@@ -545,7 +545,16 @@ positions covering every index pair exactly once.
 
 ## Step 8 — Accessible-name wording for a square
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/squareLabel.ts` exporting `squareLabel(square, isBay,
+occupant)`, taking a `Square`, a bay flag and an optional `Side` (from
+`src/rules/fleet.ts`) and joining `squareName`, `"bay"` and `` `${side} ship` ``
+with `", "` per plan decision 2. Added `src/board/squareLabel.test.ts` covering
+all five cases named in the step's verification (ordinary empty, empty bay,
+occupied bay for each side, occupied ordinary square). No deviation from the
+plan. `npm run typecheck`, `npm run lint`, `npm test` (9 files, 59 tests) and
+`npm run format:check` all pass.
 
 Add `src/board/squareLabel.ts`: given a square, whether it is a bay, and which
 side's ship (if any) stands on it, produce the accessible name, exactly as
