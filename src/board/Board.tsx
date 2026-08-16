@@ -1,12 +1,14 @@
-// The board: 15 x 15 squares with the fourteen bays marked. Ships are drawn
-// separately (see ShipIcon.tsx); this component only walks the grid's index
-// space, maps each cell back to its rule-space square, and gives it its
-// accessible name.
+// The board: 15 x 15 squares with the fourteen bays marked and the starting
+// fleet drawn on them (see ShipIcon.tsx). This component walks the grid's
+// index space, maps each cell back to its rule-space square, and gives it
+// its accessible name.
 
 import { BOARD_SIZE } from "../rules/board";
 import { isBay } from "../rules/bays";
+import { startingSideAt } from "../rules/fleet";
 import { squareForGridPosition } from "./boardView";
 import { squareLabel } from "./squareLabel";
+import { ShipIcon } from "./ShipIcon";
 import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import "./Board.css";
 
@@ -19,20 +21,23 @@ function boardRows(): GridCellDescriptor[][] {
         column: columnIndex,
       });
       const bay = isBay(square);
+      const occupant = startingSideAt(square);
       return {
         content: (
           <div
             className={bay ? "board-square board-square--bay" : "board-square"}
-          />
+          >
+            {occupant && <ShipIcon side={occupant} />}
+          </div>
         ),
-        label: squareLabel(square, bay, undefined),
+        label: squareLabel(square, bay, occupant),
         focusable: true,
       };
     }),
   );
 }
 
-/** The 15 x 15 board grid: squares and bays, drawn empty of ships. */
+/** The 15 x 15 board grid, with the fourteen starting ships drawn on it. */
 export function Board() {
   return (
     <AccessibleGrid

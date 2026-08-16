@@ -636,7 +636,30 @@ from Step 1 must still pass.
 
 ## Step 10 — Draw the ships
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/ShipIcon.tsx`: two inline-SVG silhouettes in a
+100 x 100 viewBox, coloured via `currentColor` and a `.ship-icon--green` /
+`.ship-icon--red` class setting `color` from `--color-green` / `--color-red`
+(added to `Board.css`, since the plan's file table lists no separate CSS file
+for `ShipIcon.tsx`). Green is a four-point dart/kite with a concave notch at
+the rear (`M50,15 L85,79 L50,61 L15,79 Z`); red is a rounded-corner hexagon
+(`M50,15 L80.3,32.5 L80.3,67.5 L50,85 L19.7,67.5 L19.7,32.5 Z`) — outlines
+that differ by shape, not just colour, and both bounded within roughly 70% of
+the 100-unit square with every corner left clear for a future shield count.
+The `<svg>` carries `aria-hidden="true"` and no `title`/`desc`. Wired
+`startingSideAt` into `Board.tsx` so each cell's descriptor now passes the
+real occupant into `squareLabel` and renders `<ShipIcon side={occupant} />`
+when one is present. Extended `Board.test.tsx` (no separate `ShipIcon.test`
+file, per the plan's file table) with: every one of the fourteen starting
+squares named exactly `<square>, bay, <side> ship` against `STARTING_FLEET`,
+with no other square in the grid also matching `/ship$/`; the occupied cell's
+accessible name matching the label string exactly with the SVG confirmed
+`aria-hidden` and free of `title`/`desc`; and updated the pre-existing "every
+bay named with 'bay'" test to expect the ship-carrying label now that every
+bay is occupied at game start. No deviation from the plan otherwise.
+`npm run typecheck`, `npm run lint`, `npm test` (10 files, 66 tests),
+`npm run format:check` and `npm run build` all pass.
 
 Add `src/board/ShipIcon.tsx` and place the fourteen starting ships:
 

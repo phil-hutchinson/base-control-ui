@@ -16,9 +16,6 @@
 }
 
 .board-square {
-  /* Leaves the whole square free for the ship artwork (Step 10) and a future
-     shield count in one of its corners - nothing here reserves space, but
-     nothing here fills it either. */
   width: 100%;
   height: 100%;
   box-sizing: border-box;
@@ -29,4 +26,21 @@
 .board-square--bay {
   background: var(--bay-fill);
   border: 2px solid var(--bay-border);
+}
+
+.ship-icon {
+  /* Fills the square; the artwork itself occupies roughly 70% of that,
+     within its viewBox, leaving every corner free for a future shield
+     count. */
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ship-icon--green {
+  color: var(--color-green);
+}
+
+.ship-icon--red {
+  color: var(--color-red);
 }

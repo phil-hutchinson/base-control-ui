@@ -3,8 +3,9 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
-import { ALL_SQUARES } from "../rules/board";
+import { ALL_SQUARES, squareName } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
+import { STARTING_FLEET, startingSideAt } from "../rules/fleet";
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
 
@@ -38,13 +39,39 @@ describe("Board", () => {
     render(<Board />);
 
     for (const square of ALL_SQUARES) {
-      const label = squareLabel(square, isBay(square), undefined);
+      const label = squareLabel(square, isBay(square), startingSideAt(square));
       const cell = screen.getByRole("gridcell", { name: label });
       expect(cell).toBeInTheDocument();
     }
-    expect(screen.getAllByRole("gridcell", { name: /, bay$/ })).toHaveLength(
-      BAYS.length,
+    expect(
+      screen.getAllByRole("gridcell", { name: /, bay(, .+ ship)?$/ }),
+    ).toHaveLength(BAYS.length);
+  });
+
+  it("names each starting ship's square with its side, and no other square", () => {
+    render(<Board />);
+
+    for (const { square, side } of STARTING_FLEET) {
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(square)}, bay, ${side} ship`,
+      });
+      expect(cell).toBeInTheDocument();
+    }
+    expect(screen.getAllByRole("gridcell", { name: /ship$/ })).toHaveLength(
+      STARTING_FLEET.length,
     );
+  });
+
+  it("hides the ship artwork from the accessibility tree", () => {
+    render(<Board />);
+
+    const cell = screen.getByRole("gridcell", {
+      name: "H15, bay, green ship",
+    });
+    expect(cell).toHaveAccessibleName("H15, bay, green ship");
+    const svg = cell.querySelector("svg");
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+    expect(svg?.querySelector("title, desc")).toBeNull();
   });
 
   it("has no static accessibility violations", async () => {
