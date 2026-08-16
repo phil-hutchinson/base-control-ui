@@ -509,7 +509,18 @@ typo would silently break.
 
 ## Step 7 — Board square ↔ grid index mapping
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/boardView.ts` with `gridPositionForSquare` and
+`squareForGridPosition`, built on `BOARD_SIZE`/`COLUMN_LETTERS`/`squareAt` from
+`src/rules/board.ts` and the `GridPosition` type from the ported grid module.
+Row inversion is `gridRow = BOARD_SIZE - square.row`; column maps straight
+through via `COLUMN_LETTERS.indexOf`. Added `src/board/boardView.test.ts`
+covering the four corners, the H8 centre, a round trip over all 225 squares
+(asserting every grid index pair is hit exactly once), and a named spot-check
+of the corners/centre by square name. No deviation from the plan. `npm run
+typecheck`, `npm run lint`, `npm test` (8 files, 54 tests) and `npm run
+format:check` all pass.
 
 Add `src/board/boardView.ts` holding the single piece of arithmetic that turns
 a rule-space square into a screen-space grid position and back: board row 15 is
