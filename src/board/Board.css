@@ -1,0 +1,32 @@
+/* Board grid geometry. `--square` drives every square's size from one place,
+   sized with `clamp()` on a viewport unit so the whole 15 x 15 board stays
+   square and fits a normal desktop viewport without scrolling at any window
+   size. Ordinary squares get a thin border to read as a grid; bays get a
+   different fill and a heavier, differently coloured border so they read as
+   distinct at a glance rather than a barely-different shade. */
+
+.board {
+  --square: clamp(24px, 4vmin, 42px);
+  --bay-fill: #223463;
+  --bay-border: #5fd0e8;
+  display: grid;
+  grid-template-columns: repeat(15, var(--square));
+  grid-template-rows: repeat(15, var(--square));
+  border: 2px solid var(--color-text-dim);
+}
+
+.board-square {
+  /* Leaves the whole square free for the ship artwork (Step 10) and a future
+     shield count in one of its corners - nothing here reserves space, but
+     nothing here fills it either. */
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  background: var(--color-space-raised);
+  border: 1px solid var(--color-space);
+}
+
+.board-square--bay {
+  background: var(--bay-fill);
+  border: 2px solid var(--bay-border);
+}

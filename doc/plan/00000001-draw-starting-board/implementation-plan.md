@@ -578,7 +578,27 @@ ordinary square.
 
 ## Step 9 — Draw the board: squares and bays
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/Board.tsx`, walking the 15 x 15 grid index space via
+`squareForGridPosition`, marking bays via `isBay`, and labelling every cell
+via `squareLabel(square, bay, undefined)` (no occupant — ships arrive in Step
+10). Rendered through `AccessibleGrid` with label `Base Control board`.
+`Board.css` sizes the grid from `--square: clamp(24px, 4vmin, 42px)` and gives
+bay squares a distinct fill/border (`--bay-fill`/`--bay-border`, a cyan-toned
+accent chosen to stay clear of both the amber default focus ring and the
+green/red ship colours reserved for Step 10) against ordinary squares, which
+get a plain 1px grid-line border. Wired `Board` into `src/App.tsx` in place of
+the placeholder tagline, keeping the `<h1>`; removed the now-unused
+`.app__tagline` rule from `App.css` and dropped `.app`'s vertical centring (it
+now aligns from the top) so a tall viewport shows the whole board rather than
+vertically centring it off the top edge. Added `src/board/Board.test.tsx`
+covering exactly the step's verification list (225 gridcells in 15 rows, A15
+first/O1 last in DOM order, H8/A1/O15 named, all fourteen bays named with
+`bay` and no others, axe clean). No deviation from the plan. `npm run
+typecheck`, `npm run lint`, `npm test` (10 files, 64 tests), `npm run
+format:check` and `npm run build` all pass; the existing `App` smoke test
+still passes unchanged.
 
 Add `src/board/Board.tsx` and `Board.css`, and put the board on screen:
 
