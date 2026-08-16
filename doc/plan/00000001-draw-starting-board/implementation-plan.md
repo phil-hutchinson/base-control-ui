@@ -458,7 +458,22 @@ rejected rather than silently clamped.
 
 ## Step 6 — Bays and the starting fleet (§3.1, §4)
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/bays.ts` (`BAYS`, `isBay`) and `src/rules/fleet.ts`
+(`Side`, `FleetEntry`, `STARTING_FLEET`, `startingSideAt`), both hand-transcribed
+from §3.1/§4 in the document's own order, built on `squareAt`/`squareName` from
+Step 5. Added `src/rules/bays.test.ts`, which derives the 56-square clockwise
+perimeter ring inside the test and asserts the fourteen bays fall exactly four
+apart around it (with the wraparound gap checked too), plus the corner/edge/
+count properties. Added `src/rules/fleet.test.ts` asserting seven ships a
+side, one ship per bay with no bay doubled up, side alternation around the
+clockwise ring (including the wraparound), the 180°-rotation property
+(column index → 14 − index, row → 16 − row) mapping every ship onto an
+opposite-side ship, and a literal check against §4's transcribed order as a
+line-by-line sanity check. No deviation from the plan. `npm run typecheck`,
+`npm run lint`, `npm test` (7 files, 50 tests) and `npm run format:check` all
+pass.
 
 Add the rule data this story renders:
 
