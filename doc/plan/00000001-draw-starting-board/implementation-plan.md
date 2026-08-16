@@ -264,7 +264,17 @@ no longer exits 1 with "No test files found". `npm run lint` and
 
 ## Step 2 — Port the pure grid navigation module
 
-Status: pending
+Status: committed
+
+Notes: Ported `gridNavigation.ts` and its test to `src/board/grid/`,
+keeping `ArrowKey`, `GridPosition`, `nextFocusPosition` and
+`firstFocusablePosition` and dropping `resolveInitialFocus`,
+`ResolveInitialFocusArgs`, and the test cases covering them, per plan
+decision 1. Rewrote the module header and every doc comment to drop story
+numbers and references to the reference project's own board/pieces, keeping
+only what-it-does explanations. No behavioural deviation from the plan;
+`npm run typecheck`, `npm run lint`, `npm test` and `npm run format:check`
+all pass.
 
 Port `.local/reference/capture-the-flag-ui/src/board/grid/gridNavigation.ts`
 and its test to `src/board/grid/`, trimmed and re-commented:
