@@ -306,7 +306,30 @@ row-major scan including the "nothing focusable" case.
 
 ## Step 3 — Port the accessible grid component
 
-Status: pending
+Status: committed
+
+Notes: Ported `AccessibleGrid.tsx`/`.css` to `src/board/grid/` per decision 1
+- dropped `initialFocus`/`resolveInitialFocus`, `onActivate`/`actionable`,
+per-cell `onClick`, Enter/Space handling, and the live region plus its
+`display: contents` wrapper (the wrapper element and its CSS rule went with
+it, since nothing needs `display: contents` on a single child now). One
+deviation not flagged by the plan: the reference component also carried an
+`accessible-grid__cell--focused` modifier class that no CSS in the reference
+project ever referenced (grepped the whole reference `src/`) - dropped it as
+dead code rather than porting an unused hook, consistent with the "everything
+shipped is exercised by tests" reasoning in decision 1. Added
+`AccessibleGrid.test.tsx` (jsdom) against a small 2x3 fixture grid (one
+non-focusable cell to exercise the skip policy) covering: grid/row/gridcell
+roles and accessible names; exactly one tab stop with the rest at -1 and the
+non-focusable cell carrying no `tabIndex` at all; one-cell arrow movement and
+edge clamping; skipping the non-focusable cell; `user-event.tab()` reaching
+the grid in a single stop (before/grid/after); mounting not stealing focus;
+and axe reporting no violations with `color-contrast` disabled per the DOM
+test recipe. `npm run typecheck`, `npm run lint`, `npm test` (25 tests, 3
+files, all green) and `npm run format:check` all pass; needed no new lint
+suppression beyond the expected `jsx-a11y/interactive-supports-focus` on the
+grid container (dropping activation removed the reference's second
+suppression, as decision 1 anticipated).
 
 Port `AccessibleGrid.tsx` and `AccessibleGrid.css` to `src/board/grid/`,
 trimmed per plan decision 1. What the ported component must do:
