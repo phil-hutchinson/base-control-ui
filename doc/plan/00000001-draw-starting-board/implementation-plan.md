@@ -309,27 +309,28 @@ row-major scan including the "nothing focusable" case.
 Status: committed
 
 Notes: Ported `AccessibleGrid.tsx`/`.css` to `src/board/grid/` per decision 1
+
 - dropped `initialFocus`/`resolveInitialFocus`, `onActivate`/`actionable`,
-per-cell `onClick`, Enter/Space handling, and the live region plus its
-`display: contents` wrapper (the wrapper element and its CSS rule went with
-it, since nothing needs `display: contents` on a single child now). One
-deviation not flagged by the plan: the reference component also carried an
-`accessible-grid__cell--focused` modifier class that no CSS in the reference
-project ever referenced (grepped the whole reference `src/`) - dropped it as
-dead code rather than porting an unused hook, consistent with the "everything
-shipped is exercised by tests" reasoning in decision 1. Added
-`AccessibleGrid.test.tsx` (jsdom) against a small 2x3 fixture grid (one
-non-focusable cell to exercise the skip policy) covering: grid/row/gridcell
-roles and accessible names; exactly one tab stop with the rest at -1 and the
-non-focusable cell carrying no `tabIndex` at all; one-cell arrow movement and
-edge clamping; skipping the non-focusable cell; `user-event.tab()` reaching
-the grid in a single stop (before/grid/after); mounting not stealing focus;
-and axe reporting no violations with `color-contrast` disabled per the DOM
-test recipe. `npm run typecheck`, `npm run lint`, `npm test` (25 tests, 3
-files, all green) and `npm run format:check` all pass; needed no new lint
-suppression beyond the expected `jsx-a11y/interactive-supports-focus` on the
-grid container (dropping activation removed the reference's second
-suppression, as decision 1 anticipated).
+  per-cell `onClick`, Enter/Space handling, and the live region plus its
+  `display: contents` wrapper (the wrapper element and its CSS rule went with
+  it, since nothing needs `display: contents` on a single child now). One
+  deviation not flagged by the plan: the reference component also carried an
+  `accessible-grid__cell--focused` modifier class that no CSS in the reference
+  project ever referenced (grepped the whole reference `src/`) - dropped it as
+  dead code rather than porting an unused hook, consistent with the "everything
+  shipped is exercised by tests" reasoning in decision 1. Added
+  `AccessibleGrid.test.tsx` (jsdom) against a small 2x3 fixture grid (one
+  non-focusable cell to exercise the skip policy) covering: grid/row/gridcell
+  roles and accessible names; exactly one tab stop with the rest at -1 and the
+  non-focusable cell carrying no `tabIndex` at all; one-cell arrow movement and
+  edge clamping; skipping the non-focusable cell; `user-event.tab()` reaching
+  the grid in a single stop (before/grid/after); mounting not stealing focus;
+  and axe reporting no violations with `color-contrast` disabled per the DOM
+  test recipe. `npm run typecheck`, `npm run lint`, `npm test` (25 tests, 3
+  files, all green) and `npm run format:check` all pass; needed no new lint
+  suppression beyond the expected `jsx-a11y/interactive-supports-focus` on the
+  grid container (dropping activation removed the reference's second
+  suppression, as decision 1 anticipated).
 
 Port `AccessibleGrid.tsx` and `AccessibleGrid.css` to `src/board/grid/`,
 trimmed per plan decision 1. What the ported component must do:
@@ -380,7 +381,20 @@ each carrying a short reason).
 
 ## Step 4 — `RULES_VERSION`
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/rulesVersion.ts` exporting `RULES_VERSION = "0.1"` and
+`src/rules/rulesVersion.test.ts`, which reads `doc/ruleset/rules.md` off disk
+(path resolved via `import.meta.url`), extracts the version from its
+`**Rules version: …**` line with a regex, and asserts it equals
+`RULES_VERSION`. Verified the guard actually guards by temporarily bumping the
+version line in `rules.md` to `0.2`, confirming the test fails naming both
+`0.1` and `0.2`, then reverting (not committed). No deviation from the plan.
+`npm run typecheck`, `npm run lint`, and `npm test` (26 tests, 4 files) are all
+green. `npm run format:check` reports a pre-existing formatting issue in this
+plan file (`implementation-plan.md` itself, unrelated to Step 4's new files,
+present before this step's edits) — left untouched as out of scope for this
+step.
 
 Add `src/rules/rulesVersion.ts` exporting the single `RULES_VERSION` constant,
 whose value is the version `doc/ruleset/rules.md` currently carries: **`0.1`**
