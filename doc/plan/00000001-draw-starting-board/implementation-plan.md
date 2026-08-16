@@ -688,7 +688,25 @@ text from the SVG); and axe still reports no violations.
 
 ## Step 11 — Visible column letters and row numbers
 
-Status: pending
+Status: committed
+
+Notes: Wrapped `AccessibleGrid` in a new `.board-frame` container in
+`Board.tsx`/`Board.css`: a row of `aria-hidden` row-number labels (15 down to
+1, top to bottom) to its left and a row of `aria-hidden` column-letter labels
+(A-O) below it, both laid out as CSS grid tracks sized from the same
+`--square` custom property (moved up from `.board` to `.board-frame` so both
+the grid and the labels inherit it). The labels sit as sibling `<div>`s outside
+the `role="grid"` element, per decision 4, styled in `--color-text-dim`. Added
+a test to `Board.test.tsx` asserting the grid still exposes 225 gridcells in
+15 rows with no `columnheader`/`rowheader` roles introduced, that the label
+text (`15…1`, `A…O`) is present in the DOM via `textContent`, and that the two
+label containers carry `aria-hidden="true"` (the DOM mechanism that removes
+them from the accessibility tree — Testing Library's `byText` queries don't
+themselves filter on `aria-hidden`, so asserting the attribute directly is the
+correct check rather than a `queryByText` non-match). The pre-existing axe
+test now also covers the frame with labels present. No deviation from the
+plan. `npm run typecheck`, `npm run lint`, `npm test` (10 files, 67 tests),
+`npm run format:check` and `npm run build` all pass.
 
 Add the coordinate labels decided in plan decision 4: A–O along the bottom edge
 of the board and 1–15 up the left edge, aligned with the grid tracks.

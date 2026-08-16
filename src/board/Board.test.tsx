@@ -74,6 +74,29 @@ describe("Board", () => {
     expect(svg?.querySelector("title, desc")).toBeNull();
   });
 
+  it("draws visible column letters and row numbers, hidden from the accessibility tree", () => {
+    const { container } = render(<Board />);
+
+    // The grid itself is unaffected: still 225 cells, none of them the labels.
+    expect(screen.getAllByRole("row")).toHaveLength(15);
+    expect(screen.getAllByRole("gridcell")).toHaveLength(225);
+    expect(screen.queryByRole("columnheader")).not.toBeInTheDocument();
+    expect(screen.queryByRole("rowheader")).not.toBeInTheDocument();
+
+    const rowLabels = container.querySelector(".board-frame__row-labels");
+    const columnLabels = container.querySelector(".board-frame__column-labels");
+    expect(rowLabels).toHaveAttribute("aria-hidden", "true");
+    expect(columnLabels).toHaveAttribute("aria-hidden", "true");
+
+    // The letters and numbers are drawn in the DOM, in board order, but their
+    // `aria-hidden` ancestor (asserted above) removes them from the
+    // accessibility tree entirely.
+    expect(rowLabels?.textContent).toBe(
+      Array.from({ length: 15 }, (_, index) => 15 - index).join(""),
+    );
+    expect(columnLabels?.textContent).toBe("ABCDEFGHIJKLMNO");
+  });
+
   it("has no static accessibility violations", async () => {
     const { container } = render(<Board />);
 
