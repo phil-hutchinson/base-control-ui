@@ -1,0 +1,30 @@
+:root {
+  /* Deep-space palette. The two side colors are the one pair that must stay
+     distinguishable to a color-blind viewer; they are always paired with a
+     non-color cue (label, shield count) rather than carrying meaning alone. */
+  --color-space: #0b1020;
+  --color-space-raised: #151c31;
+  --color-text-bright: #eef2ff;
+  --color-text-dim: #a3aec9;
+  --color-green: #3fa66b;
+  --color-red: #c8503f;
+
+  color-scheme: dark;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-space);
+  color: var(--color-text-bright);
+}
