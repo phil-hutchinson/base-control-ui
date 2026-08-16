@@ -420,7 +420,19 @@ guard actually guards; do not commit the temporary edit.
 
 ## Step 5 — Board geometry and square names (§3)
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/board.ts` with `BOARD_SIZE`, `COLUMN_LETTERS` (A-O),
+`ROW_NUMBERS` (1-15), a `Square` type storing only `{ column, row }` (no
+stored name), `squareAt`/`squareFromName` for building/parsing (both routing
+through `isOnBoard` so out-of-range input is rejected rather than clamped),
+`squareName` deriving the name string, and `ALL_SQUARES` (225 squares,
+row-major). Added `src/rules/board.test.ts` covering board size, the 225-square
+list with no duplicates, the corners and centre §3 names explicitly, a
+round-trip over all 225 squares, and bounds rejection (out-of-range column,
+row 0, row 16, and malformed name strings). No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (5 files, 38 tests) and
+`npm run format:check` all pass.
 
 Add `src/rules/board.ts` implementing §3 only: the board is 15 x 15; columns
 are lettered A–O left to right; rows are numbered 1–15 bottom to top; a square
