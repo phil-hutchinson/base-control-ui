@@ -983,7 +983,24 @@ building positions directly:
 
 ## Step 6 — The session: selection, intents and events
 
-Status: pending
+Status: committed
+
+Notes: Added `src/game/session.ts` (`Session`, `SessionIntent`, `SessionEvent`
+and its five member event types, `createSession`, `sessionReducer`) and
+`src/game/session.test.ts` covering all eight verification points, built
+directly from constructed `GameState` values. `createSession` runs
+`applyPassGuard` once, so an initial position with no legal move passes
+immediately rather than being handed to the player unplayable; the plan
+explicitly left this to be decided, and covered it with a test using a
+green ship boxed in on every side. Switching reuses the `selected` helper
+(and so emits a plain `selected` event) rather than a distinct event type,
+since the plan's event list names only `selected`, `selection cleared`,
+`moved`, `ply passed` and `rejected` — a switch is a reselection. The
+"any other square" rejection branch calls `applyMove` directly and returns
+its `refused` reason rather than calling `moveRefusalReason` first and then
+`applyMove`, avoiding computing the same legality check twice; behaviour is
+identical since `applyMove` runs the same check internally. No other
+deviation from the plan.
 
 Add `src/game/session.ts`: the layer between a player's input and the rules.
 
