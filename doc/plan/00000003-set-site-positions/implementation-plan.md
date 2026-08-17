@@ -508,7 +508,17 @@ default `node` environment — no jsdom docblock.
 
 ## Step 3 — Prove no single move can touch two sites
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/siteSpacing.test.ts` with a local `allMoves` helper
+enumerating §6's 0-shield ranges (1–3 orthogonal, 1–2 diagonal) from all 225
+squares, excluding the origin square and discarding off-board moves; the
+sweep passes with zero touched-two-sites failures. Deliberate-failure check:
+temporarily appended `squareAt("H", 6)` to `SITES` in `src/rules/sites.ts`,
+re-ran the sweep, and it failed with four named moves (e.g. `H3 moving 0,1
+for 3 touches sites H4, H6`), confirming the assertion bites; the edit was
+then reverted and `git status` shows only the new test file. No deviation
+from the plan.
 
 Add `src/rules/siteSpacing.test.ts`: an exhaustive sweep asserting the property
 `rules.md` §3.2 actually requires — that **no single legal move can touch two
