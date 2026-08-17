@@ -52,7 +52,11 @@ describe("Board", () => {
     ).toBeInTheDocument();
 
     for (const square of ALL_SQUARES) {
-      const label = squareLabel(square, isBay(square), startingSideAt(square));
+      const label = squareLabel({
+        square,
+        isBay: isBay(square),
+        occupant: startingSideAt(square),
+      });
       const cell = screen.getByRole("gridcell", { name: label });
       expect(cell).toBeInTheDocument();
     }

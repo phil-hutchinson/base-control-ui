@@ -41,7 +41,7 @@ const BOARD_ROWS: GridCellDescriptor[][] = Array.from(
             {occupant && <ShipIcon side={occupant} />}
           </div>
         ),
-        label: squareLabel(square, bay, occupant),
+        label: squareLabel({ square, isBay: bay, occupant }),
         focusable: true,
       };
     }),

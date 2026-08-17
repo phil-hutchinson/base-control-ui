@@ -631,7 +631,22 @@ Verification (automated): `npm test` — extend `src/rules/sites.test.ts` with:
 
 ## Step 5 — The accessible name says a square is a site and what state it is in
 
-Status: pending
+Status: committed
+
+Notes: Switched `squareLabel` to a single `SquareLabelDescriptor` object
+argument (`square`, `isBay`, optional `siteState`, optional `occupant`) rather
+than adding a fourth positional parameter, since two adjacent optional
+values of similarly-shaped types (`SiteState | undefined` next to
+`Side | undefined`) would have made the positional call site ambiguous — the
+plan explicitly left this choice to the implementer. The bay/site mutual
+exclusivity is expressed with `if (isBay) {…} else if (siteState) {…}`.
+Updated both call sites (`Board.tsx`, `Board.test.tsx`) to the new object
+form; `Board.tsx` does not yet pass `siteState` since wiring the real lookup
+in is Step 7's job, so today it is always `undefined`, matching "ordinary
+empty square" wording for every square until then. Extended
+`squareLabel.test.ts` with the four state cases and one occupied case per
+side. `npm run typecheck`, `npm run lint`, `npm test`, `npm run format:check`
+and `npm run build` all pass. No deviation from the plan's substance.
 
 Extend `src/board/squareLabel.ts` so a square's accessible name can carry a site
 segment, exactly as set out in this plan's decision 4:
