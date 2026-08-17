@@ -1089,7 +1089,17 @@ returns nothing.
 
 ## Step 12 — Manual gate: the real starting board
 
-Status: pending
+Status: committed
+
+Notes: Taken by the owner against a dev server restarted on the fixture-free
+build. All five checks pass: the seventeen sites sit where this plan's diagram
+places them and read as mirrored about column H and row 8; H8, E5, K5, E11 and
+K11 are active and the other twelve dormant; nothing is charged or depleted and
+no ship stands on a site, the fourteen ships being in their bays as before this
+story; sites and bays are not confusable and the board still fits without
+scrolling; and a screen-reader pass announces only active and dormant sites.
+`npm run build` also succeeds, so the app remains a static front-end-only
+bundle.
 
 No code. The story's remaining manual gate, confirming the board a player will
 actually see.
