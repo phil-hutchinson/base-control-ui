@@ -663,7 +663,17 @@ and its axe check still pass. Also `npm run typecheck` and `npm run build`.
 
 ## Step 6 — Show the whole 0–4 range in a component test
 
-Status: pending
+Status: committed
+
+Notes: Steps 4 and 5 already covered arcs-at-each-count and wording
+separately, so the gap this step closed was the combination. Added an
+`"alongside squareLabel"` block to `src/board/ShipIcon.test.tsx` that, for
+both sides and every count 0–4, renders `ShipIcon` directly and computes
+`squareLabel` for an ordinary square (`H8`) from the same `{ side, shields }`
+occupant, asserting both the arc count/order and the exact spoken segment
+agree. Nothing in it reads `STARTING_FLEET`. No deviations from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (101 tests) and
+`npm run format:check` all pass.
 
 Add a component test that renders a **board square's worth** of ship at each
 count and checks the two halves of this story meet correctly: the drawn arcs and

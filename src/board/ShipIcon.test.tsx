@@ -3,13 +3,17 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
+import { squareAt } from "../rules/board";
+import type { Side } from "../rules/fleet";
 import type { ShieldCount } from "../rules/shields";
 import { ARC_FILL_ORDER } from "./shieldArcs";
 import { ShipIcon } from "./ShipIcon";
+import { squareLabel } from "./squareLabel";
 
 afterEach(cleanup);
 
 const SHIELD_COUNTS: readonly ShieldCount[] = [0, 1, 2, 3, 4];
+const SIDES: readonly Side[] = ["green", "red"];
 
 describe("ShipIcon", () => {
   it.each(SHIELD_COUNTS)("draws %i arc(s) in fill order", (shields) => {
@@ -59,6 +63,34 @@ describe("ShipIcon", () => {
 
       expect(results.violations).toEqual([]);
       unmount();
+    }
+  });
+
+  describe("alongside squareLabel", () => {
+    for (const side of SIDES) {
+      it.each(SHIELD_COUNTS)(
+        `draws %i arc(s) that match the spoken shield count for a ${side} ship`,
+        (shields) => {
+          const label = squareLabel(squareAt("H", 8), false, {
+            side,
+            shields,
+          });
+          const { container } = render(
+            <ShipIcon side={side} shields={shields} />,
+          );
+
+          const arcs = container.querySelectorAll("[data-arc-position]");
+          expect(arcs).toHaveLength(shields);
+          expect(
+            Array.from(arcs).map((arc) =>
+              arc.getAttribute("data-arc-position"),
+            ),
+          ).toEqual(ARC_FILL_ORDER.slice(0, shields));
+
+          const unit = shields === 1 ? "shield" : "shields";
+          expect(label).toBe(`H8, ${side} ship, ${shields} ${unit}`);
+        },
+      );
     }
   });
 });
