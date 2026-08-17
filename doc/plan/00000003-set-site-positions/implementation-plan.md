@@ -575,7 +575,19 @@ was done. A sweep that passes vacuously would be worse than no sweep at all.
 
 ## Step 4 — The four states and the starting state
 
-Status: pending
+Status: committed
+
+Notes: Extended `src/rules/sites.ts` with the `SiteState` type (`dormant` |
+`active` | `charged` | `depleted`), `STARTING_ACTIVE_SITES` (transcribed
+literally from §8.1 in its order: H8, E5, K5, E11, K11), and
+`startingSiteState`, mirroring `startingSideAt`'s shape from `fleet.ts`. Added
+a `describe("starting site state", …)` block to `src/rules/sites.test.ts`
+covering all six checks from this step's verification, including the
+five/dormant-twelve counts, no charged/depleted at start, every active square
+being a site, non-site squares returning `undefined`, and the mirror symmetry
+of the starting-active set. No transition function, clock or cooldown added.
+`npm run typecheck`, `npm run lint`, `npm test` and `npm run format:check` all
+pass. No deviation from the plan.
 
 Extend `src/rules/sites.ts` with the state vocabulary from `rules.md` §8.1 and
 the starting state:
