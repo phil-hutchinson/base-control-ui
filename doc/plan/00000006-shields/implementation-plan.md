@@ -789,7 +789,7 @@ the dev server is restarted by hand before each remaining manual gate.
 
 ## Step 8 — Manual gate: screen reader
 
-Status: pending
+Status: committed
 
 No code. The story's screen-reader gate, taken while the temporary counts are
 still in place so a range of counts can actually be heard.
@@ -815,6 +815,13 @@ grates aloud — in particular if "0 shields" would be better as "no shields" (t
 alternative recorded in plan decision 6) — change it here, update
 `squareLabel`'s tests to match, and record the change and the reason in this
 step's Notes.
+
+Notes: Passed by the owner with the wording **unchanged**. `0 shields` was
+judged to read acceptably aloud, so plan decision 6's alternative (`no
+shields`) stays rejected and `squareLabel` is untouched. The owner also
+confirmed keyboard navigation of the grid still behaves after Step 2's
+resize — not required by this gate, but worth recording, since that is the
+part of story 00000001 most exposed by a change to the board's geometry.
 
 ---
 
