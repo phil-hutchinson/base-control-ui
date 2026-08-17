@@ -820,7 +820,35 @@ Also run `npm run build` and confirm it succeeds.
 
 ## Step 8 — Temporary review fixture: all four states on screen
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/reviewFixture.ts` exporting `reviewSiteStateAt` and
+`reviewOccupantAt`, matching `startingSiteState`/`startingSideAt`'s shape but
+built from two `ReadonlyMap`s (site states, and the four extra ships) rather
+than the rules layer's array-plus-lookup shape, since the fixture has no
+document table to transcribe literally from and a map keyed by square name
+was the simplest fit; `reviewOccupantAt` falls back from the fourteen bay
+ships (`startingSideAt`) to the four review ships. The module header states
+plainly that the arrangement is not a legal game state and nothing under
+`src/rules/` references it (confirmed by a repo-wide grep). Switched
+`Board.tsx`'s two lookups to the fixture functions at a single import site,
+with a comment marking it temporary and naming the step that reverts it.
+Replaced the `"sites on the starting board"` describe block in
+`Board.test.tsx` with a `"the temporary review fixture"` block covering the
+six verification points (one charged, two depleted, four active with one
+ship each spot-checked, ten dormant, seventeen markers with all four state
+classes present, no marker on a bay). Three other pre-existing tests in that
+file assert site/occupant state that the fixture necessarily changes (the
+centre-square check, the bay-completeness loop that builds expected labels
+from the same lookups Board.tsx now uses, and the total ship-count check) and
+were updated in place, each with a comment explaining the fixture is the
+reason — a small, necessary deviation from "only the assertions inside the
+new describe block change," since those three were written against the real
+starting state in Step 7 and the fixture genuinely alters what they observe;
+Step 11's revert restores them alongside the describe block.
+`npm run typecheck`, `npm run lint`, `npm test`, `npm run format:check` (after
+running `npm run format` once to fix an unformatted line) and `npm run build`
+all pass.
 
 Add `src/board/reviewFixture.ts`, a **temporary** module that exists only so the
 next two manual gates can judge all four appearances. Step 11 deletes it.

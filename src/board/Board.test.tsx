@@ -5,9 +5,9 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { ALL_SQUARES, squareName } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
-import { STARTING_FLEET, startingSideAt } from "../rules/fleet";
-import { startingSiteState } from "../rules/sites";
+import { STARTING_FLEET } from "../rules/fleet";
 import { Board } from "./Board";
+import { reviewOccupantAt, reviewSiteStateAt } from "./reviewFixture";
 import { squareLabel } from "./squareLabel";
 
 afterEach(cleanup);
@@ -31,9 +31,10 @@ describe("Board", () => {
   it("names the centre and the far corners correctly", () => {
     render(<Board />);
 
-    // H8 is the centre and, since this story, an active site.
+    // H8 is the centre; the temporary review fixture (step 8) makes it a
+    // charged site holding an extra green ship.
     expect(
-      screen.getByRole("gridcell", { name: "H8, active site" }),
+      screen.getByRole("gridcell", { name: "H8, charged site, green ship" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("gridcell", { name: "A1" })).toBeInTheDocument();
     expect(screen.getByRole("gridcell", { name: "O15" })).toBeInTheDocument();
@@ -59,8 +60,8 @@ describe("Board", () => {
       const label = squareLabel({
         square,
         isBay: isBay(square),
-        siteState: startingSiteState(square),
-        occupant: startingSideAt(square),
+        siteState: reviewSiteStateAt(square),
+        occupant: reviewOccupantAt(square),
       });
       const cell = screen.getByRole("gridcell", { name: label });
       expect(cell).toBeInTheDocument();
@@ -93,8 +94,10 @@ describe("Board", () => {
       });
       expect(cell).toBeInTheDocument();
     }
+    // The temporary review fixture (step 8) adds four more ships standing on
+    // sites, on top of the fourteen in their bays.
     expect(screen.getAllByRole("gridcell", { name: /ship$/ })).toHaveLength(
-      STARTING_FLEET.length,
+      STARTING_FLEET.length + 4,
     );
   });
 
@@ -133,83 +136,99 @@ describe("Board", () => {
     expect(columnLabels?.textContent).toBe("ABCDEFGHIJKLMNO");
   });
 
-  describe("sites on the starting board", () => {
-    // Literal, hand-transcribed from rules.md §3.2 and §8.1, not derived by
-    // calling the same production lookups the component uses.
-    const SITE_SQUARES = [
+  // TEMPORARY (story 00000003, step 8): the review fixture puts all four
+  // site states, and a ship standing on one of each, on screen at once. This
+  // whole describe block is deleted in step 11, along with reviewFixture.ts,
+  // and replaced with assertions on the real starting state.
+  describe("the temporary review fixture", () => {
+    // Literal, hand-transcribed from the fixture arrangement (reviewFixture.ts),
+    // not derived by calling the same production lookups the component uses.
+    const CHARGED_SITE_SQUARES = ["H8"];
+    const DEPLETED_SITE_SQUARES = ["H4", "H12"];
+    const ACTIVE_SITE_SQUARES = ["E5", "K5", "E11", "K11"];
+    const DORMANT_SITE_SQUARES = [
       "F2",
       "J2",
       "B4",
-      "H4",
       "N4",
-      "E5",
-      "K5",
       "D8",
-      "H8",
       "L8",
-      "E11",
-      "K11",
       "B12",
-      "H12",
       "N12",
       "F14",
       "J14",
     ];
-    const ACTIVE_SITE_SQUARES = ["H8", "E5", "K5", "E11", "K11"];
-    const DORMANT_SITE_SQUARES = SITE_SQUARES.filter(
-      (square) => !ACTIVE_SITE_SQUARES.includes(square),
-    );
 
-    it("draws a site marker on exactly the seventeen sites from rules.md §3.2", () => {
+    it("shows the one charged site, with its extra green ship", () => {
+      render(<Board />);
+
+      expect(
+        screen.getByRole("gridcell", { name: "H8, charged site, green ship" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getAllByRole("gridcell", { name: /, charged site/ }),
+      ).toHaveLength(CHARGED_SITE_SQUARES.length);
+    });
+
+    it("shows the two depleted sites, one with its extra red ship", () => {
+      render(<Board />);
+
+      expect(
+        screen.getByRole("gridcell", { name: "H4, depleted site, red ship" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("gridcell", { name: "H12, depleted site" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getAllByRole("gridcell", { name: /, depleted site/ }),
+      ).toHaveLength(DEPLETED_SITE_SQUARES.length);
+    });
+
+    it("shows the four active sites, one with its extra green ship", () => {
+      render(<Board />);
+
+      expect(
+        screen.getByRole("gridcell", { name: "E5, active site, green ship" }),
+      ).toBeInTheDocument();
+      for (const square of ACTIVE_SITE_SQUARES) {
+        expect(
+          screen.getByRole("gridcell", {
+            name: new RegExp(`^${square}, active site`),
+          }),
+        ).toBeInTheDocument();
+      }
+      expect(
+        screen.getAllByRole("gridcell", { name: /, active site/ }),
+      ).toHaveLength(ACTIVE_SITE_SQUARES.length);
+    });
+
+    it("shows the ten dormant sites, one with its extra red ship", () => {
+      render(<Board />);
+
+      expect(
+        screen.getByRole("gridcell", { name: "B4, dormant site, red ship" }),
+      ).toBeInTheDocument();
+      for (const square of DORMANT_SITE_SQUARES) {
+        expect(
+          screen.getByRole("gridcell", {
+            name: new RegExp(`^${square}, dormant site`),
+          }),
+        ).toBeInTheDocument();
+      }
+      expect(
+        screen.getAllByRole("gridcell", { name: /, dormant site/ }),
+      ).toHaveLength(DORMANT_SITE_SQUARES.length);
+    });
+
+    it("draws seventeen site markers in total, one per site, with all four state classes present", () => {
       const { container } = render(<Board />);
 
       expect(container.querySelectorAll(".site-marker")).toHaveLength(17);
-      for (const square of ACTIVE_SITE_SQUARES) {
-        const cell = screen.getByRole("gridcell", {
-          name: `${square}, active site`,
-        });
-        expect(cell.querySelector(".site-marker")).toBeInTheDocument();
+      for (const state of ["dormant", "active", "charged", "depleted"]) {
+        expect(
+          container.querySelectorAll(`.site-marker--${state}`).length,
+        ).toBeGreaterThan(0);
       }
-      for (const square of DORMANT_SITE_SQUARES) {
-        const cell = screen.getByRole("gridcell", {
-          name: `${square}, dormant site`,
-        });
-        expect(cell.querySelector(".site-marker")).toBeInTheDocument();
-      }
-    });
-
-    it("names exactly five sites active and twelve dormant, none charged or depleted", () => {
-      render(<Board />);
-
-      expect(
-        screen.getAllByRole("gridcell", { name: /, active site$/ }),
-      ).toHaveLength(5);
-      expect(
-        screen.getAllByRole("gridcell", { name: /, dormant site$/ }),
-      ).toHaveLength(12);
-      expect(
-        screen.queryByRole("gridcell", { name: /charged site/ }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("gridcell", { name: /depleted site/ }),
-      ).not.toBeInTheDocument();
-    });
-
-    it("spot-checks a few sites' literal accessible names", () => {
-      render(<Board />);
-
-      expect(
-        screen.getByRole("gridcell", { name: "E5, active site" }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("gridcell", { name: "H8, active site" }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("gridcell", { name: "B4, dormant site" }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("gridcell", { name: "F2, dormant site" }),
-      ).toBeInTheDocument();
     });
 
     it("never draws a site marker on a bay, and never names a bay a site", () => {
