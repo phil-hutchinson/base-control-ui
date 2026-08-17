@@ -693,7 +693,19 @@ Also `npm run typecheck`, `npm run lint`, `npm run format:check`,
 
 ## Step 2 — §6's reach table
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/movement.ts` with `reachFrom(origin, shields)`, driven
+by the five-row `REACH_OPTIONS` table transcribed directly from plan
+decision 5, and `src/rules/movement.test.ts` covering the exact H8 sets at
+each shield count, the downward-accumulation superset property, the
+three-diagonal-squares exclusion, edge/corner clipping, and the
+passed-over-squares ordering. `src/rules/siteSpacing.test.ts` was
+reconciled per decision 11: its private `ORTHOGONAL_LENGTHS` /
+`DIAGONAL_LENGTHS` / direction-table constants and hand-rolled path walk are
+gone, and `allMoves` now derives each move's direction, length and touched
+squares from `reachFrom(origin, 0)`, keeping the same `Move` shape and
+failure-message format as before. No deviation from the plan.
 
 Add `src/rules/movement.ts` with the **reach** half of §6 only: a pure function
 of a square and a `ShieldCount` returning every square that ship could move to
