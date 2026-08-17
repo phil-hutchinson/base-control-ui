@@ -790,7 +790,7 @@ static, front-end-only bundle.
 
 ## Step 13 — Manual gate: keyboard and screen reader
 
-Status: pending
+Status: committed
 
 No code. The story's remaining two manual gates, taken in one pause since both
 need the finished board and a person driving it.
