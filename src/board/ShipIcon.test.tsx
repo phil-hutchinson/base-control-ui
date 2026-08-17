@@ -71,9 +71,10 @@ describe("ShipIcon", () => {
       it.each(SHIELD_COUNTS)(
         `draws %i arc(s) that match the spoken shield count for a ${side} ship`,
         (shields) => {
-          const label = squareLabel(squareAt("H", 8), false, {
-            side,
-            shields,
+          const label = squareLabel({
+            square: squareAt("H", 8),
+            isBay: false,
+            occupant: { side, shields },
           });
           const { container } = render(
             <ShipIcon side={side} shields={shields} />,

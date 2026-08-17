@@ -19,16 +19,18 @@ This is the game's web app. It runs entirely in your browser — nothing to
 install, no account, no server.
 
 > **Status:** early development. Opening the app now shows the board in its
-> starting position, with all fourteen ships lined up in their bays — but the
-> app does not play the game yet. There are no turns, no nodes, and no way to
-> move or fight. The project is being built up story by story.
+> starting position, with all fourteen ships lined up in their bays and the
+> seventeen sites marked, five of them already nodes in play — but the app
+> does not play the game yet. Nothing wakes, runs down, or changes. There are
+> no turns, and no way to move or fight. The project is being built up story
+> by story.
 
 ## The rules
 
 The full rulebook is [doc/ruleset/rules.md](doc/ruleset/rules.md), with a
 [change log](doc/ruleset/changelog.md) recording how it has changed. The game
-is in active pre-release development and the rules are still moving — a few
-details are deliberately left open, and are listed at the end of the rulebook.
+is in active pre-release development and the rules are still moving — one
+detail is deliberately left open, and is listed at the end of the rulebook.
 
 ## Development
 

@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.1**
+**Rules version: 0.2**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -41,9 +41,10 @@ turn is two actions.
 attack with a ship.
 
 **Site** — one of the fixed positions on the board where a node can appear.
-Sites never move; which of them is awake changes during the game.
+Sites never move; which of them is in play changes during the game.
 
-**Node** — an awake site. Exactly five sites are awake at any moment.
+**Node** — a site that is in play: one that is active or charged. Exactly
+five sites are active or charged at any moment.
 
 ---
 
@@ -76,13 +77,64 @@ Bays are not owned. Either player's ships may use any bay.
 
 ### 3.2 Sites
 
-Between 12 and 15 squares in the interior of the board are **sites**. Their
-positions are fixed for the whole game and are the same in every game.
+There are **seventeen** sites. Every one is in the interior of the board —
+never on the outer edge — and their positions are fixed for the whole game and
+the same in every game:
 
-Site positions are **TBD**. They must satisfy one constraint: no two sites may
-lie on the same orthogonal line within three squares of each other, or on the
-same diagonal within two squares of each other. This guarantees that a single
-move can never wake more than one site.
+| Row | Sites         |
+| --- | ------------- |
+| 2   | F2, J2        |
+| 4   | B4, H4, N4    |
+| 5   | E5, K5        |
+| 8   | D8, H8, L8    |
+| 11  | E11, K11      |
+| 12  | B12, H12, N12 |
+| 14  | F14, J14      |
+
+Together with the bay table in section 3.1, this diagram is the whole board:
+
+```
+     A B C D E F G H I J K L M N O
+ 15  . . . # . . . # . . . # . . .
+ 14  # . . . . O . . . O . . . . #
+ 13  . . . . . . . . . . . . . . .
+ 12  . O . . . . . O . . . . . O .
+ 11  . . . . O . . . . . O . . . .
+ 10  # . . . . . . . . . . . . . #
+  9  . . . . . . . . . . . . . . .
+  8  . . . O . . . O . . . O . . .
+  7  . . . . . . . . . . . . . . .
+  6  # . . . . . . . . . . . . . #
+  5  . . . . O . . . . . O . . . .
+  4  . O . . . . . O . . . . . O .
+  3  . . . . . . . . . . . . . . .
+  2  # . . . . O . . . O . . . . #
+  1  . . . # . . . # . . . # . . .
+
+#  bay      O  site
+```
+
+**Symmetry.** The layout is a mirror image across column H and across row 8,
+so a 180° rotation also maps it onto itself. It is deliberately **not**
+symmetric across the diagonals: the fourteen bays cannot be diagonally
+symmetric either — spacing fourteen bays every fourth square around a
+56-square perimeter puts three on each horizontal edge and four on each
+vertical — and the sites are placed partly by reference to the bays, so
+requiring diagonal symmetry would fight the thing they are keyed to.
+
+**Spacing.** No single legal move may touch two sites. The square a move
+starts from does not count towards this: a ship can only ever be standing on
+a site that is already charged or depleted, since section 6 forbids ending a
+move on a dormant or depleted site and section 8.5 makes a site that wakes
+underneath a ship charged immediately — so a move can never wake the square
+it departs from. This is the property any layout of sites must satisfy; the
+seventeen listed above already satisfy it.
+
+Under the movement ranges in section 6 as they stand today, this works out as
+a derived numeric requirement: sites must be at least **three** squares apart
+on an orthogonal line and at least **two** apart on a diagonal. Those numbers
+are not the rule — the property above is — and they must be recomputed if the
+movement ranges in section 6 ever change.
 
 ---
 
@@ -160,8 +212,8 @@ one.
 Moving and attacking are entirely separate. A ship never attacks by moving onto
 its target, and never moves as a result of attacking (section 7).
 
-A ship may not **end** a move on a sleeping or spent site (section 8.5). It may
-fly over one freely.
+A ship may not **end** a move on a dormant or depleted site (section 8.5). It
+may fly over one freely.
 
 ---
 
@@ -241,27 +293,34 @@ shields on arrival (section 3.1).
 
 Every site is always in exactly one of four states:
 
-- **Sleeping** — not in play.
-- **Awake** — in play, but nothing has reached it yet.
-- **Live** — in play and producing influence.
-- **Spent** — finished, and cooling down before it can be used again.
+- **Dormant** — not in play.
+- **Active** — in play, but nothing has reached it yet.
+- **Charged** — in play and producing influence.
+- **Depleted** — finished, and cooling down before it can be used again.
 
-Exactly **five** sites are awake or live at any moment. A site cycles
-sleeping → awake → live → spent → sleeping.
+Exactly **five** sites are active or charged at any moment. A site cycles
+dormant → active → charged → depleted → dormant.
+
+**At the start of the game**, five sites are active: **H8**, **E5**, **K5**,
+**E11** and **K11**. The other twelve are dormant. Nothing is charged or
+depleted at the start: a site only becomes charged when a ship touches it
+(section 8.2), and its nine-turn clock only starts on the turn it was woken
+(section 8.3) — a charged site at the start of the game would have no waker
+and no clock start.
 
 ### 8.2 Waking a node
 
-A site that is **awake** becomes **live** the moment a ship touches it — either
-by landing on it or by flying over it during a move. It does not matter which
-player's ship, and the ship does not have to stop.
+A site that is **active** becomes **charged** the moment a ship touches it —
+either by landing on it or by flying over it during a move. It does not
+matter which player's ship, and the ship does not have to stop.
 
 This means a node can be woken by a ship that has no intention of holding it.
 Waking a node starts its clock whether or not anyone benefits.
 
 ### 8.3 How long a node lives
 
-A live node stays live for **nine turns**, counting the turn on which it was
-woken.
+A charged node stays charged for **nine turns**, counting the turn on which
+it was woken.
 
 That number is chosen so that a player who wakes a node and then sits on it
 collects influence from it **five times** — and so that when it finally runs
@@ -275,28 +334,28 @@ takes a node their opponent woke can only ever collect from it four times.
 
 ### 8.4 Influence
 
-At the end of each player's turn, that player collects influence for the live
-nodes they are **standing on**. A node counts only if one of that player's
-ships is on it at that moment — flying across a node and moving on collects
-nothing.
+At the end of each player's turn, that player collects influence for the
+charged nodes they are **standing on**. A node counts only if one of that
+player's ships is on it at that moment — flying across a node and moving on
+collects nothing.
 
-| Live nodes held | Influence |
-| --------------- | --------- |
-| 0               | 0         |
-| 1               | 1         |
-| 2               | 3         |
-| 3               | 5         |
-| 4               | 7         |
-| 5               | 9         |
+| Charged nodes held | Influence |
+| ------------------ | --------- |
+| 0                  | 0         |
+| 1                  | 1         |
+| 2                  | 3         |
+| 3                  | 5         |
+| 4                  | 7         |
+| 5                  | 9         |
 
-### 8.5 Spent and sleeping sites
+### 8.5 Depleted and dormant sites
 
-A ship may not **end a move** on a sleeping or spent site, though it may fly
-over one.
+A ship may not **end a move** on a dormant or depleted site, though it may
+fly over one.
 
-The one way a ship ends up on a dead site is by holding a node until its clock
-runs out underneath it. That ship is **stranded**, and on their next turn its
-owner must spend an action moving it clear.
+The one way a ship ends up on a depleted site is by holding a node until its
+clock runs out underneath it. That ship is **stranded**, and on their next
+turn its owner must spend an action moving it clear.
 
 That is a restriction on what an action may be, not a penalty on top of one.
 The move is ordinary in every other respect, and the rest of the turn belongs
@@ -311,40 +370,41 @@ the way, and the ship may sit where it is.
 
 This is the tail cost of holding a node. A player who wakes several nodes on
 the same turn will find them all running out on the same turn, and will owe an
-action for each ship left standing on a dead site.
+action for each ship left standing on a depleted site.
 
 If a site somehow wakes underneath a ship — only possible when that ship has
-been unable to move off it — it becomes live immediately and its clock starts
-at once.
+been unable to move off it — it becomes charged immediately and its clock
+starts at once.
 
 ### 8.6 Waking a replacement
 
-When a live node runs out, one **sleeping** site is chosen at random and wakes,
-so that five sites are always awake or live.
+When a charged node runs out, one **dormant** site is chosen at random and
+wakes, so that five sites are always active or charged.
 
 The choice is genuinely random, and neither player can see it coming.
 
-A spent site cools down for **nine turns** and then goes back to sleeping,
+A depleted site cools down for **nine turns** and then goes back to dormant,
 where it becomes eligible to be chosen again.
 
 ### 8.7 End-of-turn order
 
 Everything that happens at the end of a turn happens in this order:
 
-1. Each of the moving player's ships standing on a live node gains a shield.
+1. Each of the moving player's ships standing on a charged node gains a
+   shield.
 2. The moving player collects influence (section 8.4).
-3. Sites that have finished cooling down go from spent to sleeping.
-4. Live nodes that have finished their nine turns become spent.
+3. Sites that have finished cooling down go from depleted to dormant.
+4. Charged nodes that have finished their nine turns become depleted.
 5. A replacement site wakes for each node that just ran out.
 6. The bay return position moves one bay counter-clockwise (section 7.1).
 
 Steps 3 and 5 are in that order deliberately: sites are returned to the
-sleeping pool _before_ the pool is drawn from, which is what keeps a
+dormant pool _before_ the pool is drawn from, which is what keeps a
 replacement always available.
 
-Should the sleeping pool ever be empty when a replacement is needed, the site
-that has been spent longest goes back to sleeping first. This is a safety net
-that a correctly sized board never needs; see [Appendix B](#appendix-b--sizing-the-site-pool).
+Should the dormant pool ever be empty when a replacement is needed, the site
+that has been depleted longest goes back to dormant first. This is a safety
+net that a correctly sized board never needs; see [Appendix B](#appendix-b--sizing-the-site-pool).
 
 ---
 
@@ -362,28 +422,29 @@ own story.
 
 | #   | Item                                                                                                                                                                   |
 | --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Site positions.** How many sites (12–15) and where, subject to the spacing constraint in section 3.2.                                                                |
-| 2   | **Starting shields.** Currently 0 for every ship. Likely to vary by starting bay; if it does, bays a half-turn apart must match, or the opening stops being symmetric. |
+| 1   | **Starting shields.** Currently 0 for every ship. Likely to vary by starting bay; if it does, bays a half-turn apart must match, or the opening stops being symmetric. |
 
-Both are best settled once there is a board on screen to look at, so they wait
-on the early stories rather than blocking them.
+It is best settled once there is a board on screen to look at, so it waits on
+the early stories rather than blocking them.
 
 ---
 
 ## Appendix B — Sizing the site pool
 
-A live node lasts nine turns and a spent one cools down for nine turns, so a
-site is unavailable for eighteen turns from the moment it is woken. Five sites
-are awake or live at all times, so at the fastest possible rate the board
-consumes a replacement every 1.8 turns, and roughly five sites sit spent at any
-moment. That leaves about ten of the site pool committed.
+A charged node lasts nine turns and a depleted one cools down for nine turns,
+so a site is unavailable for eighteen turns from the moment it is woken. Five
+sites are active or charged at all times, so at the fastest possible rate the
+board consumes a replacement every 1.8 turns, and roughly five sites sit
+depleted at any moment. That leaves about ten of the seventeen-site pool
+committed, and about **seven** dormant.
 
-The pool therefore needs to be larger than ten — but the binding constraint is
-not safety, it is randomness. If only one site is sleeping when a replacement
-is needed, the "random" choice is forced and players can predict it. Sizing the
-pool so that several sites are always sleeping is what keeps section 8.6
-honest.
+The pool therefore needs to be comfortably larger than the ten sites
+committed at any moment — but the binding constraint is not safety, it is
+randomness. If only one site is dormant when a replacement is needed, the
+"random" choice is forced and players can predict it. Sizing the pool so that
+several sites are always dormant is what keeps section 8.6 honest, and
+seventeen sites leaving roughly seven dormant is the margin this depends on.
 
-Whenever the nine-turn figures or the number of live nodes change, this
-arithmetic has to be redone. The app enforces it with a test that plays out
-adversarial waking patterns and asserts the sleeping pool never runs dry.
+Whenever the nine-turn figures or the number of nodes change, this arithmetic
+has to be redone. The app must guard this: a test should play out adversarial
+waking patterns and assert the dormant pool never runs dry.

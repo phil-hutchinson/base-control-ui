@@ -13,6 +13,10 @@ export default defineConfig({
     // forwarded port pointing at nothing.
     port: 5273,
     strictPort: true,
+    // The container does not receive the host filesystem's change events, so
+    // the watcher polls instead. Vite's own ignore list still applies, so the
+    // polling covers the project's files and not `node_modules` or `.git`.
+    watch: { usePolling: true, interval: 300 },
   },
   test: {
     // Tests live beside the code they cover, so the suite is exactly the
