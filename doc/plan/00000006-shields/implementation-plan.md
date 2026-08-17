@@ -394,7 +394,19 @@ non-zero `shields` value in it means Step 9 has not run.
 
 ## Step 1 — A shield count in the game state
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/shields.ts` (`ShieldCount`, `MIN_SHIELDS`,
+`MAX_SHIELDS`, `isShieldCount`) and `src/rules/shields.test.ts`. Gave
+`FleetEntry` a required `shields: ShieldCount` field, set all fourteen
+`STARTING_FLEET` entries to `shields: 0`, and replaced `startingSideAt` with
+`startingShipAt` (deleting the old function) in `src/rules/fleet.ts`. Updated
+`src/board/Board.tsx` and `src/board/Board.test.tsx` for the rename, passing
+only `occupant?.side` onward so rendered output and accessible names are
+unchanged. Added a range assertion over `STARTING_FLEET` and renamed
+`startingSideAt` call sites in `src/rules/fleet.test.ts`. No deviations from
+the plan. `npm run typecheck`, `npm run lint`, `npm test` (76 tests) and
+`npm run format:check` all pass.
 
 Add `src/rules/shields.ts`: §4.1's shield count as a type admitting only 0, 1,
 2, 3 and 4, named constants for the minimum (0) and maximum (4), and a runtime

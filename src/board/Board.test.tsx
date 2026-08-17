@@ -5,7 +5,7 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { ALL_SQUARES, squareName } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
-import { STARTING_FLEET, startingSideAt } from "../rules/fleet";
+import { STARTING_FLEET, startingShipAt } from "../rules/fleet";
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
 
@@ -52,7 +52,11 @@ describe("Board", () => {
     ).toBeInTheDocument();
 
     for (const square of ALL_SQUARES) {
-      const label = squareLabel(square, isBay(square), startingSideAt(square));
+      const label = squareLabel(
+        square,
+        isBay(square),
+        startingShipAt(square)?.side,
+      );
       const cell = screen.getByRole("gridcell", { name: label });
       expect(cell).toBeInTheDocument();
     }

@@ -5,7 +5,7 @@
 
 import { BOARD_SIZE, COLUMN_LETTERS } from "../rules/board";
 import { isBay } from "../rules/bays";
-import { startingSideAt } from "../rules/fleet";
+import { startingShipAt } from "../rules/fleet";
 import { squareForGridPosition } from "./boardView";
 import { squareLabel } from "./squareLabel";
 import { ShipIcon } from "./ShipIcon";
@@ -32,16 +32,16 @@ const BOARD_ROWS: GridCellDescriptor[][] = Array.from(
         column: columnIndex,
       });
       const bay = isBay(square);
-      const occupant = startingSideAt(square);
+      const occupant = startingShipAt(square);
       return {
         content: (
           <div
             className={bay ? "board-square board-square--bay" : "board-square"}
           >
-            {occupant && <ShipIcon side={occupant} />}
+            {occupant && <ShipIcon side={occupant.side} />}
           </div>
         ),
-        label: squareLabel(square, bay, occupant),
+        label: squareLabel(square, bay, occupant?.side),
         focusable: true,
       };
     }),
