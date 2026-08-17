@@ -891,7 +891,7 @@ confirm:
 
 ## Step 11 — README check
 
-Status: pending
+Status: committed
 
 Review `README.md` against what this story changed and update it if it is now
 inaccurate. The `/update-readme` command does this from the branch diff.
@@ -913,3 +913,16 @@ Verification (automated): `npm run typecheck`, `npm run lint`, `npm test`,
 `npm run format:check` and `npm run build` all pass, `git diff main --stat`
 shows **no** changes under `doc/ruleset/`, and `src/rules/rulesVersion.test.ts`
 passes with `RULES_VERSION` unchanged at `"0.1"`.
+
+Notes: Reviewed via `/update-readme`; **`README.md` left unchanged**, which is
+the outcome this step anticipated. Nothing player-visible changed: every ship
+is on 0 shields and none can gain one, so the board looks as it did before the
+story and the status block's "no turns, no nodes, and no way to move or fight"
+is still exactly true. Claiming ships now show their shields would mislead,
+since no ship shows any. The README's shields paragraph describes the game
+rather than the app, and the rules did not change. The board now filling its
+window is player-visible but is presentation polish rather than a capability,
+and the README says nothing about sizing.
+
+Guard conditions confirmed: `git diff main --name-only -- doc/ruleset/` returns
+nothing, and `RULES_VERSION` is still `"0.1"`.
