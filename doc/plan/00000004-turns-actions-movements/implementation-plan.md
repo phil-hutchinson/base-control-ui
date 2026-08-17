@@ -766,7 +766,17 @@ left in it, and a search of that file finds no direction or length constants.
 
 ## Step 3 — The game state and its starting position
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/gameState.ts` with `Ship`, `GameState`,
+`startingGameState`, `shipsBySquare` and `siteStateAt`, and
+`src/rules/gameState.test.ts` covering the five listed assertions. Site
+states are stored as a plain `Record<string, SiteState>` keyed by square
+name (built once from `startingSiteState` in the builder) rather than a
+`Map`, since decision 1 bans a stored `Map`/`Set` and a plain object is
+still ordinary readonly JSON-serialisable data; `siteStateAt` and the
+builder are the only things that touch it directly. No other deviation from
+the plan.
 
 Add `src/rules/gameState.ts`: the shape of a game in progress, and the position
 it starts from. No transitions in this step.
