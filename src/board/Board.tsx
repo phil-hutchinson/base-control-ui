@@ -43,7 +43,7 @@ const BOARD_ROWS: GridCellDescriptor[][] = Array.from(
             )}
           </div>
         ),
-        label: squareLabel(square, bay, occupant?.side),
+        label: squareLabel(square, bay, occupant),
         focusable: true,
       };
     }),

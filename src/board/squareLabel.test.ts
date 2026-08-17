@@ -11,21 +11,27 @@ describe("squareLabel", () => {
     expect(squareLabel(squareAt("D", 15), true, undefined)).toBe("D15, bay");
   });
 
-  it("names an occupied bay for the green side", () => {
-    expect(squareLabel(squareAt("H", 15), true, "green")).toBe(
-      "H15, bay, green ship",
-    );
+  it("names an occupied bay for the green side, stating zero shields", () => {
+    expect(
+      squareLabel(squareAt("H", 15), true, { side: "green", shields: 0 }),
+    ).toBe("H15, bay, green ship, 0 shields");
   });
 
-  it("names an occupied bay for the red side", () => {
-    expect(squareLabel(squareAt("D", 15), true, "red")).toBe(
-      "D15, bay, red ship",
-    );
+  it("uses the singular at one shield", () => {
+    expect(
+      squareLabel(squareAt("L", 15), true, { side: "red", shields: 1 }),
+    ).toBe("L15, bay, red ship, 1 shield");
+  });
+
+  it("uses the plural at a middle count", () => {
+    expect(
+      squareLabel(squareAt("D", 15), true, { side: "red", shields: 3 }),
+    ).toBe("D15, bay, red ship, 3 shields");
   });
 
   it("names an occupied ordinary square, for completeness of the contract", () => {
-    expect(squareLabel(squareAt("H", 8), false, "green")).toBe(
-      "H8, green ship",
-    );
+    expect(
+      squareLabel(squareAt("H", 8), false, { side: "green", shields: 4 }),
+    ).toBe("H8, green ship, 4 shields");
   });
 });

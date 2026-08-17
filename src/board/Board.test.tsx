@@ -42,26 +42,26 @@ describe("Board", () => {
     // label-building functions the completeness loop below re-uses to build
     // its own expectations.
     expect(
-      screen.getByRole("gridcell", { name: "D15, bay, red ship" }),
+      screen.getByRole("gridcell", { name: "D15, bay, red ship, 0 shields" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("gridcell", { name: "H15, bay, green ship" }),
+      screen.getByRole("gridcell", {
+        name: "H15, bay, green ship, 0 shields",
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("gridcell", { name: "A10, bay, red ship" }),
+      screen.getByRole("gridcell", { name: "A10, bay, red ship, 0 shields" }),
     ).toBeInTheDocument();
 
     for (const square of ALL_SQUARES) {
-      const label = squareLabel(
-        square,
-        isBay(square),
-        startingShipAt(square)?.side,
-      );
+      const label = squareLabel(square, isBay(square), startingShipAt(square));
       const cell = screen.getByRole("gridcell", { name: label });
       expect(cell).toBeInTheDocument();
     }
     expect(
-      screen.getAllByRole("gridcell", { name: /, bay(, .+ ship)?$/ }),
+      screen.getAllByRole("gridcell", {
+        name: /, bay(, .+ ship, \d+ shields?)?$/,
+      }),
     ).toHaveLength(BAYS.length);
   });
 
@@ -82,24 +82,24 @@ describe("Board", () => {
   it("names each starting ship's square with its side, and no other square", () => {
     render(<Board />);
 
-    for (const { square, side } of STARTING_FLEET) {
+    for (const { square, side, shields } of STARTING_FLEET) {
       const cell = screen.getByRole("gridcell", {
-        name: `${squareName(square)}, bay, ${side} ship`,
+        name: `${squareName(square)}, bay, ${side} ship, ${shields} shields`,
       });
       expect(cell).toBeInTheDocument();
     }
-    expect(screen.getAllByRole("gridcell", { name: /ship$/ })).toHaveLength(
-      STARTING_FLEET.length,
-    );
+    expect(
+      screen.getAllByRole("gridcell", { name: /ship, \d+ shields?$/ }),
+    ).toHaveLength(STARTING_FLEET.length);
   });
 
   it("hides the ship artwork from the accessibility tree", () => {
     render(<Board />);
 
     const cell = screen.getByRole("gridcell", {
-      name: "H15, bay, green ship",
+      name: "H15, bay, green ship, 0 shields",
     });
-    expect(cell).toHaveAccessibleName("H15, bay, green ship");
+    expect(cell).toHaveAccessibleName("H15, bay, green ship, 0 shields");
     const svg = cell.querySelector("svg");
     expect(svg).toHaveAttribute("aria-hidden", "true");
     expect(svg?.querySelector("title, desc")).toBeNull();

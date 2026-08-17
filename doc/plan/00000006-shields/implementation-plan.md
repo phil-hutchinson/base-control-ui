@@ -620,7 +620,19 @@ disabled) reports no violations. Existing `Board` tests must still pass. Run
 
 ## Step 5 — Speak the shield count
 
-Status: pending
+Status: committed
+
+Notes: `squareLabel` now takes an optional `SquareOccupant` (`{ side, shields
+}`, a shape `FleetEntry` satisfies structurally) in place of a bare `Side`,
+and appends a final `N shields`/`1 shield` segment when a ship is present,
+including at zero. `Board.tsx` now passes `occupant` (the whole
+`FleetEntry`) into `squareLabel` instead of `occupant?.side`. Updated
+`squareLabel.test.ts` and `Board.test.tsx`'s literal expected names,
+regex checks and the "every square's name" loop to match; since
+`STARTING_FLEET` is still all-zero at this step, every occupied square in
+`Board.test.tsx` now ends in `0 shields` until Step 7's fixture and Step 9's
+revert. No deviations from the plan. `npm run typecheck`, `npm run lint`,
+`npm test` (91 tests), `npm run format:check` and `npm run build` all pass.
 
 Extend the accessible name, per plan decision 6. In
 `src/board/squareLabel.ts`, the occupant parameter changes from a bare side to
