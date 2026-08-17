@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
@@ -69,6 +69,22 @@ describe("AccessibleGrid", () => {
     expect(cell("A")).toHaveFocus();
     await user.keyboard("[ArrowLeft]");
     expect(cell("A")).toHaveFocus();
+  });
+
+  it("syncs the roving target when a cell is focused directly, not via arrow keys", async () => {
+    const user = userEvent.setup();
+    render(<AccessibleGrid label="Fixture grid" rows={rows} />);
+
+    // Simulates focus arriving on a cell other than the roving target
+    // (e.g. a mouse click, which jsdom does not itself produce).
+    act(() => {
+      cell("D").focus();
+    });
+    expect(cell("D")).toHaveAttribute("tabIndex", "0");
+    expect(cell("A")).toHaveAttribute("tabIndex", "-1");
+
+    await user.keyboard("[ArrowRight]");
+    expect(cell("E")).toHaveFocus();
   });
 
   it("skips a non-focusable cell in the arrow-key path", async () => {

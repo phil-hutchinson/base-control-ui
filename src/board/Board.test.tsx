@@ -38,6 +38,19 @@ describe("Board", () => {
   it("names every bay with 'bay' and no other square", () => {
     render(<Board />);
 
+    // A handful of literal expected names, independent of the production
+    // label-building functions the completeness loop below re-uses to build
+    // its own expectations.
+    expect(
+      screen.getByRole("gridcell", { name: "D15, bay, red ship" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("gridcell", { name: "H15, bay, green ship" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("gridcell", { name: "A10, bay, red ship" }),
+    ).toBeInTheDocument();
+
     for (const square of ALL_SQUARES) {
       const label = squareLabel(square, isBay(square), startingSideAt(square));
       const cell = screen.getByRole("gridcell", { name: label });
@@ -46,6 +59,20 @@ describe("Board", () => {
     expect(
       screen.getAllByRole("gridcell", { name: /, bay(, .+ ship)?$/ }),
     ).toHaveLength(BAYS.length);
+  });
+
+  it("marks the fourteen bay cells distinctly and draws different silhouettes per side", () => {
+    const { container } = render(<Board />);
+
+    expect(container.querySelectorAll(".board-square--bay")).toHaveLength(
+      BAYS.length,
+    );
+
+    const greenPath = container.querySelector(".ship-icon--green path");
+    const redPath = container.querySelector(".ship-icon--red path");
+    expect(greenPath).toHaveAttribute("d");
+    expect(redPath).toHaveAttribute("d");
+    expect(greenPath?.getAttribute("d")).not.toBe(redPath?.getAttribute("d"));
   });
 
   it("names each starting ship's square with its side, and no other square", () => {

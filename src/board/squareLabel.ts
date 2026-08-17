@@ -1,7 +1,7 @@
 // The wording of a square's accessible name: comma-separated segments, the
 // square name first, then "bay" if the square is one, then which side's ship
 // (if any) stands there. Ordinary empty squares are named by their square
-// name alone - see plan decision 2 in the story's implementation plan.
+// name alone.
 
 import { squareName, type Square } from "../rules/board";
 import type { Side } from "../rules/fleet";

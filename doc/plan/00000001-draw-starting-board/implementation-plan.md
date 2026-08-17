@@ -201,19 +201,15 @@ benefit the per-square name already delivers.
   give each a one-line reason in project style. The composite-widget
   `role="grid"` with a `onKeyDown` and no `tabIndex` is expected to need
   `jsx-a11y/interactive-supports-focus`.
-- **DOM test recipe** (verified against this repository's installed toolchain
-  while writing this plan):
-  - first line `// @vitest-environment jsdom`;
-  - `import "@testing-library/jest-dom/vitest";` at the top of each DOM test
-    file. No `setupFiles` entry is needed in `vite.config.ts`, and none should
-    be added: a global setup file would also load into the `node`-environment
-    pure tests. (Importing jest-dom from a `node`-environment file was checked
-    and is harmless, but per-file imports keep the dependency visible.)
-  - axe is used directly: `import axe from "axe-core"` and `axe.run(container)`.
-    Disable the `color-contrast` rule in the axe options — jsdom has no layout
-    or canvas, so that rule cannot produce a meaningful result and instead
-    prints a `HTMLCanvasElement.prototype.getContext` "not implemented" error
-    to stderr on every run.
+- **DOM test recipe**: `// @vitest-environment jsdom` on the first line, a
+  direct per-file `import "@testing-library/jest-dom/vitest";` (no
+  `setupFiles` entry in `vite.config.ts`), `cleanup` from
+  `@testing-library/react` run in `afterEach` (`vite.config.ts` does not set
+  `test.globals: true`, so Testing Library's automatic cleanup never
+  registers, and the failure mode without it is not obvious — spurious axe
+  landmark violations from an unrelated, still-mounted render), and axe run
+  directly with the `color-contrast` rule disabled. The full recipe, with
+  reasoning, is in `CONTRIBUTING.md`'s "Testing" section.
 - **`npm test` currently exits 1** with "No test files found". Step 1 retires
   that; from Step 1 onward the suite must be green.
 - **Every step is finished with** `npm run typecheck`, `npm run lint`,
@@ -641,8 +637,9 @@ Status: committed
 Notes: Added `src/board/ShipIcon.tsx`: two inline-SVG silhouettes in a
 100 x 100 viewBox, coloured via `currentColor` and a `.ship-icon--green` /
 `.ship-icon--red` class setting `color` from `--color-green` / `--color-red`
-(added to `Board.css`, since the plan's file table lists no separate CSS file
-for `ShipIcon.tsx`). Green is a four-point dart/kite with a concave notch at
+(added to `Board.css` at the time, since the plan's file table lists no
+separate CSS file for `ShipIcon.tsx`; peer-review finding 11 later moved them
+to `src/board/ShipIcon.css`). Green is a four-point dart/kite with a concave notch at
 the rear (`M50,15 L85,79 L50,61 L15,79 Z`); red is a rounded-corner hexagon
 (`M50,15 L80.3,32.5 L80.3,67.5 L50,85 L19.7,67.5 L19.7,32.5 Z`) — outlines
 that differ by shape, not just colour, and both bounded within roughly 70% of
@@ -732,31 +729,34 @@ Status: committed
 
 Notes: Fix applied for a defect the owner found at this gate: the board's
 outer edge (`.board` in `src/board/Board.css`) showed a white-ish border along
-the top and left only. Root cause confirmed as diagnosed by the owner —
-`.board` is a CSS Grid item stretched to fill a `2 / 17` by `1 / 16` area
-sized at exactly `repeat(15, var(--square))` in `.board-frame`; stretch
-alignment fits the item's **border box** to that area, so `.board`'s own
-`border: 2px solid` (default `box-sizing: content-box`) shrank its content box
-by 4px in each axis while its own `grid-template-columns/rows:
-repeat(15, var(--square))` children still demanded the full 15 squares. The
-squares overflowed the content box by 4px total (they start flush at the
-content box's top-left, since nothing shrinks explicit pixel tracks), which
-left the top and left borders visible in the gap before the content starts
-but painted the overflowing square backgrounds on top of where the bottom and
-right borders would have been drawn. Fixed by replacing `.board`'s `border`
-with `outline: 2px solid var(--color-text-dim)` (default 0 offset): an
-outline is not part of the box model, so it does not shrink the content box —
-the 15 squares now fit exactly, with no overflow — and it paints on top of
-the box's own content, coming out flush and even on all four sides. No other
-CSS or markup changed; `.board-frame__row-labels` / `__column-labels` still
-share the same `--square` tracks and were not touched, so label alignment is
-unaffected. Verified visually with a headless-Chromium (Playwright) screenshot
-of `npm run dev`'s output (installed and removed only in the scratchpad
-directory, not part of the repo) showing all four edges present and even, in
-addition to the required manual gate the owner still needs to re-run. No unit
-test was added: jsdom has no layout, so box-model overflow like this cannot be
-observed in a DOM test — this is exactly the kind of defect the visual gate
-exists to catch, so the check is manual only.
+the top and left only. Root cause: `.board` is a CSS Grid item stretched to
+fill a `2 / 17` by `1 / 16` area sized at exactly `repeat(15, var(--square))`
+in `.board-frame`; stretch alignment fits the item's **border box** to that
+area. `src/index.css` sets `* { box-sizing: border-box; }` globally, so
+`.board` was already border-box, not content-box — but under border-box the
+`border: 2px solid` still eats into the box rather than adding to it, shrinking
+the space available to its own content by 4px in each axis, while its
+`grid-template-columns/rows: repeat(15, var(--square))` children still
+demanded the full 15 squares. The squares overflowed by 4px total (they start
+flush at the box's top-left, since nothing shrinks explicit pixel tracks),
+which left the top and left borders visible in the gap before the content
+starts but painted the overflowing square backgrounds on top of where the
+bottom and right borders would have been drawn. Fixed by replacing `.board`'s
+`border` with `outline: 2px solid var(--color-text-dim)` (default 0 offset):
+an outline is not part of the box model, so it does not shrink the box
+available to the grid tracks — the 15 squares now fit exactly, with no
+overflow — and it paints on top of the box's own content, coming out flush
+and even on all four sides. Also dropped the redundant `box-sizing:
+border-box` from `.board-square`, which the global rule already provides. No
+other CSS or markup changed; `.board-frame__row-labels` / `__column-labels`
+still share the same `--square` tracks and were not touched, so label
+alignment is unaffected. Verified visually with a headless-Chromium
+(Playwright) screenshot of `npm run dev`'s output (installed and removed only
+in the scratchpad directory, not part of the repo) showing all four edges
+present and even, in addition to the required manual gate the owner still
+needs to re-run. No unit test was added: jsdom has no layout, so box-model
+overflow like this cannot be observed in a DOM test — this is exactly the
+kind of defect the visual gate exists to catch, so the check is manual only.
 `npm run typecheck`, `npm run lint`, `npm test` (67 tests, unchanged),
 `npm run format:check`, and `npm run build` all pass.
 

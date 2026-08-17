@@ -1,5 +1,4 @@
-// The fourteen bays (rules.md §3.1): outer-edge squares where a ship cannot
-// attack or be attacked, and where ending a move sheds all shields.
+// The fourteen bay squares (rules.md §3.1).
 
 import { type Square, squareAt, squareName } from "./board";
 

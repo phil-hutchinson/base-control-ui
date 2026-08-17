@@ -3,7 +3,7 @@
 // index space, maps each cell back to its rule-space square, and gives it
 // its accessible name.
 
-import { BOARD_SIZE, COLUMN_LETTERS, ROW_NUMBERS } from "../rules/board";
+import { BOARD_SIZE, COLUMN_LETTERS } from "../rules/board";
 import { isBay } from "../rules/bays";
 import { startingSideAt } from "../rules/fleet";
 import { squareForGridPosition } from "./boardView";
@@ -13,11 +13,19 @@ import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import "./Board.css";
 
 /** Row numbers in the order they are drawn, top (15) to bottom (1). */
-const DISPLAY_ROW_NUMBERS = [...ROW_NUMBERS].reverse();
+const DISPLAY_ROW_NUMBERS = Array.from(
+  { length: BOARD_SIZE },
+  (_, gridRow) => squareForGridPosition({ row: gridRow, column: 0 }).row,
+);
 
-/** The board's 15 rows of 15 cell descriptors, in grid screen order. */
-function boardRows(): GridCellDescriptor[][] {
-  return Array.from({ length: BOARD_SIZE }, (_, rowIndex) =>
+/**
+ * The board's 15 rows of 15 cell descriptors, in grid screen order. The
+ * starting position is fixed, so this is built once at module load rather
+ * than on every render.
+ */
+const BOARD_ROWS: GridCellDescriptor[][] = Array.from(
+  { length: BOARD_SIZE },
+  (_, rowIndex) =>
     Array.from({ length: BOARD_SIZE }, (_, columnIndex) => {
       const square = squareForGridPosition({
         row: rowIndex,
@@ -37,8 +45,7 @@ function boardRows(): GridCellDescriptor[][] {
         focusable: true,
       };
     }),
-  );
-}
+);
 
 /**
  * The 15 x 15 board grid, with the fourteen starting ships drawn on it, and
@@ -59,7 +66,7 @@ export function Board() {
       </div>
       <AccessibleGrid
         label="Base Control board"
-        rows={boardRows()}
+        rows={BOARD_ROWS}
         className="board"
       />
       <div className="board-frame__corner" aria-hidden="true" />

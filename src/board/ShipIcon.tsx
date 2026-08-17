@@ -6,6 +6,7 @@
 // or description and is hidden from the accessibility tree.
 
 import type { Side } from "../rules/fleet";
+import "./ShipIcon.css";
 
 interface ShipIconProps {
   readonly side: Side;

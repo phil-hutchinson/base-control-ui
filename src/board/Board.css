@@ -27,12 +27,8 @@
   display: grid;
   grid-template-columns: repeat(15, var(--square));
   grid-template-rows: repeat(15, var(--square));
-  /* An outline, not a border: a border's width is taken out of this
-     stretched grid item's content box, leaving its own 15-square tracks 4px
-     too big for it and overflowing past the bottom and right edges (masking
-     the border there while the top and left stay visible in the border's
-     inward gap). An outline draws outside the box without affecting layout,
-     so it comes out even on all four sides. */
+  /* Outlined rather than bordered so the edge does not consume the
+     stretched grid item's box, and stays even on all four sides. */
   outline: 2px solid var(--color-text-dim);
 }
 
@@ -66,7 +62,6 @@
 .board-square {
   width: 100%;
   height: 100%;
-  box-sizing: border-box;
   background: var(--color-space-raised);
   border: 1px solid var(--color-space);
 }
@@ -74,21 +69,4 @@
 .board-square--bay {
   background: var(--bay-fill);
   border: 2px solid var(--bay-border);
-}
-
-.ship-icon {
-  /* Fills the square; the artwork itself occupies roughly 70% of that,
-     within its viewBox, leaving every corner free for a future shield
-     count. */
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.ship-icon--green {
-  color: var(--color-green);
-}
-
-.ship-icon--red {
-  color: var(--color-red);
 }

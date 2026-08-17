@@ -51,6 +51,18 @@ describe("square <-> grid position round trip", () => {
 });
 
 describe("squareForGridPosition", () => {
+  it("rejects an out-of-range grid position, naming it", () => {
+    expect(() => squareForGridPosition({ row: -1, column: 0 })).toThrow(
+      /row -1, column 0/,
+    );
+    expect(() => squareForGridPosition({ row: 0, column: BOARD_SIZE })).toThrow(
+      /row 0, column 15/,
+    );
+    expect(() => squareForGridPosition({ row: BOARD_SIZE, column: 0 })).toThrow(
+      /row 15, column 0/,
+    );
+  });
+
   it("is named as expected at the corners and centre", () => {
     expect(squareName(squareForGridPosition({ row: 0, column: 0 }))).toBe(
       "A15",

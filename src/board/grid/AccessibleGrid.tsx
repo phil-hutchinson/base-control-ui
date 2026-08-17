@@ -173,6 +173,15 @@ export function AccessibleGrid({
                 role="gridcell"
                 aria-label={cell.label}
                 tabIndex={cell.focusable ? (isFocused ? 0 : -1) : undefined}
+                onFocus={() => {
+                  // Real DOM focus can land on a cell other than the roving
+                  // target - a mouse click, for instance - so bring the
+                  // target back into sync whenever that happens; otherwise
+                  // the next arrow key would compute from a stale position.
+                  if (!isFocused) {
+                    setFocused(position);
+                  }
+                }}
               >
                 {cell.content}
               </div>

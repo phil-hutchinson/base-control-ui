@@ -3,7 +3,7 @@
 
 import { type Square, squareAt, squareName } from "./board";
 
-/** The two sides. Green takes the first turn. */
+/** The two sides (rules.md §4). */
 export type Side = "green" | "red";
 
 /** One ship's starting square and side. */

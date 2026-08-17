@@ -22,5 +22,17 @@ export function gridPositionForSquare(square: Square): GridPosition {
 
 /** The square drawn at a grid position, the inverse of `gridPositionForSquare`. */
 export function squareForGridPosition(position: GridPosition): Square {
+  if (
+    !Number.isInteger(position.row) ||
+    !Number.isInteger(position.column) ||
+    position.row < 0 ||
+    position.row >= BOARD_SIZE ||
+    position.column < 0 ||
+    position.column >= BOARD_SIZE
+  ) {
+    throw new RangeError(
+      `grid position row ${position.row}, column ${position.column} is off the board`,
+    );
+  }
   return squareAt(COLUMN_LETTERS[position.column], BOARD_SIZE - position.row);
 }
