@@ -18,9 +18,10 @@ it happens.
 This is the game's web app. It runs entirely in your browser — nothing to
 install, no account, no server.
 
-> **Status:** early development. The app does not play the game yet. The rules
-> are written and the project is being built up story by story; there is
-> nothing to play here for now.
+> **Status:** early development. Opening the app now shows the board in its
+> starting position, with all fourteen ships lined up in their bays — but the
+> app does not play the game yet. There are no turns, no nodes, and no way to
+> move or fight. The project is being built up story by story.
 
 ## The rules
 

@@ -829,7 +829,19 @@ record what was heard or seen in the step's Notes before any fix.
 
 ## Step 14 — README check
 
-Status: pending
+Status: committed
+
+Notes: Updated the README's status callout from "The app does not play the
+game yet. … there is nothing to play here for now." to note that opening the
+app now shows the board in its starting position with all fourteen ships in
+their bays, while still stating plainly that nothing can be played yet (no
+turns, no nodes, no move or fight) — written in player vocabulary ("bay" is
+used elsewhere in `rules.md` itself as a player-facing term, so it was kept).
+No other README section needed a change: the rules did not change, so
+`doc/ruleset/` is untouched by this branch (`git diff main --stat --
+doc/ruleset/` is empty), and nothing else the story adds — the accessible
+grid, rule-data modules, board view mapping — is player-facing. No deviation
+from the plan.
 
 Review `README.md` against what this story changed and update it if it is now
 inaccurate. The `/update-readme` command does this from the branch diff.
