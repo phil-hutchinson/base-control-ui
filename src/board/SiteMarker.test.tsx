@@ -49,7 +49,7 @@ describe("SiteMarker", () => {
     // Charged is the only double ring.
     expect(geometries.map((g) => g.ringCount)).toEqual([1, 1, 2, 1]);
 
-    // Dormant (dotted) and depleted (dashed) each have a dash pattern, and
+    // Dormant (dashed) and depleted (dotted) each have a dash pattern, and
     // the two patterns differ from each other; active (solid) has none.
     const [dormant, active, charged, depleted] = geometries;
     expect(dormant.dashArrays[0]).not.toBeNull();
@@ -57,15 +57,15 @@ describe("SiteMarker", () => {
     expect(dormant.dashArrays[0]).not.toBe(depleted.dashArrays[0]);
     expect(active.dashArrays[0]).toBeNull();
 
-    // Dormant is visibly thinner than the other three.
-    expect(Number(dormant.strokeWidths[0])).toBeLessThan(
+    // Depleted is visibly thinner than the other three.
+    expect(Number(depleted.strokeWidths[0])).toBeLessThan(
       Number(active.strokeWidths[0]),
     );
-    expect(Number(dormant.strokeWidths[0])).toBeLessThan(
+    expect(Number(depleted.strokeWidths[0])).toBeLessThan(
       Number(charged.strokeWidths[0]),
     );
-    expect(Number(dormant.strokeWidths[0])).toBeLessThan(
-      Number(depleted.strokeWidths[0]),
+    expect(Number(depleted.strokeWidths[0])).toBeLessThan(
+      Number(dormant.strokeWidths[0]),
     );
 
     // All four are geometrically distinct from one another as a whole.

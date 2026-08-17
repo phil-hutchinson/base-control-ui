@@ -954,7 +954,24 @@ If a gate fails, record what was seen in the step's Notes before any fix.
 
 ## Step 9a — Swap the dormant and depleted appearances
 
-Status: pending
+Status: committed
+
+Notes: Swapped the two `RING_SPECS` entries in `SiteMarker.tsx` whole
+(dormant now `{ radius: 47, strokeWidth: 3, dasharray: "8 5" }`, depleted now
+`{ radius: 47, strokeWidth: 1.5, dasharray: "1 4" }`) and moved the
+darker-fill rule in `SiteMarker.css` from `.site-marker--depleted
+.site-marker__fill` to `.site-marker--dormant .site-marker__fill`, leaving
+`.site-marker--depleted` with no fill override (falls back to the base
+`.site-marker__fill { fill: none; }`). The `color: var(--color-text-dim)`
+declarations on both state classes were left untouched since the value is
+identical for both and swapping it would be a no-op. Updated
+`SiteMarker.test.tsx`'s geometry test: the dash-pattern comment now reads
+"dormant (dashed) and depleted (dotted)" and the "is visibly thinner" block
+now asserts depleted's stroke width is the smallest, matching the swap.
+`npm run typecheck`, `npm run lint`, `npm test` and `npm run format:check`
+all pass. The manual half of verification (running `npm run dev` and
+checking the fixture by eye) is left to the orchestrator/owner, per the
+dispatch instructions. No other deviation from the plan.
 
 Added after the Step 9 gate, at the owner's request. Swap the two appearances in
 `SiteMarker` **whole**, line treatment and fill together, so they match

@@ -26,6 +26,11 @@
   color: var(--color-text-dim);
 }
 
+.site-marker--dormant .site-marker__fill {
+  fill: var(--color-space);
+  fill-opacity: 0.65;
+}
+
 .site-marker--active {
   color: var(--site-accent);
 }
@@ -46,9 +51,4 @@
 
 .site-marker--depleted {
   color: var(--color-text-dim);
-}
-
-.site-marker--depleted .site-marker__fill {
-  fill: var(--color-space);
-  fill-opacity: 0.65;
 }

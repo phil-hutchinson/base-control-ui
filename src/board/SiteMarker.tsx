@@ -23,16 +23,16 @@ interface RingSpec {
 // A 100 x 100 viewBox centred at (50, 50), matching ShipIcon's. Radius 47
 // clears both ship silhouettes, which reach at most ~45.5% of the square, at
 // worst touching them at two tangent points. The four states differ in ring
-// line treatment and weight before colour - dotted, solid, double and
-// dashed - so they stay distinct in greyscale, not only by hue.
+// line treatment and weight before colour - dashed, solid, double and
+// dotted - so they stay distinct in greyscale, not only by hue.
 const RING_SPECS: Record<SiteState, readonly RingSpec[]> = {
-  dormant: [{ radius: 47, strokeWidth: 1.5, dasharray: "1 4" }],
+  dormant: [{ radius: 47, strokeWidth: 3, dasharray: "8 5" }],
   active: [{ radius: 47, strokeWidth: 3 }],
   charged: [
     { radius: 47, strokeWidth: 4 },
     { radius: 39, strokeWidth: 4 },
   ],
-  depleted: [{ radius: 47, strokeWidth: 3, dasharray: "8 5" }],
+  depleted: [{ radius: 47, strokeWidth: 1.5, dasharray: "1 4" }],
 };
 
 export function SiteMarker({ state }: SiteMarkerProps) {
