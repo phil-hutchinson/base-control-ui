@@ -26,8 +26,23 @@ the document is right.
 
 `rules.md` carries a version number, mirrored by a single `RULES_VERSION`
 constant in the code, with a test asserting the two agree so they cannot
-drift. A rules change bumps both in its own commit; once that commit is on
-`main`, it is tagged `rules-<version>` (the `/tag-rules` command does this).
+drift. A rules change bumps both in its own commit, together with a
+`changelog.md` entry.
+
+**Tagging is on hold until the game plays.** Once a ruleset commit is on
+`main` it may be tagged `rules-<version>` (the `/tag-rules` command does
+this) — but not yet. The rules move too often while the app is still being
+built up story by story, and a tag is only worth having once a recorded game
+can be replayed against the ruleset it was played under. Until then, bump the
+version and write the changelog entry as usual, and do not tag.
+
+**Only gameplay changes earn a tag.** When tagging does resume, it is for
+versions that change how the game is _played_ — a new rule, a changed number,
+a different legal move. A version that only rewords, clarifies, or adjusts
+flavour text is not tagged, because a game recorded under it replays
+identically against the last gameplay-affecting tag. Every rules change still
+bumps the version and writes a changelog entry; not every version gets a tag,
+so the tags are deliberately sparser than the version history.
 
 **There is no backwards compatibility.** Rule logic is rewritten in place, not
 versioned into parallel folders. A game recorded under an older ruleset is
