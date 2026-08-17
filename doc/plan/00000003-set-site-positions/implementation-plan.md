@@ -453,7 +453,15 @@ in the step's Notes which hits were left and why.
 
 ## Step 2 — The seventeen sites in the rules layer
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/sites.ts` with `SITES`, the seventeen squares
+transcribed by hand from §3.2's table in canonical row order, built on
+`squareAt`, and nothing else (no `isSite` predicate, per the step). Added
+`src/rules/sites.test.ts` covering count/no-duplicates, interior-only, mirror
+symmetry across column H and row 8, bay disjointness, and a literal
+line-by-line match against §3.2's table. `npm run typecheck`, `npm run lint`,
+`npm test` and `npm run format:check` all pass. No deviation from the plan.
 
 Add `src/rules/sites.ts` holding the seventeen site squares from `rules.md`
 §3.2, transcribed literally in the document's own order (the canonical row order
