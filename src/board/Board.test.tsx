@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
-import { ALL_SQUARES, squareName } from "../rules/board";
+import { ALL_SQUARES, squareAt } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
 import { STARTING_FLEET, startingShipAt } from "../rules/fleet";
 import { Board } from "./Board";
@@ -38,20 +38,17 @@ describe("Board", () => {
   it("names every bay with 'bay' and no other square", () => {
     render(<Board />);
 
-    // A handful of literal expected names, independent of the production
-    // label-building functions the completeness loop below re-uses to build
-    // its own expectations.
-    expect(
-      screen.getByRole("gridcell", { name: "D15, bay, red ship, 0 shields" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("gridcell", {
-        name: "H15, bay, green ship, 0 shields",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("gridcell", { name: "A10, bay, red ship, 0 shields" }),
-    ).toBeInTheDocument();
+    // A handful of squares, checked against squareLabel directly (the module
+    // squareLabel.test.ts pins the exact wording) rather than restating a
+    // ship's shield count here, which the fleet's fixture varies.
+    for (const square of [
+      squareAt("D", 15),
+      squareAt("H", 15),
+      squareAt("A", 10),
+    ]) {
+      const label = squareLabel(square, isBay(square), startingShipAt(square));
+      expect(screen.getByRole("gridcell", { name: label })).toBeInTheDocument();
+    }
 
     for (const square of ALL_SQUARES) {
       const label = squareLabel(square, isBay(square), startingShipAt(square));
@@ -82,9 +79,9 @@ describe("Board", () => {
   it("names each starting ship's square with its side, and no other square", () => {
     render(<Board />);
 
-    for (const { square, side, shields } of STARTING_FLEET) {
+    for (const entry of STARTING_FLEET) {
       const cell = screen.getByRole("gridcell", {
-        name: `${squareName(square)}, bay, ${side} ship, ${shields} shields`,
+        name: squareLabel(entry.square, isBay(entry.square), entry),
       });
       expect(cell).toBeInTheDocument();
     }
@@ -96,10 +93,10 @@ describe("Board", () => {
   it("hides the ship artwork from the accessibility tree", () => {
     render(<Board />);
 
-    const cell = screen.getByRole("gridcell", {
-      name: "H15, bay, green ship, 0 shields",
-    });
-    expect(cell).toHaveAccessibleName("H15, bay, green ship, 0 shields");
+    const square = squareAt("H", 15);
+    const label = squareLabel(square, isBay(square), startingShipAt(square));
+    const cell = screen.getByRole("gridcell", { name: label });
+    expect(cell).toHaveAccessibleName(label);
     const svg = cell.querySelector("svg");
     expect(svg).toHaveAttribute("aria-hidden", "true");
     expect(svg?.querySelector("title, desc")).toBeNull();

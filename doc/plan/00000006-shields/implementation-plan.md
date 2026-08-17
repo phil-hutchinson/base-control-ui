@@ -704,7 +704,33 @@ ship's shield count in `STARTING_FLEET`.
 
 ## Step 7 — Temporary fixture, and the manual gate on the arcs
 
-Status: pending
+Status: committed
+
+Notes: Set the fourteen `STARTING_FLEET` entries in `src/rules/fleet.ts` to
+the tabled temporary counts (0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3 from
+H15, clockwise), as plain literals, and reworded the module comment to flag
+them as a temporary fixture. Fixed `src/board/Board.test.tsx`, which was
+coupled to the all-zero fleet: the "names every bay" test's three literal
+expected names (D15/H15/A10) and the "hides the ship artwork" test's literal
+H15 name now derive their expected accessible name from `squareLabel` called
+with the real `startingShipAt` occupant, instead of restating the wording
+(and an always-plural `${shields} shields` template) in the test; the
+"names each starting ship's square" loop now builds its expectation the same
+way from each `STARTING_FLEET` entry rather than interpolating `shields`
+directly. This makes every assertion in the file agree with whatever counts
+`STARTING_FLEET` carries, including after Step 9's revert to all zeros.
+`npm run typecheck`, `npm run lint`, `npm test` (101 tests),
+`npm run format:check` and `npm run build` all pass. Geometry constants
+(`RING_RADIUS`, `RING_STROKE_WIDTH`, `ARC_GAP_DEGREES`, `HULL_SCALE` in
+`src/board/ShipIcon.tsx`) were left untouched at Step 4's values — the
+manual "does it look right" gate and any resulting geometry tuning are
+explicitly the owner's part of this step and have not been run yet. Do not
+consider Step 7 fully done until that gate has passed and this note has been
+updated with the outcome (and final geometry values, if changed).
+
+Deviation: none from the plan's fixture instructions. The scope of this
+agent's work was limited to the fixture and the `Board.test.tsx` fix per the
+orchestrator's instruction; the manual gate itself is left for the owner.
 
 **Two things, one verification: the fixture exists only to feed the gate.**
 
@@ -746,6 +772,18 @@ confirm all of:
 The automated suite must also stay green (`npm test`, `npm run typecheck`,
 `npm run lint`, `npm run format:check`, `npm run build`) — no test may have been
 made to pass by the temporary counts.
+
+Gate outcome: passed by the owner with the geometry **unchanged** at its
+provisional values — ring radius 42, stroke width 8, gap 14°, hull scale
+0.72. No tuning was needed, so those four constants are now settled rather
+than provisional.
+
+The gate initially showed nothing: the dev server had been started before
+the fixture landed and, on a branch without the `usePolling` watch fix (see
+commit `108a942`, which sits on `00000003-set-site-positions` and is not on
+`main`), it never saw the change. Restarting it served the fixture
+correctly. The owner chose not to carry the polling fix onto this branch;
+the dev server is restarted by hand before each remaining manual gate.
 
 ---
 

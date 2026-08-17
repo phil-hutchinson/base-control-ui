@@ -16,23 +16,27 @@ export interface FleetEntry {
 
 /**
  * The starting fleet, in the clockwise order rules.md §4 states it, starting
- * at H15. Every ship starts on 0 shields.
+ * at H15.
+ *
+ * The shield counts here are a temporary fixture for manually checking the
+ * shield arcs, and do not represent an intended starting position; every
+ * ship is meant to start on 0 shields.
  */
 export const STARTING_FLEET: readonly FleetEntry[] = [
   { square: squareAt("H", 15), side: "green", shields: 0 },
-  { square: squareAt("L", 15), side: "red", shields: 0 },
-  { square: squareAt("O", 14), side: "green", shields: 0 },
-  { square: squareAt("O", 10), side: "red", shields: 0 },
-  { square: squareAt("O", 6), side: "green", shields: 0 },
+  { square: squareAt("L", 15), side: "red", shields: 1 },
+  { square: squareAt("O", 14), side: "green", shields: 2 },
+  { square: squareAt("O", 10), side: "red", shields: 3 },
+  { square: squareAt("O", 6), side: "green", shields: 4 },
   { square: squareAt("O", 2), side: "red", shields: 0 },
-  { square: squareAt("L", 1), side: "green", shields: 0 },
-  { square: squareAt("H", 1), side: "red", shields: 0 },
-  { square: squareAt("D", 1), side: "green", shields: 0 },
-  { square: squareAt("A", 2), side: "red", shields: 0 },
+  { square: squareAt("L", 1), side: "green", shields: 1 },
+  { square: squareAt("H", 1), side: "red", shields: 2 },
+  { square: squareAt("D", 1), side: "green", shields: 3 },
+  { square: squareAt("A", 2), side: "red", shields: 4 },
   { square: squareAt("A", 6), side: "green", shields: 0 },
-  { square: squareAt("A", 10), side: "red", shields: 0 },
-  { square: squareAt("A", 14), side: "green", shields: 0 },
-  { square: squareAt("D", 15), side: "red", shields: 0 },
+  { square: squareAt("A", 10), side: "red", shields: 1 },
+  { square: squareAt("A", 14), side: "green", shields: 2 },
+  { square: squareAt("D", 15), side: "red", shields: 3 },
 ];
 
 const STARTING_ENTRY_BY_SQUARE: ReadonlyMap<string, FleetEntry> = new Map(
