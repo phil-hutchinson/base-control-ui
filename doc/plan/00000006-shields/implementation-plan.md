@@ -868,7 +868,7 @@ the fleet. Confirm by search that no `shields:` value anywhere in
 
 ## Step 10 — Manual gate: the board after the revert
 
-Status: pending
+Status: committed
 
 No code. A last look, confirming the shipped state is the intended one.
 
