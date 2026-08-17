@@ -14,7 +14,7 @@
 
 import type { Side } from "../rules/fleet";
 import type { ShieldCount } from "../rules/shields";
-import { ARC_FILL_ORDER, litArcPositions } from "./shieldArcs";
+import { litArcPositions, type ArcPosition } from "./shieldArcs";
 import "./ShipIcon.css";
 
 interface ShipIconProps {
@@ -31,9 +31,8 @@ const SHAPES: Record<Side, string> = {
 
 const VIEWBOX_CENTRE = 50;
 
-// The shield ring's geometry. Interdependent and tuned by eye at the manual
-// gate: a thicker stroke wants a smaller hull, a wider gap wants a shorter
-// visible arc.
+// The shield ring's geometry. The four values are interdependent: a thicker
+// stroke wants a smaller hull, a wider gap wants a shorter visible arc.
 /** Distance from the viewBox centre to the middle of the ring, in viewBox units. */
 const RING_RADIUS = 42;
 /** Thickness of the ring's stroke, in viewBox units. */
@@ -44,6 +43,18 @@ const ARC_GAP_DEGREES = 14;
 const HULL_SCALE = 0.72;
 
 const ARC_SWEEP_DEGREES = 90 - ARC_GAP_DEGREES;
+
+/**
+ * Which 90-degree quadrant (0 = top-right, clockwise) each arc position
+ * draws in. Exhaustive over `ArcPosition`, so a new position is a compile
+ * error here rather than a silent gap in the ring.
+ */
+const ARC_QUADRANT: Record<ArcPosition, number> = {
+  "top-right": 0,
+  "bottom-right": 1,
+  "bottom-left": 2,
+  "top-left": 3,
+};
 
 /** A point on a circle, at `angleDegrees` clockwise from the top. */
 function pointOnCircle(radius: number, angleDegrees: number) {
@@ -85,7 +96,7 @@ export function ShipIcon({ side, shields }: ShipIconProps) {
         <path
           key={position}
           data-arc-position={position}
-          d={arcPath(ARC_FILL_ORDER.indexOf(position))}
+          d={arcPath(ARC_QUADRANT[position])}
           fill="none"
           stroke="currentColor"
           strokeWidth={RING_STROKE_WIDTH}

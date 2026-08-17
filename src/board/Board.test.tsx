@@ -42,22 +42,20 @@ describe("Board", () => {
   it("names every bay with 'bay' and no other square", () => {
     render(<Board />);
 
-    // A handful of squares, checked against squareLabel directly (the module
-    // squareLabel.test.ts pins the exact wording) rather than restating a
-    // ship's shield count here, which the fleet's fixture varies.
-    for (const square of [
-      squareAt("D", 15),
-      squareAt("H", 15),
-      squareAt("A", 10),
-    ]) {
-      const label = squareLabel({
-        square,
-        isBay: isBay(square),
-        siteState: startingSiteState(square),
-        occupant: startingShipAt(square),
-      });
-      expect(screen.getByRole("gridcell", { name: label })).toBeInTheDocument();
-    }
+    // A handful of literal expected names, independent of the production
+    // label-building functions the completeness loop below re-uses to build
+    // its own expectations.
+    expect(
+      screen.getByRole("gridcell", { name: "D15, bay, red ship, 0 shields" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("gridcell", {
+        name: "H15, bay, green ship, 0 shields",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("gridcell", { name: "A10, bay, red ship, 0 shields" }),
+    ).toBeInTheDocument();
 
     for (const square of ALL_SQUARES) {
       const label = squareLabel({
@@ -88,6 +86,18 @@ describe("Board", () => {
     expect(greenPath).toHaveAttribute("d");
     expect(redPath).toHaveAttribute("d");
     expect(greenPath?.getAttribute("d")).not.toBe(redPath?.getAttribute("d"));
+  });
+
+  it("draws exactly as many shield arcs as the starting fleet carries", () => {
+    const { container } = render(<Board />);
+
+    const expectedArcs = STARTING_FLEET.reduce(
+      (total, entry) => total + entry.shields,
+      0,
+    );
+    expect(container.querySelectorAll("[data-arc-position]")).toHaveLength(
+      expectedArcs,
+    );
   });
 
   it("names each starting ship's square with its side, and no other square", () => {

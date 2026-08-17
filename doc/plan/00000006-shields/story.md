@@ -33,12 +33,15 @@ gain-a-shield-on-a-node (needs nodes), §6's movement table (needs movement),
 §7's combat arithmetic (needs combat), and §3.1's bay reset (needs movement).
 Each gets its own story.
 
-**This story does not change the ruleset.** There is no version bump, no
-changelog entry, and no `/tag-rules` run. `RULES_VERSION` stays `0.1`.
+**This story does not add or change any rule.** The one exception is a small
+cross-reference fix the owner directed at peer review: §4.1 cited the wrong
+section numbers for combat and movement, and correcting that bumped
+`RULES_VERSION` and added a changelog entry. Nothing about how the game is
+played changed, so it earns no `/tag-rules` run.
 
 ### Why every ship starts on 0
 
-[Appendix A](../../ruleset/rules.md#appendix-a--open-items) item 2 leaves
+[Appendix A](../../ruleset/rules.md#appendix-a--open-items) item 1 leaves
 starting shields open, noting they are "likely to vary by starting bay". The
 owner explored that during this story's discussion and **rejected it for now**.
 The item stays open; the reasoning is recorded here so it does not have to be
@@ -131,9 +134,10 @@ bays — a large amount of machinery bought for one opening flourish.
 
 ## Design decisions & constraints
 
-- **The rules are not touched.** Nothing here changes what `rules.md` says, so
-  `RULES_VERSION` stays `0.1` and the `rulesVersion` test keeps passing
-  unchanged. Appendix A item 2 stays open, deliberately.
+- **The rules are not touched, beyond a peer-review cross-reference fix.**
+  Nothing here changes what §4.1 means; the one edit `rules.md` receives is
+  correcting its two wrong section citations, directed by the owner at peer
+  review. Appendix A item 1 stays open, deliberately.
 - **The count is carried by position, not colour.** The arcs are ship-coloured,
   so colour still distinguishes the two sides (alongside hull shape) and never
   has to carry the count as well. Which arcs are lit is what says how many —
@@ -171,7 +175,7 @@ bays — a large amount of machinery bought for one opening flourish.
   further movement option. Nothing moves yet.
 - **Combat.** §7 entirely — who wins, what a win costs, the equal-shields
   double return, and the §7.1 bay return order.
-- **Starting shields.** Appendix A item 2 stays open. Every ship starts on 0,
+- **Starting shields.** Appendix A item 1 stays open. Every ship starts on 0,
   and the flagship variant is set aside, not adopted.
 - **Sites and nodes.** No site positions (Appendix A item 1), no node state, no
   node visuals.

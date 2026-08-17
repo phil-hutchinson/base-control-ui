@@ -32,10 +32,12 @@ the temporary counts are still in place.
   (gaining a shield on a node) and everything else shields touch (§5/§6
   movement, §7 combat, §3.1 bay reset) is out of scope, because each needs
   machinery that does not exist yet.
-- **This story does not change the rules.** `doc/ruleset/rules.md` and
-  `doc/ruleset/changelog.md` must be **untouched** by this branch.
-  `RULES_VERSION` stays `"0.1"`, `src/rules/rulesVersion.test.ts` keeps passing
-  unchanged, and there is no `/tag-rules` run. Appendix A item 2 (starting
+- **This story does not add or change any rule.** Every step through Step 11
+  left `doc/ruleset/rules.md` and `doc/ruleset/changelog.md` untouched, with
+  `RULES_VERSION` unchanged. The one exception, made afterwards at the owner's
+  direction during peer review, is a cross-reference fix to §4.1 (it cited the
+  wrong section numbers for combat and movement) — a correction, not a rule
+  change, so it earns no `/tag-rules` run. Appendix A item 1 (starting
   shields) stays deliberately open — the story records why at length; do not
   close it.
 - **The conventions.** [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) —
@@ -843,7 +845,7 @@ from the plan. `npm run typecheck`, `npm run lint`, `npm test` (102 tests),
 
 Return every entry in `STARTING_FLEET` to `shields: 0`, undoing Step 7's
 temporary values and nothing else. This is the state the story ships: every ship
-starts the game on 0 shields, and Appendix A item 2 stays open.
+starts the game on 0 shields, and Appendix A item 1 stays open.
 
 Add the assertion that locks it in: a test in `src/rules/fleet.test.ts` that
 **every** entry in the starting fleet carries exactly 0 shields. Keep the
@@ -932,9 +934,9 @@ nothing, and `RULES_VERSION` is still `"0.1"`.
 ## Post-merge note — `origin/main` merged in before peer review
 
 After Step 11, `origin/main` was merged into this branch at the owner's
-request, bringing story 00000003 (site positions). Two statements elsewhere in
-this plan are now stale **as descriptions of the branch**, though both remain
-true as descriptions of what this story did:
+request, bringing story 00000003 (site positions). Three statements elsewhere
+in this plan are now stale **as descriptions of the branch**, though all three
+remain true as descriptions of what this story did:
 
 - **`RULES_VERSION` is now `"0.2"`, not `"0.1"`.** Story 00000003 bumped it
   along with `rules.md`. This story still changes no rules: `doc/ruleset/` is
@@ -946,6 +948,21 @@ true as descriptions of what this story did:
   `occupant?: SquareOccupant` and an occupied site reads
   `"H8, charged site, green ship, 2 shields"`. Bay and site still share one
   slot; the shield segment stays last and is still stated at zero.
+- **Appendix A was renumbered.** Story 00000003 closed and removed item 1
+  (site positions), and the remaining item — starting shields — is now item 1,
+  not item 2. Every "Appendix A item 2" reference elsewhere in this plan and in
+  `story.md` means the same, now-renumbered item.
 
 The merge also brought `server.watch: { usePolling: true }`, so the dev server
 now picks up edits without a restart on this branch.
+
+## Post-peer-review note — a rules cross-reference fix
+
+Peer review found that §4.1's two section citations were inverted (it cited
+section 6 for combat and section 5 for movement; the correct sections are 7
+and 6). The mistake predates this branch, but §4.1 is the section this story
+implements, so the owner chose to fix it here rather than defer it. `rules.md`
+was corrected, `RULES_VERSION` bumped to `"0.3"`, and a changelog entry added.
+This is the one exception to this plan's repeated statement that the story
+changes no rules: it is a cross-reference correction, not a change to how the
+game is played, and it earns no `/tag-rules` run.

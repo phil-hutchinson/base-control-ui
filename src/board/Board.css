@@ -59,7 +59,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(0.6rem, 1.6vmin, 0.85rem);
+  /* Sized from --square (already floored, so this needs no floor of its
+     own), not the viewport, so the labels keep the same proportion to the
+     squares they annotate as the board grows or shrinks. */
+  font-size: calc(var(--square) * 0.35);
   color: var(--color-text-dim);
 }
 
