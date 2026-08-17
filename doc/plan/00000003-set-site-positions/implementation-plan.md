@@ -1132,7 +1132,27 @@ If a gate fails, record what was seen in the step's Notes before any fix.
 
 ## Step 13 — README check
 
-Status: pending
+Status: committed
+
+Notes: Rewrote the status callout: it now says the board shows the seventeen
+sites, five of them already nodes in play, and lists what still doesn't
+happen ("Nothing wakes, runs down, or changes, there are no turns, and there
+is no way to move or fight") instead of the old "no nodes" clause, using
+player-facing vocabulary (node = a site in play, site = the fixed position)
+per `rules.md` §2. Verified against Appendix A that only one open item
+remains (starting shields, item 1) and changed the rules paragraph from "a
+few details are deliberately left open" to "one detail is deliberately left
+open" (singular verb/noun kept consistent). Reviewed the rest of the README
+and the full `git diff main`: no other sentence describes site/node
+behaviour, so nothing else needed a change. `npm run format:check`,
+`npm run lint`, `npm run typecheck`, `npm test` (96 tests, 13 files) and
+`npm run build` all pass; `git diff main --stat` shows the expected shape
+(`rules.md`, `changelog.md`, `rulesVersion.ts` touched; `src/rules/sites.ts`
+along with `siteSpacing.test.ts` and `sites.test.ts` added; `src/board/`
+extended with `SiteMarker.tsx/.css/.test.tsx` and updated
+`Board.tsx/.css/.test.tsx` and `squareLabel.ts/.test.ts`; no `reviewFixture`
+file present, and a repo-wide grep for `reviewFixture` returns nothing). No
+deviation from the plan.
 
 Review `README.md` against what this story changed and update it if it is now
 inaccurate. The `/update-readme` command does this from the branch diff.
