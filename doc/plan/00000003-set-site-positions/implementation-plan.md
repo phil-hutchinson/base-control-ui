@@ -1004,7 +1004,16 @@ still read with a ship standing on them.
 
 ## Step 10 — Manual gate: screen reader
 
-Status: pending
+Status: committed
+
+Notes: Taken by the owner against the review fixture, with the swapped
+appearances from Step 9a in place. All five checks pass: the board still
+announces as a grid named "Base Control board", sites announce their square,
+that they are a site and their state (all four state words heard, with and
+without a ship on the square), bays and ordinary squares are unchanged, the
+wording is intelligible at speed with nothing extraneous from the artwork or
+the edge labels, and the board is still a single tab stop with one-square
+arrow movement clamping at the edges.
 
 No code. Taken here, still with the fixture in place, for the same reason as
 Step 9: after Step 11 only dormant and active sites exist, so this is the only
