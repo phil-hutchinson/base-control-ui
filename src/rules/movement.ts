@@ -1,10 +1,25 @@
 // Movement (rules.md §6): a ship moves in a straight line, orthogonally or
-// diagonally, as far as its shield count allows. This module holds the
-// reach half only — the shape of a ship's move from an otherwise empty
-// board. It knows nothing about ships, occupancy, sites or whose turn it
-// is; legality is layered on top elsewhere.
+// diagonally, as far as its shield count allows. This module holds both
+// halves of §6: reach — the shape of a ship's move from an otherwise empty
+// board — and legality, which filters reach by occupancy and by the
+// destination site's state. This is the only implementation of §6 in the
+// app; every caller that needs a legal move or the reason one is refused
+// calls the functions here.
 
-import { COLUMN_LETTERS, type Square, isOnBoard, squareAt } from "./board";
+import {
+  COLUMN_LETTERS,
+  type Square,
+  isOnBoard,
+  squareAt,
+  squareName,
+} from "./board";
+import type { ShipId } from "./fleet";
+import {
+  type GameState,
+  type Ship,
+  shipsBySquare,
+  siteStateAt,
+} from "./gameState";
 import type { ShieldCount } from "./shields";
 
 type DirectionKind = "orthogonal" | "diagonal";
@@ -98,4 +113,124 @@ export function reachFrom(
   }
 
   return entries;
+}
+
+/**
+ * The structured reasons a square is not a legal destination for a ship.
+ * Never a sentence — the wording for these lives in `src/board/`.
+ */
+export type MoveRefusalReason =
+  | "not-your-ship"
+  | "ship-already-moved"
+  | "out-of-range"
+  | "path-blocked"
+  | "destination-occupied"
+  | "destination-dormant-site"
+  | "destination-depleted-site";
+
+function findShip(state: GameState, shipId: ShipId): Ship {
+  const ship = state.ships.find((candidate) => candidate.id === shipId);
+  if (ship === undefined) {
+    throw new RangeError(`no ship with id "${shipId}" in this state`);
+  }
+  return ship;
+}
+
+/** Whether a site's state bans a ship from ending its move there (rules.md §6, §8.5). */
+function bansLanding(state: GameState, square: Square): boolean {
+  const siteState = siteStateAt(state, square);
+  return siteState === "dormant" || siteState === "depleted";
+}
+
+/**
+ * Every square `shipId` may legally move to in the given state: its §6 reach,
+ * filtered so every passed-over square and the destination are unoccupied by
+ * either side, and the destination is not a dormant or depleted site. Empty
+ * when the ship does not belong to the side to move or has already moved
+ * this ply.
+ */
+export function legalDestinations(
+  state: GameState,
+  shipId: ShipId,
+): readonly Square[] {
+  const ship = findShip(state, shipId);
+  if (ship.side !== state.sideToMove || state.movedThisPly.includes(shipId)) {
+    return [];
+  }
+
+  const occupied = shipsBySquare(state);
+
+  return reachFrom(ship.square, ship.shields)
+    .filter(
+      (entry) =>
+        !occupied.has(squareName(entry.destination)) &&
+        !entry.passedOver.some((square) => occupied.has(squareName(square))),
+    )
+    .filter((entry) => !bansLanding(state, entry.destination))
+    .map((entry) => entry.destination);
+}
+
+/**
+ * Why `destination` is not a legal move for `shipId` in the given state, as a
+ * structured reason, or `undefined` when the move is legal. Reasons are
+ * checked in order from the most fundamental (whose ship it is) to the most
+ * specific (the destination square itself), so exactly one is ever returned.
+ */
+export function moveRefusalReason(
+  state: GameState,
+  shipId: ShipId,
+  destination: Square,
+): MoveRefusalReason | undefined {
+  const ship = findShip(state, shipId);
+
+  if (ship.side !== state.sideToMove) {
+    return "not-your-ship";
+  }
+  if (state.movedThisPly.includes(shipId)) {
+    return "ship-already-moved";
+  }
+
+  const destinationName = squareName(destination);
+  const entry = reachFrom(ship.square, ship.shields).find(
+    (candidate) => squareName(candidate.destination) === destinationName,
+  );
+  if (entry === undefined) {
+    return "out-of-range";
+  }
+
+  const occupied = shipsBySquare(state);
+  if (entry.passedOver.some((square) => occupied.has(squareName(square)))) {
+    return "path-blocked";
+  }
+  if (occupied.has(destinationName)) {
+    return "destination-occupied";
+  }
+
+  const siteState = siteStateAt(state, destination);
+  if (siteState === "dormant") {
+    return "destination-dormant-site";
+  }
+  if (siteState === "depleted") {
+    return "destination-depleted-site";
+  }
+
+  return undefined;
+}
+
+/**
+ * The ships of the side to move that have not yet moved this ply, and so are
+ * still eligible to take a move action.
+ */
+export function eligibleShips(state: GameState): readonly Ship[] {
+  return state.ships.filter(
+    (ship) =>
+      ship.side === state.sideToMove && !state.movedThisPly.includes(ship.id),
+  );
+}
+
+/** Whether the side to move has any legal move at all, with any eligible ship. */
+export function sideToMoveHasLegalMove(state: GameState): boolean {
+  return eligibleShips(state).some(
+    (ship) => legalDestinations(state, ship.id).length > 0,
+  );
 }

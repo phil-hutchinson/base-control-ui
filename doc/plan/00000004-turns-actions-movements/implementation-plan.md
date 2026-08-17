@@ -822,7 +822,24 @@ asserting of the starting state:
 
 ## Step 4 — Legal destinations, and why a move is refused
 
-Status: pending
+Status: committed
+
+Notes: Added `legalDestinations`, `moveRefusalReason` (with the `MoveRefusalReason`
+union), `eligibleShips` and `sideToMoveHasLegalMove` to `src/rules/movement.ts`,
+built on `reachFrom`, `shipsBySquare` and `siteStateAt`. `legalDestinations`
+filters reach by occupancy (destination and every passed-over square, either
+side) and by the destination's site state; `moveRefusalReason` checks the same
+facts independently, in the specified order, so the two are two separate
+implementations rather than one calling the other, which is what the drift
+test in `movement.test.ts` is for. Extended `movement.test.ts` with blocking
+(friendly and enemy), clear multi-square paths, the site restriction (dormant,
+depleted, active, charged), whose-turn/already-moved, an if-and-only-if sweep
+of `ALL_SQUARES` against `moveRefusalReason` over three constructed states
+(a friendly-blocker state, an enemy-blocker state, and a site-restriction
+state), a case for each of the seven reasons, and small tests for the two new
+helpers. All states are built directly as literal `GameState` values via
+local `ship`/`buildState` test helpers, never via `startingGameState` or any
+fixture. No deviation from the plan.
 
 Extend `src/rules/movement.ts` with the **legality** half of §6, on top of
 Step 2's reach:
