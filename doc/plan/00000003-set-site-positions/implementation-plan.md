@@ -685,7 +685,22 @@ are unchanged:
 
 ## Step 6 — The site marker artwork
 
-Status: pending
+Status: committed
+
+Notes: Added `SiteMarker.tsx`/`.css` per decision 1 — a 100x100 viewBox
+matching `ShipIcon`'s, an outer fill circle at radius 47 behind one or two
+stroke-only ring circles. Ring geometry (stroke width, dash pattern, ring
+count) is set as SVG attributes from a per-state `RING_SPECS` table in the
+component rather than in CSS, since jsdom in this project's test setup does
+not apply imported CSS, and the geometry is exactly what the test needs to
+assert; CSS carries only colour (a local `--site-accent` violet, kept off
+the two side colours, bay cyan and focus amber) and fill opacity, per the
+"colour lives where only one file needs it" convention. `SiteMarker.test.tsx`
+follows the DOM test recipe and covers the four modifier classes, the
+decorative contract (aria-hidden, no title/desc, no accessible text), that
+ring count/stroke-width/dash pattern differ across all four states (not just
+class names), and axe with `color-contrast` disabled. Not wired into
+`Board.tsx` (that is Step 7). No deviation from the plan.
 
 Add `src/board/SiteMarker.tsx` and `src/board/SiteMarker.css`: a decorative
 component that draws one site in one of the four states, per this plan's
