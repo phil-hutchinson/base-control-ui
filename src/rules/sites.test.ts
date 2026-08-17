@@ -1,7 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { BAYS } from "./bays";
-import { COLUMN_LETTERS, squareAt, squareName } from "./board";
+import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
 import { SITES, STARTING_ACTIVE_SITES, startingSiteState } from "./sites";
+
+const COLUMN_INDEX = new Map(
+  COLUMN_LETTERS.map((letter, index) => [letter, index]),
+);
+const COLUMN_AT = new Map(
+  COLUMN_LETTERS.map((letter, index) => [index, letter]),
+);
+
+/** The square that mirrors the given one across column H. */
+function mirrorAcrossColumnH(square: Square): Square {
+  const index = COLUMN_INDEX.get(square.column);
+  if (index === undefined) {
+    throw new Error(`unknown column ${square.column}`);
+  }
+  const mirroredColumn = COLUMN_AT.get(14 - index);
+  if (mirroredColumn === undefined) {
+    throw new Error("mirror across column H left the board");
+  }
+  return squareAt(mirroredColumn, square.row);
+}
+
+/** The square that mirrors the given one across row 8. */
+function mirrorAcrossRow8(square: Square): Square {
+  return squareAt(square.column, 16 - square.row);
+}
 
 describe("sites", () => {
   it("has exactly seventeen sites, no duplicates", () => {
@@ -20,24 +45,10 @@ describe("sites", () => {
   });
 
   it("is unchanged by a mirror across column H", () => {
-    const columnIndex = new Map(
-      COLUMN_LETTERS.map((letter, index) => [letter, index]),
-    );
-    const columnAt = new Map(
-      COLUMN_LETTERS.map((letter, index) => [index, letter]),
-    );
     const names = new Set(SITES.map(squareName));
 
     for (const site of SITES) {
-      const index = columnIndex.get(site.column);
-      if (index === undefined) {
-        throw new Error(`unknown column ${site.column}`);
-      }
-      const mirroredColumn = columnAt.get(14 - index);
-      if (mirroredColumn === undefined) {
-        throw new Error("mirror across column H left the board");
-      }
-      const mirrored = squareAt(mirroredColumn, site.row);
+      const mirrored = mirrorAcrossColumnH(site);
       expect(names.has(squareName(mirrored))).toBe(true);
     }
   });
@@ -46,8 +57,7 @@ describe("sites", () => {
     const names = new Set(SITES.map(squareName));
 
     for (const site of SITES) {
-      const mirroredRow = 16 - site.row;
-      const mirrored = squareAt(site.column, mirroredRow);
+      const mirrored = mirrorAcrossRow8(site);
       expect(names.has(squareName(mirrored))).toBe(true);
     }
   });
@@ -128,27 +138,10 @@ describe("starting site state", () => {
 
   it("is itself symmetric about column H and row 8", () => {
     const names = new Set(STARTING_ACTIVE_SITES.map(squareName));
-    const columnIndex = new Map(
-      COLUMN_LETTERS.map((letter, index) => [letter, index]),
-    );
-    const columnAt = new Map(
-      COLUMN_LETTERS.map((letter, index) => [index, letter]),
-    );
 
     for (const site of STARTING_ACTIVE_SITES) {
-      const index = columnIndex.get(site.column);
-      if (index === undefined) {
-        throw new Error(`unknown column ${site.column}`);
-      }
-      const mirroredColumn = columnAt.get(14 - index);
-      if (mirroredColumn === undefined) {
-        throw new Error("mirror across column H left the board");
-      }
-      const columnMirrored = squareAt(mirroredColumn, site.row);
-      expect(names.has(squareName(columnMirrored))).toBe(true);
-
-      const rowMirrored = squareAt(site.column, 16 - site.row);
-      expect(names.has(squareName(rowMirrored))).toBe(true);
+      expect(names.has(squareName(mirrorAcrossColumnH(site)))).toBe(true);
+      expect(names.has(squareName(mirrorAcrossRow8(site)))).toBe(true);
     }
   });
 });

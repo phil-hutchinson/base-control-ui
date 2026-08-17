@@ -31,7 +31,7 @@ describe("Board", () => {
   it("names the centre and the far corners correctly", () => {
     render(<Board />);
 
-    // H8 is the centre and, since this story, an active site.
+    // H8 is the centre square and an active site at the start.
     expect(
       screen.getByRole("gridcell", { name: "H8, active site" }),
     ).toBeInTheDocument();

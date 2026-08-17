@@ -21,9 +21,9 @@ install, no account, no server.
 > **Status:** early development. Opening the app now shows the board in its
 > starting position, with all fourteen ships lined up in their bays and the
 > seventeen sites marked, five of them already nodes in play — but the app
-> does not play the game yet. Nothing wakes, runs down, or changes, there are
-> no turns, and there is no way to move or fight. The project is being built
-> up story by story.
+> does not play the game yet. Nothing wakes, runs down, or changes. There are
+> no turns, and no way to move or fight. The project is being built up story
+> by story.
 
 ## The rules
 

@@ -1,7 +1,6 @@
 // Confirms the property rules.md §3.2 actually requires: no single legal
-// move can touch two sites. The move ranges below are §6's ranges,
-// transcribed here only for this sweep - movement itself is out of scope
-// for this story, so no movement module exists in src/rules/.
+// move can touch two sites. The move ranges below are §6's 0-shield ranges,
+// transcribed for this sweep; there is no movement module in src/rules/ yet.
 import { describe, expect, it } from "vitest";
 import {
   ALL_SQUARES,

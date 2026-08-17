@@ -494,6 +494,14 @@ symmetry's sake is the kind of unreachable code the previous story's review
 pushed back on. (Recorded here so a reviewer noticing the asymmetry with
 `bays.ts` finds the reason.)
 
+`SITES` and, from Step 4, `STARTING_ACTIVE_SITES` **are** exported even though
+neither has a production consumer beyond `startingSiteState` itself. That is
+not the same situation as `isSite`: these two are the literal transcriptions
+of §3.2's and §8.1's tables, and `sites.test.ts` needs them exported so it can
+compare the transcription to the document line by line. A derived predicate
+with no consumer is unreachable code; transcribed rule data with a test that
+reads it is not.
+
 Depends on: Step 1 (the document states the seventeen positions), and the
 existing `src/rules/board.ts`.
 
@@ -1180,3 +1188,27 @@ Verification (automated): `npm run format:check`, `npm run lint`,
 `changelog.md` and `rulesVersion.ts` all touched (this story is a rules change),
 `src/rules/sites.ts` and its tests added, `src/board/` extended, and **no**
 `reviewFixture` file present.
+
+---
+
+## Deferred work
+
+Raised at peer review and deliberately left for a later story rather than
+folded into this one:
+
+- **A guard on the site-marker/ship layering order.** The "a ship standing on
+  a site does not hide which state it is in" requirement currently rests
+  entirely on `SiteMarker` being placed before `ShipIcon` in JSX plus
+  `grid-area: 1 / 1` in `Board.tsx`, with nothing automated checking it —
+  after Step 11 no square on the starting board even holds both a site and a
+  ship, so there is nothing for a test to exercise yet. This becomes a real,
+  reachable state only once a ship can move onto a site, so the guard
+  (whatever form it takes — a `BoardSquare` component with its own layering
+  test is one option) belongs with the story that first makes that state
+  possible.
+- **A test guarding the dormant-site pool size.** Appendix B states that the
+  app must guard the pool arithmetic — that the dormant pool cannot run dry
+  under adversarial waking patterns — but no such test exists, because
+  nothing in this story wakes, charges or depletes a site. That test belongs
+  with the story that implements §8's state transitions, where there is
+  behaviour to exercise.

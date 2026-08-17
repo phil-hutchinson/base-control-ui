@@ -438,14 +438,13 @@ board consumes a replacement every 1.8 turns, and roughly five sites sit
 depleted at any moment. That leaves about ten of the seventeen-site pool
 committed, and about **seven** dormant.
 
-The pool therefore needs more than about ten committed to it — but the
-binding constraint is not safety, it is randomness. If only one site is
-dormant when a replacement is needed, the "random" choice is forced and
-players can predict it. Sizing the pool so that several sites are always
-dormant is what keeps section 8.6 honest, and seventeen sites leaving roughly
-seven dormant is the margin this depends on.
+The pool therefore needs to be comfortably larger than the ten sites
+committed at any moment — but the binding constraint is not safety, it is
+randomness. If only one site is dormant when a replacement is needed, the
+"random" choice is forced and players can predict it. Sizing the pool so that
+several sites are always dormant is what keeps section 8.6 honest, and
+seventeen sites leaving roughly seven dormant is the margin this depends on.
 
 Whenever the nine-turn figures or the number of nodes change, this arithmetic
 has to be redone. The app must guard this: a test should play out adversarial
-waking patterns and assert the dormant pool never runs dry. No such test
-exists yet.
+waking patterns and assert the dormant pool never runs dry.
