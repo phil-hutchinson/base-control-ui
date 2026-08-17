@@ -27,7 +27,13 @@
   display: grid;
   grid-template-columns: repeat(15, var(--square));
   grid-template-rows: repeat(15, var(--square));
-  border: 2px solid var(--color-text-dim);
+  /* An outline, not a border: a border's width is taken out of this
+     stretched grid item's content box, leaving its own 15-square tracks 4px
+     too big for it and overflowing past the bottom and right edges (masking
+     the border there while the top and left stay visible in the border's
+     inward gap). An outline draws outside the box without affecting layout,
+     so it comes out even on all four sides. */
+  outline: 2px solid var(--color-text-dim);
 }
 
 .board-frame__row-labels {

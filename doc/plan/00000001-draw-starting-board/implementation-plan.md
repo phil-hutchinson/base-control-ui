@@ -728,7 +728,37 @@ that axe still reports no violations.
 
 ## Step 12 — Manual gate: it looks right
 
-Status: pending
+Status: committed
+
+Notes: Fix applied for a defect the owner found at this gate: the board's
+outer edge (`.board` in `src/board/Board.css`) showed a white-ish border along
+the top and left only. Root cause confirmed as diagnosed by the owner —
+`.board` is a CSS Grid item stretched to fill a `2 / 17` by `1 / 16` area
+sized at exactly `repeat(15, var(--square))` in `.board-frame`; stretch
+alignment fits the item's **border box** to that area, so `.board`'s own
+`border: 2px solid` (default `box-sizing: content-box`) shrank its content box
+by 4px in each axis while its own `grid-template-columns/rows:
+repeat(15, var(--square))` children still demanded the full 15 squares. The
+squares overflowed the content box by 4px total (they start flush at the
+content box's top-left, since nothing shrinks explicit pixel tracks), which
+left the top and left borders visible in the gap before the content starts
+but painted the overflowing square backgrounds on top of where the bottom and
+right borders would have been drawn. Fixed by replacing `.board`'s `border`
+with `outline: 2px solid var(--color-text-dim)` (default 0 offset): an
+outline is not part of the box model, so it does not shrink the content box —
+the 15 squares now fit exactly, with no overflow — and it paints on top of
+the box's own content, coming out flush and even on all four sides. No other
+CSS or markup changed; `.board-frame__row-labels` / `__column-labels` still
+share the same `--square` tracks and were not touched, so label alignment is
+unaffected. Verified visually with a headless-Chromium (Playwright) screenshot
+of `npm run dev`'s output (installed and removed only in the scratchpad
+directory, not part of the repo) showing all four edges present and even, in
+addition to the required manual gate the owner still needs to re-run. No unit
+test was added: jsdom has no layout, so box-model overflow like this cannot be
+observed in a DOM test — this is exactly the kind of defect the visual gate
+exists to catch, so the check is manual only.
+`npm run typecheck`, `npm run lint`, `npm test` (67 tests, unchanged),
+`npm run format:check`, and `npm run build` all pass.
 
 No code. This is the story's first manual gate: the pipeline pauses here for
 the owner.
