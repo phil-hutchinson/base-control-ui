@@ -322,7 +322,15 @@ Reasoning:
 
 ## Step 1 — Rules 0.2: the sites, the state rename, and the relaxed constraint
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `rules.md` §2, §3.2, §6, §8.1–8.7 and Appendices A/B per the
+plan; added the `## 0.2` changelog entry; bumped `RULES_VERSION` to `"0.2"`.
+The case-insensitive review-sweep grep for `sleeping|awake|live|spent` left
+exactly two hits, both verb forms as anticipated: "spent by winning fights"
+(§1) and the §8.3 heading "How long a node lives" — neither is a state name.
+No deviation from the plan; `src/` was touched only in `rulesVersion.ts` as
+the step specifies.
 
 This is the rules change, and it comes first because every later step
 implements it. Do it as one coherent pass over
