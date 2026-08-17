@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.2**
+**Rules version: 0.3**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -158,8 +158,8 @@ Every ship starts with **0 shields (TBD)**.
 ### 4.1 Shields
 
 A ship carries between 0 and 4 shields. Shields do two things, in opposite
-directions: they decide who wins a fight (section 6), and each one a ship
-carries takes away part of its movement (section 5).
+directions: they decide who wins a fight (section 7), and each one a ship
+carries takes away part of its movement (section 6).
 
 A ship gains **one shield** at the end of its owner's turn if it is standing on
 a node, up to the maximum of 4. A ship reduced to 0 shields is not destroyed —

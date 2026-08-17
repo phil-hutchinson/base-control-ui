@@ -1,9 +1,10 @@
 /* Board grid geometry. `--square` drives every square's size from one place,
-   sized with `clamp()` on a viewport unit so the whole 15 x 15 board stays
-   square and fits a normal desktop viewport without scrolling at any window
-   size. Ordinary squares get a thin border to read as a grid; bays get a
-   different fill and a heavier, differently coloured border so they read as
-   distinct at a glance rather than a barely-different shade.
+   sized from the board's own container (`.app__board`) rather than the
+   viewport, so the board fills whatever room it is actually given: it grows
+   with no ceiling, and shrinks no further than a floor kept for legibility.
+   Ordinary squares get a thin border to read as a grid; bays get a different
+   fill and a heavier, differently coloured border so they read as distinct at
+   a glance rather than a barely-different shade.
 
    `.board-frame` wraps the grid with a row of column letters below it and a
    column of row numbers beside it, both sized from the same `--square` so
@@ -13,7 +14,10 @@
    coordinates. */
 
 .board-frame {
-  --square: clamp(24px, 4vmin, 42px);
+  /* `.board-frame` is sixteen tracks wide and sixteen tall (fifteen board
+     tracks plus one label track in each axis), so a square is one sixteenth
+     of the container's smaller dimension, floored at 40px for legibility. */
+  --square: max(40px, 6.25cqmin);
   display: inline-grid;
   grid-template-columns: var(--square) repeat(15, var(--square));
   grid-template-rows: repeat(15, var(--square)) var(--square);
@@ -55,7 +59,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(0.6rem, 1.6vmin, 0.85rem);
+  /* Sized from --square (already floored, so this needs no floor of its
+     own), not the viewport, so the labels keep the same proportion to the
+     squares they annotate as the board grows or shrinks. */
+  font-size: calc(var(--square) * 0.35);
   color: var(--color-text-dim);
 }
 

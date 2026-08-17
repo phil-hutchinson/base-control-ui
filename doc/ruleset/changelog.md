@@ -5,6 +5,13 @@ newest first. A version bump is its own commit, and once merged to `main` that
 commit is tagged `rules-<version>` — so checking out `rules-0.1` gets you an
 app that plays exactly the rules described by version 0.1.
 
+## 0.3 — fixed two cross-references in section 4.1
+
+- **Section 4.1's cross-references were inverted.** It cited "section 6" for
+  who wins a fight and "section 5" for movement; the correct sections are 7
+  (Combat) and 6 (Movement). Both citations are corrected. This changes
+  nothing about how the game is played.
+
 ## 0.2 — site positions settled
 
 Closes Appendix A item 1.

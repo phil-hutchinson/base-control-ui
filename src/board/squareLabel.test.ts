@@ -13,24 +13,34 @@ describe("squareLabel", () => {
     );
   });
 
-  it("names an occupied bay for the green side", () => {
+  it("names an occupied bay for the green side, stating zero shields", () => {
     expect(
       squareLabel({
         square: squareAt("H", 15),
         isBay: true,
-        occupant: "green",
+        occupant: { side: "green", shields: 0 },
       }),
-    ).toBe("H15, bay, green ship");
+    ).toBe("H15, bay, green ship, 0 shields");
   });
 
-  it("names an occupied bay for the red side", () => {
+  it("uses the singular at one shield", () => {
+    expect(
+      squareLabel({
+        square: squareAt("L", 15),
+        isBay: true,
+        occupant: { side: "red", shields: 1 },
+      }),
+    ).toBe("L15, bay, red ship, 1 shield");
+  });
+
+  it("uses the plural at a middle count", () => {
     expect(
       squareLabel({
         square: squareAt("D", 15),
         isBay: true,
-        occupant: "red",
+        occupant: { side: "red", shields: 3 },
       }),
-    ).toBe("D15, bay, red ship");
+    ).toBe("D15, bay, red ship, 3 shields");
   });
 
   it("names an occupied ordinary square, for completeness of the contract", () => {
@@ -38,9 +48,9 @@ describe("squareLabel", () => {
       squareLabel({
         square: squareAt("H", 8),
         isBay: false,
-        occupant: "green",
+        occupant: { side: "green", shields: 4 },
       }),
-    ).toBe("H8, green ship");
+    ).toBe("H8, green ship, 4 shields");
   });
 
   it("names each site state", () => {
@@ -74,22 +84,22 @@ describe("squareLabel", () => {
     ).toBe("H4, depleted site");
   });
 
-  it("names an occupied site for each side", () => {
+  it("names an occupied site for each side, with its shield count", () => {
     expect(
       squareLabel({
         square: squareAt("H", 8),
         isBay: false,
         siteState: "charged",
-        occupant: "green",
+        occupant: { side: "green", shields: 2 },
       }),
-    ).toBe("H8, charged site, green ship");
+    ).toBe("H8, charged site, green ship, 2 shields");
     expect(
       squareLabel({
         square: squareAt("H", 4),
         isBay: false,
         siteState: "depleted",
-        occupant: "red",
+        occupant: { side: "red", shields: 0 },
       }),
-    ).toBe("H4, depleted site, red ship");
+    ).toBe("H4, depleted site, red ship, 0 shields");
   });
 });
