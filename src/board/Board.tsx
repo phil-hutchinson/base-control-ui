@@ -6,9 +6,11 @@
 import { BOARD_SIZE, COLUMN_LETTERS } from "../rules/board";
 import { isBay } from "../rules/bays";
 import { startingSideAt } from "../rules/fleet";
+import { startingSiteState } from "../rules/sites";
 import { squareForGridPosition } from "./boardView";
 import { squareLabel } from "./squareLabel";
 import { ShipIcon } from "./ShipIcon";
+import { SiteMarker } from "./SiteMarker";
 import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import "./Board.css";
 
@@ -32,16 +34,18 @@ const BOARD_ROWS: GridCellDescriptor[][] = Array.from(
         column: columnIndex,
       });
       const bay = isBay(square);
+      const siteState = startingSiteState(square);
       const occupant = startingSideAt(square);
       return {
         content: (
           <div
             className={bay ? "board-square board-square--bay" : "board-square"}
           >
+            {siteState && <SiteMarker state={siteState} />}
             {occupant && <ShipIcon side={occupant} />}
           </div>
         ),
-        label: squareLabel({ square, isBay: bay, occupant }),
+        label: squareLabel({ square, isBay: bay, siteState, occupant }),
         focusable: true,
       };
     }),

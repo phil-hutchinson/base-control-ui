@@ -754,7 +754,28 @@ jsdom test; follow CONTRIBUTING.md's DOM test recipe) asserting:
 
 ## Step 7 — Draw the sites on the real starting board
 
-Status: pending
+Status: committed
+
+Notes: Wired `startingSiteState` into `Board.tsx`, rendering a `SiteMarker`
+before the `ShipIcon` inside `.board-square` and passing `siteState` into
+`squareLabel`. Made `.board-square` a single-cell CSS grid
+(`display: grid` plus `grid-area: 1 / 1` on both children) so the marker and
+ship stack without absolute positioning, per the plan's suggested approach;
+the pre-existing `.accessible-grid__cell::after` focus ring (z-index 2, a
+sibling of `.board-square`) still paints over both, unchanged. Extended
+`Board.test.tsx` with a new `describe` block covering the four verification
+points as literal square/name lists independent of `startingSiteState`/
+`SITES`. Two pre-existing tests from story 00000001 needed updating because
+they now observe real behaviour change (H8 is both the centre square and,
+from this story, an active site, so its bare accessible name `"H8"` became
+`"H8, active site"`), and the "names every bay…" completeness loop now
+passes `siteState: startingSiteState(square)` into its `squareLabel` calls
+so its expected labels match the board's real output — this is the same
+completeness-loop test pattern that already re-uses `isBay`/`startingSideAt`,
+so extending it with `startingSiteState` is not a deviation from that
+pattern, just keeping it accurate under the new behaviour it observes.
+`npm run typecheck`, `npm run lint`, `npm test`, `npm run format:check` and
+`npm run build` all pass. No other deviation from the plan.
 
 Wire sites into `src/board/Board.tsx` using the **real** starting state from
 `src/rules/sites.ts` (Step 4):
