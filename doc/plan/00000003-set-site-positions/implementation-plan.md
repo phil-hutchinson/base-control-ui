@@ -144,10 +144,20 @@ weight** first and colour second:
 
 | State    | Ring                                   | Fill behind it         |
 | -------- | -------------------------------------- | ---------------------- |
-| dormant  | thin, **dotted**, dim                  | none (ordinary square) |
+| dormant  | medium, **dashed**, dim                | darker than ordinary   |
 | active   | medium, **solid**, accent colour       | faint accent tint      |
 | charged  | heavy **double** ring (two concentric) | strongest accent tint  |
-| depleted | medium, **dashed**, dim                | darker than ordinary   |
+| depleted | thin, **dotted**, dim                  | none (ordinary square) |
+
+**Amended at the Step 9 gate.** The dormant and depleted rows above are the
+other way round from how this decision was first written: dormant was the thin
+dotted ring with no fill, and depleted the dashed ring over a darker fill. The
+owner asked at the gate for the two appearances to be swapped outright, fill
+included, and Step 9a does that. The consequence was put to the owner before the
+swap and accepted: twelve of the seventeen sites are dormant at the start of a
+real game, so the darker fill — previously a rare marking, since nothing is
+depleted at the start — now appears twelve times on the opening board, while the
+faintest treatment is the one reserved for a spent node.
 
 Reasoning:
 
@@ -901,7 +911,15 @@ ships, it does not move the fourteen in their bays. Also run `npm run build`.
 
 ## Step 9 — Manual gate: the four appearances
 
-Status: pending
+Status: committed
+
+Notes: Taken by the owner against the review fixture. All seven checks pass —
+the four states are present and tellable apart from each other, from a bay and
+from an ordinary square; a ship on a site does not hide its state; the states
+survive greyscale; the focus ring is unmistakable on a site square; the board
+still fits and stays square. The owner asked for one change: swap the dormant
+and depleted appearances outright, fill included. Decision 1 above records the
+amended table and the trade-off; Step 9a makes the change.
 
 No code. The story's first manual gate; the pipeline pauses here for the owner.
 It is taken now, while the review fixture is in place, because this is the only
@@ -931,6 +949,39 @@ than refreshing if anything looks stale). Confirm all of:
 7. The board still fits the window without scrolling and stays square.
 
 If a gate fails, record what was seen in the step's Notes before any fix.
+
+---
+
+## Step 9a — Swap the dormant and depleted appearances
+
+Status: pending
+
+Added after the Step 9 gate, at the owner's request. Swap the two appearances in
+`SiteMarker` **whole**, line treatment and fill together, so they match
+decision 1's amended table: **dormant** becomes the medium dashed dim ring over
+a fill darker than an ordinary square, and **depleted** becomes the thin dotted
+dim ring with no fill at all. Nothing else moves — active and charged are
+untouched, the accent colour is unchanged, both rings stay at the radius that
+clears the ship silhouettes, and no other module is involved: this is a change
+of appearance only, so no rule, accessible name, or site-state lookup changes.
+
+Update `SiteMarker`'s own tests to assert the swapped appearances rather than
+editing them to fit whatever the component now emits — the point of the test is
+that the four states are distinguishable and that each is the one decision 1
+names.
+
+Depends on: Step 6 (the artwork) and Step 9 (the gate that asked for the swap).
+It comes before Step 11 deliberately, while the review fixture still puts a
+depleted site on the board — after Step 11 there is no way to see a depleted
+site at all, since nothing is depleted at the start of a real game.
+
+Verification (manual): `npm test` first — the swapped appearances are asserted.
+Then run `npm run dev` and open `http://localhost:5273` (restart the server
+rather than refreshing; the container does not pick up file changes). Confirm
+against the fixture that the four states are still tellable apart from one
+another, from a bay and from an ordinary empty square, both in colour and in
+greyscale, and that `H4`'s dotted depleted ring and `B4`'s dashed dormant ring
+still read with a ship standing on them.
 
 ---
 
