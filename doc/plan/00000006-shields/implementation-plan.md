@@ -926,3 +926,26 @@ and the README says nothing about sizing.
 
 Guard conditions confirmed: `git diff main --name-only -- doc/ruleset/` returns
 nothing, and `RULES_VERSION` is still `"0.1"`.
+
+---
+
+## Post-merge note — `origin/main` merged in before peer review
+
+After Step 11, `origin/main` was merged into this branch at the owner's
+request, bringing story 00000003 (site positions). Two statements elsewhere in
+this plan are now stale **as descriptions of the branch**, though both remain
+true as descriptions of what this story did:
+
+- **`RULES_VERSION` is now `"0.2"`, not `"0.1"`.** Story 00000003 bumped it
+  along with `rules.md`. This story still changes no rules: `doc/ruleset/` is
+  untouched by any commit on this branch, and the version moved only by way of
+  the merge.
+- **`squareLabel`'s signature changed.** Story 00000003 restructured it to take
+  a `SquareLabelDescriptor` object and added a site segment. The merge kept
+  that shape and carried this story's occupant into it, so the parameter is now
+  `occupant?: SquareOccupant` and an occupied site reads
+  `"H8, charged site, green ship, 2 shields"`. Bay and site still share one
+  slot; the shield segment stays last and is still stated at zero.
+
+The merge also brought `server.watch: { usePolling: true }`, so the dev server
+now picks up edits without a restart on this branch.
