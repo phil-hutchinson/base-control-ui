@@ -511,7 +511,16 @@ confirm it succeeds.
 
 ## Step 3 — The shields-to-arcs mapping
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/shieldArcs.ts` exporting `ArcPosition`,
+`ARC_FILL_ORDER` (the four positions in fill order) and the pure function
+`litArcPositions(shields)`, which returns `ARC_FILL_ORDER.slice(0, shields)`.
+Added `src/board/shieldArcs.test.ts` covering every count 0–4 against the
+tabled order plus a loop asserting the returned length always equals the
+count. No JSX, geometry or colour, as required. No deviations from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (82 tests) and
+`npm run format:check` all pass.
 
 Add `src/board/shieldArcs.ts`: the four arc positions and a pure function from a
 shield count to the ordered list of lit positions. The fill order is fixed and
