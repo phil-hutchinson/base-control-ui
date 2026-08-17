@@ -5,12 +5,9 @@
 
 import { BOARD_SIZE, COLUMN_LETTERS } from "../rules/board";
 import { isBay } from "../rules/bays";
+import { startingSideAt } from "../rules/fleet";
+import { startingSiteState } from "../rules/sites";
 import { squareForGridPosition } from "./boardView";
-// TEMPORARY (story 00000003, step 8 -> step 11): site states and occupants
-// come from the review fixture, not the real starting state, so all four
-// site states can be judged on screen at once. Reverts to
-// `startingSiteState` / `startingSideAt` when the fixture is removed.
-import { reviewOccupantAt, reviewSiteStateAt } from "./reviewFixture";
 import { squareLabel } from "./squareLabel";
 import { ShipIcon } from "./ShipIcon";
 import { SiteMarker } from "./SiteMarker";
@@ -37,8 +34,8 @@ const BOARD_ROWS: GridCellDescriptor[][] = Array.from(
         column: columnIndex,
       });
       const bay = isBay(square);
-      const siteState = reviewSiteStateAt(square);
-      const occupant = reviewOccupantAt(square);
+      const siteState = startingSiteState(square);
+      const occupant = startingSideAt(square);
       return {
         content: (
           <div

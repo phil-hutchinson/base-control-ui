@@ -1043,7 +1043,20 @@ record what was heard in the step's Notes before any fix.
 
 ## Step 11 — Remove the review fixture
 
-Status: pending
+Status: committed
+
+Notes: Deleted `src/board/reviewFixture.ts`; `Board.tsx` now imports
+`startingSideAt` from `../rules/fleet` and `startingSiteState` from
+`../rules/sites` again, with the temporary-fixture comment removed. In
+`Board.test.tsx`, restored the centre-square test (`H8, active site`), the
+bay-completeness loop's `squareLabel` calls, and the ship-count assertion
+(`STARTING_FLEET.length`, not `+ 4`) to the real starting state, and replaced
+the `"the temporary review fixture"` describe block with the
+`"sites on the starting board"` block from commit e79f35a, matching Step 7's
+verification list. `grep -r reviewFixture` over the repository (excluding
+`node_modules`, `.git`, and `doc/`, where the plan's own history still
+mentions the deleted module by name) returns nothing. No deviation from the
+plan.
 
 Delete `src/board/reviewFixture.ts` and return `Board.tsx` to reading its site
 states from `startingSiteState` and its occupants from `startingSideAt`. After
