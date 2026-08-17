@@ -77,6 +77,41 @@ describe("starting fleet", () => {
     }
   });
 
+  it("gives every ship a distinct id, seven a side, numbered 1-7 with no gaps", () => {
+    const ids = STARTING_FLEET.map((entry) => entry.id);
+    expect(new Set(ids).size).toBe(14);
+
+    for (const side of ["green", "red"] as const) {
+      const sideNumbers = STARTING_FLEET.filter(
+        (entry) => entry.side === side,
+      ).map((entry) => {
+        const [prefix, numberText] = entry.id.split("-");
+        expect(prefix).toBe(side);
+        return Number(numberText);
+      });
+
+      expect(new Set(sideNumbers)).toEqual(new Set([1, 2, 3, 4, 5, 6, 7]));
+    }
+  });
+
+  it("numbers each side's ids in ascending order within the fleet list", () => {
+    for (const side of ["green", "red"] as const) {
+      const sideNumbers = STARTING_FLEET.filter(
+        (entry) => entry.side === side,
+      ).map((entry) => Number(entry.id.split("-")[1]));
+
+      expect(sideNumbers).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    }
+  });
+
+  it("assigns green-1 to H15 and red-1 to L15", () => {
+    const green1 = startingShipAt(squareAt("H", 15));
+    const red1 = startingShipAt(squareAt("L", 15));
+
+    expect(green1?.id).toBe("green-1");
+    expect(red1?.id).toBe("red-1");
+  });
+
   it("matches §4's transcribed clockwise order from H15", () => {
     const expected: [string, "green" | "red"][] = [
       ["H15", "green"],

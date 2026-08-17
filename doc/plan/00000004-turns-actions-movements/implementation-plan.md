@@ -652,7 +652,14 @@ saying "there is no movement module in src/rules/ yet" must go with it.
 
 ## Step 1 — Stable ship identifiers
 
-Status: pending
+Status: committed
+
+Notes: Added `ShipId` and a required `id` field to `FleetEntry` in
+`src/rules/fleet.ts`, and gave each `STARTING_FLEET` entry its literal id in
+the existing clockwise order. Added the id-focused assertions to
+`fleet.test.ts` (distinct ids, seven per side numbered 1-7 with no gaps, ids
+ascending in list order per side, and the H15/L15 spot-check). No deviation
+from the plan.
 
 Give every ship a stable identity, so the rest of the story can follow one ship
 across squares and plies. In `src/rules/fleet.ts`:
