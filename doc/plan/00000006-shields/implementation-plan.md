@@ -827,7 +827,19 @@ part of story 00000001 most exposed by a change to the board's geometry.
 
 ## Step 9 — Remove the temporary fixture
 
-Status: pending
+Status: committed
+
+Notes: Set all fourteen `STARTING_FLEET` entries in `src/rules/fleet.ts` back
+to `shields: 0` and rewrote the header comment to drop the fixture wording,
+now stating simply that every ship starts on 0 shields. Added a new "starts
+every ship on 0 shields" test in `src/rules/fleet.test.ts`, alongside the
+existing 0–4 range test from Step 1. `src/board/Board.test.tsx` needed no
+changes and passed unchanged, confirming Step 7's fixture-agnostic rewrite
+holds. Searched the whole codebase for stray fixture references before and
+after the change; found none outside `src/rules/fleet.ts` itself — nothing
+else referred to the fixture, as plan decision 8 intended. No deviations
+from the plan. `npm run typecheck`, `npm run lint`, `npm test` (102 tests),
+`npm run format:check` and `npm run build` all pass.
 
 Return every entry in `STARTING_FLEET` to `shields: 0`, undoing Step 7's
 temporary values and nothing else. This is the state the story ships: every ship

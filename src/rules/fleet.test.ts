@@ -71,6 +71,12 @@ describe("starting fleet", () => {
     }
   });
 
+  it("starts every ship on 0 shields", () => {
+    for (const entry of STARTING_FLEET) {
+      expect(entry.shields).toBe(0);
+    }
+  });
+
   it("matches §4's transcribed clockwise order from H15", () => {
     const expected: [string, "green" | "red"][] = [
       ["H15", "green"],
