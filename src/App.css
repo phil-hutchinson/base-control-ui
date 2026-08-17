@@ -16,6 +16,17 @@
 }
 
 .app__board {
+  /* A size container so `.board-frame` can measure its square size against
+     the room this element actually has, in each axis. `flex: 1` with
+     `min-height: 0` gives it a resolved height to measure, taken from the
+     `.app` column's `min-height: 100vh`. Aligned to the block-axis start
+     rather than centred, so a board too large for the container overflows
+     downward into scrollable space instead of being clipped off the top. */
+  container-type: size;
   display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   justify-content: center;
+  align-items: flex-start;
 }

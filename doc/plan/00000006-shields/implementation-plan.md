@@ -446,7 +446,20 @@ pass **unchanged in expectation** (the rename aside): the accessible names, the
 
 ## Step 2 — Size the board from its container
 
-Status: pending
+Status: committed
+
+Notes: Replaced `--square: clamp(24px, 4vmin, 42px)` in `src/board/Board.css`
+with `max(40px, 6.25cqmin)` (one sixteenth of `.app__board`'s smaller
+dimension, floored at 40px), and rewrote the header comment accordingly. Made
+`.app__board` in `src/App.css` a size container (`container-type: size`) with
+`flex: 1` and `min-height: 0` to resolve a height from the `.app` column,
+`width: 100%`, `justify-content: center` for horizontal centring, and
+`align-items: flex-start` so an oversized board overflows downward into
+scrollable space rather than being clipped at the top. Used the size
+container as planned — no fallback needed. `npm run typecheck`, `npm run
+lint`, `npm test` (76 tests), `npm run format:check` and `npm run build` all
+pass. Kept the 40px floor as specified; did not adjust it. This step's
+verification is manual and is left for the owner to check with `npm run dev`.
 
 Change how a square's size is decided, per plan decision 7. In
 `src/board/Board.css`, `--square` stops being `clamp(24px, 4vmin, 42px)` and
