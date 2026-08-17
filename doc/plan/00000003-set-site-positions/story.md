@@ -227,3 +227,21 @@ site is a bay; and `RULES_VERSION` matches `rules.md`.
   the property they were standing in for.
 - How the accessible name words a site and its state, alongside the position
   and bay information story 00000001 already established.
+
+## Addendum — the dev server now sees file changes
+
+Added after the story was signed off, and outside its scope: a change to
+`vite.config.ts` picked up from the repository this project was based on.
+
+Inside the dev container the filesystem's change events do not reach Vite, so
+the dev server never noticed an edit and had to be restarted to show one. The
+watcher now polls instead (`server.watch: { usePolling: true, interval: 300 }`),
+which makes hot reloading work normally: saving a file updates the page.
+
+The polling covers the project's own files only. Vite builds the watcher's
+ignore list itself — `node_modules`, `.git`, `test-results`, the cache
+directory and the build output — and this change passes no ignore list of its
+own, so none of that is overridden and none of it is polled.
+
+This has no effect on the game, the rules, or the built app: `server` options
+apply to the dev server alone and are absent from a production build.
