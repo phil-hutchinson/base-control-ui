@@ -1,0 +1,16 @@
+.ship-icon {
+  /* Fills the square; the artwork itself occupies roughly 70% of that,
+     within its viewBox, leaving every corner free for a future shield
+     count. */
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ship-icon--green {
+  color: var(--color-green);
+}
+
+.ship-icon--red {
+  color: var(--color-red);
+}

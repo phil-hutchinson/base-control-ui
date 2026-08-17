@@ -1,0 +1,39 @@
+/* Generic accessible grid. No board/piece geometry here - `.accessible-grid`
+   only establishes a CSS grid box; the consumer supplies row/column sizing
+   (e.g. grid-template-columns, --square) via its own `className` on the same
+   element. `.accessible-grid__row` is `display: contents` so the `role="row"`
+   wrapper divs required by the ARIA grid pattern don't break CSS Grid layout
+   - their `role="gridcell"` children still lay out as direct grid items. */
+
+.accessible-grid {
+  display: grid;
+}
+
+.accessible-grid__row {
+  display: contents;
+}
+
+.accessible-grid__cell {
+  /* Positioning context for the focus-ring overlay below. */
+  position: relative;
+}
+
+.accessible-grid__cell:focus {
+  /* We draw our own ring on `:focus-visible` below; suppress the UA default
+     outline so mouse focus shows nothing and keyboard focus shows only our
+     ring. */
+  outline: none;
+}
+
+.accessible-grid__cell:focus-visible::after {
+  /* The keyboard-focus ring, drawn as an overlay pseudo-element rather than
+     an `outline`: a consumer's positioned cell content paints its own
+     background over a negatively-offset outline, so the ring is drawn as a
+     later-painted overlay instead. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--focus-ring);
+  z-index: 2;
+  pointer-events: none;
+}

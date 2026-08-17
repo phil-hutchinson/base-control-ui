@@ -61,6 +61,35 @@ management, live-region content — is tested with **Testing Library** and
 with **axe-core** directly (rather than a thin wrapper package, per the
 dependency policy below).
 
+A jsdom test file follows this recipe:
+
+```tsx
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import axe from "axe-core";
+import { afterEach, describe, expect, it } from "vitest";
+
+afterEach(cleanup);
+```
+
+- The docblock must be the file's first line.
+- Import `@testing-library/jest-dom/vitest` directly in every DOM test file
+  rather than adding a `setupFiles` entry to `vite.config.ts`: a global setup
+  file would also load into the `node`-environment pure tests, and per-file
+  imports keep the dependency visible where it is used.
+- Import `cleanup` from `@testing-library/react` and call it in `afterEach`.
+  `vite.config.ts` does not set `test.globals: true`, so Testing Library's
+  automatic cleanup never registers itself; without this line, renders from
+  earlier tests in the same file stay mounted, and the symptom is not an
+  obvious one — axe reports spurious violations (typically a duplicate
+  landmark) from a test that never touched the element axe is complaining
+  about.
+- When running axe, disable the `color-contrast` rule: `jsdom` has no layout
+  or canvas, so the rule cannot produce a meaningful result and instead prints
+  a `HTMLCanvasElement.prototype.getContext` "not implemented" error to stderr
+  on every run.
+
 Automated coverage does not replace the manual gates. Anything about how the
 game _looks_ or _feels_, and real screen-reader behaviour, is verified by hand
 against a keyboard and a screen reader before a change ships.
