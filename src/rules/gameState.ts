@@ -8,6 +8,9 @@ import { STARTING_FLEET, type Side, type ShipId } from "./fleet";
 import { SITES, type SiteState, startingSiteState } from "./sites";
 import type { ShieldCount } from "./shields";
 
+/** How many actions a side takes each ply (rules.md §5). */
+export const ACTIONS_PER_PLY = 2;
+
 /** One ship: its stable identity, side, current square and shield count. */
 export interface Ship {
   readonly id: ShipId;
@@ -53,7 +56,7 @@ export function startingGameState(): GameState {
     })),
     siteStates,
     sideToMove: "green",
-    actionsRemaining: 2,
+    actionsRemaining: ACTIONS_PER_PLY,
     movedThisPly: [],
   };
 }

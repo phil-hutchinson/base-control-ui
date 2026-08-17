@@ -899,7 +899,30 @@ starting position, and never via any fixture):
 
 ## Step 5 — Applying a move: actions, plies, the bay reset and the pass
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/ply.ts` with `applyMove` (returning `{ outcome:
+"applied", state, effects }` or `{ outcome: "refused", reason }` — refusals
+are returned, not thrown, per the plan, so Step 6's session reducer can
+pattern-match on `outcome` the same way it will on `moveRefusalReason`) and a
+separately exported `applyPassGuard`, called both internally after every
+applied move and directly (it is the only way to exercise the "state already
+has no legal move before any move is attempted" case §5 requires, and the
+plan's own termination test needs to call it without an actual move). The
+guard performs at most one pass per call — since only two sides exist, a
+single check-and-maybe-pass is enough to cover both real call sites and
+provably terminates, satisfying the "must not pass forever" requirement
+without a bounded-loop counter. `ACTIONS_PER_PLY` was added to
+`src/rules/gameState.ts` (not `ply.ts`) and consumed by both it and
+`ply.ts`: `gameState.ts` already held the literal, and `ply.ts` importing
+from `gameState.ts` (already a value dependency of `movement.ts`, which
+`ply.ts` also imports from) keeps the module graph acyclic, where the
+reverse direction would have made `gameState.ts` and `ply.ts` mutually
+dependent. `src/rules/ply.test.ts` covers all nine listed cases, building
+every state directly; states with a fully-idle side (no ships, or a single
+already-moved ship and no ships of the other side) are used deliberately in
+a couple of tests to exercise the guard, and the tests assert only the
+fields those cases don't disturb. No other deviation from the plan.
 
 Add `src/rules/ply.ts`, implementing §5 and §3.1's reset:
 
