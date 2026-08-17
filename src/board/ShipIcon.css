@@ -1,7 +1,6 @@
 .ship-icon {
-  /* Fills the square; the artwork itself occupies roughly 70% of that,
-     within its viewBox, leaving every corner free for a future shield
-     count. */
+  /* Fills the square. The hull sits scaled down inside its viewBox, leaving
+     the outer band clear for the shield ring drawn around it. */
   display: block;
   width: 100%;
   height: 100%;

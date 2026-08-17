@@ -546,7 +546,30 @@ order. Add a test that the result length always equals the count.
 
 ## Step 4 — Draw the arc ring
 
-Status: pending
+Status: committed
+
+Notes: `ShipIcon` now takes a required `shields: ShieldCount` prop and draws
+up to four stroked quarter-circle arcs inside its existing `100 x 100`
+viewBox, one per position from `litArcPositions` (`src/board/shieldArcs.ts`),
+each `currentColor`, unfilled, with butt caps and a `data-arc-position`
+attribute naming the position. The hull is wrapped in a `<g>` with a
+translate/scale/translate transform about (50,50) using an unchanged
+`HULL_SCALE` constant, rather than rewriting the path coordinates. Geometry
+(`RING_RADIUS`, `RING_STROKE_WIDTH`, `ARC_GAP_DEGREES`, `HULL_SCALE`) is four
+named constants at the values from plan decision 5 (42, 8, 14°, 0.72),
+untouched pending Step 7's manual tuning gate. Arc endpoints are computed with
+a small clock-angle helper (0° at top, clockwise), each arc's 90° quadrant
+trimmed by half the gap at both ends. Rewrote the stale "roughly 70%" /
+"every corner" comments in `ShipIcon.tsx` and `ShipIcon.css`. `Board.tsx`
+passes `occupant.shields` through; with the starting fleet still all on 0
+(Step 1), the board shows no arcs yet, as expected. Added
+`src/board/ShipIcon.test.tsx` rendering the icon directly at each count 0–4,
+asserting arc count/order via `data-arc-position`, that both hulls still
+render distinct `d` paths, that the `<svg>` stays `aria-hidden` with no
+title/desc even with arcs present, and an axe check (color-contrast disabled)
+at every count. No deviations from the plan. `npm run typecheck`, `npm run
+lint`, `npm test` (90 tests), `npm run format:check` and `npm run build` all
+pass.
 
 Give `ShipIcon` a required `shields` prop and draw the ring, per plan decisions
 4 and 5:

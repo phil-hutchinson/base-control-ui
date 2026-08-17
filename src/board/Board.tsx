@@ -38,7 +38,9 @@ const BOARD_ROWS: GridCellDescriptor[][] = Array.from(
           <div
             className={bay ? "board-square board-square--bay" : "board-square"}
           >
-            {occupant && <ShipIcon side={occupant.side} />}
+            {occupant && (
+              <ShipIcon side={occupant.side} shields={occupant.shields} />
+            )}
           </div>
         ),
         label: squareLabel(square, bay, occupant?.side),
