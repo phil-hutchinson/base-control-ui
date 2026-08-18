@@ -6,6 +6,15 @@
 // is spoken, not drawn: the ring here is a plain cue, the same for a win, a
 // loss or a mutual return.
 //
+// A bay's return-position cues (rules.md §7.1) are drawn as small corner
+// triangles, on screen all game regardless of selection: solid for return
+// position 1, a stroked line alone for the current receptacle. Each triangle
+// is a single new line closing a corner of the square's own border, which
+// already supplies the triangle's other two sides. Where a bay is both,
+// only the solid triangle is drawn — an outline beneath a solid triangle of
+// the same geometry would be invisible anyway — and the accessible name says
+// both.
+//
 // Having moved this ply and a ship's condition (no action available, or
 // owing an action) are separate, independently optional fields from each
 // other and from the selection mark, so a square can carry any combination
@@ -19,7 +28,12 @@
 // collide with a condition mark at the bottom.
 
 import type { CSSProperties } from "react";
-import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
+import type {
+  ReturnCue,
+  ShipCondition,
+  SquareMark,
+  SquareOccupant,
+} from "./squareLabel";
 import type { SiteState } from "../rules/sites";
 import { ShipIcon } from "./ShipIcon";
 import { SiteMarker } from "./SiteMarker";
@@ -28,6 +42,7 @@ import "./BoardSquare.css";
 export interface BoardSquareProps {
   readonly isBay: boolean;
   readonly siteState?: SiteState;
+  readonly returnCue?: ReturnCue;
   readonly occupant?: SquareOccupant;
   readonly hasMoved?: boolean;
   readonly condition?: ShipCondition;
@@ -52,6 +67,8 @@ const CHEVRON_HEIGHT = 10;
 const CHEVRON_BOTTOM_INSET = 8;
 const CHEVRON_STROKE_WIDTH = 5;
 const DAMPENED_OPACITY = 0.45;
+const RETURN_CUE_TRIANGLE_LEG = 22;
+const RETURN_CUE_STROKE_WIDTH = 4;
 
 interface BracketCorner {
   readonly x: number;
@@ -88,6 +105,41 @@ function bracketPath({ x, y, armX, armY }: BracketCorner): string {
   const horizontal = x + armX * SELECTED_BRACKET_LENGTH;
   const vertical = y + armY * SELECTED_BRACKET_LENGTH;
   return `M ${horizontal} ${y} L ${x} ${y} L ${x} ${vertical}`;
+}
+
+/**
+ * The square's four true corners, for the return-position cues: unlike
+ * `BRACKET_CORNERS` these sit exactly at the square's edge, not inset, so
+ * the triangle's two short legs run along the square's own border.
+ */
+const RETURN_CUE_CORNERS: readonly BracketCorner[] = [
+  { x: 0, y: 0, armX: 1, armY: 1 },
+  { x: 100, y: 0, armX: -1, armY: 1 },
+  { x: 100, y: 100, armX: -1, armY: -1 },
+  { x: 0, y: 100, armX: 1, armY: -1 },
+];
+
+/**
+ * One corner's filled triangle: the corner point and the two points
+ * `RETURN_CUE_TRIANGLE_LEG` along each edge, closed. The two edges along
+ * the square's own border are only nominal — the square's real border
+ * already draws them — so the only line this path adds that is not already
+ * on screen is the diagonal closing it.
+ */
+function cornerTrianglePath({ x, y, armX, armY }: BracketCorner): string {
+  const alongX = x + armX * RETURN_CUE_TRIANGLE_LEG;
+  const alongY = y + armY * RETURN_CUE_TRIANGLE_LEG;
+  return `M ${x} ${y} L ${alongX} ${y} L ${x} ${alongY} Z`;
+}
+
+/** One corner's diagonal alone: the same triangle's hypotenuse, with no line drawn along the square's own border. */
+function cornerDiagonal({ x, y, armX, armY }: BracketCorner) {
+  return {
+    x1: x + armX * RETURN_CUE_TRIANGLE_LEG,
+    y1: y,
+    x2: x,
+    y2: y + armY * RETURN_CUE_TRIANGLE_LEG,
+  };
 }
 
 /** A small solid disc marking a square the selected ship may legally move to. */
@@ -146,6 +198,57 @@ function SelectedMark() {
           strokeLinecap="round"
         />
       ))}
+    </svg>
+  );
+}
+
+/**
+ * Solid corner triangles marking return position 1 (rules.md §7.1), on
+ * screen for that bay all game regardless of selection. Drawn where a
+ * receptacle outline would collide with it, since an outline beneath a
+ * solid triangle of the same geometry would be invisible.
+ */
+function ReturnPositionMark() {
+  return (
+    <svg
+      className="board-square__mark board-square__mark--return-position"
+      viewBox="0 0 100 100"
+      aria-hidden="true"
+    >
+      {RETURN_CUE_CORNERS.map((corner) => (
+        <path
+          key={`${corner.x}-${corner.y}`}
+          d={cornerTrianglePath(corner)}
+          fill="currentColor"
+        />
+      ))}
+    </svg>
+  );
+}
+
+/** Stroked corner triangles (their diagonal alone) marking the bay a beaten ship would actually land in right now (rules.md §7.1). */
+function ReceptacleMark() {
+  return (
+    <svg
+      className="board-square__mark board-square__mark--receptacle"
+      viewBox="0 0 100 100"
+      aria-hidden="true"
+    >
+      {RETURN_CUE_CORNERS.map((corner) => {
+        const { x1, y1, x2, y2 } = cornerDiagonal(corner);
+        return (
+          <line
+            key={`${corner.x}-${corner.y}`}
+            x1={x1}
+            y1={y1}
+            x2={x2}
+            y2={y2}
+            stroke="currentColor"
+            strokeWidth={RETURN_CUE_STROKE_WIDTH}
+            strokeLinecap="round"
+          />
+        );
+      })}
     </svg>
   );
 }
@@ -216,6 +319,7 @@ function OwesActionMark() {
 export function BoardSquare({
   isBay,
   siteState,
+  returnCue,
   occupant,
   hasMoved,
   condition,
@@ -244,6 +348,11 @@ export function BoardSquare({
   return (
     <div className={classNames.join(" ")} style={style}>
       {siteState && <SiteMarker state={siteState} />}
+      {returnCue === "receptacle" && <ReceptacleMark />}
+      {(returnCue === "return-position" ||
+        returnCue === "return-position-and-receptacle") && (
+        <ReturnPositionMark />
+      )}
       {occupant && <ShipIcon side={occupant.side} shields={occupant.shields} />}
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}

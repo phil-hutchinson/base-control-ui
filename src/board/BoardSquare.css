@@ -37,6 +37,15 @@
   color: var(--color-text-dim);
 }
 
+/* The return-position cues are on screen all game regardless of selection,
+   so they take the bay's own cyan accent rather than the interaction
+   accent above: they read as part of the bay's furniture, not as part of
+   the "you are choosing an action" layer. */
+.board-square__mark--return-position,
+.board-square__mark--receptacle {
+  color: var(--bay-border);
+}
+
 /* A ship with no legal action available this ply — no legal move and no
    legal attack target, whether because it is pinned, because it has moved
    and has no target left, or because an obligation elsewhere in the fleet is

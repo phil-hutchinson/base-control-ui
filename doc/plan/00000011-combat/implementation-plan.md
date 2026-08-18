@@ -1589,7 +1589,37 @@ the board.
 
 ## Step 12 — The return position and its receptacle on the board
 
-Status: pending
+Status: committed
+
+Notes: Added `ReturnCue` (`"return-position" | "receptacle" |
+"return-position-and-receptacle"`) and its wording to `squareLabel.ts`,
+placed right after the `bay`/site segment; added the matching `returnCue`
+prop to `BoardSquareProps` and two new marks to `BoardSquare.tsx` — solid
+corner triangles (`ReturnPositionMark`) and stroked corner-diagonal lines
+(`ReceptacleMark`), each built from the same four true-corner points, one
+new line per corner as specified, taking the bay's `--bay-border` accent
+(`BoardSquare.css`); when a bay is both, only the solid mark renders.
+`Board.tsx` derives `returnPositionSquare`/`receptacleBay` fresh from
+`combat.ts` on every render and marks the matching squares. Added the tests
+the step lists to `squareLabel.test.ts`, `BoardSquare.test.tsx` and a new
+"return cues" describe block in `Board.test.tsx`.
+
+Deviation: `receptacleBay` throws when every bay is occupied, which
+`combat.ts` documents as a bug detector because §7.1's "there is always
+somewhere to go" argument only covers a fight actually in progress (its own
+two participants' vacated bays guarantee room). It does not cover the
+game's literal starting position, where all fourteen ships still sit in
+their own bays and no bay is empty at all — calling `receptacleBay`
+unconditionally on every render would have thrown immediately on load, since
+`App.tsx` renders `startingGameState` directly and Step 13's temporary
+fixture does not land until later. `Board.tsx` therefore checks whether any
+bay is currently empty (via `BAYS`) before asking for the receptacle, and
+shows no receptacle cue when none exists; `combat.ts` itself is unchanged
+and still throws as documented for its own (safe) use in `applyAttack`. This
+is a narrow, display-only guard, not a rules change, and is covered by its
+own test ("shows no receptacle wording anywhere when every bay is
+occupied..."). All of `npm run typecheck`, `npm run lint`, `npm test` (466
+passed), `npm run format:check` and `npm run build` pass.
 
 Show, all game, where a beaten ship would go.
 

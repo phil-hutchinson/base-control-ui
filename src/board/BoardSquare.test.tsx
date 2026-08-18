@@ -280,6 +280,55 @@ describe("BoardSquare", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders four filled corner triangles for return position 1, and none with no return cue", () => {
+    const { container: marked } = render(
+      <BoardSquare isBay={true} returnCue="return-position" />,
+    );
+    const { container: unmarked } = render(<BoardSquare isBay={true} />);
+
+    const triangles = marked.querySelectorAll(
+      ".board-square__mark--return-position path",
+    );
+    expect(triangles).toHaveLength(4);
+    for (const triangle of triangles) {
+      expect(triangle).toHaveAttribute("fill", "currentColor");
+    }
+    expect(
+      unmarked.querySelector(".board-square__mark--return-position"),
+    ).toBeNull();
+  });
+
+  it("renders four stroked corner lines for the receptacle, and none with no return cue", () => {
+    const { container: marked } = render(
+      <BoardSquare isBay={true} returnCue="receptacle" />,
+    );
+    const { container: unmarked } = render(<BoardSquare isBay={true} />);
+
+    const lines = marked.querySelectorAll(
+      ".board-square__mark--receptacle line",
+    );
+    expect(lines).toHaveLength(4);
+    for (const line of lines) {
+      expect(line).toHaveAttribute("stroke", "currentColor");
+    }
+    expect(
+      unmarked.querySelector(".board-square__mark--receptacle"),
+    ).toBeNull();
+  });
+
+  it("draws only the solid return-position triangles when a bay is both position 1 and the receptacle", () => {
+    const { container } = render(
+      <BoardSquare isBay={true} returnCue="return-position-and-receptacle" />,
+    );
+
+    expect(
+      container.querySelectorAll(".board-square__mark--return-position path"),
+    ).toHaveLength(4);
+    expect(
+      container.querySelector(".board-square__mark--receptacle"),
+    ).toBeNull();
+  });
+
   it("reports no axe violations for any condition or having-moved combination, and keeps every mark out of the accessibility tree", async () => {
     const conditions: readonly (ShipCondition | undefined)[] = [
       undefined,
