@@ -1822,7 +1822,12 @@ If a check fails, record what was seen in this step's Notes before any fix.
 
 ## Step 15 — Manual gate: screen reader
 
-Status: pending
+Status: committed
+
+Notes: Taken by the owner against the Step 12 fixture, with keyboard
+navigation exercised alongside the narration, and confirmed working. No
+findings and no wording changes asked for, so `announcements.ts` and
+`squareLabel.ts` are unchanged by this gate.
 
 **Runs after Step 18, not before it.** The owner asked to take the
 screen-reader pass last. It cannot run after Step 16, because Step 16 deletes
