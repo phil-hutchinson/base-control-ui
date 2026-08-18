@@ -1115,7 +1115,24 @@ wording rot.
 
 ## Step 8 — `AccessibleGrid` learns to activate a cell
 
-Status: pending
+Status: committed
+
+Notes: Added `onActivate` and `onDismiss` to `AccessibleGridProps`; a click on
+a focusable cell and Enter/Space on the focused cell call `onActivate` with
+its `GridPosition`, Space has its default prevented, arrow keys are
+unaffected, and Escape (handled first in `handleKeyDown`, independent of
+`focused`) calls `onDismiss`. The per-cell `onClick` is only wired for
+focusable cells; non-focusable cells get no click handler at all. The
+`jsx-a11y/click-events-have-key-events` disable comment had to sit above the
+`<div` itself rather than above the `onClick` attribute — ESLint attributes
+the violation to the opening JSX element's line, not the offending
+attribute's line, so a comment placed where decision text suggested (`Do not
+widen the lint configuration`) would silently not suppress anything; this was
+caught by `npm run lint` reporting the error one location and an "unused
+eslint-disable" warning at the other, and fixed by moving the comment.
+Extended `AccessibleGrid.test.tsx` with the eight cases from this step's
+verification list, using the existing 2×3 fixture; no fixture change needed.
+No other deviation from the plan.
 
 Extend `src/board/grid/AccessibleGrid.tsx` with cell activation, in its
 existing piece-agnostic spirit — it must not learn what a ship, a side or a

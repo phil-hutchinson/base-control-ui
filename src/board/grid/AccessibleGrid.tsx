@@ -1,13 +1,16 @@
 // Generic, piece-agnostic accessible grid. Implements the WAI-ARIA grid
 // composite-widget pattern: a `role="grid"` container of `role="row"` rows of
 // `role="gridcell"` cells, roving tabindex (exactly one cell tabbable at a
-// time, the rest -1), and arrow-key navigation driven by the pure
-// `nextFocusPosition` (./gridNavigation.ts).
+// time, the rest -1), arrow-key navigation driven by the pure
+// `nextFocusPosition` (./gridNavigation.ts), and cell activation (click,
+// Enter, Space) plus dismissal (Escape).
 //
 // This component knows nothing about pieces, sides, bays, or board
 // orientation - only about a 2-D array of `GridCellDescriptor`s (rendered
-// content, accessible label, and a focusable flag). Consumers map their own
-// domain coordinates onto this generic row/column index space.
+// content, accessible label, and a focusable flag), and generic
+// "activate"/"dismiss" callbacks any composite widget of this kind could use.
+// Consumers map their own domain coordinates onto this generic row/column
+// index space and decide what activation and dismissal mean.
 
 import {
   useCallback,
@@ -41,6 +44,11 @@ export interface AccessibleGridProps {
   /** Cell descriptors in screen order: `rows[row][column]`. Must be rectangular. */
   readonly rows: readonly (readonly GridCellDescriptor[])[];
   readonly className?: string;
+  /** Called with a focusable cell's position when the player activates it
+   * (click, Enter, or Space). */
+  readonly onActivate?: (position: GridPosition) => void;
+  /** Called when the player presses Escape anywhere in the grid. */
+  readonly onDismiss?: () => void;
 }
 
 const ARROW_KEYS: ReadonlySet<string> = new Set([
@@ -66,6 +74,8 @@ export function AccessibleGrid({
   label,
   rows,
   className,
+  onActivate,
+  onDismiss,
 }: AccessibleGridProps) {
   const rowCount = rows.length;
   const columnCount = rowCount > 0 ? rows[0].length : 0;
@@ -112,7 +122,23 @@ export function AccessibleGrid({
   }, [focused]);
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (focused === undefined || !isArrowKey(event.key)) {
+    if (event.key === "Escape") {
+      onDismiss?.();
+      return;
+    }
+    if (focused === undefined) {
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      if (event.key === " ") {
+        // Prevent the page from scrolling on Space, which is the browser's
+        // default action for a focused element.
+        event.preventDefault();
+      }
+      onActivate?.(focused);
+      return;
+    }
+    if (!isArrowKey(event.key)) {
       return;
     }
     event.preventDefault();
@@ -159,6 +185,12 @@ export function AccessibleGrid({
               focused.row === rowIndex &&
               focused.column === columnIndex;
             return (
+              // The cell's keyboard activation (Enter/Space) is handled by
+              // the grid's own `onKeyDown` above, not here - a click is just
+              // the pointer equivalent of the same "activate this cell"
+              // action. eslint-plugin-jsx-a11y checks each element in
+              // isolation and cannot see that, hence the disable.
+              // eslint-disable-next-line jsx-a11y/click-events-have-key-events
               <div
                 key={columnIndex}
                 ref={(element) => {
@@ -182,6 +214,9 @@ export function AccessibleGrid({
                     setFocused(position);
                   }
                 }}
+                onClick={
+                  cell.focusable ? () => onActivate?.(position) : undefined
+                }
               >
                 {cell.content}
               </div>

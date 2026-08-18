@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AccessibleGrid, type GridCellDescriptor } from "./AccessibleGrid.tsx";
 
 afterEach(cleanup);
@@ -138,6 +138,127 @@ describe("AccessibleGrid", () => {
         // jsdom has no layout or canvas, so this rule cannot produce a
         // meaningful result here and instead prints a spurious
         // getContext-not-implemented error to stderr.
+        "color-contrast": { enabled: false },
+      },
+    });
+
+    expect(results.violations).toEqual([]);
+  });
+
+  it("calls onActivate once with a cell's position when it is clicked", async () => {
+    const user = userEvent.setup();
+    const onActivate = vi.fn();
+    render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        onActivate={onActivate}
+      />,
+    );
+
+    await user.click(cell("D"));
+
+    expect(onActivate).toHaveBeenCalledTimes(1);
+    expect(onActivate).toHaveBeenCalledWith({ row: 1, column: 0 });
+  });
+
+  it("calls onActivate with the focused position on Enter and on Space", async () => {
+    const user = userEvent.setup();
+    const onActivate = vi.fn();
+    render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        onActivate={onActivate}
+      />,
+    );
+
+    cell("A").focus();
+    await user.keyboard("[Enter]");
+    expect(onActivate).toHaveBeenCalledTimes(1);
+    expect(onActivate).toHaveBeenLastCalledWith({ row: 0, column: 0 });
+
+    await user.keyboard("[ArrowDown]");
+    await user.keyboard("[Space]");
+    expect(onActivate).toHaveBeenCalledTimes(2);
+    expect(onActivate).toHaveBeenLastCalledWith({ row: 1, column: 0 });
+  });
+
+  it("prevents Space's default action so the page does not scroll", () => {
+    render(<AccessibleGrid label="Fixture grid" rows={rows} />);
+
+    cell("A").focus();
+    const event = new KeyboardEvent("keydown", {
+      key: " ",
+      bubbles: true,
+      cancelable: true,
+    });
+    cell("A").dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it("does not call onActivate for arrow keys, and still moves focus", async () => {
+    const user = userEvent.setup();
+    const onActivate = vi.fn();
+    render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        onActivate={onActivate}
+      />,
+    );
+
+    cell("A").focus();
+    await user.keyboard("[ArrowDown]");
+
+    expect(cell("D")).toHaveFocus();
+    expect(onActivate).not.toHaveBeenCalled();
+  });
+
+  it("calls onDismiss on Escape, and no other key does", async () => {
+    const user = userEvent.setup();
+    const onDismiss = vi.fn();
+    render(
+      <AccessibleGrid label="Fixture grid" rows={rows} onDismiss={onDismiss} />,
+    );
+
+    cell("A").focus();
+    await user.keyboard("[ArrowDown]");
+    await user.keyboard("[Enter]");
+    expect(onDismiss).not.toHaveBeenCalled();
+
+    await user.keyboard("[Escape]");
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("behaves exactly as before when neither prop is supplied", async () => {
+    const user = userEvent.setup();
+    render(<AccessibleGrid label="Fixture grid" rows={rows} />);
+
+    cell("A").focus();
+    await expect(user.keyboard("[Enter]")).resolves.not.toThrow();
+    await expect(user.keyboard("[Space]")).resolves.not.toThrow();
+    await expect(user.keyboard("[Escape]")).resolves.not.toThrow();
+    await expect(user.click(cell("D"))).resolves.not.toThrow();
+
+    cell("A").focus();
+    await user.keyboard("[ArrowRight]");
+    expect(cell("C")).toHaveFocus();
+  });
+
+  it("has no static accessibility violations with activation and dismissal wired up", async () => {
+    const { container } = render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        onActivate={() => {}}
+        onDismiss={() => {}}
+      />,
+    );
+
+    const results = await axe.run(container, {
+      rules: {
         "color-contrast": { enabled: false },
       },
     });
