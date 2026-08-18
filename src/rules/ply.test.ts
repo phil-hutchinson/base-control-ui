@@ -320,7 +320,10 @@ describe("applyMove", () => {
     expect(second.state.sideToMove).toBe("red");
     expect(second.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
     expect(second.state.movedThisPly).toEqual([]);
-    expect(second.effects).toEqual([{ type: "ply-ended", sideToMove: "red" }]);
+    expect(second.state.plyNumber).toBe(2);
+    expect(second.effects).toEqual([
+      { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+    ]);
   });
 
   it("refuses a second move of a ship that has already moved this ply, but allows it again next ply", () => {
@@ -370,10 +373,12 @@ describe("applyPassGuard", () => {
     expect(result.state.sideToMove).toBe("red");
     expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
     expect(result.state.movedThisPly).toEqual([]);
+    expect(result.state.plyNumber).toBe(2);
     expect(result.effect).toEqual({
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      endOfTurn: [],
     });
   });
 
@@ -392,10 +397,64 @@ describe("applyPassGuard", () => {
     const result = applyPassGuard(state);
 
     expect(result.state.sideToMove).toBe("red");
+    expect(result.state.plyNumber).toBe(2);
     expect(result.effect).toEqual({
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      endOfTurn: [],
     });
+  });
+
+  it("advances the ply number on every pass, keeping green on the odd plies and red on the even ones", () => {
+    let state = buildState({ ships: [] });
+
+    for (let expectedPly = 1; expectedPly <= 6; expectedPly++) {
+      expect(state.plyNumber).toBe(expectedPly);
+      expect(state.sideToMove).toBe(expectedPly % 2 === 1 ? "green" : "red");
+
+      const result = applyPassGuard(state);
+      expect(result.effect).toBeDefined();
+      state = result.state;
+    }
+  });
+
+  it("runs the end-of-turn sequence for the passing side, so a pinned ship on a charged node still gains a shield", () => {
+    // green-1 sits on K5, a charged site, with every one of its shields-3
+    // destinations (the eight neighbouring squares) blocked by a red ship,
+    // so green has no legal move at all and passes.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "K5", 3),
+        ship("red-1", "red", "K4"),
+        ship("red-2", "red", "K6"),
+        ship("red-3", "red", "J5"),
+        ship("red-4", "red", "L5"),
+        ship("red-5", "red", "J4"),
+        ship("red-6", "red", "J6"),
+        ship("red-7", "red", "L4"),
+        ship("red-8", "red", "L6"),
+      ],
+      siteStates: { K5: "charged" },
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.effect).toEqual({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      endOfTurn: [
+        {
+          type: "shield-gained",
+          shipId: "green-1",
+          side: "green",
+          square: squareFromName("K5"),
+          shields: 4,
+        },
+      ],
+    });
+    const passedShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(passedShip?.shields).toBe(4);
   });
 });

@@ -915,7 +915,33 @@ Verification (automated): `npm test` — extend `src/rules/nodes.test.ts`:
 
 ## Step 6 — §8.7: the end-of-turn sequence
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/endOfTurn.ts` exporting `EndOfTurnEffect` (new
+`ShieldGainedEffect`, `NodeRanOutEffect`, `ShipStrandedEffect`, plus the
+reused `SiteCooledEffect`/`SiteWokenEffect` from `nodes.ts`) and
+`runEndOfTurn(state)`, implementing all six §8.7 steps in order over `SITES`
+order for determinism; steps 2 and 6 are comment-only stubs naming §8.4 and
+§7.1. Wired into `src/rules/ply.ts`: added `PlyEndedEffect` (named type,
+replacing the former inline `ply-ended` member) and grew both it and
+`PassEffect` with `side` and `endOfTurn: readonly EndOfTurnEffect[]`; the
+second-action branch of `applyMove` and `applyPassGuard` both now call
+`runEndOfTurn` before incrementing `plyNumber` and swapping `sideToMove`,
+exactly as specified — including for a pass, per the owner-confirmed
+decision 6. `src/game/session.ts` needed no change and still type-checks;
+`createSession`'s starting-pass test was extended with a `plyNumber` check.
+Fixed mechanical fallout from the widened effect shapes in
+`src/board/announcements.test.ts`, `src/game/session.test.ts` and existing
+`src/rules/ply.test.ts` literals (added `side`/`endOfTurn: []`), without
+touching `announcements.ts` itself (its field access is a subset of the
+grown shape and needed no change; new wording is a later step). Added
+`src/rules/endOfTurn.test.ts` (6 tests) and additions to `src/rules/ply.test.ts`
+(2 tests) covering all eight of the step's verification points, including a
+full independent-per-ply sweep for §8.3's "five grant opportunities" and a
+chained 17-call simulation for the eighteen-ply round trip plus the
+step-3-then-step-5 same-ply draw. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (295 tests), `npm run
+format:check` and `npm run build` all pass.
 
 Add `src/rules/endOfTurn.ts`: the six steps of §8.7, in the document's order,
 run once at the end of a ply. Wire it into `src/rules/ply.ts`.

@@ -332,7 +332,9 @@ describe("sessionReducer — a full ply", () => {
     if (session.lastEvent?.type === "moved") {
       expect(session.lastEvent.effects).toContainEqual({
         type: "ply-ended",
+        side: "green",
         sideToMove: "red",
+        endOfTurn: [],
       });
     }
   });
@@ -369,10 +371,12 @@ describe("createSession", () => {
 
     expect(session.state.sideToMove).toBe("red");
     expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
+    expect(session.state.plyNumber).toBe(2);
     expect(session.lastEvent).toEqual({
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      endOfTurn: [],
     });
   });
 });

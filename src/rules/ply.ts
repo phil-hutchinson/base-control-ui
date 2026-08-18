@@ -8,6 +8,7 @@
 
 import { isBay } from "./bays";
 import { type Square, squareName } from "./board";
+import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
 import type { Side, ShipId } from "./fleet";
 import { ACTIONS_PER_PLY, type GameState } from "./gameState";
 import {
@@ -27,13 +28,22 @@ export interface PassEffect {
   readonly type: "ply-passed";
   readonly side: Side;
   readonly sideToMove: Side;
+  readonly endOfTurn: readonly EndOfTurnEffect[];
+}
+
+/** A ply ended because its second action was spent (rules.md §5, §8.7). */
+export interface PlyEndedEffect {
+  readonly type: "ply-ended";
+  readonly side: Side;
+  readonly sideToMove: Side;
+  readonly endOfTurn: readonly EndOfTurnEffect[];
 }
 
 /** Something that happened as a result of applying a move, beyond the move itself. */
 export type MoveEffect =
   | { readonly type: "shields-reset"; readonly shipId: ShipId }
   | SiteChargedEffect
-  | { readonly type: "ply-ended"; readonly sideToMove: Side }
+  | PlyEndedEffect
   | PassEffect;
 
 /** A move applied successfully, with the resulting state and what happened. */
@@ -53,10 +63,12 @@ export type ApplyMoveResult = AppliedMove | RefusedMove;
 
 /**
  * If the side to move has no legal move at all with any eligible ship, its
- * ply passes: the moved-this-ply marks clear, the action count resets to
- * `ACTIONS_PER_PLY`, and the other side becomes the side to move (rules.md
- * §5). Only the side to move is checked — the side passed to is not — so
- * this makes exactly one pass, never a second one back.
+ * ply passes: the end-of-turn sequence runs for it (a passed ply is still a
+ * turn), the moved-this-ply marks clear, the action count resets to
+ * `ACTIONS_PER_PLY`, the ply number advances and the other side becomes the
+ * side to move (rules.md §5, §8.7). Only the side to move is checked — the
+ * side passed to is not — so this makes exactly one pass, never a second one
+ * back.
  */
 export function applyPassGuard(state: GameState): {
   readonly state: GameState;
@@ -68,8 +80,10 @@ export function applyPassGuard(state: GameState): {
 
   const side = state.sideToMove;
   const sideToMove = otherSide(side);
+  const endOfTurn = runEndOfTurn(state);
   const passedState: GameState = {
-    ...state,
+    ...endOfTurn.state,
+    plyNumber: endOfTurn.state.plyNumber + 1,
     sideToMove,
     actionsRemaining: ACTIONS_PER_PLY,
     movedThisPly: [],
@@ -77,7 +91,12 @@ export function applyPassGuard(state: GameState): {
 
   return {
     state: passedState,
-    effect: { type: "ply-passed", side, sideToMove },
+    effect: {
+      type: "ply-passed",
+      side,
+      sideToMove,
+      endOfTurn: endOfTurn.effects,
+    },
   };
 }
 
@@ -144,14 +163,22 @@ export function applyMove(
       actionsRemaining,
     };
   } else {
-    const sideToMove = otherSide(state.sideToMove);
+    const side = wake.state.sideToMove;
+    const sideToMove = otherSide(side);
+    const endOfTurn = runEndOfTurn(wake.state);
     moved = {
-      ...wake.state,
+      ...endOfTurn.state,
+      plyNumber: endOfTurn.state.plyNumber + 1,
       sideToMove,
       actionsRemaining: ACTIONS_PER_PLY,
       movedThisPly: [],
     };
-    effects.push({ type: "ply-ended", sideToMove });
+    effects.push({
+      type: "ply-ended",
+      side,
+      sideToMove,
+      endOfTurn: endOfTurn.effects,
+    });
   }
 
   const { state: settled, effect: passEffect } = applyPassGuard(moved);

@@ -65,7 +65,9 @@ describe("announcementFor", () => {
       side: "green",
       from: squareAt("G", 7),
       to: squareAt("H", 8),
-      effects: [{ type: "ply-ended", sideToMove: "red" }],
+      effects: [
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
@@ -112,7 +114,7 @@ describe("announcementFor", () => {
       to: squareAt("A", 10),
       effects: [
         { type: "shields-reset", shipId: "red-2" },
-        { type: "ply-ended", sideToMove: "green" },
+        { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
@@ -129,8 +131,8 @@ describe("announcementFor", () => {
       from: squareAt("G", 7),
       to: squareAt("H", 8),
       effects: [
-        { type: "ply-ended", sideToMove: "red" },
-        { type: "ply-passed", side: "red", sideToMove: "green" },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+        { type: "ply-passed", side: "red", sideToMove: "green", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
@@ -144,6 +146,7 @@ describe("announcementFor", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      endOfTurn: [],
     };
     expect(announcementFor(event)).toBe(
       "Red has no legal move, so the turn passes. Green's turn, 2 actions left.",
