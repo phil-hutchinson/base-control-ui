@@ -1604,7 +1604,16 @@ The gates that use it are Steps 15–17.
 
 ## Step 15 — Manual gate: movement (ranges, blocking, sites, bays)
 
-Status: pending
+Status: committed
+
+Notes: Passed on the first run. The owner confirmed all five checks against
+the fixture — the five ranges and the absence of a three-square diagonal,
+friendly and enemy ships blocking identically, the dormant and depleted sites
+refused as destinations while remaining flyable over, the bay stripping
+shields only on landing, and the three markings legible against every square
+combination including in greyscale. The Step 11 marking geometry needed no
+adjustment: the disc radius, bracket length and inset, bar size and spent
+opacity all stand at their planned values.
 
 No code. `story.md`'s manual gates 1–4, taken with the fixture in place — the
 only moment the board can show all five ranges, all four site states, and a
