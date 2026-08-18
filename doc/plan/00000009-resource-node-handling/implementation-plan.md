@@ -599,7 +599,18 @@ sits above 0.3.
 
 ## Step 2 — The seeded random generator
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/random.ts` with `mulberry32` (seed in, `[value,
+nextSeed]` out, matching the published algorithm but returning the advanced
+seed instead of closing over it) and `drawIndex` (seed and count in, `[index,
+nextSeed]` out, throwing `RangeError` for a non-positive-integer count). Added
+`src/rules/random.test.ts` covering determinism, a golden five-pair sequence
+generated once from the implementation and recorded as literals, range over
+5,000 steps, uniformity over 7 buckets at 70,000 samples with a fixed seed,
+and the index draw's bounds/RangeError cases. No deviation from the plan;
+`npm run typecheck`, `npm run lint`, `npm test`, `npm run format:check` and
+`npm run build` all pass.
 
 Add `src/rules/random.ts`: a pure, seeded generator, the only source of
 randomness the app will ever have (`Math.random` is banned by lint). Two
