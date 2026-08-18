@@ -1,18 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { STARTING_RETURN_POSITION_INDEX } from "./bays";
+import { CLOCKWISE_BAYS, STARTING_RETURN_POSITION_INDEX } from "./bays";
 import { type Square, squareFromName, squareName } from "./board";
 import {
   adjacentSquares,
   attackRefusalReason,
   legalTargets,
+  receptacleBay,
+  resolveFight,
+  returnPositionSquare,
   sevenOnlyAttackRefusalReason,
   sevenOnlyLegalTargets,
 } from "./combat";
 import type { ShipId } from "./fleet";
+import { startingGameState } from "./gameState";
 import type { GameState, Ship, SiteStatus } from "./gameState";
 import { reachFrom } from "./movement";
-import type { ShieldCount } from "./shields";
+import { MAX_SHIELDS, MIN_SHIELDS, type ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
+
+const ALL_SHIELD_COUNTS: readonly ShieldCount[] = [0, 1, 2, 3, 4];
 
 function ship(
   id: ShipId,
@@ -40,6 +46,7 @@ function buildState(config: {
   movedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
   actionsRemaining?: number;
+  returnPositionIndex?: number;
 }): GameState {
   return {
     ships: config.ships,
@@ -49,7 +56,8 @@ function buildState(config: {
     movedThisPly: config.movedThisPly ?? [],
     plyNumber: 1,
     randomSeed: 1,
-    returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+    returnPositionIndex:
+      config.returnPositionIndex ?? STARTING_RETURN_POSITION_INDEX,
   };
 }
 
@@ -258,5 +266,108 @@ describe("attackRefusalReason / legalTargets with the §8.5 obligation", () => {
     expect(
       attackRefusalReason(state, "green-2", squareFromName("B1")),
     ).toBeUndefined();
+  });
+});
+
+describe("resolveFight", () => {
+  it("decides every combination of 0-4 against 0-4 against winner - (loser + 1)", () => {
+    for (const attackerShields of ALL_SHIELD_COUNTS) {
+      for (const defenderShields of ALL_SHIELD_COUNTS) {
+        const outcome = resolveFight(attackerShields, defenderShields);
+
+        if (attackerShields === defenderShields) {
+          expect(outcome).toEqual({ result: "mutual-return" });
+          continue;
+        }
+
+        if (attackerShields > defenderShields) {
+          expect(outcome).toEqual({
+            result: "attacker-won",
+            winnerRemainingShields: attackerShields - (defenderShields + 1),
+          });
+        } else {
+          expect(outcome).toEqual({
+            result: "defender-won",
+            winnerRemainingShields: defenderShields - (attackerShields + 1),
+          });
+        }
+
+        if (outcome.result !== "mutual-return") {
+          expect(outcome.winnerRemainingShields).toBeGreaterThanOrEqual(
+            MIN_SHIELDS,
+          );
+          expect(outcome.winnerRemainingShields).toBeLessThan(MAX_SHIELDS);
+        }
+      }
+    }
+  });
+
+  it("costs exactly one shield to beat a 0-shield ship", () => {
+    expect(resolveFight(1, 0)).toEqual({
+      result: "attacker-won",
+      winnerRemainingShields: 0,
+    });
+  });
+
+  it("leaves a 4-shield ship on 1 after beating a 2-shield ship (§7's worked example)", () => {
+    expect(resolveFight(4, 2)).toEqual({
+      result: "attacker-won",
+      winnerRemainingShields: 1,
+    });
+  });
+
+  it("lets the defender win, and pay, when it is the stronger side", () => {
+    expect(resolveFight(0, 3)).toEqual({
+      result: "defender-won",
+      winnerRemainingShields: 2,
+    });
+  });
+});
+
+describe("returnPositionSquare / receptacleBay", () => {
+  it("names H15 as position 1 in a starting state", () => {
+    expect(squareName(returnPositionSquare(startingGameState(1)))).toBe("H15");
+  });
+
+  it("gives position 1 itself as the receptacle when it is empty", () => {
+    const state = buildState({ ships: [] });
+    expect(squareName(receptacleBay(state))).toBe("H15");
+  });
+
+  it("gives the next bay clockwise when position 1 is occupied", () => {
+    const state = buildState({
+      ships: [ship("red-1", "red", "H15", 0)],
+    });
+    expect(squareName(receptacleBay(state))).toBe("L15");
+  });
+
+  it("gives the bay after that when the first two are occupied", () => {
+    const state = buildState({
+      ships: [ship("red-1", "red", "H15", 0), ship("red-2", "red", "L15", 0)],
+    });
+    expect(squareName(receptacleBay(state))).toBe("O14");
+  });
+
+  it("wraps around the end of the ring back to position 1", () => {
+    const lastRingIndex = CLOCKWISE_BAYS.length - 1;
+    const state = buildState({
+      ships: [
+        ship("red-1", "red", squareName(CLOCKWISE_BAYS[lastRingIndex]), 0),
+      ],
+      returnPositionIndex: lastRingIndex,
+    });
+    expect(squareName(receptacleBay(state))).toBe("H15");
+  });
+
+  it("is live: moving a ship out of what would be the first bay changes the answer", () => {
+    const occupiedState = buildState({
+      ships: [ship("red-1", "red", "H15", 0)],
+    });
+    expect(squareName(receptacleBay(occupiedState))).toBe("L15");
+
+    const vacatedState = buildState({
+      ships: [ship("red-1", "red", "E7", 0)],
+    });
+    expect(squareName(receptacleBay(vacatedState))).toBe("H15");
   });
 });

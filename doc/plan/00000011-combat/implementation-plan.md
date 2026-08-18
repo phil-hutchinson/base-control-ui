@@ -910,7 +910,20 @@ yet.
 
 ## Step 5 — `combat.ts`: the fight's arithmetic and §7.1's landing bay
 
-Status: pending
+Status: committed
+
+Notes: Added `FightOutcome` and `resolveFight(attackerShields, defenderShields)`
+to `src/rules/combat.ts` — a discriminated union of `"attacker-won"`,
+`"defender-won"` and `"mutual-return"`, asserting `winner − (loser + 1)` is a
+valid `ShieldCount` rather than clamping it — plus `returnPositionSquare(state)`
+(position 1's square) and `receptacleBay(state)` (the first empty bay in
+`bayNumberingFrom`'s order, judged against current occupancy via
+`shipsBySquare`, throwing if none is found). Added the tests specified:
+every 0-4 vs 0-4 combination against `winner − (loser + 1)`, the §7 worked
+example, the defender-wins direction, position 1 in a starting state, the
+receptacle at position 1/next/next-after-that/wrapped, and the live-receptacle
+case (moving a ship out of the would-be-first bay changes the answer). No
+deviation from the plan.
 
 Add to `src/rules/combat.ts` the two derivations a fight needs before anything
 can be applied: who wins and what it costs, and which bay a beaten ship goes to.

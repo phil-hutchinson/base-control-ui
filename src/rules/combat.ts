@@ -13,10 +13,11 @@ import {
   squareAt,
   squareName,
 } from "./board";
-import { isBay } from "./bays";
+import { CLOCKWISE_BAYS, bayNumberingFrom, isBay } from "./bays";
 import type { ShipId } from "./fleet";
 import { findShip } from "./moveLegality";
 import { type GameState, shipsBySquare } from "./gameState";
+import { type ShieldCount, isShieldCount } from "./shields";
 import { strandedShipIds } from "./stranded";
 
 /** The eight offsets to a square's neighbours, diagonals included. */
@@ -182,4 +183,98 @@ export function legalTargets(
   }
 
   return sevenOnlyLegalTargets(state, shipId);
+}
+
+/**
+ * The outcome of a fight (rules.md §7), decided by shield count alone.
+ * `winnerRemainingShields` is the winner's shield count after the fight,
+ * `winner − (loser + 1)` — always present with a winner, and always a valid
+ * `ShieldCount`, because the winner by definition carries more shields than
+ * the loser plus the one shield the fight costs.
+ */
+export type FightOutcome =
+  | {
+      readonly result: "attacker-won";
+      readonly winnerRemainingShields: ShieldCount;
+    }
+  | {
+      readonly result: "defender-won";
+      readonly winnerRemainingShields: ShieldCount;
+    }
+  | { readonly result: "mutual-return" };
+
+/**
+ * Decides a fight from the two ships' shield counts alone (rules.md §7). The
+ * stronger ship wins and keeps `winner − (loser + 1)` shields; the weaker
+ * ship is beaten — including when the **defender** is stronger, in which
+ * case the defender wins and the attacker is the one sent home; equal
+ * counts send both ships home.
+ *
+ * `winner − (loser + 1)` is asserted to be a valid `ShieldCount` rather than
+ * clamped: the winner by definition carries strictly more shields than the
+ * loser, so `winner ≥ loser + 1` and the result can never be negative. A
+ * clamp would hide the bug that produced a negative result instead of
+ * surfacing it.
+ */
+export function resolveFight(
+  attackerShields: ShieldCount,
+  defenderShields: ShieldCount,
+): FightOutcome {
+  if (attackerShields === defenderShields) {
+    return { result: "mutual-return" };
+  }
+
+  const winnerShields =
+    attackerShields > defenderShields
+      ? attackerShields - (defenderShields + 1)
+      : defenderShields - (attackerShields + 1);
+
+  if (!isShieldCount(winnerShields)) {
+    throw new RangeError(
+      `a fight's winner cannot end with ${winnerShields} shields`,
+    );
+  }
+
+  return attackerShields > defenderShields
+    ? { result: "attacker-won", winnerRemainingShields: winnerShields }
+    : { result: "defender-won", winnerRemainingShields: winnerShields };
+}
+
+/**
+ * Return position 1 (rules.md §7.1): the bay `state.returnPositionIndex`
+ * names in `CLOCKWISE_BAYS`.
+ */
+export function returnPositionSquare(state: GameState): Square {
+  return CLOCKWISE_BAYS[state.returnPositionIndex];
+}
+
+/**
+ * The bay a ship returning to a bay right now would actually land in
+ * (rules.md §7.1): the first empty bay counting clockwise from return
+ * position 1, judged against `state`'s current occupancy. Recomputed at
+ * every point of use and never stored — occupancy changes inside a ply, so
+ * a ship moving out of a bay as the first action can change the answer for
+ * the second.
+ *
+ * On a mutual return, call this once to place the attacker, then call it
+ * again against the state that already contains the attacker to place the
+ * defender — there is no separate "second receptacle" function.
+ *
+ * Throws if every bay is occupied. §7.1's argument that there is always
+ * somewhere to go guarantees this cannot happen, so this is a bug
+ * detector, not a case the caller need handle.
+ */
+export function receptacleBay(state: GameState): Square {
+  const occupiedSquareNames = new Set(shipsBySquare(state).keys());
+  const receptacle = bayNumberingFrom(state.returnPositionIndex).find(
+    (square) => !occupiedSquareNames.has(squareName(square)),
+  );
+
+  if (receptacle === undefined) {
+    throw new RangeError(
+      "no empty bay: rules.md §7.1 guarantees this cannot happen",
+    );
+  }
+
+  return receptacle;
 }
