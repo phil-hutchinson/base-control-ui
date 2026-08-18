@@ -223,6 +223,75 @@ describe("squareLabel", () => {
     ).toBe("D15, bay, can move here");
   });
 
+  it("names the attacker-won outcome on a target square", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 9),
+        isBay: false,
+        occupant: { side: "red", shields: 1 },
+        mark: "target",
+        predictedOutcome: "attacker-won",
+      }),
+    ).toBe("H9, red ship, 1 shield, can attack here, your ship would win");
+  });
+
+  it("names the defender-won outcome on a target square", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 9),
+        isBay: false,
+        occupant: { side: "red", shields: 4 },
+        mark: "target",
+        predictedOutcome: "defender-won",
+      }),
+    ).toBe("H9, red ship, 4 shields, can attack here, your ship would lose");
+  });
+
+  it("names the mutual-return outcome on a target square", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 9),
+        isBay: false,
+        occupant: { side: "red", shields: 2 },
+        mark: "target",
+        predictedOutcome: "mutual-return",
+      }),
+    ).toBe(
+      "H9, red ship, 2 shields, can attack here, both ships would return to bays",
+    );
+  });
+
+  it("says nothing for a target mark with no predicted outcome given", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 9),
+        isBay: false,
+        occupant: { side: "red", shields: 2 },
+        mark: "target",
+      }),
+    ).toBe("H9, red ship, 2 shields");
+  });
+
+  it("never gives a destination or a selected square a predicted outcome", () => {
+    expect(
+      squareLabel({
+        square: squareAt("G", 7),
+        isBay: false,
+        mark: "destination",
+        predictedOutcome: "attacker-won",
+      }),
+    ).toBe("G7, can move here");
+    expect(
+      squareLabel({
+        square: squareAt("G", 7),
+        isBay: false,
+        occupant: { side: "green", shields: 0 },
+        mark: "selected",
+        predictedOutcome: "attacker-won",
+      }),
+    ).toBe("G7, green ship, 0 shields, selected");
+  });
+
   it("names an occupied site for each side, with its shield count", () => {
     expect(
       squareLabel({

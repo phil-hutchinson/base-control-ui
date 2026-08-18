@@ -1494,7 +1494,33 @@ a combination it was never drawn against, is checked by eye in Step 15.
 
 ## Step 11 — Attack cues on the board, with the predicted outcome
 
-Status: pending
+Status: committed
+
+Notes: `SquareMark` in `src/board/squareLabel.ts` gained `"target"` alongside
+the existing `"selected" | "destination"`, still one exclusive slot; the
+descriptor gained an optional `predictedOutcome` field (a new
+`PredictedFightOutcome` type mirroring `ply.ts`'s `FightResolvedEffect`
+outcome literals) read only when `mark === "target"`, wired to the three
+wordings from decision 15 verbatim. `BoardSquare.tsx`/`.css` gained a
+`TargetMark` — a large hollow ring in `--interaction-accent`, distinct from
+the destination's small solid disc by shape and size — rendered only for
+`mark === "target"`, `aria-hidden` like every other mark; no verdict badge
+was added to the artwork, per the step's instruction that the outcome is
+spoken, not drawn. `Board.tsx` now also derives the selected ship's
+`legalTargets` (from `combat.ts`) alongside its `legalDestinations`, marks
+those squares `"target"`, and computes `predictedOutcome` from
+`resolveFight(selectedShip.shields, ship.shields).result`. Added the tests
+the step calls for: three outcome-wording tests plus a "no outcome given"
+and a "never on destination/selected" test in `squareLabel.test.ts`; a
+target-ring-renders, a ring-vs-disc distinctness, and an exclusivity test in
+`BoardSquare.test.tsx`; and in `Board.test.tsx` a new "attack targets"
+describe block covering targets marked distinctly from destinations with the
+outcome spoken, a moved ship showing targets and no destinations, no target
+mark with nothing selected, every 0–4 vs 0–4 combination driven from
+`resolveFight` in a loop (25 cases), and an exclusivity check across a real
+rendered board rather than only the type. `npm run typecheck`, `npm run
+lint`, `npm test` (452 passed), `npm run format:check` and `npm run build`
+all pass. No deviation from the plan.
 
 With a ship selected, mark its legal targets distinctly from its legal
 destinations, and name the outcome an attack there would have.

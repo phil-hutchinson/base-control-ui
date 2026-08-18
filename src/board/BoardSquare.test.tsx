@@ -74,6 +74,47 @@ describe("BoardSquare", () => {
     expect(unmarked.querySelector(".board-square__mark--selected")).toBeNull();
   });
 
+  it("renders the target ring when marked as a legal attack target, and not otherwise", () => {
+    const { container: marked } = render(
+      <BoardSquare isBay={false} mark="target" />,
+    );
+    const { container: unmarked } = render(<BoardSquare isBay={false} />);
+
+    expect(
+      marked.querySelector(".board-square__mark--target"),
+    ).toBeInTheDocument();
+    expect(unmarked.querySelector(".board-square__mark--target")).toBeNull();
+  });
+
+  it("draws the target ring hollow and distinct from the destination's solid disc", () => {
+    const { container: target } = render(
+      <BoardSquare isBay={false} mark="target" />,
+    );
+    const { container: destination } = render(
+      <BoardSquare isBay={false} mark="destination" />,
+    );
+
+    const ring = target.querySelector(".board-square__mark--target circle");
+    expect(ring).toHaveAttribute("fill", "none");
+    const disc = destination.querySelector(
+      ".board-square__mark--destination circle",
+    );
+    expect(disc).toHaveAttribute("fill", "currentColor");
+    expect(Number(ring?.getAttribute("r"))).toBeGreaterThan(
+      Number(disc?.getAttribute("r")),
+    );
+  });
+
+  it("renders exactly one mark for the target square, never alongside destination or selected", () => {
+    const { container } = render(<BoardSquare isBay={false} mark="target" />);
+
+    expect(container.querySelectorAll(".board-square__mark")).toHaveLength(1);
+    expect(
+      container.querySelector(".board-square__mark--destination"),
+    ).toBeNull();
+    expect(container.querySelector(".board-square__mark--selected")).toBeNull();
+  });
+
   it("renders the already-moved bar from hasMoved alone, without dampening the square", () => {
     const { container: marked } = render(
       <BoardSquare

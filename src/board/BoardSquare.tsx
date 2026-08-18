@@ -1,8 +1,10 @@
 // One square's stacked contents: the site marker beneath any ship standing
-// on it, then, during ship selection, one of two selection markings — a
-// legal destination or the selected ship's own square — all sharing the
-// square in a single-cell grid rather than absolute positioning (see
-// BoardSquare.css).
+// on it, then, during ship selection, one of three selection markings — a
+// legal destination, a legal attack target, or the selected ship's own
+// square — all sharing the square in a single-cell grid rather than
+// absolute positioning (see BoardSquare.css). A target's predicted outcome
+// is spoken, not drawn: the ring here is a plain cue, the same for a win, a
+// loss or a mutual return.
 //
 // Having moved this ply and a ship's condition (no action available, or
 // owing an action) are separate, independently optional fields from each
@@ -35,6 +37,8 @@ export interface BoardSquareProps {
 // Geometry for the markings, in the same 0-100 viewBox ShipIcon and
 // SiteMarker use, so they scale with the square exactly as those do.
 const DESTINATION_DISC_RADIUS = 9;
+const TARGET_RING_RADIUS = 32;
+const TARGET_RING_STROKE_WIDTH = 6;
 const SELECTED_BRACKET_INSET = 9;
 const SELECTED_BRACKET_LENGTH = 20;
 const SELECTED_STROKE_WIDTH = 6;
@@ -95,6 +99,31 @@ function DestinationMark() {
       aria-hidden="true"
     >
       <circle cx={50} cy={50} r={DESTINATION_DISC_RADIUS} fill="currentColor" />
+    </svg>
+  );
+}
+
+/**
+ * A large hollow ring marking a square the selected ship may legally
+ * attack, centred on the square so it reads around an enemy ship icon
+ * rather than under one. Distinct from the destination's small solid disc
+ * by both shape and size, so the two survive greyscale.
+ */
+function TargetMark() {
+  return (
+    <svg
+      className="board-square__mark board-square__mark--target"
+      viewBox="0 0 100 100"
+      aria-hidden="true"
+    >
+      <circle
+        cx={50}
+        cy={50}
+        r={TARGET_RING_RADIUS}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={TARGET_RING_STROKE_WIDTH}
+      />
     </svg>
   );
 }
@@ -218,6 +247,7 @@ export function BoardSquare({
       {occupant && <ShipIcon side={occupant.side} shields={occupant.shields} />}
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}
+      {mark === "target" && <TargetMark />}
       {hasMoved && <AlreadyMovedMark />}
       {condition === "no-action" && <NoActionMark />}
       {condition === "owes-action" && <OwesActionMark />}

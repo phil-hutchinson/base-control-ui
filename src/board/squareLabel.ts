@@ -3,15 +3,19 @@
 // those, then which side's ship (if any) stands there, then that ship's
 // shield count, then whether it has already moved this ply, then its
 // condition (no action available, or owing an action), then last of all a
-// mark saying that the square is selected or is a legal destination. A
-// square is never both a bay and a site, so the two share one slot. Having
-// moved, the condition and the mark are three separate, independently
-// optional fields — a ship can have moved and still be selected, or moved
-// and still have no action left — the condition alone staying mutually
-// exclusive within itself. Ordinary empty squares are named by their square
-// name alone. The shield count is stated even when it is zero, so a listener
-// hearing one square at a time can tell a shieldless ship apart from an app
-// that never reports shields at all.
+// mark saying that the square is selected, a legal destination, or a legal
+// attack target. A square is never both a bay and a site, so the two share
+// one slot. Having moved, the condition and the mark are three separate,
+// independently optional fields — a ship can have moved and still be
+// selected, or moved and still have no action left — the condition alone
+// staying mutually exclusive within itself. Ordinary empty squares are named
+// by their square name alone. The shield count is stated even when it is
+// zero, so a listener hearing one square at a time can tell a shieldless
+// ship apart from an app that never reports shields at all.
+//
+// A target square's mark names the fight's predicted outcome rather than a
+// fixed phrase, so a listener does not have to hold two ships' shield counts
+// across two focus stops to work out who would win.
 
 import { squareName, type Square } from "../rules/board";
 import type { Side } from "../rules/fleet";
@@ -26,14 +30,33 @@ export interface SquareOccupant {
 
 /**
  * A mark a square carries during ship selection: the selected ship's own
- * square, or a square the selected ship may legally move to.
+ * square, a square the selected ship may legally move to, or a square it may
+ * legally attack. One exclusive slot, because the three cannot co-occur: the
+ * selected ship's own square is neither a destination nor a target, a
+ * destination must be empty, and a target must hold an enemy ship.
  */
-export type SquareMark = "selected" | "destination";
+export type SquareMark = "selected" | "destination" | "target";
 
-/** How each mark reads in a square's accessible name, in the players' vocabulary. */
-const MARK_WORDING: Record<SquareMark, string> = {
+/** How the selected and destination marks read in a square's accessible name. */
+const MARK_WORDING: Record<"selected" | "destination", string> = {
   selected: "selected",
   destination: "can move here",
+};
+
+/**
+ * A fight's predicted outcome (rules.md §7), from the selected ship's own
+ * point of view: it is always the attacker in the fight a target square's
+ * name predicts, since only a selected ship's own activation of an enemy
+ * square produces a target mark.
+ */
+export type PredictedFightOutcome =
+  "attacker-won" | "defender-won" | "mutual-return";
+
+/** How a target square's predicted outcome reads in its accessible name. */
+const PREDICTED_OUTCOME_WORDING: Record<PredictedFightOutcome, string> = {
+  "attacker-won": "can attack here, your ship would win",
+  "defender-won": "can attack here, your ship would lose",
+  "mutual-return": "can attack here, both ships would return to bays",
 };
 
 /** How having moved this ply reads in a square's accessible name. */
@@ -62,6 +85,8 @@ export interface SquareLabelDescriptor {
   readonly hasMoved?: boolean;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
+  /** Used only when `mark` is `"target"`: the fight attacking here would predict. */
+  readonly predictedOutcome?: PredictedFightOutcome;
 }
 
 /** Builds a square's accessible name from its name, bay/site status, occupant, having moved, condition and mark. */
@@ -73,6 +98,7 @@ export function squareLabel({
   hasMoved,
   condition,
   mark,
+  predictedOutcome,
 }: SquareLabelDescriptor): string {
   const segments = [squareName(square)];
   if (isBay) {
@@ -91,7 +117,11 @@ export function squareLabel({
   if (condition) {
     segments.push(CONDITION_WORDING[condition]);
   }
-  if (mark) {
+  if (mark === "target") {
+    if (predictedOutcome) {
+      segments.push(PREDICTED_OUTCOME_WORDING[predictedOutcome]);
+    }
+  } else if (mark) {
     segments.push(MARK_WORDING[mark]);
   }
   return segments.join(", ");

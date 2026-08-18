@@ -11,6 +11,8 @@ import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import { startingSiteState } from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
+import { legalTargets, resolveFight } from "../rules/combat";
+import type { ShieldCount } from "../rules/shields";
 import { createSession, sessionReducer, type Session } from "../game/session";
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
@@ -409,7 +411,7 @@ describe("Board", () => {
 
       expect(
         screen.queryByRole("gridcell", {
-          name: /, selected$|can move here$|already moved this turn$/,
+          name: /, selected$|can move here$|already moved this turn$|can attack here/,
         }),
       ).not.toBeInTheDocument();
     });
@@ -424,6 +426,161 @@ describe("Board", () => {
       });
 
       expect(results.violations).toEqual([]);
+    });
+  });
+
+  describe("attack targets", () => {
+    // green-1 selected on H8 with an adjacent enemy on H9, so it carries
+    // both destinations (empty neighbours) and one target.
+    function attackState(overrides?: {
+      attackerShields?: ShieldCount;
+      defenderShields?: ShieldCount;
+      movedThisPly?: string[];
+    }): GameState {
+      return {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: overrides?.attackerShields ?? 2,
+          },
+          {
+            id: "red-1",
+            side: "red",
+            square: squareAt("H", 9),
+            shields: overrides?.defenderShields ?? 0,
+          },
+        ],
+        siteStates: {},
+        sideToMove: "green",
+        actionsRemaining: overrides?.movedThisPly ? 1 : 2,
+        movedThisPly: overrides?.movedThisPly ?? [],
+        plyNumber: 1,
+        randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+      };
+    }
+
+    it("marks legal targets distinctly from legal destinations, naming the predicted outcome", () => {
+      const state = attackState();
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      // Attacker 2 shields vs defender 0: the attacker wins.
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H9, red ship, 0 shields, can attack here, your ship would win",
+        }),
+      ).toBeInTheDocument();
+
+      const destinations = legalDestinations(state, "green-1");
+      expect(destinations.length).toBeGreaterThan(0);
+      for (const destination of destinations) {
+        expect(
+          screen.getByRole("gridcell", {
+            name: new RegExp(`^${squareName(destination)},.*can move here$`),
+          }),
+        ).toBeInTheDocument();
+      }
+      // The target square never also carries the destination wording.
+      expect(
+        screen.queryByRole("gridcell", {
+          name: /^H9,.*can move here$/,
+        }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows only targets, no destinations, for a ship that has already moved", () => {
+      const state = attackState({ movedThisPly: ["green-1"] });
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H9, red ship, 0 shields, can attack here, your ship would win",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("gridcell", { name: /can move here$/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("marks no square as a target when nothing is selected", () => {
+      const state = attackState();
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.queryByRole("gridcell", { name: /can attack here/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("produces the right predicted outcome for every combination of 0-4 against 0-4", () => {
+      const shieldCounts: readonly ShieldCount[] = [0, 1, 2, 3, 4];
+      for (const attackerShields of shieldCounts) {
+        for (const defenderShields of shieldCounts) {
+          const state = attackState({ attackerShields, defenderShields });
+          const session: Session = {
+            state,
+            selectedShipId: "green-1",
+            lastEvent: undefined,
+          };
+          render(<Board session={session} onIntent={noop} />);
+
+          const outcome = resolveFight(attackerShields, defenderShields).result;
+          const wording =
+            outcome === "attacker-won"
+              ? "can attack here, your ship would win"
+              : outcome === "defender-won"
+                ? "can attack here, your ship would lose"
+                : "can attack here, both ships would return to bays";
+          const unit = defenderShields === 1 ? "shield" : "shields";
+
+          expect(
+            screen.getByRole("gridcell", {
+              name: `H9, red ship, ${defenderShields} ${unit}, ${wording}`,
+            }),
+          ).toBeInTheDocument();
+
+          cleanup();
+        }
+      }
+    });
+
+    it("never marks a square with more than one of selected, destination and target", () => {
+      const state = attackState();
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      const targets = legalTargets(state, "green-1");
+      expect(targets.length).toBeGreaterThan(0);
+
+      for (const cell of screen.getAllByRole("gridcell")) {
+        const name = cell.getAttribute("aria-label") ?? "";
+        const matches = [
+          ", selected",
+          "can move here",
+          "can attack here",
+        ].filter((marker) => name.includes(marker));
+        expect(matches.length).toBeLessThanOrEqual(1);
+      }
     });
   });
 

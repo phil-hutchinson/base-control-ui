@@ -7,6 +7,7 @@ import { useCallback, useMemo } from "react";
 import { BOARD_SIZE, COLUMN_LETTERS, squareName } from "../rules/board";
 import { isBay } from "../rules/bays";
 import { shipHasLegalAction } from "../rules/actions";
+import { legalTargets, resolveFight } from "../rules/combat";
 import { shipsBySquare, siteStateAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
 import { strandedShipIds } from "../rules/stranded";
@@ -15,6 +16,7 @@ import { announcementFor } from "./announcements";
 import { squareForGridPosition } from "./boardView";
 import {
   squareLabel,
+  type PredictedFightOutcome,
   type ShipCondition,
   type SquareMark,
 } from "./squareLabel";
@@ -71,6 +73,11 @@ export function Board({ session, onIntent }: BoardProps) {
         ? legalDestinations(session.state, selectedShip.id).map(squareName)
         : [],
     );
+    const targetSquareNames = new Set(
+      selectedShip
+        ? legalTargets(session.state, selectedShip.id).map(squareName)
+        : [],
+    );
     const owedShipIds = new Set(strandedShipIds(session.state));
 
     // A ship's condition, for the side to move only: an opponent's ship
@@ -111,10 +118,17 @@ export function Board({ session, onIntent }: BoardProps) {
           : false;
 
         let mark: SquareMark | undefined;
+        let predictedOutcome: PredictedFightOutcome | undefined;
         if (selectedShip && squareName(selectedShip.square) === name) {
           mark = "selected";
         } else if (destinationSquareNames.has(name)) {
           mark = "destination";
+        } else if (selectedShip && targetSquareNames.has(name) && ship) {
+          mark = "target";
+          predictedOutcome = resolveFight(
+            selectedShip.shields,
+            ship.shields,
+          ).result;
         }
 
         return {
@@ -136,6 +150,7 @@ export function Board({ session, onIntent }: BoardProps) {
             hasMoved,
             condition,
             mark,
+            predictedOutcome,
           }),
           focusable: true,
         };
