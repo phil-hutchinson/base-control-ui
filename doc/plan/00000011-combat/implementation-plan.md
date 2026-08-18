@@ -453,6 +453,15 @@ says both**, which is why the union has a third value rather than the artwork
 silently dropping one. The manual gate (Step 15) is where the choice is checked
 on screen.
 
+**Which cue is solid was reversed at the Step 14 gate — see Step 13a.** The
+owner's revised design gives the **solid** triangles to the receptacle and the
+**outline** to position 1, because the receptacle is the bay that will actually
+take the next beaten ship and so is the more important of the two nearly all
+the time. The coincidence case is unchanged in the artwork — still solid, now
+because that square is the receptacle — and the accessible name still says
+both. The `returnCue` union and this field's existence are unaffected; only the
+mapping from cue to artwork changes.
+
 Rejected: making `mark` a set. It would make the exclusivity that really does
 hold unenforceable, and every consumer would gain a loop where a switch is
 correct.
@@ -503,8 +512,9 @@ shields"_. The selection marks stay last, where they are today.
   **solid** disc it is distinct by shape and size, so it survives greyscale.
 - **The return cues** are four corner triangles, exactly as the owner specified:
   each drawn as **one new line** across the corner, with the square's existing
-  border forming the triangle's other two sides — filled for position 1, a
-  stroked line only for the receptacle. They are **not** part of the interaction
+  border forming the triangle's other two sides — filled for the receptacle, a
+  stroked line only for position 1. (Step 12 built this the other way round;
+  Step 13a reverses it on the owner's revised design.) They are **not** part of the interaction
   layer: they are on screen all game regardless of selection, so they take the
   **bay** accent rather than the interaction accent, reading as part of the
   bay's own furniture. Triangles are unlike every existing mark (disc, brackets,
@@ -1591,6 +1601,11 @@ the board.
 
 Status: committed
 
+**Superseded in part by Step 13a**: the mapping below gives position 1 the
+solid triangles and the receptacle the outline. The owner reversed that at the
+Step 14 gate. Everything else here — the geometry, the `returnCue` field, the
+derivation and the every-bay-full guard — still stands.
+
 Notes: Added `ReturnCue` (`"return-position" | "receptacle" |
 "return-position-and-receptacle"`) and its wording to `squareLabel.ts`,
 placed right after the `bay`/site segment; added the matching `returnCue`
@@ -1811,9 +1826,65 @@ accommodate the fixture**. Confirm by inspection that nothing outside
 
 ---
 
-## Step 14 — Manual gate: fights, all three ways, and taking a node
+## Step 13a — Reverse the return cues: the receptacle takes the solid triangles
 
 Status: pending
+
+Added after the Step 14 gate, on the owner's revised design. Step 12 gave the
+**solid** corner triangles to return position 1 and the **outline** to the
+receptacle. Swap them: the **receptacle** — the bay that will actually take the
+next beaten ship — gets the solid triangles, and **position 1** gets the
+outline.
+
+The reasoning is the owner's: of the two cues, the receptacle is the one that
+matters in almost every position, because it is where a ship is about to land.
+Position 1 is the rule behind it — worth showing, since it is what makes the
+receptacle predictable a turn ahead, but the quieter of the two. The heavier
+mark should sit on the more important fact, and Step 12 had that backwards.
+
+What changes, and what does not:
+
+- **Only the mapping from cue to artwork.** `returnCue` keeps its three values,
+  `combat.ts` is untouched, and the derivation in `Board.tsx` — including the
+  guard that shows no receptacle when every bay is full — is unchanged.
+- **The coincidence case still draws the solid mark alone**, for the same
+  reason as before (an outline under a solid triangle of identical geometry is
+  invisible), but now that mark is the receptacle's. The accessible name still
+  says both.
+- **The no-receptacle case now reads correctly by construction.** When every bay
+  is full — the opening position, or a game driven back into one — the only cue
+  drawn is position 1's outline, and the absence of any solid mark says plainly
+  that there is nowhere for a beaten ship to go. Under Step 12's mapping that
+  same position drew a solid mark, which claimed more than the board knew.
+- **The accessible-name wording does not change.** "return position 1" and
+  "next bay for a beaten ship" describe the facts, not the artwork, and both
+  stay accurate.
+- The two mark components keep their geometry; what changes is which cue
+  renders which, so the component names should follow the cue they now serve
+  rather than being left pointing at the other one.
+
+Depends on: Step 12 (the marks and the `returnCue` field it introduced).
+
+Verification (automated): `npm test` — the Step 12 tests that assert which
+treatment each cue renders are inverted to the new mapping (rewritten, not
+weakened), the coincidence-case test still asserts the solid mark alone, and a
+test covers the every-bay-full case drawing the outline alone. Then
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm run build`.
+How the reversed pair reads on screen is Step 15's gate.
+
+---
+
+## Step 14 — Manual gate: fights, all three ways, and taking a node
+
+Status: committed
+
+Notes: Gate taken by the owner and **passed** — "the actual game works well",
+all three outcomes, the non-advance, the return to a bay and taking the node
+with a second action all behaving as intended. One design change came out of
+it, on the cues rather than the gameplay: the owner reversed which return cue
+is solid, since the receptacle is the more important of the two nearly all the
+time. That is Step 13a, added after this gate rather than folded in here, so
+the change has its own verified step.
 
 No code. `story.md`'s manual gates 1 and 2, taken against the Step 13 fixture.
 
@@ -1863,20 +1934,21 @@ Depends on: Step 13. (Independent of Step 14; take them in either order.)
 Verification (manual): run `npm run dev`, open `http://localhost:5273`, and
 confirm:
 
-1. **Position 1 is marked all game.** The **L1** bay carries the solid corner
-   triangles from the moment the board loads, whether or not a ship is standing
-   on it, and with nothing selected.
-2. **The receptacle is somewhere else.** Because L1 and H1 are occupied, the
-   **outline** triangles are on **D1**. The two treatments are tellable apart at
-   a glance, including in greyscale (browser devtools greyscale emulation or the
-   OS colour filter).
+1. **Position 1 is marked all game.** The **L1** bay carries the **outline**
+   corner triangles from the moment the board loads, whether or not a ship is
+   standing on it, and with nothing selected.
+2. **The receptacle is somewhere else, and heavier.** Because L1 and H1 are
+   occupied, the **solid** triangles are on **D1**. The two treatments are
+   tellable apart at a glance, including in greyscale (browser devtools
+   greyscale emulation or the OS colour filter), and the solid one reads as the
+   more important of the two — which is the point of the reversal in Step 13a.
 3. **The receptacle is live.** Move green **H1** out of its bay as the turn's
-   first action. The outline triangles move to **H1** immediately, mid-turn,
+   first action. The solid triangles move to **H1** immediately, mid-turn,
    without waiting for the turn to end.
 4. **The drift.** Play a few turns (any legal actions will do) and confirm the
-   solid triangles move **one bay counter-clockwise** at the end of every turn —
-   L1 → O2 → O6 and so on — including at the end of a turn in which nothing much
-   happened.
+   outline triangles move **one bay counter-clockwise** at the end of every turn
+   — L1 → O2 → O6 and so on — including at the end of a turn in which nothing
+   much happened.
 5. **The coincidence case.** Play on until position 1 lands on an **empty** bay.
    It is then also the receptacle: confirm the solid mark alone is what is drawn,
    that it does not look broken or ambiguous, and that the square still reads
@@ -1982,9 +2054,12 @@ confirm:
 1. The real starting position is on screen: fourteen ships one per bay with no
    shields, five active sites and twelve dormant, "Green's turn — 2 actions
    left".
-2. **H15 carries the solid return-position triangles**, and — because H15 holds
-   a ship at the start — the outline receptacle triangles are on the first empty
-   bay clockwise from it.
+2. **H15 carries the outline return-position triangles**, and — because every
+   bay holds a ship at the start — **no solid receptacle triangles are drawn
+   anywhere**. That is correct rather than missing: with all fourteen bays full
+   no beaten ship would have anywhere to go, and no fight is possible in that
+   position anyway. The first solid mark should appear the moment any bay
+   empties.
 3. A game plays from it: select a ship, move it, and confirm nothing of the
    fixture or of the pre-story board is out of place.
 4. Two ships can be manoeuvred into contact and a fight fought from the real

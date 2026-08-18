@@ -238,12 +238,21 @@ target)`, mirroring the shapes `movement.ts` already exposes, plus a
 
 9. **The return position on the board** — the owner's design:
 
-   - **Position 1 is always marked**, whether or not it is empty, with **solid
-     triangles in all four corners** of the square — each drawn as a single new
-     line, the square's existing border forming the triangle's other two sides.
+   - **Position 1 is always marked**, whether or not it is empty, with
+     **triangles in all four corners** of the square — each drawn as a single
+     new line, the square's existing border forming the triangle's other two
+     sides.
    - **The current first receptacle** — the bay a beaten ship would actually
-     land in — is marked the same way in **outline**, and is **recomputed after
-     every action**, since moving a ship out of a bay changes it.
+     land in — is marked the same way, and is **recomputed after every
+     action**, since moving a ship out of a bay changes it.
+   - **The receptacle's triangles are solid and position 1's are outline.** The
+     owner revised this after seeing both on screen: the receptacle is the bay
+     that will actually take the next beaten ship, so it is the more important
+     of the two nearly all the time, and the heavier mark belongs on it.
+     Position 1 is the rule behind the receptacle rather than the fact a player
+     acts on. Where one square is both, it is solid; where no bay is empty at
+     all, only position 1's outline is drawn, and the absence of a solid mark
+     correctly says there is nowhere for a beaten ship to go.
    - **The secondary receptacle is not shown.** A player working out where the
      second of two mutually beaten ships would land can count on from the
      first.
