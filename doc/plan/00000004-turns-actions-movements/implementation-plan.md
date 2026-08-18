@@ -1778,7 +1778,18 @@ and the reason in this step's Notes.
 
 ## Step 18 — Remove the temporary fixture
 
-Status: pending
+Status: committed
+
+Notes: Deleted `src/game/reviewFixture.ts` and switched `App.tsx`'s one
+`useReducer` call back to `startingGameState()` (one import swap, one call
+site). A repository-wide search for `reviewFixture` outside `doc/` returns
+nothing. No test needed changing — `App.test.tsx` already asserted only the
+shell (heading, turn indicator text, axe), and the starting-position
+assertions this step's verification calls for (fourteen ships matching
+`STARTING_FLEET`, five active/twelve dormant sites, green to move with two
+actions) were already present in `src/rules/gameState.test.ts` and
+`src/rules/fleet.test.ts` from Step 3, so nothing was added. `RULES_VERSION`
+remains `"0.3"`. No deviation from the plan.
 
 Delete `src/game/reviewFixture.ts` and return `src/App.tsx` to building its
 initial session from `startingGameState()`. Nothing else changes.
