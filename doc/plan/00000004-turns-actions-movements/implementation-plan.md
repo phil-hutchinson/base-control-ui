@@ -1676,7 +1676,20 @@ If a check fails, record what was seen in this step's Notes before any fix.
 
 ## Step 16 — Manual gate: plies, rejections and keyboard-only play
 
-Status: pending
+Status: committed
+
+Notes: Passed. The owner confirmed the ply sequence and the action countdown,
+the spent ship refusing a second move and clearing on its side's next turn,
+every listed rejection leaving the board unchanged, keyboard-only play for
+both sides with focus never lost, and the layout.
+
+On check 6, the owner observed that a rejection produces no message a sighted
+player can see: the board simply declines to highlight or move. That is what
+this story built — decision 8 puts every rejection sentence in the visually
+hidden live region alone, so the explanation reaches screen readers (verified
+at Step 17) and a sighted player gets only the refusal itself. The owner
+judged that acceptable, so nothing changes here. Whether a sighted player
+should also see the sentence is a question for a later story, not this one.
 
 No code. `story.md`'s manual gates 5–7, with the fixture still in place.
 
