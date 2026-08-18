@@ -605,7 +605,19 @@ did with its own fixture. No automated test may depend on it.
 
 ## Step 1 — Rules: starting shields settled, and two ships always have somewhere to go (version 0.6)
 
-Status: pending
+Status: committed
+
+Notes: Edited `doc/ruleset/rules.md` (version bumped to 0.6, "0 shields (TBD)"
+lost its TBD, the introduction's "some details are still being settled"
+paragraph removed, Appendix A's table/item/closing sentence replaced with a
+single "nothing is currently outstanding" line while keeping its heading and
+Appendix B's numbering and cross-reference, and §7.1's "there is always
+somewhere to go" paragraph extended to the mutual-return case), added the 0.6
+entry to `doc/ruleset/changelog.md` stating plainly that neither change is a
+tagging candidate and that tagging is on hold regardless, and bumped
+`RULES_VERSION` to `"0.6"` in `src/rules/rulesVersion.ts`. `README.md` was
+deliberately left untouched per the step's instruction (Step 19 handles it).
+No deviation from the plan.
 
 Edit `doc/ruleset/rules.md`, bump its version to **0.6**, record the change in
 `doc/ruleset/changelog.md`, and set `RULES_VERSION` to match. This is the only
