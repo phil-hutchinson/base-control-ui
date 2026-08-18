@@ -1824,6 +1824,15 @@ If a check fails, record what was seen in this step's Notes before any fix.
 
 Status: pending
 
+**Runs after Step 18, not before it.** The owner asked to take the
+screen-reader pass last. It cannot run after Step 16, because Step 16 deletes
+the fixture this gate plays against and the real starting position needs nine
+plies before a node runs out and eighteen before anything is stranded — most of
+what this gate listens for would be unreachable. So the running order for the
+remainder of the story is **18, 15, 16, 17**: the README check first, then this
+gate with the fixture still installed, then the fixture's removal and the last
+look at the shipped board.
+
 No code. `story.md`'s manual gate 5.
 
 Depends on: Steps 13 and 14 (the same session, played the same way).
@@ -1929,7 +1938,10 @@ description of the game still reads true.
 
 Player-facing text: "turn" and "node", written for a non-technical reader.
 
-Depends on: Step 16 (the app is in its shipped shape).
+Depends on: Steps 1-14 (everything the README would describe is built). Note
+this step now runs **before** Steps 15-17, per the running order recorded under
+Step 15: the README describes how the game plays, which the temporary fixture
+does not affect.
 
 Verification (automated): `npm run format:check` passes (prettier formats
 markdown), and `npm run typecheck`, `npm run lint`, `npm test` and
