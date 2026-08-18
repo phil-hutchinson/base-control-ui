@@ -1731,7 +1731,14 @@ If a check fails, record what was seen in this step's Notes before any fix.
 
 ## Step 17 — Manual gate: screen reader
 
-Status: pending
+Status: committed
+
+Notes: Passed. The owner confirmed all seven checks with a screen reader on
+the fixture position: the square announcements carry the three new marks, a
+selection counts its moves rather than listing them, moves and the change of
+turn are announced, rejections read as plain language naming the square, and
+nothing repeats into noise or leaks out of the artwork. No wording grated
+aloud, so `announcements.ts` and `squareLabel.ts` are unchanged by this gate.
 
 No code. `story.md`'s manual gate 8, taken while the fixture is in place so a
 full range of shield counts, all four site states and both sides can actually
