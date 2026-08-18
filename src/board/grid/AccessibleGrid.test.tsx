@@ -265,4 +265,86 @@ describe("AccessibleGrid", () => {
 
     expect(results.violations).toEqual([]);
   });
+
+  it("renders a supplied announcement in a status live region", () => {
+    render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        announcement="Green ship at A1 selected. 4 moves available."
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Green ship at A1 selected. 4 moves available.",
+    );
+  });
+
+  it("updates the live region's text when the announcement prop changes", () => {
+    const { rerender } = render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        announcement="Selection cleared."
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Selection cleared.");
+
+    rerender(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        announcement="Green's turn, 2 actions left."
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Green's turn, 2 actions left.",
+    );
+  });
+
+  it("renders an empty live region when no announcement is supplied", () => {
+    render(<AccessibleGrid label="Fixture grid" rows={rows} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
+  it("renders the live region outside the grid element", () => {
+    render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        announcement="Selection cleared."
+      />,
+    );
+
+    const grid = screen.getByRole("grid", { name: "Fixture grid" });
+    const region = screen.getByRole("status");
+
+    expect(grid).not.toContainElement(region);
+  });
+
+  it("has no static accessibility violations with an announcement present", async () => {
+    const { container, rerender } = render(
+      <AccessibleGrid label="Fixture grid" rows={rows} />,
+    );
+
+    let results = await axe.run(container, {
+      rules: { "color-contrast": { enabled: false } },
+    });
+    expect(results.violations).toEqual([]);
+
+    rerender(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        announcement="Green ship at A1 selected. 4 moves available."
+      />,
+    );
+
+    results = await axe.run(container, {
+      rules: { "color-contrast": { enabled: false } },
+    });
+    expect(results.violations).toEqual([]);
+  });
 });

@@ -1180,7 +1180,31 @@ recipe) using the file's existing 2×3 fixture:
 
 ## Step 9 — `AccessibleGrid` gains a live region
 
-Status: pending
+Status: committed
+
+Notes: Added an `announcement?: string` prop, rendered verbatim (never
+composed) into a `role="status"` / `aria-live="polite"` / `aria-atomic="true"`
+element styled with the standard clipped-absolute visually-hidden pattern in
+`AccessibleGrid.css`. The grid element and the live region are now both
+children of a new `.accessible-grid__wrapper` div (`display: contents`), so
+the grid element keeps whatever grid item a consumer's `className` makes it
+and the region is a sibling, not a child, of `role="grid"`. The
+`interactive-supports-focus` eslint-disable comment, previously a plain JS
+comment above the JSX, had to move into a `{/* ... */}` JSX comment once the
+grid element became a JSX child of the new wrapper rather than the top-level
+return expression — `npm run lint` confirmed it still suppresses the rule
+correctly (no residual warning, no unused-disable warning). Extended
+`AccessibleGrid.test.tsx` with the five cases from this step's verification
+list (text present and updates across a rerender, empty when no announcement
+is supplied, the region outside the grid element, axe clean with and without
+an announcement). `Board.test.tsx`'s existing 225-gridcell/axe assertions
+still pass unchanged, confirming the wrapper does not disturb the board
+(Board does not pass an `announcement` prop yet — that arrives when the board
+is wired to the session in a later step). `npm run build` succeeds. The
+board's visual layout with the wrapper in place is not checkable in jsdom and
+is confirmed by eye at Step 15's manual gate. No deviation from the plan; the
+wrapper approach worked, so the recorded fallback (rendering the region in
+the consumer instead) was not needed.
 
 Give `AccessibleGrid` an optional `announcement` prop and render it into a
 visually hidden live region, `role="status"` (which already carries polite,

@@ -3,10 +3,35 @@
    (e.g. grid-template-columns, --square) via its own `className` on the same
    element. `.accessible-grid__row` is `display: contents` so the `role="row"`
    wrapper divs required by the ARIA grid pattern don't break CSS Grid layout
-   - their `role="gridcell"` children still lay out as direct grid items. */
+   - their `role="gridcell"` children still lay out as direct grid items.
+
+   `.accessible-grid__wrapper` holds the grid element and its live region as
+   siblings (a `role="grid"` element may only own rows) and is itself
+   `display: contents`, so it never becomes a layout box: the grid element
+   stays whatever grid item a consumer's own `className` made it. The live
+   region is visually hidden with the standard clipped-absolute pattern, so
+   an absolutely positioned element consumes no track of its own even though
+   `display: contents` otherwise hands it straight to the surrounding
+   layout. */
+
+.accessible-grid__wrapper {
+  display: contents;
+}
 
 .accessible-grid {
   display: grid;
+}
+
+.accessible-grid__live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .accessible-grid__row {

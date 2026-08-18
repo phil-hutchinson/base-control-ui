@@ -5,12 +5,21 @@
 // `nextFocusPosition` (./gridNavigation.ts), and cell activation (click,
 // Enter, Space) plus dismissal (Escape).
 //
+// It also carries an optional live region: a visually hidden `role="status"`
+// element that announces whatever text the consumer supplies. A `role="grid"`
+// element may only own rows, so the region is rendered as a sibling of the
+// grid rather than inside it, under a wrapper with `display: contents` so
+// that wrapper never itself becomes a layout box - the grid element stays
+// whatever grid item a consumer's own CSS made it.
+//
 // This component knows nothing about pieces, sides, bays, or board
 // orientation - only about a 2-D array of `GridCellDescriptor`s (rendered
 // content, accessible label, and a focusable flag), and generic
-// "activate"/"dismiss" callbacks any composite widget of this kind could use.
-// Consumers map their own domain coordinates onto this generic row/column
-// index space and decide what activation and dismissal mean.
+// "activate"/"dismiss" callbacks and an announcement string any composite
+// widget of this kind could use. Consumers map their own domain coordinates
+// onto this generic row/column index space, decide what activation and
+// dismissal mean, and compose their own announcement text - this component
+// never composes wording of its own.
 
 import {
   useCallback,
@@ -49,6 +58,9 @@ export interface AccessibleGridProps {
   readonly onActivate?: (position: GridPosition) => void;
   /** Called when the player presses Escape anywhere in the grid. */
   readonly onDismiss?: () => void;
+  /** Text for the visually hidden live region. The grid renders this
+   * verbatim - it never composes an announcement from any other prop. */
+  readonly announcement?: string;
 }
 
 const ARROW_KEYS: ReadonlySet<string> = new Set([
@@ -76,6 +88,7 @@ export function AccessibleGrid({
   className,
   onActivate,
   onDismiss,
+  announcement,
 }: AccessibleGridProps) {
   const rowCount = rows.length;
   const columnCount = rowCount > 0 ? rows[0].length : 0;
@@ -160,70 +173,85 @@ export function AccessibleGrid({
   }
 
   return (
-    // `role="grid"` is a composite widget: per the WAI-ARIA authoring
-    // practices, the container itself is never a tab stop - only its cells
-    // are, via roving tabindex (see the `tabIndex` on each `role="gridcell"`
-    // below). eslint-plugin-jsx-a11y does not recognize that pattern and
-    // otherwise asks for a `tabIndex` on the container itself.
-    // eslint-disable-next-line jsx-a11y/interactive-supports-focus
-    <div
-      ref={containerRef}
-      className={classNames.join(" ")}
-      role="grid"
-      aria-label={label}
-      onKeyDown={handleKeyDown}
-    >
-      {rows.map((rowCells, rowIndex) => (
-        <div className="accessible-grid__row" role="row" key={rowIndex}>
-          {rowCells.map((cell, columnIndex) => {
-            const position: GridPosition = {
-              row: rowIndex,
-              column: columnIndex,
-            };
-            const isFocused =
-              focused !== undefined &&
-              focused.row === rowIndex &&
-              focused.column === columnIndex;
-            return (
-              // The cell's keyboard activation (Enter/Space) is handled by
-              // the grid's own `onKeyDown` above, not here - a click is just
-              // the pointer equivalent of the same "activate this cell"
-              // action. eslint-plugin-jsx-a11y checks each element in
-              // isolation and cannot see that, hence the disable.
-              // eslint-disable-next-line jsx-a11y/click-events-have-key-events
-              <div
-                key={columnIndex}
-                ref={(element) => {
-                  const key = positionKey(position);
-                  if (element) {
-                    cellRefs.current.set(key, element);
-                  } else {
-                    cellRefs.current.delete(key);
+    // The wrapper is `display: contents` so it never becomes a layout box of
+    // its own - the grid element below stays whatever grid item a consumer's
+    // `className` made it, with the live region as its sibling rather than
+    // its child (a `role="grid"` element may only own rows).
+    <div className="accessible-grid__wrapper">
+      {/* `role="grid"` is a composite widget: per the WAI-ARIA authoring
+          practices, the container itself is never a tab stop - only its
+          cells are, via roving tabindex (see the `tabIndex` on each
+          `role="gridcell"` below). eslint-plugin-jsx-a11y does not recognize
+          that pattern and otherwise asks for a `tabIndex` on the container
+          itself. */}
+      {/* eslint-disable-next-line jsx-a11y/interactive-supports-focus */}
+      <div
+        ref={containerRef}
+        className={classNames.join(" ")}
+        role="grid"
+        aria-label={label}
+        onKeyDown={handleKeyDown}
+      >
+        {rows.map((rowCells, rowIndex) => (
+          <div className="accessible-grid__row" role="row" key={rowIndex}>
+            {rowCells.map((cell, columnIndex) => {
+              const position: GridPosition = {
+                row: rowIndex,
+                column: columnIndex,
+              };
+              const isFocused =
+                focused !== undefined &&
+                focused.row === rowIndex &&
+                focused.column === columnIndex;
+              return (
+                // The cell's keyboard activation (Enter/Space) is handled by
+                // the grid's own `onKeyDown` above, not here - a click is just
+                // the pointer equivalent of the same "activate this cell"
+                // action. eslint-plugin-jsx-a11y checks each element in
+                // isolation and cannot see that, hence the disable.
+                // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+                <div
+                  key={columnIndex}
+                  ref={(element) => {
+                    const key = positionKey(position);
+                    if (element) {
+                      cellRefs.current.set(key, element);
+                    } else {
+                      cellRefs.current.delete(key);
+                    }
+                  }}
+                  className="accessible-grid__cell"
+                  role="gridcell"
+                  aria-label={cell.label}
+                  tabIndex={cell.focusable ? (isFocused ? 0 : -1) : undefined}
+                  onFocus={() => {
+                    // Real DOM focus can land on a cell other than the roving
+                    // target - a mouse click, for instance - so bring the
+                    // target back into sync whenever that happens; otherwise
+                    // the next arrow key would compute from a stale position.
+                    if (!isFocused) {
+                      setFocused(position);
+                    }
+                  }}
+                  onClick={
+                    cell.focusable ? () => onActivate?.(position) : undefined
                   }
-                }}
-                className="accessible-grid__cell"
-                role="gridcell"
-                aria-label={cell.label}
-                tabIndex={cell.focusable ? (isFocused ? 0 : -1) : undefined}
-                onFocus={() => {
-                  // Real DOM focus can land on a cell other than the roving
-                  // target - a mouse click, for instance - so bring the
-                  // target back into sync whenever that happens; otherwise
-                  // the next arrow key would compute from a stale position.
-                  if (!isFocused) {
-                    setFocused(position);
-                  }
-                }}
-                onClick={
-                  cell.focusable ? () => onActivate?.(position) : undefined
-                }
-              >
-                {cell.content}
-              </div>
-            );
-          })}
-        </div>
-      ))}
+                >
+                  {cell.content}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="accessible-grid__live-region"
+      >
+        {announcement}
+      </div>
     </div>
   );
 }
