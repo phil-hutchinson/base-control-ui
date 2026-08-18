@@ -84,6 +84,69 @@ describe("squareLabel", () => {
     ).toBe("H4, depleted site");
   });
 
+  it("names an unmarked square exactly as before, when no mark is given", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 8),
+        isBay: false,
+        occupant: { side: "green", shields: 0 },
+      }),
+    ).toBe("H8, green ship, 0 shields");
+  });
+
+  it("adds 'selected' last, after the shield count", () => {
+    expect(
+      squareLabel({
+        square: squareAt("G", 7),
+        isBay: false,
+        occupant: { side: "green", shields: 0 },
+        mark: "selected",
+      }),
+    ).toBe("G7, green ship, 0 shields, selected");
+  });
+
+  it("adds 'already moved this turn' last, after the shield count", () => {
+    expect(
+      squareLabel({
+        square: squareAt("M", 10),
+        isBay: false,
+        occupant: { side: "green", shields: 4 },
+        mark: "already-moved",
+      }),
+    ).toBe("M10, green ship, 4 shields, already moved this turn");
+  });
+
+  it("adds 'can move here' last, on an empty site square", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 8),
+        isBay: false,
+        siteState: "charged",
+        mark: "destination",
+      }),
+    ).toBe("H8, charged site, can move here");
+  });
+
+  it("adds 'can move here' last, on a plain empty square", () => {
+    expect(
+      squareLabel({
+        square: squareAt("G", 7),
+        isBay: false,
+        mark: "destination",
+      }),
+    ).toBe("G7, can move here");
+  });
+
+  it("adds 'can move here' last, on an empty bay", () => {
+    expect(
+      squareLabel({
+        square: squareAt("D", 15),
+        isBay: true,
+        mark: "destination",
+      }),
+    ).toBe("D15, bay, can move here");
+  });
+
   it("names an occupied site for each side, with its shield count", () => {
     expect(
       squareLabel({

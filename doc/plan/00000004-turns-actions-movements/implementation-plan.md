@@ -1331,7 +1331,40 @@ Also `npm run build`.
 
 ## Step 11 — Drawing selection, destinations and spent ships
 
-Status: pending
+Status: committed
+
+Notes: `src/board/squareLabel.ts` gained a `SquareMark` type
+(`"selected" | "destination" | "already-moved"`) and its wording table, with
+the mark appended last in `squareLabel`. `src/board/BoardSquare.tsx` gained
+three small SVG marker components (`DestinationMark`, `SelectedMark`,
+`SpentMark`), each in the same 0-100 viewBox `ShipIcon`/`SiteMarker` use, with
+`DESTINATION_DISC_RADIUS`, `SELECTED_BRACKET_INSET`/`_LENGTH`/`_STROKE_WIDTH`,
+`SPENT_BAR_WIDTH`/`_HEIGHT`/`_BOTTOM_INSET` and `SPENT_OPACITY` as the named
+constants decision 9 asks for, all local to that file. The three markings
+share one CSS custom property, `--interaction-accent` (defaulted in
+`BoardSquare.css` to a blue distinct from both side colours, the violet site
+accent, the cyan bay border and the amber focus ring), and are told apart from
+each other by shape alone, not colour. `SPENT_OPACITY` is threaded to
+`BoardSquare.css` as an inline `--spent-opacity` custom property on the
+square's root element rather than duplicated as a literal in the stylesheet,
+keeping the one constant the only place the number is written; `.ship-icon`'s
+opacity is set from it via a `.board-square--already-moved` descendant
+selector, so `ShipIcon.tsx` itself needed no change. `Board.tsx` computes each
+square's mark inside its existing `useMemo`: the selected ship's own square,
+its legal destinations from `legalDestinations` (Step 4's one function, called
+once per render, not per square), and any ship whose id is in
+`state.movedThisPly`. Extended `squareLabel.test.ts` with one case per mark
+(on a plain square, an empty site, and an empty bay) plus an explicit
+unmarked-square case, and `Board.test.tsx` with a `selection markings`
+describe block rendering a hand-built session (never the fixture, which does
+not exist yet) with green-1 selected on H8 and green-2 recorded as already
+moved, covering the selected square, exactly `legalDestinations`' squares,
+the one already-moved square, no marks with nothing selected, and axe
+mid-selection. `npm run typecheck`, `npm run lint`, `npm test`,
+`npm run format:check` and `npm run build` all pass. No deviation from the
+plan; the markings' legibility, greyscale survival and non-collision with
+sites, bays, ships and the focus ring are left for Step 15's manual gate, as
+the plan says.
 
 Give the board the three new markings from plan decision 9, and say them in the
 accessible names.

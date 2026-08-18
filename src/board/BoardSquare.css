@@ -17,3 +17,26 @@
   background: var(--bay-fill);
   border: 2px solid var(--bay-border);
 }
+
+/* The three interaction markings (destination, selected, spent) share one
+   accent, kept distinct from the side colors, the site accent, the bay cyan
+   and the focus-ring amber, so they read as one "you are choosing a move"
+   layer rather than game-state artwork. They differ from each other in
+   shape, not color, so the layer still reads in greyscale. */
+.board-square__mark {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--interaction-accent, #6fa8ff);
+}
+
+.board-square__mark--already-moved {
+  color: var(--color-text-dim);
+}
+
+/* A ship that has already moved this ply is drawn faded, alongside its
+   bottom-edge bar, so "spent" is a deliberate marking rather than a
+   lightness accident. */
+.board-square--already-moved .ship-icon {
+  opacity: var(--spent-opacity, 1);
+}

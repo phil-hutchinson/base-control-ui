@@ -8,7 +8,8 @@ import { BAYS, isBay } from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import { startingSiteState } from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
-import { createSession } from "../game/session";
+import { legalDestinations } from "../rules/movement";
+import { createSession, type Session } from "../game/session";
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
 
@@ -300,5 +301,91 @@ describe("Board", () => {
       screen.getByRole("gridcell", { name: "H15, bay" }),
     ).toBeInTheDocument();
     expect(container.querySelectorAll(".ship-icon--green")).toHaveLength(7);
+  });
+
+  describe("selection markings", () => {
+    // A hand-built session with green-1 selected on H8, and green-2 (still
+    // in its starting bay) already marked as moved this ply. Never built via
+    // the fixture, which the plan bans any test from depending on.
+    const state: GameState = {
+      ...startingGameState(),
+      ships: startingGameState().ships.map((ship) =>
+        ship.id === "green-1"
+          ? { ...ship, square: squareAt("H", 8), shields: 2 }
+          : ship,
+      ),
+      movedThisPly: ["green-2"],
+    };
+    const session: Session = {
+      state,
+      selectedShipId: "green-1",
+      lastEvent: undefined,
+    };
+
+    it("marks the selected ship's own square", () => {
+      render(<Board session={session} />);
+
+      expect(
+        screen.getByRole("gridcell", { name: /^H8,.*, selected$/ }),
+      ).toBeInTheDocument();
+    });
+
+    it("marks exactly the squares Step 4's legalDestinations calls legal", () => {
+      render(<Board session={session} />);
+
+      const destinations = legalDestinations(state, "green-1");
+      expect(destinations.length).toBeGreaterThan(0);
+      for (const destination of destinations) {
+        expect(
+          screen.getByRole("gridcell", {
+            name: new RegExp(`^${squareName(destination)},.*can move here$`),
+          }),
+        ).toBeInTheDocument();
+      }
+      expect(
+        screen.getAllByRole("gridcell", { name: /can move here$/ }),
+      ).toHaveLength(destinations.length);
+    });
+
+    it("marks a ship that has already moved this ply", () => {
+      render(<Board session={session} />);
+
+      const movedShip = state.ships.find((ship) => ship.id === "green-2");
+      expect(movedShip).toBeDefined();
+      expect(
+        screen.getByRole("gridcell", {
+          name: new RegExp(
+            `^${squareName(movedShip!.square)},.*already moved this turn$`,
+          ),
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getAllByRole("gridcell", {
+          name: /already moved this turn$/,
+        }),
+      ).toHaveLength(1);
+    });
+
+    it("marks no square when nothing is selected", () => {
+      render(<Board session={startingSession} />);
+
+      expect(
+        screen.queryByRole("gridcell", {
+          name: /, selected$|can move here$|already moved this turn$/,
+        }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("has no static accessibility violations mid-selection", async () => {
+      const { container } = render(<Board session={session} />);
+
+      const results = await axe.run(container, {
+        rules: {
+          "color-contrast": { enabled: false },
+        },
+      });
+
+      expect(results.violations).toEqual([]);
+    });
   });
 });

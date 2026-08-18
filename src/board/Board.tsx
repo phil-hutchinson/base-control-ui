@@ -7,9 +7,10 @@ import { useMemo } from "react";
 import { BOARD_SIZE, COLUMN_LETTERS, squareName } from "../rules/board";
 import { isBay } from "../rules/bays";
 import { shipsBySquare, siteStateAt } from "../rules/gameState";
+import { legalDestinations } from "../rules/movement";
 import type { Session } from "../game/session";
 import { squareForGridPosition } from "./boardView";
-import { squareLabel } from "./squareLabel";
+import { squareLabel, type SquareMark } from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
 import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import "./Board.css";
@@ -35,25 +36,49 @@ export interface BoardProps {
 export function Board({ session }: BoardProps) {
   const rows: GridCellDescriptor[][] = useMemo(() => {
     const ships = shipsBySquare(session.state);
+    const selectedShip =
+      session.selectedShipId === undefined
+        ? undefined
+        : session.state.ships.find(
+            (ship) => ship.id === session.selectedShipId,
+          );
+    const destinationSquareNames = new Set(
+      selectedShip
+        ? legalDestinations(session.state, selectedShip.id).map(squareName)
+        : [],
+    );
+
     return Array.from({ length: BOARD_SIZE }, (_, rowIndex) =>
       Array.from({ length: BOARD_SIZE }, (_, columnIndex) => {
         const square = squareForGridPosition({
           row: rowIndex,
           column: columnIndex,
         });
+        const name = squareName(square);
         const bay = isBay(square);
         const siteState = siteStateAt(session.state, square);
-        const ship = ships.get(squareName(square));
+        const ship = ships.get(name);
         const occupant = ship && { side: ship.side, shields: ship.shields };
+
+        let mark: SquareMark | undefined;
+        if (selectedShip && squareName(selectedShip.square) === name) {
+          mark = "selected";
+        } else if (destinationSquareNames.has(name)) {
+          mark = "destination";
+        } else if (ship && session.state.movedThisPly.includes(ship.id)) {
+          mark = "already-moved";
+        }
+
         return {
           content: (
             <BoardSquare
               isBay={bay}
               siteState={siteState}
               occupant={occupant}
+              mark={mark}
             />
           ),
-          label: squareLabel({ square, isBay: bay, siteState, occupant }),
+          label: squareLabel({ square, isBay: bay, siteState, occupant, mark }),
           focusable: true,
         };
       }),
