@@ -1250,7 +1250,37 @@ rewritten pass tests pass, and the rest of the suite is green.
 
 ## Step 9 — The attack gesture, and the words for it
 
-Status: pending
+Status: committed
+
+Notes: `src/game/session.ts` gained `AttackedEvent` (fields `from`/`target`
+rather than `from`/`to`, since neither ship moves), widened `RejectionReason`
+to include `AttackRefusalReason`, added `targetCount` to `SelectedEvent`, and
+replaced the friendly-reselect eligibility test and the no-selection
+eligibility test with a shared `isSelectable` helper built on
+`shipHasLegalAction` (selectable when it has a legal action, or when it has
+not moved yet at all — the existing pinned-ship allowance). Activating a
+square now branches on its occupant: empty → `applyMove` as before, friendly
+→ reselect or `ship-already-moved`, enemy → `applyAttack`, reporting
+`attacked` or a structured rejection. `src/board/announcements.ts` gained the
+three fight sentences (built from the single `fight-resolved` effect),
+generalised the move/attack "how the ply ended" clause into one
+`actionEndingClause` shared by both event kinds, added the five new refusal
+sentences, and replaced the selection sentence with `selectionCountsPhrase`
+covering all four count shapes. Tests added: `src/game/session.test.ts` (the
+attack gesture — adjacent attack, distant out-of-range rejection, reselecting
+a moved-but-still-armed friendly ship, rejecting a moved friendly ship with no
+target), `src/board/announcements.test.ts` (all four selection-count shapes,
+all three fight outcomes, all five new refusals, and an attack sharing a
+move's ending/pass clauses), and `src/board/Board.test.tsx` (focus stays on
+the attacked square after a keyboard attack, which now reads as an empty
+square — decision 18). Two pre-existing session tests asserted `targetCount`
+implicitly via full-object equality and needed the new field added; one
+pre-existing session test ("rejects an occupied destination as
+destination-occupied") exercised a scenario — activating an adjacent enemy
+ship — that the new gesture no longer routes through `applyMove` at all, so it
+was replaced rather than weakened, per the story's own expectation that this
+is "the regression this test exists to catch". No other deviation from the
+plan; `combat.ts`, `ply.ts` and `actions.ts` were not touched.
 
 Teach the session that activating an enemy ship is an attack, widen which ships
 may be selected, and write the wording for everything new.

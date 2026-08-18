@@ -790,6 +790,35 @@ describe("Board", () => {
       });
     });
 
+    it("keeps focus on the attacked square, which now reads as empty", async () => {
+      const user = userEvent.setup();
+      const state: GameState = {
+        ...startingGameState(TEST_SEED),
+        ships: startingGameState(TEST_SEED).ships.map((ship) => {
+          if (ship.id === "green-1") {
+            return { ...ship, square: squareAt("H", 8), shields: 4 };
+          }
+          if (ship.id === "red-1") {
+            return { ...ship, square: squareAt("H", 9), shields: 0 };
+          }
+          return ship;
+        }),
+      };
+      render(<Harness initial={state} />);
+
+      await activate(user, "keyboard", cell(/^H8,/));
+      await activate(user, "keyboard", cell(/^H9,.*red ship/));
+
+      const attackedCell = cell("H9");
+      expect(document.activeElement).toBe(attackedCell);
+      expect(screen.getByRole("grid")).toContainElement(
+        document.activeElement as HTMLElement,
+      );
+      expect(liveRegion()).toHaveTextContent(
+        /^Green ship at H8 attacked the red ship at H9 and won\./,
+      );
+    });
+
     it("cancels the selection on Escape from anywhere in the grid", async () => {
       const user = userEvent.setup();
       render(<Harness initial={baseState()} />);

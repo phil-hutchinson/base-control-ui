@@ -8,12 +8,28 @@ import { squareName } from "../rules/board";
 import type { EndOfTurnEffect, ShieldGainedEffect } from "../rules/endOfTurn";
 import type { Side } from "../rules/fleet";
 import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
-import type { MoveEffect, PassEffect } from "../rules/ply";
+import type {
+  AttackEffect,
+  FightResolvedEffect,
+  MoveEffect,
+  PassEffect,
+  PlyEndedEffect,
+} from "../rules/ply";
 import { MAX_SHIELDS } from "../rules/shields";
-import type { MovedEvent, RejectedEvent, SessionEvent } from "../game/session";
+import type {
+  AttackedEvent,
+  MovedEvent,
+  RejectedEvent,
+  SessionEvent,
+} from "../game/session";
 
 function capitalize(side: Side): string {
   return side === "green" ? "Green" : "Red";
+}
+
+/** The side's name in lower case, for use mid-sentence rather than at its start. */
+function sideWord(side: Side): string {
+  return side === "green" ? "green" : "red";
 }
 
 function actionsPhrase(count: number): string {
@@ -22,6 +38,35 @@ function actionsPhrase(count: number): string {
 
 function movesPhrase(count: number): string {
   return `${count} ${count === 1 ? "move" : "moves"}`;
+}
+
+function targetsPhrase(count: number): string {
+  return `${count} ${count === 1 ? "target" : "targets"}`;
+}
+
+function shieldsPhrase(count: number): string {
+  return `${count} ${count === 1 ? "shield" : "shields"}`;
+}
+
+/**
+ * The selection sentence's counts clause (rules.md §5): both moves and
+ * targets when both exist, whichever one exists alone, or a plain statement
+ * that nothing is available.
+ */
+function selectionCountsPhrase(
+  destinationCount: number,
+  targetCount: number,
+): string {
+  if (destinationCount > 0 && targetCount > 0) {
+    return `${movesPhrase(destinationCount)} and ${targetsPhrase(targetCount)} available.`;
+  }
+  if (destinationCount > 0) {
+    return `${movesPhrase(destinationCount)} available.`;
+  }
+  if (targetCount > 0) {
+    return `${targetsPhrase(targetCount)} available.`;
+  }
+  return "No actions available.";
 }
 
 /** "Green's turn, 2 actions left" — used inside announcements, not the indicator. */
@@ -154,24 +199,27 @@ function moveSentence(event: MovedEvent): string {
 }
 
 /**
- * How a move's ply ended, if at all: the end-of-turn sequence's own clauses,
- * then the other side's turn if the ply ended, a further pass (with its own
- * end-of-turn clauses) if the resulting side had no legal move at all, or
- * how many actions the mover has left if the ply simply continues.
+ * How an action's ply ended, if at all: the end-of-turn sequence's own
+ * clauses, then the other side's turn if the ply ended, a further pass (with
+ * its own end-of-turn clauses) if the resulting side had no legal action at
+ * all, or how many actions the acting side has left if the ply simply
+ * continues. Shared by a move and an attack — both end a ply the same way.
  */
-function moveEndingClause(event: MovedEvent): string {
-  const plyEndedEffect = event.effects.find(
-    (effect): effect is Extract<MoveEffect, { type: "ply-ended" }> =>
-      effect.type === "ply-ended",
+function actionEndingClause(
+  side: Side,
+  effects: readonly (MoveEffect | AttackEffect)[],
+  actionsRemaining: number,
+): string {
+  const plyEndedEffect = effects.find(
+    (effect): effect is PlyEndedEffect => effect.type === "ply-ended",
   );
   const plyEndedClauses =
     plyEndedEffect !== undefined
       ? endOfTurnClauses(plyEndedEffect.endOfTurn)
       : [];
 
-  const passEffect = event.effects.find(
-    (effect): effect is Extract<MoveEffect, { type: "ply-passed" }> =>
-      effect.type === "ply-passed",
+  const passEffect = effects.find(
+    (effect): effect is PassEffect => effect.type === "ply-passed",
   );
   if (passEffect !== undefined) {
     return [...plyEndedClauses, passSentence(passEffect)].join(" ");
@@ -184,7 +232,51 @@ function moveEndingClause(event: MovedEvent): string {
     ].join(" ");
   }
 
-  return `${capitalize(event.side)} has ${actionsPhrase(event.actionsRemaining)} left.`;
+  return `${capitalize(side)} has ${actionsPhrase(actionsRemaining)} left.`;
+}
+
+/**
+ * The fight's own sentence (rules.md §7), from the single `fight-resolved`
+ * effect an attack always carries. The losing-attacker sentence reads as a
+ * deliberate choice, not an error: §7 permits attacking a stronger enemy, and
+ * stripping its shields at the cost of the attacker's own is a real tactic.
+ */
+function fightSentence(event: AttackedEvent): string {
+  const fight = event.effects.find(
+    (effect): effect is FightResolvedEffect => effect.type === "fight-resolved",
+  );
+  if (fight === undefined) {
+    throw new RangeError(
+      "an attacked event always carries a fight-resolved effect",
+    );
+  }
+
+  const attackerSquare = squareName(fight.attacker.square);
+  const defenderSquare = squareName(fight.defender.square);
+  const attackerSide = capitalize(fight.attacker.side);
+  const defenderSide = sideWord(fight.defender.side);
+  const opening = `${attackerSide} ship at ${attackerSquare} attacked the ${defenderSide} ship at ${defenderSquare}`;
+
+  if (fight.outcome === "mutual-return") {
+    const [attackerReturn, defenderReturn] = fight.returns;
+    return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both with no shields.`;
+  }
+
+  if (fight.winner === undefined) {
+    throw new RangeError(
+      "a decided fight always carries a winner: rules.md §7",
+    );
+  }
+
+  if (fight.outcome === "attacker-won") {
+    const [defenderReturn] = fight.returns;
+    const cost = fight.defender.shields + 1;
+    return `${opening} and won. The beaten ship returned to the ${squareName(defenderReturn.to)} bay with no shields. The fight cost ${shieldsPhrase(cost)}, leaving the winner on ${fight.winner.remainingShields}.`;
+  }
+
+  const [attackerReturn] = fight.returns;
+  const cost = fight.attacker.shields + 1;
+  return `${opening} and lost. The beaten ship returned to the ${squareName(attackerReturn.to)} bay with no shields. The fight cost the defender ${shieldsPhrase(cost)}, leaving it on ${fight.winner.remainingShields}.`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {
@@ -208,6 +300,19 @@ function rejectionSentence(event: RejectedEvent): string {
       return `${square} is a dormant site — a ship cannot stop there.`;
     case "destination-depleted-site":
       return `${square} is a depleted site — a ship cannot stop there.`;
+    case "attacker-in-bay":
+      return "A ship in a bay cannot attack. Move it out first.";
+    case "target-in-bay":
+      return "A ship in a bay cannot be attacked.";
+    case "target-not-adjacent":
+      return `${square} is out of attack range. An attack reaches only the eight squares around a ship.`;
+    // Unreachable through the board's own gesture — activating a friendly
+    // ship re-selects it and activating an empty square is a move attempt —
+    // but `attackRefusalReason` answers for every square, so both are worded.
+    case "target-is-friendly":
+      return "That is your own ship, not a target.";
+    case "no-target-there":
+      return `There is no ship on ${square} to attack.`;
   }
 }
 
@@ -222,11 +327,13 @@ export function announcementFor(event: SessionEvent | undefined): string {
 
   switch (event.type) {
     case "selected":
-      return `${capitalize(event.side)} ship at ${squareName(event.square)} selected. ${movesPhrase(event.destinationCount)} available.`;
+      return `${capitalize(event.side)} ship at ${squareName(event.square)} selected. ${selectionCountsPhrase(event.destinationCount, event.targetCount)}`;
     case "selection-cleared":
       return "Selection cleared.";
     case "moved":
-      return `${moveSentence(event)} ${moveEndingClause(event)}`;
+      return `${moveSentence(event)} ${actionEndingClause(event.side, event.effects, event.actionsRemaining)}`;
+    case "attacked":
+      return `${fightSentence(event)} ${actionEndingClause(event.side, event.effects, event.actionsRemaining)}`;
     case "ply-passed":
       return passSentence(event);
     case "rejected":

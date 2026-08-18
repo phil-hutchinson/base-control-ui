@@ -8,8 +8,9 @@ import {
   type Ship,
   type SiteStatus,
 } from "../rules/gameState";
+import { legalTargets } from "../rules/combat";
 import { legalDestinations } from "../rules/movement";
-import { applyMove } from "../rules/ply";
+import { applyAttack, applyMove } from "../rules/ply";
 import type { ShieldCount } from "../rules/shields";
 import type { SiteState } from "../rules/sites";
 import { createSession, type Session, sessionReducer } from "./session";
@@ -79,6 +80,7 @@ describe("sessionReducer — nothing selected", () => {
       side: "green",
       square: squareFromName("H8"),
       destinationCount: legalDestinations(state, "green-1").length,
+      targetCount: legalTargets(state, "green-1").length,
     });
   });
 
@@ -158,6 +160,7 @@ describe("sessionReducer — a ship is selected", () => {
       side: "green",
       square: squareFromName("A1"),
       destinationCount: legalDestinations(state, "green-2").length,
+      targetCount: legalTargets(state, "green-2").length,
     });
   });
 
@@ -186,24 +189,103 @@ describe("sessionReducer — a ship is selected", () => {
     });
   });
 
-  describe("rejections", () => {
-    it("rejects an occupied destination as destination-occupied, leaving the selection and state untouched", () => {
+  describe("the attack gesture", () => {
+    it("attacks an adjacent enemy ship, clearing the selection", () => {
       const state = buildState({
-        ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "H9")],
+        ships: [
+          ship("green-1", "green", "H8", 4),
+          ship("red-1", "red", "H9", 0),
+        ],
+      });
+      const selected = activate(sessionFor(state), "H8");
+      const target = squareFromName("H9");
+
+      const result = activate(selected, "H9");
+
+      expect(result.selectedShipId).toBeUndefined();
+      const direct = applyAttack(state, "green-1", target);
+      expect(direct.outcome).toBe("applied");
+      if (direct.outcome !== "applied") {
+        throw new Error("expected the attack to be applied");
+      }
+      expect(result.state).toEqual(direct.state);
+      expect(result.lastEvent).toEqual({
+        type: "attacked",
+        shipId: "green-1",
+        side: "green",
+        from: squareFromName("H8"),
+        target,
+        effects: direct.effects,
+        actionsRemaining: direct.state.actionsRemaining,
+      });
+    });
+
+    it("rejects a distant enemy as out of attack range, not as a blocked or occupied move", () => {
+      const state = buildState({
+        ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
       });
       const selected = activate(sessionFor(state), "H8");
 
-      const result = activate(selected, "H9");
+      const result = activate(selected, "A1");
 
       expect(result.selectedShipId).toBe("green-1");
       expect(result.state).toBe(state);
       expect(result.lastEvent).toEqual({
         type: "rejected",
-        reason: "destination-occupied",
-        square: squareFromName("H9"),
+        reason: "target-not-adjacent",
+        square: squareFromName("A1"),
       });
     });
 
+    it("re-selects a friendly ship that has moved but can still attack", () => {
+      const state = buildState({
+        ships: [
+          ship("green-1", "green", "H8"),
+          ship("green-2", "green", "K5"),
+          ship("red-1", "red", "K6"),
+        ],
+        movedThisPly: ["green-2"],
+      });
+      const selected = activate(sessionFor(state), "H8");
+
+      const result = activate(selected, "K5");
+
+      expect(result.selectedShipId).toBe("green-2");
+      expect(result.state).toBe(state);
+      expect(result.lastEvent).toEqual({
+        type: "selected",
+        shipId: "green-2",
+        side: "green",
+        square: squareFromName("K5"),
+        destinationCount: 0,
+        targetCount: 1,
+      });
+    });
+
+    it("rejects a friendly ship that has moved and has no target as ship-already-moved", () => {
+      const state = buildState({
+        ships: [
+          ship("green-1", "green", "H8"),
+          ship("green-2", "green", "K5"),
+          ship("red-1", "red", "A1"),
+        ],
+        movedThisPly: ["green-2"],
+      });
+      const selected = activate(sessionFor(state), "H8");
+
+      const result = activate(selected, "K5");
+
+      expect(result.selectedShipId).toBe("green-1");
+      expect(result.state).toBe(state);
+      expect(result.lastEvent).toEqual({
+        type: "rejected",
+        reason: "ship-already-moved",
+        square: squareFromName("K5"),
+      });
+    });
+  });
+
+  describe("rejections", () => {
     it("rejects a square beyond the ship's reach as out-of-range", () => {
       const state = buildState({ ships: [ship("green-1", "green", "H8")] });
       const selected = activate(sessionFor(state), "H8");

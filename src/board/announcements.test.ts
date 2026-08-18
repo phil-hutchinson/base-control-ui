@@ -3,13 +3,14 @@ import { STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
 import { squareAt } from "../rules/board";
 import { ACTIONS_PER_PLY } from "../rules/gameState";
 import type {
+  AttackedEvent,
   MovedEvent,
   RejectedEvent,
   RejectionReason,
   SelectedEvent,
   SelectionClearedEvent,
 } from "../game/session";
-import type { PassEffect } from "../rules/ply";
+import type { FightResolvedEffect, PassEffect } from "../rules/ply";
 import { announcementFor, turnIndicatorText } from "./announcements";
 
 describe("announcementFor", () => {
@@ -20,6 +21,7 @@ describe("announcementFor", () => {
       side: "green",
       square: squareAt("G", 7),
       destinationCount: 20,
+      targetCount: 0,
     };
     expect(announcementFor(event)).toBe(
       "Green ship at G7 selected. 20 moves available.",
@@ -33,9 +35,66 @@ describe("announcementFor", () => {
       side: "red",
       square: squareAt("M", 10),
       destinationCount: 1,
+      targetCount: 0,
     };
     expect(announcementFor(event)).toBe(
       "Red ship at M10 selected. 1 move available.",
+    );
+  });
+
+  it("counts targets on selection, plural, when there are no moves", () => {
+    const event: SelectedEvent = {
+      type: "selected",
+      shipId: "green-1",
+      side: "green",
+      square: squareAt("G", 7),
+      destinationCount: 0,
+      targetCount: 2,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at G7 selected. 2 targets available.",
+    );
+  });
+
+  it("uses the singular at one target", () => {
+    const event: SelectedEvent = {
+      type: "selected",
+      shipId: "red-1",
+      side: "red",
+      square: squareAt("M", 10),
+      destinationCount: 0,
+      targetCount: 1,
+    };
+    expect(announcementFor(event)).toBe(
+      "Red ship at M10 selected. 1 target available.",
+    );
+  });
+
+  it("counts both moves and targets when both are available", () => {
+    const event: SelectedEvent = {
+      type: "selected",
+      shipId: "green-1",
+      side: "green",
+      square: squareAt("G", 7),
+      destinationCount: 2,
+      targetCount: 1,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at G7 selected. 2 moves and 1 target available.",
+    );
+  });
+
+  it("says no actions are available when neither a move nor a target exists", () => {
+    const event: SelectedEvent = {
+      type: "selected",
+      shipId: "green-1",
+      side: "green",
+      square: squareAt("G", 7),
+      destinationCount: 0,
+      targetCount: 0,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at G7 selected. No actions available.",
     );
   });
 
@@ -194,6 +253,23 @@ describe("announcementFor", () => {
       squareAt("H", 4),
       "H4 is a depleted site — a ship cannot stop there.",
     ],
+    [
+      "attacker-in-bay",
+      squareAt("H", 15),
+      "A ship in a bay cannot attack. Move it out first.",
+    ],
+    ["target-in-bay", squareAt("A", 6), "A ship in a bay cannot be attacked."],
+    [
+      "target-not-adjacent",
+      squareAt("J", 7),
+      "J7 is out of attack range. An attack reaches only the eight squares around a ship.",
+    ],
+    [
+      "target-is-friendly",
+      squareAt("G", 7),
+      "That is your own ship, not a target.",
+    ],
+    ["no-target-there", squareAt("G", 4), "There is no ship on G4 to attack."],
   ];
 
   it.each(cases)(
@@ -608,6 +684,234 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Red has no legal move, so the turn passes. Red ship at K11 gained a shield, now on 2. Green's turn, 2 actions left.",
+    );
+  });
+});
+
+describe("announcementFor — combat (rules.md \u00a77)", () => {
+  it("announces the attacker winning: outcome, bay and shield cost", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      outcome: "attacker-won",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("J", 4),
+        shields: 4,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("K", 5),
+        shields: 0,
+      },
+      winner: { shipId: "green-1", remainingShields: 3 },
+      returns: [
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("K", 5),
+          to: squareAt("D", 1),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("J", 4),
+      target: squareAt("K", 5),
+      effects: [fight],
+      actionsRemaining: 1,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at J4 attacked the red ship at K5 and won. " +
+        "The beaten ship returned to the D1 bay with no shields. " +
+        "The fight cost 1 shield, leaving the winner on 3. " +
+        "Green has 1 action left.",
+    );
+  });
+
+  it("announces the defender winning, read as a real choice rather than an error", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      outcome: "defender-won",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("G", 9),
+        shields: 1,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("H", 9),
+        shields: 3,
+      },
+      winner: { shipId: "red-1", remainingShields: 1 },
+      returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("G", 9),
+          to: squareAt("D", 1),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("G", 9),
+      target: squareAt("H", 9),
+      effects: [fight],
+      actionsRemaining: 1,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at G9 attacked the red ship at H9 and lost. " +
+        "The beaten ship returned to the D1 bay with no shields. " +
+        "The fight cost the defender 2 shields, leaving it on 1. " +
+        "Green has 1 action left.",
+    );
+  });
+
+  it("announces a mutual return, naming both bays", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      outcome: "mutual-return",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("C", 6),
+        shields: 2,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("C", 7),
+        shields: 2,
+      },
+      returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("C", 6),
+          to: squareAt("D", 1),
+        },
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("C", 7),
+          to: squareAt("A", 2),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 6),
+      target: squareAt("C", 7),
+      effects: [fight],
+      actionsRemaining: 1,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at C6 attacked the red ship at C7 and both were beaten. " +
+        "The attacker returned to the D1 bay and the defender to the A2 bay, both with no shields. " +
+        "Green has 1 action left.",
+    );
+  });
+
+  it("carries the same ending clause a move uses when an attack ends the ply", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      outcome: "attacker-won",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("J", 4),
+        shields: 1,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("K", 5),
+        shields: 0,
+      },
+      winner: { shipId: "green-1", remainingShields: 0 },
+      returns: [
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("K", 5),
+          to: squareAt("D", 1),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("J", 4),
+      target: squareAt("K", 5),
+      effects: [
+        fight,
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at J4 attacked the red ship at K5 and won. " +
+        "The beaten ship returned to the D1 bay with no shields. " +
+        "The fight cost 1 shield, leaving the winner on 0. " +
+        "Red's turn, 2 actions left.",
+    );
+  });
+
+  it("carries a following pass when the fight leaves the other side with nothing to do", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      outcome: "attacker-won",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("J", 4),
+        shields: 1,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("K", 5),
+        shields: 0,
+      },
+      winner: { shipId: "green-1", remainingShields: 0 },
+      returns: [
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("K", 5),
+          to: squareAt("D", 1),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("J", 4),
+      target: squareAt("K", 5),
+      effects: [
+        fight,
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+        { type: "ply-passed", side: "red", sideToMove: "green", endOfTurn: [] },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at J4 attacked the red ship at K5 and won. " +
+        "The beaten ship returned to the D1 bay with no shields. " +
+        "The fight cost 1 shield, leaving the winner on 0. " +
+        "Red has no legal move, so the turn passes. Green's turn, 2 actions left.",
     );
   });
 });
