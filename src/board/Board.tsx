@@ -1,16 +1,16 @@
-// The board: 15 x 15 squares with the fourteen bays marked and the starting
-// fleet drawn on them (see ShipIcon.tsx). This component walks the grid's
-// index space, maps each cell back to its rule-space square, and gives it
-// its accessible name.
+// The board: 15 x 15 squares built from a game session's state (see
+// BoardSquare.tsx for one square's contents). This component walks the
+// grid's index space, maps each cell back to its rule-space square, and
+// gives it its accessible name.
 
-import { BOARD_SIZE, COLUMN_LETTERS } from "../rules/board";
+import { useMemo } from "react";
+import { BOARD_SIZE, COLUMN_LETTERS, squareName } from "../rules/board";
 import { isBay } from "../rules/bays";
-import { startingShipAt } from "../rules/fleet";
-import { startingSiteState } from "../rules/sites";
+import { shipsBySquare, siteStateAt } from "../rules/gameState";
+import type { Session } from "../game/session";
 import { squareForGridPosition } from "./boardView";
 import { squareLabel } from "./squareLabel";
-import { ShipIcon } from "./ShipIcon";
-import { SiteMarker } from "./SiteMarker";
+import { BoardSquare } from "./BoardSquare";
 import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import "./Board.css";
 
@@ -20,47 +20,46 @@ const DISPLAY_ROW_NUMBERS = Array.from(
   (_, gridRow) => squareForGridPosition({ row: gridRow, column: 0 }).row,
 );
 
-/**
- * The board's 15 rows of 15 cell descriptors, in grid screen order. The
- * starting position is fixed, so this is built once at module load rather
- * than on every render.
- */
-const BOARD_ROWS: GridCellDescriptor[][] = Array.from(
-  { length: BOARD_SIZE },
-  (_, rowIndex) =>
-    Array.from({ length: BOARD_SIZE }, (_, columnIndex) => {
-      const square = squareForGridPosition({
-        row: rowIndex,
-        column: columnIndex,
-      });
-      const bay = isBay(square);
-      const siteState = startingSiteState(square);
-      const occupant = startingShipAt(square);
-      return {
-        content: (
-          <div
-            className={bay ? "board-square board-square--bay" : "board-square"}
-          >
-            {siteState && <SiteMarker state={siteState} />}
-            {occupant && (
-              <ShipIcon side={occupant.side} shields={occupant.shields} />
-            )}
-          </div>
-        ),
-        label: squareLabel({ square, isBay: bay, siteState, occupant }),
-        focusable: true,
-      };
-    }),
-);
+export interface BoardProps {
+  /** The session whose game state the board renders a picture of. */
+  readonly session: Session;
+}
 
 /**
- * The 15 x 15 board grid, with the fourteen starting ships drawn on it, and
- * visible column/row labels around its edges so a sighted reader can find a
- * square by eye. The labels are decorative: every square's accessible name
- * already carries its coordinates, so the labels are `aria-hidden` and sit
- * outside the `role="grid"` element (a grid may only own rows).
+ * The 15 x 15 board grid, drawn from a session's game state, with visible
+ * column/row labels around its edges so a sighted reader can find a square
+ * by eye. The labels are decorative: every square's accessible name already
+ * carries its coordinates, so the labels are `aria-hidden` and sit outside
+ * the `role="grid"` element (a grid may only own rows).
  */
-export function Board() {
+export function Board({ session }: BoardProps) {
+  const rows: GridCellDescriptor[][] = useMemo(() => {
+    const ships = shipsBySquare(session.state);
+    return Array.from({ length: BOARD_SIZE }, (_, rowIndex) =>
+      Array.from({ length: BOARD_SIZE }, (_, columnIndex) => {
+        const square = squareForGridPosition({
+          row: rowIndex,
+          column: columnIndex,
+        });
+        const bay = isBay(square);
+        const siteState = siteStateAt(session.state, square);
+        const ship = ships.get(squareName(square));
+        const occupant = ship && { side: ship.side, shields: ship.shields };
+        return {
+          content: (
+            <BoardSquare
+              isBay={bay}
+              siteState={siteState}
+              occupant={occupant}
+            />
+          ),
+          label: squareLabel({ square, isBay: bay, siteState, occupant }),
+          focusable: true,
+        };
+      }),
+    );
+  }, [session]);
+
   return (
     <div className="board-frame">
       <div className="board-frame__row-labels" aria-hidden="true">
@@ -72,7 +71,7 @@ export function Board() {
       </div>
       <AccessibleGrid
         label="Base Control board"
-        rows={BOARD_ROWS}
+        rows={rows}
         className="board"
       />
       <div className="board-frame__corner" aria-hidden="true" />

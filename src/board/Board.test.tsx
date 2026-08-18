@@ -3,25 +3,39 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
-import { ALL_SQUARES, squareAt } from "../rules/board";
+import { ALL_SQUARES, squareAt, squareName, type Square } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
-import { STARTING_FLEET, startingShipAt } from "../rules/fleet";
+import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import { startingSiteState } from "../rules/sites";
+import { startingGameState, type GameState } from "../rules/gameState";
+import { createSession } from "../game/session";
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
 
 afterEach(cleanup);
 
+/** A square-name-keyed lookup of `STARTING_FLEET`, for building expected
+ * accessible names — nothing in production looks up a starting ship by
+ * square any more, so these tests build their own local index. */
+const STARTING_ENTRY_BY_SQUARE: ReadonlyMap<string, FleetEntry> = new Map(
+  STARTING_FLEET.map((entry) => [squareName(entry.square), entry]),
+);
+function startingShipAt(square: Square): FleetEntry | undefined {
+  return STARTING_ENTRY_BY_SQUARE.get(squareName(square));
+}
+
+const startingSession = createSession(startingGameState());
+
 describe("Board", () => {
   it("renders 225 gridcells in 15 rows", () => {
-    render(<Board />);
+    render(<Board session={startingSession} />);
 
     expect(screen.getAllByRole("row")).toHaveLength(15);
     expect(screen.getAllByRole("gridcell")).toHaveLength(225);
   });
 
   it("draws A15 first and O1 last in DOM order", () => {
-    render(<Board />);
+    render(<Board session={startingSession} />);
 
     const cells = screen.getAllByRole("gridcell");
     expect(cells[0]).toHaveAccessibleName("A15");
@@ -29,7 +43,7 @@ describe("Board", () => {
   });
 
   it("names the centre and the far corners correctly", () => {
-    render(<Board />);
+    render(<Board session={startingSession} />);
 
     // H8 is the centre square and an active site at the start.
     expect(
@@ -40,7 +54,7 @@ describe("Board", () => {
   });
 
   it("names every bay with 'bay' and no other square", () => {
-    render(<Board />);
+    render(<Board session={startingSession} />);
 
     // A handful of literal expected names, independent of the production
     // label-building functions the completeness loop below re-uses to build
@@ -75,7 +89,7 @@ describe("Board", () => {
   });
 
   it("marks the fourteen bay cells distinctly and draws different silhouettes per side", () => {
-    const { container } = render(<Board />);
+    const { container } = render(<Board session={startingSession} />);
 
     expect(container.querySelectorAll(".board-square--bay")).toHaveLength(
       BAYS.length,
@@ -89,7 +103,7 @@ describe("Board", () => {
   });
 
   it("draws exactly as many shield arcs as the starting fleet carries", () => {
-    const { container } = render(<Board />);
+    const { container } = render(<Board session={startingSession} />);
 
     const expectedArcs = STARTING_FLEET.reduce(
       (total, entry) => total + entry.shields,
@@ -101,7 +115,7 @@ describe("Board", () => {
   });
 
   it("names each starting ship's square with its side, and no other square", () => {
-    render(<Board />);
+    render(<Board session={startingSession} />);
 
     for (const entry of STARTING_FLEET) {
       const cell = screen.getByRole("gridcell", {
@@ -120,7 +134,7 @@ describe("Board", () => {
   });
 
   it("hides the ship artwork from the accessibility tree", () => {
-    render(<Board />);
+    render(<Board session={startingSession} />);
 
     const square = squareAt("H", 15);
     const label = squareLabel({
@@ -137,7 +151,7 @@ describe("Board", () => {
   });
 
   it("draws visible column letters and row numbers, hidden from the accessibility tree", () => {
-    const { container } = render(<Board />);
+    const { container } = render(<Board session={startingSession} />);
 
     // The grid itself is unaffected: still 225 cells, none of them the labels.
     expect(screen.getAllByRole("row")).toHaveLength(15);
@@ -187,7 +201,7 @@ describe("Board", () => {
     );
 
     it("draws a site marker on exactly the seventeen sites from rules.md §3.2", () => {
-      const { container } = render(<Board />);
+      const { container } = render(<Board session={startingSession} />);
 
       expect(container.querySelectorAll(".site-marker")).toHaveLength(17);
       for (const square of ACTIVE_SITE_SQUARES) {
@@ -205,7 +219,7 @@ describe("Board", () => {
     });
 
     it("names exactly five sites active and twelve dormant, none charged or depleted", () => {
-      render(<Board />);
+      render(<Board session={startingSession} />);
 
       expect(
         screen.getAllByRole("gridcell", { name: /, active site$/ }),
@@ -222,7 +236,7 @@ describe("Board", () => {
     });
 
     it("spot-checks a few sites' literal accessible names", () => {
-      render(<Board />);
+      render(<Board session={startingSession} />);
 
       expect(
         screen.getByRole("gridcell", { name: "E5, active site" }),
@@ -239,7 +253,7 @@ describe("Board", () => {
     });
 
     it("never draws a site marker on a bay, and never names a bay a site", () => {
-      const { container } = render(<Board />);
+      const { container } = render(<Board session={startingSession} />);
 
       const bayElements = container.querySelectorAll(".board-square--bay");
       expect(bayElements).toHaveLength(BAYS.length);
@@ -253,7 +267,7 @@ describe("Board", () => {
   });
 
   it("has no static accessibility violations", async () => {
-    const { container } = render(<Board />);
+    const { container } = render(<Board session={startingSession} />);
 
     const results = await axe.run(container, {
       rules: {
@@ -262,5 +276,29 @@ describe("Board", () => {
     });
 
     expect(results.violations).toEqual([]);
+  });
+
+  it("renders from the game state it is given, not the starting position", () => {
+    const state: GameState = {
+      ...startingGameState(),
+      ships: startingGameState().ships.map((ship) =>
+        ship.id === "green-1" ? { ...ship, square: squareAt("H", 8) } : ship,
+      ),
+    };
+    const session = createSession(state);
+
+    const { container } = render(<Board session={session} />);
+
+    // H8 is a site as well as this ship's new square; both are named.
+    const cell = screen.getByRole("gridcell", {
+      name: "H8, active site, green ship, 0 shields",
+    });
+    expect(cell).toBeInTheDocument();
+    expect(cell.querySelector(".ship-icon--green")).toBeInTheDocument();
+    // The bay green-1 started in is empty now.
+    expect(
+      screen.getByRole("gridcell", { name: "H15, bay" }),
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll(".ship-icon--green")).toHaveLength(7);
   });
 });

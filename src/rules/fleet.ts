@@ -1,7 +1,7 @@
 // The two sides and the starting fleet (rules.md §4): seven ships a side,
 // one per bay, alternating clockwise from H15.
 
-import { type Square, squareAt, squareName } from "./board";
+import { type Square, squareAt } from "./board";
 import type { ShieldCount } from "./shields";
 
 /** The two sides (rules.md §4). */
@@ -41,12 +41,3 @@ export const STARTING_FLEET: readonly FleetEntry[] = [
   { id: "green-7", square: squareAt("A", 14), side: "green", shields: 0 },
   { id: "red-7", square: squareAt("D", 15), side: "red", shields: 0 },
 ];
-
-const STARTING_ENTRY_BY_SQUARE: ReadonlyMap<string, FleetEntry> = new Map(
-  STARTING_FLEET.map((entry) => [squareName(entry.square), entry]),
-);
-
-/** The ship (if any) that starts the game on the given square. */
-export function startingShipAt(square: Square): FleetEntry | undefined {
-  return STARTING_ENTRY_BY_SQUARE.get(squareName(square));
-}

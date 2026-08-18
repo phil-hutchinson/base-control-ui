@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { BAYS } from "./bays";
-import { COLUMN_LETTERS, squareAt, squareName } from "./board";
-import { STARTING_FLEET, startingShipAt } from "./fleet";
+import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
+import { STARTING_FLEET, type FleetEntry } from "./fleet";
 import { isShieldCount } from "./shields";
+
+/** A square-name-keyed lookup of `STARTING_FLEET`, built locally for these
+ * tests rather than exported from `fleet.ts` — nothing in production needs
+ * to look up a starting ship by square any more. */
+const STARTING_ENTRY_BY_SQUARE: ReadonlyMap<string, FleetEntry> = new Map(
+  STARTING_FLEET.map((entry) => [squareName(entry.square), entry]),
+);
+function startingShipAt(square: Square): FleetEntry | undefined {
+  return STARTING_ENTRY_BY_SQUARE.get(squareName(square));
+}
 
 describe("starting fleet", () => {
   it("has fourteen ships, seven a side", () => {

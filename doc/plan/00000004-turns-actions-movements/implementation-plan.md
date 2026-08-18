@@ -1252,7 +1252,29 @@ layout is confirmed by eye at Step 15's gate — jsdom cannot see it.
 
 ## Step 10 — The board renders from a game state
 
-Status: pending
+Status: committed
+
+Notes: `App.tsx` now holds the session via `useReducer(sessionReducer,
+startingGameState(), createSession)` and passes it to `<Board session={...}
+/>`. `Board.tsx` builds its 225 `GridCellDescriptor`s inside a `useMemo`
+keyed on `session`, reading each square's occupant from `shipsBySquare` and
+its site state from `siteStateAt`, replacing the module-level `BOARD_ROWS`
+constant. `src/board/BoardSquare.tsx` (plus `BoardSquare.css`, moved out of
+`Board.css`) now renders one square's stacked contents (site marker beneath
+ship, in DOM order), reusing `squareLabel.ts`'s existing `SquareOccupant`
+type rather than a duplicate. `startingShipAt` is deleted from
+`src/rules/fleet.ts`; `fleet.test.ts`'s rotational-symmetry test and
+`Board.test.tsx` each build their own local square-keyed map from
+`STARTING_FLEET` instead (a plain local helper, not exported). Because `rows`
+is now memoised on `session` rather than rebuilt every render, the
+`AccessibleGrid` roving-focus effect only re-runs when the session actually
+changes (not on every render), so the "watch for a render loop" note in this
+step is moot rather than merely confirmed-harmless. Added
+`src/board/BoardSquare.test.tsx` for the layering guard (site marker before
+ship in DOM order when a square holds both) and a new `Board.test.tsx` case
+rendering from a hand-built state with a ship moved to H8, asserting its
+accessible name, its ship artwork, and that its original bay is empty. No
+deviation from the plan.
 
 This is the structural change the story is named for: the board stops being a
 picture built once at module load and becomes a picture of a state that moves.
