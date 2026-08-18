@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ALL_SQUARES, isOnBoard, squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
-import type { GameState, Ship } from "./gameState";
+import type { GameState, Ship, SiteStatus } from "./gameState";
 import {
   legalDestinations,
   type MoveRefusalReason,
@@ -173,6 +173,17 @@ function ship(
   return { id, side, square: squareFromName(square), shields };
 }
 
+function siteStatuses(
+  states: Readonly<Record<string, SiteState>>,
+): Record<string, SiteStatus> {
+  return Object.fromEntries(
+    Object.entries(states).map(([name, state]) => [
+      name,
+      { state, enteredOnPly: 0 },
+    ]),
+  );
+}
+
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
@@ -181,10 +192,12 @@ function buildState(config: {
 }): GameState {
   return {
     ships: config.ships,
-    siteStates: config.siteStates ?? {},
+    siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: 2,
     movedThisPly: config.movedThisPly ?? [],
+    plyNumber: 1,
+    randomSeed: 1,
   };
 }
 

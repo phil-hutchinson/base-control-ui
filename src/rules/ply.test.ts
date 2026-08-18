@@ -5,6 +5,7 @@ import {
   ACTIONS_PER_PLY,
   type GameState,
   type Ship,
+  type SiteStatus,
   startingGameState,
 } from "./gameState";
 import { applyMove, applyPassGuard } from "./ply";
@@ -20,6 +21,17 @@ function ship(
   return { id, side, square: squareFromName(square), shields };
 }
 
+function siteStatuses(
+  states: Readonly<Record<string, SiteState>>,
+): Record<string, SiteStatus> {
+  return Object.fromEntries(
+    Object.entries(states).map(([name, state]) => [
+      name,
+      { state, enteredOnPly: 0 },
+    ]),
+  );
+}
+
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
@@ -29,10 +41,12 @@ function buildState(config: {
 }): GameState {
   return {
     ships: config.ships,
-    siteStates: config.siteStates ?? {},
+    siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? ACTIONS_PER_PLY,
     movedThisPly: config.movedThisPly ?? [],
+    plyNumber: 1,
+    randomSeed: 1,
   };
 }
 
@@ -129,8 +143,8 @@ describe("applyMove", () => {
   });
 
   it("gives green the first ply", () => {
-    expect(startingGameState().sideToMove).toBe("green");
-    expect(startingGameState().actionsRemaining).toBe(ACTIONS_PER_PLY);
+    expect(startingGameState(1).sideToMove).toBe("green");
+    expect(startingGameState(1).actionsRemaining).toBe(ACTIONS_PER_PLY);
   });
 
   it("spends two actions before passing the turn, then clears the moved-this-ply marks", () => {

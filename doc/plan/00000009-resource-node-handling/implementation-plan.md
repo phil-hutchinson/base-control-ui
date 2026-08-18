@@ -661,7 +661,34 @@ covering:
 
 ## Step 3 — The state carries a seed, a ply number and site clocks
 
-Status: pending
+Status: committed
+
+Notes: Added `CHARGED_LIFE_PLIES`/`DEPLETED_COOLDOWN_PLIES` and
+`hasChargedNodeFinished`/`hasDepletedSiteFinishedCooling` to `sites.ts`,
+transcribing plan decision 5's arithmetic directly. Added `SiteStatus` to
+`gameState.ts`, changed `siteStates` to `Record<string, SiteStatus>`, added
+`plyNumber` and `randomSeed`, made `startingGameState` take the seed as a
+required argument (`enteredOnPly: 0` for every starting site), kept
+`siteStateAt`'s signature unchanged and added `siteStatusAt`. Added
+`src/game/seed.ts` (`freshSeed()`, via `crypto.getRandomValues`) and switched
+`App.tsx` to a true lazy `useReducer` initialiser (`useReducer(reducer,
+undefined, createStartingSession)`) so the seed is drawn exactly once — the
+previous `useReducer(reducer, startingGameState(), createSession)` form would
+have evaluated `startingGameState()` as a plain argument expression on every
+render, which is fine functionally but would have redrawn (and discarded) a
+seed each render, and would no longer type-check once the seed became
+required. Updated every test the plan named
+(`gameState.test.ts`, `sites.test.ts`, `ply.test.ts`, `session.test.ts`,
+`announcements.test.ts`, `Board.test.tsx`, `TurnIndicator.test.tsx`)
+mechanically, passing a literal seed and wrapping literal `siteStates` maps
+in a small per-file `{state, enteredOnPly: 0}` helper. One deviation: the
+plan's file list omitted `src/rules/movement.test.ts`, which also builds
+`GameState` literals with `siteStates` directly (via its own `buildState`
+helper) and needed the identical mechanical update to keep the build
+type-checking; updated it the same way, without changing any assertion.
+`npm run typecheck`, `npm run lint`, `npm test` (267 tests, including
+`App.test.tsx` confirming `crypto` works under jsdom), `npm run format:check`
+and `npm run build` all pass.
 
 Give `GameState` the three things the node cycle needs, and give the app a
 seed to open with.

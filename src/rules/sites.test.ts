@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { BAYS } from "./bays";
 import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
-import { SITES, STARTING_ACTIVE_SITES, startingSiteState } from "./sites";
+import {
+  CHARGED_LIFE_PLIES,
+  DEPLETED_COOLDOWN_PLIES,
+  SITES,
+  STARTING_ACTIVE_SITES,
+  hasChargedNodeFinished,
+  hasDepletedSiteFinishedCooling,
+  startingSiteState,
+} from "./sites";
 
 const COLUMN_INDEX = new Map(
   COLUMN_LETTERS.map((letter, index) => [letter, index]),
@@ -143,5 +151,49 @@ describe("starting site state", () => {
       expect(names.has(squareName(mirrorAcrossColumnH(site)))).toBe(true);
       expect(names.has(squareName(mirrorAcrossRow8(site)))).toBe(true);
     }
+  });
+});
+
+describe("the site clocks (rules.md §8.3, §8.6)", () => {
+  it("has both clocks at nine turns", () => {
+    expect(CHARGED_LIFE_PLIES).toBe(9);
+    expect(DEPLETED_COOLDOWN_PLIES).toBe(9);
+  });
+
+  it("has a charged node finish on its ninth turn, counting the turn it was woken on", () => {
+    const wokenOnPly = 1;
+
+    for (let ply = wokenOnPly; ply <= wokenOnPly + 7; ply++) {
+      expect(hasChargedNodeFinished(wokenOnPly, ply)).toBe(false);
+    }
+    expect(hasChargedNodeFinished(wokenOnPly, wokenOnPly + 8)).toBe(true);
+    expect(hasChargedNodeFinished(wokenOnPly, wokenOnPly + 20)).toBe(true);
+  });
+
+  it("has a depleted site finish cooling on its ninth turn, not counting the turn it depleted on", () => {
+    const depletedOnPly = 9;
+
+    for (let ply = depletedOnPly; ply <= depletedOnPly + 8; ply++) {
+      expect(hasDepletedSiteFinishedCooling(depletedOnPly, ply)).toBe(false);
+    }
+    expect(
+      hasDepletedSiteFinishedCooling(depletedOnPly, depletedOnPly + 9),
+    ).toBe(true);
+    expect(
+      hasDepletedSiteFinishedCooling(depletedOnPly, depletedOnPly + 20),
+    ).toBe(true);
+  });
+
+  it("works the eighteen-ply round trip: woken on ply 1, depletes at the end of ply 9, dormant again at ply 18", () => {
+    const wokenOnPly = 1;
+
+    // Charged for plies 1 through 9; finished as of ply 9.
+    expect(hasChargedNodeFinished(wokenOnPly, 8)).toBe(false);
+    expect(hasChargedNodeFinished(wokenOnPly, 9)).toBe(true);
+
+    // Depleted with enteredOnPly 9; finished cooling as of ply 18.
+    const depletedOnPly = 9;
+    expect(hasDepletedSiteFinishedCooling(depletedOnPly, 17)).toBe(false);
+    expect(hasDepletedSiteFinishedCooling(depletedOnPly, 18)).toBe(true);
   });
 });

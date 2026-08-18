@@ -29,7 +29,9 @@ function startingShipAt(square: Square): FleetEntry | undefined {
   return STARTING_ENTRY_BY_SQUARE.get(squareName(square));
 }
 
-const startingSession = createSession(startingGameState());
+const TEST_SEED = 1;
+
+const startingSession = createSession(startingGameState(TEST_SEED));
 
 describe("Board", () => {
   it("renders 225 gridcells in 15 rows", () => {
@@ -297,8 +299,8 @@ describe("Board", () => {
 
   it("renders from the game state it is given, not the starting position", () => {
     const state: GameState = {
-      ...startingGameState(),
-      ships: startingGameState().ships.map((ship) =>
+      ...startingGameState(TEST_SEED),
+      ships: startingGameState(TEST_SEED).ships.map((ship) =>
         ship.id === "green-1" ? { ...ship, square: squareAt("H", 8) } : ship,
       ),
     };
@@ -324,8 +326,8 @@ describe("Board", () => {
     // in its starting bay) already marked as moved this ply. Built directly
     // rather than through the fixture.
     const state: GameState = {
-      ...startingGameState(),
-      ships: startingGameState().ships.map((ship) =>
+      ...startingGameState(TEST_SEED),
+      ships: startingGameState(TEST_SEED).ships.map((ship) =>
         ship.id === "green-1"
           ? { ...ship, square: squareAt("H", 8), shields: 2 }
           : ship,
@@ -422,8 +424,8 @@ describe("Board", () => {
     // destinations against. Every other ship stays in its starting bay.
     function baseState(): GameState {
       return {
-        ...startingGameState(),
-        ships: startingGameState().ships.map((ship) =>
+        ...startingGameState(TEST_SEED),
+        ships: startingGameState(TEST_SEED).ships.map((ship) =>
           ship.id === "green-1"
             ? { ...ship, square: squareAt("H", 8), shields: 2 }
             : ship,

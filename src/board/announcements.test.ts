@@ -209,6 +209,8 @@ describe("turnIndicatorText", () => {
         sideToMove: "green",
         actionsRemaining: ACTIONS_PER_PLY,
         movedThisPly: [],
+        plyNumber: 1,
+        randomSeed: 1,
       }),
     ).toBe("Green's turn — 2 actions left");
   });
@@ -221,6 +223,8 @@ describe("turnIndicatorText", () => {
         sideToMove: "red",
         actionsRemaining: 1,
         movedThisPly: [],
+        plyNumber: 1,
+        randomSeed: 1,
       }),
     ).toBe("Red's turn — 1 action left");
   });
