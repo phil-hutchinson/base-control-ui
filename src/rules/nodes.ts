@@ -106,9 +106,7 @@ export interface SiteWokenEffect {
  * A depleted site finished cooling down and returned to the dormant pool.
  * Reported both by the ordinary end-of-turn cooling (§8.7 step 3, declared
  * in `endOfTurn.ts`) and by the empty-pool safety net below, because the
- * same thing happened to the site either way. Declared here — rather than
- * in `endOfTurn.ts`, which does not exist yet — so this step stands on its
- * own; `endOfTurn.ts` reuses this type instead of declaring its own.
+ * same thing happened to the site either way.
  */
 export interface SiteCooledEffect {
   readonly type: "site-cooled";

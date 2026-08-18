@@ -24,12 +24,12 @@ install, no account, no server.
 > marked, five of them already nodes in play. Green goes first, each player
 > moves two ships a turn, and no ship moves twice in the same turn — by mouse
 > or by keyboard. A node wakes the moment a ship touches it, landing on it or
-> flying over it, and pays a shield each turn to whichever player is sitting
-> on it. A node runs out after nine turns, and a new one wakes somewhere else
-> at random to replace it. A ship still standing on a node that has just run
-> out has to be moved clear before its owner can do anything else that turn.
-> There is still no fighting, and nothing is scored yet. The project is being
-> built up story by story.
+> flying over it, and pays a shield to the player sitting on it at the end of
+> each of their own turns. A node runs out after nine turns, and a new one
+> wakes somewhere else at random to replace it. A ship still standing on a
+> node that has just run out has to be moved clear before its owner can do
+> anything else that turn. There is still no fighting, and nothing is scored
+> yet. The project is being built up story by story.
 
 ## The rules
 

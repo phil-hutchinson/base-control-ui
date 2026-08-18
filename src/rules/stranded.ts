@@ -7,7 +7,7 @@
 
 import type { ShipId } from "./fleet";
 import { type GameState, siteStateAt } from "./gameState";
-import { sixOnlyLegalDestinations } from "./movement";
+import { sixOnlyLegalDestinations } from "./moveLegality";
 
 const STRANDING_SITE_STATES = new Set(["dormant", "depleted"]);
 

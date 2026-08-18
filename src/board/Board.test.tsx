@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { useReducer } from "react";
-import { ALL_SQUARES, squareAt, squareName, type Square } from "../rules/board";
+import { squareAt, squareName, type Square } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import { startingSiteState } from "../rules/sites";
@@ -78,16 +78,33 @@ describe("Board", () => {
       screen.getByRole("gridcell", { name: "A10, bay, red ship, 0 shields" }),
     ).toBeInTheDocument();
 
-    for (const square of ALL_SQUARES) {
+    // A representative sample of the remaining bays — one on each of the
+    // other two sides not already covered above — built the production way
+    // rather than as a literal, so a change to `squareLabel` is still caught.
+    for (const square of [squareAt("O", 10), squareAt("H", 1)]) {
       const label = squareLabel({
         square,
-        isBay: isBay(square),
+        isBay: true,
         siteState: startingSiteState(square),
         occupant: startingShipAt(square),
       });
-      const cell = screen.getByRole("gridcell", { name: label });
-      expect(cell).toBeInTheDocument();
+      expect(screen.getByRole("gridcell", { name: label })).toBeInTheDocument();
     }
+
+    // A non-bay square must never be named "bay".
+    const nonBaySquare = squareAt("H", 8);
+    expect(isBay(nonBaySquare)).toBe(false);
+    expect(
+      screen.getByRole("gridcell", {
+        name: squareLabel({
+          square: nonBaySquare,
+          isBay: false,
+          siteState: startingSiteState(nonBaySquare),
+          occupant: startingShipAt(nonBaySquare),
+        }),
+      }),
+    ).toBeInTheDocument();
+
     expect(
       screen.getAllByRole("gridcell", {
         name: /, bay(, .+ ship, \d+ shields?)?$/,

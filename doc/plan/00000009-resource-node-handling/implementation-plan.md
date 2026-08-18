@@ -5,6 +5,12 @@ step is implemented, verified and committed on its own, by an agent that has
 read only `story.md`, this plan, and its own step. Everything a step needs is
 stated here.
 
+**Note (added after the fact):** Steps 13a and 13b, added mid-flight,
+superseded the plan-time text below — this story ended up making **two**
+rules changes and shipping `RULES_VERSION` `"0.5"`, not one change and
+`"0.4"`. The front matter that follows is left as it was written, for the
+record.
+
 ## What this story builds
 
 The board starts changing on its own. A ship touching an **active** site

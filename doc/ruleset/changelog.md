@@ -1,9 +1,11 @@
 # Rules changelog
 
 Every change to [rules.md](rules.md) bumps its version and gets an entry here,
-newest first. A version bump is its own commit, and once merged to `main` that
-commit is tagged `rules-<version>` — so checking out `rules-0.1` gets you an
-app that plays exactly the rules described by version 0.1.
+newest first. A version bump is its own commit. Once merged to `main`, a
+version that changes how the game is played is a candidate to be tagged
+`rules-<version>` — so checking out `rules-0.1` would get you an app that
+plays exactly the rules described by version 0.1 — but tagging is on hold
+until the game plays (see the project's contribution notes).
 
 ## 0.5 — the freeing move is the first action
 

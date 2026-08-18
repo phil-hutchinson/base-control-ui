@@ -41,9 +41,9 @@ function joinWithAnd(items: readonly string[]): string {
 }
 
 /**
- * All of a sequence's shield gains as one clause, naming the squares rather
- * than repeating a sentence per ship (plan decision 8). A ship reaching the
- * cap of 4 is named as such.
+ * All of a sequence's shield gains as one clause, naming the squares once
+ * rather than repeating a sentence per ship. A ship reaching the cap of 4 is
+ * named as such.
  */
 function shieldGainedClause(effects: readonly ShieldGainedEffect[]): string {
   const side = capitalize(effects[0].side);
@@ -70,9 +70,8 @@ function shieldGainedClause(effects: readonly ShieldGainedEffect[]): string {
 /**
  * The clauses an end-of-turn sequence produced, in the order the sequence
  * produced them. All of a sequence's shield gains are grouped into one
- * clause (plan decision 8); `site-cooled` produces no clause at all — a
- * depleted site quietly returning to the dormant pool is a board change,
- * not a player event.
+ * clause; `site-cooled` produces no clause at all — a depleted site quietly
+ * returning to the dormant pool is a board change, not a player event.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -123,6 +122,12 @@ function passSentence(effect: PassEffect): string {
  * the way — whether that was by landing on it or by flying over it. Either
  * side's ship reads the same way; the side is already named at the start of
  * the sentence.
+ *
+ * The bay case is checked first and returns early, so a move that both
+ * charges a site en route and ends in a bay would announce only the bay.
+ * That combination cannot happen on the current site layout — asserted by
+ * `noMoveBothChargesAndEndsInABay` in `src/rules/siteSpacing.test.ts` — so
+ * this ordering is safe only as long as that test keeps passing.
  */
 function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);

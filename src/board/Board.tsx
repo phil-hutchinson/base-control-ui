@@ -74,9 +74,9 @@ export function Board({ session, onIntent }: BoardProps) {
 
     // A ship's condition, for the side to move only: an opponent's ship
     // never carries one. Owing an action takes precedence from the start of
-    // the ply, whether or not the obligation currently binds; then already
-    // having moved; then having no legal destination at all, which covers
-    // both a pinned ship and one held back by the obligation elsewhere.
+    // the turn, when the obligation already binds; then already having
+    // moved; then having no legal destination at all, which covers both a
+    // pinned ship and one held back by the obligation elsewhere.
     function shipCondition(ship: Ship): ShipCondition | undefined {
       if (ship.side !== session.state.sideToMove) {
         return undefined;
