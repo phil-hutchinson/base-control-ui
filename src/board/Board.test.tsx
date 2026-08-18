@@ -407,6 +407,171 @@ describe("Board", () => {
     });
   });
 
+  describe("ship conditions", () => {
+    // A minimal, hand-built state: green-1 owes an action on a depleted
+    // site, green-2 and green-3 are ordinary green ships elsewhere with a
+    // normal move available (until the obligation binds), and red-1 is the
+    // opponent, present to confirm it never carries a condition.
+    function strandedState(actionsRemaining: number): GameState {
+      return {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 4),
+            shields: 0,
+          },
+          {
+            id: "green-2",
+            side: "green",
+            square: squareAt("A", 1),
+            shields: 0,
+          },
+          {
+            id: "green-3",
+            side: "green",
+            square: squareAt("B", 2),
+            shields: 0,
+          },
+          { id: "red-1", side: "red", square: squareAt("O", 15), shields: 0 },
+        ],
+        siteStates: {
+          [squareName(squareAt("H", 4))]: {
+            state: "depleted",
+            enteredOnPly: 1,
+          },
+        },
+        sideToMove: "green",
+        actionsRemaining,
+        movedThisPly: [],
+        plyNumber: 1,
+        randomSeed: 1,
+      };
+    }
+
+    it("names the stranded ship's square from the first action, before the obligation binds", () => {
+      const session: Session = {
+        state: strandedState(2),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn",
+        }),
+      ).toBeInTheDocument();
+      // Green-2 and green-3 each have a normal move available and the
+      // obligation does not bind yet, so neither carries a condition.
+      expect(
+        screen.getByRole("gridcell", { name: "A1, green ship, 0 shields" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("gridcell", { name: "B2, green ship, 0 shields" }),
+      ).toBeInTheDocument();
+    });
+
+    it("combines a condition and a selection mark, condition first", () => {
+      const session: Session = {
+        state: strandedState(2),
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn, selected",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("dampens the rest of the moving side once the obligation binds, but not the owed ship", () => {
+      const state: GameState = {
+        ...strandedState(1),
+        movedThisPly: ["green-2"],
+      };
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn",
+        }),
+      ).toBeInTheDocument();
+      // Green-2 already spent this ply's first action moving elsewhere.
+      expect(
+        screen.getByRole("gridcell", {
+          name: "A1, green ship, 0 shields, already moved this turn",
+        }),
+      ).toBeInTheDocument();
+      // Green-3 has not moved and would have a normal move under §6 alone,
+      // but the obligation now binds every action, so it reads as having no
+      // action available — not as "already moved".
+      expect(
+        screen.getByRole("gridcell", {
+          name: "B2, green ship, 0 shields, no action available this turn",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("never gives the opponent's ship a condition, whatever the moving side's ships owe", () => {
+      const session: Session = {
+        state: strandedState(1),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", { name: "O15, red ship, 0 shields" }),
+      ).toBeInTheDocument();
+    });
+
+    it("names a pinned ship 'no action available', with nothing stranded anywhere", () => {
+      // green-1 sits at H8 with 4 shields, so its only reach is the four
+      // orthogonal neighbours (rules.md §6) — all four occupied by red ships,
+      // leaving it with no legal destination at all.
+      const state: GameState = {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 4,
+          },
+          { id: "red-1", side: "red", square: squareAt("H", 9), shields: 0 },
+          { id: "red-2", side: "red", square: squareAt("H", 7), shields: 0 },
+          { id: "red-3", side: "red", square: squareAt("G", 8), shields: 0 },
+          { id: "red-4", side: "red", square: squareAt("I", 8), shields: 0 },
+        ],
+        siteStates: {},
+        sideToMove: "green",
+        actionsRemaining: 2,
+        movedThisPly: [],
+        plyNumber: 1,
+        randomSeed: 1,
+      };
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H8, green ship, 4 shields, no action available this turn",
+        }),
+      ).toBeInTheDocument();
+    });
+  });
+
   describe("playing a turn", () => {
     // A small stand-in for App.tsx's own useReducer wiring, so these tests
     // exercise the real session reducer rather than a hand-built session.

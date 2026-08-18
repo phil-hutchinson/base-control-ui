@@ -1,11 +1,17 @@
 // One square's stacked contents: the site marker beneath any ship standing
-// on it, then, during ship selection, one of three markings — a legal
-// destination, the selected ship's own square, or a ship that has already
-// moved this ply — all sharing the square in a single-cell grid rather than
-// absolute positioning (see BoardSquare.css).
+// on it, then, during ship selection, one of two selection markings — a
+// legal destination or the selected ship's own square — all sharing the
+// square in a single-cell grid rather than absolute positioning (see
+// BoardSquare.css).
+//
+// A ship's condition (already moved, no action available, or owing an
+// action) is a separate, independently optional field from the selection
+// mark. For now this component only draws the "already moved" bar from it,
+// matching what it drew when that was still a mark value; the other two
+// conditions do not yet render anything here — see Step 11.
 
 import type { CSSProperties } from "react";
-import type { SquareMark, SquareOccupant } from "./squareLabel";
+import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
 import type { SiteState } from "../rules/sites";
 import { ShipIcon } from "./ShipIcon";
 import { SiteMarker } from "./SiteMarker";
@@ -15,6 +21,7 @@ export interface BoardSquareProps {
   readonly isBay: boolean;
   readonly siteState?: SiteState;
   readonly occupant?: SquareOccupant;
+  readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
 }
 
@@ -125,20 +132,21 @@ export function BoardSquare({
   isBay,
   siteState,
   occupant,
+  condition,
   mark,
 }: BoardSquareProps) {
   const classNames = ["board-square"];
   if (isBay) {
     classNames.push("board-square--bay");
   }
-  if (mark === "already-moved") {
+  if (condition === "already-moved") {
     classNames.push("board-square--already-moved");
   }
 
   // Threads SPENT_OPACITY into BoardSquare.css as the one place it is
   // defined, rather than duplicating the number in the stylesheet.
   const style =
-    mark === "already-moved"
+    condition === "already-moved"
       ? ({ "--spent-opacity": SPENT_OPACITY } as CSSProperties)
       : undefined;
 
@@ -148,7 +156,7 @@ export function BoardSquare({
       {occupant && <ShipIcon side={occupant.side} shields={occupant.shields} />}
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}
-      {mark === "already-moved" && <SpentMark />}
+      {condition === "already-moved" && <SpentMark />}
     </div>
   );
 }

@@ -1293,7 +1293,38 @@ square is available.
 
 ## Step 10 — The accessible name says what a ship's condition is
 
-Status: pending
+Status: committed
+
+Notes: `SquareMark` narrowed to `"selected" | "destination"`; added
+`ShipCondition` (`"already-moved" | "no-action" | "owes-action"`) as its own
+optional field on `SquareLabelDescriptor`, with the name's segment order now
+square, bay-or-site, ship, shields, condition, mark, and the wording exactly
+as the plan states. `Board.tsx` gained a `shipCondition` helper computing the
+condition per plan decision 13's precedence (owed, from `strandedShipIds`,
+regardless of whether the obligation currently binds; then already-moved;
+then no legal destination via the public `legalDestinations`, which already
+folds in both pinning and the bound obligation; else none), applied only to
+ships of `state.sideToMove`, and the selection-mark branch lost its
+`already-moved` case. `BoardSquare.tsx` needed a minimal accommodation to
+keep building: it gained an optional `condition` prop and now reads
+`condition === "already-moved"` everywhere it previously read
+`mark === "already-moved"` (the dampened class, the `--spent-opacity` style,
+and drawing the existing solid bar), so the app still renders the "already
+moved" case exactly as before; it does not yet draw anything for `no-action`
+or `owes-action` — that generalisation, the hollow bar, the chevron and the
+blink are Step 11's job. Extended `squareLabel.test.ts` with cases for each
+condition's wording and for a condition combined with a mark, and added a new
+`Board.test.tsx` "ship conditions" describe block (five tests, hand-built
+minimal `GameState` literals rather than the starting fleet) covering all
+seven of the step's verification points: wording before the obligation
+binds, condition-then-mark ordering, dampening the rest of the moving side
+once the obligation binds while leaving the owed ship alone, opponent ships
+never carrying a condition, and a pinned ship (4 shields, boxed on its four
+orthogonal neighbours) reading "no action available this turn" with nothing
+stranded anywhere. Updated `BoardSquare.test.tsx`'s existing already-moved
+case to pass `condition` instead of `mark`. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (340 tests), `npm run
+format:check` and `npm run build` all pass.
 
 Split the square label's single mark slot into two (plan decision 12) and teach
 `Board.tsx` to work out each ship's condition.

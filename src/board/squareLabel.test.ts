@@ -105,15 +105,51 @@ describe("squareLabel", () => {
     ).toBe("G7, green ship, 0 shields, selected");
   });
 
-  it("adds 'already moved this turn' last, after the shield count", () => {
+  it("adds 'already moved this turn' as the condition, after the shield count", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
         occupant: { side: "green", shields: 4 },
-        mark: "already-moved",
+        condition: "already-moved",
       }),
     ).toBe("M10, green ship, 4 shields, already moved this turn");
+  });
+
+  it("adds 'no action available this turn' as the condition", () => {
+    expect(
+      squareLabel({
+        square: squareAt("M", 10),
+        isBay: false,
+        occupant: { side: "green", shields: 4 },
+        condition: "no-action",
+      }),
+    ).toBe("M10, green ship, 4 shields, no action available this turn");
+  });
+
+  it("adds 'stranded, must move this turn' as the condition", () => {
+    expect(
+      squareLabel({
+        square: squareAt("M", 10),
+        isBay: false,
+        occupant: { side: "green", shields: 4 },
+        condition: "owes-action",
+      }),
+    ).toBe("M10, green ship, 4 shields, stranded, must move this turn");
+  });
+
+  it("puts the condition before the mark, when a square carries both", () => {
+    expect(
+      squareLabel({
+        square: squareAt("M", 10),
+        isBay: false,
+        occupant: { side: "green", shields: 4 },
+        condition: "owes-action",
+        mark: "selected",
+      }),
+    ).toBe(
+      "M10, green ship, 4 shields, stranded, must move this turn, selected",
+    );
   });
 
   it("adds 'can move here' last, on an empty site square", () => {

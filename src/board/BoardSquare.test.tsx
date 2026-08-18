@@ -77,7 +77,7 @@ describe("BoardSquare", () => {
       <BoardSquare
         isBay={false}
         occupant={{ side: "green", shields: 0 }}
-        mark="already-moved"
+        condition="already-moved"
       />,
     );
     const { container: unmarked } = render(
