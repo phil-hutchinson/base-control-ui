@@ -1057,7 +1057,24 @@ plan decision 7's table, from positions built directly:
 
 ## Step 7 — Player-facing wording
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/announcements.ts` with `announcementFor(event)` (a
+`SessionEvent | undefined` to a sentence, `""` when there is no event yet —
+needed since a fresh session's `lastEvent` can be `undefined`) and
+`turnIndicatorText(state)`, plus `src/board/announcements.test.ts` covering
+every row of decision 8's table by exact string, the singular/plural forms,
+and the turn indicator at two actions and at one. `moveEndingClause` derives
+"N action(s) left" for a move that doesn't end the ply from
+`ACTIONS_PER_PLY - 1` rather than a stored count, since `MovedEvent` carries
+no actions-remaining field and a mid-ply move always leaves exactly one of
+the ply's two actions — this follows from `ACTIONS_PER_PLY` being 2 and is
+not a rule invented in `src/board/`. Also added a case, not explicitly in
+the plan's wording table, for a move whose effects carry both `ply-ended`
+and a subsequent `ply-passed` (the guard firing immediately after the ply
+handed over) — `applyMove` can produce this combination, so the wording
+module handles it by chaining the two clauses, covered by an extra test.
+No other deviation from the plan.
 
 Add `src/board/announcements.ts`: pure functions turning Step 6's structured
 events into English, and a game state into the turn indicator's sentence. It
