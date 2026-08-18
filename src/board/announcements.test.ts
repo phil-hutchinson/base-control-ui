@@ -167,6 +167,11 @@ describe("announcementFor", () => {
       "That ship has already moved this turn. Choose another.",
     ],
     [
+      "another-ship-stranded",
+      squareAt("G", 7),
+      "A stranded ship must be moved clear this turn. Choose one of those instead.",
+    ],
+    [
       "nothing-to-select",
       squareAt("G", 4),
       "No ship on G4. Choose one of your own ships.",
@@ -200,6 +205,409 @@ describe("announcementFor", () => {
 
   it("is empty when there is no event yet", () => {
     expect(announcementFor(undefined)).toBe("");
+  });
+});
+
+describe("announcementFor — the node cycle (rules.md §8)", () => {
+  it("announces a move that lands on and charges a site", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("G", 7),
+      to: squareAt("H", 8),
+      effects: [
+        {
+          type: "site-charged",
+          square: squareAt("H", 8),
+          shipId: "green-1",
+          side: "green",
+          reach: "landed-on",
+        },
+      ],
+      actionsRemaining: 1,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from G7 to H8 and charged the node. Green has 1 action left.",
+    );
+  });
+
+  it("announces the opponent flying over and charging a site without stopping", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "red-2",
+      side: "red",
+      from: squareAt("K", 9),
+      to: squareAt("K", 12),
+      effects: [
+        {
+          type: "site-charged",
+          square: squareAt("K", 11),
+          shipId: "red-2",
+          side: "red",
+          reach: "flown-over",
+        },
+      ],
+      actionsRemaining: 1,
+    };
+    expect(announcementFor(event)).toBe(
+      "Red ship moved from K9 to K12, flying over K11 and charging the node. Red has 1 action left.",
+    );
+  });
+
+  it("announces a node running out at the end of a turn", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [{ type: "node-ran-out", square: squareAt("K", 5) }],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. The node at K5 ran out. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("announces a replacement waking active", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "site-woken",
+              square: squareAt("D", 8),
+              wokeInto: "active",
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. A new node woke at D8. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("announces a replacement waking already charged, under a ship", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "site-woken",
+              square: squareAt("D", 8),
+              wokeInto: "charged",
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. A new node woke at D8, already charged because a ship was standing there. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("announces a ship becoming stranded, naming the square", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "ship-stranded",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("K", 5),
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at K5 is stranded and must be moved clear next turn. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("announces one shield gained, naming the square and the new count", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-gained",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 2,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at H8 gained a shield, now on 2. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("groups several shields gained in one sequence into one clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-gained",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 2,
+            },
+            {
+              type: "shield-gained",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 3,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a shield. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("says which ship reached the shield cap of 4, within a grouped clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-gained",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 2,
+            },
+            {
+              type: "shield-gained",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 4,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a shield. K5 reached the cap of 4. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("says a single ship reached the shield cap of 4", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-gained",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 4,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at K5 gained a shield, reaching the cap of 4. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("says nothing at all for a site cooling back to dormant", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [{ type: "site-cooled", square: squareAt("N", 4) }],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("announces a full end-of-turn sequence in the order it was produced", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("K", 4),
+      to: squareAt("K", 5),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-gained",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 4,
+            },
+            { type: "site-cooled", square: squareAt("N", 4) },
+            { type: "node-ran-out", square: squareAt("K", 5) },
+            {
+              type: "ship-stranded",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("K", 5),
+            },
+            {
+              type: "site-woken",
+              square: squareAt("D", 8),
+              wokeInto: "active",
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from K4 to K5. " +
+        "Green ship at K5 gained a shield, reaching the cap of 4. " +
+        "The node at K5 ran out. " +
+        "Green ship at K5 is stranded and must be moved clear next turn. " +
+        "A new node woke at D8. " +
+        "Red's turn, 2 actions left.",
+    );
+  });
+
+  it("carries the end-of-turn clauses of the ended ply ahead of a following pass", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("G", 7),
+      to: squareAt("H", 8),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [{ type: "node-ran-out", square: squareAt("K", 5) }],
+        },
+        { type: "ply-passed", side: "red", sideToMove: "green", endOfTurn: [] },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from G7 to H8. The node at K5 ran out. " +
+        "Red has no legal move, so the turn passes. Green's turn, 2 actions left.",
+    );
+  });
+
+  it("carries a passing side's own end-of-turn clauses on a standalone pass", () => {
+    const event: PassEffect = {
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      endOfTurn: [
+        {
+          type: "shield-gained",
+          shipId: "red-1",
+          side: "red",
+          square: squareAt("K", 11),
+          shields: 2,
+        },
+      ],
+    };
+    expect(announcementFor(event)).toBe(
+      "Red has no legal move, so the turn passes. Red ship at K11 gained a shield, now on 2. Green's turn, 2 actions left.",
+    );
   });
 });
 

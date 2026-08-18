@@ -1216,7 +1216,31 @@ additions to `src/rules/movement.test.ts`:
 
 ## Step 9 — The words for everything that now happens
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `moveSentence` to fold a move's own `site-charged` effect into
+"what the move was" (landing: "… and charged the node."; flying over: "…,
+flying over X and charging the node."), and factored the ply-ending logic in
+`moveEndingClause` and the standalone `ply-passed` case around a shared
+`endOfTurnClauses`/`passSentence` pair so both draw their clauses from the
+nested `EndOfTurnEffect[]` in the same order the sequence produced them.
+`endOfTurnClauses` groups every `shield-gained` effect into one clause via
+`shieldGainedClause` (naming the square and new count for one ship, "ships at
+X and Y each gained a shield" for several, with any ship reaching the cap of
+4 named separately), speaks `node-ran-out`, `ship-stranded` and `site-woken`
+(with the `wokeInto: "charged"` case naming why), and silently drops
+`site-cooled`. Finalised Step 8's placeholder `another-ship-stranded`
+refusal sentence as-is ("A stranded ship must be moved clear this turn.
+Choose one of those instead.") — it already explained the obligation without
+a square, so no wording change was needed, only its test coverage, added to
+the existing `cases` table. Added a `joinWithAnd` list-formatting helper. No
+deviation from the plan; wording choices (e.g. "and charged the node" vs. a
+separate sentence) were made freely within the plan's constraints since it
+left exact phrasing to the implementer. `npm run typecheck`, `npm run lint`,
+`npm test` (332 tests, 36 in `announcements.test.ts`), `npm run format:check`
+and `npm run build` all pass. Confirmed by grep that no player-facing
+sentence in `announcements.ts` contains "ply" or "hub" (the only matches are
+the `ACTIONS_PER_PLY` identifier and internal effect-type discriminants).
 
 Give the live region a sentence for each new event, in
 `src/board/announcements.ts`. Wording is players' vocabulary throughout —
