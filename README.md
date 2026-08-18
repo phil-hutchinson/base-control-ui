@@ -18,12 +18,13 @@ it happens.
 This is the game's web app. It runs entirely in your browser — nothing to
 install, no account, no server.
 
-> **Status:** early development. Opening the app now shows the board in its
-> starting position, with all fourteen ships lined up in their bays and the
-> seventeen sites marked, five of them already nodes in play — but the app
-> does not play the game yet. Nothing wakes, runs down, or changes. There are
-> no turns, and no way to move or fight. The project is being built up story
-> by story.
+> **Status:** early development. The app now plays turns and moves ships.
+> Opening it shows the board in its starting position, with all fourteen ships
+> lined up in their bays and the seventeen sites marked, five of them already
+> nodes in play. Green goes first, each player moves two ships a turn, and no
+> ship moves twice in the same turn — by mouse or by keyboard. There is still
+> no fighting: nodes never wake or run down, no shields are gained, and
+> nothing is scored yet. The project is being built up story by story.
 
 ## The rules
 

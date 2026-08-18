@@ -1855,7 +1855,19 @@ confirm:
 
 ## Step 20 — README check
 
-Status: pending
+Status: committed
+
+Notes: Rewrote the README's status callout, whose two closing claims ("There
+are no turns, and no way to move or fight") this story made false. It now
+says the app plays turns and moves ships — green first, two ships a turn, no
+ship twice, by mouse or keyboard — and keeps the list of what is still
+missing: no fighting, no node waking or running down, no shields gained,
+nothing scored. Nothing else in the README needed changing. Confirmed
+`doc/ruleset/` is untouched by this branch, `RULES_VERSION` is still `"0.3"`,
+and the branch diff has the expected shape: `src/rules/` gains `movement.ts`,
+`gameState.ts` and `ply.ts`, a new `src/game/` holds `session.ts` alone, and
+`src/board/` gains `announcements.ts`, `BoardSquare.tsx` and
+`TurnIndicator.tsx`.
 
 Review `README.md` against what this story changed and update it if it is now
 inaccurate. The `/update-readme` command does this from the branch diff.
