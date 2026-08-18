@@ -5,6 +5,17 @@ newest first. A version bump is its own commit, and once merged to `main` that
 commit is tagged `rules-<version>` — so checking out `rules-0.1` gets you an
 app that plays exactly the rules described by version 0.1.
 
+## 0.4 — a ship on a dormant site is stranded too
+
+- **Section 8.5 now strands a ship on a dormant site on the same terms as one
+  on a depleted site.** A node that runs out under a ship goes depleted, and
+  nine turns later — if the ship still has not moved — cools down to dormant
+  underneath it. Section 6 forbids ending a move on either state, so the ship
+  is equally stuck in both, and now owes an action in both. This changes how
+  the game is played, so it would ordinarily be a tagging candidate, but
+  tagging is on hold until the game plays (see the project's contribution
+  notes), so no tag is made for this version.
+
 ## 0.3 — fixed two cross-references in section 4.1
 
 - **Section 4.1's cross-references were inverted.** It cited "section 6" for

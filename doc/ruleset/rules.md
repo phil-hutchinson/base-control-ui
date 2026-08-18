@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.3**
+**Rules version: 0.4**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -355,7 +355,10 @@ fly over one.
 
 The one way a ship ends up on a depleted site is by holding a node until its
 clock runs out underneath it. That ship is **stranded**, and on their next
-turn its owner must spend an action moving it clear.
+turn its owner must spend an action moving it clear. A ship still standing
+there nine turns later, when the site finishes cooling down and goes dormant,
+is equally stuck — section 6 forbids ending a move on either state — and stays
+stranded on the same terms.
 
 That is a restriction on what an action may be, not a penalty on top of one.
 The move is ordinary in every other respect, and the rest of the turn belongs
@@ -370,7 +373,7 @@ the way, and the ship may sit where it is.
 
 This is the tail cost of holding a node. A player who wakes several nodes on
 the same turn will find them all running out on the same turn, and will owe an
-action for each ship left standing on a depleted site.
+action for each ship left standing on a dormant or depleted site.
 
 If a site somehow wakes underneath a ship — only possible when that ship has
 been unable to move off it — it becomes charged immediately and its clock

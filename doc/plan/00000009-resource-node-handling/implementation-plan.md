@@ -543,7 +543,14 @@ position, so Step 16 takes nothing with it.
 
 ## Step 1 — Rules: a ship on a dormant site is stranded too (version 0.4)
 
-Status: pending
+Status: committed
+
+Notes: Extended §8.5's stranded-ship paragraph and its "owe an action" summary
+paragraph to say "dormant or depleted site"/"either state", left §6 and the
+rest of §8.5 (the waiver and final paragraphs) untouched, bumped the version
+line to 0.4, added a `## 0.4` changelog entry, and set `RULES_VERSION` to
+"0.4". No deviation from the plan; `npm run typecheck`, `npm run lint`,
+`npm test` and `npm run format:check` all pass.
 
 Edit `doc/ruleset/rules.md` §8.5 so that a ship standing on a **dormant** site
 is stranded on exactly the same terms as one on a depleted site, then bump the
