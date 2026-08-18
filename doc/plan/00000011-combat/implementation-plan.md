@@ -1035,7 +1035,43 @@ step changed nothing observable. `npm run typecheck` and `npm run lint` pass.
 
 ## Step 7 — `applyAttack`: resolving a fight
 
-Status: pending
+Status: committed
+
+Notes: Added `applyAttack(state, shipId, target)` to `src/rules/ply.ts`,
+refusing through `attackRefusalReason` and otherwise resolving through
+`resolveFight` and `receptacleBay`: the winner (if any) stays put and keeps
+`winner − (loser + 1)` shields, the loser (or both, attacker first, on a
+mutual return) is placed in a bay at 0 shields via a new private
+`placeInBay` helper, and the attacking ship is never added to
+`movedThisPly`. Reported as a single `FightResolvedEffect` (decision 8),
+folded into a new `AttackEffect` union alongside the shared
+`EndOfActionEffect`, then finished through Step 6's `applyEndOfActionTail`
+(its `effects` parameter widened to `(MoveEffect | AttackEffect)[]` as the
+step anticipated). Added a private `assertFightInvariants` throwing on any
+violation of decision 10's guarantees: every ship other than the returning
+one(s) is on the same square as before, the fleet's per-side ship count is
+unchanged, and `siteStates` is reference-identical to the pre-fight state.
+Added 21 tests to `src/rules/ply.test.ts` covering all three outcomes, the
+shield cost, the charged-node interaction with end-of-turn step 1, the
+site-inertness and un-stranding-by-force invariants, return placement (plain
+and live-receptacle), the return position's non-drift within a ply and
+drift at ply end, every action-permission combination the step lists, and
+refusal. Deviation: the fleet-count assertion compares each side's ship
+count **before and after the fight** rather than hard-coding the literal
+seven, so it holds for the file's existing minimal-fleet test fixtures too;
+it still enforces exactly what "the fleet is still seven ships a side"
+reduces to for an operation that can only ever change who holds a square,
+never how many ships either side has, and a dedicated 14-ship test
+("keeps the fleet the same size on each side, across a sequence of fights")
+covers the literal seven-a-side case the step's verification asks for.
+Two of the new tests initially tripped the pre-Step-8 pass guard, which is
+still move-only (`sideToMoveHasLegalMove`): a lone ship completing its first
+action left no "eligible" (not-yet-moved) ship for the guard to find a move
+with, so it passed the ply early even though a legal attack remained. Fixed
+by adding a second, otherwise-uninvolved ship with a legal move to those two
+test fixtures, documented inline as expected until Step 8 widens the guard
+to actions. `npm run typecheck`, `npm run lint`, `npm test` (406 passed),
+`npm run format:check` and `npm run build` all pass.
 
 Add `applyAttack(state, shipId, targetSquare)` to `src/rules/ply.ts`, beside
 `applyMove` and sharing Step 6's tail. It is the only thing in the app that

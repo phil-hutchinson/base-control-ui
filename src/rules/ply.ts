@@ -1,16 +1,31 @@
-// Applying a move, and the ply it belongs to (rules.md §5, §3.1, §8.2). A
-// move is either refused, with the reason from movement.ts, or applied: the
-// ship arrives, is marked as having moved, spends one action, wakes any
-// active site it touched on the way, and loses its shields if it ends in a
-// bay. When the ply's two actions are spent, play passes to the other side.
-// The pass guard covers the case §5 sets out for when the side to move has
-// no legal move at all.
+// Applying an action, and the ply it belongs to (rules.md §5, §3.1, §7,
+// §8.2). An action is a move or an attack. A move is either refused, with the
+// reason from movement.ts, or applied: the ship arrives, is marked as having
+// moved, spends one action, wakes any active site it touched on the way, and
+// loses its shields if it ends in a bay. An attack is either refused, with
+// the reason from combat.ts, or resolved: neither ship changes square, the
+// winner (if any) keeps its shields minus the fight's cost, and the loser (or
+// both, on a mutual return) is placed in a bay at 0 shields — never marked as
+// having moved, since only a move counts towards that. When the ply's two
+// actions are spent, play passes to the other side. The pass guard covers the
+// case §5 sets out for when the side to move has no legal move at all.
 
 import { isBay } from "./bays";
 import { type Square, squareName } from "./board";
+import {
+  type AttackRefusalReason,
+  attackRefusalReason,
+  receptacleBay,
+  resolveFight,
+} from "./combat";
 import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
 import type { Side, ShipId } from "./fleet";
-import { ACTIONS_PER_PLY, type GameState } from "./gameState";
+import {
+  ACTIONS_PER_PLY,
+  type GameState,
+  type Ship,
+  shipsBySquare,
+} from "./gameState";
 import {
   type MoveRefusalReason,
   moveRefusalReason,
@@ -18,6 +33,7 @@ import {
   sideToMoveHasLegalMove,
 } from "./movement";
 import { type SiteChargedEffect, wakeTouchedSites } from "./nodes";
+import type { ShieldCount } from "./shields";
 
 function otherSide(side: Side): Side {
   return side === "green" ? "red" : "green";
@@ -65,6 +81,61 @@ export interface RefusedMove {
 }
 
 export type ApplyMoveResult = AppliedMove | RefusedMove;
+
+/** One ship's identity, side, square and shield count, as they stood before a fight. */
+export interface FightShip {
+  readonly shipId: ShipId;
+  readonly side: Side;
+  readonly square: Square;
+  readonly shields: ShieldCount;
+}
+
+/** One ship's journey back to a bay, from where it stood to where it landed. */
+export interface FightReturn {
+  readonly shipId: ShipId;
+  readonly side: Side;
+  readonly from: Square;
+  readonly to: Square;
+}
+
+/**
+ * A fight, resolved in full (rules.md §7): one effect for the whole fight
+ * rather than several, since a fight is one fact. `attacker` and `defender`
+ * describe both ships as they stood **before** the fight; `winner` is present
+ * only when the fight was decided (absent on a mutual return), naming the
+ * winning ship and the shields it kept; `returns` lists every ship placed in
+ * a bay — one entry for a decided fight, two (attacker first) for a mutual
+ * return.
+ */
+export interface FightResolvedEffect {
+  readonly type: "fight-resolved";
+  readonly outcome: "attacker-won" | "defender-won" | "mutual-return";
+  readonly attacker: FightShip;
+  readonly defender: FightShip;
+  readonly winner?: {
+    readonly shipId: ShipId;
+    readonly remainingShields: ShieldCount;
+  };
+  readonly returns: readonly FightReturn[];
+}
+
+/** Something that happened as a result of applying an attack, beyond the fight itself. */
+export type AttackEffect = FightResolvedEffect | EndOfActionEffect;
+
+/** An attack applied successfully, with the resulting state and what happened. */
+export interface AppliedAttack {
+  readonly outcome: "applied";
+  readonly state: GameState;
+  readonly effects: readonly AttackEffect[];
+}
+
+/** An attack that was not legal, carrying the reason (never a sentence). */
+export interface RefusedAttack {
+  readonly outcome: "refused";
+  readonly reason: AttackRefusalReason;
+}
+
+export type ApplyAttackResult = AppliedAttack | RefusedAttack;
 
 /**
  * If the side to move has no legal move at all with any eligible ship, its
@@ -114,11 +185,13 @@ export function applyPassGuard(state: GameState): {
  * `movedThisPly` when given, and omitted for an action — an attack, in
  * particular — that does not count as a move (rules.md §5). Mutates
  * `effects` by appending whichever of the two end-of-action effects fired,
- * and returns the resulting state.
+ * and returns the resulting state. `effects` is typed to accept either
+ * caller's effect list, since both `MoveEffect` and `AttackEffect` include
+ * `EndOfActionEffect` as one of their members.
  */
 function applyEndOfActionTail(
   state: GameState,
-  effects: MoveEffect[],
+  effects: (MoveEffect | AttackEffect)[],
   movedShipId?: ShipId,
 ): GameState {
   const actionsRemaining = state.actionsRemaining - 1;
@@ -216,4 +289,192 @@ export function applyMove(
   const settled = applyEndOfActionTail(wake.state, effects, shipId);
 
   return { outcome: "applied", state: settled, effects };
+}
+
+/** Places `shipId` in `bay`, resetting its shields to 0 (rules.md §7.1, §3.1). */
+function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
+  return {
+    ...state,
+    ships: state.ships.map((ship) =>
+      ship.id === shipId ? { ...ship, square: bay, shields: 0 } : ship,
+    ),
+  };
+}
+
+/**
+ * Checks the invariants rules.md §7 guarantees about a fight's result, and
+ * throws if any is violated — bug detectors on a cheap operation, not cases a
+ * caller need handle. `returnedShipIds` names the ship or ships placed in a
+ * bay; every other ship, including a winner, must be exactly where it was.
+ *
+ * The fleet-size check compares each side's count before and after, rather
+ * than hard-coding seven: that is what "the fleet is still seven ships a
+ * side" (rules.md §4) reduces to for a fight, which can only ever change who
+ * holds a square, never how many ships either side has.
+ */
+function assertFightInvariants(
+  before: GameState,
+  after: GameState,
+  returnedShipIds: ReadonlySet<ShipId>,
+): void {
+  for (const ship of before.ships) {
+    const updated = after.ships.find((candidate) => candidate.id === ship.id);
+    if (updated === undefined) {
+      throw new RangeError(
+        `ship "${ship.id}" is missing after a fight: rules.md §7 never removes a ship`,
+      );
+    }
+    if (
+      !returnedShipIds.has(ship.id) &&
+      squareName(updated.square) !== squareName(ship.square)
+    ) {
+      throw new RangeError(
+        `ship "${ship.id}" changed square in a fight it did not lose: rules.md §7 says neither ship moves`,
+      );
+    }
+  }
+
+  for (const side of ["green", "red"] as const) {
+    const beforeCount = before.ships.filter(
+      (ship) => ship.side === side,
+    ).length;
+    const afterCount = after.ships.filter((ship) => ship.side === side).length;
+    if (afterCount !== beforeCount) {
+      throw new RangeError(
+        `${side}'s fleet had ${beforeCount} ships before this fight and ${afterCount} after`,
+      );
+    }
+  }
+
+  if (after.siteStates !== before.siteStates) {
+    throw new RangeError(
+      "a fight changed a site's state: rules.md §7 says nobody moves in a fight, so §8.2 never fires",
+    );
+  }
+}
+
+/**
+ * Applies an attack by `shipId` on `target` in `state`, or refuses it
+ * (rules.md §7). A legal attack never mutates `state`: neither ship changes
+ * square — the winner, if any, simply keeps `winner − (loser + 1)` shields,
+ * and the loser (or both ships, on a mutual return, attacker first) is placed
+ * in a bay at 0 shields. The attacking ship is **not** added to
+ * `movedThisPly`: only a move counts towards that (rules.md §5). One action
+ * is spent; when the ply's second action is spent, play passes to the other
+ * side exactly as it does after a move, and the result then passes through
+ * `applyPassGuard`.
+ */
+export function applyAttack(
+  state: GameState,
+  shipId: ShipId,
+  target: Square,
+): ApplyAttackResult {
+  const reason = attackRefusalReason(state, shipId, target);
+  if (reason !== undefined) {
+    return { outcome: "refused", reason };
+  }
+
+  const attackerShip = state.ships.find((ship) => ship.id === shipId);
+  if (attackerShip === undefined) {
+    throw new RangeError(`no ship with id "${shipId}" in this state`);
+  }
+  const defenderShip = shipsBySquare(state).get(squareName(target));
+  if (defenderShip === undefined) {
+    throw new RangeError(
+      `no ship on the attacked square ${squareName(target)}`,
+    );
+  }
+
+  const attackerBefore = toFightShip(attackerShip);
+  const defenderBefore = toFightShip(defenderShip);
+
+  const fightOutcome = resolveFight(attackerShip.shields, defenderShip.shields);
+
+  let nextState: GameState;
+  let winner: FightResolvedEffect["winner"];
+  let returns: FightReturn[];
+
+  if (fightOutcome.result === "mutual-return") {
+    const attackerTo = receptacleBay(state);
+    const afterAttackerReturned = placeInBay(
+      state,
+      attackerShip.id,
+      attackerTo,
+    );
+    const defenderTo = receptacleBay(afterAttackerReturned);
+    nextState = placeInBay(afterAttackerReturned, defenderShip.id, defenderTo);
+    winner = undefined;
+    returns = [
+      {
+        shipId: attackerShip.id,
+        side: attackerShip.side,
+        from: attackerShip.square,
+        to: attackerTo,
+      },
+      {
+        shipId: defenderShip.id,
+        side: defenderShip.side,
+        from: defenderShip.square,
+        to: defenderTo,
+      },
+    ];
+  } else {
+    const winnerIsAttacker = fightOutcome.result === "attacker-won";
+    const winnerShip = winnerIsAttacker ? attackerShip : defenderShip;
+    const loserShip = winnerIsAttacker ? defenderShip : attackerShip;
+
+    const loserTo = receptacleBay(state);
+    const withWinnerShields: GameState = {
+      ...state,
+      ships: state.ships.map((ship) =>
+        ship.id === winnerShip.id
+          ? { ...ship, shields: fightOutcome.winnerRemainingShields }
+          : ship,
+      ),
+    };
+    nextState = placeInBay(withWinnerShields, loserShip.id, loserTo);
+    winner = {
+      shipId: winnerShip.id,
+      remainingShields: fightOutcome.winnerRemainingShields,
+    };
+    returns = [
+      {
+        shipId: loserShip.id,
+        side: loserShip.side,
+        from: loserShip.square,
+        to: loserTo,
+      },
+    ];
+  }
+
+  assertFightInvariants(
+    state,
+    nextState,
+    new Set(returns.map((entry) => entry.shipId)),
+  );
+
+  const effects: AttackEffect[] = [
+    {
+      type: "fight-resolved",
+      outcome: fightOutcome.result,
+      attacker: attackerBefore,
+      defender: defenderBefore,
+      winner,
+      returns,
+    },
+  ];
+
+  const settled = applyEndOfActionTail(nextState, effects);
+
+  return { outcome: "applied", state: settled, effects };
+}
+
+/** A ship's identity, side, square and shield count, snapshotted for a `FightResolvedEffect`. */
+function toFightShip(ship: Ship): FightShip {
+  return {
+    shipId: ship.id,
+    side: ship.side,
+    square: ship.square,
+    shields: ship.shields,
+  };
 }
