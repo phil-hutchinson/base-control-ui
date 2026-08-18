@@ -1491,7 +1491,17 @@ Also `npm run build`.
 
 ## Step 13 — The turn indicator
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/TurnIndicator.tsx` (plus `TurnIndicator.css`), a
+small component rendering `announcements.ts`'s existing `turnIndicatorText`
+verbatim in a `<p>` with no ARIA role or `aria-live` attribute. `App.tsx`
+renders `<TurnIndicator state={session.state} />` between the title and
+`.app__board`, unchanged in every other respect. Added
+`src/board/TurnIndicator.test.tsx` (green/two, green/one, red/two exact-text
+cases, plus a check for the absence of `role="status"`, `role="alert"` and
+`aria-live`) and extended `src/App.test.tsx` with a case asserting the
+indicator's text appears on the page. No deviation from the plan.
 
 Add `src/board/TurnIndicator.tsx` (plus its `.css`) and render it in
 `src/App.tsx` **between the title and `.app__board`** — never inside

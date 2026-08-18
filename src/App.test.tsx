@@ -19,6 +19,14 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the turn indicator", () => {
+    render(<App />);
+
+    expect(
+      screen.getByText("Green's turn — 2 actions left"),
+    ).toBeInTheDocument();
+  });
+
   it("has no static accessibility violations", async () => {
     const { container } = render(<App />);
 
