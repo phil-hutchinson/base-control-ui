@@ -1822,7 +1822,13 @@ Verification (automated): `npm test`, `npm run typecheck`, `npm run lint`,
 
 ## Step 19 — Manual gate: the board after the revert
 
-Status: pending
+Status: committed
+
+Notes: Passed. The owner confirmed the real starting position — fourteen
+ships one per bay with no shields, five active sites and twelve dormant with
+nothing charged or depleted, green to move with two actions — that a game
+plays from it, and that nothing of the fixture or of the pre-story board is
+out of place.
 
 No code. `story.md`'s manual gate 9: a last look at what a player will actually
 open.
