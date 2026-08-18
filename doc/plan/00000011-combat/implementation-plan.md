@@ -1151,7 +1151,44 @@ every existing one is unchanged and green.
 
 ## Step 8 — A legal action is a move or an attack: the pass guard follows
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/actions.ts` with `sideToMoveHasLegalAction` (built on
+top of `sideToMoveHasLegalMove`, then OR'd with a check of every side-to-move
+ship's `sevenOnlyLegalTargets`) and `shipHasLegalAction` (built on the public
+`legalDestinations`/`legalTargets`), and pointed `applyPassGuard` in
+`src/rules/ply.ts` at the former in place of `sideToMoveHasLegalMove`, along
+with its doc comments. Added `src/rules/actions.test.ts` covering the cases
+the step lists. Rewrote the two pass-guard positions in `src/rules/ply.test.ts`
+as instructed: the old green-on-A1/red-on-B1-and-A2 position became "does not
+pass — no legal move but a legal attack" (re-verified: A1's only two on-board
+orthogonal squares, A2 and B1, are occupied, blocking movement, while B1 is a
+legal attack target and A2 is not, being a bay), and a new green-in-the-A2-bay
+position with red on A1/A3/B2 became "passes — no legal action at all"
+(re-verified: those are A2's only three on-board orthogonal squares, and §3.1
+forbids an attack from a bay regardless of adjacency); the single-ship fixture
+means no other green ship could have an action either. Also rewrote the
+"drifts the return position on a passed ply too" test onto the new
+no-legal-action position, since the old one no longer passes. Removed the two
+stale "still move-only until Step 8" comments and their now-unneeded
+green-2 helper ships in the "move, then attack" and "already moved, can still
+attack" tests, since each ship's own attack on the adjacent red ship already
+keeps the guard from firing without a second ship's move. Deviation (blast
+radius beyond `ply.test.ts`, still within the step's own verification that
+`npm test` be green): two more pre-existing fixtures broke for the same
+reason and were rewritten rather than weakened — `ply.test.ts`'s "runs the
+end-of-turn sequence for the passing side" test (its 8-red-ship ring around
+an open charged site always now grants a legal attack on at least one
+neighbour, since full movement-blocking of an open square is mathematically
+inseparable from adjacency to those same blockers; rewritten as a ship that
+has already spent this ply's move action and has no adjacent enemy, which is
+a realistic, reachable mid-ply state and still exercises the same shield-gain
+assertion), and `src/game/session.test.ts`'s "runs the pass guard once, so a
+stuck starting position passes immediately" (rewritten onto a green ship in
+the A2 bay with five red ships blocking its five reachable squares directly
+or on the way to a farther one, for the same reason). `npm run typecheck`,
+`npm run lint`, `npm test` (414 passed), `npm run format:check` and
+`npm run build` all pass.
 
 Add `src/rules/actions.ts`, §5's action-level view, and point the pass guard at
 it.

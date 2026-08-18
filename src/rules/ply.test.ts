@@ -771,15 +771,8 @@ describe("applyAttack", () => {
   });
 
   it("lets a ship move, then attack, as its ply's two actions", () => {
-    // green-2 has a legal move of its own throughout, so the pass guard —
-    // still move-only until Step 8 — never mistakes green-1 alone having
-    // moved for the whole side having nothing left to do.
     const state = buildState({
-      ships: [
-        ship("green-1", "green", "H8", 3),
-        ship("green-2", "green", "A1", 3),
-        ship("red-1", "red", "H10"),
-      ],
+      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H10")],
     });
 
     const first = applyMove(state, "green-1", squareFromName("H9"));
@@ -816,14 +809,8 @@ describe("applyAttack", () => {
   });
 
   it("still refuses a second move of a ship that has already moved this ply, even though it can still attack", () => {
-    // green-2 keeps a legal move available so the move-only pass guard (still
-    // in force until Step 8) does not end the ply early.
     const state = buildState({
-      ships: [
-        ship("green-1", "green", "H8", 3),
-        ship("green-2", "green", "A1", 3),
-        ship("red-1", "red", "H10"),
-      ],
+      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H10")],
     });
 
     const first = applyMove(state, "green-1", squareFromName("H9"));
@@ -908,12 +895,34 @@ describe("applyAttack", () => {
 });
 
 describe("applyPassGuard", () => {
-  it("passes the ply when the side to move has no legal move with any eligible ship", () => {
+  it("does not pass the ply when the side to move has no legal move but has a legal attack", () => {
+    // green-1 on A1 (4 shields, not a bay) is boxed in for movement — its
+    // only two on-board orthogonal squares, A2 and B1, are both occupied —
+    // but B1 is a legal attack target, so the side still has an action.
     const state = buildState({
       ships: [
         ship("green-1", "green", "A1", 4),
         ship("red-1", "red", "B1"),
         ship("red-2", "red", "A2"),
+      ],
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state).toEqual(state);
+    expect(result.effect).toBeUndefined();
+  });
+
+  it("passes the ply when the side to move has no legal action at all", () => {
+    // green-1 is in the A2 bay, so §3.1 forbids it to attack regardless of
+    // what stands next to it, and every square it could otherwise reach —
+    // A1, A3 and B2, its only on-board orthogonal neighbours — is occupied.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "A2", 4),
+        ship("red-1", "red", "A1"),
+        ship("red-2", "red", "A3"),
+        ship("red-3", "red", "B2"),
       ],
     });
 
@@ -943,9 +952,10 @@ describe("applyPassGuard", () => {
   it("drifts the return position on a passed ply too, since §8.7 runs in full for one", () => {
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A1", 4),
-        ship("red-1", "red", "B1"),
-        ship("red-2", "red", "A2"),
+        ship("green-1", "green", "A2", 4),
+        ship("red-1", "red", "A1"),
+        ship("red-2", "red", "A3"),
+        ship("red-3", "red", "B2"),
       ],
       returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
     });
@@ -985,23 +995,16 @@ describe("applyPassGuard", () => {
     }
   });
 
-  it("runs the end-of-turn sequence for the passing side, so a pinned ship on a charged node still gains a shield", () => {
-    // green-1 sits on K5, a charged site, with every one of its shields-3
-    // destinations (the eight neighbouring squares) blocked by a red ship,
-    // so green has no legal move at all and passes.
+  it("runs the end-of-turn sequence for the passing side, so a ship that has moved and has no attack left still gains a shield", () => {
+    // green-1 sits on K5, a charged site, having already spent this ply's
+    // first action on a move: it has no move left (already moved) and no
+    // enemy stands anywhere near it to attack, so it passes with its second
+    // action still nominally available.
     const state = buildState({
-      ships: [
-        ship("green-1", "green", "K5", 3),
-        ship("red-1", "red", "K4"),
-        ship("red-2", "red", "K6"),
-        ship("red-3", "red", "J5"),
-        ship("red-4", "red", "L5"),
-        ship("red-5", "red", "J4"),
-        ship("red-6", "red", "J6"),
-        ship("red-7", "red", "L4"),
-        ship("red-8", "red", "L6"),
-      ],
+      ships: [ship("green-1", "green", "K5", 3)],
       siteStates: { K5: "charged" },
+      movedThisPly: ["green-1"],
+      actionsRemaining: 1,
     });
 
     const result = applyPassGuard(state);

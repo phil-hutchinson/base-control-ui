@@ -354,18 +354,18 @@ describe("createSession", () => {
   });
 
   it("runs the pass guard once, so a stuck starting position passes immediately", () => {
-    // green-1 at A1, with 0 shields, is hemmed in: every one of its reachable
-    // squares is either occupied or blocked by a red ship one square away.
+    // green-1 is in the A2 bay, with 0 shields: every one of its reachable
+    // squares is either occupied by a red ship one square away or blocked
+    // along the way to a farther one, and §3.1 forbids it to attack from a
+    // bay regardless.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A1"),
-        ship("red-1", "red", "A2"),
-        ship("red-2", "red", "B1"),
+        ship("green-1", "green", "A2"),
+        ship("red-1", "red", "A1"),
+        ship("red-2", "red", "A3"),
         ship("red-3", "red", "B2"),
-        ship("red-4", "red", "A3"),
-        ship("red-5", "red", "C1"),
-        ship("red-6", "red", "B3"),
-        ship("red-7", "red", "C3"),
+        ship("red-4", "red", "B1"),
+        ship("red-5", "red", "B3"),
       ],
     });
 

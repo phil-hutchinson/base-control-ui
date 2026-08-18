@@ -8,8 +8,9 @@
 // both, on a mutual return) is placed in a bay at 0 shields — never marked as
 // having moved, since only a move counts towards that. When the ply's two
 // actions are spent, play passes to the other side. The pass guard covers the
-// case §5 sets out for when the side to move has no legal move at all.
+// case §5 sets out for when the side to move has no legal action at all.
 
+import { sideToMoveHasLegalAction } from "./actions";
 import { isBay } from "./bays";
 import { type Square, squareName } from "./board";
 import {
@@ -30,7 +31,6 @@ import {
   type MoveRefusalReason,
   moveRefusalReason,
   reachFrom,
-  sideToMoveHasLegalMove,
 } from "./movement";
 import { type SiteChargedEffect, wakeTouchedSites } from "./nodes";
 import type { ShieldCount } from "./shields";
@@ -138,9 +138,10 @@ export interface RefusedAttack {
 export type ApplyAttackResult = AppliedAttack | RefusedAttack;
 
 /**
- * If the side to move has no legal move at all with any eligible ship, its
- * ply passes: the end-of-turn sequence runs for it (a passed ply is still a
- * turn), the moved-this-ply marks clear, the action count resets to
+ * If the side to move has no legal action at all — no legal move with any
+ * eligible ship and no legal attack target with any ship — its ply passes:
+ * the end-of-turn sequence runs for it (a passed ply is still a turn), the
+ * moved-this-ply marks clear, the action count resets to
  * `ACTIONS_PER_PLY`, the ply number advances and the other side becomes the
  * side to move (rules.md §5, §8.7). Only the side to move is checked — the
  * side passed to is not — so this makes exactly one pass, never a second one
@@ -150,7 +151,7 @@ export function applyPassGuard(state: GameState): {
   readonly state: GameState;
   readonly effect: PassEffect | undefined;
 } {
-  if (sideToMoveHasLegalMove(state)) {
+  if (sideToMoveHasLegalAction(state)) {
     return { state, effect: undefined };
   }
 
