@@ -816,7 +816,22 @@ been updated.
 
 ## Step 4 — `combat.ts`: who may attack whom (§7, §3.1, §8.5)
 
-Status: pending
+Status: committed
+
+Notes: Created `src/rules/combat.ts` with `adjacentSquares` (a written-out
+eight-offset table filtered to the board, not derived from `reachFrom`),
+`AttackRefusalReason`, the §7-only layer (`sevenOnlyAttackRefusalReason`,
+`sevenOnlyLegalTargets`) and the public layer (`attackRefusalReason`,
+`legalTargets`) that applies §8.5 unconditionally — refusing every attack,
+including the owing ship's own, whenever `strandedShipIds(state)` is
+non-empty, with no `!owed.includes(shipId)` exception. Reused `findShip` from
+`moveLegality.ts` rather than duplicating it. Added
+`src/rules/combat.test.ts` covering adjacency (interior/edge/corner, the
+4-shield diagonal and 0-shield three-square-reach independence from §6), the
+bay exclusion both ways and distinguishably, the friendly/empty/wrong-ship
+refusals, a moved ship retaining its targets, and the §8.5 cases (universal
+refusal including the attacker's own, restored after the freeing move, and
+waived when the obligation itself is waived). No deviation from the plan.
 
 Create `src/rules/combat.ts`, the **only** implementation of §7 in the app, and
 give it the legality half: adjacency, the refusal reasons, and the legal
