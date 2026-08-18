@@ -1920,7 +1920,23 @@ confirm:
 
 ## Step 18 — README check
 
-Status: pending
+Status: committed
+
+Notes: Rewrote the status paragraph to say nodes wake on touch (landing or
+flying over), pay a shield a turn to whichever player is sitting on them, run
+out after nine turns and are replaced somewhere else at random, and that a
+stranded ship must be moved clear before its owner does anything else that
+turn — while keeping "no fighting" and "nothing is scored yet" as the honest
+remaining gaps. Checked the rest of the README: the rules and changelog links
+are unchanged and correct, the "one detail is deliberately left open"
+sentence still matches Appendix A (only item 1, starting shields, is listed,
+and this story does not touch it), the game description at the top still
+reads true, and the README carries no rules-version number to update (it
+links to the document rather than quoting the number, so the 0.5 bump needs
+no README change). No deviation from the plan; ran the checks directly
+rather than through `/update-readme`, since this agent's task was the README
+text itself. `npm run format:check`, `npm run typecheck`, `npm run lint`,
+`npm test` (348 tests) and `npm run build` all pass.
 
 `README.md`'s status paragraph currently tells the player, in as many words,
 that "nodes never wake or run down, no shields are gained, and nothing is
