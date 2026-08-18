@@ -6,6 +6,7 @@
 import { useCallback, useMemo } from "react";
 import { BOARD_SIZE, COLUMN_LETTERS, squareName } from "../rules/board";
 import { isBay } from "../rules/bays";
+import { shipHasLegalAction } from "../rules/actions";
 import { shipsBySquare, siteStateAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
 import { strandedShipIds } from "../rules/stranded";
@@ -74,9 +75,12 @@ export function Board({ session, onIntent }: BoardProps) {
 
     // A ship's condition, for the side to move only: an opponent's ship
     // never carries one. Owing an action takes precedence from the start of
-    // the turn, when the obligation already binds; then already having
-    // moved; then having no legal destination at all, which covers both a
-    // pinned ship and one held back by the obligation elsewhere.
+    // the turn, when the obligation already binds; then having no legal
+    // action at all — no legal move and no legal attack target — which
+    // covers a pinned ship, a ship held back by the obligation elsewhere,
+    // and a ship that has moved and has no target left. Having moved is a
+    // separate, independent fact (`hasMoved` below) and no longer
+    // contributes to the condition.
     function shipCondition(ship: Ship): ShipCondition | undefined {
       if (ship.side !== session.state.sideToMove) {
         return undefined;
@@ -84,10 +88,7 @@ export function Board({ session, onIntent }: BoardProps) {
       if (owedShipIds.has(ship.id)) {
         return "owes-action";
       }
-      if (session.state.movedThisPly.includes(ship.id)) {
-        return "already-moved";
-      }
-      if (legalDestinations(session.state, ship.id).length === 0) {
+      if (!shipHasLegalAction(session.state, ship.id)) {
         return "no-action";
       }
       return undefined;
@@ -105,6 +106,9 @@ export function Board({ session, onIntent }: BoardProps) {
         const ship = ships.get(name);
         const occupant = ship && { side: ship.side, shields: ship.shields };
         const condition = ship && shipCondition(ship);
+        const hasMoved = ship
+          ? session.state.movedThisPly.includes(ship.id)
+          : false;
 
         let mark: SquareMark | undefined;
         if (selectedShip && squareName(selectedShip.square) === name) {
@@ -119,6 +123,7 @@ export function Board({ session, onIntent }: BoardProps) {
               isBay={bay}
               siteState={siteState}
               occupant={occupant}
+              hasMoved={hasMoved}
               condition={condition}
               mark={mark}
             />
@@ -128,6 +133,7 @@ export function Board({ session, onIntent }: BoardProps) {
             isBay: bay,
             siteState,
             occupant,
+            hasMoved,
             condition,
             mark,
           }),

@@ -105,15 +105,40 @@ describe("squareLabel", () => {
     ).toBe("G7, green ship, 0 shields, selected");
   });
 
-  it("adds 'already moved this turn' as the condition, after the shield count", () => {
+  it("adds 'already moved this turn' when hasMoved is true, after the shield count", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
         occupant: { side: "green", shields: 4 },
-        condition: "already-moved",
+        hasMoved: true,
       }),
     ).toBe("M10, green ship, 4 shields, already moved this turn");
+  });
+
+  it("says nothing about having moved when hasMoved is false or absent", () => {
+    expect(
+      squareLabel({
+        square: squareAt("M", 10),
+        isBay: false,
+        occupant: { side: "green", shields: 4 },
+        hasMoved: false,
+      }),
+    ).toBe("M10, green ship, 4 shields");
+  });
+
+  it("combines having moved with the no-action condition, moved first", () => {
+    expect(
+      squareLabel({
+        square: squareAt("M", 10),
+        isBay: false,
+        occupant: { side: "green", shields: 4 },
+        hasMoved: true,
+        condition: "no-action",
+      }),
+    ).toBe(
+      "M10, green ship, 4 shields, already moved this turn, no action available this turn",
+    );
   });
 
   it("adds 'no action available this turn' as the condition", () => {
@@ -149,6 +174,21 @@ describe("squareLabel", () => {
       }),
     ).toBe(
       "M10, green ship, 4 shields, stranded, must move this turn, selected",
+    );
+  });
+
+  it("orders having moved, the condition and the mark: shields, moved, condition, mark", () => {
+    expect(
+      squareLabel({
+        square: squareAt("M", 10),
+        isBay: false,
+        occupant: { side: "green", shields: 2 },
+        hasMoved: true,
+        condition: "no-action",
+        mark: "selected",
+      }),
+    ).toBe(
+      "M10, green ship, 2 shields, already moved this turn, no action available this turn, selected",
     );
   });
 

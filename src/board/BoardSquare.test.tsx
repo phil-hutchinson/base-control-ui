@@ -74,12 +74,12 @@ describe("BoardSquare", () => {
     expect(unmarked.querySelector(".board-square__mark--selected")).toBeNull();
   });
 
-  it("renders the already-moved bar and the dampened class when marked as already moved, and not otherwise", () => {
+  it("renders the already-moved bar from hasMoved alone, without dampening the square", () => {
     const { container: marked } = render(
       <BoardSquare
         isBay={false}
         occupant={{ side: "green", shields: 0 }}
-        condition="already-moved"
+        hasMoved={true}
       />,
     );
     const { container: unmarked } = render(
@@ -89,7 +89,7 @@ describe("BoardSquare", () => {
     expect(
       marked.querySelector(".board-square__mark--already-moved"),
     ).toBeInTheDocument();
-    expect(marked.querySelector(".board-square--dampened")).toBeInTheDocument();
+    expect(marked.querySelector(".board-square--dampened")).toBeNull();
 
     expect(
       unmarked.querySelector(".board-square__mark--already-moved"),
@@ -120,6 +120,27 @@ describe("BoardSquare", () => {
     expect(bar).toHaveAttribute("fill", "none");
   });
 
+  it("renders both the already-moved bar and the no-action bar together, and dampens the square", () => {
+    const { container } = render(
+      <BoardSquare
+        isBay={false}
+        occupant={{ side: "green", shields: 0 }}
+        hasMoved={true}
+        condition="no-action"
+      />,
+    );
+
+    expect(
+      container.querySelector(".board-square__mark--already-moved"),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelector(".board-square__mark--no-action"),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelector(".board-square--dampened"),
+    ).toBeInTheDocument();
+  });
+
   it("renders the chevron and does not apply the dampened class for owes-action, applying the owes-action class instead", () => {
     const { container } = render(
       <BoardSquare
@@ -138,12 +159,8 @@ describe("BoardSquare", () => {
     ).toBeInTheDocument();
   });
 
-  it("distinguishes the three condition marks from one another by shape, not only by class name", () => {
-    const conditions: readonly ShipCondition[] = [
-      "already-moved",
-      "no-action",
-      "owes-action",
-    ];
+  it("distinguishes the two condition marks from one another by shape, not only by class name", () => {
+    const conditions: readonly ShipCondition[] = ["no-action", "owes-action"];
     const shapes = conditions.map((condition) => {
       const { container } = render(
         <BoardSquare
@@ -156,21 +173,34 @@ describe("BoardSquare", () => {
       return mark?.firstElementChild?.tagName;
     });
 
-    // A solid rect, a hollow rect and a chevron path are three distinct
-    // element/attribute shapes, so the layer survives greyscale.
-    expect(shapes).toEqual(["rect", "rect", "path"]);
-    const [already, noAction] = conditions.map((condition) => {
-      const { container } = render(
-        <BoardSquare
-          isBay={false}
-          occupant={{ side: "green", shields: 0 }}
-          condition={condition}
-        />,
-      );
-      return container.querySelector(".board-square__mark rect");
-    });
-    expect(already?.getAttribute("fill")).toBe("currentColor");
-    expect(noAction?.getAttribute("fill")).toBe("none");
+    // A hollow rect and a chevron path are two distinct element/attribute
+    // shapes, so the layer survives greyscale.
+    expect(shapes).toEqual(["rect", "path"]);
+    const { container: noActionContainer } = render(
+      <BoardSquare
+        isBay={false}
+        occupant={{ side: "green", shields: 0 }}
+        condition="no-action"
+      />,
+    );
+    const noActionBar = noActionContainer.querySelector(
+      ".board-square__mark rect",
+    );
+    expect(noActionBar?.getAttribute("fill")).toBe("none");
+  });
+
+  it("distinguishes the already-moved bar from the no-action bar by fill, not only by class name", () => {
+    const { container } = render(
+      <BoardSquare
+        isBay={false}
+        occupant={{ side: "green", shields: 0 }}
+        hasMoved={true}
+      />,
+    );
+    const alreadyMovedBar = container.querySelector(
+      ".board-square__mark--already-moved rect",
+    );
+    expect(alreadyMovedBar?.getAttribute("fill")).toBe("currentColor");
   });
 
   it("renders a condition mark and a selection mark together", () => {
@@ -209,35 +239,38 @@ describe("BoardSquare", () => {
     ).toBeInTheDocument();
   });
 
-  it("reports no axe violations for any condition, and keeps every mark out of the accessibility tree", async () => {
+  it("reports no axe violations for any condition or having-moved combination, and keeps every mark out of the accessibility tree", async () => {
     const conditions: readonly (ShipCondition | undefined)[] = [
       undefined,
-      "already-moved",
       "no-action",
       "owes-action",
     ];
+    const hasMovedValues: readonly boolean[] = [false, true];
     for (const condition of conditions) {
-      const { container } = render(
-        <BoardSquare
-          isBay={false}
-          occupant={{ side: "green", shields: 1 }}
-          condition={condition}
-          mark="selected"
-        />,
-      );
+      for (const hasMoved of hasMovedValues) {
+        const { container } = render(
+          <BoardSquare
+            isBay={false}
+            occupant={{ side: "green", shields: 1 }}
+            hasMoved={hasMoved}
+            condition={condition}
+            mark="selected"
+          />,
+        );
 
-      for (const mark of container.querySelectorAll(".board-square__mark")) {
-        expect(mark).toHaveAttribute("aria-hidden", "true");
+        for (const mark of container.querySelectorAll(".board-square__mark")) {
+          expect(mark).toHaveAttribute("aria-hidden", "true");
+        }
+
+        const results = await axe.run(container, {
+          rules: {
+            "color-contrast": { enabled: false },
+          },
+        });
+
+        expect(results.violations).toEqual([]);
+        cleanup();
       }
-
-      const results = await axe.run(container, {
-        rules: {
-          "color-contrast": { enabled: false },
-        },
-      });
-
-      expect(results.violations).toEqual([]);
-      cleanup();
     }
   });
 });

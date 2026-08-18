@@ -1395,7 +1395,37 @@ unchanged.
 
 ## Step 10 — "Already moved" stops meaning "spent"
 
-Status: pending
+Status: committed
+
+Notes: `ShipCondition` in `src/board/squareLabel.ts` shrank to `"no-action" |
+"owes-action"`, `hasMoved` was added as an independent boolean on
+`SquareLabelDescriptor` and `BoardSquareProps`, and `squareLabel` now emits
+the "already moved this turn" segment from `hasMoved` in the order square,
+bay/site, ship, shields, already-moved, condition, mark. In `Board.tsx`,
+`shipCondition` now derives `no-action` from `shipHasLegalAction` (Step 8's
+predicate) instead of `legalDestinations`, and `hasMoved` is computed and
+passed separately as `state.movedThisPly.includes(ship.id)`, exactly as the
+step specifies. In `BoardSquare.tsx`/`.css`, dampening is now driven by
+`condition === "no-action"` alone, the `AlreadyMovedMark` renders from
+`hasMoved` rather than from `condition`, and its bar moved from the bottom
+edge to the top edge (a new `ALREADY_MOVED_BAR_TOP_INSET` constant replacing
+the bottom-inset math for that mark only; the no-action and owes-action
+marks stay at the bottom). Rewrote `squareLabel.test.ts`,
+`BoardSquare.test.tsx` and `Board.test.tsx` for the new shape rather than
+weakening them, per the step's own instruction — in particular the
+"pinned ship" fixture in `Board.test.tsx`, which combat had silently broken
+before this step's derivation used it (orthogonal red blockers are legal
+attack targets under §7's eight-neighbour range even though the 4-shield
+ship can't step there), was rebuilt with friendly blockers so the ship is
+still genuinely out of actions; this is a necessary consequence of wiring in
+`shipHasLegalAction`, not a scope expansion, so it is recorded here rather
+than left silently passing for the wrong reason. Added the two new
+`Board.test.tsx` cases the step calls for (moved-with-target reads
+undampened with no condition; moved-with-neither reads both facts, dampened)
+alongside the existing pinned-ship case. `npm run typecheck`, `npm run lint`,
+`npm test` (439 passed), `npm run format:check` and `npm run build` all
+pass. No deviation from the plan beyond the pinned-ship fixture fix just
+described.
 
 A ship that has moved is a valid choice for the second action **if and only if
 it has a legal attack target** (§5). The board must match the rule.

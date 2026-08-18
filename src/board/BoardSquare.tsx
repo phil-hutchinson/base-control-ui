@@ -4,14 +4,17 @@
 // square in a single-cell grid rather than absolute positioning (see
 // BoardSquare.css).
 //
-// A ship's condition (already moved, no action available, or owing an
-// action) is a separate, independently optional field from the selection
-// mark, and a square can carry both a condition mark and a selection mark at
-// once. A ship with no legal action available — because it has already
-// moved, because it is pinned, or because an obligation elsewhere in the
-// fleet is holding it back — is drawn dampened; a ship that owes an action
-// blinks between full and dampened opacity instead, its static mark alone
-// carrying the meaning under prefers-reduced-motion.
+// Having moved this ply and a ship's condition (no action available, or
+// owing an action) are separate, independently optional fields from each
+// other and from the selection mark, so a square can carry any combination
+// of the three at once. A ship with no legal action available at all —
+// because it is pinned, because it has moved and has no attack target left,
+// or because an obligation elsewhere in the fleet is holding it back — is
+// drawn dampened; a ship that owes an action blinks between full and
+// dampened opacity instead, its static mark alone carrying the meaning under
+// prefers-reduced-motion. Having moved never dampens a ship by itself: it
+// stays a plain fact, drawn as a bar at the square's top edge so it cannot
+// collide with a condition mark at the bottom.
 
 import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
@@ -24,6 +27,7 @@ export interface BoardSquareProps {
   readonly isBay: boolean;
   readonly siteState?: SiteState;
   readonly occupant?: SquareOccupant;
+  readonly hasMoved?: boolean;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
 }
@@ -38,6 +42,7 @@ const CONDITION_BAR_WIDTH = 30;
 const CONDITION_BAR_HEIGHT = 5;
 const CONDITION_BAR_BOTTOM_INSET = 8;
 const CONDITION_BAR_STROKE_WIDTH = 2;
+const ALREADY_MOVED_BAR_TOP_INSET = 8;
 const CHEVRON_WIDTH = 24;
 const CHEVRON_HEIGHT = 10;
 const CHEVRON_BOTTOM_INSET = 8;
@@ -116,7 +121,7 @@ function SelectedMark() {
   );
 }
 
-/** A short solid bar near the square's bottom edge, marking a ship that has already moved this ply. */
+/** A short solid bar near the square's top edge, marking a ship that has already moved this ply. */
 function AlreadyMovedMark() {
   return (
     <svg
@@ -126,7 +131,7 @@ function AlreadyMovedMark() {
     >
       <rect
         x={50 - CONDITION_BAR_WIDTH / 2}
-        y={100 - CONDITION_BAR_BOTTOM_INSET - CONDITION_BAR_HEIGHT}
+        y={ALREADY_MOVED_BAR_TOP_INSET}
         width={CONDITION_BAR_WIDTH}
         height={CONDITION_BAR_HEIGHT}
         fill="currentColor"
@@ -183,6 +188,7 @@ export function BoardSquare({
   isBay,
   siteState,
   occupant,
+  hasMoved,
   condition,
   mark,
 }: BoardSquareProps) {
@@ -190,7 +196,7 @@ export function BoardSquare({
   if (isBay) {
     classNames.push("board-square--bay");
   }
-  const isDampened = condition === "already-moved" || condition === "no-action";
+  const isDampened = condition === "no-action";
   if (isDampened) {
     classNames.push("board-square--dampened");
   }
@@ -212,7 +218,7 @@ export function BoardSquare({
       {occupant && <ShipIcon side={occupant.side} shields={occupant.shields} />}
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}
-      {condition === "already-moved" && <AlreadyMovedMark />}
+      {hasMoved && <AlreadyMovedMark />}
       {condition === "no-action" && <NoActionMark />}
       {condition === "owes-action" && <OwesActionMark />}
     </div>

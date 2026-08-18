@@ -19,12 +19,12 @@
   border: 2px solid var(--bay-border);
 }
 
-/* The interaction markings (destination, selected, and the three ship
-   conditions) share one accent, kept distinct from the side colors, the
-   site accent, the bay cyan and the focus-ring amber, so they read as one
-   "you are choosing a move" layer rather than game-state artwork. They
-   differ from each other in shape, not color, so the layer still reads in
-   greyscale. */
+/* The interaction markings (destination, selected, having moved, and the
+   two ship conditions) share one accent, kept distinct from the side
+   colors, the site accent, the bay cyan and the focus-ring amber, so they
+   read as one "you are choosing a move" layer rather than game-state
+   artwork. They differ from each other in shape, not color, so the layer
+   still reads in greyscale. */
 .board-square__mark {
   display: block;
   width: 100%;
@@ -37,12 +37,13 @@
   color: var(--color-text-dim);
 }
 
-/* A ship with no legal action available this ply — because it has already
-   moved, because an obligation elsewhere in the fleet is holding it back, or
-   because it is pinned with nowhere legal to go — is drawn faded, alongside
-   its own bottom-edge bar (solid for "already moved", hollow for the other
-   two reasons), so "dampened" is a deliberate marking rather than a
-   lightness accident. */
+/* A ship with no legal action available this ply — no legal move and no
+   legal attack target, whether because it is pinned, because it has moved
+   and has no target left, or because an obligation elsewhere in the fleet is
+   holding it back — is drawn faded, alongside its own bottom-edge hollow
+   bar, so "dampened" is a deliberate marking rather than a lightness
+   accident. Having moved is drawn separately, at the square's top edge, and
+   never dampens a ship by itself. */
 .board-square--dampened .ship-icon {
   opacity: var(--dampened-opacity, 1);
 }

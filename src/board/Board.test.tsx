@@ -382,21 +382,24 @@ describe("Board", () => {
       ).toHaveLength(destinations.length);
     });
 
-    it("marks a ship that has already moved this ply", () => {
+    it("marks a ship that has already moved this ply — here, still in a bay, so also carrying no-action", () => {
       render(<Board session={session} onIntent={noop} />);
 
       const movedShip = state.ships.find((ship) => ship.id === "green-2");
       expect(movedShip).toBeDefined();
+      // Still in its bay, so §3.1 forbids it any attack, and it has already
+      // used its one move: "already moved" and "no-action" both apply, in
+      // that order.
       expect(
         screen.getByRole("gridcell", {
           name: new RegExp(
-            `^${squareName(movedShip!.square)},.*already moved this turn$`,
+            `^${squareName(movedShip!.square)},.*already moved this turn, no action available this turn$`,
           ),
         }),
       ).toBeInTheDocument();
       expect(
         screen.getAllByRole("gridcell", {
-          name: /already moved this turn$/,
+          name: /already moved this turn/,
         }),
       ).toHaveLength(1);
     });
@@ -526,10 +529,13 @@ describe("Board", () => {
           name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn",
         }),
       ).toBeInTheDocument();
-      // Green-2 already spent this ply's first action moving elsewhere.
+      // Green-2 already spent this ply's first action moving elsewhere, has
+      // no enemy adjacent to attack, and the obligation would refuse the
+      // attack anyway (decision 6 of the plan) — so it reads as both
+      // "already moved" and "no action available", dampened.
       expect(
         screen.getByRole("gridcell", {
-          name: "A1, green ship, 0 shields, already moved this turn",
+          name: "A1, green ship, 0 shields, already moved this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
       // Green-3 has not moved and would have a normal move under §6 alone,
@@ -557,8 +563,12 @@ describe("Board", () => {
 
     it("names a pinned ship 'no action available', with nothing stranded anywhere", () => {
       // green-1 sits at H8 with 4 shields, so its only reach is the four
-      // orthogonal neighbours (rules.md §6) — all four occupied by red ships,
-      // leaving it with no legal destination at all.
+      // orthogonal neighbours (rules.md §6) — all four occupied by *friendly*
+      // ships, leaving it with no legal destination. Blocking with green
+      // rather than red ships also denies it any attack target: an enemy on
+      // any of those squares would give it a legal attack under §7 even
+      // though it could not step there, since attack range is all eight
+      // neighbours regardless of shields.
       const state: GameState = {
         ships: [
           {
@@ -567,10 +577,30 @@ describe("Board", () => {
             square: squareAt("H", 8),
             shields: 4,
           },
-          { id: "red-1", side: "red", square: squareAt("H", 9), shields: 0 },
-          { id: "red-2", side: "red", square: squareAt("H", 7), shields: 0 },
-          { id: "red-3", side: "red", square: squareAt("G", 8), shields: 0 },
-          { id: "red-4", side: "red", square: squareAt("I", 8), shields: 0 },
+          {
+            id: "green-2",
+            side: "green",
+            square: squareAt("H", 9),
+            shields: 0,
+          },
+          {
+            id: "green-3",
+            side: "green",
+            square: squareAt("H", 7),
+            shields: 0,
+          },
+          {
+            id: "green-4",
+            side: "green",
+            square: squareAt("G", 8),
+            shields: 0,
+          },
+          {
+            id: "green-5",
+            side: "green",
+            square: squareAt("I", 8),
+            shields: 0,
+          },
         ],
         siteStates: {},
         sideToMove: "green",
@@ -590,6 +620,75 @@ describe("Board", () => {
       expect(
         screen.getByRole("gridcell", {
           name: "H8, green ship, 4 shields, no action available this turn",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("reads a moved ship with a legal attack target as moved and nothing else — no condition", () => {
+      // green-1 has already moved this ply, but red-1 sits adjacent to it,
+      // so it still has a legal attack under §7 and carries no condition.
+      const state: GameState = {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 2,
+          },
+          { id: "red-1", side: "red", square: squareAt("H", 9), shields: 0 },
+        ],
+        siteStates: {},
+        sideToMove: "green",
+        actionsRemaining: 1,
+        movedThisPly: ["green-1"],
+        plyNumber: 1,
+        randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+      };
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H8, green ship, 2 shields, already moved this turn",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("reads a moved ship with no legal move and no legal target as both moved and out of actions", () => {
+      // green-1 has already moved this ply and has no adjacent enemy, so it
+      // has no legal move (its one move is spent) and no legal target.
+      const state: GameState = {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 2,
+          },
+        ],
+        siteStates: {},
+        sideToMove: "green",
+        actionsRemaining: 1,
+        movedThisPly: ["green-1"],
+        plyNumber: 1,
+        randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+      };
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H8, green ship, 2 shields, already moved this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
     });
