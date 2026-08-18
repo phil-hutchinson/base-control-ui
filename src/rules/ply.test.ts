@@ -22,13 +22,13 @@ function ship(
 }
 
 function siteStatuses(
-  states: Readonly<Record<string, SiteState>>,
+  states: Readonly<Record<string, SiteState | readonly [SiteState, number]>>,
 ): Record<string, SiteStatus> {
   return Object.fromEntries(
-    Object.entries(states).map(([name, state]) => [
-      name,
-      { state, enteredOnPly: 0 },
-    ]),
+    Object.entries(states).map(([name, entry]) => {
+      const [state, enteredOnPly] = Array.isArray(entry) ? entry : [entry, 0];
+      return [name, { state, enteredOnPly }];
+    }),
   );
 }
 
@@ -37,7 +37,10 @@ function buildState(config: {
   sideToMove?: "green" | "red";
   actionsRemaining?: number;
   movedThisPly?: readonly ShipId[];
-  siteStates?: Readonly<Record<string, SiteState>>;
+  siteStates?: Readonly<
+    Record<string, SiteState | readonly [SiteState, number]>
+  >;
+  plyNumber?: number;
 }): GameState {
   return {
     ships: config.ships,
@@ -45,7 +48,7 @@ function buildState(config: {
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? ACTIONS_PER_PLY,
     movedThisPly: config.movedThisPly ?? [],
-    plyNumber: 1,
+    plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
   };
 }
@@ -124,6 +127,149 @@ describe("applyMove", () => {
     expect(landedShip?.shields).toBe(0);
     expect(result.effects).not.toContainEqual(
       expect.objectContaining({ type: "shields-reset" }),
+    );
+  });
+
+  it("charges an active site a ship lands on, mid-move (rules.md §8.2)", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8")],
+      siteStates: { K8: "active" },
+      plyNumber: 5,
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("K8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.siteStates.K8).toEqual({
+      state: "charged",
+      enteredOnPly: 5,
+    });
+    expect(result.effects).toContainEqual({
+      type: "site-charged",
+      square: squareFromName("K8"),
+      shipId: "green-1",
+      side: "green",
+      reach: "landed-on",
+    });
+    const movedShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(movedShip?.square).toEqual(squareFromName("K8"));
+  });
+
+  it("charges an active site a ship flies over without stopping (rules.md §8.2)", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8")],
+      siteStates: { I8: "active" },
+      plyNumber: 3,
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("K8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.siteStates.I8).toEqual({
+      state: "charged",
+      enteredOnPly: 3,
+    });
+    expect(result.effects).toContainEqual({
+      type: "site-charged",
+      square: squareFromName("I8"),
+      shipId: "green-1",
+      side: "green",
+      reach: "flown-over",
+    });
+    const movedShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(movedShip?.square).toEqual(squareFromName("K8"));
+  });
+
+  it("wakes a site for a red ship exactly as it would for a green one", () => {
+    const state = buildState({
+      ships: [ship("red-1", "red", "H8")],
+      sideToMove: "red",
+      siteStates: { K8: "active" },
+      plyNumber: 6,
+    });
+
+    const result = applyMove(state, "red-1", squareFromName("K8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.siteStates.K8).toEqual({
+      state: "charged",
+      enteredOnPly: 6,
+    });
+    expect(result.effects).toContainEqual({
+      type: "site-charged",
+      square: squareFromName("K8"),
+      shipId: "red-1",
+      side: "red",
+      reach: "landed-on",
+    });
+  });
+
+  it("leaves an already-charged site's clock untouched when touched again", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8")],
+      siteStates: { K8: ["charged", 2] },
+      plyNumber: 5,
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("K8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.siteStates.K8).toEqual({
+      state: "charged",
+      enteredOnPly: 2,
+    });
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "site-charged" }),
+    );
+  });
+
+  it("leaves a dormant or depleted site flown over unaffected and reports no effect", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8")],
+      siteStates: { I8: "dormant", J8: ["depleted", 1] },
+      plyNumber: 4,
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("K8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.siteStates.I8).toEqual(state.siteStates.I8);
+    expect(result.state.siteStates.J8).toEqual(state.siteStates.J8);
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "site-charged" }),
+    );
+  });
+
+  it("reports no site-charged effect and leaves siteStates deeply unchanged when a move touches no site", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8")],
+      siteStates: { E5: "active" },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.siteStates).toEqual(state.siteStates);
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "site-charged" }),
     );
   });
 

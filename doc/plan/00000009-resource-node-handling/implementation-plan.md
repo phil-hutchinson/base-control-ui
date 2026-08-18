@@ -763,7 +763,29 @@ Verification (automated): `npm test` — extend `src/rules/gameState.test.ts` an
 
 ## Step 4 — §8.2: a ship touching an active site charges it
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/nodes.ts` with `wakeTouchedSites(state, ship, path)`,
+looping over `path.passedOver` (flown-over) then `path.destination`
+(landed-on), charging only `active` sites and leaving any other state
+untouched; returns the original `state` object unchanged when nothing was
+touched. Wired it into `applyMove` in `src/rules/ply.ts`: after computing the
+moved-ship array, it re-derives the matching `reachFrom` entry from the
+ship's original square and shields (`moveRefusalReason` already found one
+internally but does not expose it, so this re-derives it rather than
+threading a new return value through the public refusal API), builds the
+post-move state, runs the wake, and folds the `site-charged` effects into the
+move's effect list ahead of `ply-ended`/`ply-passed`. Extended `MoveEffect` to
+include `SiteChargedEffect`. Added `src/rules/nodes.test.ts` (unit tests on
+`wakeTouchedSites` directly) and new cases in `src/rules/ply.test.ts`
+(integration through `applyMove`), covering all seven verification points.
+One small test-helper deviation: `ply.test.ts`'s `buildState`/`siteStatuses`
+helpers gained an optional `plyNumber` and an optional `[SiteState, number]`
+tuple form for `siteStates` entries, needed to test that an already-charged
+site's `enteredOnPly` is left alone rather than reset — a mechanical,
+backward-compatible extension of existing test scaffolding, not a plan
+deviation. `npm run typecheck`, `npm run lint`, `npm test` (279 tests),
+`npm run format:check` and `npm run build` all pass.
 
 Add `src/rules/nodes.ts` with the §8.2 wake, and call it from `applyMove`.
 
