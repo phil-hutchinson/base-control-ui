@@ -838,7 +838,28 @@ cases in `src/rules/ply.test.ts`:
 
 ## Step 5 — §8.6: drawing a replacement from the dormant pool
 
-Status: pending
+Status: committed
+
+Notes: Added `drawReplacements(state, count)` to `src/rules/nodes.ts`,
+built on a private `drawOneReplacement` (one draw: pool = `SITES` filtered to
+`dormant`, index via `drawIndex`, wakes `active` unless `shipsBySquare` shows
+an occupant, in which case `charged`) called `count` times in a loop, each
+iteration folding the advanced-seed state and effects into the next. The
+empty-pool safety net is a private `cooldownLongestDepletedSite`, scanning
+`SITES` order and keeping the strictly-smallest `enteredOnPly` so ties
+resolve to the earliest `SITES` entry, called before the draw when the pool
+is empty; it throws when no depleted site exists either. Declared
+`SiteWokenEffect` and `SiteCooledEffect` (plus `ReplacementDrawResult`) in
+`nodes.ts` per the task's instruction, since `endOfTurn.ts` does not exist
+yet — `SiteCooledEffect` is the one Step 6 must reuse (import it from
+`nodes.ts`) rather than re-declare for its own step-3 cooling effect, so the
+union in `EndOfTurnEffect` has one `site-cooled` shape, not two. Extended
+`src/rules/nodes.test.ts` (`buildState` gained an optional `randomSeed`) with
+a `describe("drawReplacements", …)` block covering the seven verification
+points, including a golden seed-0/seed-1 pair and pool sizes computed by
+hand from the algorithm to make the assertions concrete rather than only
+structural. No deviation from the plan. `npm run typecheck`, `npm run lint`,
+`npm test` (287 tests), `npm run format:check` and `npm run build` all pass.
 
 Add the replacement draw to `src/rules/nodes.ts`, as a pure function. **Nothing
 calls it yet** — Step 6 wires it into the sequence. This step is scaffolding
