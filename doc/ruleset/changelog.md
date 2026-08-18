@@ -7,7 +7,7 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
-## 0.5 — the freeing move is the first action
+## 0.5 — the freeing move is the first action, and a passed turn is still a turn
 
 - **Section 8.5 now says which action clears a stranded ship: the first.**
   While any ship still owes an action, each action in turn must free one, and
@@ -20,6 +20,14 @@ until the game plays (see the project's contribution notes).
   the rest wait. This changes how the game is played, so it would ordinarily
   be a tagging candidate, but tagging is on hold until the game plays (see the
   project's contribution notes), so no tag is made for this version.
+- **Section 8.7 now says plainly that a passed turn still runs the full
+  end-of-turn sequence.** A turn that passes because no legal action was
+  available (section 5) is followed by the clocks ticking and, for a ship of
+  the passing player standing on a charged node, its shield. The end-of-turn
+  sequence arrived with this same version and was written this way from the
+  start, but section 8.7 described only the order of its steps and never said
+  which turns it runs for. This bullet states that in writing; it does not
+  change how the game is played.
 
 ## 0.4 — a ship on a dormant site is stranded too
 

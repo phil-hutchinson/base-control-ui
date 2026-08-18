@@ -404,6 +404,11 @@ Everything that happens at the end of a turn happens in this order:
 5. A replacement site wakes for each node that just ran out.
 6. The bay return position moves one bay counter-clockwise (section 7.1).
 
+A turn that passes because no legal action was available (section 5) is still
+a turn: this sequence runs for it in full, just as it would for a turn in
+which both actions were taken. The clocks still tick, and a ship of the
+passing player standing on a charged node still gains its shield.
+
 Steps 3 and 5 are in that order deliberately: sites are returned to the
 dormant pool _before_ the pool is drawn from, which is what keeps a
 replacement always available.
