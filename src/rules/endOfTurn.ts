@@ -3,6 +3,7 @@
 // just moved and `state.plyNumber` as the ply just played, so `ply.ts` must
 // call this before either changes.
 
+import { driftReturnPositionIndex } from "./bays";
 import type { Square } from "./board";
 import { squareName } from "./board";
 import type { Side, ShipId } from "./fleet";
@@ -62,8 +63,8 @@ export interface EndOfTurnResult {
  * `plyNumber` as the ply itself — the caller runs this **before** swapping
  * sides or advancing the ply counter.
  *
- * Steps 2 (influence) and 6 (bay return position) are deliberately empty
- * slots awaiting their own stories; every other step runs unconditionally.
+ * Step 2 (influence) is a deliberately empty slot awaiting its own story;
+ * every other step, including step 6, runs unconditionally.
  */
 export function runEndOfTurn(state: GameState): EndOfTurnResult {
   const side = state.sideToMove;
@@ -157,7 +158,15 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     effects.push(...draw.effects);
   }
 
-  // Step 6: bay return position (§7.1) — awaits the combat story.
+  // Step 6: the bay return position drifts one bay counter-clockwise
+  // (§7.1), silently — no effect is produced, since the board already
+  // carries the return-position cues on every square that needs them.
+  workingState = {
+    ...workingState,
+    returnPositionIndex: driftReturnPositionIndex(
+      workingState.returnPositionIndex,
+    ),
+  };
 
   return { state: workingState, effects };
 }

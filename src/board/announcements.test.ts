@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
 import { squareAt } from "../rules/board";
 import { ACTIONS_PER_PLY } from "../rules/gameState";
 import type {
@@ -622,6 +623,7 @@ describe("turnIndicatorText", () => {
         movedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
       }),
     ).toBe("Green's turn — 2 actions left");
   });
@@ -636,6 +638,7 @@ describe("turnIndicatorText", () => {
         movedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
       }),
     ).toBe("Red's turn — 1 action left");
   });

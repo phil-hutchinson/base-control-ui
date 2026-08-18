@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STARTING_RETURN_POSITION_INDEX } from "./bays";
 import { squareFromName } from "./board";
 import type { ShipId } from "./fleet";
 import {
@@ -41,6 +42,7 @@ function buildState(config: {
     Record<string, SiteState | readonly [SiteState, number]>
   >;
   plyNumber?: number;
+  returnPositionIndex?: number;
 }): GameState {
   return {
     ships: config.ships,
@@ -50,6 +52,8 @@ function buildState(config: {
     movedThisPly: config.movedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
+    returnPositionIndex:
+      config.returnPositionIndex ?? STARTING_RETURN_POSITION_INDEX,
   };
 }
 
@@ -326,6 +330,33 @@ describe("applyMove", () => {
     ]);
   });
 
+  it("leaves the return position unchanged between a ply's two actions, and drifts it once the ply ends", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8"),
+        ship("green-2", "green", "A1"),
+        ship("red-1", "red", "O15"),
+      ],
+      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+    });
+
+    const first = applyMove(state, "green-1", squareFromName("H9"));
+    if (first.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(first.state.returnPositionIndex).toBe(
+      STARTING_RETURN_POSITION_INDEX,
+    );
+
+    const second = applyMove(first.state, "green-2", squareFromName("B1"));
+    if (second.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(second.state.returnPositionIndex).not.toBe(
+      STARTING_RETURN_POSITION_INDEX,
+    );
+  });
+
   it("refuses a second move of a ship that has already moved this ply, but allows it again next ply", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "A1")],
@@ -389,6 +420,23 @@ describe("applyPassGuard", () => {
 
     expect(result.state).toEqual(state);
     expect(result.effect).toBeUndefined();
+  });
+
+  it("drifts the return position on a passed ply too, since §8.7 runs in full for one", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "A1", 4),
+        ship("red-1", "red", "B1"),
+        ship("red-2", "red", "A2"),
+      ],
+      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state.returnPositionIndex).not.toBe(
+      STARTING_RETURN_POSITION_INDEX,
+    );
   });
 
   it("passes once, unconditionally, when no ship at all has a legal move", () => {

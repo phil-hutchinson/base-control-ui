@@ -6,7 +6,7 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
-import { BAYS, isBay } from "../rules/bays";
+import { BAYS, isBay, STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import { startingSiteState } from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
@@ -463,6 +463,7 @@ describe("Board", () => {
         movedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
       };
     }
 
@@ -577,6 +578,7 @@ describe("Board", () => {
         movedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
       };
       const session: Session = {
         state,

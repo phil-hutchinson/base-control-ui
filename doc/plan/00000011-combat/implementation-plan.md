@@ -745,7 +745,28 @@ existing bay test still passes unchanged.
 
 ## Step 3 — The state carries the return position, and §8.7 step 6 drifts it
 
-Status: pending
+Status: committed
+
+Notes: Added `returnPositionIndex` to `GameState` (documented as an index
+into `CLOCKWISE_BAYS`, with the receptacle explicitly noted as derived
+elsewhere and never stored), set it to `STARTING_RETURN_POSITION_INDEX` in
+`startingGameState`, and filled in `endOfTurn.ts` step 6 to drift it one bay
+counter-clockwise unconditionally via `driftReturnPositionIndex`, emitting no
+effect (decision 19). Added the three specified tests (`gameState.test.ts`:
+starting state names H15; `endOfTurn.test.ts`: one call drifts H15 → D15,
+fourteen calls return to H15 and produce no effect, and the step touches no
+other field; `ply.test.ts`: the position is unchanged between a ply's two
+actions, changes when the ply ends, and also drifts on a passed ply via
+`applyPassGuard`, reusing the existing pass-guard test position as
+instructed). Rewrote the old "step 2 and step 6 stay empty" test into "step 2
+stays empty" (now asserting the drifted `returnPositionIndex` rather than
+full state equality) since step 6 is no longer an empty slot. Every other
+test file that hand-builds a `GameState` (`Board.test.tsx`,
+`announcements.test.ts`, `session.test.ts`, `movement.test.ts`,
+`nodes.test.ts`, `stranded.test.ts`) needed the new required field added to
+its `buildState` helper or literal, defaulting to
+`STARTING_RETURN_POSITION_INDEX`, as the plan anticipated. No deviation from
+the plan.
 
 Put §7.1's return position into the game state and fill in the end-of-turn step
 that moves it.

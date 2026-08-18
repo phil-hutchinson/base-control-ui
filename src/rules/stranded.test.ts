@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STARTING_RETURN_POSITION_INDEX } from "./bays";
 import { squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, SiteStatus } from "./gameState";
@@ -42,6 +43,7 @@ function buildState(config: {
     movedThisPly: config.movedThisPly ?? [],
     plyNumber: 1,
     randomSeed: 1,
+    returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
   };
 }
 
