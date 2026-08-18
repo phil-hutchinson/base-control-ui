@@ -1454,7 +1454,33 @@ legibility of the three shapes and the reduced-motion switch are Step 14.
 
 ## Step 12 — A temporary position for the manual gates
 
-Status: pending
+Status: committed
+
+Notes: Added `src/game/reviewFixture.ts` exporting `reviewFixtureGameState()`,
+built directly from the position given in this step (ply 9, green to move,
+two actions free, nothing moved; K5 charged with `enteredOnPly: 1`, E5/H8/E11/
+K11 active, the remaining twelve `SITES` dormant; seed `20260818`; the exact
+ship placements and shields given). Switched `src/App.tsx`'s lazy reducer
+initialiser from `createSession(startingGameState(freshSeed()))` to
+`createSession(reviewFixtureGameState())` — one import swapped for another,
+one call changed, nothing else touched. Verified the required arithmetic with
+a throwaway script run via `npx tsx` from a scratch file under `src/game/`
+(deleted immediately after): `legalDestinations` confirms green-2's H6→H8 is
+legal and lands on H8 (active); red-2's K9→K12 is legal and passes over K11
+(active); green-4 at A1/4 shields has zero legal destinations (boxed in by
+green-5 on A2 and red-1 on B1, off-board the other two ways); and green-1 at
+K5 has 8 legal destinations at 3 shields and 4 at 4 shields. No square needed
+to move — the position as specified in this step's arithmetic held exactly.
+Module header states plainly that the position is not reachable by play and
+that the module is temporary; reworded two more mentions of "manual gate" in
+the file's doc comments (CONTRIBUTING.md bans plan-step references in code
+comments, and "manual gate" is this plan's term for the gate steps) to speak
+of "checking the board by eye" instead — a wording deviation only, the
+content is unchanged. `grep -rl reviewFixture src` shows only the fixture
+module and its one call site in `App.tsx`; no test anywhere references it,
+and `src/App.test.tsx` still asserts only the shell (heading, turn-indicator
+text, axe) unchanged. `npm run typecheck`, `npm run lint`, `npm test` (346
+tests, none modified), `npm run format:check` and `npm run build` all pass.
 
 Add `src/game/reviewFixture.ts`, a **temporary** module holding a hand-built
 position, and have `src/App.tsx` build its initial session from it instead of
