@@ -5,6 +5,20 @@ newest first. A version bump is its own commit, and once merged to `main` that
 commit is tagged `rules-<version>` — so checking out `rules-0.1` gets you an
 app that plays exactly the rules described by version 0.1.
 
+## 0.5 — the freeing move is the first action
+
+- **Section 8.5 now says which action clears a stranded ship: the first.**
+  While any ship still owes an action, each action in turn must free one, and
+  only once none remain does the rest of the turn belong to the player. The
+  previous wording said only that an action was owed, which left open a
+  reading where the obligation could be put off to the turn's last action —
+  a turn that stays free right up until it suddenly is not. The consequences
+  are unchanged: one stranded ship frees the rest of the turn, two claim both
+  actions, and three or more mean the player clears two of their choice and
+  the rest wait. This changes how the game is played, so it would ordinarily
+  be a tagging candidate, but tagging is on hold until the game plays (see the
+  project's contribution notes), so no tag is made for this version.
+
 ## 0.4 — a ship on a dormant site is stranded too
 
 - **Section 8.5 now strands a ship on a dormant site on the same terms as one

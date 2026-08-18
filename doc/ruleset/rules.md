@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.4**
+**Rules version: 0.5**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -361,11 +361,14 @@ is equally stuck — section 6 forbids ending a move on either state — and sta
 stranded on the same terms.
 
 That is a restriction on what an action may be, not a penalty on top of one.
-The move is ordinary in every other respect, and the rest of the turn belongs
-to the player: they may attack with the ship they have just freed, move a
-different ship, or do anything else that is legal. If two ships are stranded,
-both actions go to clearing them. If three or more are, the player clears two
-and the rest wait for the following turn.
+The freeing move is the **first action** of the turn: while any ship still
+owes one, each action in turn must free one, and only once none remain does
+the rest of the turn belong to the player. With one ship stranded, the first
+action frees it and the rest of the turn is the player's: they may attack with
+the ship they have just freed, move a different ship, or do anything else
+that is legal. With two ships stranded, both actions go to clearing them.
+With three or more, the player clears two of their choice and the rest wait
+for the following turn.
 
 If a stranded ship has no legal move at all, the requirement is simply waived —
 the player is not obliged to attack blockers or shuffle friendly ships out of

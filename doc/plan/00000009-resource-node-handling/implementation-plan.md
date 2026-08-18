@@ -1598,7 +1598,17 @@ If a check fails, record what was seen in this step's Notes before any fix.
 
 ## Step 13a — Rules: the freeing move is the first action (version 0.5)
 
-Status: pending
+Status: committed
+
+Notes: Rewrote §8.5's consequences paragraph to state the freeing move is the
+first action of a turn while any ship still owes one, keeping the three
+consequences (one frees the rest of the turn, two claim both actions, three
+or more leave two cleared and the rest waiting) as results of that rule; left
+the waiver and final paragraphs, and §6, untouched. Bumped the version line
+to 0.5, added a `## 0.5` changelog entry above 0.4, and set `RULES_VERSION`
+to "0.5". No deviation from the plan; no code in `src/` implements the new
+reading yet (Step 13b does). `npm run typecheck`, `npm run lint`, `npm test`
+(346 tests, unchanged), `npm run format:check` and `npm run build` all pass.
 
 A finding from the Step 13 gate. §8.5 says a stranded ship's owner "must spend
 an action moving it clear" but never says **which** action, and this plan's
