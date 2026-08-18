@@ -19,10 +19,7 @@ export interface BoardSquareProps {
 }
 
 // Geometry for the three markings, in the same 0-100 viewBox ShipIcon and
-// SiteMarker use, so they scale with the square exactly as those do. Named
-// here in one place, tunable by eye at the manual gate: legibility, greyscale
-// survival and non-collision with a site's rings or a ship's shield arcs
-// cannot be checked in a DOM test.
+// SiteMarker use, so they scale with the square exactly as those do.
 const DESTINATION_DISC_RADIUS = 9;
 const SELECTED_BRACKET_INSET = 9;
 const SELECTED_BRACKET_LENGTH = 20;

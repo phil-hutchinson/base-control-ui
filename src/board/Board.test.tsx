@@ -321,8 +321,8 @@ describe("Board", () => {
 
   describe("selection markings", () => {
     // A hand-built session with green-1 selected on H8, and green-2 (still
-    // in its starting bay) already marked as moved this ply. Never built via
-    // the fixture, which the plan bans any test from depending on.
+    // in its starting bay) already marked as moved this ply. Built directly
+    // rather than through the fixture.
     const state: GameState = {
       ...startingGameState(),
       ships: startingGameState().ships.map((ship) =>
@@ -346,7 +346,7 @@ describe("Board", () => {
       ).toBeInTheDocument();
     });
 
-    it("marks exactly the squares Step 4's legalDestinations calls legal", () => {
+    it("marks exactly the squares legalDestinations calls legal", () => {
       render(<Board session={session} onIntent={noop} />);
 
       const destinations = legalDestinations(state, "green-1");

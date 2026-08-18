@@ -97,6 +97,22 @@ describe("applyMove", () => {
     );
   });
 
+  it("does not report a shields-reset effect for a ship that had no shields to lose", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "A11", 0)],
+    });
+    const result = applyMove(state, "green-1", squareFromName("A10"));
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    const landedShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(landedShip?.shields).toBe(0);
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "shields-reset" }),
+    );
+  });
+
   it("refuses an illegal destination, leaving the state exactly as it went in", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "H9")],
@@ -210,7 +226,7 @@ describe("applyPassGuard", () => {
     expect(result.effect).toBeUndefined();
   });
 
-  it("terminates rather than passing back and forth for ever when no ship at all has a legal move", () => {
+  it("passes once, unconditionally, when no ship at all has a legal move", () => {
     const state = buildState({ ships: [] });
 
     const result = applyPassGuard(state);

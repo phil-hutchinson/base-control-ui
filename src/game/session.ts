@@ -38,6 +38,8 @@ export interface MovedEvent {
   readonly from: Square;
   readonly to: Square;
   readonly effects: readonly MoveEffect[];
+  /** The mover's remaining actions after this move, from the resulting state. */
+  readonly actionsRemaining: number;
 }
 
 /**
@@ -122,7 +124,7 @@ function cleared(session: Session): Session {
   };
 }
 
-/** Activating a square when no ship is currently selected (plan decision 7). */
+/** Activating a square when no ship is currently selected. */
 function activateWithNoSelection(session: Session, square: Square): Session {
   const ship = shipsBySquare(session.state).get(squareName(square));
 
@@ -138,7 +140,7 @@ function activateWithNoSelection(session: Session, square: Square): Session {
   return selected(session, ship.id, ship.side, square);
 }
 
-/** Activating a square while `selectedShipId` is already selected (plan decision 7). */
+/** Activating a square while `selectedShipId` is already selected. */
 function activateWithSelection(
   session: Session,
   selectedShipId: ShipId,
@@ -180,6 +182,7 @@ function activateWithSelection(
       from: selectedShip.square,
       to: square,
       effects: result.effects,
+      actionsRemaining: result.state.actionsRemaining,
     },
   };
 }

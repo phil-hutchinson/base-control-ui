@@ -62,7 +62,7 @@ function moveEndingClause(event: MovedEvent): string {
     return `${turnPhrase(plyEndedEffect.sideToMove, ACTIONS_PER_PLY)}.`;
   }
 
-  return `${capitalize(event.side)} has ${actionsPhrase(ACTIONS_PER_PLY - 1)} left.`;
+  return `${capitalize(event.side)} has ${actionsPhrase(event.actionsRemaining)} left.`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {

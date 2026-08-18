@@ -73,7 +73,7 @@ export interface ReachEntry {
 /**
  * Every square a ship at `origin` carrying `shields` could move to on an
  * otherwise empty board (rules.md §6). Moves that would leave the board are
- * omitted entirely. Says nothing about occupancy, sites or whose turn it is.
+ * omitted entirely. Says nothing about occupancy, sites or whose ply it is.
  */
 export function reachFrom(
   origin: Square,
@@ -136,40 +136,6 @@ function findShip(state: GameState, shipId: ShipId): Ship {
   return ship;
 }
 
-/** Whether a site's state bans a ship from ending its move there (rules.md §6, §8.5). */
-function bansLanding(state: GameState, square: Square): boolean {
-  const siteState = siteStateAt(state, square);
-  return siteState === "dormant" || siteState === "depleted";
-}
-
-/**
- * Every square `shipId` may legally move to in the given state: its §6 reach,
- * filtered so every passed-over square and the destination are unoccupied by
- * either side, and the destination is not a dormant or depleted site. Empty
- * when the ship does not belong to the side to move or has already moved
- * this ply.
- */
-export function legalDestinations(
-  state: GameState,
-  shipId: ShipId,
-): readonly Square[] {
-  const ship = findShip(state, shipId);
-  if (ship.side !== state.sideToMove || state.movedThisPly.includes(shipId)) {
-    return [];
-  }
-
-  const occupied = shipsBySquare(state);
-
-  return reachFrom(ship.square, ship.shields)
-    .filter(
-      (entry) =>
-        !occupied.has(squareName(entry.destination)) &&
-        !entry.passedOver.some((square) => occupied.has(squareName(square))),
-    )
-    .filter((entry) => !bansLanding(state, entry.destination))
-    .map((entry) => entry.destination);
-}
-
 /**
  * Why `destination` is not a legal move for `shipId` in the given state, as a
  * structured reason, or `undefined` when the move is legal. Reasons are
@@ -218,10 +184,33 @@ export function moveRefusalReason(
 }
 
 /**
+ * Every square `shipId` may legally move to in the given state: its §6 reach,
+ * filtered down to the destinations `moveRefusalReason` raises no objection
+ * to. Empty when the ship does not belong to the side to move or has already
+ * moved this ply.
+ */
+export function legalDestinations(
+  state: GameState,
+  shipId: ShipId,
+): readonly Square[] {
+  const ship = findShip(state, shipId);
+  if (ship.side !== state.sideToMove || state.movedThisPly.includes(shipId)) {
+    return [];
+  }
+
+  return reachFrom(ship.square, ship.shields)
+    .map((entry) => entry.destination)
+    .filter(
+      (destination) =>
+        moveRefusalReason(state, shipId, destination) === undefined,
+    );
+}
+
+/**
  * The ships of the side to move that have not yet moved this ply, and so are
  * still eligible to take a move action.
  */
-export function eligibleShips(state: GameState): readonly Ship[] {
+function eligibleShips(state: GameState): readonly Ship[] {
   return state.ships.filter(
     (ship) =>
       ship.side === state.sideToMove && !state.movedThisPly.includes(ship.id),

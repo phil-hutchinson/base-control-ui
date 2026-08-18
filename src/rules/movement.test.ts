@@ -3,7 +3,6 @@ import { ALL_SQUARES, isOnBoard, squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship } from "./gameState";
 import {
-  eligibleShips,
   legalDestinations,
   type MoveRefusalReason,
   moveRefusalReason,
@@ -368,8 +367,8 @@ describe("legalDestinations and moveRefusalReason", () => {
   });
 });
 
-describe("eligibleShips and sideToMoveHasLegalMove", () => {
-  it("lists only the side to move's ships that have not yet moved", () => {
+describe("sideToMoveHasLegalMove", () => {
+  it("considers only the side to move's ships that have not yet moved", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "H8"),
@@ -379,9 +378,9 @@ describe("eligibleShips and sideToMoveHasLegalMove", () => {
       movedThisPly: ["green-2"],
     });
 
-    expect(eligibleShips(state).map((eligible) => eligible.id)).toEqual([
-      "green-1",
-    ]);
+    expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
+    expect(legalDestinations(state, "green-2")).toEqual([]);
+    expect(sideToMoveHasLegalMove(state)).toBe(true);
   });
 
   it("is true when the side to move has a legal move, false when it has none", () => {

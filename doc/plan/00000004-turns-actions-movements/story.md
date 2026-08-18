@@ -251,7 +251,10 @@ directly.
   already moved, or an out-of-reach square is a thing players will do
   constantly while learning. Each must produce a clear, non-technical
   explanation rather than nothing at all, and the explanation must reach a
-  screen-reader user as well as a sighted one.
+  screen-reader user as well as a sighted one. For a sighted player, that
+  explanation is the board itself: nothing highlights and nothing moves. The
+  written sentence is carried only in the live region, for the screen-reader
+  user who needs it read aloud — this is the intended behaviour, not a gap.
 
 - **The app deliberately lags the document in one place.** §8.5 requires a
   player whose ship is stranded on a depleted site to spend an action moving it

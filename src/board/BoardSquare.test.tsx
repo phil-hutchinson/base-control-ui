@@ -45,4 +45,55 @@ describe("BoardSquare", () => {
     expect(shipIndex).toBeGreaterThanOrEqual(0);
     expect(markerIndex).toBeLessThan(shipIndex);
   });
+
+  it("renders the destination mark when marked as a legal destination, and not otherwise", () => {
+    const { container: marked } = render(
+      <BoardSquare isBay={false} mark="destination" />,
+    );
+    const { container: unmarked } = render(<BoardSquare isBay={false} />);
+
+    expect(
+      marked.querySelector(".board-square__mark--destination"),
+    ).toBeInTheDocument();
+    expect(
+      unmarked.querySelector(".board-square__mark--destination"),
+    ).toBeNull();
+  });
+
+  it("renders the selected mark when marked as selected, and not otherwise", () => {
+    const { container: marked } = render(
+      <BoardSquare isBay={false} mark="selected" />,
+    );
+    const { container: unmarked } = render(<BoardSquare isBay={false} />);
+
+    expect(
+      marked.querySelector(".board-square__mark--selected"),
+    ).toBeInTheDocument();
+    expect(unmarked.querySelector(".board-square__mark--selected")).toBeNull();
+  });
+
+  it("renders the spent mark and the faded-ship class when marked as already moved, and not otherwise", () => {
+    const { container: marked } = render(
+      <BoardSquare
+        isBay={false}
+        occupant={{ side: "green", shields: 0 }}
+        mark="already-moved"
+      />,
+    );
+    const { container: unmarked } = render(
+      <BoardSquare isBay={false} occupant={{ side: "green", shields: 0 }} />,
+    );
+
+    expect(
+      marked.querySelector(".board-square__mark--already-moved"),
+    ).toBeInTheDocument();
+    expect(
+      marked.querySelector(".board-square--already-moved"),
+    ).toBeInTheDocument();
+
+    expect(
+      unmarked.querySelector(".board-square__mark--already-moved"),
+    ).toBeNull();
+    expect(unmarked.querySelector(".board-square--already-moved")).toBeNull();
+  });
 });

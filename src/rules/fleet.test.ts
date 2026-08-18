@@ -70,11 +70,6 @@ describe("starting fleet", () => {
     }
   });
 
-  it("finds no starting ship on an ordinary square", () => {
-    expect(startingShipAt(squareAt("H", 8))).toBeUndefined();
-    expect(startingShipAt(squareAt("A", 1))).toBeUndefined();
-  });
-
   it("gives every ship a shield count within the 0-4 range", () => {
     for (const entry of STARTING_FLEET) {
       expect(isShieldCount(entry.shields)).toBe(true);

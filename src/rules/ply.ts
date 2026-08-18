@@ -48,12 +48,11 @@ export interface RefusedMove {
 export type ApplyMoveResult = AppliedMove | RefusedMove;
 
 /**
- * If the side now to move has no legal move at all with any eligible ship,
- * its ply passes: the moved-this-ply marks clear, the action count resets to
+ * If the side to move has no legal move at all with any eligible ship, its
+ * ply passes: the moved-this-ply marks clear, the action count resets to
  * `ACTIONS_PER_PLY`, and the other side becomes the side to move (rules.md
- * §5). Applies at most one pass — if neither side has a legal move, this
- * stops rather than passing back and forth for ever, and the state is
- * returned as it stands.
+ * §5). Only the side to move is checked — the side passed to is not — so
+ * this makes exactly one pass, never a second one back.
  */
 export function applyPassGuard(state: GameState): {
   readonly state: GameState;
@@ -101,6 +100,7 @@ export function applyMove(
 
   const effects: MoveEffect[] = [];
   const endsInBay = isBay(destination);
+  const movingShip = state.ships.find((ship) => ship.id === shipId);
 
   const ships = state.ships.map((ship) =>
     ship.id === shipId
@@ -111,7 +111,7 @@ export function applyMove(
         }
       : ship,
   );
-  if (endsInBay) {
+  if (endsInBay && movingShip !== undefined && movingShip.shields > 0) {
     effects.push({ type: "shields-reset", shipId });
   }
 

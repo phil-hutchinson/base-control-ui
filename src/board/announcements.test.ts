@@ -51,6 +51,7 @@ describe("announcementFor", () => {
       from: squareAt("G", 7),
       to: squareAt("H", 8),
       effects: [],
+      actionsRemaining: 1,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from G7 to H8. Green has 1 action left.",
@@ -65,6 +66,7 @@ describe("announcementFor", () => {
       from: squareAt("G", 7),
       to: squareAt("H", 8),
       effects: [{ type: "ply-ended", sideToMove: "red" }],
+      actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from G7 to H8. Red's turn, 2 actions left.",
@@ -79,9 +81,25 @@ describe("announcementFor", () => {
       from: squareAt("A", 11),
       to: squareAt("A", 10),
       effects: [{ type: "shields-reset", shipId: "red-2" }],
+      actionsRemaining: 1,
     };
     expect(announcementFor(event)).toBe(
       "Red ship moved from A11 into the A10 bay and lost its shields. Red has 1 action left.",
+    );
+  });
+
+  it("announces a move into a bay by a ship with no shields to lose as a plain move", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "red-2",
+      side: "red",
+      from: squareAt("A", 11),
+      to: squareAt("A", 10),
+      effects: [],
+      actionsRemaining: 1,
+    };
+    expect(announcementFor(event)).toBe(
+      "Red ship moved from A11 to A10. Red has 1 action left.",
     );
   });
 
@@ -96,6 +114,7 @@ describe("announcementFor", () => {
         { type: "shields-reset", shipId: "red-2" },
         { type: "ply-ended", sideToMove: "green" },
       ],
+      actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
       "Red ship moved from A11 into the A10 bay and lost its shields. Green's turn, 2 actions left.",
@@ -113,6 +132,7 @@ describe("announcementFor", () => {
         { type: "ply-ended", sideToMove: "red" },
         { type: "ply-passed", side: "red", sideToMove: "green" },
       ],
+      actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from G7 to H8. Red has no legal move, so the turn passes. Green's turn, 2 actions left.",

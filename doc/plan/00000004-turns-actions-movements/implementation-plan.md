@@ -335,6 +335,13 @@ the legal-destination list **if and only if** the reason function returns "no
 reason". That test is the thing standing between "the version the player can
 see" and "the version the game enforces" diverging.
 
+**Revisited at peer review.** Keeping `legalDestinations` and
+`moveRefusalReason` as two independent implementations left the sweep test as
+the only thing holding them together, which is weaker than `story.md` asks
+for. `legalDestinations` now derives its answer by filtering §6 reach with
+`moveRefusalReason`, so the two cannot drift by construction; the sweep test
+stays on as a regression guard.
+
 ### 7. The interaction grammar
 
 **Decision.** Selection is a two-step interaction — pick a ship, pick a square
