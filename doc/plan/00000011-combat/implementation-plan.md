@@ -1828,7 +1828,30 @@ accommodate the fixture**. Confirm by inspection that nothing outside
 
 ## Step 13a — Reverse the return cues: the receptacle takes the solid triangles
 
-Status: pending
+Status: committed
+
+Notes: In `src/board/BoardSquare.tsx`, swapped which geometry each mark
+component draws — `ReceptacleMark` now renders the four filled corner
+triangles (`cornerTrianglePath`) and `ReturnPositionMark` now renders the
+four stroked corner diagonals (`cornerDiagonal`) — and swapped the render
+conditions so `"receptacle"` and `"return-position-and-receptacle"` render
+`ReceptacleMark` (solid) while `"return-position"` alone renders
+`ReturnPositionMark` (outline); updated the module header and both
+components' doc comments to describe the new mapping and the every-bay-full
+case. `combat.ts`, the `returnCue` field and its three values, the
+derivation (and every-bay-full guard) in `Board.tsx`, and the accessible-name
+wording in `squareLabel.ts` were left untouched, as the step specifies.
+Rewrote the three Step 12 tests in `src/board/BoardSquare.test.tsx` that
+assert which treatment each cue renders, inverted to the new mapping. Added
+artwork assertions (not just wording) to two tests in the "return cues"
+describe block of `src/board/Board.test.tsx`: the coincidence-case test now
+also asserts the solid receptacle triangles render alone, and the
+every-bay-occupied test now also asserts position 1's stroked outline
+renders alone with no receptacle mark present, covering the every-bay-full
+case the step's verification calls for. `npm run typecheck`, `npm run lint`,
+`npm test` (466 passed), `npm run format:check` (after `prettier --write` on
+the two touched files) and `npm run build` all pass. No deviation from the
+plan.
 
 Added after the Step 14 gate, on the owner's revised design. Step 12 gave the
 **solid** corner triangles to return position 1 and the **outline** to the

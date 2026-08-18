@@ -7,13 +7,16 @@
 // loss or a mutual return.
 //
 // A bay's return-position cues (rules.md §7.1) are drawn as small corner
-// triangles, on screen all game regardless of selection: solid for return
-// position 1, a stroked line alone for the current receptacle. Each triangle
+// triangles, on screen all game regardless of selection: solid for the
+// current receptacle, a stroked line alone for return position 1. The
+// receptacle is the bay that will actually take the next beaten ship, so it
+// carries the heavier mark; position 1 is the rule behind it. Each triangle
 // is a single new line closing a corner of the square's own border, which
 // already supplies the triangle's other two sides. Where a bay is both,
 // only the solid triangle is drawn — an outline beneath a solid triangle of
 // the same geometry would be invisible anyway — and the accessible name says
-// both.
+// both. Where no bay is empty at all, only position 1's outline is drawn,
+// correctly saying there is nowhere for a beaten ship to go.
 //
 // Having moved this ply and a ship's condition (no action available, or
 // owing an action) are separate, independently optional fields from each
@@ -203,15 +206,17 @@ function SelectedMark() {
 }
 
 /**
- * Solid corner triangles marking return position 1 (rules.md §7.1), on
- * screen for that bay all game regardless of selection. Drawn where a
- * receptacle outline would collide with it, since an outline beneath a
- * solid triangle of the same geometry would be invisible.
+ * Solid corner triangles marking the bay a beaten ship would actually land
+ * in right now (rules.md §7.1) — the receptacle. It is the more important of
+ * the two return cues nearly all the time, since it is where a ship is about
+ * to land, so it carries the heavier mark. Drawn instead of position 1's
+ * outline where a bay is both, since an outline beneath a solid triangle of
+ * the same geometry would be invisible.
  */
-function ReturnPositionMark() {
+function ReceptacleMark() {
   return (
     <svg
-      className="board-square__mark board-square__mark--return-position"
+      className="board-square__mark board-square__mark--receptacle"
       viewBox="0 0 100 100"
       aria-hidden="true"
     >
@@ -226,11 +231,11 @@ function ReturnPositionMark() {
   );
 }
 
-/** Stroked corner triangles (their diagonal alone) marking the bay a beaten ship would actually land in right now (rules.md §7.1). */
-function ReceptacleMark() {
+/** Stroked corner triangles (their diagonal alone) marking return position 1 (rules.md §7.1), on screen for that bay all game regardless of selection. */
+function ReturnPositionMark() {
   return (
     <svg
-      className="board-square__mark board-square__mark--receptacle"
+      className="board-square__mark board-square__mark--return-position"
       viewBox="0 0 100 100"
       aria-hidden="true"
     >
@@ -348,11 +353,9 @@ export function BoardSquare({
   return (
     <div className={classNames.join(" ")} style={style}>
       {siteState && <SiteMarker state={siteState} />}
-      {returnCue === "receptacle" && <ReceptacleMark />}
-      {(returnCue === "return-position" ||
-        returnCue === "return-position-and-receptacle") && (
-        <ReturnPositionMark />
-      )}
+      {(returnCue === "receptacle" ||
+        returnCue === "return-position-and-receptacle") && <ReceptacleMark />}
+      {returnCue === "return-position" && <ReturnPositionMark />}
       {occupant && <ShipIcon side={occupant.side} shields={occupant.shields} />}
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}

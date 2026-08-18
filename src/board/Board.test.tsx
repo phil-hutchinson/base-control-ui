@@ -658,18 +658,23 @@ describe("Board", () => {
       ).toBeInTheDocument();
     });
 
-    it("names both return cues on the same bay when position 1 is itself the receptacle", () => {
+    it("names both return cues on the same bay when position 1 is itself the receptacle, and draws only the solid receptacle triangles", () => {
       // green-1 (H15) is the only ship moved out, so position 1 is empty
       // and is also the first empty bay.
       const state = stateWithBaysVacatedBy("green-1");
       const session = createSession(state);
       render(<Board session={session} onIntent={noop} />);
 
+      const cell = screen.getByRole("gridcell", {
+        name: "H15, bay, return position 1, next bay for a beaten ship",
+      });
+      expect(cell).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", {
-          name: "H15, bay, return position 1, next bay for a beaten ship",
-        }),
-      ).toBeInTheDocument();
+        cell.querySelectorAll(".board-square__mark--receptacle path"),
+      ).toHaveLength(4);
+      expect(
+        cell.querySelector(".board-square__mark--return-position"),
+      ).toBeNull();
     });
 
     it("moves the return-position wording one bay counter-clockwise once the ply ends", () => {
@@ -741,7 +746,7 @@ describe("Board", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("shows no receptacle wording anywhere when every bay is occupied, as at the true starting position", () => {
+    it("shows no receptacle wording anywhere when every bay is occupied, as at the true starting position, and draws position 1's outline alone", () => {
       render(<Board session={startingSession} onIntent={noop} />);
 
       expect(
@@ -749,12 +754,18 @@ describe("Board", () => {
           name: /next bay for a beaten ship/,
         }),
       ).not.toBeInTheDocument();
-      // Return position 1 is still marked even though it is occupied.
+      // Return position 1 is still marked even though it is occupied, and
+      // with no empty bay to be the receptacle, only its stroked outline is
+      // drawn — the absence of a solid triangle correctly says there is
+      // nowhere for a beaten ship to go.
+      const cell = screen.getByRole("gridcell", {
+        name: "H15, bay, return position 1, green ship, 0 shields",
+      });
+      expect(cell).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", {
-          name: "H15, bay, return position 1, green ship, 0 shields",
-        }),
-      ).toBeInTheDocument();
+        cell.querySelectorAll(".board-square__mark--return-position line"),
+      ).toHaveLength(4);
+      expect(cell.querySelector(".board-square__mark--receptacle")).toBeNull();
     });
   });
 
