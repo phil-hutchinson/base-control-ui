@@ -6,7 +6,7 @@ import "./App.css";
 
 /** The app shell: the title above the board, drawn from the game session. */
 export function App() {
-  const [session] = useReducer(
+  const [session, dispatch] = useReducer(
     sessionReducer,
     startingGameState(),
     createSession,
@@ -16,7 +16,7 @@ export function App() {
     <main className="app">
       <h1 className="app__title">Base Control</h1>
       <div className="app__board">
-        <Board session={session} />
+        <Board session={session} onIntent={dispatch} />
       </div>
     </main>
   );

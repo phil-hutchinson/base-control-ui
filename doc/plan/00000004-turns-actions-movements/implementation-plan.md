@@ -1421,7 +1421,28 @@ gate.
 
 ## Step 12 — Wiring the interaction end to end
 
-Status: pending
+Status: committed
+
+Notes: `Board.tsx` now takes a required `onIntent: (intent: SessionIntent) =>
+void` prop, wires it to `AccessibleGrid`'s `onActivate` (via
+`squareForGridPosition`) and `onDismiss`, and passes
+`announcementFor(session.lastEvent)` to `AccessibleGrid`'s `announcement`
+prop. `App.tsx` now destructures `dispatch` from its existing `useReducer`
+call and passes it straight through as `onIntent` — `useReducer`'s dispatch
+already has exactly the `(intent: SessionIntent) => void` shape the prop
+needs, so no wrapper was necessary. Added a `Harness` component inside
+`Board.test.tsx`'s new "playing a turn" describe block, mirroring `App.tsx`'s
+own `useReducer` wiring, so the interaction tests exercise the real
+`sessionReducer` rather than a hand-built session; all seven verification
+scenarios (select, cancel by reactivating, cancel by Escape, switch, move,
+three rejection reasons, and the post-move focus check) are driven through
+`describe.each(["keyboard", "pointer"])`, with Escape (keyboard-only) as one
+additional standalone test. Confirmed by test that DOM focus survives a
+keyboard-driven move and lands on the destination cell inside the grid, per
+the existing roving-tabindex behaviour — no change to `AccessibleGrid` was
+needed. Every existing `<Board session={...} />` render call in
+`Board.test.tsx` gained a no-op `onIntent` prop to satisfy the now-required
+prop. No deviation from the plan.
 
 Connect input to the session and the session's events to the live region:
 
