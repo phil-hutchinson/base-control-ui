@@ -1538,7 +1538,25 @@ Its placement and behaviour at narrow widths are judged by eye at Step 16.
 
 ## Step 14 — The temporary fixture
 
-Status: pending
+Status: committed
+
+Notes: Added `src/game/reviewFixture.ts` exporting `reviewFixtureState()`,
+transcribing decision 10's ship and site tables literally (`SHIP_SPECS` /
+`SITE_SPECS`), and switched `App.tsx`'s one `useReducer` call from
+`startingGameState()` to `reviewFixtureState()` (one import swap, one call
+site, per the plan). The module header states plainly that the arrangement
+is not a legal game state. Manually verified (via a throwaway test file,
+deleted before finishing) that the fixture behaves as decision 10 describes:
+green's five-shield ladder gives exactly 20/16/12/8/4 destinations, the C5
+blocking line excludes both the friendly and enemy blockers' squares and the
+squares beyond them, and — once `sideToMove` is patched to `"red"` to
+exercise red's ships, since it is green's turn in the real fixture — H3/B13/
+K7/N9 each exclude the dormant or depleted site and include the intended
+fly-over and site-landing squares, A11 offers both A10 (bay) and A9, and
+G13 has exactly four destinations. No automated test references the fixture
+(confirmed by grep: only `App.tsx` and `reviewFixture.ts` mention it), and no
+existing test needed rewriting — every test already built its own position.
+No deviation from the plan.
 
 Add `src/game/reviewFixture.ts`, a **temporary** module holding the position
 tabled in plan decision 10, and have `src/App.tsx` build its initial session
