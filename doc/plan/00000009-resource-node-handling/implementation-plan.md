@@ -1377,7 +1377,36 @@ and `src/board/Board.test.tsx`:
 
 ## Step 11 — The board shows the obligation
 
-Status: pending
+Status: committed
+
+Notes: Renamed the dampened shade's class from `board-square--already-moved`
+to `board-square--dampened` (applied for `already-moved` and `no-action`
+alike) and its custom property from `--spent-opacity` to
+`--dampened-opacity`; the constant is now set whenever any condition is
+present, since the blinking ship needs the same value as its blink target.
+Renamed `SpentMark` to `AlreadyMovedMark` and added `NoActionMark` (the same
+bottom-edge bar, hollow: `fill="none"` with a stroke) and `OwesActionMark` (a
+bottom-edge chevron pointing up at the ship, in the default interaction
+accent, via a stroked `path`). Added `board-square--owes-action` as its own
+modifier class (kept separate from `--dampened`, since an owed ship blinks
+rather than sitting statically faded) with a `board-square-owes-action-blink`
+keyframe animation (1.4s, ease-in-out, infinite, alternate, opacity 1 to
+`--dampened-opacity`) targeting `.ship-icon`, switched off under
+`@media (prefers-reduced-motion: reduce)` with the ship forced back to full
+opacity so the chevron carries the meaning alone. All three marks stay in the
+existing `0 0 100 100` mark layer and render alongside the selection marks
+unchanged. Extended `BoardSquare.test.tsx` with cases for each of the five
+verification points (the three marks render and are distinguishable by
+element/attribute shape rather than only by class name; the dampened class
+applies to `already-moved`/`no-action` and not `owes-action`, which gets its
+own class instead; a condition mark and a selection mark render together; no
+condition renders exactly what the component rendered before this step
+existed; and an axe pass, `color-contrast` disabled, across every condition
+with every mark aria-hidden). No deviation from the plan; the geometry,
+blink rate and easing are exactly the provisional values plan decision 14
+names, left for the Step 14 manual gate to adjust by eye. `npm run
+typecheck`, `npm run lint`, `npm test` (346 tests), `npm run format:check`
+and `npm run build` all pass.
 
 Draw what Step 10 named. In `src/board/BoardSquare.tsx` and
 `BoardSquare.css`:

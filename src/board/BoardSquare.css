@@ -19,11 +19,12 @@
   border: 2px solid var(--bay-border);
 }
 
-/* The three interaction markings (destination, selected, spent) share one
-   accent, kept distinct from the side colors, the site accent, the bay cyan
-   and the focus-ring amber, so they read as one "you are choosing a move"
-   layer rather than game-state artwork. They differ from each other in
-   shape, not color, so the layer still reads in greyscale. */
+/* The interaction markings (destination, selected, and the three ship
+   conditions) share one accent, kept distinct from the side colors, the
+   site accent, the bay cyan and the focus-ring amber, so they read as one
+   "you are choosing a move" layer rather than game-state artwork. They
+   differ from each other in shape, not color, so the layer still reads in
+   greyscale. */
 .board-square__mark {
   display: block;
   width: 100%;
@@ -31,13 +32,43 @@
   color: var(--interaction-accent);
 }
 
-.board-square__mark--already-moved {
+.board-square__mark--already-moved,
+.board-square__mark--no-action {
   color: var(--color-text-dim);
 }
 
-/* A ship that has already moved this ply is drawn faded, alongside its
-   bottom-edge bar, so "spent" is a deliberate marking rather than a
+/* A ship with no legal action available this ply — because it has already
+   moved, because an obligation elsewhere in the fleet is holding it back, or
+   because it is pinned with nowhere legal to go — is drawn faded, alongside
+   its own bottom-edge bar (solid for "already moved", hollow for the other
+   two reasons), so "dampened" is a deliberate marking rather than a
    lightness accident. */
-.board-square--already-moved .ship-icon {
-  opacity: var(--spent-opacity, 1);
+.board-square--dampened .ship-icon {
+  opacity: var(--dampened-opacity, 1);
+}
+
+/* A ship that owes an action blinks between full and dampened opacity from
+   the start of the ply, on top of its own chevron mark, so the summons is
+   visible before the obligation binds and the player has already tried the
+   wrong thing. */
+.board-square--owes-action .ship-icon {
+  animation: board-square-owes-action-blink 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes board-square-owes-action-blink {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: var(--dampened-opacity, 1);
+  }
+}
+
+/* No state in this app is ever carried by motion alone: the chevron mark
+   keeps saying "owes an action" with the blink switched off. */
+@media (prefers-reduced-motion: reduce) {
+  .board-square--owes-action .ship-icon {
+    animation: none;
+    opacity: 1;
+  }
 }
