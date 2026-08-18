@@ -1,19 +1,23 @@
-// Applying a move, and the ply it belongs to (rules.md §5, §3.1). A move is
-// either refused, with the reason from movement.ts, or applied: the ship
-// arrives, is marked as having moved, spends one action, and loses its
-// shields if it ends in a bay. When the ply's two actions are spent, play
-// passes to the other side. The pass guard covers the case §5 sets out for
-// when the side to move has no legal move at all.
+// Applying a move, and the ply it belongs to (rules.md §5, §3.1, §8.2). A
+// move is either refused, with the reason from movement.ts, or applied: the
+// ship arrives, is marked as having moved, spends one action, wakes any
+// active site it touched on the way, and loses its shields if it ends in a
+// bay. When the ply's two actions are spent, play passes to the other side.
+// The pass guard covers the case §5 sets out for when the side to move has
+// no legal move at all.
 
 import { isBay } from "./bays";
-import type { Square } from "./board";
+import { type Square, squareName } from "./board";
+import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
 import type { Side, ShipId } from "./fleet";
 import { ACTIONS_PER_PLY, type GameState } from "./gameState";
 import {
   type MoveRefusalReason,
   moveRefusalReason,
+  reachFrom,
   sideToMoveHasLegalMove,
 } from "./movement";
+import { type SiteChargedEffect, wakeTouchedSites } from "./nodes";
 
 function otherSide(side: Side): Side {
   return side === "green" ? "red" : "green";
@@ -24,12 +28,22 @@ export interface PassEffect {
   readonly type: "ply-passed";
   readonly side: Side;
   readonly sideToMove: Side;
+  readonly endOfTurn: readonly EndOfTurnEffect[];
+}
+
+/** A ply ended because its second action was spent (rules.md §5, §8.7). */
+export interface PlyEndedEffect {
+  readonly type: "ply-ended";
+  readonly side: Side;
+  readonly sideToMove: Side;
+  readonly endOfTurn: readonly EndOfTurnEffect[];
 }
 
 /** Something that happened as a result of applying a move, beyond the move itself. */
 export type MoveEffect =
   | { readonly type: "shields-reset"; readonly shipId: ShipId }
-  | { readonly type: "ply-ended"; readonly sideToMove: Side }
+  | SiteChargedEffect
+  | PlyEndedEffect
   | PassEffect;
 
 /** A move applied successfully, with the resulting state and what happened. */
@@ -49,10 +63,12 @@ export type ApplyMoveResult = AppliedMove | RefusedMove;
 
 /**
  * If the side to move has no legal move at all with any eligible ship, its
- * ply passes: the moved-this-ply marks clear, the action count resets to
- * `ACTIONS_PER_PLY`, and the other side becomes the side to move (rules.md
- * §5). Only the side to move is checked — the side passed to is not — so
- * this makes exactly one pass, never a second one back.
+ * ply passes: the end-of-turn sequence runs for it (a passed ply is still a
+ * turn), the moved-this-ply marks clear, the action count resets to
+ * `ACTIONS_PER_PLY`, the ply number advances and the other side becomes the
+ * side to move (rules.md §5, §8.7). Only the side to move is checked — the
+ * side passed to is not — so this makes exactly one pass, never a second one
+ * back.
  */
 export function applyPassGuard(state: GameState): {
   readonly state: GameState;
@@ -64,8 +80,10 @@ export function applyPassGuard(state: GameState): {
 
   const side = state.sideToMove;
   const sideToMove = otherSide(side);
+  const endOfTurn = runEndOfTurn(state);
   const passedState: GameState = {
-    ...state,
+    ...endOfTurn.state,
+    plyNumber: endOfTurn.state.plyNumber + 1,
     sideToMove,
     actionsRemaining: ACTIONS_PER_PLY,
     movedThisPly: [],
@@ -73,7 +91,12 @@ export function applyPassGuard(state: GameState): {
 
   return {
     state: passedState,
-    effect: { type: "ply-passed", side, sideToMove },
+    effect: {
+      type: "ply-passed",
+      side,
+      sideToMove,
+      endOfTurn: endOfTurn.effects,
+    },
   };
 }
 
@@ -101,6 +124,18 @@ export function applyMove(
   const effects: MoveEffect[] = [];
   const endsInBay = isBay(destination);
   const movingShip = state.ships.find((ship) => ship.id === shipId);
+  if (movingShip === undefined) {
+    throw new RangeError(`no ship with id "${shipId}" in this state`);
+  }
+  const destinationName = squareName(destination);
+  const path = reachFrom(movingShip.square, movingShip.shields).find(
+    (entry) => squareName(entry.destination) === destinationName,
+  );
+  if (path === undefined) {
+    throw new RangeError(
+      `no reach entry for ship "${shipId}" to a legal destination`,
+    );
+  }
 
   const ships = state.ships.map((ship) =>
     ship.id === shipId
@@ -111,29 +146,39 @@ export function applyMove(
         }
       : ship,
   );
-  if (endsInBay && movingShip !== undefined && movingShip.shields > 0) {
+  if (endsInBay && movingShip.shields > 0) {
     effects.push({ type: "shields-reset", shipId });
   }
+
+  const afterMove: GameState = { ...state, ships };
+  const wake = wakeTouchedSites(afterMove, movingShip, path);
+  effects.push(...wake.effects);
 
   const actionsRemaining = state.actionsRemaining - 1;
   let moved: GameState;
   if (actionsRemaining > 0) {
     moved = {
-      ...state,
-      ships,
+      ...wake.state,
       movedThisPly: [...state.movedThisPly, shipId],
       actionsRemaining,
     };
   } else {
-    const sideToMove = otherSide(state.sideToMove);
+    const side = wake.state.sideToMove;
+    const sideToMove = otherSide(side);
+    const endOfTurn = runEndOfTurn(wake.state);
     moved = {
-      ...state,
-      ships,
+      ...endOfTurn.state,
+      plyNumber: endOfTurn.state.plyNumber + 1,
       sideToMove,
       actionsRemaining: ACTIONS_PER_PLY,
       movedThisPly: [],
     };
-    effects.push({ type: "ply-ended", sideToMove });
+    effects.push({
+      type: "ply-ended",
+      side,
+      sideToMove,
+      endOfTurn: endOfTurn.effects,
+    });
   }
 
   const { state: settled, effect: passEffect } = applyPassGuard(moved);

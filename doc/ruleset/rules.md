@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.3**
+**Rules version: 0.5**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -355,14 +355,20 @@ fly over one.
 
 The one way a ship ends up on a depleted site is by holding a node until its
 clock runs out underneath it. That ship is **stranded**, and on their next
-turn its owner must spend an action moving it clear.
+turn its owner must spend an action moving it clear. A ship still standing
+there nine turns later, when the site finishes cooling down and goes dormant,
+is equally stuck — section 6 forbids ending a move on either state — and stays
+stranded on the same terms.
 
 That is a restriction on what an action may be, not a penalty on top of one.
-The move is ordinary in every other respect, and the rest of the turn belongs
-to the player: they may attack with the ship they have just freed, move a
-different ship, or do anything else that is legal. If two ships are stranded,
-both actions go to clearing them. If three or more are, the player clears two
-and the rest wait for the following turn.
+The freeing move is the **first action** of the turn: while any ship still
+owes one, each action in turn must free one, and only once none remain does
+the rest of the turn belong to the player. With one ship stranded, the first
+action frees it and the rest of the turn is the player's: they may attack with
+the ship they have just freed, move a different ship, or do anything else
+that is legal. With two ships stranded, both actions go to clearing them.
+With three or more, the player clears two of their choice and the rest wait
+for the following turn.
 
 If a stranded ship has no legal move at all, the requirement is simply waived —
 the player is not obliged to attack blockers or shuffle friendly ships out of
@@ -370,7 +376,7 @@ the way, and the ship may sit where it is.
 
 This is the tail cost of holding a node. A player who wakes several nodes on
 the same turn will find them all running out on the same turn, and will owe an
-action for each ship left standing on a depleted site.
+action for each ship left standing on a dormant or depleted site.
 
 If a site somehow wakes underneath a ship — only possible when that ship has
 been unable to move off it — it becomes charged immediately and its clock
@@ -397,6 +403,11 @@ Everything that happens at the end of a turn happens in this order:
 4. Charged nodes that have finished their nine turns become depleted.
 5. A replacement site wakes for each node that just ran out.
 6. The bay return position moves one bay counter-clockwise (section 7.1).
+
+A turn that passes because no legal action was available (section 5) is still
+a turn: this sequence runs for it in full, just as it would for a turn in
+which both actions were taken. The clocks still tick, and a ship of the
+passing player standing on a charged node still gains its shield.
 
 Steps 3 and 5 are in that order deliberately: sites are returned to the
 dormant pool _before_ the pool is drawn from, which is what keeps a

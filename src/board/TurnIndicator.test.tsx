@@ -9,7 +9,7 @@ afterEach(cleanup);
 
 describe("TurnIndicator", () => {
   it("says green's turn with two actions left", () => {
-    const state = { ...startingGameState(), sideToMove: "green" as const };
+    const state = { ...startingGameState(1), sideToMove: "green" as const };
 
     render(<TurnIndicator state={state} />);
 
@@ -20,7 +20,7 @@ describe("TurnIndicator", () => {
 
   it("says green's turn with one action left, singular", () => {
     const state = {
-      ...startingGameState(),
+      ...startingGameState(1),
       sideToMove: "green" as const,
       actionsRemaining: 1,
     };
@@ -34,7 +34,7 @@ describe("TurnIndicator", () => {
 
   it("says red's turn with two actions left", () => {
     const state = {
-      ...startingGameState(),
+      ...startingGameState(1),
       sideToMove: "red" as const,
       actionsRemaining: 2,
     };
@@ -45,7 +45,7 @@ describe("TurnIndicator", () => {
   });
 
   it("is not a live region", () => {
-    const state = startingGameState();
+    const state = startingGameState(1);
 
     const { container } = render(<TurnIndicator state={state} />);
 

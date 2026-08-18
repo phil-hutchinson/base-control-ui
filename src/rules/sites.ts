@@ -1,5 +1,6 @@
-// The seventeen site squares (rules.md §3.2) and the four states a site can
-// be in (rules.md §8.1).
+// The seventeen site squares (rules.md §3.2), the four states a site can be
+// in (rules.md §8.1), and the two nine-ply clocks that govern how long a
+// site stays charged (§8.3) and how long it stays depleted (§8.6).
 
 import { type Square, squareAt, squareName } from "./board";
 
@@ -66,4 +67,42 @@ export function startingSiteState(square: Square): SiteState | undefined {
     return undefined;
   }
   return STARTING_ACTIVE_NAMES.has(name) ? "active" : "dormant";
+}
+
+/**
+ * How many turns a charged node stays charged (rules.md §8.3), counting the
+ * turn it was woken on.
+ */
+export const CHARGED_LIFE_PLIES = 9;
+
+/**
+ * How many turns a depleted site cools down for before it returns to the
+ * dormant pool (rules.md §8.6), not counting the turn it depleted on.
+ */
+export const DEPLETED_COOLDOWN_PLIES = 9;
+
+/**
+ * Whether a node charged on `enteredOnPly` has finished its nine turns as of
+ * `plyNumber` (rules.md §8.3). The charged clock counts the turn it was
+ * woken on, so this is true from `enteredOnPly + CHARGED_LIFE_PLIES - 1`
+ * onwards.
+ */
+export function hasChargedNodeFinished(
+  enteredOnPly: number,
+  plyNumber: number,
+): boolean {
+  return plyNumber - enteredOnPly + 1 >= CHARGED_LIFE_PLIES;
+}
+
+/**
+ * Whether a site depleted on `enteredOnPly` has finished cooling down as of
+ * `plyNumber` (rules.md §8.6). The cooldown does not count the turn the site
+ * depleted on, so this is true from `enteredOnPly + DEPLETED_COOLDOWN_PLIES`
+ * onwards.
+ */
+export function hasDepletedSiteFinishedCooling(
+  enteredOnPly: number,
+  plyNumber: number,
+): boolean {
+  return plyNumber - enteredOnPly >= DEPLETED_COOLDOWN_PLIES;
 }

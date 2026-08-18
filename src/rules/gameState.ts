@@ -19,31 +19,51 @@ export interface Ship {
   readonly shields: ShieldCount;
 }
 
+/**
+ * A site's current state, plus the ply number on which it entered that
+ * state. Recorded for every site in every state, not only charged and
+ * depleted ones, so the fact is never missing; only the charged (§8.3) and
+ * depleted (§8.6) derivations consult it.
+ */
+export interface SiteStatus {
+  readonly state: SiteState;
+  readonly enteredOnPly: number;
+}
+
 /** The state of a game in progress. */
 export interface GameState {
   /** Every ship, in `STARTING_FLEET` order. */
   readonly ships: readonly Ship[];
-  /** Every site's current state, keyed by square name. */
-  readonly siteStates: Readonly<Record<string, SiteState>>;
+  /** Every site's current status, keyed by square name. */
+  readonly siteStates: Readonly<Record<string, SiteStatus>>;
   /** The side whose ply it is. */
   readonly sideToMove: Side;
   /** How many of the ply's two actions remain. */
   readonly actionsRemaining: number;
   /** The ids of the ships that have already moved this ply (never more than two). */
   readonly movedThisPly: readonly ShipId[];
+  /** The ply currently being played, starting at 1. */
+  readonly plyNumber: number;
+  /** The 32-bit seed the next random draw will use (rules.md §8.6). */
+  readonly randomSeed: number;
 }
 
 /**
  * The state the game starts from: the fourteen `STARTING_FLEET` ships, every
- * site's starting state, green to move, two actions remaining, nothing
- * moved.
+ * site's starting state (none entered during a ply, so `enteredOnPly` is 0),
+ * green to move, two actions remaining, nothing moved, ply 1, and the given
+ * seed.
+ *
+ * The seed is a required argument — see `src/game/seed.ts` for where the
+ * app's opening seed comes from. Every test passes one explicitly, so a
+ * game's opening position is always reproducible.
  */
-export function startingGameState(): GameState {
-  const siteStates: Record<string, SiteState> = {};
+export function startingGameState(randomSeed: number): GameState {
+  const siteStates: Record<string, SiteStatus> = {};
   for (const site of SITES) {
     const state = startingSiteState(site);
     if (state !== undefined) {
-      siteStates[squareName(site)] = state;
+      siteStates[squareName(site)] = { state, enteredOnPly: 0 };
     }
   }
 
@@ -58,6 +78,8 @@ export function startingGameState(): GameState {
     sideToMove: "green",
     actionsRemaining: ACTIONS_PER_PLY,
     movedThisPly: [],
+    plyNumber: 1,
+    randomSeed,
   };
 }
 
@@ -71,5 +93,13 @@ export function siteStateAt(
   state: GameState,
   square: Square,
 ): SiteState | undefined {
+  return state.siteStates[squareName(square)]?.state;
+}
+
+/** A square's full site status (state and the ply it entered it), or `undefined` if it is not a site. */
+export function siteStatusAt(
+  state: GameState,
+  square: Square,
+): SiteStatus | undefined {
   return state.siteStates[squareName(square)];
 }

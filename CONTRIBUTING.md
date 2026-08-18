@@ -131,10 +131,15 @@ The ruleset lives in this repository at
 truth. Rule logic in `src/` implements it and never restates or extends it.
 
 Rules are versioned by a single number, not by parallel folders: a rules change
-rewrites the rule logic in place, bumps `rules.md`'s version and the
-`RULES_VERSION` constant together, and is tagged `rules-<version>` on `main`
-once merged. There is **no backwards compatibility** — an old game is replayed
-by checking out the tag it was played under.
+rewrites the rule logic in place and bumps `rules.md`'s version and the
+`RULES_VERSION` constant together. Once merged to `main`, a version that
+changes how the game is played is a candidate to be tagged `rules-<version>` —
+but **tagging is on hold until the game plays**: the rules move too often
+while the app is still being built up story by story, and a tag is only worth
+having once a recorded game can be replayed against the ruleset it was played
+under. Every rules change still bumps the version and writes a changelog
+entry regardless. There is **no backwards compatibility** — an old game is
+replayed by checking out the tag it was played under, once tagging resumes.
 
 Because the game has a random element, the rules layer owns a **seeded**
 random source, and the seed is recorded with a game so it replays exactly. No

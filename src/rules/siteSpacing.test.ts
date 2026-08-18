@@ -4,6 +4,7 @@
 // at 0.
 import { describe, expect, it } from "vitest";
 import { ALL_SQUARES, COLUMN_LETTERS, type Square, squareName } from "./board";
+import { isBay } from "./bays";
 import { reachFrom } from "./movement";
 import { SITES } from "./sites";
 
@@ -66,6 +67,31 @@ describe("site spacing", () => {
           `${squareName(move.origin)} moving ${move.direction[0]},${move.direction[1]} ` +
             `for ${move.length} touches sites ${touchedSites.join(", ")}`,
         );
+      }
+    }
+
+    expect(failures).toEqual([]);
+  });
+
+  it("noMoveBothChargesAndEndsInABay: no legal move touches a site and ends in a bay", () => {
+    // src/board/announcements.ts's moveSentence announces a move ending in a
+    // bay before it looks for a site charged en route, so a move doing both
+    // would silently drop the charge from the sentence. This guards the
+    // assumption that no legal move on this board can do both.
+    const moves = allMoves();
+    expect(moves.length).toBeGreaterThan(0);
+
+    const failures: string[] = [];
+
+    for (const move of moves) {
+      if (isBay(move.touched[move.touched.length - 1])) {
+        const touchedSites = sitesTouchedBy(move);
+        if (touchedSites.length > 0) {
+          failures.push(
+            `${squareName(move.origin)} moving ${move.direction[0]},${move.direction[1]} ` +
+              `for ${move.length} touches site(s) ${touchedSites.join(", ")} and ends in a bay`,
+          );
+        }
       }
     }
 

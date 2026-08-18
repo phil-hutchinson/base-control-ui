@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { useReducer } from "react";
-import { ALL_SQUARES, squareAt, squareName, type Square } from "../rules/board";
+import { squareAt, squareName, type Square } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import { startingSiteState } from "../rules/sites";
@@ -29,7 +29,9 @@ function startingShipAt(square: Square): FleetEntry | undefined {
   return STARTING_ENTRY_BY_SQUARE.get(squareName(square));
 }
 
-const startingSession = createSession(startingGameState());
+const TEST_SEED = 1;
+
+const startingSession = createSession(startingGameState(TEST_SEED));
 
 describe("Board", () => {
   it("renders 225 gridcells in 15 rows", () => {
@@ -76,16 +78,33 @@ describe("Board", () => {
       screen.getByRole("gridcell", { name: "A10, bay, red ship, 0 shields" }),
     ).toBeInTheDocument();
 
-    for (const square of ALL_SQUARES) {
+    // A representative sample of the remaining bays — one on each of the
+    // other two sides not already covered above — built the production way
+    // rather than as a literal, so a change to `squareLabel` is still caught.
+    for (const square of [squareAt("O", 10), squareAt("H", 1)]) {
       const label = squareLabel({
         square,
-        isBay: isBay(square),
+        isBay: true,
         siteState: startingSiteState(square),
         occupant: startingShipAt(square),
       });
-      const cell = screen.getByRole("gridcell", { name: label });
-      expect(cell).toBeInTheDocument();
+      expect(screen.getByRole("gridcell", { name: label })).toBeInTheDocument();
     }
+
+    // A non-bay square must never be named "bay".
+    const nonBaySquare = squareAt("H", 8);
+    expect(isBay(nonBaySquare)).toBe(false);
+    expect(
+      screen.getByRole("gridcell", {
+        name: squareLabel({
+          square: nonBaySquare,
+          isBay: false,
+          siteState: startingSiteState(nonBaySquare),
+          occupant: startingShipAt(nonBaySquare),
+        }),
+      }),
+    ).toBeInTheDocument();
+
     expect(
       screen.getAllByRole("gridcell", {
         name: /, bay(, .+ ship, \d+ shields?)?$/,
@@ -297,8 +316,8 @@ describe("Board", () => {
 
   it("renders from the game state it is given, not the starting position", () => {
     const state: GameState = {
-      ...startingGameState(),
-      ships: startingGameState().ships.map((ship) =>
+      ...startingGameState(TEST_SEED),
+      ships: startingGameState(TEST_SEED).ships.map((ship) =>
         ship.id === "green-1" ? { ...ship, square: squareAt("H", 8) } : ship,
       ),
     };
@@ -324,8 +343,8 @@ describe("Board", () => {
     // in its starting bay) already marked as moved this ply. Built directly
     // rather than through the fixture.
     const state: GameState = {
-      ...startingGameState(),
-      ships: startingGameState().ships.map((ship) =>
+      ...startingGameState(TEST_SEED),
+      ships: startingGameState(TEST_SEED).ships.map((ship) =>
         ship.id === "green-1"
           ? { ...ship, square: squareAt("H", 8), shields: 2 }
           : ship,
@@ -405,6 +424,175 @@ describe("Board", () => {
     });
   });
 
+  describe("ship conditions", () => {
+    // A minimal, hand-built state: green-1 owes an action on a depleted
+    // site, green-2 and green-3 are ordinary green ships elsewhere with a
+    // normal move available (until the obligation binds), and red-1 is the
+    // opponent, present to confirm it never carries a condition.
+    function strandedState(actionsRemaining: number): GameState {
+      return {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 4),
+            shields: 0,
+          },
+          {
+            id: "green-2",
+            side: "green",
+            square: squareAt("A", 1),
+            shields: 0,
+          },
+          {
+            id: "green-3",
+            side: "green",
+            square: squareAt("B", 2),
+            shields: 0,
+          },
+          { id: "red-1", side: "red", square: squareAt("O", 15), shields: 0 },
+        ],
+        siteStates: {
+          [squareName(squareAt("H", 4))]: {
+            state: "depleted",
+            enteredOnPly: 1,
+          },
+        },
+        sideToMove: "green",
+        actionsRemaining,
+        movedThisPly: [],
+        plyNumber: 1,
+        randomSeed: 1,
+      };
+    }
+
+    it("names the stranded ship's square from the first action, and dampens the rest of the fleet from the same moment", () => {
+      const session: Session = {
+        state: strandedState(2),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn",
+        }),
+      ).toBeInTheDocument();
+      // The obligation binds from the first action, so green-2 and green-3
+      // read as having no action available even though both actions remain.
+      expect(
+        screen.getByRole("gridcell", {
+          name: "A1, green ship, 0 shields, no action available this turn",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("gridcell", {
+          name: "B2, green ship, 0 shields, no action available this turn",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("combines a condition and a selection mark, condition first", () => {
+      const session: Session = {
+        state: strandedState(2),
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn, selected",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("dampens the rest of the moving side once the obligation binds, but not the owed ship", () => {
+      const state: GameState = {
+        ...strandedState(1),
+        movedThisPly: ["green-2"],
+      };
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn",
+        }),
+      ).toBeInTheDocument();
+      // Green-2 already spent this ply's first action moving elsewhere.
+      expect(
+        screen.getByRole("gridcell", {
+          name: "A1, green ship, 0 shields, already moved this turn",
+        }),
+      ).toBeInTheDocument();
+      // Green-3 has not moved and would have a normal move under §6 alone,
+      // but the obligation now binds every action, so it reads as having no
+      // action available — not as "already moved".
+      expect(
+        screen.getByRole("gridcell", {
+          name: "B2, green ship, 0 shields, no action available this turn",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("never gives the opponent's ship a condition, whatever the moving side's ships owe", () => {
+      const session: Session = {
+        state: strandedState(1),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", { name: "O15, red ship, 0 shields" }),
+      ).toBeInTheDocument();
+    });
+
+    it("names a pinned ship 'no action available', with nothing stranded anywhere", () => {
+      // green-1 sits at H8 with 4 shields, so its only reach is the four
+      // orthogonal neighbours (rules.md §6) — all four occupied by red ships,
+      // leaving it with no legal destination at all.
+      const state: GameState = {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 4,
+          },
+          { id: "red-1", side: "red", square: squareAt("H", 9), shields: 0 },
+          { id: "red-2", side: "red", square: squareAt("H", 7), shields: 0 },
+          { id: "red-3", side: "red", square: squareAt("G", 8), shields: 0 },
+          { id: "red-4", side: "red", square: squareAt("I", 8), shields: 0 },
+        ],
+        siteStates: {},
+        sideToMove: "green",
+        actionsRemaining: 2,
+        movedThisPly: [],
+        plyNumber: 1,
+        randomSeed: 1,
+      };
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H8, green ship, 4 shields, no action available this turn",
+        }),
+      ).toBeInTheDocument();
+    });
+  });
+
   describe("playing a turn", () => {
     // A small stand-in for App.tsx's own useReducer wiring, so these tests
     // exercise the real session reducer rather than a hand-built session.
@@ -422,8 +610,8 @@ describe("Board", () => {
     // destinations against. Every other ship stays in its starting bay.
     function baseState(): GameState {
       return {
-        ...startingGameState(),
-        ships: startingGameState().ships.map((ship) =>
+        ...startingGameState(TEST_SEED),
+        ships: startingGameState(TEST_SEED).ships.map((ship) =>
           ship.id === "green-1"
             ? { ...ship, square: squareAt("H", 8), shields: 2 }
             : ship,

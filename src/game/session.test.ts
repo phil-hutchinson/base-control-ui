@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { squareFromName } from "../rules/board";
 import type { ShipId, Side } from "../rules/fleet";
-import { ACTIONS_PER_PLY, type GameState, type Ship } from "../rules/gameState";
+import {
+  ACTIONS_PER_PLY,
+  type GameState,
+  type Ship,
+  type SiteStatus,
+} from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
 import { applyMove } from "../rules/ply";
 import type { ShieldCount } from "../rules/shields";
@@ -17,6 +22,17 @@ function ship(
   return { id, side, square: squareFromName(square), shields };
 }
 
+function siteStatuses(
+  states: Readonly<Record<string, SiteState>>,
+): Record<string, SiteStatus> {
+  return Object.fromEntries(
+    Object.entries(states).map(([name, state]) => [
+      name,
+      { state, enteredOnPly: 0 },
+    ]),
+  );
+}
+
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: Side;
@@ -25,10 +41,12 @@ function buildState(config: {
 }): GameState {
   return {
     ships: config.ships,
-    siteStates: config.siteStates ?? {},
+    siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: ACTIONS_PER_PLY,
     movedThisPly: config.movedThisPly ?? [],
+    plyNumber: 1,
+    randomSeed: 1,
   };
 }
 
@@ -314,7 +332,9 @@ describe("sessionReducer — a full ply", () => {
     if (session.lastEvent?.type === "moved") {
       expect(session.lastEvent.effects).toContainEqual({
         type: "ply-ended",
+        side: "green",
         sideToMove: "red",
+        endOfTurn: [],
       });
     }
   });
@@ -351,10 +371,12 @@ describe("createSession", () => {
 
     expect(session.state.sideToMove).toBe("red");
     expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
+    expect(session.state.plyNumber).toBe(2);
     expect(session.lastEvent).toEqual({
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      endOfTurn: [],
     });
   });
 });

@@ -6,12 +6,17 @@
 import { useCallback, useMemo } from "react";
 import { BOARD_SIZE, COLUMN_LETTERS, squareName } from "../rules/board";
 import { isBay } from "../rules/bays";
-import { shipsBySquare, siteStateAt } from "../rules/gameState";
+import { shipsBySquare, siteStateAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
+import { strandedShipIds } from "../rules/stranded";
 import type { Session, SessionIntent } from "../game/session";
 import { announcementFor } from "./announcements";
 import { squareForGridPosition } from "./boardView";
-import { squareLabel, type SquareMark } from "./squareLabel";
+import {
+  squareLabel,
+  type ShipCondition,
+  type SquareMark,
+} from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
 import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import type { GridPosition } from "./grid/gridNavigation";
@@ -65,6 +70,28 @@ export function Board({ session, onIntent }: BoardProps) {
         ? legalDestinations(session.state, selectedShip.id).map(squareName)
         : [],
     );
+    const owedShipIds = new Set(strandedShipIds(session.state));
+
+    // A ship's condition, for the side to move only: an opponent's ship
+    // never carries one. Owing an action takes precedence from the start of
+    // the turn, when the obligation already binds; then already having
+    // moved; then having no legal destination at all, which covers both a
+    // pinned ship and one held back by the obligation elsewhere.
+    function shipCondition(ship: Ship): ShipCondition | undefined {
+      if (ship.side !== session.state.sideToMove) {
+        return undefined;
+      }
+      if (owedShipIds.has(ship.id)) {
+        return "owes-action";
+      }
+      if (session.state.movedThisPly.includes(ship.id)) {
+        return "already-moved";
+      }
+      if (legalDestinations(session.state, ship.id).length === 0) {
+        return "no-action";
+      }
+      return undefined;
+    }
 
     return Array.from({ length: BOARD_SIZE }, (_, rowIndex) =>
       Array.from({ length: BOARD_SIZE }, (_, columnIndex) => {
@@ -77,14 +104,13 @@ export function Board({ session, onIntent }: BoardProps) {
         const siteState = siteStateAt(session.state, square);
         const ship = ships.get(name);
         const occupant = ship && { side: ship.side, shields: ship.shields };
+        const condition = ship && shipCondition(ship);
 
         let mark: SquareMark | undefined;
         if (selectedShip && squareName(selectedShip.square) === name) {
           mark = "selected";
         } else if (destinationSquareNames.has(name)) {
           mark = "destination";
-        } else if (ship && session.state.movedThisPly.includes(ship.id)) {
-          mark = "already-moved";
         }
 
         return {
@@ -93,10 +119,18 @@ export function Board({ session, onIntent }: BoardProps) {
               isBay={bay}
               siteState={siteState}
               occupant={occupant}
+              condition={condition}
               mark={mark}
             />
           ),
-          label: squareLabel({ square, isBay: bay, siteState, occupant, mark }),
+          label: squareLabel({
+            square,
+            isBay: bay,
+            siteState,
+            occupant,
+            condition,
+            mark,
+          }),
           focusable: true,
         };
       }),
