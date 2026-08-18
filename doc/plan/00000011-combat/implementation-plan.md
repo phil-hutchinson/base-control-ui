@@ -683,7 +683,15 @@ Appendix B link still resolves; and the changelog's 0.6 entry sits above 0.5.
 
 ## Step 2 — The clockwise bay ring
 
-Status: pending
+Status: committed
+
+Notes: Added `CLOCKWISE_BAYS`, `STARTING_RETURN_POSITION_INDEX`,
+`driftReturnPositionIndex` and `bayNumberingFrom` to `src/rules/bays.ts`, all
+pure functions of an index with no import of `fleet.ts` or `gameState.ts`.
+Added the tests specified in `src/rules/bays.test.ts`, including the guard
+that `CLOCKWISE_BAYS` matches `STARTING_FLEET`'s squares in order (the test
+file imports `fleet.ts`, `bays.ts` itself does not). No deviation from the
+plan.
 
 Add §7.1's bay ring and its pure arithmetic to `src/rules/bays.ts`, alongside
 the existing `BAYS` and `isBay`, which do not change.
