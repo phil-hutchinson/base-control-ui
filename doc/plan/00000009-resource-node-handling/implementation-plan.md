@@ -1755,7 +1755,27 @@ the relevant cases in `src/rules/movement.test.ts` and
 
 ## Step 14 — Manual gate: being stranded, and reading the obligation
 
-Status: pending
+Status: committed
+
+Notes: Taken by the owner. All six checks passed. The obligation binds and is
+visible from the first action under Step 13a's rule, the refusal explains
+itself, and the rest of the turn is free once the stranded ship is clear. The
+blink was settled by eye at **1 s**, ease-in-out, alternating, travelling the
+full distance between full opacity and the dampened 0.45 — 1.4 s was too easy
+to miss, 1.1 s read well, and 1 s read best. Reduced motion stops the blink
+with the ship at full strength and the chevron carrying the meaning alone; the
+three condition marks are tellable apart, including without colour; and the
+pinned ship's permanent dampened shade, plus the whole fleet dampening from the
+start of a stranded turn, both read as honest rather than alarming. No findings.
+
+Separately, the owner reported during this gate that a ship trapped on a dead
+site by friendly ships, then freed when one of those blockers moves on the
+first action, appeared not to bind the second action. This was investigated
+with a throwaway test driving the position through `sessionReducer` exactly as
+a player's clicks do: the owed set is recomputed at every action and does pull
+the newly-mobile ship in, the obligation binds, and moving another ship is
+refused with `another-ship-stranded`. The owner retested and confirmed it
+behaves correctly. No code changed; no bug.
 
 No code, except adjustments to the blink and mark geometry from Step 11, which
 this gate exists to settle. `story.md`'s manual gates 3 and 4.
@@ -1781,7 +1801,8 @@ actions on ply 9, then red's on ply 10). Then confirm:
 3. **The blink is legible without being punishing.** Fast enough to read as a
    summons, slow enough to sit with for a whole turn. The owner found the
    Step 11 value (1.4 s) subtle enough not to yell but not quite noticeable
-   enough, and asked for **25% faster**; it is set to **1.1 s** for this gate.
+   enough, and asked for **25% faster**; 1.1 s read well and it is set to
+   **1 s** for this gate.
    Confirm that reads right, adjust further against the running board if not,
    and **record the final values** in this step's Notes.
 4. **Reduced motion.** Turn on the system's reduce-motion preference (or
