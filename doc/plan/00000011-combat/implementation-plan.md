@@ -1694,7 +1694,37 @@ reads properly, is checked by eye in Step 15.
 
 ## Step 13 — A temporary position for the manual gates
 
-Status: pending
+Status: implemented
+
+Notes: Added `src/game/reviewFixture.ts` (ply 9, green to move, two actions,
+nothing moved; K5 charged since ply 5; E5/H8/E11/K11 active, the remaining
+twelve sites dormant) and pointed `src/App.tsx` at it in place of
+`startingGameState(freshSeed())`, exactly as the step describes. Ship
+placements match the step's table verbatim: green-1 J4/4, green-2 G9/1,
+green-3 C6/2, green-4 A6/0 (bay), green-5 H1/0 (bay), green-6 O6/0 (bay),
+green-7 D15/0 (bay); red-1 O10/0 (bay), red-2 K5/0, red-3 H9/3, red-4 L1/0
+(bay), red-5 C7/2, red-6 A10/0 (bay), red-7 A14/0 (bay). Seed
+`20260818`. `returnPositionIndex` set directly to 6 (L1, position 1 for ply 9) rather than computed at runtime, since the state is hand-built once. Six
+bays are empty (H15, L15, O14, O2, D1, A2) so the receptacle cue is visible
+and has room to move.
+
+Verified the arithmetic the step calls for with a throwaway
+`reviewFixture.verify.test.ts` (written, run via `npx vitest run`, and
+deleted before finishing, per the step's instruction): all three attacking
+pairs (J4→K5, G9→H9, C6→C7) are legal targets; green-1 has no diagonal
+destination at 4 shields but gains K5 as one at 3 shields once K5 is
+vacated; green-5 has a legal destination out of H1; `receptacleBay` returns
+D1 (L1 occupied by red-4, H1 occupied by green-5, D1 first empty in
+position-1 order); and `strandedShipIds` is empty for this state, since none
+of J4, G9 or C6 is a site and bays are never sites. No square had to move
+from the step's own table — the position as specified checked out on the
+first pass.
+
+Ran `npm run typecheck`, `npm run lint`, `npm test` (466 tests, no test file
+touched), `npm run format:check` (after `prettier --write` on the one new
+file) and `npm run build`, all green. Confirmed by `grep` that only
+`src/App.tsx` and `src/game/reviewFixture.ts` mention `reviewFixture`
+anywhere in `src/`. No deviation from the plan.
 
 Add `src/game/reviewFixture.ts`, a **temporary** module holding a hand-built
 position, and have `src/App.tsx` build its initial session from it instead of
