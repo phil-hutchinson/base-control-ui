@@ -31,12 +31,13 @@ export function strandedShipIds(state: GameState): readonly ShipId[] {
 }
 
 /**
- * Whether §8.5's obligation binds the action about to be taken: true once
- * the number of ships that owe an action is at least the number of actions
- * remaining this ply. One stranded ship leaves the first action free and
- * binds the second; two bind both; three or more mean the player clears two
- * of their choice this turn and the rest wait for the next.
+ * Whether §8.5's obligation binds the action about to be taken: true
+ * whenever any ship owes an action. The freeing move is the first action of
+ * the turn while any ship still owes one, so one stranded ship binds the
+ * first action and leaves the second free; two bind both; three or more mean
+ * the player clears two of their choice this turn and the rest wait for the
+ * next.
  */
 export function strandedObligationBinds(state: GameState): boolean {
-  return strandedShipIds(state).length >= state.actionsRemaining;
+  return strandedShipIds(state).length > 0;
 }

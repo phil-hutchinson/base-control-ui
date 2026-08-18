@@ -1668,7 +1668,32 @@ correctly under the new rule, and that the changelog entry sits above 0.4.
 
 ## Step 13b — The obligation binds from the first action
 
-Status: pending
+Status: committed
+
+Notes: `strandedObligationBinds` in `src/rules/stranded.ts` now returns
+`strandedShipIds(state).length > 0`, dropping the `actionsRemaining`
+comparison entirely (confirmed by grep that the identifier no longer appears
+in the file). `src/rules/movement.ts`'s refusal check, still immediately
+after `ship-already-moved`, now calls `strandedObligationBinds(state)`
+instead of spelling the comparison out inline, so the two modules cannot
+drift apart. Nothing in `src/board/` changed, as the plan expected: it
+already derives a ship's condition from `legalDestinations`/
+`strandedShipIds`, so the new binding rule took effect there for free.
+Updated `src/rules/stranded.test.ts` (rewrote the
+`strandedObligationBinds` "does not bind until the second action" case into
+one asserting it binds from the first action and clears once the stranded
+ship has moved, and split the old "leaves any move free" `moveRefusalReason`
+case into two — binds-from-the-first-action and frees-the-second-once-moved)
+and `src/rules/movement.test.ts` (updated the cross-check case and its
+comment to bind at `actionsRemaining: 2`, and rewrote the
+`legalDestinations`-and-obligation block's first two cases plus added a
+"reopens once the stranded ship has moved" case). Updated
+`src/board/Board.test.tsx`'s first `ship conditions` test — previously
+titled "... before the obligation binds" and asserting green-2/green-3 carry
+no condition at two actions remaining — to assert both now read "no action
+available this turn" from the first action, matching the plan's point 8.
+No deviations from the plan. `npm run typecheck`, `npm run lint`, `npm test`
+(348 tests, no hang), `npm run format:check` and `npm run build` all pass.
 
 Implement Step 13a's rule. The change is small and almost entirely a
 subtraction.

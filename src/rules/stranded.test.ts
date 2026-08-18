@@ -148,25 +148,21 @@ describe("strandedShipIds", () => {
 });
 
 describe("strandedObligationBinds", () => {
-  it("does not bind with two actions remaining and one stranded ship, and binds once one action is spent", () => {
-    const free = buildState({
+  it("binds from the first action with one stranded ship, and is free again once it has moved", () => {
+    const beforeMoving = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
       actionsRemaining: 2,
     });
-    expect(strandedObligationBinds(free)).toBe(false);
+    expect(strandedObligationBinds(beforeMoving)).toBe(true);
 
-    const bound = buildState({
-      ships: [
-        ship("green-1", "green", "E7"),
-        ship("green-2", "green", "A1"),
-        ship("green-3", "green", "D1"),
-      ],
+    const afterMoving = buildState({
+      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
-      movedThisPly: ["green-2"],
+      movedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
-    expect(strandedObligationBinds(bound)).toBe(true);
+    expect(strandedObligationBinds(afterMoving)).toBe(false);
   });
 
   it("binds on both actions with two stranded ships", () => {
@@ -218,18 +214,31 @@ describe("strandedObligationBinds", () => {
 });
 
 describe("moveRefusalReason with the §8.5 obligation", () => {
-  it("leaves any move free while the obligation does not yet bind", () => {
+  it("binds the first action with one stranded ship: another ship is refused, the stranded ship is allowed", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
       actionsRemaining: 2,
     });
 
-    expect(
-      moveRefusalReason(state, "green-2", squareFromName("A2")),
-    ).toBeUndefined();
+    expect(moveRefusalReason(state, "green-2", squareFromName("A2"))).toBe(
+      "another-ship-stranded",
+    );
     expect(
       moveRefusalReason(state, "green-1", squareFromName("E8")),
+    ).toBeUndefined();
+  });
+
+  it("frees the second action once the stranded ship has moved", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
+      siteStates: { E7: "dormant" },
+      movedThisPly: ["green-1"],
+      actionsRemaining: 1,
+    });
+
+    expect(
+      moveRefusalReason(state, "green-2", squareFromName("A2")),
     ).toBeUndefined();
   });
 

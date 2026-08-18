@@ -27,7 +27,7 @@ import {
   siteStateAt,
 } from "./gameState";
 import type { ShieldCount } from "./shields";
-import { strandedShipIds } from "./stranded";
+import { strandedObligationBinds, strandedShipIds } from "./stranded";
 
 type DirectionKind = "orthogonal" | "diagonal";
 
@@ -242,10 +242,9 @@ export function moveRefusalReason(
     return "ship-already-moved";
   }
 
-  const owedShipIds = strandedShipIds(state);
   if (
-    owedShipIds.length >= state.actionsRemaining &&
-    !owedShipIds.includes(shipId)
+    strandedObligationBinds(state) &&
+    !strandedShipIds(state).includes(shipId)
   ) {
     return "another-ship-stranded";
   }

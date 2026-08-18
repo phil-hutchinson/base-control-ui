@@ -331,14 +331,14 @@ describe("legalDestinations and moveRefusalReason", () => {
       },
       {
         // green-2 is not stranded, but green-1 is, and the obligation binds
-        // with only one action left — so every square is refused for green-2.
+        // from the first action — so every square is refused for green-2.
         state: buildState({
           ships: [
             ship("green-1", "green", "E7"),
             ship("green-2", "green", "A1"),
           ],
           siteStates: { E7: "dormant" },
-          actionsRemaining: 1,
+          actionsRemaining: 2,
         }),
         shipId: "green-2",
       },
@@ -445,10 +445,9 @@ describe("sideToMoveHasLegalMove", () => {
 });
 
 describe("legalDestinations and the §8.5 obligation", () => {
-  it("stays unrestricted while the obligation does not yet bind", () => {
+  it("stays unrestricted when no ship is stranded", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
       actionsRemaining: 2,
     });
 
@@ -456,15 +455,26 @@ describe("legalDestinations and the §8.5 obligation", () => {
     expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
   });
 
-  it("empties for a non-owed ship once the obligation binds, and stays open for the owed one", () => {
+  it("empties for a non-owed ship from the first action with one stranded ship, and stays open for the owed one", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
-      actionsRemaining: 1,
+      actionsRemaining: 2,
     });
 
     expect(legalDestinations(state, "green-2")).toEqual([]);
     expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
+  });
+
+  it("reopens for the rest of the fleet once the stranded ship has moved", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
+      siteStates: { E7: "dormant" },
+      movedThisPly: ["green-1"],
+      actionsRemaining: 1,
+    });
+
+    expect(legalDestinations(state, "green-2").length).toBeGreaterThan(0);
   });
 
   it("does not blow the stack: a repeated sweep completes promptly", () => {

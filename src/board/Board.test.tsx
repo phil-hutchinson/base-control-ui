@@ -449,7 +449,7 @@ describe("Board", () => {
       };
     }
 
-    it("names the stranded ship's square from the first action, before the obligation binds", () => {
+    it("names the stranded ship's square from the first action, and dampens the rest of the fleet from the same moment", () => {
       const session: Session = {
         state: strandedState(2),
         selectedShipId: undefined,
@@ -462,13 +462,17 @@ describe("Board", () => {
           name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn",
         }),
       ).toBeInTheDocument();
-      // Green-2 and green-3 each have a normal move available and the
-      // obligation does not bind yet, so neither carries a condition.
+      // The obligation binds from the first action, so green-2 and green-3
+      // read as having no action available even though both actions remain.
       expect(
-        screen.getByRole("gridcell", { name: "A1, green ship, 0 shields" }),
+        screen.getByRole("gridcell", {
+          name: "A1, green ship, 0 shields, no action available this turn",
+        }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", { name: "B2, green ship, 0 shields" }),
+        screen.getByRole("gridcell", {
+          name: "B2, green ship, 0 shields, no action available this turn",
+        }),
       ).toBeInTheDocument();
     });
 
