@@ -1107,7 +1107,43 @@ drags).
 
 ## Step 8 — §8.5: the action a stranded ship owes
 
-Status: pending
+Status: committed
+
+Notes: Split `movement.ts`'s `moveRefusalReason` into a private §6-only
+`sixOnlyMoveRefusalReason` (today's checks, verbatim) and a public wrapper
+that checks ownership, then already-moved, then §8.5's obligation (via a
+freshly recomputed `strandedShipIds(state)` from the new `stranded.ts`),
+before delegating destination checks to the §6-only half; added a private
+§6-only `sixOnlyLegalDestinations`, exported (as `stranded.ts` needs it) and
+used by `sideToMoveHasLegalMove` in place of the old call through the public
+`legalDestinations`. Added `MoveRefusalReason`'s new
+`"another-ship-stranded"` value, checked immediately after
+`ship-already-moved`. Added `src/rules/stranded.ts` with `strandedShipIds`
+and `strandedObligationBinds`, both pure and recomputed on demand, exactly as
+specified. `stranded.ts` imports `sixOnlyLegalDestinations` from
+`movement.ts` and `movement.ts` imports `strandedShipIds` from
+`stranded.ts` — a deliberate circular module import (not a call-graph
+cycle: `moveRefusalReason` → `strandedShipIds` → `sixOnlyLegalDestinations`
+→ `sixOnlyMoveRefusalReason`, which never calls back into `stranded.ts`),
+which TypeScript, eslint and Vitest all handle without complaint since
+neither module evaluates the other's exports at module-init time. One
+unavoidable ripple: adding the new `MoveRefusalReason` value made
+`announcements.ts`'s `rejectionSentence` switch non-exhaustive, so a
+placeholder sentence ("A stranded ship must be moved clear this turn.
+Choose one of those instead.") was added there to keep the build green;
+this is a minimal fix to an otherwise out-of-scope file, left for Step 9 to
+finalise the wording and add its own test coverage — not a deviation from
+this step's own scope, which the plan already anticipates would ripple
+("checked immediately after ship-already-moved" implies the union changes).
+Added `src/rules/stranded.test.ts` (15 tests) covering all ten of the
+step's verification points, and extended `src/rules/movement.test.ts` (17
+tests, up from 13) with a stranded case folded into the existing
+cross-check and reason-table tests, plus a new `describe` block for
+`legalDestinations` against the obligation and an explicit "does not blow
+the stack" sweep. Full suite (317 tests) completes in the low tens of
+seconds with no hang, confirming the recursion trap was avoided. No
+deviation from the plan otherwise. `npm run typecheck`, `npm run lint`,
+`npm test`, `npm run format:check` and `npm run build` all pass.
 
 Implement the stranded rule in the rules layer, as a restriction on what an
 action may be, so it reaches the player through the same refusal machinery

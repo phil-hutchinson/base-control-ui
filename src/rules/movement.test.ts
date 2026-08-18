@@ -189,12 +189,13 @@ function buildState(config: {
   sideToMove?: "green" | "red";
   movedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
+  actionsRemaining?: number;
 }): GameState {
   return {
     ships: config.ships,
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
-    actionsRemaining: 2,
+    actionsRemaining: config.actionsRemaining ?? 2,
     movedThisPly: config.movedThisPly ?? [],
     plyNumber: 1,
     randomSeed: 1,
@@ -328,6 +329,19 @@ describe("legalDestinations and moveRefusalReason", () => {
         }),
         shipId: "green-1",
       },
+      {
+        // green-2 is not stranded, but green-1 is, and the obligation binds
+        // with only one action left — so every square is refused for green-2.
+        state: buildState({
+          ships: [
+            ship("green-1", "green", "E7"),
+            ship("green-2", "green", "A1"),
+          ],
+          siteStates: { E7: "dormant" },
+          actionsRemaining: 1,
+        }),
+        shipId: "green-2",
+      },
     ];
 
     for (const { state, shipId } of cases) {
@@ -359,12 +373,18 @@ describe("legalDestinations and moveRefusalReason", () => {
       ships: [ship("green-1", "green", "H8")],
       movedThisPly: ["green-1"],
     });
+    const stranded = buildState({
+      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
+      siteStates: { E7: "dormant" },
+      actionsRemaining: 1,
+    });
 
     const expectations: ReadonlyArray<
       readonly [GameState, ShipId, string, MoveRefusalReason]
     > = [
       [notYourTurn, "green-1", "H9", "not-your-ship"],
       [alreadyMoved, "green-1", "H9", "ship-already-moved"],
+      [stranded, "green-2", "A2", "another-ship-stranded"],
       [blocking, "green-1", "O15", "out-of-range"],
       [blocking, "green-1", "H11", "path-blocked"],
       [blocking, "green-1", "H10", "destination-occupied"],
@@ -405,5 +425,63 @@ describe("sideToMoveHasLegalMove", () => {
       movedThisPly: ["green-1"],
     });
     expect(sideToMoveHasLegalMove(cannotMove)).toBe(false);
+  });
+
+  it("stays unaffected by the §8.5 obligation: a side that can move can still move", () => {
+    // green-1 is stranded on a dormant site and the obligation binds, so
+    // moving green-2 is refused — but the side still has a legal move
+    // (green-1's own), so the §5 pass guard must not fire.
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
+      siteStates: { E7: "dormant" },
+      actionsRemaining: 1,
+    });
+
+    expect(moveRefusalReason(state, "green-2", squareFromName("A2"))).toBe(
+      "another-ship-stranded",
+    );
+    expect(sideToMoveHasLegalMove(state)).toBe(true);
+  });
+});
+
+describe("legalDestinations and the §8.5 obligation", () => {
+  it("stays unrestricted while the obligation does not yet bind", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
+      siteStates: { E7: "dormant" },
+      actionsRemaining: 2,
+    });
+
+    expect(legalDestinations(state, "green-2").length).toBeGreaterThan(0);
+    expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
+  });
+
+  it("empties for a non-owed ship once the obligation binds, and stays open for the owed one", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
+      siteStates: { E7: "dormant" },
+      actionsRemaining: 1,
+    });
+
+    expect(legalDestinations(state, "green-2")).toEqual([]);
+    expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
+  });
+
+  it("does not blow the stack: a repeated sweep completes promptly", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "E7"),
+        ship("green-2", "green", "A1"),
+        ship("green-3", "green", "D1"),
+      ],
+      siteStates: { E7: "dormant" },
+      actionsRemaining: 1,
+    });
+
+    for (let i = 0; i < 500; i++) {
+      legalDestinations(state, "green-2");
+      legalDestinations(state, "green-1");
+      sideToMoveHasLegalMove(state);
+    }
   });
 });

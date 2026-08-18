@@ -72,6 +72,8 @@ function rejectionSentence(event: RejectedEvent): string {
       return "That is your opponent's ship. Choose one of your own.";
     case "ship-already-moved":
       return "That ship has already moved this turn. Choose another.";
+    case "another-ship-stranded":
+      return "A stranded ship must be moved clear this turn. Choose one of those instead.";
     case "nothing-to-select":
       return `No ship on ${square}. Choose one of your own ships.`;
     case "out-of-range":

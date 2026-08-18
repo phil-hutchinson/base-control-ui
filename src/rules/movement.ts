@@ -5,6 +5,12 @@
 // destination site's state. This is the only implementation of §6 in the
 // app; every caller that needs a legal move or the reason one is refused
 // calls the functions here.
+//
+// The public legality functions also enforce §8.5's stranded-ship
+// obligation (`src/rules/stranded.ts`). Internally, a §6-only half exists
+// alongside them for code that needs "can this ship move at all" without
+// asking whether the obligation applies — `stranded.ts` itself, and the §5
+// pass guard.
 
 import {
   COLUMN_LETTERS,
@@ -21,6 +27,7 @@ import {
   siteStateAt,
 } from "./gameState";
 import type { ShieldCount } from "./shields";
+import { strandedShipIds } from "./stranded";
 
 type DirectionKind = "orthogonal" | "diagonal";
 
@@ -122,6 +129,7 @@ export function reachFrom(
 export type MoveRefusalReason =
   | "not-your-ship"
   | "ship-already-moved"
+  | "another-ship-stranded"
   | "out-of-range"
   | "path-blocked"
   | "destination-occupied"
@@ -137,12 +145,17 @@ function findShip(state: GameState, shipId: ShipId): Ship {
 }
 
 /**
- * Why `destination` is not a legal move for `shipId` in the given state, as a
- * structured reason, or `undefined` when the move is legal. Reasons are
- * checked in order from the most fundamental (whose ship it is) to the most
- * specific (the destination square itself), so exactly one is ever returned.
+ * Why `destination` is not a legal move for `shipId` in the given state,
+ * under §6 alone: whose ship it is, whether it has already moved, its reach,
+ * occupancy along the way, and the destination site's state. Says nothing
+ * about §8.5's stranded-ship obligation, so that the obligation itself
+ * (`src/rules/stranded.ts`) can ask "does this ship have a legal move" without
+ * asking "does the obligation apply to this ship" — asking the second
+ * question here would be circular. Every other caller under `src/rules/`
+ * that only needs "can this ship move at all" uses this half; the public
+ * `moveRefusalReason` below is the one to call everywhere else.
  */
-export function moveRefusalReason(
+function sixOnlyMoveRefusalReason(
   state: GameState,
   shipId: ShipId,
   destination: Square,
@@ -184,10 +197,67 @@ export function moveRefusalReason(
 }
 
 /**
+ * Every square `shipId` may legally move to in the given state under §6
+ * alone, ignoring §8.5's stranded-ship obligation. The §6-only counterpart to
+ * the public `legalDestinations` below; see `sixOnlyMoveRefusalReason` for
+ * why it exists.
+ */
+export function sixOnlyLegalDestinations(
+  state: GameState,
+  shipId: ShipId,
+): readonly Square[] {
+  const ship = findShip(state, shipId);
+  if (ship.side !== state.sideToMove || state.movedThisPly.includes(shipId)) {
+    return [];
+  }
+
+  return reachFrom(ship.square, ship.shields)
+    .map((entry) => entry.destination)
+    .filter(
+      (destination) =>
+        sixOnlyMoveRefusalReason(state, shipId, destination) === undefined,
+    );
+}
+
+/**
+ * Why `destination` is not a legal move for `shipId` in the given state, as a
+ * structured reason, or `undefined` when the move is legal. Reasons are
+ * checked in order from the most fundamental (whose ship it is) to the most
+ * specific (the destination square itself): ownership, whether it has
+ * already moved, then §8.5's stranded-ship obligation — checked before
+ * anything about the destination, because the objection is to the ship, not
+ * the square — and finally §6's reach, occupancy and site-state checks.
+ */
+export function moveRefusalReason(
+  state: GameState,
+  shipId: ShipId,
+  destination: Square,
+): MoveRefusalReason | undefined {
+  const ship = findShip(state, shipId);
+
+  if (ship.side !== state.sideToMove) {
+    return "not-your-ship";
+  }
+  if (state.movedThisPly.includes(shipId)) {
+    return "ship-already-moved";
+  }
+
+  const owedShipIds = strandedShipIds(state);
+  if (
+    owedShipIds.length >= state.actionsRemaining &&
+    !owedShipIds.includes(shipId)
+  ) {
+    return "another-ship-stranded";
+  }
+
+  return sixOnlyMoveRefusalReason(state, shipId, destination);
+}
+
+/**
  * Every square `shipId` may legally move to in the given state: its §6 reach,
  * filtered down to the destinations `moveRefusalReason` raises no objection
- * to. Empty when the ship does not belong to the side to move or has already
- * moved this ply.
+ * to — so a ship held back by §8.5's obligation reports none. Empty when the
+ * ship does not belong to the side to move or has already moved this ply.
  */
 export function legalDestinations(
   state: GameState,
@@ -217,9 +287,15 @@ function eligibleShips(state: GameState): readonly Ship[] {
   );
 }
 
-/** Whether the side to move has any legal move at all, with any eligible ship. */
+/**
+ * Whether the side to move has any legal move at all, with any eligible
+ * ship, under §6 alone. Used by the §5 pass guard, which must keep working
+ * regardless of §8.5's obligation: the obligation only ever binds when at
+ * least one ship with a legal move exists, so a side that can move at all can
+ * still move.
+ */
 export function sideToMoveHasLegalMove(state: GameState): boolean {
   return eligibleShips(state).some(
-    (ship) => legalDestinations(state, ship.id).length > 0,
+    (ship) => sixOnlyLegalDestinations(state, ship.id).length > 0,
   );
 }
