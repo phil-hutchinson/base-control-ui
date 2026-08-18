@@ -52,7 +52,7 @@
    visible before the obligation binds and the player has already tried the
    wrong thing. */
 .board-square--owes-action .ship-icon {
-  animation: board-square-owes-action-blink 1.4s ease-in-out infinite alternate;
+  animation: board-square-owes-action-blink 1.1s ease-in-out infinite alternate;
 }
 
 @keyframes board-square-owes-action-blink {

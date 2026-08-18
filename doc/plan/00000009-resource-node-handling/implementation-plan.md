@@ -1545,7 +1545,18 @@ The gates that use it are Steps 13–15.
 
 ## Step 13 — Manual gate: a node's whole life
 
-Status: pending
+Status: committed
+
+Notes: Taken by the owner against the Step 12 fixture over an extended
+session. All six checks passed: a site charges the moment a ship lands on it,
+the run-out pays the holder its fourth shield and wakes a replacement in the
+same instant with the opponent to move next, a fly-over charges without the
+ship stopping, a shield arrives once per round up to four, the node runs out
+on the ninth turn, and the four site appearances stay tellable apart while
+changing. Two findings, neither about this step's own checks: the owner ruled
+that a single stranded ship should owe the **first** action of the turn rather
+than leaving it free (Steps 13a and 13b), and asked for the blink to run 25%
+faster (settled at Step 14).
 
 No code. `story.md`'s manual gates 1 and 2, taken against the Step 12 fixture.
 
@@ -1585,6 +1596,128 @@ If a check fails, record what was seen in this step's Notes before any fix.
 
 ---
 
+## Step 13a — Rules: the freeing move is the first action (version 0.5)
+
+Status: pending
+
+A finding from the Step 13 gate. §8.5 says a stranded ship's owner "must spend
+an action moving it clear" but never says **which** action, and this plan's
+decision 11 read the silence one way: the obligation binds only once the
+number of ships owing an action reaches the number of actions left, so a
+single stranded ship left the first action free and forced the second. Watching
+it play, the owner has ruled the other way — **the freeing move is the first
+action of the turn**, and what remains of the turn is then the player's.
+
+That reading is the better fit for §8.5's own wording. The section already says
+"the move is ordinary in every other respect, and **the rest of the turn**
+belongs to the player", which describes a turn whose obligation is discharged
+first and whose remainder is free — not one that stays free until the last
+action forces it. But the document does not say so outright, and code may not
+carry a rule the document does not state, so this is a rules edit.
+
+What to change:
+
+1. **§8.5.** In the paragraph that turns the obligation into a restriction on
+   what an action may be, say plainly that the freeing move is the **first**
+   action of the turn, and that while any ship still owes one, each action in
+   turn must free one. Keep the existing consequences intact and make them
+   read as results of that rule: with one stranded ship the rest of the turn
+   is the player's; with two, both actions go to clearing them; with three or
+   more, the player clears two of their choice and the rest wait. Keep the
+   waiver paragraph (a stranded ship with no legal move is excused) and the
+   final paragraph (a site waking underneath a ship) untouched.
+2. **Do not touch §6**, and do not revisit Step 1's dormant-site change — it
+   stands exactly as it is.
+3. **Version line** at the top of `rules.md`: `0.4` → `0.5`.
+4. **`doc/ruleset/changelog.md`**: a new `## 0.5` entry at the top, saying the
+   freeing move is now the first action of the turn rather than any action,
+   and why — a turn that only forces the obligation at its last action lets a
+   player put off a move they have no choice about, which reads as a free turn
+   right up until it is not. Note that this **does** change how the game is
+   played and so would be a tagging candidate, but tagging is on hold until
+   the game plays, so no tag is made.
+5. **`src/rules/rulesVersion.ts`**: `RULES_VERSION` → `"0.5"`.
+
+Nothing else changes; Step 13b changes the code.
+
+**This supersedes** `story.md`'s in-scope item 8 and this plan's decision 11 on
+the binding condition only. Everything else in both — who owes an action, the
+waiver for a ship with no legal move, the refusal reason and its ordering, and
+the marks on the board — is unaffected.
+
+Depends on: Step 13 (the gate that produced the finding).
+
+Verification (automated): `npm test` — `src/rules/rulesVersion.test.ts` passes,
+which is the guard that the constant and the document agree; every other test
+passes unchanged, because no code implements the new reading yet.
+`npm run format:check` passes. Also confirm by reading that §8.5 now states
+which action the obligation takes, that its three consequences still read
+correctly under the new rule, and that the changelog entry sits above 0.4.
+
+---
+
+## Step 13b — The obligation binds from the first action
+
+Status: pending
+
+Implement Step 13a's rule. The change is small and almost entirely a
+subtraction.
+
+- **`src/rules/stranded.ts`.** The binding condition becomes simply **whether
+  any ship owes an action at all**, rather than a comparison against
+  `actionsRemaining`, which drops out of the module entirely. The owed set
+  itself is unchanged: the side to move's ships standing on a dormant or
+  depleted site, not yet moved this ply, with at least one legal move.
+- **`src/rules/movement.ts`.** The refusal check keeps its place —
+  immediately after `ship-already-moved`, before anything about the
+  destination — and keeps its reason. Only the condition it tests changes, in
+  step with `stranded.ts`. If the binding rule is currently spelled out inline
+  there rather than asked of `stranded.ts`, this is the moment to have one
+  module own it, so the rule cannot be changed in one place and not the other.
+- **Nothing in `src/board/` changes.** The `owes-action` condition is already
+  computed from the owed set rather than from whether the obligation binds, so
+  the owed ship still blinks from the start of the ply; and the rest of the
+  fleet still dampens exactly when it has no legal destination, which under
+  the new rule is now from the first action rather than the second. The
+  visible consequence is intended and is what the Step 14 gate looks at.
+
+The cases the new rule yields, all of which are tests: one stranded ship must
+be freed by the first action and the second is then free; two must be freed by
+both; three or more mean two are freed, the player's choice, and the rest wait
+for the next turn; a stranded ship with no legal move is still waived and binds
+nothing.
+
+Depends on: Step 13a (the rules edit the code implements).
+
+Verification (automated): `npm test` — update `src/rules/stranded.test.ts` and
+the relevant cases in `src/rules/movement.test.ts` and
+`src/board/Board.test.tsx`:
+
+1. **One stranded ship** now binds the **first** action: with both actions
+   remaining, moving any other ship is refused with the stranded reason, and
+   moving the stranded ship is allowed. Once it has moved, nothing owes an
+   action and the second action is free — assert both halves, since the second
+   is the whole of what the player gets back.
+2. **Two stranded ships** bind both actions, as before.
+3. **Three stranded ships** bind both actions, the player chooses which two,
+   and the third is still stranded next ply, as before.
+4. **The waiver** is unchanged: a stranded ship with no legal move at all is
+   not counted, and a state whose only stranded ship is immobile behaves
+   exactly like a state with none.
+5. **Only the side to move** is restricted, as before.
+6. **A stranded ship that has already moved** this ply does not keep binding
+   the second action.
+7. **The §5 pass still fires** when the side to move has no legal move at all.
+8. **The board follows**: with one stranded ship and both actions remaining,
+   every other ship of the moving side is now named "no action available this
+   turn" from the **first** action, while the stranded ship is named
+   "stranded, must move this turn". This is the assertion that changes in
+   `Board.test.tsx`.
+9. `actionsRemaining` is no longer consulted by the stranded rule — confirm by
+   reading that it appears nowhere in `stranded.ts`.
+
+---
+
 ## Step 14 — Manual gate: being stranded, and reading the obligation
 
 Status: pending
@@ -1592,26 +1725,30 @@ Status: pending
 No code, except adjustments to the blink and mark geometry from Step 11, which
 this gate exists to settle. `story.md`'s manual gates 3 and 4.
 
-Depends on: Step 13 (the same fixture, and a node that has run out).
+Depends on: Steps 13a and 13b (the obligation now binds from the first action,
+which is what checks 1 and 2 below look at), and Step 13 (the same fixture, and
+a node that has run out).
 
 Verification (manual): run `npm run dev`, open `http://localhost:5273`, and play
 to the point where **K5** has run out under green's ship (spend green's two
 actions on ply 9, then red's on ply 10). Then confirm:
 
-1. **The obligation is visible before it binds.** At the **start** of green's
-   turn, the stranded ship on K5 **blinks** between the full and dampened
-   shades and carries its own static mark. The rest of green's fleet is
-   **not** dampened — the first action is genuinely free — and spending it on
-   another ship is allowed.
-2. **It binds on the second action.** After the free action, the rest of the
-   fleet dampens, and trying to move any other ship **explains itself** (the
-   sentence is in the live region; a sighted player sees the refusal as the
-   board declining to act). Moving the stranded ship clear works, and the
-   ship is ordinary again afterwards.
+1. **The obligation is visible and binding from the first action.** At the
+   **start** of green's turn, the stranded ship on K5 **blinks** between the
+   full and dampened shades and carries its own static mark, and the rest of
+   green's fleet is **already dampened** — under Step 13a's rule the first
+   action is the one that owes the move, not the second.
+2. **The refusal explains itself.** Trying to move any other ship while the
+   obligation stands says why (the sentence is in the live region; a sighted
+   player sees the refusal as the board declining to act). Moving the stranded
+   ship clear works; the **rest of the turn is then genuinely free**, with the
+   fleet undampened and the second action spendable on anything legal.
 3. **The blink is legible without being punishing.** Fast enough to read as a
-   summons, slow enough to sit with for a whole turn. Adjust the rate, easing
-   and how far it travels between the two shades against the running board, and
-   **record the final values** in this step's Notes.
+   summons, slow enough to sit with for a whole turn. The owner found the
+   Step 11 value (1.4 s) subtle enough not to yell but not quite noticeable
+   enough, and asked for **25% faster**; it is set to **1.1 s** for this gate.
+   Confirm that reads right, adjust further against the running board if not,
+   and **record the final values** in this step's Notes.
 4. **Reduced motion.** Turn on the system's reduce-motion preference (or
    emulate it in browser devtools). The blink **stops**, the ship draws at full
    strength, and the obligation is still obvious from the static mark alone.
