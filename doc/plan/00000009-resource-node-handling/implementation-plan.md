@@ -1035,7 +1035,28 @@ drive everything through moves.
 
 ## Step 7 — The Appendix B guard: the dormant pool never runs dry
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/sitePool.test.ts`, driving `runEndOfTurn` directly
+(states built and advanced by hand — `plyNumber` incremented and `sideToMove`
+swapped by the test, never through `applyMove`) over 200 plies, five seeds
+(1, 12345, 987654321, 42, 999983) and the three named patterns: charging every
+active site the instant it appears (theoretical maximum), charging at most
+two per ply (achievable maximum), and a staggered pattern that lets active
+sites sit untouched for three plies and then charges all of them at once
+(clustering several nodes' nine-turn clocks onto the same ply). At every ply
+the test asserts, independently of the implementation's own safety net, that
+the dormant pool plus the sites finishing cooldown this ply is never smaller
+than the number of nodes running out this ply (the hard Appendix B assertion),
+that exactly five sites are active or charged, that every site has a valid
+state with a defined `enteredOnPly` no later than the ply just played, and it
+tracks the smallest dormant-pool size seen. Observed minimum dormant-pool
+size across all three patterns and all five seeds: **7**, comfortably above
+the softer floor of 2 the step asks to guard, and consistent with Appendix
+B's own estimate of "roughly seven" dormant sites at any moment — no finding
+to raise. No deviation from the plan. `npm run typecheck`, `npm run lint`,
+`npm test` (298 tests, ~1.2s for the three new tests), `npm run format:check`
+and `npm run build` all pass.
 
 A test-only step. Appendix B explicitly asks the app for this guard, and it is
 the check that the nine-turn figures and the seventeen-site pool are still
