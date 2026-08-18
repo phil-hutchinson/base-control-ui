@@ -986,7 +986,20 @@ Verification (automated): `npm test` — the new cases pass; nothing else change
 
 ## Step 6 — Extract the shared end-of-action tail in `ply.ts`
 
-Status: pending
+Status: committed
+
+Notes: Extracted the private `applyEndOfActionTail(state, effects,
+movedShipId?)` in `src/rules/ply.ts`, taking the state after the action's own
+effects, the effects list so far (mutated by pushing whichever of
+`ply-ended`/`ply-passed` fires), and an optional ship id added to
+`movedThisPly` only when given; `applyMove` now calls it with its own `shipId`
+in place of its inlined tail. Also introduced the exported `EndOfActionEffect
+= PlyEndedEffect | PassEffect` alias and folded `MoveEffect`'s last two
+variants into it, as the step asked, so Step 7's attack effect union can
+include the same two effects by name. Verified as a pure refactor: `git
+status` shows only `src/rules/ply.ts` changed, `src/rules/ply.test.ts` was not
+touched, and the whole suite (388 tests) passes unchanged. No deviation from
+the plan.
 
 A pure refactor, with no behaviour change, so `applyAttack` can share it in Step
 7 rather than duplicate it.

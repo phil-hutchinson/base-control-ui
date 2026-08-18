@@ -39,12 +39,17 @@ export interface PlyEndedEffect {
   readonly endOfTurn: readonly EndOfTurnEffect[];
 }
 
+/**
+ * The two effects that can close out an action, shared by every kind of
+ * action rather than tied to moves specifically.
+ */
+export type EndOfActionEffect = PlyEndedEffect | PassEffect;
+
 /** Something that happened as a result of applying a move, beyond the move itself. */
 export type MoveEffect =
   | { readonly type: "shields-reset"; readonly shipId: ShipId }
   | SiteChargedEffect
-  | PlyEndedEffect
-  | PassEffect;
+  | EndOfActionEffect;
 
 /** A move applied successfully, with the resulting state and what happened. */
 export interface AppliedMove {
@@ -101,6 +106,60 @@ export function applyPassGuard(state: GameState): {
 }
 
 /**
+ * Runs the tail every action shares once its own effects have been applied:
+ * spends one action; if that was the ply's second, runs the end-of-turn
+ * sequence, advances the ply number, swaps the side to move and clears
+ * `movedThisPly`, recording a `ply-ended` effect; then runs `applyPassGuard`,
+ * recording a `ply-passed` effect if it fires. `movedShipId` is added to
+ * `movedThisPly` when given, and omitted for an action — an attack, in
+ * particular — that does not count as a move (rules.md §5). Mutates
+ * `effects` by appending whichever of the two end-of-action effects fired,
+ * and returns the resulting state.
+ */
+function applyEndOfActionTail(
+  state: GameState,
+  effects: MoveEffect[],
+  movedShipId?: ShipId,
+): GameState {
+  const actionsRemaining = state.actionsRemaining - 1;
+  let next: GameState;
+  if (actionsRemaining > 0) {
+    next = {
+      ...state,
+      movedThisPly:
+        movedShipId === undefined
+          ? state.movedThisPly
+          : [...state.movedThisPly, movedShipId],
+      actionsRemaining,
+    };
+  } else {
+    const side = state.sideToMove;
+    const sideToMove = otherSide(side);
+    const endOfTurn = runEndOfTurn(state);
+    next = {
+      ...endOfTurn.state,
+      plyNumber: endOfTurn.state.plyNumber + 1,
+      sideToMove,
+      actionsRemaining: ACTIONS_PER_PLY,
+      movedThisPly: [],
+    };
+    effects.push({
+      type: "ply-ended",
+      side,
+      sideToMove,
+      endOfTurn: endOfTurn.effects,
+    });
+  }
+
+  const { state: settled, effect: passEffect } = applyPassGuard(next);
+  if (passEffect !== undefined) {
+    effects.push(passEffect);
+  }
+
+  return settled;
+}
+
+/**
  * Applies a move of `shipId` to `destination` in `state`, or refuses it. A
  * legal move never mutates `state`: it returns a new state in which the ship
  * stands on `destination`, the square it left is empty, the ship is marked as
@@ -154,37 +213,7 @@ export function applyMove(
   const wake = wakeTouchedSites(afterMove, movingShip, path);
   effects.push(...wake.effects);
 
-  const actionsRemaining = state.actionsRemaining - 1;
-  let moved: GameState;
-  if (actionsRemaining > 0) {
-    moved = {
-      ...wake.state,
-      movedThisPly: [...state.movedThisPly, shipId],
-      actionsRemaining,
-    };
-  } else {
-    const side = wake.state.sideToMove;
-    const sideToMove = otherSide(side);
-    const endOfTurn = runEndOfTurn(wake.state);
-    moved = {
-      ...endOfTurn.state,
-      plyNumber: endOfTurn.state.plyNumber + 1,
-      sideToMove,
-      actionsRemaining: ACTIONS_PER_PLY,
-      movedThisPly: [],
-    };
-    effects.push({
-      type: "ply-ended",
-      side,
-      sideToMove,
-      endOfTurn: endOfTurn.effects,
-    });
-  }
-
-  const { state: settled, effect: passEffect } = applyPassGuard(moved);
-  if (passEffect !== undefined) {
-    effects.push(passEffect);
-  }
+  const settled = applyEndOfActionTail(wake.state, effects, shipId);
 
   return { outcome: "applied", state: settled, effects };
 }
