@@ -1,27 +1,46 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
-import { ALL_SQUARES, squareAt } from "../rules/board";
+import { useReducer } from "react";
+import { ALL_SQUARES, squareAt, squareName, type Square } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
-import { STARTING_FLEET, startingShipAt } from "../rules/fleet";
+import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import { startingSiteState } from "../rules/sites";
+import { startingGameState, type GameState } from "../rules/gameState";
+import { legalDestinations } from "../rules/movement";
+import { createSession, sessionReducer, type Session } from "../game/session";
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
 
 afterEach(cleanup);
 
+const noop = () => {};
+
+/** A square-name-keyed lookup of `STARTING_FLEET`, for building expected
+ * accessible names — nothing in production looks up a starting ship by
+ * square any more, so these tests build their own local index. */
+const STARTING_ENTRY_BY_SQUARE: ReadonlyMap<string, FleetEntry> = new Map(
+  STARTING_FLEET.map((entry) => [squareName(entry.square), entry]),
+);
+function startingShipAt(square: Square): FleetEntry | undefined {
+  return STARTING_ENTRY_BY_SQUARE.get(squareName(square));
+}
+
+const startingSession = createSession(startingGameState());
+
 describe("Board", () => {
   it("renders 225 gridcells in 15 rows", () => {
-    render(<Board />);
+    render(<Board session={startingSession} onIntent={noop} />);
 
     expect(screen.getAllByRole("row")).toHaveLength(15);
     expect(screen.getAllByRole("gridcell")).toHaveLength(225);
   });
 
   it("draws A15 first and O1 last in DOM order", () => {
-    render(<Board />);
+    render(<Board session={startingSession} onIntent={noop} />);
 
     const cells = screen.getAllByRole("gridcell");
     expect(cells[0]).toHaveAccessibleName("A15");
@@ -29,7 +48,7 @@ describe("Board", () => {
   });
 
   it("names the centre and the far corners correctly", () => {
-    render(<Board />);
+    render(<Board session={startingSession} onIntent={noop} />);
 
     // H8 is the centre square and an active site at the start.
     expect(
@@ -40,7 +59,7 @@ describe("Board", () => {
   });
 
   it("names every bay with 'bay' and no other square", () => {
-    render(<Board />);
+    render(<Board session={startingSession} onIntent={noop} />);
 
     // A handful of literal expected names, independent of the production
     // label-building functions the completeness loop below re-uses to build
@@ -75,7 +94,9 @@ describe("Board", () => {
   });
 
   it("marks the fourteen bay cells distinctly and draws different silhouettes per side", () => {
-    const { container } = render(<Board />);
+    const { container } = render(
+      <Board session={startingSession} onIntent={noop} />,
+    );
 
     expect(container.querySelectorAll(".board-square--bay")).toHaveLength(
       BAYS.length,
@@ -89,7 +110,9 @@ describe("Board", () => {
   });
 
   it("draws exactly as many shield arcs as the starting fleet carries", () => {
-    const { container } = render(<Board />);
+    const { container } = render(
+      <Board session={startingSession} onIntent={noop} />,
+    );
 
     const expectedArcs = STARTING_FLEET.reduce(
       (total, entry) => total + entry.shields,
@@ -101,7 +124,7 @@ describe("Board", () => {
   });
 
   it("names each starting ship's square with its side, and no other square", () => {
-    render(<Board />);
+    render(<Board session={startingSession} onIntent={noop} />);
 
     for (const entry of STARTING_FLEET) {
       const cell = screen.getByRole("gridcell", {
@@ -120,7 +143,7 @@ describe("Board", () => {
   });
 
   it("hides the ship artwork from the accessibility tree", () => {
-    render(<Board />);
+    render(<Board session={startingSession} onIntent={noop} />);
 
     const square = squareAt("H", 15);
     const label = squareLabel({
@@ -137,7 +160,9 @@ describe("Board", () => {
   });
 
   it("draws visible column letters and row numbers, hidden from the accessibility tree", () => {
-    const { container } = render(<Board />);
+    const { container } = render(
+      <Board session={startingSession} onIntent={noop} />,
+    );
 
     // The grid itself is unaffected: still 225 cells, none of them the labels.
     expect(screen.getAllByRole("row")).toHaveLength(15);
@@ -187,7 +212,9 @@ describe("Board", () => {
     );
 
     it("draws a site marker on exactly the seventeen sites from rules.md §3.2", () => {
-      const { container } = render(<Board />);
+      const { container } = render(
+        <Board session={startingSession} onIntent={noop} />,
+      );
 
       expect(container.querySelectorAll(".site-marker")).toHaveLength(17);
       for (const square of ACTIVE_SITE_SQUARES) {
@@ -205,7 +232,7 @@ describe("Board", () => {
     });
 
     it("names exactly five sites active and twelve dormant, none charged or depleted", () => {
-      render(<Board />);
+      render(<Board session={startingSession} onIntent={noop} />);
 
       expect(
         screen.getAllByRole("gridcell", { name: /, active site$/ }),
@@ -222,7 +249,7 @@ describe("Board", () => {
     });
 
     it("spot-checks a few sites' literal accessible names", () => {
-      render(<Board />);
+      render(<Board session={startingSession} onIntent={noop} />);
 
       expect(
         screen.getByRole("gridcell", { name: "E5, active site" }),
@@ -239,7 +266,9 @@ describe("Board", () => {
     });
 
     it("never draws a site marker on a bay, and never names a bay a site", () => {
-      const { container } = render(<Board />);
+      const { container } = render(
+        <Board session={startingSession} onIntent={noop} />,
+      );
 
       const bayElements = container.querySelectorAll(".board-square--bay");
       expect(bayElements).toHaveLength(BAYS.length);
@@ -253,7 +282,9 @@ describe("Board", () => {
   });
 
   it("has no static accessibility violations", async () => {
-    const { container } = render(<Board />);
+    const { container } = render(
+      <Board session={startingSession} onIntent={noop} />,
+    );
 
     const results = await axe.run(container, {
       rules: {
@@ -262,5 +293,352 @@ describe("Board", () => {
     });
 
     expect(results.violations).toEqual([]);
+  });
+
+  it("renders from the game state it is given, not the starting position", () => {
+    const state: GameState = {
+      ...startingGameState(),
+      ships: startingGameState().ships.map((ship) =>
+        ship.id === "green-1" ? { ...ship, square: squareAt("H", 8) } : ship,
+      ),
+    };
+    const session = createSession(state);
+
+    const { container } = render(<Board session={session} onIntent={noop} />);
+
+    // H8 is a site as well as this ship's new square; both are named.
+    const cell = screen.getByRole("gridcell", {
+      name: "H8, active site, green ship, 0 shields",
+    });
+    expect(cell).toBeInTheDocument();
+    expect(cell.querySelector(".ship-icon--green")).toBeInTheDocument();
+    // The bay green-1 started in is empty now.
+    expect(
+      screen.getByRole("gridcell", { name: "H15, bay" }),
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll(".ship-icon--green")).toHaveLength(7);
+  });
+
+  describe("selection markings", () => {
+    // A hand-built session with green-1 selected on H8, and green-2 (still
+    // in its starting bay) already marked as moved this ply. Built directly
+    // rather than through the fixture.
+    const state: GameState = {
+      ...startingGameState(),
+      ships: startingGameState().ships.map((ship) =>
+        ship.id === "green-1"
+          ? { ...ship, square: squareAt("H", 8), shields: 2 }
+          : ship,
+      ),
+      movedThisPly: ["green-2"],
+    };
+    const session: Session = {
+      state,
+      selectedShipId: "green-1",
+      lastEvent: undefined,
+    };
+
+    it("marks the selected ship's own square", () => {
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", { name: /^H8,.*, selected$/ }),
+      ).toBeInTheDocument();
+    });
+
+    it("marks exactly the squares legalDestinations calls legal", () => {
+      render(<Board session={session} onIntent={noop} />);
+
+      const destinations = legalDestinations(state, "green-1");
+      expect(destinations.length).toBeGreaterThan(0);
+      for (const destination of destinations) {
+        expect(
+          screen.getByRole("gridcell", {
+            name: new RegExp(`^${squareName(destination)},.*can move here$`),
+          }),
+        ).toBeInTheDocument();
+      }
+      expect(
+        screen.getAllByRole("gridcell", { name: /can move here$/ }),
+      ).toHaveLength(destinations.length);
+    });
+
+    it("marks a ship that has already moved this ply", () => {
+      render(<Board session={session} onIntent={noop} />);
+
+      const movedShip = state.ships.find((ship) => ship.id === "green-2");
+      expect(movedShip).toBeDefined();
+      expect(
+        screen.getByRole("gridcell", {
+          name: new RegExp(
+            `^${squareName(movedShip!.square)},.*already moved this turn$`,
+          ),
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getAllByRole("gridcell", {
+          name: /already moved this turn$/,
+        }),
+      ).toHaveLength(1);
+    });
+
+    it("marks no square when nothing is selected", () => {
+      render(<Board session={startingSession} onIntent={noop} />);
+
+      expect(
+        screen.queryByRole("gridcell", {
+          name: /, selected$|can move here$|already moved this turn$/,
+        }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("has no static accessibility violations mid-selection", async () => {
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      const results = await axe.run(container, {
+        rules: {
+          "color-contrast": { enabled: false },
+        },
+      });
+
+      expect(results.violations).toEqual([]);
+    });
+  });
+
+  describe("playing a turn", () => {
+    // A small stand-in for App.tsx's own useReducer wiring, so these tests
+    // exercise the real session reducer rather than a hand-built session.
+    function Harness({ initial }: { initial: GameState }) {
+      const [session, dispatch] = useReducer(
+        sessionReducer,
+        initial,
+        createSession,
+      );
+      return <Board session={session} onIntent={dispatch} />;
+    }
+
+    // green-1 moved off its starting bay onto the empty interior square H8,
+    // with two shields, so it has an obstruction-free reach to check
+    // destinations against. Every other ship stays in its starting bay.
+    function baseState(): GameState {
+      return {
+        ...startingGameState(),
+        ships: startingGameState().ships.map((ship) =>
+          ship.id === "green-1"
+            ? { ...ship, square: squareAt("H", 8), shields: 2 }
+            : ship,
+        ),
+      };
+    }
+
+    function cell(name: string | RegExp): HTMLElement {
+      return screen.getByRole("gridcell", { name });
+    }
+
+    function liveRegion(): HTMLElement {
+      return screen.getByRole("status");
+    }
+
+    type InputMode = "keyboard" | "pointer";
+
+    async function activate(
+      user: ReturnType<typeof userEvent.setup>,
+      mode: InputMode,
+      target: HTMLElement,
+    ) {
+      if (mode === "pointer") {
+        await user.click(target);
+      } else {
+        target.focus();
+        await user.keyboard("[Enter]");
+      }
+    }
+
+    describe.each<InputMode>(["keyboard", "pointer"])("via %s", (mode) => {
+      it("selects an own unmoved ship, marks its destinations, and announces it", async () => {
+        const user = userEvent.setup();
+        render(<Harness initial={baseState()} />);
+
+        await activate(user, mode, cell(/^H8,/));
+
+        expect(cell(/^H8,.*selected$/)).toBeInTheDocument();
+        const destinations = legalDestinations(baseState(), "green-1");
+        expect(destinations.length).toBeGreaterThan(0);
+        for (const destination of destinations) {
+          expect(
+            cell(new RegExp(`^${squareName(destination)},.*can move here$`)),
+          ).toBeInTheDocument();
+        }
+        expect(
+          screen.getAllByRole("gridcell", { name: /can move here$/ }),
+        ).toHaveLength(destinations.length);
+        expect(liveRegion()).toHaveTextContent(
+          new RegExp(
+            `^Green ship at H8 selected\\. ${destinations.length} moves? available\\.$`,
+          ),
+        );
+      });
+
+      it("cancels the selection when the selected ship's square is activated again", async () => {
+        const user = userEvent.setup();
+        render(<Harness initial={baseState()} />);
+
+        await activate(user, mode, cell(/^H8,/));
+        await activate(user, mode, cell(/^H8,.*selected$/));
+
+        expect(cell(/^H8,/)).not.toHaveAccessibleName(/selected$/);
+        expect(
+          screen.queryByRole("gridcell", { name: /can move here$/ }),
+        ).not.toBeInTheDocument();
+        expect(liveRegion()).toHaveTextContent("Selection cleared.");
+      });
+
+      it("switches the selection to a different own unmoved ship", async () => {
+        const user = userEvent.setup();
+        render(<Harness initial={baseState()} />);
+
+        await activate(user, mode, cell(/^H8,/));
+
+        const otherShip = STARTING_FLEET.find(
+          (entry) => entry.side === "green" && entry.id !== "green-1",
+        );
+        expect(otherShip).toBeDefined();
+        const otherName = squareName(otherShip!.square);
+
+        await activate(user, mode, cell(new RegExp(`^${otherName},`)));
+
+        expect(
+          cell(new RegExp(`^${otherName},.*selected$`)),
+        ).toBeInTheDocument();
+        expect(cell(/^H8,/)).not.toHaveAccessibleName(/selected$/);
+      });
+
+      it("moves the ship onto an activated legal destination and announces it", async () => {
+        const user = userEvent.setup();
+        render(<Harness initial={baseState()} />);
+
+        await activate(user, mode, cell(/^H8,/));
+        const [destination] = legalDestinations(baseState(), "green-1");
+        const destinationName = squareName(destination);
+
+        const destinationCell = cell(
+          new RegExp(`^${destinationName},.*can move here$`),
+        );
+        await activate(user, mode, destinationCell);
+
+        expect(
+          cell(new RegExp(`^${destinationName},.*green ship`)),
+        ).toBeInTheDocument();
+        expect(
+          screen.queryByRole("gridcell", { name: /^H8,.*green ship/ }),
+        ).not.toBeInTheDocument();
+        expect(liveRegion()).toHaveTextContent(
+          new RegExp(`^Green ship moved from H8 to ${destinationName}\\.`),
+        );
+
+        if (mode === "keyboard") {
+          expect(document.activeElement).toBe(
+            cell(new RegExp(`^${destinationName},.*green ship`)),
+          );
+          expect(screen.getByRole("grid")).toContainElement(
+            document.activeElement as HTMLElement,
+          );
+        }
+      });
+
+      it("rejects activating an opponent's ship and leaves the board unchanged", async () => {
+        const user = userEvent.setup();
+        render(<Harness initial={baseState()} />);
+
+        const redEntry = STARTING_FLEET.find((entry) => entry.side === "red");
+        expect(redEntry).toBeDefined();
+        const redName = squareName(redEntry!.square);
+
+        await activate(user, mode, cell(new RegExp(`^${redName},`)));
+
+        expect(liveRegion()).toHaveTextContent(
+          "That is your opponent's ship. Choose one of your own.",
+        );
+        expect(
+          screen.queryByRole("gridcell", { name: /selected$/ }),
+        ).not.toBeInTheDocument();
+        expect(cell(/^H8,.*green ship/)).toBeInTheDocument();
+      });
+
+      it("rejects activating an own ship that has already moved this turn", async () => {
+        const user = userEvent.setup();
+        const state = { ...baseState(), movedThisPly: ["green-2"] };
+        render(<Harness initial={state} />);
+
+        const movedEntry = STARTING_FLEET.find(
+          (entry) => entry.id === "green-2",
+        );
+        expect(movedEntry).toBeDefined();
+        const movedName = squareName(movedEntry!.square);
+
+        await activate(user, mode, cell(new RegExp(`^${movedName},`)));
+
+        expect(liveRegion()).toHaveTextContent(
+          "That ship has already moved this turn. Choose another.",
+        );
+        expect(
+          screen.queryByRole("gridcell", { name: /selected$/ }),
+        ).not.toBeInTheDocument();
+      });
+
+      it("rejects an out-of-range destination and keeps the selection", async () => {
+        const user = userEvent.setup();
+        render(<Harness initial={baseState()} />);
+
+        await activate(user, mode, cell(/^H8,/));
+        await activate(user, mode, cell("A1"));
+
+        expect(liveRegion()).toHaveTextContent(
+          "A1 is out of range for the selected ship.",
+        );
+        expect(cell(/^H8,.*selected$/)).toBeInTheDocument();
+      });
+    });
+
+    it("cancels the selection on Escape from anywhere in the grid", async () => {
+      const user = userEvent.setup();
+      render(<Harness initial={baseState()} />);
+
+      await activate(user, "keyboard", cell(/^H8,/));
+      await user.keyboard("[Escape]");
+
+      expect(cell(/^H8,/)).not.toHaveAccessibleName(/selected$/);
+      expect(
+        screen.queryByRole("gridcell", { name: /can move here$/ }),
+      ).not.toBeInTheDocument();
+      expect(liveRegion()).toHaveTextContent("Selection cleared.");
+    });
+
+    it("has no static accessibility violations at rest", async () => {
+      const { container } = render(<Harness initial={baseState()} />);
+
+      const results = await axe.run(container, {
+        rules: {
+          "color-contrast": { enabled: false },
+        },
+      });
+
+      expect(results.violations).toEqual([]);
+    });
+
+    it("has no static accessibility violations mid-selection", async () => {
+      const user = userEvent.setup();
+      const { container } = render(<Harness initial={baseState()} />);
+
+      await user.click(cell(/^H8,/));
+
+      const results = await axe.run(container, {
+        rules: {
+          "color-contrast": { enabled: false },
+        },
+      });
+
+      expect(results.violations).toEqual([]);
+    });
   });
 });

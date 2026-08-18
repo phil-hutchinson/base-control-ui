@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { BAYS } from "./bays";
-import { COLUMN_LETTERS, squareAt, squareName } from "./board";
-import { STARTING_FLEET, startingShipAt } from "./fleet";
+import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
+import { STARTING_FLEET, type FleetEntry } from "./fleet";
 import { isShieldCount } from "./shields";
+
+/** A square-name-keyed lookup of `STARTING_FLEET`, built locally for these
+ * tests rather than exported from `fleet.ts` — nothing in production needs
+ * to look up a starting ship by square any more. */
+const STARTING_ENTRY_BY_SQUARE: ReadonlyMap<string, FleetEntry> = new Map(
+  STARTING_FLEET.map((entry) => [squareName(entry.square), entry]),
+);
+function startingShipAt(square: Square): FleetEntry | undefined {
+  return STARTING_ENTRY_BY_SQUARE.get(squareName(square));
+}
 
 describe("starting fleet", () => {
   it("has fourteen ships, seven a side", () => {
@@ -60,11 +70,6 @@ describe("starting fleet", () => {
     }
   });
 
-  it("finds no starting ship on an ordinary square", () => {
-    expect(startingShipAt(squareAt("H", 8))).toBeUndefined();
-    expect(startingShipAt(squareAt("A", 1))).toBeUndefined();
-  });
-
   it("gives every ship a shield count within the 0-4 range", () => {
     for (const entry of STARTING_FLEET) {
       expect(isShieldCount(entry.shields)).toBe(true);
@@ -75,6 +80,41 @@ describe("starting fleet", () => {
     for (const entry of STARTING_FLEET) {
       expect(entry.shields).toBe(0);
     }
+  });
+
+  it("gives every ship a distinct id, seven a side, numbered 1-7 with no gaps", () => {
+    const ids = STARTING_FLEET.map((entry) => entry.id);
+    expect(new Set(ids).size).toBe(14);
+
+    for (const side of ["green", "red"] as const) {
+      const sideNumbers = STARTING_FLEET.filter(
+        (entry) => entry.side === side,
+      ).map((entry) => {
+        const [prefix, numberText] = entry.id.split("-");
+        expect(prefix).toBe(side);
+        return Number(numberText);
+      });
+
+      expect(new Set(sideNumbers)).toEqual(new Set([1, 2, 3, 4, 5, 6, 7]));
+    }
+  });
+
+  it("numbers each side's ids in ascending order within the fleet list", () => {
+    for (const side of ["green", "red"] as const) {
+      const sideNumbers = STARTING_FLEET.filter(
+        (entry) => entry.side === side,
+      ).map((entry) => Number(entry.id.split("-")[1]));
+
+      expect(sideNumbers).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    }
+  });
+
+  it("assigns green-1 to H15 and red-1 to L15", () => {
+    const green1 = startingShipAt(squareAt("H", 15));
+    const red1 = startingShipAt(squareAt("L", 15));
+
+    expect(green1?.id).toBe("green-1");
+    expect(red1?.id).toBe("red-1");
   });
 
   it("matches §4's transcribed clockwise order from H15", () => {

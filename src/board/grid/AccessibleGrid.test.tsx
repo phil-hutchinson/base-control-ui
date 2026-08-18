@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AccessibleGrid, type GridCellDescriptor } from "./AccessibleGrid.tsx";
 
 afterEach(cleanup);
@@ -142,6 +142,209 @@ describe("AccessibleGrid", () => {
       },
     });
 
+    expect(results.violations).toEqual([]);
+  });
+
+  it("calls onActivate once with a cell's position when it is clicked", async () => {
+    const user = userEvent.setup();
+    const onActivate = vi.fn();
+    render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        onActivate={onActivate}
+      />,
+    );
+
+    await user.click(cell("D"));
+
+    expect(onActivate).toHaveBeenCalledTimes(1);
+    expect(onActivate).toHaveBeenCalledWith({ row: 1, column: 0 });
+  });
+
+  it("calls onActivate with the focused position on Enter and on Space", async () => {
+    const user = userEvent.setup();
+    const onActivate = vi.fn();
+    render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        onActivate={onActivate}
+      />,
+    );
+
+    cell("A").focus();
+    await user.keyboard("[Enter]");
+    expect(onActivate).toHaveBeenCalledTimes(1);
+    expect(onActivate).toHaveBeenLastCalledWith({ row: 0, column: 0 });
+
+    await user.keyboard("[ArrowDown]");
+    await user.keyboard("[Space]");
+    expect(onActivate).toHaveBeenCalledTimes(2);
+    expect(onActivate).toHaveBeenLastCalledWith({ row: 1, column: 0 });
+  });
+
+  it("prevents Space's default action so the page does not scroll", () => {
+    render(<AccessibleGrid label="Fixture grid" rows={rows} />);
+
+    cell("A").focus();
+    const event = new KeyboardEvent("keydown", {
+      key: " ",
+      bubbles: true,
+      cancelable: true,
+    });
+    cell("A").dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it("does not call onActivate for arrow keys, and still moves focus", async () => {
+    const user = userEvent.setup();
+    const onActivate = vi.fn();
+    render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        onActivate={onActivate}
+      />,
+    );
+
+    cell("A").focus();
+    await user.keyboard("[ArrowDown]");
+
+    expect(cell("D")).toHaveFocus();
+    expect(onActivate).not.toHaveBeenCalled();
+  });
+
+  it("calls onDismiss on Escape, and no other key does", async () => {
+    const user = userEvent.setup();
+    const onDismiss = vi.fn();
+    render(
+      <AccessibleGrid label="Fixture grid" rows={rows} onDismiss={onDismiss} />,
+    );
+
+    cell("A").focus();
+    await user.keyboard("[ArrowDown]");
+    await user.keyboard("[Enter]");
+    expect(onDismiss).not.toHaveBeenCalled();
+
+    await user.keyboard("[Escape]");
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("behaves exactly as before when neither prop is supplied", async () => {
+    const user = userEvent.setup();
+    render(<AccessibleGrid label="Fixture grid" rows={rows} />);
+
+    cell("A").focus();
+    await expect(user.keyboard("[Enter]")).resolves.not.toThrow();
+    await expect(user.keyboard("[Space]")).resolves.not.toThrow();
+    await expect(user.keyboard("[Escape]")).resolves.not.toThrow();
+    await expect(user.click(cell("D"))).resolves.not.toThrow();
+
+    cell("A").focus();
+    await user.keyboard("[ArrowRight]");
+    expect(cell("C")).toHaveFocus();
+  });
+
+  it("has no static accessibility violations with activation and dismissal wired up", async () => {
+    const { container } = render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        onActivate={() => {}}
+        onDismiss={() => {}}
+      />,
+    );
+
+    const results = await axe.run(container, {
+      rules: {
+        "color-contrast": { enabled: false },
+      },
+    });
+
+    expect(results.violations).toEqual([]);
+  });
+
+  it("renders a supplied announcement in a status live region", () => {
+    render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        announcement="Green ship at A1 selected. 4 moves available."
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Green ship at A1 selected. 4 moves available.",
+    );
+  });
+
+  it("updates the live region's text when the announcement prop changes", () => {
+    const { rerender } = render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        announcement="Selection cleared."
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Selection cleared.");
+
+    rerender(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        announcement="Green's turn, 2 actions left."
+      />,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Green's turn, 2 actions left.",
+    );
+  });
+
+  it("renders an empty live region when no announcement is supplied", () => {
+    render(<AccessibleGrid label="Fixture grid" rows={rows} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
+  it("renders the live region outside the grid element", () => {
+    render(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        announcement="Selection cleared."
+      />,
+    );
+
+    const grid = screen.getByRole("grid", { name: "Fixture grid" });
+    const region = screen.getByRole("status");
+
+    expect(grid).not.toContainElement(region);
+  });
+
+  it("has no static accessibility violations with an announcement present", async () => {
+    const { container, rerender } = render(
+      <AccessibleGrid label="Fixture grid" rows={rows} />,
+    );
+
+    let results = await axe.run(container, {
+      rules: { "color-contrast": { enabled: false } },
+    });
+    expect(results.violations).toEqual([]);
+
+    rerender(
+      <AccessibleGrid
+        label="Fixture grid"
+        rows={rows}
+        announcement="Green ship at A1 selected. 4 moves available."
+      />,
+    );
+
+    results = await axe.run(container, {
+      rules: { "color-contrast": { enabled: false } },
+    });
     expect(results.violations).toEqual([]);
   });
 });

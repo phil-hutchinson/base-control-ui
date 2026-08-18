@@ -1,14 +1,18 @@
 // The two sides and the starting fleet (rules.md §4): seven ships a side,
 // one per bay, alternating clockwise from H15.
 
-import { type Square, squareAt, squareName } from "./board";
+import { type Square, squareAt } from "./board";
 import type { ShieldCount } from "./shields";
 
 /** The two sides (rules.md §4). */
 export type Side = "green" | "red";
 
+/** A ship's stable identity, distinct from the square it currently occupies. */
+export type ShipId = string;
+
 /** One ship's starting square, side and shield count. */
 export interface FleetEntry {
+  readonly id: ShipId;
   readonly square: Square;
   readonly side: Side;
   readonly shields: ShieldCount;
@@ -18,30 +22,22 @@ export interface FleetEntry {
  * The starting fleet, in the clockwise order rules.md §4 states it, starting
  * at H15.
  *
- * Every ship starts on 0 shields.
+ * Every ship starts on 0 shields. Ids are numbered per side in this same
+ * clockwise order.
  */
 export const STARTING_FLEET: readonly FleetEntry[] = [
-  { square: squareAt("H", 15), side: "green", shields: 0 },
-  { square: squareAt("L", 15), side: "red", shields: 0 },
-  { square: squareAt("O", 14), side: "green", shields: 0 },
-  { square: squareAt("O", 10), side: "red", shields: 0 },
-  { square: squareAt("O", 6), side: "green", shields: 0 },
-  { square: squareAt("O", 2), side: "red", shields: 0 },
-  { square: squareAt("L", 1), side: "green", shields: 0 },
-  { square: squareAt("H", 1), side: "red", shields: 0 },
-  { square: squareAt("D", 1), side: "green", shields: 0 },
-  { square: squareAt("A", 2), side: "red", shields: 0 },
-  { square: squareAt("A", 6), side: "green", shields: 0 },
-  { square: squareAt("A", 10), side: "red", shields: 0 },
-  { square: squareAt("A", 14), side: "green", shields: 0 },
-  { square: squareAt("D", 15), side: "red", shields: 0 },
+  { id: "green-1", square: squareAt("H", 15), side: "green", shields: 0 },
+  { id: "red-1", square: squareAt("L", 15), side: "red", shields: 0 },
+  { id: "green-2", square: squareAt("O", 14), side: "green", shields: 0 },
+  { id: "red-2", square: squareAt("O", 10), side: "red", shields: 0 },
+  { id: "green-3", square: squareAt("O", 6), side: "green", shields: 0 },
+  { id: "red-3", square: squareAt("O", 2), side: "red", shields: 0 },
+  { id: "green-4", square: squareAt("L", 1), side: "green", shields: 0 },
+  { id: "red-4", square: squareAt("H", 1), side: "red", shields: 0 },
+  { id: "green-5", square: squareAt("D", 1), side: "green", shields: 0 },
+  { id: "red-5", square: squareAt("A", 2), side: "red", shields: 0 },
+  { id: "green-6", square: squareAt("A", 6), side: "green", shields: 0 },
+  { id: "red-6", square: squareAt("A", 10), side: "red", shields: 0 },
+  { id: "green-7", square: squareAt("A", 14), side: "green", shields: 0 },
+  { id: "red-7", square: squareAt("D", 15), side: "red", shields: 0 },
 ];
-
-const STARTING_ENTRY_BY_SQUARE: ReadonlyMap<string, FleetEntry> = new Map(
-  STARTING_FLEET.map((entry) => [squareName(entry.square), entry]),
-);
-
-/** The ship (if any) that starts the game on the given square. */
-export function startingShipAt(square: Square): FleetEntry | undefined {
-  return STARTING_ENTRY_BY_SQUARE.get(squareName(square));
-}

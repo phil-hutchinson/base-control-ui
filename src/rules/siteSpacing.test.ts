@@ -1,34 +1,11 @@
 // Confirms the property rules.md §3.2 actually requires: no single legal
-// move can touch two sites. The move ranges below are §6's 0-shield ranges,
-// transcribed for this sweep; there is no movement module in src/rules/ yet.
+// move can touch two sites. Enumerates every §6 move at 0 shields, the
+// worst case, since every move available with shields is also available
+// at 0.
 import { describe, expect, it } from "vitest";
-import {
-  ALL_SQUARES,
-  COLUMN_LETTERS,
-  type Square,
-  isOnBoard,
-  squareAt,
-  squareName,
-} from "./board";
+import { ALL_SQUARES, COLUMN_LETTERS, type Square, squareName } from "./board";
+import { reachFrom } from "./movement";
 import { SITES } from "./sites";
-
-/** §6: orthogonal reach at 0 shields is 1, 2 or 3 squares. */
-const ORTHOGONAL_LENGTHS = [1, 2, 3];
-/** §6: diagonal reach at 0 shields is 1 or 2 squares. */
-const DIAGONAL_LENGTHS = [1, 2];
-
-const ORTHOGONAL_DIRECTIONS: ReadonlyArray<readonly [number, number]> = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
-const DIAGONAL_DIRECTIONS: ReadonlyArray<readonly [number, number]> = [
-  [1, 1],
-  [1, -1],
-  [-1, 1],
-  [-1, -1],
-];
 
 const SITE_NAMES: ReadonlySet<string> = new Set(SITES.map(squareName));
 
@@ -41,9 +18,7 @@ interface Move {
 }
 
 /**
- * Every legal 0-shield move from every square on the board, per §6. The
- * 0-shield case is the worst case: every move available with shields is
- * also available at 0. Moves that would leave the board are omitted.
+ * Every legal 0-shield move from every square on the board, per §6.
  */
 function allMoves(): readonly Move[] {
   const moves: Move[] = [];
@@ -51,36 +26,22 @@ function allMoves(): readonly Move[] {
   for (const origin of ALL_SQUARES) {
     const originColumnIndex = COLUMN_LETTERS.indexOf(origin.column);
 
-    const directionSets: ReadonlyArray<
-      readonly [ReadonlyArray<readonly [number, number]>, readonly number[]]
-    > = [
-      [ORTHOGONAL_DIRECTIONS, ORTHOGONAL_LENGTHS],
-      [DIAGONAL_DIRECTIONS, DIAGONAL_LENGTHS],
-    ];
+    for (const entry of reachFrom(origin, 0)) {
+      const length = entry.passedOver.length + 1;
+      const destinationColumnIndex = COLUMN_LETTERS.indexOf(
+        entry.destination.column,
+      );
+      const direction: readonly [number, number] = [
+        (destinationColumnIndex - originColumnIndex) / length,
+        (entry.destination.row - origin.row) / length,
+      ];
 
-    for (const [directions, lengths] of directionSets) {
-      for (const direction of directions) {
-        for (const length of lengths) {
-          const touched: Square[] = [];
-          let offBoard = false;
-
-          for (let step = 1; step <= length; step++) {
-            const columnIndex = originColumnIndex + direction[0] * step;
-            const row = origin.row + direction[1] * step;
-            const column = COLUMN_LETTERS[columnIndex];
-
-            if (column === undefined || !isOnBoard(column, row)) {
-              offBoard = true;
-              break;
-            }
-            touched.push(squareAt(column, row));
-          }
-
-          if (!offBoard) {
-            moves.push({ origin, direction, length, touched });
-          }
-        }
-      }
+      moves.push({
+        origin,
+        direction,
+        length,
+        touched: [...entry.passedOver, entry.destination],
+      });
     }
   }
 
