@@ -1868,7 +1868,23 @@ If a check fails, record what was heard in this step's Notes before any fix.
 
 ## Step 16 — Remove the fixture
 
-Status: pending
+Status: committed
+
+Notes: Deleted `src/game/reviewFixture.ts` and reverted `src/App.tsx`'s lazy
+reducer initialiser to `createSession(startingGameState(freshSeed()))`, drawn
+once as before. A repository-wide search for `reviewFixture` now returns
+nothing outside `doc/`. No test was changed or removed: `src/rules/
+gameState.test.ts` (from Step 3) already asserts the full shipped starting
+position — fourteen ships matching `STARTING_FLEET` (all on 0 shields), five
+active and twelve dormant sites with none charged or depleted, green to move
+on ply 1 with two actions, nothing moved — so no new assertions were added,
+as the task instructed. Deviation from the plan text only: the plan's own
+prose says `RULES_VERSION` should be `"0.4"`, but Step 13a (added after this
+plan section was written) bumped it to `"0.5"`; `rulesVersion.test.ts` checks
+the constant against `rules.md` directly rather than against a hardcoded
+version, so it passes unchanged at 0.5, and no code change was needed. `npm
+run typecheck`, `npm run lint`, `npm test` (348 tests, unchanged count), `npm
+run format:check` and `npm run build` all pass.
 
 Delete `src/game/reviewFixture.ts` and return `src/App.tsx` to building its
 initial session from `startingGameState(...)` with a seed drawn from
