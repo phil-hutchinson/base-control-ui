@@ -1916,7 +1916,11 @@ Verification (automated): `npm test`, `npm run typecheck`, `npm run lint`,
 
 ## Step 17 — Manual gate: the shipped board
 
-Status: pending
+Status: committed
+
+Notes: Taken by the owner with the fixture removed and confirmed working as
+expected: the real starting position is on screen, a game plays from it and a
+site charges when a ship reaches it, and the app opens cleanly on reload.
 
 No code. A short last look at what a player will actually open, with the
 fixture gone.
