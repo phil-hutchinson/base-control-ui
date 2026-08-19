@@ -2087,7 +2087,12 @@ Verification (automated): `npm test`, `npm run typecheck`, `npm run lint`,
 
 ## Step 18 — Manual gate: the shipped board
 
-Status: pending
+Status: committed
+
+Notes: Gate taken by the owner and **passed** — "it's clean". The shipped
+opening position, the lone outline mark on H15 with no receptacle drawn
+anywhere, ordinary play and a mutual return fought from the real starting
+position all behaved as the step describes. No findings.
 
 No code. A short last look at what a player will actually open, with the fixture
 gone.
