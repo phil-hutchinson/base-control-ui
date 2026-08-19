@@ -1709,7 +1709,7 @@ reads properly, is checked by eye in Step 15.
 
 ## Step 13 — A temporary position for the manual gates
 
-Status: implemented
+Status: committed
 
 Notes: Added `src/game/reviewFixture.ts` (ply 9, green to move, two actions,
 nothing moved; K5 charged since ply 5; E5/H8/E11/K11 active, the remaining
