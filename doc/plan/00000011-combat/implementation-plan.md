@@ -2121,7 +2121,23 @@ confirm:
 
 ## Step 19 — README check
 
-Status: pending
+Status: committed
+
+Notes: Updated `README.md` in three places. The status paragraph now opens
+"plays turns, moves ships and fights", says a turn is two actions — a move or
+an attack — and that a ship which has already moved can still attack; it
+describes the fight itself (more shields wins, the beaten ship pushed to a bay
+with none, the winner paying one more shield than the loser carried, the
+winner holding its ground so clearing a node and taking it costs both
+actions), the mutual return, and the return bay travelling around the board
+with the board marking it. It keeps saying nothing is scored yet and the game
+does not end. The old sentence "each player moves two ships a turn" was
+reworded because a turn is no longer two moves. The rules paragraph's claim
+that "one detail is deliberately left open" is gone — Appendix A now records
+nothing outstanding. Confirmed by reading that the README carries no rules
+version number, so the 0.6 bump needs nothing there. `npm run format:check`,
+`npm run typecheck`, `npm run lint`, `npm test` (466) and `npm run build` all
+green; the diff is `README.md` alone.
 
 `README.md` currently tells the player, in as many words, that "there is still
 no fighting", and its rules paragraph says "one detail is deliberately left
