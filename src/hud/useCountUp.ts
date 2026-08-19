@@ -21,8 +21,10 @@ function prefersReducedMotion(): boolean {
  * The number to draw, rolling towards `target` and always settling exactly
  * on it. A fresh render returns `target` unchanged — nothing rolls up from
  * zero — and a `target` that changes mid-roll re-targets from wherever the
- * display currently sits. Under prefers-reduced-motion, jumps straight to
- * `target` and schedules nothing.
+ * display currently sits. A `target` lower than what is currently displayed
+ * snaps to it instantly instead of rolling down; only a rising target
+ * animates. Under prefers-reduced-motion, jumps straight to `target` and
+ * schedules nothing.
  */
 export function useCountUp(target: number): number {
   const [displayed, setDisplayed] = useState(target);
@@ -37,7 +39,7 @@ export function useCountUp(target: number): number {
     if (displayedRef.current === target) {
       return;
     }
-    if (prefersReducedMotion()) {
+    if (prefersReducedMotion() || target < displayedRef.current) {
       displayedRef.current = target;
       setDisplayed(target);
       return;

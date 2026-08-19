@@ -34,7 +34,6 @@ export interface ShieldGainedEffect {
 export interface EnergyCollectedEffect {
   readonly type: "energy-collected";
   readonly side: Side;
-  readonly nodesHeld: number;
   readonly amount: number;
   readonly newTotal: number;
   readonly squares: readonly Square[];
@@ -118,7 +117,6 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     effects.push({
       type: "energy-collected",
       side,
-      nodesHeld: heldSquares.length,
       amount,
       newTotal,
       squares: heldSquares,

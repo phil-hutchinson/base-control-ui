@@ -8,9 +8,7 @@ import type { Side } from "./fleet";
 
 /**
  * §8.4's table: the energy paid for a count of charged nodes held, indexed
- * by that count. Kept as literal data — not a formula — because the table is
- * what the document states; that today's six values happen to be triangular
- * numbers is a fact about this table, not a rule about the next one.
+ * by that count.
  */
 const ENERGY_BY_NODES_HELD: readonly number[] = [0, 1, 3, 6, 10, 15];
 

@@ -23,8 +23,8 @@ interface GameOverPanelProps {
 
 /**
  * The finished game's result, focused when it appears (rules.md §9). Not
- * `aria-modal` and no focus trap: this story implements neither, and the
- * board behind it already refuses every activation once the game is over.
+ * `aria-modal`, and no focus trap: the board behind it refuses every
+ * activation once the game is over.
  */
 export function GameOverPanel({ state, onPlayAgain }: GameOverPanelProps) {
   const headingId = useId();

@@ -585,7 +585,6 @@ describe("applyAttack", () => {
         {
           type: "energy-collected",
           side: "green",
-          nodesHeld: 1,
           amount: 1,
           newTotal: 1,
           squares: [squareFromName("K5")],
@@ -1064,7 +1063,6 @@ describe("applyPassGuard", () => {
         {
           type: "energy-collected",
           side: "green",
-          nodesHeld: 1,
           amount: 1,
           newTotal: 1,
           squares: [squareFromName("K5")],

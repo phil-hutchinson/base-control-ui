@@ -7,11 +7,12 @@
 
 import { describe, expect, it } from "vitest";
 import { COLUMN_LETTERS, type Square, squareName } from "./board";
-import { legalTargets } from "./combat";
+import { legalTargets, sevenOnlyLegalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import { gameResult, isGameOver, pliesForGameLength } from "./gameLength";
 import { type GameState, siteStateAt, startingGameState } from "./gameState";
 import type { EnergyCollectedEffect } from "./endOfTurn";
+import { sixOnlyLegalDestinations } from "./moveLegality";
 import { legalDestinations } from "./movement";
 import {
   type AttackEffect,
@@ -64,10 +65,9 @@ function distanceToNearestChargedOrActive(
 }
 
 /**
- * The deterministic greedy policy described in the implementation plan
- * (decision 11): head for a charged node first, otherwise close the
- * distance to the nearest charged or active site, otherwise attack,
- * otherwise pass. Evaluated fresh for every action.
+ * A deterministic greedy policy: head for a charged node first, otherwise
+ * close the distance to the nearest charged or active site, otherwise
+ * attack, otherwise pass. Evaluated fresh for every action.
  */
 function chooseAction(state: GameState): Action | undefined {
   const ships = state.ships;
@@ -195,20 +195,56 @@ function playFullGame(seed: number, lengthInRounds: number): PlayedGame {
   return { finalState: state, greenCollected, redCollected };
 }
 
-function assertRefusesEverything(state: GameState): void {
-  const ship = state.ships.find((candidate) => candidate.side === "green");
-  const enemyShip = state.ships.find((candidate) => candidate.side === "red");
-  if (ship === undefined || enemyShip === undefined) {
-    throw new Error("expected at least one ship per side to remain");
+/**
+ * A move that the six-only legality layer (game-over-unaware by design)
+ * still calls legal on `state` — i.e. one that would have been legal a
+ * moment earlier, before the game ended.
+ */
+function findMoveLegalAMomentEarlier(
+  state: GameState,
+): { shipId: ShipId; destination: Square } | undefined {
+  for (const ship of state.ships) {
+    const [destination] = sixOnlyLegalDestinations(state, ship.id);
+    if (destination !== undefined) {
+      return { shipId: ship.id, destination };
+    }
   }
+  return undefined;
+}
 
-  const moveAttempt = applyMove(state, ship.id, ship.square);
+/**
+ * An attack that the seven-only legality layer (game-over-unaware by
+ * design) still calls legal on `state` — i.e. one that would have been
+ * legal a moment earlier, before the game ended.
+ */
+function findAttackLegalAMomentEarlier(
+  state: GameState,
+): { shipId: ShipId; target: Square } | undefined {
+  for (const ship of state.ships) {
+    const [target] = sevenOnlyLegalTargets(state, ship.id);
+    if (target !== undefined) {
+      return { shipId: ship.id, target };
+    }
+  }
+  return undefined;
+}
+
+function assertRefusesEverything(state: GameState): void {
+  const move = findMoveLegalAMomentEarlier(state);
+  if (move === undefined) {
+    throw new Error("expected at least one move legal a moment earlier");
+  }
+  const moveAttempt = applyMove(state, move.shipId, move.destination);
   expect(moveAttempt.outcome).toBe("refused");
   if (moveAttempt.outcome === "refused") {
     expect(moveAttempt.reason).toBe("game-over");
   }
 
-  const attackAttempt = applyAttack(state, ship.id, enemyShip.square);
+  const attack = findAttackLegalAMomentEarlier(state);
+  if (attack === undefined) {
+    throw new Error("expected at least one attack legal a moment earlier");
+  }
+  const attackAttempt = applyAttack(state, attack.shipId, attack.target);
   expect(attackAttempt.outcome).toBe("refused");
   if (attackAttempt.outcome === "refused") {
     expect(attackAttempt.reason).toBe("game-over");

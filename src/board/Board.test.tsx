@@ -1339,7 +1339,6 @@ describe("energy overlay composition", () => {
             {
               type: "energy-collected",
               side: "green",
-              nodesHeld: 1,
               amount: 1,
               newTotal: 1,
               squares: [squareAt("H", 8)],

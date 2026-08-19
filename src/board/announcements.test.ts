@@ -723,7 +723,6 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
             {
               type: "energy-collected",
               side: "green",
-              nodesHeld: 1,
               amount: 1,
               newTotal: 7,
               squares: [squareAt("H", 8)],
@@ -754,7 +753,6 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
             {
               type: "energy-collected",
               side: "green",
-              nodesHeld: 3,
               amount: 6,
               newTotal: 24,
               squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
@@ -809,7 +807,6 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
             {
               type: "energy-collected",
               side: "green",
-              nodesHeld: 1,
               amount: 1,
               newTotal: 5,
               squares: [squareAt("H", 8)],
@@ -829,7 +826,6 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
     const collected: EnergyCollectedEffect = {
       type: "energy-collected",
       side: "red",
-      nodesHeld: 2,
       amount: 3,
       newTotal: 3,
       squares: [squareAt("E", 5), squareAt("K", 5)],

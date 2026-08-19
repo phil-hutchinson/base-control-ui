@@ -416,7 +416,11 @@ export function resultSentence(result: GameResult): string {
     return `The game is a draw, ${result.energy.green} energy each.`;
   }
 
-  const winner = result.winner as Side;
+  if (result.winner === undefined) {
+    throw new RangeError("a decided game always carries a winner: rules.md §9");
+  }
+
+  const winner = result.winner;
   const loser: Side = winner === "green" ? "red" : "green";
   return `${capitalize(winner)} wins, ${result.energy[winner]} energy to ${result.energy[loser]}.`;
 }

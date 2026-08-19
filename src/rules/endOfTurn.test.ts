@@ -115,7 +115,6 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
       {
         type: "energy-collected",
         side: "green",
-        nodesHeld: 3,
         amount: 6,
         newTotal: 6,
         squares: [
@@ -191,7 +190,6 @@ describe("runEndOfTurn — the order of steps, and §8.3's second property", () 
       {
         type: "energy-collected",
         side: "green",
-        nodesHeld: 1,
         amount: 1,
         newTotal: 1,
         squares: [squareFromName("H8")],
@@ -318,7 +316,6 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.effects).toContainEqual({
       type: "energy-collected",
       side: "green",
-      nodesHeld: 1,
       amount: 1,
       newTotal: 1,
       squares: [squareFromName("H8")],
@@ -347,7 +344,6 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.effects).toContainEqual({
       type: "energy-collected",
       side: "green",
-      nodesHeld: 3,
       amount: 6,
       newTotal: 6,
       squares: [
@@ -377,7 +373,6 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.effects).toContainEqual({
       type: "energy-collected",
       side: "green",
-      nodesHeld: 1,
       amount: 1,
       newTotal: 1,
       squares: [squareFromName("H8")],
@@ -411,7 +406,6 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.effects).toContainEqual({
       type: "energy-collected",
       side: "green",
-      nodesHeld: 1,
       amount: 1,
       newTotal: 1,
       squares: [squareFromName("H8")],
@@ -563,7 +557,6 @@ describe("runEndOfTurn — a passed ply still collects (§8.7 runs in full for a
         {
           type: "energy-collected",
           side: "green",
-          nodesHeld: 1,
           amount: 1,
           newTotal: 1,
           squares: [squareFromName("K5")],

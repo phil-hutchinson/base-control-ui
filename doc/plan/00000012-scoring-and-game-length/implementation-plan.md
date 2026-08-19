@@ -201,6 +201,15 @@ them and positions the `+N` at their centroid), and the HUD needs the count.
 One function returning the squares serves both — the count is its length — so
 there is no second walk of the state that could disagree with the first.
 
+**Story deviation, from peer review.** `EnergyCollectedEffect` originally
+carried a `nodesHeld` field alongside `squares`, duplicating `squares.length`.
+Nothing derived is stored elsewhere in this codebase (`gameState.ts` keeps no
+occupancy for the same reason), and the story's own principle — "a second copy
+of a fact is a second thing that can be wrong" — points the same way, so the
+field was dropped; every caller reads `squares.length` instead. `story.md`
+names the field explicitly ("how many nodes were held"), so this deliberately
+deviates from that wording while keeping the fact itself available.
+
 ### 4. Energy totals live in `GameState`, not in the session
 
 A running total is a rule fact under §8.4: a future engine will read it, and a
@@ -502,12 +511,6 @@ with `freshSeed()` and dispatches a `new-game` intent carrying it **and the
 finished game's length**; the reducer receives both rather than reaching for
 either. `freshSeed` lives in
 `src/game/` and outside `src/rules/`, and this story does not disturb that.
-
-The intent carries **no length** today. Every game is §9's hundred rounds, so
-an optional length field would be untested dead code that a peer review would
-rightly flag. When choosing a length ships, the intent gains the field and play
-again passes the finished game's own length — that is the one line this
-decision defers, and it is recorded here so the future story knows to add it.
 
 ### 19. No web font
 
@@ -1180,6 +1183,12 @@ over:
   short game and presses play again gets another short game, not a
   hundred-round one they cannot finish.
 
+  **Story deviation.** `story.md`'s Out of scope section says play again
+  starts a game at "§9's default length"; this forwards the finished game's
+  own `lengthInRounds` instead. Behaviour is identical today, since every
+  shipped game is the default, but the mechanism differs — recorded here so
+  the two documents do not read as disagreeing by accident.
+
 Depends on: Steps 5 and 7 (the predicate and the reason).
 
 Verification (automated): `npm test` with new cases in
@@ -1382,7 +1391,12 @@ state is not yet over. Record in the Notes anything that had to move.
 Status: committed
 
 Notes: Moved `TurnIndicator.tsx`/`.css`/`.test.tsx` into `src/hud/` unchanged
-in behaviour, repointing its `announcements` import to `../board/`. Added
+in behaviour, repointing its `announcements` import to `../board/`. The only
+styling change made to sit it in the strip was dropping its outer margin
+(`margin: 0 0 1rem` → `margin: 0`); it keeps the system font and
+`--color-text-bright` rather than gaining the arcade face the rest of the
+strip uses. The owner accepted it unrestyled at the Step 13 and 18b manual
+gates. Added
 `src/hud/ScoreDisplay.tsx` (side name, zero-padded four-digit total, a fixed
 five-pip row from `chargedNodesHeldBy`, and Step 10's `scoreSentence` as a
 visually hidden sentence — all decoration `aria-hidden`), `RoundCounter.tsx`
@@ -1916,6 +1930,14 @@ and every wording module stay untouched.
 prints both final totals in large arcade digits directly above it, so the
 sentence ("Red wins, 6 energy to 3.") reads as a restatement. Remove it from
 the panel's visible layout.
+
+**Story deviation.** Story item 9 asks the panel to show "both final scores,
+and the outcome — a side wins, or a draw" visibly. This step, at the owner's
+gate request, keeps both scores visible but makes the outcome sentence
+`visually-hidden` instead — a sighted player sees the two numbers and infers
+the winner, and the outcome still reaches a screen reader as words. Recorded
+here so `story.md` and the shipped panel are not read as disagreeing by
+accident.
 
 **It does not leave the panel's accessible text.** The panel's score block is
 `aria-hidden` decoration (Step 16), so the sentence is currently the only thing

@@ -36,7 +36,6 @@ function sessionWithEvent(event: SessionEvent | undefined): Session {
 const THREE_NODE_COLLECTION: EnergyCollectedEffect = {
   type: "energy-collected",
   side: "green",
-  nodesHeld: 3,
   amount: 6,
   newTotal: 24,
   squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
@@ -113,7 +112,6 @@ describe("EnergyOverlay", () => {
     const passCollection: EnergyCollectedEffect = {
       type: "energy-collected",
       side: "red",
-      nodesHeld: 1,
       amount: 1,
       newTotal: 4,
       squares: [squareAt("K", 5)],
@@ -161,7 +159,6 @@ describe("EnergyOverlay", () => {
         {
           type: "energy-collected",
           side: "red",
-          nodesHeld: 2,
           amount: 3,
           newTotal: 3,
           squares: [squareAt("E", 5), squareAt("K", 5)],
