@@ -182,7 +182,7 @@ function cleared(session: Session): Session {
  */
 function isSelectable(state: GameState, shipId: ShipId): boolean {
   return (
-    shipHasLegalAction(state, shipId) || !state.movedThisPly.includes(shipId)
+    shipHasLegalAction(state, shipId) || !state.actedThisPly.includes(shipId)
   );
 }
 
@@ -197,7 +197,7 @@ function activateWithNoSelection(session: Session, square: Square): Session {
     return rejected(session, "not-your-ship", square);
   }
   if (!isSelectable(session.state, ship.id)) {
-    return rejected(session, "ship-already-moved", square);
+    return rejected(session, "ship-already-acted", square);
   }
   return selected(session, ship.id, ship.side, square);
 }
@@ -223,7 +223,7 @@ function activateWithSelection(
 
   if (other !== undefined && other.side === selectedShip.side) {
     if (!isSelectable(session.state, other.id)) {
-      return rejected(session, "ship-already-moved", square);
+      return rejected(session, "ship-already-acted", square);
     }
     return selected(session, other.id, other.side, square);
   }

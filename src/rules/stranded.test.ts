@@ -32,7 +32,7 @@ function siteStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
-  movedThisPly?: readonly ShipId[];
+  actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
   actionsRemaining?: number;
 }): GameState {
@@ -41,7 +41,7 @@ function buildState(config: {
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? 2,
-    movedThisPly: config.movedThisPly ?? [],
+    actedThisPly: config.actedThisPly ?? [],
     plyNumber: 1,
     randomSeed: 1,
     returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
@@ -118,11 +118,11 @@ describe("strandedShipIds", () => {
     expect(strandedObligationBinds(state)).toBe(false);
   });
 
-  it("drops a ship that has already moved this ply", () => {
+  it("drops a ship that has already acted this ply", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
 
@@ -164,7 +164,7 @@ describe("strandedObligationBinds", () => {
     const afterMoving = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
     expect(strandedObligationBinds(afterMoving)).toBe(false);
@@ -185,7 +185,7 @@ describe("strandedObligationBinds", () => {
 
     const afterOne = {
       ...state,
-      movedThisPly: ["green-1"] as const,
+      actedThisPly: ["green-1"] as const,
       actionsRemaining: 1,
     };
     expect(strandedShipIds(afterOne)).toEqual(["green-2"]);
@@ -238,7 +238,7 @@ describe("moveRefusalReason with the §8.5 obligation", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
 
@@ -255,7 +255,7 @@ describe("moveRefusalReason with the §8.5 obligation", () => {
         ship("green-3", "green", "D1"),
       ],
       siteStates: { E7: "dormant" },
-      movedThisPly: ["green-2"],
+      actedThisPly: ["green-2"],
       actionsRemaining: 1,
     });
 
@@ -297,7 +297,7 @@ describe("moveRefusalReason with the §8.5 obligation", () => {
         ship("green-3", "green", "D1"),
       ],
       siteStates: { E7: "dormant" },
-      movedThisPly: ["green-2"],
+      actedThisPly: ["green-2"],
       actionsRemaining: 1,
     });
 
@@ -330,7 +330,7 @@ describe("sideToMoveHasLegalMove alongside the obligation", () => {
         ship("green-3", "green", "D1"),
       ],
       siteStates: { E7: "dormant" },
-      movedThisPly: ["green-2"],
+      actedThisPly: ["green-2"],
       actionsRemaining: 1,
     });
 

@@ -31,7 +31,7 @@ describe("startingGameState", () => {
 
     expect(state.sideToMove).toBe("green");
     expect(state.actionsRemaining).toBe(2);
-    expect(state.movedThisPly).toEqual([]);
+    expect(state.actedThisPly).toEqual([]);
     expect(state.plyNumber).toBe(1);
     expect(state.randomSeed).toBe(SEED);
   });
@@ -127,7 +127,7 @@ describe("startingGameState", () => {
     expect(first).toEqual(second);
     expect(first.ships).not.toBe(second.ships);
     expect(first.siteStates).not.toBe(second.siteStates);
-    expect(first.movedThisPly).not.toBe(second.movedThisPly);
+    expect(first.actedThisPly).not.toBe(second.actedThisPly);
   });
 
   it("starts both sides at 0 energy", () => {

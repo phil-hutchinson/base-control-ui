@@ -383,7 +383,7 @@ describe("Board", () => {
           ? { ...ship, square: squareAt("H", 8), shields: 2 }
           : ship,
       ),
-      movedThisPly: ["green-2"],
+      actedThisPly: ["green-2"],
     };
     const session: Session = {
       state,
@@ -416,24 +416,24 @@ describe("Board", () => {
       ).toHaveLength(destinations.length);
     });
 
-    it("marks a ship that has already moved this ply — here, still in a bay, so also carrying no-action", () => {
+    it("marks a ship that has already acted this ply — here, still in a bay, so also carrying no-action", () => {
       render(<Board session={session} onIntent={noop} />);
 
       const movedShip = state.ships.find((ship) => ship.id === "green-2");
       expect(movedShip).toBeDefined();
       // Still in its bay, so §3.1 forbids it any attack, and it has already
-      // used its one move: "already moved" and "no-action" both apply, in
+      // used its one move: "already acted" and "no-action" both apply, in
       // that order.
       expect(
         screen.getByRole("gridcell", {
           name: new RegExp(
-            `^${squareName(movedShip!.square)},.*already moved this turn, no action available this turn$`,
+            `^${squareName(movedShip!.square)},.*already acted this turn, no action available this turn$`,
           ),
         }),
       ).toBeInTheDocument();
       expect(
         screen.getAllByRole("gridcell", {
-          name: /already moved this turn/,
+          name: /already acted this turn/,
         }),
       ).toHaveLength(1);
     });
@@ -443,7 +443,7 @@ describe("Board", () => {
 
       expect(
         screen.queryByRole("gridcell", {
-          name: /, selected$|can move here$|already moved this turn$|can attack here/,
+          name: /, selected$|can move here$|already acted this turn$|can attack here/,
         }),
       ).not.toBeInTheDocument();
     });
@@ -467,7 +467,7 @@ describe("Board", () => {
     function attackState(overrides?: {
       attackerShields?: ShieldCount;
       defenderShields?: ShieldCount;
-      movedThisPly?: string[];
+      actedThisPly?: string[];
     }): GameState {
       return {
         ships: [
@@ -486,8 +486,8 @@ describe("Board", () => {
         ],
         siteStates: {},
         sideToMove: "green",
-        actionsRemaining: overrides?.movedThisPly ? 1 : 2,
-        movedThisPly: overrides?.movedThisPly ?? [],
+        actionsRemaining: overrides?.actedThisPly ? 1 : 2,
+        actedThisPly: overrides?.actedThisPly ?? [],
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
@@ -529,8 +529,8 @@ describe("Board", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("shows only targets, no destinations, for a ship that has already moved", () => {
-      const state = attackState({ movedThisPly: ["green-1"] });
+    it("shows only targets, no destinations, for a ship that has already acted", () => {
+      const state = attackState({ actedThisPly: ["green-1"] });
       const session: Session = {
         state,
         selectedShipId: "green-1",
@@ -624,7 +624,7 @@ describe("Board", () => {
     // starting turn) while others empty out — the state the return cues
     // actually have something to say about, since the true starting
     // position (every ship still in its own bay) has no empty bay at all.
-    // The vacated ships are recorded as already moved, so a dormant square
+    // The vacated ships are recorded as already acted, so a dormant square
     // they land on does not accidentally strand them under §8.5 and block
     // every other ship's moves, which would otherwise show up as a spurious
     // "no action available" on unrelated squares this describe block never
@@ -643,7 +643,7 @@ describe("Board", () => {
             ? ship
             : { ...ship, square: VACATED_DESTINATIONS[index] };
         }),
-        movedThisPly: [...shipIds],
+        actedThisPly: [...shipIds],
       };
     }
 
@@ -813,7 +813,7 @@ describe("Board", () => {
         },
         sideToMove: "green",
         actionsRemaining,
-        movedThisPly: [],
+        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
@@ -867,7 +867,7 @@ describe("Board", () => {
     it("dampens the rest of the moving side once the obligation binds, but not the owed ship", () => {
       const state: GameState = {
         ...strandedState(1),
-        movedThisPly: ["green-2"],
+        actedThisPly: ["green-2"],
       };
       const session: Session = {
         state,
@@ -884,15 +884,15 @@ describe("Board", () => {
       // Green-2 already spent this ply's first action moving elsewhere, has
       // no enemy adjacent to attack, and the obligation would refuse the
       // attack anyway (decision 6 of the plan) — so it reads as both
-      // "already moved" and "no action available", dampened.
+      // "already acted" and "no action available", dampened.
       expect(
         screen.getByRole("gridcell", {
-          name: "A1, green ship, 0 shields, already moved this turn, no action available this turn",
+          name: "A1, green ship, 0 shields, already acted this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
       // Green-3 has not moved and would have a normal move under §6 alone,
       // but the obligation now binds every action, so it reads as having no
-      // action available — not as "already moved".
+      // action available — not as "already acted".
       expect(
         screen.getByRole("gridcell", {
           name: "B2, green ship, 0 shields, no action available this turn",
@@ -957,7 +957,7 @@ describe("Board", () => {
         siteStates: {},
         sideToMove: "green",
         actionsRemaining: 2,
-        movedThisPly: [],
+        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
@@ -979,7 +979,7 @@ describe("Board", () => {
     });
 
     it("reads a moved ship with a legal attack target as moved and nothing else — no condition", () => {
-      // green-1 has already moved this ply, but red-1 sits adjacent to it,
+      // green-1 has already acted this ply, but red-1 sits adjacent to it,
       // so it still has a legal attack under §7 and carries no condition.
       const state: GameState = {
         ships: [
@@ -994,7 +994,7 @@ describe("Board", () => {
         siteStates: {},
         sideToMove: "green",
         actionsRemaining: 1,
-        movedThisPly: ["green-1"],
+        actedThisPly: ["green-1"],
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
@@ -1010,13 +1010,13 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H8, green ship, 2 shields, already moved this turn",
+          name: "H8, green ship, 2 shields, already acted this turn",
         }),
       ).toBeInTheDocument();
     });
 
     it("reads a moved ship with no legal move and no legal target as both moved and out of actions", () => {
-      // green-1 has already moved this ply and has no adjacent enemy, so it
+      // green-1 has already acted this ply and has no adjacent enemy, so it
       // has no legal move (its one move is spent) and no legal target.
       const state: GameState = {
         ships: [
@@ -1030,7 +1030,7 @@ describe("Board", () => {
         siteStates: {},
         sideToMove: "green",
         actionsRemaining: 1,
-        movedThisPly: ["green-1"],
+        actedThisPly: ["green-1"],
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
@@ -1046,7 +1046,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H8, green ship, 2 shields, already moved this turn, no action available this turn",
+          name: "H8, green ship, 2 shields, already acted this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
     });
@@ -1212,9 +1212,9 @@ describe("Board", () => {
         expect(cell(/^H8,.*green ship/)).toBeInTheDocument();
       });
 
-      it("rejects activating an own ship that has already moved this turn", async () => {
+      it("rejects activating an own ship that has already acted this turn", async () => {
         const user = userEvent.setup();
-        const state = { ...baseState(), movedThisPly: ["green-2"] };
+        const state = { ...baseState(), actedThisPly: ["green-2"] };
         render(<Harness initial={state} />);
 
         const movedEntry = STARTING_FLEET.find(
@@ -1226,7 +1226,7 @@ describe("Board", () => {
         await activate(user, mode, cell(new RegExp(`^${movedName},`)));
 
         expect(liveRegion()).toHaveTextContent(
-          "That ship has already moved this turn. Choose another.",
+          "That ship has already acted this turn. Choose another.",
         );
         expect(
           screen.queryByRole("gridcell", { name: /selected$/ }),

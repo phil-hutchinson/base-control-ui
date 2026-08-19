@@ -39,7 +39,7 @@ function siteStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: Side;
-  movedThisPly?: readonly ShipId[];
+  actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
   plyNumber?: number;
   lengthInRounds?: number;
@@ -49,7 +49,7 @@ function buildState(config: {
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: ACTIONS_PER_PLY,
-    movedThisPly: config.movedThisPly ?? [],
+    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
@@ -105,10 +105,10 @@ describe("sessionReducer — nothing selected", () => {
     });
   });
 
-  it("rejects an own ship that has already moved this ply as ship-already-moved", () => {
+  it("rejects an own ship that has already acted this ply as ship-already-acted", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
     });
     const result = activate(sessionFor(state), "H8");
 
@@ -116,7 +116,7 @@ describe("sessionReducer — nothing selected", () => {
     expect(result.state).toBe(state);
     expect(result.lastEvent).toEqual({
       type: "rejected",
-      reason: "ship-already-moved",
+      reason: "ship-already-acted",
       square: squareFromName("H8"),
     });
   });
@@ -249,7 +249,7 @@ describe("sessionReducer — a ship is selected", () => {
           ship("green-2", "green", "K5"),
           ship("red-1", "red", "K6"),
         ],
-        movedThisPly: ["green-2"],
+        actedThisPly: ["green-2"],
       });
       const selected = activate(sessionFor(state), "H8");
 
@@ -267,14 +267,14 @@ describe("sessionReducer — a ship is selected", () => {
       });
     });
 
-    it("rejects a friendly ship that has moved and has no target as ship-already-moved", () => {
+    it("rejects a friendly ship that has acted and has no target as ship-already-acted", () => {
       const state = buildState({
         ships: [
           ship("green-1", "green", "H8"),
           ship("green-2", "green", "K5"),
           ship("red-1", "red", "A1"),
         ],
-        movedThisPly: ["green-2"],
+        actedThisPly: ["green-2"],
       });
       const selected = activate(sessionFor(state), "H8");
 
@@ -284,7 +284,7 @@ describe("sessionReducer — a ship is selected", () => {
       expect(result.state).toBe(state);
       expect(result.lastEvent).toEqual({
         type: "rejected",
-        reason: "ship-already-moved",
+        reason: "ship-already-acted",
         square: squareFromName("K5"),
       });
     });
@@ -412,7 +412,7 @@ describe("sessionReducer — a full ply", () => {
 
     expect(session.state.sideToMove).toBe("red");
     expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(session.state.movedThisPly).toEqual([]);
+    expect(session.state.actedThisPly).toEqual([]);
     expect(session.lastEvent).toMatchObject({
       type: "moved",
       shipId: "green-2",

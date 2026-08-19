@@ -44,7 +44,7 @@ function siteStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
-  movedThisPly?: readonly ShipId[];
+  actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
   actionsRemaining?: number;
   returnPositionIndex?: number;
@@ -56,7 +56,7 @@ function buildState(config: {
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? 2,
-    movedThisPly: config.movedThisPly ?? [],
+    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     returnPositionIndex:
@@ -191,10 +191,10 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
     ).toBe("not-your-ship");
   });
 
-  it("a ship that has already moved this ply still has its targets", () => {
+  it("a ship that has already acted this ply still has its targets", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 0)],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
 
@@ -237,7 +237,7 @@ describe("attackRefusalReason / legalTargets with the §8.5 obligation", () => {
         ship("red-1", "red", "E9", 0),
         ship("red-2", "red", "B1", 0),
       ],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
 

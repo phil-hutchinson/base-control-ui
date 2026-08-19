@@ -90,12 +90,12 @@ const RETURN_CUE_WORDING: Record<ReturnCue, string> = {
     "return position 1, next bay for a beaten ship",
 };
 
-/** How having moved this ply reads in a square's accessible name. */
-const ALREADY_MOVED_WORDING = "already moved this turn";
+/** How having acted this ply reads in a square's accessible name. */
+const ALREADY_ACTED_WORDING = "already acted this turn";
 
 /**
  * A ship's own condition, independent of the current selection and of
- * whether it has moved: it has no legal action available at all — no legal
+ * whether it has acted: it has no legal action available at all — no legal
  * move and no legal attack target — or it owes its owner an action under
  * §8.5.
  */
@@ -115,19 +115,19 @@ export interface SquareLabelDescriptor {
   /** A return-position cue (rules.md §7.1), emitted right after the bay/site segment; only bays ever carry one. */
   readonly returnCue?: ReturnCue;
   readonly occupant?: SquareOccupant;
-  readonly hasMoved?: boolean;
+  readonly hasActed?: boolean;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
 }
 
-/** Builds a square's accessible name from its name, bay/site status, return cues, occupant, having moved, condition and mark. */
+/** Builds a square's accessible name from its name, bay/site status, return cues, occupant, having acted, condition and mark. */
 export function squareLabel({
   square,
   isBay,
   siteState,
   returnCue,
   occupant,
-  hasMoved,
+  hasActed,
   condition,
   mark,
 }: SquareLabelDescriptor): string {
@@ -145,8 +145,8 @@ export function squareLabel({
     const unit = occupant.shields === 1 ? "shield" : "shields";
     segments.push(`${occupant.shields} ${unit}`);
   }
-  if (hasMoved) {
-    segments.push(ALREADY_MOVED_WORDING);
+  if (hasActed) {
+    segments.push(ALREADY_ACTED_WORDING);
   }
   if (condition) {
     segments.push(CONDITION_WORDING[condition]);

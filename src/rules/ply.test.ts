@@ -39,7 +39,7 @@ function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
   actionsRemaining?: number;
-  movedThisPly?: readonly ShipId[];
+  actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<
     Record<string, SiteState | readonly [SiteState, number]>
   >;
@@ -53,7 +53,7 @@ function buildState(config: {
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? ACTIONS_PER_PLY,
-    movedThisPly: config.movedThisPly ?? [],
+    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     returnPositionIndex:
@@ -319,7 +319,7 @@ describe("applyMove", () => {
     }
     expect(first.state.sideToMove).toBe("green");
     expect(first.state.actionsRemaining).toBe(1);
-    expect(first.state.movedThisPly).toEqual(["green-1"]);
+    expect(first.state.actedThisPly).toEqual(["green-1"]);
     expect(first.effects).toEqual([]);
 
     const second = applyMove(first.state, "green-2", squareFromName("B1"));
@@ -329,7 +329,7 @@ describe("applyMove", () => {
     }
     expect(second.state.sideToMove).toBe("red");
     expect(second.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(second.state.movedThisPly).toEqual([]);
+    expect(second.state.actedThisPly).toEqual([]);
     expect(second.state.plyNumber).toBe(2);
     expect(second.effects).toEqual([
       { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
@@ -363,17 +363,17 @@ describe("applyMove", () => {
     );
   });
 
-  it("refuses a second move of a ship that has already moved this ply, but allows it again next ply", () => {
+  it("refuses a second move of a ship that has already acted this ply, but allows it again next ply", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "A1")],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
 
     const refused = applyMove(state, "green-1", squareFromName("H9"));
     expect(refused).toEqual({
       outcome: "refused",
-      reason: "ship-already-moved",
+      reason: "ship-already-acted",
     });
 
     // Green's next ply: two actions available again, nothing moved yet.
@@ -785,7 +785,7 @@ describe("applyAttack", () => {
     const attacker = second.state.ships.find((s) => s.id === "green-1");
     expect(attacker?.square).toEqual(squareFromName("H8"));
     expect(attacker?.shields).toBe(1);
-    expect(second.state.movedThisPly).toEqual([]);
+    expect(second.state.actedThisPly).toEqual([]);
   });
 
   it("lets a ship attack, then move, as its ply's two actions", () => {
@@ -797,7 +797,7 @@ describe("applyAttack", () => {
     if (first.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
-    expect(first.state.movedThisPly).toEqual([]);
+    expect(first.state.actedThisPly).toEqual([]);
 
     const second = applyMove(first.state, "green-1", squareFromName("H9"));
     expect(second.outcome).toBe("applied");
@@ -818,7 +818,7 @@ describe("applyAttack", () => {
     if (first.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(first.state.movedThisPly).toEqual(["green-1"]);
+    expect(first.state.actedThisPly).toEqual(["green-1"]);
 
     const second = applyAttack(first.state, "green-1", squareFromName("H10"));
     expect(second.outcome).toBe("applied");
@@ -847,7 +847,7 @@ describe("applyAttack", () => {
     expect(second.outcome).toBe("applied");
   });
 
-  it("still refuses a second move of a ship that has already moved this ply, even though it can still attack", () => {
+  it("still refuses a second move of a ship that has already acted this ply, even though it can still attack", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H10")],
     });
@@ -860,7 +860,7 @@ describe("applyAttack", () => {
     const secondMove = applyMove(first.state, "green-1", squareFromName("G9"));
     expect(secondMove).toEqual({
       outcome: "refused",
-      reason: "ship-already-moved",
+      reason: "ship-already-acted",
     });
 
     const secondAttack = applyAttack(
@@ -903,7 +903,7 @@ describe("applyAttack", () => {
     if (first.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
-    expect(first.state.movedThisPly).toEqual([]);
+    expect(first.state.actedThisPly).toEqual([]);
     const returnedShip = first.state.ships.find((s) => s.id === "green-1");
     expect(returnedShip?.square).toEqual(squareFromName("H15"));
 
@@ -969,7 +969,7 @@ describe("applyPassGuard", () => {
 
     expect(result.state.sideToMove).toBe("red");
     expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(result.state.movedThisPly).toEqual([]);
+    expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
     expect(result.effect).toEqual({
       type: "ply-passed",
@@ -1036,13 +1036,13 @@ describe("applyPassGuard", () => {
 
   it("runs the end-of-turn sequence for the passing side, so a ship that has moved and has no attack left still gains a shield", () => {
     // green-1 sits on K5, a charged site, having already spent this ply's
-    // first action on a move: it has no move left (already moved) and no
+    // first action on a move: it has no move left (already acted) and no
     // enemy stands anywhere near it to attack, so it passes with its second
     // action still nominally available.
     const state = buildState({
       ships: [ship("green-1", "green", "K5", 3)],
       siteStates: { K5: "charged" },
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
 

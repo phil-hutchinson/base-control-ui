@@ -27,7 +27,7 @@ export type { MoveRefusalReason, ReachEntry };
  * structured reason, or `undefined` when the move is legal. Reasons are
  * checked in order from the most fundamental (whether the game is even still
  * being played) to the most specific (the destination square itself):
- * whether the game is over, whose ship it is, whether it has already moved,
+ * whether the game is over, whose ship it is, whether it has already acted,
  * then §8.5's stranded-ship obligation — checked before anything about the
  * destination, because the objection is to the ship, not the square — and
  * finally §6's reach, occupancy and site-state checks.
@@ -51,8 +51,8 @@ export function moveRefusalReason(
   if (ship.side !== state.sideToMove) {
     return "not-your-ship";
   }
-  if (state.movedThisPly.includes(shipId)) {
-    return "ship-already-moved";
+  if (state.actedThisPly.includes(shipId)) {
+    return "ship-already-acted";
   }
 
   const owed = strandedShipIds(state);
@@ -68,7 +68,7 @@ export function moveRefusalReason(
  * with §8.5's obligation applied at the ship level and the rest of the
  * filtering — occupancy and site state — delegated to
  * `sixOnlyLegalDestinations`. Empty once the game is over, when the ship does
- * not belong to the side to move, has already moved this ply, or is held
+ * not belong to the side to move, has already acted this ply, or is held
  * back by the obligation.
  */
 export function legalDestinations(
@@ -80,7 +80,7 @@ export function legalDestinations(
   }
 
   const ship = findShip(state, shipId);
-  if (ship.side !== state.sideToMove || state.movedThisPly.includes(shipId)) {
+  if (ship.side !== state.sideToMove || state.actedThisPly.includes(shipId)) {
     return [];
   }
 
@@ -93,13 +93,13 @@ export function legalDestinations(
 }
 
 /**
- * The ships of the side to move that have not yet moved this ply, and so are
+ * The ships of the side to move that have not yet acted this ply, and so are
  * still eligible to take a move action.
  */
 function eligibleShips(state: GameState): readonly Ship[] {
   return state.ships.filter(
     (ship) =>
-      ship.side === state.sideToMove && !state.movedThisPly.includes(ship.id),
+      ship.side === state.sideToMove && !state.actedThisPly.includes(ship.id),
   );
 }
 

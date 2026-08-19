@@ -599,7 +599,27 @@ README.md` that neither README sentence survives.
 
 ## Step 2 — `movedThisPly` becomes `actedThisPly` (mechanical, no behaviour)
 
-Status: pending
+Status: committed
+
+Notes: Renamed `movedThisPly` → `actedThisPly`, `"ship-already-moved"` →
+`"ship-already-acted"`, `hasMoved` → `hasActed` (and the CSS class,
+`AlreadyMovedMark` → `AlreadyActedMark`, `ALREADY_MOVED_WORDING` →
+`ALREADY_ACTED_WORDING`, `ALREADY_MOVED_BAR_TOP_INSET` →
+`ALREADY_ACTED_BAR_TOP_INSET`), and `applyEndOfActionTail`'s `movedShipId` →
+`actedShipId`, exactly as specified, across all listed source and test files.
+Comments naming the renamed field/mechanism ("moved-this-ply marks", "has not
+yet moved this ply", etc.) were reworded to "acted" alongside the rename;
+left untouched, per the plan's explicit instruction, the two comments whose
+behavioural claims Step 3 rewrites: `applyEndOfActionTail`'s note that an
+attack's id is "omitted ... since only a move counts towards that" and
+`isSelectable`'s "Widened from 'has not moved this ply' so a ship that has
+moved and can still attack (rules.md §5) is selectable too." No behaviour
+changed; the suite holds at 616 tests. `npm test`, `npm run typecheck`,
+`npm run lint`, `npm run build` and `npm run format:check` all pass, and the
+step's grep check
+(`movedThisPly\|ship-already-moved\|hasMoved\|already moved this
+turn\|already-moved` against `src/`) returns nothing. No deviations from the
+plan.
 
 A pure rename. **No behaviour changes in this step**: attacks still do not
 record an action, and every test's expectations hold with new names. If a test

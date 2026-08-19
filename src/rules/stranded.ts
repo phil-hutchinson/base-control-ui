@@ -13,7 +13,7 @@ const STRANDING_SITE_STATES = new Set(["dormant", "depleted"]);
 
 /**
  * The ids of the side to move's ships that owe an action: standing on a
- * dormant or depleted site, not yet moved this ply, and with at least one
+ * dormant or depleted site, not yet acted this ply, and with at least one
  * legal move available under §6 alone. A stranded ship with no legal move at
  * all is left out — §8.5 waives the requirement rather than obliging the
  * player to shuffle blockers aside.
@@ -21,7 +21,7 @@ const STRANDING_SITE_STATES = new Set(["dormant", "depleted"]);
 export function strandedShipIds(state: GameState): readonly ShipId[] {
   return state.ships
     .filter((ship) => ship.side === state.sideToMove)
-    .filter((ship) => !state.movedThisPly.includes(ship.id))
+    .filter((ship) => !state.actedThisPly.includes(ship.id))
     .filter((ship) => {
       const siteState = siteStateAt(state, ship.square);
       return siteState !== undefined && STRANDING_SITE_STATES.has(siteState);

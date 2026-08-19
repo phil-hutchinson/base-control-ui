@@ -45,8 +45,8 @@ export interface GameState {
   readonly sideToMove: Side;
   /** How many of the ply's two actions remain. */
   readonly actionsRemaining: number;
-  /** The ids of the ships that have already moved this ply (never more than two). */
-  readonly movedThisPly: readonly ShipId[];
+  /** The ids of the ships that have already acted this ply (never more than two). */
+  readonly actedThisPly: readonly ShipId[];
   /** The ply currently being played, starting at 1. */
   readonly plyNumber: number;
   /** The 32-bit seed the next random draw will use (rules.md §8.6). */
@@ -115,7 +115,7 @@ export function startingGameState(
     siteStates,
     sideToMove: "green",
     actionsRemaining: ACTIONS_PER_PLY,
-    movedThisPly: [],
+    actedThisPly: [],
     plyNumber: 1,
     randomSeed,
     returnPositionIndex: STARTING_RETURN_POSITION_INDEX,

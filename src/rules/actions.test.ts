@@ -31,7 +31,7 @@ function siteStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
-  movedThisPly?: readonly ShipId[];
+  actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
 }): GameState {
   return {
@@ -39,7 +39,7 @@ function buildState(config: {
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: 2,
-    movedThisPly: config.movedThisPly ?? [],
+    actedThisPly: config.actedThisPly ?? [],
     plyNumber: 1,
     randomSeed: 1,
     returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
@@ -94,7 +94,7 @@ describe("shipHasLegalAction", () => {
   it("is true for a ship that has moved and still has a legal target", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H9", 3), ship("red-1", "red", "H10")],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
     });
 
     expect(shipHasLegalAction(state, "green-1")).toBe(true);
@@ -103,7 +103,7 @@ describe("shipHasLegalAction", () => {
   it("is false for a ship that has moved and has no legal target", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H9", 3)],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
     });
 
     expect(shipHasLegalAction(state, "green-1")).toBe(false);
@@ -130,7 +130,7 @@ describe("shipHasLegalAction", () => {
         ship("red-1", "red", "H10"),
       ],
       siteStates: { E5: "dormant" },
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
     });
 
     expect(shipHasLegalAction(state, "green-2")).toBe(true);
