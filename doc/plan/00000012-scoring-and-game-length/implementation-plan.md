@@ -1201,7 +1201,24 @@ Verification (automated): `npm test` with new cases in
 
 ## Step 10 — The words: energy collected, the game's result, and the HUD's labels
 
-Status: pending
+Status: committed
+
+Notes: Added `energyCollectedClause` (fed into `endOfTurnClauses` between the
+shield clause and `node-ran-out`/`ship-stranded`/`site-woken`, matching
+effect order), `resultSentence(GameResult)`, and `announcementForSession
+(session)` to `announcements.ts`. To let the latter substitute the
+"whose turn is next" clause with the game-over clause rather than append to
+it, `passSentence`/`actionEndingClause` were split into clause-array-returning
+`passSentenceClauses`/`actionEndingClauses` taking an optional `tailClause`
+override, with the original functions kept as thin `.join(" ")` wrappers used
+unchanged by `announcementFor` (all 35 existing direct tests pass untouched).
+Added `scoreSentence`, `roundCounterText`, `roundCounterSpokenText` and the
+`GAME_OVER_HEADING` constant for the HUD (Step 12's job to render, not
+compose), and made `turnIndicatorText` read "Game over" once `isGameOver`.
+`Board.tsx` now calls `announcementForSession(session)` in place of
+`announcementFor(session.lastEvent)` — its one-line change. No deviation from
+the plan. `npm run typecheck`, `npm run lint`, `npm test` (569 passed),
+`npm run format:check` and `npm run build` all pass.
 
 All new player-facing wording, in `src/board/announcements.ts`, composed and
 unit-tested away from the DOM as every other sentence in the app already is.

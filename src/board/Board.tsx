@@ -17,7 +17,7 @@ import { shipsBySquare, siteStateAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
 import { strandedShipIds } from "../rules/stranded";
 import type { Session, SessionIntent } from "../game/session";
-import { announcementFor } from "./announcements";
+import { announcementForSession } from "./announcements";
 import { squareForGridPosition } from "./boardView";
 import {
   squareLabel,
@@ -207,7 +207,7 @@ export function Board({ session, onIntent }: BoardProps) {
         className="board"
         onActivate={handleActivate}
         onDismiss={handleDismiss}
-        announcement={announcementFor(session.lastEvent)}
+        announcement={announcementForSession(session)}
       />
       <div className="board-frame__corner" aria-hidden="true" />
       <div className="board-frame__column-labels" aria-hidden="true">

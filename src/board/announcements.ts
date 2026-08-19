@@ -1,13 +1,25 @@
-// Player-facing wording (rules.md §5, §6, §8): turns a session event
-// (`../game/session.ts`) into the sentence the live region speaks, and a
-// game state into the turn indicator's sentence. Kept out of components so
-// the wording can be unit-tested on its own. The players' vocabulary
-// throughout: "turn" and "node", never "ply" or "hub".
+// Player-facing wording (rules.md §5, §6, §8, §9): turns a session event
+// (`../game/session.ts`) into the sentence the live region speaks, a game
+// state into the turn indicator's sentence, and a finished game's result
+// into words for the HUD. Kept out of components so the wording can be
+// unit-tested on its own. The players' vocabulary throughout: "turn" and
+// "node", never "ply" or "hub".
 
 import { squareName } from "../rules/board";
-import type { EndOfTurnEffect, ShieldGainedEffect } from "../rules/endOfTurn";
+import { chargedNodesHeldBy } from "../rules/energy";
+import type {
+  EndOfTurnEffect,
+  EnergyCollectedEffect,
+  ShieldGainedEffect,
+} from "../rules/endOfTurn";
 import type { Side } from "../rules/fleet";
 import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
+import {
+  currentRound,
+  gameResult,
+  isGameOver,
+  type GameResult,
+} from "../rules/gameLength";
 import type {
   AttackEffect,
   FightResolvedEffect,
@@ -20,6 +32,7 @@ import type {
   AttackedEvent,
   MovedEvent,
   RejectedEvent,
+  Session,
   SessionEvent,
 } from "../game/session";
 
@@ -41,6 +54,18 @@ function targetsPhrase(count: number): string {
 
 function shieldsPhrase(count: number): string {
   return `${count} ${count === 1 ? "shield" : "shields"}`;
+}
+
+function roundsPhrase(count: number): string {
+  return `${count} ${count === 1 ? "round" : "rounds"}`;
+}
+
+/** "3 nodes held", "1 node held", "no nodes held" — for the HUD's hidden score sentence. */
+function nodesHeldPhrase(count: number): string {
+  if (count === 0) {
+    return "no nodes held";
+  }
+  return `${count} ${count === 1 ? "node" : "nodes"} held`;
 }
 
 /**
@@ -108,10 +133,27 @@ function shieldGainedClause(effects: readonly ShieldGainedEffect[]): string {
 }
 
 /**
+ * A single turn's collection (rules.md §8.4): one node names itself, several
+ * name their count and squares. There is at most one of these per sequence —
+ * §8.4 pays once, for the count of nodes held, never once per node.
+ */
+function energyCollectedClause(effect: EnergyCollectedEffect): string {
+  const side = capitalize(effect.side);
+  const squares = effect.squares.map((square) => squareName(square));
+  const source =
+    squares.length === 1
+      ? `the node at ${squares[0]}`
+      : `${squares.length} nodes at ${joinWithAnd(squares)}`;
+  return `${side} collected ${effect.amount} energy from ${source}, and now has ${effect.newTotal}.`;
+}
+
+/**
  * The clauses an end-of-turn sequence produced, in the order the sequence
  * produced them. All of a sequence's shield gains are grouped into one
  * clause; `site-cooled` produces no clause at all — a depleted site quietly
- * returning to the dormant pool is a board change, not a player event.
+ * returning to the dormant pool is a board change, not a player event. A
+ * zero collection produces no `energy-collected` effect at all (rules.md
+ * §8.4), so there is nothing here to skip for that case.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -127,6 +169,9 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
     switch (effect.type) {
       case "shield-gained":
       case "site-cooled":
+        break;
+      case "energy-collected":
+        clauses.push(energyCollectedClause(effect));
         break;
       case "node-ran-out":
         clauses.push(`The node at ${squareName(effect.square)} ran out.`);
@@ -149,12 +194,24 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   return clauses;
 }
 
-function passSentence(effect: PassEffect): string {
+/**
+ * A passed turn's clauses (rules.md §5), ending with `tailClause` — the next
+ * side's turn by default, or `announcementForSession`'s game-over clause when
+ * the pass was the game's last ply.
+ */
+function passSentenceClauses(
+  effect: PassEffect,
+  tailClause?: string,
+): string[] {
   return [
     `${capitalize(effect.side)} has no legal move, so the turn passes.`,
     ...endOfTurnClauses(effect.endOfTurn),
-    `${turnPhrase(effect.sideToMove, ACTIONS_PER_PLY)}.`,
-  ].join(" ");
+    tailClause ?? `${turnPhrase(effect.sideToMove, ACTIONS_PER_PLY)}.`,
+  ];
+}
+
+function passSentence(effect: PassEffect): string {
+  return passSentenceClauses(effect).join(" ");
 }
 
 /**
@@ -199,12 +256,15 @@ function moveSentence(event: MovedEvent): string {
  * its own end-of-turn clauses) if the resulting side had no legal action at
  * all, or how many actions the acting side has left if the ply simply
  * continues. Shared by a move and an attack — both end a ply the same way.
+ * `tailClause`, when given, replaces the "whose turn is next" clause — the
+ * substitution `announcementForSession` makes at the end of the game.
  */
-function actionEndingClause(
+function actionEndingClauses(
   side: Side,
   effects: readonly (MoveEffect | AttackEffect)[],
   actionsRemaining: number,
-): string {
+  tailClause?: string,
+): string[] {
   const plyEndedEffect = effects.find(
     (effect): effect is PlyEndedEffect => effect.type === "ply-ended",
   );
@@ -217,17 +277,26 @@ function actionEndingClause(
     (effect): effect is PassEffect => effect.type === "ply-passed",
   );
   if (passEffect !== undefined) {
-    return [...plyEndedClauses, passSentence(passEffect)].join(" ");
+    return [...plyEndedClauses, ...passSentenceClauses(passEffect, tailClause)];
   }
 
   if (plyEndedEffect !== undefined) {
     return [
       ...plyEndedClauses,
-      `${turnPhrase(plyEndedEffect.sideToMove, ACTIONS_PER_PLY)}.`,
-    ].join(" ");
+      tailClause ??
+        `${turnPhrase(plyEndedEffect.sideToMove, ACTIONS_PER_PLY)}.`,
+    ];
   }
 
-  return `${capitalize(side)} has ${actionsPhrase(actionsRemaining)} left.`;
+  return [`${capitalize(side)} has ${actionsPhrase(actionsRemaining)} left.`];
+}
+
+function actionEndingClause(
+  side: Side,
+  effects: readonly (MoveEffect | AttackEffect)[],
+  actionsRemaining: number,
+): string {
+  return actionEndingClauses(side, effects, actionsRemaining).join(" ");
 }
 
 /**
@@ -337,7 +406,94 @@ export function announcementFor(event: SessionEvent | undefined): string {
   }
 }
 
-/** "Green's turn — 2 actions left", singular at one action. */
+/**
+ * A finished game's result (rules.md §9): the winner and both final totals,
+ * or a draw naming the shared total. Reused by the game-over clause below and
+ * by the result panel.
+ */
+export function resultSentence(result: GameResult): string {
+  if (result.outcome === "draw") {
+    return `The game is a draw, ${result.energy.green} energy each.`;
+  }
+
+  const winner = result.winner as Side;
+  const loser: Side = winner === "green" ? "red" : "green";
+  return `${capitalize(winner)} wins, ${result.energy[winner]} energy to ${result.energy[loser]}.`;
+}
+
+/**
+ * The clause substituted for "whose turn is next" once the game has ended
+ * (rules.md §9): that the game is over, and its result.
+ */
+function gameOverClause(state: GameState): string {
+  return `The game is over after ${roundsPhrase(state.lengthInRounds)}. ${resultSentence(gameResult(state))}`;
+}
+
+/**
+ * The sentence the live region speaks for a session's last event, aware of
+ * whether the game the session belongs to has ended. Before the end this is
+ * exactly `announcementFor(session.lastEvent)`. Once the game is over, the
+ * "whose turn is next" clause a finished ply or pass would otherwise end
+ * with is **replaced** by the game-over clause — never appended after it, so
+ * a screen reader never hears "Green's turn — 2 actions left" immediately
+ * followed by "the game is over".
+ */
+export function announcementForSession(session: Session): string {
+  const { state, lastEvent } = session;
+  if (!isGameOver(state)) {
+    return announcementFor(lastEvent);
+  }
+
+  if (lastEvent === undefined) {
+    return "";
+  }
+
+  const tailClause = gameOverClause(state);
+
+  switch (lastEvent.type) {
+    case "moved":
+      return `${moveSentence(lastEvent)} ${actionEndingClauses(lastEvent.side, lastEvent.effects, lastEvent.actionsRemaining, tailClause).join(" ")}`;
+    case "attacked":
+      return `${fightSentence(lastEvent)} ${actionEndingClauses(lastEvent.side, lastEvent.effects, lastEvent.actionsRemaining, tailClause).join(" ")}`;
+    case "ply-passed":
+      return passSentenceClauses(lastEvent, tailClause).join(" ");
+    // A selection, its clearing, or a rejection never carries a "whose turn
+    // is next" clause to replace — including the "game-over" rejection
+    // itself, already worded above — so these are spoken exactly as
+    // `announcementFor` would word them.
+    case "selected":
+    case "selection-cleared":
+    case "rejected":
+      return announcementFor(lastEvent);
+  }
+}
+
+/** "Green: 24 energy, 3 nodes held." — the HUD score cell's hidden text. */
+export function scoreSentence(state: GameState, side: Side): string {
+  const nodesHeld = chargedNodesHeldBy(state, side).length;
+  return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}.`;
+}
+
+/** "35/100" — the HUD round counter's visible text, clamped at game over. */
+export function roundCounterText(state: GameState): string {
+  return `${currentRound(state)}/${state.lengthInRounds}`;
+}
+
+/** "Round 35 of 100." — the HUD round counter's spoken text. */
+export function roundCounterSpokenText(state: GameState): string {
+  return `Round ${currentRound(state)} of ${state.lengthInRounds}.`;
+}
+
+/** The result panel's heading, in sentence case; the panel uppercases it with CSS. */
+export const GAME_OVER_HEADING = "Game over";
+
+/**
+ * "Green's turn — 2 actions left", singular at one action, or "Game over"
+ * once the game has ended (rules.md §9).
+ */
 export function turnIndicatorText(state: GameState): string {
+  if (isGameOver(state)) {
+    return "Game over";
+  }
   return `${capitalize(state.sideToMove)}'s turn — ${actionsPhrase(state.actionsRemaining)} left`;
 }

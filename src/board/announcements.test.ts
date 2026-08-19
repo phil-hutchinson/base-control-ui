@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
 import { squareAt } from "../rules/board";
-import { ACTIONS_PER_PLY } from "../rules/gameState";
+import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
+import type { GameResult } from "../rules/gameLength";
+import type { EnergyCollectedEffect } from "../rules/endOfTurn";
 import type {
   AttackedEvent,
   MovedEvent,
@@ -10,9 +12,19 @@ import type {
   RejectionReason,
   SelectedEvent,
   SelectionClearedEvent,
+  Session,
 } from "../game/session";
 import type { FightResolvedEffect, PassEffect } from "../rules/ply";
-import { announcementFor, turnIndicatorText } from "./announcements";
+import {
+  GAME_OVER_HEADING,
+  announcementFor,
+  announcementForSession,
+  resultSentence,
+  roundCounterSpokenText,
+  roundCounterText,
+  scoreSentence,
+  turnIndicatorText,
+} from "./announcements";
 
 describe("announcementFor", () => {
   it("counts destinations on selection, plural", () => {
@@ -694,6 +706,369 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
   });
 });
 
+describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
+  it("announces one node held", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-collected",
+              side: "green",
+              nodesHeld: 1,
+              amount: 1,
+              newTotal: 7,
+              squares: [squareAt("H", 8)],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green collected 1 energy from the node at H8, and now has 7. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("announces several nodes held, naming the count and every square", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-collected",
+              side: "green",
+              nodesHeld: 3,
+              amount: 6,
+              newTotal: 24,
+              squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 24. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("produces no clause when nothing was collected", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("orders the collection after the shield clause and before a node running out", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-gained",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 2,
+            },
+            {
+              type: "energy-collected",
+              side: "green",
+              nodesHeld: 1,
+              amount: 1,
+              newTotal: 5,
+              squares: [squareAt("H", 8)],
+            },
+            { type: "node-ran-out", square: squareAt("K", 5) },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at H8 gained a shield, now on 2. Green collected 1 energy from the node at H8, and now has 5. The node at K5 ran out. Red's turn, 2 actions left.",
+    );
+  });
+
+  it("a passed turn still carries its own collection clause", () => {
+    const collected: EnergyCollectedEffect = {
+      type: "energy-collected",
+      side: "red",
+      nodesHeld: 2,
+      amount: 3,
+      newTotal: 3,
+      squares: [squareAt("E", 5), squareAt("K", 5)],
+    };
+    const event: PassEffect = {
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      endOfTurn: [collected],
+    };
+    expect(announcementFor(event)).toBe(
+      "Red has no legal move, so the turn passes. Red collected 3 energy from 2 nodes at E5 and K5, and now has 3. Green's turn, 2 actions left.",
+    );
+  });
+});
+
+describe("resultSentence", () => {
+  it("names green as the winner, with both totals", () => {
+    const result: GameResult = {
+      outcome: "green-won",
+      winner: "green",
+      energy: { green: 42, red: 37 },
+    };
+    expect(resultSentence(result)).toBe("Green wins, 42 energy to 37.");
+  });
+
+  it("names red as the winner, with both totals", () => {
+    const result: GameResult = {
+      outcome: "red-won",
+      winner: "red",
+      energy: { green: 20, red: 31 },
+    };
+    expect(resultSentence(result)).toBe("Red wins, 31 energy to 20.");
+  });
+
+  it("names a draw, with the shared total", () => {
+    const result: GameResult = {
+      outcome: "draw",
+      energy: { green: 37, red: 37 },
+    };
+    expect(resultSentence(result)).toBe("The game is a draw, 37 energy each.");
+  });
+});
+
+describe("announcementForSession", () => {
+  function stateAt(config: {
+    plyNumber: number;
+    sideToMove: "green" | "red";
+    lengthInRounds: number;
+    energy: { green: number; red: number };
+  }): GameState {
+    return {
+      ships: [],
+      siteStates: {},
+      sideToMove: config.sideToMove,
+      actionsRemaining: ACTIONS_PER_PLY,
+      movedThisPly: [],
+      plyNumber: config.plyNumber,
+      randomSeed: 1,
+      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+      energy: config.energy,
+      lengthInRounds: config.lengthInRounds,
+    };
+  }
+
+  it("is unchanged before the game is over", () => {
+    const state = stateAt({
+      plyNumber: 5,
+      sideToMove: "red",
+      lengthInRounds: 3,
+      energy: { green: 4, red: 1 },
+    });
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("G", 7),
+      to: squareAt("H", 8),
+      effects: [
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+    expect(announcementForSession(session)).toBe(announcementFor(event));
+  });
+
+  it("substitutes the result for the next-turn clause when a move ends the game", () => {
+    const state = stateAt({
+      plyNumber: 7,
+      sideToMove: "green",
+      lengthInRounds: 3,
+      energy: { green: 4, red: 7 },
+    });
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "red-1",
+      side: "red",
+      from: squareAt("G", 7),
+      to: squareAt("H", 8),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "red",
+          sideToMove: "green",
+          endOfTurn: [],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+    expect(announcementForSession(session)).toBe(
+      "Red ship moved from G7 to H8. The game is over after 3 rounds. Red wins, 7 energy to 4.",
+    );
+  });
+
+  it("substitutes the result for the next-turn clause when a pass ends the game", () => {
+    const state = stateAt({
+      plyNumber: 7,
+      sideToMove: "green",
+      lengthInRounds: 3,
+      energy: { green: 4, red: 4 },
+    });
+    const event: PassEffect = {
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      endOfTurn: [],
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+    expect(announcementForSession(session)).toBe(
+      "Red has no legal move, so the turn passes. The game is over after 3 rounds. The game is a draw, 4 energy each.",
+    );
+  });
+
+  it("substitutes the result for the next-turn clause when an attack ends the game", () => {
+    const state = stateAt({
+      plyNumber: 7,
+      sideToMove: "green",
+      lengthInRounds: 3,
+      energy: { green: 9, red: 2 },
+    });
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      outcome: "attacker-won",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("H", 8),
+        shields: 2,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("H", 9),
+        shields: 1,
+      },
+      winner: { shipId: "green-1", remainingShields: 1 },
+      returns: [
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("H", 9),
+          to: squareAt("A", 8),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("H", 8),
+      target: squareAt("H", 9),
+      effects: [
+        fight,
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+    expect(announcementForSession(session)).toBe(
+      "Green ship at H8 attacked the red ship at H9 and won. The beaten ship returned to the A8 bay with no shields. The fight cost 2 shields, leaving the winner on 1. The game is over after 3 rounds. Green wins, 9 energy to 2.",
+    );
+  });
+
+  it("leaves a rejection's own game-over sentence untouched", () => {
+    const state = stateAt({
+      plyNumber: 7,
+      sideToMove: "green",
+      lengthInRounds: 3,
+      energy: { green: 4, red: 4 },
+    });
+    const event: RejectedEvent = {
+      type: "rejected",
+      reason: "game-over",
+      square: squareAt("H", 8),
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+    expect(announcementForSession(session)).toBe(
+      "The game is over. Nothing further can be played.",
+    );
+  });
+
+  it("is empty when there is no event yet, even at game over", () => {
+    const state = stateAt({
+      plyNumber: 7,
+      sideToMove: "green",
+      lengthInRounds: 3,
+      energy: { green: 0, red: 0 },
+    });
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: undefined,
+    };
+    expect(announcementForSession(session)).toBe("");
+  });
+});
+
 describe("announcementFor — combat (rules.md \u00a77)", () => {
   it("announces the attacker winning: outcome, bay and shield cost", () => {
     const fight: FightResolvedEffect = {
@@ -955,5 +1330,161 @@ describe("turnIndicatorText", () => {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       }),
     ).toBe("Red's turn — 1 action left");
+  });
+
+  it("reads 'Game over' once the game has ended, instead of naming a turn", () => {
+    expect(
+      turnIndicatorText({
+        ships: [],
+        siteStates: {},
+        sideToMove: "green",
+        actionsRemaining: ACTIONS_PER_PLY,
+        movedThisPly: [],
+        plyNumber: 7,
+        randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 4, red: 4 },
+        lengthInRounds: 3,
+      }),
+    ).toBe("Game over");
+  });
+});
+
+describe("HUD wording", () => {
+  function stateWith(config: {
+    energy: { green: number; red: number };
+    lengthInRounds: number;
+    plyNumber: number;
+    ships?: readonly {
+      id: string;
+      side: "green" | "red";
+      square: ReturnType<typeof squareAt>;
+      shields: 0 | 1 | 2 | 3 | 4;
+    }[];
+    charged?: readonly string[];
+  }): GameState {
+    const siteStates: Record<
+      string,
+      { state: "charged"; enteredOnPly: number }
+    > = {};
+    for (const square of config.charged ?? []) {
+      siteStates[square] = { state: "charged", enteredOnPly: 1 };
+    }
+    return {
+      ships: config.ships ?? [],
+      siteStates,
+      sideToMove: "green",
+      actionsRemaining: ACTIONS_PER_PLY,
+      movedThisPly: [],
+      plyNumber: config.plyNumber,
+      randomSeed: 1,
+      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+      energy: config.energy,
+      lengthInRounds: config.lengthInRounds,
+    };
+  }
+
+  describe("scoreSentence", () => {
+    it("names no nodes held at zero", () => {
+      const state = stateWith({
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 1,
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 0 energy, no nodes held.",
+      );
+    });
+
+    it("uses the singular at one node held", () => {
+      const state = stateWith({
+        energy: { green: 7, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 3,
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 0,
+          },
+        ],
+        charged: ["H8"],
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 7 energy, 1 node held.",
+      );
+    });
+
+    it("counts several nodes held, plural", () => {
+      const state = stateWith({
+        energy: { green: 24, red: 3 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 3,
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 0,
+          },
+          {
+            id: "green-2",
+            side: "green",
+            square: squareAt("E", 5),
+            shields: 0,
+          },
+        ],
+        charged: ["H8", "E5"],
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 24 energy, 2 nodes held.",
+      );
+    });
+
+    it("reads the other side's own total and count, unaffected by a node it does not hold", () => {
+      const state = stateWith({
+        energy: { green: 7, red: 1 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 4,
+        ships: [
+          { id: "red-1", side: "red", square: squareAt("K", 5), shields: 0 },
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 0,
+          },
+        ],
+        charged: ["K5", "H8"],
+      });
+      expect(scoreSentence(state, "red")).toBe("Red: 1 energy, 1 node held.");
+    });
+  });
+
+  describe("roundCounterText and roundCounterSpokenText", () => {
+    it("reads the round out of a default-length game's own length", () => {
+      const state = stateWith({
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 69,
+      });
+      expect(roundCounterText(state)).toBe("35/100");
+      expect(roundCounterSpokenText(state)).toBe("Round 35 of 100.");
+    });
+
+    it("holds at the game's own length once the game is over, never naming a hundred", () => {
+      const state = stateWith({
+        energy: { green: 0, red: 0 },
+        lengthInRounds: 3,
+        plyNumber: 7,
+      });
+      expect(roundCounterText(state)).toBe("3/3");
+      expect(roundCounterSpokenText(state)).toBe("Round 3 of 3.");
+    });
+  });
+
+  it("names the result panel's heading in sentence case", () => {
+    expect(GAME_OVER_HEADING).toBe("Game over");
   });
 });
