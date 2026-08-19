@@ -37,13 +37,10 @@ export function App() {
       <div className="app__cabinet">
         <div className="app__board">
           <Board session={session} onIntent={dispatch} />
-          {isGameOver(session.state) && (
-            <GameOverPanel
-              state={session.state}
-              onPlayAgain={handlePlayAgain}
-            />
-          )}
         </div>
+        {isGameOver(session.state) && (
+          <GameOverPanel state={session.state} onPlayAgain={handlePlayAgain} />
+        )}
       </div>
     </main>
   );

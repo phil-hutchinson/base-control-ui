@@ -1859,7 +1859,53 @@ Anything wrong here is fixed before Step 19, in the step that owns it.
 
 ## Step 18a — The refinements the manual gate asked for
 
-Status: pending
+Status: committed
+
+Notes: All four refinements done. (1) `GameOverPanel`'s result sentence moved
+from a visible `<p className="game-over-panel__result">` to
+`<p className="visually-hidden">`, and the now-unused
+`.game-over-panel__result` rule was removed from the CSS. (2) The panel's
+background changed from `rgb(11 16 32 / 88%)` to `var(--color-space)` (the
+same colour, made opaque, taken from the existing palette rather than a new
+literal). (3) Investigated in a real headless Chromium (`playwright`,
+installed offline from the dev container's npm cache into the scratchpad, not
+added to the project) before changing anything, per the step's instruction.
+Measuring the rendered boxes confirmed `.app__board`'s own box is always
+exactly inset from `.app__cabinet` by the cabinet's padding on all four
+sides — the asymmetry is not in that box, it is that `.app__board`'s child
+(the board) can overflow past that box on the bottom, left or right (never
+the top, which `align-items: flex-start` and `justify-content: center` keep
+flush by construction), and a panel sized to `.app__board` alone left that
+overflow, and the bezel behind it, uncovered on those sides while the top's
+untouched bezel band stayed visible — reading as a thicker border at the top.
+Fixed by moving `GameOverPanel` in `App.tsx` to be a sibling of `.app__board`
+inside `.app__cabinet` instead of a child of `.app__board`, and moving
+`position: relative` from `.app__board` to `.app__cabinet` in `App.css` to
+match, with the reasoning recorded in `.app__cabinet`'s comment. This makes
+the panel (`position: absolute; inset: 0`, unchanged) cover
+`.app__cabinet`'s full padding box — flush to its 2px border on all four
+sides, confirmed with screenshots at several viewport sizes — rather than
+stopping at the smaller box `.app__board` resolves to.
+`.app__board`'s `container-type: size`, `flex: 1`, `min-height: 0` and
+resolved height are untouched, per the step's constraint; `EnergyOverlay`
+does not depend on `.app__board`'s `position: relative` (it is `position:
+relative` on itself, inside `.board-frame`), so removing that declaration
+from `.app__board` had no other effect. (4) Added a `round-counter__label`
+span reading "Round" to `RoundCounter.tsx`, `aria-hidden` and styled in
+`RoundCounter.css` matching `ScoreDisplay`'s side-name treatment (arcade
+face, size, letter-spacing, uppercase) but in `--color-text-bright` rather
+than a side colour; `.round-counter` became a flex column to stack the label
+above the value, and the existing round text gained an explicit
+`round-counter__value` class. No new wording was added to
+`announcements.ts`. Added/updated tests in `GameOverPanel.test.tsx` (the
+result sentence is `visually-hidden` and no longer carries
+`game-over-panel__result`) and `RoundCounter.test.tsx` (the `ROUND` label is
+`aria-hidden`, the spoken sentence remains the only accessible text); the
+existing `GameOverPanel`, `App`, `Hud` and `RoundCounter` tests needed no
+other changes. No deviation from the plan beyond the CSS investigation
+itself, which the step explicitly asked for and left the outcome open.
+`npm run typecheck`, `npm run lint`, `npm test` (614 passed), `npm run
+format:check` and `npm run build` all pass.
 
 Four changes the owner asked for at Step 18's gate. They are cosmetic, they
 touch only the HUD and the result panel, and they are grouped into one step

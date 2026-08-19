@@ -41,6 +41,15 @@ describe("RoundCounter", () => {
     expect(screen.getByText("2/3")).toBeInTheDocument();
   });
 
+  it("labels itself ROUND decoratively, leaving the spoken form as the only accessible text", () => {
+    const state = atPly(69);
+
+    render(<RoundCounter state={state} />);
+
+    expect(screen.getByText("Round")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("Round 35 of 100.")).toHaveClass("visually-hidden");
+  });
+
   it("has no static accessibility violations", async () => {
     const state = atPly(1);
 

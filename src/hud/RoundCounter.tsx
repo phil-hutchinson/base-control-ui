@@ -16,7 +16,12 @@ interface RoundCounterProps {
 export function RoundCounter({ state }: RoundCounterProps) {
   return (
     <div className="round-counter">
-      <span aria-hidden="true">{roundCounterText(state)}</span>
+      <span className="round-counter__label" aria-hidden="true">
+        Round
+      </span>
+      <span className="round-counter__value" aria-hidden="true">
+        {roundCounterText(state)}
+      </span>
       <span className="visually-hidden">{roundCounterSpokenText(state)}</span>
     </div>
   );

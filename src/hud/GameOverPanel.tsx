@@ -62,7 +62,7 @@ export function GameOverPanel({ state, onPlayAgain }: GameOverPanelProps) {
           </div>
         ))}
       </div>
-      <p className="game-over-panel__result">{resultSentence(result)}</p>
+      <p className="visually-hidden">{resultSentence(result)}</p>
       <button
         type="button"
         className="game-over-panel__play-again"

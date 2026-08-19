@@ -8,7 +8,7 @@
   justify-content: center;
   gap: 1rem;
   padding: 2rem;
-  background-color: rgb(11 16 32 / 88%);
+  background-color: var(--color-space);
   text-align: center;
 }
 
@@ -67,13 +67,6 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-shadow: 0 0 0.4em currentcolor;
-}
-
-.game-over-panel__result {
-  margin: 0;
-  max-width: 32ch;
-  font-size: clamp(1rem, 2.5vw, 1.25rem);
-  color: var(--color-text-bright);
 }
 
 .game-over-panel__play-again {

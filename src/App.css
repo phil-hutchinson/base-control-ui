@@ -32,8 +32,15 @@
      `.app__board`, the way a cabinet's screen sits inside its own surround.
      The padding here is the bezel's thickness, taken out of the room
      `.app__board` measures itself against — the board still grows and
-     shrinks with no ceiling of its own, just from a smaller starting box. */
+     shrinks with no ceiling of its own, just from a smaller starting box.
+     `position: relative` anchors the game-over panel, so it covers the
+     bezel too rather than stopping at the smaller box `.app__board`
+     resolves to — a board too tall or wide for that box overflows past it
+     on the bottom, left or right (never the top, which stays flush by
+     construction), and a panel sized to `.app__board` alone would leave
+     that overflow, and the bezel behind it, uncovered on those sides. */
   display: flex;
+  position: relative;
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -54,10 +61,8 @@
      `.app__cabinet` bezel's own resolved height. Aligned to the block-axis
      start rather than centred, so a board too large for the container
      overflows downward into scrollable space instead of being clipped off
-     the top. `position: relative` anchors the game-over panel, which covers
-     this element once the game ends. */
+     the top. */
   container-type: size;
-  position: relative;
   display: flex;
   flex: 1;
   min-height: 0;

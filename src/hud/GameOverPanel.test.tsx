@@ -54,6 +54,14 @@ describe("GameOverPanel", () => {
     ).toHaveTextContent("7");
   });
 
+  it("keeps the result sentence out of the panel's visible layout, while it stays findable as accessible text", () => {
+    render(<GameOverPanel state={finishedState()} onPlayAgain={() => {}} />);
+
+    const resultSentence = screen.getByText("Red wins, 7 energy to 4.");
+    expect(resultSentence).toHaveClass("visually-hidden");
+    expect(resultSentence).not.toHaveClass("game-over-panel__result");
+  });
+
   it("names a draw", () => {
     render(
       <GameOverPanel

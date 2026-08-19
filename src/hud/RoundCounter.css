@@ -1,4 +1,19 @@
 .round-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.round-counter__label {
+  font-family: var(--font-arcade);
+  font-size: clamp(0.75rem, 1.5vw, 1rem);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-text-bright);
+}
+
+.round-counter__value {
   font-family: var(--font-arcade);
   font-size: clamp(1rem, 2.5vw, 1.5rem);
   font-weight: 600;
