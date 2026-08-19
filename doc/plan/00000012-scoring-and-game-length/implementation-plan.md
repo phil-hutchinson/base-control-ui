@@ -713,7 +713,20 @@ covering:
 
 ## Step 3 — `src/rules/gameLength.ts`: §9's length and the round arithmetic
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/gameLength.ts` with `DEFAULT_GAME_LENGTH_ROUNDS`
+(100), `isGameLengthRounds` (positive whole number predicate, mirroring
+`isShieldCount`'s shape), `pliesForGameLength` (length × 2), and
+`roundForPly` (`ceil(plyNumber / 2)`, throwing `RangeError` on a non-positive
+or fractional ply, deliberately unclamped to any length — Step 5 adds the
+clamped form). The module imports nothing from `gameState.ts`, per the step.
+Added `src/rules/gameLength.test.ts` covering the default, both example game
+lengths, the seven ply→round cases from the step's verification list
+including the deliberately-unclamped 201→101, the three round throws, and
+the length predicate's accept/reject cases. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (500 passed), `npm run
+format:check` and `npm run build` all pass.
 
 Add `src/rules/gameLength.ts`, named for §9's subject rather than for the
 moment of ending, because the arithmetic it owns is consulted on every turn and
