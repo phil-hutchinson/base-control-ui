@@ -7,6 +7,7 @@
 
 import type { Square } from "./board";
 import type { ShipId } from "./fleet";
+import { isGameOver } from "./gameLength";
 import type { GameState, Ship } from "./gameState";
 import {
   findShip,
@@ -24,17 +25,27 @@ export type { MoveRefusalReason, ReachEntry };
 /**
  * Why `destination` is not a legal move for `shipId` in the given state, as a
  * structured reason, or `undefined` when the move is legal. Reasons are
- * checked in order from the most fundamental (whose ship it is) to the most
- * specific (the destination square itself): ownership, whether it has
- * already moved, then §8.5's stranded-ship obligation — checked before
- * anything about the destination, because the objection is to the ship, not
- * the square — and finally §6's reach, occupancy and site-state checks.
+ * checked in order from the most fundamental (whether the game is even still
+ * being played) to the most specific (the destination square itself):
+ * whether the game is over, whose ship it is, whether it has already moved,
+ * then §8.5's stranded-ship obligation — checked before anything about the
+ * destination, because the objection is to the ship, not the square — and
+ * finally §6's reach, occupancy and site-state checks.
+ *
+ * The game-over check is deliberately absent from `sixOnlyMoveRefusalReason`
+ * — that layer exists so the §5 pass guard can ask "is any action legal
+ * here" without this question answering it; see `applyPassGuard` in
+ * `ply.ts`.
  */
 export function moveRefusalReason(
   state: GameState,
   shipId: ShipId,
   destination: Square,
 ): MoveRefusalReason | undefined {
+  if (isGameOver(state)) {
+    return "game-over";
+  }
+
   const ship = findShip(state, shipId);
 
   if (ship.side !== state.sideToMove) {
@@ -56,13 +67,18 @@ export function moveRefusalReason(
  * Every square `shipId` may legally move to in the given state: its §6 reach,
  * with §8.5's obligation applied at the ship level and the rest of the
  * filtering — occupancy and site state — delegated to
- * `sixOnlyLegalDestinations`. Empty when the ship does not belong to the side
- * to move, has already moved this ply, or is held back by the obligation.
+ * `sixOnlyLegalDestinations`. Empty once the game is over, when the ship does
+ * not belong to the side to move, has already moved this ply, or is held
+ * back by the obligation.
  */
 export function legalDestinations(
   state: GameState,
   shipId: ShipId,
 ): readonly Square[] {
+  if (isGameOver(state)) {
+    return [];
+  }
+
   const ship = findShip(state, shipId);
   if (ship.side !== state.sideToMove || state.movedThisPly.includes(shipId)) {
     return [];

@@ -15,6 +15,7 @@ import {
 } from "./board";
 import { CLOCKWISE_BAYS, bayNumberingFrom, isBay } from "./bays";
 import type { ShipId } from "./fleet";
+import { isGameOver } from "./gameLength";
 import { findShip } from "./moveLegality";
 import { type GameState, shipsBySquare } from "./gameState";
 import { type ShieldCount, isShieldCount } from "./shields";
@@ -68,7 +69,8 @@ export type AttackRefusalReason =
   | "target-in-bay"
   | "no-target-there"
   | "target-is-friendly"
-  | "target-not-adjacent";
+  | "target-not-adjacent"
+  | "game-over";
 
 /**
  * Why `target` is not a legal attack for `shipId` in the given state, under
@@ -138,8 +140,16 @@ export function sevenOnlyLegalTargets(
 
 /**
  * Why `target` is not a legal attack for `shipId` in the given state, as a
- * structured reason, or `undefined` when the attack is legal. Layers §8.5's
- * stranded-ship obligation on top of `sevenOnlyAttackRefusalReason`.
+ * structured reason, or `undefined` when the attack is legal. Layers §9's
+ * game-over check and §8.5's stranded-ship obligation on top of
+ * `sevenOnlyAttackRefusalReason`.
+ *
+ * The game-over check runs first, ahead of ownership: once the game has
+ * ended, no attack is legal for anyone, including one that would have been
+ * refused anyway. It is deliberately absent from `sevenOnlyAttackRefusalReason`
+ * — that layer exists so the §5 pass guard can ask "is any action legal
+ * here" without this question answering it; see `applyPassGuard` in
+ * `ply.ts`.
  *
  * §8.5 refuses **every** attack while any ship owes an action — including an
  * attack by the owing ship itself. Unlike `moveRefusalReason`, which excuses
@@ -154,6 +164,10 @@ export function attackRefusalReason(
   shipId: ShipId,
   target: Square,
 ): AttackRefusalReason | undefined {
+  if (isGameOver(state)) {
+    return "game-over";
+  }
+
   const attacker = findShip(state, shipId);
 
   if (attacker.side !== state.sideToMove) {
@@ -168,14 +182,19 @@ export function attackRefusalReason(
 
 /**
  * Every square `shipId` may legally attack in the given state: its §7
- * neighbours, with §8.5's obligation applied at the ship level exactly as in
- * `attackRefusalReason` — refusing every ship's attacks, including the
- * owing ship's own, while any ship owes an action.
+ * neighbours, with §9's game-over check and §8.5's obligation applied at the
+ * ship level exactly as in `attackRefusalReason` — empty once the game is
+ * over, and refusing every ship's attacks, including the owing ship's own,
+ * while any ship owes an action.
  */
 export function legalTargets(
   state: GameState,
   shipId: ShipId,
 ): readonly Square[] {
+  if (isGameOver(state)) {
+    return [];
+  }
+
   const attacker = findShip(state, shipId);
   if (attacker.side !== state.sideToMove || strandedShipIds(state).length > 0) {
     return [];

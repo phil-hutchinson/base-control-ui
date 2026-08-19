@@ -967,7 +967,31 @@ Verification (automated): `npm test` with new cases in
 
 ## Step 7 — Refusing to play past the end, and the pass-guard trap
 
-Status: pending
+Status: committed
+
+Notes: Added `"game-over"` to `MoveRefusalReason` (`moveLegality.ts`) and
+`AttackRefusalReason` (`combat.ts`). `moveRefusalReason` (`movement.ts`) and
+`attackRefusalReason` (`combat.ts`) now check `isGameOver` first, ahead of
+ownership; `legalDestinations` and `legalTargets` likewise return `[]` first.
+`sixOnlyMoveRefusalReason`/`sixOnlyLegalDestinations` and
+`sevenOnlyAttackRefusalReason`/`sevenOnlyLegalTargets` were left untouched, as
+required. `applyPassGuard` (`ply.ts`) now checks `isGameOver(state)` before
+`sideToMoveHasLegalAction`, returning the state untouched with no effect, with
+a comment explaining why in terms of what the code does. Worded the new
+`"game-over"` rejection reason in `announcements.ts`'s `rejectionSentence`
+exactly as specified: "The game is over. Nothing further can be played." Added
+direct tests of the trap to `ply.test.ts` (a ply-201 state and a
+three-round-game ply-7 state both left untouched by `applyPassGuard` with no
+ships able to act at all — the case that would have looped without the fix —
+plus a state driven through its final action ending at ply 201 with the guard
+firing nothing), and game-over refusal/emptiness tests to `movement.test.ts`
+and `combat.test.ts` (refusing a move/attack that would otherwise be legal and
+one that would have been illegal anyway, both with `"game-over"`; emptiness of
+the public layers against the unchanged §6-only/§7-only ones; and judging
+against a state's own shorter length rather than the default). Added the new
+reason to `announcements.test.ts`'s existing data-driven rejection-sentence
+table. No deviation from the plan. `npm run typecheck`, `npm run lint`,
+`npm test` (537 passed), `npm run format:check` and `npm run build` all pass.
 
 **This is the story's one genuine correctness trap. Read decision 8 above
 before writing any code.**

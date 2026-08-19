@@ -271,6 +271,11 @@ describe("announcementFor", () => {
       "That is your own ship, not a target.",
     ],
     ["no-target-there", squareAt("G", 4), "There is no ship on G4 to attack."],
+    [
+      "game-over",
+      squareAt("G", 4),
+      "The game is over. Nothing further can be played.",
+    ],
   ];
 
   it.each(cases)(

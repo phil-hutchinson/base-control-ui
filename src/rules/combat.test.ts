@@ -48,6 +48,8 @@ function buildState(config: {
   siteStates?: Readonly<Record<string, SiteState>>;
   actionsRemaining?: number;
   returnPositionIndex?: number;
+  plyNumber?: number;
+  lengthInRounds?: number;
 }): GameState {
   return {
     ships: config.ships,
@@ -55,12 +57,12 @@ function buildState(config: {
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? 2,
     movedThisPly: config.movedThisPly ?? [],
-    plyNumber: 1,
+    plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     returnPositionIndex:
       config.returnPositionIndex ?? STARTING_RETURN_POSITION_INDEX,
     energy: { green: 0, red: 0 },
-    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
   };
 }
 
@@ -269,6 +271,68 @@ describe("attackRefusalReason / legalTargets with the §8.5 obligation", () => {
     expect(
       attackRefusalReason(state, "green-2", squareFromName("B1")),
     ).toBeUndefined();
+  });
+});
+
+describe("attackRefusalReason and legalTargets once the game is over", () => {
+  it("refuses an attack that would otherwise be legal, with game-over ahead of any other reason", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
+      plyNumber: 201,
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "game-over",
+    );
+  });
+
+  it("refuses an attack that would have been illegal anyway, still with game-over", () => {
+    const notAdjacent = buildState({
+      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "K5", 0)],
+      plyNumber: 201,
+    });
+    const notYourShip = buildState({
+      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
+      sideToMove: "red",
+      plyNumber: 201,
+    });
+
+    expect(
+      attackRefusalReason(notAdjacent, "green-1", squareFromName("K5")),
+    ).toBe("game-over");
+    expect(
+      attackRefusalReason(notYourShip, "green-1", squareFromName("H9")),
+    ).toBe("game-over");
+  });
+
+  it("empties legalTargets while the §7-only layer stays unchanged, pinning the layering", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
+      plyNumber: 201,
+    });
+
+    expect(legalTargets(state, "green-1")).toEqual([]);
+    expect(sevenOnlyLegalTargets(state, "green-1").length).toBeGreaterThan(0);
+  });
+
+  it("judges game-over against the state's own length, not the default", () => {
+    const notOver = buildState({
+      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
+      plyNumber: 6,
+      lengthInRounds: 3,
+    });
+    const over = buildState({
+      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
+      plyNumber: 7,
+      lengthInRounds: 3,
+    });
+
+    expect(
+      attackRefusalReason(notOver, "green-1", squareFromName("H9")),
+    ).toBeUndefined();
+    expect(attackRefusalReason(over, "green-1", squareFromName("H9"))).toBe(
+      "game-over",
+    );
   });
 });
 

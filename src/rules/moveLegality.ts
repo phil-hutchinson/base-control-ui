@@ -126,7 +126,8 @@ export type MoveRefusalReason =
   | "path-blocked"
   | "destination-occupied"
   | "destination-dormant-site"
-  | "destination-depleted-site";
+  | "destination-depleted-site"
+  | "game-over";
 
 /** The ship with the given id in this state, or throws if there is none. */
 export function findShip(state: GameState, shipId: ShipId): Ship {

@@ -307,6 +307,8 @@ function rejectionSentence(event: RejectedEvent): string {
       return "That is your own ship, not a target.";
     case "no-target-there":
       return `There is no ship on ${square} to attack.`;
+    case "game-over":
+      return "The game is over. Nothing further can be played.";
   }
 }
 
