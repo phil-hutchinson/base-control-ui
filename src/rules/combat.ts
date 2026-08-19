@@ -64,6 +64,7 @@ export function adjacentSquares(square: Square): readonly Square[] {
  */
 export type AttackRefusalReason =
   | "not-your-ship"
+  | "ship-already-acted"
   | "another-ship-stranded"
   | "attacker-in-bay"
   | "target-in-bay"
@@ -79,9 +80,9 @@ export type AttackRefusalReason =
  * without §8.5's answer depending on the question, exactly as
  * `sixOnlyMoveRefusalReason` does for §6.
  *
- * Checked most fundamental first: whose ship it is, then the attacker's own
- * bay, then everything about the target — no ship there, a friendly ship, a
- * ship in a bay, not adjacent.
+ * Checked most fundamental first: whose ship it is, then whether it has
+ * already acted, then the attacker's own bay, then everything about the
+ * target — no ship there, a friendly ship, a ship in a bay, not adjacent.
  */
 export function sevenOnlyAttackRefusalReason(
   state: GameState,
@@ -92,6 +93,9 @@ export function sevenOnlyAttackRefusalReason(
 
   if (attacker.side !== state.sideToMove) {
     return "not-your-ship";
+  }
+  if (state.actedThisPly.includes(shipId)) {
+    return "ship-already-acted";
   }
   if (isBay(attacker.square)) {
     return "attacker-in-bay";
@@ -128,7 +132,11 @@ export function sevenOnlyLegalTargets(
   shipId: ShipId,
 ): readonly Square[] {
   const attacker = findShip(state, shipId);
-  if (attacker.side !== state.sideToMove || isBay(attacker.square)) {
+  if (
+    attacker.side !== state.sideToMove ||
+    state.actedThisPly.includes(shipId) ||
+    isBay(attacker.square)
+  ) {
     return [];
   }
 
@@ -151,6 +159,12 @@ export function sevenOnlyLegalTargets(
  * here" without this question answering it; see `applyPassGuard` in
  * `ply.ts`.
  *
+ * Ownership and the already-acted check are duplicated here ahead of §8.5's
+ * stranded check, exactly as `moveRefusalReason` duplicates them ahead of
+ * its own stranded check, so the refusal a player hears has the same
+ * priority whichever action they attempted: a ship that has already acted is
+ * told so, rather than being told a stranded ship elsewhere needs moving.
+ *
  * §8.5 refuses **every** attack while any ship owes an action — including an
  * attack by the owing ship itself. Unlike `moveRefusalReason`, which excuses
  * the ships that owe (`!owed.includes(shipId)`), there is no exception here:
@@ -172,6 +186,9 @@ export function attackRefusalReason(
 
   if (attacker.side !== state.sideToMove) {
     return "not-your-ship";
+  }
+  if (state.actedThisPly.includes(shipId)) {
+    return "ship-already-acted";
   }
   if (strandedShipIds(state).length > 0) {
     return "another-ship-stranded";

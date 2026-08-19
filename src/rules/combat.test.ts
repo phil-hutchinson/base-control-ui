@@ -191,7 +191,7 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
     ).toBe("not-your-ship");
   });
 
-  it("a ship that has already acted this ply still has its targets", () => {
+  it("refuses a ship that has already acted this ply, leaving it with no targets", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 0)],
       actedThisPly: ["green-1"],
@@ -200,10 +200,8 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
 
     expect(
       sevenOnlyAttackRefusalReason(state, "green-1", squareFromName("H9")),
-    ).toBeUndefined();
-    expect(squareNames(sevenOnlyLegalTargets(state, "green-1"))).toEqual([
-      "H9",
-    ]);
+    ).toBe("ship-already-acted");
+    expect(sevenOnlyLegalTargets(state, "green-1")).toEqual([]);
   });
 });
 
@@ -229,7 +227,7 @@ describe("attackRefusalReason / legalTargets with the §8.5 obligation", () => {
     expect(legalTargets(state, "green-2")).toEqual([]);
   });
 
-  it("attacks are legal again once the freeing move is made, including with the ship just freed", () => {
+  it("attacks are legal again for the rest of the side once the freeing move is made, but not with the ship that just made it: one action per ship (rules.md §5)", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "E8", 4),
@@ -241,9 +239,9 @@ describe("attackRefusalReason / legalTargets with the §8.5 obligation", () => {
       actionsRemaining: 1,
     });
 
-    expect(
-      attackRefusalReason(state, "green-1", squareFromName("E9")),
-    ).toBeUndefined();
+    expect(attackRefusalReason(state, "green-1", squareFromName("E9"))).toBe(
+      "ship-already-acted",
+    );
     expect(
       attackRefusalReason(state, "green-2", squareFromName("B1")),
     ).toBeUndefined();

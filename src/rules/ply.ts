@@ -1,14 +1,15 @@
 // Applying an action, and the ply it belongs to (rules.md §5, §3.1, §7,
 // §8.2). An action is a move or an attack. A move is either refused, with the
-// reason from movement.ts, or applied: the ship arrives, is marked as having
-// moved, spends one action, wakes any active site it touched on the way, and
-// loses its shields if it ends in a bay. An attack is either refused, with
-// the reason from combat.ts, or resolved: neither ship changes square, the
-// winner (if any) keeps its shields minus the fight's cost, and the loser (or
-// both, on a mutual return) is placed in a bay at 0 shields — never marked as
-// having moved, since only a move counts towards that. When the ply's two
-// actions are spent, play passes to the other side. The pass guard covers the
-// case §5 sets out for when the side to move has no legal action at all.
+// reason from movement.ts, or applied: the ship arrives, spends one action,
+// wakes any active site it touched on the way, and loses its shields if it
+// ends in a bay. An attack is either refused, with the reason from
+// combat.ts, or resolved: neither ship changes square, the winner (if any)
+// keeps its shields minus the fight's cost, and the loser (or both, on a
+// mutual return) is placed in a bay at 0 shields. Every action — a move or an
+// attack — marks the acting ship as having acted this ply, since a ship may
+// take at most one action per turn (rules.md §5). When the ply's two actions
+// are spent, play passes to the other side. The pass guard covers the case
+// §5 sets out for when the side to move has no legal action at all.
 
 import { sideToMoveHasLegalAction } from "./actions";
 import { isBay } from "./bays";
@@ -195,27 +196,24 @@ export function applyPassGuard(state: GameState): {
  * sequence, advances the ply number, swaps the side to move and clears
  * `actedThisPly`, recording a `ply-ended` effect; then runs `applyPassGuard`,
  * recording a `ply-passed` effect if it fires. `actedShipId` is added to
- * `actedThisPly` when given, and omitted for an action — an attack, in
- * particular — that does not count as a move (rules.md §5). Mutates
- * `effects` by appending whichever of the two end-of-action effects fired,
- * and returns the resulting state. `effects` is typed to accept either
- * caller's effect list, since both `MoveEffect` and `AttackEffect` include
- * `EndOfActionEffect` as one of their members.
+ * `actedThisPly` — a move and an attack both spend the acting ship's one
+ * action for the turn (rules.md §5), so every caller passes its own ship's
+ * id. Mutates `effects` by appending whichever of the two end-of-action effects
+ * fired, and returns the resulting state. `effects` is typed to accept
+ * either caller's effect list, since both `MoveEffect` and `AttackEffect`
+ * include `EndOfActionEffect` as one of their members.
  */
 function applyEndOfActionTail(
   state: GameState,
   effects: (MoveEffect | AttackEffect)[],
-  actedShipId?: ShipId,
+  actedShipId: ShipId,
 ): GameState {
   const actionsRemaining = state.actionsRemaining - 1;
   let next: GameState;
   if (actionsRemaining > 0) {
     next = {
       ...state,
-      actedThisPly:
-        actedShipId === undefined
-          ? state.actedThisPly
-          : [...state.actedThisPly, actedShipId],
+      actedThisPly: [...state.actedThisPly, actedShipId],
       actionsRemaining,
     };
   } else {
@@ -370,8 +368,9 @@ function assertFightInvariants(
  * (rules.md §7). A legal attack never mutates `state`: neither ship changes
  * square — the winner, if any, simply keeps `winner − (loser + 1)` shields,
  * and the loser (or both ships, on a mutual return, attacker first) is placed
- * in a bay at 0 shields. The attacking ship is **not** added to
- * `actedThisPly`: only a move counts towards that (rules.md §5). One action
+ * in a bay at 0 shields. The attacking ship is added to `actedThisPly` in
+ * every outcome, including a mutual return in which it ends the action in a
+ * bay itself: it spent its one action either way (rules.md §5). One action
  * is spent; when the ply's second action is spent, play passes to the other
  * side exactly as it does after a move, and the result then passes through
  * `applyPassGuard`.
@@ -476,7 +475,7 @@ export function applyAttack(
     },
   ];
 
-  const settled = applyEndOfActionTail(nextState, effects);
+  const settled = applyEndOfActionTail(nextState, effects, attackerShip.id);
 
   return { outcome: "applied", state: settled, effects };
 }

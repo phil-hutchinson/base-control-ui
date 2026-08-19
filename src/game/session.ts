@@ -5,7 +5,6 @@
 // game state, so it lives here rather than in `src/rules/`; the event is
 // structured, never a sentence — wording is decided elsewhere.
 
-import { shipHasLegalAction } from "../rules/actions";
 import { type Square, squareName } from "../rules/board";
 import { type AttackRefusalReason, legalTargets } from "../rules/combat";
 import type { Side, ShipId } from "../rules/fleet";
@@ -174,16 +173,14 @@ function cleared(session: Session): Session {
 }
 
 /**
- * Whether `shipId` may be selected: it has a legal action of its own, or it
- * has not moved this ply yet (so it can still be a first, if currently
- * fruitless, choice — a pinned ship, or one held back by §8.5's obligation).
- * Widened from "has not moved this ply" so a ship that has moved and can
- * still attack (rules.md §5) is selectable too.
+ * Whether `shipId` may be selected: it has not acted this ply yet. A ship
+ * with no legal action at all — a pinned ship, or one held back by §8.5's
+ * obligation — is still a legitimate, if fruitless, first choice; a ship
+ * that has already acted has none left to offer (rules.md §5 permits at most
+ * one action per ship per turn).
  */
 function isSelectable(state: GameState, shipId: ShipId): boolean {
-  return (
-    shipHasLegalAction(state, shipId) || !state.actedThisPly.includes(shipId)
-  );
+  return !state.actedThisPly.includes(shipId);
 }
 
 /** Activating a square when no ship is currently selected. */

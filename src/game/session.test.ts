@@ -242,8 +242,8 @@ describe("sessionReducer — a ship is selected", () => {
       });
     });
 
-    it("re-selects a friendly ship that has moved but can still attack", () => {
-      const state = buildState({
+    it("rejects a friendly ship that has already acted as ship-already-acted, whether or not it still has a target in range", () => {
+      const withTarget = buildState({
         ships: [
           ship("green-1", "green", "H8"),
           ship("green-2", "green", "K5"),
@@ -251,24 +251,19 @@ describe("sessionReducer — a ship is selected", () => {
         ],
         actedThisPly: ["green-2"],
       });
-      const selected = activate(sessionFor(state), "H8");
+      const selectedWithTarget = activate(sessionFor(withTarget), "H8");
 
-      const result = activate(selected, "K5");
+      const resultWithTarget = activate(selectedWithTarget, "K5");
 
-      expect(result.selectedShipId).toBe("green-2");
-      expect(result.state).toBe(state);
-      expect(result.lastEvent).toEqual({
-        type: "selected",
-        shipId: "green-2",
-        side: "green",
+      expect(resultWithTarget.selectedShipId).toBe("green-1");
+      expect(resultWithTarget.state).toBe(withTarget);
+      expect(resultWithTarget.lastEvent).toEqual({
+        type: "rejected",
+        reason: "ship-already-acted",
         square: squareFromName("K5"),
-        destinationCount: 0,
-        targetCount: 1,
       });
-    });
 
-    it("rejects a friendly ship that has acted and has no target as ship-already-acted", () => {
-      const state = buildState({
+      const withoutTarget = buildState({
         ships: [
           ship("green-1", "green", "H8"),
           ship("green-2", "green", "K5"),
@@ -276,13 +271,13 @@ describe("sessionReducer — a ship is selected", () => {
         ],
         actedThisPly: ["green-2"],
       });
-      const selected = activate(sessionFor(state), "H8");
+      const selectedWithoutTarget = activate(sessionFor(withoutTarget), "H8");
 
-      const result = activate(selected, "K5");
+      const resultWithoutTarget = activate(selectedWithoutTarget, "K5");
 
-      expect(result.selectedShipId).toBe("green-1");
-      expect(result.state).toBe(state);
-      expect(result.lastEvent).toEqual({
+      expect(resultWithoutTarget.selectedShipId).toBe("green-1");
+      expect(resultWithoutTarget.state).toBe(withoutTarget);
+      expect(resultWithoutTarget.lastEvent).toEqual({
         type: "rejected",
         reason: "ship-already-acted",
         square: squareFromName("K5"),

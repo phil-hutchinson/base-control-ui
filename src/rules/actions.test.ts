@@ -91,13 +91,13 @@ describe("sideToMoveHasLegalAction", () => {
 });
 
 describe("shipHasLegalAction", () => {
-  it("is true for a ship that has moved and still has a legal target", () => {
+  it("is false for a ship that has moved, even with an enemy in range: one action per ship (rules.md §5)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H9", 3), ship("red-1", "red", "H10")],
       actedThisPly: ["green-1"],
     });
 
-    expect(shipHasLegalAction(state, "green-1")).toBe(true);
+    expect(shipHasLegalAction(state, "green-1")).toBe(false);
   });
 
   it("is false for a ship that has moved and has no legal target", () => {

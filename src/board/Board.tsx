@@ -108,8 +108,9 @@ export function Board({ session, onIntent }: BoardProps) {
     // the turn, when the obligation already binds; then having no legal
     // action at all — no legal move and no legal attack target — which
     // covers a pinned ship, a ship held back by the obligation elsewhere,
-    // and a ship that has acted and has no target left. Having acted is a
-    // separate, independent fact (`hasActed` below) and no longer
+    // and every ship that has already acted: one action per ship (rules.md
+    // §5) means an acted ship never has a legal move or attack left. Having
+    // acted is a separate, independent fact (`hasActed` below) and no longer
     // contributes to the condition.
     function shipCondition(ship: Ship): ShipCondition | undefined {
       if (ship.side !== session.state.sideToMove) {

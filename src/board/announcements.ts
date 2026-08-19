@@ -204,7 +204,7 @@ function passSentenceClauses(
   tailClause?: string,
 ): string[] {
   return [
-    `${capitalize(effect.side)} has no legal move, so the turn passes.`,
+    `${capitalize(effect.side)} has no legal action, so the turn passes.`,
     ...endOfTurnClauses(effect.endOfTurn),
     tailClause ?? `${turnPhrase(effect.sideToMove, ACTIONS_PER_PLY)}.`,
   ];

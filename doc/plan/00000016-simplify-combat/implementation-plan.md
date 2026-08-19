@@ -678,7 +678,49 @@ number of tests as before**, since nothing was added or removed. Then
 
 ## Step 3 — One action per ship: attacks spend the ship's turn
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as specified. `combat.ts` gained
+`"ship-already-acted"` in `AttackRefusalReason`, checked second in
+`sevenOnlyAttackRefusalReason`/`sevenOnlyLegalTargets` (after ownership,
+before the attacker's bay check) and duplicated in the public
+`attackRefusalReason` ahead of the §8.5 stranded check, with comments
+explaining the duplication. `ply.ts`'s `applyAttack` now passes the
+attacker's id to `applyEndOfActionTail` in every branch (including a mutual
+return, where the attacker itself ends up in a bay); `applyEndOfActionTail`'s
+`actedShipId` parameter was made non-optional rather than kept optional,
+since every caller now supplies it — the plan left this choice open.
+`session.ts`'s `isSelectable` simplified to "has not acted this ply" and its
+now-unused `shipHasLegalAction` import was removed. `announcements.ts`'s pass
+sentence changed from "no legal move" to "no legal action". Rewrote the
+tests the plan named as inverting
+(`ply.test.ts`'s attack-twice/attack-then-move/move-then-attack/mutual-return
+tests, `combat.test.ts`'s already-acted-still-has-targets test,
+`actions.test.ts`'s moved-ship-still-has-target test,
+`session.test.ts`'s re-select/reject tests, `Board.test.tsx`'s
+already-acted-shows-only-targets test) and added the new tests the step
+requires, including the pass-guard trap test built directly against
+`applyPassGuard` with a ship that has already acted but would otherwise
+offer a legal target. One deviation, both necessary consequences of the rule
+actually taking effect rather than gaps in the plan: (1) several existing
+`ply.test.ts` fight-resolution and refusal tests used a single ship per
+side, so after that ship's one action the pass guard now legitimately fires
+mid-test (there being no second ship left to act) and either appends an
+unexpected `ply-passed` effect or advances `sideToMove` before the test's
+second action runs; fixed by adding an uninvolved second ship to each such
+state (mirroring how `session.test.ts`'s existing states already do this),
+never by weakening an assertion. (2) `combat.test.ts`'s
+"attacks are legal again once the freeing move is made, including with the
+ship just freed" and `Board.tsx`/`squareLabel.ts`'s header comments about a
+moved ship still being selectable or still carrying a target were
+pre-existing statements that the rule this step implements makes false;
+rewrote the test to assert the new split (the ship that just acted stays
+refused, the rest of the side is free again) and corrected the comments —
+not files the plan's "Where the code goes" table lists for this step, but
+leaving a comment asserting a behaviour this step deliberately removes would
+violate the comment convention. `npm run typecheck`, `npm run lint`,
+`npm test` (617/617, including `fullGame.test.ts` completing at the
+expected ply), `npm run build` and `npm run format:check` all pass.
 
 Make the rule real. This is the smallest diff in the story and the one that
 changes the most about how a turn plays.

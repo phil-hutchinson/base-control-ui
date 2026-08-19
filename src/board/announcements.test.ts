@@ -210,7 +210,7 @@ describe("announcementFor", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from G7 to H8. Red has no legal move, so the turn passes. Green's turn, 2 actions left.",
+      "Green ship moved from G7 to H8. Red has no legal action, so the turn passes. Green's turn, 2 actions left.",
     );
   });
 
@@ -222,7 +222,7 @@ describe("announcementFor", () => {
       endOfTurn: [],
     };
     expect(announcementFor(event)).toBe(
-      "Red has no legal move, so the turn passes. Green's turn, 2 actions left.",
+      "Red has no legal action, so the turn passes. Green's turn, 2 actions left.",
     );
   });
 
@@ -681,7 +681,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from G7 to H8. The node at K5 ran out. " +
-        "Red has no legal move, so the turn passes. Green's turn, 2 actions left.",
+        "Red has no legal action, so the turn passes. Green's turn, 2 actions left.",
     );
   });
 
@@ -701,7 +701,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       ],
     };
     expect(announcementFor(event)).toBe(
-      "Red has no legal move, so the turn passes. Red ship at K11 gained a shield, now on 2. Green's turn, 2 actions left.",
+      "Red has no legal action, so the turn passes. Red ship at K11 gained a shield, now on 2. Green's turn, 2 actions left.",
     );
   });
 });
@@ -837,7 +837,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       endOfTurn: [collected],
     };
     expect(announcementFor(event)).toBe(
-      "Red has no legal move, so the turn passes. Red collected 3 energy from 2 nodes at E5 and K5, and now has 3. Green's turn, 2 actions left.",
+      "Red has no legal action, so the turn passes. Red collected 3 energy from 2 nodes at E5 and K5, and now has 3. Green's turn, 2 actions left.",
     );
   });
 });
@@ -969,7 +969,7 @@ describe("announcementForSession", () => {
       lastEvent: event,
     };
     expect(announcementForSession(session)).toBe(
-      "Red has no legal move, so the turn passes. The game is over after 3 rounds. The game is a draw, 4 energy each.",
+      "Red has no legal action, so the turn passes. The game is over after 3 rounds. The game is a draw, 4 energy each.",
     );
   });
 
@@ -1288,7 +1288,7 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
       "Green ship at J4 attacked the red ship at K5 and won. " +
         "The beaten ship returned to the D1 bay with no shields. " +
         "The fight cost 1 shield, leaving the winner on 0. " +
-        "Red has no legal move, so the turn passes. Green's turn, 2 actions left.",
+        "Red has no legal action, so the turn passes. Green's turn, 2 actions left.",
     );
   });
 });

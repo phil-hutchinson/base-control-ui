@@ -529,7 +529,7 @@ describe("Board", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("shows only targets, no destinations, for a ship that has already acted", () => {
+    it("shows neither targets nor destinations for a ship that has already acted: one action per ship (rules.md §5)", () => {
       const state = attackState({ actedThisPly: ["green-1"] });
       const session: Session = {
         state,
@@ -539,10 +539,8 @@ describe("Board", () => {
       render(<Board session={session} onIntent={noop} />);
 
       expect(
-        screen.getByRole("gridcell", {
-          name: "H9, red ship, 0 shields, can attack here, your ship would win",
-        }),
-      ).toBeInTheDocument();
+        screen.queryByRole("gridcell", { name: /can attack here/ }),
+      ).not.toBeInTheDocument();
       expect(
         screen.queryByRole("gridcell", { name: /can move here$/ }),
       ).not.toBeInTheDocument();
@@ -978,9 +976,10 @@ describe("Board", () => {
       ).toBeInTheDocument();
     });
 
-    it("reads a moved ship with a legal attack target as moved and nothing else — no condition", () => {
-      // green-1 has already acted this ply, but red-1 sits adjacent to it,
-      // so it still has a legal attack under §7 and carries no condition.
+    it("reads a moved ship as both acted and out of actions, even with an enemy adjacent: one action per ship (rules.md §5)", () => {
+      // green-1 has already acted this ply. red-1 sits adjacent to it, but
+      // an acted ship has no legal attack left either, so it carries the
+      // no-action condition alongside having acted.
       const state: GameState = {
         ships: [
           {
@@ -1010,7 +1009,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H8, green ship, 2 shields, already acted this turn",
+          name: "H8, green ship, 2 shields, already acted this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
     });
