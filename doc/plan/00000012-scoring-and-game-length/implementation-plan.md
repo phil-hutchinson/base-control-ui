@@ -1817,7 +1817,11 @@ component test passes untouched, and axe finds no violations on the app
 
 ## Step 18 — Manual gate: the whole look, the motion, and the ending
 
-Status: pending
+Status: committed
+
+Notes: Gate passed with four refinements requested by the owner, which
+Step 18a carries out. The arcade effects, the motion, the payout reading
+and the ending were all accepted as they stand.
 
 The story's manual gates, run against Step 11's three-round fixture so a whole
 game — collections, the counter running out, the ending, and play again — takes
@@ -1850,6 +1854,108 @@ Verification (manual): the owner confirms:
   exactly as they did before this story.
 
 Anything wrong here is fixed before Step 19, in the step that owns it.
+
+---
+
+## Step 18a — The refinements the manual gate asked for
+
+Status: pending
+
+Four changes the owner asked for at Step 18's gate. They are cosmetic, they
+touch only the HUD and the result panel, and they are grouped into one step
+because none of them is worth a commit of its own. The board, the rules layer
+and every wording module stay untouched.
+
+**1. The result panel stops showing the result sentence.** The panel already
+prints both final totals in large arcade digits directly above it, so the
+sentence ("Red wins, 6 energy to 3.") reads as a restatement. Remove it from
+the panel's visible layout.
+
+**It does not leave the panel's accessible text.** The panel's score block is
+`aria-hidden` decoration (Step 16), so the sentence is currently the only thing
+that tells assistive technology who won and by how much. Deleting it outright
+would leave a screen reader with a "Game over" heading and a button and no
+result at all. Keep the sentence in the panel as visually hidden text, using
+the `.visually-hidden` utility Step 12 added to `src/index.css` — the same
+split the HUD's scores and round counter already use, where decorative digits
+carry the look and a hidden sentence carries the meaning. `resultSentence` in
+`src/board/announcements.ts` is unchanged and still feeds the live region.
+
+**2. The result panel's background becomes opaque.** It is currently
+`rgb(11 16 32 / 88%)`, and the board showing faintly through it reads as
+unfinished rather than as depth. Use the solid palette colour instead. Do not
+introduce a new literal — take it from the existing deep-space custom
+properties in `src/index.css`.
+
+**3. The panel covers the bezel evenly on all four sides.** As it stands the
+overlay reaches over the cabinet's padding on three sides but stops short at
+the top, leaving a band of the bezel showing there that reads as a border
+thicker than the other three. Once the background is opaque this is more
+obvious, not less. The panel should cover the same amount on every side — the
+top edge is the one the owner prefers, so match the other three to it.
+
+The panel is currently `position: absolute; inset: 0` anchored to
+`.app__board`, which `.app__cabinet` wraps with its own padding and 2px border.
+Work out where the asymmetry actually comes from before changing anything;
+`.app__board` is a size container with `align-items: flex-start` and a board
+that can overflow downward, so an overlay anchored to it does not necessarily
+cover what a reader sees as "the screen". Anchoring the panel to
+`.app__cabinet` instead is the likely answer, but confirm it in the browser
+rather than assuming. **`.app__board` must keep `container-type: size`, its
+`flex: 1; min-height: 0`, and its resolved height** — `.board-frame` measures
+`--square` against it, and the board's sizing behaviour is not this step's to
+change.
+
+**4. The round counter gains a "ROUND" label.** A white label reading `ROUND`
+sits above the counter, in the same treatment as the `GREEN` and `RED` names
+above the two scores — the same arcade face, size, letter-spacing and
+uppercasing — but in the bright text colour rather than a side colour, since
+the round belongs to neither side. Reuse the existing custom properties; the
+side colours stay the single source of side identity and must not appear here.
+
+The label is decoration and is `aria-hidden`, exactly as the side names are:
+`roundCounterSpokenText` already says "round 2 of 3" in the counter's hidden
+sentence, and a screen reader hearing "ROUND round 2 of 3" would be worse, not
+better. **No new wording enters `src/board/announcements.ts`** — the visible
+word is a label in the component, not a sentence.
+
+Depends on: Steps 12, 16 and 17 (the HUD, the panel and the chrome all exist
+and have been looked at).
+
+Verification (automated): `npm test` and `npm run build`, with:
+
+- a `GameOverPanel` test asserting the result sentence is still present as
+  accessible text — findable by its words through the accessible tree — while
+  no longer part of the panel's visible layout;
+- the existing `GameOverPanel`, `App`, `Hud` and `RoundCounter` tests passing,
+  with changes only where they asserted the removed visible sentence;
+- a `RoundCounter` test that the visible `ROUND` label is `aria-hidden` and
+  that the counter's accessible text is still the spoken form alone;
+- axe finds no violations on the app and on the panel (`color-contrast`
+  disabled, per CONTRIBUTING.md).
+
+The look itself is Step 18b's gate.
+
+---
+
+## Step 18b — Manual gate: the refinements
+
+Status: pending
+
+Run `npm run dev` and open `http://localhost:5273`, and play the three-round
+fixture out to its end.
+
+Verification (manual): the owner confirms:
+
+- the result panel shows the heading, both totals and the button, with no
+  result sentence visible;
+- the panel is fully opaque — no board showing through;
+- the panel's white edge is the same thickness on all four sides, matching the
+  top edge as it was;
+- a white `ROUND` label sits above the round counter, matching `GREEN` and
+  `RED` in every respect but colour;
+- nothing else about the look, the motion or the ending has changed from
+  Step 18.
 
 ---
 
