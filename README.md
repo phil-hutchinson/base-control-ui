@@ -2,8 +2,8 @@
 
 Base Control is a game for two players. Each of you commands a fleet of seven
 ships on a 15 x 15 board, competing for the handful of contested nodes that
-light up across it. Hold a node and it pays you influence every turn. The
-player with the most influence at the end wins.
+light up across it. Hold a node and it pays you energy every turn. The
+player with the most energy at the end wins.
 
 Your ships carry shields. Shields win fights — but every shield a ship carries
 slows it down, so the strongest ship on the board is also the slowest. Sitting
@@ -18,25 +18,33 @@ it happens.
 This is the game's web app. It runs entirely in your browser — nothing to
 install, no account, no server.
 
-> **Status:** early development. The app now plays turns, moves ships and
-> fights. Opening it shows the board in its starting position, with all
-> fourteen ships lined up in their bays and the seventeen sites marked, five
-> of them already nodes in play. Green goes first, and each player takes two
-> actions a turn — a move or an attack — by mouse or by keyboard. No ship
-> moves twice in the same turn, though a ship that has already moved can
-> still attack. A node wakes the moment a ship touches it, landing on it or
-> flying over it, and pays a shield to the player sitting on it at the end of
-> each of their own turns. A node runs out after nine turns, and a new one
-> wakes somewhere else at random to replace it. A ship still standing on a
-> node that has just run out has to be moved clear before its owner can do
-> anything else that turn. In a fight the ship carrying more shields wins and
-> the beaten one is pushed back to a bay with none — but winning costs the
-> winner a shield more than the loser was carrying, and the winner holds its
-> ground rather than advancing, so clearing a node and then taking it needs
-> both of a turn's actions. Two ships carrying the same shields both go home.
-> The bay a beaten ship returns to travels around the edge of the board as
-> the game goes on, and the board marks where it is. Nothing is scored yet
-> and the game does not end. The project is being built up story by story.
+> **Status:** early development. The app now plays a whole game, from the
+> opening position to the final score. Opening it shows the board in its
+> starting position, with all fourteen ships lined up in their bays and the
+> seventeen sites marked, five of them already nodes in play. Green goes
+> first, and each player takes two actions a turn — a move or an attack — by
+> mouse or by keyboard. No ship moves twice in the same turn, though a ship
+> that has already moved can still attack. A node wakes the moment a ship
+> touches it, landing on it or flying over it, and pays a shield to the
+> player sitting on it at the end of each of their own turns. A node runs
+> out after nine turns, and a new one wakes somewhere else at random to
+> replace it. A ship still standing on a node that has just run out has to
+> be moved clear before its owner can do anything else that turn. In a fight
+> the ship carrying more shields wins and the beaten one is pushed back to a
+> bay with none — but winning costs the winner a shield more than the loser
+> was carrying, and the winner holds its ground rather than advancing, so
+> clearing a node and then taking it needs both of a turn's actions. Two
+> ships carrying the same shields both go home. The bay a beaten ship
+> returns to travels around the edge of the board as the game goes on, and
+> the board marks where it is. A node also pays energy at the end of each
+> turn to the player sitting on it, and holding several at once pays far
+> more than holding them one at a time would. The app keeps score and shows
+> it, along with how many nodes each player holds and which round the game
+> is in. After a hundred rounds the game ends: the player with the most
+> energy wins, an equal score is a draw, and a button starts another game.
+> There is still no way to save or record a game, no computer opponent to
+> play against, and no way to choose how long a game runs. The project is
+> being built up story by story.
 
 ## The rules
 

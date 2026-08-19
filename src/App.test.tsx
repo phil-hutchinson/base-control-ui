@@ -27,6 +27,24 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the HUD's scores and round counter for the opening position", () => {
+    render(<App />);
+
+    expect(
+      screen.getByText("Green: 0 energy, no nodes held."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Red: 0 energy, no nodes held."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1/100")).toBeInTheDocument();
+  });
+
+  it("has no result panel while the game is in progress", () => {
+    render(<App />);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("has no static accessibility violations", async () => {
     const { container } = render(<App />);
 

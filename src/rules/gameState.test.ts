@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CLOCKWISE_BAYS } from "./bays";
 import { squareFromName, squareName } from "./board";
 import { STARTING_FLEET } from "./fleet";
+import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
   shipsBySquare,
   siteStateAt,
@@ -127,5 +128,32 @@ describe("startingGameState", () => {
     expect(first.ships).not.toBe(second.ships);
     expect(first.siteStates).not.toBe(second.siteStates);
     expect(first.movedThisPly).not.toBe(second.movedThisPly);
+  });
+
+  it("starts both sides at 0 energy", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.energy).toEqual({ green: 0, red: 0 });
+  });
+
+  it("defaults to a hundred-round length when none is given", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.lengthInRounds).toBe(DEFAULT_GAME_LENGTH_ROUNDS);
+  });
+
+  it("takes a given length, changing nothing else about the state", () => {
+    const defaultLength = startingGameState(SEED);
+    const shortGame = startingGameState(SEED, 3);
+
+    expect(shortGame.lengthInRounds).toBe(3);
+    expect({
+      ...shortGame,
+      lengthInRounds: defaultLength.lengthInRounds,
+    }).toEqual(defaultLength);
+  });
+
+  it.each([0, -1, 2.5])("throws a RangeError for a length of %s", (length) => {
+    expect(() => startingGameState(SEED, length)).toThrow(RangeError);
   });
 });

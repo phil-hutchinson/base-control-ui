@@ -1,0 +1,90 @@
+/* Sits in the same grid area as `.board` (see Board.css), so it is exactly
+   the grid's box with no measurement of its own. Its children are placed in
+   percentages of that box, computed by boardView.ts's centroid function. */
+.energy-overlay {
+  grid-column: 2 / 17;
+  grid-row: 1 / 16;
+  position: relative;
+  pointer-events: none;
+}
+
+.energy-overlay__gain {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-arcade);
+  font-weight: 700;
+  font-size: clamp(1rem, 2.5vw, 1.75rem);
+  text-shadow: 0 0 0.4em currentcolor;
+  animation: energy-overlay-float 1.2s ease-out forwards;
+}
+
+.energy-overlay__gain--green {
+  color: var(--color-green);
+}
+
+.energy-overlay__gain--red {
+  color: var(--color-red);
+}
+
+@keyframes energy-overlay-float {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -180%);
+  }
+}
+
+.energy-overlay__pulse {
+  position: absolute;
+  width: var(--square);
+  height: var(--square);
+  transform: translate(-50%, -50%) scale(0.6);
+  border-radius: 50%;
+  border: 2px solid currentcolor;
+  animation: energy-overlay-pulse 0.8s ease-out forwards;
+}
+
+.energy-overlay__pulse--green {
+  color: var(--color-green);
+}
+
+.energy-overlay__pulse--red {
+  color: var(--color-red);
+}
+
+@keyframes energy-overlay-pulse {
+  from {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+}
+
+/* No state here is ever carried by motion alone: the number and the pulse
+   still appear and fade, just without travelling or scaling. */
+@media (prefers-reduced-motion: reduce) {
+  .energy-overlay__gain {
+    animation: energy-overlay-fade 1.2s ease-out forwards;
+    transform: translate(-50%, -50%);
+  }
+
+  .energy-overlay__pulse {
+    animation: energy-overlay-fade 0.8s ease-out forwards;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes energy-overlay-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

@@ -17,7 +17,7 @@ import { shipsBySquare, siteStateAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
 import { strandedShipIds } from "../rules/stranded";
 import type { Session, SessionIntent } from "../game/session";
-import { announcementFor } from "./announcements";
+import { announcementForSession } from "./announcements";
 import { squareForGridPosition } from "./boardView";
 import {
   squareLabel,
@@ -26,6 +26,7 @@ import {
   type SquareMark,
 } from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
+import { EnergyOverlay } from "./EnergyOverlay";
 import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import type { GridPosition } from "./grid/gridNavigation";
 import "./Board.css";
@@ -48,7 +49,8 @@ export interface BoardProps {
  * column/row labels around its edges so a sighted reader can find a square
  * by eye. The labels are decorative: every square's accessible name already
  * carries its coordinates, so the labels are `aria-hidden` and sit outside
- * the `role="grid"` element (a grid may only own rows).
+ * the `role="grid"` element (a grid may only own rows). The energy overlay
+ * follows the same pattern, for the same reason.
  */
 export function Board({ session, onIntent }: BoardProps) {
   const handleActivate = useCallback(
@@ -207,8 +209,9 @@ export function Board({ session, onIntent }: BoardProps) {
         className="board"
         onActivate={handleActivate}
         onDismiss={handleDismiss}
-        announcement={announcementFor(session.lastEvent)}
+        announcement={announcementForSession(session)}
       />
+      <EnergyOverlay session={session} />
       <div className="board-frame__corner" aria-hidden="true" />
       <div className="board-frame__column-labels" aria-hidden="true">
         {COLUMN_LETTERS.map((column) => (

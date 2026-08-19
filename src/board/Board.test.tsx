@@ -15,6 +15,7 @@ import {
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import { startingSiteState } from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
+import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalDestinations } from "../rules/movement";
 import {
   legalTargets,
@@ -22,7 +23,12 @@ import {
   returnPositionSquare,
 } from "../rules/combat";
 import type { ShieldCount } from "../rules/shields";
-import { createSession, sessionReducer, type Session } from "../game/session";
+import {
+  createSession,
+  sessionReducer,
+  type MovedEvent,
+  type Session,
+} from "../game/session";
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
 
@@ -485,6 +491,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
     }
 
@@ -809,6 +817,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
     }
 
@@ -951,6 +961,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
       const session: Session = {
         state,
@@ -986,6 +998,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
       const session: Session = {
         state,
@@ -1020,6 +1034,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
       const session: Session = {
         state,
@@ -1300,5 +1316,57 @@ describe("Board", () => {
 
       expect(results.violations).toEqual([]);
     });
+  });
+});
+
+describe("energy overlay composition", () => {
+  it("draws it as a sibling of the grid, hidden from the accessibility tree", () => {
+    const state: GameState = {
+      ...startingGameState(TEST_SEED),
+    };
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-collected",
+              side: "green",
+              amount: 1,
+              newTotal: 1,
+              squares: [squareAt("H", 8)],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: 2,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+
+    const { container } = render(<Board session={session} onIntent={noop} />);
+
+    const overlay = container.querySelector(".energy-overlay");
+    expect(overlay).toBeInTheDocument();
+    expect(overlay).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByRole("grid")).not.toContainElement(
+      overlay as HTMLElement,
+    );
+    expect(overlay?.querySelector(".energy-overlay__gain")).toHaveTextContent(
+      "+1",
+    );
+
+    // The grid itself is unaffected by the overlay's presence.
+    expect(screen.getAllByRole("gridcell")).toHaveLength(225);
   });
 });

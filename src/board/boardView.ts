@@ -36,3 +36,38 @@ export function squareForGridPosition(position: GridPosition): Square {
   }
   return squareAt(COLUMN_LETTERS[position.column], BOARD_SIZE - position.row);
 }
+
+/** A position expressed as percentages of the grid's own box, for placing a decorative overlay over it without measuring anything. */
+export interface PercentPosition {
+  readonly top: number;
+  readonly left: number;
+}
+
+/**
+ * The centroid of one or more squares, as a percentage position across the
+ * grid (a single square's own centre sits at `(index + 0.5) / 15`). Used to
+ * place the decorative "+N" a collection pays: one payout is one number
+ * (rules.md §8.4 pays for the count of nodes held), so it lands at the
+ * centroid of the nodes that paid rather than split across them. Throws on
+ * an empty list, since a centroid needs at least one point.
+ */
+export function centroidPercentPosition(
+  squares: readonly Square[],
+): PercentPosition {
+  if (squares.length === 0) {
+    throw new RangeError(
+      "centroidPercentPosition requires at least one square",
+    );
+  }
+  const positions = squares.map(gridPositionForSquare);
+  const averageRow =
+    positions.reduce((sum, position) => sum + position.row, 0) /
+    positions.length;
+  const averageColumn =
+    positions.reduce((sum, position) => sum + position.column, 0) /
+    positions.length;
+  return {
+    top: ((averageRow + 0.5) / BOARD_SIZE) * 100,
+    left: ((averageColumn + 0.5) / BOARD_SIZE) * 100,
+  };
+}

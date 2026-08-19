@@ -21,6 +21,7 @@ import {
 } from "./combat";
 import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
 import type { Side, ShipId } from "./fleet";
+import { isGameOver } from "./gameLength";
 import {
   ACTIONS_PER_PLY,
   type GameState,
@@ -146,11 +147,22 @@ export type ApplyAttackResult = AppliedAttack | RefusedAttack;
  * side to move (rules.md §5, §8.7). Only the side to move is checked — the
  * side passed to is not — so this makes exactly one pass, never a second one
  * back.
+ *
+ * Once the game is over, every action is refused (rules.md §9), which is
+ * exactly the condition this guard fires on. Checked first, ahead of
+ * `sideToMoveHasLegalAction`, this returns the state untouched: otherwise the
+ * guard would read "no legal action" as a pass, run the end-of-turn sequence
+ * for a ply that does not exist, and advance past the end again on every
+ * subsequent call, without bound.
  */
 export function applyPassGuard(state: GameState): {
   readonly state: GameState;
   readonly effect: PassEffect | undefined;
 } {
+  if (isGameOver(state)) {
+    return { state, effect: undefined };
+  }
+
   if (sideToMoveHasLegalAction(state)) {
     return { state, effect: undefined };
   }

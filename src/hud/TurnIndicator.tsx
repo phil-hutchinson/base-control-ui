@@ -5,7 +5,7 @@
 // would announce it twice.
 
 import type { GameState } from "../rules/gameState";
-import { turnIndicatorText } from "./announcements";
+import { turnIndicatorText } from "../board/announcements";
 import "./TurnIndicator.css";
 
 interface TurnIndicatorProps {

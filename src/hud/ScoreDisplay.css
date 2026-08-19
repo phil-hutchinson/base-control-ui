@@ -1,0 +1,57 @@
+.score-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 6ch;
+}
+
+.score-display__name {
+  font-family: var(--font-arcade);
+  font-size: clamp(0.75rem, 1.5vw, 1rem);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.score-display--green .score-display__name,
+.score-display--green .score-display__digits {
+  color: var(--color-green);
+}
+
+.score-display--red .score-display__name,
+.score-display--red .score-display__digits {
+  color: var(--color-red);
+}
+
+.score-display__digits {
+  font-family: var(--font-arcade);
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 0.4em currentcolor;
+}
+
+.score-display__pips {
+  display: flex;
+  gap: 0.35em;
+}
+
+.score-display__pip {
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background-color: var(--color-space-raised);
+  border: 1px solid var(--color-text-dim);
+}
+
+.score-display--green .score-display__pip--lit {
+  background-color: var(--color-green);
+  border-color: var(--color-green);
+  box-shadow: 0 0 0.4em var(--color-green);
+}
+
+.score-display--red .score-display__pip--lit {
+  background-color: var(--color-red);
+  border-color: var(--color-red);
+  box-shadow: 0 0 0.4em var(--color-red);
+}

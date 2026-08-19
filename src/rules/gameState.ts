@@ -6,6 +6,7 @@
 import { type Square, squareName } from "./board";
 import { STARTING_RETURN_POSITION_INDEX } from "./bays";
 import { STARTING_FLEET, type Side, type ShipId } from "./fleet";
+import { DEFAULT_GAME_LENGTH_ROUNDS, isGameLengthRounds } from "./gameLength";
 import { SITES, type SiteState, startingSiteState } from "./sites";
 import type { ShieldCount } from "./shields";
 
@@ -31,6 +32,9 @@ export interface SiteStatus {
   readonly enteredOnPly: number;
 }
 
+/** Each side's running energy total (rules.md §8.4). */
+export type EnergyTotals = Readonly<Record<Side, number>>;
+
 /** The state of a game in progress. */
 export interface GameState {
   /** Every ship, in `STARTING_FLEET` order. */
@@ -55,19 +59,44 @@ export interface GameState {
    * from that occupancy at the point of use — it is never stored here.
    */
   readonly returnPositionIndex: number;
+  /** Each side's running energy total (rules.md §8.4), both starting at 0. */
+  readonly energy: EnergyTotals;
+  /**
+   * The game's length in rounds (rules.md §9), fixed for the game's
+   * lifetime once set by `startingGameState`. Every piece of round
+   * arithmetic reads it from here rather than from a default, so a shorter
+   * or longer game is a property of this state and not of the app. Neither
+   * the current round nor whether the game is over is stored: both are
+   * derived from `plyNumber` and this field at the point of use.
+   */
+  readonly lengthInRounds: number;
 }
 
 /**
  * The state the game starts from: the fourteen `STARTING_FLEET` ships, every
  * site's starting state (none entered during a ply, so `enteredOnPly` is 0),
- * green to move, two actions remaining, nothing moved, ply 1, and the given
- * seed.
+ * green to move, two actions remaining, nothing moved, ply 1, the given
+ * seed, both sides at 0 energy, and the given game length.
  *
  * The seed is a required argument — see `src/game/seed.ts` for where the
  * app's opening seed comes from. Every test passes one explicitly, so a
  * game's opening position is always reproducible.
+ *
+ * The game's length in rounds defaults to `DEFAULT_GAME_LENGTH_ROUNDS`
+ * (rules.md §9) and, once set, is fixed for the game's lifetime. It must be
+ * a positive whole number; anything else is a caller bug and throws a
+ * `RangeError`.
  */
-export function startingGameState(randomSeed: number): GameState {
+export function startingGameState(
+  randomSeed: number,
+  lengthInRounds: number = DEFAULT_GAME_LENGTH_ROUNDS,
+): GameState {
+  if (!isGameLengthRounds(lengthInRounds)) {
+    throw new RangeError(
+      `startingGameState: lengthInRounds must be a positive integer, got ${lengthInRounds}`,
+    );
+  }
+
   const siteStates: Record<string, SiteStatus> = {};
   for (const site of SITES) {
     const state = startingSiteState(site);
@@ -90,6 +119,8 @@ export function startingGameState(randomSeed: number): GameState {
     plyNumber: 1,
     randomSeed,
     returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+    energy: { green: 0, red: 0 },
+    lengthInRounds,
   };
 }
 

@@ -3,6 +3,7 @@ import { STARTING_RETURN_POSITION_INDEX } from "./bays";
 import { squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, SiteStatus } from "./gameState";
+import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { moveRefusalReason, sideToMoveHasLegalMove } from "./movement";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
@@ -44,6 +45,8 @@ function buildState(config: {
     plyNumber: 1,
     randomSeed: 1,
     returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+    energy: { green: 0, red: 0 },
+    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
   };
 }
 

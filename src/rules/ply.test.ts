@@ -9,6 +9,7 @@ import {
   type SiteStatus,
   startingGameState,
 } from "./gameState";
+import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyAttack, applyMove, applyPassGuard } from "./ply";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
@@ -44,6 +45,8 @@ function buildState(config: {
   >;
   plyNumber?: number;
   returnPositionIndex?: number;
+  lengthInRounds?: number;
+  energy?: { green: number; red: number };
 }): GameState {
   return {
     ships: config.ships,
@@ -55,6 +58,8 @@ function buildState(config: {
     randomSeed: 1,
     returnPositionIndex:
       config.returnPositionIndex ?? STARTING_RETURN_POSITION_INDEX,
+    energy: config.energy ?? { green: 0, red: 0 },
+    lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
   };
 }
 
@@ -577,6 +582,13 @@ describe("applyAttack", () => {
           square: squareFromName("K5"),
           shields: 1,
         },
+        {
+          type: "energy-collected",
+          side: "green",
+          amount: 1,
+          newTotal: 1,
+          squares: [squareFromName("K5")],
+        },
       ],
     });
   });
@@ -1048,9 +1060,66 @@ describe("applyPassGuard", () => {
           square: squareFromName("K5"),
           shields: 4,
         },
+        {
+          type: "energy-collected",
+          side: "green",
+          amount: 1,
+          newTotal: 1,
+          squares: [squareFromName("K5")],
+        },
       ],
     });
     const passedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(passedShip?.shields).toBe(4);
+  });
+
+  it("the trap: returns the state untouched once the game is over, rather than passing an unbounded number of times", () => {
+    // No ship at all has a legal action, which is exactly the condition the
+    // guard would otherwise read as "pass". At ply 201 of a hundred-round
+    // game the game is already over, so this must not run the end-of-turn
+    // sequence, tick a clock, collect energy or advance the ply.
+    const state = buildState({ ships: [], plyNumber: 201 });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state).toEqual(state);
+    expect(result.effect).toBeUndefined();
+  });
+
+  it("the trap, at a shorter length: returns the state untouched once that game's own length has run out", () => {
+    const state = buildState({
+      ships: [],
+      plyNumber: 7,
+      lengthInRounds: 3,
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state).toEqual(state);
+    expect(result.effect).toBeUndefined();
+  });
+
+  it("a state one action from the end, driven through that action, ends at ply 201 with the guard having fired nothing", () => {
+    const state = buildState({
+      ships: [ship("red-1", "red", "H8")],
+      sideToMove: "red",
+      actionsRemaining: 1,
+      plyNumber: 200,
+    });
+
+    const result = applyMove(state, "red-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.plyNumber).toBe(201);
+    expect(result.effects.some((effect) => effect.type === "ply-passed")).toBe(
+      false,
+    );
+
+    const guarded = applyPassGuard(result.state);
+    expect(guarded.state).toEqual(result.state);
+    expect(guarded.effect).toBeUndefined();
   });
 });
