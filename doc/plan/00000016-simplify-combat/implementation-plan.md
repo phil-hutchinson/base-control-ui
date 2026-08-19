@@ -126,7 +126,7 @@ Every function this story needs to attach to exists today.
 - `src/game/session.ts` — `Session`, `SessionIntent`, `SessionEvent`
   (`SelectedEvent`, `MovedEvent`, `AttackedEvent`, `RejectedEvent`, …),
   `RejectionReason` (`MoveRefusalReason | AttackRefusalReason |
-  "nothing-to-select"`), `isSelectable`, `sessionReducer`.
+"nothing-to-select"`), `isSelectable`, `sessionReducer`.
 - `src/board/announcements.ts` — **all** player-facing wording:
   `announcementFor(event)`, `fightSentence`, `rejectionSentence` (an exhaustive
   `switch` over `RejectionReason`, so renaming a reason forces this file to
@@ -144,22 +144,22 @@ Every function this story needs to attach to exists today.
 
 ## Where the code goes
 
-| Path                                                | Change                                                                                       |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `doc/ruleset/rules.md`                              | §4.1, §5, §6, §7, §8.2, §8.5; version → 0.8 (Step 1 only)                                    |
-| `doc/ruleset/changelog.md`                          | the 0.8 entry (Step 1 only)                                                                  |
-| `src/rules/rulesVersion.ts`                         | `RULES_VERSION` → `"0.8"` (Step 1 only)                                                      |
-| `src/rules/gameState.ts`                            | `movedThisPly` → `actedThisPly` (Step 2)                                                     |
-| `src/rules/moveLegality.ts`                         | the rename; `"ship-already-moved"` → `"ship-already-acted"` (Step 2)                          |
-| `src/rules/movement.ts`, `src/rules/stranded.ts`    | the rename (Step 2)                                                                          |
-| `src/rules/combat.ts`                               | already-acted check (Step 3); range from `reachFrom`, `attackReach` (Step 4); `winnerAdvance` (Step 5) |
-| `src/rules/ply.ts`                                  | attacks record an action (Step 3); the advance, the widened effect, the rewritten invariants (Step 5) |
-| `src/rules/nodes.ts`                                | comments widen from "a move" to "a ship's path" (Step 5)                                     |
-| `src/rules/actions.ts`                              | nothing beyond the rename it inherits (Step 2)                                               |
-| `src/game/session.ts`                               | the rename (Step 2); `isSelectable` simplifies (Step 3); `AttackedEvent`'s comment (Step 5)  |
-| `src/board/announcements.ts`                        | the rename (Step 2); already-acted and pass wording (Step 3); the two new refusals (Step 4); the fight sentence (Step 6) |
-| `src/board/Board.tsx`, `BoardSquare.tsx` / `.css`, `squareLabel.ts` | `hasMoved` → `hasActed`, "already acted this turn" (Step 2) |
-| `README.md`                                         | the rules summary (Step 1); a final accuracy pass (Step 8)                                  |
+| Path                                                                | Change                                                                                                                   |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `doc/ruleset/rules.md`                                              | §4.1, §5, §6, §7, §8.2, §8.5; version → 0.8 (Step 1 only)                                                                |
+| `doc/ruleset/changelog.md`                                          | the 0.8 entry (Step 1 only)                                                                                              |
+| `src/rules/rulesVersion.ts`                                         | `RULES_VERSION` → `"0.8"` (Step 1 only)                                                                                  |
+| `src/rules/gameState.ts`                                            | `movedThisPly` → `actedThisPly` (Step 2)                                                                                 |
+| `src/rules/moveLegality.ts`                                         | the rename; `"ship-already-moved"` → `"ship-already-acted"` (Step 2)                                                     |
+| `src/rules/movement.ts`, `src/rules/stranded.ts`                    | the rename (Step 2)                                                                                                      |
+| `src/rules/combat.ts`                                               | already-acted check (Step 3); range from `reachFrom`, `attackReach` (Step 4); `winnerAdvance` (Step 5)                   |
+| `src/rules/ply.ts`                                                  | attacks record an action (Step 3); the advance, the widened effect, the rewritten invariants (Step 5)                    |
+| `src/rules/nodes.ts`                                                | comments widen from "a move" to "a ship's path" (Step 5)                                                                 |
+| `src/rules/actions.ts`                                              | nothing beyond the rename it inherits (Step 2)                                                                           |
+| `src/game/session.ts`                                               | the rename (Step 2); `isSelectable` simplifies (Step 3); `AttackedEvent`'s comment (Step 5)                              |
+| `src/board/announcements.ts`                                        | the rename (Step 2); already-acted and pass wording (Step 3); the two new refusals (Step 4); the fight sentence (Step 6) |
+| `src/board/Board.tsx`, `BoardSquare.tsx` / `.css`, `squareLabel.ts` | `hasMoved` → `hasActed`, "already acted this turn" (Step 2)                                                              |
+| `README.md`                                                         | the rules summary (Step 1); a final accuracy pass (Step 8)                                                               |
 
 ## Decisions taken at plan time
 
@@ -448,7 +448,21 @@ appear further away.
 
 ## Step 1 — Rules: attack range, the winner's advance, one action per ship (version 0.8)
 
-Status: pending
+Status: committed
+
+Notes: Edited `doc/ruleset/rules.md` to version 0.8 (§4.1, §5, §6, §7, §8.2,
+§8.5, and the version line), added the 0.8 entry to
+`doc/ruleset/changelog.md`, bumped `RULES_VERSION` in
+`src/rules/rulesVersion.ts`, and corrected the two now-wrong sentences in
+`README.md`'s status blockquote, exactly as specified. No deviations from the
+plan. `npm run format:check` still reports a pre-existing warning on this
+`implementation-plan.md` file unrelated to this step (confirmed by running
+`prettier --write` on it in isolation and reverting — the warning exists on
+the file as committed before this step touched it, from formatting drift
+outside this step's scope of `doc/ruleset/rules.md`,
+`doc/ruleset/changelog.md`, `src/rules/rulesVersion.ts` and `README.md`);
+`format:check` passes cleanly on all four files this step actually
+modified.
 
 Edit `doc/ruleset/rules.md` to version **0.8**. Nothing in `src/` changes in
 this step except `RULES_VERSION`.
@@ -756,16 +770,16 @@ In `src/rules/combat.ts`:
 - **Delete** `ADJACENT_OFFSETS` and `adjacentSquares`. Nothing outside
   `combat.ts` and `combat.test.ts` uses them.
 - **Rewrite the module header.** It currently explains at length why §7's range
-  is *not* derived from `reachFrom` and must not be coupled to §6's table. That
+  is _not_ derived from `reachFrom` and must not be coupled to §6's table. That
   is now exactly backwards: §7's range **is** §6's range, there is one
   implementation of the table, and both sections read it.
 - Add **`attackReach(state, shipId, target)`** returning the `ReachEntry` whose
   `destination` is `target`, from `reachFrom(attacker.square,
-  attacker.shields)`, or `undefined` when the target is out of the attacker's
+attacker.shields)`, or `undefined` when the target is out of the attacker's
   reach (Decision 4). Import `reachFrom` and `ReachEntry` from
   `./moveLegality`, which `combat.ts` already imports `findShip` from — not
   from `./movement`, whose §8.5 and §9 layers this has no business pulling in.
-  Its doc comment states what it is *not*: no ownership, no bays, no occupancy,
+  Its doc comment states what it is _not_: no ownership, no bays, no occupancy,
   no ply awareness — pure geometry, shared by the legality check and (from
   Step 5) by the advance.
 - In `AttackRefusalReason`, `"target-not-adjacent"` becomes
@@ -781,7 +795,7 @@ In `src/rules/combat.ts`:
   the target's own site state is irrelevant (a ship stranded on a depleted site
   can still be attacked).
 - `sevenOnlyLegalTargets` enumerates `reachFrom(attacker.square,
-  attacker.shields)`'s destinations instead of the eight neighbours, filtering
+attacker.shields)`'s destinations instead of the eight neighbours, filtering
   as it already does by `sevenOnlyAttackRefusalReason`.
 - **Reword the §8.5 comment** on `attackRefusalReason`. "A move can free a
   stranded ship, but an attack never does" is no longer true once Step 5 lands
@@ -797,9 +811,9 @@ exhaustive, so this file must change in the same step:
   player the truth and carries the story's most surprising consequence, because
   this sentence is the only place a player will discover it. Recommended
   wording, which the step may polish but must keep the facts of: `"<square> is
-  out of attack range. A ship attacks as far as it moves, so shields shorten
-  its reach — a ship with four shields can only strike one square up, down,
-  left or right."`
+out of attack range. A ship attacks as far as it moves, so shields shorten
+its reach — a ship with four shields can only strike one square up, down,
+left or right."`
 - `"attack-path-blocked"` gets its own sentence, distinct from a move's
   `"path-blocked"` so the player knows which action was refused. Recommended:
   `"Another ship stands in the way, so the attack cannot reach <square>."`
