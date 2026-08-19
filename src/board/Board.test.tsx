@@ -6,11 +6,22 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
-import { BAYS, isBay } from "../rules/bays";
+import {
+  BAYS,
+  driftReturnPositionIndex,
+  isBay,
+  STARTING_RETURN_POSITION_INDEX,
+} from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import { startingSiteState } from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
+import {
+  legalTargets,
+  resolveFight,
+  returnPositionSquare,
+} from "../rules/combat";
+import type { ShieldCount } from "../rules/shields";
 import { createSession, sessionReducer, type Session } from "../game/session";
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
@@ -69,9 +80,11 @@ describe("Board", () => {
     expect(
       screen.getByRole("gridcell", { name: "D15, bay, red ship, 0 shields" }),
     ).toBeInTheDocument();
+    // H15 is return position 1 on the starting turn (rules.md §7.1), so its
+    // name carries that cue too.
     expect(
       screen.getByRole("gridcell", {
-        name: "H15, bay, green ship, 0 shields",
+        name: "H15, bay, return position 1, green ship, 0 shields",
       }),
     ).toBeInTheDocument();
     expect(
@@ -145,12 +158,21 @@ describe("Board", () => {
   it("names each starting ship's square with its side, and no other square", () => {
     render(<Board session={startingSession} onIntent={noop} />);
 
+    // H15 also carries return position 1 on the starting turn.
+    const returnPositionSquareName = squareName(
+      returnPositionSquare(startingGameState(TEST_SEED)),
+    );
+
     for (const entry of STARTING_FLEET) {
       const cell = screen.getByRole("gridcell", {
         name: squareLabel({
           square: entry.square,
           isBay: isBay(entry.square),
           siteState: startingSiteState(entry.square),
+          returnCue:
+            squareName(entry.square) === returnPositionSquareName
+              ? "return-position"
+              : undefined,
           occupant: entry,
         }),
       });
@@ -169,6 +191,8 @@ describe("Board", () => {
       square,
       isBay: isBay(square),
       siteState: startingSiteState(square),
+      // H15 is return position 1 on the starting turn.
+      returnCue: "return-position",
       occupant: startingShipAt(square),
     });
     const cell = screen.getByRole("gridcell", { name: label });
@@ -331,9 +355,13 @@ describe("Board", () => {
     });
     expect(cell).toBeInTheDocument();
     expect(cell.querySelector(".ship-icon--green")).toBeInTheDocument();
-    // The bay green-1 started in is empty now.
+    // The bay green-1 started in is empty now, so it is also — as well as
+    // remaining return position 1 — the current receptacle (the coincidence
+    // case of rules.md §7.1, decision 14).
     expect(
-      screen.getByRole("gridcell", { name: "H15, bay" }),
+      screen.getByRole("gridcell", {
+        name: "H15, bay, return position 1, next bay for a beaten ship",
+      }),
     ).toBeInTheDocument();
     expect(container.querySelectorAll(".ship-icon--green")).toHaveLength(7);
   });
@@ -382,21 +410,24 @@ describe("Board", () => {
       ).toHaveLength(destinations.length);
     });
 
-    it("marks a ship that has already moved this ply", () => {
+    it("marks a ship that has already moved this ply — here, still in a bay, so also carrying no-action", () => {
       render(<Board session={session} onIntent={noop} />);
 
       const movedShip = state.ships.find((ship) => ship.id === "green-2");
       expect(movedShip).toBeDefined();
+      // Still in its bay, so §3.1 forbids it any attack, and it has already
+      // used its one move: "already moved" and "no-action" both apply, in
+      // that order.
       expect(
         screen.getByRole("gridcell", {
           name: new RegExp(
-            `^${squareName(movedShip!.square)},.*already moved this turn$`,
+            `^${squareName(movedShip!.square)},.*already moved this turn, no action available this turn$`,
           ),
         }),
       ).toBeInTheDocument();
       expect(
         screen.getAllByRole("gridcell", {
-          name: /already moved this turn$/,
+          name: /already moved this turn/,
         }),
       ).toHaveLength(1);
     });
@@ -406,7 +437,7 @@ describe("Board", () => {
 
       expect(
         screen.queryByRole("gridcell", {
-          name: /, selected$|can move here$|already moved this turn$/,
+          name: /, selected$|can move here$|already moved this turn$|can attack here/,
         }),
       ).not.toBeInTheDocument();
     });
@@ -421,6 +452,320 @@ describe("Board", () => {
       });
 
       expect(results.violations).toEqual([]);
+    });
+  });
+
+  describe("attack targets", () => {
+    // green-1 selected on H8 with an adjacent enemy on H9, so it carries
+    // both destinations (empty neighbours) and one target.
+    function attackState(overrides?: {
+      attackerShields?: ShieldCount;
+      defenderShields?: ShieldCount;
+      movedThisPly?: string[];
+    }): GameState {
+      return {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: overrides?.attackerShields ?? 2,
+          },
+          {
+            id: "red-1",
+            side: "red",
+            square: squareAt("H", 9),
+            shields: overrides?.defenderShields ?? 0,
+          },
+        ],
+        siteStates: {},
+        sideToMove: "green",
+        actionsRemaining: overrides?.movedThisPly ? 1 : 2,
+        movedThisPly: overrides?.movedThisPly ?? [],
+        plyNumber: 1,
+        randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+      };
+    }
+
+    it("marks legal targets distinctly from legal destinations, naming the predicted outcome", () => {
+      const state = attackState();
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      // Attacker 2 shields vs defender 0: the attacker wins.
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H9, red ship, 0 shields, can attack here, your ship would win",
+        }),
+      ).toBeInTheDocument();
+
+      const destinations = legalDestinations(state, "green-1");
+      expect(destinations.length).toBeGreaterThan(0);
+      for (const destination of destinations) {
+        expect(
+          screen.getByRole("gridcell", {
+            name: new RegExp(`^${squareName(destination)},.*can move here$`),
+          }),
+        ).toBeInTheDocument();
+      }
+      // The target square never also carries the destination wording.
+      expect(
+        screen.queryByRole("gridcell", {
+          name: /^H9,.*can move here$/,
+        }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows only targets, no destinations, for a ship that has already moved", () => {
+      const state = attackState({ movedThisPly: ["green-1"] });
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H9, red ship, 0 shields, can attack here, your ship would win",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("gridcell", { name: /can move here$/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("marks no square as a target when nothing is selected", () => {
+      const state = attackState();
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.queryByRole("gridcell", { name: /can attack here/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("produces the right predicted outcome for every combination of 0-4 against 0-4", () => {
+      const shieldCounts: readonly ShieldCount[] = [0, 1, 2, 3, 4];
+      for (const attackerShields of shieldCounts) {
+        for (const defenderShields of shieldCounts) {
+          const state = attackState({ attackerShields, defenderShields });
+          const session: Session = {
+            state,
+            selectedShipId: "green-1",
+            lastEvent: undefined,
+          };
+          render(<Board session={session} onIntent={noop} />);
+
+          const outcome = resolveFight(attackerShields, defenderShields).result;
+          const wording =
+            outcome === "attacker-won"
+              ? "can attack here, your ship would win"
+              : outcome === "defender-won"
+                ? "can attack here, your ship would lose"
+                : "can attack here, both ships would return to bays";
+          const unit = defenderShields === 1 ? "shield" : "shields";
+
+          expect(
+            screen.getByRole("gridcell", {
+              name: `H9, red ship, ${defenderShields} ${unit}, ${wording}`,
+            }),
+          ).toBeInTheDocument();
+
+          cleanup();
+        }
+      }
+    });
+
+    it("never marks a square with more than one of selected, destination and target", () => {
+      const state = attackState();
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      const targets = legalTargets(state, "green-1");
+      expect(targets.length).toBeGreaterThan(0);
+
+      for (const cell of screen.getAllByRole("gridcell")) {
+        const name = cell.getAttribute("aria-label") ?? "";
+        const matches = [
+          ", selected",
+          "can move here",
+          "can attack here",
+        ].filter((marker) => name.includes(marker));
+        expect(matches.length).toBeLessThanOrEqual(1);
+      }
+    });
+  });
+
+  describe("return cues", () => {
+    // The starting fleet with one or two ships moved out of their bays, so
+    // some bays stay occupied (in particular H15, return position 1 on the
+    // starting turn) while others empty out — the state the return cues
+    // actually have something to say about, since the true starting
+    // position (every ship still in its own bay) has no empty bay at all.
+    // The vacated ships are recorded as already moved, so a dormant square
+    // they land on does not accidentally strand them under §8.5 and block
+    // every other ship's moves, which would otherwise show up as a spurious
+    // "no action available" on unrelated squares this describe block never
+    // asked about.
+    const VACATED_DESTINATIONS: readonly Square[] = [
+      squareAt("B", 4),
+      squareAt("C", 4),
+    ];
+
+    function stateWithBaysVacatedBy(...shipIds: readonly string[]): GameState {
+      return {
+        ...startingGameState(TEST_SEED),
+        ships: startingGameState(TEST_SEED).ships.map((ship) => {
+          const index = shipIds.indexOf(ship.id);
+          return index === -1
+            ? ship
+            : { ...ship, square: VACATED_DESTINATIONS[index] };
+        }),
+        movedThisPly: [...shipIds],
+      };
+    }
+
+    it("marks H15 as return position 1, and the receptacle on the first empty bay clockwise from it", () => {
+      // green-2 (O14) is the only ship moved out; H15 (position 1) and L15
+      // stay occupied, so O14 is the first empty bay after position 1.
+      const state = stateWithBaysVacatedBy("green-2");
+      const session = createSession(state);
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H15, bay, return position 1, green ship, 0 shields",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("gridcell", {
+          name: "O14, bay, next bay for a beaten ship",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("names both return cues on the same bay when position 1 is itself the receptacle, and draws only the solid receptacle triangles", () => {
+      // green-1 (H15) is the only ship moved out, so position 1 is empty
+      // and is also the first empty bay.
+      const state = stateWithBaysVacatedBy("green-1");
+      const session = createSession(state);
+      render(<Board session={session} onIntent={noop} />);
+
+      const cell = screen.getByRole("gridcell", {
+        name: "H15, bay, return position 1, next bay for a beaten ship",
+      });
+      expect(cell).toBeInTheDocument();
+      expect(
+        cell.querySelectorAll(".board-square__mark--receptacle path"),
+      ).toHaveLength(4);
+      expect(
+        cell.querySelector(".board-square__mark--return-position"),
+      ).toBeNull();
+    });
+
+    it("moves the return-position wording one bay counter-clockwise once the ply ends", () => {
+      const before: GameState = {
+        ...startingGameState(TEST_SEED),
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+      };
+      const after: GameState = {
+        ...startingGameState(TEST_SEED),
+        returnPositionIndex: driftReturnPositionIndex(
+          STARTING_RETURN_POSITION_INDEX,
+        ),
+      };
+
+      const { unmount } = render(
+        <Board session={createSession(before)} onIntent={noop} />,
+      );
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H15, bay, return position 1, green ship, 0 shields",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("gridcell", { name: /^D15,.*return position 1/ }),
+      ).not.toBeInTheDocument();
+      unmount();
+
+      render(<Board session={createSession(after)} onIntent={noop} />);
+      expect(
+        screen.getByRole("gridcell", {
+          name: "D15, bay, return position 1, red ship, 0 shields",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("gridcell", { name: /^H15,.*return position 1/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("moves the receptacle wording onto a bay vacated mid-ply, since it is recomputed every render", () => {
+      // First green-2 (O14) alone is moved out: the receptacle is O14, the
+      // first empty bay after the still-occupied H15 and L15.
+      const beforeSecondAction = stateWithBaysVacatedBy("green-2");
+      const { unmount } = render(
+        <Board session={createSession(beforeSecondAction)} onIntent={noop} />,
+      );
+      expect(
+        screen.getByRole("gridcell", {
+          name: "O14, bay, next bay for a beaten ship",
+        }),
+      ).toBeInTheDocument();
+      unmount();
+
+      // Now red-1 (L15) is also moved out, as the ply's second action: L15
+      // is earlier in the ring than O14, so the receptacle moves onto it.
+      const afterSecondAction = stateWithBaysVacatedBy("green-2", "red-1");
+      render(
+        <Board session={createSession(afterSecondAction)} onIntent={noop} />,
+      );
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "L15, bay, next bay for a beaten ship",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("gridcell", {
+          name: /^O14,.*next bay for a beaten ship/,
+        }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows no receptacle wording anywhere when every bay is occupied, as at the true starting position, and draws position 1's outline alone", () => {
+      render(<Board session={startingSession} onIntent={noop} />);
+
+      expect(
+        screen.queryByRole("gridcell", {
+          name: /next bay for a beaten ship/,
+        }),
+      ).not.toBeInTheDocument();
+      // Return position 1 is still marked even though it is occupied, and
+      // with no empty bay to be the receptacle, only its stroked outline is
+      // drawn — the absence of a solid triangle correctly says there is
+      // nowhere for a beaten ship to go.
+      const cell = screen.getByRole("gridcell", {
+        name: "H15, bay, return position 1, green ship, 0 shields",
+      });
+      expect(cell).toBeInTheDocument();
+      expect(
+        cell.querySelectorAll(".board-square__mark--return-position line"),
+      ).toHaveLength(4);
+      expect(cell.querySelector(".board-square__mark--receptacle")).toBeNull();
     });
   });
 
@@ -463,6 +808,7 @@ describe("Board", () => {
         movedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
       };
     }
 
@@ -525,10 +871,13 @@ describe("Board", () => {
           name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn",
         }),
       ).toBeInTheDocument();
-      // Green-2 already spent this ply's first action moving elsewhere.
+      // Green-2 already spent this ply's first action moving elsewhere, has
+      // no enemy adjacent to attack, and the obligation would refuse the
+      // attack anyway (decision 6 of the plan) — so it reads as both
+      // "already moved" and "no action available", dampened.
       expect(
         screen.getByRole("gridcell", {
-          name: "A1, green ship, 0 shields, already moved this turn",
+          name: "A1, green ship, 0 shields, already moved this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
       // Green-3 has not moved and would have a normal move under §6 alone,
@@ -556,8 +905,12 @@ describe("Board", () => {
 
     it("names a pinned ship 'no action available', with nothing stranded anywhere", () => {
       // green-1 sits at H8 with 4 shields, so its only reach is the four
-      // orthogonal neighbours (rules.md §6) — all four occupied by red ships,
-      // leaving it with no legal destination at all.
+      // orthogonal neighbours (rules.md §6) — all four occupied by *friendly*
+      // ships, leaving it with no legal destination. Blocking with green
+      // rather than red ships also denies it any attack target: an enemy on
+      // any of those squares would give it a legal attack under §7 even
+      // though it could not step there, since attack range is all eight
+      // neighbours regardless of shields.
       const state: GameState = {
         ships: [
           {
@@ -566,10 +919,30 @@ describe("Board", () => {
             square: squareAt("H", 8),
             shields: 4,
           },
-          { id: "red-1", side: "red", square: squareAt("H", 9), shields: 0 },
-          { id: "red-2", side: "red", square: squareAt("H", 7), shields: 0 },
-          { id: "red-3", side: "red", square: squareAt("G", 8), shields: 0 },
-          { id: "red-4", side: "red", square: squareAt("I", 8), shields: 0 },
+          {
+            id: "green-2",
+            side: "green",
+            square: squareAt("H", 9),
+            shields: 0,
+          },
+          {
+            id: "green-3",
+            side: "green",
+            square: squareAt("H", 7),
+            shields: 0,
+          },
+          {
+            id: "green-4",
+            side: "green",
+            square: squareAt("G", 8),
+            shields: 0,
+          },
+          {
+            id: "green-5",
+            side: "green",
+            square: squareAt("I", 8),
+            shields: 0,
+          },
         ],
         siteStates: {},
         sideToMove: "green",
@@ -577,6 +950,7 @@ describe("Board", () => {
         movedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
       };
       const session: Session = {
         state,
@@ -588,6 +962,75 @@ describe("Board", () => {
       expect(
         screen.getByRole("gridcell", {
           name: "H8, green ship, 4 shields, no action available this turn",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("reads a moved ship with a legal attack target as moved and nothing else — no condition", () => {
+      // green-1 has already moved this ply, but red-1 sits adjacent to it,
+      // so it still has a legal attack under §7 and carries no condition.
+      const state: GameState = {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 2,
+          },
+          { id: "red-1", side: "red", square: squareAt("H", 9), shields: 0 },
+        ],
+        siteStates: {},
+        sideToMove: "green",
+        actionsRemaining: 1,
+        movedThisPly: ["green-1"],
+        plyNumber: 1,
+        randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+      };
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H8, green ship, 2 shields, already moved this turn",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("reads a moved ship with no legal move and no legal target as both moved and out of actions", () => {
+      // green-1 has already moved this ply and has no adjacent enemy, so it
+      // has no legal move (its one move is spent) and no legal target.
+      const state: GameState = {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 2,
+          },
+        ],
+        siteStates: {},
+        sideToMove: "green",
+        actionsRemaining: 1,
+        movedThisPly: ["green-1"],
+        plyNumber: 1,
+        randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+      };
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H8, green ship, 2 shields, already moved this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
     });
@@ -786,6 +1229,35 @@ describe("Board", () => {
         );
         expect(cell(/^H8,.*selected$/)).toBeInTheDocument();
       });
+    });
+
+    it("keeps focus on the attacked square, which now reads as empty", async () => {
+      const user = userEvent.setup();
+      const state: GameState = {
+        ...startingGameState(TEST_SEED),
+        ships: startingGameState(TEST_SEED).ships.map((ship) => {
+          if (ship.id === "green-1") {
+            return { ...ship, square: squareAt("H", 8), shields: 4 };
+          }
+          if (ship.id === "red-1") {
+            return { ...ship, square: squareAt("H", 9), shields: 0 };
+          }
+          return ship;
+        }),
+      };
+      render(<Harness initial={state} />);
+
+      await activate(user, "keyboard", cell(/^H8,/));
+      await activate(user, "keyboard", cell(/^H9,.*red ship/));
+
+      const attackedCell = cell("H9");
+      expect(document.activeElement).toBe(attackedCell);
+      expect(screen.getByRole("grid")).toContainElement(
+        document.activeElement as HTMLElement,
+      );
+      expect(liveRegion()).toHaveTextContent(
+        /^Green ship at H8 attacked the red ship at H9 and won\./,
+      );
     });
 
     it("cancels the selection on Escape from anywhere in the grid", async () => {

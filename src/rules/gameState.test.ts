@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CLOCKWISE_BAYS } from "./bays";
 import { squareFromName, squareName } from "./board";
 import { STARTING_FLEET } from "./fleet";
 import {
@@ -32,6 +33,14 @@ describe("startingGameState", () => {
     expect(state.movedThisPly).toEqual([]);
     expect(state.plyNumber).toBe(1);
     expect(state.randomSeed).toBe(SEED);
+  });
+
+  it("names H15 as return position 1", () => {
+    const state = startingGameState(SEED);
+
+    expect(CLOCKWISE_BAYS[state.returnPositionIndex]).toEqual(
+      squareFromName("H15"),
+    );
   });
 
   it("gives every site a status: five active, twelve dormant, none charged or depleted, all entered on ply 0", () => {

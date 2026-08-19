@@ -5,7 +5,14 @@
 
 import { useCallback, useMemo } from "react";
 import { BOARD_SIZE, COLUMN_LETTERS, squareName } from "../rules/board";
-import { isBay } from "../rules/bays";
+import { BAYS, isBay } from "../rules/bays";
+import { shipHasLegalAction } from "../rules/actions";
+import {
+  legalTargets,
+  receptacleBay,
+  resolveFight,
+  returnPositionSquare,
+} from "../rules/combat";
 import { shipsBySquare, siteStateAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
 import { strandedShipIds } from "../rules/stranded";
@@ -14,6 +21,7 @@ import { announcementFor } from "./announcements";
 import { squareForGridPosition } from "./boardView";
 import {
   squareLabel,
+  type ReturnCue,
   type ShipCondition,
   type SquareMark,
 } from "./squareLabel";
@@ -70,13 +78,37 @@ export function Board({ session, onIntent }: BoardProps) {
         ? legalDestinations(session.state, selectedShip.id).map(squareName)
         : [],
     );
+    const targetSquareNames = new Set(
+      selectedShip
+        ? legalTargets(session.state, selectedShip.id).map(squareName)
+        : [],
+    );
     const owedShipIds = new Set(strandedShipIds(session.state));
+
+    // Return position 1 is always well-defined (rules.md §7.1): it is just
+    // an index into the ring, empty bay or not. The receptacle is only
+    // meaningful once some bay is actually empty — combat.ts's own
+    // `receptacleBay` throws otherwise, on the assumption (true whenever a
+    // fight can happen) that a returning ship's own vacated bay guarantees
+    // room. At the game's own starting position every bay still holds its
+    // starting ship, so that assumption does not yet hold; the board simply
+    // shows no receptacle cue until a bay actually empties.
+    const returnPositionSquareName = squareName(
+      returnPositionSquare(session.state),
+    );
+    const anyBayEmpty = BAYS.some((bay) => !ships.has(squareName(bay)));
+    const receptacleSquareName = anyBayEmpty
+      ? squareName(receptacleBay(session.state))
+      : undefined;
 
     // A ship's condition, for the side to move only: an opponent's ship
     // never carries one. Owing an action takes precedence from the start of
-    // the turn, when the obligation already binds; then already having
-    // moved; then having no legal destination at all, which covers both a
-    // pinned ship and one held back by the obligation elsewhere.
+    // the turn, when the obligation already binds; then having no legal
+    // action at all — no legal move and no legal attack target — which
+    // covers a pinned ship, a ship held back by the obligation elsewhere,
+    // and a ship that has moved and has no target left. Having moved is a
+    // separate, independent fact (`hasMoved` below) and no longer
+    // contributes to the condition.
     function shipCondition(ship: Ship): ShipCondition | undefined {
       if (ship.side !== session.state.sideToMove) {
         return undefined;
@@ -84,10 +116,7 @@ export function Board({ session, onIntent }: BoardProps) {
       if (owedShipIds.has(ship.id)) {
         return "owes-action";
       }
-      if (session.state.movedThisPly.includes(ship.id)) {
-        return "already-moved";
-      }
-      if (legalDestinations(session.state, ship.id).length === 0) {
+      if (!shipHasLegalAction(session.state, ship.id)) {
         return "no-action";
       }
       return undefined;
@@ -105,12 +134,34 @@ export function Board({ session, onIntent }: BoardProps) {
         const ship = ships.get(name);
         const occupant = ship && { side: ship.side, shields: ship.shields };
         const condition = ship && shipCondition(ship);
+        const hasMoved = ship
+          ? session.state.movedThisPly.includes(ship.id)
+          : false;
 
         let mark: SquareMark | undefined;
         if (selectedShip && squareName(selectedShip.square) === name) {
           mark = "selected";
         } else if (destinationSquareNames.has(name)) {
           mark = "destination";
+        } else if (selectedShip && targetSquareNames.has(name) && ship) {
+          mark = {
+            kind: "target",
+            outcome: resolveFight(selectedShip.shields, ship.shields).result,
+          };
+        }
+
+        // The two return-position cues are independent of `mark` and of
+        // each other's usual exclusivity: a bay can be position 1 and the
+        // current receptacle at once, when position 1 happens to be empty.
+        const isReturnPosition = name === returnPositionSquareName;
+        const isReceptacle = name === receptacleSquareName;
+        let returnCue: ReturnCue | undefined;
+        if (isReturnPosition && isReceptacle) {
+          returnCue = "return-position-and-receptacle";
+        } else if (isReturnPosition) {
+          returnCue = "return-position";
+        } else if (isReceptacle) {
+          returnCue = "receptacle";
         }
 
         return {
@@ -118,7 +169,9 @@ export function Board({ session, onIntent }: BoardProps) {
             <BoardSquare
               isBay={bay}
               siteState={siteState}
+              returnCue={returnCue}
               occupant={occupant}
+              hasMoved={hasMoved}
               condition={condition}
               mark={mark}
             />
@@ -127,7 +180,9 @@ export function Board({ session, onIntent }: BoardProps) {
             square,
             isBay: bay,
             siteState,
+            returnCue,
             occupant,
+            hasMoved,
             condition,
             mark,
           }),

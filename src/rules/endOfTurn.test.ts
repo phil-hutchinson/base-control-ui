@@ -1,4 +1,9 @@
 import { describe, expect, it } from "vitest";
+import {
+  CLOCKWISE_BAYS,
+  driftReturnPositionIndex,
+  STARTING_RETURN_POSITION_INDEX,
+} from "./bays";
 import { squareFromName, squareName } from "./board";
 import { runEndOfTurn } from "./endOfTurn";
 import type { ShipId } from "./fleet";
@@ -32,6 +37,7 @@ function buildState(config: {
   sideToMove?: "green" | "red";
   plyNumber?: number;
   randomSeed?: number;
+  returnPositionIndex?: number;
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -41,6 +47,8 @@ function buildState(config: {
     movedThisPly: [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: config.randomSeed ?? 1,
+    returnPositionIndex:
+      config.returnPositionIndex ?? STARTING_RETURN_POSITION_INDEX,
   };
 }
 
@@ -255,8 +263,8 @@ describe("runEndOfTurn — steps 3 and 5, a site freed this ply is drawable this
   });
 });
 
-describe("runEndOfTurn — step 2 and step 6 stay empty", () => {
-  it("keeps influence and the bay return position out of scope: nothing else changes when nothing is due", () => {
+describe("runEndOfTurn — step 2 stays empty", () => {
+  it("keeps influence out of scope: no effect and no other state change when nothing is due", () => {
     const state = buildState({
       sideToMove: "green",
       plyNumber: 3,
@@ -267,7 +275,58 @@ describe("runEndOfTurn — step 2 and step 6 stay empty", () => {
     const result = runEndOfTurn(state);
 
     expect(result.effects).toEqual([]);
-    expect(result.state).toEqual(state);
+    expect(result.state).toEqual({
+      ...state,
+      returnPositionIndex: driftReturnPositionIndex(state.returnPositionIndex),
+    });
+  });
+});
+
+describe("runEndOfTurn — step 6, the return position's drift (§7.1)", () => {
+  it("moves the return position one bay counter-clockwise, from H15 to D15", () => {
+    const state = buildState({
+      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(CLOCKWISE_BAYS[STARTING_RETURN_POSITION_INDEX]).toEqual(
+      squareFromName("H15"),
+    );
+    expect(CLOCKWISE_BAYS[result.state.returnPositionIndex]).toEqual(
+      squareFromName("D15"),
+    );
+  });
+
+  it("returns to H15 after fourteen calls, and produces no effect", () => {
+    let state = buildState({
+      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+    });
+
+    for (let i = 0; i < 14; i++) {
+      const result = runEndOfTurn(state);
+      expect(result.effects).toEqual([]);
+      state = result.state;
+    }
+
+    expect(state.returnPositionIndex).toBe(STARTING_RETURN_POSITION_INDEX);
+  });
+
+  it("is the only field the step changes", () => {
+    const state = buildState({
+      sideToMove: "green",
+      plyNumber: 3,
+      siteStates: { H8: ["active", 0], K5: ["dormant", 0] },
+      ships: [ship("green-1", "green", "D2")],
+      returnPositionIndex: 5,
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state).toEqual({
+      ...state,
+      returnPositionIndex: driftReturnPositionIndex(5),
+    });
   });
 });
 

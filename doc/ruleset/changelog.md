@@ -7,6 +7,29 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.6 — starting shields settled, and two ships always have somewhere to go
+
+- **Appendix A item 1 is closed: every ship starts with 0 shields.** This is
+  the owner's decision. The number in section 4 was already 0; only the
+  "(TBD)" marking, the appendix's table and item, and the introduction's
+  sentence pointing at undecided details are removed. Nothing about how the
+  game is played changes — the starting shield count is unchanged. Appendix A
+  keeps its heading, now carrying a single line saying nothing is currently
+  outstanding, so Appendix B keeps its number and every cross-reference to it
+  (section 8.7, and earlier planning documents) still resolves.
+- **Section 7.1's "there is always somewhere to go" now covers the mutual
+  return too.** The paragraph already argued that a single returning ship
+  always finds an empty bay, because it was by definition on the board and
+  not in a bay. The case immediately above it in the document — two ships
+  returning from one fight — is the same argument applied twice: both were
+  off-bay, so at least two bays are empty. This is a restatement of an
+  argument the section already made, not a new rule, and changes nothing
+  about how the game is played.
+
+Neither change here is a tagging candidate — nothing about how the game is
+played is different before and after this version — and tagging is on hold
+until the game plays in any case (see the project's contribution notes).
+
 ## 0.5 — the freeing move is the first action, and a passed turn is still a turn
 
 - **Section 8.5 now says which action clears a stranded ship: the first.**

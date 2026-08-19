@@ -105,15 +105,40 @@ describe("squareLabel", () => {
     ).toBe("G7, green ship, 0 shields, selected");
   });
 
-  it("adds 'already moved this turn' as the condition, after the shield count", () => {
+  it("adds 'already moved this turn' when hasMoved is true, after the shield count", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
         occupant: { side: "green", shields: 4 },
-        condition: "already-moved",
+        hasMoved: true,
       }),
     ).toBe("M10, green ship, 4 shields, already moved this turn");
+  });
+
+  it("says nothing about having moved when hasMoved is false or absent", () => {
+    expect(
+      squareLabel({
+        square: squareAt("M", 10),
+        isBay: false,
+        occupant: { side: "green", shields: 4 },
+        hasMoved: false,
+      }),
+    ).toBe("M10, green ship, 4 shields");
+  });
+
+  it("combines having moved with the no-action condition, moved first", () => {
+    expect(
+      squareLabel({
+        square: squareAt("M", 10),
+        isBay: false,
+        occupant: { side: "green", shields: 4 },
+        hasMoved: true,
+        condition: "no-action",
+      }),
+    ).toBe(
+      "M10, green ship, 4 shields, already moved this turn, no action available this turn",
+    );
   });
 
   it("adds 'no action available this turn' as the condition", () => {
@@ -152,6 +177,21 @@ describe("squareLabel", () => {
     );
   });
 
+  it("orders having moved, the condition and the mark: shields, moved, condition, mark", () => {
+    expect(
+      squareLabel({
+        square: squareAt("M", 10),
+        isBay: false,
+        occupant: { side: "green", shields: 2 },
+        hasMoved: true,
+        condition: "no-action",
+        mark: "selected",
+      }),
+    ).toBe(
+      "M10, green ship, 2 shields, already moved this turn, no action available this turn, selected",
+    );
+  });
+
   it("adds 'can move here' last, on an empty site square", () => {
     expect(
       squareLabel({
@@ -183,6 +223,41 @@ describe("squareLabel", () => {
     ).toBe("D15, bay, can move here");
   });
 
+  it("names the attacker-won outcome on a target square", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 9),
+        isBay: false,
+        occupant: { side: "red", shields: 1 },
+        mark: { kind: "target", outcome: "attacker-won" },
+      }),
+    ).toBe("H9, red ship, 1 shield, can attack here, your ship would win");
+  });
+
+  it("names the defender-won outcome on a target square", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 9),
+        isBay: false,
+        occupant: { side: "red", shields: 4 },
+        mark: { kind: "target", outcome: "defender-won" },
+      }),
+    ).toBe("H9, red ship, 4 shields, can attack here, your ship would lose");
+  });
+
+  it("names the mutual-return outcome on a target square", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 9),
+        isBay: false,
+        occupant: { side: "red", shields: 2 },
+        mark: { kind: "target", outcome: "mutual-return" },
+      }),
+    ).toBe(
+      "H9, red ship, 2 shields, can attack here, both ships would return to bays",
+    );
+  });
+
   it("names an occupied site for each side, with its shield count", () => {
     expect(
       squareLabel({
@@ -200,5 +275,66 @@ describe("squareLabel", () => {
         occupant: { side: "red", shields: 0 },
       }),
     ).toBe("H4, depleted site, red ship, 0 shields");
+  });
+
+  it("adds 'return position 1' right after 'bay', on an empty bay", () => {
+    expect(
+      squareLabel({
+        square: squareAt("D", 15),
+        isBay: true,
+        returnCue: "return-position",
+      }),
+    ).toBe("D15, bay, return position 1");
+  });
+
+  it("adds 'next bay for a beaten ship' right after 'bay', on an empty bay", () => {
+    expect(
+      squareLabel({
+        square: squareAt("D", 15),
+        isBay: true,
+        returnCue: "receptacle",
+      }),
+    ).toBe("D15, bay, next bay for a beaten ship");
+  });
+
+  it("names both return cues together, in that order, when position 1 is also the receptacle", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 15),
+        isBay: true,
+        returnCue: "return-position-and-receptacle",
+      }),
+    ).toBe("H15, bay, return position 1, next bay for a beaten ship");
+  });
+
+  it("places a return cue before the occupant", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 15),
+        isBay: true,
+        returnCue: "return-position",
+        occupant: { side: "green", shields: 0 },
+      }),
+    ).toBe("H15, bay, return position 1, green ship, 0 shields");
+  });
+
+  it("combines a return cue with a selection mark, the mark staying last", () => {
+    expect(
+      squareLabel({
+        square: squareAt("D", 15),
+        isBay: true,
+        returnCue: "receptacle",
+        mark: "destination",
+      }),
+    ).toBe("D15, bay, next bay for a beaten ship, can move here");
+  });
+
+  it("says nothing about return cues when none is given", () => {
+    expect(
+      squareLabel({
+        square: squareAt("D", 15),
+        isBay: true,
+      }),
+    ).toBe("D15, bay");
   });
 });

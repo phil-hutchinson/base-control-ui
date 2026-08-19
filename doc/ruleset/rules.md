@@ -1,14 +1,10 @@
 # Base Control — Rules
 
-**Rules version: 0.5**
+**Rules version: 0.6**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
 is right and the app has a bug.
-
-Some details are still being settled. Anything not yet decided is listed in
-[Appendix A](#appendix-a--open-items), and marked **TBD** where it appears in
-the text.
 
 ---
 
@@ -153,7 +149,7 @@ Because the bays are spaced evenly and there are fourteen of them, each
 player's starting fleet is exactly the half-turn rotation of the other's, so
 neither side begins with better ground.
 
-Every ship starts with **0 shields (TBD)**.
+Every ship starts with 0 shields.
 
 ### 4.1 Shields
 
@@ -276,7 +272,10 @@ ships return, the attacker is placed first and the defender then takes the next
 empty bay.
 
 There is always somewhere to go: a ship being returned was by definition on the
-board and not in a bay, so at least one bay is empty.
+board and not in a bay, so at least one bay is empty. The same argument covers
+the case above, where two ships return from one fight: both were by
+definition on the board and not in a bay, so at least two bays are empty, and
+the attacker's placement can never leave the defender without one.
 
 ### 7.2 Returning by choice
 
@@ -428,15 +427,9 @@ influence wins. Equal influence is a draw.
 
 ## Appendix A — Open items
 
-These are the parts of the game not yet settled. Each will be decided in its
-own story.
-
-| #   | Item                                                                                                                                                                   |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Starting shields.** Currently 0 for every ship. Likely to vary by starting bay; if it does, bays a half-turn apart must match, or the opening stops being symmetric. |
-
-It is best settled once there is a board on screen to look at, so it waits on
-the early stories rather than blocking them.
+Nothing is currently outstanding. The rules are expected to keep changing as
+the game is built, so this appendix will list open items again when there are
+any.
 
 ---
 

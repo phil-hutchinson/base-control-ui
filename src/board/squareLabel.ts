@@ -1,16 +1,26 @@
 // The wording of a square's accessible name: comma-separated segments, the
 // square name first, then "bay" or "<state> site" if the square is one of
-// those, then which side's ship (if any) stands there, then that ship's
-// shield count, then that ship's condition (already moved, no action
-// available, or owing an action), then last of all a mark saying that the
-// square is selected or is a legal destination. A square is never both a bay
-// and a site, so the two share one slot. The condition and the mark are two
-// separate, independently optional fields — a ship can be selected and
-// stranded at once, or selected and unable to move at all — each mutually
-// exclusive within itself. Ordinary empty squares are named by their square
-// name alone. The shield count is stated even when it is zero, so a listener
-// hearing one square at a time can tell a shieldless ship apart from an app
-// that never reports shields at all.
+// those, then a bay's return-position cues (return position 1, the current
+// receptacle, or both) if it carries any, then which side's ship (if any)
+// stands there, then that ship's shield count, then whether it has already
+// moved this ply, then its condition (no action available, or owing an
+// action), then last of all a mark saying that the square is selected, a
+// legal destination, or a legal attack target. A square is never both a bay
+// and a site, so the two share one slot. Having moved, the condition and the
+// mark are three separate, independently optional fields — a ship can have
+// moved and still be selected, or moved and still have no action left — the
+// condition alone staying mutually exclusive within itself. Ordinary empty
+// squares are named by their square name alone. The shield count is stated
+// even when it is zero, so a listener hearing one square at a time can tell
+// a shieldless ship apart from an app that never reports shields at all.
+//
+// A target square's mark names the fight's predicted outcome rather than a
+// fixed phrase, so a listener does not have to hold two ships' shield counts
+// across two focus stops to work out who would win.
+//
+// The return-position cues are independent of the selected/destination/
+// target mark, since a bay can be return position 1, the current
+// receptacle and a legal destination all at once (rules.md §7.1).
 
 import { squareName, type Square } from "../rules/board";
 import type { Side } from "../rules/fleet";
@@ -24,27 +34,75 @@ export interface SquareOccupant {
 }
 
 /**
- * A mark a square carries during ship selection: the selected ship's own
- * square, or a square the selected ship may legally move to.
+ * A fight's predicted outcome (rules.md §7), from the selected ship's own
+ * point of view: it is always the attacker in the fight a target square's
+ * name predicts, since only a selected ship's own activation of an enemy
+ * square produces a target mark.
  */
-export type SquareMark = "selected" | "destination";
+export type PredictedFightOutcome =
+  "attacker-won" | "defender-won" | "mutual-return";
 
-/** How each mark reads in a square's accessible name, in the players' vocabulary. */
-const MARK_WORDING: Record<SquareMark, string> = {
+/**
+ * A mark a square carries during ship selection: the selected ship's own
+ * square, a square the selected ship may legally move to, or a square it may
+ * legally attack, carrying the fight's predicted outcome. One exclusive
+ * slot, because the three cannot co-occur: the selected ship's own square is
+ * neither a destination nor a target, a destination must be empty, and a
+ * target must hold an enemy ship. The outcome lives on the mark itself, not
+ * a separate field, so a target can never be built without one.
+ */
+export type SquareMark =
+  | "selected"
+  | "destination"
+  | { readonly kind: "target"; readonly outcome: PredictedFightOutcome };
+
+/** How the selected and destination marks read in a square's accessible name. */
+const MARK_WORDING: Record<"selected" | "destination", string> = {
   selected: "selected",
   destination: "can move here",
 };
 
+/** How a target square's predicted outcome reads in its accessible name. */
+const PREDICTED_OUTCOME_WORDING: Record<PredictedFightOutcome, string> = {
+  "attacker-won": "can attack here, your ship would win",
+  "defender-won": "can attack here, your ship would lose",
+  "mutual-return": "can attack here, both ships would return to bays",
+};
+
 /**
- * A ship's own condition, independent of the current selection: it has
- * already moved this ply, it has no legal action available at all, or it
- * owes its owner an action under §8.5.
+ * The return-position cues a bay square carries (rules.md §7.1), independent
+ * of `mark`: a bay can be return position 1, the bay a beaten ship would
+ * actually land in right now (the receptacle), or both at once — when
+ * position 1 happens to be empty — and can also be a legal destination for
+ * the selected ship at the same time.
  */
-export type ShipCondition = "already-moved" | "no-action" | "owes-action";
+export type ReturnCue =
+  "return-position" | "receptacle" | "return-position-and-receptacle";
+
+/**
+ * How each return cue reads in a square's accessible name. "return position
+ * 1" is rules.md §7.1's own phrase, so the rulebook and the app agree.
+ */
+const RETURN_CUE_WORDING: Record<ReturnCue, string> = {
+  "return-position": "return position 1",
+  receptacle: "next bay for a beaten ship",
+  "return-position-and-receptacle":
+    "return position 1, next bay for a beaten ship",
+};
+
+/** How having moved this ply reads in a square's accessible name. */
+const ALREADY_MOVED_WORDING = "already moved this turn";
+
+/**
+ * A ship's own condition, independent of the current selection and of
+ * whether it has moved: it has no legal action available at all — no legal
+ * move and no legal attack target — or it owes its owner an action under
+ * §8.5.
+ */
+export type ShipCondition = "no-action" | "owes-action";
 
 /** How each condition reads in a square's accessible name, in the players' vocabulary. */
 const CONDITION_WORDING: Record<ShipCondition, string> = {
-  "already-moved": "already moved this turn",
   "no-action": "no action available this turn",
   "owes-action": "stranded, must move this turn",
 };
@@ -54,17 +112,22 @@ export interface SquareLabelDescriptor {
   readonly square: Square;
   readonly isBay: boolean;
   readonly siteState?: SiteState;
+  /** A return-position cue (rules.md §7.1), emitted right after the bay/site segment; only bays ever carry one. */
+  readonly returnCue?: ReturnCue;
   readonly occupant?: SquareOccupant;
+  readonly hasMoved?: boolean;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
 }
 
-/** Builds a square's accessible name from its name, bay/site status, occupant, condition and mark. */
+/** Builds a square's accessible name from its name, bay/site status, return cues, occupant, having moved, condition and mark. */
 export function squareLabel({
   square,
   isBay,
   siteState,
+  returnCue,
   occupant,
+  hasMoved,
   condition,
   mark,
 }: SquareLabelDescriptor): string {
@@ -74,16 +137,26 @@ export function squareLabel({
   } else if (siteState) {
     segments.push(`${siteState} site`);
   }
+  if (returnCue) {
+    segments.push(RETURN_CUE_WORDING[returnCue]);
+  }
   if (occupant) {
     segments.push(`${occupant.side} ship`);
     const unit = occupant.shields === 1 ? "shield" : "shields";
     segments.push(`${occupant.shields} ${unit}`);
   }
+  if (hasMoved) {
+    segments.push(ALREADY_MOVED_WORDING);
+  }
   if (condition) {
     segments.push(CONDITION_WORDING[condition]);
   }
   if (mark) {
-    segments.push(MARK_WORDING[mark]);
+    segments.push(
+      typeof mark === "string"
+        ? MARK_WORDING[mark]
+        : PREDICTED_OUTCOME_WORDING[mark.outcome],
+    );
   }
   return segments.join(", ");
 }
