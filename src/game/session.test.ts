@@ -41,6 +41,8 @@ function buildState(config: {
   sideToMove?: Side;
   movedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
+  plyNumber?: number;
+  lengthInRounds?: number;
 }): GameState {
   return {
     ships: config.ships,
@@ -48,11 +50,11 @@ function buildState(config: {
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: ACTIONS_PER_PLY,
     movedThisPly: config.movedThisPly ?? [],
-    plyNumber: 1,
+    plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
     energy: { green: 0, red: 0 },
-    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
   };
 }
 
@@ -465,5 +467,133 @@ describe("createSession", () => {
       sideToMove: "red",
       endOfTurn: [],
     });
+  });
+});
+
+describe("sessionReducer — once the game is over", () => {
+  const state = buildState({
+    ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "H9")],
+    plyNumber: 201,
+  });
+
+  it("rejects activating a friendly ship with game-over", () => {
+    const result = activate(sessionFor(state), "H8");
+
+    expect(result.state).toBe(state);
+    expect(result.selectedShipId).toBeUndefined();
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "game-over",
+      square: squareFromName("H8"),
+    });
+  });
+
+  it("rejects activating an enemy ship with game-over", () => {
+    const result = activate(sessionFor(state), "H9");
+
+    expect(result.state).toBe(state);
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "game-over",
+      square: squareFromName("H9"),
+    });
+  });
+
+  it("rejects activating an empty square with game-over", () => {
+    const result = activate(sessionFor(state), "A1");
+
+    expect(result.state).toBe(state);
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "game-over",
+      square: squareFromName("A1"),
+    });
+  });
+
+  it("rejects activating a would-be-legal destination with game-over", () => {
+    // A selection reached this session directly rather than through the
+    // reducer, since the reducer itself now refuses a selection once the
+    // game is over — this exercises the already-selected path's guard too.
+    const withSelection: Session = {
+      ...sessionFor(state),
+      selectedShipId: "green-1",
+    };
+
+    const result = activate(withSelection, "H9");
+
+    expect(result.state).toBe(state);
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "game-over",
+      square: squareFromName("H9"),
+    });
+  });
+
+  it("still clears a selection on dismiss", () => {
+    const withSelection: Session = {
+      ...sessionFor(state),
+      selectedShipId: "green-1",
+    };
+
+    const result = dismiss(withSelection);
+
+    expect(result.state).toBe(state);
+    expect(result.selectedShipId).toBeUndefined();
+    expect(result.lastEvent).toEqual({ type: "selection-cleared" });
+  });
+});
+
+describe("sessionReducer — new-game", () => {
+  it("starts a fresh session at ply 1, both totals 0, with the given seed and length", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8")],
+      plyNumber: 201,
+    });
+    const session: Session = {
+      state,
+      selectedShipId: "green-1",
+      lastEvent: undefined,
+    };
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 42,
+      lengthInRounds: 100,
+    });
+
+    expect(result.selectedShipId).toBeUndefined();
+    expect(result.state.plyNumber).toBe(1);
+    expect(result.state.energy).toEqual({ green: 0, red: 0 });
+    expect(result.state.randomSeed).toBe(42);
+    expect(result.state.lengthInRounds).toBe(100);
+  });
+
+  it("honours a non-default length rather than the game's default", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 7,
+      lengthInRounds: 3,
+    });
+
+    expect(result.state.lengthInRounds).toBe(3);
+  });
+
+  it("honours the given seed rather than drawing its own", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const first = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 1,
+      lengthInRounds: 5,
+    });
+    const second = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 2,
+      lengthInRounds: 5,
+    });
+
+    expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
   });
 });

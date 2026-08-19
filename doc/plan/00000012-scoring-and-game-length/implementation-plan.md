@@ -1132,7 +1132,26 @@ of seconds, say so rather than silently trimming the assertions.
 
 ## Step 9 — The session at the end of a game: refuse, and play again
 
-Status: pending
+Status: committed
+
+Notes: `sessionReducer` now checks `isGameOver(session.state)` first in the
+`activate` branch — before either `activateWithNoSelection` or
+`activateWithSelection` runs — returning a `rejected` event with `"game-over"`
+and the untouched state; `dismiss` is handled before that check so it still
+clears a selection at game over. Added a `new-game` intent
+(`{ type: "new-game", randomSeed, lengthInRounds }`) that builds
+`startingGameState(randomSeed, lengthInRounds)` and runs it through
+`createSession`, using exactly what it is handed — no `freshSeed()` and no
+`DEFAULT_GAME_LENGTH_ROUNDS` in the reducer. Added the step's five cases to
+`src/game/session.test.ts` (friendly/enemy/empty/would-be-legal-destination
+activation all rejected with `game-over` and the state unchanged; dismiss
+still clears; new-game resets to ply 1 with both totals 0 and carries the
+given seed and length; a non-default length is honoured; two different seeds
+produce two different `randomSeed`s), extending `buildState` with optional
+`plyNumber` and `lengthInRounds` fields matching the pattern already used in
+`ply.test.ts`. No deviation from the plan. `npm run typecheck`, `npm run
+lint`, `npm test` (547 passed), `npm run format:check` and `npm run build`
+all pass.
 
 Two changes to `src/game/session.ts`, both about what happens once the game is
 over:

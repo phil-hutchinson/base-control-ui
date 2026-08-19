@@ -9,7 +9,12 @@ import { shipHasLegalAction } from "../rules/actions";
 import { type Square, squareName } from "../rules/board";
 import { type AttackRefusalReason, legalTargets } from "../rules/combat";
 import type { Side, ShipId } from "../rules/fleet";
-import { type GameState, shipsBySquare } from "../rules/gameState";
+import {
+  type GameState,
+  shipsBySquare,
+  startingGameState,
+} from "../rules/gameState";
+import { isGameOver } from "../rules/gameLength";
 import { type MoveRefusalReason, legalDestinations } from "../rules/movement";
 import {
   type AttackEffect,
@@ -90,10 +95,20 @@ export type SessionEvent =
   | PassEffect
   | RejectedEvent;
 
-/** An intent a player's input turns into: activate a square, or dismiss a selection. */
+/**
+ * An intent a player's input turns into: activate a square, dismiss a
+ * selection, or start a new game. `new-game` carries both the seed and the
+ * length in rounds the new game starts from — the reducer uses what it is
+ * handed and never draws a seed or reaches for a default length itself.
+ */
 export type SessionIntent =
   | { readonly type: "activate"; readonly square: Square }
-  | { readonly type: "dismiss" };
+  | { readonly type: "dismiss" }
+  | {
+      readonly type: "new-game";
+      readonly randomSeed: number;
+      readonly lengthInRounds: number;
+    };
 
 /** The game state, the selected ship if any, and the last thing that happened. */
 export interface Session {
@@ -261,8 +276,18 @@ export function sessionReducer(
   session: Session,
   intent: SessionIntent,
 ): Session {
+  if (intent.type === "new-game") {
+    return createSession(
+      startingGameState(intent.randomSeed, intent.lengthInRounds),
+    );
+  }
+
   if (intent.type === "dismiss") {
     return session.selectedShipId === undefined ? session : cleared(session);
+  }
+
+  if (isGameOver(session.state)) {
+    return rejected(session, "game-over", intent.square);
   }
 
   return session.selectedShipId === undefined
