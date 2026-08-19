@@ -9,6 +9,7 @@ import { runEndOfTurn } from "./endOfTurn";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, SiteStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
+import { applyPassGuard } from "./ply";
 import type { ShieldCount } from "./shields";
 import { SITES, type SiteState } from "./sites";
 
@@ -111,6 +112,18 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
         square: squareFromName("H12"),
         shields: 1,
       },
+      {
+        type: "energy-collected",
+        side: "green",
+        nodesHeld: 3,
+        amount: 6,
+        newTotal: 6,
+        squares: [
+          squareFromName("H8"),
+          squareFromName("L8"),
+          squareFromName("H12"),
+        ],
+      },
     ]);
   });
 
@@ -174,6 +187,14 @@ describe("runEndOfTurn — the order of steps, and §8.3's second property", () 
         side: "green",
         square: squareFromName("H8"),
         shields: 4,
+      },
+      {
+        type: "energy-collected",
+        side: "green",
+        nodesHeld: 1,
+        amount: 1,
+        newTotal: 1,
+        squares: [squareFromName("H8")],
       },
       { type: "node-ran-out", square: squareFromName("H8") },
       {
@@ -266,8 +287,8 @@ describe("runEndOfTurn — steps 3 and 5, a site freed this ply is drawable this
   });
 });
 
-describe("runEndOfTurn — step 2 stays empty", () => {
-  it("keeps influence out of scope: no effect and no other state change when nothing is due", () => {
+describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
+  it("emits no effect and leaves both totals unchanged when nothing is held", () => {
     const state = buildState({
       sideToMove: "green",
       plyNumber: 3,
@@ -282,6 +303,137 @@ describe("runEndOfTurn — step 2 stays empty", () => {
       ...state,
       returnPositionIndex: driftReturnPositionIndex(state.returnPositionIndex),
     });
+  });
+
+  it("pays the side that just played and leaves the other side's total untouched", () => {
+    const state = buildState({
+      sideToMove: "green",
+      plyNumber: 3,
+      siteStates: { H8: ["charged", 1] },
+      ships: [ship("green-1", "green", "H8", 4)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-collected",
+      side: "green",
+      nodesHeld: 1,
+      amount: 1,
+      newTotal: 1,
+      squares: [squareFromName("H8")],
+    });
+    expect(result.state.energy).toEqual({ green: 1, red: 0 });
+  });
+
+  it("pays for three held nodes, carrying the count, the amount, the new total and the squares", () => {
+    const state = buildState({
+      sideToMove: "green",
+      plyNumber: 3,
+      siteStates: {
+        H8: ["charged", 1],
+        K5: ["charged", 1],
+        L8: ["charged", 1],
+      },
+      ships: [
+        ship("green-1", "green", "H8", 4),
+        ship("green-2", "green", "K5", 4),
+        ship("green-3", "green", "L8", 4),
+      ],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-collected",
+      side: "green",
+      nodesHeld: 3,
+      amount: 6,
+      newTotal: 6,
+      squares: [
+        squareFromName("K5"),
+        squareFromName("H8"),
+        squareFromName("L8"),
+      ],
+    });
+    expect(result.state.energy).toEqual({ green: 6, red: 0 });
+  });
+
+  it("pays for a node whose clock runs out at the end of this very turn (before steps 3-5 tick)", () => {
+    // Woken on ply 1 (N = 1), so ply 9 (N + 8) is the waker's own ply on
+    // which the node finishes its nine turns and goes depleted at step 4.
+    const state = buildState({
+      sideToMove: "green",
+      plyNumber: 9,
+      siteStates: {
+        H8: ["charged", 1],
+        E5: ["dormant", 0], // the only dormant candidate for the replacement
+      },
+      ships: [ship("green-1", "green", "H8", 4)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-collected",
+      side: "green",
+      nodesHeld: 1,
+      amount: 1,
+      newTotal: 1,
+      squares: [squareFromName("H8")],
+    });
+    expect(result.state.energy).toEqual({ green: 1, red: 0 });
+    expect(result.state.siteStates.H8).toEqual({
+      state: "depleted",
+      enteredOnPly: 9,
+    });
+  });
+
+  it("is unaffected by a ship gaining its fourth shield in step 1", () => {
+    const state = buildState({
+      sideToMove: "green",
+      plyNumber: 5,
+      siteStates: { H8: ["charged", 1] },
+      ships: [ship("green-1", "green", "H8", 3)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    const shieldEffectIndex = result.effects.findIndex(
+      (effect) => effect.type === "shield-gained",
+    );
+    const energyEffectIndex = result.effects.findIndex(
+      (effect) => effect.type === "energy-collected",
+    );
+    expect(shieldEffectIndex).toBeGreaterThanOrEqual(0);
+    expect(shieldEffectIndex).toBeLessThan(energyEffectIndex);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-collected",
+      side: "green",
+      nodesHeld: 1,
+      amount: 1,
+      newTotal: 1,
+      squares: [squareFromName("H8")],
+    });
+    const ship1 = result.state.ships.find((s) => s.id === "green-1");
+    expect(ship1?.shields).toBe(4);
+  });
+
+  it("pays this side nothing for a node held by the opponent", () => {
+    const state = buildState({
+      sideToMove: "green",
+      plyNumber: 3,
+      siteStates: { H8: ["charged", 1] },
+      ships: [ship("red-1", "red", "H8", 1)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(
+      result.effects.some((effect) => effect.type === "energy-collected"),
+    ).toBe(false);
+    expect(result.state.energy).toEqual({ green: 0, red: 0 });
   });
 });
 
@@ -373,5 +525,51 @@ describe("runEndOfTurn — the five-sites invariant (§8.1)", () => {
       state: "active",
       enteredOnPly: plyNumber,
     });
+  });
+});
+
+describe("runEndOfTurn — a passed ply still collects (§8.7 runs in full for a pass)", () => {
+  it("pays the side that passes while standing on a charged node, through applyPassGuard", () => {
+    // green-1 sits on K5, a charged site, having already spent this ply's
+    // first action on a move: it has no move left (already moved) and no
+    // enemy stands anywhere near it to attack, so it passes with its second
+    // action still nominally available — but §8.7 still runs in full for
+    // that passed turn, and green is still standing on the node.
+    const state = {
+      ...buildState({
+        sideToMove: "green",
+        plyNumber: 3,
+        siteStates: { K5: ["charged", 1] },
+        ships: [ship("green-1", "green", "K5", 3)],
+      }),
+      movedThisPly: ["green-1" as ShipId],
+      actionsRemaining: 1,
+    };
+
+    const result = applyPassGuard(state);
+
+    expect(result.effect).toEqual({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      endOfTurn: [
+        {
+          type: "shield-gained",
+          shipId: "green-1",
+          side: "green",
+          square: squareFromName("K5"),
+          shields: 4,
+        },
+        {
+          type: "energy-collected",
+          side: "green",
+          nodesHeld: 1,
+          amount: 1,
+          newTotal: 1,
+          squares: [squareFromName("K5")],
+        },
+      ],
+    });
+    expect(result.state.energy).toEqual({ green: 1, red: 0 });
   });
 });

@@ -888,7 +888,31 @@ Verification (automated): `npm test` with new cases in
 
 ## Step 6 — §8.7 step 2: the moving player collects
 
-Status: pending
+Status: committed
+
+Notes: Filled the slot with `chargedNodesHeldBy` / `energyForNodesHeld` from
+Step 2, adding the new total to `state.energy[side]` and pushing an
+`EnergyCollectedEffect` (side, nodesHeld, amount, newTotal, squares) to the
+union — added between `ShieldGainedEffect` and `NodeRanOutEffect`, matching
+step order. Zero payout emits no effect (decision 9); replaced the step-2
+"awaits its own story" comment and the `runEndOfTurn` doc comment's mention of
+the empty slot. Rewrote `endOfTurn.test.ts`'s "keeps influence out of scope"
+test (now "step 2, the energy collection (§8.4)") into the full set the step
+lists — paid/not-paid, three-node payout with squares, pays-before-the-clock,
+unaffected by the step-1 shield cap, opponent-held pays nothing — plus a new
+describe block asserting a passed ply still collects, driven through
+`applyPassGuard` with the same "already moved, no target nearby" single-ship
+pattern `ply.test.ts` already used for its own shield-gain-on-pass test.
+Updated three pre-existing tests whose fixtures happened to stand ships on
+charged nodes (two in `endOfTurn.test.ts`'s step-1/ordering describes, one in
+`ply.test.ts`'s `applyAttack`/`applyPassGuard` describes) to include the now-
+expected `energy-collected` effect, per the plan's "existing tests may need
+new positions, not weaker assertions" — no assertion was weakened or removed.
+Announcements are untouched, as directed. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (525 passed), `npm run
+format:check` and `npm run build` all pass. `grep -ril influence` (excluding
+node_modules/.git) now turns up only `doc/plan/*` and
+`doc/ruleset/changelog.md` — no more `src/` hits.
 
 Fill `runEndOfTurn`'s documented empty slot in `src/rules/endOfTurn.ts`.
 

@@ -6,6 +6,7 @@
 import { driftReturnPositionIndex } from "./bays";
 import type { Square } from "./board";
 import { squareName } from "./board";
+import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
 import type { Side, ShipId } from "./fleet";
 import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
 import {
@@ -29,6 +30,16 @@ export interface ShieldGainedEffect {
   readonly shields: ShieldCount;
 }
 
+/** The side that just played collected energy for the charged nodes it holds (§8.7 step 2, §8.4). */
+export interface EnergyCollectedEffect {
+  readonly type: "energy-collected";
+  readonly side: Side;
+  readonly nodesHeld: number;
+  readonly amount: number;
+  readonly newTotal: number;
+  readonly squares: readonly Square[];
+}
+
 /** A charged node finished its nine turns and went depleted (§8.7 step 4, §8.3). */
 export interface NodeRanOutEffect {
   readonly type: "node-ran-out";
@@ -46,6 +57,7 @@ export interface ShipStrandedEffect {
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
 export type EndOfTurnEffect =
   | ShieldGainedEffect
+  | EnergyCollectedEffect
   | SiteCooledEffect
   | NodeRanOutEffect
   | ShipStrandedEffect
@@ -62,9 +74,6 @@ export interface EndOfTurnResult {
  * `sideToMove` is read as the player who just played that ply and
  * `plyNumber` as the ply itself — the caller runs this **before** swapping
  * sides or advancing the ply counter.
- *
- * Step 2 (influence) is a deliberately empty slot awaiting its own story;
- * every other step, including step 6, runs unconditionally.
  */
 export function runEndOfTurn(state: GameState): EndOfTurnResult {
   const side = state.sideToMove;
@@ -94,7 +103,27 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   });
   let workingState: GameState = { ...state, ships };
 
-  // Step 2: influence (§8.4) — awaits its own story. No total is kept.
+  // Step 2: the moving side collects energy for the charged nodes it holds
+  // right now (§8.4). A zero payout is not an event — no effect, no other
+  // state change — so a player standing on nothing does not read as having
+  // had something happen to them.
+  const heldSquares = chargedNodesHeldBy(workingState, side);
+  const amount = energyForNodesHeld(heldSquares.length);
+  if (amount > 0) {
+    const newTotal = workingState.energy[side] + amount;
+    workingState = {
+      ...workingState,
+      energy: { ...workingState.energy, [side]: newTotal },
+    };
+    effects.push({
+      type: "energy-collected",
+      side,
+      nodesHeld: heldSquares.length,
+      amount,
+      newTotal,
+      squares: heldSquares,
+    });
+  }
 
   // Step 3: depleted sites that have finished cooling go dormant (§8.6).
   let siteStates = workingState.siteStates;
