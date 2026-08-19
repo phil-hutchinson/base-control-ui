@@ -8,6 +8,7 @@ import { squareFromName, squareName } from "./board";
 import { runEndOfTurn } from "./endOfTurn";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, SiteStatus } from "./gameState";
+import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { ShieldCount } from "./shields";
 import { SITES, type SiteState } from "./sites";
 
@@ -49,6 +50,8 @@ function buildState(config: {
     randomSeed: config.randomSeed ?? 1,
     returnPositionIndex:
       config.returnPositionIndex ?? STARTING_RETURN_POSITION_INDEX,
+    energy: { green: 0, red: 0 },
+    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
   };
 }
 

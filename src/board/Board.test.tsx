@@ -15,6 +15,7 @@ import {
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import { startingSiteState } from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
+import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalDestinations } from "../rules/movement";
 import {
   legalTargets,
@@ -485,6 +486,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
     }
 
@@ -809,6 +812,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
     }
 
@@ -951,6 +956,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
       const session: Session = {
         state,
@@ -986,6 +993,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
       const session: Session = {
         state,
@@ -1020,6 +1029,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
       const session: Session = {
         state,

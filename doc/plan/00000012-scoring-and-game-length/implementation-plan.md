@@ -764,7 +764,23 @@ unclamped — Step 5 adds the clamped, state-aware form); the round throws on 0,
 
 ## Step 4 — `GameState` carries each side's energy and the game's length
 
-Status: pending
+Status: committed
+
+Notes: Added `EnergyTotals` (`Readonly<Record<Side, number>>`, exported) and
+the `energy` / `lengthInRounds` fields to `GameState`, with doc comments
+noting both are fixed at start / derived elsewhere as appropriate.
+`startingGameState` gained a defaulted `lengthInRounds` parameter (default
+`DEFAULT_GAME_LENGTH_ROUNDS` from `gameLength.ts`, a value import in that
+one direction only, matching decision 6), validated with `isGameLengthRounds`
+and throwing a `RangeError` naming the offending value otherwise. Updated
+every hand-built `GameState` literal across the dozen test files the plan
+named (plus their `buildState` helpers' imports) to carry
+`energy: { green: 0, red: 0 }` and `lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS`;
+`sitePool.test.ts` needed no change since it only builds state via
+`startingGameState`. Added the four new cases to `gameState.test.ts` per the
+step's verification list. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (506 passed), `npm run
+format:check` and `npm run build` all pass.
 
 Add two fields to `GameState` in `src/rules/gameState.ts`:
 

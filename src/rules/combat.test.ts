@@ -14,6 +14,7 @@ import {
 import type { ShipId } from "./fleet";
 import { startingGameState } from "./gameState";
 import type { GameState, Ship, SiteStatus } from "./gameState";
+import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { reachFrom } from "./movement";
 import { MAX_SHIELDS, MIN_SHIELDS, type ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
@@ -58,6 +59,8 @@ function buildState(config: {
     randomSeed: 1,
     returnPositionIndex:
       config.returnPositionIndex ?? STARTING_RETURN_POSITION_INDEX,
+    energy: { green: 0, red: 0 },
+    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
   };
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
 import { squareAt } from "../rules/board";
 import { ACTIONS_PER_PLY } from "../rules/gameState";
+import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import type {
   AttackedEvent,
   MovedEvent,
@@ -928,6 +929,8 @@ describe("turnIndicatorText", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       }),
     ).toBe("Green's turn — 2 actions left");
   });
@@ -943,6 +946,8 @@ describe("turnIndicatorText", () => {
         plyNumber: 1,
         randomSeed: 1,
         returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       }),
     ).toBe("Red's turn — 1 action left");
   });

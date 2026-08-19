@@ -9,6 +9,7 @@ import {
   type SiteStatus,
   startingGameState,
 } from "./gameState";
+import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyAttack, applyMove, applyPassGuard } from "./ply";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
@@ -55,6 +56,8 @@ function buildState(config: {
     randomSeed: 1,
     returnPositionIndex:
       config.returnPositionIndex ?? STARTING_RETURN_POSITION_INDEX,
+    energy: { green: 0, red: 0 },
+    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
   };
 }
 
