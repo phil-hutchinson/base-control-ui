@@ -1062,7 +1062,24 @@ Verification (automated): `npm test`, with the trap tested directly:
 
 ## Step 8 — A full game, end to end
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/fullGame.test.ts` with the decision-11 greedy policy
+(charge-hub move, else distance-closing move, else first legal attack, else
+pass) written only in the test file, driving `applyMove` / `applyAttack` /
+`applyPassGuard` through the public rules API. Two cases: a fixed seed at the
+default hundred-round length and the same seed at a three-round length, each
+asserting the game ends exactly at the expected ply, both totals equal the
+sum of the `energy-collected` effects observed (extracted from the nested
+`ply-ended` / `ply-passed` end-of-turn effects), the result names the higher
+total (or a draw), and a move, an attack and the pass guard all refuse with
+`"game-over"` afterwards. A 10,000-action ceiling guards against a hang. The
+hundred-round run finished green 150 / red 146 — both sides scoring, a close
+game, consistent with the new payout curve. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (539 passed), `npm run
+format:check` and `npm run build` all pass. `fullGame.test.ts` itself runs in
+about 150ms; the whole suite still finishes in roughly 23–26s, unchanged in
+character from before this step (dominated, as before, by `Board.test.tsx`).
 
 Add `src/rules/fullGame.test.ts`: an integration test that plays a whole game
 through the public rules API and proves the three pieces — the collection, the
