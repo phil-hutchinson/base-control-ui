@@ -1503,7 +1503,38 @@ markup and CSS would be reworked.
 
 ## Step 14 — The score counts up
 
-Status: pending
+Status: committed
+
+Notes: Added `src/hud/countUp.ts` (`countUpValue(from, to, elapsedMs)`, a
+600ms linear roll that clamps to the target at or past the duration and when
+`from === to`) and `src/hud/useCountUp.ts` (a `requestAnimationFrame` hook
+that tracks the displayed value in a ref, re-targets on prop change, cancels
+its frame on unmount, and returns `target` unchanged on first render). Wired
+`ScoreDisplay.tsx`'s aria-hidden digits through `useCountUp`; the hidden
+sentence from `announcements.ts` is untouched and still carries the true
+total directly from state. Added `src/hud/countUp.test.ts` (midpoint, exact
+settle at the duration, past the duration, a downward target, a zero-length
+change, and a never-overshoots sweep) and two cases to
+`ScoreDisplay.test.tsx`: a fresh render shows the true total in the visible
+digits, and the hidden sentence carries the true total immediately after a
+rerender with a changed state. The rAF loop itself is left to Step 18's
+manual gate, per the plan.
+
+One deviation: decision 12 states "jsdom implements `matchMedia` and reports
+`matches: false`" — false in this environment (jsdom 26.1.0, as pinned in
+`package.json`): `window.matchMedia` is not defined at all, and calling it
+throws `TypeError: window.matchMedia is not a function`, confirmed by a
+throwaway test before writing the hook. `prefersReducedMotion()` therefore
+guards on `typeof window.matchMedia !== "function"` and returns `false` (the
+animated path) when the API is absent, rather than assuming jsdom supplies
+it. This keeps every existing and new component test that renders
+`ScoreDisplay` — and thus mounts the hook — working unchanged, and matches
+the behaviour the plan's own tests expect (a fresh render already returns
+the prop unchanged regardless of this branch, so no test's outcome depends
+on which path jsdom would have taken).
+
+`npm run typecheck`, `npm run lint`, `npm test` (591 passed), `npm run
+format:check` and `npm run build` all pass.
 
 Make each score **count up** to its new total rather than jumping — the arcade
 convention, and the thing that makes a payout feel like a payout.

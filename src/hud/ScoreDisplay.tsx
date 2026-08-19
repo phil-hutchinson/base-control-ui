@@ -7,6 +7,7 @@ import { scoreSentence } from "../board/announcements";
 import { chargedNodesHeldBy } from "../rules/energy";
 import type { Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
+import { useCountUp } from "./useCountUp";
 import "./ScoreDisplay.css";
 
 /** §8.1: exactly five sites are ever active or charged, so a side can never
@@ -29,6 +30,7 @@ interface ScoreDisplayProps {
 
 export function ScoreDisplay({ state, side }: ScoreDisplayProps) {
   const nodesHeld = chargedNodesHeldBy(state, side).length;
+  const displayedTotal = useCountUp(state.energy[side]);
 
   return (
     <div className={`score-display score-display--${side}`}>
@@ -36,7 +38,7 @@ export function ScoreDisplay({ state, side }: ScoreDisplayProps) {
         {SIDE_NAME[side]}
       </span>
       <span className="score-display__digits" aria-hidden="true">
-        {state.energy[side].toString().padStart(SCORE_DIGITS, "0")}
+        {displayedTotal.toString().padStart(SCORE_DIGITS, "0")}
       </span>
       <span className="score-display__pips" aria-hidden="true">
         {Array.from({ length: NODES_IN_PLAY }, (_, index) => (

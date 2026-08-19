@@ -141,4 +141,24 @@ describe("ScoreDisplay", () => {
 
     expect(results.violations).toEqual([]);
   });
+
+  it("counts up: a fresh render shows the true total, not zero", () => {
+    const state = buildState({ energy: { green: 24, red: 9 } });
+
+    const { container } = render(<ScoreDisplay state={state} side="green" />);
+
+    expect(container).toHaveTextContent("0024");
+  });
+
+  it("counts up: the hidden sentence carries the true total right after a state change", () => {
+    const before = buildState({ energy: { green: 0, red: 0 } });
+    const after = buildState({ energy: { green: 6, red: 0 } });
+
+    const { rerender } = render(<ScoreDisplay state={before} side="green" />);
+    rerender(<ScoreDisplay state={after} side="green" />);
+
+    expect(
+      screen.getByText("Green: 6 energy, no nodes held."),
+    ).toBeInTheDocument();
+  });
 });
