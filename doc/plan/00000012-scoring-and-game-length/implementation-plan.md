@@ -1679,7 +1679,42 @@ Layout, motion and legibility are Step 18's manual gate — jsdom has no layout.
 
 ## Step 16 — The result panel and play again
 
-Status: pending
+Status: committed
+
+Notes: Added `src/hud/GameOverPanel.tsx` / `.css` — a `role="dialog"` named
+via `aria-labelledby` (a `useId()`-generated heading id), `tabIndex={-1}`,
+focused on mount with a `useEffect` + `useRef`, not `aria-modal` and no focus
+trap (decision 18). It reuses `GAME_OVER_HEADING` and `resultSentence` from
+`announcements.ts` and calls `gameResult(state)` directly, so rendering it
+against a state whose game is not yet over throws — the same "caller bug"
+habit the rules layer already follows — rather than the component silently
+guarding against misuse. Both final scores render as `aria-hidden` decorative
+arcade digits per side (green/red), coloured from the existing
+`--color-green`/`--color-red`; the accessible text for the result comes from
+the visible `resultSentence` paragraph alone, so the totals are not spoken
+twice. `App.tsx` now imports `isGameOver` from `gameLength.ts` and
+conditionally renders `<GameOverPanel>` as a sibling of `<Board>` inside
+`.app__board` (given `position: relative` for the panel to anchor against);
+its play-again handler draws `freshSeed()` and dispatches Step 9's
+`new-game` intent carrying `session.state.lengthInRounds` — the finished
+game's own length, never the default. Added `src/hud/GameOverPanel.test.tsx`
+covering the winner/draw wording, both final totals, focus on appearance,
+keyboard operability (Tab, Enter and Space) and pointer operability, and an
+axe check on the panel alone; plus a `Harness` sub-suite ("wired into the
+board, as App.tsx wires it") that replicates App.tsx's own
+`useReducer`/play-again wiring (the same stand-in pattern
+`Board.test.tsx`'s "playing a turn" describe block already uses) around a
+hand-built one-round, one-action-from-the-end state, driving a real click
+through the board to end the game and asserting: the panel is absent
+beforehand and present afterwards, the live region's text includes "The game
+is over after 1 round. Red wins, 7 energy to 4.", and that pressing play
+again resets to ply 1 with `1/1` on the round counter (proving the
+non-default length survives), both scores at 0, the panel gone, and the
+board accepting a fresh selection click again. Added one `App.test.tsx` case
+confirming no `dialog` role is present while the fixture's game is still in
+progress. No deviation from the plan. `npm run typecheck`, `npm run lint`,
+`npm test` (612 passed), `npm run format:check` and `npm run build` all
+pass.
 
 Once the game is over, a result panel appears over the board: "GAME OVER" in
 arcade type, both final scores, and the outcome — a side wins, or a draw — in

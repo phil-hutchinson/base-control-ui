@@ -37,6 +37,12 @@ describe("App", () => {
     expect(screen.getByText("2/3")).toBeInTheDocument();
   });
 
+  it("has no result panel while the game is in progress", () => {
+    render(<App />);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("has no static accessibility violations", async () => {
     const { container } = render(<App />);
 

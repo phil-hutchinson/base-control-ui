@@ -21,8 +21,11 @@
      `min-height: 0` gives it a resolved height to measure, taken from the
      `.app` column's `min-height: 100vh`. Aligned to the block-axis start
      rather than centred, so a board too large for the container overflows
-     downward into scrollable space instead of being clipped off the top. */
+     downward into scrollable space instead of being clipped off the top.
+     `position: relative` anchors the game-over panel, which covers this
+     element once the game ends. */
   container-type: size;
+  position: relative;
   display: flex;
   flex: 1;
   min-height: 0;
