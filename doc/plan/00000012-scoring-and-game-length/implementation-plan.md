@@ -664,7 +664,17 @@ one).
 
 ## Step 2 — `src/rules/energy.ts`: §8.4's table, and what a side is standing on
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/energy.ts` with `energyForNodesHeld` (the six-value
+table, throwing `RangeError` outside 0–5) and `chargedNodesHeldBy` (returns
+the held squares in `SITES` order, using `shipsBySquare` and `siteStateAt`).
+Added `src/rules/energy.test.ts` covering the table's six payouts, the three
+out-of-range throws, and each of the "standing on" cases from the step's
+verification list. No deviation from the plan: the module imports nothing
+beyond `board`, `gameState`, `sites` and `fleet`, and does not touch effects
+or totals. `npm run typecheck`, `npm run lint`, `npm test` (482 passed),
+`npm run format:check` and `npm run build` all pass.
 
 Add `src/rules/energy.ts`, owning exactly two things:
 
