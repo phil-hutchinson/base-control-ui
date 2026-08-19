@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.6**
+**Rules version: 0.7**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -12,8 +12,8 @@ is right and the app has a bug.
 
 Base Control is a two-player game played on a square board. Each player
 commands a fleet of seven ships and competes to occupy the board's contested
-nodes, collecting **influence** for every turn they hold one. The player with
-the most influence when the game ends is the winner.
+nodes, collecting **energy** for every turn they hold one. The player with
+the most energy when the game ends is the winner.
 
 Ships are never destroyed. A ship that loses a fight is pushed back to a bay on
 the edge of the board and rejoins the game from there.
@@ -294,7 +294,7 @@ Every site is always in exactly one of four states:
 
 - **Dormant** — not in play.
 - **Active** — in play, but nothing has reached it yet.
-- **Charged** — in play and producing influence.
+- **Charged** — in play and producing energy.
 - **Depleted** — finished, and cooling down before it can be used again.
 
 Exactly **five** sites are active or charged at any moment. A site cycles
@@ -322,7 +322,7 @@ A charged node stays charged for **nine turns**, counting the turn on which
 it was woken.
 
 That number is chosen so that a player who wakes a node and then sits on it
-collects influence from it **five times** — and so that when it finally runs
+collects energy from it **five times** — and so that when it finally runs
 out, it is the _opponent_ who takes the next turn and so sees the replacement
 node first.
 
@@ -331,21 +331,21 @@ A node runs its clock down whether or not any ship is standing on it.
 Note the consequence: the clock belongs to whoever woke the node. A player who
 takes a node their opponent woke can only ever collect from it four times.
 
-### 8.4 Influence
+### 8.4 Energy
 
-At the end of each player's turn, that player collects influence for the
+At the end of each player's turn, that player collects energy for the
 charged nodes they are **standing on**. A node counts only if one of that
 player's ships is on it at that moment — flying across a node and moving on
 collects nothing.
 
-| Charged nodes held | Influence |
-| ------------------ | --------- |
-| 0                  | 0         |
-| 1                  | 1         |
-| 2                  | 3         |
-| 3                  | 5         |
-| 4                  | 7         |
-| 5                  | 9         |
+| Charged nodes held | Energy |
+| ------------------ | ------ |
+| 0                  | 0      |
+| 1                  | 1      |
+| 2                  | 3      |
+| 3                  | 6      |
+| 4                  | 10     |
+| 5                  | 15     |
 
 ### 8.5 Depleted and dormant sites
 
@@ -397,7 +397,7 @@ Everything that happens at the end of a turn happens in this order:
 
 1. Each of the moving player's ships standing on a charged node gains a
    shield.
-2. The moving player collects influence (section 8.4).
+2. The moving player collects energy (section 8.4).
 3. Sites that have finished cooling down go from depleted to dormant.
 4. Charged nodes that have finished their nine turns become depleted.
 5. A replacement site wakes for each node that just ran out.
@@ -421,7 +421,7 @@ net that a correctly sized board never needs; see [Appendix B](#appendix-b--sizi
 ## 9. Ending the game
 
 The game ends after **100 rounds** — 100 turns each. The player with the most
-influence wins. Equal influence is a draw.
+energy wins. Equal energy is a draw.
 
 ---
 

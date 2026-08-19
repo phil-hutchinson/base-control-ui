@@ -7,6 +7,28 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.7 — energy, and a steeper payout curve
+
+- **"Influence" is renamed "energy" throughout.** Every occurrence in section
+  1's overview, section 8.1's description of a charged site, section 8.3's
+  rationale for the nine-turn clock, section 8.4's heading and table, section
+  8.7's step 2, and section 9. This is a wording change; it does not alter how
+  the game is played.
+- **Section 8.4's table now pays 0, 1, 3, 6, 10, 15 for 0 to 5 charged nodes
+  held**, replacing the old 0, 1, 3, 5, 7, 9. The old table paid a flat two
+  energy for every node held after the first; the new one pays a marginal 1,
+  2, 3, 4, 5, so the fifth node a player holds is worth five times the first.
+  Holding all five nodes at once now pays fifteen, against nine before, and a
+  player pushed from three nodes to two loses three energy a turn rather than
+  two. The intended consequence: concentration beats spread, and driving an
+  enemy off a node and taking it with the turn's second action now moves the
+  score by more than the shields it burned.
+
+The table change alters how the game is played, so this version would
+ordinarily be a tagging candidate — but tagging is on hold until the game
+plays (see the project's contribution notes), so no tag is made for this
+version.
+
 ## 0.6 — starting shields settled, and two ships always have somewhere to go
 
 - **Appendix A item 1 is closed: every ship starts with 0 shields.** This is

@@ -2,8 +2,8 @@
 
 Base Control is a game for two players. Each of you commands a fleet of seven
 ships on a 15 x 15 board, competing for the handful of contested nodes that
-light up across it. Hold a node and it pays you influence every turn. The
-player with the most influence at the end wins.
+light up across it. Hold a node and it pays you energy every turn. The
+player with the most energy at the end wins.
 
 Your ships carry shields. Shields win fights — but every shield a ship carries
 slows it down, so the strongest ship on the board is also the slowest. Sitting

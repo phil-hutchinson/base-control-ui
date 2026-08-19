@@ -582,7 +582,20 @@ Step 19 can delete the fixture without taking any coverage with it.
 
 ## Step 1 — Rules: influence becomes energy, and §8.4 pays a steeper curve (version 0.7)
 
-Status: pending
+Status: committed
+
+Notes: Renamed influence to energy throughout `rules.md` (§1, §8.1, §8.3,
+§8.4's heading/table, §8.7 step 2, §9), replaced §8.4's table with 0, 1, 3, 6,
+10, 15, and bumped the version to 0.7. Added the 0.7 changelog entry, bumped
+`RULES_VERSION`, and renamed the word in `README.md` and `CLAUDE.md`. Left
+`src/rules/endOfTurn.ts`'s step-2 comment and `src/rules/endOfTurn.test.ts`'s
+test name untouched, per the plan (Step 6's job) — both still say
+"influence", which is expected and matches the plan's own description of
+that test in Step 6. `grep -ril influence` over the repo (excluding
+node_modules/.git) turns up only `doc/plan/*` (historical),
+`doc/ruleset/changelog.md` (pre-0.7 entries plus the 0.7 entry's own mention
+of the rename), and the two `src/rules/endOfTurn.*` files awaiting Step 6 —
+exactly the expected set.
 
 Edit `doc/ruleset/rules.md` to version **0.7**:
 

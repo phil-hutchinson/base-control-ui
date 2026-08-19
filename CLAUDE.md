@@ -4,7 +4,7 @@
 
 This repository is the web app for **Base Control**: a two-player, space-themed
 board game in which each side manoeuvres a fleet of seven ships to occupy
-contested nodes and collect influence. It is not a pure-strategy game — which
+contested nodes and collect energy. It is not a pure-strategy game — which
 node site wakes up next is random.
 
 The app is a **front-end only** TypeScript/React single-page application — no
@@ -112,7 +112,7 @@ board games "move" is the ambiguous word, but here it is a precise one, so it
 must not be used loosely.
 
 **Hub** — a site that is currently in play: the thing a ship stands on to
-collect influence. Code, tests and plans say "hub"; player-facing text says
+collect energy. Code, tests and plans say "hub"; player-facing text says
 **"node"**. The split exists to keep the code word clear of the search-tree
 "node" that arrives with any future engine work — a collision that would be
 genuinely confusing in a codebase holding both. The player-facing word is a
