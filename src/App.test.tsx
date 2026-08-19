@@ -27,6 +27,16 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the HUD's scores and round counter for the opening position", () => {
+    render(<App />);
+
+    expect(
+      screen.getByText("Green: 4 energy, 2 nodes held."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Red: 1 energy, 1 node held.")).toBeInTheDocument();
+    expect(screen.getByText("2/3")).toBeInTheDocument();
+  });
+
   it("has no static accessibility violations", async () => {
     const { container } = render(<App />);
 

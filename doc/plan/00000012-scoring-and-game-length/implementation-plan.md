@@ -1379,7 +1379,29 @@ state is not yet over. Record in the Notes anything that had to move.
 
 ## Step 12 — The arcade HUD: `src/hud/`, the scores, the pips and the round counter
 
-Status: pending
+Status: committed
+
+Notes: Moved `TurnIndicator.tsx`/`.css`/`.test.tsx` into `src/hud/` unchanged
+in behaviour, repointing its `announcements` import to `../board/`. Added
+`src/hud/ScoreDisplay.tsx` (side name, zero-padded four-digit total, a fixed
+five-pip row from `chargedNodesHeldBy`, and Step 10's `scoreSentence` as a
+visually hidden sentence — all decoration `aria-hidden`), `RoundCounter.tsx`
+(Step 10's `roundCounterText`/`roundCounterSpokenText`), and `Hud.tsx`
+(both `ScoreDisplay`s either side of `RoundCounter` in one row, with
+`TurnIndicator` beneath, all inside one `.hud` strip). Added a shared
+`.visually-hidden` utility class to `index.css` (the same clipped-absolute
+pattern `AccessibleGrid.css` already uses), plus the `--font-arcade` and
+`--glow-text` custom properties the arcade look needs — no web font, side
+colours still drawn from the existing `--color-green`/`--color-red`.
+`App.tsx` now renders `<Hud state={session.state} />` in place of the direct
+`TurnIndicator`. Added `ScoreDisplay.test.tsx`, `RoundCounter.test.tsx` and
+`Hud.test.tsx` (jsdom recipe, each with an axe check) covering every case in
+the step's verification list, and two new `App.test.tsx` cases asserting the
+review fixture's scores (`Green: 4 energy, 2 nodes held.` /
+`Red: 1 energy, 1 node held.`) and round counter (`2/3`) render through the
+app shell. No deviation from the plan. `npm run typecheck`, `npm run lint`,
+`npm test` (583 passed), `npm run format:check` and `npm run build` all
+pass.
 
 Create `src/hud/` and move `TurnIndicator.tsx`, `TurnIndicator.css` and
 `TurnIndicator.test.tsx` into it from `src/board/`, **unchanged in behaviour**
