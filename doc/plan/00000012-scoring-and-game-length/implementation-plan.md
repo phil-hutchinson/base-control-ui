@@ -2049,7 +2049,15 @@ the counter at 1/100.
 
 ## Step 20 — README check
 
-Status: pending
+Status: committed
+
+Notes: The status paragraph now describes the energy payout, the visible
+score, node counts and round counter, and the hundred-round ending with
+its draw and play-again button, and no longer says nothing is scored. It
+still names what is missing: no saved or recorded games, no computer
+opponent, no choice of game length. "Influence" had not crept back, and
+the README carries no rules version, so the 0.7 bump needed nothing
+there. The paragraph was rewrapped to the file's line width.
 
 `README.md` currently tells the player, in as many words, that "Nothing is
 scored yet and the game does not end". **That is now false.** Update it — the
