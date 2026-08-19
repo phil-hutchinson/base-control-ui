@@ -1281,7 +1281,26 @@ asserted the live region's exact text mid-game (which should not change).
 
 ## Step 11 — A temporary short game for the manual gates
 
-Status: pending
+Status: committed
+
+Notes: Added `src/game/reviewFixture.ts`, built from
+`startingGameState(FIXTURE_SEED, 3)` with three ships repositioned onto
+charged nodes (green-1 on H8, 2 shields; green-2 on E5, 1 shield; red-1 on
+K5, 1 shield), H8/E5/K5 overridden to `charged` entered on ply 1, and
+`plyNumber`/`sideToMove`/`actionsRemaining`/`movedThisPly`/
+`returnPositionIndex` (drifted twice via `driftReturnPositionIndex`) and
+`energy: { green: 4, red: 1 }` overridden to match ply 3. `App.tsx` now
+builds its opening session from `reviewFixtureGameState()` in place of
+`startingGameState(freshSeed())` — a one-import, one-call change, matching
+story 00000011's precedent exactly. Verified the position's arithmetic with
+a throwaway test file (five active-or-charged sites, the three ships on
+charged nodes with the right `enteredOnPly`, no stranded ship, green has a
+legal move, the game is not over, and `currentRound` reads 2 of 3) and
+deleted it before finishing, per the step. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (569 passed, unchanged count,
+no test modified), `npm run format:check` and `npm run build` all pass.
+`grep -rln reviewFixture src` shows only `src/game/reviewFixture.ts` and its
+one call site in `src/App.tsx`.
 
 Add `src/game/reviewFixture.ts`, a **temporary** module holding a hand-built
 position, and have `src/App.tsx` build its initial session from it instead of
