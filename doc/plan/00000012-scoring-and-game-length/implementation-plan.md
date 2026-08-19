@@ -1466,7 +1466,11 @@ Verification (automated): `npm test` with a new jsdom test file for the HUD
 
 ## Step 13 — Manual gate: the HUD reads right
 
-Status: pending
+Status: committed
+
+Notes: Manual gate passed — the owner confirmed the strip reads as one
+deliberate thing, the scores and pips are legible, the counter reads the
+fixture's own three rounds, and the ending behaves.
 
 The first look at this story's visual direction, before the float, the panel
 and the chrome are built on top of it. The app opens on Step 11's three-round
