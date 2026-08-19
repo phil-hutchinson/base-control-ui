@@ -629,6 +629,12 @@ tagging candidate and that tagging is on hold regardless, and bumped
 deliberately left untouched per the step's instruction (Step 19 handles it).
 No deviation from the plan.
 
+Peer review addendum: `rulesVersion.test.ts` originally confirmed the
+changelog's 0.6 entry by eye rather than automatically. A second test was
+added beside the version test, reading `changelog.md` and asserting it has a
+heading for `RULES_VERSION`, closing the gap in `story.md`'s verification
+list.
+
 Edit `doc/ruleset/rules.md`, bump its version to **0.6**, record the change in
 `doc/ruleset/changelog.md`, and set `RULES_VERSION` to match. This is the only
 rules change in the story and it lands before any code depends on it. Neither
@@ -1065,8 +1071,10 @@ Added 21 tests to `src/rules/ply.test.ts` covering all three outcomes, the
 shield cost, the charged-node interaction with end-of-turn step 1, the
 site-inertness and un-stranding-by-force invariants, return placement (plain
 and live-receptacle), the return position's non-drift within a ply and
-drift at ply end, every action-permission combination the step lists, and
-refusal. Deviation: the fleet-count assertion compares each side's ship
+drift at ply end, attack-then-move, move-then-attack, two ships each
+attacking, and the move cap, and refusal — but not attacking twice with one
+ship, which peer review found missing; that case was added afterwards.
+Deviation: the fleet-count assertion compares each side's ship
 count **before and after the fight** rather than hard-coding the literal
 seven, so it holds for the file's existing minimal-fleet test fixtures too;
 it still enforces exactly what "the fleet is still seven ships a side"
@@ -1291,6 +1299,14 @@ ship — that the new gesture no longer routes through `applyMove` at all, so it
 was replaced rather than weakened, per the story's own expectation that this
 is "the regression this test exists to catch". No other deviation from the
 plan; `combat.ts`, `ply.ts` and `actions.ts` were not touched.
+
+Peer review addendum: `story.md` item 10 says a ship is "selectable exactly
+when it has a legal action", which `isSelectable` deliberately does not
+implement literally — it keeps the pre-existing pinned-ship allowance
+(selectable when it has a legal action, or when it has not moved this ply at
+all), matching decision 20. The story's "exactly when" is read as applying to
+ships that have already moved; a ship that has not moved yet still selects
+even with no legal action, as it always has.
 
 Teach the session that activating an enemy ship is an attack, widen which ships
 may be selected, and write the wording for everything new.

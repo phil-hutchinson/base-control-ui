@@ -21,7 +21,6 @@ import { announcementFor } from "./announcements";
 import { squareForGridPosition } from "./boardView";
 import {
   squareLabel,
-  type PredictedFightOutcome,
   type ReturnCue,
   type ShipCondition,
   type SquareMark,
@@ -140,17 +139,15 @@ export function Board({ session, onIntent }: BoardProps) {
           : false;
 
         let mark: SquareMark | undefined;
-        let predictedOutcome: PredictedFightOutcome | undefined;
         if (selectedShip && squareName(selectedShip.square) === name) {
           mark = "selected";
         } else if (destinationSquareNames.has(name)) {
           mark = "destination";
         } else if (selectedShip && targetSquareNames.has(name) && ship) {
-          mark = "target";
-          predictedOutcome = resolveFight(
-            selectedShip.shields,
-            ship.shields,
-          ).result;
+          mark = {
+            kind: "target",
+            outcome: resolveFight(selectedShip.shields, ship.shields).result,
+          };
         }
 
         // The two return-position cues are independent of `mark` and of
@@ -188,7 +185,6 @@ export function Board({ session, onIntent }: BoardProps) {
             hasMoved,
             condition,
             mark,
-            predictedOutcome,
           }),
           focusable: true,
         };

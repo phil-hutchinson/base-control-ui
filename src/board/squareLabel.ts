@@ -34,21 +34,6 @@ export interface SquareOccupant {
 }
 
 /**
- * A mark a square carries during ship selection: the selected ship's own
- * square, a square the selected ship may legally move to, or a square it may
- * legally attack. One exclusive slot, because the three cannot co-occur: the
- * selected ship's own square is neither a destination nor a target, a
- * destination must be empty, and a target must hold an enemy ship.
- */
-export type SquareMark = "selected" | "destination" | "target";
-
-/** How the selected and destination marks read in a square's accessible name. */
-const MARK_WORDING: Record<"selected" | "destination", string> = {
-  selected: "selected",
-  destination: "can move here",
-};
-
-/**
  * A fight's predicted outcome (rules.md §7), from the selected ship's own
  * point of view: it is always the attacker in the fight a target square's
  * name predicts, since only a selected ship's own activation of an enemy
@@ -56,6 +41,26 @@ const MARK_WORDING: Record<"selected" | "destination", string> = {
  */
 export type PredictedFightOutcome =
   "attacker-won" | "defender-won" | "mutual-return";
+
+/**
+ * A mark a square carries during ship selection: the selected ship's own
+ * square, a square the selected ship may legally move to, or a square it may
+ * legally attack, carrying the fight's predicted outcome. One exclusive
+ * slot, because the three cannot co-occur: the selected ship's own square is
+ * neither a destination nor a target, a destination must be empty, and a
+ * target must hold an enemy ship. The outcome lives on the mark itself, not
+ * a separate field, so a target can never be built without one.
+ */
+export type SquareMark =
+  | "selected"
+  | "destination"
+  | { readonly kind: "target"; readonly outcome: PredictedFightOutcome };
+
+/** How the selected and destination marks read in a square's accessible name. */
+const MARK_WORDING: Record<"selected" | "destination", string> = {
+  selected: "selected",
+  destination: "can move here",
+};
 
 /** How a target square's predicted outcome reads in its accessible name. */
 const PREDICTED_OUTCOME_WORDING: Record<PredictedFightOutcome, string> = {
@@ -107,14 +112,12 @@ export interface SquareLabelDescriptor {
   readonly square: Square;
   readonly isBay: boolean;
   readonly siteState?: SiteState;
-  /** A bay's return-position cues (rules.md §7.1); only meaningful when `isBay` is true. */
+  /** A return-position cue (rules.md §7.1), emitted right after the bay/site segment; only bays ever carry one. */
   readonly returnCue?: ReturnCue;
   readonly occupant?: SquareOccupant;
   readonly hasMoved?: boolean;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
-  /** Used only when `mark` is `"target"`: the fight attacking here would predict. */
-  readonly predictedOutcome?: PredictedFightOutcome;
 }
 
 /** Builds a square's accessible name from its name, bay/site status, return cues, occupant, having moved, condition and mark. */
@@ -127,7 +130,6 @@ export function squareLabel({
   hasMoved,
   condition,
   mark,
-  predictedOutcome,
 }: SquareLabelDescriptor): string {
   const segments = [squareName(square)];
   if (isBay) {
@@ -149,12 +151,12 @@ export function squareLabel({
   if (condition) {
     segments.push(CONDITION_WORDING[condition]);
   }
-  if (mark === "target") {
-    if (predictedOutcome) {
-      segments.push(PREDICTED_OUTCOME_WORDING[predictedOutcome]);
-    }
-  } else if (mark) {
-    segments.push(MARK_WORDING[mark]);
+  if (mark) {
+    segments.push(
+      typeof mark === "string"
+        ? MARK_WORDING[mark]
+        : PREDICTED_OUTCOME_WORDING[mark.outcome],
+    );
   }
   return segments.join(", ");
 }

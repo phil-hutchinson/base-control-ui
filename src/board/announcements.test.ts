@@ -229,7 +229,7 @@ describe("announcementFor", () => {
     [
       "another-ship-stranded",
       squareAt("G", 7),
-      "A stranded ship must be moved clear this turn. Choose one of those instead.",
+      "A stranded ship must be moved clear this turn. Only a move will free it — choose one of those.",
     ],
     [
       "nothing-to-select",

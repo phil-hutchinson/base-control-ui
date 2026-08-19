@@ -13,9 +13,8 @@
 // carries the heavier mark; position 1 is the rule behind it. Each triangle
 // is a single new line closing a corner of the square's own border, which
 // already supplies the triangle's other two sides. Where a bay is both,
-// only the solid triangle is drawn — an outline beneath a solid triangle of
-// the same geometry would be invisible anyway — and the accessible name says
-// both. Where no bay is empty at all, only position 1's outline is drawn,
+// only the solid triangle is drawn, and the accessible name says both.
+// Where no bay is empty at all, only position 1's outline is drawn,
 // correctly saying there is nowhere for a beaten ship to go.
 //
 // Having moved this ply and a ship's condition (no action available, or
@@ -359,7 +358,7 @@ export function BoardSquare({
       {occupant && <ShipIcon side={occupant.side} shields={occupant.shields} />}
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}
-      {mark === "target" && <TargetMark />}
+      {typeof mark === "object" && mark.kind === "target" && <TargetMark />}
       {hasMoved && <AlreadyMovedMark />}
       {condition === "no-action" && <NoActionMark />}
       {condition === "owes-action" && <OwesActionMark />}

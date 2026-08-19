@@ -749,6 +749,33 @@ describe("applyAttack", () => {
     expect(survivingAttacker?.shields).toBe(2);
   });
 
+  it("lets one ship attack twice, winning the first so it survives to strike a second neighbour", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("red-1", "red", "H9", 0),
+        ship("red-2", "red", "G9", 0),
+      ],
+    });
+
+    const first = applyAttack(state, "green-1", squareFromName("H9"));
+    expect(first.outcome).toBe("applied");
+    if (first.outcome !== "applied") {
+      throw new Error("expected the first attack to be applied");
+    }
+
+    const second = applyAttack(first.state, "green-1", squareFromName("G9"));
+    expect(second.outcome).toBe("applied");
+    if (second.outcome !== "applied") {
+      throw new Error("expected the second attack to be applied");
+    }
+
+    const attacker = second.state.ships.find((s) => s.id === "green-1");
+    expect(attacker?.square).toEqual(squareFromName("H8"));
+    expect(attacker?.shields).toBe(1);
+    expect(second.state.movedThisPly).toEqual([]);
+  });
+
   it("lets a ship attack, then move, as its ply's two actions", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 1)],

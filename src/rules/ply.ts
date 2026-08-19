@@ -308,10 +308,9 @@ function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
  * caller need handle. `returnedShipIds` names the ship or ships placed in a
  * bay; every other ship, including a winner, must be exactly where it was.
  *
- * The fleet-size check compares each side's count before and after, rather
- * than hard-coding seven: that is what "the fleet is still seven ships a
- * side" (rules.md §4) reduces to for a fight, which can only ever change who
- * holds a square, never how many ships either side has.
+ * The fleet-size check asserts each side's ship count is unchanged by the
+ * fight, which can only ever change who holds a square, never how many
+ * ships either side has.
  */
 function assertFightInvariants(
   before: GameState,

@@ -35,8 +35,7 @@ const ADJACENT_OFFSETS: ReadonlyArray<readonly [number, number]> = [
 /**
  * The eight squares surrounding `square`, diagonals included, filtered to
  * squares actually on the board (five on an edge, three at a corner). §7's
- * whole attack range — see the module header for why this is not derived
- * from `reachFrom`.
+ * whole attack range, fixed and independent of shield count.
  */
 export function adjacentSquares(square: Square): readonly Square[] {
   const columnIndex = COLUMN_LETTERS.indexOf(square.column);
@@ -210,11 +209,9 @@ export type FightOutcome =
  * case the defender wins and the attacker is the one sent home; equal
  * counts send both ships home.
  *
- * `winner − (loser + 1)` is asserted to be a valid `ShieldCount` rather than
- * clamped: the winner by definition carries strictly more shields than the
- * loser, so `winner ≥ loser + 1` and the result can never be negative. A
- * clamp would hide the bug that produced a negative result instead of
- * surfacing it.
+ * `winner − (loser + 1)` is asserted to be a valid `ShieldCount`: the winner
+ * by definition carries strictly more shields than the loser, so
+ * `winner ≥ loser + 1` and the result can never be negative.
  */
 export function resolveFight(
   attackerShields: ShieldCount,

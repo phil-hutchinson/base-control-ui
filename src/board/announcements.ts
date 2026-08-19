@@ -27,11 +27,6 @@ function capitalize(side: Side): string {
   return side === "green" ? "Green" : "Red";
 }
 
-/** The side's name in lower case, for use mid-sentence rather than at its start. */
-function sideWord(side: Side): string {
-  return side === "green" ? "green" : "red";
-}
-
 function actionsPhrase(count: number): string {
   return `${count} ${count === 1 ? "action" : "actions"}`;
 }
@@ -254,8 +249,7 @@ function fightSentence(event: AttackedEvent): string {
   const attackerSquare = squareName(fight.attacker.square);
   const defenderSquare = squareName(fight.defender.square);
   const attackerSide = capitalize(fight.attacker.side);
-  const defenderSide = sideWord(fight.defender.side);
-  const opening = `${attackerSide} ship at ${attackerSquare} attacked the ${defenderSide} ship at ${defenderSquare}`;
+  const opening = `${attackerSide} ship at ${attackerSquare} attacked the ${fight.defender.side} ship at ${defenderSquare}`;
 
   if (fight.outcome === "mutual-return") {
     const [attackerReturn, defenderReturn] = fight.returns;
@@ -287,7 +281,7 @@ function rejectionSentence(event: RejectedEvent): string {
     case "ship-already-moved":
       return "That ship has already moved this turn. Choose another.";
     case "another-ship-stranded":
-      return "A stranded ship must be moved clear this turn. Choose one of those instead.";
+      return "A stranded ship must be moved clear this turn. Only a move will free it — choose one of those.";
     case "nothing-to-select":
       return `No ship on ${square}. Choose one of your own ships.`;
     case "out-of-range":
