@@ -1948,7 +1948,15 @@ If a check fails, record what was seen in this step's Notes before any fix.
 
 ## Step 15 — Manual gate: the cues, on screen
 
-Status: pending
+Status: committed
+
+Notes: Gate taken by the owner and **passed**, against the reversed cues from
+Step 13a. Solid receptacle and outline position 1 read apart at a glance, the
+receptacle tracks a ship leaving a bay mid-turn, the drift is visible turn by
+turn, and destinations, targets, the top-edge "already moved" bar and the
+bottom-edge no-action bar are all distinguishable — including the two bars
+together on one square, which no earlier story had put on screen at once. No
+findings.
 
 No code. `story.md`'s manual gates 3 and 4, taken against the Step 13 fixture.
 
