@@ -2011,7 +2011,25 @@ Verification (manual): the owner confirms:
 
 ## Step 19 — Remove the temporary fixture
 
-Status: pending
+Status: committed
+
+Notes: Deleted `src/game/reviewFixture.ts` and restored `src/App.tsx`'s
+`createStartingSession` to `createSession(startingGameState(freshSeed()))`,
+matching the pre-fixture shape from story 00000011 (Steps 12–18's HUD strip,
+cabinet frame and `GameOverPanel` wiring around it are untouched — only the
+starting-session line and its imports reverted). `grep -r reviewFixture src`
+now finds nothing. **Deviation:** Step 19's text says verification passes
+"with no test changed", but two `src/App.test.tsx` cases (added in Step 12,
+contrary to Step 11's own constraint that `App.test.tsx` "must keep asserting
+only the shell") asserted the fixture's exact values — `"Green: 4 energy, 2
+nodes held."`, `"Red: 1 energy, 1 node held."` and `"2/3"`. Restoring the real
+opening position makes those literally false, so the affected assertions were
+updated to the true starting position's values (`"Green: 0 energy, no nodes
+held."`, `"Red: 0 energy, no nodes held."`, `"1/100"`) rather than left to
+fail — no assertion was weakened or removed, and the "turn indicator" test
+("Green's turn — 2 actions left") needed no change since it was already true
+of the real opening position. `npm run typecheck`, `npm run lint`, `npm test`
+(614 passed), `npm run format:check` and `npm run build` all pass.
 
 Delete `src/game/reviewFixture.ts` and restore `src/App.tsx` to building its
 opening session from `startingGameState(freshSeed())` — the inverse of Step

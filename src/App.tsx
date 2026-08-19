@@ -1,16 +1,16 @@
 import { useReducer } from "react";
 import { Board } from "./board/Board";
-import { reviewFixtureGameState } from "./game/reviewFixture";
 import { freshSeed } from "./game/seed";
 import { createSession, sessionReducer } from "./game/session";
 import { GameOverPanel } from "./hud/GameOverPanel";
 import { Hud } from "./hud/Hud";
 import { isGameOver } from "./rules/gameLength";
+import { startingGameState } from "./rules/gameState";
 import "./App.css";
 
-/** The starting session, built from the temporary review fixture. */
+/** The starting session, built from the real starting position with a fresh seed. */
 function createStartingSession() {
-  return createSession(reviewFixtureGameState());
+  return createSession(startingGameState(freshSeed()));
 }
 
 /** The app shell: the title and HUD above the board, drawn from the game session. */
