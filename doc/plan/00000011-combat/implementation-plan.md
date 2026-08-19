@@ -2005,7 +2005,12 @@ If a check fails, record what was seen in this step's Notes before any fix.
 
 ## Step 16 — Manual gate: screen reader
 
-Status: pending
+Status: committed
+
+Notes: Gate taken by the owner with a real screen reader and **passed** — no
+findings. The predicted outcome at the end of a target's name (check 5) was
+left as built: the owner raised nothing against it, so it keeps its place and
+its wording.
 
 No code. `story.md`'s manual gate 5, taken against the Step 13 fixture with a
 real screen reader (not the accessibility tree inspector — this gate exists to
