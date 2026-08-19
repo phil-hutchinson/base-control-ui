@@ -830,7 +830,21 @@ The whole suite must be green with every existing assertion intact.
 
 ## Step 5 — `gameLength.ts`: whether the game is over, and who won
 
-Status: pending
+Status: committed
+
+Notes: Added `isGameOver` (`plyNumber > pliesForGameLength(state.lengthInRounds)`),
+`currentRound` (`min(roundForPly(plyNumber), lengthInRounds)`), the `GameResult`
+type (`outcome` discriminator plus optional `winner`, mirroring
+`FightResolvedEffect`'s shape, plus both sides' final `energy`), and `gameResult`
+(throws `RangeError` if the game is not yet over) to `src/rules/gameLength.ts`.
+`GameState`, `EnergyTotals` and `Side` are imported with `import type` only, per
+decision 6. Added the step's cases to `gameLength.test.ts`: not-over/over at
+plies 200/201 of a default-length game and 6/7 of a three-round game; the
+clamped round at plies 199/200/201 (default length) and 6/7 (three-round);
+green-won/red-won/draw results each carrying both totals; and the throw on an
+unfinished game. No deviation from the plan. `npm run typecheck`, `npm run
+lint`, `npm test` (519 passed), `npm run format:check` and `npm run build` all
+pass.
 
 Extend `src/rules/gameLength.ts` with the state-aware half, now that the state
 carries what it needs. `GameState` and `Side` are imported **as types only**

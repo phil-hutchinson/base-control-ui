@@ -2,6 +2,9 @@
 // turn, not only at the last one — named for §9's subject rather than for
 // the moment of ending.
 
+import type { EnergyTotals, GameState } from "./gameState";
+import type { Side } from "./fleet";
+
 /** §9's default game length in rounds. The one named place this number lives. */
 export const DEFAULT_GAME_LENGTH_ROUNDS = 100;
 
@@ -28,4 +31,52 @@ export function roundForPly(plyNumber: number): number {
     );
   }
   return Math.ceil(plyNumber / 2);
+}
+
+/**
+ * Whether the given state's game has ended: `plyNumber` has run past the
+ * plies its own `lengthInRounds` allows. Judged against the state's own
+ * length, never against `DEFAULT_GAME_LENGTH_ROUNDS` — a state started at a
+ * different length ends at a different ply.
+ */
+export function isGameOver(state: GameState): boolean {
+  return state.plyNumber > pliesForGameLength(state.lengthInRounds);
+}
+
+/**
+ * The round to display for the given state: the round its `plyNumber` is
+ * in, held at the game's own length once play has run past the end so the
+ * counter reads (for example) 100/100 rather than 101/100.
+ */
+export function currentRound(state: GameState): number {
+  return Math.min(roundForPly(state.plyNumber), state.lengthInRounds);
+}
+
+/** The result of a finished game: which side won, or a draw, with both final totals. */
+export interface GameResult {
+  readonly outcome: "green-won" | "red-won" | "draw";
+  readonly winner?: Side;
+  readonly energy: EnergyTotals;
+}
+
+/**
+ * The result of the given state's game. The state's game must already be
+ * over — asking for the result of a game still in progress is a caller bug
+ * and throws a `RangeError`.
+ */
+export function gameResult(state: GameState): GameResult {
+  if (!isGameOver(state)) {
+    throw new RangeError(
+      `gameResult: game is not over at ply ${state.plyNumber} of ${state.lengthInRounds} rounds`,
+    );
+  }
+
+  const { green, red } = state.energy;
+  if (green > red) {
+    return { outcome: "green-won", winner: "green", energy: state.energy };
+  }
+  if (red > green) {
+    return { outcome: "red-won", winner: "red", energy: state.energy };
+  }
+  return { outcome: "draw", energy: state.energy };
 }
