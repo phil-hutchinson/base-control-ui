@@ -1575,7 +1575,42 @@ that asserts jsdom's scheduler instead of the behaviour.
 
 ## Step 15 — The floating gain and the node pulse
 
-Status: pending
+Status: committed
+
+Notes: Added `centroidPercentPosition` to `src/board/boardView.ts` (decision
+13): averages each square's `gridPositionForSquare` and maps through
+`(index + 0.5) / 15 * 100`, throwing on an empty list. Added
+`src/board/EnergyOverlay.tsx` / `.css`, rendered by `Board.tsx` as a sibling
+of `AccessibleGrid` inside `.board-frame`, sharing `.board`'s own grid area
+(`grid-column: 2 / 17; grid-row: 1 / 16`) so it needs no measurement of its
+own, `aria-hidden="true"` and `pointer-events: none`. The pure helper
+`collectionsForEvent` (with `energyCollectionsIn` beneath it) lives in
+`EnergyOverlay.tsx` beside the component, per the plan, and walks a session
+event for every `energy-collected` effect it carries: a top-level
+`ply-passed` event's own `endOfTurn`, or — for `moved`/`attacked` — both a
+nested `ply-ended` effect's `endOfTurn` and a nested `ply-passed` effect's,
+since both can fire in the same event (decision 14). Each collection draws
+one pulse per paying square (itself `centroidPercentPosition` of a
+one-square list, reusing the same function rather than adding a second) and
+one `+N` at the collection's own centroid, keyed by `` `${side}-${plyNumber}` ``
+so a second collection by the same side re-runs its animation. CSS follows
+`BoardSquare.css`'s `prefers-reduced-motion: reduce` pattern: the float and
+the pulse still appear and fade, without travel or scale, under reduced
+motion. `BoardSquare.tsx`/`.css` untouched, as required.
+
+Tests: `boardView.test.ts` gained the four centroid cases the plan lists
+(single square, midway between two, a diagonal pair's rectangle centre,
+empty-list throw). `src/board/EnergyOverlay.test.tsx` (new) covers no event,
+one collection's gain amount/count/side colour and per-square pulse count, a
+zero-payout action drawing neither, both collections rendering when a
+ply-ending action is followed by the other side's pass, a top-level pass
+event's own collection, the `aria-hidden` attribute, and an axe run
+(`color-contrast` disabled). `Board.test.tsx` gained one composition test
+confirming the overlay is a sibling of the `role="grid"` element (not a
+descendant) when a real collecting event is rendered through `Board`, and
+that the grid itself (225 cells) is unaffected. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm test` (603 passed, up from 591),
+`npm run format:check` and `npm run build` all pass.
 
 When a side collects, a `+N` floats up off the board and fades in that side's
 colour, and each node that paid pulses briefly.
