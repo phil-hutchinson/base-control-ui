@@ -1,13 +1,14 @@
 import { useReducer } from "react";
 import { Board } from "./board/Board";
 import { TurnIndicator } from "./board/TurnIndicator";
-import { reviewFixtureGameState } from "./game/reviewFixture";
 import { createSession, sessionReducer } from "./game/session";
+import { freshSeed } from "./game/seed";
+import { startingGameState } from "./rules/gameState";
 import "./App.css";
 
-/** The starting session, built from the temporary review fixture. */
+/** The starting session, built from the real starting position with a fresh seed. */
 function createStartingSession() {
-  return createSession(reviewFixtureGameState());
+  return createSession(startingGameState(freshSeed()));
 }
 
 /** The app shell: the title and turn indicator above the board, drawn from the game session. */

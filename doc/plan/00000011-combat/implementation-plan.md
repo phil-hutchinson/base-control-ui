@@ -2047,7 +2047,17 @@ If a check fails, record what was heard in this step's Notes before any fix.
 
 ## Step 17 — Remove the fixture
 
-Status: pending
+Status: committed
+
+Notes: Deleted `src/game/reviewFixture.ts`; `src/App.tsx` now builds its
+starting session from `startingGameState(freshSeed())`. A repository-wide
+search for `reviewFixture` finds nothing outside `doc/`. The H15 return
+position assertion already exists in `src/rules/gameState.test.ts` ("names
+H15 as return position 1", added in Step 3) and now exercises the real
+starting state exclusively, since nothing else in `src/` referenced the
+fixture; no duplicate test was added. All checks green: `npm test` (466
+tests), `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run
+build`. No deviation from the plan.
 
 Delete `src/game/reviewFixture.ts` and return `src/App.tsx` to building its
 initial session from `startingGameState(...)` with a seed drawn from
