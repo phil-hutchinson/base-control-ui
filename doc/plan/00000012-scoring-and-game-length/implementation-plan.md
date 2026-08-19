@@ -1986,7 +1986,11 @@ The look itself is Step 18b's gate.
 
 ## Step 18b — Manual gate: the refinements
 
-Status: pending
+Status: committed
+
+Notes: Gate passed. The owner accepted the four refinements as they
+stand, noting that the app's layout will be reworked in a separate story
+regardless.
 
 Run `npm run dev` and open `http://localhost:5273`, and play the three-round
 fixture out to its end.
