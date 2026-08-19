@@ -1765,7 +1765,27 @@ Verification (automated): `npm test` with new jsdom tests:
 
 ## Step 17 — The arcade chrome: the title, the cabinet and the bezel
 
-Status: pending
+Status: committed
+
+Notes: `App.tsx` now wraps `.app__board` in a new `.app__cabinet` div — the
+bezel — leaving `.app__board`'s own `container-type: size`, `flex: 1` and
+`min-height: 0` untouched so its sizing behaviour against `.board-frame` is
+unaffected; the bezel's padding simply gives it a smaller starting box to
+grow and shrink from. `App.css` gives `.app` a radial-gradient vignette (the
+cabinet face, using `--color-space`/`--color-space-raised`), `.app__title`
+the arcade font stack and a two-layer glow via `--font-arcade`/`--glow-text`
+(already introduced in Step 12), and `.app__cabinet` a bordered, rounded,
+inset-shadowed frame around the playing area using the existing
+`--color-text-dim`/`--color-space-raised` tokens. No new custom properties
+were needed in `index.css` — everything the chrome wanted was already there
+from Step 12 — so that file is untouched, a narrower diff than the plan
+anticipated but consistent with "extended there if the frame needs more."
+No max-width was added to the cabinet, deliberately, so the board keeps
+growing with no ceiling as `Board.css`'s own comment states. The board grid,
+squares, ships and site markers are untouched. No other deviation from the
+plan. `npm run typecheck`, `npm run lint`, `npm test` (612 passed, unchanged
+from Step 16), `npm run format:check` and `npm run build` all pass; no test
+asserts on the new class names, so none needed updating.
 
 Give the page frame the same treatment the HUD already has: a cabinet face
 around the board, glow on the title, a bezel around the playing area. Uses the

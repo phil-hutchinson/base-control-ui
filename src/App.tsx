@@ -34,11 +34,16 @@ export function App() {
     <main className="app">
       <h1 className="app__title">Base Control</h1>
       <Hud state={session.state} />
-      <div className="app__board">
-        <Board session={session} onIntent={dispatch} />
-        {isGameOver(session.state) && (
-          <GameOverPanel state={session.state} onPlayAgain={handlePlayAgain} />
-        )}
+      <div className="app__cabinet">
+        <div className="app__board">
+          <Board session={session} onIntent={dispatch} />
+          {isGameOver(session.state) && (
+            <GameOverPanel
+              state={session.state}
+              onPlayAgain={handlePlayAgain}
+            />
+          )}
+        </div>
       </div>
     </main>
   );
