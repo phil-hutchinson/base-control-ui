@@ -315,7 +315,25 @@ site in `src/App.tsx` mentions it.
 
 ### Step 2 — The new site artwork
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `SiteMarker.tsx` to a single centred `<circle r={12}>` filled
+with `currentColor` for all four states, dropping the ring-spec table and the
+per-state multi-circle rendering. `SiteMarker.css` now carries a shared
+`2px solid transparent` border on `.site-marker`, overridden per state:
+depleted/dormant/active set both `color` and `border-color` (grey, white,
+`#ffbe3d`), and charged drops the border entirely and paints a
+`radial-gradient(circle farthest-corner at 50% 50%, #ffbe3d 0%, #ffbe3d 20%,
+#fff3c4 100%)` background instead. The unused `--site-accent` custom property
+is gone. Replaced the "differs by more than colour" geometry test with an
+`it.each` asserting one centred circle per state in the shared viewBox, per
+D2; the modifier-class, decorative and axe tests are untouched.
+`src/board/Board.test.tsx`'s site tests needed no change, confirming the
+component's contract (class list, single `aria-hidden` SVG, no title/desc)
+held. `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test`
+(651 tests, 40 files) and `npm run build` all pass. No deviation from the
+step as written; exact colours/radius are starting values per D6, to be
+judged by eye at Step 9.
 
 Redraw `src/board/SiteMarker.tsx` and `src/board/SiteMarker.css` to
 `story.md`'s four states, following D2–D6. The component's contract does not

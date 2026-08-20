@@ -1,54 +1,38 @@
-/* Colours for the site-state ring. SiteMarker.tsx sets the stroke width,
-   dash pattern and ring count as SVG attributes; this file only sets colour,
-   which is the states' second-order cue. `--site-accent` is a violet, kept
-   distinct from the two side colours, the bay cyan (`--bay-border` in
-   Board.css) and the focus-ring amber (`--focus-ring`), and lives here
-   rather than in the shared palette because only this file needs it. */
+/* Colours for the site-state marker: a small centred circle, bordered like
+   a bay square (`--bay-border` in Board.css) in the state's own colour for
+   depleted, dormant and active, and a borderless radial glow for charged.
+   SiteMarker.tsx only sets the circle's geometry; this file sets everything
+   about its appearance. */
 
 .site-marker {
   display: block;
   width: 100%;
   height: 100%;
-  --site-accent: #9b6fd1;
-}
-
-.site-marker__ring {
-  fill: none;
-  stroke: currentColor;
-}
-
-.site-marker__fill {
-  stroke: none;
-  fill: none;
-}
-
-.site-marker--dormant {
-  color: var(--color-text-dim);
-}
-
-.site-marker--dormant .site-marker__fill {
-  fill: var(--color-space);
-  fill-opacity: 0.65;
-}
-
-.site-marker--active {
-  color: var(--site-accent);
-}
-
-.site-marker--active .site-marker__fill {
-  fill: var(--site-accent);
-  fill-opacity: 0.18;
-}
-
-.site-marker--charged {
-  color: var(--site-accent);
-}
-
-.site-marker--charged .site-marker__fill {
-  fill: var(--site-accent);
-  fill-opacity: 0.4;
+  border: 2px solid transparent;
 }
 
 .site-marker--depleted {
   color: var(--color-text-dim);
+  border-color: var(--color-text-dim);
+}
+
+.site-marker--dormant {
+  color: var(--color-text-bright);
+  border-color: var(--color-text-bright);
+}
+
+.site-marker--active {
+  color: #ffbe3d;
+  border-color: #ffbe3d;
+}
+
+.site-marker--charged {
+  color: #ffbe3d;
+  border: none;
+  background: radial-gradient(
+    circle farthest-corner at 50% 50%,
+    #ffbe3d 0%,
+    #ffbe3d 20%,
+    #fff3c4 100%
+  );
 }
