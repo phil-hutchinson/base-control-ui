@@ -62,7 +62,13 @@ describe("ScoreDisplay", () => {
   it("carries the true total and node count as a hidden sentence", () => {
     const state = buildState({ energy: { green: 24, red: 9 } });
 
-    render(<ScoreDisplay state={state} side="green" />);
+    render(
+      <ScoreDisplay
+        state={state}
+        side="green"
+        displayedTotal={state.energy.green}
+      />,
+    );
 
     expect(
       screen.getByText("Green: 24 energy, no nodes held."),
@@ -74,8 +80,16 @@ describe("ScoreDisplay", () => {
 
     const { container } = render(
       <div>
-        <ScoreDisplay state={state} side="green" />
-        <ScoreDisplay state={state} side="red" />
+        <ScoreDisplay
+          state={state}
+          side="green"
+          displayedTotal={state.energy.green}
+        />
+        <ScoreDisplay
+          state={state}
+          side="red"
+          displayedTotal={state.energy.red}
+        />
       </div>,
     );
 
@@ -89,7 +103,9 @@ describe("ScoreDisplay", () => {
   it("renders five pips, none lit when the side holds no charged node", () => {
     const state = buildState({});
 
-    const { container } = render(<ScoreDisplay state={state} side="green" />);
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
 
     expect(container.querySelectorAll(".score-display__pip")).toHaveLength(5);
     expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
@@ -107,7 +123,9 @@ describe("ScoreDisplay", () => {
       ],
     });
 
-    const { container } = render(<ScoreDisplay state={state} side="green" />);
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
 
     expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
       2,
@@ -123,7 +141,9 @@ describe("ScoreDisplay", () => {
       ships: [ship("red-1", "red", "K5")],
     });
 
-    const { container } = render(<ScoreDisplay state={state} side="green" />);
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
 
     expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
       0,
@@ -133,7 +153,9 @@ describe("ScoreDisplay", () => {
   it("has no static accessibility violations", async () => {
     const state = buildState({});
 
-    const { container } = render(<ScoreDisplay state={state} side="green" />);
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
 
     const results = await axe.run(container, {
       rules: { "color-contrast": { enabled: false } },
@@ -142,20 +164,20 @@ describe("ScoreDisplay", () => {
     expect(results.violations).toEqual([]);
   });
 
-  it("counts up: a fresh render shows the true total, not zero", () => {
+  it("draws the digits from the displayed total, not the state's true total", () => {
     const state = buildState({ energy: { green: 24, red: 9 } });
 
-    const { container } = render(<ScoreDisplay state={state} side="green" />);
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={15} />,
+    );
 
-    expect(container).toHaveTextContent("0024");
+    expect(container).toHaveTextContent("0015");
   });
 
-  it("counts up: the hidden sentence carries the true total right after a state change", () => {
-    const before = buildState({ energy: { green: 0, red: 0 } });
-    const after = buildState({ energy: { green: 6, red: 0 } });
+  it("carries the state's true total in the hidden sentence even while the displayed total is still rolling", () => {
+    const state = buildState({ energy: { green: 6, red: 0 } });
 
-    const { rerender } = render(<ScoreDisplay state={before} side="green" />);
-    rerender(<ScoreDisplay state={after} side="green" />);
+    render(<ScoreDisplay state={state} side="green" displayedTotal={0} />);
 
     expect(
       screen.getByText("Green: 6 energy, no nodes held."),

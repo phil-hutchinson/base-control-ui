@@ -15,6 +15,7 @@ import { freshSeed } from "../game/seed";
 import { createSession, sessionReducer } from "../game/session";
 import { GameOverPanel } from "./GameOverPanel";
 import { Hud } from "./Hud";
+import { useDisplayedEnergy } from "./useDisplayedEnergy";
 
 afterEach(cleanup);
 
@@ -129,6 +130,9 @@ describe("GameOverPanel", () => {
         initial,
         createSession,
       );
+      const { displayed: displayedEnergy } = useDisplayedEnergy(
+        session.state.energy,
+      );
 
       function handlePlayAgain() {
         dispatch({
@@ -140,7 +144,7 @@ describe("GameOverPanel", () => {
 
       return (
         <>
-          <Hud state={session.state} />
+          <Hud state={session.state} displayedEnergy={displayedEnergy} />
           <Board session={session} onIntent={dispatch} />
           {isGameOver(session.state) && (
             <GameOverPanel

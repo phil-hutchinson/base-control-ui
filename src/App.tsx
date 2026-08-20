@@ -5,6 +5,7 @@ import { createSession, sessionReducer } from "./game/session";
 import { reviewFixtureGameState } from "./game/reviewFixture";
 import { GameOverPanel } from "./hud/GameOverPanel";
 import { Hud } from "./hud/Hud";
+import { useDisplayedEnergy } from "./hud/useDisplayedEnergy";
 import { isGameOver } from "./rules/gameLength";
 import "./App.css";
 
@@ -20,6 +21,9 @@ export function App() {
     undefined,
     createStartingSession,
   );
+  const { displayed: displayedEnergy } = useDisplayedEnergy(
+    session.state.energy,
+  );
 
   /** Play again: a fresh seed, the finished game's own length, nothing else. */
   function handlePlayAgain() {
@@ -34,7 +38,7 @@ export function App() {
     <main className="app">
       <div className="app__cabinet">
         <h1 className="app__title">Base Control</h1>
-        <Hud state={session.state} />
+        <Hud state={session.state} displayedEnergy={displayedEnergy} />
         <div className="app__board">
           <Board session={session} onIntent={dispatch} />
         </div>

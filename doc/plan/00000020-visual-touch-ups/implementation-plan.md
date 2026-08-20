@@ -685,7 +685,33 @@ judged by eye at Step 9.
 
 ### Step 7 — The score count-up moves up to `App`
 
-Status: pending
+Status: committed
+
+Notes: Added `src/hud/useDisplayedEnergy.ts`, wrapping two fixed `useCountUp`
+calls (one per side) and returning `{ displayed, settled }`, where `settled`
+is `green === energy.green && red === energy.red`. `ScoreDisplay.tsx` no
+longer calls `useCountUp` and instead takes `displayedTotal: number` as a
+prop, unchanged otherwise (the hidden sentence still reads `state.energy[side]`
+via `scoreSentence`). `Hud.tsx` takes a new `displayedEnergy: EnergyTotals`
+prop and passes each side's value to its `ScoreDisplay`. `App.tsx` calls
+`useDisplayedEnergy(session.state.energy)` and passes `displayed` to `<Hud />`;
+`settled` is destructured out but left unused, per the step's own guidance not
+to invent a use for it yet. Added `src/hud/useDisplayedEnergy.test.tsx`
+(`renderHook`) covering the three cases named in the step: a fresh render is
+settled at the targets; a rising target leaves `settled: false` with the old
+value on the very next render and settles on the new target within a 2000ms
+`waitFor` (well beyond the 600ms roll); a falling target snaps instantly and
+stays settled. Updated `ScoreDisplay.test.tsx` to pass `displayedTotal` on
+every render and sharpened the two "counts up" cases into "draws the digits
+from the displayed total, not the state's true total" and "carries the
+state's true total in the hidden sentence even while the displayed total is
+still rolling". Updated `Hud.test.tsx` to pass `displayedEnergy={state.energy}`
+on every render, with no assertions changed. Updated `GameOverPanel.test.tsx`'s
+`Harness` to call `useDisplayedEnergy` and pass its `displayed` totals to
+`<Hud />`, mirroring `App.tsx`; no assertion in that file changed. `npm run
+typecheck`, `npm run lint`, `npm run format:check` (after one `prettier
+--write` pass on the two files it flagged), `npm test` (41 files, 658 tests)
+and `npm run build` all pass. No deviation from the step as written.
 
 Scaffolding for Step 8, with **no visible change**: lift the score count-up out
 of `ScoreDisplay` so that the app has one place that knows both displayed totals

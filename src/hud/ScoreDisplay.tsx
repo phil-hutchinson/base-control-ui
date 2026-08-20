@@ -7,7 +7,6 @@ import { scoreSentence } from "../board/announcements";
 import { chargedNodesHeldBy } from "../rules/energy";
 import type { Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
-import { useCountUp } from "./useCountUp";
 import "./ScoreDisplay.css";
 
 /** §8.1: exactly five sites are ever active or charged, so a side can never
@@ -26,11 +25,16 @@ const SIDE_NAME: Readonly<Record<Side, string>> = {
 interface ScoreDisplayProps {
   readonly state: GameState;
   readonly side: Side;
+  /** The rolling total to draw, owned by `useDisplayedEnergy` above the HUD. */
+  readonly displayedTotal: number;
 }
 
-export function ScoreDisplay({ state, side }: ScoreDisplayProps) {
+export function ScoreDisplay({
+  state,
+  side,
+  displayedTotal,
+}: ScoreDisplayProps) {
   const nodesHeld = chargedNodesHeldBy(state, side).length;
-  const displayedTotal = useCountUp(state.energy[side]);
 
   return (
     <div className={`score-display score-display--${side}`}>
