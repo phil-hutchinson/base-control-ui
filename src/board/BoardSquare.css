@@ -62,7 +62,7 @@
    own chevron mark, so the player sees which ship to move before trying
    another. */
 .board-square--owes-action .ship-icon {
-  animation: board-square-owes-action-blink 1s ease-in-out infinite alternate;
+  animation: board-square-owes-action-blink 0.25s ease-in-out infinite alternate;
 }
 
 @keyframes board-square-owes-action-blink {

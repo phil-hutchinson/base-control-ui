@@ -487,7 +487,16 @@ centring are checked by eye at Step 9.
 
 ### Step 4 — The stranded flash speeds up
 
-Status: pending
+Status: committed
+
+Notes: Changed the `animation` duration on `.board-square--owes-action .ship-icon`
+in `src/board/BoardSquare.css` from `1s` to `0.25s`; nothing else in the
+declaration changed. `npm run typecheck`, `npm run lint`, `npm run format:check`,
+`npm test` (651 tests, 40 files) and `npm run build` all pass.
+`grep -n "board-square-owes-action-blink" -A 1 src/board/BoardSquare.css` shows
+the 0.25s duration, and a grep for the old `1s ease-in-out infinite alternate`
+value returns nothing. No deviation from the step as written; the speed itself
+is for Step 9's manual gate.
 
 In `src/board/BoardSquare.css`, the `board-square-owes-action-blink` animation
 on `.board-square--owes-action .ship-icon` runs for `1s`; make it `0.25s`.
