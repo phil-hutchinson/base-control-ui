@@ -825,7 +825,38 @@ deadlocked the game or stalled the deterministic policy.
 
 ## Step 4 — Attack range comes from §6's movement table
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as specified. `combat.ts`'s `ADJACENT_OFFSETS`/
+`adjacentSquares` were deleted and the module header rewritten to say range
+is now derived from `reachFrom` rather than kept independent of it. Added
+`attackReach(state, shipId, target)`, importing `reachFrom`/`ReachEntry` from
+`./moveLegality` (not `./movement`), with a doc comment stating what it is
+not (no ownership, no bays, no occupancy, no ply awareness). Renamed
+`"target-not-adjacent"` to `"target-out-of-range"` and added
+`"attack-path-blocked"` to `AttackRefusalReason`; `sevenOnlyAttackRefusalReason`
+now checks `attackReach` and then `passedOver` occupancy last, after every
+check about the target square, so a bay target within reach is still
+refused `"target-in-bay"`. `sevenOnlyLegalTargets` now enumerates
+`reachFrom`'s destinations. Reworded the §8.5 comment on `attackRefusalReason`
+to cite §8.5's own requirement (the freeing action is a move) instead of the
+now-inaccurate "an attack never does". `announcements.ts`'s exhaustive
+`rejectionSentence` switch gained both new sentences, with the
+`"target-out-of-range"` wording carrying the four-shield/diagonal fact per
+the plan's recommendation. Rewrote `combat.test.ts`'s `adjacentSquares`
+describe block into a new `attackReach` describe block, replaced the two
+inverted range tests with shield-count-by-shield-count coverage (4-shield
+orthogonal-only, 3-shield's unchanged eight-neighbour fulcrum, 0-shield's
+three-orthogonal/two-diagonal reach), added `"attack-path-blocked"` coverage
+for a blocker of either side and the cleared-path case, and added a
+`"target-out-of-range"` test; the pre-existing bay/friendly/ownership/
+already-acted tests already exercised checking those ahead of range and
+path (their targets were already within reach), so no new "order" test was
+needed beyond renaming the reason string. Updated the reason string in
+`session.test.ts`, `ply.test.ts` and `announcements.test.ts`. No deviations
+from the plan. `npm run typecheck`, `npm run lint`, `npm test` (621/621,
+including `fullGame.test.ts` completing at the expected ply), `npm run
+build` and `npm run format:check` all pass.
 
 In `src/rules/combat.ts`:
 

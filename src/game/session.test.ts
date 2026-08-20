@@ -237,7 +237,7 @@ describe("sessionReducer — a ship is selected", () => {
       expect(result.state).toBe(state);
       expect(result.lastEvent).toEqual({
         type: "rejected",
-        reason: "target-not-adjacent",
+        reason: "target-out-of-range",
         square: squareFromName("A1"),
       });
     });

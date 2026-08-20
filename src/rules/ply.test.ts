@@ -1031,7 +1031,7 @@ describe("applyAttack", () => {
 
     expect(result).toEqual({
       outcome: "refused",
-      reason: "target-not-adjacent",
+      reason: "target-out-of-range",
     });
     expect(state).toEqual(before);
   });

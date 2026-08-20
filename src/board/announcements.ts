@@ -367,8 +367,10 @@ function rejectionSentence(event: RejectedEvent): string {
       return "A ship in a bay cannot attack. Move it out first.";
     case "target-in-bay":
       return "A ship in a bay cannot be attacked.";
-    case "target-not-adjacent":
-      return `${square} is out of attack range. An attack reaches only the eight squares around a ship.`;
+    case "target-out-of-range":
+      return `${square} is out of attack range. A ship attacks as far as it moves, so shields shorten its reach — a ship with four shields can only strike one square up, down, left or right.`;
+    case "attack-path-blocked":
+      return `Another ship stands in the way, so the attack cannot reach ${square}.`;
     // Unreachable through the board's own gesture — activating a friendly
     // ship re-selects it and activating an empty square is a move attempt —
     // but `attackRefusalReason` answers for every square, so both are worded.

@@ -273,9 +273,14 @@ describe("announcementFor", () => {
     ],
     ["target-in-bay", squareAt("A", 6), "A ship in a bay cannot be attacked."],
     [
-      "target-not-adjacent",
+      "target-out-of-range",
       squareAt("J", 7),
-      "J7 is out of attack range. An attack reaches only the eight squares around a ship.",
+      "J7 is out of attack range. A ship attacks as far as it moves, so shields shorten its reach — a ship with four shields can only strike one square up, down, left or right.",
+    ],
+    [
+      "attack-path-blocked",
+      squareAt("J", 7),
+      "Another ship stands in the way, so the attack cannot reach J7.",
     ],
     [
       "target-is-friendly",
