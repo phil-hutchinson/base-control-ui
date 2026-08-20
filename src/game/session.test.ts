@@ -89,6 +89,27 @@ describe("sessionReducer — nothing selected", () => {
     });
   });
 
+  it("reports a target count that includes a target beyond the eight neighbours", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("red-1", "red", "H10", 0),
+      ],
+    });
+    const result = activate(sessionFor(state), "H8");
+
+    const targets = legalTargets(state, "green-1");
+    expect(targets).toContainEqual(squareFromName("H10"));
+    expect(result.lastEvent).toEqual({
+      type: "selected",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+      destinationCount: legalDestinations(state, "green-1").length,
+      targetCount: targets.length,
+    });
+  });
+
   it("rejects an opponent's ship as not-your-ship", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],

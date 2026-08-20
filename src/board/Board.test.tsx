@@ -616,6 +616,166 @@ describe("Board", () => {
     });
   });
 
+  describe("attack range", () => {
+    // A minimal three-ship state (an attacker, a defender, and an optional
+    // third ship to block the lane between them), for exercising highlights
+    // beyond the eight-neighbour range the board used to be limited to.
+    function rangeState(config: {
+      attackerSquare: Square;
+      attackerShields: ShieldCount;
+      defenderSquare: Square;
+      defenderShields: ShieldCount;
+      blockerSquare?: Square;
+      actedThisPly?: string[];
+    }): GameState {
+      const ships = [
+        {
+          id: "green-1",
+          side: "green" as const,
+          square: config.attackerSquare,
+          shields: config.attackerShields,
+        },
+        {
+          id: "red-1",
+          side: "red" as const,
+          square: config.defenderSquare,
+          shields: config.defenderShields,
+        },
+      ];
+      if (config.blockerSquare) {
+        ships.push({
+          id: "green-2",
+          side: "green" as const,
+          square: config.blockerSquare,
+          shields: 0,
+        });
+      }
+      return {
+        ships,
+        siteStates: {},
+        sideToMove: "green",
+        actionsRemaining: 2,
+        actedThisPly: config.actedThisPly ?? [],
+        plyNumber: 1,
+        randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      };
+    }
+
+    it("highlights a target two squares away for a 1-shield ship, with the predicted outcome", () => {
+      const state = rangeState({
+        attackerSquare: squareAt("H", 8),
+        attackerShields: 1,
+        defenderSquare: squareAt("H", 10),
+        defenderShields: 0,
+      });
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      // Two squares away is outside the old fixed eight-neighbour range but
+      // within a 1-shield ship's true reach (rules.md §6, §7).
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H10, red ship, 0 shields, can attack here, your ship would win",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("shows no target on a diagonal neighbour for a 4-shield ship, which can only strike orthogonally", () => {
+      const state = rangeState({
+        attackerSquare: squareAt("H", 8),
+        attackerShields: 4,
+        defenderSquare: squareAt("I", 9),
+        defenderShields: 0,
+      });
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.queryByRole("gridcell", { name: /^I9,.*can attack here/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("gridcell", { name: "I9, red ship, 0 shields" }),
+      ).toBeInTheDocument();
+    });
+
+    it("does not highlight a target beyond a blocking ship, of either side, as attackable", () => {
+      const state = rangeState({
+        attackerSquare: squareAt("H", 8),
+        attackerShields: 1,
+        defenderSquare: squareAt("H", 10),
+        defenderShields: 0,
+        blockerSquare: squareAt("H", 9),
+      });
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.queryByRole("gridcell", { name: /^H10,.*can attack here/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("offers no highlight for a target beyond the eight neighbours when the attacking ship has already acted", () => {
+      const state = rangeState({
+        attackerSquare: squareAt("H", 8),
+        attackerShields: 1,
+        defenderSquare: squareAt("H", 10),
+        defenderShields: 0,
+        actedThisPly: ["green-1"],
+      });
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.queryByRole("gridcell", { name: /can attack here/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("gridcell", { name: /can move here$/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("has no static accessibility violations with a long-range target highlighted", async () => {
+      const state = rangeState({
+        attackerSquare: squareAt("H", 8),
+        attackerShields: 1,
+        defenderSquare: squareAt("H", 10),
+        defenderShields: 0,
+      });
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      const results = await axe.run(container, {
+        rules: {
+          "color-contrast": { enabled: false },
+        },
+      });
+
+      expect(results.violations).toEqual([]);
+    });
+  });
+
   describe("return cues", () => {
     // The starting fleet with one or two ships moved out of their bays, so
     // some bays stay occupied (in particular H15, return position 1 on the

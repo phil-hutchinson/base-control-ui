@@ -1146,7 +1146,25 @@ correctly.
 
 ## Step 7 — The board and the session at range
 
-Status: pending
+Status: committed
+
+Notes: Added a new "attack range" describe block to `Board.test.tsx` (after
+"attack targets") with five tests: a 1-shield ship highlighting a target two
+squares away with the predicted-outcome mark; a 4-shield ship showing no
+target on a diagonal neighbour (asserting the enemy cell renders plainly,
+with no "can attack here" wording); a blocked two-square lane showing no
+target; a long-range target offering no highlight when the attacking ship
+has already acted; and an axe check on a board carrying a long-range
+highlight (`color-contrast` disabled). The already-acted-is-refused-with-the-
+sentence half of that bullet was already covered end to end by Step 3's
+existing "rejects activating an own ship that has already acted this turn"
+test in the "playing a turn" describe block, so no new interactive test was
+added for it — only the highlighting half was new. Added one test to
+`session.test.ts` ("reports a target count that includes a target beyond the
+eight neighbours") using a 1-shield attacker with an enemy two squares away.
+No production code changed; no deviations from the plan beyond the
+already-acted note above. `npm run typecheck`, `npm run lint`, `npm test`
+(648/648, up from 642), `npm run build` and `npm run format:check` all pass.
 
 By this step the suite is already green: every component test broken by
 Steps 2–6 was fixed in the step that broke it. This step **adds** the UI-level
