@@ -1351,7 +1351,12 @@ describe("assertFightInvariants (rules.md §7)", () => {
     ).toThrow(RangeError);
   });
 
-  it("throws when the winning attacker's reported square is off its own advance", () => {
+  it("throws when the winning attacker's reported square is off the attack's lane, even though it matches the advance's own reported path", () => {
+    // The advance's own travelled set (`travelledSquareNames`) claims A1,
+    // matching the winner's actual square below — a set built from the
+    // advance's own output could never catch this. The check must instead
+    // use the attack's lane (`laneSquareNames`), which is independent of
+    // what the advance reported and does not contain A1.
     const before = buildState({
       ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 1)],
     });
@@ -1363,7 +1368,8 @@ describe("assertFightInvariants (rules.md §7)", () => {
     };
     const advancingWinner: AdvancingWinner = {
       shipId: "green-1",
-      travelledSquareNames: new Set(["H9"]),
+      laneSquareNames: new Set(["H8", "H9"]),
+      travelledSquareNames: new Set(["A1"]),
     };
 
     expect(() =>

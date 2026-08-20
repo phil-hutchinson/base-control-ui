@@ -50,9 +50,7 @@ export function attackReach(
  * it. The lane's occupancy is not re-checked here: it was clear when the
  * attack was judged, and the loser has already been placed in a bay by the
  * time this runs, so nothing between the attacker and the loser's former
- * square can be occupied. This is not a move — `sixOnlyMoveRefusalReason` is
- * deliberately not consulted, since its occupancy, already-acted and
- * ownership checks mean nothing for an advance.
+ * square can be occupied.
  */
 export function winnerAdvance(
   state: GameState,
@@ -225,11 +223,12 @@ export function attackRefusalReason(
 }
 
 /**
- * Every square `shipId` may legally attack in the given state: its §7
- * neighbours, with §9's game-over check and §8.5's obligation applied at the
- * ship level exactly as in `attackRefusalReason` — empty once the game is
- * over, and refusing every ship's attacks, including the owing ship's own,
- * while any ship owes an action.
+ * Every square `shipId` may legally attack in the given state: every square
+ * within its §6 movement reach holding an enemy ship, with §9's game-over
+ * check and §8.5's obligation applied at the ship level exactly as in
+ * `attackRefusalReason` — empty once the game is over, and refusing every
+ * ship's attacks, including the owing ship's own, while any ship owes an
+ * action.
  */
 export function legalTargets(
   state: GameState,

@@ -152,7 +152,7 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
     ).toBe("target-out-of-range");
   });
 
-  it("a 3-shield ship's targets are exactly the eight neighbours around it — the fulcrum this story does not change", () => {
+  it("a 3-shield ship's targets are exactly the eight neighbours around it", () => {
     const neighbours = ["G7", "G8", "G9", "H7", "H9", "I7", "I8", "I9"];
     const state = buildState({
       ships: [

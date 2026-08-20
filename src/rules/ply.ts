@@ -330,14 +330,18 @@ function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
 
 /**
  * The advancing winner, for `assertFightInvariants` to check against: the
- * winning attacker's id, and the squares its advance actually travelled
- * (`passedOver` plus `destination`). Absent when the fight had no winner, the
+ * winning attacker's id, the attack lane it was judged against
+ * (`laneSquareNames` — the attacker's own square, the attack's `passedOver`
+ * and its `destination`, from the attack's `ReachEntry`), and the squares
+ * the advance itself actually travelled (`travelledSquareNames` — its own
+ * `passedOver` plus `destination`). Absent when the fight had no winner, the
  * winner was the defender, or the winner held its ground — in every one of
  * those cases the winner's square is asserted unchanged, like any other ship
  * that did not return to a bay.
  */
 export interface AdvancingWinner {
   readonly shipId: ShipId;
+  readonly laneSquareNames: ReadonlySet<string>;
   readonly travelledSquareNames: ReadonlySet<string>;
 }
 
@@ -353,16 +357,23 @@ export interface AdvancingWinner {
  * fight, which can only ever change who holds a square, never how many
  * ships either side has.
  *
+ * The winner's final square is checked against `laneSquareNames` — the
+ * attack it was judged against — not against `travelledSquareNames`, which
+ * is the advance's own report of where it went: checking a value against
+ * itself could never catch `winnerAdvance` returning a square that was never
+ * on the lane the attack was legal down.
+ *
  * The site-state check replaces a plain identity comparison with one that
  * still catches a fight that changes a site when nobody travelled (the
  * travelled set is empty whenever `advancingWinner` is absent): every site
- * whose state changed must be one the winner actually travelled over, and
- * every such change must be `active` turning `charged` — the only thing
- * rules.md §8.2 ever does.
+ * whose state changed must be one the winner actually travelled over
+ * (`travelledSquareNames`), and every such change must be `active` turning
+ * `charged` — the only thing rules.md §8.2 ever does. This check is not
+ * self-referential in the way the square check would be: it compares the
+ * advance's path against `siteStates`, a wholly different piece of state.
  *
- * Exported so the story's most intricate code can be pinned by a test that
- * hand-constructs an otherwise-impossible before/after pair, rather than
- * only ever being exercised indirectly through `applyAttack`.
+ * Exported so a test can hand-construct an otherwise-impossible before/after
+ * pair, since it has no other seam.
  */
 export function assertFightInvariants(
   before: GameState,
@@ -391,7 +402,7 @@ export function assertFightInvariants(
 
     if (isAdvancingWinner) {
       const updatedName = squareName(updated.square);
-      if (!advancingWinner.travelledSquareNames.has(updatedName)) {
+      if (!advancingWinner.laneSquareNames.has(updatedName)) {
         throw new RangeError(
           `winning attacker "${ship.id}" ended off its own lane: rules.md §7's advance only ever travels the lane it attacked down`,
         );
@@ -568,6 +579,11 @@ export function applyAttack(
         siteChargedEffects = wake.effects;
         advancingWinner = {
           shipId: winnerShip.id,
+          laneSquareNames: new Set(
+            [attackerShip.square, ...reach.passedOver, reach.destination].map(
+              squareName,
+            ),
+          ),
           travelledSquareNames: new Set(
             [...advance.passedOver, advance.destination].map(squareName),
           ),

@@ -159,7 +159,7 @@ Every function this story needs to attach to exists today.
 | `src/game/session.ts`                                               | the rename (Step 2); `isSelectable` simplifies (Step 3); `AttackedEvent`'s comment (Step 5)                              |
 | `src/board/announcements.ts`                                        | the rename (Step 2); already-acted and pass wording (Step 3); the two new refusals (Step 4); the fight sentence (Step 6) |
 | `src/board/Board.tsx`, `BoardSquare.tsx` / `.css`, `squareLabel.ts` | `hasMoved` → `hasActed`, "already acted this turn" (Step 2)                                                              |
-| `README.md`                                                         | the rules summary (Step 1); a final accuracy pass (Step 8)                                                               |
+| `README.md`                                                         | the rules summary (Step 1); a final accuracy pass (Step 9)                                                               |
 
 ## Decisions taken at plan time
 
@@ -581,7 +581,7 @@ contradicts the ruleset:
   strong but short-ranged.
 
 Keep the README's voice: a player is reading it, not a developer. Nothing else
-in the README changes here — Step 11 does the final accuracy pass once the
+in the README changes here — Step 9 does the final accuracy pass once the
 whole story has landed.
 
 Depends on: nothing.

@@ -619,7 +619,7 @@ describe("Board", () => {
   describe("attack range", () => {
     // A minimal three-ship state (an attacker, a defender, and an optional
     // third ship to block the lane between them), for exercising highlights
-    // beyond the eight-neighbour range the board used to be limited to.
+    // at a range of more than one square.
     function rangeState(config: {
       attackerSquare: Square;
       attackerShields: ShieldCount;

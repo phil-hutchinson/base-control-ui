@@ -32,7 +32,7 @@ install, no account, no server.
 > be moved clear before its owner can do anything else that turn. In a fight
 > the ship carrying more shields wins and the beaten one is pushed back to a
 > bay with none — but winning costs the winner a shield more than the loser
-> was carrying. The winner advances onto the square it just cleared, so a
+> was carrying. The attacking winner advances onto the square it just cleared, so a
 > won fight can take a node outright, in a single action; and a ship attacks
 > exactly as far as it moves, so heavy shields buy strength at the cost of
 > reach. Two ships carrying the same shields both go home. The bay a beaten
