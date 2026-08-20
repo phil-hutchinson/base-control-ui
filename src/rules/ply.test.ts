@@ -356,7 +356,7 @@ describe("applyMove", () => {
       reason: "ship-already-acted",
     });
 
-    // Green's next ply: two actions available again, nothing moved yet.
+    // Green's next ply: its action is available again, nothing moved yet.
     const nextPly = buildState({
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "A1")],
     });
@@ -710,26 +710,35 @@ describe("applyAttack", () => {
     ).toEqual(squareFromName("L15"));
   });
 
-  it("recomputes the receptacle live: a bay an earlier action vacated changes where a fight's beaten ship lands", () => {
-    // Built directly rather than played into (rules.md §5, D2): one action
-    // per turn always ends the ply, so the move that vacated H15 and the
-    // fight below can never share a ply. This state stands for the
-    // position right after such a move — H15 already empty, return
-    // position 1 still on it — whichever ply actually vacated it.
+  it("recomputes the receptacle live: a bay an earlier ply's move vacated changes where a fight's beaten ship lands", () => {
+    // green-2 sits in H15, and green-1 and red-1 are positioned for the
+    // fight the next ply will bring. returnPositionIndex 1 drifts to 0
+    // (H15 back to being return position 1) once this ply ends.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H12", 0),
-        ship("green-2", "green", "K5", 2),
-        ship("red-1", "red", "K6", 1),
+        ship("green-2", "green", "H15", 4),
+        ship("green-1", "green", "H9", 0),
+        ship("red-1", "red", "H8", 3),
       ],
+      returnPositionIndex: 1,
     });
 
-    const result = applyAttack(state, "green-2", squareFromName("K6"));
+    const vacated = applyMove(state, "green-2", squareFromName("H14"));
+    expect(vacated.outcome).toBe("applied");
+    if (vacated.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(vacated.state.sideToMove).toBe("red");
+
+    // With H15 still counted as occupied, this fight's loser would land on
+    // L15, return position 2; recomputed live against the now-empty H15, it
+    // lands there instead.
+    const result = applyAttack(vacated.state, "red-1", squareFromName("H9"));
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
-    expect(result.state.ships.find((s) => s.id === "red-1")?.square).toEqual(
+    expect(result.state.ships.find((s) => s.id === "green-1")?.square).toEqual(
       squareFromName("H15"),
     );
   });
@@ -755,7 +764,7 @@ describe("applyAttack", () => {
   });
 
   it("refuses a second attack attempt by a ship that has already acted this ply, even with a fresh target in range", () => {
-    // Built directly rather than played into (rules.md §5, D2): one action
+    // Built directly rather than played into (rules.md §5): one action
     // per turn always ends the ply, so a ship that has already acted is
     // never seen again — by its own side — until the side's next turn.
     // This stands for the moment right after green-1 won a fight at H9.
@@ -773,7 +782,7 @@ describe("applyAttack", () => {
   });
 
   it("refuses a move by a ship that has already acted this ply", () => {
-    // Built directly rather than played into (rules.md §5, D2).
+    // Built directly rather than played into (rules.md §5).
     const state = buildState({
       ships: [ship("green-1", "green", "H9", 1)],
       actedThisPly: ["green-1"],
@@ -788,7 +797,7 @@ describe("applyAttack", () => {
   });
 
   it("refuses an attack by a ship that has already acted this ply", () => {
-    // Built directly rather than played into (rules.md §5, D2).
+    // Built directly rather than played into (rules.md §5).
     const state = buildState({
       ships: [ship("green-1", "green", "H9", 0), ship("red-1", "red", "H10")],
       actedThisPly: ["green-1"],
@@ -874,7 +883,7 @@ describe("applyAttack", () => {
   });
 
   it("refuses both a move and an attack for a ship that has already acted this ply", () => {
-    // Built directly rather than played into (rules.md §5, D2).
+    // Built directly rather than played into (rules.md §5).
     const state = buildState({
       ships: [
         ship("green-1", "green", "H9", 3),
@@ -939,7 +948,7 @@ describe("applyAttack", () => {
       endOfTurn: [],
     });
 
-    // Built directly rather than played into (rules.md §5, D2): this stands
+    // Built directly rather than played into (rules.md §5): this stands
     // for the moment right after the mutual return above, before the tail
     // clears actedThisPly for the next ply — a further attempt by the same
     // ship is still refused.

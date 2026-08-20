@@ -25,12 +25,12 @@ until the game plays (see the project's contribution notes).
   wording no longer describes anything now that a turn has no second action.
   The placement itself, and the attacker-then-defender order on a mutual
   return, are unchanged.
-- **Section 8.5's stranded obligation is restated for one action.** The
-  principle is unchanged — while any ship still owes an action, the turn's
-  action must free one — but the worked examples for two and three or more
-  stranded ships are gone: a player now frees exactly one stranded ship per
-  turn, and any others wait for a later turn. The waiver for a stranded ship
-  with no legal move, and the tail-cost note, are unchanged.
+- **Section 8.5's stranded obligation is restated generically.** The
+  principle is unchanged — while any ship still owes an action, each action
+  of the turn must free one — but the worked examples for two and three or more
+  stranded ships are gone: a player frees as many stranded ships as their
+  turn has actions, and the rest wait for a later turn. The waiver for a
+  stranded ship with no legal move, and the tail-cost note, are unchanged.
 - **Section 8.7's end-of-turn sequence** now says it runs in full for "a turn
   in which an action was taken", rather than "both actions were taken" — a
   wording fix to match the new count, not a change to the sequence itself.

@@ -234,7 +234,7 @@ function findAttackLegalAMomentEarlier(
  * attack, all as `"game-over"`. Returns whether an attack legal a moment
  * earlier was found to refuse: under one action per turn, a short game may
  * end before any two ships come within reach of one another, so the caller
- * decides whether that absence is expected (rules.md §5, D5).
+ * decides whether that absence is expected (rules.md §5).
  */
 function assertRefusesEverything(state: GameState): boolean {
   const move = findMoveLegalAMomentEarlier(state);
@@ -325,7 +325,7 @@ describe("a full game, end to end", () => {
     expect(result.energy).toEqual(finalState.energy);
 
     // Under one action per turn, six actions never bring two ships within
-    // reach of one another, so no attack is expected here (D5); the move
+    // reach of one another, so no attack is expected here; the move
     // and pass refusals are still checked.
     assertRefusesEverything(finalState);
   });

@@ -48,7 +48,10 @@ describe("TurnIndicator", () => {
   it("reads 'Game over' once the game has ended, instead of naming a side", () => {
     render(<TurnIndicator state={finishedState()} />);
 
-    expect(screen.getByText("Game over")).toBeInTheDocument();
+    const indicator = screen.getByText("Game over");
+    expect(indicator).toBeInTheDocument();
+    expect(indicator).not.toHaveClass("turn-indicator--green");
+    expect(indicator).not.toHaveClass("turn-indicator--red");
   });
 
   it("is not a live region", () => {

@@ -173,11 +173,11 @@ Green takes the first turn, and the players alternate. On a turn a player takes
 - **Move** one ship, or
 - **Attack** with one ship.
 
-A player must take as many of their turn's actions as are available. If a player has no
-legal action at all, their turn passes. This should be uncommon — a player
-always has seven ships — but an attack reaches only as far as the attacker's
-shields allow, so an action is not always available; the rule is here so the
-game can never deadlock.
+A player must take as many of their turn's actions as are available. If a
+player has no legal action at all, their turn passes. This should be
+uncommon — a player always has seven ships — but an attack reaches only as
+far as the attacker's shields allow, so an action is not always available;
+the rule is here so the game can never deadlock.
 
 ---
 
@@ -365,8 +365,9 @@ is equally stuck — section 6 forbids ending a move on either state — and sta
 stranded on the same terms.
 
 That is a restriction on what an action may be, not a penalty on top of one:
-while any ship still owes an action, the turn's action must free one. A
-player frees one stranded ship per turn; any others wait for a later turn.
+while any ship still owes an action, each action of the turn must free one.
+A player frees as many stranded ships as their turn has actions; the rest
+wait for a later turn.
 
 If a stranded ship has no legal move at all, the requirement is simply waived —
 the player is not obliged to attack blockers or shuffle friendly ships out of
@@ -404,8 +405,8 @@ Everything that happens at the end of a turn happens in this order:
 
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
-which an action was taken. The clocks still tick, and a ship of the
-passing player standing on a charged node still gains its shield.
+which an action was taken. The clocks still tick, and a ship of the passing
+player standing on a charged node still gains its shield.
 
 Steps 3 and 5 are in that order deliberately: sites are returned to the
 dormant pool _before_ the pool is drawn from, which is what keeps a

@@ -10,7 +10,7 @@
 // active site it touches along the way exactly as a move would; a winning
 // defender never advances, and a mutual return leaves both squares empty.
 // Every action — a move or an attack — marks the acting ship as having acted
-// this ply, since a ship may take at most one action per turn (rules.md §5).
+// this ply, so a further attempt by the same ship this ply is refused.
 // When the ply's actions are all spent, play passes to the other side. The
 // pass guard covers the case §5 sets out for when the side to move has no
 // legal action at all.

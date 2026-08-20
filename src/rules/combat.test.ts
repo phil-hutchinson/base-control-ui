@@ -362,7 +362,7 @@ describe("attackRefusalReason / legalTargets with the §8.5 obligation", () => {
         ship("red-5", "red", "B1", 0),
       ],
       siteStates: { [boxedInSquare]: "depleted" },
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
 
     expect(

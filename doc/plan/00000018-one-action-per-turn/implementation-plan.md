@@ -91,6 +91,15 @@ count, and because removing it is explicitly out of scope. Rejected: deleting
 the guard and its refusal reason as dead code, which would make a future count
 of 2 or 3 a behavioural regression rather than a constant change.
 
+Peer review (#1) flagged the tension this decision creates with Step 1: this
+decision cites §5's "a ship may take at most one action per turn" as the
+guard's justification, but Step 1 deletes that very sentence as redundant at
+a count of 1 — the code comments that cited §5 for the guard were left
+pointing at a sentence the document no longer states. The owner's resolution
+kept both: the rules stay as Step 1 left them (§5 is not restored), the guard
+stays (D2 is not reopened), and the code comments were reworded during review
+processing to describe what the guard does without attributing it to §5.
+
 **D3 — The indicator's wording lives in `announcements.ts`, its capitals and
 colour in CSS.** (Confirmed by the owner, who pointed at the existing shouting
 text — `BASE CONTROL`, `GREEN`, `RED`, `ROUND` — as the pattern to follow;
@@ -241,7 +250,14 @@ deviation beyond the plan's explicit list: `GameOverPanel.test.tsx`'s
 harmless since the game is over) was also changed to `1` for consistency,
 since it is otherwise an impossible state under 0.9 — not called out by
 name in the plan but trivial and in the same spirit as the `Board.test.tsx`
-tidy-up.
+tidy-up. Peer review (#6) found one comment this step's tidy-up list named
+verbatim but missed — `Board.test.tsx`'s "Green-2 already spent this ply's
+first action…", which also carried a stale "(decision 6 of the plan)"
+citation — reworded during review processing. Peer review (#3) also found
+`src/rules/stranded.test.ts` untouched by this step, even though it still
+modelled a two-action turn in its `strandedObligationBinds` tests and its
+`actionsRemaining: 2` fixtures — a tenth file beyond the nine named above,
+fixed during review processing.
 
 Change `ACTIONS_PER_PLY` in `src/rules/gameState.ts` from 2 to 1, and follow it
 through the code comments and tests that hard-code "two". No structural change

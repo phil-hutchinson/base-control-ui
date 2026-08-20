@@ -339,14 +339,14 @@ describe("legalDestinations and moveRefusalReason", () => {
       },
       {
         // green-2 is not stranded, but green-1 is, and the obligation binds
-        // from the first action — so every square is refused for green-2.
+        // the turn's action — so every square is refused for green-2.
         state: buildState({
           ships: [
             ship("green-1", "green", "E7"),
             ship("green-2", "green", "A1"),
           ],
           siteStates: { E7: "dormant" },
-          actionsRemaining: 2,
+          actionsRemaining: 1,
         }),
         shipId: "green-2",
       },
@@ -456,18 +456,18 @@ describe("legalDestinations and the §8.5 obligation", () => {
   it("stays unrestricted when no ship is stranded", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
 
     expect(legalDestinations(state, "green-2").length).toBeGreaterThan(0);
     expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
   });
 
-  it("empties for a non-owed ship from the first action with one stranded ship, and stays open for the owed one", () => {
+  it("empties for a non-owed ship with one stranded ship, and stays open for the owed one", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
 
     expect(legalDestinations(state, "green-2")).toEqual([]);

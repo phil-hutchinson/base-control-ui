@@ -40,7 +40,7 @@ function buildState(config: {
     ships: config.ships,
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
-    actionsRemaining: config.actionsRemaining ?? 2,
+    actionsRemaining: config.actionsRemaining ?? 1,
     actedThisPly: config.actedThisPly ?? [],
     plyNumber: 1,
     randomSeed: 1,
@@ -135,7 +135,7 @@ describe("strandedShipIds", () => {
     const state = buildState({
       ships: [boxedInShip(boxedInSquare), ...boxingShips(boxedInSquare)],
       siteStates: { [boxedInSquare]: "depleted" },
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
 
     expect(strandedShipIds(state)).toEqual([]);
@@ -143,7 +143,7 @@ describe("strandedShipIds", () => {
 
     const noStranding = buildState({
       ships: [boxedInShip(boxedInSquare), ...boxingShips(boxedInSquare)],
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
     expect(strandedShipIds(noStranding)).toEqual(strandedShipIds(state));
     expect(strandedObligationBinds(noStranding)).toBe(
@@ -157,7 +157,7 @@ describe("strandedObligationBinds", () => {
     const beforeMoving = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
     expect(strandedObligationBinds(beforeMoving)).toBe(true);
 
@@ -170,7 +170,7 @@ describe("strandedObligationBinds", () => {
     expect(strandedObligationBinds(afterMoving)).toBe(false);
   });
 
-  it("binds on both actions with two stranded ships", () => {
+  it("binds the turn's one action with two stranded ships, and the second still owes on the next ply", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "E7"),
@@ -178,21 +178,27 @@ describe("strandedObligationBinds", () => {
         ship("green-3", "green", "A1"),
       ],
       siteStates: { E7: "dormant", K5: "depleted" },
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
     expect(strandedShipIds(state)).toEqual(["green-1", "green-2"]);
     expect(strandedObligationBinds(state)).toBe(true);
 
-    const afterOne = {
-      ...state,
-      actedThisPly: ["green-1"] as const,
+    // The turn's one action frees green-1; a fresh ply begins with no
+    // memory of it, and green-2 is still owing.
+    const nextPly = buildState({
+      ships: [
+        ship("green-1", "green", "A2"),
+        ship("green-2", "green", "K5"),
+        ship("green-3", "green", "A1"),
+      ],
+      siteStates: { K5: "depleted" },
       actionsRemaining: 1,
-    };
-    expect(strandedShipIds(afterOne)).toEqual(["green-2"]);
-    expect(strandedObligationBinds(afterOne)).toBe(true);
+    });
+    expect(strandedShipIds(nextPly)).toEqual(["green-2"]);
+    expect(strandedObligationBinds(nextPly)).toBe(true);
   });
 
-  it("with three stranded ships, the player clears two of their choice and the third waits", () => {
+  it("with three stranded ships, the player frees one and the rest still owe on the next ply", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "E7"),
@@ -201,20 +207,25 @@ describe("strandedObligationBinds", () => {
         ship("green-4", "green", "A1"),
       ],
       siteStates: { E7: "dormant", K5: "depleted", N5: "dormant" },
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
     expect(strandedShipIds(state)).toEqual(["green-1", "green-2", "green-3"]);
     expect(strandedObligationBinds(state)).toBe(true);
 
-    // The player frees green-1 and green-2, leaving green-3 stranded going
-    // into the next ply — a fresh state, recomputed with no memory of the
-    // ply that just ended.
+    // The turn's one action frees green-1, leaving green-2 and green-3
+    // stranded going into the next ply — a fresh state, recomputed with no
+    // memory of the ply that just ended.
     const nextPly = buildState({
-      ships: [ship("green-3", "green", "N5"), ship("green-4", "green", "A1")],
-      siteStates: { N5: "dormant" },
-      actionsRemaining: 2,
+      ships: [
+        ship("green-2", "green", "K5"),
+        ship("green-3", "green", "N5"),
+        ship("green-4", "green", "A1"),
+      ],
+      siteStates: { K5: "depleted", N5: "dormant" },
+      actionsRemaining: 1,
     });
-    expect(strandedShipIds(nextPly)).toEqual(["green-3"]);
+    expect(strandedShipIds(nextPly)).toEqual(["green-2", "green-3"]);
+    expect(strandedObligationBinds(nextPly)).toBe(true);
   });
 });
 
@@ -223,7 +234,7 @@ describe("moveRefusalReason with the §8.5 obligation", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
 
     expect(moveRefusalReason(state, "green-2", squareFromName("A2"))).toBe(
@@ -315,7 +326,7 @@ describe("sideToMoveHasLegalMove alongside the obligation", () => {
     const state = buildState({
       ships: [boxedInShip(boxedInSquare), ...boxingShips(boxedInSquare)],
       siteStates: { [boxedInSquare]: "depleted" },
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
 
     expect(strandedShipIds(state)).toEqual([]);
@@ -349,7 +360,7 @@ describe("sideToMoveHasLegalMove alongside the obligation", () => {
         ship("green-3", "green", "D1"),
       ],
       siteStates: { E7: "dormant" },
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     });
 
     for (let i = 0; i < 500; i++) {

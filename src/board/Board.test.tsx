@@ -654,7 +654,7 @@ describe("Board", () => {
         ships,
         siteStates: {},
         sideToMove: "green",
-        actionsRemaining: 2,
+        actionsRemaining: 1,
         actedThisPly: config.actedThisPly ?? [],
         plyNumber: 1,
         randomSeed: 1,
@@ -893,8 +893,8 @@ describe("Board", () => {
       ).toBeInTheDocument();
       unmount();
 
-      // Now red-1 (L15) is also moved out, as the ply's second action: L15
-      // is earlier in the ring than O14, so the receptacle moves onto it.
+      // Now red-1 (L15) is also moved out: L15 is earlier in the ring than
+      // O14, so the receptacle moves onto it.
       const afterSecondAction = stateWithBaysVacatedBy("green-2", "red-1");
       render(
         <Board session={createSession(afterSecondAction)} onIntent={noop} />,
@@ -1039,10 +1039,10 @@ describe("Board", () => {
           name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn",
         }),
       ).toBeInTheDocument();
-      // Green-2 already spent this ply's first action moving elsewhere, has
-      // no enemy adjacent to attack, and the obligation would refuse the
-      // attack anyway (decision 6 of the plan) — so it reads as both
-      // "already acted" and "no action available", dampened.
+      // Green-2 has already acted this ply moving elsewhere, has no enemy
+      // adjacent to attack, and the obligation would refuse the attack
+      // anyway — so it reads as both "already acted" and "no action
+      // available", dampened.
       expect(
         screen.getByRole("gridcell", {
           name: "A1, green ship, 0 shields, already acted this turn, no action available this turn",
@@ -1114,7 +1114,7 @@ describe("Board", () => {
         ],
         siteStates: {},
         sideToMove: "green",
-        actionsRemaining: 2,
+        actionsRemaining: 1,
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
@@ -1505,7 +1505,7 @@ describe("energy overlay composition", () => {
           ],
         },
       ],
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     };
     const session: Session = {
       state,
