@@ -8,13 +8,13 @@ import { TurnIndicator } from "./TurnIndicator";
 afterEach(cleanup);
 
 describe("TurnIndicator", () => {
-  it("says green's turn with two actions left", () => {
+  it("says green's turn with one action left", () => {
     const state = { ...startingGameState(1), sideToMove: "green" as const };
 
     render(<TurnIndicator state={state} />);
 
     expect(
-      screen.getByText("Green's turn — 2 actions left"),
+      screen.getByText("Green's turn — 1 action left"),
     ).toBeInTheDocument();
   });
 

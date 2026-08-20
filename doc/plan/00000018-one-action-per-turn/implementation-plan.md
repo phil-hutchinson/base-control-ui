@@ -213,7 +213,35 @@ returns nothing.
 
 ### Step 2 — `ACTIONS_PER_PLY` goes to 1
 
-Status: pending
+Status: committed
+
+Notes: Changed the constant and made the named comments in `gameState.ts`,
+`ply.ts`, `stranded.ts` and `combat.ts` count-neutral, exactly as listed.
+Fixed the 46 failing tests across the nine files the plan named: mechanical
+count updates in `announcements.test.ts` (24, via a single `2 actions left`
+→ `1 action left` substitution), `gameState.test.ts`, `session.test.ts`
+(restructured per pattern 1 — one action ends the ply, then red's own
+action proves the pass), `Hud.test.tsx`, `GameOverPanel.test.tsx`,
+`App.test.tsx` and `TurnIndicator.test.tsx` (old indicator sentence, left
+for Step 3); `fullGame.test.ts` restructured per D5 exactly as specified;
+`Board.test.tsx`'s `strandedState(2)` callers tidied to `strandedState(1)`
+with reworded comments, no assertion changed. `ply.test.ts`'s 15 failures
+were restructured using the plan's two patterns — take one action and
+assert the ply ended and the side flipped, or build the mid-acted state
+directly via `buildState` with a comment noting it is built rather than
+played into — keeping `ship-already-acted` coverage alive from
+directly-built states in five separate tests. Two tests ("lets ... attack
+as the ply's two actions" and "lets one ship move and a different ship
+attack ...") were reworded to describe a round's two actions (one per
+side) rather than a ply's, since that is what they now demonstrate. Total
+test count is unchanged (648 before and after); `npm run typecheck`,
+`npm run lint`, `npm run format:check` and `npm test` all pass. One
+deviation beyond the plan's explicit list: `GameOverPanel.test.tsx`'s
+`finishedState` helper's stray `actionsRemaining: 2` (never asserted, and
+harmless since the game is over) was also changed to `1` for consistency,
+since it is otherwise an impossible state under 0.9 — not called out by
+name in the plan but trivial and in the same spirit as the `Board.test.tsx`
+tidy-up.
 
 Change `ACTIONS_PER_PLY` in `src/rules/gameState.ts` from 2 to 1, and follow it
 through the code comments and tests that hard-code "two". No structural change

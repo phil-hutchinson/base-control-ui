@@ -229,7 +229,14 @@ function findAttackLegalAMomentEarlier(
   return undefined;
 }
 
-function assertRefusesEverything(state: GameState): void {
+/**
+ * Confirms `state` refuses a move, a pass and — when one is available — an
+ * attack, all as `"game-over"`. Returns whether an attack legal a moment
+ * earlier was found to refuse: under one action per turn, a short game may
+ * end before any two ships come within reach of one another, so the caller
+ * decides whether that absence is expected (rules.md §5, D5).
+ */
+function assertRefusesEverything(state: GameState): boolean {
   const move = findMoveLegalAMomentEarlier(state);
   if (move === undefined) {
     throw new Error("expected at least one move legal a moment earlier");
@@ -241,18 +248,20 @@ function assertRefusesEverything(state: GameState): void {
   }
 
   const attack = findAttackLegalAMomentEarlier(state);
-  if (attack === undefined) {
-    throw new Error("expected at least one attack legal a moment earlier");
-  }
-  const attackAttempt = applyAttack(state, attack.shipId, attack.target);
-  expect(attackAttempt.outcome).toBe("refused");
-  if (attackAttempt.outcome === "refused") {
-    expect(attackAttempt.reason).toBe("game-over");
+  const foundAttack = attack !== undefined;
+  if (attack !== undefined) {
+    const attackAttempt = applyAttack(state, attack.shipId, attack.target);
+    expect(attackAttempt.outcome).toBe("refused");
+    if (attackAttempt.outcome === "refused") {
+      expect(attackAttempt.reason).toBe("game-over");
+    }
   }
 
   const guarded = applyPassGuard(state);
   expect(guarded.state).toEqual(state);
   expect(guarded.effect).toBeUndefined();
+
+  return foundAttack;
 }
 
 function sumAmounts(effects: readonly EnergyCollectedEffect[]): number {
@@ -290,7 +299,9 @@ describe("a full game, end to end", () => {
     }
     expect(result.energy).toEqual(finalState.energy);
 
-    assertRefusesEverything(finalState);
+    // A hundred-round game is long enough that fights do happen; this is
+    // where the game-over refusal of an attack is genuinely proven.
+    expect(assertRefusesEverything(finalState)).toBe(true);
   });
 
   it("plays a three-round game to its end, by the same route", () => {
@@ -313,6 +324,9 @@ describe("a full game, end to end", () => {
     }
     expect(result.energy).toEqual(finalState.energy);
 
+    // Under one action per turn, six actions never bring two ships within
+    // reach of one another, so no attack is expected here (D5); the move
+    // and pass refusals are still checked.
     assertRefusesEverything(finalState);
   });
 });

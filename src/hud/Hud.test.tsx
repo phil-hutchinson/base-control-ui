@@ -26,7 +26,7 @@ describe("Hud", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("35/100")).toBeInTheDocument();
     expect(
-      screen.getByText("Green's turn — 2 actions left"),
+      screen.getByText("Green's turn — 1 action left"),
     ).toBeInTheDocument();
   });
 

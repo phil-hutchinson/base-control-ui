@@ -26,11 +26,11 @@ describe("startingGameState", () => {
     });
   });
 
-  it("has green to move, two actions remaining, nothing moved, ply 1 and the given seed", () => {
+  it("has green to move, one action remaining, nothing moved, ply 1 and the given seed", () => {
     const state = startingGameState(SEED);
 
     expect(state.sideToMove).toBe("green");
-    expect(state.actionsRemaining).toBe(2);
+    expect(state.actionsRemaining).toBe(1);
     expect(state.actedThisPly).toEqual([]);
     expect(state.plyNumber).toBe(1);
     expect(state.randomSeed).toBe(SEED);

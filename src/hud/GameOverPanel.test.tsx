@@ -24,7 +24,7 @@ function finishedState(overrides: Partial<GameState> = {}): GameState {
     ships: [],
     siteStates: {},
     sideToMove: "green",
-    actionsRemaining: 2,
+    actionsRemaining: 1,
     actedThisPly: [],
     plyNumber: 3,
     randomSeed: 1,
@@ -214,7 +214,7 @@ describe("GameOverPanel", () => {
         screen.getByText("Red: 0 energy, no nodes held."),
       ).toBeInTheDocument();
       expect(
-        screen.getByText("Green's turn — 2 actions left"),
+        screen.getByText("Green's turn — 1 action left"),
       ).toBeInTheDocument();
 
       const greenStart = STARTING_FLEET[0];

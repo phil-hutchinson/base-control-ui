@@ -23,7 +23,7 @@ describe("App", () => {
     render(<App />);
 
     expect(
-      screen.getByText("Green's turn — 2 actions left"),
+      screen.getByText("Green's turn — 1 action left"),
     ).toBeInTheDocument();
   });
 

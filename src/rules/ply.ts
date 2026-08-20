@@ -11,7 +11,7 @@
 // defender never advances, and a mutual return leaves both squares empty.
 // Every action — a move or an attack — marks the acting ship as having acted
 // this ply, since a ship may take at most one action per turn (rules.md §5).
-// When the ply's two actions are spent, play passes to the other side. The
+// When the ply's actions are all spent, play passes to the other side. The
 // pass guard covers the case §5 sets out for when the side to move has no
 // legal action at all.
 
@@ -55,7 +55,7 @@ export interface PassEffect {
   readonly endOfTurn: readonly EndOfTurnEffect[];
 }
 
-/** A ply ended because its second action was spent (rules.md §5, §8.7). */
+/** A ply ended because its last action was spent (rules.md §5, §8.7). */
 export interface PlyEndedEffect {
   readonly type: "ply-ended";
   readonly side: Side;
@@ -208,7 +208,7 @@ export function applyPassGuard(state: GameState): {
 
 /**
  * Runs the tail every action shares once its own effects have been applied:
- * spends one action; if that was the ply's second, runs the end-of-turn
+ * spends one action; if that was the ply's last, runs the end-of-turn
  * sequence, advances the ply number, swaps the side to move and clears
  * `actedThisPly`, recording a `ply-ended` effect; then runs `applyPassGuard`,
  * recording a `ply-passed` effect if it fires. `actedShipId` is added to
@@ -265,7 +265,7 @@ function applyEndOfActionTail(
  * stands on `destination`, the square it left is empty, the ship is marked as
  * having acted this ply, one action is spent, and — per rules.md §3.1 — the
  * ship's shields are reset to 0 if `destination` is a bay. When the ply's
- * second action is spent, play passes to the other side and the
+ * last action is spent, play passes to the other side and the
  * acted-this-ply marks clear. The result then passes through
  * `applyPassGuard`, so a move that leaves the side now to move with no legal
  * move at all is followed immediately by a pass.
@@ -469,7 +469,7 @@ export function assertFightInvariants(
  * advances, and a mutual return leaves both squares empty. The attacking ship
  * is added to `actedThisPly` in every outcome, including a mutual return in
  * which it ends the action in a bay itself: it spent its one action either
- * way (rules.md §5). One action is spent; when the ply's second action is
+ * way (rules.md §5). One action is spent; when the ply's last action is
  * spent, play passes to the other side exactly as it does after a move, and
  * the result then passes through `applyPassGuard`.
  */
