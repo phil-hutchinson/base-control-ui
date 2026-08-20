@@ -20,7 +20,7 @@ function buildState(plyNumber: number): GameState {
     siteStates: {},
     sideToMove: "green",
     actionsRemaining: 2,
-    movedThisPly: [],
+    actedThisPly: [],
     plyNumber,
     randomSeed: 1,
     returnPositionIndex: STARTING_RETURN_POSITION_INDEX,

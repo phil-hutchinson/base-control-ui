@@ -45,7 +45,7 @@ function buildState(config: {
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: "green",
     actionsRemaining: 2,
-    movedThisPly: [],
+    actedThisPly: [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: config.randomSeed ?? 1,
     returnPositionIndex: STARTING_RETURN_POSITION_INDEX,

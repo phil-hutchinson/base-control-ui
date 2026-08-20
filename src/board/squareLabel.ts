@@ -3,16 +3,18 @@
 // those, then a bay's return-position cues (return position 1, the current
 // receptacle, or both) if it carries any, then which side's ship (if any)
 // stands there, then that ship's shield count, then whether it has already
-// moved this ply, then its condition (no action available, or owing an
+// acted this ply, then its condition (no action available, or owing an
 // action), then last of all a mark saying that the square is selected, a
 // legal destination, or a legal attack target. A square is never both a bay
-// and a site, so the two share one slot. Having moved, the condition and the
-// mark are three separate, independently optional fields — a ship can have
-// moved and still be selected, or moved and still have no action left — the
-// condition alone staying mutually exclusive within itself. Ordinary empty
-// squares are named by their square name alone. The shield count is stated
-// even when it is zero, so a listener hearing one square at a time can tell
-// a shieldless ship apart from an app that never reports shields at all.
+// and a site, so the two share one slot. Having acted, the condition and the
+// mark are three separately optional fields, each computed on its own: a
+// ship that has not yet acted can still carry the no-action condition (a
+// pinned ship, selectable but fruitless), and the mark reflects the current
+// selection or highlight independently of both — the condition alone
+// staying mutually exclusive within itself. Ordinary empty squares are named
+// by their square name alone. The shield count is stated even when it is
+// zero, so a listener hearing one square at a time can tell a shieldless
+// ship apart from an app that never reports shields at all.
 //
 // A target square's mark names the fight's predicted outcome rather than a
 // fixed phrase, so a listener does not have to hold two ships' shield counts
@@ -90,12 +92,12 @@ const RETURN_CUE_WORDING: Record<ReturnCue, string> = {
     "return position 1, next bay for a beaten ship",
 };
 
-/** How having moved this ply reads in a square's accessible name. */
-const ALREADY_MOVED_WORDING = "already moved this turn";
+/** How having acted this ply reads in a square's accessible name. */
+const ALREADY_ACTED_WORDING = "already acted this turn";
 
 /**
  * A ship's own condition, independent of the current selection and of
- * whether it has moved: it has no legal action available at all — no legal
+ * whether it has acted: it has no legal action available at all — no legal
  * move and no legal attack target — or it owes its owner an action under
  * §8.5.
  */
@@ -115,19 +117,19 @@ export interface SquareLabelDescriptor {
   /** A return-position cue (rules.md §7.1), emitted right after the bay/site segment; only bays ever carry one. */
   readonly returnCue?: ReturnCue;
   readonly occupant?: SquareOccupant;
-  readonly hasMoved?: boolean;
+  readonly hasActed?: boolean;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
 }
 
-/** Builds a square's accessible name from its name, bay/site status, return cues, occupant, having moved, condition and mark. */
+/** Builds a square's accessible name from its name, bay/site status, return cues, occupant, having acted, condition and mark. */
 export function squareLabel({
   square,
   isBay,
   siteState,
   returnCue,
   occupant,
-  hasMoved,
+  hasActed,
   condition,
   mark,
 }: SquareLabelDescriptor): string {
@@ -145,8 +147,8 @@ export function squareLabel({
     const unit = occupant.shields === 1 ? "shield" : "shields";
     segments.push(`${occupant.shields} ${unit}`);
   }
-  if (hasMoved) {
-    segments.push(ALREADY_MOVED_WORDING);
+  if (hasActed) {
+    segments.push(ALREADY_ACTED_WORDING);
   }
   if (condition) {
     segments.push(CONDITION_WORDING[condition]);

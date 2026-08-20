@@ -204,7 +204,7 @@ function passSentenceClauses(
   tailClause?: string,
 ): string[] {
   return [
-    `${capitalize(effect.side)} has no legal move, so the turn passes.`,
+    `${capitalize(effect.side)} has no legal action, so the turn passes.`,
     ...endOfTurnClauses(effect.endOfTurn),
     tailClause ?? `${turnPhrase(effect.sideToMove, ACTIONS_PER_PLY)}.`,
   ];
@@ -300,6 +300,35 @@ function actionEndingClause(
 }
 
 /**
+ * The winning attacker's advance clause (rules.md §7): where it ended up, or
+ * that it held its ground when no square on the lane was legal to end on.
+ * When the advance charged a node, that is said too, in the same vocabulary
+ * `moveSentence` uses for a move that does the same thing — landing on the
+ * node or only flying over it on the way to the final square.
+ */
+function winnerAdvanceClause(
+  winner: NonNullable<FightResolvedEffect["winner"]>,
+  effects: readonly AttackEffect[],
+): string {
+  if (!winner.advanced) {
+    return "It held its ground.";
+  }
+
+  const square = squareName(winner.square);
+  const chargeEffect = effects.find(
+    (effect): effect is Extract<AttackEffect, { type: "site-charged" }> =>
+      effect.type === "site-charged",
+  );
+  if (chargeEffect === undefined) {
+    return `It advanced to ${square} and took it.`;
+  }
+  if (chargeEffect.reach === "landed-on") {
+    return `It advanced to ${square} and took it, charging the node.`;
+  }
+  return `It advanced to ${square} and took it, flying over ${squareName(chargeEffect.square)} and charging the node.`;
+}
+
+/**
  * The fight's own sentence (rules.md §7), from the single `fight-resolved`
  * effect an attack always carries. The losing-attacker sentence reads as a
  * deliberate choice, not an error: §7 permits attacking a stronger enemy, and
@@ -334,7 +363,8 @@ function fightSentence(event: AttackedEvent): string {
   if (fight.outcome === "attacker-won") {
     const [defenderReturn] = fight.returns;
     const cost = fight.defender.shields + 1;
-    return `${opening} and won. The beaten ship returned to the ${squareName(defenderReturn.to)} bay with no shields. The fight cost ${shieldsPhrase(cost)}, leaving the winner on ${fight.winner.remainingShields}.`;
+    const advanceClause = winnerAdvanceClause(fight.winner, event.effects);
+    return `${opening} and won. ${advanceClause} The beaten ship returned to the ${squareName(defenderReturn.to)} bay with no shields. The fight cost ${shieldsPhrase(cost)}, leaving the winner on ${fight.winner.remainingShields}.`;
   }
 
   const [attackerReturn] = fight.returns;
@@ -347,8 +377,8 @@ function rejectionSentence(event: RejectedEvent): string {
   switch (event.reason) {
     case "not-your-ship":
       return "That is your opponent's ship. Choose one of your own.";
-    case "ship-already-moved":
-      return "That ship has already moved this turn. Choose another.";
+    case "ship-already-acted":
+      return "That ship has already acted this turn. Choose another.";
     case "another-ship-stranded":
       return "A stranded ship must be moved clear this turn. Only a move will free it — choose one of those.";
     case "nothing-to-select":
@@ -367,8 +397,10 @@ function rejectionSentence(event: RejectedEvent): string {
       return "A ship in a bay cannot attack. Move it out first.";
     case "target-in-bay":
       return "A ship in a bay cannot be attacked.";
-    case "target-not-adjacent":
-      return `${square} is out of attack range. An attack reaches only the eight squares around a ship.`;
+    case "target-out-of-range":
+      return `${square} is out of attack range. A ship attacks as far as it moves, so shields shorten its reach — a ship with four shields can only strike one square up, down, left or right.`;
+    case "attack-path-blocked":
+      return `Another ship stands in the way, so the attack cannot reach ${square}.`;
     // Unreachable through the board's own gesture — activating a friendly
     // ship re-selects it and activating an empty square is a move attempt —
     // but `attackRefusalReason` answers for every square, so both are worded.

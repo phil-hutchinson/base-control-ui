@@ -105,39 +105,39 @@ describe("squareLabel", () => {
     ).toBe("G7, green ship, 0 shields, selected");
   });
 
-  it("adds 'already moved this turn' when hasMoved is true, after the shield count", () => {
+  it("adds 'already acted this turn' when hasActed is true, after the shield count", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
         occupant: { side: "green", shields: 4 },
-        hasMoved: true,
+        hasActed: true,
       }),
-    ).toBe("M10, green ship, 4 shields, already moved this turn");
+    ).toBe("M10, green ship, 4 shields, already acted this turn");
   });
 
-  it("says nothing about having moved when hasMoved is false or absent", () => {
+  it("says nothing about having acted when hasActed is false or absent", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
         occupant: { side: "green", shields: 4 },
-        hasMoved: false,
+        hasActed: false,
       }),
     ).toBe("M10, green ship, 4 shields");
   });
 
-  it("combines having moved with the no-action condition, moved first", () => {
+  it("combines having acted with the no-action condition, acted first", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
         occupant: { side: "green", shields: 4 },
-        hasMoved: true,
+        hasActed: true,
         condition: "no-action",
       }),
     ).toBe(
-      "M10, green ship, 4 shields, already moved this turn, no action available this turn",
+      "M10, green ship, 4 shields, already acted this turn, no action available this turn",
     );
   });
 
@@ -177,18 +177,18 @@ describe("squareLabel", () => {
     );
   });
 
-  it("orders having moved, the condition and the mark: shields, moved, condition, mark", () => {
+  it("orders having acted, the condition and the mark: shields, acted, condition, mark", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
         occupant: { side: "green", shields: 2 },
-        hasMoved: true,
+        hasActed: true,
         condition: "no-action",
         mark: "selected",
       }),
     ).toBe(
-      "M10, green ship, 2 shields, already moved this turn, no action available this turn, selected",
+      "M10, green ship, 2 shields, already acted this turn, no action available this turn, selected",
     );
   });
 

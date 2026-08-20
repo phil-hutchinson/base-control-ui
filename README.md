@@ -23,19 +23,20 @@ install, no account, no server.
 > starting position, with all fourteen ships lined up in their bays and the
 > seventeen sites marked, five of them already nodes in play. Green goes
 > first, and each player takes two actions a turn — a move or an attack — by
-> mouse or by keyboard. No ship moves twice in the same turn, though a ship
-> that has already moved can still attack. A node wakes the moment a ship
-> touches it, landing on it or flying over it, and pays a shield to the
+> mouse or by keyboard. No ship takes more than one action a turn, so a
+> turn's two actions always use two different ships. A node wakes the moment
+> a ship touches it, landing on it or flying over it, and pays a shield to the
 > player sitting on it at the end of each of their own turns. A node runs
 > out after nine turns, and a new one wakes somewhere else at random to
 > replace it. A ship still standing on a node that has just run out has to
 > be moved clear before its owner can do anything else that turn. In a fight
 > the ship carrying more shields wins and the beaten one is pushed back to a
 > bay with none — but winning costs the winner a shield more than the loser
-> was carrying, and the winner holds its ground rather than advancing, so
-> clearing a node and then taking it needs both of a turn's actions. Two
-> ships carrying the same shields both go home. The bay a beaten ship
-> returns to travels around the edge of the board as the game goes on, and
+> was carrying. The attacking winner advances onto the square it just cleared, so a
+> won fight can take a node outright, in a single action; and a ship attacks
+> exactly as far as it moves, so heavy shields buy strength at the cost of
+> reach. Two ships carrying the same shields both go home. The bay a beaten
+> ship returns to travels around the edge of the board as the game goes on, and
 > the board marks where it is. A node also pays energy at the end of each
 > turn to the player sitting on it, and holding several at once pays far
 > more than holding them one at a time would. The app keeps score and shows

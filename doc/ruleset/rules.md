@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.7**
+**Rules version: 0.8**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -155,7 +155,9 @@ Every ship starts with 0 shields.
 
 A ship carries between 0 and 4 shields. Shields do two things, in opposite
 directions: they decide who wins a fight (section 7), and each one a ship
-carries takes away part of its movement (section 6).
+carries takes away part of its movement (section 6) — and with it, part of
+its attack range, since an attack travels exactly as far as a move
+(section 7).
 
 A ship gains **one shield** at the end of its owner's turn if it is standing on
 a node, up to the maximum of 4. A ship reduced to 0 shields is not destroyed —
@@ -171,15 +173,15 @@ Green takes the first turn, and the players alternate. On a turn a player takes
 - **Move** one ship, or
 - **Attack** with one ship.
 
-A ship may be moved **at most once per turn**. There is no other restriction: a
-player may move two different ships, move a ship and attack with it (in either
-order), attack with two different ships, or attack twice with the same ship.
+A ship may take **at most one action per turn** — a move, or an attack, never
+both, and never a second one of either kind. A turn's two actions therefore
+always involve two different ships.
 
 A player must take both actions if two are available, and one if only one is.
-If a player has no legal action at all, their turn passes. In practice this
-should never happen — a player always has seven ships, and attacking is legal
-even when it is a losing move — but the rule is here so the game can never
-deadlock.
+If a player has no legal action at all, their turn passes. This should be
+uncommon — a player always has seven ships — but an attack reaches only as
+far as the attacker's shields allow, so an action is not always available;
+the rule is here so the game can never deadlock.
 
 ---
 
@@ -205,8 +207,9 @@ lands on, must be empty. Ships never fly over one another, and a ship can never
 land on a square another ship occupies — neither a friendly ship nor an enemy
 one.
 
-Moving and attacking are entirely separate. A ship never attacks by moving onto
-its target, and never moves as a result of attacking (section 7).
+Moving and attacking are entirely separate: a ship never attacks by moving
+onto its target. Winning a fight can still move the winning ship — see
+section 7's advance, which is not a move.
 
 A ship may not **end** a move on a dormant or depleted site (section 8.5). It
 may fly over one freely.
@@ -215,14 +218,16 @@ may fly over one freely.
 
 ## 7. Combat
 
-A ship may attack an enemy ship standing next to it — any of the eight
-surrounding squares, diagonals included. Attacking is always the attacking
-player's choice; ships never fight automatically. A ship may attack an enemy
-stronger than itself.
-
-An attack reaches further than a heavily shielded ship can move. A ship with 4
-shields can only step one square orthogonally, but it can still strike any of
-the eight squares around it.
+A ship may attack an enemy ship within its **movement range** (section 6) —
+the same distances, the same straight lines, and on the same terms: every
+square the attack passes over must be empty, of either side's ships. The
+target square is of course occupied, by the enemy ship, and the site it
+stands on does not matter — a ship stranded on a depleted site (section 8.5)
+can still be attacked. At the two extremes: a ship with 4 shields reaches only
+one square orthogonally and cannot strike a diagonal at all, while a ship
+carrying no shields reaches three squares orthogonally. Attacking is always
+the attacking player's choice; ships never fight automatically. A ship may
+attack an enemy stronger than itself.
 
 Neither ship may be in a bay: a ship in a bay cannot attack, and cannot be
 attacked.
@@ -236,9 +241,15 @@ shields — **one more than the loser was carrying**:
 So a 4-shield ship that beats a 2-shield ship comes out of it with 1, and even
 beating an unshielded ship costs a shield.
 
-**Neither ship moves.** The winner holds its ground — it does not advance onto
-the square the loser has left, and that square is simply empty afterwards.
-Winning a fight clears ground; it does not take it.
+**The winner advances.** Only an attacking winner does — a winning defender
+holds its ground. The attacker advances along the line it
+attacked down, to the furthest square, working back from the square the
+loser has left, that it may legally end on. "May legally end on" is section
+6's restriction and nothing else — not a dormant site, not a depleted site
+(section 8.5). In the ordinary case that is simply the loser's own square,
+and the winner takes it. If no square on the lane is one it may legally end
+on, the winner holds its ground instead. The squares the winner crosses along
+the way count as touched for section 8.2, exactly as they would for a move.
 
 If both ships carry **the same number of shields**, both are returned to bays
 with 0 shields. The attacker is placed first, then the defender, and both
@@ -248,12 +259,10 @@ Because a fight always costs the winner more shields than the loser was
 carrying, attacking a nearly-equal opponent leaves the winner badly exposed.
 Attacking a much weaker ship is cheap.
 
-And because the winner stays put, driving an enemy off a hub does not put you
-on it. Claiming the square takes a second action. Whether the attacking ship
-can be the one to claim it depends on where it struck from — an attack reaches
-all eight neighbours, but a heavily shielded ship cannot move diagonally to
-follow it up. The shields burned in the fight may be exactly what unlocks the
-move it needs.
+And because the winner advances, driving an enemy off a node and taking it
+can now be a single action: a won fight can take a node outright. Heavy
+shields buy strength at the cost of reach, so the ship most likely to win a
+fight is the one least able to start one at a distance.
 
 ### 7.1 Returning to a bay
 
@@ -310,8 +319,9 @@ and no clock start.
 ### 8.2 Waking a node
 
 A site that is **active** becomes **charged** the moment a ship touches it —
-either by landing on it or by flying over it during a move. It does not
-matter which player's ship, and the ship does not have to stop.
+either by landing on it or by flying over it, whether during a move or a
+winning attacker's advance (section 7). It does not matter which player's
+ship, and the ship does not have to stop.
 
 This means a node can be woken by a ship that has no intention of holding it.
 Waking a node starts its clock whether or not anyone benefits.
@@ -363,9 +373,9 @@ That is a restriction on what an action may be, not a penalty on top of one.
 The freeing move is the **first action** of the turn: while any ship still
 owes one, each action in turn must free one, and only once none remain does
 the rest of the turn belong to the player. With one ship stranded, the first
-action frees it and the rest of the turn is the player's: they may attack with
-the ship they have just freed, move a different ship, or do anything else
-that is legal. With two ships stranded, both actions go to clearing them.
+action frees it and the rest of the turn is the player's: they may move or
+attack with a different ship, or do anything else that is legal. With two
+ships stranded, both actions go to clearing them.
 With three or more, the player clears two of their choice and the rest wait
 for the following turn.
 

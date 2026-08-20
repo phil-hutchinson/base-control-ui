@@ -1,56 +1,73 @@
-// Combat (rules.md §7, §3.1, §8.5): who may attack whom. This is the only
-// implementation of §7 in the app, the way `movement.ts` is the only
-// implementation of §6. Attack range is a fixed set of eight neighbouring
-// squares, independent of shield count — deliberately written out rather
-// than derived from `reachFrom` (rules.md §6), whose per-shield table §7's
-// range must not be coupled to: a 4-shield ship strikes all eight
-// neighbours while it can only step one square orthogonally.
+// Combat (rules.md §7, §3.1, §8.5): who may attack whom, and where a winning
+// attacker ends up. This is the only implementation of §7 in the app, the way
+// `movement.ts` is the only implementation of §6. Attack range **is** §6's
+// movement range: a ship attacks exactly as far as it moves, path and all, so
+// `attackReach` reads `reachFrom` (rules.md §6) rather than carrying a second
+// copy of the table. There is one implementation of the table, and both
+// sections read it. `winnerAdvance` walks that same lane backwards from the
+// loser's square to find where the winner may legally come to rest.
 
-import {
-  COLUMN_LETTERS,
-  type Square,
-  isOnBoard,
-  squareAt,
-  squareName,
-} from "./board";
+import { type Square, squareName } from "./board";
 import { CLOCKWISE_BAYS, bayNumberingFrom, isBay } from "./bays";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
-import { findShip } from "./moveLegality";
-import { type GameState, shipsBySquare } from "./gameState";
+import { type ReachEntry, findShip, reachFrom } from "./moveLegality";
+import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
 import { type ShieldCount, isShieldCount } from "./shields";
 import { strandedShipIds } from "./stranded";
 
-/** The eight offsets to a square's neighbours, diagonals included. */
-const ADJACENT_OFFSETS: ReadonlyArray<readonly [number, number]> = [
-  [1, 0],
-  [1, 1],
-  [0, 1],
-  [-1, 1],
-  [-1, 0],
-  [-1, -1],
-  [0, -1],
-  [1, -1],
-];
+/**
+ * The lane `shipId` would attack down to reach `target`: the `ReachEntry`
+ * from `reachFrom(attacker.square, attacker.shields)` whose `destination` is
+ * `target`, or `undefined` when `target` is outside the attacker's reach
+ * altogether. Purely geometric — no ownership, no bays, no occupancy, no
+ * awareness of whose ply it is — so both the legality check below and
+ * `winnerAdvance` share one answer to "what lane is this".
+ */
+export function attackReach(
+  state: GameState,
+  shipId: ShipId,
+  target: Square,
+): ReachEntry | undefined {
+  const attacker = findShip(state, shipId);
+  const targetName = squareName(target);
+
+  return reachFrom(attacker.square, attacker.shields).find(
+    (entry) => squareName(entry.destination) === targetName,
+  );
+}
 
 /**
- * The eight squares surrounding `square`, diagonals included, filtered to
- * squares actually on the board (five on an edge, three at a corner). §7's
- * whole attack range, fixed and independent of shield count.
+ * Where a winning attacker ends up (rules.md §7): scanning `reach`'s lane
+ * backwards from the loser's square towards the attacker, the furthest
+ * square it may legally end on — §6's site restriction and nothing else, not
+ * a dormant site, not a depleted site — shaped as the sub-lane the winner
+ * actually travels (`destination` is the square it stops on, `passedOver` the
+ * lane squares before it). `undefined` when no square on the lane qualifies,
+ * meaning the winner holds its ground.
+ *
+ * `reach` is the attack's own `ReachEntry`, exactly as `attackReach` found
+ * it. The lane's occupancy is not re-checked here: it was clear when the
+ * attack was judged, and the loser has already been placed in a bay by the
+ * time this runs, so nothing between the attacker and the loser's former
+ * square can be occupied.
  */
-export function adjacentSquares(square: Square): readonly Square[] {
-  const columnIndex = COLUMN_LETTERS.indexOf(square.column);
-  const squares: Square[] = [];
+export function winnerAdvance(
+  state: GameState,
+  reach: ReachEntry,
+): ReachEntry | undefined {
+  const lane = [...reach.passedOver, reach.destination];
 
-  for (const [deltaColumn, deltaRow] of ADJACENT_OFFSETS) {
-    const column = COLUMN_LETTERS[columnIndex + deltaColumn];
-    const row = square.row + deltaRow;
-    if (column !== undefined && isOnBoard(column, row)) {
-      squares.push(squareAt(column, row));
+  for (let index = lane.length - 1; index >= 0; index--) {
+    const candidate = lane[index];
+    const siteState = siteStateAt(state, candidate);
+    if (siteState === "dormant" || siteState === "depleted") {
+      continue;
     }
+    return { destination: candidate, passedOver: lane.slice(0, index) };
   }
 
-  return squares;
+  return undefined;
 }
 
 /**
@@ -64,12 +81,14 @@ export function adjacentSquares(square: Square): readonly Square[] {
  */
 export type AttackRefusalReason =
   | "not-your-ship"
+  | "ship-already-acted"
   | "another-ship-stranded"
   | "attacker-in-bay"
   | "target-in-bay"
   | "no-target-there"
   | "target-is-friendly"
-  | "target-not-adjacent"
+  | "target-out-of-range"
+  | "attack-path-blocked"
   | "game-over";
 
 /**
@@ -79,9 +98,11 @@ export type AttackRefusalReason =
  * without §8.5's answer depending on the question, exactly as
  * `sixOnlyMoveRefusalReason` does for §6.
  *
- * Checked most fundamental first: whose ship it is, then the attacker's own
- * bay, then everything about the target — no ship there, a friendly ship, a
- * ship in a bay, not adjacent.
+ * Checked most fundamental first: whose ship it is, then whether it has
+ * already acted, then the attacker's own bay, then everything about the
+ * target — no ship there, a friendly ship, a ship in a bay — and only then
+ * range and path, which come last so a bay target within reach is still
+ * refused as `"target-in-bay"` rather than as an out-of-range square.
  */
 export function sevenOnlyAttackRefusalReason(
   state: GameState,
@@ -92,6 +113,9 @@ export function sevenOnlyAttackRefusalReason(
 
   if (attacker.side !== state.sideToMove) {
     return "not-your-ship";
+  }
+  if (state.actedThisPly.includes(shipId)) {
+    return "ship-already-acted";
   }
   if (isBay(attacker.square)) {
     return "attacker-in-bay";
@@ -107,12 +131,15 @@ export function sevenOnlyAttackRefusalReason(
   if (isBay(target)) {
     return "target-in-bay";
   }
-  if (
-    !adjacentSquares(attacker.square).some(
-      (square) => squareName(square) === squareName(target),
-    )
-  ) {
-    return "target-not-adjacent";
+
+  const reach = attackReach(state, shipId, target);
+  if (reach === undefined) {
+    return "target-out-of-range";
+  }
+
+  const occupied = shipsBySquare(state);
+  if (reach.passedOver.some((square) => occupied.has(squareName(square)))) {
+    return "attack-path-blocked";
   }
 
   return undefined;
@@ -128,14 +155,20 @@ export function sevenOnlyLegalTargets(
   shipId: ShipId,
 ): readonly Square[] {
   const attacker = findShip(state, shipId);
-  if (attacker.side !== state.sideToMove || isBay(attacker.square)) {
+  if (
+    attacker.side !== state.sideToMove ||
+    state.actedThisPly.includes(shipId) ||
+    isBay(attacker.square)
+  ) {
     return [];
   }
 
-  return adjacentSquares(attacker.square).filter(
-    (square) =>
-      sevenOnlyAttackRefusalReason(state, shipId, square) === undefined,
-  );
+  return reachFrom(attacker.square, attacker.shields)
+    .map((entry) => entry.destination)
+    .filter(
+      (square) =>
+        sevenOnlyAttackRefusalReason(state, shipId, square) === undefined,
+    );
 }
 
 /**
@@ -151,13 +184,19 @@ export function sevenOnlyLegalTargets(
  * here" without this question answering it; see `applyPassGuard` in
  * `ply.ts`.
  *
+ * Ownership and the already-acted check are duplicated here ahead of §8.5's
+ * stranded check, exactly as `moveRefusalReason` duplicates them ahead of
+ * its own stranded check, so the refusal a player hears has the same
+ * priority whichever action they attempted: a ship that has already acted is
+ * told so, rather than being told a stranded ship elsewhere needs moving.
+ *
  * §8.5 refuses **every** attack while any ship owes an action — including an
  * attack by the owing ship itself. Unlike `moveRefusalReason`, which excuses
  * the ships that owe (`!owed.includes(shipId)`), there is no exception here:
- * a move can free a stranded ship, but an attack never does, so while the
- * obligation binds it blocks every attack the same way. The reason string is
- * the same `"another-ship-stranded"` moves use, so the player hears one
- * sentence whichever action they tried.
+ * §8.5 requires the freeing action to be a move, so while the obligation
+ * binds it blocks every attack the same way, whoever it is by. The reason
+ * string is the same `"another-ship-stranded"` moves use, so the player
+ * hears one sentence whichever action they tried.
  */
 export function attackRefusalReason(
   state: GameState,
@@ -173,6 +212,9 @@ export function attackRefusalReason(
   if (attacker.side !== state.sideToMove) {
     return "not-your-ship";
   }
+  if (state.actedThisPly.includes(shipId)) {
+    return "ship-already-acted";
+  }
   if (strandedShipIds(state).length > 0) {
     return "another-ship-stranded";
   }
@@ -181,11 +223,12 @@ export function attackRefusalReason(
 }
 
 /**
- * Every square `shipId` may legally attack in the given state: its §7
- * neighbours, with §9's game-over check and §8.5's obligation applied at the
- * ship level exactly as in `attackRefusalReason` — empty once the game is
- * over, and refusing every ship's attacks, including the owing ship's own,
- * while any ship owes an action.
+ * Every square `shipId` may legally attack in the given state: every square
+ * within its §6 movement reach holding an enemy ship, with §9's game-over
+ * check and §8.5's obligation applied at the ship level exactly as in
+ * `attackRefusalReason` — empty once the game is over, and refusing every
+ * ship's attacks, including the owing ship's own, while any ship owes an
+ * action.
  */
 export function legalTargets(
   state: GameState,

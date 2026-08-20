@@ -10,7 +10,13 @@ import {
   startingGameState,
 } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
-import { applyAttack, applyMove, applyPassGuard } from "./ply";
+import {
+  type AdvancingWinner,
+  applyAttack,
+  applyMove,
+  applyPassGuard,
+  assertFightInvariants,
+} from "./ply";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
 import { strandedShipIds } from "./stranded";
@@ -39,7 +45,7 @@ function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
   actionsRemaining?: number;
-  movedThisPly?: readonly ShipId[];
+  actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<
     Record<string, SiteState | readonly [SiteState, number]>
   >;
@@ -53,7 +59,7 @@ function buildState(config: {
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? ACTIONS_PER_PLY,
-    movedThisPly: config.movedThisPly ?? [],
+    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     returnPositionIndex:
@@ -319,7 +325,7 @@ describe("applyMove", () => {
     }
     expect(first.state.sideToMove).toBe("green");
     expect(first.state.actionsRemaining).toBe(1);
-    expect(first.state.movedThisPly).toEqual(["green-1"]);
+    expect(first.state.actedThisPly).toEqual(["green-1"]);
     expect(first.effects).toEqual([]);
 
     const second = applyMove(first.state, "green-2", squareFromName("B1"));
@@ -329,7 +335,7 @@ describe("applyMove", () => {
     }
     expect(second.state.sideToMove).toBe("red");
     expect(second.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(second.state.movedThisPly).toEqual([]);
+    expect(second.state.actedThisPly).toEqual([]);
     expect(second.state.plyNumber).toBe(2);
     expect(second.effects).toEqual([
       { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
@@ -363,17 +369,17 @@ describe("applyMove", () => {
     );
   });
 
-  it("refuses a second move of a ship that has already moved this ply, but allows it again next ply", () => {
+  it("refuses a second move of a ship that has already acted this ply, but allows it again next ply", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "A1")],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
 
     const refused = applyMove(state, "green-1", squareFromName("H9"));
     expect(refused).toEqual({
       outcome: "refused",
-      reason: "ship-already-moved",
+      reason: "ship-already-acted",
     });
 
     // Green's next ply: two actions available again, nothing moved yet.
@@ -396,9 +402,15 @@ describe("applyMove", () => {
 });
 
 describe("applyAttack", () => {
-  it("resolves an attacker's win: the attacker stays put and keeps the fight's shields, the defender returns to a bay at 0", () => {
+  it("resolves an attacker's win: the attacker advances onto the loser's square and keeps the fight's shields, the defender returns to a bay at 0", () => {
+    // green-2, uninvolved, keeps green with a legal move left after the
+    // fight so the pass guard does not also fire and add its own effect.
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 1)],
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("green-2", "green", "A1"),
+        ship("red-1", "red", "H9", 1),
+      ],
     });
     const before = structuredClone(state);
 
@@ -409,7 +421,7 @@ describe("applyAttack", () => {
       throw new Error("expected the attack to be applied");
     }
     const winner = result.state.ships.find((s) => s.id === "green-1");
-    expect(winner).toEqual(ship("green-1", "green", "H8", 1));
+    expect(winner).toEqual(ship("green-1", "green", "H9", 1));
     const loser = result.state.ships.find((s) => s.id === "red-1");
     expect(loser).toEqual(ship("red-1", "red", "H15", 0));
 
@@ -429,7 +441,12 @@ describe("applyAttack", () => {
           square: squareFromName("H9"),
           shields: 1,
         },
-        winner: { shipId: "green-1", remainingShields: 1 },
+        winner: {
+          shipId: "green-1",
+          remainingShields: 1,
+          square: squareFromName("H9"),
+          advanced: true,
+        },
         returns: [
           {
             shipId: "red-1",
@@ -446,8 +463,14 @@ describe("applyAttack", () => {
   });
 
   it("resolves a defender's win: the attacker returns to a bay at 0, the defender stays put and keeps the fight's shields", () => {
+    // green-2, uninvolved, keeps green with a legal move left after the
+    // fight so the pass guard does not also fire and add its own effect.
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("green-2", "green", "A1"),
+        ship("red-1", "red", "H9", 3),
+      ],
     });
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -477,7 +500,12 @@ describe("applyAttack", () => {
           square: squareFromName("H9"),
           shields: 3,
         },
-        winner: { shipId: "red-1", remainingShields: 1 },
+        winner: {
+          shipId: "red-1",
+          remainingShields: 1,
+          square: squareFromName("H9"),
+          advanced: false,
+        },
         returns: [
           {
             shipId: "green-1",
@@ -491,8 +519,14 @@ describe("applyAttack", () => {
   });
 
   it("resolves a mutual return on equal shields: both ships return to bays at 0, the attacker placed first", () => {
+    // green-2, uninvolved, keeps green with a legal move left after the
+    // fight so the pass guard does not also fire and add its own effect.
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
+      ships: [
+        ship("green-1", "green", "H8", 2),
+        ship("green-2", "green", "A1"),
+        ship("red-1", "red", "H9", 2),
+      ],
     });
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -555,20 +589,21 @@ describe("applyAttack", () => {
     expect(winner?.shields).toBe(2);
   });
 
-  it("lets a winner reduced to 0 shields on a charged node gain one back at the end of the ply", () => {
+  it("lets a winner reduced to 0 shields advance onto a charged node and gain one back at the end of the ply", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "K5", 1), ship("red-1", "red", "K6", 0)],
+      ships: [ship("green-1", "green", "K6", 1), ship("red-1", "red", "K5", 0)],
       siteStates: { K5: "charged" },
       actionsRemaining: 1,
     });
 
-    const result = applyAttack(state, "green-1", squareFromName("K6"));
+    const result = applyAttack(state, "green-1", squareFromName("K5"));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
     const winner = result.state.ships.find((s) => s.id === "green-1");
+    expect(winner?.square).toEqual(squareFromName("K5"));
     expect(winner?.shields).toBe(1);
     expect(result.effects).toContainEqual({
       type: "ply-ended",
@@ -593,7 +628,7 @@ describe("applyAttack", () => {
     });
   });
 
-  it("leaves neither ship moved: the winner stays put and the loser's square is empty", () => {
+  it("advances the winner onto the loser's square, leaving that square empty of anyone but the winner and the attacker's own square empty", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 1)],
     });
@@ -605,11 +640,11 @@ describe("applyAttack", () => {
       throw new Error("expected the attack to be applied");
     }
     const occupiedSquares = result.state.ships.map((s) => squareName(s.square));
-    expect(occupiedSquares).toContain(squareName(squareFromName("H8")));
-    expect(occupiedSquares).not.toContain(squareName(squareFromName("H9")));
+    expect(occupiedSquares).not.toContain(squareName(squareFromName("H8")));
+    expect(occupiedSquares).toContain(squareName(squareFromName("H9")));
   });
 
-  it("leaves a charged node driving an enemy off it charged, with its clock unchanged, and touches no other site", () => {
+  it("leaves an already-charged node the winner advances onto charged, with its clock unchanged, and touches no other site", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "K4", 3), ship("red-1", "red", "K5", 1)],
       siteStates: { K5: ["charged", 3] },
@@ -621,8 +656,12 @@ describe("applyAttack", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
+    const winner = result.state.ships.find((s) => s.id === "green-1");
+    expect(winner?.square).toEqual(squareFromName("K5"));
     // Not the ply's last action, so the end-of-turn sequence never runs and
     // siteStates is untouched — same reference, not merely equal contents.
+    // A site already charged is not re-charged by §8.2, so the advance onto
+    // it leaves its clock exactly where it was.
     expect(result.state.siteStates).toBe(state.siteStates);
     expect(result.effects).not.toContainEqual(
       expect.objectContaining({ type: "site-charged" }),
@@ -727,9 +766,12 @@ describe("applyAttack", () => {
   });
 
   it("does not drift the return position between a ply's two actions, but drifts it once the ply ends", () => {
+    // A ship may take at most one action per turn (rules.md §5), so the
+    // ply's two attacks come from two different ships.
     const state = buildState({
       ships: [
         ship("green-1", "green", "K5", 4),
+        ship("green-2", "green", "L4", 4),
         ship("red-1", "red", "K6", 0),
         ship("red-2", "red", "K4", 0),
       ],
@@ -745,7 +787,7 @@ describe("applyAttack", () => {
       STARTING_RETURN_POSITION_INDEX,
     );
 
-    const second = applyAttack(first.state, "green-1", squareFromName("K4"));
+    const second = applyAttack(first.state, "green-2", squareFromName("K4"));
     expect(second.outcome).toBe("applied");
     if (second.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
@@ -754,17 +796,22 @@ describe("applyAttack", () => {
       STARTING_RETURN_POSITION_INDEX,
     );
 
-    const survivingAttacker = second.state.ships.find(
-      (s) => s.id === "green-1",
-    );
-    expect(survivingAttacker?.square).toEqual(squareFromName("K5"));
-    expect(survivingAttacker?.shields).toBe(2);
+    const firstAttacker = second.state.ships.find((s) => s.id === "green-1");
+    expect(firstAttacker?.square).toEqual(squareFromName("K6"));
+    expect(firstAttacker?.shields).toBe(3);
+    const secondAttacker = second.state.ships.find((s) => s.id === "green-2");
+    expect(secondAttacker?.square).toEqual(squareFromName("K4"));
+    expect(secondAttacker?.shields).toBe(3);
   });
 
-  it("lets one ship attack twice, winning the first so it survives to strike a second neighbour", () => {
+  it("refuses a second attack by the same ship, even though it won the first and a second target stands in range", () => {
+    // green-2, uninvolved, keeps green with a legal action left after the
+    // first attack so the pass guard does not fire before the second is
+    // attempted.
     const state = buildState({
       ships: [
         ship("green-1", "green", "H8", 3),
+        ship("green-2", "green", "A1"),
         ship("red-1", "red", "H9", 0),
         ship("red-2", "red", "G9", 0),
       ],
@@ -775,56 +822,64 @@ describe("applyAttack", () => {
     if (first.outcome !== "applied") {
       throw new Error("expected the first attack to be applied");
     }
+    expect(first.state.actedThisPly).toEqual(["green-1"]);
 
     const second = applyAttack(first.state, "green-1", squareFromName("G9"));
-    expect(second.outcome).toBe("applied");
-    if (second.outcome !== "applied") {
-      throw new Error("expected the second attack to be applied");
-    }
 
-    const attacker = second.state.ships.find((s) => s.id === "green-1");
-    expect(attacker?.square).toEqual(squareFromName("H8"));
-    expect(attacker?.shields).toBe(1);
-    expect(second.state.movedThisPly).toEqual([]);
+    expect(second).toEqual({
+      outcome: "refused",
+      reason: "ship-already-acted",
+    });
   });
 
-  it("lets a ship attack, then move, as its ply's two actions", () => {
+  it("refuses a move by a ship that attacked as the ply's first action", () => {
+    // green-2, uninvolved, keeps green with a legal action left after the
+    // attack so the pass guard does not fire before the move is attempted.
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 1)],
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("green-2", "green", "A1"),
+        ship("red-1", "red", "H9", 1),
+      ],
     });
 
     const first = applyAttack(state, "green-1", squareFromName("H9"));
     if (first.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
-    expect(first.state.movedThisPly).toEqual([]);
+    expect(first.state.actedThisPly).toEqual(["green-1"]);
 
     const second = applyMove(first.state, "green-1", squareFromName("H9"));
-    expect(second.outcome).toBe("applied");
-    if (second.outcome !== "applied") {
-      throw new Error("expected the move to be applied");
-    }
-    expect(second.state.ships.find((s) => s.id === "green-1")?.square).toEqual(
-      squareFromName("H9"),
-    );
+
+    expect(second).toEqual({
+      outcome: "refused",
+      reason: "ship-already-acted",
+    });
   });
 
-  it("lets a ship move, then attack, as its ply's two actions", () => {
+  it("refuses an attack by a ship that moved as the ply's first action", () => {
+    // green-2, uninvolved, keeps green with a legal action left after the
+    // move so the pass guard does not fire before the attack is attempted.
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H10")],
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("green-2", "green", "A1"),
+        ship("red-1", "red", "H10"),
+      ],
     });
 
     const first = applyMove(state, "green-1", squareFromName("H9"));
     if (first.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(first.state.movedThisPly).toEqual(["green-1"]);
+    expect(first.state.actedThisPly).toEqual(["green-1"]);
 
     const second = applyAttack(first.state, "green-1", squareFromName("H10"));
-    expect(second.outcome).toBe("applied");
-    if (second.outcome !== "applied") {
-      throw new Error("expected the attack to be applied");
-    }
+
+    expect(second).toEqual({
+      outcome: "refused",
+      reason: "ship-already-acted",
+    });
   });
 
   it("lets two different ships each attack as the ply's two actions", () => {
@@ -847,9 +902,64 @@ describe("applyAttack", () => {
     expect(second.outcome).toBe("applied");
   });
 
-  it("still refuses a second move of a ship that has already moved this ply, even though it can still attack", () => {
+  it("lets one ship move and a different ship attack, in either order, as the ply's two actions", () => {
+    const moveThenAttack = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("green-2", "green", "A1", 3),
+        ship("red-1", "red", "B1"),
+      ],
+    });
+    const firstMove = applyMove(
+      moveThenAttack,
+      "green-1",
+      squareFromName("H9"),
+    );
+    expect(firstMove.outcome).toBe("applied");
+    if (firstMove.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    const secondAttack = applyAttack(
+      firstMove.state,
+      "green-2",
+      squareFromName("B1"),
+    );
+    expect(secondAttack.outcome).toBe("applied");
+
+    const attackThenMove = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("green-2", "green", "A1"),
+        ship("red-1", "red", "H9", 1),
+      ],
+    });
+    const firstAttack = applyAttack(
+      attackThenMove,
+      "green-1",
+      squareFromName("H9"),
+    );
+    expect(firstAttack.outcome).toBe("applied");
+    if (firstAttack.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const secondMove = applyMove(
+      firstAttack.state,
+      "green-2",
+      squareFromName("B1"),
+    );
+    expect(secondMove.outcome).toBe("applied");
+  });
+
+  it("refuses both a second move and an attack for a ship that has already acted this ply", () => {
+    // green-2, uninvolved, keeps green with a legal action left after the
+    // move so the pass guard does not fire before the second action is
+    // attempted.
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H10")],
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("green-2", "green", "A1"),
+        ship("red-1", "red", "H10"),
+      ],
     });
 
     const first = applyMove(state, "green-1", squareFromName("H9"));
@@ -860,7 +970,7 @@ describe("applyAttack", () => {
     const secondMove = applyMove(first.state, "green-1", squareFromName("G9"));
     expect(secondMove).toEqual({
       outcome: "refused",
-      reason: "ship-already-moved",
+      reason: "ship-already-acted",
     });
 
     const secondAttack = applyAttack(
@@ -868,7 +978,10 @@ describe("applyAttack", () => {
       "green-1",
       squareFromName("H10"),
     );
-    expect(secondAttack.outcome).toBe("applied");
+    expect(secondAttack).toEqual({
+      outcome: "refused",
+      reason: "ship-already-acted",
+    });
   });
 
   it("un-strands by force: a ship stranded on a depleted site that is beaten in a fight is in a bay and owes nothing on its owner's next turn", () => {
@@ -893,9 +1006,14 @@ describe("applyAttack", () => {
     expect(strandedShipIds(result.state)).not.toContain("green-1");
   });
 
-  it("does not mark a ship returned to a bay by a mutual return as moved, so it may still be moved as the ply's second action", () => {
+  it("marks the attacker as having acted on a mutual return, even though it ends the action in a bay itself", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "K5", 2), ship("red-1", "red", "K6", 2)],
+      ships: [
+        ship("green-1", "green", "K5", 2),
+        ship("green-2", "green", "A1", 2),
+        ship("red-1", "red", "K6", 2),
+        ship("red-2", "red", "B1"),
+      ],
     });
 
     const first = applyAttack(state, "green-1", squareFromName("K6"));
@@ -903,18 +1021,25 @@ describe("applyAttack", () => {
     if (first.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
-    expect(first.state.movedThisPly).toEqual([]);
+    expect(first.state.actedThisPly).toEqual(["green-1"]);
     const returnedShip = first.state.ships.find((s) => s.id === "green-1");
     expect(returnedShip?.square).toEqual(squareFromName("H15"));
 
-    const second = applyMove(first.state, "green-1", squareFromName("H12"));
-    expect(second.outcome).toBe("applied");
-    if (second.outcome !== "applied") {
-      throw new Error("expected the move to be applied");
-    }
-    expect(second.state.ships.find((s) => s.id === "green-1")?.square).toEqual(
+    const secondByReturnedShip = applyMove(
+      first.state,
+      "green-1",
       squareFromName("H12"),
     );
+    expect(secondByReturnedShip).toEqual({
+      outcome: "refused",
+      reason: "ship-already-acted",
+    });
+
+    // The mutual return is the side to move's own attacker returning; the
+    // opponent's ship it fought is not the side to move's concern, and the
+    // ply's second action is a different green ship's, exactly as normal.
+    const second = applyAttack(first.state, "green-2", squareFromName("B1"));
+    expect(second.outcome).toBe("applied");
   });
 
   it("refuses an illegal attack, leaving the state exactly as it went in", () => {
@@ -927,9 +1052,329 @@ describe("applyAttack", () => {
 
     expect(result).toEqual({
       outcome: "refused",
-      reason: "target-not-adjacent",
+      reason: "target-out-of-range",
     });
     expect(state).toEqual(before);
+  });
+});
+
+describe("the winner's advance (rules.md §7)", () => {
+  // A 0-shield attacker unlocks the three-square orthogonal reach, but 0
+  // shields can never win a fight (§7: the stronger side wins, and 0 against
+  // 0 is a mutual return), so the three-square advance can never be produced
+  // through `applyAttack`. It is tested directly against `winnerAdvance` in
+  // `combat.test.ts` instead.
+  it.each([
+    {
+      label: "one square orthogonally",
+      attackerSquare: "H8",
+      attackerShields: 4 as ShieldCount,
+      defenderSquare: "H9",
+      passedOverNames: [] as string[],
+      winnerShields: 3 as ShieldCount,
+    },
+    {
+      label: "one square diagonally",
+      attackerSquare: "H8",
+      attackerShields: 3 as ShieldCount,
+      defenderSquare: "I9",
+      passedOverNames: [] as string[],
+      winnerShields: 2 as ShieldCount,
+    },
+    {
+      label: "two squares orthogonally",
+      attackerSquare: "H5",
+      attackerShields: 2 as ShieldCount,
+      defenderSquare: "H7",
+      passedOverNames: ["H6"],
+      winnerShields: 1 as ShieldCount,
+    },
+    {
+      label: "two squares diagonally",
+      attackerSquare: "H5",
+      attackerShields: 1 as ShieldCount,
+      defenderSquare: "J7",
+      passedOverNames: ["I6"],
+      winnerShields: 0 as ShieldCount,
+    },
+  ])(
+    "advances the winner onto the loser's square for an attack from $label, leaving the squares between it empty",
+    ({
+      attackerSquare,
+      attackerShields,
+      defenderSquare,
+      passedOverNames,
+      winnerShields,
+    }) => {
+      const state = buildState({
+        ships: [
+          ship("green-1", "green", attackerSquare, attackerShields),
+          ship("red-1", "red", defenderSquare, 0),
+        ],
+      });
+
+      const result = applyAttack(
+        state,
+        "green-1",
+        squareFromName(defenderSquare),
+      );
+
+      expect(result.outcome).toBe("applied");
+      if (result.outcome !== "applied") {
+        throw new Error("expected the attack to be applied");
+      }
+      const winner = result.state.ships.find((s) => s.id === "green-1");
+      expect(winner?.square).toEqual(squareFromName(defenderSquare));
+      expect(winner?.shields).toBe(winnerShields);
+
+      const occupiedNames = result.state.ships.map((s) => squareName(s.square));
+      expect(occupiedNames).not.toContain(attackerSquare);
+      for (const passedOverName of passedOverNames) {
+        expect(occupiedNames).not.toContain(passedOverName);
+      }
+    },
+  );
+
+  it("stops the advance one square short when the loser's square is a depleted site, a reachable version of the stop-short rule", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H6", 2), ship("red-1", "red", "H8", 0)],
+      siteStates: { H8: "depleted" },
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const winner = result.state.ships.find((s) => s.id === "green-1");
+    expect(winner?.square).toEqual(squareFromName("H7"));
+    expect(winner?.shields).toBe(1);
+    const loser = result.state.ships.find((s) => s.id === "red-1");
+    expect(loser && isBay(loser.square)).toBe(true);
+  });
+
+  it("holds its ground on an adjacent attack onto a dormant site", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H7", 3), ship("red-1", "red", "H8", 0)],
+      siteStates: { H8: "dormant" },
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const winner = result.state.ships.find((s) => s.id === "green-1");
+    expect(winner?.square).toEqual(squareFromName("H7"));
+
+    const fightResolved = result.effects[0];
+    if (fightResolved.type !== "fight-resolved") {
+      throw new Error("expected a fight-resolved effect first");
+    }
+    expect(fightResolved.winner).toEqual({
+      shipId: "green-1",
+      remainingShields: 2,
+      square: squareFromName("H7"),
+      advanced: false,
+    });
+  });
+
+  it("wakes an active site the advance lands on, starting its clock (reach: landed-on)", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "G8", 4), ship("red-1", "red", "H8", 0)],
+      siteStates: { H8: "active" },
+      plyNumber: 4,
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(result.effects).toContainEqual({
+      type: "site-charged",
+      square: squareFromName("H8"),
+      shipId: "green-1",
+      side: "green",
+      reach: "landed-on",
+    });
+    expect(result.state.siteStates.H8).toEqual({
+      state: "charged",
+      enteredOnPly: 4,
+    });
+  });
+
+  it("wakes an active site the advance merely flies over, starting its clock (reach: flown-over)", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H7", 2), ship("red-1", "red", "H9", 0)],
+      siteStates: { H8: "active" },
+      plyNumber: 6,
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const winner = result.state.ships.find((s) => s.id === "green-1");
+    expect(winner?.square).toEqual(squareFromName("H9"));
+    expect(result.effects).toContainEqual({
+      type: "site-charged",
+      square: squareFromName("H8"),
+      shipId: "green-1",
+      side: "green",
+      reach: "flown-over",
+    });
+    expect(result.state.siteStates.H8).toEqual({
+      state: "charged",
+      enteredOnPly: 6,
+    });
+  });
+
+  it("orders its effects fight-resolved, then site-charged, then the end-of-action tail's, and pays off at the end of the ply: the node charged by the advance yields energy and a shield", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "G8", 1), ship("red-1", "red", "H8", 0)],
+      siteStates: { H8: "active" },
+      actionsRemaining: 1,
+      plyNumber: 4,
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+
+    expect(result.effects[0]).toMatchObject({ type: "fight-resolved" });
+    expect(result.effects[1]).toEqual({
+      type: "site-charged",
+      square: squareFromName("H8"),
+      shipId: "green-1",
+      side: "green",
+      reach: "landed-on",
+    });
+
+    const winner = result.state.ships.find((s) => s.id === "green-1");
+    expect(winner?.square).toEqual(squareFromName("H8"));
+
+    expect(result.effects).toContainEqual({
+      type: "ply-ended",
+      side: "green",
+      sideToMove: "red",
+      endOfTurn: [
+        {
+          type: "shield-gained",
+          shipId: "green-1",
+          side: "green",
+          square: squareFromName("H8"),
+          shields: 1,
+        },
+        {
+          type: "energy-collected",
+          side: "green",
+          amount: 1,
+          newTotal: 1,
+          squares: [squareFromName("H8")],
+        },
+      ],
+    });
+  });
+
+  it("wakes nothing on a defender's win, even with an active site on the attacker's own square, on the lane, and on the bay the loser is placed in", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H6", 1), ship("red-1", "red", "H8", 3)],
+      siteStates: { H6: "active", H7: "active", H15: "active" },
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(result.effects[0]).toMatchObject({ outcome: "defender-won" });
+    expect(result.state.siteStates).toEqual(state.siteStates);
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "site-charged" }),
+    );
+  });
+
+  it("wakes nothing on a mutual return, even with an active site on both ships' own squares, on the lane, and on both bays the ships are placed in", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H6", 2), ship("red-1", "red", "H8", 2)],
+      siteStates: {
+        H6: "active",
+        H7: "active",
+        H8: "active",
+        H15: "active",
+        L15: "active",
+      },
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(result.effects[0]).toMatchObject({ outcome: "mutual-return" });
+    expect(result.state.siteStates).toEqual(state.siteStates);
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "site-charged" }),
+    );
+  });
+});
+
+describe("assertFightInvariants (rules.md §7)", () => {
+  it("throws when an uninvolved ship's square changed", () => {
+    const before = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("green-2", "green", "A1", 2),
+        ship("red-1", "red", "H9", 1),
+      ],
+    });
+    const after: GameState = {
+      ...before,
+      ships: before.ships.map((s) =>
+        s.id === "green-2" ? { ...s, square: squareFromName("B2") } : s,
+      ),
+    };
+
+    expect(() =>
+      assertFightInvariants(before, after, new Set(["red-1"]), undefined),
+    ).toThrow(RangeError);
+  });
+
+  it("throws when the winning attacker's reported square is off the attack's lane, even though it matches the advance's own reported path", () => {
+    // The advance's own travelled set (`travelledSquareNames`) claims A1,
+    // matching the winner's actual square below — a set built from the
+    // advance's own output could never catch this. The check must instead
+    // use the attack's lane (`laneSquareNames`), which is independent of
+    // what the advance reported and does not contain A1.
+    const before = buildState({
+      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 1)],
+    });
+    const after: GameState = {
+      ...before,
+      ships: before.ships.map((s) =>
+        s.id === "green-1" ? { ...s, square: squareFromName("A1") } : s,
+      ),
+    };
+    const advancingWinner: AdvancingWinner = {
+      shipId: "green-1",
+      laneSquareNames: new Set(["H8", "H9"]),
+      travelledSquareNames: new Set(["A1"]),
+    };
+
+    expect(() =>
+      assertFightInvariants(before, after, new Set(["red-1"]), advancingWinner),
+    ).toThrow(RangeError);
   });
 });
 
@@ -952,6 +1397,34 @@ describe("applyPassGuard", () => {
     expect(result.effect).toBeUndefined();
   });
 
+  it("passes the ply when its one ship with a nearby target has already acted — the already-acted check must live in the seven-only layer", () => {
+    // green-1 is boxed in for movement exactly as above, and red-1 stands
+    // right next to it — a legal attack target, if green-1 had not already
+    // spent its one action this ply. If the already-acted check lived only
+    // in the public `attackRefusalReason` and not in
+    // `sevenOnlyAttackRefusalReason`, `sideToMoveHasLegalAction` would still
+    // see this as a legal attack and the guard would never pass.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "A1", 4),
+        ship("red-1", "red", "B1"),
+        ship("red-2", "red", "A2"),
+      ],
+      actedThisPly: ["green-1"],
+      actionsRemaining: 1,
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state.sideToMove).toBe("red");
+    expect(result.effect).toEqual({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      endOfTurn: [],
+    });
+  });
+
   it("passes the ply when the side to move has no legal action at all", () => {
     // green-1 is in the A2 bay, so §3.1 forbids it to attack regardless of
     // what stands next to it, and every square it could otherwise reach —
@@ -969,7 +1442,7 @@ describe("applyPassGuard", () => {
 
     expect(result.state.sideToMove).toBe("red");
     expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(result.state.movedThisPly).toEqual([]);
+    expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
     expect(result.effect).toEqual({
       type: "ply-passed",
@@ -1036,13 +1509,13 @@ describe("applyPassGuard", () => {
 
   it("runs the end-of-turn sequence for the passing side, so a ship that has moved and has no attack left still gains a shield", () => {
     // green-1 sits on K5, a charged site, having already spent this ply's
-    // first action on a move: it has no move left (already moved) and no
+    // first action on a move: it has no move left (already acted) and no
     // enemy stands anywhere near it to attack, so it passes with its second
     // action still nominally available.
     const state = buildState({
       ships: [ship("green-1", "green", "K5", 3)],
       siteStates: { K5: "charged" },
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
 

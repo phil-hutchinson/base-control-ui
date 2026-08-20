@@ -46,7 +46,7 @@ export interface BoardSquareProps {
   readonly siteState?: SiteState;
   readonly returnCue?: ReturnCue;
   readonly occupant?: SquareOccupant;
-  readonly hasMoved?: boolean;
+  readonly hasActed?: boolean;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
 }
@@ -63,7 +63,7 @@ const CONDITION_BAR_WIDTH = 30;
 const CONDITION_BAR_HEIGHT = 5;
 const CONDITION_BAR_BOTTOM_INSET = 8;
 const CONDITION_BAR_STROKE_WIDTH = 2;
-const ALREADY_MOVED_BAR_TOP_INSET = 8;
+const ALREADY_ACTED_BAR_TOP_INSET = 8;
 const CHEVRON_WIDTH = 24;
 const CHEVRON_HEIGHT = 10;
 const CHEVRON_BOTTOM_INSET = 8;
@@ -257,17 +257,17 @@ function ReturnPositionMark() {
   );
 }
 
-/** A short solid bar near the square's top edge, marking a ship that has already moved this ply. */
-function AlreadyMovedMark() {
+/** A short solid bar near the square's top edge, marking a ship that has already acted this ply. */
+function AlreadyActedMark() {
   return (
     <svg
-      className="board-square__mark board-square__mark--already-moved"
+      className="board-square__mark board-square__mark--already-acted"
       viewBox="0 0 100 100"
       aria-hidden="true"
     >
       <rect
         x={50 - CONDITION_BAR_WIDTH / 2}
-        y={ALREADY_MOVED_BAR_TOP_INSET}
+        y={ALREADY_ACTED_BAR_TOP_INSET}
         width={CONDITION_BAR_WIDTH}
         height={CONDITION_BAR_HEIGHT}
         fill="currentColor"
@@ -325,7 +325,7 @@ export function BoardSquare({
   siteState,
   returnCue,
   occupant,
-  hasMoved,
+  hasActed,
   condition,
   mark,
 }: BoardSquareProps) {
@@ -359,7 +359,7 @@ export function BoardSquare({
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}
       {typeof mark === "object" && mark.kind === "target" && <TargetMark />}
-      {hasMoved && <AlreadyMovedMark />}
+      {hasActed && <AlreadyActedMark />}
       {condition === "no-action" && <NoActionMark />}
       {condition === "owes-action" && <OwesActionMark />}
     </div>

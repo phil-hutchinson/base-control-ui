@@ -190,7 +190,7 @@ function siteStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
-  movedThisPly?: readonly ShipId[];
+  actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
   actionsRemaining?: number;
   plyNumber?: number;
@@ -201,7 +201,7 @@ function buildState(config: {
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? 2,
-    movedThisPly: config.movedThisPly ?? [],
+    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
@@ -288,7 +288,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     ).toBeUndefined();
   });
 
-  it("reports not-your-ship for the side not to move, and ship-already-moved for a ship that has already moved", () => {
+  it("reports not-your-ship for the side not to move, and ship-already-acted for a ship that has already acted", () => {
     const notYourTurn = buildState({
       ships: [ship("green-1", "green", "H8")],
       sideToMove: "red",
@@ -300,12 +300,12 @@ describe("legalDestinations and moveRefusalReason", () => {
 
     const alreadyMoved = buildState({
       ships: [ship("green-1", "green", "H8")],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
     });
     expect(legalDestinations(alreadyMoved, "green-1")).toEqual([]);
     expect(
       moveRefusalReason(alreadyMoved, "green-1", squareFromName("H9")),
-    ).toBe("ship-already-moved");
+    ).toBe("ship-already-acted");
   });
 
   it("agrees with moveRefusalReason over every square on the board, across several states", () => {
@@ -379,7 +379,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     });
     const alreadyMoved = buildState({
       ships: [ship("green-1", "green", "H8")],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
     });
     const stranded = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
@@ -391,7 +391,7 @@ describe("legalDestinations and moveRefusalReason", () => {
       readonly [GameState, ShipId, string, MoveRefusalReason]
     > = [
       [notYourTurn, "green-1", "H9", "not-your-ship"],
-      [alreadyMoved, "green-1", "H9", "ship-already-moved"],
+      [alreadyMoved, "green-1", "H9", "ship-already-acted"],
       [stranded, "green-2", "A2", "another-ship-stranded"],
       [blocking, "green-1", "O15", "out-of-range"],
       [blocking, "green-1", "H11", "path-blocked"],
@@ -416,7 +416,7 @@ describe("sideToMoveHasLegalMove", () => {
         ship("green-2", "green", "A1"),
         ship("red-1", "red", "O15"),
       ],
-      movedThisPly: ["green-2"],
+      actedThisPly: ["green-2"],
     });
 
     expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
@@ -430,7 +430,7 @@ describe("sideToMoveHasLegalMove", () => {
 
     const cannotMove = buildState({
       ships: [ship("green-1", "green", "H8")],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
     });
     expect(sideToMoveHasLegalMove(cannotMove)).toBe(false);
   });
@@ -478,7 +478,7 @@ describe("legalDestinations and the §8.5 obligation", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
 

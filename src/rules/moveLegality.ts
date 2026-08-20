@@ -120,7 +120,7 @@ export function reachFrom(
  */
 export type MoveRefusalReason =
   | "not-your-ship"
-  | "ship-already-moved"
+  | "ship-already-acted"
   | "another-ship-stranded"
   | "out-of-range"
   | "path-blocked"
@@ -140,7 +140,7 @@ export function findShip(state: GameState, shipId: ShipId): Ship {
 
 /**
  * Why `destination` is not a legal move for `shipId` in the given state,
- * under §6 alone: whose ship it is, whether it has already moved, its reach,
+ * under §6 alone: whose ship it is, whether it has already acted, its reach,
  * occupancy along the way, and the destination site's state. Says nothing
  * about §8.5's stranded-ship obligation — `movement.ts` layers that on top
  * for the public `moveRefusalReason`.
@@ -155,8 +155,8 @@ export function sixOnlyMoveRefusalReason(
   if (ship.side !== state.sideToMove) {
     return "not-your-ship";
   }
-  if (state.movedThisPly.includes(shipId)) {
-    return "ship-already-moved";
+  if (state.actedThisPly.includes(shipId)) {
+    return "ship-already-acted";
   }
 
   const destinationName = squareName(destination);
@@ -197,7 +197,7 @@ export function sixOnlyLegalDestinations(
   shipId: ShipId,
 ): readonly Square[] {
   const ship = findShip(state, shipId);
-  if (ship.side !== state.sideToMove || state.movedThisPly.includes(shipId)) {
+  if (ship.side !== state.sideToMove || state.actedThisPly.includes(shipId)) {
     return [];
   }
 

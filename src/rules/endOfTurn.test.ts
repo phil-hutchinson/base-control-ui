@@ -46,7 +46,7 @@ function buildState(config: {
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: 1,
-    movedThisPly: [],
+    actedThisPly: [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: config.randomSeed ?? 1,
     returnPositionIndex:
@@ -525,7 +525,7 @@ describe("runEndOfTurn — the five-sites invariant (§8.1)", () => {
 describe("runEndOfTurn — a passed ply still collects (§8.7 runs in full for a pass)", () => {
   it("pays the side that passes while standing on a charged node, through applyPassGuard", () => {
     // green-1 sits on K5, a charged site, having already spent this ply's
-    // first action on a move: it has no move left (already moved) and no
+    // first action on a move: it has no move left (already acted) and no
     // enemy stands anywhere near it to attack, so it passes with its second
     // action still nominally available — but §8.7 still runs in full for
     // that passed turn, and green is still standing on the node.
@@ -536,7 +536,7 @@ describe("runEndOfTurn — a passed ply still collects (§8.7 runs in full for a
         siteStates: { K5: ["charged", 1] },
         ships: [ship("green-1", "green", "K5", 3)],
       }),
-      movedThisPly: ["green-1" as ShipId],
+      actedThisPly: ["green-1" as ShipId],
       actionsRemaining: 1,
     };
 

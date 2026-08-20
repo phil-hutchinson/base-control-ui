@@ -7,6 +7,50 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.8 — attack range, the winner's advance, and one action per ship
+
+- **Section 7's attack range is now section 6's movement range.** A ship
+  attacks exactly as far as it moves, over the same straight lines, with the
+  same requirement that the path be clear. The old fixed range — any of the
+  eight surrounding squares, diagonals included — is gone. At the two sharp
+  ends: a 4-shield ship now reaches only its four orthogonal neighbours and
+  cannot strike a diagonal at all, where before it struck all eight; a ship
+  carrying no shields reaches three squares orthogonally and two diagonally,
+  where before it reached only the eight adjacent squares. A 3-shield ship's
+  range is unchanged either way — it is the fulcrum the old fixed range
+  happened to match.
+- **A winning attacker now advances onto the ground it won.** It moves along
+  the line it attacked down, to the furthest square, working back from the
+  square the loser has left, that it may legally end on under section 6's
+  restriction (not a dormant site, not a depleted one) — ordinarily the
+  loser's own square. If no square on the lane qualifies, the winner holds
+  its ground, exactly as every winner did before this version. Only an
+  **attacking** winner advances; a winning defender still holds its ground.
+  A won fight can now take a node outright, in a single action, where it
+  previously took a fight and a separate move.
+- **Section 8.2 widens to cover the advance.** A site wakes when a ship
+  touches it during a move or during a winning attacker's advance — the two
+  are not distinguished, and a site the winner merely crosses on its way
+  wakes just as one it lands on does.
+- **A ship may take at most one action per turn.** Section 5 previously let a
+  ship move and then attack, or attack twice, in the same turn. Once a won
+  fight can also relocate the winner, either of those would let a single ship
+  do far too much in one turn; a turn's two actions now always involve two
+  different ships.
+- **Three sentences elsewhere in the document are corrected to stay
+  consistent with the above, without changing any rule of their own:**
+  section 6's claim that a ship "never moves as a result of attacking" is
+  replaced by a pointer to the advance; section 8.5's example of what a
+  player may do with a ship it has just freed no longer names attacking with
+  that same ship, since one action per ship rules it out; and section 4.1
+  now says a shield takes away part of a ship's attack range as well as its
+  movement, since the two are now the same number.
+
+All three changes alter how the game is played, so this version would
+ordinarily be a tagging candidate — but tagging is on hold until the game
+plays (see the project's contribution notes), so no tag is made for this
+version.
+
 ## 0.7 — energy, and a steeper payout curve
 
 - **"Influence" is renamed "energy" throughout.** Every occurrence in section

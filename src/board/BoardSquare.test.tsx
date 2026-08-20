@@ -126,12 +126,12 @@ describe("BoardSquare", () => {
     expect(container.querySelector(".board-square__mark--selected")).toBeNull();
   });
 
-  it("renders the already-moved bar from hasMoved alone, without dampening the square", () => {
+  it("renders the already-acted bar from hasActed alone, without dampening the square", () => {
     const { container: marked } = render(
       <BoardSquare
         isBay={false}
         occupant={{ side: "green", shields: 0 }}
-        hasMoved={true}
+        hasActed={true}
       />,
     );
     const { container: unmarked } = render(
@@ -139,17 +139,17 @@ describe("BoardSquare", () => {
     );
 
     expect(
-      marked.querySelector(".board-square__mark--already-moved"),
+      marked.querySelector(".board-square__mark--already-acted"),
     ).toBeInTheDocument();
     expect(marked.querySelector(".board-square--dampened")).toBeNull();
 
     expect(
-      unmarked.querySelector(".board-square__mark--already-moved"),
+      unmarked.querySelector(".board-square__mark--already-acted"),
     ).toBeNull();
     expect(unmarked.querySelector(".board-square--dampened")).toBeNull();
   });
 
-  it("renders the hollow bar and the dampened class for no-action, distinct from the solid already-moved bar", () => {
+  it("renders the hollow bar and the dampened class for no-action, distinct from the solid already-acted bar", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
@@ -162,7 +162,7 @@ describe("BoardSquare", () => {
       container.querySelector(".board-square__mark--no-action"),
     ).toBeInTheDocument();
     expect(
-      container.querySelector(".board-square__mark--already-moved"),
+      container.querySelector(".board-square__mark--already-acted"),
     ).toBeNull();
     expect(
       container.querySelector(".board-square--dampened"),
@@ -172,18 +172,18 @@ describe("BoardSquare", () => {
     expect(bar).toHaveAttribute("fill", "none");
   });
 
-  it("renders both the already-moved bar and the no-action bar together, and dampens the square", () => {
+  it("renders both the already-acted bar and the no-action bar together, and dampens the square", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
         occupant={{ side: "green", shields: 0 }}
-        hasMoved={true}
+        hasActed={true}
         condition="no-action"
       />,
     );
 
     expect(
-      container.querySelector(".board-square__mark--already-moved"),
+      container.querySelector(".board-square__mark--already-acted"),
     ).toBeInTheDocument();
     expect(
       container.querySelector(".board-square__mark--no-action"),
@@ -241,16 +241,16 @@ describe("BoardSquare", () => {
     expect(noActionBar?.getAttribute("fill")).toBe("none");
   });
 
-  it("distinguishes the already-moved bar from the no-action bar by fill, not only by class name", () => {
+  it("distinguishes the already-acted bar from the no-action bar by fill, not only by class name", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
         occupant={{ side: "green", shields: 0 }}
-        hasMoved={true}
+        hasActed={true}
       />,
     );
     const alreadyMovedBar = container.querySelector(
-      ".board-square__mark--already-moved rect",
+      ".board-square__mark--already-acted rect",
     );
     expect(alreadyMovedBar?.getAttribute("fill")).toBe("currentColor");
   });
@@ -346,14 +346,14 @@ describe("BoardSquare", () => {
       "no-action",
       "owes-action",
     ];
-    const hasMovedValues: readonly boolean[] = [false, true];
+    const hasActedValues: readonly boolean[] = [false, true];
     for (const condition of conditions) {
-      for (const hasMoved of hasMovedValues) {
+      for (const hasActed of hasActedValues) {
         const { container } = render(
           <BoardSquare
             isBay={false}
             occupant={{ side: "green", shields: 1 }}
-            hasMoved={hasMoved}
+            hasActed={hasActed}
             condition={condition}
             mark="selected"
           />,

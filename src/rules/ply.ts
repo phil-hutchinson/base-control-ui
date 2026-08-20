@@ -1,23 +1,30 @@
 // Applying an action, and the ply it belongs to (rules.md §5, §3.1, §7,
 // §8.2). An action is a move or an attack. A move is either refused, with the
-// reason from movement.ts, or applied: the ship arrives, is marked as having
-// moved, spends one action, wakes any active site it touched on the way, and
-// loses its shields if it ends in a bay. An attack is either refused, with
-// the reason from combat.ts, or resolved: neither ship changes square, the
-// winner (if any) keeps its shields minus the fight's cost, and the loser (or
-// both, on a mutual return) is placed in a bay at 0 shields — never marked as
-// having moved, since only a move counts towards that. When the ply's two
-// actions are spent, play passes to the other side. The pass guard covers the
-// case §5 sets out for when the side to move has no legal action at all.
+// reason from movement.ts, or applied: the ship arrives, spends one action,
+// wakes any active site it touched on the way, and loses its shields if it
+// ends in a bay. An attack is either refused, with the reason from
+// combat.ts, or resolved: the winner (if any) keeps its shields minus the
+// fight's cost, and the loser (or both, on a mutual return) is placed in a
+// bay at 0 shields. A winning attacker then advances along the lane it
+// attacked down, to the furthest square it may legally end on, waking any
+// active site it touches along the way exactly as a move would; a winning
+// defender never advances, and a mutual return leaves both squares empty.
+// Every action — a move or an attack — marks the acting ship as having acted
+// this ply, since a ship may take at most one action per turn (rules.md §5).
+// When the ply's two actions are spent, play passes to the other side. The
+// pass guard covers the case §5 sets out for when the side to move has no
+// legal action at all.
 
 import { sideToMoveHasLegalAction } from "./actions";
 import { isBay } from "./bays";
 import { type Square, squareName } from "./board";
 import {
   type AttackRefusalReason,
+  attackReach,
   attackRefusalReason,
   receptacleBay,
   resolveFight,
+  winnerAdvance,
 } from "./combat";
 import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
 import type { Side, ShipId } from "./fleet";
@@ -104,8 +111,11 @@ export interface FightReturn {
  * rather than several, since a fight is one fact. `attacker` and `defender`
  * describe both ships as they stood **before** the fight; `winner` is present
  * only when the fight was decided (absent on a mutual return), naming the
- * winning ship and the shields it kept; `returns` lists every ship placed in
- * a bay — one entry for a decided fight, two (attacker first) for a mutual
+ * winning ship, the shields it kept, the square it stands on once the fight
+ * is over and whether it got there by advancing. Only an attacking winner can
+ * advance (`advanced: true`); a winning defender's `square` is simply its own
+ * and `advanced` is always `false`. `returns` lists every ship placed in a
+ * bay — one entry for a decided fight, two (attacker first) for a mutual
  * return.
  */
 export interface FightResolvedEffect {
@@ -116,12 +126,19 @@ export interface FightResolvedEffect {
   readonly winner?: {
     readonly shipId: ShipId;
     readonly remainingShields: ShieldCount;
+    readonly square: Square;
+    readonly advanced: boolean;
   };
   readonly returns: readonly FightReturn[];
 }
 
-/** Something that happened as a result of applying an attack, beyond the fight itself. */
-export type AttackEffect = FightResolvedEffect | EndOfActionEffect;
+/**
+ * Something that happened as a result of applying an attack, beyond the
+ * fight itself. `SiteChargedEffect` joins the union because a winning
+ * attacker's advance can wake a node exactly as a move can (rules.md §8.2).
+ */
+export type AttackEffect =
+  FightResolvedEffect | SiteChargedEffect | EndOfActionEffect;
 
 /** An attack applied successfully, with the resulting state and what happened. */
 export interface AppliedAttack {
@@ -142,7 +159,7 @@ export type ApplyAttackResult = AppliedAttack | RefusedAttack;
  * If the side to move has no legal action at all — no legal move with any
  * eligible ship and no legal attack target with any ship — its ply passes:
  * the end-of-turn sequence runs for it (a passed ply is still a turn), the
- * moved-this-ply marks clear, the action count resets to
+ * acted-this-ply marks clear, the action count resets to
  * `ACTIONS_PER_PLY`, the ply number advances and the other side becomes the
  * side to move (rules.md §5, §8.7). Only the side to move is checked — the
  * side passed to is not — so this makes exactly one pass, never a second one
@@ -175,7 +192,7 @@ export function applyPassGuard(state: GameState): {
     plyNumber: endOfTurn.state.plyNumber + 1,
     sideToMove,
     actionsRemaining: ACTIONS_PER_PLY,
-    movedThisPly: [],
+    actedThisPly: [],
   };
 
   return {
@@ -193,29 +210,26 @@ export function applyPassGuard(state: GameState): {
  * Runs the tail every action shares once its own effects have been applied:
  * spends one action; if that was the ply's second, runs the end-of-turn
  * sequence, advances the ply number, swaps the side to move and clears
- * `movedThisPly`, recording a `ply-ended` effect; then runs `applyPassGuard`,
- * recording a `ply-passed` effect if it fires. `movedShipId` is added to
- * `movedThisPly` when given, and omitted for an action — an attack, in
- * particular — that does not count as a move (rules.md §5). Mutates
- * `effects` by appending whichever of the two end-of-action effects fired,
- * and returns the resulting state. `effects` is typed to accept either
- * caller's effect list, since both `MoveEffect` and `AttackEffect` include
- * `EndOfActionEffect` as one of their members.
+ * `actedThisPly`, recording a `ply-ended` effect; then runs `applyPassGuard`,
+ * recording a `ply-passed` effect if it fires. `actedShipId` is added to
+ * `actedThisPly` — a move and an attack both spend the acting ship's one
+ * action for the turn (rules.md §5), so every caller passes its own ship's
+ * id. Mutates `effects` by appending whichever of the two end-of-action effects
+ * fired, and returns the resulting state. `effects` is typed to accept
+ * either caller's effect list, since both `MoveEffect` and `AttackEffect`
+ * include `EndOfActionEffect` as one of their members.
  */
 function applyEndOfActionTail(
   state: GameState,
   effects: (MoveEffect | AttackEffect)[],
-  movedShipId?: ShipId,
+  actedShipId: ShipId,
 ): GameState {
   const actionsRemaining = state.actionsRemaining - 1;
   let next: GameState;
   if (actionsRemaining > 0) {
     next = {
       ...state,
-      movedThisPly:
-        movedShipId === undefined
-          ? state.movedThisPly
-          : [...state.movedThisPly, movedShipId],
+      actedThisPly: [...state.actedThisPly, actedShipId],
       actionsRemaining,
     };
   } else {
@@ -227,7 +241,7 @@ function applyEndOfActionTail(
       plyNumber: endOfTurn.state.plyNumber + 1,
       sideToMove,
       actionsRemaining: ACTIONS_PER_PLY,
-      movedThisPly: [],
+      actedThisPly: [],
     };
     effects.push({
       type: "ply-ended",
@@ -249,10 +263,10 @@ function applyEndOfActionTail(
  * Applies a move of `shipId` to `destination` in `state`, or refuses it. A
  * legal move never mutates `state`: it returns a new state in which the ship
  * stands on `destination`, the square it left is empty, the ship is marked as
- * having moved this ply, one action is spent, and — per rules.md §3.1 — the
+ * having acted this ply, one action is spent, and — per rules.md §3.1 — the
  * ship's shields are reset to 0 if `destination` is a bay. When the ply's
  * second action is spent, play passes to the other side and the
- * moved-this-ply marks clear. The result then passes through
+ * acted-this-ply marks clear. The result then passes through
  * `applyPassGuard`, so a move that leaves the side now to move with no legal
  * move at all is followed immediately by a pass.
  */
@@ -315,19 +329,57 @@ function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
 }
 
 /**
+ * The advancing winner, for `assertFightInvariants` to check against: the
+ * winning attacker's id, the attack lane it was judged against
+ * (`laneSquareNames` — the attacker's own square, the attack's `passedOver`
+ * and its `destination`, from the attack's `ReachEntry`), and the squares
+ * the advance itself actually travelled (`travelledSquareNames` — its own
+ * `passedOver` plus `destination`). Absent when the fight had no winner, the
+ * winner was the defender, or the winner held its ground — in every one of
+ * those cases the winner's square is asserted unchanged, like any other ship
+ * that did not return to a bay.
+ */
+export interface AdvancingWinner {
+  readonly shipId: ShipId;
+  readonly laneSquareNames: ReadonlySet<string>;
+  readonly travelledSquareNames: ReadonlySet<string>;
+}
+
+/**
  * Checks the invariants rules.md §7 guarantees about a fight's result, and
  * throws if any is violated — bug detectors on a cheap operation, not cases a
  * caller need handle. `returnedShipIds` names the ship or ships placed in a
- * bay; every other ship, including a winner, must be exactly where it was.
+ * bay; `advancingWinner`, when present, names the one further ship §7 allows
+ * to change square: the attacking winner, travelling its own lane. Every
+ * other ship must be exactly where it was.
  *
  * The fleet-size check asserts each side's ship count is unchanged by the
  * fight, which can only ever change who holds a square, never how many
  * ships either side has.
+ *
+ * The winner's final square is checked against `laneSquareNames` — the
+ * attack it was judged against — not against `travelledSquareNames`, which
+ * is the advance's own report of where it went: checking a value against
+ * itself could never catch `winnerAdvance` returning a square that was never
+ * on the lane the attack was legal down.
+ *
+ * The site-state check replaces a plain identity comparison with one that
+ * still catches a fight that changes a site when nobody travelled (the
+ * travelled set is empty whenever `advancingWinner` is absent): every site
+ * whose state changed must be one the winner actually travelled over
+ * (`travelledSquareNames`), and every such change must be `active` turning
+ * `charged` — the only thing rules.md §8.2 ever does. This check is not
+ * self-referential in the way the square check would be: it compares the
+ * advance's path against `siteStates`, a wholly different piece of state.
+ *
+ * Exported so a test can hand-construct an otherwise-impossible before/after
+ * pair, since it has no other seam.
  */
-function assertFightInvariants(
+export function assertFightInvariants(
   before: GameState,
   after: GameState,
   returnedShipIds: ReadonlySet<ShipId>,
+  advancingWinner: AdvancingWinner | undefined,
 ): void {
   for (const ship of before.ships) {
     const updated = after.ships.find((candidate) => candidate.id === ship.id);
@@ -336,13 +388,30 @@ function assertFightInvariants(
         `ship "${ship.id}" is missing after a fight: rules.md §7 never removes a ship`,
       );
     }
+
+    const isAdvancingWinner = advancingWinner?.shipId === ship.id;
     if (
       !returnedShipIds.has(ship.id) &&
+      !isAdvancingWinner &&
       squareName(updated.square) !== squareName(ship.square)
     ) {
       throw new RangeError(
-        `ship "${ship.id}" changed square in a fight it did not lose: rules.md §7 says neither ship moves`,
+        `ship "${ship.id}" changed square in a fight it neither lost nor won as the attacker: rules.md §7 moves only a returning ship and an attacking winner`,
       );
+    }
+
+    if (isAdvancingWinner) {
+      const updatedName = squareName(updated.square);
+      if (!advancingWinner.laneSquareNames.has(updatedName)) {
+        throw new RangeError(
+          `winning attacker "${ship.id}" ended off its own lane: rules.md §7's advance only ever travels the lane it attacked down`,
+        );
+      }
+      if (isBay(updated.square)) {
+        throw new RangeError(
+          `winning attacker "${ship.id}" ended in a bay: rules.md §3.1 and §3.2 guarantee an advance can never land in one`,
+        );
+      }
     }
   }
 
@@ -358,23 +427,51 @@ function assertFightInvariants(
     }
   }
 
-  if (after.siteStates !== before.siteStates) {
-    throw new RangeError(
-      "a fight changed a site's state: rules.md §7 says nobody moves in a fight, so §8.2 never fires",
-    );
+  const travelledSquareNames =
+    advancingWinner?.travelledSquareNames ?? new Set<string>();
+  const siteNames = new Set([
+    ...Object.keys(before.siteStates),
+    ...Object.keys(after.siteStates),
+  ]);
+  for (const name of siteNames) {
+    const beforeStatus = before.siteStates[name];
+    const afterStatus = after.siteStates[name];
+    const unchanged =
+      beforeStatus !== undefined &&
+      afterStatus !== undefined &&
+      beforeStatus.state === afterStatus.state &&
+      beforeStatus.enteredOnPly === afterStatus.enteredOnPly;
+    if (unchanged) {
+      continue;
+    }
+    if (!travelledSquareNames.has(name)) {
+      throw new RangeError(
+        `site "${name}" changed state in a fight though no ship travelled over it: rules.md §8.2 only wakes a site a ship actually touches`,
+      );
+    }
+    if (beforeStatus?.state !== "active" || afterStatus?.state !== "charged") {
+      throw new RangeError(
+        `site "${name}" changed from "${beforeStatus?.state}" to "${afterStatus?.state}" in a fight: rules.md §8.2 only ever turns an active site charged`,
+      );
+    }
   }
 }
 
 /**
  * Applies an attack by `shipId` on `target` in `state`, or refuses it
- * (rules.md §7). A legal attack never mutates `state`: neither ship changes
- * square — the winner, if any, simply keeps `winner − (loser + 1)` shields,
- * and the loser (or both ships, on a mutual return, attacker first) is placed
- * in a bay at 0 shields. The attacking ship is **not** added to
- * `movedThisPly`: only a move counts towards that (rules.md §5). One action
- * is spent; when the ply's second action is spent, play passes to the other
- * side exactly as it does after a move, and the result then passes through
- * `applyPassGuard`.
+ * (rules.md §7). A legal attack never mutates `state`: the winner, if any,
+ * keeps `winner − (loser + 1)` shields, and the loser (or both ships, on a
+ * mutual return, attacker first) is placed in a bay at 0 shields. When the
+ * attacker wins, it then advances along the lane it attacked down to the
+ * furthest square it may legally end on (`winnerAdvance`), waking any active
+ * site the advance touches exactly as `applyMove` would (rules.md §8.2); when
+ * there is no such square it holds its ground. A winning defender never
+ * advances, and a mutual return leaves both squares empty. The attacking ship
+ * is added to `actedThisPly` in every outcome, including a mutual return in
+ * which it ends the action in a bay itself: it spent its one action either
+ * way (rules.md §5). One action is spent; when the ply's second action is
+ * spent, play passes to the other side exactly as it does after a move, and
+ * the result then passes through `applyPassGuard`.
  */
 export function applyAttack(
   state: GameState,
@@ -405,6 +502,8 @@ export function applyAttack(
   let nextState: GameState;
   let winner: FightResolvedEffect["winner"];
   let returns: FightReturn[];
+  let siteChargedEffects: readonly SiteChargedEffect[] = [];
+  let advancingWinner: AdvancingWinner | undefined;
 
   if (fightOutcome.result === "mutual-return") {
     const attackerTo = receptacleBay(state);
@@ -444,10 +543,59 @@ export function applyAttack(
           : ship,
       ),
     };
-    nextState = placeInBay(withWinnerShields, loserShip.id, loserTo);
+    const afterLoserReturned = placeInBay(
+      withWinnerShields,
+      loserShip.id,
+      loserTo,
+    );
+
+    let winnerSquare = winnerShip.square;
+    let advanced = false;
+    nextState = afterLoserReturned;
+
+    if (winnerIsAttacker) {
+      const reach = attackReach(state, attackerShip.id, target);
+      if (reach === undefined) {
+        throw new RangeError(
+          `attacker "${attackerShip.id}" has no reach entry for a target attackRefusalReason already accepted`,
+        );
+      }
+
+      const advance = winnerAdvance(afterLoserReturned, reach);
+      if (advance !== undefined) {
+        advanced = true;
+        winnerSquare = advance.destination;
+
+        const afterWinnerAdvanced: GameState = {
+          ...afterLoserReturned,
+          ships: afterLoserReturned.ships.map((ship) =>
+            ship.id === winnerShip.id
+              ? { ...ship, square: advance.destination }
+              : ship,
+          ),
+        };
+        const wake = wakeTouchedSites(afterWinnerAdvanced, winnerShip, advance);
+        nextState = wake.state;
+        siteChargedEffects = wake.effects;
+        advancingWinner = {
+          shipId: winnerShip.id,
+          laneSquareNames: new Set(
+            [attackerShip.square, ...reach.passedOver, reach.destination].map(
+              squareName,
+            ),
+          ),
+          travelledSquareNames: new Set(
+            [...advance.passedOver, advance.destination].map(squareName),
+          ),
+        };
+      }
+    }
+
     winner = {
       shipId: winnerShip.id,
       remainingShields: fightOutcome.winnerRemainingShields,
+      square: winnerSquare,
+      advanced,
     };
     returns = [
       {
@@ -463,6 +611,7 @@ export function applyAttack(
     state,
     nextState,
     new Set(returns.map((entry) => entry.shipId)),
+    advancingWinner,
   );
 
   const effects: AttackEffect[] = [
@@ -474,9 +623,10 @@ export function applyAttack(
       winner,
       returns,
     },
+    ...siteChargedEffects,
   ];
 
-  const settled = applyEndOfActionTail(nextState, effects);
+  const settled = applyEndOfActionTail(nextState, effects, attackerShip.id);
 
   return { outcome: "applied", state: settled, effects };
 }
