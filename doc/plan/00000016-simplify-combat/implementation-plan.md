@@ -1087,7 +1087,28 @@ moves a ship.
 
 ## Step 6 — The fight's words: where the winner ended up
 
-Status: pending
+Status: committed
+
+Notes: Added `winnerAdvanceClause` in `src/board/announcements.ts`, mirroring
+`moveSentence`'s "charged the node" / "flying over `<square>` and charging the
+node" wording exactly, and spliced it into `fightSentence`'s attacker-won
+branch between "and won." and the beaten ship's bay clause. It reads the
+`site-charged` effect from `event.effects` the same way `moveSentence` reads
+it from a move's effects (via `Extract<AttackEffect, { type: "site-charged" }>`).
+Held-ground reads as "It held its ground." with no square named, per the
+step's requirement that the two shapes be distinguishable. Updated the four
+existing `announcements.test.ts` fixtures that had `advanced: true` (added by
+Step 5 for compile-correctness) to expect the new clause, and added four new
+tests: an attacker holding its ground, an advance charging a node it landed
+on, an advance charging a node it flew over, alongside the pre-existing
+defender-won and mutual-return tests confirming those sentences are
+unchanged. The mutual-return and losing-attacker sentences needed no edit at
+all — the plan anticipated this ("adjusted only where the effect's new shape
+forces it"), and neither branch reads `winner.square`/`advanced`, so nothing
+forced a change. `Board.test.tsx`'s existing end-to-end live-region test for
+an attack already asserted only a sentence prefix, so it kept passing
+unchanged. No deviations from the plan. `npm run typecheck`, `npm run lint`,
+`npm test` (642/642), `npm run build` and `npm run format:check` all pass.
 
 In `src/board/announcements.ts`, `fightSentence` reports the advance. The
 attacker-won sentence must carry four facts, and a player must be able to tell

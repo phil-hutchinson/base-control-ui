@@ -300,6 +300,35 @@ function actionEndingClause(
 }
 
 /**
+ * The winning attacker's advance clause (rules.md §7): where it ended up, or
+ * that it held its ground when no square on the lane was legal to end on.
+ * When the advance charged a node, that is said too, in the same vocabulary
+ * `moveSentence` uses for a move that does the same thing — landing on the
+ * node or only flying over it on the way to the final square.
+ */
+function winnerAdvanceClause(
+  winner: NonNullable<FightResolvedEffect["winner"]>,
+  effects: readonly AttackEffect[],
+): string {
+  if (!winner.advanced) {
+    return "It held its ground.";
+  }
+
+  const square = squareName(winner.square);
+  const chargeEffect = effects.find(
+    (effect): effect is Extract<AttackEffect, { type: "site-charged" }> =>
+      effect.type === "site-charged",
+  );
+  if (chargeEffect === undefined) {
+    return `It advanced to ${square} and took it.`;
+  }
+  if (chargeEffect.reach === "landed-on") {
+    return `It advanced to ${square} and took it, charging the node.`;
+  }
+  return `It advanced to ${square} and took it, flying over ${squareName(chargeEffect.square)} and charging the node.`;
+}
+
+/**
  * The fight's own sentence (rules.md §7), from the single `fight-resolved`
  * effect an attack always carries. The losing-attacker sentence reads as a
  * deliberate choice, not an error: §7 permits attacking a stronger enemy, and
@@ -334,7 +363,8 @@ function fightSentence(event: AttackedEvent): string {
   if (fight.outcome === "attacker-won") {
     const [defenderReturn] = fight.returns;
     const cost = fight.defender.shields + 1;
-    return `${opening} and won. The beaten ship returned to the ${squareName(defenderReturn.to)} bay with no shields. The fight cost ${shieldsPhrase(cost)}, leaving the winner on ${fight.winner.remainingShields}.`;
+    const advanceClause = winnerAdvanceClause(fight.winner, event.effects);
+    return `${opening} and won. ${advanceClause} The beaten ship returned to the ${squareName(defenderReturn.to)} bay with no shields. The fight cost ${shieldsPhrase(cost)}, leaving the winner on ${fight.winner.remainingShields}.`;
   }
 
   const [attackerReturn] = fight.returns;
