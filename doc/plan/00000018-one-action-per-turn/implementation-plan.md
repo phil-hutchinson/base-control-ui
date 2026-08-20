@@ -426,7 +426,12 @@ behaves correctly, or reports what does not.
 
 ### Step 5 — README
 
-Status: pending
+Status: committed
+
+Notes: The Status paragraph now says one action a turn; the sentence about a
+turn's two actions using two different ships is gone rather than reworded, and
+the stranded ship is described as costing its owner's next turn. The paragraph
+was re-flowed after editing.
 
 Run the `/update-readme` command (`.claude/commands/update-readme.md`), which
 reviews the branch diff and updates `README.md` where a player or a new reader
