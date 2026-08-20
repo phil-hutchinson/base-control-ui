@@ -393,7 +393,12 @@ live-region wording and its tests — never in the indicator.
 
 ### Step 4 — Owner play-test
 
-Status: pending
+Status: committed
+
+Notes: The owner play-tested the running app on 2026-08-19 and confirmed it
+behaves correctly — a turn ends after one action, the banner reads
+`GREEN TO PLAY` / `RED TO PLAY` in the player's colour, and the game reaches
+its end.
 
 A manual gate. The pipeline stops here and hands the running app to the
 repository owner. Build no fixture and script no sequence of actions: this is a
