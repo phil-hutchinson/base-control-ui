@@ -7,6 +7,39 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.9 — one action per turn
+
+- **A turn is now one action, not two.** Section 2's definition of a turn and
+  section 5's statement of the count both drop from two to one; a player
+  still moves a ship or attacks with a ship, just once per turn instead of
+  twice.
+- **Section 5's two sentences about one action per ship are removed as
+  redundant.** "A ship may take at most one action per turn" and "a turn's
+  two actions therefore always involve two different ships" were both true
+  and useful when a turn held two actions; with one action per turn they say
+  nothing, so they are deleted rather than kept as dead text. The obligation
+  to take the turn's action where one is available, and the passing rule for
+  when none is, are otherwise unchanged.
+- **Section 7.1's returning ship is placed "before anything else happens"**
+  rather than "before the attacking player's second action" — the old
+  wording no longer describes anything now that a turn has no second action.
+  The placement itself, and the attacker-then-defender order on a mutual
+  return, are unchanged.
+- **Section 8.5's stranded obligation is restated for one action.** The
+  principle is unchanged — while any ship still owes an action, the turn's
+  action must free one — but the worked examples for two and three or more
+  stranded ships are gone: a player now frees exactly one stranded ship per
+  turn, and any others wait for a later turn. The waiver for a stranded ship
+  with no legal move, and the tail-cost note, are unchanged.
+- **Section 8.7's end-of-turn sequence** now says it runs in full for "a turn
+  in which an action was taken", rather than "both actions were taken" — a
+  wording fix to match the new count, not a change to the sequence itself.
+
+This changes how the game is played, halving what a player can do in a turn,
+so it would ordinarily be a tagging candidate — but tagging is on hold until
+the game plays (see the project's contribution notes), so no tag is made for
+this version.
+
 ## 0.8 — attack range, the winner's advance, and one action per ship
 
 - **Section 7's attack range is now section 6's movement range.** A ship

@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.8**
+**Rules version: 0.9**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -29,12 +29,12 @@ The game has one random element: which node site wakes up next.
 ## 2. Words used in these rules
 
 **Turn** — everything one player does before play passes to their opponent. A
-turn is two actions.
+turn is one action.
 
 **Round** — one turn for each player. The game lasts 100 rounds.
 
-**Action** — one of the two things a player does on their turn: move a ship, or
-attack with a ship.
+**Action** — what a player does on their turn: move a ship, or attack with a
+ship.
 
 **Site** — one of the fixed positions on the board where a node can appear.
 Sites never move; which of them is in play changes during the game.
@@ -168,20 +168,16 @@ it is simply at its fastest and its weakest.
 ## 5. Turns and actions
 
 Green takes the first turn, and the players alternate. On a turn a player takes
-**two actions**. Each action is either:
+**one action**. Each action is either:
 
 - **Move** one ship, or
 - **Attack** with one ship.
 
-A ship may take **at most one action per turn** — a move, or an attack, never
-both, and never a second one of either kind. A turn's two actions therefore
-always involve two different ships.
-
-A player must take both actions if two are available, and one if only one is.
-If a player has no legal action at all, their turn passes. This should be
-uncommon — a player always has seven ships — but an attack reaches only as
-far as the attacker's shields allow, so an action is not always available;
-the rule is here so the game can never deadlock.
+A player must take as many of their turn's actions as are available. If a player has no
+legal action at all, their turn passes. This should be uncommon — a player
+always has seven ships — but an attack reaches only as far as the attacker's
+shields allow, so an action is not always available; the rule is here so the
+game can never deadlock.
 
 ---
 
@@ -275,10 +271,9 @@ On the first turn of the game, return position 1 is **H15**. At the end of
 every turn it moves **one bay counter-clockwise**, so it works its way around
 the board and returns to where it started every seven rounds.
 
-A returning ship is placed **immediately**, as part of resolving the fight, so
-it is already in its bay before the attacking player's second action. When both
-ships return, the attacker is placed first and the defender then takes the next
-empty bay.
+A returning ship is placed **immediately**, as part of resolving the fight,
+before anything else happens. When both ships return, the attacker is placed
+first and the defender then takes the next empty bay.
 
 There is always somewhere to go: a ship being returned was by definition on the
 board and not in a bay, so at least one bay is empty. The same argument covers
@@ -369,15 +364,9 @@ there nine turns later, when the site finishes cooling down and goes dormant,
 is equally stuck — section 6 forbids ending a move on either state — and stays
 stranded on the same terms.
 
-That is a restriction on what an action may be, not a penalty on top of one.
-The freeing move is the **first action** of the turn: while any ship still
-owes one, each action in turn must free one, and only once none remain does
-the rest of the turn belong to the player. With one ship stranded, the first
-action frees it and the rest of the turn is the player's: they may move or
-attack with a different ship, or do anything else that is legal. With two
-ships stranded, both actions go to clearing them.
-With three or more, the player clears two of their choice and the rest wait
-for the following turn.
+That is a restriction on what an action may be, not a penalty on top of one:
+while any ship still owes an action, the turn's action must free one. A
+player frees one stranded ship per turn; any others wait for a later turn.
 
 If a stranded ship has no legal move at all, the requirement is simply waived —
 the player is not obliged to attack blockers or shuffle friendly ships out of
@@ -415,7 +404,7 @@ Everything that happens at the end of a turn happens in this order:
 
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
-which both actions were taken. The clocks still tick, and a ship of the
+which an action was taken. The clocks still tick, and a ship of the
 passing player standing on a charged node still gains its shield.
 
 Steps 3 and 5 are in that order deliberately: sites are returned to the

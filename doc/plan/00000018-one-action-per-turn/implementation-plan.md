@@ -134,7 +134,15 @@ game plays out as well.
 
 ### Step 1 — Rules 0.9: a turn is one action
 
-Status: pending
+Status: committed
+
+Notes: Edited `rules.md` (front matter, §2, §5, §7.1, §8.5, §8.7) per D1,
+keeping the action count named only in §2's and §5's definitions and making
+every other affected sentence count-neutral; added the `## 0.9 — one action
+per turn` changelog entry; bumped `RULES_VERSION` to `"0.9"`. No deviation
+from the plan — `ACTIONS_PER_PLY` was left untouched as instructed, and the
+grep for "two actions\|both actions\|second action" in `rules.md` returns
+nothing.
 
 Edit [`doc/ruleset/rules.md`](../../ruleset/rules.md) and nothing else about
 the game. Follow D1: name the count only where the count is defined, and make
