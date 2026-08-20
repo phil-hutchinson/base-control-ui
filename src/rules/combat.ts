@@ -1,16 +1,18 @@
-// Combat (rules.md §7, §3.1, §8.5): who may attack whom. This is the only
-// implementation of §7 in the app, the way `movement.ts` is the only
-// implementation of §6. Attack range **is** §6's movement range: a ship
-// attacks exactly as far as it moves, path and all, so `attackReach` reads
-// `reachFrom` (rules.md §6) rather than carrying a second copy of the table.
-// There is one implementation of the table, and both sections read it.
+// Combat (rules.md §7, §3.1, §8.5): who may attack whom, and where a winning
+// attacker ends up. This is the only implementation of §7 in the app, the way
+// `movement.ts` is the only implementation of §6. Attack range **is** §6's
+// movement range: a ship attacks exactly as far as it moves, path and all, so
+// `attackReach` reads `reachFrom` (rules.md §6) rather than carrying a second
+// copy of the table. There is one implementation of the table, and both
+// sections read it. `winnerAdvance` walks that same lane backwards from the
+// loser's square to find where the winner may legally come to rest.
 
 import { type Square, squareName } from "./board";
 import { CLOCKWISE_BAYS, bayNumberingFrom, isBay } from "./bays";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type ReachEntry, findShip, reachFrom } from "./moveLegality";
-import { type GameState, shipsBySquare } from "./gameState";
+import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
 import { type ShieldCount, isShieldCount } from "./shields";
 import { strandedShipIds } from "./stranded";
 
@@ -19,9 +21,8 @@ import { strandedShipIds } from "./stranded";
  * from `reachFrom(attacker.square, attacker.shields)` whose `destination` is
  * `target`, or `undefined` when `target` is outside the attacker's reach
  * altogether. Purely geometric — no ownership, no bays, no occupancy, no
- * awareness of whose ply it is — so both the legality check below and (from
- * a later step) the winner's advance share one answer to "what lane is
- * this".
+ * awareness of whose ply it is — so both the legality check below and
+ * `winnerAdvance` share one answer to "what lane is this".
  */
 export function attackReach(
   state: GameState,
@@ -34,6 +35,41 @@ export function attackReach(
   return reachFrom(attacker.square, attacker.shields).find(
     (entry) => squareName(entry.destination) === targetName,
   );
+}
+
+/**
+ * Where a winning attacker ends up (rules.md §7): scanning `reach`'s lane
+ * backwards from the loser's square towards the attacker, the furthest
+ * square it may legally end on — §6's site restriction and nothing else, not
+ * a dormant site, not a depleted site — shaped as the sub-lane the winner
+ * actually travels (`destination` is the square it stops on, `passedOver` the
+ * lane squares before it). `undefined` when no square on the lane qualifies,
+ * meaning the winner holds its ground.
+ *
+ * `reach` is the attack's own `ReachEntry`, exactly as `attackReach` found
+ * it. The lane's occupancy is not re-checked here: it was clear when the
+ * attack was judged, and the loser has already been placed in a bay by the
+ * time this runs, so nothing between the attacker and the loser's former
+ * square can be occupied. This is not a move — `sixOnlyMoveRefusalReason` is
+ * deliberately not consulted, since its occupancy, already-acted and
+ * ownership checks mean nothing for an advance.
+ */
+export function winnerAdvance(
+  state: GameState,
+  reach: ReachEntry,
+): ReachEntry | undefined {
+  const lane = [...reach.passedOver, reach.destination];
+
+  for (let index = lane.length - 1; index >= 0; index--) {
+    const candidate = lane[index];
+    const siteState = siteStateAt(state, candidate);
+    if (siteState === "dormant" || siteState === "depleted") {
+      continue;
+    }
+    return { destination: candidate, passedOver: lane.slice(0, index) };
+  }
+
+  return undefined;
 }
 
 /**

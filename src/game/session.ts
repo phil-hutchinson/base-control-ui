@@ -56,8 +56,10 @@ export interface MovedEvent {
 
 /**
  * A ship attacked another, carrying the side that attacked and everything
- * `applyAttack` reported. Neither ship moves (rules.md §7), so `from` is the
- * attacking ship's own square and `target` is the square it attacked.
+ * `applyAttack` reported. `from` is the attacking ship's own square **before**
+ * the fight and `target` is the square it attacked (rules.md §7); a winning
+ * attacker may have advanced since, which the `fight-resolved` effect in
+ * `effects` reports.
  */
 export interface AttackedEvent {
   readonly type: "attacked";

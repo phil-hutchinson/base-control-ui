@@ -1246,7 +1246,7 @@ describe("Board", () => {
       });
     });
 
-    it("keeps focus on the attacked square, which now reads as empty", async () => {
+    it("keeps focus on the attacked square, which now shows the winner having taken it", async () => {
       const user = userEvent.setup();
       const state: GameState = {
         ...startingGameState(TEST_SEED),
@@ -1265,7 +1265,7 @@ describe("Board", () => {
       await activate(user, "keyboard", cell(/^H8,/));
       await activate(user, "keyboard", cell(/^H9,.*red ship/));
 
-      const attackedCell = cell("H9");
+      const attackedCell = cell(/^H9,.*green ship/);
       expect(document.activeElement).toBe(attackedCell);
       expect(screen.getByRole("grid")).toContainElement(
         document.activeElement as HTMLElement,

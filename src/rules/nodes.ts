@@ -1,9 +1,11 @@
 // Two of the state transitions §8 puts on a site: waking on touch (§8.2), a
 // ship charging any active site it touches, whether it lands on the site or
-// only passes over it on the way somewhere else; and drawing a replacement
+// only passes over it on the way somewhere else, and whether it got there by
+// moving or by advancing after winning a fight; and drawing a replacement
 // from the dormant pool (§8.6), once a node has run out. Both are pure state
-// transitions; `ply.ts` and `endOfTurn.ts` call them as part of applying a
-// move and running the end-of-turn sequence respectively.
+// transitions; `ply.ts` calls the first as part of applying a move or a
+// winning attacker's advance, and `endOfTurn.ts` calls the second as part of
+// running the end-of-turn sequence.
 
 import { type Square, squareName } from "./board";
 import type { Side, ShipId } from "./fleet";
@@ -36,10 +38,11 @@ export interface WakeResult {
 }
 
 /**
- * Charges every **active** site among the squares a move touched — its
- * destination and everything it passed over, in path order — leaving sites
- * in any other state untouched. `ship` is the ship that made the move, and
- * `path` is the matching `reachFrom` entry, so callers never re-derive it.
+ * Charges every **active** site among the squares a ship's path touched —
+ * its destination and everything it passed over, in path order — leaving
+ * sites in any other state untouched. `ship` is the ship whose path it was,
+ * and `path` is the matching `ReachEntry`, either a move's own or a winning
+ * attacker's advance (rules.md §8.2), so callers never re-derive it.
  *
  * The §3.2 spacing property means a legal move can touch at most one site,
  * but this loops over the whole path rather than assuming it — that

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { CLOCKWISE_BAYS, STARTING_RETURN_POSITION_INDEX } from "./bays";
-import { type Square, squareFromName, squareName } from "./board";
+import { CLOCKWISE_BAYS, STARTING_RETURN_POSITION_INDEX, isBay } from "./bays";
+import {
+  BOARD_SIZE,
+  COLUMN_LETTERS,
+  type Square,
+  squareAt,
+  squareFromName,
+  squareName,
+} from "./board";
 import {
   attackReach,
   attackRefusalReason,
@@ -10,12 +17,15 @@ import {
   returnPositionSquare,
   sevenOnlyAttackRefusalReason,
   sevenOnlyLegalTargets,
+  winnerAdvance,
 } from "./combat";
 import type { ShipId } from "./fleet";
 import { startingGameState } from "./gameState";
 import type { GameState, Ship, SiteStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
+import { type ReachEntry, reachFrom } from "./moveLegality";
 import { MAX_SHIELDS, MIN_SHIELDS, type ShieldCount } from "./shields";
+import { SITES } from "./sites";
 import type { SiteState } from "./sites";
 
 const ALL_SHIELD_COUNTS: readonly ShieldCount[] = [0, 1, 2, 3, 4];
@@ -526,5 +536,98 @@ describe("returnPositionSquare / receptacleBay", () => {
       ships: [ship("red-1", "red", "E7", 0)],
     });
     expect(squareName(receptacleBay(vacatedState))).toBe("H15");
+  });
+});
+
+describe("winnerAdvance", () => {
+  function laneOf(origin: string, destination: string): ReachEntry {
+    const attacker = ship("green-1", "green", origin, 0);
+    const entry = reachFrom(attacker.square, 0).find(
+      (candidate) => squareName(candidate.destination) === destination,
+    );
+    if (entry === undefined) {
+      throw new Error(`no reach entry from ${origin} to ${destination}`);
+    }
+    return entry;
+  }
+
+  it("lands on the loser's square when it is ordinary ground", () => {
+    const state = buildState({ ships: [] });
+    const advance = winnerAdvance(state, laneOf("H5", "H8"));
+
+    expect(advance).toBeDefined();
+    expect(squareName(advance!.destination)).toBe("H8");
+    expect(squareNames(advance!.passedOver)).toEqual(["H6", "H7"]);
+  });
+
+  it("stops one square short when the loser's square is a dead site", () => {
+    const state = buildState({ ships: [], siteStates: { H8: "dormant" } });
+    const advance = winnerAdvance(state, laneOf("H5", "H8"));
+
+    expect(advance).toBeDefined();
+    expect(squareName(advance!.destination)).toBe("H7");
+    expect(squareNames(advance!.passedOver)).toEqual(["H6"]);
+  });
+
+  it("stops two squares short when the loser's square and the one before it are both dead", () => {
+    const state = buildState({
+      ships: [],
+      siteStates: { H7: "depleted", H8: "dormant" },
+    });
+    const advance = winnerAdvance(state, laneOf("H5", "H8"));
+
+    expect(advance).toBeDefined();
+    expect(squareName(advance!.destination)).toBe("H6");
+    expect(squareNames(advance!.passedOver)).toEqual([]);
+  });
+
+  it("holds its ground when the only square on the lane is dead", () => {
+    const state = buildState({ ships: [], siteStates: { H6: "dormant" } });
+    const advance = winnerAdvance(state, laneOf("H5", "H6"));
+
+    expect(advance).toBeUndefined();
+  });
+
+  it("never lands the winner in a bay, swept across every non-bay origin, every shield count and every lane it offers whose target is itself not a bay, under two extreme site configurations", () => {
+    // A lane whose destination is a bay is not one `winnerAdvance` is ever
+    // handed in real play: `sevenOnlyAttackRefusalReason` refuses a bay
+    // target (rules.md §3.1) before `attackReach`'s lane is ever passed to
+    // it. The sweep mirrors that precondition rather than re-deriving it.
+    const allDepleted = siteStatuses(
+      Object.fromEntries(
+        SITES.map((site) => [squareName(site), "depleted" as SiteState]),
+      ),
+    );
+    const allActive = siteStatuses(
+      Object.fromEntries(
+        SITES.map((site) => [squareName(site), "active" as SiteState]),
+      ),
+    );
+
+    for (const siteStates of [allDepleted, allActive]) {
+      const state: GameState = { ...buildState({ ships: [] }), siteStates };
+
+      for (const column of COLUMN_LETTERS) {
+        for (let row = 1; row <= BOARD_SIZE; row++) {
+          const origin = squareAt(column, row);
+          if (isBay(origin)) {
+            continue;
+          }
+
+          for (const shields of ALL_SHIELD_COUNTS) {
+            for (const reach of reachFrom(origin, shields)) {
+              if (isBay(reach.destination)) {
+                continue;
+              }
+
+              const advance = winnerAdvance(state, reach);
+              if (advance !== undefined) {
+                expect(isBay(advance.destination)).toBe(false);
+              }
+            }
+          }
+        }
+      }
+    }
   });
 });

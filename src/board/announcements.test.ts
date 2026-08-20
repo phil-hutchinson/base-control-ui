@@ -1000,7 +1000,12 @@ describe("announcementForSession", () => {
         square: squareAt("H", 9),
         shields: 1,
       },
-      winner: { shipId: "green-1", remainingShields: 1 },
+      winner: {
+        shipId: "green-1",
+        remainingShields: 1,
+        square: squareAt("H", 9),
+        advanced: true,
+      },
       returns: [
         {
           shipId: "red-1",
@@ -1087,7 +1092,12 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
         square: squareAt("K", 5),
         shields: 0,
       },
-      winner: { shipId: "green-1", remainingShields: 3 },
+      winner: {
+        shipId: "green-1",
+        remainingShields: 3,
+        square: squareAt("K", 5),
+        advanced: true,
+      },
       returns: [
         {
           shipId: "red-1",
@@ -1130,7 +1140,12 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
         square: squareAt("H", 9),
         shields: 3,
       },
-      winner: { shipId: "red-1", remainingShields: 1 },
+      winner: {
+        shipId: "red-1",
+        remainingShields: 1,
+        square: squareAt("H", 9),
+        advanced: false,
+      },
       returns: [
         {
           shipId: "green-1",
@@ -1220,7 +1235,12 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
         square: squareAt("K", 5),
         shields: 0,
       },
-      winner: { shipId: "green-1", remainingShields: 0 },
+      winner: {
+        shipId: "green-1",
+        remainingShields: 0,
+        square: squareAt("K", 5),
+        advanced: true,
+      },
       returns: [
         {
           shipId: "red-1",
@@ -1266,7 +1286,12 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
         square: squareAt("K", 5),
         shields: 0,
       },
-      winner: { shipId: "green-1", remainingShields: 0 },
+      winner: {
+        shipId: "green-1",
+        remainingShields: 0,
+        square: squareAt("K", 5),
+        advanced: true,
+      },
       returns: [
         {
           shipId: "red-1",
