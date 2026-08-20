@@ -36,11 +36,10 @@
      shrinks with no ceiling of its own, just from a smaller starting box.
      `flex: 1; min-height: 0` gives the cabinet itself a resolved height
      from `.app`'s flex column, which `.app__board` in turn needs a share
-     of to resolve its own. `position: relative` anchors the game-over
-     panel, which still covers this whole box while it is absolutely
-     positioned. */
+     of to resolve its own. Once the game ends and its score roll settles,
+     the game-over panel takes this box's place entirely rather than
+     covering it. */
   display: flex;
-  position: relative;
   flex-direction: column;
   align-items: center;
   flex: 1;

@@ -124,13 +124,16 @@ describe("GameOverPanel", () => {
     // A stand-in for App.tsx's own useReducer wiring and its play-again
     // handler, parameterized by a starting state, so these tests exercise
     // the real session reducer end to end rather than a hand-built session.
+    // Mirrors App.tsx: the panel takes the place of the HUD and board once
+    // the game is over and the score roll has settled, rather than covering
+    // them.
     function Harness({ initial }: { initial: GameState }) {
       const [session, dispatch] = useReducer(
         sessionReducer,
         initial,
         createSession,
       );
-      const { displayed: displayedEnergy } = useDisplayedEnergy(
+      const { displayed: displayedEnergy, settled } = useDisplayedEnergy(
         session.state.energy,
       );
 
@@ -142,16 +145,14 @@ describe("GameOverPanel", () => {
         });
       }
 
-      return (
+      const gameOver = isGameOver(session.state) && settled;
+
+      return gameOver ? (
+        <GameOverPanel state={session.state} onPlayAgain={handlePlayAgain} />
+      ) : (
         <>
           <Hud state={session.state} displayedEnergy={displayedEnergy} />
           <Board session={session} onIntent={dispatch} />
-          {isGameOver(session.state) && (
-            <GameOverPanel
-              state={session.state}
-              onPlayAgain={handlePlayAgain}
-            />
-          )}
         </>
       );
     }
@@ -179,7 +180,34 @@ describe("GameOverPanel", () => {
       return screen.getByRole("status");
     }
 
-    it("is absent while the game is in progress, appears once the last action ends it, and the live region announces the result", async () => {
+    // One action from the end of a one-round game in which that last action
+    // scores: red-1 already stands on a charged node and does not move;
+    // red-2's move is the ending action, so its own end-of-turn collects the
+    // node red-1 holds and the HUD's score rolls before the panel appears.
+    function scoringNearEndState(): GameState {
+      return {
+        ships: [
+          { id: "red-1", side: "red", square: squareAt("H", 8), shields: 0 },
+          { id: "red-2", side: "red", square: squareAt("G", 1), shields: 0 },
+        ],
+        siteStates: {
+          [squareName(squareAt("H", 8))]: {
+            state: "charged",
+            enteredOnPly: 1,
+          },
+        },
+        sideToMove: "red",
+        actionsRemaining: 1,
+        actedThisPly: [],
+        plyNumber: 2,
+        randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 4, red: 6 },
+        lengthInRounds: 1,
+      };
+    }
+
+    it("is absent while the game is in progress, and appears once the last action ends it", async () => {
       const user = userEvent.setup();
       render(<Harness initial={nearEndState()} />);
 
@@ -194,9 +222,40 @@ describe("GameOverPanel", () => {
         screen.getByRole("dialog", { name: "Game over" }),
       ).toBeInTheDocument();
       expect(screen.getByText("Red wins, 7 energy to 4.")).toBeInTheDocument();
+    });
+
+    it("holds the panel back while the last turn's score rolls, keeping the board and HUD on screen and the live region announcing the result, then shows the settled total once it appears", async () => {
+      const user = userEvent.setup();
+      const { container } = render(<Harness initial={scoringNearEndState()} />);
+
+      await user.click(screen.getByRole("gridcell", { name: /^G1,/ }));
+      await user.click(
+        screen.getByRole("gridcell", { name: /^G2,.*can move here$/ }),
+      );
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(screen.getByRole("grid")).toBeInTheDocument();
       expect(liveRegion()).toHaveTextContent(
         "The game is over after 1 round. Red wins, 7 energy to 4.",
       );
+
+      expect(
+        await screen.findByRole(
+          "dialog",
+          { name: "Game over" },
+          { timeout: 2000 },
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Red wins, 7 energy to 4.")).toBeInTheDocument();
+      expect(
+        container.querySelector(
+          ".game-over-panel__score--red .game-over-panel__score-digits",
+        ),
+      ).toHaveTextContent("7");
+      expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("Red: 7 energy, 1 node held."),
+      ).not.toBeInTheDocument();
     });
 
     it("play again starts a fresh game of the same length: ply 1, both scores 0, the panel gone, the board accepting clicks again", async () => {

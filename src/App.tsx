@@ -21,7 +21,7 @@ export function App() {
     undefined,
     createStartingSession,
   );
-  const { displayed: displayedEnergy } = useDisplayedEnergy(
+  const { displayed: displayedEnergy, settled } = useDisplayedEnergy(
     session.state.energy,
   );
 
@@ -34,16 +34,24 @@ export function App() {
     });
   }
 
+  // The panel takes over the whole cabinet once the game has ended and the
+  // last turn's score roll has settled — until then the game stays on
+  // screen and the HUD keeps counting up.
+  const gameOver = isGameOver(session.state) && settled;
+
   return (
     <main className="app">
       <div className="app__cabinet">
-        <h1 className="app__title">Base Control</h1>
-        <Hud state={session.state} displayedEnergy={displayedEnergy} />
-        <div className="app__board">
-          <Board session={session} onIntent={dispatch} />
-        </div>
-        {isGameOver(session.state) && (
+        {gameOver ? (
           <GameOverPanel state={session.state} onPlayAgain={handlePlayAgain} />
+        ) : (
+          <>
+            <h1 className="app__title">Base Control</h1>
+            <Hud state={session.state} displayedEnergy={displayedEnergy} />
+            <div className="app__board">
+              <Board session={session} onIntent={dispatch} />
+            </div>
+          </>
         )}
       </div>
     </main>

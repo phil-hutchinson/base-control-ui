@@ -773,7 +773,35 @@ where the number comes from.
 
 ### Step 8 — The full-box game-over screen
 
-Status: pending
+Status: committed
+
+Notes: `src/App.tsx` now renders, inside `.app__cabinet`, either the title +
+`Hud` + board or the `GameOverPanel`, gated on
+`isGameOver(session.state) && settled` (destructuring `settled` out of
+`useDisplayedEnergy`, resolving Step 7's unused binding as that step
+anticipated). `src/hud/GameOverPanel.css` dropped `position: absolute`,
+`inset: 0` and `z-index`, and `.game-over-panel` now takes `flex: 1;
+min-height: 0; width: 100%` so it fills the cabinet in the game's place;
+its background moved from `--color-space` to `--color-space-raised` (the
+cabinet's own surface), per the story's "the box is the screen" option.
+`src/App.css` dropped `.app__cabinet`'s `position: relative` and reworded
+its comment paragraph accordingly; confirmed nothing else in `App.css` or
+`EnergyOverlay.css` depended on it (`.energy-overlay` establishes its own
+containing block). `src/hud/GameOverPanel.tsx` is unchanged. In
+`GameOverPanel.test.tsx`, the `Harness` now mirrors `App.tsx`'s either/or
+render exactly (including reading `settled`); the original combined case
+was split into "is absent while the game is in progress, and appears once
+the last action ends it" (keeping the absent/present and hidden
+result-sentence assertions, using the pre-existing unscored `nearEndState`)
+and a new "holds the panel back while the last turn's score rolls…" case
+built on a new `scoringNearEndState` (red-1 parked on a charged H8, red-2
+making the ending move elsewhere), which asserts the dialog is absent and
+the grid/live-region are present immediately after the move, then awaits
+the dialog and asserts the settled total (7), the grid gone, and one HUD
+hidden sentence gone. `npm run typecheck`, `npm run lint`, `npm run
+format:check` (after one `prettier --write` pass on the test file), `npm
+test` (41 files, 659 tests) and `npm run build` all pass. No deviation from
+the step as written.
 
 When the game ends, the game-over screen takes over the whole cabinet box, and
 it waits for the last turn's count-up to settle first (D10).
