@@ -34,7 +34,7 @@ The three bordered states use the same border attributes as the bay borders
 
 Drop the lettered and numbered strips and the tracks that hold them, so
 `.board-frame` becomes a plain 15 x 15 of playing squares, sized and
-recentred as such. Square *names* are unaffected: A–O and 1–15 still name
+recentred as such. Square _names_ are unaffected: A–O and 1–15 still name
 squares in the rules and in accessible names, they are just no longer drawn
 on screen.
 

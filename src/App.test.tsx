@@ -29,12 +29,12 @@ describe("App", () => {
     render(<App />);
 
     expect(
-      screen.getByText("Green: 0 energy, no nodes held."),
+      screen.getByText("Green: 4 energy, 2 nodes held."),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Red: 0 energy, no nodes held."),
+      screen.getByText("Red: 1 energy, 2 nodes held."),
     ).toBeInTheDocument();
-    expect(screen.getByText("1/100")).toBeInTheDocument();
+    expect(screen.getByText("3/3")).toBeInTheDocument();
   });
 
   it("has no result panel while the game is in progress", () => {
