@@ -1197,7 +1197,10 @@ reports no violations.
 
 ## Step 8 — Manual gate: combat at range, and taking the ground
 
-Status: pending
+Status: committed
+
+Notes: The owner ran the app and confirmed all seven criteria pass. No
+findings, so no follow-up step or story.
 
 The owner runs the app and looks. Nothing is implemented in this step; findings
 either become a follow-up step here or a follow-up story, at the owner's
