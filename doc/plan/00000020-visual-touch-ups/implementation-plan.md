@@ -526,7 +526,36 @@ surface a test can reach.
 
 ### Step 5 — Unlit shield arcs
 
-Status: pending
+Status: committed
+
+Notes: Added `unlitArcPositions` to `src/board/shieldArcs.ts` (the
+`ARC_FILL_ORDER` complement of `litArcPositions`), with new cases in
+`shieldArcs.test.ts` covering both ends and the "lit + unlit = ARC_FILL_ORDER
+with no overlap" property. `ShipIcon.tsx` now maps over `ARC_FILL_ORDER`
+unconditionally, computing an unlit set from `unlitArcPositions(shields)` and
+giving every arc `ship-icon__arc` plus `ship-icon__arc--lit` or
+`--unlit`, dropping the inline `stroke="currentColor"` so CSS controls it.
+`ShipIcon.css` adds a `--unlit-arc-colour: #5a6480` custom property on
+`.ship-icon` (starting value per D6) and the two modifier-class stroke
+rules; lit arcs still resolve to `currentColor`, i.e. the side colour.
+Updated `ShipIcon.test.tsx`'s fill-order test and its `alongside
+squareLabel` block to assert four arcs always render, with exactly the
+first `shields` of them carrying the lit class in `EXPECTED_ARC_ORDER`
+order and the rest unlit; the quadrant, silhouette, aria-hidden and axe
+tests were untouched, as expected. One deviation beyond the step's own
+file list: `src/board/Board.test.tsx`'s pre-existing "draws exactly as
+many shield arcs as the starting fleet carries" test asserted a bare count
+of `[data-arc-position]` elements equal to the fleet's total shields, which
+is now always `56` (14 ships × 4 arcs) regardless of shields carried;
+renamed it to "...as many lit shield arcs as the starting fleet carries,
+four arcs per ship" and split the assertion into a fixed total (`14 * 4`)
+and a `.ship-icon__arc--lit` count equal to the fleet's shield total. This
+file was not named in the step's own file list but broke as a direct,
+foreseeable consequence of always rendering four arcs; the fix only
+changes the assertion's selector, not its intent. `npm run typecheck`,
+`npm run lint`, `npm run format:check`, `npm test` (655 tests, 40 files)
+and `npm run build` all pass. The grey's exact shade is a starting value
+per D6, to be judged by eye at Step 9.
 
 A ship draws all four shield arcs: the ones it has in the ship's own colour, the
 ones it does not in grey, so the ring shows how much shielding is missing as

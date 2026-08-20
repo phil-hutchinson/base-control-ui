@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { squareAt } from "../rules/board";
 import type { Side } from "../rules/fleet";
 import type { ShieldCount } from "../rules/shields";
-import type { ArcPosition } from "./shieldArcs";
+import { ARC_FILL_ORDER, type ArcPosition } from "./shieldArcs";
 import { ShipIcon } from "./ShipIcon";
 import { squareLabel } from "./squareLabel";
 
@@ -27,14 +27,26 @@ const EXPECTED_ARC_ORDER: Record<ShieldCount, readonly ArcPosition[]> = {
 };
 
 describe("ShipIcon", () => {
-  it.each(SHIELD_COUNTS)("draws %i arc(s) in fill order", (shields) => {
+  it.each(SHIELD_COUNTS)("draws four arcs in fill order, %i lit", (shields) => {
     const { container } = render(<ShipIcon side="green" shields={shields} />);
 
     const arcs = container.querySelectorAll("[data-arc-position]");
-    expect(arcs).toHaveLength(shields);
+    expect(arcs).toHaveLength(4);
     expect(
       Array.from(arcs).map((arc) => arc.getAttribute("data-arc-position")),
-    ).toEqual(EXPECTED_ARC_ORDER[shields]);
+    ).toEqual(ARC_FILL_ORDER);
+
+    const litArcs = Array.from(arcs).filter((arc) =>
+      arc.classList.contains("ship-icon__arc--lit"),
+    );
+    const unlitArcs = Array.from(arcs).filter((arc) =>
+      arc.classList.contains("ship-icon__arc--unlit"),
+    );
+    expect(litArcs.map((arc) => arc.getAttribute("data-arc-position"))).toEqual(
+      EXPECTED_ARC_ORDER[shields],
+    );
+    expect(litArcs).toHaveLength(shields);
+    expect(unlitArcs).toHaveLength(4 - shields);
   });
 
   it("draws each arc position starting in its own quadrant", () => {
@@ -123,11 +135,18 @@ describe("ShipIcon", () => {
           );
 
           const arcs = container.querySelectorAll("[data-arc-position]");
-          expect(arcs).toHaveLength(shields);
+          expect(arcs).toHaveLength(4);
           expect(
             Array.from(arcs).map((arc) =>
               arc.getAttribute("data-arc-position"),
             ),
+          ).toEqual(ARC_FILL_ORDER);
+
+          const litArcs = Array.from(arcs).filter((arc) =>
+            arc.classList.contains("ship-icon__arc--lit"),
+          );
+          expect(
+            litArcs.map((arc) => arc.getAttribute("data-arc-position")),
           ).toEqual(EXPECTED_ARC_ORDER[shields]);
 
           const unit = shields === 1 ? "shield" : "shields";

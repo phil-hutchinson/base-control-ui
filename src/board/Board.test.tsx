@@ -147,17 +147,20 @@ describe("Board", () => {
     expect(greenPath?.getAttribute("d")).not.toBe(redPath?.getAttribute("d"));
   });
 
-  it("draws exactly as many shield arcs as the starting fleet carries", () => {
+  it("draws exactly as many lit shield arcs as the starting fleet carries, four arcs per ship", () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,
     );
 
-    const expectedArcs = STARTING_FLEET.reduce(
+    const expectedLitArcs = STARTING_FLEET.reduce(
       (total, entry) => total + entry.shields,
       0,
     );
     expect(container.querySelectorAll("[data-arc-position]")).toHaveLength(
-      expectedArcs,
+      STARTING_FLEET.length * 4,
+    );
+    expect(container.querySelectorAll(".ship-icon__arc--lit")).toHaveLength(
+      expectedLitArcs,
     );
   });
 

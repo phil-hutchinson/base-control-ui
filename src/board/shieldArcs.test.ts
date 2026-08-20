@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { litArcPositions } from "./shieldArcs";
+import {
+  ARC_FILL_ORDER,
+  litArcPositions,
+  unlitArcPositions,
+} from "./shieldArcs";
 
 describe("litArcPositions", () => {
   it("lights nothing at 0 shields", () => {
@@ -34,6 +38,35 @@ describe("litArcPositions", () => {
   it("returns a list whose length always equals the count", () => {
     for (const shields of [0, 1, 2, 3, 4] as const) {
       expect(litArcPositions(shields)).toHaveLength(shields);
+    }
+  });
+});
+
+describe("unlitArcPositions", () => {
+  it("has every position unlit at 0 shields", () => {
+    expect(unlitArcPositions(0)).toEqual([
+      "top-right",
+      "bottom-right",
+      "bottom-left",
+      "top-left",
+    ]);
+  });
+
+  it("has no position unlit at 4 shields", () => {
+    expect(unlitArcPositions(4)).toEqual([]);
+  });
+
+  it("leaves bottom-left and top-left unlit at 2 shields", () => {
+    expect(unlitArcPositions(2)).toEqual(["bottom-left", "top-left"]);
+  });
+
+  it("together with litArcPositions covers ARC_FILL_ORDER exactly once each", () => {
+    for (const shields of [0, 1, 2, 3, 4] as const) {
+      const combined = [
+        ...litArcPositions(shields),
+        ...unlitArcPositions(shields),
+      ];
+      expect(combined).toEqual(ARC_FILL_ORDER);
     }
   });
 });
