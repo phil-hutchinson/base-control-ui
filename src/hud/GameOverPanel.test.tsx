@@ -213,9 +213,7 @@ describe("GameOverPanel", () => {
       expect(
         screen.getByText("Red: 0 energy, no nodes held."),
       ).toBeInTheDocument();
-      expect(
-        screen.getByText("Green's turn — 1 action left"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("Green to play")).toBeInTheDocument();
 
       const greenStart = STARTING_FLEET[0];
       await user.click(

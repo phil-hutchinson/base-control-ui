@@ -25,9 +25,7 @@ describe("Hud", () => {
       screen.getByText("Red: 9 energy, no nodes held."),
     ).toBeInTheDocument();
     expect(screen.getByText("35/100")).toBeInTheDocument();
-    expect(
-      screen.getByText("Green's turn — 1 action left"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Green to play")).toBeInTheDocument();
   });
 
   it("reads a shorter game's own length in the round counter", () => {

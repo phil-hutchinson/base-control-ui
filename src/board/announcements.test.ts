@@ -1492,7 +1492,7 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
 });
 
 describe("turnIndicatorText", () => {
-  it("states the side to move and its actions, plural", () => {
+  it("states green as the side to play", () => {
     expect(
       turnIndicatorText({
         ships: [],
@@ -1506,16 +1506,16 @@ describe("turnIndicatorText", () => {
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       }),
-    ).toBe("Green's turn — 1 action left");
+    ).toBe("Green to play");
   });
 
-  it("uses the singular at one action left", () => {
+  it("states red as the side to play", () => {
     expect(
       turnIndicatorText({
         ships: [],
         siteStates: {},
         sideToMove: "red",
-        actionsRemaining: 1,
+        actionsRemaining: ACTIONS_PER_PLY,
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
@@ -1523,7 +1523,7 @@ describe("turnIndicatorText", () => {
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       }),
-    ).toBe("Red's turn — 1 action left");
+    ).toBe("Red to play");
   });
 
   it("reads 'Game over' once the game has ended, instead of naming a turn", () => {

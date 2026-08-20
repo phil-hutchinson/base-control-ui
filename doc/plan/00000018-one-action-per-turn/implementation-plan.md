@@ -320,7 +320,32 @@ swapped; the `ship-already-acted` refusal; and a passed ply running the full
 
 ### Step 3 — The turn indicator says who is up
 
-Status: pending
+Status: committed
+
+Notes: `turnIndicatorText` in `src/board/announcements.ts` now returns
+`"Green to play"` / `"Red to play"` (sentence case, per D3) or `"Game over"`;
+`actionsPhrase`/`ACTIONS_PER_PLY` remain used by `announcementForSession`'s
+untouched sentences, so no import went unused. `TurnIndicator.tsx` adds a
+`turn-indicator--green`/`--red` modifier class from `state.sideToMove`,
+omitted once the game is over (importing `isGameOver` from
+`../rules/gameLength`, not `gameState` as the step text implied — that is
+where it is actually exported); `TurnIndicator.css` adds
+`text-transform: uppercase` and the two modifier colours from
+`--color-green`/`--color-red`, leaving the game-over case in the existing
+plain bright colour. Updated the named tests: `announcements.test.ts`'s
+`turnIndicatorText` describe block (two "to play" cases, replacing the old
+singular/plural pair, which no longer applies since the sentence carries no
+count), `TurnIndicator.test.tsx` (side-modifier-class assertions plus a new
+"Game over" case built from a `finishedState` helper matching
+`GameOverPanel.test.tsx`'s, to cover the verification's game-over
+requirement), and mechanical string swaps in `Hud.test.tsx`, `App.test.tsx`
+and `GameOverPanel.test.tsx`. `npm run typecheck`, `npm run lint` and
+`npm test` all pass (648 tests, none removed). `grep -rn "actions left" src`
+returns hits only in `announcements.ts` and `announcements.test.ts`, plus one
+unrelated pre-existing fixture literal in `AccessibleGrid.test.tsx` (an
+arbitrary string passed through the live-region prop, not the indicator or
+`announcementForSession`'s real wording) — not in scope for this step and
+left untouched. No other deviation from the plan.
 
 Change `turnIndicatorText` in `src/board/announcements.ts` to return
 `"Green to play"` / `"Red to play"` for the side to move, with no action count
