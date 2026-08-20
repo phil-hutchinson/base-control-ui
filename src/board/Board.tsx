@@ -4,7 +4,7 @@
 // gives it its accessible name.
 
 import { useCallback, useMemo } from "react";
-import { BOARD_SIZE, COLUMN_LETTERS, squareName } from "../rules/board";
+import { BOARD_SIZE, squareName } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
 import { shipHasLegalAction } from "../rules/actions";
 import {
@@ -31,12 +31,6 @@ import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import type { GridPosition } from "./grid/gridNavigation";
 import "./Board.css";
 
-/** Row numbers in the order they are drawn, top (15) to bottom (1). */
-const DISPLAY_ROW_NUMBERS = Array.from(
-  { length: BOARD_SIZE },
-  (_, gridRow) => squareForGridPosition({ row: gridRow, column: 0 }).row,
-);
-
 export interface BoardProps {
   /** The session whose game state the board renders a picture of. */
   readonly session: Session;
@@ -45,12 +39,11 @@ export interface BoardProps {
 }
 
 /**
- * The 15 x 15 board grid, drawn from a session's game state, with visible
- * column/row labels around its edges so a sighted reader can find a square
- * by eye. The labels are decorative: every square's accessible name already
- * carries its coordinates, so the labels are `aria-hidden` and sit outside
- * the `role="grid"` element (a grid may only own rows). The energy overlay
- * follows the same pattern, for the same reason.
+ * The 15 x 15 board grid, drawn from a session's game state. No row or
+ * column labels are drawn on screen; every square's accessible name already
+ * carries its coordinates. The energy overlay sits outside the
+ * `role="grid"` element (a grid may only own rows), alongside the grid
+ * itself.
  */
 export function Board({ session, onIntent }: BoardProps) {
   const handleActivate = useCallback(
@@ -196,13 +189,6 @@ export function Board({ session, onIntent }: BoardProps) {
 
   return (
     <div className="board-frame">
-      <div className="board-frame__row-labels" aria-hidden="true">
-        {DISPLAY_ROW_NUMBERS.map((row) => (
-          <span key={row} className="board-frame__label">
-            {row}
-          </span>
-        ))}
-      </div>
       <AccessibleGrid
         label="Base Control board"
         rows={rows}
@@ -212,14 +198,6 @@ export function Board({ session, onIntent }: BoardProps) {
         announcement={announcementForSession(session)}
       />
       <EnergyOverlay session={session} />
-      <div className="board-frame__corner" aria-hidden="true" />
-      <div className="board-frame__column-labels" aria-hidden="true">
-        {COLUMN_LETTERS.map((column) => (
-          <span key={column} className="board-frame__label">
-            {column}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }

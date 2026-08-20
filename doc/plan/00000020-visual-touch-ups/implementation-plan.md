@@ -405,7 +405,31 @@ Step 9.
 
 ### Step 3 — No row or column labels
 
-Status: pending
+Status: committed
+
+Notes: Removed the row/column label elements, the `board-frame__corner`
+spacer, `DISPLAY_ROW_NUMBERS` and the now-unused `COLUMN_LETTERS` import from
+`Board.tsx`, and rewrote its doc comment; `.board-frame` in `Board.css` is now
+fifteen tracks per axis with `--square: max(40px, 6.6667cqmin)`, `.board`
+placed at `1 / 16` for both axes, and the four label rules deleted;
+`.energy-overlay` in `EnergyOverlay.css` moved to `grid-column: 1 / 16` to
+match. Replaced the "draws visible column letters and row numbers" test with
+one asserting `.board-frame` holds only the grid and the energy overlay (by
+child count and by querying `.board`/`.energy-overlay`, deliberately not the
+removed `board-frame__*` class names, so `grep -rn "board-frame__" src`
+stays clean per the step's own verification), that the grid is still 15 rows
+and 225 cells with no column/row headers, and that A1 and O15 still carry
+their plain accessible names. One deviation from the plan's literal test
+prose: it suggested asserting a cell name "starts `A1,`" / "starts `O15,`",
+but on the starting position those two corner squares are ordinary empty
+squares whose accessible name is the bare square name with no trailing
+comma (`squareLabel.ts`: "ordinary empty squares are named by their square
+name alone") — so the test asserts the exact names `"A1"` and `"O15"`
+instead, which still proves square names survive the label removal.
+`npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (651
+tests, 40 files) and `npm run build` all pass; `grep -rn "board-frame__" src`
+returns nothing. The board's new size and centring are for Step 9's manual
+gate.
 
 Drop the lettered and numbered strips from the board and shrink `.board-frame`
 to a plain 15 x 15 of playing squares (D7).
