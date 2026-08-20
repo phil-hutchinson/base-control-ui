@@ -524,11 +524,10 @@ describe("runEndOfTurn — the five-sites invariant (§8.1)", () => {
 
 describe("runEndOfTurn — a passed ply still collects (§8.7 runs in full for a pass)", () => {
   it("pays the side that passes while standing on a charged node, through applyPassGuard", () => {
-    // green-1 sits on K5, a charged site, having already spent this ply's
-    // first action on a move: it has no move left (already acted) and no
-    // enemy stands anywhere near it to attack, so it passes with its second
-    // action still nominally available — but §8.7 still runs in full for
-    // that passed turn, and green is still standing on the node.
+    // green-1 sits on K5, a charged site, having already acted this ply: it
+    // has no move left (already acted) and no enemy stands anywhere near it
+    // to attack, so it passes — but §8.7 still runs in full for that passed
+    // turn, and green is still standing on the node.
     const state = {
       ...buildState({
         sideToMove: "green",

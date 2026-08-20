@@ -19,7 +19,7 @@ function buildState(plyNumber: number): GameState {
     ships: [],
     siteStates: {},
     sideToMove: "green",
-    actionsRemaining: 2,
+    actionsRemaining: 1,
     actedThisPly: [],
     plyNumber,
     randomSeed: 1,
@@ -58,7 +58,7 @@ function movedEventWithCollection(
         endOfTurn: effect === undefined ? [] : [effect],
       },
     ],
-    actionsRemaining: 2,
+    actionsRemaining: 1,
   };
 }
 
@@ -136,7 +136,7 @@ describe("EnergyOverlay", () => {
           endOfTurn: [passCollection],
         },
       ],
-      actionsRemaining: 2,
+      actionsRemaining: 1,
     };
 
     const { container } = render(

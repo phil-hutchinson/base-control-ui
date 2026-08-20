@@ -400,39 +400,22 @@ describe("sessionReducer — dismiss", () => {
 });
 
 describe("sessionReducer — a full ply", () => {
-  it("passes the turn after two actions, and the moved event says so", () => {
+  it("passes the turn after one action, and the moved event says so", () => {
     const state = buildState({
-      ships: [
-        ship("green-1", "green", "H8"),
-        ship("green-2", "green", "A1"),
-        ship("red-1", "red", "O1"),
-      ],
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O1")],
     });
 
     let session = sessionFor(state);
     session = activate(session, "H8");
     session = activate(session, "H9");
 
-    expect(session.state.sideToMove).toBe("green");
-    expect(session.state.actionsRemaining).toBe(1);
-    expect(session.lastEvent).toMatchObject({
-      type: "moved",
-      shipId: "green-1",
-    });
-    if (session.lastEvent?.type === "moved") {
-      expect(session.lastEvent.effects).toEqual([]);
-    }
-
-    session = activate(session, "A1");
-    session = activate(session, "A2");
-
     expect(session.state.sideToMove).toBe("red");
     expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
     expect(session.state.actedThisPly).toEqual([]);
     expect(session.lastEvent).toMatchObject({
       type: "moved",
-      shipId: "green-2",
-      to: squareFromName("A2"),
+      shipId: "green-1",
+      to: squareFromName("H9"),
     });
     if (session.lastEvent?.type === "moved") {
       expect(session.lastEvent.effects).toContainEqual({
@@ -442,6 +425,19 @@ describe("sessionReducer — a full ply", () => {
         endOfTurn: [],
       });
     }
+
+    // Red's own single action, proving the ply really did pass to it.
+    session = activate(session, "O1");
+    session = activate(session, "O2");
+
+    expect(session.state.sideToMove).toBe("green");
+    expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
+    expect(session.state.actedThisPly).toEqual([]);
+    expect(session.lastEvent).toMatchObject({
+      type: "moved",
+      shipId: "red-1",
+      to: squareFromName("O2"),
+    });
   });
 });
 

@@ -22,9 +22,7 @@ describe("App", () => {
   it("shows the turn indicator", () => {
     render(<App />);
 
-    expect(
-      screen.getByText("Green's turn — 2 actions left"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Green to play")).toBeInTheDocument();
   });
 
   it("shows the HUD's scores and round counter for the opening position", () => {

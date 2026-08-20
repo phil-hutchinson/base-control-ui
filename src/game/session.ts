@@ -178,8 +178,7 @@ function cleared(session: Session): Session {
  * Whether `shipId` may be selected: it has not acted this ply yet. A ship
  * with no legal action at all — a pinned ship, or one held back by §8.5's
  * obligation — is still a legitimate, if fruitless, first choice; a ship
- * that has already acted has none left to offer (rules.md §5 permits at most
- * one action per ship per turn).
+ * that has already acted has none left to offer.
  */
 function isSelectable(state: GameState, shipId: ShipId): boolean {
   return !state.actedThisPly.includes(shipId);

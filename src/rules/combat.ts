@@ -312,8 +312,8 @@ export function returnPositionSquare(state: GameState): Square {
  * (rules.md §7.1): the first empty bay counting clockwise from return
  * position 1, judged against `state`'s current occupancy. Recomputed at
  * every point of use and never stored — occupancy changes inside a ply, so
- * a ship moving out of a bay as the first action can change the answer for
- * the second.
+ * a ship moving out of a bay as one action can change the answer for a later
+ * one.
  *
  * On a mutual return, call this once to place the attacker, then call it
  * again against the state that already contains the attacker to place the

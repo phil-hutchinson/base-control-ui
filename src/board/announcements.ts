@@ -524,12 +524,12 @@ export function roundCounterSpokenText(state: GameState): string {
 export const GAME_OVER_HEADING = "Game over";
 
 /**
- * "Green's turn — 2 actions left", singular at one action, or "Game over"
- * once the game has ended (rules.md §9).
+ * "Green to play", or "Game over" once the game has ended (rules.md §9).
+ * Stored in sentence case; `TurnIndicator.css` uppercases it for display.
  */
 export function turnIndicatorText(state: GameState): string {
   if (isGameOver(state)) {
     return "Game over";
   }
-  return `${capitalize(state.sideToMove)}'s turn — ${actionsPhrase(state.actionsRemaining)} left`;
+  return `${capitalize(state.sideToMove)} to play`;
 }

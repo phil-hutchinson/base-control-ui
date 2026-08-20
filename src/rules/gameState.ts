@@ -11,7 +11,7 @@ import { SITES, type SiteState, startingSiteState } from "./sites";
 import type { ShieldCount } from "./shields";
 
 /** How many actions a side takes each ply (rules.md §5). */
-export const ACTIONS_PER_PLY = 2;
+export const ACTIONS_PER_PLY = 1;
 
 /** One ship: its stable identity, side, current square and shield count. */
 export interface Ship {
@@ -43,9 +43,9 @@ export interface GameState {
   readonly siteStates: Readonly<Record<string, SiteStatus>>;
   /** The side whose ply it is. */
   readonly sideToMove: Side;
-  /** How many of the ply's two actions remain. */
+  /** How many of the ply's actions remain. */
   readonly actionsRemaining: number;
-  /** The ids of the ships that have already acted this ply (never more than two). */
+  /** The ids of the ships that have already acted this ply (never more than `ACTIONS_PER_PLY`). */
   readonly actedThisPly: readonly ShipId[];
   /** The ply currently being played, starting at 1. */
   readonly plyNumber: number;
@@ -75,7 +75,7 @@ export interface GameState {
 /**
  * The state the game starts from: the fourteen `STARTING_FLEET` ships, every
  * site's starting state (none entered during a ply, so `enteredOnPly` is 0),
- * green to move, two actions remaining, nothing moved, ply 1, the given
+ * green to move, `ACTIONS_PER_PLY` actions remaining, nothing moved, ply 1, the given
  * seed, both sides at 0 energy, and the given game length.
  *
  * The seed is a required argument — see `src/game/seed.ts` for where the
