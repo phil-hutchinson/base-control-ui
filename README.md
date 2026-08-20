@@ -23,10 +23,9 @@ install, no account, no server.
 > starting position, with all fourteen ships lined up in their bays and the
 > seventeen sites marked, five of them already nodes in play. Green goes
 > first, and each player takes two actions a turn — a move or an attack — by
-> mouse or by keyboard. A ship takes at most one action a turn — a move or
-> an attack, never both — so a turn's two actions always use two different
-> ships. A node wakes the moment a ship
-> touches it, landing on it or flying over it, and pays a shield to the
+> mouse or by keyboard. No ship takes more than one action a turn, so a
+> turn's two actions always use two different ships. A node wakes the moment
+> a ship touches it, landing on it or flying over it, and pays a shield to the
 > player sitting on it at the end of each of their own turns. A node runs
 > out after nine turns, and a new one wakes somewhere else at random to
 > replace it. A ship still standing on a node that has just run out has to
@@ -34,10 +33,10 @@ install, no account, no server.
 > the ship carrying more shields wins and the beaten one is pushed back to a
 > bay with none — but winning costs the winner a shield more than the loser
 > was carrying. The winner advances onto the square it just cleared, so a
-> won fight can take a node outright, in a single action; a ship attacks
+> won fight can take a node outright, in a single action; and a ship attacks
 > exactly as far as it moves, so heavy shields buy strength at the cost of
-> reach. Two ships carrying the same shields both go home. The bay a beaten ship
-> returns to travels around the edge of the board as the game goes on, and
+> reach. Two ships carrying the same shields both go home. The bay a beaten
+> ship returns to travels around the edge of the board as the game goes on, and
 > the board marks where it is. A node also pays energy at the end of each
 > turn to the player sitting on it, and holding several at once pays far
 > more than holding them one at a time would. The app keeps score and shows

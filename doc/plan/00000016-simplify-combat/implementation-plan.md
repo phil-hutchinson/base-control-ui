@@ -1225,7 +1225,17 @@ what needs changing. The pipeline pauses here.
 
 ## Step 9 — README check
 
-Status: pending
+Status: committed
+
+Notes: Ran the README review over the branch diff. Step 1 had already
+corrected the two sentences that contradicted ruleset 0.8, and a read of the
+status blockquote against `rules.md` 0.8 turned up no remaining
+contradiction — it describes attack range as the ship's movement range,
+says a won fight can take a node in one action, and says a ship takes one
+action a turn. The only edits needed were stylistic: "a move or an attack"
+appeared twice in consecutive sentences after Step 1's insertion, so the
+one-action sentence was tightened, and two paragraphs were re-wrapped. The
+step's grep check returns nothing.
 
 Run `/update-readme`, which reviews the branch diff and updates `README.md` if
 warranted. Step 1 already corrected the two sentences that contradicted the new
