@@ -613,7 +613,25 @@ Step 9.
 
 ### Step 6 — One containing box
 
-Status: pending
+Status: committed
+
+Notes: Moved `<h1 className="app__title">` and `<Hud />` inside
+`.app__cabinet`, above `.app__board`, in `src/App.tsx`. In `App.css`,
+`.app__cabinet` is now a column (`flex-direction: column; align-items:
+center`) holding the title, the HUD and the board area, keeping its border,
+radius, background, box-shadow, `flex: 1; min-height: 0; width: 100%` and
+its responsive padding; `position: relative` stays, since `GameOverPanel`
+still positions itself absolutely against it until Step 8. `.app__board`'s
+rules are unchanged; only its doc comment was reworded to say the resolved
+height now comes from the cabinet once the title and HUD above have taken
+their share. `Hud.css`'s `.hud` dropped its `border` and `background-color`
+and the padding that inset content from that panel's own edge, keeping its
+column layout, `gap` and the `margin: 0 0 1.5rem` that separates it from the
+board below (the title's own `margin-bottom` already separates it from the
+HUD above). `npm run typecheck`, `npm run lint`, `npm run format:check`,
+`npm test` (655 tests, 40 files, no test file touched) and `npm run build`
+all pass. No deviation from the step as written; the look itself is for
+Step 9's manual gate.
 
 `.app__cabinet` grows to hold everything — the title, the HUD strip and the
 board — instead of the board alone, and the HUD loses its own separately

@@ -32,9 +32,9 @@ export function App() {
 
   return (
     <main className="app">
-      <h1 className="app__title">Base Control</h1>
-      <Hud state={session.state} />
       <div className="app__cabinet">
+        <h1 className="app__title">Base Control</h1>
+        <Hud state={session.state} />
         <div className="app__board">
           <Board session={session} onIntent={dispatch} />
         </div>
