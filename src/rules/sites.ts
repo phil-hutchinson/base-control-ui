@@ -106,3 +106,35 @@ export function hasDepletedSiteFinishedCooling(
 ): boolean {
   return plyNumber - enteredOnPly >= DEPLETED_COOLDOWN_PLIES;
 }
+
+/**
+ * How far a charged or depleted site is through its clock, as a proportion
+ * from 0 (the first turn it is seen in that state) to 1 (its last). Dormant
+ * and active have no clock, so this reports `undefined` for them. The
+ * charged window counts the turn the site entered the state; the depleted
+ * window does not, so it starts counting one ply later.
+ */
+export function siteCyclePosition(
+  state: SiteState,
+  enteredOnPly: number,
+  plyNumber: number,
+): number | undefined {
+  let denominator: number;
+  let elapsed: number;
+
+  if (state === "charged") {
+    denominator = CHARGED_LIFE_PLIES - 1;
+    elapsed = plyNumber - enteredOnPly;
+  } else if (state === "depleted") {
+    denominator = DEPLETED_COOLDOWN_PLIES - 1;
+    elapsed = plyNumber - enteredOnPly - 1;
+  } else {
+    return undefined;
+  }
+
+  if (denominator <= 0) {
+    return 0;
+  }
+
+  return Math.min(1, Math.max(0, elapsed / denominator));
+}

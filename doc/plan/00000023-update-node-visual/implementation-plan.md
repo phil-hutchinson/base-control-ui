@@ -229,7 +229,7 @@ assistive technology through the square's accessible name
 
 ## Step 1 — The cycle-position calculation in `src/rules/sites.ts`
 
-Status: pending
+Status: committed
 
 Add one exported function to `src/rules/sites.ts`, alongside
 `CHARGED_LIFE_PLIES`, `DEPLETED_COOLDOWN_PLIES`, `hasChargedNodeFinished` and
@@ -271,6 +271,24 @@ consumers yet.
 
 Verification (automated): `npm run typecheck`, `npm run lint` and
 `npm test` all pass, with the new `sites.test.ts` cases among them.
+
+Notes: Added `siteCyclePosition(state, enteredOnPly, plyNumber)` to
+`src/rules/sites.ts`, taking primitives per D2 and returning `undefined` for
+dormant/active. Re-checked D6's reasoning against `nodes.ts`
+(`wakeTouchedSites` sets `enteredOnPly: state.plyNumber` mid-ply;
+`drawReplacements`'s charged-on-wake path runs from `endOfTurn.ts` step 5, so
+`enteredOnPly` is the ply that just ended) and `endOfTurn.ts` (step 3 cools
+depleted sites with `enteredOnPly: plyNumber` at end-of-ply, step 4 depletes
+finished charged sites the same way) and agree with it: charged's window is
+`p - e` over `CHARGED_LIFE_PLIES - 1` because the site is seen from the ply it
+entered, while depleted's is `p - e - 1` over `DEPLETED_COOLDOWN_PLIES - 1`
+because the site is never seen depleted on the ply it entered that state (it
+was still charged for the whole of that ply). Added tests to a new
+`describe("the site cycle position (rules.md §8.3, §8.6)")` block in
+`sites.test.ts`, deriving window boundaries from `hasChargedNodeFinished` /
+`hasDepletedSiteFinishedCooling` rather than hard-coded ply numbers, per D6's
+instruction not to assert every charged node reaches the full 0-to-1 travel.
+No deviations from the plan.
 
 ---
 
