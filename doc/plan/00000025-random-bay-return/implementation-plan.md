@@ -751,7 +751,31 @@ watching test two or three fail, then reverting. `npm run typecheck`,
 
 ## Step 6 — `README.md` and `CLAUDE.md`
 
-Status: pending
+Status: committed
+
+Notes: Replaced the "How it plays" paragraph's sentence about the return bay
+travelling the ring and the board marking it with one saying a beaten ship's
+bay is chosen at random from whichever bays stand empty, so neither player
+can know it in advance; reflowed the surrounding blockquote paragraph to the
+file's existing ~80-column wrapping so the new sentence didn't leave a
+short line, per `prettier --check` (Markdown proseWrap is `preserve` here, so
+Prettier does not do this itself). Extended `CLAUDE.md`'s project-description
+sentence to name both random elements, matching rules.md §1's phrasing. Also
+updated `CLAUDE.md`'s "Game records" section, which likewise said "the
+game's **one** random element must come from a seeded generator" — a second,
+independent instance of the same now-false count that the plan's given
+wording didn't call out by name but that the step's brief ("bring CLAUDE.md's
+project-facing description in line with 0.10") covers; reworded to "the
+game's random elements must all come from the same seeded generator",
+preserving the one-stream point (D3) the sentence exists to make. Grepped
+both files for "ring", "return position", "receptacle", "cue" and
+"clockwise" and found nothing else to fix. Ran the `/update-readme` review by
+hand against `git diff main...HEAD --stat`: no other file in the diff touches
+player-visible behaviour beyond the bay-return wording already handled, so no
+further README changes were warranted.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(668 tests, unchanged from step 5) all pass;
+`grep -n "travels around the edge" README.md` returns nothing. The orchestrator rewrapped the README paragraph before committing: the step had reflowed the whole blockquote at 81 characters where the file's convention is 76, which turned a one-sentence change into a thirty-three-line diff. Rewrapped at the original width, so only the changed sentence and the lines after it move.
 
 Bring the two player-facing and project-facing descriptions in line with 0.10.
 

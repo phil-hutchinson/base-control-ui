@@ -5,7 +5,8 @@
 This repository is the web app for **Base Control**: a two-player, space-themed
 board game in which each side manoeuvres a fleet of seven ships to occupy
 contested nodes and collect energy. It is not a pure-strategy game — which
-node site wakes up next is random.
+node site wakes up next is random, and so is which bay a beaten ship is
+pushed back to.
 
 The app is a **front-end only** TypeScript/React single-page application — no
 backend API; it must be deployable from a static file host.
@@ -56,9 +57,9 @@ player-facing document: it exists to replay a game while working on the app,
 and later to watch trained engines play each other. The format is ours to
 change freely and needs no stability guarantees.
 
-The game's one random element must come from a **seeded** generator recorded
-with the game, so a record replays exactly. `Math.random` is banned by lint in
-game code.
+The game's random elements must all come from the same **seeded** generator
+recorded with the game, so a record replays exactly. `Math.random` is banned by
+lint in game code.
 
 ## Ownership
 
