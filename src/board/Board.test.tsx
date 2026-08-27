@@ -16,6 +16,7 @@ import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import {
   CHARGED_LIFE_PLIES,
   DEPLETED_COOLDOWN_PLIES,
+  SITES,
   startingSiteState,
 } from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
@@ -295,8 +296,8 @@ describe("Board", () => {
         container.querySelectorAll("radialGradient"),
       ).map((gradient) => gradient.getAttribute("id"));
 
-      expect(gradientIds).toHaveLength(17);
-      expect(new Set(gradientIds).size).toBe(17);
+      expect(gradientIds).toHaveLength(SITES.length);
+      expect(new Set(gradientIds).size).toBe(SITES.length);
     });
 
     it("names exactly five sites active and twelve dormant, none charged or depleted", () => {
@@ -459,8 +460,8 @@ describe("Board", () => {
     });
 
     it("shows a depleted site at its start-of-cycle offset on its first cooling ply", () => {
-      // The depleted window starts the ply after enteredOnPly (D6): the
-      // site was still charged for the whole of the ply it depleted on.
+      // The depleted window starts the ply after enteredOnPly: the site
+      // was still charged for the whole of the ply it depleted on.
       const enteredOnPly = 5;
       const firstCoolingPly = enteredOnPly + 1;
       const session: Session = {

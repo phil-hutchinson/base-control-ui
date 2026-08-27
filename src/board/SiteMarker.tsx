@@ -59,9 +59,9 @@ function middleStopOffsetPercent(
 }
 
 // Radii, gradient stops, colours and opacities, taken from
-// node-artwork.md exactly as specified there. Keyed by SiteState, so a
-// state that gains or loses artwork is a compile error rather than a
-// silent gap, the same shape as ShipIcon.tsx's ARC_QUADRANT.
+// doc/plan/00000023-update-node-visual/node-artwork.md exactly as specified
+// there. One artwork per site state; the exhaustive switch has no default,
+// so a new state is a compile error rather than a silent gap.
 function siteArtwork(
   state: SiteState,
   cyclePosition: number | undefined,

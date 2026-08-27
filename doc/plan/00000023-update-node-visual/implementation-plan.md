@@ -14,6 +14,12 @@ gradient stop and opacity comes from there and is **not** adjusted to taste.
 Read that document before starting step 2; it is short and it is the
 specification.
 
+Commit `ccdae24`, which precedes this plan, is owner groundwork this story
+relies on rather than a deliverable of it: it adds the "Accessibility during
+pre-release" section to `CLAUDE.md` and re-scopes story 21's
+`known-issues.md` from a story-20 record into the running ledger that
+section points at.
+
 ## Where the work lands
 
 | File                                                                      | What happens to it                                                    |
@@ -155,6 +161,12 @@ off the end of it.
 If a clock constant is ever reduced to 1 or less, the denominator is zero.
 Guard that case and report progress 0 (a one-turn clock is entirely its own
 first turn).
+
+The branch is unreachable today, since both `CHARGED_LIFE_PLIES` and
+`DEPLETED_COOLDOWN_PLIES` exceed 1, and it is knowingly untested for that
+reason. It stays rather than being deleted because removing it would let a
+future one-turn clock constant produce `NaN` from the division, which the
+surrounding clamp does not catch.
 
 ### D8 — Gradient ids carry the square's name
 
@@ -560,8 +572,10 @@ different pair of states) and item 2 covers the removal of the marker's own
 `src/board/SiteMarker.css` on their `Where:` line and note that a site's
 state still reaches assistive technology via the unchanged
 `src/board/squareLabel.ts`. Did not touch the story-20 section or preamble.
-No deviations from the plan. `npm run format:check`, `npm run typecheck`,
-`npm run lint` and `npm test` (688 tests) all pass.
+One deviation from the plan: split the single consequence the plan described
+into the two items above, rather than recording it as one. `npm run
+format:check`, `npm run typecheck`, `npm run lint` and `npm test` (688 tests)
+all pass.
 
 ---
 

@@ -29,8 +29,9 @@ interface ExpectedArtwork {
 }
 
 // Radii, stop offsets, colours and opacities as specified in
-// node-artwork.md, transcribed here as the expectation an assertion checks
-// against, independently of SiteMarker.tsx's own table.
+// doc/plan/00000023-update-node-visual/node-artwork.md, transcribed here as
+// the expectation an assertion checks against, independently of
+// SiteMarker.tsx's own table.
 const EXPECTED_ARTWORK: Record<SiteState, ExpectedArtwork> = {
   dormant: {
     radius: "12",

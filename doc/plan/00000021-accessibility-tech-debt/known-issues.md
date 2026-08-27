@@ -104,17 +104,17 @@ closing.
 
 As before, a site's state still reaches assistive technology through the
 square's accessible name (`src/board/squareLabel.ts`), unchanged by this
-story, so a screen-reader user is unaffected and the loss falls on a sighted
-player who cannot separate gold/wheat from grey/white.
+story, so a screen-reader user is unaffected.
 
 Where: `src/board/SiteMarker.tsx`, `src/board/SiteMarker.css`.
 
-### 2. The site marker's own border is removed entirely
+### 2. The charged/depleted distinction is gameplay-relevant, not just visual
 
-The 2px state-coloured border that previously sat on `.site-marker` —
-separate from the ordinary grid border every square has — is dropped in this
-story's redraw. A site square's marker is now fill colour alone, with no
-border of its own at all; the ordinary 1px grid border and the bay's 2px cyan
-border are untouched.
+A charged node pays energy to the player standing on it at the end of their
+turn; a depleted node pays nothing. Now that the two share one shape, telling
+them apart rests entirely on gold-and-wheat against grey-and-white — colours
+that are hard or impossible to separate without colour vision. A player who
+cannot make that separation can lose track of which nodes are still worth
+holding, not merely see a less distinct board.
 
 Where: `src/board/SiteMarker.tsx`, `src/board/SiteMarker.css`.

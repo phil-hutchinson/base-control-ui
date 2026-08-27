@@ -36,6 +36,10 @@ How far through that clock a node is shows in the artwork: charged looks like
 the first charged sample on the turn it wakes and like the second on its last
 turn, and depleted travels the same road in the opposite direction.
 
+One exception: a site woken already-charged by the replacement draw is first
+seen one step along its cycle and shows for eight turns rather than nine, so
+it never displays the start-of-cycle appearance.
+
 Between those ends it takes intermediate positions — one per turn, following
 the proportion of the clock still to run. **This is not an animation.**
 Nothing transitions, eases or moves on its own; a node simply looks slightly

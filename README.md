@@ -26,7 +26,7 @@ install, no account, no server.
 > mouse or by keyboard. A node wakes the moment a ship touches it, landing
 > on it or flying over it, and pays a shield to the player sitting on it at
 > the end of each of their own turns. A node runs out after nine turns — its
-> glow shifts a little on each of them, so you can see roughly how much life
+> glow shifts a little as it runs down, so you can see roughly how much life
 > it has left — and a new one wakes somewhere else at random to replace it.
 > A ship still standing on a node that has just run out has to be moved
 > clear, and that is what its owner's next turn is spent on. In a fight the
