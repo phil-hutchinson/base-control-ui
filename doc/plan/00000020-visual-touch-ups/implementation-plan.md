@@ -38,8 +38,8 @@ Eleven steps:
 6. One containing box.
 7. The score count-up is lifted out of `ScoreDisplay` (no visible change).
 8. The full-box game-over screen, gated on the count-up settling.
-9. Manual gate: the owner looks at the whole thing.
-10. The temporary fixture is removed.
+9. The temporary fixture is removed.
+10. Manual gate: the owner looks at the whole thing, in the real app.
 11. `README.md`.
 
 ## Sources of truth
@@ -132,7 +132,7 @@ the component uniform and keeps the state difference in one place (the
 stylesheet). Rejected: rendering a different element type or no SVG at all for
 charged — a second shape of markup for one state, for no visible gain.
 
-**D6 — Exact colours and radii are tuned by eye at the manual gate (Step 9).**
+**D6 — Exact colours and radii are tuned by eye at the manual gate (Step 10).**
 The plan gives starting values that satisfy the story; they are starting
 values, not requirements. The one thing to watch is that the orange-yellow does
 not read as the focus-ring amber (`--focus-ring`, `#ffb703` in `src/index.css`),
@@ -194,17 +194,22 @@ deferred to the later accessibility story rather than solved here:
   overlay instead of the count-up would contradict the story, which names the
   count-up.
 
-**D11 — A temporary review fixture, added first and removed at the end.** None
-of what this story changes can be seen from the real opening position in a
-reasonable time: no site is charged or depleted at the start, no ship has
-shields, no ship is stranded, and the game runs a hundred rounds. Stories
-00000009, 00000011 and 00000012 all used the same device — a hand-built
+**D11 — A temporary review fixture, added first and removed before the manual
+gate.** None of what this story changes can be seen from the real opening
+position in a reasonable time: no site is charged or depleted at the start, no
+ship has shields, no ship is stranded, and the game runs a hundred rounds.
+Stories 00000009, 00000011 and 00000012 all used the same device — a hand-built
 position in `src/game/`, wired into `App.tsx` with a one-import, one-call
 change, deleted before the story ships. It goes in **first** so that every
-implementing step can also glance at its own work in the dev server, not only
-the gate. Its one cost is that `src/App.test.tsx`'s three opening-position
-assertions have to follow it there (Step 1) and back (Step 10); both steps say
-so explicitly, so it is not an undocumented deviation when it happens.
+implementing step can glance at its own work in the dev server, and it comes
+out in Step 9, **before** the gate: the owner looks at the app as it will
+actually ship, from the true opening position, rather than at a position no
+game can reach. The accepted cost is that the states the fixture manufactured
+(charged and depleted sites, shielded ships, a stranded ship) are not on screen
+at the gate unless the owner plays far enough to produce them. Its other cost
+is that `src/App.test.tsx`'s three opening-position assertions have to follow it
+there (Step 1) and back (Step 9); both steps say so explicitly, so it is not an
+undocumented deviation when it happens.
 
 ---
 
@@ -231,7 +236,7 @@ its one call site in `App.tsx`. No deviation from the step as written.
 Add `src/game/reviewFixture.ts`, a **temporary** module holding a hand-built
 position, and have `src/App.tsx` build its opening session from it instead of
 from `startingGameState(freshSeed())` — a change of one import and one call.
-**Step 10 deletes it.** See D11 for why it exists.
+**Step 9 deletes it.** See D11 for why it exists.
 
 The module header must say plainly that this is **not a position reachable by
 play** and that it exists only so the app can be checked by eye. It must not
@@ -294,7 +299,7 @@ nothing to do with this story.
   `"1/100"`. With the fixture in place those are false, so update those three
   assertions to the fixture's values (`"Green: 4 energy, 2 nodes held."`,
   `"Red: 1 energy, 2 nodes held."`, `"3/3"`). Do not weaken or delete them, and
-  do not add any further dependency on the fixture. Step 10 restores them.
+  do not add any further dependency on the fixture. Step 9 restores them.
   `"Green to play"` and the "no result panel while the game is in progress"
   assertion stay true either way.
 
@@ -333,7 +338,7 @@ component's contract (class list, single `aria-hidden` SVG, no title/desc)
 held. `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test`
 (651 tests, 40 files) and `npm run build` all pass. No deviation from the
 step as written; exact colours/radius are starting values per D6, to be
-judged by eye at Step 9.
+judged by eye at Step 10.
 
 Redraw `src/board/SiteMarker.tsx` and `src/board/SiteMarker.css` to
 `story.md`'s four states, following D2–D6. The component's contract does not
@@ -387,7 +392,7 @@ than colour" geometry test — the new artwork does not differ by geometry for
 three of the four states (D2) — with a structural test of what jsdom can
 actually see: every state renders exactly one centred circle in the shared
 viewBox. Do not invent assertions about CSS colours or borders; jsdom does not
-apply the imported stylesheet, and the appearance is Step 9's business.
+apply the imported stylesheet, and the appearance is Step 10's business.
 
 Depends on: Step 1 (the fixture puts all four states on screen at once, so the
 implementer can glance at the result; nothing in the code depends on it).
@@ -399,7 +404,7 @@ per state, the decorative markings, and no axe violations. `src/board/Board.test
 site tests (which assert which squares carry a marker, and in which state) must
 pass **unchanged** — if one needs editing, the component's contract has been
 changed and it should not have been. The appearance itself is checked by eye at
-Step 9.
+Step 10.
 
 ---
 
@@ -428,7 +433,7 @@ name alone") — so the test asserts the exact names `"A1"` and `"O15"`
 instead, which still proves square names survive the label removal.
 `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (651
 tests, 40 files) and `npm run build` all pass; `grep -rn "board-frame__" src`
-returns nothing. The board's new size and centring are for Step 9's manual
+returns nothing. The board's new size and centring are for Step 10's manual
 gate.
 
 Drop the lettered and numbered strips from the board and shrink `.board-frame`
@@ -481,7 +486,7 @@ Verification (automated): `npm run typecheck`, `npm run lint`,
 `npm run format:check`, `npm test` and `npm run build` all pass, with the
 replacement `Board.test.tsx` case above. Additionally
 `grep -rn "board-frame__" src` returns nothing at all. The board's new size and
-centring are checked by eye at Step 9.
+centring are checked by eye at Step 10.
 
 ---
 
@@ -496,7 +501,7 @@ declaration changed. `npm run typecheck`, `npm run lint`, `npm run format:check`
 `grep -n "board-square-owes-action-blink" -A 1 src/board/BoardSquare.css` shows
 the 0.25s duration, and a grep for the old `1s ease-in-out infinite alternate`
 value returns nothing. No deviation from the step as written; the speed itself
-is for Step 9's manual gate.
+is for Step 10's manual gate.
 
 In `src/board/BoardSquare.css`, the `board-square-owes-action-blink` animation
 on `.board-square--owes-action .ship-icon` runs for `1s`; make it `0.25s`.
@@ -518,7 +523,7 @@ Verification (automated): `npm run typecheck`, `npm run lint`,
 asserts the duration, because jsdom does not apply stylesheets. Additionally
 `grep -n "board-square-owes-action-blink" -A 1 src/board/BoardSquare.css` shows
 the 0.25s duration and no other occurrence of the old value. The speed itself is
-judged by eye at Step 9; this is the one step whose real verification is
+judged by eye at Step 10; this is the one step whose real verification is
 entirely deferred there, and that is deliberate — a CSS duration has no runtime
 surface a test can reach.
 
@@ -555,7 +560,7 @@ foreseeable consequence of always rendering four arcs; the fix only
 changes the assertion's selector, not its intent. `npm run typecheck`,
 `npm run lint`, `npm run format:check`, `npm test` (655 tests, 40 files)
 and `npm run build` all pass. The grey's exact shade is a starting value
-per D6, to be judged by eye at Step 9.
+per D6, to be judged by eye at Step 10.
 
 A ship draws all four shield arcs: the ones it has in the ship's own colour, the
 ones it does not in grey, so the ring shows how much shielding is missing as
@@ -607,7 +612,7 @@ Verification (automated): `npm run typecheck`, `npm run lint`,
 `src/board/shieldArcs.test.ts` covering the new function at every shield count
 and `src/board/ShipIcon.test.tsx` asserting four arcs with the right lit/unlit
 split at every shield count for both sides. The colours are judged by eye at
-Step 9.
+Step 10.
 
 ---
 
@@ -631,7 +636,7 @@ board below (the title's own `margin-bottom` already separates it from the
 HUD above). `npm run typecheck`, `npm run lint`, `npm run format:check`,
 `npm test` (655 tests, 40 files, no test file touched) and `npm run build`
 all pass. No deviation from the step as written; the look itself is for
-Step 9's manual gate.
+Step 10's manual gate.
 
 `.app__cabinet` grows to hold everything — the title, the HUD strip and the
 board — instead of the board alone, and the HUD loses its own separately
@@ -679,7 +684,7 @@ Verification (automated): `npm run typecheck`, `npm run lint`,
 changed** — `src/App.test.tsx`'s heading, HUD and axe assertions are all about
 structure and accessible text, none of which this step touches, so an edit
 there means something has been changed that should not have been. The look is
-judged by eye at Step 9.
+judged by eye at Step 10.
 
 ---
 
@@ -873,69 +878,11 @@ Verification (automated): `npm run typecheck`, `npm run lint`,
 `GameOverPanel.test.tsx` cases above proving both halves of the behaviour: an
 unscored last turn shows the panel at once, and a scored one holds it back until
 the roll settles and then shows the settled totals with the game gone from the
-box. The look of the full-box screen is judged by eye at Step 9.
+box. The look of the full-box screen is judged by eye at Step 10.
 
 ---
 
-### Step 9 — Manual gate: the whole look
-
-Status: pending
-
-A manual gate. The pipeline stops here and hands the running app to the
-repository owner. Nothing is implemented in this step.
-
-Run `npm run dev` in the dev container and open the app. It starts from the
-temporary review fixture (Step 1): a three-round game at round 3, green to play,
-with all four site states, ships at every shield count, and one stranded green
-ship.
-
-What to look for, item by item:
-
-1. **Site artwork** — a depleted site (D8) is a small grey circle with a grey
-   border; the dormant sites are small white circles with white borders; the
-   active site (E11) is a small orange-yellow circle with a matching border;
-   the charged sites (H8, E5, K5, K11) are a glow spreading from an
-   orange-yellow centre out to whitish-yellow, filling almost all of the square
-   with no border. A ship standing on a bordered site still leaves its border
-   visible. The orange-yellow is not mistakable for the amber focus ring — press
-   Tab into the board and move around with the arrow keys to compare.
-2. **No labels** — no letters below the board, no numbers beside it; the board
-   is a plain 15 x 15, sized and centred sensibly in its box. Resize the window
-   tall and narrow, then short and wide: the board should still grow to fill the
-   room and stay centred, and the floating "+N" and the pulse that appear when
-   energy is collected should land on the right squares.
-3. **Stranded flash** — green-3 on D8 blinks noticeably faster than before (a
-   quarter-second each way). It should read as urgent, not as a flicker.
-4. **Shield arcs** — every ship shows a full ring of four arcs: red-2 on K11 (no
-   shields) is all grey; green-2 on E5 (four shields) is all colour; the others
-   are part-and-part, with the missing positions clearly grey and clearly not
-   mistakable for the other side's colour.
-5. **One box** — the title, the HUD strip and the board sit inside a single
-   bezelled box; the HUD no longer has a panel of its own around it.
-6. **Game over** — take green's action (it must free the stranded ship: try
-   moving another ship first and see it refused), watch green's score roll 4 →
-   7, then take red's action. Red's score rolls 1 → 4 **while the board and HUD
-   are still on screen**, and only when it settles does the game-over screen
-   take over the whole box, showing "Game over", Green 7, Red 4 and "Play
-   again". The title, HUD and board are gone, not merely covered. Press "Play
-   again": a fresh three-round game starts from the true opening position.
-
-Also worth a glance while there: the board still refuses clicks once the game is
-over (there is nothing to click, since the board is gone), and keyboard focus
-lands on the game-over panel when it appears.
-
-If the owner asks for tuning — a colour, a radius, a gradient falloff, a
-spacing — the pipeline adds a refinement step after this one and re-gates it,
-rather than folding the changes into this step's record.
-
-Depends on: Steps 1–8 (everything being looked at).
-
-Verification (manual): the owner works through the six items above and confirms
-each, or reports what does not look right.
-
----
-
-### Step 10 — Remove the temporary fixture
+### Step 9 — Remove the temporary fixture
 
 Status: pending
 
@@ -949,7 +896,11 @@ values, back to the true opening position: `"Green: 0 energy, no nodes held."`,
 `"Red: 0 energy, no nodes held."` and `"1/100"`. This is expected, was planned
 in Step 1, and is not a deviation.
 
-Depends on: Step 9 (the gate the fixture existed for).
+The fixture comes out **before** the manual gate, not after it, so that what the
+owner looks at in Step 10 is the app as it will ship (D11).
+
+Depends on: Steps 2–8 (everything the fixture existed to let an implementer
+see).
 
 Verification (automated): `npm run typecheck`, `npm run lint`,
 `npm run format:check`, `npm test` and `npm run build` all pass, with **no test
@@ -958,6 +909,38 @@ proof nothing came to depend on the fixture. `grep -rn "reviewFixture" src`
 returns nothing. Open the app once and confirm it starts from the true opening
 position: both scores 0, the counter at 1/100, every ship in a bay with an
 all-grey shield ring, five active sites and no charged or depleted ones.
+
+---
+
+### Step 10 — Manual gate: the whole look
+
+Status: pending
+
+A manual gate. The pipeline stops here and hands the running app to the
+repository owner. Nothing is implemented in this step.
+
+Run `npm run dev` in the dev container and give the owner the URL. The app
+starts from the true opening position (the fixture is gone, Step 9): a
+hundred-round game, both scores at zero, every ship in its bay, five active
+sites.
+
+What this story changed, so the owner knows what is theirs to judge: the site
+artwork (four states), the removal of the row and column labels, the faster
+stranded flash, the grey unlit shield arcs, the single bezelled box holding the
+title, the HUD and the board, and the game-over screen taking over that whole
+box once the last turn's score has finished rolling. Only the site artwork in
+its dormant and active states, the missing labels, the one box and the all-grey
+shield rings are visible from the opening position; the rest need play to
+reach.
+
+If the owner asks for tuning — a colour, a radius, a gradient falloff, a
+spacing — the pipeline adds a refinement step after this one and re-gates it,
+rather than folding the changes into this step's record.
+
+Depends on: Steps 1–9 (everything being looked at, and the fixture's removal).
+
+Verification (manual): the owner confirms the look, or reports what does not
+look right.
 
 ---
 
@@ -977,7 +960,7 @@ the board, or the old site artwork?) and the closing paragraph about the score
 and the "Play again" button, which is still accurate. If nothing needs changing,
 say so in the Notes; do not invent an edit.
 
-Depends on: Steps 2–8 (the diff `/update-readme` reads) and Step 10 (so the diff
+Depends on: Steps 2–8 (the diff `/update-readme` reads) and Step 9 (so the diff
 does not describe the temporary fixture).
 
 Verification (automated): `npm run typecheck`, `npm run lint`,
