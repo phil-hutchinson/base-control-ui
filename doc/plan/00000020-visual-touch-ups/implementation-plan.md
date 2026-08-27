@@ -931,7 +931,12 @@ all-grey shield ring, five active sites and no charged or depleted ones.
 
 ### Step 10 — Manual gate: the whole look
 
-Status: pending
+Status: committed
+
+Notes: The owner looked at the running app on 2026-08-26 and confirmed the
+whole look, with nothing to tune — so no refinement step was added. The app
+was served from the already-running dev server on port 5273, from the true
+opening position with the fixture gone (Step 9).
 
 A manual gate. The pipeline stops here and hands the running app to the
 repository owner. Nothing is implemented in this step.
