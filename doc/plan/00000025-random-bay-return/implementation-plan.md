@@ -358,7 +358,30 @@ must be unchanged and green, since no behaviour changed.
 
 ## Step 2 — The board stops marking the next return bay
 
-Status: pending
+Status: committed
+
+Notes: Removed both on-board cues and everything that fed them —
+`ReceptacleMark`/`ReturnPositionMark`, `RETURN_CUE_CORNERS`,
+`cornerTrianglePath`/`cornerDiagonal`, the two triangle constants, and the
+`returnCue` prop in `BoardSquare.tsx`; the `.board-square__mark--return-position,
+.board-square__mark--receptacle` rule in `BoardSquare.css`; the `ReturnCue`
+type, `RETURN_CUE_WORDING` table and `returnCue` field in `squareLabel.ts`; and
+the return-position/receptacle computation, the `returnCue` derivation and the
+`returnPositionSquare`/`receptacleBay`/`ReturnCue`/`BAYS` imports in
+`Board.tsx` (`isBay` and `legalTargets`/`resolveFight` kept). Updated module
+header comments in `BoardSquare.tsx` and `squareLabel.ts` to drop the cue
+descriptions. Removed the cue-specific test cases in `squareLabel.test.ts`,
+`BoardSquare.test.tsx` and the `describe("return cues", ...)` block in
+`Board.test.tsx`, updated the accessible-name expectations that lost the cue
+segment (e.g. H15 now `"H15, bay, green ship, 0 shields"`), and added the
+guard test asserting no `.board-square__mark--receptacle` /
+`--return-position` element exists and no gridcell name matches
+`/return position|beaten ship/`. `combat.ts` still exports
+`returnPositionSquare` and `receptacleBay`, still called from `ply.ts`, as
+expected — step 3 removes them. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm run format:check` (after a Prettier
+auto-fix on `squareLabel.test.ts`) and `npm test` (675 tests, down from 688 —
+13 cue-specific tests removed, 1 guard test added) all pass.
 
 Remove both on-board return cues and everything that exists only to feed them.
 After this step a bay square looks like a bay and nothing more, and no square's
