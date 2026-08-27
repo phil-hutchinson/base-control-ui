@@ -968,7 +968,22 @@ look right.
 
 ### Step 11 — README check
 
-Status: pending
+Status: committed
+
+Notes: Ran `/update-readme` against the branch diff. **`README.md` is
+unchanged**, as the step anticipated. Nothing in the diff is player-visible in
+the sense the README records: it describes what the game is, how a turn works,
+and what the app can and cannot yet do, and this story changed only how those
+things are drawn. The two places the step named both hold up — the opening
+paragraph of the status block describes the board as "all fourteen ships lined
+up in their bays and the seventeen sites marked, five of them already nodes in
+play", which says nothing about the row and column labels that went or about
+the old site artwork; and the closing sentences about the score, the hundred
+rounds and the button that starts another game are all still accurate, the
+game-over screen having changed only in where it is drawn. The README does not
+mention the board's letters and numbers anywhere, so their removal from the
+screen leaves nothing to correct — square names themselves are unchanged, and
+belong to `rules.md` in any case.
 
 Run the `/update-readme` command (`.claude/commands/update-readme.md`), which
 reviews the branch diff and updates `README.md` where a player or a new reader
