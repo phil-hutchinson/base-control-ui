@@ -271,6 +271,43 @@ perfectly legal bay, just not the one a replay expects — which is why step 3
 also asserts the seed advances once per returning ship, and why this invariant
 is an addition to that test rather than a substitute for it.
 
+### D15 — A blocked lane stops the winner's advance (owner decision, added after peer review)
+
+Peer review comment 6 observed that the loser can now be drawn into a bay that
+sits on the winning attacker's lane. The orchestrator investigated and found
+the consequence is worse than the comment recorded: `winnerAdvance` judges a
+candidate square by **site state alone** and never re-checks occupancy, so the
+winner does not stop — it advances straight over the ship it just beat.
+
+It is reproducible. Green at G15 carrying 1 shield attacks red at I15 carrying
+0; the lane's one intermediate square is H15, a bay. At seed 7 the draw sends
+the loser to H15, and the winner then advances G15 → I15 across it.
+
+`winnerAdvance`'s doc comment asserts the opposite — that "the loser has
+already been placed in a bay by the time this runs, so nothing between the
+attacker and the loser's former square can be occupied". That was the
+reasoning under the ring and it is simply false now.
+
+**The ruleset already forbids this.** §3.1 makes a bay "an ordinary square in
+every way except two" — a ship in one cannot attack or be attacked, and a ship
+ending a move there loses its shields — and blocking movement is not among the
+exceptions. §7 requires every square an attack passes over to be empty of
+either side's ships, and the advance travels that same lane. So the code is
+wrong, not the document.
+
+The defect is **pre-existing**: the ring's first-empty-bay walk could also land
+a loser on the lane. It was rare and nobody had hit it. The random draw makes
+it materially likelier, which is why the owner chose to fix it inside this
+story rather than hand it to a follow-up (the alternatives put were recording
+it for its own story, and keeping the loser off the lane by excluding lane
+squares from the bay pool — rejected because it complicates §7.1's draw to
+avoid an interaction the rules already answer).
+
+The owner also chose to **spell the rule out in §7** rather than rely on §6's
+clear-path restriction being read into "may legally end on". Version 0.10 is
+unmerged, so this folds into the existing 0.10 entry rather than earning a
+0.11.
+
 ---
 
 ## Step 1 — Rules 0.10: the return bay is drawn at random
@@ -842,3 +879,76 @@ Depends on: steps 2, 3, 4 and 6.
 Verification (manual): the owner performs the checks above in the running app
 and confirms each. If any check fails, record which one in this step's Notes
 and stop rather than proceeding to sign-off.
+
+---
+
+## Step 8 — A blocked lane stops the winner's advance
+
+Status: pending
+
+Added after peer review, on the owner's decision. Read **D15** first — it
+records the defect, the reproduction, why the ruleset already forbids it, and
+why it is being fixed inside this story.
+
+The bug: `winnerAdvance` in `src/rules/combat.ts` picks the furthest square on
+the attack lane the winner may end on, judging candidates by site state alone.
+It never checks occupancy, because when it was written the lane was clear by
+construction. It no longer is: the loser is placed in a bay before the advance
+is computed, and that bay can sit on the lane.
+
+**The rules edit.** `rules.md` stays at version **0.10** — it is unmerged, so
+this ships as part of the same version rather than earning a 0.11. In §7, the
+paragraph beginning "**The winner advances.**" states that "may legally end
+on" is "section 6's restriction and nothing else — not a dormant site, not a
+depleted site". Add a sentence making the path explicit: the winner cannot
+cross an occupied square, so if the beaten ship's bay lies on the lane it
+blocks the advance, and the winner stops short of it — holding its ground when
+there is no square left to reach. Keep it in the document's voice, for a
+non-technical reader. Extend the existing `## 0.10` entry in
+`doc/ruleset/changelog.md` with a bullet recording the clarification and the
+fact that it settles a case the random draw made likely; do not add a second
+version heading. `RULES_VERSION` does not change.
+
+**The code.** `winnerAdvance` must reject any candidate the winner cannot
+reach because a square strictly between its origin and that candidate is
+occupied. Note the shape of `ReachEntry`: `passedOver` excludes both the origin
+and the destination, so for a candidate at lane index `i` the squares that must
+be clear are the lane squares before `i`. A candidate square that is itself
+occupied is not a legal landing square either. Scanning from the far end as it
+does now, the first candidate that is both landable and reachable wins; if none
+is, the winner holds its ground, which is the existing `undefined` return and
+needs no new caller handling.
+
+**Fix the doc comment**, which currently asserts that nothing on the lane can
+be occupied. It should say instead that occupancy is re-checked because the
+returning loser may have been placed on the lane. Do not write story numbers,
+decision ids or rejected alternatives into the source (`CONTRIBUTING.md`,
+"Comments").
+
+**Tests**, in `src/rules/combat.test.ts` for the unit and
+`src/rules/ply.test.ts` for the whole attack:
+
+- The reproduction from **D15**, pinned: green at G15 with 1 shield attacks red
+  at I15 with 0, seed 7 draws the loser into H15, and the winner **holds its
+  ground at G15** rather than landing on I15. Assert the winner's square
+  directly — this is the case the story shipped broken, so it is worth an exact
+  pin rather than a property.
+- A `winnerAdvance` unit test where an occupied lane square forces the scan to
+  stop short, and one where the occupied square is beyond the chosen
+  destination and therefore irrelevant.
+- Confirm the ordinary case is untouched: with a clear lane the winner still
+  takes the loser's square.
+
+Consider whether `assertFightInvariants` should also assert the winner crossed
+no occupied square. It already checks the winner ended on its own lane; the
+squares it crossed are available as `travelledSquareNames`. Add it if it reads
+naturally alongside the existing checks — it is the same class of bug detector
+as the D14 additions — and say so in the Notes either way.
+
+Depends on: steps 1–7 (this is a fix to the behaviour they delivered).
+
+Verification (automated): `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` all pass; the seed-7 reproduction test
+fails against the current `winnerAdvance` and passes after the fix — confirm
+that ordering explicitly, so the test is known to catch the bug rather than
+merely to agree with the new code.
