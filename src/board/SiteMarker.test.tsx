@@ -141,6 +141,61 @@ describe("SiteMarker", () => {
     },
   );
 
+  it.each([
+    { cyclePosition: 0, expectedOffset: "25%" },
+    { cyclePosition: 0.5, expectedOffset: "37.5%" },
+    { cyclePosition: 1, expectedOffset: "50%" },
+  ])(
+    "moves charged's middle stop to $expectedOffset at cycle position $cyclePosition",
+    ({ cyclePosition, expectedOffset }) => {
+      const { container } = render(
+        <SiteMarker
+          state="charged"
+          squareName={SQUARE_NAME}
+          cyclePosition={cyclePosition}
+        />,
+      );
+
+      const stops = container.querySelectorAll("stop");
+      expect(stops[1]).toHaveAttribute("offset", expectedOffset);
+    },
+  );
+
+  it.each([
+    { cyclePosition: 0, expectedOffset: "50%" },
+    { cyclePosition: 0.5, expectedOffset: "37.5%" },
+    { cyclePosition: 1, expectedOffset: "25%" },
+  ])(
+    "moves depleted's middle stop to $expectedOffset at cycle position $cyclePosition",
+    ({ cyclePosition, expectedOffset }) => {
+      const { container } = render(
+        <SiteMarker
+          state="depleted"
+          squareName={SQUARE_NAME}
+          cyclePosition={cyclePosition}
+        />,
+      );
+
+      const stops = container.querySelectorAll("stop");
+      expect(stops[1]).toHaveAttribute("offset", expectedOffset);
+    },
+  );
+
+  it.each(["charged", "depleted"] as const)(
+    "falls back to %s's start-of-cycle offset when no cycle position is given",
+    (state) => {
+      const { container } = render(
+        <SiteMarker state={state} squareName={SQUARE_NAME} />,
+      );
+
+      const stops = container.querySelectorAll("stop");
+      expect(stops[1]).toHaveAttribute(
+        "offset",
+        EXPECTED_ARTWORK[state].stops[1].offset,
+      );
+    },
+  );
+
   it("reports no axe violations for any state", async () => {
     for (const state of STATES) {
       const { container } = render(

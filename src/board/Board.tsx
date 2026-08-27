@@ -13,8 +13,9 @@ import {
   resolveFight,
   returnPositionSquare,
 } from "../rules/combat";
-import { shipsBySquare, siteStateAt, type Ship } from "../rules/gameState";
+import { shipsBySquare, siteStatusAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
+import { siteCyclePosition } from "../rules/sites";
 import { strandedShipIds } from "../rules/stranded";
 import type { Session, SessionIntent } from "../game/session";
 import { announcementForSession } from "./announcements";
@@ -125,7 +126,15 @@ export function Board({ session, onIntent }: BoardProps) {
         });
         const name = squareName(square);
         const bay = isBay(square);
-        const siteState = siteStateAt(session.state, square);
+        const siteStatus = siteStatusAt(session.state, square);
+        const siteState = siteStatus?.state;
+        const cyclePosition = siteStatus
+          ? siteCyclePosition(
+              siteStatus.state,
+              siteStatus.enteredOnPly,
+              session.state.plyNumber,
+            )
+          : undefined;
         const ship = ships.get(name);
         const occupant = ship && { side: ship.side, shields: ship.shields };
         const condition = ship && shipCondition(ship);
@@ -165,6 +174,7 @@ export function Board({ session, onIntent }: BoardProps) {
               isBay={bay}
               squareName={name}
               siteState={siteState}
+              cyclePosition={cyclePosition}
               returnCue={returnCue}
               occupant={occupant}
               hasActed={hasActed}

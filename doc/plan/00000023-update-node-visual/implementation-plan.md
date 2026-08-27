@@ -395,7 +395,7 @@ distinct. No deviations from the plan. `npm run typecheck`, `npm run lint`,
 
 ## Step 3 — Make the middle stop follow the site's position in its cycle
 
-Status: pending
+Status: committed
 
 Wire step 1's calculation into step 2's artwork, so a charged node's middle
 gradient stop sits at 25% on the turn it wakes and travels outward to 50% on its
@@ -452,6 +452,32 @@ in, and the props already threaded to `SiteMarker`).
 Verification (automated): `npm run typecheck`, `npm run lint` and `npm test`
 all pass, including the new offset assertions in `SiteMarker.test.tsx` and the
 new ply-driven assertions in `Board.test.tsx`.
+
+Notes: `Board.tsx` now calls `siteStatusAt` and passes `siteStatus.state` as
+`siteState` and `siteCyclePosition(siteStatus.state, siteStatus.enteredOnPly,
+session.state.plyNumber)` as the new `cyclePosition` prop, threaded through
+`BoardSquare` (an optional prop, per the plan, so existing `BoardSquare` test
+renders stay valid) to `SiteMarker`. `SiteMarker.tsx` replaced the fixed
+`SITE_ARTWORK` table from step 2 with a `siteArtwork(state, cyclePosition)`
+function — an exhaustive `switch` over `SiteState` with no `default`, which
+`strict` TypeScript still rejects at compile time if a case is dropped,
+preserving the compile-safety property the table gave — because charged's
+and depleted's middle stop is now a value computed from `cyclePosition`
+rather than a literal; the other three stops and both states' radii are
+unchanged literals. The two range ends (25/50 for charged, 50/25 for
+depleted) are named constants (`CHARGED_START_OFFSET_PERCENT` etc.) read by
+one small `middleStopOffsetPercent` helper that linearly interpolates and
+returns the start value when `cyclePosition` is `undefined`; no rounding, so
+the eighth-turn steps stay exact per D6. Added `SiteMarker.test.tsx` cases
+asserting the middle stop at cycle positions 0, 0.5 and 1 for both charged
+and depleted (opposite directions, meeting at 37.5% in the middle) and the
+start-of-cycle fallback with no `cyclePosition` given; added a
+`Board.test.tsx` describe block with a hand-built single-site state asserting
+the rendered offset at the first and last ply of each window, deriving the
+last plies from `CHARGED_LIFE_PLIES`/`DEPLETED_COOLDOWN_PLIES` and the
+depleted window's `enteredOnPly + 1` start per D6, rather than hard-coding
+ply numbers. No deviations from the plan. `npm run typecheck`, `npm run
+lint`, `npm test` (688 tests) and `npm run format:check` all pass.
 
 ---
 

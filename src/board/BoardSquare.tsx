@@ -45,6 +45,7 @@ export interface BoardSquareProps {
   readonly isBay: boolean;
   readonly squareName: string;
   readonly siteState?: SiteState;
+  readonly cyclePosition?: number;
   readonly returnCue?: ReturnCue;
   readonly occupant?: SquareOccupant;
   readonly hasActed?: boolean;
@@ -325,6 +326,7 @@ export function BoardSquare({
   isBay,
   squareName,
   siteState,
+  cyclePosition,
   returnCue,
   occupant,
   hasActed,
@@ -353,7 +355,13 @@ export function BoardSquare({
 
   return (
     <div className={classNames.join(" ")} style={style}>
-      {siteState && <SiteMarker state={siteState} squareName={squareName} />}
+      {siteState && (
+        <SiteMarker
+          state={siteState}
+          squareName={squareName}
+          cyclePosition={cyclePosition}
+        />
+      )}
       {(returnCue === "receptacle" ||
         returnCue === "return-position-and-receptacle") && <ReceptacleMark />}
       {returnCue === "return-position" && <ReturnPositionMark />}
