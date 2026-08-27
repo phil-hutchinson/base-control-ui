@@ -884,7 +884,24 @@ box. The look of the full-box screen is judged by eye at Step 10.
 
 ### Step 9 — Remove the temporary fixture
 
-Status: pending
+Status: committed
+
+Notes: Deleted `src/game/reviewFixture.ts` and reverted `src/App.tsx` to
+`createSession(startingGameState(freshSeed()))` — the import of
+`reviewFixtureGameState` gone, `startingGameState` back, and the
+`createStartingSession` doc comment back to "the real starting position with
+a fresh seed". Restored the three `src/App.test.tsx` assertions to
+`"Green: 0 energy, no nodes held."`, `"Red: 0 energy, no nodes held."` and
+`"1/100"`; the file is now byte-identical to its pre-Step-1 blob, and no
+other test changed. `npm run typecheck`, `npm run lint`,
+`npm run format:check`, `npm test` (41 files, 659 tests — the same count as
+after Step 8) and `npm run build` all pass; `format:check` is now clean with
+no warning at all, Step 1 having formatted `story.md`.
+`grep -rn "reviewFixture" src` returns nothing. The opening position is
+covered in the DOM by the restored `App.test.tsx` assertions (both scores 0,
+the counter at 1/100); the rest of that check — every ship in a bay with an
+all-grey ring, five active sites, none charged or depleted — is the first
+thing on screen at Step 10's gate. No deviation from the step as written.
 
 Delete `src/game/reviewFixture.ts` and restore `src/App.tsx`'s starting session
 to `createSession(startingGameState(freshSeed()))` — the inverse of Step 1's
