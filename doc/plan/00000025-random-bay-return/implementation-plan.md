@@ -275,7 +275,16 @@ is an addition to that test rather than a substitute for it.
 
 ## Step 1 — Rules 0.10: the return bay is drawn at random
 
-Status: pending
+Status: committed
+
+Notes: Rewrote §7.1, extended §1's random-elements sentence to two, dropped
+§8.7 step 6, bumped the version line and `RULES_VERSION` to 0.10, and added
+the 0.10 changelog entry above 0.9. Read the rest of the document for
+stragglers as instructed; found none beyond the ones the plan already
+expected (§3.1, §4's H15 listing, §7's "returned to a bay (section 7.1)",
+Appendix A). No file under `src/` other than `rulesVersion.ts` was touched.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(688 tests, unchanged count) all pass.
 
 Edit `doc/ruleset/rules.md`, add a `doc/ruleset/changelog.md` entry and bump
 `RULES_VERSION` in `src/rules/rulesVersion.ts`. **No behaviour changes in this
