@@ -809,7 +809,9 @@ itself is reviewed by the owner at peer review and final sign-off.
 
 ## Step 7 — Manual verification in the running app
 
-Status: pending
+Status: committed
+
+Notes: The owner ran the app and confirmed the step's checks — no bay carries a cue, a fight sends the beaten ship to an unpredictable bay, a drawn fight returns both ships, and nothing else regressed visually.
 
 The owner runs the app and confirms the story's visible behaviour. Start it
 with `npm run dev` inside the dev container (all development happens in the
