@@ -483,7 +483,7 @@ lint`, `npm test` (688 tests) and `npm run format:check` all pass.
 
 ## Step 4 — Look at it
 
-Status: pending
+Status: committed
 
 No code. This is the owner's visual gate on a story whose whole point is how
 the board looks.
@@ -508,6 +508,14 @@ Verification (manual): Run `npm run dev`, open the app, and check:
   travels back the other way over its cooldown.
 - A ship standing on a site is still drawn on top of the marker and is still
   legible against the charged and depleted artwork.
+
+Notes: Checked by the owner and passed — the artwork, the removed site border,
+the untouched bay borders and the per-turn travel all behave as intended.
+
+The owner noted one thing for **a future story, deliberately not addressed
+here**: the ships will want restyling so the nodes read more clearly beneath
+them. That is a change to ship artwork, which this story puts out of scope, and
+it is not a defect in what this story delivered.
 
 ---
 
