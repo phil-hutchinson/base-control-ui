@@ -582,7 +582,40 @@ returns nothing.
 
 ## Step 4 — Delete the ring: the state field, the drift and the helpers
 
-Status: pending
+Status: committed
+
+Notes: Deleted `CLOCKWISE_BAYS`, `STARTING_RETURN_POSITION_INDEX`,
+`driftReturnPositionIndex` and `bayNumberingFrom` from `src/rules/bays.ts`
+(`BAYS` and `isBay` untouched); removed `returnPositionIndex` from
+`GameState` and `startingGameState` in `src/rules/gameState.ts`; removed
+§8.7 step 6 and its import from `src/rules/endOfTurn.ts`, updating both the
+module header and `runEndOfTurn`'s doc comment from "six steps" to "five
+steps". Grepped for `returnPositionIndex` / `STARTING_RETURN_POSITION_INDEX`
+and found the plan's sixteen listed files plus `src/rules/bays.test.ts`
+(which the plan calls out separately, in the "tests that are about the
+mechanism itself" bullet, not the generic list); dropped the field and its
+import from each. Removed the `CLOCKWISE_BAYS` /
+`driftReturnPositionIndex` / `bayNumberingFrom` describe blocks from
+`src/rules/bays.test.ts` (confirmed first that `fleet.test.ts`'s "matches
+§4's transcribed clockwise order from H15" still independently covers the
+starting-fleet ordering, per **D9**), the step-6 drift describe block and
+its `returnPositionIndex` expectation in `src/rules/endOfTurn.test.ts`
+(simplified the "leaves both totals unchanged" assertion to
+`expect(result.state).toEqual(state)`), the "names H15 as return position
+1" test in `src/rules/gameState.test.ts`, and the three
+now-mechanism-only "drifts the return position…" tests in
+`src/rules/ply.test.ts` (on `applyMove`, `applyAttack` and
+`applyPassGuard`). No new "no ship's square changes" assertion was added:
+the existing "leaves both totals unchanged" test in `endOfTurn.test.ts` now
+asserts the whole resulting state, ships included, equals the input
+unchanged when nothing is held, and none of the five remaining steps ever
+touch a ship's square, so the plan's "if the existing tests already say
+that, no new test is needed" applied. No deviation from the plan otherwise.
+`npm run typecheck`, `npm run lint`, `npm run format:check` (after a
+Prettier auto-fix on `src/rules/bays.ts`) and `npm test` (665 tests, down
+from 682 — 17 tests removed) all pass, including `src/rules/fullGame.test.ts`.
+`grep -rn "returnPositionIndex\|CLOCKWISE_BAYS\|bayNumberingFrom\|driftReturnPositionIndex\|STARTING_RETURN_POSITION_INDEX" src`
+returns nothing.
 
 Remove what the mechanism was made of (**D9**). This is one step because the
 pieces are mutually dependent: `endOfTurn.ts`'s drift is the only writer of

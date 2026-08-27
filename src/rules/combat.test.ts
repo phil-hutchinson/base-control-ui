@@ -54,7 +54,6 @@ function buildState(config: {
   actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
   actionsRemaining?: number;
-  returnPositionIndex?: number;
   plyNumber?: number;
   lengthInRounds?: number;
 }): GameState {
@@ -66,7 +65,6 @@ function buildState(config: {
     actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
-    returnPositionIndex: config.returnPositionIndex ?? 0,
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
   };

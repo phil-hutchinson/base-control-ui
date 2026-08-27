@@ -1,9 +1,8 @@
-// §8.7's end-of-turn sequence: the six steps run once at the end of every
+// §8.7's end-of-turn sequence: the five steps run once at the end of every
 // ply, in the document's order. Reads `state.sideToMove` as the player who
 // just moved and `state.plyNumber` as the ply just played, so `ply.ts` must
 // call this before either changes.
 
-import { driftReturnPositionIndex } from "./bays";
 import type { Square } from "./board";
 import { squareName } from "./board";
 import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
@@ -69,7 +68,7 @@ export interface EndOfTurnResult {
 }
 
 /**
- * Runs §8.7's six steps, in order, for the ply that is ending. `state`'s
+ * Runs §8.7's five steps, in order, for the ply that is ending. `state`'s
  * `sideToMove` is read as the player who just played that ply and
  * `plyNumber` as the ply itself — the caller runs this **before** swapping
  * sides or advancing the ply counter.
@@ -184,16 +183,6 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     workingState = draw.state;
     effects.push(...draw.effects);
   }
-
-  // Step 6: the bay return position drifts one bay counter-clockwise
-  // (§7.1), silently — no effect is produced, since the board already
-  // carries the return-position cues on every square that needs them.
-  workingState = {
-    ...workingState,
-    returnPositionIndex: driftReturnPositionIndex(
-      workingState.returnPositionIndex,
-    ),
-  };
 
   return { state: workingState, effects };
 }

@@ -4,7 +4,6 @@ import { cleanup, render } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { squareAt } from "../rules/board";
-import { STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
 import type { EnergyCollectedEffect } from "../rules/endOfTurn";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import type { GameState } from "../rules/gameState";
@@ -23,7 +22,6 @@ function buildState(plyNumber: number): GameState {
     actedThisPly: [],
     plyNumber,
     randomSeed: 1,
-    returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
   };

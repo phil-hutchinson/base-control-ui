@@ -2,7 +2,6 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
 import { startingGameState, type GameState } from "../rules/gameState";
 import { TurnIndicator } from "./TurnIndicator";
 
@@ -18,7 +17,6 @@ function finishedState(): GameState {
     actedThisPly: [],
     plyNumber: 3,
     randomSeed: 1,
-    returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
     energy: { green: 4, red: 7 },
     lengthInRounds: 1,
   };

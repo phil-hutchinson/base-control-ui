@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BAYS, STARTING_RETURN_POSITION_INDEX, isBay } from "./bays";
+import { BAYS, isBay } from "./bays";
 import { squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
 import {
@@ -58,7 +58,6 @@ function buildState(config: {
     Record<string, SiteState | readonly [SiteState, number]>
   >;
   plyNumber?: number;
-  returnPositionIndex?: number;
   lengthInRounds?: number;
   energy?: { green: number; red: number };
 }): GameState {
@@ -70,8 +69,6 @@ function buildState(config: {
     actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
-    returnPositionIndex:
-      config.returnPositionIndex ?? STARTING_RETURN_POSITION_INDEX,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
   };
@@ -334,21 +331,6 @@ describe("applyMove", () => {
     expect(result.effects).toEqual([
       { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
     ]);
-  });
-
-  it("drifts the return position once the ply's one action ends it", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O15")],
-      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
-    });
-
-    const result = applyMove(state, "green-1", squareFromName("H9"));
-    if (result.outcome !== "applied") {
-      throw new Error("expected the move to be applied");
-    }
-    expect(result.state.returnPositionIndex).not.toBe(
-      STARTING_RETURN_POSITION_INDEX,
-    );
   });
 
   it("refuses a second move of a ship that has already acted this ply, but allows it again next ply", () => {
@@ -845,26 +827,6 @@ describe("applyAttack", () => {
       expect(squareName(attacker.square)).not.toBe(squareName(defender.square));
       seed = result.state.randomSeed;
     }
-  });
-
-  it("drifts the return position once the ply's one attack ends it", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "K5", 4), ship("red-1", "red", "K6", 0)],
-      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
-    });
-
-    const result = applyAttack(state, "green-1", squareFromName("K6"));
-    expect(result.outcome).toBe("applied");
-    if (result.outcome !== "applied") {
-      throw new Error("expected the attack to be applied");
-    }
-    expect(result.state.returnPositionIndex).not.toBe(
-      STARTING_RETURN_POSITION_INDEX,
-    );
-
-    const attacker = result.state.ships.find((s) => s.id === "green-1");
-    expect(attacker?.square).toEqual(squareFromName("K6"));
-    expect(attacker?.shields).toBe(3);
   });
 
   it("refuses a second attack attempt by a ship that has already acted this ply, even with a fresh target in range", () => {
@@ -1547,24 +1509,6 @@ describe("applyPassGuard", () => {
 
     expect(result.state).toEqual(state);
     expect(result.effect).toBeUndefined();
-  });
-
-  it("drifts the return position on a passed ply too, since §8.7 runs in full for one", () => {
-    const state = buildState({
-      ships: [
-        ship("green-1", "green", "A2", 4),
-        ship("red-1", "red", "A1"),
-        ship("red-2", "red", "A3"),
-        ship("red-3", "red", "B2"),
-      ],
-      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
-    });
-
-    const result = applyPassGuard(state);
-
-    expect(result.state.returnPositionIndex).not.toBe(
-      STARTING_RETURN_POSITION_INDEX,
-    );
   });
 
   it("passes once, unconditionally, when no ship at all has a legal move", () => {

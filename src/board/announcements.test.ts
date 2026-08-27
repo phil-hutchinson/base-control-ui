@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
 import { squareAt } from "../rules/board";
 import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
@@ -890,7 +889,6 @@ describe("announcementForSession", () => {
       actedThisPly: [],
       plyNumber: config.plyNumber,
       randomSeed: 1,
-      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
     };
@@ -1502,7 +1500,6 @@ describe("turnIndicatorText", () => {
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       }),
@@ -1519,7 +1516,6 @@ describe("turnIndicatorText", () => {
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       }),
@@ -1536,7 +1532,6 @@ describe("turnIndicatorText", () => {
         actedThisPly: [],
         plyNumber: 7,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 4, red: 4 },
         lengthInRounds: 3,
       }),
@@ -1572,7 +1567,6 @@ describe("HUD wording", () => {
       actedThisPly: [],
       plyNumber: config.plyNumber,
       randomSeed: 1,
-      returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
     };

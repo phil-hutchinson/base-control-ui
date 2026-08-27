@@ -6,7 +6,7 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
-import { BAYS, isBay, STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
+import { BAYS, isBay } from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import {
   CHARGED_LIFE_PLIES,
@@ -386,7 +386,6 @@ describe("Board", () => {
         actedThisPly: [],
         plyNumber,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -590,7 +589,6 @@ describe("Board", () => {
         actedThisPly: overrides?.actedThisPly ?? [],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -758,7 +756,6 @@ describe("Board", () => {
         actedThisPly: config.actedThisPly ?? [],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -931,7 +928,6 @@ describe("Board", () => {
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -1075,7 +1071,6 @@ describe("Board", () => {
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -1113,7 +1108,6 @@ describe("Board", () => {
         actedThisPly: ["green-1"],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -1149,7 +1143,6 @@ describe("Board", () => {
         actedThisPly: ["green-1"],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
