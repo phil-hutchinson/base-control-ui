@@ -43,6 +43,7 @@ import "./BoardSquare.css";
 
 export interface BoardSquareProps {
   readonly isBay: boolean;
+  readonly squareName: string;
   readonly siteState?: SiteState;
   readonly returnCue?: ReturnCue;
   readonly occupant?: SquareOccupant;
@@ -322,6 +323,7 @@ function OwesActionMark() {
 /** One square's visible contents: a site marker, a ship, and a selection marking, each if present. */
 export function BoardSquare({
   isBay,
+  squareName,
   siteState,
   returnCue,
   occupant,
@@ -351,7 +353,7 @@ export function BoardSquare({
 
   return (
     <div className={classNames.join(" ")} style={style}>
-      {siteState && <SiteMarker state={siteState} />}
+      {siteState && <SiteMarker state={siteState} squareName={squareName} />}
       {(returnCue === "receptacle" ||
         returnCue === "return-position-and-receptacle") && <ReceptacleMark />}
       {returnCue === "return-position" && <ReturnPositionMark />}

@@ -163,6 +163,7 @@ export function Board({ session, onIntent }: BoardProps) {
           content: (
             <BoardSquare
               isBay={bay}
+              squareName={name}
               siteState={siteState}
               returnCue={returnCue}
               occupant={occupant}

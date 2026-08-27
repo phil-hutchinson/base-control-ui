@@ -282,6 +282,19 @@ describe("Board", () => {
       }
     });
 
+    it("gives every site marker's gradient its own document-unique id", () => {
+      const { container } = render(
+        <Board session={startingSession} onIntent={noop} />,
+      );
+
+      const gradientIds = Array.from(
+        container.querySelectorAll("radialGradient"),
+      ).map((gradient) => gradient.getAttribute("id"));
+
+      expect(gradientIds).toHaveLength(17);
+      expect(new Set(gradientIds).size).toBe(17);
+    });
+
     it("names exactly five sites active and twelve dormant, none charged or depleted", () => {
       render(<Board session={startingSession} onIntent={noop} />);
 

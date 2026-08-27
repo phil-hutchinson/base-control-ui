@@ -294,7 +294,7 @@ No deviations from the plan.
 
 ## Step 2 — Redraw the four states from the samples
 
-Status: pending
+Status: committed
 
 Redraw `src/board/SiteMarker.tsx` and `src/board/SiteMarker.css` from the six
 SVG samples in [`node-artwork.md`](node-artwork.md), and thread the square's
@@ -373,6 +373,23 @@ Verification (automated): `npm run typecheck`, `npm run lint` and `npm test`
 all pass, including the updated `SiteMarker.test.tsx` assertions for all four
 states' geometry and gradient stops and the new distinct-ids test in
 `Board.test.tsx`.
+
+Notes: Redrew `SiteMarker.tsx` around a `SITE_ARTWORK` table (`Record<SiteState,
+...>`) holding each state's radius and gradient stops, transcribed from
+`node-artwork.md`; charged and depleted use their fixed start-of-cycle middle
+stop (25% / 50%) as instructed, ready for step 3 to make it move. Added the
+required `squareName` prop to `SiteMarker` and `BoardSquare` and threaded
+`name` through from `Board.tsx`, and reduced `SiteMarker.css` to the element's
+box per D10, leaving `.site-marker--<state>` in place per D11 and removing
+only the marker's own border per D12. Updated the `.board-square__mark`
+comment in `BoardSquare.css` per the step's wording change. Updated
+`SiteMarker.test.tsx` (added per-state radius/stop/gradient-id assertions,
+kept the existing modifier-class, decorative and axe tests), mechanically
+added `squareName` to all 29 `BoardSquare` renders in `BoardSquare.test.tsx`
+via a scripted find/replace plus a Prettier pass, and added a
+`Board.test.tsx` test asserting the seventeen rendered gradient ids are all
+distinct. No deviations from the plan. `npm run typecheck`, `npm run lint`,
+`npm test` (676 tests) and `npm run format:check` all pass.
 
 ---
 
