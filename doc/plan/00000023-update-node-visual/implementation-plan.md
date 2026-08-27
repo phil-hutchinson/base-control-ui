@@ -567,7 +567,7 @@ No deviations from the plan. `npm run format:check`, `npm run typecheck`,
 
 ## Step 6 — README check
 
-Status: pending
+Status: committed
 
 Confirm `README.md` is still accurate given this story. Run the
 `/update-readme` command, which reviews the current branch diff and updates the
@@ -583,3 +583,18 @@ Depends on: all previous steps, so the diff it reviews is complete.
 
 Verification (automated): `/update-readme` reports no change needed, or its
 change is applied and `npm run format:check` passes.
+
+Notes: Reviewed the branch diff against `README.md`. Almost all of it stands:
+the story changes no rule, no setup step and no project status, and the README
+never described the markers' colours or shapes.
+
+One clause was added, against the plan's expectation of no change. The story
+gives a player information they could not previously read off the board — how
+much life a charged node has left — and the status paragraph is where the
+README lists what the app now lets a player do. The sentence "A node runs out
+after nine turns" gained "its glow shifts a little on each of them, so you can
+see roughly how much life it has left". The surrounding paragraph was rewrapped
+to keep the line width even, so the diff is wider than the edit; a word-by-word
+comparison confirms that clause is the only change.
+
+Verification (automated): `npm run format:check` passes.
