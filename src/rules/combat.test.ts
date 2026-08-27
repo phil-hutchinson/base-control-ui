@@ -575,7 +575,7 @@ describe("drawReturnBay", () => {
     expect(() => drawReturnBay(state)).toThrow(/§7\.1/);
   });
 
-  it("spreads draws over chained seeds across every empty bay, never an occupied one (D11 coverage sweep)", () => {
+  it("spreads draws over chained seeds across every empty bay, never an occupied one", () => {
     const occupiedBays = new Set(["H15", "O14", "O6", "D1", "A6"]);
     const state = buildState({
       ships: [...occupiedBays].map((name, index) =>

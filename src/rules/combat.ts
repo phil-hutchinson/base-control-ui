@@ -313,8 +313,8 @@ export function resolveFight(
 
 /**
  * The bay a returning ship lands in, drawn at random from the bays that are
- * empty right now (rules.md §7.1): a seed in, the drawn square and the next
- * seed out, in the shape `drawIndex` and `mulberry32` already use. The pool
+ * empty right now (rules.md §7.1): a seed in, `[bay: Square, nextSeed: number]`
+ * out, in the shape `drawIndex` and `mulberry32` already use. The pool
  * is every bay in `BAYS` order with no ship on it, judged against `state`'s
  * current occupancy — recomputed at every point of use and never stored, so
  * a ship moving out of a bay as one action can change the answer for a later

@@ -541,6 +541,42 @@ describe("applyAttack", () => {
     ]);
   });
 
+  it("draws the attacker's bay first on a mutual return, pinned to a stated seed", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
+    });
+
+    // Both bays are empty before the fight, so the attacker's draw picks
+    // from all fourteen; the defender's draw is then made against the pool
+    // with the attacker's bay removed.
+    const [attackerIndex, seedAfterAttackerDraw] = drawIndex(
+      state.randomSeed,
+      BAYS.length,
+    );
+    const attackerBayName = squareName(BAYS[attackerIndex]);
+    const defenderPool = BAYS.filter(
+      (square) => squareName(square) !== attackerBayName,
+    );
+    const [defenderIndex] = drawIndex(
+      seedAfterAttackerDraw,
+      defenderPool.length,
+    );
+    const defenderBayName = squareName(defenderPool[defenderIndex]);
+
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(
+      squareName(result.state.ships.find((s) => s.id === "green-1")!.square),
+    ).toBe(attackerBayName);
+    expect(
+      squareName(result.state.ships.find((s) => s.id === "red-1")!.square),
+    ).toBe(defenderBayName);
+  });
+
   it("costs exactly one shield to beat a 0-shield ship", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 0)],
@@ -734,8 +770,8 @@ describe("applyAttack", () => {
 
   it("advances randomSeed once on a single-loser fight and twice on a mutual return", () => {
     // Drawing the second return of a mutual return from the same seed the
-    // first draw used would silently break replay (D5): the pool is just
-    // one square shorter, so the draw still looks legal.
+    // first draw used would silently break replay: the pool is just one
+    // square shorter, so the draw still looks legal.
     const singleLoser = buildState({
       ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 0)],
     });
@@ -756,11 +792,15 @@ describe("applyAttack", () => {
     if (mutualResult.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
-    // Two draws happened, so the seed must not be where one draw would
-    // leave it.
-    const [, seedAfterOneDraw] = drawIndex(mutual.randomSeed, BAYS.length);
-    expect(mutualResult.state.randomSeed).not.toBe(mutual.randomSeed);
-    expect(mutualResult.state.randomSeed).not.toBe(seedAfterOneDraw);
+    // Both bays start empty, so the attacker's draw picks from all fourteen
+    // and the defender's draw — against the state that already holds the
+    // attacker — picks from the remaining thirteen.
+    const [, seedAfterAttackerDraw] = drawIndex(mutual.randomSeed, BAYS.length);
+    const [, seedAfterDefenderDraw] = drawIndex(
+      seedAfterAttackerDraw,
+      BAYS.length - 1,
+    );
+    expect(mutualResult.state.randomSeed).toBe(seedAfterDefenderDraw);
   });
 
   it("places both ships in different bays on a mutual return, whatever the seed, when exactly two bays are empty", () => {
