@@ -9,6 +9,8 @@
   width: 100%;
   height: 100%;
   border: 2px solid transparent;
+  --site-lit: #ffbe3d;
+  --site-glow: #fff3c4;
 }
 
 .site-marker--depleted {
@@ -22,17 +24,17 @@
 }
 
 .site-marker--active {
-  color: #ffbe3d;
-  border-color: #ffbe3d;
+  color: var(--site-lit);
+  border-color: var(--site-lit);
 }
 
 .site-marker--charged {
-  color: #ffbe3d;
+  color: var(--site-lit);
   border: none;
   background: radial-gradient(
     circle farthest-corner at 50% 50%,
-    #ffbe3d 0%,
-    #ffbe3d 20%,
-    #fff3c4 100%
+    var(--site-lit) 0%,
+    var(--site-lit) 20%,
+    var(--site-glow) 100%
   );
 }

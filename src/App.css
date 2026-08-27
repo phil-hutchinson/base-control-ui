@@ -37,8 +37,8 @@
      `flex: 1; min-height: 0` gives the cabinet itself a resolved height
      from `.app`'s flex column, which `.app__board` in turn needs a share
      of to resolve its own. Once the game ends and its score roll settles,
-     the game-over panel takes this box's place entirely rather than
-     covering it. */
+     the game-over panel takes this box's place: the title, HUD and board
+     are switched off and the panel fills the cabinet on its own. */
   display: flex;
   flex-direction: column;
   align-items: center;

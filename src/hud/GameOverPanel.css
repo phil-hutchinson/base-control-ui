@@ -1,6 +1,6 @@
 .game-over-panel {
-  /* Fills the cabinet in place of the title, HUD and board, rather than
-     covering them — there is nothing left behind it to cover. */
+  /* Fills the cabinet: the panel is the only thing in the box while the
+     game is over. */
   display: flex;
   flex: 1;
   min-height: 0;

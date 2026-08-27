@@ -1,7 +1,6 @@
 .hud {
-  /* No border or background of its own: it now sits inside `.app__cabinet`,
-     which supplies both. The margin keeps it clear of the title above and
-     the board below. */
+  /* No border or background of its own: `.app__cabinet` supplies both.
+     The margin keeps it clear of the title above and the board below. */
   display: flex;
   flex-direction: column;
   align-items: center;

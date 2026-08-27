@@ -4,7 +4,6 @@
 // score has finished counting up without re-deriving the arithmetic itself.
 
 import type { EnergyTotals } from "../rules/gameState";
-import type { Side } from "../rules/fleet";
 import { useCountUp } from "./useCountUp";
 
 /** The totals to draw, plus whether both sides have reached their targets. */
@@ -25,7 +24,7 @@ export function useDisplayedEnergy(energy: EnergyTotals): DisplayedEnergy {
   const red = useCountUp(energy.red);
 
   return {
-    displayed: { green, red } satisfies Record<Side, number>,
+    displayed: { green, red },
     settled: green === energy.green && red === energy.red,
   };
 }

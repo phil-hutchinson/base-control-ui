@@ -14,7 +14,11 @@ function createStartingSession() {
   return createSession(startingGameState(freshSeed()));
 }
 
-/** The app shell: the title and HUD above the board, drawn from the game session. */
+/**
+ * The app shell: one cabinet box holding the title, the HUD and the board,
+ * drawn from the game session, swapped in full for the game-over panel once
+ * the game has ended and the last turn's score roll has settled.
+ */
 export function App() {
   const [session, dispatch] = useReducer(
     sessionReducer,

@@ -14,7 +14,7 @@
   /* `.board-frame` is fifteen tracks wide and fifteen tall, so a square is
      one fifteenth of the container's smaller dimension, floored at 40px for
      legibility. */
-  --square: max(40px, 6.6667cqmin);
+  --square: max(40px, calc(100cqmin / 15));
   display: inline-grid;
   grid-template-columns: repeat(15, var(--square));
   grid-template-rows: repeat(15, var(--square));

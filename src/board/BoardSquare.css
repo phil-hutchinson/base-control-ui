@@ -21,10 +21,10 @@
 
 /* The interaction markings (destination, selected, having moved, and the
    two ship conditions) share one accent, kept distinct from the side
-   colors, the site accent, the bay cyan and the focus-ring amber, so they
-   read as one "you are choosing a move" layer rather than game-state
-   artwork. They differ from each other in shape, not color, so the layer
-   still reads in greyscale. */
+   colors, the site marker's amber and grey/white borders, the bay cyan and
+   the focus-ring amber, so they read as one "you are choosing a move"
+   layer rather than game-state artwork. They differ from each other in
+   shape, not color, so the layer still reads in greyscale. */
 .board-square__mark {
   display: block;
   width: 100%;
