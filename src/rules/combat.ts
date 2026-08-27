@@ -48,21 +48,32 @@ export function attackReach(
  * meaning the winner holds its ground.
  *
  * `reach` is the attack's own `ReachEntry`, exactly as `attackReach` found
- * it. The lane's occupancy is not re-checked here: it was clear when the
- * attack was judged, and the loser has already been placed in a bay by the
- * time this runs, so nothing between the attacker and the loser's former
- * square can be occupied.
+ * it. Occupancy is re-checked here even though the lane was clear when the
+ * attack was judged, because the loser's return may have placed it on a bay
+ * that sits on that same lane; a candidate the winner cannot reach without
+ * crossing an occupied square is skipped, as is an occupied candidate itself.
  */
 export function winnerAdvance(
   state: GameState,
   reach: ReachEntry,
 ): ReachEntry | undefined {
   const lane = [...reach.passedOver, reach.destination];
+  const occupiedSquareNames = shipsBySquare(state);
 
   for (let index = lane.length - 1; index >= 0; index--) {
     const candidate = lane[index];
     const siteState = siteStateAt(state, candidate);
     if (siteState === "dormant" || siteState === "depleted") {
+      continue;
+    }
+    if (occupiedSquareNames.has(squareName(candidate))) {
+      continue;
+    }
+    if (
+      lane
+        .slice(0, index)
+        .some((square) => occupiedSquareNames.has(squareName(square)))
+    ) {
       continue;
     }
     return { destination: candidate, passedOver: lane.slice(0, index) };

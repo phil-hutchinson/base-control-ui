@@ -884,7 +884,47 @@ and stop rather than proceeding to sign-off.
 
 ## Step 8 — A blocked lane stops the winner's advance
 
-Status: pending
+Status: committed
+
+Notes: Reproduced the defect first, as instructed: `startingGameState()` with
+green-1 and red-1 relocated to G15/1 shield and I15/0 shields and
+`randomSeed: 7` set, run through `applyAttack`, gave winner square `I15`
+(crossing the loser's drawn bay at H15) against the unmodified code — logged,
+then discarded before any fix landed. `winnerAdvance` in `src/rules/combat.ts`
+now also skips any lane candidate that is itself occupied, or that can only be
+reached by crossing an occupied square (`shipsBySquare(state)`, checked
+alongside the existing site-state check); its doc comment was rewritten to
+say occupancy is re-checked because the returning loser may have been placed
+on the lane, replacing the now-false claim that nothing on the lane can be
+occupied. `rules.md` §7's "The winner advances" paragraph gained one sentence
+stating the occupied-square block explicitly, and the existing `## 0.10`
+changelog entry gained a bullet recording it; `RULES_VERSION` and the version
+line are unchanged, as instructed. Added two `winnerAdvance` unit tests in
+`combat.test.ts` (stopping short of an occupied candidate or an occupied
+square between it and the attacker; ignoring an occupied square beyond the
+chosen stop) — the existing "lands on the loser's square when it is ordinary
+ground" test already covers the plan's "clear lane is untouched" case, so no
+new test was added for that. Added the pinned D15 reproduction as a permanent
+test in `ply.test.ts` (same scenario as the manual reproduction, built with
+`buildState`/bay-filler ships instead of `startingGameState` to match the
+file's own idiom), asserting the winner holds at G15 and the loser lands at
+H15; confirmed by temporarily reverting `combat.ts` and re-running just that
+test, and separately the two new `combat.test.ts` cases, that each fails
+against the pre-fix code and passes after, per the step's verification
+instruction.
+
+`assertFightInvariants` gained a returned-ship-adjacent check: for every
+square an advancing winner's `travelledSquareNames` lists, no ship other than
+the winner itself occupies it in `after`. Decided in favour of adding it —
+it reads as a natural continuation of the existing per-ship loop (built the
+same way as the D14 additions, and it is exactly the class of bug this step's
+own defect was: an invariant that would have caught the D15 crossing before a
+test happened to notice it) — with its own hand-built before/after test case,
+following the file's existing pattern for this function's tests. No deviation
+from the plan otherwise.
+`npm run typecheck`, `npm run lint`, `npm run format:check` (after a Prettier
+auto-fix on `src/rules/ply.test.ts`) and `npm test` (672 tests, up from 668)
+all pass.
 
 Added after peer review, on the owner's decision. Read **D15** first — it
 records the defect, the reproduction, why the ruleset already forbids it, and

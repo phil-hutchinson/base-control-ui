@@ -25,6 +25,12 @@ until the game plays (see the project's contribution notes).
   is drawn from the bays still empty.** This order makes no difference to
   the odds, but is kept deliberately, because fixing it is what lets a
   recorded game replay exactly.
+- **Section 7 now spells out that the winner's advance cannot cross an
+  occupied square.** If the beaten ship's random bay lands on the lane, it
+  blocks the advance there and the winner stops short of it. The rule was
+  always implied — bays block movement like any other square (section 3.1)
+  — but it is worth stating plainly now that the random draw makes the case
+  materially likelier than the old, predictable return position did.
 
 This changes how the game is played — a beaten ship can no longer be tracked
 to a predictable bay — so it would ordinarily be a tagging candidate, but

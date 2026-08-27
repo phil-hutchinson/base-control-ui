@@ -1319,6 +1319,47 @@ describe("the winner's advance (rules.md §7)", () => {
       expect.objectContaining({ type: "site-charged" }),
     );
   });
+
+  it("holds its ground rather than crossing the bay the loser was just drawn into (D15 reproduction)", () => {
+    // The lane's one intermediate square, H15, is a bay; with H15 and L15
+    // the only empty bays, seed 7 draws the loser into H15, right on the
+    // lane the attacker is advancing down.
+    const emptyBayNames = ["H15", "L15"];
+    const bayOccupants = BAYS.filter(
+      (square) => !emptyBayNames.includes(squareName(square)),
+    ).map((square, index) =>
+      ship(`bay-filler-${index}`, "red", squareName(square)),
+    );
+    const state: GameState = {
+      ...buildState({
+        ships: [
+          ship("green-1", "green", "G15", 1),
+          ship("red-1", "red", "I15", 0),
+          ...bayOccupants,
+        ],
+      }),
+      randomSeed: 7,
+    };
+
+    const result = applyAttack(state, "green-1", squareFromName("I15"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const loser = result.state.ships.find((s) => s.id === "red-1")!;
+    expect(squareName(loser.square)).toBe("H15");
+
+    const winner = result.state.ships.find((s) => s.id === "green-1")!;
+    expect(squareName(winner.square)).toBe("G15");
+    expect(result.effects[0]).toMatchObject({
+      winner: {
+        shipId: "green-1",
+        square: squareFromName("G15"),
+        advanced: false,
+      },
+    });
+  });
 });
 
 describe("assertFightInvariants (rules.md §7)", () => {
@@ -1361,6 +1402,31 @@ describe("assertFightInvariants (rules.md §7)", () => {
       shipId: "green-1",
       laneSquareNames: new Set(["H8", "H9"]),
       travelledSquareNames: new Set(["A1"]),
+    };
+
+    expect(() =>
+      assertFightInvariants(before, after, new Set(["red-1"]), advancingWinner),
+    ).toThrow(RangeError);
+  });
+
+  it("throws when the winning attacker's advance crosses a square another ship occupies in `after` (D15)", () => {
+    const before = buildState({
+      ships: [
+        ship("green-1", "green", "H5", 3),
+        ship("red-1", "red", "H9", 1),
+        ship("red-2", "red", "H7", 0),
+      ],
+    });
+    const after: GameState = {
+      ...before,
+      ships: before.ships.map((s) =>
+        s.id === "green-1" ? { ...s, square: squareFromName("H7") } : s,
+      ),
+    };
+    const advancingWinner: AdvancingWinner = {
+      shipId: "green-1",
+      laneSquareNames: new Set(["H6", "H7", "H8", "H9"]),
+      travelledSquareNames: new Set(["H7"]),
     };
 
     expect(() =>

@@ -243,10 +243,13 @@ holds its ground. The attacker advances along the line it
 attacked down, to the furthest square, working back from the square the
 loser has left, that it may legally end on. "May legally end on" is section
 6's restriction and nothing else — not a dormant site, not a depleted site
-(section 8.5). In the ordinary case that is simply the loser's own square,
-and the winner takes it. If no square on the lane is one it may legally end
-on, the winner holds its ground instead. The squares the winner crosses along
-the way count as touched for section 8.2, exactly as they would for a move.
+(section 8.5). The winner also cannot cross a square another ship occupies:
+if the beaten ship's bay (section 7.1) lies on the lane, it blocks the
+advance there, and the winner stops short of it. In the ordinary case that is
+simply the loser's own square, and the winner takes it. If no square on the
+lane is one it may legally end on, the winner holds its ground instead. The
+squares the winner crosses along the way count as touched for section 8.2,
+exactly as they would for a move.
 
 If both ships carry **the same number of shields**, both are returned to bays
 with 0 shields. The attacker is placed first, then the defender, and both

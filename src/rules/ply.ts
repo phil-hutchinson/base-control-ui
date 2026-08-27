@@ -377,6 +377,11 @@ export interface AdvancingWinner {
  * each lands in a bay that held no ship in `before` — together, exactly what
  * "there is always somewhere to go" promises.
  *
+ * The crossing check pins §7's other guarantee for an advancing winner:
+ * every square in `travelledSquareNames` is, in `after`, either empty or the
+ * winner's own final square — nothing else may sit on the lane it crossed,
+ * including a ship a returning loser was just drawn into a bay on.
+ *
  * Exported so a test can hand-construct an otherwise-impossible before/after
  * pair, since it has no other seam.
  */
@@ -459,6 +464,22 @@ export function assertFightInvariants(
 
   const travelledSquareNames =
     advancingWinner?.travelledSquareNames ?? new Set<string>();
+
+  if (advancingWinner !== undefined) {
+    for (const name of travelledSquareNames) {
+      const occupant = after.ships.find(
+        (ship) =>
+          ship.id !== advancingWinner.shipId &&
+          squareName(ship.square) === name,
+      );
+      if (occupant !== undefined) {
+        throw new RangeError(
+          `winning attacker "${advancingWinner.shipId}" crossed or landed on "${name}" while "${occupant.id}" was there: rules.md §7 never lets the advance cross an occupied square`,
+        );
+      }
+    }
+  }
+
   const siteNames = new Set([
     ...Object.keys(before.siteStates),
     ...Object.keys(after.siteStates),

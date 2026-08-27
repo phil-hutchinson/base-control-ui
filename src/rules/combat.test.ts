@@ -649,6 +649,29 @@ describe("winnerAdvance", () => {
     expect(advance).toBeUndefined();
   });
 
+  it("stops short of an occupied lane square, whether the occupant sits on the candidate itself or between it and the attacker", () => {
+    const state = buildState({
+      ships: [ship("red-1", "red", "H7", 0)],
+    });
+    const advance = winnerAdvance(state, laneOf("H5", "H8"));
+
+    expect(advance).toBeDefined();
+    expect(squareName(advance!.destination)).toBe("H6");
+    expect(squareNames(advance!.passedOver)).toEqual([]);
+  });
+
+  it("ignores an occupied square that lies beyond the square the winner actually stops on", () => {
+    const state = buildState({
+      ships: [ship("red-1", "red", "H8", 0)],
+      siteStates: { H8: "dormant" },
+    });
+    const advance = winnerAdvance(state, laneOf("H5", "H8"));
+
+    expect(advance).toBeDefined();
+    expect(squareName(advance!.destination)).toBe("H7");
+    expect(squareNames(advance!.passedOver)).toEqual(["H6"]);
+  });
+
   it("never lands the winner in a bay, swept across every non-bay origin, every shield count and every lane it offers whose target is itself not a bay, under two extreme site configurations", () => {
     // A lane whose destination is a bay is not one `winnerAdvance` is ever
     // handed in real play: `sevenOnlyAttackRefusalReason` refuses a bay
