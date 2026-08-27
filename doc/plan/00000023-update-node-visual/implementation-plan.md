@@ -521,7 +521,7 @@ it is not a defect in what this story delivered.
 
 ## Step 5 — Record the accessibility consequence
 
-Status: pending
+Status: committed
 
 Append a new section to
 `doc/plan/00000021-accessibility-tech-debt/known-issues.md`, headed for this
@@ -548,6 +548,20 @@ Depends on: Steps 2 and 3, whose change is what the note describes.
 Verification (automated): `npm run format:check` passes (Prettier formats
 Markdown in this repository), and the file contains the new section with the
 story-20 section intact above it.
+
+Notes: Appended a "From story 23 — update node visual" section to
+`known-issues.md`, `###`-level and numbered from 1 within the new section,
+matching the story-20 section's structure. Split the consequence into two
+items rather than one: item 1 covers the artwork change (dormant/active gain
+a size distinction so that pair is resolved, but charged/depleted become the
+same shape differing only by colour, moving story 20's item 3 gap to a
+different pair of states) and item 2 covers the removal of the marker's own
+2px state-coloured border. Both name `src/board/SiteMarker.tsx` and
+`src/board/SiteMarker.css` on their `Where:` line and note that a site's
+state still reaches assistive technology via the unchanged
+`src/board/squareLabel.ts`. Did not touch the story-20 section or preamble.
+No deviations from the plan. `npm run format:check`, `npm run typecheck`,
+`npm run lint` and `npm test` (688 tests) all pass.
 
 ---
 

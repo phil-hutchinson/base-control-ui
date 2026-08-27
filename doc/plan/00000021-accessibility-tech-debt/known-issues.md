@@ -84,3 +84,37 @@ The unlit shield arcs added by this story distinguish present from missing
 shielding by colour (ship colour against grey), but the square's accessible
 name states the ship's shield count in words, including zero, so the
 information does not depend on seeing the ring.
+
+## From story 23 — update node visual
+
+Source: `doc/plan/00000023-update-node-visual/implementation-plan.md` decision
+D14, and `doc/plan/00000023-update-node-visual/story.md`, "Out of scope".
+
+### 1. Charged and depleted are now the same shape, differing by colour alone
+
+Item 3 above, from story 20, described depleted, dormant and active sharing
+one shape and border, distinguished only by colour, with charged
+"unmistakably different." This story redraws all four states with new
+artwork instead of resolving that: dormant and active now differ from each
+other in size as well as hue, so that pair is no longer colour-alone. But
+charged and depleted have become the same shape — a wide circle filling the
+square, one gold-and-wheat, the other grey-and-white — differing only by
+colour. The colour-alone gap moves to a different pair of states rather than
+closing.
+
+As before, a site's state still reaches assistive technology through the
+square's accessible name (`src/board/squareLabel.ts`), unchanged by this
+story, so a screen-reader user is unaffected and the loss falls on a sighted
+player who cannot separate gold/wheat from grey/white.
+
+Where: `src/board/SiteMarker.tsx`, `src/board/SiteMarker.css`.
+
+### 2. The site marker's own border is removed entirely
+
+The 2px state-coloured border that previously sat on `.site-marker` —
+separate from the ordinary grid border every square has — is dropped in this
+story's redraw. A site square's marker is now fill colour alone, with no
+border of its own at all; the ordinary 1px grid border and the bay's 2px cyan
+border are untouched.
+
+Where: `src/board/SiteMarker.tsx`, `src/board/SiteMarker.css`.
