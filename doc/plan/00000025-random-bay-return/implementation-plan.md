@@ -455,7 +455,33 @@ at the running board is part of step 7.
 
 ## Step 3 — The bay is drawn from the seeded generator
 
-Status: pending
+Status: committed
+
+Notes: `combat.ts`'s `returnPositionSquare`/`receptacleBay` replaced by
+`drawReturnBay(state): [Square, number]`, pooling `BAYS` order filtered to
+empty squares and calling `drawIndex` (D2/D4/D6). `applyAttack` in `ply.ts`
+now writes the advanced seed into the intermediate state at each placement,
+on both the mutual-return path (two draws, second against the state that
+already holds the attacker and the first draw's seed) and the single-loser
+path (one draw) — D5. `assertFightInvariants` gained the D14 checks
+(returned ships end on a bay, in distinct bays, each empty in `before`), with
+its own three new hand-built test cases. `combat.test.ts`'s ring-based
+describe block was replaced with one for `drawReturnBay` covering: always an
+empty bay; the one-empty-bay case for many seeds; same seed same bay; seed
+always advances; live recomputation; the empty-pool throw; and the D11
+chained-seed coverage sweep. `ply.test.ts`'s fight tests that pinned a
+specific ring-derived bay were rewritten to assert bay membership and
+liveness as properties instead, except one (the first attacker-win test),
+which pins the exact bay `randomSeed: 1` draws, per the plan's "one pinned
+test" instruction; added the two-seeds-per-draw, two/several-empty-bays and
+seed-advance-once/twice tests the step calls for. Ran the D5 sanity check
+(temporarily drew the mutual return's second bay from the un-advanced seed)
+and confirmed the new "advances randomSeed once…twice" test fails, then
+reverted. `state.returnPositionIndex` and `endOfTurn.ts`'s drift are left in
+place, as instructed, for step 4. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(682 tests, up from 675) all pass; `grep -rn "receptacleBay\|returnPositionSquare" src`
+returns nothing.
 
 Replace "the first empty bay from return position 1" with a seeded draw over
 the empty bays, and thread the advanced seed through `applyAttack`. Read
