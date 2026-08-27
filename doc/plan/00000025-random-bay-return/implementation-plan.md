@@ -676,7 +676,38 @@ returns nothing.
 
 ## Step 5 — A seeded game replays its fights and its bays exactly
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/seededReplay.test.ts`, modelled on `fullGame.test.ts`'s
+header and API usage per D13, with a local attack-first-then-move-else-pass
+policy (no randomness of its own) and a `MAX_ACTIONS` ceiling. The runner
+plays from a given seed for 40 rounds and records the square name of every
+`fight-resolved` effect's `returns[].to`. With this policy and a 40-round
+game, seed `20260819` produces 26 bay returns; test one asserts a floor of 10.
+Test two replays seed `20260819` twice and asserts identical bay sequences and
+identical final states. Test three compares seed `20260819` against
+`20260820`, confirmed by running it to diverge — noted here per the step's
+instruction in case a future change makes this pair coincide. Ran the D5
+sanity check described in the step: temporarily made the mutual return's
+second `drawReturnBay` call use the un-advanced `state` (both wrong occupancy
+and wrong seed) instead of `afterAttackerReturned`, which made all three new
+tests fail with `assertFightInvariants`'s "two returned ships both ended in
+bay" error (rather than merely producing a different-but-still-self-consistent
+result), then reverted — confirmed `git diff` on `src/rules/ply.ts` is clean
+afterwards. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(668 tests, up from 665) all pass.
+
+One observation worth recording, since it looks like a failure of the draw and
+is not. Under this attack-first policy the recorded bay sequence oscillates
+between **H15 and L15 alone**, rather than spreading around the board. The
+cause is the size of the pool, not the draw: the policy sends the same two
+ships into each other repeatedly, so only those two ships are ever off their
+bays, and only their two bays are ever empty. The orchestrator confirmed this
+by instrumenting the same policy and counting the empty bays at each fight —
+**exactly 2 at every one of them**, so the draw has two candidates and no room
+to spread. Wider pools are covered by D11's chained-seed sweep in
+`combat.test.ts`, which asserts every empty bay is hit. Nothing to fix.
 
 Add one integration test proving the property the whole seeded-generator design
 exists for: the same opening seed and the same sequence of actions produce the
