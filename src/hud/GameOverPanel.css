@@ -1,14 +1,16 @@
 .game-over-panel {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
+  /* Fills the cabinet: the panel is the only thing in the box while the
+     game is over. */
   display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1rem;
   padding: 2rem;
-  background-color: var(--color-space);
+  background-color: var(--color-space-raised);
   text-align: center;
 }
 

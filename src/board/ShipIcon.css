@@ -4,6 +4,12 @@
   display: block;
   width: 100%;
   height: 100%;
+
+  /* Grey used for the shield arcs a ship does not currently have, so the
+     ring shows what is missing as well as what is present. Stays visible
+     against both an ordinary square and a bay, without reading as either
+     side's colour. */
+  --unlit-arc-colour: #5a6480;
 }
 
 .ship-icon--green {
@@ -12,4 +18,12 @@
 
 .ship-icon--red {
   color: var(--color-red);
+}
+
+.ship-icon__arc--lit {
+  stroke: currentColor;
+}
+
+.ship-icon__arc--unlit {
+  stroke: var(--unlit-arc-colour);
 }

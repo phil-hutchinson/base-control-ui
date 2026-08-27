@@ -6,27 +6,24 @@
    fill and a heavier, differently coloured border so they read as distinct at
    a glance rather than a barely-different shade.
 
-   `.board-frame` wraps the grid with a row of column letters below it and a
-   column of row numbers beside it, both sized from the same `--square` so
-   they stay aligned with the grid tracks at every viewport size. The labels
-   live outside the `role="grid"` element (an ARIA grid may only own rows) and
-   are `aria-hidden`, since every square's accessible name already carries its
-   coordinates. */
+   `.board-frame` is a plain 15 x 15 wrapper around the grid, with no row or
+   column labels drawn on screen — every square's accessible name already
+   carries its coordinates. */
 
 .board-frame {
-  /* `.board-frame` is sixteen tracks wide and sixteen tall (fifteen board
-     tracks plus one label track in each axis), so a square is one sixteenth
-     of the container's smaller dimension, floored at 40px for legibility. */
-  --square: max(40px, 6.25cqmin);
+  /* `.board-frame` is fifteen tracks wide and fifteen tall, so a square is
+     one fifteenth of the container's smaller dimension, floored at 40px for
+     legibility. */
+  --square: max(40px, calc(100cqmin / 15));
   display: inline-grid;
-  grid-template-columns: var(--square) repeat(15, var(--square));
-  grid-template-rows: repeat(15, var(--square)) var(--square);
+  grid-template-columns: repeat(15, var(--square));
+  grid-template-rows: repeat(15, var(--square));
 }
 
 .board {
   --bay-fill: #223463;
   --bay-border: #5fd0e8;
-  grid-column: 2 / 17;
+  grid-column: 1 / 16;
   grid-row: 1 / 16;
   display: grid;
   grid-template-columns: repeat(15, var(--square));
@@ -34,36 +31,6 @@
   /* Outlined rather than bordered so the edge does not consume the
      stretched grid item's box, and stays even on all four sides. */
   outline: 2px solid var(--color-text-dim);
-}
-
-.board-frame__row-labels {
-  grid-column: 1;
-  grid-row: 1 / 16;
-  display: grid;
-  grid-template-rows: repeat(15, var(--square));
-}
-
-.board-frame__corner {
-  grid-column: 1;
-  grid-row: 16;
-}
-
-.board-frame__column-labels {
-  grid-column: 2 / 17;
-  grid-row: 16;
-  display: grid;
-  grid-template-columns: repeat(15, var(--square));
-}
-
-.board-frame__label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Sized from --square (already floored, so this needs no floor of its
-     own), not the viewport, so the labels keep the same proportion to the
-     squares they annotate as the board grows or shrinks. */
-  font-size: calc(var(--square) * 0.35);
-  color: var(--color-text-dim);
 }
 
 /* One square's own contents (site marker, ship, bay fill/border) are styled

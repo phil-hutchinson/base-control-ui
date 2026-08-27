@@ -20,3 +20,10 @@ export const ARC_FILL_ORDER: readonly ArcPosition[] = [
 export function litArcPositions(shields: ShieldCount): readonly ArcPosition[] {
   return ARC_FILL_ORDER.slice(0, shields);
 }
+
+/** The arc positions not lit for a given shield count, in fill order. */
+export function unlitArcPositions(
+  shields: ShieldCount,
+): readonly ArcPosition[] {
+  return ARC_FILL_ORDER.slice(shields);
+}

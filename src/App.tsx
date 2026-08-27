@@ -4,6 +4,7 @@ import { freshSeed } from "./game/seed";
 import { createSession, sessionReducer } from "./game/session";
 import { GameOverPanel } from "./hud/GameOverPanel";
 import { Hud } from "./hud/Hud";
+import { useDisplayedEnergy } from "./hud/useDisplayedEnergy";
 import { isGameOver } from "./rules/gameLength";
 import { startingGameState } from "./rules/gameState";
 import "./App.css";
@@ -13,12 +14,19 @@ function createStartingSession() {
   return createSession(startingGameState(freshSeed()));
 }
 
-/** The app shell: the title and HUD above the board, drawn from the game session. */
+/**
+ * The app shell: one cabinet box holding the title, the HUD and the board,
+ * drawn from the game session, swapped in full for the game-over panel once
+ * the game has ended and the last turn's score roll has settled.
+ */
 export function App() {
   const [session, dispatch] = useReducer(
     sessionReducer,
     undefined,
     createStartingSession,
+  );
+  const { displayed: displayedEnergy, settled } = useDisplayedEnergy(
+    session.state.energy,
   );
 
   /** Play again: a fresh seed, the finished game's own length, nothing else. */
@@ -30,16 +38,24 @@ export function App() {
     });
   }
 
+  // The panel takes over the whole cabinet once the game has ended and the
+  // last turn's score roll has settled — until then the game stays on
+  // screen and the HUD keeps counting up.
+  const gameOver = isGameOver(session.state) && settled;
+
   return (
     <main className="app">
-      <h1 className="app__title">Base Control</h1>
-      <Hud state={session.state} />
       <div className="app__cabinet">
-        <div className="app__board">
-          <Board session={session} onIntent={dispatch} />
-        </div>
-        {isGameOver(session.state) && (
+        {gameOver ? (
           <GameOverPanel state={session.state} onPlayAgain={handlePlayAgain} />
+        ) : (
+          <>
+            <h1 className="app__title">Base Control</h1>
+            <Hud state={session.state} displayedEnergy={displayedEnergy} />
+            <div className="app__board">
+              <Board session={session} onIntent={dispatch} />
+            </div>
+          </>
         )}
       </div>
     </main>

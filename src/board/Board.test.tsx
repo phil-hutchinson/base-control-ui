@@ -147,17 +147,20 @@ describe("Board", () => {
     expect(greenPath?.getAttribute("d")).not.toBe(redPath?.getAttribute("d"));
   });
 
-  it("draws exactly as many shield arcs as the starting fleet carries", () => {
+  it("draws exactly as many lit shield arcs as the starting fleet carries, four arcs per ship", () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,
     );
 
-    const expectedArcs = STARTING_FLEET.reduce(
+    const expectedLitArcs = STARTING_FLEET.reduce(
       (total, entry) => total + entry.shields,
       0,
     );
     expect(container.querySelectorAll("[data-arc-position]")).toHaveLength(
-      expectedArcs,
+      STARTING_FLEET.length * 4,
+    );
+    expect(container.querySelectorAll(".ship-icon__arc--lit")).toHaveLength(
+      expectedLitArcs,
     );
   });
 
@@ -208,29 +211,28 @@ describe("Board", () => {
     expect(svg?.querySelector("title, desc")).toBeNull();
   });
 
-  it("draws visible column letters and row numbers, hidden from the accessibility tree", () => {
+  it("draws no row or column labels, leaving a plain 15 x 15 grid", () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,
     );
 
-    // The grid itself is unaffected: still 225 cells, none of them the labels.
+    // `.board-frame` holds nothing but the grid and the energy overlay -
+    // neither label element is in the DOM at all any more.
+    const frame = container.querySelector(".board-frame");
+    expect(frame?.children).toHaveLength(2);
+    expect(frame?.querySelector(".board")).toBeInTheDocument();
+    expect(frame?.querySelector(".energy-overlay")).toBeInTheDocument();
+
+    // The grid itself is unaffected: still 225 cells, none of them labels.
     expect(screen.getAllByRole("row")).toHaveLength(15);
     expect(screen.getAllByRole("gridcell")).toHaveLength(225);
     expect(screen.queryByRole("columnheader")).not.toBeInTheDocument();
     expect(screen.queryByRole("rowheader")).not.toBeInTheDocument();
 
-    const rowLabels = container.querySelector(".board-frame__row-labels");
-    const columnLabels = container.querySelector(".board-frame__column-labels");
-    expect(rowLabels).toHaveAttribute("aria-hidden", "true");
-    expect(columnLabels).toHaveAttribute("aria-hidden", "true");
-
-    // The letters and numbers are drawn in the DOM, in board order, but their
-    // `aria-hidden` ancestor (asserted above) removes them from the
-    // accessibility tree entirely.
-    expect(rowLabels?.textContent).toBe(
-      Array.from({ length: 15 }, (_, index) => 15 - index).join(""),
-    );
-    expect(columnLabels?.textContent).toBe("ABCDEFGHIJKLMNO");
+    // Square names are unaffected: a square's accessible name still carries
+    // its coordinates, even though they are no longer drawn on screen.
+    expect(screen.getByRole("gridcell", { name: "A1" })).toBeInTheDocument();
+    expect(screen.getByRole("gridcell", { name: "O15" })).toBeInTheDocument();
   });
 
   describe("sites on the starting board", () => {

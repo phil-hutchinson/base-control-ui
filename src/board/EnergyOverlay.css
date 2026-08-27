@@ -2,7 +2,7 @@
    the grid's box with no measurement of its own. Its children are placed in
    percentages of that box, computed by boardView.ts's centroid function. */
 .energy-overlay {
-  grid-column: 2 / 17;
+  grid-column: 1 / 16;
   grid-row: 1 / 16;
   position: relative;
   pointer-events: none;

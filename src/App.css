@@ -28,23 +28,23 @@
 }
 
 .app__cabinet {
-  /* The bezel around the playing area: a raised frame surrounding
-     `.app__board`, the way a cabinet's screen sits inside its own surround.
-     The padding here is the bezel's thickness, taken out of the room
+  /* The one console box: the title, the HUD strip and the board area, all
+     inside a single raised frame, the way an arcade cabinet's whole front
+     panel is one surround rather than a separate bezel per screen. The
+     padding here is that frame's thickness, taken out of the room
      `.app__board` measures itself against — the board still grows and
      shrinks with no ceiling of its own, just from a smaller starting box.
-     `position: relative` anchors the game-over panel, so it covers the
-     bezel too rather than stopping at the smaller box `.app__board`
-     resolves to — a board too tall or wide for that box overflows past it
-     on the bottom, left or right (never the top, which stays flush by
-     construction), and a panel sized to `.app__board` alone would leave
-     that overflow, and the bezel behind it, uncovered on those sides. */
+     `flex: 1; min-height: 0` gives the cabinet itself a resolved height
+     from `.app`'s flex column, which `.app__board` in turn needs a share
+     of to resolve its own. Once the game ends and its score roll settles,
+     the game-over panel takes this box's place: the title, HUD and board
+     are switched off and the panel fills the cabinet on its own. */
   display: flex;
-  position: relative;
+  flex-direction: column;
+  align-items: center;
   flex: 1;
   min-height: 0;
   width: 100%;
-  justify-content: center;
   padding: clamp(0.75rem, 2vw, 1.5rem);
   border: 2px solid var(--color-text-dim);
   border-radius: 1rem;
@@ -58,10 +58,10 @@
   /* A size container so `.board-frame` can measure its square size against
      the room this element actually has, in each axis. `flex: 1` with
      `min-height: 0` gives it a resolved height to measure, taken from the
-     `.app__cabinet` bezel's own resolved height. Aligned to the block-axis
-     start rather than centred, so a board too large for the container
-     overflows downward into scrollable space instead of being clipped off
-     the top. */
+     `.app__cabinet` box's own resolved height, once the title and the HUD
+     above it have taken their share. Aligned to the block-axis start rather
+     than centred, so a board too large for the container overflows downward
+     into scrollable space instead of being clipped off the top. */
   container-type: size;
   display: flex;
   flex: 1;

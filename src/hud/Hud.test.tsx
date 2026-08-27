@@ -16,7 +16,7 @@ describe("Hud", () => {
       plyNumber: 69,
     };
 
-    render(<Hud state={state} />);
+    render(<Hud state={state} displayedEnergy={state.energy} />);
 
     expect(
       screen.getByText("Green: 24 energy, no nodes held."),
@@ -31,7 +31,7 @@ describe("Hud", () => {
   it("reads a shorter game's own length in the round counter", () => {
     const state = { ...startingGameState(1, 3), plyNumber: 3 };
 
-    render(<Hud state={state} />);
+    render(<Hud state={state} displayedEnergy={state.energy} />);
 
     expect(screen.getByText("2/3")).toBeInTheDocument();
   });
@@ -39,7 +39,9 @@ describe("Hud", () => {
   it("has no static accessibility violations", async () => {
     const state = startingGameState(1);
 
-    const { container } = render(<Hud state={state} />);
+    const { container } = render(
+      <Hud state={state} displayedEnergy={state.energy} />,
+    );
 
     const results = await axe.run(container, {
       rules: { "color-contrast": { enabled: false } },

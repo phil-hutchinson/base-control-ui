@@ -6,15 +6,20 @@
 // the SVG carries no title or description and is hidden from the
 // accessibility tree.
 //
-// A shield ring is drawn around the hull as up to four 90-degree arcs, one
-// per lit position from shieldArcs.ts, each the ship's own colour and
-// separated from its neighbours by a visible gap. The hull is scaled down
-// from its original size so the ring has room to sit outside it without
-// reaching the edge of the square.
+// A shield ring is drawn around the hull as four 90-degree arcs, one per
+// position from shieldArcs.ts, each separated from its neighbours by a
+// visible gap. Lit positions take the ship's own colour; unlit ones are
+// grey, so the ring shows how much shielding is missing as well as how much
+// is present. The hull is scaled down from its original size so the ring has
+// room to sit outside it without reaching the edge of the square.
 
 import type { Side } from "../rules/fleet";
 import type { ShieldCount } from "../rules/shields";
-import { litArcPositions, type ArcPosition } from "./shieldArcs";
+import {
+  ARC_FILL_ORDER,
+  unlitArcPositions,
+  type ArcPosition,
+} from "./shieldArcs";
 import "./ShipIcon.css";
 
 interface ShipIconProps {
@@ -75,6 +80,7 @@ function arcPath(quadrantIndex: number): string {
 }
 
 export function ShipIcon({ side, shields }: ShipIconProps) {
+  const unlitPositions = new Set(unlitArcPositions(shields));
   return (
     <svg
       className={`ship-icon ship-icon--${side}`}
@@ -92,17 +98,22 @@ export function ShipIcon({ side, shields }: ShipIconProps) {
           strokeLinejoin="round"
         />
       </g>
-      {litArcPositions(shields).map((position) => (
-        <path
-          key={position}
-          data-arc-position={position}
-          d={arcPath(ARC_QUADRANT[position])}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={RING_STROKE_WIDTH}
-          strokeLinecap="butt"
-        />
-      ))}
+      {ARC_FILL_ORDER.map((position) => {
+        const lit = !unlitPositions.has(position);
+        return (
+          <path
+            key={position}
+            data-arc-position={position}
+            className={`ship-icon__arc ${
+              lit ? "ship-icon__arc--lit" : "ship-icon__arc--unlit"
+            }`}
+            d={arcPath(ARC_QUADRANT[position])}
+            fill="none"
+            strokeWidth={RING_STROKE_WIDTH}
+            strokeLinecap="butt"
+          />
+        );
+      })}
     </svg>
   );
 }
