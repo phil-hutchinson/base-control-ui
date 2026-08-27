@@ -87,6 +87,28 @@ for a non-technical reader. When writing user stories, the "user" is typically
 a player, not a developer. Technical depth belongs in `CONTRIBUTING.md`, code,
 and planning documents.
 
+## Accessibility during pre-release
+
+The game is still being built and iterated on: how it looks, and how it is
+played, both change from story to story. Until it is released, **do not spend
+work keeping accessibility intact through a change** — visual, gameplay, or
+anything else. Where a change costs an accessible behaviour, accept the cost
+and **record it** as a note in
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md`, so the eventual
+accessibility story picks it up deliberately.
+
+This is affordable because the base plumbing is already in place — accessible
+names, announcements, the live region, keyboard navigation. What is deferred
+is repair work on top of it, which can be done when the time comes without a
+rewrite.
+
+For tests: **do not add plan steps for testing accessibility.** Where an
+existing automated test has a straightforward path to being updated, update
+it; where it does not, the story does not owe it one.
+
+That document is the single ledger for these notes; it is not an audit, and
+nothing goes in it that was not knowingly accepted by a story.
+
 ## Conventions
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the toolchain, dependency policy,

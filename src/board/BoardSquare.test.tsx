@@ -10,15 +10,19 @@ afterEach(cleanup);
 
 describe("BoardSquare", () => {
   it("renders neither a site marker nor a ship on a plain empty square", () => {
-    const { container } = render(<BoardSquare isBay={false} />);
+    const { container } = render(<BoardSquare isBay={false} squareName="H8" />);
 
     expect(container.querySelector(".site-marker")).toBeNull();
     expect(container.querySelector(".ship-icon")).toBeNull();
   });
 
   it("draws the bay modifier class only when the square is a bay", () => {
-    const { container: bay } = render(<BoardSquare isBay={true} />);
-    const { container: plain } = render(<BoardSquare isBay={false} />);
+    const { container: bay } = render(
+      <BoardSquare isBay={true} squareName="C7" />,
+    );
+    const { container: plain } = render(
+      <BoardSquare isBay={false} squareName="H8" />,
+    );
 
     expect(bay.querySelector(".board-square--bay")).toBeInTheDocument();
     expect(plain.querySelector(".board-square--bay")).toBeNull();
@@ -28,6 +32,7 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         siteState="charged"
         occupant={{ side: "green", shields: 2 }}
       />,
@@ -50,9 +55,11 @@ describe("BoardSquare", () => {
 
   it("renders the destination mark when marked as a legal destination, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isBay={false} mark="destination" />,
+      <BoardSquare isBay={false} squareName="H8" mark="destination" />,
     );
-    const { container: unmarked } = render(<BoardSquare isBay={false} />);
+    const { container: unmarked } = render(
+      <BoardSquare isBay={false} squareName="H8" />,
+    );
 
     expect(
       marked.querySelector(".board-square__mark--destination"),
@@ -64,9 +71,11 @@ describe("BoardSquare", () => {
 
   it("renders the selected mark when marked as selected, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isBay={false} mark="selected" />,
+      <BoardSquare isBay={false} squareName="H8" mark="selected" />,
     );
-    const { container: unmarked } = render(<BoardSquare isBay={false} />);
+    const { container: unmarked } = render(
+      <BoardSquare isBay={false} squareName="H8" />,
+    );
 
     expect(
       marked.querySelector(".board-square__mark--selected"),
@@ -78,10 +87,13 @@ describe("BoardSquare", () => {
     const { container: marked } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         mark={{ kind: "target", outcome: "attacker-won" }}
       />,
     );
-    const { container: unmarked } = render(<BoardSquare isBay={false} />);
+    const { container: unmarked } = render(
+      <BoardSquare isBay={false} squareName="H8" />,
+    );
 
     expect(
       marked.querySelector(".board-square__mark--target"),
@@ -93,11 +105,12 @@ describe("BoardSquare", () => {
     const { container: target } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         mark={{ kind: "target", outcome: "attacker-won" }}
       />,
     );
     const { container: destination } = render(
-      <BoardSquare isBay={false} mark="destination" />,
+      <BoardSquare isBay={false} squareName="H8" mark="destination" />,
     );
 
     const ring = target.querySelector(".board-square__mark--target circle");
@@ -115,6 +128,7 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         mark={{ kind: "target", outcome: "attacker-won" }}
       />,
     );
@@ -130,12 +144,17 @@ describe("BoardSquare", () => {
     const { container: marked } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         occupant={{ side: "green", shields: 0 }}
         hasActed={true}
       />,
     );
     const { container: unmarked } = render(
-      <BoardSquare isBay={false} occupant={{ side: "green", shields: 0 }} />,
+      <BoardSquare
+        isBay={false}
+        squareName="H8"
+        occupant={{ side: "green", shields: 0 }}
+      />,
     );
 
     expect(
@@ -153,6 +172,7 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         occupant={{ side: "green", shields: 0 }}
         condition="no-action"
       />,
@@ -176,6 +196,7 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         occupant={{ side: "green", shields: 0 }}
         hasActed={true}
         condition="no-action"
@@ -197,6 +218,7 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         occupant={{ side: "green", shields: 0 }}
         condition="owes-action"
       />,
@@ -217,6 +239,7 @@ describe("BoardSquare", () => {
       const { container } = render(
         <BoardSquare
           isBay={false}
+          squareName="H8"
           occupant={{ side: "green", shields: 0 }}
           condition={condition}
         />,
@@ -231,6 +254,7 @@ describe("BoardSquare", () => {
     const { container: noActionContainer } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         occupant={{ side: "green", shields: 0 }}
         condition="no-action"
       />,
@@ -245,6 +269,7 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         occupant={{ side: "green", shields: 0 }}
         hasActed={true}
       />,
@@ -259,6 +284,7 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         occupant={{ side: "green", shields: 0 }}
         condition="owes-action"
         mark="selected"
@@ -277,6 +303,7 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         siteState="active"
         occupant={{ side: "red", shields: 3 }}
         mark="destination"
@@ -293,9 +320,11 @@ describe("BoardSquare", () => {
 
   it("renders four stroked corner lines for return position 1, and none with no return cue", () => {
     const { container: marked } = render(
-      <BoardSquare isBay={true} returnCue="return-position" />,
+      <BoardSquare isBay={true} squareName="C7" returnCue="return-position" />,
     );
-    const { container: unmarked } = render(<BoardSquare isBay={true} />);
+    const { container: unmarked } = render(
+      <BoardSquare isBay={true} squareName="C7" />,
+    );
 
     const lines = marked.querySelectorAll(
       ".board-square__mark--return-position line",
@@ -311,9 +340,11 @@ describe("BoardSquare", () => {
 
   it("renders four filled corner triangles for the receptacle, and none with no return cue", () => {
     const { container: marked } = render(
-      <BoardSquare isBay={true} returnCue="receptacle" />,
+      <BoardSquare isBay={true} squareName="C7" returnCue="receptacle" />,
     );
-    const { container: unmarked } = render(<BoardSquare isBay={true} />);
+    const { container: unmarked } = render(
+      <BoardSquare isBay={true} squareName="C7" />,
+    );
 
     const triangles = marked.querySelectorAll(
       ".board-square__mark--receptacle path",
@@ -329,7 +360,11 @@ describe("BoardSquare", () => {
 
   it("draws only the solid receptacle triangles when a bay is both position 1 and the receptacle", () => {
     const { container } = render(
-      <BoardSquare isBay={true} returnCue="return-position-and-receptacle" />,
+      <BoardSquare
+        isBay={true}
+        squareName="C7"
+        returnCue="return-position-and-receptacle"
+      />,
     );
 
     expect(
@@ -352,6 +387,7 @@ describe("BoardSquare", () => {
         const { container } = render(
           <BoardSquare
             isBay={false}
+            squareName="H8"
             occupant={{ side: "green", shields: 1 }}
             hasActed={hasActed}
             condition={condition}

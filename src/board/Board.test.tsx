@@ -13,7 +13,12 @@ import {
   STARTING_RETURN_POSITION_INDEX,
 } from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
-import { startingSiteState } from "../rules/sites";
+import {
+  CHARGED_LIFE_PLIES,
+  DEPLETED_COOLDOWN_PLIES,
+  SITES,
+  startingSiteState,
+} from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalDestinations } from "../rules/movement";
@@ -282,6 +287,19 @@ describe("Board", () => {
       }
     });
 
+    it("gives every site marker's gradient its own document-unique id", () => {
+      const { container } = render(
+        <Board session={startingSession} onIntent={noop} />,
+      );
+
+      const gradientIds = Array.from(
+        container.querySelectorAll("radialGradient"),
+      ).map((gradient) => gradient.getAttribute("id"));
+
+      expect(gradientIds).toHaveLength(SITES.length);
+      expect(new Set(gradientIds).size).toBe(SITES.length);
+    });
+
     it("names exactly five sites active and twelve dormant, none charged or depleted", () => {
       render(<Board session={startingSession} onIntent={noop} />);
 
@@ -372,6 +390,112 @@ describe("Board", () => {
       }),
     ).toBeInTheDocument();
     expect(container.querySelectorAll(".ship-icon--green")).toHaveLength(7);
+  });
+
+  describe("the site cycle position reaching the marker", () => {
+    // A minimal hand-built state with a single site square, isolating the
+    // wiring from Board.tsx's ply number and the site's enteredOnPly through
+    // to the marker's middle gradient stop.
+    function stateWithSite(
+      square: Square,
+      state: "charged" | "depleted",
+      enteredOnPly: number,
+      plyNumber: number,
+    ): GameState {
+      return {
+        ships: [],
+        siteStates: {
+          [squareName(square)]: { state, enteredOnPly },
+        },
+        sideToMove: "green",
+        actionsRemaining: 1,
+        actedThisPly: [],
+        plyNumber,
+        randomSeed: 1,
+        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      };
+    }
+
+    function middleStopOffset(container: HTMLElement, state: string) {
+      const marker = container.querySelector(`.site-marker--${state}`);
+      const stops = marker?.querySelectorAll("stop");
+      return stops?.[1]?.getAttribute("offset");
+    }
+
+    it("shows a charged site at its start-of-cycle offset on the ply it woke", () => {
+      const enteredOnPly = 5;
+      const session: Session = {
+        state: stateWithSite(
+          squareAt("H", 8),
+          "charged",
+          enteredOnPly,
+          enteredOnPly,
+        ),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      expect(middleStopOffset(container, "charged")).toBe("25%");
+    });
+
+    it("shows a charged site at its end-of-cycle offset on its last charged ply", () => {
+      const enteredOnPly = 5;
+      const lastPly = enteredOnPly + CHARGED_LIFE_PLIES - 1;
+      const session: Session = {
+        state: stateWithSite(
+          squareAt("H", 8),
+          "charged",
+          enteredOnPly,
+          lastPly,
+        ),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      expect(middleStopOffset(container, "charged")).toBe("50%");
+    });
+
+    it("shows a depleted site at its start-of-cycle offset on its first cooling ply", () => {
+      // The depleted window starts the ply after enteredOnPly: the site
+      // was still charged for the whole of the ply it depleted on.
+      const enteredOnPly = 5;
+      const firstCoolingPly = enteredOnPly + 1;
+      const session: Session = {
+        state: stateWithSite(
+          squareAt("H", 8),
+          "depleted",
+          enteredOnPly,
+          firstCoolingPly,
+        ),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      expect(middleStopOffset(container, "depleted")).toBe("50%");
+    });
+
+    it("shows a depleted site at its end-of-cycle offset on its last cooling ply", () => {
+      const enteredOnPly = 5;
+      const lastPly = enteredOnPly + DEPLETED_COOLDOWN_PLIES;
+      const session: Session = {
+        state: stateWithSite(
+          squareAt("H", 8),
+          "depleted",
+          enteredOnPly,
+          lastPly,
+        ),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      expect(middleStopOffset(container, "depleted")).toBe("25%");
+    });
   });
 
   describe("selection markings", () => {

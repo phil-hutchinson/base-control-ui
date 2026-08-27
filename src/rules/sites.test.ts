@@ -8,6 +8,7 @@ import {
   STARTING_ACTIVE_SITES,
   hasChargedNodeFinished,
   hasDepletedSiteFinishedCooling,
+  siteCyclePosition,
   startingSiteState,
 } from "./sites";
 
@@ -195,5 +196,93 @@ describe("the site clocks (rules.md §8.3, §8.6)", () => {
     const depletedOnPly = 9;
     expect(hasDepletedSiteFinishedCooling(depletedOnPly, 17)).toBe(false);
     expect(hasDepletedSiteFinishedCooling(depletedOnPly, 18)).toBe(true);
+  });
+});
+
+describe("the site cycle position (rules.md §8.3, §8.6)", () => {
+  /** The last ply a node charged on `enteredOnPly` is still displayed charged. */
+  function lastChargedPly(enteredOnPly: number): number {
+    let ply = enteredOnPly;
+    while (!hasChargedNodeFinished(enteredOnPly, ply)) {
+      ply++;
+    }
+    return ply;
+  }
+
+  /** The last ply a site depleted on `enteredOnPly` is still displayed depleted. */
+  function lastDepletedPly(enteredOnPly: number): number {
+    let ply = enteredOnPly + 1;
+    while (!hasDepletedSiteFinishedCooling(enteredOnPly, ply)) {
+      ply++;
+    }
+    return ply;
+  }
+
+  it("has charged report 0 on the ply it was charged", () => {
+    const enteredOnPly = 5;
+    expect(siteCyclePosition("charged", enteredOnPly, enteredOnPly)).toBe(0);
+  });
+
+  it("has charged report 1 on the last ply hasChargedNodeFinished says it is still running", () => {
+    const enteredOnPly = 5;
+    const lastPly = lastChargedPly(enteredOnPly);
+    expect(siteCyclePosition("charged", enteredOnPly, lastPly)).toBe(1);
+  });
+
+  it("has charged travel nine distinct, strictly increasing positions", () => {
+    const enteredOnPly = 5;
+    const lastPly = lastChargedPly(enteredOnPly);
+
+    const positions: number[] = [];
+    for (let ply = enteredOnPly; ply <= lastPly; ply++) {
+      positions.push(siteCyclePosition("charged", enteredOnPly, ply) as number);
+    }
+
+    expect(positions).toHaveLength(9);
+    for (let i = 1; i < positions.length; i++) {
+      expect(positions[i]).toBeGreaterThan(positions[i - 1]);
+    }
+  });
+
+  it("has depleted report 0 on the ply after it depleted", () => {
+    const enteredOnPly = 9;
+    expect(siteCyclePosition("depleted", enteredOnPly, enteredOnPly + 1)).toBe(
+      0,
+    );
+  });
+
+  it("has depleted report 1 on the last ply hasDepletedSiteFinishedCooling says it is still cooling", () => {
+    const enteredOnPly = 9;
+    const lastPly = lastDepletedPly(enteredOnPly);
+    expect(siteCyclePosition("depleted", enteredOnPly, lastPly)).toBe(1);
+  });
+
+  it("has depleted travel nine distinct, strictly increasing positions", () => {
+    const enteredOnPly = 9;
+    const lastPly = lastDepletedPly(enteredOnPly);
+
+    const positions: number[] = [];
+    for (let ply = enteredOnPly + 1; ply <= lastPly; ply++) {
+      positions.push(
+        siteCyclePosition("depleted", enteredOnPly, ply) as number,
+      );
+    }
+
+    expect(positions).toHaveLength(9);
+    for (let i = 1; i < positions.length; i++) {
+      expect(positions[i]).toBeGreaterThan(positions[i - 1]);
+    }
+  });
+
+  it("clamps values outside the window to 0 or 1", () => {
+    expect(siteCyclePosition("charged", 5, 1)).toBe(0);
+    expect(siteCyclePosition("charged", 5, 100)).toBe(1);
+    expect(siteCyclePosition("depleted", 9, 1)).toBe(0);
+    expect(siteCyclePosition("depleted", 9, 100)).toBe(1);
+  });
+
+  it("reports nothing for dormant and active, which have no clock", () => {
+    expect(siteCyclePosition("dormant", 5, 5)).toBeUndefined();
+    expect(siteCyclePosition("active", 5, 5)).toBeUndefined();
   });
 });
