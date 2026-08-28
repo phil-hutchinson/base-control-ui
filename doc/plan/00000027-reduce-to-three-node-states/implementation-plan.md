@@ -1230,7 +1230,30 @@ extended `seededReplay.test.ts` are green, and `fullGame.test.ts` scores again.
 
 ## Step 6 — `README.md`, `CLAUDE.md`, and a sweep for stale citations
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `README.md`'s intro sentence and status blockquote to describe
+0.11's cycle — nodes light up on their own at the end of a turn, the board
+tops itself back up to five charged sites among the seventeen, and a ship can
+only stop on one that is already lit — replacing the "wakes the moment a ship
+touches it" and "five of them already nodes in play" wording. Updated
+`CLAUDE.md`'s **Hub** entry to "a site that is charged" per the plan. One
+addition beyond the plan's letter: `CLAUDE.md`'s opening project paragraph
+also had a stale sentence ("which node site wakes up next is random"),
+matching the exact language §1 of `rules.md` itself moved away from in step
+1; fixed it to "which site is charged next is random" for consistency, since
+the step's own brief for this file is "the waking-on-touch wording and the
+Hub entry" and this line is exactly that wording, just outside the Hub entry
+proper. The citation sweep (`§8.7`, `§8.2`, `§8.6`, `section 8.7`, `depleted`,
+`wak`, `safety net`/`empty pool`) across `src/`, `doc/ruleset/`, `README.md`,
+`CLAUDE.md`, `CONTRIBUTING.md` and the live accessibility ledger found
+nothing stale: every `§8.2`/`§8.6` citation already points at the charge draw
+and the end-of-turn sequence respectively (steps 3–5 kept them current as
+they went), no `§8.7` or "depleted" survives outside `changelog.md`'s
+historical record of the rename, and `known-issues.md`'s story-20 entry is
+correctly left in its own pre-0.11 vocabulary as a historical record (per
+step 3's notes and D19). `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (667 tests, unchanged) all pass.
 
 `README.md` describes the old cycle directly and is wrong in at least three
 places after this story:
