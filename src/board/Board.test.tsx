@@ -6,12 +6,7 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
-import {
-  BAYS,
-  driftReturnPositionIndex,
-  isBay,
-  STARTING_RETURN_POSITION_INDEX,
-} from "../rules/bays";
+import { BAYS, isBay } from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import {
   CHARGED_LIFE_PLIES,
@@ -22,11 +17,7 @@ import {
 import { startingGameState, type GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalDestinations } from "../rules/movement";
-import {
-  legalTargets,
-  resolveFight,
-  returnPositionSquare,
-} from "../rules/combat";
+import { legalTargets, resolveFight } from "../rules/combat";
 import type { ShieldCount } from "../rules/shields";
 import {
   createSession,
@@ -91,11 +82,9 @@ describe("Board", () => {
     expect(
       screen.getByRole("gridcell", { name: "D15, bay, red ship, 0 shields" }),
     ).toBeInTheDocument();
-    // H15 is return position 1 on the starting turn (rules.md §7.1), so its
-    // name carries that cue too.
     expect(
       screen.getByRole("gridcell", {
-        name: "H15, bay, return position 1, green ship, 0 shields",
+        name: "H15, bay, green ship, 0 shields",
       }),
     ).toBeInTheDocument();
     expect(
@@ -172,21 +161,12 @@ describe("Board", () => {
   it("names each starting ship's square with its side, and no other square", () => {
     render(<Board session={startingSession} onIntent={noop} />);
 
-    // H15 also carries return position 1 on the starting turn.
-    const returnPositionSquareName = squareName(
-      returnPositionSquare(startingGameState(TEST_SEED)),
-    );
-
     for (const entry of STARTING_FLEET) {
       const cell = screen.getByRole("gridcell", {
         name: squareLabel({
           square: entry.square,
           isBay: isBay(entry.square),
           siteState: startingSiteState(entry.square),
-          returnCue:
-            squareName(entry.square) === returnPositionSquareName
-              ? "return-position"
-              : undefined,
           occupant: entry,
         }),
       });
@@ -205,8 +185,6 @@ describe("Board", () => {
       square,
       isBay: isBay(square),
       siteState: startingSiteState(square),
-      // H15 is return position 1 on the starting turn.
-      returnCue: "return-position",
       occupant: startingShipAt(square),
     });
     const cell = screen.getByRole("gridcell", { name: label });
@@ -381,13 +359,9 @@ describe("Board", () => {
     });
     expect(cell).toBeInTheDocument();
     expect(cell.querySelector(".ship-icon--green")).toBeInTheDocument();
-    // The bay green-1 started in is empty now, so it is also — as well as
-    // remaining return position 1 — the current receptacle (the coincidence
-    // case of rules.md §7.1, decision 14).
+    // The bay green-1 started in is empty now.
     expect(
-      screen.getByRole("gridcell", {
-        name: "H15, bay, return position 1, next bay for a beaten ship",
-      }),
+      screen.getByRole("gridcell", { name: "H15, bay" }),
     ).toBeInTheDocument();
     expect(container.querySelectorAll(".ship-icon--green")).toHaveLength(7);
   });
@@ -412,7 +386,6 @@ describe("Board", () => {
         actedThisPly: [],
         plyNumber,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -616,7 +589,6 @@ describe("Board", () => {
         actedThisPly: overrides?.actedThisPly ?? [],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -784,7 +756,6 @@ describe("Board", () => {
         actedThisPly: config.actedThisPly ?? [],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -902,163 +873,20 @@ describe("Board", () => {
     });
   });
 
-  describe("return cues", () => {
-    // The starting fleet with one or two ships moved out of their bays, so
-    // some bays stay occupied (in particular H15, return position 1 on the
-    // starting turn) while others empty out — the state the return cues
-    // actually have something to say about, since the true starting
-    // position (every ship still in its own bay) has no empty bay at all.
-    // The vacated ships are recorded as already acted, so a dormant square
-    // they land on does not accidentally strand them under §8.5 and block
-    // every other ship's moves, which would otherwise show up as a spurious
-    // "no action available" on unrelated squares this describe block never
-    // asked about.
-    const VACATED_DESTINATIONS: readonly Square[] = [
-      squareAt("B", 4),
-      squareAt("C", 4),
-    ];
+  it("marks no bay with a return cue and names no square after a return position or a receptacle", () => {
+    const { container } = render(
+      <Board session={startingSession} onIntent={noop} />,
+    );
 
-    function stateWithBaysVacatedBy(...shipIds: readonly string[]): GameState {
-      return {
-        ...startingGameState(TEST_SEED),
-        ships: startingGameState(TEST_SEED).ships.map((ship) => {
-          const index = shipIds.indexOf(ship.id);
-          return index === -1
-            ? ship
-            : { ...ship, square: VACATED_DESTINATIONS[index] };
-        }),
-        actedThisPly: [...shipIds],
-      };
-    }
-
-    it("marks H15 as return position 1, and the receptacle on the first empty bay clockwise from it", () => {
-      // green-2 (O14) is the only ship moved out; H15 (position 1) and L15
-      // stay occupied, so O14 is the first empty bay after position 1.
-      const state = stateWithBaysVacatedBy("green-2");
-      const session = createSession(state);
-      render(<Board session={session} onIntent={noop} />);
-
-      expect(
-        screen.getByRole("gridcell", {
-          name: "H15, bay, return position 1, green ship, 0 shields",
-        }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("gridcell", {
-          name: "O14, bay, next bay for a beaten ship",
-        }),
-      ).toBeInTheDocument();
-    });
-
-    it("names both return cues on the same bay when position 1 is itself the receptacle, and draws only the solid receptacle triangles", () => {
-      // green-1 (H15) is the only ship moved out, so position 1 is empty
-      // and is also the first empty bay.
-      const state = stateWithBaysVacatedBy("green-1");
-      const session = createSession(state);
-      render(<Board session={session} onIntent={noop} />);
-
-      const cell = screen.getByRole("gridcell", {
-        name: "H15, bay, return position 1, next bay for a beaten ship",
-      });
-      expect(cell).toBeInTheDocument();
-      expect(
-        cell.querySelectorAll(".board-square__mark--receptacle path"),
-      ).toHaveLength(4);
-      expect(
-        cell.querySelector(".board-square__mark--return-position"),
-      ).toBeNull();
-    });
-
-    it("moves the return-position wording one bay counter-clockwise once the ply ends", () => {
-      const before: GameState = {
-        ...startingGameState(TEST_SEED),
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
-      };
-      const after: GameState = {
-        ...startingGameState(TEST_SEED),
-        returnPositionIndex: driftReturnPositionIndex(
-          STARTING_RETURN_POSITION_INDEX,
-        ),
-      };
-
-      const { unmount } = render(
-        <Board session={createSession(before)} onIntent={noop} />,
-      );
-      expect(
-        screen.getByRole("gridcell", {
-          name: "H15, bay, return position 1, green ship, 0 shields",
-        }),
-      ).toBeInTheDocument();
-      expect(
-        screen.queryByRole("gridcell", { name: /^D15,.*return position 1/ }),
-      ).not.toBeInTheDocument();
-      unmount();
-
-      render(<Board session={createSession(after)} onIntent={noop} />);
-      expect(
-        screen.getByRole("gridcell", {
-          name: "D15, bay, return position 1, red ship, 0 shields",
-        }),
-      ).toBeInTheDocument();
-      expect(
-        screen.queryByRole("gridcell", { name: /^H15,.*return position 1/ }),
-      ).not.toBeInTheDocument();
-    });
-
-    it("moves the receptacle wording onto a bay vacated mid-ply, since it is recomputed every render", () => {
-      // First green-2 (O14) alone is moved out: the receptacle is O14, the
-      // first empty bay after the still-occupied H15 and L15.
-      const beforeSecondAction = stateWithBaysVacatedBy("green-2");
-      const { unmount } = render(
-        <Board session={createSession(beforeSecondAction)} onIntent={noop} />,
-      );
-      expect(
-        screen.getByRole("gridcell", {
-          name: "O14, bay, next bay for a beaten ship",
-        }),
-      ).toBeInTheDocument();
-      unmount();
-
-      // Now red-1 (L15) is also moved out: L15 is earlier in the ring than
-      // O14, so the receptacle moves onto it.
-      const afterSecondAction = stateWithBaysVacatedBy("green-2", "red-1");
-      render(
-        <Board session={createSession(afterSecondAction)} onIntent={noop} />,
-      );
-
-      expect(
-        screen.getByRole("gridcell", {
-          name: "L15, bay, next bay for a beaten ship",
-        }),
-      ).toBeInTheDocument();
-      expect(
-        screen.queryByRole("gridcell", {
-          name: /^O14,.*next bay for a beaten ship/,
-        }),
-      ).not.toBeInTheDocument();
-    });
-
-    it("shows no receptacle wording anywhere when every bay is occupied, as at the true starting position, and draws position 1's outline alone", () => {
-      render(<Board session={startingSession} onIntent={noop} />);
-
-      expect(
-        screen.queryByRole("gridcell", {
-          name: /next bay for a beaten ship/,
-        }),
-      ).not.toBeInTheDocument();
-      // Return position 1 is still marked even though it is occupied, and
-      // with no empty bay to be the receptacle, only its stroked outline is
-      // drawn — the absence of a solid triangle correctly says there is
-      // nowhere for a beaten ship to go.
-      const cell = screen.getByRole("gridcell", {
-        name: "H15, bay, return position 1, green ship, 0 shields",
-      });
-      expect(cell).toBeInTheDocument();
-      expect(
-        cell.querySelectorAll(".board-square__mark--return-position line"),
-      ).toHaveLength(4);
-      expect(cell.querySelector(".board-square__mark--receptacle")).toBeNull();
-    });
+    expect(
+      container.querySelector(".board-square__mark--receptacle"),
+    ).toBeNull();
+    expect(
+      container.querySelector(".board-square__mark--return-position"),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("gridcell", { name: /return position|beaten ship/ }),
+    ).not.toBeInTheDocument();
   });
 
   describe("ship conditions", () => {
@@ -1100,7 +928,6 @@ describe("Board", () => {
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -1244,7 +1071,6 @@ describe("Board", () => {
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -1282,7 +1108,6 @@ describe("Board", () => {
         actedThisPly: ["green-1"],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };
@@ -1318,7 +1143,6 @@ describe("Board", () => {
         actedThisPly: ["green-1"],
         plyNumber: 1,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       };

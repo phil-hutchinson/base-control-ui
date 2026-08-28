@@ -4,7 +4,6 @@ import { cleanup, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { squareFromName } from "../rules/board";
-import { STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
 import type { ShipId } from "../rules/fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import type {
@@ -52,7 +51,6 @@ function buildState(config: {
     actedThisPly: [],
     plyNumber: 1,
     randomSeed: 1,
-    returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
   };

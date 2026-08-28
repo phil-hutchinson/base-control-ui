@@ -22,7 +22,7 @@ import {
   type AttackRefusalReason,
   attackReach,
   attackRefusalReason,
-  receptacleBay,
+  drawReturnBay,
   resolveFight,
   winnerAdvance,
 } from "./combat";
@@ -372,6 +372,16 @@ export interface AdvancingWinner {
  * self-referential in the way the square check would be: it compares the
  * advance's path against `siteStates`, a wholly different piece of state.
  *
+ * The returned-ship checks pin what §7.1's random draw guarantees: every
+ * returned ship ends on a bay square, no two returned ships share a bay, and
+ * each lands in a bay that held no ship in `before` — together, exactly what
+ * "there is always somewhere to go" promises.
+ *
+ * The crossing check pins §7's other guarantee for an advancing winner:
+ * every square in `travelledSquareNames` is, in `after`, either empty or the
+ * winner's own final square — nothing else may sit on the lane it crossed,
+ * including a ship a returning loser was just drawn into a bay on.
+ *
  * Exported so a test can hand-construct an otherwise-impossible before/after
  * pair, since it has no other seam.
  */
@@ -381,6 +391,11 @@ export function assertFightInvariants(
   returnedShipIds: ReadonlySet<ShipId>,
   advancingWinner: AdvancingWinner | undefined,
 ): void {
+  const beforeOccupiedSquareNames = new Set(
+    before.ships.map((ship) => squareName(ship.square)),
+  );
+  const returnedBaySquareNames = new Set<string>();
+
   for (const ship of before.ships) {
     const updated = after.ships.find((candidate) => candidate.id === ship.id);
     if (updated === undefined) {
@@ -413,6 +428,26 @@ export function assertFightInvariants(
         );
       }
     }
+
+    if (returnedShipIds.has(ship.id)) {
+      const updatedName = squareName(updated.square);
+      if (!isBay(updated.square)) {
+        throw new RangeError(
+          `returned ship "${ship.id}" ended on "${updatedName}", which is not a bay: rules.md §7.1 sends a returning ship to a bay`,
+        );
+      }
+      if (returnedBaySquareNames.has(updatedName)) {
+        throw new RangeError(
+          `two returned ships both ended in bay "${updatedName}": rules.md §7.1 draws each returning ship its own empty bay`,
+        );
+      }
+      returnedBaySquareNames.add(updatedName);
+      if (beforeOccupiedSquareNames.has(updatedName)) {
+        throw new RangeError(
+          `returned ship "${ship.id}" ended in bay "${updatedName}", which held a ship before the fight: rules.md §7.1 draws only from bays empty at the moment`,
+        );
+      }
+    }
   }
 
   for (const side of ["green", "red"] as const) {
@@ -429,6 +464,22 @@ export function assertFightInvariants(
 
   const travelledSquareNames =
     advancingWinner?.travelledSquareNames ?? new Set<string>();
+
+  if (advancingWinner !== undefined) {
+    for (const name of travelledSquareNames) {
+      const occupant = after.ships.find(
+        (ship) =>
+          ship.id !== advancingWinner.shipId &&
+          squareName(ship.square) === name,
+      );
+      if (occupant !== undefined) {
+        throw new RangeError(
+          `winning attacker "${advancingWinner.shipId}" crossed or landed on "${name}" while "${occupant.id}" was there: rules.md §7 never lets the advance cross an occupied square`,
+        );
+      }
+    }
+  }
+
   const siteNames = new Set([
     ...Object.keys(before.siteStates),
     ...Object.keys(after.siteStates),
@@ -461,17 +512,19 @@ export function assertFightInvariants(
  * Applies an attack by `shipId` on `target` in `state`, or refuses it
  * (rules.md §7). A legal attack never mutates `state`: the winner, if any,
  * keeps `winner − (loser + 1)` shields, and the loser (or both ships, on a
- * mutual return, attacker first) is placed in a bay at 0 shields. When the
- * attacker wins, it then advances along the lane it attacked down to the
- * furthest square it may legally end on (`winnerAdvance`), waking any active
- * site the advance touches exactly as `applyMove` would (rules.md §8.2); when
- * there is no such square it holds its ground. A winning defender never
- * advances, and a mutual return leaves both squares empty. The attacking ship
- * is added to `actedThisPly` in every outcome, including a mutual return in
- * which it ends the action in a bay itself: it spent its one action either
- * way (rules.md §5). One action is spent; when the ply's last action is
- * spent, play passes to the other side exactly as it does after a move, and
- * the result then passes through `applyPassGuard`.
+ * mutual return, attacker first) is placed at 0 shields in a bay drawn at
+ * random from the bays standing empty (`drawReturnBay`), advancing
+ * `randomSeed` once per returning ship. When the attacker wins, it then
+ * advances along the lane it attacked down to the furthest square it may
+ * legally end on (`winnerAdvance`), waking any active site the advance
+ * touches exactly as `applyMove` would (rules.md §8.2); when there is no such
+ * square it holds its ground. A winning defender never advances, and a
+ * mutual return leaves both squares empty. The attacking ship is added to
+ * `actedThisPly` in every outcome, including a mutual return in which it
+ * ends the action in a bay itself: it spent its one action either way
+ * (rules.md §5). One action is spent; when the ply's last action is spent,
+ * play passes to the other side exactly as it does after a move, and the
+ * result then passes through `applyPassGuard`.
  */
 export function applyAttack(
   state: GameState,
@@ -506,14 +559,18 @@ export function applyAttack(
   let advancingWinner: AdvancingWinner | undefined;
 
   if (fightOutcome.result === "mutual-return") {
-    const attackerTo = receptacleBay(state);
-    const afterAttackerReturned = placeInBay(
-      state,
-      attackerShip.id,
-      attackerTo,
+    const [attackerTo, seedAfterAttacker] = drawReturnBay(state);
+    const afterAttackerReturned: GameState = {
+      ...placeInBay(state, attackerShip.id, attackerTo),
+      randomSeed: seedAfterAttacker,
+    };
+    const [defenderTo, seedAfterDefender] = drawReturnBay(
+      afterAttackerReturned,
     );
-    const defenderTo = receptacleBay(afterAttackerReturned);
-    nextState = placeInBay(afterAttackerReturned, defenderShip.id, defenderTo);
+    nextState = {
+      ...placeInBay(afterAttackerReturned, defenderShip.id, defenderTo),
+      randomSeed: seedAfterDefender,
+    };
     winner = undefined;
     returns = [
       {
@@ -534,7 +591,7 @@ export function applyAttack(
     const winnerShip = winnerIsAttacker ? attackerShip : defenderShip;
     const loserShip = winnerIsAttacker ? defenderShip : attackerShip;
 
-    const loserTo = receptacleBay(state);
+    const [loserTo, seedAfterLoser] = drawReturnBay(state);
     const withWinnerShields: GameState = {
       ...state,
       ships: state.ships.map((ship) =>
@@ -543,11 +600,10 @@ export function applyAttack(
           : ship,
       ),
     };
-    const afterLoserReturned = placeInBay(
-      withWinnerShields,
-      loserShip.id,
-      loserTo,
-    );
+    const afterLoserReturned: GameState = {
+      ...placeInBay(withWinnerShields, loserShip.id, loserTo),
+      randomSeed: seedAfterLoser,
+    };
 
     let winnerSquare = winnerShip.square;
     let advanced = false;

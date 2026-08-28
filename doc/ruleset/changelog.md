@@ -7,6 +7,36 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.10 — random bay return
+
+- **A returning ship's bay is now drawn at random from the bays that are
+  empty at that moment**, every empty bay equally likely, instead of walking
+  a numbered ring that advanced one bay at the end of every turn. Section
+  7.1 is rewritten accordingly.
+- **Return position 1, its H15 starting point and the counter-clockwise
+  drift are all removed.** There is no longer a numbered "next" bay to point
+  to; the destination is unknowable until the fight happens.
+- **Section 8.7's end-of-turn sequence drops from six steps to five.** Step
+  6, which moved the return position one bay counter-clockwise, is deleted;
+  steps 1 through 5 are unchanged.
+- **Section 1's "one random element" becomes two**: which node site wakes up
+  next, and which bay a beaten ship is pushed back to.
+- **On a mutual return the attacker is still placed first, then the defender
+  is drawn from the bays still empty.** This order makes no difference to
+  the odds, but is kept deliberately, because fixing it is what lets a
+  recorded game replay exactly.
+- **Section 7 now spells out that the winner's advance cannot cross an
+  occupied square.** If the beaten ship's random bay lands on the lane, it
+  blocks the advance there and the winner stops short of it. The rule was
+  always implied — bays block movement like any other square (section 3.1)
+  — but it is worth stating plainly now that the random draw makes the case
+  materially likelier than the old, predictable return position did.
+
+This changes how the game is played — a beaten ship can no longer be tracked
+to a predictable bay — so it would ordinarily be a tagging candidate, but
+tagging is on hold until the game plays (see the project's contribution
+notes), so no tag is made for this version.
+
 ## 0.9 — one action per turn
 
 - **A turn is now one action, not two.** Section 2's definition of a turn and

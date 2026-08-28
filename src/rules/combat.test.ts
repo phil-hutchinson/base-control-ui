@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CLOCKWISE_BAYS, STARTING_RETURN_POSITION_INDEX, isBay } from "./bays";
+import { BAYS, isBay } from "./bays";
 import {
   BOARD_SIZE,
   COLUMN_LETTERS,
@@ -11,16 +11,14 @@ import {
 import {
   attackReach,
   attackRefusalReason,
+  drawReturnBay,
   legalTargets,
-  receptacleBay,
   resolveFight,
-  returnPositionSquare,
   sevenOnlyAttackRefusalReason,
   sevenOnlyLegalTargets,
   winnerAdvance,
 } from "./combat";
 import type { ShipId } from "./fleet";
-import { startingGameState } from "./gameState";
 import type { GameState, Ship, SiteStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { type ReachEntry, reachFrom } from "./moveLegality";
@@ -56,7 +54,6 @@ function buildState(config: {
   actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
   actionsRemaining?: number;
-  returnPositionIndex?: number;
   plyNumber?: number;
   lengthInRounds?: number;
 }): GameState {
@@ -68,8 +65,6 @@ function buildState(config: {
     actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
-    returnPositionIndex:
-      config.returnPositionIndex ?? STARTING_RETURN_POSITION_INDEX,
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
   };
@@ -491,51 +486,117 @@ describe("resolveFight", () => {
   });
 });
 
-describe("returnPositionSquare / receptacleBay", () => {
-  it("names H15 as position 1 in a starting state", () => {
-    expect(squareName(returnPositionSquare(startingGameState(1)))).toBe("H15");
+describe("drawReturnBay", () => {
+  it("always draws a bay that was empty in the state drawn against", () => {
+    const state = buildState({
+      ships: [
+        ship("red-1", "red", "H15", 0),
+        ship("red-2", "red", "L15", 0),
+        ship("red-3", "red", "O14", 0),
+      ],
+    });
+    const occupied = new Set(["H15", "L15", "O14"]);
+
+    for (let seed = 0; seed < 200; seed++) {
+      const [bay] = drawReturnBay({ ...state, randomSeed: seed });
+      expect(isBay(bay)).toBe(true);
+      expect(occupied.has(squareName(bay))).toBe(false);
+    }
   });
 
-  it("gives position 1 itself as the receptacle when it is empty", () => {
-    const state = buildState({ ships: [] });
-    expect(squareName(receptacleBay(state))).toBe("H15");
+  it("gives the one empty bay for every seed when every other bay is occupied", () => {
+    const occupiedBays = BAYS.filter((square) => squareName(square) !== "H15");
+    const state = buildState({
+      ships: occupiedBays.map((square, index) =>
+        ship(`red-${index}`, "red", squareName(square), 0),
+      ),
+    });
+
+    for (let seed = 0; seed < 50; seed++) {
+      const [bay] = drawReturnBay({ ...state, randomSeed: seed });
+      expect(squareName(bay)).toBe("H15");
+    }
   });
 
-  it("gives the next bay clockwise when position 1 is occupied", () => {
+  it("gives the same bay for the same seed", () => {
     const state = buildState({
       ships: [ship("red-1", "red", "H15", 0)],
     });
-    expect(squareName(receptacleBay(state))).toBe("L15");
+
+    const [firstBay, firstNextSeed] = drawReturnBay(state);
+    const [secondBay, secondNextSeed] = drawReturnBay(state);
+
+    expect(squareName(secondBay)).toBe(squareName(firstBay));
+    expect(secondNextSeed).toBe(firstNextSeed);
   });
 
-  it("gives the bay after that when the first two are occupied", () => {
-    const state = buildState({
-      ships: [ship("red-1", "red", "H15", 0), ship("red-2", "red", "L15", 0)],
-    });
-    expect(squareName(receptacleBay(state))).toBe("O14");
+  it("advances the seed away from the one passed in", () => {
+    const state = buildState({ ships: [] });
+
+    for (let seed = 0; seed < 50; seed++) {
+      const [, nextSeed] = drawReturnBay({ ...state, randomSeed: seed });
+      expect(nextSeed).not.toBe(seed);
+    }
   });
 
-  it("wraps around the end of the ring back to position 1", () => {
-    const lastRingIndex = CLOCKWISE_BAYS.length - 1;
-    const state = buildState({
-      ships: [
-        ship("red-1", "red", squareName(CLOCKWISE_BAYS[lastRingIndex]), 0),
-      ],
-      returnPositionIndex: lastRingIndex,
-    });
-    expect(squareName(receptacleBay(state))).toBe("H15");
-  });
-
-  it("is live: moving a ship out of what would be the first bay changes the answer", () => {
+  it("is live: moving a ship out of a bay changes the answer", () => {
     const occupiedState = buildState({
       ships: [ship("red-1", "red", "H15", 0)],
     });
-    expect(squareName(receptacleBay(occupiedState))).toBe("L15");
+    const [occupiedBay] = drawReturnBay(occupiedState);
+    expect(squareName(occupiedBay)).not.toBe("H15");
 
     const vacatedState = buildState({
       ships: [ship("red-1", "red", "E7", 0)],
     });
-    expect(squareName(receptacleBay(vacatedState))).toBe("H15");
+    const otherOccupiedBays = BAYS.filter(
+      (square) => squareName(square) !== "H15",
+    );
+    const fullyVacatedExceptOne: GameState = {
+      ...vacatedState,
+      ships: [
+        ship("red-1", "red", "E7", 0),
+        ...otherOccupiedBays.map((square, index) =>
+          ship(`red-${index + 2}`, "red", squareName(square), 0),
+        ),
+      ],
+    };
+    const [vacatedBay] = drawReturnBay(fullyVacatedExceptOne);
+    expect(squareName(vacatedBay)).toBe("H15");
+  });
+
+  it("throws naming §7.1 when every bay is occupied", () => {
+    const state = buildState({
+      ships: BAYS.map((square, index) =>
+        ship(`red-${index}`, "red", squareName(square), 0),
+      ),
+    });
+
+    expect(() => drawReturnBay(state)).toThrow(/§7\.1/);
+  });
+
+  it("spreads draws over chained seeds across every empty bay, never an occupied one", () => {
+    const occupiedBays = new Set(["H15", "O14", "O6", "D1", "A6"]);
+    const state = buildState({
+      ships: [...occupiedBays].map((name, index) =>
+        ship(`red-${index}`, "red", name, 0),
+      ),
+    });
+    const emptyBayNames = new Set(
+      BAYS.map(squareName).filter((name) => !occupiedBays.has(name)),
+    );
+
+    const seenBayNames = new Set<string>();
+    let seed = 12345;
+    for (let draw = 0; draw < 500; draw++) {
+      const [bay, nextSeed] = drawReturnBay({ ...state, randomSeed: seed });
+      const name = squareName(bay);
+      expect(occupiedBays.has(name)).toBe(false);
+      seenBayNames.add(name);
+      seed = nextSeed;
+    }
+
+    expect(seenBayNames).toEqual(emptyBayNames);
   });
 });
 
@@ -586,6 +647,29 @@ describe("winnerAdvance", () => {
     const advance = winnerAdvance(state, laneOf("H5", "H6"));
 
     expect(advance).toBeUndefined();
+  });
+
+  it("stops short of an occupied lane square, whether the occupant sits on the candidate itself or between it and the attacker", () => {
+    const state = buildState({
+      ships: [ship("red-1", "red", "H7", 0)],
+    });
+    const advance = winnerAdvance(state, laneOf("H5", "H8"));
+
+    expect(advance).toBeDefined();
+    expect(squareName(advance!.destination)).toBe("H6");
+    expect(squareNames(advance!.passedOver)).toEqual([]);
+  });
+
+  it("ignores an occupied square that lies beyond the square the winner actually stops on", () => {
+    const state = buildState({
+      ships: [ship("red-1", "red", "H8", 0)],
+      siteStates: { H8: "dormant" },
+    });
+    const advance = winnerAdvance(state, laneOf("H5", "H8"));
+
+    expect(advance).toBeDefined();
+    expect(squareName(advance!.destination)).toBe("H7");
+    expect(squareNames(advance!.passedOver)).toEqual(["H6"]);
   });
 
   it("never lands the winner in a bay, swept across every non-bay origin, every shield count and every lane it offers whose target is itself not a bay, under two extreme site configurations", () => {

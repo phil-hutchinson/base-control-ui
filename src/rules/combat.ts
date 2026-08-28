@@ -8,11 +8,12 @@
 // loser's square to find where the winner may legally come to rest.
 
 import { type Square, squareName } from "./board";
-import { CLOCKWISE_BAYS, bayNumberingFrom, isBay } from "./bays";
+import { BAYS, isBay } from "./bays";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type ReachEntry, findShip, reachFrom } from "./moveLegality";
 import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
+import { drawIndex } from "./random";
 import { type ShieldCount, isShieldCount } from "./shields";
 import { strandedShipIds } from "./stranded";
 
@@ -47,21 +48,32 @@ export function attackReach(
  * meaning the winner holds its ground.
  *
  * `reach` is the attack's own `ReachEntry`, exactly as `attackReach` found
- * it. The lane's occupancy is not re-checked here: it was clear when the
- * attack was judged, and the loser has already been placed in a bay by the
- * time this runs, so nothing between the attacker and the loser's former
- * square can be occupied.
+ * it. Occupancy is re-checked here even though the lane was clear when the
+ * attack was judged, because the loser's return may have placed it on a bay
+ * that sits on that same lane; a candidate the winner cannot reach without
+ * crossing an occupied square is skipped, as is an occupied candidate itself.
  */
 export function winnerAdvance(
   state: GameState,
   reach: ReachEntry,
 ): ReachEntry | undefined {
   const lane = [...reach.passedOver, reach.destination];
+  const occupiedSquareNames = shipsBySquare(state);
 
   for (let index = lane.length - 1; index >= 0; index--) {
     const candidate = lane[index];
     const siteState = siteStateAt(state, candidate);
     if (siteState === "dormant" || siteState === "depleted") {
+      continue;
+    }
+    if (occupiedSquareNames.has(squareName(candidate))) {
+      continue;
+    }
+    if (
+      lane
+        .slice(0, index)
+        .some((square) => occupiedSquareNames.has(squareName(square)))
+    ) {
       continue;
     }
     return { destination: candidate, passedOver: lane.slice(0, index) };
@@ -300,40 +312,35 @@ export function resolveFight(
 }
 
 /**
- * Return position 1 (rules.md §7.1): the bay `state.returnPositionIndex`
- * names in `CLOCKWISE_BAYS`.
- */
-export function returnPositionSquare(state: GameState): Square {
-  return CLOCKWISE_BAYS[state.returnPositionIndex];
-}
-
-/**
- * The bay a ship returning to a bay right now would actually land in
- * (rules.md §7.1): the first empty bay counting clockwise from return
- * position 1, judged against `state`'s current occupancy. Recomputed at
- * every point of use and never stored — occupancy changes inside a ply, so
+ * The bay a returning ship lands in, drawn at random from the bays that are
+ * empty right now (rules.md §7.1): a seed in, `[bay: Square, nextSeed: number]`
+ * out, in the shape `drawIndex` and `mulberry32` already use. The pool
+ * is every bay in `BAYS` order with no ship on it, judged against `state`'s
+ * current occupancy — recomputed at every point of use and never stored, so
  * a ship moving out of a bay as one action can change the answer for a later
- * one.
+ * one. The caller must store the returned seed.
  *
  * On a mutual return, call this once to place the attacker, then call it
- * again against the state that already contains the attacker to place the
- * defender — there is no separate "second receptacle" function.
+ * again against the state that already holds the attacker **and the
+ * advanced seed** to place the defender — there is no separate "second
+ * draw" function.
  *
  * Throws if every bay is occupied. §7.1's argument that there is always
- * somewhere to go guarantees this cannot happen, so this is a bug
- * detector, not a case the caller need handle.
+ * somewhere to go guarantees this cannot happen, so this is a bug detector,
+ * not a case the caller need handle.
  */
-export function receptacleBay(state: GameState): Square {
+export function drawReturnBay(state: GameState): [Square, number] {
   const occupiedSquareNames = new Set(shipsBySquare(state).keys());
-  const receptacle = bayNumberingFrom(state.returnPositionIndex).find(
+  const pool = BAYS.filter(
     (square) => !occupiedSquareNames.has(squareName(square)),
   );
 
-  if (receptacle === undefined) {
+  if (pool.length === 0) {
     throw new RangeError(
       "no empty bay: rules.md §7.1 guarantees this cannot happen",
     );
   }
 
-  return receptacle;
+  const [index, nextSeed] = drawIndex(state.randomSeed, pool.length);
+  return [pool[index], nextSeed];
 }

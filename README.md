@@ -35,17 +35,17 @@ install, no account, no server.
 > carrying. The attacking winner advances onto the square it just cleared,
 > so a won fight can take a node outright, in a single action; and a ship
 > attacks exactly as far as it moves, so heavy shields buy strength at the
-> cost of reach. Two ships carrying the same shields both go home. The bay a
-> beaten ship returns to travels around the edge of the board as the game
-> goes on, and the board marks where it is. A node also pays energy at the
-> end of each turn to the player sitting on it, and holding several at once
-> pays far more than holding them one at a time would. The app keeps score
-> and shows it, along with how many nodes each player holds and which round
-> the game is in. After a hundred rounds the game ends: the player with the
-> most energy wins, an equal score is a draw, and a button starts another
-> game. There is still no way to save or record a game, no computer opponent
-> to play against, and no way to choose how long a game runs. The project is
-> being built up story by story.
+> cost of reach. Two ships carrying the same shields both go home. Which bay
+> a beaten ship lands in is chosen at random from whichever bays are
+> standing empty, so neither of you can know in advance where it will be. A
+> node also pays energy at the end of each turn to the player sitting on it,
+> and holding several at once pays far more than holding them one at a time
+> would. The app keeps score and shows it, along with how many nodes each
+> player holds and which round the game is in. After a hundred rounds the
+> game ends: the player with the most energy wins, an equal score is a draw,
+> and a button starts another game. There is still no way to save or record
+> a game, no computer opponent to play against, and no way to choose how
+> long a game runs. The project is being built up story by story.
 
 ## The rules
 

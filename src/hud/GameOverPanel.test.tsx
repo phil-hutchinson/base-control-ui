@@ -7,7 +7,6 @@ import { useReducer } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Board } from "../board/Board";
 import { squareAt, squareName } from "../rules/board";
-import { STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
 import { STARTING_FLEET } from "../rules/fleet";
 import { isGameOver } from "../rules/gameLength";
 import type { GameState } from "../rules/gameState";
@@ -29,7 +28,6 @@ function finishedState(overrides: Partial<GameState> = {}): GameState {
     actedThisPly: [],
     plyNumber: 3,
     randomSeed: 1,
-    returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
     energy: { green: 4, red: 7 },
     lengthInRounds: 1,
     ...overrides,
@@ -170,7 +168,6 @@ describe("GameOverPanel", () => {
         actedThisPly: [],
         plyNumber: 2,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 4, red: 7 },
         lengthInRounds: 1,
       };
@@ -201,7 +198,6 @@ describe("GameOverPanel", () => {
         actedThisPly: [],
         plyNumber: 2,
         randomSeed: 1,
-        returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
         energy: { green: 4, red: 6 },
         lengthInRounds: 1,
       };

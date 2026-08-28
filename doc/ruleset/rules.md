@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.9**
+**Rules version: 0.10**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -22,7 +22,8 @@ A ship carries **shields**, which make it stronger in a fight but slower to
 move. Shields are gained by sitting on a node and spent by winning fights, so a
 ship's strength and its speed pull permanently against each other.
 
-The game has one random element: which node site wakes up next.
+The game has two random elements: which node site wakes up next, and which
+bay a beaten ship is pushed back to.
 
 ---
 
@@ -242,10 +243,13 @@ holds its ground. The attacker advances along the line it
 attacked down, to the furthest square, working back from the square the
 loser has left, that it may legally end on. "May legally end on" is section
 6's restriction and nothing else — not a dormant site, not a depleted site
-(section 8.5). In the ordinary case that is simply the loser's own square,
-and the winner takes it. If no square on the lane is one it may legally end
-on, the winner holds its ground instead. The squares the winner crosses along
-the way count as touched for section 8.2, exactly as they would for a move.
+(section 8.5). The winner also cannot cross a square another ship occupies:
+if the beaten ship's bay (section 7.1) lies on the lane, it blocks the
+advance there, and the winner stops short of it. In the ordinary case that is
+simply the loser's own square, and the winner takes it. If no square on the
+lane is one it may legally end on, the winner holds its ground instead. The
+squares the winner crosses along the way count as touched for section 8.2,
+exactly as they would for a move.
 
 If both ships carry **the same number of shields**, both are returned to bays
 with 0 shields. The attacker is placed first, then the defender, and both
@@ -262,18 +266,17 @@ fight is the one least able to start one at a distance.
 
 ### 7.1 Returning to a bay
 
-Bays are numbered fresh each turn. One bay is **return position 1** for the
-current turn; the rest are numbered 2, 3, 4 and so on, counting **clockwise**
-around the board. A returning ship goes to the **first empty bay** in that
-order.
+A returning ship goes to a bay chosen **at random** from the bays that are
+**empty at that moment**, every empty bay equally likely.
 
-On the first turn of the game, return position 1 is **H15**. At the end of
-every turn it moves **one bay counter-clockwise**, so it works its way around
-the board and returns to where it started every seven rounds.
+The choice is genuinely random, and neither player can see it coming — the
+same assurance section 8.6 gives for the replacement site.
 
 A returning ship is placed **immediately**, as part of resolving the fight,
 before anything else happens. When both ships return, the attacker is placed
-first and the defender then takes the next empty bay.
+first, and the defender's bay is then drawn from the bays still empty. Which
+ship is placed first makes no difference to the odds, but fixing the order is
+what lets a recorded game replay exactly.
 
 There is always somewhere to go: a ship being returned was by definition on the
 board and not in a bay, so at least one bay is empty. The same argument covers
@@ -401,7 +404,6 @@ Everything that happens at the end of a turn happens in this order:
 3. Sites that have finished cooling down go from depleted to dormant.
 4. Charged nodes that have finished their nine turns become depleted.
 5. A replacement site wakes for each node that just ran out.
-6. The bay return position moves one bay counter-clockwise (section 7.1).
 
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in

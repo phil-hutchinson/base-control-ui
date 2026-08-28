@@ -4,7 +4,6 @@
 // `shipsBySquare` at the point of use instead.
 
 import { type Square, squareName } from "./board";
-import { STARTING_RETURN_POSITION_INDEX } from "./bays";
 import { STARTING_FLEET, type Side, type ShipId } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS, isGameLengthRounds } from "./gameLength";
 import { SITES, type SiteState, startingSiteState } from "./sites";
@@ -49,16 +48,8 @@ export interface GameState {
   readonly actedThisPly: readonly ShipId[];
   /** The ply currently being played, starting at 1. */
   readonly plyNumber: number;
-  /** The 32-bit seed the next random draw will use (rules.md §8.6). */
+  /** The 32-bit seed the next random draw will use (rules.md §8.6, §7.1). */
   readonly randomSeed: number;
-  /**
-   * An index into `CLOCKWISE_BAYS` naming return position 1 (rules.md §7.1)
-   * for the ply being played. Position 1 itself is
-   * `CLOCKWISE_BAYS[returnPositionIndex]`; the bay a beaten ship actually
-   * lands in depends on which bays are occupied right now and is derived
-   * from that occupancy at the point of use — it is never stored here.
-   */
-  readonly returnPositionIndex: number;
   /** Each side's running energy total (rules.md §8.4), both starting at 0. */
   readonly energy: EnergyTotals;
   /**
@@ -118,7 +109,6 @@ export function startingGameState(
     actedThisPly: [],
     plyNumber: 1,
     randomSeed,
-    returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
     energy: { green: 0, red: 0 },
     lengthInRounds,
   };
