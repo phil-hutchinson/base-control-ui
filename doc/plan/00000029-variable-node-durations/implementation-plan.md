@@ -855,7 +855,19 @@ tables in §8.2 and §8.3 each sum to 100%.
 
 ## Step 2 — A weighted index draw in `random.ts`
 
-Status: pending
+Status: committed
+
+Notes: Added `drawWeightedIndex` to `src/rules/random.ts` beside `drawIndex`,
+built on `mulberry32`, advancing the seed exactly once and throwing
+`RangeError` for an empty list, a negative or non-finite weight, or a
+non-positive total; a zero weight is legal and simply never drawn, and
+floating-point overshoot at the top of the range falls back to the last
+in-range index. Added the ten tests `src/rules/random.test.ts` (determinism,
+seed-advance parity with `mulberry32`, proportional draws, a single weight,
+a zero weight, four refusal cases, and an in-range sweep). Nothing else
+calls the new function, matching the step's scaffolding intent. `npm test`
+(680/680, up from 670), `npm run typecheck`, `npm run lint` and
+`npm run format:check` all pass.
 
 Add the weighted index draw described in **D5** to `src/rules/random.ts`, beside
 `drawIndex`. **Nothing calls it yet** — this step is scaffolding, deliberately
