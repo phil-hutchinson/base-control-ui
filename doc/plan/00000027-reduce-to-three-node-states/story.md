@@ -277,8 +277,8 @@ A game recorded with its opening seed still replays exactly.
 
 Three states, three artworks:
 
-| State   | Artwork                                                          |
-| ------- | ---------------------------------------------------------------- |
+| State   | Artwork                                                           |
+| ------- | ----------------------------------------------------------------- |
 | Active  | today's **active** artwork — the radius-24 gold disc, unchanged   |
 | Charged | unchanged, including its start-to-end travel over the nine turns  |
 | Dormant | today's **depleted** artwork — the grey radius-70 fill, unchanged |

@@ -520,7 +520,15 @@ stories, not for this one.
 
 ## Step 1 — Rules 0.11: three states, and the board charges its own nodes
 
-Status: pending
+Status: committed
+
+Notes: Edited `doc/ruleset/rules.md` per D2's renumbering (the rewritten
+"Charging a site" now sits at §8.2, old §8.7 is §8.6, §8.3–§8.5 unchanged),
+added the 0.11 changelog entry, and bumped `RULES_VERSION` to `"0.11"`. No
+`src/` behaviour changed. `grep` confirms no `depleted` or `§8.7` remains
+anywhere in `rules.md`, and no sentence says a ship wakes, charges, or
+otherwise changes a site. `npm test` (673 tests, unchanged count),
+`npm run typecheck`, `npm run lint` and `npm run format:check` all pass.
 
 Edit `doc/ruleset/rules.md`, add a `doc/ruleset/changelog.md` entry and bump
 `RULES_VERSION` in `src/rules/rulesVersion.ts`. **No behaviour changes in this
