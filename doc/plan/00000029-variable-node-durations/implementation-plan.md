@@ -1691,7 +1691,14 @@ turns.
 
 ## Step 9 — Owner play-through
 
-Status: pending
+Status: committed
+
+Notes: The owner ran `npm run dev` and confirmed all ten checks pass — the
+unstaggered opening, active sites growing as they wait, the five drifting
+apart, held nodes burning faster, vacating ending a node immediately with its
+announcement, a node changing hands intact in a fight, a drawn fight ending
+it, an early-ended node returning sooner, stranding unchanged, and the rest of
+the game still working.
 
 The story's eyeball checks, gathered into one pass. The owner runs
 `npm run dev` in the dev container, opens the app and confirms:
