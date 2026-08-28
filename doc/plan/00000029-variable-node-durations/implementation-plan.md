@@ -595,7 +595,20 @@ may quietly "improve" a number, and no test may encode a number twice.
 
 ## Step 1 — Rules 0.12: capacity, drain, pressure, and leaving a node
 
-Status: pending
+Status: committed
+
+Notes: Rewrote §1, §2, §7, §8.1–§8.6, added §8.7, and redid Appendix B in
+`doc/ruleset/rules.md`; added the 0.12 changelog entry above 0.11; bumped
+`RULES_VERSION` to `"0.12"`. Section numbers run 8.1–8.7 with no gap, no
+sentence claims a fixed nine-turn life or cooldown, the word "stagger" does
+not appear anywhere (one draft sentence used "staggering" to explain why it
+is no longer needed, per the plan's own step-1 wording, but was reworded to
+avoid the substring entirely since the verification instruction reads as a
+literal check), and the three distribution tables in §8.2/§8.3 each sum to
+100%. No `src/` file other than `rulesVersion.ts` was touched, matching
+D1/D2's no-renumbering, rules-first constraint. `npm test` (670/670, same
+count as before), `npm run typecheck`, `npm run lint` and
+`npm run format:check` all pass.
 
 Edit `doc/ruleset/rules.md`, add a `doc/ruleset/changelog.md` entry and bump
 `RULES_VERSION` in `src/rules/rulesVersion.ts`. **No behaviour changes in this
