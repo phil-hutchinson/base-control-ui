@@ -1024,7 +1024,44 @@ appears nowhere.
 
 ## Step 4 — The end-of-turn charge draw, and why cooling comes last
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/chargeDraw.ts` per D8: `SiteChargedEffect` (square
+only, reusing the type name step 2 retired, per D12) and `runChargeDraw`,
+which computes its own shortfall against `TARGET_CHARGED_SITES`, builds the
+active pool by walking `SITES`, and draws one at a time without replacement
+via `drawIndex`/`state.randomSeed` (D9, D10), stopping — with no throw — the
+moment the shortfall is met or the pool is empty, whichever comes first.
+Wired it into `endOfTurn.ts` as step 4, between the run-out step and the
+cooling step, per D11; `announcements.ts` gained the `site-charged` clause
+(`A new node charged at ${square}.`) with `site-went-active` left silent.
+Added `src/rules/chargeDraw.test.ts` (shortfall, without-replacement,
+determinism, the pool including an occupied active site, running short,
+nothing-to-do) and rewrote/added the D11 ordering test in `endOfTurn.test.ts`
+as this step's named headline check: a dormant site finishing cooling and a
+node running out in the same sequence, with the board at zero charged and no
+other active site, so a wrongly-ordered sequence would draw the very site
+that just went active — proven not to happen.
+
+Deviations, both required by the draw now actually running rather than being
+a placeholder, and both left as comments at their edit sites: (1) several
+existing tests in `endOfTurn.test.ts` and `ply.test.ts` built states with a
+lone active site and an otherwise-short board, so the now-live draw
+legitimately charged that site and broke exact-effects or
+state-unchanged assertions that had nothing to do with what those tests were
+actually proving; each was adjusted (an incidental active site changed to
+dormant, or the board topped up to five charged elsewhere) to keep isolating
+its own property rather than incidentally exercising the draw. (2)
+`fullGame.test.ts`'s hundred-round test's fixed seed (20260819) happens to
+end the game without two ships in attack range at the very last moment now
+that the charge draw drives real gameplay instead of an inert board (a
+scan of nearby seeds found this true for the large majority, false for this
+one); moved to the adjacent seed 20260820, which does. Neither deviation
+touches the "two scoring assertions suspended until step 5" comment, which
+is left exactly as step 2 wrote it.
+
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(657 tests, up from 646) all pass.
 
 Add §8.2's charge draw and slot it into §8.6's sequence as step 4, ahead of the
 cooling step. After this commit the game plays 0.11 in full.

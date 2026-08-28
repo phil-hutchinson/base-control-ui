@@ -1,12 +1,14 @@
 // §8.6's end-of-turn sequence: the steps run once at the end of every ply,
 // in the document's order. Reads `state.sideToMove` as the player who just
 // moved and `state.plyNumber` as the ply just played, so `ply.ts` must call
-// this before either changes. The charge draw (§8.2, §8.6 step 4) is not
-// implemented yet — it arrives in the next step; for now cooling a dormant
-// site runs last, after the run-out step, per §8.6.
+// this before either changes. Cooling a dormant site to active runs last,
+// after the charge draw, deliberately (§8.6): it is what makes a site spend
+// at least one whole turn visibly active before the draw can pick it,
+// rather than going dormant -> active -> charged inside a single sequence.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
+import { type SiteChargedEffect, runChargeDraw } from "./chargeDraw";
 import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
 import type { Side, ShipId } from "./fleet";
 import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
@@ -61,6 +63,7 @@ export type EndOfTurnEffect =
   | EnergyCollectedEffect
   | NodeRanOutEffect
   | ShipStrandedEffect
+  | SiteChargedEffect
   | SiteWentActiveEffect;
 
 /** The state resulting from the end-of-turn sequence, and the effects it produced. */
@@ -73,8 +76,7 @@ export interface EndOfTurnResult {
  * Runs §8.6's end-of-turn steps, in order, for the ply that is ending.
  * `state`'s `sideToMove` is read as the player who just played that ply and
  * `plyNumber` as the ply itself — the caller runs this **before** swapping
- * sides or advancing the ply counter. The charge draw (§8.6 step 4) is not
- * implemented yet, so after this step a run-out node is not replaced.
+ * sides or advancing the ply counter.
  */
 export function runEndOfTurn(state: GameState): EndOfTurnResult {
   const side = state.sideToMove;
@@ -156,8 +158,12 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   }
   workingState = { ...workingState, siteStates };
 
-  // Step 4: the charge draw (§8.2) is not implemented yet — it arrives in
-  // the next step, which inserts it here, ahead of step 5 below.
+  // Step 4: as many active sites as it takes to bring the board back to
+  // five charged are charged, at random (§8.2, §8.6 step 4). Running short
+  // is legal: with no active site left to draw from, this simply stops.
+  const chargeDraw = runChargeDraw(workingState);
+  workingState = chargeDraw.state;
+  effects.push(...chargeDraw.effects);
 
   // Step 5: dormant sites that have finished cooling go active (§8.2). This
   // runs last, deliberately: it is what makes a site spend at least one

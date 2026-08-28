@@ -275,7 +275,11 @@ function sumAmounts(effects: readonly EnergyCollectedEffect[]): number {
 
 describe("a full game, end to end", () => {
   it("plays a hundred-round game to its end, with totals consistent throughout", () => {
-    const seed = 20260819;
+    // Chosen so that, with the charge draw now driving the board (step 4),
+    // an attack is still legal a moment before the game ends — the
+    // adjacent seed 20260819 happens not to leave two ships in range at
+    // that exact final moment, though most seeds do.
+    const seed = 20260820;
     const { finalState, greenCollected, redCollected } = playFullGame(
       seed,
       100,

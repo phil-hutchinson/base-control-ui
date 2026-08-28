@@ -76,9 +76,12 @@ function buildState(config: {
 
 describe("applyMove", () => {
   it("moves the ship and touches nothing else", () => {
+    // Dormant rather than active, so the end-of-turn charge draw this move
+    // triggers has no pool to draw E5 from — this test is about the move
+    // itself, not about the board's self-charging.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
-      siteStates: { E5: "active" },
+      siteStates: { E5: "dormant" },
     });
     const before = structuredClone(state);
 
@@ -206,9 +209,11 @@ describe("applyMove", () => {
   });
 
   it("leaves siteStates deeply unchanged when a move touches no site", () => {
+    // Dormant rather than active, so the end-of-turn charge draw this move
+    // triggers has no pool to draw E5 from.
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      siteStates: { E5: "active" },
+      siteStates: { E5: "dormant" },
     });
 
     const result = applyMove(state, "green-1", squareFromName("H9"));
@@ -1160,9 +1165,20 @@ describe("the winner's advance (rules.md §7)", () => {
   });
 
   it("flying over an active site during a winning advance leaves it active (reach: flown-over)", () => {
+    // Five sites elsewhere are already charged, so the end-of-turn charge
+    // draw this fight's ply-end triggers has no shortfall to fill and
+    // cannot touch H8 — the only thing that could change H8 here is the
+    // advance flying over it.
     const state = buildState({
       ships: [ship("green-1", "green", "H7", 2), ship("red-1", "red", "H9", 0)],
-      siteStates: { H8: "active" },
+      siteStates: {
+        H8: "active",
+        F2: "charged",
+        J2: "charged",
+        B4: "charged",
+        N4: "charged",
+        D8: "charged",
+      },
       plyNumber: 6,
     });
 
@@ -1202,7 +1218,10 @@ describe("the winner's advance (rules.md §7)", () => {
   it("wakes nothing on a mutual return, even with an active site on the defender's own square, on the lane, and on both bays the ships are placed in", () => {
     // The attacker's own square is charged, not active — an active site
     // would strand the attacker itself (§8.5) and refuse the attack before
-    // any of this could be observed.
+    // any of this could be observed. Five sites elsewhere are also charged,
+    // so the end-of-turn charge draw the fight's own ply-end triggers has
+    // no shortfall to fill and cannot touch H8 either — the only source of
+    // any site-state change under test here is the fight itself.
     const state = buildState({
       ships: [ship("green-1", "green", "H6", 2), ship("red-1", "red", "H8", 2)],
       siteStates: {
@@ -1211,6 +1230,11 @@ describe("the winner's advance (rules.md §7)", () => {
         H8: "active",
         H15: "active",
         L15: "active",
+        F2: "charged",
+        J2: "charged",
+        B4: "charged",
+        N4: "charged",
+        D8: "charged",
       },
     });
 

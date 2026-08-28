@@ -150,7 +150,10 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
 /**
  * The clauses an end-of-turn sequence produced, in the order the sequence
  * produced them. All of a sequence's shield gains are grouped into one
- * clause; `site-went-active` produces no clause at all — an active site is
+ * clause. The two board-only site transitions are judged separately:
+ * `site-charged` speaks — a node appearing is the only way one ever appears
+ * now, and it is the thing both players are racing towards — while
+ * `site-went-active` produces no clause at all, because an active site is
  * not a node, produces nothing and cannot be stopped on, so a site quietly
  * becoming eligible for the charge draw is a board change, not a player
  * event. A zero collection produces no `energy-collected` effect at all
@@ -176,6 +179,9 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
         break;
       case "node-ran-out":
         clauses.push(`The node at ${squareName(effect.square)} ran out.`);
+        break;
+      case "site-charged":
+        clauses.push(`A new node charged at ${squareName(effect.square)}.`);
         break;
       case "ship-stranded":
         clauses.push(

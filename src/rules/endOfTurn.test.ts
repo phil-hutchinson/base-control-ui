@@ -108,6 +108,10 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
           squareFromName("H12"),
         ],
       },
+      // Step 4: the board is one node short of five, and K5 is the only
+      // active site, so it is charged deterministically — the draw needs
+      // no choice among a pool of one.
+      { type: "site-charged", square: squareFromName("K5") },
     ]);
   });
 
@@ -221,7 +225,7 @@ describe("runEndOfTurn — step 3, a charged node running out (§8.3, §8.5)", (
     });
   });
 
-  it("leaves the site un-replaced this same turn — the charge draw is not implemented until the next step", () => {
+  it("replaces the site in the same end-of-turn sequence, ahead of step 4's charge draw (§8.2, §8.6)", () => {
     const state = buildState({
       sideToMove: "green",
       plyNumber: 10,
@@ -238,8 +242,16 @@ describe("runEndOfTurn — step 3, a charged node running out (§8.3, §8.5)", (
       enteredOnPly: 10,
     });
     expect(result.state.siteStates.F2).toEqual({
-      state: "active",
-      enteredOnPly: 0,
+      state: "charged",
+      enteredOnPly: 10,
+    });
+    expect(result.effects).toContainEqual({
+      type: "node-ran-out",
+      square: squareFromName("H8"),
+    });
+    expect(result.effects).toContainEqual({
+      type: "site-charged",
+      square: squareFromName("F2"),
     });
     expect(
       result.effects.some((effect) => effect.type === "site-went-active"),
@@ -282,10 +294,14 @@ describe("runEndOfTurn — step 5, a dormant site cooling to active (§8.2)", ()
     ]);
   });
 
-  it("runs step 3 (run-out) and step 5 (cooling) in the same sequence without letting a site go dormant, active and charged in one turn (§8.6 step ordering)", () => {
-    // H8 finishes cooling this same ply that another node, F2, runs out.
-    // With no charge draw yet (it arrives next step), the only outcome to
-    // guard here is that H8 goes active — never further than that.
+  it("this step's headline check: the charge draw (step 4) never charges a site cooling to active in the very sequence it does so (§8.6 step ordering, D11)", () => {
+    // H8 finishes cooling this same ply that another node, F2, runs out —
+    // leaving the board with nothing charged at all and, until step 5 runs,
+    // no active site anywhere else either. If cooling ran ahead of the
+    // draw, H8 would be the draw's only candidate and a maximal shortfall
+    // (five) would charge it in the same sequence it went active; run in
+    // the document's order, the draw sees an empty pool and H8 is left
+    // merely active, first eligible for the draw only on the next ply.
     const state = buildState({
       sideToMove: "green",
       plyNumber: 19,
@@ -309,15 +325,20 @@ describe("runEndOfTurn — step 5, a dormant site cooling to active (§8.2)", ()
       state: "dormant",
       enteredOnPly: 19,
     });
+    expect(
+      result.effects.some((effect) => effect.type === "site-charged"),
+    ).toBe(false);
   });
 });
 
 describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("emits no effect and leaves both totals unchanged when nothing is held", () => {
+    // Dormant rather than active, so step 4's charge draw has no pool to
+    // draw these two from and this stays a pure test of step 2 alone.
     const state = buildState({
       sideToMove: "green",
       plyNumber: 3,
-      siteStates: { H8: ["active", 0], K5: ["active", 0] },
+      siteStates: { H8: ["dormant", 0], K5: ["dormant", 0] },
       ships: [ship("green-1", "green", "D2")],
     });
 

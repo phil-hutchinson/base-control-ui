@@ -330,6 +330,28 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
+  it("announces a new node charging at the end of a turn (§8.2)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [{ type: "site-charged", square: squareAt("D", 8) }],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. A new node charged at D8. Red's turn, 1 action left.",
+    );
+  });
+
   it("says nothing at all for a dormant site going active (§8.2, §8.6)", () => {
     const event: MovedEvent = {
       type: "moved",
