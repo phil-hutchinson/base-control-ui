@@ -671,7 +671,28 @@ changes a site; and the word "depleted" does not appear in the document at all.
 
 ## Step 2 — Ships stop changing site states
 
-Status: pending
+Status: committed
+
+Notes: Deleted `wakeTouchedSites`, `SiteReach`, `WakeResult` and
+`SiteChargedEffect` from `nodes.ts` (kept `drawReplacements` and its helpers,
+per plan, for step 3 to remove); removed both wake call sites in `ply.ts`
+(`applyMove`'s now-unneeded `reachFrom`/path lookup, and `applyAttack`'s
+advance-time wake), dropped `SiteChargedEffect` from `MoveEffect` and
+`AttackEffect`, and tightened `assertFightInvariants` per D15 to forbid any
+site-state change during a fight. `announcements.ts` lost the charging
+variants of `moveSentence` and `winnerAdvanceClause` (the latter's signature
+dropped its now-unused `effects` parameter; its one call site updated).
+Deleted `siteSpacing.test.ts` outright (D16). Updated `nodes.test.ts`,
+`ply.test.ts` and `announcements.test.ts` to remove wake/site-charged
+assertions, and added the step's own verification tests in `ply.test.ts`:
+landing on and flying over an active site (by a move and by a winning
+advance) leaves it active, and a sequence of moves plus a won fight whose
+winner advances onto a site leaves every site's `siteStates` entry
+unchanged. Removed the two `energy.green/red > 0` assertions from
+`fullGame.test.ts` with a comment naming step 5 as where they are restored
+(D18) — no other deviation from the plan. `npm test` (659 tests, down from
+673 as expected), `npm run typecheck`, `npm run lint` and
+`npm run format:check` all pass.
 
 Delete waking on touch and everything that exists only to serve it. **The four
 states stay for this step** — the state rotation is step 3. After this commit

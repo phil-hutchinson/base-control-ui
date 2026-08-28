@@ -1,98 +1,13 @@
-// Two of the state transitions §8 puts on a site: waking on touch (§8.2), a
-// ship charging any active site it touches, whether it lands on the site or
-// only passes over it on the way somewhere else, and whether it got there by
-// moving or by advancing after winning a fight; and drawing a replacement
-// from the dormant pool (§8.6), once a node has run out. Both are pure state
-// transitions; `ply.ts` calls the first as part of applying a move or a
-// winning attacker's advance, and `endOfTurn.ts` calls the second as part of
-// running the end-of-turn sequence.
+// The replacement draw §8 puts on a site: waking a dormant site to replace
+// one that ran out (§8.6 in rules.md 0.10). 0.11 removes both the state a
+// ship touching a site used to cause and the draw's whole basis — the board
+// charges sites on its own timer instead — so nothing here describes the
+// current ruleset; it survives only until step 3 deletes it.
 
 import { type Square, squareName } from "./board";
-import type { Side, ShipId } from "./fleet";
-import {
-  type GameState,
-  type Ship,
-  shipsBySquare,
-  siteStateAt,
-} from "./gameState";
-import type { ReachEntry } from "./movement";
+import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
 import { drawIndex } from "./random";
 import { SITES } from "./sites";
-
-/** Whether a ship reached a site by landing on it or only by flying over it. */
-export type SiteReach = "landed-on" | "flown-over";
-
-/** A site went from active to charged because a ship touched it (rules.md §8.2). */
-export interface SiteChargedEffect {
-  readonly type: "site-charged";
-  readonly square: Square;
-  readonly shipId: ShipId;
-  readonly side: Side;
-  readonly reach: SiteReach;
-}
-
-/** The state resulting from a wake, and the effects it produced. */
-export interface WakeResult {
-  readonly state: GameState;
-  readonly effects: readonly SiteChargedEffect[];
-}
-
-/**
- * Charges every **active** site among the squares a ship's path touched —
- * its destination and everything it passed over, in path order — leaving
- * sites in any other state untouched. `ship` is the ship whose path it was,
- * and `path` is the matching `ReachEntry`, either a move's own or a winning
- * attacker's advance (rules.md §8.2), so callers never re-derive it.
- *
- * The §3.2 spacing property means a legal move can touch at most one site,
- * but this loops over the whole path rather than assuming it — that
- * assumption belongs to the site layout, not to this module.
- */
-export function wakeTouchedSites(
-  state: GameState,
-  ship: Ship,
-  path: ReachEntry,
-): WakeResult {
-  const touched: ReadonlyArray<{
-    readonly square: Square;
-    readonly reach: SiteReach;
-  }> = [
-    ...path.passedOver.map((square) => ({
-      square,
-      reach: "flown-over" as const,
-    })),
-    { square: path.destination, reach: "landed-on" as const },
-  ];
-
-  let siteStates = state.siteStates;
-  const effects: SiteChargedEffect[] = [];
-
-  for (const { square, reach } of touched) {
-    const name = squareName(square);
-    const status = siteStates[name];
-    if (status === undefined || status.state !== "active") {
-      continue;
-    }
-
-    siteStates = {
-      ...siteStates,
-      [name]: { state: "charged", enteredOnPly: state.plyNumber },
-    };
-    effects.push({
-      type: "site-charged",
-      square,
-      shipId: ship.id,
-      side: ship.side,
-      reach,
-    });
-  }
-
-  if (effects.length === 0) {
-    return { state, effects };
-  }
-
-  return { state: { ...state, siteStates }, effects };
-}
 
 /**
  * A dormant site woke to replace one that ran out (rules.md §8.6). It wakes
