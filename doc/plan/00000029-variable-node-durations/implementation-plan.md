@@ -1520,7 +1520,39 @@ visual result is confirmed by the owner in step 9, not here.
 
 ## Step 7 — The long-run economy and replay, re-established
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `src/rules/sitePool.test.ts` fully around 0.12's Appendix B
+and D16, replacing the interim step-3 file: five `it.each(SEEDS)` groups
+(five-charged, active-pool floor, expiry spread, and the new
+pressure-weighting wait-bound check) plus the retained single-seed
+steady-state means check. Bounds were set from measured values over several
+seeds at 500 plies each (via a throwaway local script, not committed):
+multi-expiry share topped out under 3% (bound 10%), the worst single-ply
+expiry count was 3 (bound `TARGET_CHARGED_SITES - 1` = 4), every site was
+charged at least 3 times (floor 2), and the longest observed gap between a
+site's successive charges was 277 turns (ceiling 400) — all with generous
+margin per the plan's "measure first, then set bounds generously"
+instruction. `src/rules/seededReplay.test.ts`'s existing "not vacuous" and
+"different seed diverges" assertions were re-run and still hold (measured
+directly: 26 bay returns and exactly 10 charged sites over the 40-round
+run against the >=10 threshold — deterministic, so not flaky despite the
+tight margin); its header comment was extended per the plan to say the
+per-node drain/recovery draws now dominate the stream, and one explicit
+`siteLevels` equality assertion was added to the same-seed replay test,
+naming directly (D6's point) that the drain/recovery draws' effect on every
+site's `level` replays, not only the charged-site sequence — this was
+already implied by the pre-existing whole-`finalState` equality check but
+the plan asked it be considered as its own named assertion.
+`src/rules/fullGame.test.ts` needed no changes: run as-is, all three tests
+still pass (hundred-round and three-round games both end correctly, both
+sides score above zero, the game-over refusals all hold), so per the plan
+("nothing in it should need rewriting... run it") it was left untouched.
+Full suite: `npm test` 725/725 (up from 719 — the sitePool.test.ts rewrite
+nets 13 tests, replacing 7 interim ones, plus one assertion added to an
+existing seededReplay test rather than a new one), `npm run typecheck`,
+`npm run lint` and `npm run format:check` all pass. No deviations from the
+plan.
 
 With the whole cycle in place, rewrite the integration test that guards
 Appendix B and re-confirm the two whole-game tests against a draw stream that
