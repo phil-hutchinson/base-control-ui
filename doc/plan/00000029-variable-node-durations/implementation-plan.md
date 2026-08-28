@@ -1625,7 +1625,30 @@ and `fullGame.test.ts` still scores and still ends.
 
 ## Step 8 — `README.md` and a sweep for stale numbers
 
-Status: pending
+Status: committed
+
+Notes: Rewrote the intro paragraph's node sentence (holding a node burns it
+faster, leaving it spends what is left) and the status blockquote's
+nine-turn sentence (variable pace, faster while held, instant on vacating,
+recovery sooner when spent early), and added the companion sentence D2's
+active-site growth deserves (an unlit site grows and brightens the longer
+it waits). Reviewed the whole branch diff against `/update-readme`'s
+criteria by hand rather than invoking the slash command literally (it is
+not callable as a tool from this agent); nothing else in the diff is
+player-visible beyond what the two rewritten passages already cover, so no
+further README changes were made. Swept `src/`, `README.md` and
+`CONTRIBUTING.md` for "nine turns"/"nine plies", "stagger",
+`CHARGED_LIFE_PLIES`, `DORMANT_COOLDOWN_PLIES` and `enteredOnPly`: the first
+four constant/field names are gone entirely, and the only stale hits were
+two "(the staggered opening)" comments in `src/board/Board.test.tsx`
+explaining why H8 starts charged, which no longer applies now the stagger
+is deleted — reworded to say H8 is one of the five sites the opening board
+starts charged. `sitePool.test.ts`'s references to the old stagger are a
+correct historical explanation of why the 0.12 test differs from 0.11's and
+were left as-is. Every `§8.7` citation in `src/` means the vacating rule.
+`npm test` (725/725, unchanged from step 7), `npm run typecheck`,
+`npm run lint` and `npm run format:check` all pass. No deviations from the
+plan.
 
 `README.md` states the old mechanic directly and is wrong in at least two
 places after this story:

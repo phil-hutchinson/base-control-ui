@@ -11,9 +11,11 @@ on a node builds shields up; winning a fight burns them off. Ships are never
 destroyed: a ship that loses is pushed back to a bay on the edge of the board,
 stripped of its shields, and flies again from there.
 
-Nodes do not last. Each one runs down after a few turns and goes dark, and the
-board lights up a new one somewhere else on its own, at the end of a turn —
-and you will not know where until it happens.
+Nodes do not last. Standing on one burns it down faster than leaving it
+alone, and holding a node and then walking away spends what is left of it —
+either way it eventually goes dark, and the board lights up a new one
+somewhere else on its own, at the end of a turn, so you will not know where
+until it happens.
 
 This is the game's web app. It runs entirely in your browser — nothing to
 install, no account, no server.
@@ -25,12 +27,17 @@ install, no account, no server.
 > goes first, and each player takes one action a turn — a move or an attack —
 > by mouse or by keyboard. Nodes light up on their own: at the end of every
 > turn the board tops itself back up to five charged sites among the
-> seventeen, picking the new ones at random as older ones run out, and a ship
-> can only stop on a site that is already lit. A lit node pays a shield to
-> the player sitting on it at the end of each of their own turns. A node runs
-> out after nine turns — its glow shifts a little as it runs down, so you can
-> see roughly how much life it has left — and it stays dark for a while
-> before the board can light it again.
+> seventeen, picking the new ones at random as older ones run out — and a
+> site that has been waiting longer is more likely to be picked next, which
+> shows in how it looks: an unlit site grows and brightens the longer it
+> waits its turn. A ship can only stop on a site that is already lit. A lit
+> node pays a shield to the player sitting on it at the end of each of their
+> own turns. A node's glow shifts as it burns down, so you can see roughly
+> how much life it has left, and it runs out at a random pace — faster while
+> a ship is sitting on it than while it stands empty, and instantly the
+> moment a ship that was holding it moves away. Once it runs out it stays
+> dark for a while before the board can light it again, coming back sooner
+> if it was spent early rather than burned all the way down.
 > A ship still standing on a node that has just run out has to be moved
 > clear, and that is what its owner's next turn is spent on. In a fight the
 > ship carrying more shields wins and the beaten one is pushed back to a bay

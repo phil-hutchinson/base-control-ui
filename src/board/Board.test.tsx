@@ -65,7 +65,8 @@ describe("Board", () => {
   it("names the centre and the far corners correctly", () => {
     render(<Board session={startingSession} onIntent={noop} />);
 
-    // H8 is the centre square and starts charged (the staggered opening).
+    // H8 is the centre square and one of the five sites the opening board
+    // starts charged.
     expect(
       screen.getByRole("gridcell", { name: "H8, charged site" }),
     ).toBeInTheDocument();
@@ -351,7 +352,7 @@ describe("Board", () => {
     const { container } = render(<Board session={session} onIntent={noop} />);
 
     // H8 is a site as well as this ship's new square; both are named. It
-    // starts charged (the staggered opening).
+    // is one of the five sites the opening board starts charged.
     const cell = screen.getByRole("gridcell", {
       name: "H8, charged site, green ship, 0 shields",
     });
