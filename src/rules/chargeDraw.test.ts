@@ -4,7 +4,7 @@ import { runChargeDraw } from "./chargeDraw";
 import type { ShipId } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { GameState, Ship, SiteStatus } from "./gameState";
-import { drawIndex } from "./random";
+import { drawWeightedIndex } from "./random";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
 import { strandedShipIds } from "./stranded";
@@ -56,7 +56,7 @@ describe("runChargeDraw — the shortfall (§8.2, §8.6 step 4)", () => {
         J2: ["charged", 1],
         B4: ["charged", 1],
         H4: ["charged", 1],
-        N4: ["active", 0],
+        N4: ["active", 1],
       },
     });
 
@@ -76,9 +76,9 @@ describe("runChargeDraw — the shortfall (§8.2, §8.6 step 4)", () => {
       siteStates: {
         F2: ["charged", 1],
         J2: ["charged", 1],
-        B4: ["active", 0],
-        H4: ["active", 0],
-        N4: ["active", 0],
+        B4: ["active", 1],
+        H4: ["active", 1],
+        N4: ["active", 1],
       },
     });
 
@@ -105,7 +105,7 @@ describe("runChargeDraw — the shortfall (§8.2, §8.6 step 4)", () => {
         B4: ["charged", 1],
         H4: ["charged", 1],
         N4: ["charged", 1],
-        K5: ["active", 0],
+        K5: ["active", 1],
       },
     });
 
@@ -121,9 +121,9 @@ describe("runChargeDraw — without replacement", () => {
     const state = buildState({
       randomSeed: 42,
       siteStates: {
-        F2: ["active", 0],
-        J2: ["active", 0],
-        B4: ["active", 0],
+        F2: ["active", 1],
+        J2: ["active", 1],
+        B4: ["active", 1],
       },
     });
 
@@ -135,17 +135,21 @@ describe("runChargeDraw — without replacement", () => {
     );
     expect(new Set(drawnNames).size).toBe(3);
 
-    // Replaying the same draw by hand, one at a time without replacement,
-    // reaches the same final seed — confirming the seed truly advances once
-    // per site charged and not, for instance, once per candidate considered.
+    // Replaying the same draw by hand, one at a time without replacement and
+    // weighted by each site's pressure, reaches the same final seed —
+    // confirming the seed truly advances once per site charged and not, for
+    // instance, once per candidate considered.
     let pool = [
-      squareFromName("F2"),
-      squareFromName("J2"),
-      squareFromName("B4"),
+      { square: squareFromName("F2"), weight: 1 },
+      { square: squareFromName("J2"), weight: 1 },
+      { square: squareFromName("B4"), weight: 1 },
     ];
     let seed = 42;
     for (let i = 0; i < 3; i++) {
-      const [index, nextSeed] = drawIndex(seed, pool.length);
+      const [index, nextSeed] = drawWeightedIndex(
+        seed,
+        pool.map((entry) => entry.weight),
+      );
       pool = pool.filter((_, poolIndex) => poolIndex !== index);
       seed = nextSeed;
     }
@@ -158,10 +162,10 @@ describe("runChargeDraw — determinism", () => {
     const state = buildState({
       randomSeed: 7,
       siteStates: {
-        F2: ["active", 0],
-        J2: ["active", 0],
-        B4: ["active", 0],
-        H4: ["active", 0],
+        F2: ["active", 1],
+        J2: ["active", 1],
+        B4: ["active", 1],
+        H4: ["active", 1],
       },
     });
 
@@ -173,10 +177,10 @@ describe("runChargeDraw — determinism", () => {
 
   it("produces a different draw from a different seed, over a handful of seeds", () => {
     const siteStates = {
-      F2: ["active", 0],
-      J2: ["active", 0],
-      B4: ["active", 0],
-      H4: ["active", 0],
+      F2: ["active", 1],
+      J2: ["active", 1],
+      B4: ["active", 1],
+      H4: ["active", 1],
     } as const;
 
     const results = [1, 2, 3, 4, 5].map((seed) =>
@@ -208,7 +212,7 @@ describe("runChargeDraw — the pool", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "F2", 1)],
       siteStates: {
-        F2: ["active", 0],
+        F2: ["active", 1],
       },
     });
 
@@ -233,7 +237,7 @@ describe("runChargeDraw — running short", () => {
       siteStates: {
         F2: ["charged", 1],
         J2: ["dormant", 1],
-        B4: ["active", 0],
+        B4: ["active", 1],
       },
     });
 
@@ -258,7 +262,7 @@ describe("runChargeDraw — running short", () => {
       siteStates: {
         F2: ["charged", 1],
         J2: ["dormant", 1],
-        B4: ["active", 0],
+        B4: ["active", 1],
       },
     });
     const shortResult = runChargeDraw(shortState);
@@ -274,9 +278,9 @@ describe("runChargeDraw — running short", () => {
       siteStates: {
         ...shortResult.state.siteStates,
         ...siteStatuses({
-          H4: ["active", 0],
-          N4: ["active", 0],
-          D8: ["active", 0],
+          H4: ["active", 1],
+          N4: ["active", 1],
+          D8: ["active", 1],
         }),
       },
     };
@@ -306,5 +310,95 @@ describe("runChargeDraw — nothing to do", () => {
     const result = runChargeDraw(state);
 
     expect(result).toEqual({ state, effects: [] });
+  });
+});
+
+describe("runChargeDraw — weighted by pressure (§8.2, D15)", () => {
+  it("draws a pressure-20 site about twice as often as a pressure-10 site, and still sometimes draws a pressure-1 site", () => {
+    const counts: Record<string, number> = { N4: 0, D8: 0, H8: 0 };
+    const TRIALS = 4000;
+    for (let seed = 1; seed <= TRIALS; seed++) {
+      const state = buildState({
+        randomSeed: seed,
+        siteStates: {
+          F2: ["charged", 1],
+          J2: ["charged", 1],
+          B4: ["charged", 1],
+          H4: ["charged", 1],
+          N4: ["active", 20],
+          D8: ["active", 10],
+          H8: ["active", 1],
+        },
+      });
+
+      const result = runChargeDraw(state);
+
+      expect(result.effects).toHaveLength(1);
+      const drawnName = squareName(result.effects[0].square);
+      counts[drawnName] += 1;
+    }
+
+    const ratio = counts.N4 / counts.D8;
+    expect(ratio).toBeGreaterThan(1.5);
+    expect(ratio).toBeLessThan(2.5);
+    expect(counts.H8).toBeGreaterThan(0);
+  });
+
+  it("draws several sites without replacement, each draw weighted by the pressures still remaining", () => {
+    const state = buildState({
+      randomSeed: 99,
+      siteStates: {
+        N4: ["active", 20],
+        D8: ["active", 10],
+        H8: ["active", 1],
+      },
+    });
+
+    const result = runChargeDraw(state);
+
+    expect(result.effects).toHaveLength(3);
+    const drawnNames = result.effects.map((effect) =>
+      squareName(effect.square),
+    );
+    expect(new Set(drawnNames).size).toBe(3);
+
+    // Replaying by hand with the weighted primitive, one at a time without
+    // replacement, reaches the same final seed as the actual draw — the
+    // remaining weights after each removal are the remaining sites'
+    // pressures, not a fresh uniform pool.
+    let pool = [
+      { square: squareFromName("N4"), weight: 20 },
+      { square: squareFromName("D8"), weight: 10 },
+      { square: squareFromName("H8"), weight: 1 },
+    ];
+    let seed = 99;
+    for (let i = 0; i < 3; i++) {
+      const [index, nextSeed] = drawWeightedIndex(
+        seed,
+        pool.map((entry) => entry.weight),
+      );
+      pool = pool.filter((_, poolIndex) => poolIndex !== index);
+      seed = nextSeed;
+    }
+    expect(result.state.randomSeed).toBe(seed);
+  });
+
+  it("charges a site at level 0 regardless of the pressure it carried, discarding it", () => {
+    const state = buildState({
+      siteStates: {
+        F2: ["charged", 1],
+        J2: ["charged", 1],
+        B4: ["charged", 1],
+        H4: ["charged", 1],
+        N4: ["active", 37],
+      },
+    });
+
+    const result = runChargeDraw(state);
+
+    expect(result.state.siteStates.N4).toEqual({
+      state: "charged",
+      level: 0,
+    });
   });
 });

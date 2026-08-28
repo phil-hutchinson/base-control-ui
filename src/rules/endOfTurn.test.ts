@@ -12,7 +12,7 @@ import {
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { ShieldCount } from "./shields";
-import { NODE_CAPACITY, type SiteState } from "./sites";
+import { NODE_CAPACITY, PRESSURE_CAP, type SiteState } from "./sites";
 
 function ship(
   id: ShipId,
@@ -364,6 +364,50 @@ describe("runEndOfTurn — step 4, the charge draw never charges a site that wen
     expect(
       result.effects.some((effect) => effect.type === "site-charged"),
     ).toBe(false);
+  });
+});
+
+describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
+  it("gains a point of pressure every ply it stays active", () => {
+    // Five other sites are already charged so the board is not short and
+    // H8 cannot itself be drawn by step 4 — this isolates step 5.
+    const state = buildState({
+      siteStates: {
+        H8: ["active", 10],
+        F2: ["charged", 1],
+        J2: ["charged", 1],
+        B4: ["charged", 1],
+        L8: ["charged", 1],
+        D8: ["charged", 1],
+      },
+    });
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(result.state.siteStates.H8).toEqual({
+      state: "active",
+      level: 11,
+    });
+  });
+
+  it("stops at the pressure cap and never exceeds it", () => {
+    const state = buildState({
+      siteStates: {
+        H8: ["active", PRESSURE_CAP],
+        F2: ["charged", 1],
+        J2: ["charged", 1],
+        B4: ["charged", 1],
+        L8: ["charged", 1],
+        D8: ["charged", 1],
+      },
+    });
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(result.state.siteStates.H8).toEqual({
+      state: "active",
+      level: PRESSURE_CAP,
+    });
   });
 });
 

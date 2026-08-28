@@ -1123,7 +1123,7 @@ describe("the winner's advance (rules.md §7)", () => {
   it("holds its ground on an adjacent attack onto an active site", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H7", 3), ship("red-1", "red", "H8", 0)],
-      siteStates: { H8: "active" },
+      siteStates: { H8: ["active", 1] },
     });
 
     const result = applyAttack(state, "green-1", squareFromName("H8"));
@@ -1171,12 +1171,14 @@ describe("the winner's advance (rules.md §7)", () => {
   it("flying over an active site during a winning advance leaves it active", () => {
     // Five sites elsewhere are already charged, so the end-of-turn charge
     // draw this fight's ply-end triggers has no shortfall to fill and
-    // cannot touch H8 — the only thing that could change H8 here is the
-    // advance flying over it.
+    // cannot touch H8 — the only thing that could change H8's state is the
+    // advance flying over it. Its level does still move: every active site
+    // gains a point of pressure at the end of every turn (§8.2, §8.6 step
+    // 5), whether or not the fight went near it.
     const state = buildState({
       ships: [ship("green-1", "green", "H7", 2), ship("red-1", "red", "H9", 0)],
       siteStates: {
-        H8: "active",
+        H8: ["active", 1],
         F2: "charged",
         J2: "charged",
         B4: "charged",
@@ -1194,7 +1196,7 @@ describe("the winner's advance (rules.md §7)", () => {
     }
     const winner = result.state.ships.find((s) => s.id === "green-1");
     expect(winner?.square).toEqual(squareFromName("H9"));
-    expect(result.state.siteStates.H8).toEqual(state.siteStates.H8);
+    expect(result.state.siteStates.H8).toEqual({ state: "active", level: 2 });
   });
 
   it("changes no site on a defender's win, even with active sites on the lane and on the bay the loser is placed in", () => {
@@ -1251,15 +1253,18 @@ describe("the winner's advance (rules.md §7)", () => {
     expect(result.effects[0]).toMatchObject({ outcome: "mutual-return" });
     // H6, H7, H15 and L15 are not among the seventeen sites (rules.md
     // §3.2), so they are immune to every piece of end-of-turn site
-    // mechanics and stay exactly as they went in. H8 is a real site, but
-    // it is active — untouched by drain or recovery, and the charge draw
-    // has no shortfall to fill — so it too stays exactly unchanged. F2,
-    // J2, B4, N4 and D8 are real charged sites with no ship on them: their
-    // drain does rise (§8.3), so what stays true of them is that they
-    // remain charged, not that their drain is literally unchanged.
-    for (const name of ["H6", "H7", "H8", "H15", "L15"]) {
+    // mechanics and stay exactly as they went in. H8 is a real site, and
+    // it is active: the fight itself does not touch it — untouched by
+    // drain or recovery, and the charge draw has no shortfall to fill —
+    // but it does gain a point of pressure like any other active site at
+    // the end of the turn (§8.2, §8.6 step 5). F2, J2, B4, N4 and D8 are
+    // real charged sites with no ship on them: their drain does rise
+    // (§8.3), so what stays true of them is that they remain charged, not
+    // that their drain is literally unchanged.
+    for (const name of ["H6", "H7", "H15", "L15"]) {
       expect(result.state.siteStates[name]).toEqual(state.siteStates[name]);
     }
+    expect(result.state.siteStates.H8).toEqual({ state: "active", level: 1 });
     for (const name of ["F2", "J2", "B4", "N4", "D8"]) {
       expect(result.state.siteStates[name].state).toBe("charged");
       expect(result.state.siteStates[name].level).toBeGreaterThan(0);

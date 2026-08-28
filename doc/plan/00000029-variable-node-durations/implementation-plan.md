@@ -1145,7 +1145,44 @@ and `DORMANT_COOLDOWN_PLIES` and confirm none of them appears anywhere.
 
 ## Step 4 — Pressure, and the weighted charge draw
 
-Status: pending
+Status: committed
+
+Notes: `endOfTurn.ts` gained step 5 (every active site gains 1 pressure,
+capped at `PRESSURE_CAP`, skipping sites the charge draw just charged),
+inserted between step 4 and step 6, with the module header comment restating
+both ordering arguments. `sites.ts` gained `STARTING_PRESSURE` (1), used by
+`startingSiteStatus` and step 6's active transition in place of the bare
+literal, as the plan's "if that reads better" offered. `chargeDraw.ts` now
+draws with `drawWeightedIndex`, weighting each pooled site by its own
+`level` (pressure), recomputing the pool's weights after each removal so a
+site drawn earlier cannot be drawn again and the remaining weights are the
+remaining sites' pressures; the module and function doc comments were
+rewritten to describe the weighting and the never-below-1 invariant. Added
+the plan's six test groups: pressure growth and the cap, the discard on
+charge, the pressure-ratio weighting (~2:1 over 4000 trials, generous
+tolerance), weighted draw without replacement, and running-short — check 2
+(a site is first eligible at pressure 1, never charged in the sequence it
+went active) was already covered by a test step 3 had added under the same
+"§8.6 step ordering" heading, so no new test duplicates it; the notes there
+were left as is. One deviation, forced rather than chosen: switching the
+charge draw to weighted broke the invariant assumed by several pre-existing
+step-3-era fixtures across `chargeDraw.test.ts` and `ply.test.ts` that used
+`level: 0` (or the bare-state shorthand's default) for an `active` site —
+legal under the old uniform draw but a zero weight that collapses a
+single-candidate pool's total to 0 and trips `drawWeightedIndex`'s
+`RangeError`, per D15's "pressure is never below 1". `chargeDraw.test.ts`'s
+`["active", 0]` fixtures were bumped to `["active", 1]` throughout (weight
+irrelevant to those tests' assertions), its manual by-hand replay in the
+"without replacement" test was switched from `drawIndex` to
+`drawWeightedIndex` to match the production code path, and three
+`ply.test.ts` fixtures/assertions were updated: one bare-shorthand `H8:
+"active"` bumped to `["active", 1]` to keep its single-candidate charge-draw
+pool non-empty-weighted, and two others (where H8 stays active throughout
+because five other real sites are already charged, so H8 is never in the
+draw pool at all) had their "site unchanged" assertions corrected to expect
+H8's pressure risen by exactly 1 from step 5, with a comment explaining why.
+`npm test` (690/690, up from 685), `npm run typecheck`, `npm run lint` and
+`npm run format:check` all pass.
 
 Give active sites pressure and make §8.2's draw weighted by it. After this
 commit the only mechanic still missing is §8.7's vacating rule.

@@ -55,6 +55,12 @@ export const NODE_CAPACITY = 60;
 export const PRESSURE_CAP = 50;
 
 /**
+ * The pressure an active site starts at, whether from the opening position
+ * or from finishing recovery (rules.md §8.2, §8.6 step 6).
+ */
+export const STARTING_PRESSURE = 1;
+
+/**
  * How many sites the board aims to keep charged at all times (rules.md
  * §8.1, §8.2). This is an aim, not an invariant: the board charges up to
  * this many active sites at the end of every turn, and falls short when
@@ -152,7 +158,7 @@ export function startingSiteStatus(
   if (OPENING_CHARGED_SQUARE_NAMES.has(name)) {
     return { state: "charged", level: 0 };
   }
-  return { state: "active", level: 1 };
+  return { state: "active", level: STARTING_PRESSURE };
 }
 
 /**

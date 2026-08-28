@@ -1,14 +1,18 @@
 // §8.6's end-of-turn sequence: the steps run once at the end of every ply,
 // in the document's order. Reads `state.sideToMove` as the player who just
 // moved and `state.plyNumber` as the ply just played, so `ply.ts` must call
-// this before either changes. Recovering a dormant site to active runs
-// last, after the charge draw, deliberately (§8.6): it is what makes a site
-// spend at least one whole turn visibly active before the draw can pick it,
-// rather than going dormant -> active -> charged inside a single sequence.
-// And the two clocks are symmetric about the turn a state is entered: a
-// node charged in step 4 of turn N first drains in step 3 of turn N+1, and a
-// node that goes dormant in step 3 of turn N first recovers in step 6 of
-// turn N+1 — which is what this file's second argument is for.
+// this before either changes. Two ordering choices matter and both are
+// deliberate (§8.6). Pressure (step 5) is gained after the charge draw
+// (step 4), not before, so a site is drawn at the pressure it held all
+// turn — its first appearance in a draw is at weight 1, never 2.
+// Recovering a dormant site to active (step 6) runs last, after both of
+// those, deliberately: it is what makes a site spend at least one whole
+// turn visibly active before the draw can pick it, rather than going
+// dormant -> active -> charged inside a single sequence. And the two
+// clocks are symmetric about the turn a state is entered: a node charged
+// in step 4 of turn N first drains in step 3 of turn N+1, and a node that
+// goes dormant in step 3 of turn N first recovers in step 6 of turn N+1 —
+// which is what this file's second argument is for.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
@@ -26,7 +30,9 @@ import {
   EMPTY_NODE_DRAIN_TABLE,
   HELD_NODE_DRAIN_TABLE,
   NODE_CAPACITY,
+  PRESSURE_CAP,
   SITES,
+  STARTING_PRESSURE,
   drawTableAmount,
 } from "./sites";
 import { MAX_SHIELDS, type ShieldCount } from "./shields";
@@ -204,8 +210,27 @@ export function runEndOfTurn(
   effects.push(...chargeDraw.effects);
 
   // Step 5: every site still active gains a point of pressure, to the cap
-  // of 50 (§8.2). Not implemented yet — arrives in the next step of this
-  // story's plan.
+  // of 50 (§8.2). This runs after the charge draw, so a site is drawn at
+  // the pressure it held all turn — its first appearance in a draw is at
+  // weight 1, not 2 — and it runs before step 6, so a site that goes active
+  // there starts at pressure 1 untouched by this step.
+  for (const square of SITES) {
+    const name = squareName(square);
+    const status = workingState.siteStates[name];
+    if (status === undefined || status.state !== "active") {
+      continue;
+    }
+    if (status.level >= PRESSURE_CAP) {
+      continue;
+    }
+    workingState = {
+      ...workingState,
+      siteStates: {
+        ...workingState.siteStates,
+        [name]: { state: "active", level: status.level + 1 },
+      },
+    };
+  }
 
   // Step 6: every site that was dormant before this ply began (see this
   // function's doc comment on `dormantBeforePly`) subtracts its recovery;
@@ -230,7 +255,9 @@ export function runEndOfTurn(
     );
     const level = status.level - drawnAmount;
     const nextStatus: SiteStatus =
-      level > 0 ? { state: "dormant", level } : { state: "active", level: 1 };
+      level > 0
+        ? { state: "dormant", level }
+        : { state: "active", level: STARTING_PRESSURE };
     workingState = {
       ...workingState,
       siteStates: { ...workingState.siteStates, [name]: nextStatus },
