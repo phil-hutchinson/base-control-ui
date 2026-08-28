@@ -291,9 +291,9 @@ describe("a full game, end to end", () => {
     expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
     expect(finalState.energy.red).toBe(sumAmounts(redCollected));
 
-    // The policy-should-actually-score assertion is suspended here: nothing
-    // can charge a site until the end-of-turn charge draw exists, so no
-    // energy is ever collected yet. Restored in step 5.
+    // The policy should actually score, not merely reach the end.
+    expect(finalState.energy.green).toBeGreaterThan(0);
+    expect(finalState.energy.red).toBeGreaterThan(0);
 
     const result = gameResult(finalState);
     if (finalState.energy.green > finalState.energy.red) {

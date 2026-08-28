@@ -1154,7 +1154,31 @@ and the story's whole "a site must spend a turn active" property rests on it.
 
 ## Step 5 — The long-run economy, and replay
 
-Status: pending
+Status: committed
+
+Notes: Restored `fullGame.test.ts`'s two `energy > 0` assertions and removed
+the comment naming this step as their restorer, exactly as D18 describes.
+Rewrote `src/rules/sitePool.test.ts` from scratch (D17): it drives
+`runEndOfTurn` directly from `startingGameState`, with no ship ever moving,
+for 500 plies over three seeds, and asserts the board stays at exactly five
+charged the whole run, the active pool never falls below a floor of two, no
+single turn ever runs out more than one node (the no-lockstep property), and
+the steady-state means for dormant (~5) and active (~7) sites fall within
+loose bounds matching Appendix B's arithmetic. Extended
+`src/rules/seededReplay.test.ts` to record the sequence of `site-charged`
+squares alongside the existing bay-return sequence (added a
+`chargedSquares` helper reading `site-charged` out of `ply-ended`/`ply-passed`
+end-of-turn effects, including from the pass-guard branch, which the
+existing bay-return tracking did not previously read from) and extended its
+three existing tests to also assert the charged-site sequence is non-vacuous,
+replays identically from the same seed, and diverges from a different seed.
+
+No deviation from the plan: the hundred-round test's seed (20260820, set in
+step 4) and the rest of `fullGame.test.ts` were left untouched beyond
+restoring the two assertions.
+
+`npm test` (667 tests, up from 657 — 10 new in `sitePool.test.ts`),
+`npm run typecheck`, `npm run lint` and `npm run format:check` all pass.
 
 With the cycle complete, add the integration-level tests the story asks for and
 restore what step 2 suspended.
