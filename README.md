@@ -11,9 +11,9 @@ on a node builds shields up; winning a fight burns them off. Ships are never
 destroyed: a ship that loses is pushed back to a bay on the edge of the board,
 stripped of its shields, and flies again from there.
 
-Nodes do not last. Each one runs down after a few turns and goes dark, and
-another wakes somewhere else on the board — and you will not know where until
-it happens.
+Nodes do not last. Each one runs down after a few turns and goes dark, and the
+board lights up a new one somewhere else on its own, at the end of a turn —
+and you will not know where until it happens.
 
 This is the game's web app. It runs entirely in your browser — nothing to
 install, no account, no server.
@@ -21,13 +21,16 @@ install, no account, no server.
 > **Status:** early development. The app now plays a whole game, from the
 > opening position to the final score. Opening it shows the board in its
 > starting position, with all fourteen ships lined up in their bays and the
-> seventeen sites marked, five of them already nodes in play. Green goes
-> first, and each player takes one action a turn — a move or an attack — by
-> mouse or by keyboard. A node wakes the moment a ship touches it, landing
-> on it or flying over it, and pays a shield to the player sitting on it at
-> the end of each of their own turns. A node runs out after nine turns — its
-> glow shifts a little as it runs down, so you can see roughly how much life
-> it has left — and a new one wakes somewhere else at random to replace it.
+> seventeen sites marked, five of them already lit as charged nodes. Green
+> goes first, and each player takes one action a turn — a move or an attack —
+> by mouse or by keyboard. Nodes light up on their own: at the end of every
+> turn the board tops itself back up to five charged sites among the
+> seventeen, picking the new ones at random as older ones run out, and a ship
+> can only stop on a site that is already lit. A lit node pays a shield to
+> the player sitting on it at the end of each of their own turns. A node runs
+> out after nine turns — its glow shifts a little as it runs down, so you can
+> see roughly how much life it has left — and it stays dark for a while
+> before the board can light it again.
 > A ship still standing on a node that has just run out has to be moved
 > clear, and that is what its owner's next turn is spent on. In a fight the
 > ship carrying more shields wins and the beaten one is pushed back to a bay

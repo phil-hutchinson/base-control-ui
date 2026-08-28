@@ -1,200 +1,109 @@
-// The guard Appendix B explicitly asks the app for: drives the end-of-turn
-// sequence over a long run under adversarial waking patterns and confirms
-// the dormant pool never runs dry.
+// An integration test of the site economy over a long run, with no ship
+// activity to interfere. Under 0.10 this file guarded the invariant that the
+// dormant pool never ran dry (Appendix B). Under 0.11 running short is a
+// legal outcome, so there is no such guarantee left to guard; what Appendix B
+// asks for instead is the randomness margin — several sites are always
+// active when the charge draw runs, so the draw is never forced and never
+// predictable, and the board never falls into lockstep, five nodes running
+// out together and being replaced together forever after.
 
 import { describe, expect, it } from "vitest";
-import { squareName } from "./board";
 import { runEndOfTurn } from "./endOfTurn";
-import { type GameState, startingGameState } from "./gameState";
-import {
-  hasChargedNodeFinished,
-  hasDepletedSiteFinishedCooling,
-  SITES,
-} from "./sites";
+import { type GameState, siteStateAt, startingGameState } from "./gameState";
+import { SITES, type SiteState, TARGET_CHARGED_SITES } from "./sites";
 
-const SITE_NAMES = SITES.map(squareName);
+/** A generous game length: this test drives `runEndOfTurn` directly and never consults `isGameOver`. */
+const NOMINAL_LENGTH_IN_ROUNDS = 1_000;
+const PLIES_TO_RUN = 500;
+const MINIMUM_ACTIVE_SITES = 2;
 
-/** A handful of seeds so the replacement draw takes a different path each run. */
-const SEEDS = [1, 12345, 987654321, 42, 999983];
-
-/** Long enough to run several full eighteen-ply node life cycles. */
-const PLY_COUNT = 200;
-
-/**
- * The floor for the softer assertion: below two, the "random" replacement is
- * effectively forced and players can predict it. Appendix B's own arithmetic
- * predicts a pool of roughly seven.
- */
-const MINIMUM_HEALTHY_DORMANT_POOL = 2;
-
-function activeSiteNames(state: GameState): string[] {
-  return SITE_NAMES.filter(
-    (name) => state.siteStates[name]?.state === "active",
-  );
+function countInState(state: GameState, target: SiteState): number {
+  return SITES.filter((square) => siteStateAt(state, square) === target).length;
 }
 
-function dormantSiteNames(state: GameState): string[] {
-  return SITE_NAMES.filter(
-    (name) => state.siteStates[name]?.state === "dormant",
-  );
+interface EconomySample {
+  readonly charged: number;
+  readonly active: number;
+  readonly dormant: number;
+  readonly nodesRanOutThisPly: number;
 }
 
 /**
- * Charges an active site directly, without a move — this guard is about the
- * site economy, not movement, so it drives state rather than `applyMove`.
+ * Drives the end-of-turn sequence for `plies` turns from the opening
+ * position, with no ship ever moving, and samples the board after each turn.
  */
-function chargeSite(state: GameState, name: string): GameState {
-  const status = state.siteStates[name];
-  if (status === undefined || status.state !== "active") {
-    return state;
-  }
-  return {
-    ...state,
-    siteStates: {
-      ...state.siteStates,
-      [name]: { state: "charged", enteredOnPly: state.plyNumber },
-    },
-  };
-}
+function runEconomy(seed: number, plies: number): readonly EconomySample[] {
+  let state = startingGameState(seed, NOMINAL_LENGTH_IN_ROUNDS);
+  const samples: EconomySample[] = [];
 
-/**
- * The dormant pool available to step 5's draws this ply, computed
- * independently of `runEndOfTurn`: every currently dormant site, plus every
- * depleted site step 3 is about to cool down, against every charged node
- * step 4 is about to run out. If this is never negative, the pool is never
- * empty when a replacement is needed — the hard assertion Appendix B asks
- * for.
- */
-function poolMarginBeforeThisPly(state: GameState): number {
-  let dormant = 0;
-  let cooling = 0;
-  let runningOut = 0;
-
-  for (const name of SITE_NAMES) {
-    const status = state.siteStates[name];
-    if (status === undefined) {
-      continue;
-    }
-    if (status.state === "dormant") {
-      dormant += 1;
-    } else if (
-      status.state === "depleted" &&
-      hasDepletedSiteFinishedCooling(status.enteredOnPly, state.plyNumber)
-    ) {
-      cooling += 1;
-    } else if (
-      status.state === "charged" &&
-      hasChargedNodeFinished(status.enteredOnPly, state.plyNumber)
-    ) {
-      runningOut += 1;
-    }
-  }
-
-  return dormant + cooling - runningOut;
-}
-
-function assertStateInvariants(state: GameState, plyJustPlayed: number): void {
-  expect(Object.keys(state.siteStates).sort()).toEqual([...SITE_NAMES].sort());
-
-  let activeOrCharged = 0;
-  for (const name of SITE_NAMES) {
-    const status = state.siteStates[name];
-    expect(status).toBeDefined();
-    expect(["dormant", "active", "charged", "depleted"]).toContain(
-      status!.state,
-    );
-    if (status!.state === "active" || status!.state === "charged") {
-      activeOrCharged += 1;
-    }
-    if (status!.state === "charged" || status!.state === "depleted") {
-      expect(status!.enteredOnPly).toBeLessThanOrEqual(plyJustPlayed);
-    }
-  }
-
-  // §8.1: exactly five sites are active or charged at all times.
-  expect(activeOrCharged).toBe(5);
-}
-
-/**
- * Runs one seed's game for `PLY_COUNT` plies, deciding which active sites to
- * charge each ply from `wakePattern`, asserting every invariant at every
- * ply, and returning the smallest dormant pool observed.
- */
-function runGuardedGame(
-  seed: number,
-  wakePattern: (state: GameState) => readonly string[],
-): number {
-  let state = startingGameState(seed);
-  let minDormant = dormantSiteNames(state).length;
-
-  for (let i = 0; i < PLY_COUNT; i++) {
-    for (const name of wakePattern(state)) {
-      state = chargeSite(state, name);
-    }
-
-    // The hard Appendix B assertion: the pool never runs dry.
-    expect(poolMarginBeforeThisPly(state)).toBeGreaterThanOrEqual(0);
-
-    const plyJustPlayed = state.plyNumber;
+  for (let i = 0; i < plies; i++) {
     const result = runEndOfTurn(state);
-    assertStateInvariants(result.state, plyJustPlayed);
-
-    minDormant = Math.min(minDormant, dormantSiteNames(result.state).length);
-
-    state = {
-      ...result.state,
-      plyNumber: plyJustPlayed + 1,
-      sideToMove: state.sideToMove === "green" ? "red" : "green",
-    };
+    samples.push({
+      charged: countInState(result.state, "charged"),
+      active: countInState(result.state, "active"),
+      dormant: countInState(result.state, "dormant"),
+      nodesRanOutThisPly: result.effects.filter(
+        (effect) => effect.type === "node-ran-out",
+      ).length,
+    });
+    state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
   }
 
-  return minDormant;
+  return samples;
 }
 
-describe("the Appendix B guard — the dormant pool never runs dry", () => {
-  it("holds under the theoretical maximum: every active site charged the instant it appears", () => {
-    let minDormant = Number.POSITIVE_INFINITY;
+const SEEDS = [20260819, 20260820, 20260821];
 
-    for (const seed of SEEDS) {
-      minDormant = Math.min(
-        minDormant,
-        runGuardedGame(seed, (state) => activeSiteNames(state)),
-      );
-    }
+describe("the long-run site economy — Appendix B's randomness margin", () => {
+  it.each(SEEDS)(
+    "stays at five charged with no ship activity to help it (seed %d)",
+    (seed) => {
+      const samples = runEconomy(seed, PLIES_TO_RUN);
 
-    expect(minDormant).toBeGreaterThanOrEqual(MINIMUM_HEALTHY_DORMANT_POOL);
-  });
+      for (const sample of samples) {
+        expect(sample.charged).toBe(TARGET_CHARGED_SITES);
+      }
+    },
+  );
 
-  it("holds under the achievable maximum: at most two sites woken per ply", () => {
-    let minDormant = Number.POSITIVE_INFINITY;
+  it.each(SEEDS)(
+    "never lets the active pool fall below a floor of two (seed %d)",
+    (seed) => {
+      const samples = runEconomy(seed, PLIES_TO_RUN);
 
-    for (const seed of SEEDS) {
-      minDormant = Math.min(
-        minDormant,
-        runGuardedGame(seed, (state) => activeSiteNames(state).slice(0, 2)),
-      );
-    }
+      for (const sample of samples) {
+        expect(sample.active).toBeGreaterThanOrEqual(MINIMUM_ACTIVE_SITES);
+      }
+    },
+  );
 
-    expect(minDormant).toBeGreaterThanOrEqual(MINIMUM_HEALTHY_DORMANT_POOL);
-  });
+  it.each(SEEDS)(
+    "does not fall into lockstep: at most one node runs out in any single turn (seed %d)",
+    (seed) => {
+      const samples = runEconomy(seed, PLIES_TO_RUN);
 
-  it("holds under a staggered pattern that clusters several run-outs into the same ply", () => {
-    let minDormant = Number.POSITIVE_INFINITY;
+      for (const sample of samples) {
+        expect(sample.nodesRanOutThisPly).toBeLessThanOrEqual(1);
+      }
+    },
+  );
 
-    // Sites sit active, untouched (no clock runs on an active site), for
-    // three plies at a time, then every active site is charged at once —
-    // deliberately batching several independent nodes' nine-turn clocks onto
-    // the same starting ply, so they later run out, and get replaced,
-    // together.
-    for (const seed of SEEDS) {
-      minDormant = Math.min(
-        minDormant,
-        runGuardedGame(seed, (state) =>
-          state.plyNumber % 4 === 0 ? activeSiteNames(state) : [],
-        ),
-      );
-    }
+  it("keeps roughly five sites dormant and seven active in the steady state", () => {
+    const samples = runEconomy(20260819, PLIES_TO_RUN);
+    // Skip the opening stagger settling in; Appendix B's arithmetic is
+    // about the steady state, not the first few turns.
+    const steady = samples.slice(50);
 
-    expect(minDormant).toBeGreaterThanOrEqual(MINIMUM_HEALTHY_DORMANT_POOL);
+    const meanDormant =
+      steady.reduce((total, sample) => total + sample.dormant, 0) /
+      steady.length;
+    const meanActive =
+      steady.reduce((total, sample) => total + sample.active, 0) /
+      steady.length;
+
+    expect(meanDormant).toBeGreaterThan(3);
+    expect(meanDormant).toBeLessThan(7);
+    expect(meanActive).toBeGreaterThan(5);
+    expect(meanActive).toBeLessThan(9);
   });
 });

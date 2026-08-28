@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.10**
+**Rules version: 0.11**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -22,8 +22,8 @@ A ship carries **shields**, which make it stronger in a fight but slower to
 move. Shields are gained by sitting on a node and spent by winning fights, so a
 ship's strength and its speed pull permanently against each other.
 
-The game has two random elements: which node site wakes up next, and which
-bay a beaten ship is pushed back to.
+The game has two random elements: which site is charged next, and which bay
+a beaten ship is pushed back to.
 
 ---
 
@@ -40,8 +40,9 @@ ship.
 **Site** — one of the fixed positions on the board where a node can appear.
 Sites never move; which of them is in play changes during the game.
 
-**Node** — a site that is in play: one that is active or charged. Exactly
-five sites are active or charged at any moment.
+**Node** — a site that is charged: the one a ship stands on to collect
+energy. The board aims to keep five sites charged at any moment, though it
+may fall short.
 
 ---
 
@@ -119,19 +120,13 @@ symmetric either — spacing fourteen bays every fourth square around a
 vertical — and the sites are placed partly by reference to the bays, so
 requiring diagonal symmetry would fight the thing they are keyed to.
 
-**Spacing.** No single legal move may touch two sites. The square a move
-starts from does not count towards this: a ship can only ever be standing on
-a site that is already charged or depleted, since section 6 forbids ending a
-move on a dormant or depleted site and section 8.5 makes a site that wakes
-underneath a ship charged immediately — so a move can never wake the square
-it departs from. This is the property any layout of sites must satisfy; the
-seventeen listed above already satisfy it.
-
-Under the movement ranges in section 6 as they stand today, this works out as
-a derived numeric requirement: sites must be at least **three** squares apart
-on an orthogonal line and at least **two** apart on a diagonal. Those numbers
-are not the rule — the property above is — and they must be recomputed if the
-movement ranges in section 6 ever change.
+**Spacing.** No single legal move touches two or more sites — a property that
+existed so that one move could never charge two nodes at once. As of version
+0.11, nothing a ship does charges a site (section 8.2), so the property no
+longer binds anything. The seventeen positions above still happen to satisfy
+it, but that is now incidental rather than required: a future story that
+revisits the layout is free to place sites closer together without breaking
+any rule.
 
 ---
 
@@ -208,7 +203,7 @@ Moving and attacking are entirely separate: a ship never attacks by moving
 onto its target. Winning a fight can still move the winning ship — see
 section 7's advance, which is not a move.
 
-A ship may not **end** a move on a dormant or depleted site (section 8.5). It
+A ship may not **end** a move on a site that is not charged (section 8.5). It
 may fly over one freely.
 
 ---
@@ -219,12 +214,12 @@ A ship may attack an enemy ship within its **movement range** (section 6) —
 the same distances, the same straight lines, and on the same terms: every
 square the attack passes over must be empty, of either side's ships. The
 target square is of course occupied, by the enemy ship, and the site it
-stands on does not matter — a ship stranded on a depleted site (section 8.5)
-can still be attacked. At the two extremes: a ship with 4 shields reaches only
-one square orthogonally and cannot strike a diagonal at all, while a ship
-carrying no shields reaches three squares orthogonally. Attacking is always
-the attacking player's choice; ships never fight automatically. A ship may
-attack an enemy stronger than itself.
+stands on does not matter — a ship stranded on a site that is not charged
+(section 8.5) can still be attacked. At the two extremes: a ship with 4
+shields reaches only one square orthogonally and cannot strike a diagonal at
+all, while a ship carrying no shields reaches three squares orthogonally.
+Attacking is always the attacking player's choice; ships never fight
+automatically. A ship may attack an enemy stronger than itself.
 
 Neither ship may be in a bay: a ship in a bay cannot attack, and cannot be
 attacked.
@@ -242,14 +237,12 @@ beating an unshielded ship costs a shield.
 holds its ground. The attacker advances along the line it
 attacked down, to the furthest square, working back from the square the
 loser has left, that it may legally end on. "May legally end on" is section
-6's restriction and nothing else — not a dormant site, not a depleted site
+6's restriction and nothing else — not a site that is not charged
 (section 8.5). The winner also cannot cross a square another ship occupies:
 if the beaten ship's bay (section 7.1) lies on the lane, it blocks the
 advance there, and the winner stops short of it. In the ordinary case that is
 simply the loser's own square, and the winner takes it. If no square on the
-lane is one it may legally end on, the winner holds its ground instead. The
-squares the winner crosses along the way count as touched for section 8.2,
-exactly as they would for a move.
+lane is one it may legally end on, the winner holds its ground instead.
 
 If both ships carry **the same number of shields**, both are returned to bays
 with 0 shields. The attacker is placed first, then the defender, and both
@@ -270,7 +263,7 @@ A returning ship goes to a bay chosen **at random** from the bays that are
 **empty at that moment**, every empty bay equally likely.
 
 The choice is genuinely random, and neither player can see it coming — the
-same assurance section 8.6 gives for the replacement site.
+same assurance section 8.2 gives for the charge draw.
 
 A returning ship is placed **immediately**, as part of resolving the fight,
 before anything else happens. When both ships return, the attacker is placed
@@ -295,49 +288,69 @@ shields on arrival (section 3.1).
 
 ## 8. Nodes
 
-### 8.1 The four states of a site
+### 8.1 The three states of a site
 
-Every site is always in exactly one of four states:
+Every site is always in exactly one of three states:
 
-- **Dormant** — not in play.
-- **Active** — in play, but nothing has reached it yet.
-- **Charged** — in play and producing energy.
-- **Depleted** — finished, and cooling down before it can be used again.
+- **Active** — eligible to be charged, but producing nothing. A ship may not
+  end a move here.
+- **Charged** — producing energy. A ship may end a move here, collect from
+  it (section 8.4) and gain shields on it (section 4.1).
+- **Dormant** — cooling down after running out. Not eligible to be charged. A
+  ship may not end a move here.
 
-Exactly **five** sites are active or charged at any moment. A site cycles
-dormant → active → charged → depleted → dormant.
+A site cycles active → charged → dormant → active.
 
-**At the start of the game**, five sites are active: **H8**, **E5**, **K5**,
-**E11** and **K11**. The other twelve are dormant. Nothing is charged or
-depleted at the start: a site only becomes charged when a ship touches it
-(section 8.2), and its nine-turn clock only starts on the turn it was woken
-(section 8.3) — a charged site at the start of the game would have no waker
-and no clock start.
+The board **aims** to keep five sites charged at all times: at the end of
+every turn it charges as many active sites as it takes to bring the charged
+count back to five (section 8.2). If there are not enough active sites, it
+charges what it can and simply runs short until the next turn.
 
-### 8.2 Waking a node
+**At the start of the game**, five sites are charged: **H8**, **E5**, **K5**,
+**E11** and **K11**. The other twelve are active. Nothing is dormant at the
+start.
 
-A site that is **active** becomes **charged** the moment a ship touches it —
-either by landing on it or by flying over it, whether during a move or a
-winning attacker's advance (section 7). It does not matter which player's
-ship, and the ship does not have to stop.
+Their clocks are **staggered**, so they do not all run out on the same turn:
 
-This means a node can be woken by a ship that has no intention of holding it.
-Waking a node starts its clock whether or not anyone benefits.
+| Site | Runs out at the end of turn |
+| ---- | --------------------------- |
+| K5   | 2                           |
+| E11  | 4                           |
+| K11  | 5                           |
+| E5   | 7                           |
+| H8   | 9                           |
+
+Five nodes charged together would run out together, be replaced together, and
+leave the whole board pulsing in lockstep for the rest of the game — nothing
+in the cycle would ever break that up on its own. Staggering the opening five
+spreads their expiries once, and because each replacement's clock starts when
+its predecessor runs out, that spread then holds for the whole game with no
+further rule. This staggered opening is expected to be revisited by a later
+story.
+
+### 8.2 Charging a site
+
+At the end of every turn, as many **active** sites as it takes to bring the
+charged count back to five are chosen at random, one at a time, each equally
+likely. If fewer than that are active, fewer are charged and the board runs
+below five until the next turn. Charged nodes still run out on schedule
+whether or not the board is at its five.
+
+The choice is genuinely random, and neither player can see it coming.
+
+A dormant site cools down for **nine turns** and then goes active, where it
+becomes eligible to be charged.
 
 ### 8.3 How long a node lives
 
-A charged node stays charged for **nine turns**, counting the turn on which
-it was woken.
+A site charged at the end of turn N is charged for turns **N+1 to N+9** —
+nine turns during which a ship can stand on it and collect energy.
 
-That number is chosen so that a player who wakes a node and then sits on it
-collects energy from it **five times** — and so that when it finally runs
-out, it is the _opponent_ who takes the next turn and so sees the replacement
-node first.
+A node appears at the same moment for both players, and neither is any closer
+to it in time than the other. A player who reaches it on the first of its
+nine turns and holds it for all of them collects from it **five times**.
 
 A node runs its clock down whether or not any ship is standing on it.
-
-Note the consequence: the clock belongs to whoever woke the node. A player who
-takes a node their opponent woke can only ever collect from it four times.
 
 ### 8.4 Energy
 
@@ -355,15 +368,15 @@ collects nothing.
 | 4                  | 10     |
 | 5                  | 15     |
 
-### 8.5 Depleted and dormant sites
+### 8.5 Active and dormant sites
 
-A ship may not **end a move** on a dormant or depleted site, though it may
-fly over one.
+A ship may not **end a move** on an active or a dormant site, though it may
+fly over either freely.
 
-The one way a ship ends up on a depleted site is by holding a node until its
+The one way a ship ends up on a dormant site is by holding a node until its
 clock runs out underneath it. That ship is **stranded**, and on their next
 turn its owner must spend an action moving it clear. A ship still standing
-there nine turns later, when the site finishes cooling down and goes dormant,
+there nine turns later, when the site finishes cooling down and goes active,
 is equally stuck — section 6 forbids ending a move on either state — and stays
 stranded on the same terms.
 
@@ -376,47 +389,35 @@ If a stranded ship has no legal move at all, the requirement is simply waived �
 the player is not obliged to attack blockers or shuffle friendly ships out of
 the way, and the ship may sit where it is.
 
-This is the tail cost of holding a node. A player who wakes several nodes on
-the same turn will find them all running out on the same turn, and will owe an
-action for each ship left standing on a dormant or depleted site.
+This is the tail cost of holding a node. Nodes charged on the same turn run
+out on the same turn, so a player holding several of them owes an action for
+each ship left standing on the site it ran out under.
 
-If a site somehow wakes underneath a ship — only possible when that ship has
-been unable to move off it — it becomes charged immediately and its clock
-starts at once.
-
-### 8.6 Waking a replacement
-
-When a charged node runs out, one **dormant** site is chosen at random and
-wakes, so that five sites are always active or charged.
-
-The choice is genuinely random, and neither player can see it coming.
-
-A depleted site cools down for **nine turns** and then goes back to dormant,
-where it becomes eligible to be chosen again.
-
-### 8.7 End-of-turn order
+### 8.6 End-of-turn order
 
 Everything that happens at the end of a turn happens in this order:
 
 1. Each of the moving player's ships standing on a charged node gains a
    shield.
 2. The moving player collects energy (section 8.4).
-3. Sites that have finished cooling down go from depleted to dormant.
-4. Charged nodes that have finished their nine turns become depleted.
-5. A replacement site wakes for each node that just ran out.
+3. Charged nodes that have finished their nine turns become dormant,
+   stranding any ship left on them.
+4. As many active sites as it takes to bring the board back to five charged
+   are charged (section 8.2).
+5. Dormant sites that have finished cooling down become active.
 
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
 which an action was taken. The clocks still tick, and a ship of the passing
 player standing on a charged node still gains its shield.
 
-Steps 3 and 5 are in that order deliberately: sites are returned to the
-dormant pool _before_ the pool is drawn from, which is what keeps a
-replacement always available.
-
-Should the dormant pool ever be empty when a replacement is needed, the site
-that has been depleted longest goes back to dormant first. This is a safety
-net that a correctly sized board never needs; see [Appendix B](#appendix-b--sizing-the-site-pool).
+Step 5 is last **deliberately**. It is what makes a site spend at least one
+whole turn active before it can be charged: a site that finishes cooling at
+the end of turn N goes active only after that turn's charge draw (step 4), so
+it is active for the whole of turn N+1 and is first eligible in turn N+1's
+draw. Running the steps in any other order would let a site go dormant →
+active → charged inside a single end-of-turn sequence, and it would never be
+visibly active at all.
 
 ---
 
@@ -437,20 +438,23 @@ any.
 
 ## Appendix B — Sizing the site pool
 
-A charged node lasts nine turns and a depleted one cools down for nine turns,
-so a site is unavailable for eighteen turns from the moment it is woken. Five
-sites are active or charged at all times, so at the fastest possible rate the
-board consumes a replacement every 1.8 turns, and roughly five sites sit
-depleted at any moment. That leaves about ten of the seventeen-site pool
-committed, and about **seven** dormant.
+A charged node lasts nine turns and a dormant one cools down for nine turns,
+so a site is unavailable for eighteen turns from the moment it is charged.
+The board aims to keep five sites charged at all times, so at the fastest
+possible rate it charges a site roughly every 1.8 turns, and roughly five
+sites sit dormant at any moment. That leaves about ten of the seventeen-site
+pool committed, and about **seven** active.
 
-The pool therefore needs to be comfortably larger than the ten sites
-committed at any moment — but the binding constraint is not safety, it is
-randomness. If only one site is dormant when a replacement is needed, the
-"random" choice is forced and players can predict it. Sizing the pool so that
-several sites are always dormant is what keeps section 8.6 honest, and
-seventeen sites leaving roughly seven dormant is the margin this depends on.
+Running short of five charged is now a **legal outcome**, not a failure the
+pool must be sized to prevent — section 8.2 charges as many active sites as
+it can and simply falls short when it has to. What the pool size still buys
+is **randomness**: if only one or two sites are active when the charge draw
+runs, the "random" choice is nearly forced and players can predict it. Sizing
+the pool so that several sites are always active is what keeps section 8.2
+honest, and seventeen sites leaving roughly seven active is the margin this
+depends on.
 
-Whenever the nine-turn figures or the number of nodes change, this arithmetic
-has to be redone. The app must guard this: a test should play out adversarial
-waking patterns and assert the dormant pool never runs dry.
+Whenever the nine-turn figures or the target of five charged sites change,
+this arithmetic has to be redone. The app guards this with a test that the
+active pool stays comfortably above one over a long run, not that it never
+empties.

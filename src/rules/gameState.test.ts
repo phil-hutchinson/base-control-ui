@@ -35,11 +35,17 @@ describe("startingGameState", () => {
     expect(state.randomSeed).toBe(SEED);
   });
 
-  it("gives every site a status: five active, twelve dormant, none charged or depleted, all entered on ply 0", () => {
+  it("gives every site a status: five charged (the staggered opening), twelve active, none dormant", () => {
     const state = startingGameState(SEED);
 
-    const activeSites = ["H8", "E5", "K5", "E11", "K11"];
-    const dormantSites = [
+    const chargedSitesAndRunOutPly: readonly [string, number][] = [
+      ["H8", 9],
+      ["E5", 7],
+      ["K5", 2],
+      ["E11", 4],
+      ["K11", 5],
+    ];
+    const activeSites = [
       "F2",
       "J2",
       "B4",
@@ -54,30 +60,28 @@ describe("startingGameState", () => {
       "J14",
     ];
 
-    for (const name of activeSites) {
-      expect(siteStateAt(state, squareFromName(name))).toBe("active");
+    for (const [name, runsOutAtEndOfPly] of chargedSitesAndRunOutPly) {
+      const status = siteStatusAt(state, squareFromName(name));
+      expect(status?.state).toBe("charged");
+      expect(status?.enteredOnPly).toBe(runsOutAtEndOfPly - 9);
     }
-    for (const name of dormantSites) {
-      expect(siteStateAt(state, squareFromName(name))).toBe("dormant");
+    for (const name of activeSites) {
+      const status = siteStatusAt(state, squareFromName(name));
+      expect(status?.state).toBe("active");
+      expect(status?.enteredOnPly).toBe(0);
     }
 
     const allStatuses = Object.values(state.siteStates);
     expect(allStatuses).toHaveLength(17);
     expect(
-      allStatuses.filter((status) => status.state === "active"),
+      allStatuses.filter((status) => status.state === "charged"),
     ).toHaveLength(5);
     expect(
-      allStatuses.filter((status) => status.state === "dormant"),
+      allStatuses.filter((status) => status.state === "active"),
     ).toHaveLength(12);
     expect(
-      allStatuses.filter((status) => status.state === "charged"),
+      allStatuses.filter((status) => status.state === "dormant"),
     ).toHaveLength(0);
-    expect(
-      allStatuses.filter((status) => status.state === "depleted"),
-    ).toHaveLength(0);
-    for (const status of allStatuses) {
-      expect(status.enteredOnPly).toBe(0);
-    }
   });
 
   it("gives a non-site square no state or status", () => {
@@ -90,12 +94,11 @@ describe("startingGameState", () => {
   it("agrees with siteStatusAt: the state matches, and the status carries the clock", () => {
     const state = startingGameState(SEED);
 
-    for (const name of ["H8", "F2"]) {
+    for (const name of ["H8", "F2", "K5"]) {
       const square = squareFromName(name);
-      expect(siteStatusAt(state, square)).toEqual({
-        state: siteStateAt(state, square),
-        enteredOnPly: 0,
-      });
+      const status = siteStatusAt(state, square);
+      expect(status?.state).toBe(siteStateAt(state, square));
+      expect(status).toBeDefined();
     }
   });
 

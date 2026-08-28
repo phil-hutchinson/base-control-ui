@@ -2,11 +2,16 @@ import { describe, expect, it } from "vitest";
 import { squareFromName, squareName } from "./board";
 import { runEndOfTurn } from "./endOfTurn";
 import type { ShipId } from "./fleet";
-import type { GameState, Ship, SiteStatus } from "./gameState";
+import {
+  type GameState,
+  type Ship,
+  type SiteStatus,
+  startingGameState,
+} from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { ShieldCount } from "./shields";
-import { SITES, type SiteState } from "./sites";
+import type { SiteState } from "./sites";
 
 function ship(
   id: ShipId,
@@ -46,13 +51,6 @@ function buildState(config: {
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
   };
-}
-
-function countActiveOrCharged(state: GameState): number {
-  return SITES.filter((square) => {
-    const status = state.siteStates[squareName(square)];
-    return status?.state === "active" || status?.state === "charged";
-  }).length;
 }
 
 describe("runEndOfTurn — step 1, the shield grant", () => {
@@ -115,13 +113,20 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
           squareFromName("H12"),
         ],
       },
+      // Step 4: the board is one node short of five, and K5 is the only
+      // active site, so it is charged deterministically — the draw needs
+      // no choice among a pool of one.
+      { type: "site-charged", square: squareFromName("K5") },
     ]);
   });
 
-  it("grants a shield on exactly five of the waker's own plies over the node's nine-turn life (§8.3)", () => {
-    // The node is charged from ply 1 (N = 1); green woke it and green takes
-    // the odd plies. Each ply is built independently, with the ship reset to
-    // a shield count below the cap, so the cap never masks an opportunity.
+  it("grants a shield and collects energy on exactly five of the holder's own plies over the node's nine-turn life (§8.3)", () => {
+    // A site charged at the end of ply 0 is charged for plies 1 through 9
+    // (rules.md §8.3). Green holds it throughout and moves on the odd
+    // plies, so it is green's turn on five of those nine — the ship is
+    // reset to a shield count below the cap on every ply so the cap never
+    // masks an opportunity, and the site is left charged throughout since
+    // it does not finish until the end of ply 9.
     let grantedOnGreenPlies = 0;
     let totalGreenPlies = 0;
 
@@ -130,7 +135,7 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
       const state = buildState({
         sideToMove,
         plyNumber: ply,
-        siteStates: { H8: ["charged", 1] },
+        siteStates: { H8: ["charged", 0] },
         ships: [ship("green-1", "green", "H8", 0)],
       });
 
@@ -139,14 +144,20 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
         (effect) =>
           effect.type === "shield-gained" && effect.shipId === "green-1",
       );
+      const collected = result.effects.some(
+        (effect) =>
+          effect.type === "energy-collected" && effect.side === "green",
+      );
 
       if (sideToMove === "green") {
         totalGreenPlies += 1;
+        expect(collected).toBe(true);
         if (gained) {
           grantedOnGreenPlies += 1;
         }
       } else {
         expect(gained).toBe(false);
+        expect(collected).toBe(false);
       }
     }
 
@@ -155,17 +166,14 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
   });
 });
 
-describe("runEndOfTurn — the order of steps, and §8.3's second property", () => {
-  it("gains the shield at step 1 before the ship is stranded by the node running out at step 4", () => {
-    // Woken on ply 1 (N = 1), so ply 9 (N + 8) is the waker's own ply on
-    // which the node finishes its nine turns.
+describe("runEndOfTurn — step 3, a charged node running out (§8.3, §8.5)", () => {
+  it("gains the shield and collects energy at steps 1 and 2, before the ship is stranded by the node running out at step 3", () => {
+    // Charged at the end of ply 1, so it finishes at the end of ply 10
+    // (rules.md §8.3: plyNumber - enteredOnPly >= 9).
     const state = buildState({
       sideToMove: "green",
-      plyNumber: 9,
-      siteStates: {
-        H8: ["charged", 1],
-        E5: ["dormant", 0], // the only dormant candidate for the replacement
-      },
+      plyNumber: 10,
+      siteStates: { H8: ["charged", 1] },
       ships: [ship("green-1", "green", "H8", 3)],
     });
 
@@ -193,96 +201,149 @@ describe("runEndOfTurn — the order of steps, and §8.3's second property", () 
         side: "green",
         square: squareFromName("H8"),
       },
-      {
-        type: "site-woken",
-        square: squareFromName("E5"),
-        wokeInto: "active",
-      },
     ]);
 
     const strandedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(strandedShip?.shields).toBe(4);
     expect(result.state.siteStates.H8).toEqual({
-      state: "depleted",
-      enteredOnPly: 9,
+      state: "dormant",
+      enteredOnPly: 10,
     });
+  });
+
+  it("does not run out a ply early", () => {
+    const state = buildState({
+      sideToMove: "green",
+      plyNumber: 9,
+      siteStates: { H8: ["charged", 1] },
+      ships: [ship("green-1", "green", "H8", 3)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(
+      result.effects.some((effect) => effect.type === "node-ran-out"),
+    ).toBe(false);
+    expect(result.state.siteStates.H8).toEqual({
+      state: "charged",
+      enteredOnPly: 1,
+    });
+  });
+
+  it("replaces the site in the same end-of-turn sequence, ahead of step 4's charge draw (§8.2, §8.6)", () => {
+    const state = buildState({
+      sideToMove: "green",
+      plyNumber: 10,
+      siteStates: {
+        H8: ["charged", 1],
+        F2: ["active", 0],
+      },
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.siteStates.H8).toEqual({
+      state: "dormant",
+      enteredOnPly: 10,
+    });
+    expect(result.state.siteStates.F2).toEqual({
+      state: "charged",
+      enteredOnPly: 10,
+    });
+    expect(result.effects).toContainEqual({
+      type: "node-ran-out",
+      square: squareFromName("H8"),
+    });
+    expect(result.effects).toContainEqual({
+      type: "site-charged",
+      square: squareFromName("F2"),
+    });
+    expect(
+      result.effects.some((effect) => effect.type === "site-went-active"),
+    ).toBe(false);
   });
 });
 
-describe("runEndOfTurn — steps 3 and 5, a site freed this ply is drawable this same ply", () => {
-  it("carries a site through the full eighteen-ply round trip, ending eligible for the same ply's draw", () => {
-    // Woken on ply 1 (N = 1): charged through ply 9, depleted from the end
-    // of ply 9 through ply 17, dormant again at step 3 of ply 18 (N + 17).
-    // K5 sits in the dormant pool throughout, so H8's own replacement draw
-    // at ply 9 (mandatory the instant a node runs out) lands there instead
-    // of triggering the empty-pool safety net on H8 itself.
-    let state = buildState({
+describe("runEndOfTurn — step 5, a dormant site cooling to active (§8.2)", () => {
+  it("goes active nine turns after it went dormant, not before, and reports no clause (§8.2, §8.6)", () => {
+    // Went dormant at the end of ply 10, so it finishes cooling at the end
+    // of ply 19 (rules.md §8.2: plyNumber - enteredOnPly >= 9).
+    const stillCooling = buildState({
       sideToMove: "green",
-      plyNumber: 1,
-      siteStates: { H8: ["charged", 1], K5: ["dormant", 0] },
+      plyNumber: 18,
+      siteStates: { H8: ["dormant", 10] },
     });
+    const stillCoolingResult = runEndOfTurn(stillCooling);
+    expect(stillCoolingResult.state.siteStates.H8).toEqual({
+      state: "dormant",
+      enteredOnPly: 10,
+    });
+    expect(
+      stillCoolingResult.effects.some(
+        (effect) => effect.type === "site-went-active",
+      ),
+    ).toBe(false);
 
-    for (let ply = 1; ply <= 17; ply++) {
-      const result = runEndOfTurn({ ...state, plyNumber: ply });
-      state = { ...result.state, plyNumber: ply + 1 };
-
-      if (ply < 9) {
-        expect(state.siteStates.H8).toEqual({
-          state: "charged",
-          enteredOnPly: 1,
-        });
-      } else {
-        expect(state.siteStates.H8).toEqual({
-          state: "depleted",
-          enteredOnPly: 9,
-        });
-      }
-    }
-
-    expect(state.plyNumber).toBe(18);
-    expect(state.siteStates.H8).toEqual({ state: "depleted", enteredOnPly: 9 });
-    // K5 was drawn as H8's own replacement back at ply 9, and stays active.
-    expect(state.siteStates.K5).toEqual({ state: "active", enteredOnPly: 9 });
-
-    // A second node (D8) finishes on this same ply, so a replacement draw
-    // happens — and H8 is the only site the cooling step could have freed
-    // this ply, so it is the only dormant candidate.
-    const withRunningOutNode: GameState = {
-      ...state,
-      siteStates: {
-        ...state.siteStates,
-        D8: { state: "charged", enteredOnPly: 10 },
-      },
-    };
-
-    const finalResult = runEndOfTurn(withRunningOutNode);
-
-    expect(finalResult.effects).toEqual([
-      { type: "site-cooled", square: squareFromName("H8") },
-      { type: "node-ran-out", square: squareFromName("D8") },
-      {
-        type: "site-woken",
-        square: squareFromName("H8"),
-        wokeInto: "active",
-      },
-    ]);
-    expect(finalResult.state.siteStates.H8).toEqual({
+    const finishedCooling = buildState({
+      sideToMove: "green",
+      plyNumber: 19,
+      siteStates: { H8: ["dormant", 10] },
+    });
+    const finishedResult = runEndOfTurn(finishedCooling);
+    expect(finishedResult.state.siteStates.H8).toEqual({
       state: "active",
-      enteredOnPly: 18,
+      enteredOnPly: 19,
     });
-    expect(finalResult.state.siteStates.D8).toEqual({
-      state: "depleted",
-      enteredOnPly: 18,
+    expect(finishedResult.effects).toEqual([
+      { type: "site-went-active", square: squareFromName("H8") },
+    ]);
+  });
+
+  it("the charge draw never charges a site that went active in the same end-of-turn sequence (§8.6 step ordering)", () => {
+    // H8 finishes cooling this same ply that another node, F2, runs out —
+    // leaving the board with nothing charged at all and, until step 5 runs,
+    // no active site anywhere else either. If cooling ran ahead of the
+    // draw, H8 would be the draw's only candidate and a maximal shortfall
+    // (five) would charge it in the same sequence it went active; run in
+    // the document's order, the draw sees an empty pool and H8 is left
+    // merely active, first eligible for the draw only on the next ply.
+    const state = buildState({
+      sideToMove: "green",
+      plyNumber: 19,
+      siteStates: {
+        H8: ["dormant", 10],
+        F2: ["charged", 10],
+      },
     });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toEqual([
+      { type: "node-ran-out", square: squareFromName("F2") },
+      { type: "site-went-active", square: squareFromName("H8") },
+    ]);
+    expect(result.state.siteStates.H8).toEqual({
+      state: "active",
+      enteredOnPly: 19,
+    });
+    expect(result.state.siteStates.F2).toEqual({
+      state: "dormant",
+      enteredOnPly: 19,
+    });
+    expect(
+      result.effects.some((effect) => effect.type === "site-charged"),
+    ).toBe(false);
   });
 });
 
 describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("emits no effect and leaves both totals unchanged when nothing is held", () => {
+    // Dormant rather than active, so step 4's charge draw has no pool to
+    // draw these two from and this stays a pure test of step 2 alone.
     const state = buildState({
       sideToMove: "green",
       plyNumber: 3,
-      siteStates: { H8: ["active", 0], K5: ["dormant", 0] },
+      siteStates: { H8: ["dormant", 0], K5: ["dormant", 0] },
       ships: [ship("green-1", "green", "D2")],
     });
 
@@ -344,16 +405,12 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.state.energy).toEqual({ green: 6, red: 0 });
   });
 
-  it("pays for a node whose clock runs out at the end of this very turn (before steps 3-5 tick)", () => {
-    // Woken on ply 1 (N = 1), so ply 9 (N + 8) is the waker's own ply on
-    // which the node finishes its nine turns and goes depleted at step 4.
+  it("pays for a node whose clock runs out at the end of this very turn (before step 3 ticks)", () => {
+    // Charged at the end of ply 1, so it finishes at the end of ply 10.
     const state = buildState({
       sideToMove: "green",
-      plyNumber: 9,
-      siteStates: {
-        H8: ["charged", 1],
-        E5: ["dormant", 0], // the only dormant candidate for the replacement
-      },
+      plyNumber: 10,
+      siteStates: { H8: ["charged", 1] },
       ships: [ship("green-1", "green", "H8", 4)],
     });
 
@@ -368,8 +425,8 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     });
     expect(result.state.energy).toEqual({ green: 1, red: 0 });
     expect(result.state.siteStates.H8).toEqual({
-      state: "depleted",
-      enteredOnPly: 9,
+      state: "dormant",
+      enteredOnPly: 10,
     });
   });
 
@@ -420,54 +477,11 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   });
 });
 
-describe("runEndOfTurn — the five-sites invariant (§8.1)", () => {
-  it("leaves exactly five sites active or charged after a ply that runs one out and draws its replacement", () => {
-    const plyNumber = 100;
-    const state = buildState({
-      sideToMove: "green",
-      plyNumber,
-      siteStates: {
-        F2: ["charged", 92], // finishes this ply: 100 - 92 + 1 = 9
-        J2: ["active", 0],
-        B4: ["charged", 95],
-        H4: ["active", 0],
-        N4: ["charged", 99],
-        E5: ["dormant", 0], // the only dormant candidate
-        K5: ["depleted", 95],
-        D8: ["depleted", 95],
-        H8: ["depleted", 95],
-        L8: ["depleted", 95],
-        E11: ["depleted", 95],
-        K11: ["depleted", 95],
-        B12: ["depleted", 95],
-        H12: ["depleted", 95],
-        N12: ["depleted", 95],
-        F14: ["depleted", 95],
-        J14: ["depleted", 95],
-      },
-    });
-
-    expect(countActiveOrCharged(state)).toBe(5);
-
-    const result = runEndOfTurn(state);
-
-    expect(countActiveOrCharged(result.state)).toBe(5);
-    expect(result.state.siteStates.F2).toEqual({
-      state: "depleted",
-      enteredOnPly: plyNumber,
-    });
-    expect(result.state.siteStates.E5).toEqual({
-      state: "active",
-      enteredOnPly: plyNumber,
-    });
-  });
-});
-
-describe("runEndOfTurn — a passed ply still collects (§8.7 runs in full for a pass)", () => {
+describe("runEndOfTurn — a passed ply still collects (§8.6 runs in full for a pass)", () => {
   it("pays the side that passes while standing on a charged node, through applyPassGuard", () => {
     // green-1 sits on K5, a charged site, having already acted this ply: it
     // has no move left (already acted) and no enemy stands anywhere near it
-    // to attack, so it passes — but §8.7 still runs in full for that passed
+    // to attack, so it passes — but §8.6 still runs in full for that passed
     // turn, and green is still standing on the node.
     const state = {
       ...buildState({
@@ -504,5 +518,36 @@ describe("runEndOfTurn — a passed ply still collects (§8.7 runs in full for a
       ],
     });
     expect(result.state.energy).toEqual({ green: 1, red: 0 });
+  });
+});
+
+describe("runEndOfTurn — the staggered opening (§8.1)", () => {
+  it("runs out K5, E11, K11, E5 and H8 in turn, one per ply, at the ends of plies 2, 4, 5, 7 and 9", () => {
+    const expectedRunOuts = new Map([
+      [2, "K5"],
+      [4, "E11"],
+      [5, "K11"],
+      [7, "E5"],
+      [9, "H8"],
+    ]);
+
+    let state = startingGameState(1, DEFAULT_GAME_LENGTH_ROUNDS);
+
+    for (let ply = 1; ply <= 9; ply++) {
+      const result = runEndOfTurn(state);
+      const ranOut = result.effects.filter(
+        (effect) => effect.type === "node-ran-out",
+      );
+
+      const expectedSquare = expectedRunOuts.get(ply);
+      if (expectedSquare === undefined) {
+        expect(ranOut).toEqual([]);
+      } else {
+        expect(ranOut).toHaveLength(1);
+        expect(squareName(ranOut[0].square)).toBe(expectedSquare);
+      }
+
+      state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
+    }
   });
 });

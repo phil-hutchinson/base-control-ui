@@ -150,10 +150,14 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
 /**
  * The clauses an end-of-turn sequence produced, in the order the sequence
  * produced them. All of a sequence's shield gains are grouped into one
- * clause; `site-cooled` produces no clause at all — a depleted site quietly
- * returning to the dormant pool is a board change, not a player event. A
- * zero collection produces no `energy-collected` effect at all (rules.md
- * §8.4), so there is nothing here to skip for that case.
+ * clause. The two board-only site transitions are judged separately:
+ * `site-charged` speaks — a node appearing is the only way one ever appears
+ * now, and it is the thing both players are racing towards — while
+ * `site-went-active` produces no clause at all, because an active site is
+ * not a node, produces nothing and cannot be stopped on, so a site quietly
+ * becoming eligible for the charge draw is a board change, not a player
+ * event. A zero collection produces no `energy-collected` effect at all
+ * (rules.md §8.4), so there is nothing here to skip for that case.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -168,7 +172,7 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   for (const effect of effects) {
     switch (effect.type) {
       case "shield-gained":
-      case "site-cooled":
+      case "site-went-active":
         break;
       case "energy-collected":
         clauses.push(energyCollectedClause(effect));
@@ -176,16 +180,12 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
       case "node-ran-out":
         clauses.push(`The node at ${squareName(effect.square)} ran out.`);
         break;
+      case "site-charged":
+        clauses.push(`A new node charged at ${squareName(effect.square)}.`);
+        break;
       case "ship-stranded":
         clauses.push(
           `${capitalize(effect.side)} ship at ${squareName(effect.square)} is stranded and must be moved clear next turn.`,
-        );
-        break;
-      case "site-woken":
-        clauses.push(
-          effect.wokeInto === "charged"
-            ? `A new node woke at ${squareName(effect.square)}, already charged because a ship was standing there.`
-            : `A new node woke at ${squareName(effect.square)}.`,
         );
         break;
     }
@@ -215,16 +215,9 @@ function passSentence(effect: PassEffect): string {
 }
 
 /**
- * "What the move was": the ship's journey, and — when it charged a site on
- * the way — whether that was by landing on it or by flying over it. Either
- * side's ship reads the same way; the side is already named at the start of
- * the sentence.
- *
- * The bay case is checked first and returns early, so a move that both
- * charges a site en route and ends in a bay would announce only the bay.
- * That combination cannot happen on the current site layout — asserted by
- * `noMoveBothChargesAndEndsInABay` in `src/rules/siteSpacing.test.ts` — so
- * this ordering is safe only as long as that test keeps passing.
+ * "What the move was": the ship's journey, and whether it ended in a bay.
+ * Either side's ship reads the same way; the side is already named at the
+ * start of the sentence.
  */
 function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);
@@ -237,17 +230,7 @@ function moveSentence(event: MovedEvent): string {
     return `${capitalize(event.side)} ship moved from ${from} into the ${to} bay and lost its shields.`;
   }
 
-  const chargeEffect = event.effects.find(
-    (effect): effect is Extract<MoveEffect, { type: "site-charged" }> =>
-      effect.type === "site-charged",
-  );
-  if (chargeEffect === undefined) {
-    return `${capitalize(event.side)} ship moved from ${from} to ${to}.`;
-  }
-  if (chargeEffect.reach === "landed-on") {
-    return `${capitalize(event.side)} ship moved from ${from} to ${to} and charged the node.`;
-  }
-  return `${capitalize(event.side)} ship moved from ${from} to ${to}, flying over ${squareName(chargeEffect.square)} and charging the node.`;
+  return `${capitalize(event.side)} ship moved from ${from} to ${to}.`;
 }
 
 /**
@@ -302,30 +285,15 @@ function actionEndingClause(
 /**
  * The winning attacker's advance clause (rules.md §7): where it ended up, or
  * that it held its ground when no square on the lane was legal to end on.
- * When the advance charged a node, that is said too, in the same vocabulary
- * `moveSentence` uses for a move that does the same thing — landing on the
- * node or only flying over it on the way to the final square.
  */
 function winnerAdvanceClause(
   winner: NonNullable<FightResolvedEffect["winner"]>,
-  effects: readonly AttackEffect[],
 ): string {
   if (!winner.advanced) {
     return "It held its ground.";
   }
 
-  const square = squareName(winner.square);
-  const chargeEffect = effects.find(
-    (effect): effect is Extract<AttackEffect, { type: "site-charged" }> =>
-      effect.type === "site-charged",
-  );
-  if (chargeEffect === undefined) {
-    return `It advanced to ${square} and took it.`;
-  }
-  if (chargeEffect.reach === "landed-on") {
-    return `It advanced to ${square} and took it, charging the node.`;
-  }
-  return `It advanced to ${square} and took it, flying over ${squareName(chargeEffect.square)} and charging the node.`;
+  return `It advanced to ${squareName(winner.square)} and took it.`;
 }
 
 /**
@@ -363,7 +331,7 @@ function fightSentence(event: AttackedEvent): string {
   if (fight.outcome === "attacker-won") {
     const [defenderReturn] = fight.returns;
     const cost = fight.defender.shields + 1;
-    const advanceClause = winnerAdvanceClause(fight.winner, event.effects);
+    const advanceClause = winnerAdvanceClause(fight.winner);
     return `${opening} and won. ${advanceClause} The beaten ship returned to the ${squareName(defenderReturn.to)} bay with no shields. The fight cost ${shieldsPhrase(cost)}, leaving the winner on ${fight.winner.remainingShields}.`;
   }
 
@@ -389,10 +357,10 @@ function rejectionSentence(event: RejectedEvent): string {
       return `Another ship is in the way of ${square}.`;
     case "destination-occupied":
       return `${square} is occupied.`;
+    case "destination-active-site":
+      return `${square} is an active site — nothing has charged there yet, so a ship cannot stop there.`;
     case "destination-dormant-site":
-      return `${square} is a dormant site — a ship cannot stop there.`;
-    case "destination-depleted-site":
-      return `${square} is a depleted site — a ship cannot stop there.`;
+      return `${square} is a dormant site — it has run out and is cooling down, so a ship cannot stop there.`;
     case "attacker-in-bay":
       return "A ship in a bay cannot attack. Move it out first.";
     case "target-in-bay":

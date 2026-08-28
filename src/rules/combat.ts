@@ -42,7 +42,7 @@ export function attackReach(
  * Where a winning attacker ends up (rules.md §7): scanning `reach`'s lane
  * backwards from the loser's square towards the attacker, the furthest
  * square it may legally end on — §6's site restriction and nothing else, not
- * a dormant site, not a depleted site — shaped as the sub-lane the winner
+ * an active site, not a dormant site — shaped as the sub-lane the winner
  * actually travels (`destination` is the square it stops on, `passedOver` the
  * lane squares before it). `undefined` when no square on the lane qualifies,
  * meaning the winner holds its ground.
@@ -63,7 +63,7 @@ export function winnerAdvance(
   for (let index = lane.length - 1; index >= 0; index--) {
     const candidate = lane[index];
     const siteState = siteStateAt(state, candidate);
-    if (siteState === "dormant" || siteState === "depleted") {
+    if (siteState === "active" || siteState === "dormant") {
       continue;
     }
     if (occupiedSquareNames.has(squareName(candidate))) {

@@ -1,5 +1,5 @@
-// Stranded ships (rules.md §8.5): a ship still standing on a dormant or
-// depleted site owes its owner an action to move it clear. This module
+// Stranded ships (rules.md §8.5): a ship still standing on an active or
+// dormant site owes its owner an action to move it clear. This module
 // answers which of the side to move's ships currently owe one, and whether
 // that obligation binds the action about to be taken. Both are derived fresh
 // from the state every time they are asked, never cached, so they stay
@@ -9,11 +9,11 @@ import type { ShipId } from "./fleet";
 import { type GameState, siteStateAt } from "./gameState";
 import { sixOnlyLegalDestinations } from "./moveLegality";
 
-const STRANDING_SITE_STATES = new Set(["dormant", "depleted"]);
+const STRANDING_SITE_STATES = new Set(["active", "dormant"]);
 
 /**
- * The ids of the side to move's ships that owe an action: standing on a
- * dormant or depleted site, not yet acted this ply, and with at least one
+ * The ids of the side to move's ships that owe an action: standing on an
+ * active or dormant site, not yet acted this ply, and with at least one
  * legal move available under §6 alone. A stranded ship with no legal move at
  * all is left out — §8.5 waives the requirement rather than obliging the
  * player to shuffle blockers aside.

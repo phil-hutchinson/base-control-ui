@@ -6,6 +6,11 @@
 // draws no randomness of its own: it attacks before it moves, so it produces
 // plenty of fights, unlike `fullGame.test.ts`'s greedy policy, which only
 // attacks when no ship has a legal move at all.
+//
+// The board's own end-of-turn charge draw (§8.2) is now the main consumer of
+// the seeded stream, alongside bay returns, so the same property is proven
+// for it too: the sequence of sites the draw charges over a game replays
+// identically from the same seed.
 
 import { describe, expect, it } from "vitest";
 import { type Square, squareName } from "./board";
@@ -14,7 +19,14 @@ import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type GameState, startingGameState } from "./gameState";
 import { legalDestinations } from "./movement";
-import { applyAttack, applyMove, applyPassGuard } from "./ply";
+import {
+  type AttackEffect,
+  type EndOfActionEffect,
+  type MoveEffect,
+  applyAttack,
+  applyMove,
+  applyPassGuard,
+} from "./ply";
 
 type Action =
   | {
@@ -51,22 +63,43 @@ function chooseAction(state: GameState): Action | undefined {
   return undefined;
 }
 
+/** The square name of every `site-charged` effect nested inside an end-of-action effect, if any. */
+function chargedSquares(
+  effects: readonly (MoveEffect | AttackEffect | EndOfActionEffect)[],
+): readonly string[] {
+  const squares: string[] = [];
+  for (const effect of effects) {
+    if (effect.type === "ply-ended" || effect.type === "ply-passed") {
+      for (const sub of effect.endOfTurn) {
+        if (sub.type === "site-charged") {
+          squares.push(squareName(sub.square));
+        }
+      }
+    }
+  }
+  return squares;
+}
+
 /** A hard ceiling on actions applied, so a regression fails an assertion, not the test runner. */
 const MAX_ACTIONS = 10_000;
 
 interface PlayedGame {
   readonly finalState: GameState;
   readonly bayReturns: readonly string[];
+  readonly chargedSites: readonly string[];
 }
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the attack-first
  * policy above, and records the square name of every bay a `fight-resolved`
- * effect returned a ship to, in the order the fights happened.
+ * effect returned a ship to, in the order the fights happened, and the
+ * square name of every site the end-of-turn charge draw (§8.2) charged, in
+ * the order it charged them.
  */
 function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
   let state = startingGameState(seed, lengthInRounds);
   const bayReturns: string[] = [];
+  const chargedSites: string[] = [];
 
   let actionsApplied = 0;
   while (!isGameOver(state)) {
@@ -80,8 +113,11 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     const action = chooseAction(state);
 
     if (action === undefined) {
-      const { state: nextState } = applyPassGuard(state);
+      const { state: nextState, effect } = applyPassGuard(state);
       state = nextState;
+      if (effect !== undefined) {
+        chargedSites.push(...chargedSquares([effect]));
+      }
       continue;
     }
 
@@ -100,6 +136,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
           }
         }
       }
+      chargedSites.push(...chargedSquares(result.effects));
     } else {
       const result = applyMove(state, action.shipId, action.destination);
       if (result.outcome !== "applied") {
@@ -108,28 +145,31 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
         );
       }
       state = result.state;
+      chargedSites.push(...chargedSquares(result.effects));
     }
   }
 
-  return { finalState: state, bayReturns };
+  return { finalState: state, bayReturns, chargedSites };
 }
 
-describe("a seeded game replays its fights and its bays exactly", () => {
-  it("produces plenty of fights over a forty-round game — the run is not vacuous", () => {
-    const { bayReturns } = playSeededGame(20260819, 40);
+describe("a seeded game replays its fights, its bays and its charge draws exactly", () => {
+  it("produces plenty of fights and charge draws over a forty-round game — the run is not vacuous", () => {
+    const { bayReturns, chargedSites } = playSeededGame(20260819, 40);
 
     expect(bayReturns.length).toBeGreaterThanOrEqual(10);
+    expect(chargedSites.length).toBeGreaterThanOrEqual(10);
   });
 
-  it("replays the same bay sequence and the same final state from the same seed", () => {
+  it("replays the same bay sequence, the same charged-site sequence and the same final state from the same seed", () => {
     const first = playSeededGame(20260819, 40);
     const second = playSeededGame(20260819, 40);
 
     expect(second.bayReturns).toEqual(first.bayReturns);
+    expect(second.chargedSites).toEqual(first.chargedSites);
     expect(second.finalState).toEqual(first.finalState);
   });
 
-  it("produces a different bay sequence from a different seed", () => {
+  it("produces a different bay sequence and a different charged-site sequence from a different seed", () => {
     // Any pair of distinct seeds is expected to diverge; these two are
     // confirmed to by running this test. If a future change to the game
     // happens to make this pair coincide, pick another pair.
@@ -137,5 +177,6 @@ describe("a seeded game replays its fights and its bays exactly", () => {
     const second = playSeededGame(20260820, 40);
 
     expect(second.bayReturns).not.toEqual(first.bayReturns);
+    expect(second.chargedSites).not.toEqual(first.chargedSites);
   });
 });

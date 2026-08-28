@@ -6,7 +6,7 @@
 import { type Square, squareName } from "./board";
 import { STARTING_FLEET, type Side, type ShipId } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS, isGameLengthRounds } from "./gameLength";
-import { SITES, type SiteState, startingSiteState } from "./sites";
+import { SITES, type SiteState, startingSiteStatus } from "./sites";
 import type { ShieldCount } from "./shields";
 
 /** How many actions a side takes each ply (rules.md §5). */
@@ -21,10 +21,12 @@ export interface Ship {
 }
 
 /**
- * A site's current state, plus the ply number on which it entered that
- * state. Recorded for every site in every state, not only charged and
- * depleted ones, so the fact is never missing; only the charged (§8.3) and
- * depleted (§8.6) derivations consult it.
+ * A site's current state, plus the ply at whose end it entered that state
+ * (§8.3, §8.2 — both clocks measure plies since the end of the ply the
+ * state was entered on). Recorded for every site in every state, not only
+ * charged and dormant ones, so the fact is never missing; only the charged
+ * (§8.3) and dormant (§8.2) derivations consult it. May be zero or negative
+ * for the staggered opening five, whose clocks started before the game did.
  */
 export interface SiteStatus {
   readonly state: SiteState;
@@ -48,7 +50,7 @@ export interface GameState {
   readonly actedThisPly: readonly ShipId[];
   /** The ply currently being played, starting at 1. */
   readonly plyNumber: number;
-  /** The 32-bit seed the next random draw will use (rules.md §8.6, §7.1). */
+  /** The 32-bit seed the next random draw will use (rules.md §8.2, §7.1). */
   readonly randomSeed: number;
   /** Each side's running energy total (rules.md §8.4), both starting at 0. */
   readonly energy: EnergyTotals;
@@ -65,9 +67,10 @@ export interface GameState {
 
 /**
  * The state the game starts from: the fourteen `STARTING_FLEET` ships, every
- * site's starting state (none entered during a ply, so `enteredOnPly` is 0),
- * green to move, `ACTIONS_PER_PLY` actions remaining, nothing moved, ply 1, the given
- * seed, both sides at 0 energy, and the given game length.
+ * site's starting state and `enteredOnPly` (the staggered opening five
+ * charged, the rest active — see `startingSiteStatus`), green to move,
+ * `ACTIONS_PER_PLY` actions remaining, nothing moved, ply 1, the given seed,
+ * both sides at 0 energy, and the given game length.
  *
  * The seed is a required argument — see `src/game/seed.ts` for where the
  * app's opening seed comes from. Every test passes one explicitly, so a
@@ -90,9 +93,9 @@ export function startingGameState(
 
   const siteStates: Record<string, SiteStatus> = {};
   for (const site of SITES) {
-    const state = startingSiteState(site);
-    if (state !== undefined) {
-      siteStates[squareName(site)] = { state, enteredOnPly: 0 };
+    const status = startingSiteStatus(site);
+    if (status !== undefined) {
+      siteStates[squareName(site)] = status;
     }
   }
 

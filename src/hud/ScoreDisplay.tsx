@@ -9,8 +9,9 @@ import type { Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
 import "./ScoreDisplay.css";
 
-/** §8.1: exactly five sites are ever active or charged, so a side can never
- * hold more than five nodes at once — the pip row is a fixed five. */
+/** §8.1, §8.2: the board never charges more than five sites at once, so a
+ * side can never hold more than five nodes at once — the pip row is a fixed
+ * five. */
 const NODES_IN_PLAY = 5;
 
 /** A hundred-round game pays at most 15 x 100 = 1500, so four digits is the

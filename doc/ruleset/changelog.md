@@ -7,6 +7,64 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.11 — three node states
+
+- **A site now has three states instead of four**, and the mapping is not a
+  simple rename: **depleted** is renamed **dormant**; today's **dormant**
+  ("not in play") and **active** ("in play, but nothing has reached it yet")
+  merge into a single new **active**, since waking on touch no longer exists
+  to tell them apart; **charged** keeps its name and its meaning. The cycle
+  becomes active → charged → dormant → active.
+- **Waking a node is deleted outright (old section 8.2).** Nothing a ship
+  does — landing on a site, flying over it, or a winning attacker advancing
+  across it — changes that site's state any more. Every cross-reference to
+  waking is removed with it, including section 7's note that a winner's
+  advance counts its crossed squares as touched.
+- **A site is charged by the board, not by a ship.** At the end of every
+  turn, as many active sites as it takes to bring the charged count back to
+  **five** are chosen at random, one at a time, each equally likely (the new
+  section 8.2, "Charging a site", replacing old section 8.6's replacement
+  draw). If there are not enough active sites, fewer are charged and the
+  board runs below five until the next turn.
+- **"Exactly five sites are active or charged" becomes a target, not an
+  invariant.** The board aims for five charged sites and may fall short;
+  charged nodes keep running out on schedule regardless of whether the board
+  is at its target.
+- **A node's clock now starts when the board charges it, not when a ship
+  wakes it.** Section 8.3 is rewritten around the new start: a site charged
+  at the end of turn N is charged for turns N+1 to N+9. Both players are now
+  the same distance from a new node in time, so the paragraph about the
+  clock belonging to whoever woke the node is deleted along with it.
+- **The opening five nodes are staggered.** The game still starts with H8,
+  E5, K5, E11 and K11 charged and the other twelve active, but their clocks
+  are no longer aligned: they run out at the ends of turns 2, 4, 5, 7 and 9
+  respectively, so the board's replacements spread out from the first turn
+  instead of all arriving in lockstep.
+- **Section 8.5's "a site that wakes underneath a ship becomes charged
+  immediately" is deleted.** Charging no longer needs a waker, so an
+  occupied active site is charged exactly like any other, and a stranded
+  ship that finds its site charged under it is simply lucky.
+- **The empty-pool safety net is deleted**, along with Appendix B's
+  reference to it. The old rule that the longest-depleted site goes back to
+  dormant first existed to guarantee a replacement was always available;
+  that guarantee is withdrawn, so running short is now a legal outcome
+  rather than a failure the app must prevent.
+- **Section 3.2's spacing property is recorded as withdrawn, not removed.**
+  "No single legal move touches two or more sites" existed so that one move
+  could never charge two nodes at once; nothing charges on touch any more,
+  so the property no longer binds. The seventeen site positions are
+  unchanged and still happen to satisfy it.
+- **Section 8's sections are renumbered to close the gap left by deleting
+  old section 8.2.** The rewritten "Charging a site" (old section 8.6) moves
+  up into the vacated 8.2 slot, and old section 8.7 ("End-of-turn order")
+  becomes section 8.6. Sections 8.3, 8.4 and 8.5 keep their numbers.
+
+This changes how the game is played — nodes now appear on their own instead
+of being triggered by ships, and the five-active-or-charged invariant becomes
+a target the board can fall short of — so it would ordinarily be a tagging
+candidate, but tagging is on hold until the game plays (see the project's
+contribution notes), so no tag is made for this version.
+
 ## 0.10 — random bay return
 
 - **A returning ship's bay is now drawn at random from the bays that are

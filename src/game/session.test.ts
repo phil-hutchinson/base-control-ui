@@ -337,6 +337,24 @@ describe("sessionReducer — a ship is selected", () => {
       });
     });
 
+    it("rejects an active site as destination-active-site", () => {
+      const state = buildState({
+        ships: [ship("green-1", "green", "H8")],
+        siteStates: { H9: "active" },
+      });
+      const selected = activate(sessionFor(state), "H8");
+
+      const result = activate(selected, "H9");
+
+      expect(result.selectedShipId).toBe("green-1");
+      expect(result.state).toBe(state);
+      expect(result.lastEvent).toEqual({
+        type: "rejected",
+        reason: "destination-active-site",
+        square: squareFromName("H9"),
+      });
+    });
+
     it("rejects a dormant site as destination-dormant-site", () => {
       const state = buildState({
         ships: [ship("green-1", "green", "H8")],
@@ -351,24 +369,6 @@ describe("sessionReducer — a ship is selected", () => {
       expect(result.lastEvent).toEqual({
         type: "rejected",
         reason: "destination-dormant-site",
-        square: squareFromName("H9"),
-      });
-    });
-
-    it("rejects a depleted site as destination-depleted-site", () => {
-      const state = buildState({
-        ships: [ship("green-1", "green", "H8")],
-        siteStates: { H9: "depleted" },
-      });
-      const selected = activate(sessionFor(state), "H8");
-
-      const result = activate(selected, "H9");
-
-      expect(result.selectedShipId).toBe("green-1");
-      expect(result.state).toBe(state);
-      expect(result.lastEvent).toEqual({
-        type: "rejected",
-        reason: "destination-depleted-site",
         square: squareFromName("H9"),
       });
     });
