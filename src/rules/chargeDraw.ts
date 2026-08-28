@@ -61,7 +61,7 @@ export function runChargeDraw(state: GameState): ChargeDrawResult {
     };
     effects.push({ type: "site-charged", square: drawn });
 
-    pool = pool.filter((square) => square !== drawn);
+    pool = pool.filter((_, poolIndex) => poolIndex !== index);
     shortfall -= 1;
   }
 

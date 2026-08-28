@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { squareFromName } from "./board";
+import { squareFromName, squareName } from "./board";
 import { runEndOfTurn } from "./endOfTurn";
 import type { ShipId } from "./fleet";
-import type { GameState, Ship, SiteStatus } from "./gameState";
+import {
+  type GameState,
+  type Ship,
+  type SiteStatus,
+  startingGameState,
+} from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { ShieldCount } from "./shields";
@@ -294,7 +299,7 @@ describe("runEndOfTurn — step 5, a dormant site cooling to active (§8.2)", ()
     ]);
   });
 
-  it("this step's headline check: the charge draw (step 4) never charges a site cooling to active in the very sequence it does so (§8.6 step ordering, D11)", () => {
+  it("the charge draw never charges a site that went active in the same end-of-turn sequence (§8.6 step ordering)", () => {
     // H8 finishes cooling this same ply that another node, F2, runs out —
     // leaving the board with nothing charged at all and, until step 5 runs,
     // no active site anywhere else either. If cooling ran ahead of the
@@ -513,5 +518,36 @@ describe("runEndOfTurn — a passed ply still collects (§8.6 runs in full for a
       ],
     });
     expect(result.state.energy).toEqual({ green: 1, red: 0 });
+  });
+});
+
+describe("runEndOfTurn — the staggered opening (§8.1)", () => {
+  it("runs out K5, E11, K11, E5 and H8 in turn, one per ply, at the ends of plies 2, 4, 5, 7 and 9", () => {
+    const expectedRunOuts = new Map([
+      [2, "K5"],
+      [4, "E11"],
+      [5, "K11"],
+      [7, "E5"],
+      [9, "H8"],
+    ]);
+
+    let state = startingGameState(1, DEFAULT_GAME_LENGTH_ROUNDS);
+
+    for (let ply = 1; ply <= 9; ply++) {
+      const result = runEndOfTurn(state);
+      const ranOut = result.effects.filter(
+        (effect) => effect.type === "node-ran-out",
+      );
+
+      const expectedSquare = expectedRunOuts.get(ply);
+      if (expectedSquare === undefined) {
+        expect(ranOut).toEqual([]);
+      } else {
+        expect(ranOut).toHaveLength(1);
+        expect(squareName(ranOut[0].square)).toBe(expectedSquare);
+      }
+
+      state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
+    }
   });
 });

@@ -825,6 +825,13 @@ and not yet replaced, per D8/D17; step 5 adds a new `sitePool.test.ts`) and
 `grep -rn "STARTING_ACTIVE_SITES\|startingSiteState\b"` over `src/` both
 return nothing.
 
+Peer review follow-up: new test 2, driving `runEndOfTurn` ply by ply from
+`startingGameState` and asserting `node-ran-out` fires for K5, E11, K11, E5
+and H8 at the ends of plies 2, 4, 5, 7 and 9, had been left out of this step
+and was added afterwards in `src/rules/endOfTurn.test.ts` rather than
+`sites.test.ts`, since it exercises `runEndOfTurn`/`gameState.ts` rather than
+`sites.ts` alone.
+
 Narrow `SiteState` to three members and carry the consequences through every
 consumer. This is the largest step in the plan, and **D7** explains why it
 cannot usefully be split: the type narrowing is one compile event and the
@@ -1052,13 +1059,21 @@ state-unchanged assertions that had nothing to do with what those tests were
 actually proving; each was adjusted (an incidental active site changed to
 dormant, or the board topped up to five charged elsewhere) to keep isolating
 its own property rather than incidentally exercising the draw. (2)
-`fullGame.test.ts`'s hundred-round test's fixed seed (20260819) happens to
+`fullGame.test.ts`'s hundred-round test's fixed seed (20260819) happened to
 end the game without two ships in attack range at the very last moment now
 that the charge draw drives real gameplay instead of an inert board (a
 scan of nearby seeds found this true for the large majority, false for this
 one); moved to the adjacent seed 20260820, which does. Neither deviation
 touches the "two scoring assertions suspended until step 5" comment, which
 is left exactly as step 2 wrote it.
+
+Peer review follow-up: deviation (2) above no longer applies. The seed move
+papered over a fragile assertion rather than fixing it — the "an attack is
+refused after game over" coverage rested on the played-out final position
+happening to leave two ships in range. `fullGame.test.ts` now builds a
+dedicated game-over state with two ships deliberately in range for that
+assertion, the hundred-round test asserts only totals and the ending, and
+the seed is back to 20260819, matching the three-round test.
 
 `npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
 (657 tests, up from 646) all pass.

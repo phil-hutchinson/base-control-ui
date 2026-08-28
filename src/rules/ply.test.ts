@@ -1143,7 +1143,7 @@ describe("the winner's advance (rules.md §7)", () => {
     });
   });
 
-  it("landing on a charged site during a winning advance leaves it charged (reach: landed-on)", () => {
+  it("landing on a charged site during a winning advance leaves it charged", () => {
     // A winner may only ever end an advance on a charged site (rules.md
     // §7) — an active or dormant candidate is skipped in favour of the
     // furthest charged or ordinary square on the lane.
@@ -1164,7 +1164,7 @@ describe("the winner's advance (rules.md §7)", () => {
     expect(result.state.siteStates.H8).toEqual(state.siteStates.H8);
   });
 
-  it("flying over an active site during a winning advance leaves it active (reach: flown-over)", () => {
+  it("flying over an active site during a winning advance leaves it active", () => {
     // Five sites elsewhere are already charged, so the end-of-turn charge
     // draw this fight's ply-end triggers has no shortfall to fill and
     // cannot touch H8 — the only thing that could change H8 here is the
@@ -1193,7 +1193,7 @@ describe("the winner's advance (rules.md §7)", () => {
     expect(result.state.siteStates.H8).toEqual(state.siteStates.H8);
   });
 
-  it("wakes nothing on a defender's win, even with active sites on the lane and on the bay the loser is placed in", () => {
+  it("changes no site on a defender's win, even with active sites on the lane and on the bay the loser is placed in", () => {
     // The attacker's own square is charged, not active — an active site
     // would strand the attacker itself (§8.5) and refuse the attack before
     // any of this could be observed.
@@ -1215,7 +1215,7 @@ describe("the winner's advance (rules.md §7)", () => {
     );
   });
 
-  it("wakes nothing on a mutual return, even with an active site on the defender's own square, on the lane, and on both bays the ships are placed in", () => {
+  it("changes no site on a mutual return, even with an active site on the defender's own square, on the lane, and on both bays the ships are placed in", () => {
     // The attacker's own square is charged, not active — an active site
     // would strand the attacker itself (§8.5) and refuse the attack before
     // any of this could be observed. Five sites elsewhere are also charged,

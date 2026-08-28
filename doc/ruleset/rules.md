@@ -215,11 +215,11 @@ the same distances, the same straight lines, and on the same terms: every
 square the attack passes over must be empty, of either side's ships. The
 target square is of course occupied, by the enemy ship, and the site it
 stands on does not matter — a ship stranded on a site that is not charged
-(section 8.5) can still be attacked. At the two extremes: a ship with 4 shields reaches only
-one square orthogonally and cannot strike a diagonal at all, while a ship
-carrying no shields reaches three squares orthogonally. Attacking is always
-the attacking player's choice; ships never fight automatically. A ship may
-attack an enemy stronger than itself.
+(section 8.5) can still be attacked. At the two extremes: a ship with 4
+shields reaches only one square orthogonally and cannot strike a diagonal at
+all, while a ship carrying no shields reaches three squares orthogonally.
+Attacking is always the attacking player's choice; ships never fight
+automatically. A ship may attack an enemy stronger than itself.
 
 Neither ship may be in a bay: a ship in a bay cannot attack, and cannot be
 attacked.

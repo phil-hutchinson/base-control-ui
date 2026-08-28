@@ -6,7 +6,12 @@
 // seeded charge draws.
 
 import { describe, expect, it } from "vitest";
-import { COLUMN_LETTERS, type Square, squareName } from "./board";
+import {
+  COLUMN_LETTERS,
+  type Square,
+  squareFromName,
+  squareName,
+} from "./board";
 import { legalTargets, sevenOnlyLegalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import { gameResult, isGameOver, pliesForGameLength } from "./gameLength";
@@ -275,11 +280,7 @@ function sumAmounts(effects: readonly EnergyCollectedEffect[]): number {
 
 describe("a full game, end to end", () => {
   it("plays a hundred-round game to its end, with totals consistent throughout", () => {
-    // Chosen so that, with the charge draw now driving the board (step 4),
-    // an attack is still legal a moment before the game ends — the
-    // adjacent seed 20260819 happens not to leave two ships in range at
-    // that exact final moment, though most seeds do.
-    const seed = 20260820;
+    const seed = 20260819;
     const { finalState, greenCollected, redCollected } = playFullGame(
       seed,
       100,
@@ -308,9 +309,11 @@ describe("a full game, end to end", () => {
     }
     expect(result.energy).toEqual(finalState.energy);
 
-    // A hundred-round game is long enough that fights do happen; this is
-    // where the game-over refusal of an attack is genuinely proven.
-    expect(assertRefusesEverything(finalState)).toBe(true);
+    // Whether the played-out final position happens to leave two ships in
+    // attack range is not something this test controls, so only the move
+    // and pass refusals are relied on here; the attack refusal is asserted
+    // separately below, against a state built to guarantee one.
+    assertRefusesEverything(finalState);
   });
 
   it("plays a three-round game to its end, by the same route", () => {
@@ -337,5 +340,39 @@ describe("a full game, end to end", () => {
     // reach of one another, so no attack is expected here; the move
     // and pass refusals are still checked.
     assertRefusesEverything(finalState);
+  });
+
+  it("refuses an attack, not only a move and a pass, once the game is over", () => {
+    // Built rather than played out, so the attack refusal does not depend
+    // on two ships happening to end a played game within range of each
+    // other: green-1 and red-1 sit three squares apart with a clear lane
+    // between them, well within a zero-shield ship's reach (rules.md §6).
+    const state: GameState = {
+      ships: [
+        {
+          id: "green-1" as ShipId,
+          side: "green",
+          square: squareFromName("G8"),
+          shields: 0,
+        },
+        {
+          id: "red-1" as ShipId,
+          side: "red",
+          square: squareFromName("G11"),
+          shields: 0,
+        },
+      ],
+      siteStates: {},
+      sideToMove: "green",
+      actionsRemaining: 1,
+      actedThisPly: [],
+      plyNumber: pliesForGameLength(1) + 1,
+      randomSeed: 1,
+      energy: { green: 0, red: 0 },
+      lengthInRounds: 1,
+    };
+
+    expect(isGameOver(state)).toBe(true);
+    expect(assertRefusesEverything(state)).toBe(true);
   });
 });

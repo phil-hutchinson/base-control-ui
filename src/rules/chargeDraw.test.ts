@@ -7,6 +7,7 @@ import type { GameState, Ship, SiteStatus } from "./gameState";
 import { drawIndex } from "./random";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
+import { strandedShipIds } from "./stranded";
 
 function ship(
   id: ShipId,
@@ -222,6 +223,7 @@ describe("runChargeDraw — the pool", () => {
     });
     const occupant = result.state.ships.find((s) => s.id === "green-1");
     expect(occupant?.square).toEqual(squareFromName("F2"));
+    expect(strandedShipIds(result.state)).not.toContain("green-1");
   });
 });
 
@@ -249,6 +251,43 @@ describe("runChargeDraw — running short", () => {
       (status) => status.state === "charged",
     ).length;
     expect(chargedCount).toBeLessThan(5);
+  });
+
+  it("climbs back to five, charging more than one site in a ply, once more active sites become available", () => {
+    const shortState = buildState({
+      siteStates: {
+        F2: ["charged", 1],
+        J2: ["dormant", 1],
+        B4: ["active", 0],
+      },
+    });
+    const shortResult = runChargeDraw(shortState);
+    const shortChargedCount = Object.values(
+      shortResult.state.siteStates,
+    ).filter((status) => status.state === "charged").length;
+    expect(shortChargedCount).toBeLessThan(5);
+
+    // The following turn: three more sites have gone active, enough to
+    // close the gap the board was left short by above.
+    const recoveredState: GameState = {
+      ...shortResult.state,
+      siteStates: {
+        ...shortResult.state.siteStates,
+        ...siteStatuses({
+          H4: ["active", 0],
+          N4: ["active", 0],
+          D8: ["active", 0],
+        }),
+      },
+    };
+
+    const recoveredResult = runChargeDraw(recoveredState);
+
+    expect(recoveredResult.effects).toHaveLength(3);
+    const recoveredChargedCount = Object.values(
+      recoveredResult.state.siteStates,
+    ).filter((status) => status.state === "charged").length;
+    expect(recoveredChargedCount).toBe(5);
   });
 });
 

@@ -39,8 +39,8 @@ export const SITES: readonly Square[] = [
 export type SiteState = "active" | "charged" | "dormant";
 
 /**
- * How many turns a charged node stays charged (rules.md §8.3), counting the
- * turn it was charged on.
+ * How many turns a charged node stays charged (rules.md §8.3), not counting
+ * the turn at whose end it was charged.
  */
 export const CHARGED_LIFE_PLIES = 9;
 
