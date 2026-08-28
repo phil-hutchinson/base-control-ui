@@ -1,21 +1,33 @@
 // §8.6's end-of-turn sequence: the steps run once at the end of every ply,
 // in the document's order. Reads `state.sideToMove` as the player who just
 // moved and `state.plyNumber` as the ply just played, so `ply.ts` must call
-// this before either changes. Cooling a dormant site to active runs last,
-// after the charge draw, deliberately (§8.6): it is what makes a site spend
-// at least one whole turn visibly active before the draw can pick it,
+// this before either changes. Recovering a dormant site to active runs
+// last, after the charge draw, deliberately (§8.6): it is what makes a site
+// spend at least one whole turn visibly active before the draw can pick it,
 // rather than going dormant -> active -> charged inside a single sequence.
+// And the two clocks are symmetric about the turn a state is entered: a
+// node charged in step 4 of turn N first drains in step 3 of turn N+1, and a
+// node that goes dormant in step 3 of turn N first recovers in step 6 of
+// turn N+1 — which is what this file's second argument is for.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
 import { type SiteChargedEffect, runChargeDraw } from "./chargeDraw";
 import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
 import type { Side, ShipId } from "./fleet";
-import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
 import {
-  hasChargedNodeFinished,
-  hasDormantSiteFinishedCooling,
+  type GameState,
+  type SiteStatus,
+  shipsBySquare,
+  siteStateAt,
+} from "./gameState";
+import {
+  DORMANT_RECOVERY_TABLE,
+  EMPTY_NODE_DRAIN_TABLE,
+  HELD_NODE_DRAIN_TABLE,
+  NODE_CAPACITY,
   SITES,
+  drawTableAmount,
 } from "./sites";
 import { MAX_SHIELDS, type ShieldCount } from "./shields";
 
@@ -37,7 +49,7 @@ export interface EnergyCollectedEffect {
   readonly squares: readonly Square[];
 }
 
-/** A charged node finished its nine turns and went dormant (§8.6 step 3, §8.3). */
+/** A charged node's drain reached its capacity and it went dormant (§8.6 step 3, §8.3). */
 export interface NodeRanOutEffect {
   readonly type: "node-ran-out";
   readonly square: Square;
@@ -51,7 +63,7 @@ export interface ShipStrandedEffect {
   readonly square: Square;
 }
 
-/** A dormant site finished cooling down and went active (§8.6 step 5, §8.2). */
+/** A dormant site finished recovering and went active, at pressure 1 (§8.6 step 6, §8.2). */
 export interface SiteWentActiveEffect {
   readonly type: "site-went-active";
   readonly square: Square;
@@ -77,10 +89,24 @@ export interface EndOfTurnResult {
  * `state`'s `sideToMove` is read as the player who just played that ply and
  * `plyNumber` as the ply itself — the caller runs this **before** swapping
  * sides or advancing the ply counter.
+ *
+ * `dormantBeforePly` is the square names of every site that was dormant
+ * before the ply began (§8.6 step 6). It is required, not optional, because
+ * there is no safe default: step 6 must recover exactly those sites, never
+ * one that only went dormant during this very ply — whether by reaching
+ * capacity in step 3 below, or mid-ply because its occupant left it (§8.7) —
+ * and nothing in `state` distinguishes such a site from one that has been
+ * dormant for turns. Because `ACTIONS_PER_PLY` is 1 (rules.md §5), the state
+ * before a ply's one action **is** the state at the start of the ply, so a
+ * caller can build this set from that state with `dormantSiteNames`. A
+ * future ruleset with more than one action per ply would need a genuine
+ * start-of-ply snapshot carried in `GameState` instead.
  */
-export function runEndOfTurn(state: GameState): EndOfTurnResult {
+export function runEndOfTurn(
+  state: GameState,
+  dormantBeforePly: ReadonlySet<string>,
+): EndOfTurnResult {
   const side = state.sideToMove;
-  const plyNumber = state.plyNumber;
   const occupants = shipsBySquare(state);
   const effects: EndOfTurnEffect[] = [];
 
@@ -127,36 +153,48 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     });
   }
 
-  // Step 3: charged nodes that have finished their nine turns go dormant
-  // (§8.3), stranding any ship left standing on them (§8.5).
-  let siteStates = workingState.siteStates;
+  // Step 3: every charged node adds its drain — drawn from the held table if
+  // a ship of either side is standing on it right now, the empty table
+  // otherwise — and any that reaches capacity goes dormant carrying its
+  // drain unclamped (§8.3), stranding any ship left standing on it (§8.5).
   for (const square of SITES) {
     const name = squareName(square);
-    const status = siteStates[name];
-    if (
-      status === undefined ||
-      status.state !== "charged" ||
-      !hasChargedNodeFinished(status.enteredOnPly, plyNumber)
-    ) {
+    const status = workingState.siteStates[name];
+    if (status === undefined || status.state !== "charged") {
       continue;
     }
-    siteStates = {
-      ...siteStates,
-      [name]: { state: "dormant", enteredOnPly: plyNumber },
+    const table = occupants.has(name)
+      ? HELD_NODE_DRAIN_TABLE
+      : EMPTY_NODE_DRAIN_TABLE;
+    const [drawnAmount, nextSeed] = drawTableAmount(
+      workingState.randomSeed,
+      table,
+    );
+    const level = status.level + drawnAmount;
+    const nextStatus: SiteStatus =
+      level < NODE_CAPACITY
+        ? { state: "charged", level }
+        : { state: "dormant", level };
+    workingState = {
+      ...workingState,
+      siteStates: { ...workingState.siteStates, [name]: nextStatus },
+      randomSeed: nextSeed,
     };
-    effects.push({ type: "node-ran-out", square });
 
-    const occupant = occupants.get(name);
-    if (occupant !== undefined) {
-      effects.push({
-        type: "ship-stranded",
-        shipId: occupant.id,
-        side: occupant.side,
-        square,
-      });
+    if (nextStatus.state === "dormant") {
+      effects.push({ type: "node-ran-out", square });
+
+      const occupant = occupants.get(name);
+      if (occupant !== undefined) {
+        effects.push({
+          type: "ship-stranded",
+          shipId: occupant.id,
+          side: occupant.side,
+          square,
+        });
+      }
     }
   }
-  workingState = { ...workingState, siteStates };
 
   // Step 4: as many active sites as it takes to bring the board back to
   // five charged are charged, at random (§8.2, §8.6 step 4). Running short
@@ -165,29 +203,44 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   workingState = chargeDraw.state;
   effects.push(...chargeDraw.effects);
 
-  // Step 5: dormant sites that have finished cooling go active (§8.2). This
-  // runs last, deliberately: it is what makes a site spend at least one
-  // whole turn visibly active before the charge draw can pick it, rather
-  // than going dormant -> active -> charged inside a single end-of-turn
-  // sequence.
-  siteStates = workingState.siteStates;
+  // Step 5: every site still active gains a point of pressure, to the cap
+  // of 50 (§8.2). Not implemented yet — arrives in the next step of this
+  // story's plan.
+
+  // Step 6: every site that was dormant before this ply began (see this
+  // function's doc comment on `dormantBeforePly`) subtracts its recovery;
+  // any that reaches zero or below goes active, at pressure 1 (§8.2). A
+  // site that only went dormant during this very sequence — in step 3
+  // above, or earlier in the ply because its occupant left it (§8.7) — was
+  // charged when the ply began, so it is excluded and first recovers at the
+  // end of the next ply.
   for (const square of SITES) {
     const name = squareName(square);
-    const status = siteStates[name];
+    const status = workingState.siteStates[name];
     if (
       status === undefined ||
       status.state !== "dormant" ||
-      !hasDormantSiteFinishedCooling(status.enteredOnPly, plyNumber)
+      !dormantBeforePly.has(name)
     ) {
       continue;
     }
-    siteStates = {
-      ...siteStates,
-      [name]: { state: "active", enteredOnPly: plyNumber },
+    const [drawnAmount, nextSeed] = drawTableAmount(
+      workingState.randomSeed,
+      DORMANT_RECOVERY_TABLE,
+    );
+    const level = status.level - drawnAmount;
+    const nextStatus: SiteStatus =
+      level > 0 ? { state: "dormant", level } : { state: "active", level: 1 };
+    workingState = {
+      ...workingState,
+      siteStates: { ...workingState.siteStates, [name]: nextStatus },
+      randomSeed: nextSeed,
     };
-    effects.push({ type: "site-went-active", square });
+
+    if (nextStatus.state === "active") {
+      effects.push({ type: "site-went-active", square });
+    }
   }
-  workingState = { ...workingState, siteStates };
 
   return { state: workingState, effects };
 }

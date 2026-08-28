@@ -22,9 +22,9 @@ function siteStatuses(
   states: Readonly<Record<string, readonly [SiteState, number]>>,
 ): Record<string, SiteStatus> {
   return Object.fromEntries(
-    Object.entries(states).map(([name, [state, enteredOnPly]]) => [
+    Object.entries(states).map(([name, [state, level]]) => [
       name,
-      { state, enteredOnPly },
+      { state, level },
     ]),
   );
 }
@@ -67,7 +67,7 @@ describe("runChargeDraw — the shortfall (§8.2, §8.6 step 4)", () => {
     ]);
     expect(result.state.siteStates.N4).toEqual({
       state: "charged",
-      enteredOnPly: 5,
+      level: 0,
     });
   });
 
@@ -92,7 +92,7 @@ describe("runChargeDraw — the shortfall (§8.2, §8.6 step 4)", () => {
     for (const name of ["B4", "H4", "N4"]) {
       expect(result.state.siteStates[name]).toEqual({
         state: "charged",
-        enteredOnPly: 5,
+        level: 0,
       });
     }
   });
@@ -219,7 +219,7 @@ describe("runChargeDraw — the pool", () => {
     ]);
     expect(result.state.siteStates.F2).toEqual({
       state: "charged",
-      enteredOnPly: 5,
+      level: 0,
     });
     const occupant = result.state.ships.find((s) => s.id === "green-1");
     expect(occupant?.square).toEqual(squareFromName("F2"));
@@ -244,7 +244,7 @@ describe("runChargeDraw — running short", () => {
     ]);
     expect(result.state.siteStates.J2).toEqual({
       state: "dormant",
-      enteredOnPly: 1,
+      level: 1,
     });
 
     const chargedCount = Object.values(result.state.siteStates).filter(

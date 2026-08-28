@@ -190,7 +190,7 @@ describe("GameOverPanel", () => {
         siteStates: {
           [squareName(squareAt("H", 8))]: {
             state: "charged",
-            enteredOnPly: 1,
+            level: 1,
           },
         },
         sideToMove: "red",

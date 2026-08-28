@@ -1350,12 +1350,9 @@ describe("HUD wording", () => {
     }[];
     charged?: readonly string[];
   }): GameState {
-    const siteStates: Record<
-      string,
-      { state: "charged"; enteredOnPly: number }
-    > = {};
+    const siteStates: Record<string, { state: "charged"; level: number }> = {};
     for (const square of config.charged ?? []) {
-      siteStates[square] = { state: "charged", enteredOnPly: 1 };
+      siteStates[square] = { state: "charged", level: 1 };
     }
     return {
       ships: config.ships ?? [],

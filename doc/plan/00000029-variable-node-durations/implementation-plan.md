@@ -920,7 +920,53 @@ nothing else in the suite changes, because nothing else calls the new function.
 
 ## Step 3 — Capacity, drain and recovery: one `level` per site
 
-Status: pending
+Status: committed
+
+Notes: `sites.ts` gained `NODE_CAPACITY` (60), `PRESSURE_CAP` (50, unused
+until step 4 per the plan), the three `WeightedAmount` tables, and
+`drawTableAmount`; `CHARGED_LIFE_PLIES`, `DORMANT_COOLDOWN_PLIES`,
+`hasChargedNodeFinished`, `hasDormantSiteFinishedCooling` and the staggered
+opening were deleted per D4/D10. `SiteStatus` is now `{ state, level }`
+(`gameState.ts`), and `gameState.ts` gained `dormantSiteNames` as the shared
+helper D8 calls for. `endOfTurn.ts`'s `runEndOfTurn` takes the required
+`dormantBeforePly` second argument exactly as D8 specifies, with step 3
+drawing drain (held vs. empty table by momentary occupancy) and step 6
+drawing recovery only for that set; step 5 is a one-line placeholder comment
+naming pressure, not yet implemented. `chargeDraw.ts` charges at `level: 0`.
+`ply.ts` threads `dormantSiteNames(state)` (the pre-action state) through
+`applyEndOfActionTail` from both `applyMove` and `applyAttack`;
+`applyPassGuard` builds its own set from its own state; `assertFightInvariants`
+compares `level` in place of `enteredOnPly`. `Board.tsx`'s `siteCyclePosition`
+call now passes the status's `level` and no ply number. Deviations from the
+plan: (1) the step 3 test-list's item 10 says cycle position should report
+"1 for a dormant site at a level of capacity and 0 at level 0" — this is the
+reverse of D13's own formula (`1 − level / capacity`) and of D13's own worked
+example (a node ended at drain 20 is two-thirds _through_ its dormant
+travel, not one-third), and would also contradict the untouched
+`SiteMarker`/`Board.test.tsx` wiring inherited from 0.11 (dormant starts its
+travel at full drain, ends at zero). Implemented and tested to D13's formula
+instead, treating the checklist line as a slip. (2) `sitePool.test.ts` needed
+more than removing the lockstep assertion to go green — 0.12's steady-state
+mix (~2-3 dormant, ~9-10 active) is far enough from 0.11's (~5, ~7) that the
+old numeric bounds fail outright — so its one remaining bounds test was
+retargeted to the new mix with a comment pointing at step 7's full rewrite,
+which is still where the pressure-weighting property belongs. (3) Several
+`ply.test.ts` fight/move integration tests built fixtures with a
+canonical-site square left at the shorthand default `level: 0` for a
+`dormant` or `charged` state, or asserted a real site's status by strict
+equality after a full `applyMove`/`applyAttack` call; under 0.12 a real
+site's drain or recovery always moves every end-of-turn sequence (unlike
+0.11's fixed clock, which was inert unless it happened to finish), so these
+were re-fixtured — mostly onto column-G squares, which this codebase's own
+existing tests already use as a "not one of the seventeen sites" idiom, with
+the rest changed to assert the site's `state` rather than its exact `level`.
+One test's expected stranded-ship shield count was also corrected from 3 to
+4, since step 1's shield grant now visibly lifts it before step 3 stands the
+node down. `npm test` (685/685, up from 680), `npm run typecheck`,
+`npm run lint` and `npm run format:check` all pass; grepping `src/` for
+`enteredOnPly`, `CHARGED_LIFE_PLIES`, `DORMANT_COOLDOWN_PLIES`,
+`hasChargedNodeFinished`, `hasDormantSiteFinishedCooling` and
+`STAGGERED_OPENING` finds nothing.
 
 Replace the two fixed nine-ply clocks with capacity, a randomly drawn drain and
 a randomly drawn recovery, and collapse `SiteStatus` onto one number. **The

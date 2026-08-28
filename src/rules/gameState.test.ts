@@ -35,16 +35,10 @@ describe("startingGameState", () => {
     expect(state.randomSeed).toBe(SEED);
   });
 
-  it("gives every site a status: five charged (the staggered opening), twelve active, none dormant", () => {
+  it("gives every site a status: five charged at drain 0, twelve active at pressure 1, none dormant", () => {
     const state = startingGameState(SEED);
 
-    const chargedSitesAndRunOutPly: readonly [string, number][] = [
-      ["H8", 9],
-      ["E5", 7],
-      ["K5", 2],
-      ["E11", 4],
-      ["K11", 5],
-    ];
+    const chargedSites = ["H8", "E5", "K5", "E11", "K11"];
     const activeSites = [
       "F2",
       "J2",
@@ -60,15 +54,15 @@ describe("startingGameState", () => {
       "J14",
     ];
 
-    for (const [name, runsOutAtEndOfPly] of chargedSitesAndRunOutPly) {
+    for (const name of chargedSites) {
       const status = siteStatusAt(state, squareFromName(name));
       expect(status?.state).toBe("charged");
-      expect(status?.enteredOnPly).toBe(runsOutAtEndOfPly - 9);
+      expect(status?.level).toBe(0);
     }
     for (const name of activeSites) {
       const status = siteStatusAt(state, squareFromName(name));
       expect(status?.state).toBe("active");
-      expect(status?.enteredOnPly).toBe(0);
+      expect(status?.level).toBe(1);
     }
 
     const allStatuses = Object.values(state.siteStates);

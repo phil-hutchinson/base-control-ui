@@ -8,12 +8,7 @@ import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
-import {
-  CHARGED_LIFE_PLIES,
-  DORMANT_COOLDOWN_PLIES,
-  SITES,
-  startingSiteStatus,
-} from "../rules/sites";
+import { NODE_CAPACITY, SITES, startingSiteStatus } from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalDestinations } from "../rules/movement";
@@ -366,23 +361,22 @@ describe("Board", () => {
 
   describe("the site cycle position reaching the marker", () => {
     // A minimal hand-built state with a single site square, isolating the
-    // wiring from Board.tsx's ply number and the site's enteredOnPly through
-    // to the marker's middle gradient stop.
+    // wiring from Board.tsx through the site's level to the marker's middle
+    // gradient stop.
     function stateWithSite(
       square: Square,
       state: "charged" | "dormant",
-      enteredOnPly: number,
-      plyNumber: number,
+      level: number,
     ): GameState {
       return {
         ships: [],
         siteStates: {
-          [squareName(square)]: { state, enteredOnPly },
+          [squareName(square)]: { state, level },
         },
         sideToMove: "green",
         actionsRemaining: 1,
         actedThisPly: [],
-        plyNumber,
+        plyNumber: 1,
         randomSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
@@ -395,19 +389,9 @@ describe("Board", () => {
       return stops?.[1]?.getAttribute("offset");
     }
 
-    it("shows a charged site at its start-of-cycle offset on the first ply after it was charged", () => {
-      // The charged window starts the ply after enteredOnPly: both clocks
-      // now measure plies since the end of the ply the state was entered on
-      // (rules.md §8.3, §8.2).
-      const enteredOnPly = 5;
-      const firstChargedPly = enteredOnPly + 1;
+    it("shows a charged site at its start-of-cycle offset at drain 0", () => {
       const session: Session = {
-        state: stateWithSite(
-          squareAt("H", 8),
-          "charged",
-          enteredOnPly,
-          firstChargedPly,
-        ),
+        state: stateWithSite(squareAt("H", 8), "charged", 0),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -416,16 +400,9 @@ describe("Board", () => {
       expect(middleStopOffset(container, "charged")).toBe("25%");
     });
 
-    it("shows a charged site at its end-of-cycle offset on its last charged ply", () => {
-      const enteredOnPly = 5;
-      const lastPly = enteredOnPly + CHARGED_LIFE_PLIES;
+    it("shows a charged site at its end-of-cycle offset at capacity", () => {
       const session: Session = {
-        state: stateWithSite(
-          squareAt("H", 8),
-          "charged",
-          enteredOnPly,
-          lastPly,
-        ),
+        state: stateWithSite(squareAt("H", 8), "charged", NODE_CAPACITY),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -434,18 +411,11 @@ describe("Board", () => {
       expect(middleStopOffset(container, "charged")).toBe("50%");
     });
 
-    it("shows a dormant site at its start-of-cycle offset on its first cooling ply", () => {
-      // The dormant window starts the ply after enteredOnPly: the site was
-      // still charged for the whole of the ply it ran out on.
-      const enteredOnPly = 5;
-      const firstCoolingPly = enteredOnPly + 1;
+    it("shows a dormant site at its start-of-cycle offset at a level of capacity", () => {
+      // A dormant site's level is the drain it has left to recover: full
+      // capacity is the start of its cooling travel (rules.md §8.2).
       const session: Session = {
-        state: stateWithSite(
-          squareAt("H", 8),
-          "dormant",
-          enteredOnPly,
-          firstCoolingPly,
-        ),
+        state: stateWithSite(squareAt("H", 8), "dormant", NODE_CAPACITY),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -454,16 +424,9 @@ describe("Board", () => {
       expect(middleStopOffset(container, "dormant")).toBe("50%");
     });
 
-    it("shows a dormant site at its end-of-cycle offset on its last cooling ply", () => {
-      const enteredOnPly = 5;
-      const lastPly = enteredOnPly + DORMANT_COOLDOWN_PLIES;
+    it("shows a dormant site at its end-of-cycle offset at level 0", () => {
       const session: Session = {
-        state: stateWithSite(
-          squareAt("H", 8),
-          "dormant",
-          enteredOnPly,
-          lastPly,
-        ),
+        state: stateWithSite(squareAt("H", 8), "dormant", 0),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -922,7 +885,7 @@ describe("Board", () => {
         siteStates: {
           [squareName(squareAt("H", 4))]: {
             state: "dormant",
-            enteredOnPly: 1,
+            level: 1,
           },
         },
         sideToMove: "green",

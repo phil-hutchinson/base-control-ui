@@ -21,16 +21,24 @@ export interface Ship {
 }
 
 /**
- * A site's current state, plus the ply at whose end it entered that state
- * (§8.3, §8.2 — both clocks measure plies since the end of the ply the
- * state was entered on). Recorded for every site in every state, not only
- * charged and dormant ones, so the fact is never missing; only the charged
- * (§8.3) and dormant (§8.2) derivations consult it. May be zero or negative
- * for the staggered opening five, whose clocks started before the game did.
+ * A site's current state, plus its `level` — a single number whose meaning
+ * depends on the state it is attached to (rules.md §8.1–§8.3):
+ *
+ * | State   | `level` is           | Starts at             | Moves at end of turn | Changes state at |
+ * | ------- | --------------------- | ---------------------- | --------------------- | ----------------- |
+ * | Active  | pressure               | 1                       | +1, capped at 50      | drawn (§8.2)       |
+ * | Charged | drain                  | 0                       | + the drain draw      | ≥ capacity         |
+ * | Dormant | the drain to recover   | the drain it carried    | − the recovery draw   | ≤ 0                |
+ *
+ * A dormant site's `level` carries over from whatever drain the node had
+ * when it went dormant, so a node ended early is dormant for proportionally
+ * less time — that carry is a real property of the design, not an
+ * implementation convenience, and is why there is one field rather than
+ * three.
  */
 export interface SiteStatus {
   readonly state: SiteState;
-  readonly enteredOnPly: number;
+  readonly level: number;
 }
 
 /** Each side's running energy total (rules.md §8.4). */
@@ -67,8 +75,8 @@ export interface GameState {
 
 /**
  * The state the game starts from: the fourteen `STARTING_FLEET` ships, every
- * site's starting state and `enteredOnPly` (the staggered opening five
- * charged, the rest active — see `startingSiteStatus`), green to move,
+ * site's starting state and `level` (five sites charged at drain 0, the
+ * rest active at pressure 1 — see `startingSiteStatus`), green to move,
  * `ACTIONS_PER_PLY` actions remaining, nothing moved, ply 1, the given seed,
  * both sides at 0 energy, and the given game length.
  *
@@ -130,10 +138,26 @@ export function siteStateAt(
   return state.siteStates[squareName(square)]?.state;
 }
 
-/** A square's full site status (state and the ply it entered it), or `undefined` if it is not a site. */
+/** A square's full site status (state and level), or `undefined` if it is not a site. */
 export function siteStatusAt(
   state: GameState,
   square: Square,
 ): SiteStatus | undefined {
   return state.siteStates[squareName(square)];
+}
+
+/**
+ * The square names of every site that is `dormant` in the given state. Built
+ * fresh from whatever state is handed to it — this is how a caller captures
+ * "dormant before the ply began" for `runEndOfTurn`'s second argument (see
+ * that function's doc comment).
+ */
+export function dormantSiteNames(state: GameState): ReadonlySet<string> {
+  const names = new Set<string>();
+  for (const [name, status] of Object.entries(state.siteStates)) {
+    if (status.state === "dormant") {
+      names.add(name);
+    }
+  }
+  return names;
 }

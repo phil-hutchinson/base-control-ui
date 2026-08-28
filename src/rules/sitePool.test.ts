@@ -9,7 +9,12 @@
 
 import { describe, expect, it } from "vitest";
 import { runEndOfTurn } from "./endOfTurn";
-import { type GameState, siteStateAt, startingGameState } from "./gameState";
+import {
+  dormantSiteNames,
+  type GameState,
+  siteStateAt,
+  startingGameState,
+} from "./gameState";
 import { SITES, type SiteState, TARGET_CHARGED_SITES } from "./sites";
 
 /** A generous game length: this test drives `runEndOfTurn` directly and never consults `isGameOver`. */
@@ -37,7 +42,7 @@ function runEconomy(seed: number, plies: number): readonly EconomySample[] {
   const samples: EconomySample[] = [];
 
   for (let i = 0; i < plies; i++) {
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, dormantSiteNames(state));
     samples.push({
       charged: countInState(result.state, "charged"),
       active: countInState(result.state, "active"),
@@ -77,21 +82,23 @@ describe("the long-run site economy — Appendix B's randomness margin", () => {
     },
   );
 
-  it.each(SEEDS)(
-    "does not fall into lockstep: at most one node runs out in any single turn (seed %d)",
-    (seed) => {
-      const samples = runEconomy(seed, PLIES_TO_RUN);
+  // 0.11's "at most one node runs out per turn" lockstep guard is withdrawn
+  // under 0.12: two independently drawn drains coinciding is ordinary, not a
+  // bug (see the plan's D10). This file is rewritten properly against
+  // Appendix B's 0.12 premise in a later step of this story; removing the
+  // stale assertion here is the minimum needed to keep the suite green in
+  // the meantime.
 
-      for (const sample of samples) {
-        expect(sample.nodesRanOutThisPly).toBeLessThanOrEqual(1);
-      }
-    },
-  );
-
-  it("keeps roughly five sites dormant and seven active in the steady state", () => {
+  // 0.12's Appendix B predicts roughly two or three sites dormant and nine
+  // or ten active at any moment (a mixed node life of about twenty turns,
+  // recovery of about ten) — quite different from 0.11's roughly five and
+  // seven. Bounds below are widened generously around that; a tighter check,
+  // and the pressure-weighting property Appendix B also asks for, belongs to
+  // this file's full rewrite in a later step of this story.
+  it("keeps roughly two or three sites dormant and nine or ten active in the steady state", () => {
     const samples = runEconomy(20260819, PLIES_TO_RUN);
-    // Skip the opening stagger settling in; Appendix B's arithmetic is
-    // about the steady state, not the first few turns.
+    // Skip the opening settling in; Appendix B's arithmetic is about the
+    // steady state, not the first few turns.
     const steady = samples.slice(50);
 
     const meanDormant =
@@ -101,9 +108,9 @@ describe("the long-run site economy — Appendix B's randomness margin", () => {
       steady.reduce((total, sample) => total + sample.active, 0) /
       steady.length;
 
-    expect(meanDormant).toBeGreaterThan(3);
-    expect(meanDormant).toBeLessThan(7);
-    expect(meanActive).toBeGreaterThan(5);
-    expect(meanActive).toBeLessThan(9);
+    expect(meanDormant).toBeGreaterThan(0.5);
+    expect(meanDormant).toBeLessThan(4);
+    expect(meanActive).toBeGreaterThan(8);
+    expect(meanActive).toBeLessThan(12);
   });
 });

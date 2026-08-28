@@ -55,7 +55,7 @@ export function runChargeDraw(state: GameState): ChargeDrawResult {
       ...workingState,
       siteStates: {
         ...workingState.siteStates,
-        [name]: { state: "charged", enteredOnPly: workingState.plyNumber },
+        [name]: { state: "charged", level: 0 },
       },
       randomSeed: nextSeed,
     };
