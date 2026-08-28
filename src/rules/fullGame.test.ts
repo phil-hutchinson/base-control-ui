@@ -2,8 +2,8 @@
 // proves the collection (§8.4), the round arithmetic (§9) and the ending
 // work together as one. The action policy below is deterministic and lives
 // only in this file — the rules layer implements the rules, not how to play
-// them — and draws no randomness of its own, so it never perturbs §8.6's
-// seeded replacement draws.
+// them — and draws no randomness of its own, so it never perturbs §8.2's
+// seeded charge draws.
 
 import { describe, expect, it } from "vitest";
 import { COLUMN_LETTERS, type Square, squareName } from "./board";
@@ -45,7 +45,12 @@ function chebyshevDistance(a: Square, b: Square): number {
   return Math.max(columnDelta, rowDelta);
 }
 
-/** The distance from `square` to the nearest charged or active site right now. */
+/**
+ * The distance from `square` to the nearest charged or active site right
+ * now. Active means eligible to be charged (rules.md §8.1), so this heads
+ * for either a node or a site that might become one — heading for a
+ * dormant site would be pointless, since it cannot be charged next.
+ */
 function distanceToNearestChargedOrActive(
   state: GameState,
   square: Square,
@@ -66,8 +71,8 @@ function distanceToNearestChargedOrActive(
 
 /**
  * A deterministic greedy policy: head for a charged node first, otherwise
- * close the distance to the nearest charged or active site, otherwise
- * attack, otherwise pass. Evaluated fresh for every action.
+ * close the distance to the nearest charged-or-eligible-to-be-charged site,
+ * otherwise attack, otherwise pass. Evaluated fresh for every action.
  */
 function chooseAction(state: GameState): Action | undefined {
   const ships = state.ships;

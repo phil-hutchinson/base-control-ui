@@ -151,10 +151,12 @@ describe("applyMove", () => {
     );
   });
 
-  it("landing on an active site leaves it active: nothing a ship does changes a site's state (rules.md §8.2)", () => {
+  it("landing on a charged site leaves it charged: nothing a ship does changes a site's state (rules.md §8.2)", () => {
+    // A ship may only ever end a move on a charged site (rules.md §6) — an
+    // active or dormant destination is refused before it can be reached.
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      siteStates: { K8: "active" },
+      siteStates: { K8: ["charged", 1] },
       plyNumber: 5,
     });
 
@@ -187,10 +189,10 @@ describe("applyMove", () => {
     expect(movedShip?.square).toEqual(squareFromName("K8"));
   });
 
-  it("leaves a dormant site flown over unaffected", () => {
+  it("leaves an active site flown over unaffected", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      siteStates: { I8: ["dormant", 1] },
+      siteStates: { I8: ["active", 1] },
       plyNumber: 4,
     });
 
@@ -935,10 +937,10 @@ describe("applyAttack", () => {
     });
   });
 
-  it("un-strands by force: a ship stranded on a depleted site that is beaten in a fight is in a bay and owes nothing on its owner's next turn", () => {
+  it("un-strands by force: a ship stranded on a dormant site that is beaten in a fight is in a bay and owes nothing on its owner's next turn", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E5", 0), ship("red-1", "red", "F5", 2)],
-      siteStates: { E5: "depleted" },
+      siteStates: { E5: "dormant" },
       sideToMove: "red",
       actionsRemaining: 1,
     });
@@ -1090,10 +1092,10 @@ describe("the winner's advance (rules.md §7)", () => {
     },
   );
 
-  it("stops the advance one square short when the loser's square is a depleted site, a reachable version of the stop-short rule", () => {
+  it("stops the advance one square short when the loser's square is a dormant site, a reachable version of the stop-short rule", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H6", 2), ship("red-1", "red", "H8", 0)],
-      siteStates: { H8: "depleted" },
+      siteStates: { H8: "dormant" },
     });
 
     const result = applyAttack(state, "green-1", squareFromName("H8"));
@@ -1109,10 +1111,10 @@ describe("the winner's advance (rules.md §7)", () => {
     expect(loser && isBay(loser.square)).toBe(true);
   });
 
-  it("holds its ground on an adjacent attack onto a dormant site", () => {
+  it("holds its ground on an adjacent attack onto an active site", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H7", 3), ship("red-1", "red", "H8", 0)],
-      siteStates: { H8: "dormant" },
+      siteStates: { H8: "active" },
     });
 
     const result = applyAttack(state, "green-1", squareFromName("H8"));
@@ -1136,10 +1138,13 @@ describe("the winner's advance (rules.md §7)", () => {
     });
   });
 
-  it("landing on an active site during a winning advance leaves it active (reach: landed-on)", () => {
+  it("landing on a charged site during a winning advance leaves it charged (reach: landed-on)", () => {
+    // A winner may only ever end an advance on a charged site (rules.md
+    // §7) — an active or dormant candidate is skipped in favour of the
+    // furthest charged or ordinary square on the lane.
     const state = buildState({
       ships: [ship("green-1", "green", "G8", 4), ship("red-1", "red", "H8", 0)],
-      siteStates: { H8: "active" },
+      siteStates: { H8: ["charged", 1] },
       plyNumber: 4,
     });
 
@@ -1172,10 +1177,13 @@ describe("the winner's advance (rules.md §7)", () => {
     expect(result.state.siteStates.H8).toEqual(state.siteStates.H8);
   });
 
-  it("wakes nothing on a defender's win, even with an active site on the attacker's own square, on the lane, and on the bay the loser is placed in", () => {
+  it("wakes nothing on a defender's win, even with active sites on the lane and on the bay the loser is placed in", () => {
+    // The attacker's own square is charged, not active — an active site
+    // would strand the attacker itself (§8.5) and refuse the attack before
+    // any of this could be observed.
     const state = buildState({
       ships: [ship("green-1", "green", "H6", 1), ship("red-1", "red", "H8", 3)],
-      siteStates: { H6: "active", H7: "active", H15: "active" },
+      siteStates: { H6: "charged", H7: "active", H15: "active" },
     });
 
     const result = applyAttack(state, "green-1", squareFromName("H8"));
@@ -1191,11 +1199,14 @@ describe("the winner's advance (rules.md §7)", () => {
     );
   });
 
-  it("wakes nothing on a mutual return, even with an active site on both ships' own squares, on the lane, and on both bays the ships are placed in", () => {
+  it("wakes nothing on a mutual return, even with an active site on the defender's own square, on the lane, and on both bays the ships are placed in", () => {
+    // The attacker's own square is charged, not active — an active site
+    // would strand the attacker itself (§8.5) and refuse the attack before
+    // any of this could be observed.
     const state = buildState({
       ships: [ship("green-1", "green", "H6", 2), ship("red-1", "red", "H8", 2)],
       siteStates: {
-        H6: "active",
+        H6: "charged",
         H7: "active",
         H8: "active",
         H15: "active",
@@ -1268,7 +1279,7 @@ describe("nothing a ship does changes any site's state (rules.md §8.2)", () => 
         ship("red-2", "red", "O5", 0),
       ],
       siteStates: {
-        H8: "active",
+        H8: ["charged", 1],
         I8: ["dormant", 0],
         K5: ["charged", 0],
       },
@@ -1295,7 +1306,7 @@ describe("nothing a ship does changes any site's state (rules.md §8.2)", () => 
     }
     expect(afterRedMove.state.siteStates).toEqual(startingSiteStates);
 
-    // Green's next ply: a won fight whose winner advances onto an active site.
+    // Green's next ply: a won fight whose winner advances onto a charged site.
     const afterAttack = applyAttack(
       afterRedMove.state,
       "green-1",

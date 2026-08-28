@@ -8,12 +8,7 @@ import { SiteMarker } from "./SiteMarker";
 
 afterEach(cleanup);
 
-const STATES: readonly SiteState[] = [
-  "dormant",
-  "active",
-  "charged",
-  "depleted",
-];
+const STATES: readonly SiteState[] = ["active", "charged", "dormant"];
 
 const SQUARE_NAME = "H8";
 
@@ -33,13 +28,6 @@ interface ExpectedArtwork {
 // the expectation an assertion checks against, independently of
 // SiteMarker.tsx's own table.
 const EXPECTED_ARTWORK: Record<SiteState, ExpectedArtwork> = {
-  dormant: {
-    radius: "12",
-    stops: [
-      { offset: "0%", color: "#F1DBA5", opacity: "1" },
-      { offset: "100%", color: "#DAA520", opacity: "0.75" },
-    ],
-  },
   active: {
     radius: "24",
     stops: [
@@ -55,7 +43,7 @@ const EXPECTED_ARTWORK: Record<SiteState, ExpectedArtwork> = {
       { offset: "100%", color: "#F5DEB3", opacity: "1" },
     ],
   },
-  depleted: {
+  dormant: {
     radius: "70",
     stops: [
       { offset: "0%", color: "#808080", opacity: "1" },
@@ -167,11 +155,11 @@ describe("SiteMarker", () => {
     { cyclePosition: 0.5, expectedOffset: "37.5%" },
     { cyclePosition: 1, expectedOffset: "25%" },
   ])(
-    "moves depleted's middle stop to $expectedOffset at cycle position $cyclePosition",
+    "moves dormant's middle stop to $expectedOffset at cycle position $cyclePosition",
     ({ cyclePosition, expectedOffset }) => {
       const { container } = render(
         <SiteMarker
-          state="depleted"
+          state="dormant"
           squareName={SQUARE_NAME}
           cyclePosition={cyclePosition}
         />,
@@ -182,7 +170,7 @@ describe("SiteMarker", () => {
     },
   );
 
-  it.each(["charged", "depleted"] as const)(
+  it.each(["charged", "dormant"] as const)(
     "falls back to %s's start-of-cycle offset when no cycle position is given",
     (state) => {
       const { container } = render(

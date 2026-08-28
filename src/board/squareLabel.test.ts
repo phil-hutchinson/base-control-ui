@@ -56,13 +56,6 @@ describe("squareLabel", () => {
   it("names each site state", () => {
     expect(
       squareLabel({
-        square: squareAt("B", 4),
-        isBay: false,
-        siteState: "dormant",
-      }),
-    ).toBe("B4, dormant site");
-    expect(
-      squareLabel({
         square: squareAt("E", 5),
         isBay: false,
         siteState: "active",
@@ -79,9 +72,9 @@ describe("squareLabel", () => {
       squareLabel({
         square: squareAt("H", 4),
         isBay: false,
-        siteState: "depleted",
+        siteState: "dormant",
       }),
-    ).toBe("H4, depleted site");
+    ).toBe("H4, dormant site");
   });
 
   it("names an unmarked square exactly as before, when no mark is given", () => {
@@ -271,9 +264,9 @@ describe("squareLabel", () => {
       squareLabel({
         square: squareAt("H", 4),
         isBay: false,
-        siteState: "depleted",
+        siteState: "dormant",
         occupant: { side: "red", shields: 0 },
       }),
-    ).toBe("H4, depleted site, red ship, 0 shields");
+    ).toBe("H4, dormant site, red ship, 0 shields");
   });
 });

@@ -784,7 +784,46 @@ expected.
 
 ## Step 3 — The three states, the two clocks and the staggered opening
 
-Status: pending
+Status: committed
+
+Notes: Implemented per the plan, following the rotation mapping and D2–D19
+throughout. `sites.ts` was rewritten with the three-member `SiteState`, the
+re-based clocks (`hasChargedNodeFinished`/`hasDormantSiteFinishedCooling`
+sharing one `elapsed = ply - entered - 1` computation per D3),
+`TARGET_CHARGED_SITES`, the exported `STAGGERED_OPENING_CHARGED_SITES` table
+and `startingSiteStatus` (D5). `gameState.ts`, `endOfTurn.ts` (four steps,
+cooling last, charge draw left as a one-line placeholder for step 4),
+`moveLegality.ts` (D13's two refusal reasons), `stranded.ts`
+(`STRANDING_SITE_STATES`, found and fixed by reading per D7), `combat.ts`
+(`winnerAdvance`), `energy.ts`, `ScoreDisplay.tsx`, `SiteMarker.tsx` (D14's
+three artworks, radius-12 disc removed) and `announcements.ts`
+(`site-went-active` silent, refusal wording, `site-woken`/`site-cooled`
+removed) were all updated. `nodes.ts`, `nodes.test.ts` and `sitePool.test.ts`
+were deleted per D8/D17. The accessibility ledger's story-23 entries 1 and 2
+were reworded per D19 (dormant/active size clause dropped); story-20's entry
+was left as a historical record in its own vocabulary.
+
+One deviation from the plan's letter, not its intent: fixing the rotation in
+`ply.test.ts` surfaced five tests whose scenarios were only valid under the
+_old_ meaning of "active" (a landable, non-stranding state) and stopped being
+valid once "active" became a stranding, non-landable state under the new
+mapping — e.g. a ship built to stand on an "active" square while attacking
+now strands that ship and refuses the attack before the property under test
+can be observed. These were step-2-added tests, not explicitly listed for
+step 3, but they were failing after the rotation and needed a genuine
+scenario fix (not just a word substitution) to keep testing what they were
+meant to: landing/advancing tests were moved onto a charged destination
+(only state a ship may land on or a winner may advance onto now), and the two
+"wakes nothing" tests keep their active sites everywhere except the
+attacker's own square, which is charged so the attack itself stays legal.
+All five now pass and still exercise their original property.
+
+`npm run typecheck`, `npm run lint`, `npm test` (646 tests, down from 659
+after step 2 — `nodes.test.ts` and `sitePool.test.ts` were deleted outright
+and not yet replaced, per D8/D17; step 5 adds a new `sitePool.test.ts`) and
+`npm run format:check` all pass. `grep -rn "depleted"` and
+`grep -rn "STARTING_ACTIVE_SITES\|startingSiteState\b"` over `src/` both
+return nothing.
 
 Narrow `SiteState` to three members and carry the consequences through every
 consumer. This is the largest step in the plan, and **D7** explains why it

@@ -10,9 +10,9 @@ import { BAYS, isBay } from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
 import {
   CHARGED_LIFE_PLIES,
-  DEPLETED_COOLDOWN_PLIES,
+  DORMANT_COOLDOWN_PLIES,
   SITES,
-  startingSiteState,
+  startingSiteStatus,
 } from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
@@ -65,9 +65,9 @@ describe("Board", () => {
   it("names the centre and the far corners correctly", () => {
     render(<Board session={startingSession} onIntent={noop} />);
 
-    // H8 is the centre square and an active site at the start.
+    // H8 is the centre square and starts charged (the staggered opening).
     expect(
-      screen.getByRole("gridcell", { name: "H8, active site" }),
+      screen.getByRole("gridcell", { name: "H8, charged site" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("gridcell", { name: "A1" })).toBeInTheDocument();
     expect(screen.getByRole("gridcell", { name: "O15" })).toBeInTheDocument();
@@ -98,7 +98,7 @@ describe("Board", () => {
       const label = squareLabel({
         square,
         isBay: true,
-        siteState: startingSiteState(square),
+        siteState: startingSiteStatus(square)?.state,
         occupant: startingShipAt(square),
       });
       expect(screen.getByRole("gridcell", { name: label })).toBeInTheDocument();
@@ -112,7 +112,7 @@ describe("Board", () => {
         name: squareLabel({
           square: nonBaySquare,
           isBay: false,
-          siteState: startingSiteState(nonBaySquare),
+          siteState: startingSiteStatus(nonBaySquare)?.state,
           occupant: startingShipAt(nonBaySquare),
         }),
       }),
@@ -166,7 +166,7 @@ describe("Board", () => {
         name: squareLabel({
           square: entry.square,
           isBay: isBay(entry.square),
-          siteState: startingSiteState(entry.square),
+          siteState: startingSiteStatus(entry.square)?.state,
           occupant: entry,
         }),
       });
@@ -184,7 +184,7 @@ describe("Board", () => {
     const label = squareLabel({
       square,
       isBay: isBay(square),
-      siteState: startingSiteState(square),
+      siteState: startingSiteStatus(square)?.state,
       occupant: startingShipAt(square),
     });
     const cell = screen.getByRole("gridcell", { name: label });
@@ -240,9 +240,9 @@ describe("Board", () => {
       "F14",
       "J14",
     ];
-    const ACTIVE_SITE_SQUARES = ["H8", "E5", "K5", "E11", "K11"];
-    const DORMANT_SITE_SQUARES = SITE_SQUARES.filter(
-      (square) => !ACTIVE_SITE_SQUARES.includes(square),
+    const CHARGED_SITE_SQUARES = ["H8", "E5", "K5", "E11", "K11"];
+    const ACTIVE_SITE_SQUARES = SITE_SQUARES.filter(
+      (square) => !CHARGED_SITE_SQUARES.includes(square),
     );
 
     it("draws a site marker on exactly the seventeen sites from rules.md §3.2", () => {
@@ -251,15 +251,15 @@ describe("Board", () => {
       );
 
       expect(container.querySelectorAll(".site-marker")).toHaveLength(17);
-      for (const square of ACTIVE_SITE_SQUARES) {
+      for (const square of CHARGED_SITE_SQUARES) {
         const cell = screen.getByRole("gridcell", {
-          name: `${square}, active site`,
+          name: `${square}, charged site`,
         });
         expect(cell.querySelector(".site-marker")).toBeInTheDocument();
       }
-      for (const square of DORMANT_SITE_SQUARES) {
+      for (const square of ACTIVE_SITE_SQUARES) {
         const cell = screen.getByRole("gridcell", {
-          name: `${square}, dormant site`,
+          name: `${square}, active site`,
         });
         expect(cell.querySelector(".site-marker")).toBeInTheDocument();
       }
@@ -278,20 +278,17 @@ describe("Board", () => {
       expect(new Set(gradientIds).size).toBe(SITES.length);
     });
 
-    it("names exactly five sites active and twelve dormant, none charged or depleted", () => {
+    it("names exactly five sites charged and twelve active, none dormant", () => {
       render(<Board session={startingSession} onIntent={noop} />);
 
       expect(
-        screen.getAllByRole("gridcell", { name: /, active site$/ }),
+        screen.getAllByRole("gridcell", { name: /, charged site$/ }),
       ).toHaveLength(5);
       expect(
-        screen.getAllByRole("gridcell", { name: /, dormant site$/ }),
+        screen.getAllByRole("gridcell", { name: /, active site$/ }),
       ).toHaveLength(12);
       expect(
-        screen.queryByRole("gridcell", { name: /charged site/ }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("gridcell", { name: /depleted site/ }),
+        screen.queryByRole("gridcell", { name: /dormant site/ }),
       ).not.toBeInTheDocument();
     });
 
@@ -299,16 +296,16 @@ describe("Board", () => {
       render(<Board session={startingSession} onIntent={noop} />);
 
       expect(
-        screen.getByRole("gridcell", { name: "E5, active site" }),
+        screen.getByRole("gridcell", { name: "E5, charged site" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", { name: "H8, active site" }),
+        screen.getByRole("gridcell", { name: "H8, charged site" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", { name: "B4, dormant site" }),
+        screen.getByRole("gridcell", { name: "B4, active site" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", { name: "F2, dormant site" }),
+        screen.getByRole("gridcell", { name: "F2, active site" }),
       ).toBeInTheDocument();
     });
 
@@ -353,9 +350,10 @@ describe("Board", () => {
 
     const { container } = render(<Board session={session} onIntent={noop} />);
 
-    // H8 is a site as well as this ship's new square; both are named.
+    // H8 is a site as well as this ship's new square; both are named. It
+    // starts charged (the staggered opening).
     const cell = screen.getByRole("gridcell", {
-      name: "H8, active site, green ship, 0 shields",
+      name: "H8, charged site, green ship, 0 shields",
     });
     expect(cell).toBeInTheDocument();
     expect(cell.querySelector(".ship-icon--green")).toBeInTheDocument();
@@ -372,7 +370,7 @@ describe("Board", () => {
     // to the marker's middle gradient stop.
     function stateWithSite(
       square: Square,
-      state: "charged" | "depleted",
+      state: "charged" | "dormant",
       enteredOnPly: number,
       plyNumber: number,
     ): GameState {
@@ -397,14 +395,18 @@ describe("Board", () => {
       return stops?.[1]?.getAttribute("offset");
     }
 
-    it("shows a charged site at its start-of-cycle offset on the ply it woke", () => {
+    it("shows a charged site at its start-of-cycle offset on the first ply after it was charged", () => {
+      // The charged window starts the ply after enteredOnPly: both clocks
+      // now measure plies since the end of the ply the state was entered on
+      // (rules.md §8.3, §8.2).
       const enteredOnPly = 5;
+      const firstChargedPly = enteredOnPly + 1;
       const session: Session = {
         state: stateWithSite(
           squareAt("H", 8),
           "charged",
           enteredOnPly,
-          enteredOnPly,
+          firstChargedPly,
         ),
         selectedShipId: undefined,
         lastEvent: undefined,
@@ -416,7 +418,7 @@ describe("Board", () => {
 
     it("shows a charged site at its end-of-cycle offset on its last charged ply", () => {
       const enteredOnPly = 5;
-      const lastPly = enteredOnPly + CHARGED_LIFE_PLIES - 1;
+      const lastPly = enteredOnPly + CHARGED_LIFE_PLIES;
       const session: Session = {
         state: stateWithSite(
           squareAt("H", 8),
@@ -432,15 +434,15 @@ describe("Board", () => {
       expect(middleStopOffset(container, "charged")).toBe("50%");
     });
 
-    it("shows a depleted site at its start-of-cycle offset on its first cooling ply", () => {
-      // The depleted window starts the ply after enteredOnPly: the site
-      // was still charged for the whole of the ply it depleted on.
+    it("shows a dormant site at its start-of-cycle offset on its first cooling ply", () => {
+      // The dormant window starts the ply after enteredOnPly: the site was
+      // still charged for the whole of the ply it ran out on.
       const enteredOnPly = 5;
       const firstCoolingPly = enteredOnPly + 1;
       const session: Session = {
         state: stateWithSite(
           squareAt("H", 8),
-          "depleted",
+          "dormant",
           enteredOnPly,
           firstCoolingPly,
         ),
@@ -449,16 +451,16 @@ describe("Board", () => {
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
 
-      expect(middleStopOffset(container, "depleted")).toBe("50%");
+      expect(middleStopOffset(container, "dormant")).toBe("50%");
     });
 
-    it("shows a depleted site at its end-of-cycle offset on its last cooling ply", () => {
+    it("shows a dormant site at its end-of-cycle offset on its last cooling ply", () => {
       const enteredOnPly = 5;
-      const lastPly = enteredOnPly + DEPLETED_COOLDOWN_PLIES;
+      const lastPly = enteredOnPly + DORMANT_COOLDOWN_PLIES;
       const session: Session = {
         state: stateWithSite(
           squareAt("H", 8),
-          "depleted",
+          "dormant",
           enteredOnPly,
           lastPly,
         ),
@@ -467,7 +469,7 @@ describe("Board", () => {
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
 
-      expect(middleStopOffset(container, "depleted")).toBe("25%");
+      expect(middleStopOffset(container, "dormant")).toBe("25%");
     });
   });
 
@@ -890,7 +892,7 @@ describe("Board", () => {
   });
 
   describe("ship conditions", () => {
-    // A minimal, hand-built state: green-1 owes an action on a depleted
+    // A minimal, hand-built state: green-1 owes an action on a dormant
     // site, green-2 and green-3 are ordinary green ships elsewhere with a
     // normal move available (until the obligation binds), and red-1 is the
     // opponent, present to confirm it never carries a condition.
@@ -919,7 +921,7 @@ describe("Board", () => {
         ],
         siteStates: {
           [squareName(squareAt("H", 4))]: {
-            state: "depleted",
+            state: "dormant",
             enteredOnPly: 1,
           },
         },
@@ -943,7 +945,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn",
+          name: "H4, dormant site, green ship, 0 shields, stranded, must move this turn",
         }),
       ).toBeInTheDocument();
       // The obligation binds the turn's action, so green-2 and green-3 read
@@ -970,7 +972,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn, selected",
+          name: "H4, dormant site, green ship, 0 shields, stranded, must move this turn, selected",
         }),
       ).toBeInTheDocument();
     });
@@ -989,7 +991,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted site, green ship, 0 shields, stranded, must move this turn",
+          name: "H4, dormant site, green ship, 0 shields, stranded, must move this turn",
         }),
       ).toBeInTheDocument();
       // Green-2 has already acted this ply moving elsewhere, has no enemy

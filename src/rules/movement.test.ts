@@ -247,13 +247,12 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(destinations).toContain("H11");
   });
 
-  it("excludes a dormant or depleted destination, allows flying over either, and allows an active or charged destination", () => {
+  it("excludes an active or dormant destination, allows flying over either, and allows a charged destination", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7")],
       siteStates: {
-        G7: "dormant",
-        C7: "depleted",
-        E9: "active",
+        G7: "active",
+        C7: "dormant",
         G9: "charged",
       },
     });
@@ -263,23 +262,19 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(destinations).toContain("H7");
     expect(destinations).not.toContain("C7");
     expect(destinations).toContain("B7");
-    expect(destinations).toContain("E9");
     expect(destinations).toContain("G9");
 
     expect(moveRefusalReason(state, "green-1", squareFromName("G7"))).toBe(
-      "destination-dormant-site",
+      "destination-active-site",
     );
     expect(moveRefusalReason(state, "green-1", squareFromName("C7"))).toBe(
-      "destination-depleted-site",
+      "destination-dormant-site",
     );
     expect(
       moveRefusalReason(state, "green-1", squareFromName("H7")),
     ).toBeUndefined();
     expect(
       moveRefusalReason(state, "green-1", squareFromName("B7")),
-    ).toBeUndefined();
-    expect(
-      moveRefusalReason(state, "green-1", squareFromName("E9")),
     ).toBeUndefined();
     expect(
       moveRefusalReason(state, "green-1", squareFromName("G9")),
@@ -327,9 +322,8 @@ describe("legalDestinations and moveRefusalReason", () => {
         state: buildState({
           ships: [ship("green-1", "green", "E7")],
           siteStates: {
-            G7: "dormant",
-            C7: "depleted",
-            E9: "active",
+            G7: "active",
+            C7: "dormant",
             G9: "charged",
           },
         }),
@@ -343,7 +337,7 @@ describe("legalDestinations and moveRefusalReason", () => {
             ship("green-1", "green", "E7"),
             ship("green-2", "green", "A1"),
           ],
-          siteStates: { E7: "dormant" },
+          siteStates: { E7: "active" },
           actionsRemaining: 1,
         }),
         shipId: "green-2",
@@ -369,7 +363,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     });
     const sites = buildState({
       ships: [ship("green-1", "green", "E7")],
-      siteStates: { G7: "dormant", C7: "depleted" },
+      siteStates: { G7: "active", C7: "dormant" },
     });
     const notYourTurn = buildState({
       ships: [ship("green-1", "green", "H8")],
@@ -381,7 +375,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     });
     const stranded = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actionsRemaining: 1,
     });
 
@@ -394,8 +388,8 @@ describe("legalDestinations and moveRefusalReason", () => {
       [blocking, "green-1", "O15", "out-of-range"],
       [blocking, "green-1", "H11", "path-blocked"],
       [blocking, "green-1", "H10", "destination-occupied"],
-      [sites, "green-1", "G7", "destination-dormant-site"],
-      [sites, "green-1", "C7", "destination-depleted-site"],
+      [sites, "green-1", "G7", "destination-active-site"],
+      [sites, "green-1", "C7", "destination-dormant-site"],
     ];
 
     for (const [state, shipId, square, reason] of expectations) {
@@ -434,12 +428,12 @@ describe("sideToMoveHasLegalMove", () => {
   });
 
   it("stays unaffected by the §8.5 obligation: a side that can move can still move", () => {
-    // green-1 is stranded on a dormant site and the obligation binds, so
+    // green-1 is stranded on an active site and the obligation binds, so
     // moving green-2 is refused — but the side still has a legal move
     // (green-1's own), so the §5 pass guard must not fire.
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actionsRemaining: 1,
     });
 
@@ -464,7 +458,7 @@ describe("legalDestinations and the §8.5 obligation", () => {
   it("empties for a non-owed ship with one stranded ship, and stays open for the owed one", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actionsRemaining: 1,
     });
 
@@ -475,7 +469,7 @@ describe("legalDestinations and the §8.5 obligation", () => {
   it("reopens for the rest of the fleet once the stranded ship has moved", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
@@ -490,7 +484,7 @@ describe("legalDestinations and the §8.5 obligation", () => {
         ship("green-2", "green", "A1"),
         ship("green-3", "green", "D1"),
       ],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actionsRemaining: 1,
     });
 

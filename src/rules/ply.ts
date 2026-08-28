@@ -49,7 +49,7 @@ export interface PassEffect {
   readonly endOfTurn: readonly EndOfTurnEffect[];
 }
 
-/** A ply ended because its last action was spent (rules.md §5, §8.7). */
+/** A ply ended because its last action was spent (rules.md §5, §8.6). */
 export interface PlyEndedEffect {
   readonly type: "ply-ended";
   readonly side: Side;
@@ -152,7 +152,7 @@ export type ApplyAttackResult = AppliedAttack | RefusedAttack;
  * the end-of-turn sequence runs for it (a passed ply is still a turn), the
  * acted-this-ply marks clear, the action count resets to
  * `ACTIONS_PER_PLY`, the ply number advances and the other side becomes the
- * side to move (rules.md §5, §8.7). Only the side to move is checked — the
+ * side to move (rules.md §5, §8.6). Only the side to move is checked — the
  * side passed to is not — so this makes exactly one pass, never a second one
  * back.
  *

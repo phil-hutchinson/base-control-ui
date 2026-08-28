@@ -90,17 +90,15 @@ information does not depend on seeing the ring.
 Source: `doc/plan/00000023-update-node-visual/implementation-plan.md` decision
 D14, and `doc/plan/00000023-update-node-visual/story.md`, "Out of scope".
 
-### 1. Charged and depleted are now the same shape, differing by colour alone
+### 1. Charged and dormant are now the same shape, differing by colour alone
 
 Item 3 above, from story 20, described depleted, dormant and active sharing
 one shape and border, distinguished only by colour, with charged
 "unmistakably different." This story redraws all four states with new
-artwork instead of resolving that: dormant and active now differ from each
-other in size as well as hue, so that pair is no longer colour-alone. But
-charged and depleted have become the same shape — a wide circle filling the
-square, one gold-and-wheat, the other grey-and-white — differing only by
-colour. The colour-alone gap moves to a different pair of states rather than
-closing.
+artwork instead of resolving that: charged and depleted (renamed dormant by
+story 27) have become the same shape — a wide circle filling the square, one
+gold-and-wheat, the other grey-and-white — differing only by colour. The
+colour-alone gap moves to a different pair of states rather than closing.
 
 As before, a site's state still reaches assistive technology through the
 square's accessible name (`src/board/squareLabel.ts`), unchanged by this
@@ -108,10 +106,10 @@ story, so a screen-reader user is unaffected.
 
 Where: `src/board/SiteMarker.tsx`, `src/board/SiteMarker.css`.
 
-### 2. The charged/depleted distinction is gameplay-relevant, not just visual
+### 2. The charged/dormant distinction is gameplay-relevant, not just visual
 
 A charged node pays energy to the player standing on it at the end of their
-turn; a depleted node pays nothing. Now that the two share one shape, telling
+turn; a dormant node pays nothing. Now that the two share one shape, telling
 them apart rests entirely on gold-and-wheat against grey-and-white — colours
 that are hard or impossible to separate without colour vision. A player who
 cannot make that separation can lose track of which nodes are still worth

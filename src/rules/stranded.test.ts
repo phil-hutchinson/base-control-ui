@@ -74,27 +74,21 @@ function boxingShips(origin: string): readonly Ship[] {
 }
 
 describe("strandedShipIds", () => {
-  it("counts a ship on a dormant or depleted site, unmoved, with a legal move", () => {
+  it("counts a ship on an active or dormant site, unmoved, with a legal move", () => {
+    const active = buildState({
+      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
+      siteStates: { E7: "active" },
+    });
+    expect(strandedShipIds(active)).toEqual(["green-1"]);
+
     const dormant = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
     });
     expect(strandedShipIds(dormant)).toEqual(["green-1"]);
-
-    const depleted = buildState({
-      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "depleted" },
-    });
-    expect(strandedShipIds(depleted)).toEqual(["green-1"]);
   });
 
-  it("leaves out an active or charged site, and a square that is not a site at all", () => {
-    const active = buildState({
-      ships: [ship("green-1", "green", "E7")],
-      siteStates: { E7: "active" },
-    });
-    expect(strandedShipIds(active)).toEqual([]);
-
+  it("leaves out a charged site, and a square that is not a site at all", () => {
     const charged = buildState({
       ships: [ship("green-1", "green", "E7")],
       siteStates: { E7: "charged" },
@@ -109,7 +103,7 @@ describe("strandedShipIds", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "A1"), ship("red-1", "red", "E7")],
       sideToMove: "green",
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
     });
 
     expect(strandedShipIds(state)).toEqual([]);
@@ -119,7 +113,7 @@ describe("strandedShipIds", () => {
   it("drops a ship that has already acted this ply", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
@@ -132,7 +126,7 @@ describe("strandedShipIds", () => {
     const boxedInSquare = "H8";
     const state = buildState({
       ships: [boxedInShip(boxedInSquare), ...boxingShips(boxedInSquare)],
-      siteStates: { [boxedInSquare]: "depleted" },
+      siteStates: { [boxedInSquare]: "dormant" },
       actionsRemaining: 1,
     });
 
@@ -154,14 +148,14 @@ describe("strandedObligationBinds", () => {
   it("binds from the first action with one stranded ship, and is free again once it has moved", () => {
     const beforeMoving = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actionsRemaining: 1,
     });
     expect(strandedObligationBinds(beforeMoving)).toBe(true);
 
     const afterMoving = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
@@ -175,7 +169,7 @@ describe("strandedObligationBinds", () => {
         ship("green-2", "green", "K5"),
         ship("green-3", "green", "A1"),
       ],
-      siteStates: { E7: "dormant", K5: "depleted" },
+      siteStates: { E7: "active", K5: "dormant" },
       actionsRemaining: 1,
     });
     expect(strandedShipIds(state)).toEqual(["green-1", "green-2"]);
@@ -189,7 +183,7 @@ describe("strandedObligationBinds", () => {
         ship("green-2", "green", "K5"),
         ship("green-3", "green", "A1"),
       ],
-      siteStates: { K5: "depleted" },
+      siteStates: { K5: "dormant" },
       actionsRemaining: 1,
     });
     expect(strandedShipIds(nextPly)).toEqual(["green-2"]);
@@ -204,7 +198,7 @@ describe("strandedObligationBinds", () => {
         ship("green-3", "green", "N5"),
         ship("green-4", "green", "A1"),
       ],
-      siteStates: { E7: "dormant", K5: "depleted", N5: "dormant" },
+      siteStates: { E7: "active", K5: "dormant", N5: "active" },
       actionsRemaining: 1,
     });
     expect(strandedShipIds(state)).toEqual(["green-1", "green-2", "green-3"]);
@@ -219,7 +213,7 @@ describe("strandedObligationBinds", () => {
         ship("green-3", "green", "N5"),
         ship("green-4", "green", "A1"),
       ],
-      siteStates: { K5: "depleted", N5: "dormant" },
+      siteStates: { K5: "dormant", N5: "active" },
       actionsRemaining: 1,
     });
     expect(strandedShipIds(nextPly)).toEqual(["green-2", "green-3"]);
@@ -231,7 +225,7 @@ describe("moveRefusalReason with the §8.5 obligation", () => {
   it("binds the first action with one stranded ship: another ship is refused, the stranded ship is allowed", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actionsRemaining: 1,
     });
 
@@ -246,7 +240,7 @@ describe("moveRefusalReason with the §8.5 obligation", () => {
   it("frees the second action once the stranded ship has moved", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
@@ -263,7 +257,7 @@ describe("moveRefusalReason with the §8.5 obligation", () => {
         ship("green-2", "green", "A1"),
         ship("green-3", "green", "D1"),
       ],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actedThisPly: ["green-2"],
       actionsRemaining: 1,
     });
@@ -276,19 +270,19 @@ describe("moveRefusalReason with the §8.5 obligation", () => {
     ).toBeUndefined();
   });
 
-  it("both dormant and depleted count on the same terms", () => {
+  it("both active and dormant count on the same terms", () => {
+    const active = buildState({
+      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
+      siteStates: { E7: "active" },
+      actionsRemaining: 1,
+    });
     const dormant = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       siteStates: { E7: "dormant" },
       actionsRemaining: 1,
     });
-    const depleted = buildState({
-      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "depleted" },
-      actionsRemaining: 1,
-    });
 
-    for (const state of [dormant, depleted]) {
+    for (const state of [active, dormant]) {
       expect(moveRefusalReason(state, "green-2", squareFromName("A2"))).toBe(
         "another-ship-stranded",
       );
@@ -305,7 +299,7 @@ describe("moveRefusalReason with the §8.5 obligation", () => {
         ship("green-2", "green", "A1"),
         ship("green-3", "green", "D1"),
       ],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actedThisPly: ["green-2"],
       actionsRemaining: 1,
     });
@@ -323,7 +317,7 @@ describe("sideToMoveHasLegalMove alongside the obligation", () => {
     const boxedInSquare = "H8";
     const state = buildState({
       ships: [boxedInShip(boxedInSquare), ...boxingShips(boxedInSquare)],
-      siteStates: { [boxedInSquare]: "depleted" },
+      siteStates: { [boxedInSquare]: "dormant" },
       actionsRemaining: 1,
     });
 
@@ -338,7 +332,7 @@ describe("sideToMoveHasLegalMove alongside the obligation", () => {
         ship("green-2", "green", "A1"),
         ship("green-3", "green", "D1"),
       ],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actedThisPly: ["green-2"],
       actionsRemaining: 1,
     });
@@ -357,7 +351,7 @@ describe("sideToMoveHasLegalMove alongside the obligation", () => {
         ship("green-2", "green", "A1"),
         ship("green-3", "green", "D1"),
       ],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
       actionsRemaining: 1,
     });
 

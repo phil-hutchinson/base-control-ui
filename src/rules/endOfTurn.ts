@@ -1,7 +1,9 @@
-// §8.7's end-of-turn sequence: the five steps run once at the end of every
-// ply, in the document's order. Reads `state.sideToMove` as the player who
-// just moved and `state.plyNumber` as the ply just played, so `ply.ts` must
-// call this before either changes.
+// §8.6's end-of-turn sequence: the steps run once at the end of every ply,
+// in the document's order. Reads `state.sideToMove` as the player who just
+// moved and `state.plyNumber` as the ply just played, so `ply.ts` must call
+// this before either changes. The charge draw (§8.2, §8.6 step 4) is not
+// implemented yet — it arrives in the next step; for now cooling a dormant
+// site runs last, after the run-out step, per §8.6.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
@@ -9,18 +11,13 @@ import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
 import type { Side, ShipId } from "./fleet";
 import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
 import {
-  type SiteCooledEffect,
-  type SiteWokenEffect,
-  drawReplacements,
-} from "./nodes";
-import {
   hasChargedNodeFinished,
-  hasDepletedSiteFinishedCooling,
+  hasDormantSiteFinishedCooling,
   SITES,
 } from "./sites";
 import { MAX_SHIELDS, type ShieldCount } from "./shields";
 
-/** A ship on a charged node gained a shield at the end of its side's turn (§8.7 step 1, §4.1). */
+/** A ship on a charged node gained a shield at the end of its side's turn (§8.6 step 1, §4.1). */
 export interface ShieldGainedEffect {
   readonly type: "shield-gained";
   readonly shipId: ShipId;
@@ -29,7 +26,7 @@ export interface ShieldGainedEffect {
   readonly shields: ShieldCount;
 }
 
-/** The side that just played collected energy for the charged nodes it holds (§8.7 step 2, §8.4). */
+/** The side that just played collected energy for the charged nodes it holds (§8.6 step 2, §8.4). */
 export interface EnergyCollectedEffect {
   readonly type: "energy-collected";
   readonly side: Side;
@@ -38,13 +35,13 @@ export interface EnergyCollectedEffect {
   readonly squares: readonly Square[];
 }
 
-/** A charged node finished its nine turns and went depleted (§8.7 step 4, §8.3). */
+/** A charged node finished its nine turns and went dormant (§8.6 step 3, §8.3). */
 export interface NodeRanOutEffect {
   readonly type: "node-ran-out";
   readonly square: Square;
 }
 
-/** A ship was left standing on a site that ran out underneath it (§8.7 step 4, §8.5). */
+/** A ship was left standing on a site that ran out underneath it (§8.6 step 3, §8.5). */
 export interface ShipStrandedEffect {
   readonly type: "ship-stranded";
   readonly shipId: ShipId;
@@ -52,14 +49,19 @@ export interface ShipStrandedEffect {
   readonly square: Square;
 }
 
+/** A dormant site finished cooling down and went active (§8.6 step 5, §8.2). */
+export interface SiteWentActiveEffect {
+  readonly type: "site-went-active";
+  readonly square: Square;
+}
+
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
 export type EndOfTurnEffect =
   | ShieldGainedEffect
   | EnergyCollectedEffect
-  | SiteCooledEffect
   | NodeRanOutEffect
   | ShipStrandedEffect
-  | SiteWokenEffect;
+  | SiteWentActiveEffect;
 
 /** The state resulting from the end-of-turn sequence, and the effects it produced. */
 export interface EndOfTurnResult {
@@ -68,10 +70,11 @@ export interface EndOfTurnResult {
 }
 
 /**
- * Runs §8.7's five steps, in order, for the ply that is ending. `state`'s
- * `sideToMove` is read as the player who just played that ply and
+ * Runs §8.6's end-of-turn steps, in order, for the ply that is ending.
+ * `state`'s `sideToMove` is read as the player who just played that ply and
  * `plyNumber` as the ply itself — the caller runs this **before** swapping
- * sides or advancing the ply counter.
+ * sides or advancing the ply counter. The charge draw (§8.6 step 4) is not
+ * implemented yet, so after this step a run-out node is not replaced.
  */
 export function runEndOfTurn(state: GameState): EndOfTurnResult {
   const side = state.sideToMove;
@@ -122,30 +125,9 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     });
   }
 
-  // Step 3: depleted sites that have finished cooling go dormant (§8.6).
-  let siteStates = workingState.siteStates;
-  for (const square of SITES) {
-    const name = squareName(square);
-    const status = siteStates[name];
-    if (
-      status === undefined ||
-      status.state !== "depleted" ||
-      !hasDepletedSiteFinishedCooling(status.enteredOnPly, plyNumber)
-    ) {
-      continue;
-    }
-    siteStates = {
-      ...siteStates,
-      [name]: { state: "dormant", enteredOnPly: plyNumber },
-    };
-    effects.push({ type: "site-cooled", square });
-  }
-  workingState = { ...workingState, siteStates };
-
-  // Step 4: charged nodes that have finished their nine turns go depleted
+  // Step 3: charged nodes that have finished their nine turns go dormant
   // (§8.3), stranding any ship left standing on them (§8.5).
-  let ranOutCount = 0;
-  siteStates = workingState.siteStates;
+  let siteStates = workingState.siteStates;
   for (const square of SITES) {
     const name = squareName(square);
     const status = siteStates[name];
@@ -158,10 +140,9 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     }
     siteStates = {
       ...siteStates,
-      [name]: { state: "depleted", enteredOnPly: plyNumber },
+      [name]: { state: "dormant", enteredOnPly: plyNumber },
     };
     effects.push({ type: "node-ran-out", square });
-    ranOutCount += 1;
 
     const occupant = occupants.get(name);
     if (occupant !== undefined) {
@@ -175,14 +156,32 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   }
   workingState = { ...workingState, siteStates };
 
-  // Step 5: one replacement draw for each node that just ran out, so five
-  // sites are active or charged again (§8.6). Comes after step 3 so a site
-  // freed this same ply is drawable.
-  if (ranOutCount > 0) {
-    const draw = drawReplacements(workingState, ranOutCount);
-    workingState = draw.state;
-    effects.push(...draw.effects);
+  // Step 4: the charge draw (§8.2) is not implemented yet — it arrives in
+  // the next step, which inserts it here, ahead of step 5 below.
+
+  // Step 5: dormant sites that have finished cooling go active (§8.2). This
+  // runs last, deliberately: it is what makes a site spend at least one
+  // whole turn visibly active before the charge draw can pick it, rather
+  // than going dormant -> active -> charged inside a single end-of-turn
+  // sequence.
+  siteStates = workingState.siteStates;
+  for (const square of SITES) {
+    const name = squareName(square);
+    const status = siteStates[name];
+    if (
+      status === undefined ||
+      status.state !== "dormant" ||
+      !hasDormantSiteFinishedCooling(status.enteredOnPly, plyNumber)
+    ) {
+      continue;
+    }
+    siteStates = {
+      ...siteStates,
+      [name]: { state: "active", enteredOnPly: plyNumber },
+    };
+    effects.push({ type: "site-went-active", square });
   }
+  workingState = { ...workingState, siteStates };
 
   return { state: workingState, effects };
 }

@@ -88,15 +88,6 @@ describe("chargedNodesHeldBy", () => {
     expect(chargedNodesHeldBy(state, "green")).toEqual([]);
   });
 
-  it("does not count a ship on a depleted site", () => {
-    const state = buildState({
-      siteStates: { H8: "depleted" },
-      ships: [ship("green-1", "green", "H8")],
-    });
-
-    expect(chargedNodesHeldBy(state, "green")).toEqual([]);
-  });
-
   it("does not count a ship on a dormant site", () => {
     const state = buildState({
       siteStates: { H8: "dormant" },

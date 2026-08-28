@@ -125,8 +125,8 @@ export type MoveRefusalReason =
   | "out-of-range"
   | "path-blocked"
   | "destination-occupied"
+  | "destination-active-site"
   | "destination-dormant-site"
-  | "destination-depleted-site"
   | "game-over";
 
 /** The ship with the given id in this state, or throws if there is none. */
@@ -176,11 +176,11 @@ export function sixOnlyMoveRefusalReason(
   }
 
   const siteState = siteStateAt(state, destination);
+  if (siteState === "active") {
+    return "destination-active-site";
+  }
   if (siteState === "dormant") {
     return "destination-dormant-site";
-  }
-  if (siteState === "depleted") {
-    return "destination-depleted-site";
   }
 
   return undefined;

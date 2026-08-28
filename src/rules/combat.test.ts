@@ -311,7 +311,7 @@ describe("attackRefusalReason / legalTargets with the §8.5 obligation", () => {
         ship("red-1", "red", "E8", 0),
         ship("red-2", "red", "A2", 0),
       ],
-      siteStates: { E7: "dormant" },
+      siteStates: { E7: "active" },
     });
 
     expect(attackRefusalReason(state, "green-2", squareFromName("A2"))).toBe(
@@ -356,7 +356,7 @@ describe("attackRefusalReason / legalTargets with the §8.5 obligation", () => {
         ship("green-2", "green", "B2", 2),
         ship("red-5", "red", "B1", 0),
       ],
-      siteStates: { [boxedInSquare]: "depleted" },
+      siteStates: { [boxedInSquare]: "dormant" },
       actionsRemaining: 1,
     });
 
@@ -622,7 +622,7 @@ describe("winnerAdvance", () => {
   });
 
   it("stops one square short when the loser's square is a dead site", () => {
-    const state = buildState({ ships: [], siteStates: { H8: "dormant" } });
+    const state = buildState({ ships: [], siteStates: { H8: "active" } });
     const advance = winnerAdvance(state, laneOf("H5", "H8"));
 
     expect(advance).toBeDefined();
@@ -633,7 +633,7 @@ describe("winnerAdvance", () => {
   it("stops two squares short when the loser's square and the one before it are both dead", () => {
     const state = buildState({
       ships: [],
-      siteStates: { H7: "depleted", H8: "dormant" },
+      siteStates: { H7: "dormant", H8: "active" },
     });
     const advance = winnerAdvance(state, laneOf("H5", "H8"));
 
@@ -643,7 +643,7 @@ describe("winnerAdvance", () => {
   });
 
   it("holds its ground when the only square on the lane is dead", () => {
-    const state = buildState({ ships: [], siteStates: { H6: "dormant" } });
+    const state = buildState({ ships: [], siteStates: { H6: "active" } });
     const advance = winnerAdvance(state, laneOf("H5", "H6"));
 
     expect(advance).toBeUndefined();
@@ -663,7 +663,7 @@ describe("winnerAdvance", () => {
   it("ignores an occupied square that lies beyond the square the winner actually stops on", () => {
     const state = buildState({
       ships: [ship("red-1", "red", "H8", 0)],
-      siteStates: { H8: "dormant" },
+      siteStates: { H8: "active" },
     });
     const advance = winnerAdvance(state, laneOf("H5", "H8"));
 
@@ -677,18 +677,20 @@ describe("winnerAdvance", () => {
     // handed in real play: `sevenOnlyAttackRefusalReason` refuses a bay
     // target (rules.md §3.1) before `attackReach`'s lane is ever passed to
     // it. The sweep mirrors that precondition rather than re-deriving it.
-    const allDepleted = siteStatuses(
+    // Every site blocks the advance in one extreme (dormant) and none does
+    // in the other (charged is the only state a winner may end on).
+    const allDormant = siteStatuses(
       Object.fromEntries(
-        SITES.map((site) => [squareName(site), "depleted" as SiteState]),
+        SITES.map((site) => [squareName(site), "dormant" as SiteState]),
       ),
     );
-    const allActive = siteStatuses(
+    const allCharged = siteStatuses(
       Object.fromEntries(
-        SITES.map((site) => [squareName(site), "active" as SiteState]),
+        SITES.map((site) => [squareName(site), "charged" as SiteState]),
       ),
     );
 
-    for (const siteStates of [allDepleted, allActive]) {
+    for (const siteStates of [allDormant, allCharged]) {
       const state: GameState = { ...buildState({ ships: [] }), siteStates };
 
       for (const column of COLUMN_LETTERS) {

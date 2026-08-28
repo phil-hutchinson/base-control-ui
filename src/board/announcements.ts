@@ -150,10 +150,11 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
 /**
  * The clauses an end-of-turn sequence produced, in the order the sequence
  * produced them. All of a sequence's shield gains are grouped into one
- * clause; `site-cooled` produces no clause at all — a depleted site quietly
- * returning to the dormant pool is a board change, not a player event. A
- * zero collection produces no `energy-collected` effect at all (rules.md
- * §8.4), so there is nothing here to skip for that case.
+ * clause; `site-went-active` produces no clause at all — an active site is
+ * not a node, produces nothing and cannot be stopped on, so a site quietly
+ * becoming eligible for the charge draw is a board change, not a player
+ * event. A zero collection produces no `energy-collected` effect at all
+ * (rules.md §8.4), so there is nothing here to skip for that case.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -168,7 +169,7 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   for (const effect of effects) {
     switch (effect.type) {
       case "shield-gained":
-      case "site-cooled":
+      case "site-went-active":
         break;
       case "energy-collected":
         clauses.push(energyCollectedClause(effect));
@@ -179,13 +180,6 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
       case "ship-stranded":
         clauses.push(
           `${capitalize(effect.side)} ship at ${squareName(effect.square)} is stranded and must be moved clear next turn.`,
-        );
-        break;
-      case "site-woken":
-        clauses.push(
-          effect.wokeInto === "charged"
-            ? `A new node woke at ${squareName(effect.square)}, already charged because a ship was standing there.`
-            : `A new node woke at ${squareName(effect.square)}.`,
         );
         break;
     }
@@ -357,10 +351,10 @@ function rejectionSentence(event: RejectedEvent): string {
       return `Another ship is in the way of ${square}.`;
     case "destination-occupied":
       return `${square} is occupied.`;
+    case "destination-active-site":
+      return `${square} is an active site — nothing has charged there yet, so a ship cannot stop there.`;
     case "destination-dormant-site":
-      return `${square} is a dormant site — a ship cannot stop there.`;
-    case "destination-depleted-site":
-      return `${square} is a depleted site — a ship cannot stop there.`;
+      return `${square} is a dormant site — it has run out and is cooling down, so a ship cannot stop there.`;
     case "attacker-in-bay":
       return "A ship in a bay cannot attack. Move it out first.";
     case "target-in-bay":

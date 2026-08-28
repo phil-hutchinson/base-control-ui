@@ -256,14 +256,14 @@ describe("announcementFor", () => {
     ["path-blocked", squareAt("C", 8), "Another ship is in the way of C8."],
     ["destination-occupied", squareAt("C", 7), "C7 is occupied."],
     [
-      "destination-dormant-site",
+      "destination-active-site",
       squareAt("D", 8),
-      "D8 is a dormant site — a ship cannot stop there.",
+      "D8 is an active site — nothing has charged there yet, so a ship cannot stop there.",
     ],
     [
-      "destination-depleted-site",
+      "destination-dormant-site",
       squareAt("H", 4),
-      "H4 is a depleted site — a ship cannot stop there.",
+      "H4 is a dormant site — it has run out and is cooling down, so a ship cannot stop there.",
     ],
     [
       "attacker-in-bay",
@@ -330,7 +330,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("announces a replacement waking active", () => {
+  it("says nothing at all for a dormant site going active (§8.2, §8.6)", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -342,47 +342,13 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           type: "ply-ended",
           side: "green",
           sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "site-woken",
-              square: squareAt("D", 8),
-              wokeInto: "active",
-            },
-          ],
+          endOfTurn: [{ type: "site-went-active", square: squareAt("D", 8) }],
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. A new node woke at D8. Red's turn, 1 action left.",
-    );
-  });
-
-  it("announces a replacement waking already charged, under a ship", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-3",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "site-woken",
-              square: squareAt("D", 8),
-              wokeInto: "charged",
-            },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. A new node woke at D8, already charged because a ship was standing there. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Red's turn, 1 action left.",
     );
   });
 
@@ -549,28 +515,6 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("says nothing at all for a site cooling back to dormant", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-3",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [{ type: "site-cooled", square: squareAt("N", 4) }],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Red's turn, 1 action left.",
-    );
-  });
-
   it("announces a full end-of-turn sequence in the order it was produced", () => {
     const event: MovedEvent = {
       type: "moved",
@@ -591,7 +535,6 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               square: squareAt("K", 5),
               shields: 4,
             },
-            { type: "site-cooled", square: squareAt("N", 4) },
             { type: "node-ran-out", square: squareAt("K", 5) },
             {
               type: "ship-stranded",
@@ -599,11 +542,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               side: "green",
               square: squareAt("K", 5),
             },
-            {
-              type: "site-woken",
-              square: squareAt("D", 8),
-              wokeInto: "active",
-            },
+            { type: "site-went-active", square: squareAt("N", 4) },
           ],
         },
       ],
@@ -614,7 +553,6 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         "Green ship at K5 gained a shield, reaching the cap of 4. " +
         "The node at K5 ran out. " +
         "Green ship at K5 is stranded and must be moved clear next turn. " +
-        "A new node woke at D8. " +
         "Red's turn, 1 action left.",
     );
   });

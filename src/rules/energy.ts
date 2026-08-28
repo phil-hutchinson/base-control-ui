@@ -14,8 +14,8 @@ const ENERGY_BY_NODES_HELD: readonly number[] = [0, 1, 3, 6, 10, 15];
 
 /**
  * The energy paid for holding `nodesHeld` charged nodes (rules.md §8.4).
- * Throws a `RangeError` outside 0–5: exactly five sites are active or
- * charged at any moment (§8.1), so a sixth held node is a bug in the caller,
+ * Throws a `RangeError` outside 0–5: the board never charges more than five
+ * sites at once (§8.1, §8.2), so a sixth held node is a bug in the caller,
  * not a case to absorb.
  */
 export function energyForNodesHeld(nodesHeld: number): number {
@@ -36,10 +36,10 @@ export function energyForNodesHeld(nodesHeld: number): number {
 /**
  * The charged nodes `side` is standing on right now, in `SITES` order. A
  * node counts only if one of that side's ships occupies its square **and**
- * the square's site state is `charged` (rules.md §8.4) — an active,
- * depleted or dormant site pays nothing, and neither does a node a ship
- * merely flew over, which this cannot see because it reads the state at the
- * moment asked.
+ * the square's site state is `charged` (rules.md §8.4) — an active or
+ * dormant site pays nothing, and neither does a node a ship merely flew
+ * over, which this cannot see because it reads the state at the moment
+ * asked.
  */
 export function chargedNodesHeldBy(
   state: GameState,
