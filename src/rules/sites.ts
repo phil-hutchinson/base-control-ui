@@ -170,14 +170,20 @@ export function startingSiteStatus(
  * position; none is undefined.
  */
 export function siteCyclePosition(state: SiteState, level: number): number {
+  const denominator = state === "active" ? PRESSURE_CAP - 1 : NODE_CAPACITY;
+
+  if (denominator <= 0) {
+    return 0;
+  }
+
   let raw: number;
 
   if (state === "charged") {
-    raw = level / NODE_CAPACITY;
+    raw = level / denominator;
   } else if (state === "dormant") {
-    raw = 1 - level / NODE_CAPACITY;
+    raw = 1 - level / denominator;
   } else {
-    raw = (level - 1) / (PRESSURE_CAP - 1);
+    raw = (level - 1) / denominator;
   }
 
   return Math.min(1, Math.max(0, raw));

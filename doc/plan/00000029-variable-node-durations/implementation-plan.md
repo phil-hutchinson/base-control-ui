@@ -610,6 +610,16 @@ D1/D2's no-renumbering, rules-first constraint. `npm test` (670/670, same
 count as before), `npm run typecheck`, `npm run lint` and
 `npm run format:check` all pass.
 
+Peer review follow-up: 0.11's §8.3 opened with a fairness assurance — a node
+appears at the same moment for both players, and neither is any closer to it
+in time than the other — half of which (the same-moment half) survives
+0.12's clock unchanged but was dropped along with the sentence that had to
+go. This was a deliberate omission, decided at the review-fix stage rather
+than during this step: the assurance restates a symmetry the rest of §8
+already implies (§8.2's draw and §8.6's ordering apply identically to both
+players), so it is not restored. The 0.12 changelog entry gets a line
+recording the drop.
+
 Edit `doc/ruleset/rules.md`, add a `doc/ruleset/changelog.md` entry and bump
 `RULES_VERSION` in `src/rules/rulesVersion.ts`. **No behaviour changes in this
 step** — no other file under `src/` is touched. See **D1** for why this is its
@@ -1553,6 +1563,20 @@ nets 13 tests, replacing 7 interim ones, plus one assertion added to an
 existing seededReplay test rather than a new one), `npm run typecheck`,
 `npm run lint` and `npm run format:check` all pass. No deviations from the
 plan.
+
+Peer review follow-up: D16's property 4 asked for an integration-level bound
+that a uniform draw could not also satisfy. At the shipped numbers it does
+not have that margin — over 500 arbitrary seeds a uniform draw passes both
+of `sitePool.test.ts`'s assertions on about 93% of them, so the test mostly
+exercises the economy's general health rather than discriminating the
+weighting from its absence. Retuning the property to something a uniform
+draw genuinely fails (a spread-of-gaps measure, say) is balance-adjacent
+work that D18 puts out of scope for this story. The comment above the
+assertions in `sitePool.test.ts` was reworded to stop claiming this is the
+guard for the weighting, and now points at `chargeDraw.test.ts`'s
+"weighted by pressure" describe block (§8.2), which asserts the 2:1 ratio
+directly and is the real guard. The existing assertions stay as a loose
+sanity bound on the economy.
 
 With the whole cycle in place, rewrite the integration test that guards
 Appendix B and re-confirm the two whole-game tests against a draw stream that

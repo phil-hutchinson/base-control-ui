@@ -254,7 +254,7 @@ simply the loser's own square, and the winner takes it. If no square on the
 lane is one it may legally end on, the winner holds its ground instead.
 
 When the loser's own square is a charged node, the winner's advance onto it
-**changes the node's hands intact**: the attacker takes the square the
+means **the node changes hands intact**: the attacker takes the square the
 instant the fight resolves, so the node is never left unoccupied and keeps
 the drain it already had (section 8.7). A drawn fight and a blocked advance
 leave the node empty instead — see section 8.7 for both.
@@ -407,11 +407,11 @@ The one way a ship ends up on a dormant site is by holding a node until its
 capacity runs out underneath it (section 8.3) — leaving a node ends it too
 (section 8.7), but the ship that left is by definition no longer on it. A
 ship left standing on a node that ran out under it is **stranded**, and on
-their next turn its owner must spend an action moving it clear. A ship still
-standing there when the site finishes recovering — about ten turns from a
-full node, sooner from one that was ended early (section 8.2) — and goes
-active, is equally stuck — section 6 forbids ending a move on either state —
-and stays stranded on the same terms.
+their next turn its owner must spend an action moving it clear. A site
+finishes recovering and goes active about ten turns after a full node ran
+out, sooner if it was ended early (section 8.2). A ship still standing there
+when that happens is equally stuck — section 6 forbids ending a move on
+either state — and stays stranded on the same terms.
 
 That is a restriction on what an action may be, not a penalty on top of one:
 while any ship still owes an action, each action of the turn must free one.

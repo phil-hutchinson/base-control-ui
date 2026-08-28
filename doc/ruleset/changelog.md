@@ -72,6 +72,9 @@ until the game plays (see the project's contribution notes).
 - Every number in this version — the capacity of 60, the pressure cap of 50,
   and all three distributions — is a first guess to be play-tested and
   retuned.
+- Section 8.3 drops the assurance that a node appears at the same moment for
+  both players and neither is closer to it in time than the other; it is
+  redundant with the symmetry the rest of section 8 already states.
 
 This changes how the game is played — a node's life is now variable instead
 of fixed, leaving a node ends it, and the charge draw is weighted instead of

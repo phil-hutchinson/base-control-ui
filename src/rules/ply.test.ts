@@ -1749,7 +1749,7 @@ describe("§8.7 — leaving a node ends it", () => {
       false,
     );
     // H8 was charged, not dormant, when this ply began, so step 6's
-    // "dormant before this ply began" filter (§8.6, D8) excludes it: it does
+    // "dormant before this ply began" filter (§8.6) excludes it: it does
     // not recover this same sequence, and its drain is exactly what it was.
     expect(result.state.siteStates.H8).toEqual({
       state: "dormant",

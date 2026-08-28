@@ -313,7 +313,7 @@ describe("runChargeDraw — nothing to do", () => {
   });
 });
 
-describe("runChargeDraw — weighted by pressure (§8.2, D15)", () => {
+describe("runChargeDraw — weighted by pressure (§8.2)", () => {
   it("draws a pressure-20 site about twice as often as a pressure-10 site, and still sometimes draws a pressure-1 site", () => {
     const counts: Record<string, number> = { N4: 0, D8: 0, H8: 0 };
     const TRIALS = 4000;

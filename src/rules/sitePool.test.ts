@@ -11,10 +11,9 @@
 // together forever after (rules.md's old "lockstep" concern), and this file
 // used to assert "at most one node runs out per turn" as a consequence of
 // it. 0.12 drops the stagger — nothing can form that lockstep any more, since
-// every node's drain is drawn independently (see the plan's D10) — and two
-// nodes coinciding is now ordinary rather than a bug. What replaces the old
-// assertion is a bound on how often several coincide, not a claim that they
-// never do.
+// every node's drain is drawn independently — and two nodes coinciding is
+// now ordinary rather than a bug. What replaces the old assertion is a bound
+// on how often several coincide, not a claim that they never do.
 
 import { describe, expect, it } from "vitest";
 import { squareName } from "./board";
@@ -63,12 +62,12 @@ const MINIMUM_CHARGES_PER_SITE = 2;
 /**
  * The longest gap, in turns, any one site is allowed to wait between
  * successive charges. Under a uniform draw this tail is unbounded — a site
- * could in principle never be drawn again. Under the pressure weighting a
- * site's own chance grows every turn it waits, so the tail is bounded in
- * practice; measured over several seeds the observed maximum is under 280
- * turns out of 500 played, and the ceiling below leaves generous margin
- * above that. This is the one check in the file that would notice the
- * pressure weighting being lost or broken.
+ * could in principle never be drawn again — but at these plies and seeds a
+ * uniform draw passes this bound too, so it is a loose sanity check on the
+ * economy rather than a guard against the pressure weighting being lost or
+ * broken. `chargeDraw.test.ts`'s "weighted by pressure" describe block
+ * (§8.2) is the check that actually guards the weighting, by asserting its
+ * 2:1 ratio directly.
  */
 const MAXIMUM_TURNS_BETWEEN_CHARGES = 400;
 

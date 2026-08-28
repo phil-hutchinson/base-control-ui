@@ -29,8 +29,9 @@ install, no account, no server.
 > turn the board tops itself back up to five charged sites among the
 > seventeen, picking the new ones at random as older ones run out — and a
 > site that has been waiting longer is more likely to be picked next, which
-> shows in how it looks: an unlit site grows and brightens the longer it
-> waits its turn. A ship can only stop on a site that is already lit. A lit
+> shows in how it looks: a site that is waiting to be lit grows and
+> brightens the longer it waits. A ship can only stop on a site that is
+> already lit. A lit
 > node pays a shield to the player sitting on it at the end of each of their
 > own turns. A node's glow shifts as it burns down, so you can see roughly
 > how much life it has left, and it runs out at a random pace — faster while
