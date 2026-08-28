@@ -1263,7 +1263,55 @@ easiest thing in this story to break by accident.
 
 ## Step 5 — Leaving a node ends it
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/vacating.ts` with `NodeVacatedEffect` and
+`applyVacating(before, after)`, exactly D11's rule over a `SITES`-ordered
+walk, raising no randomness. Wired both call sites in `ply.ts` —
+`applyMove` after the ship is placed, `applyAttack` after
+`assertFightInvariants` — both before `applyEndOfActionTail`, with
+`MoveEffect`/`AttackEffect` gaining `NodeVacatedEffect` and the fight's
+vacate effects appended after `fight-resolved`; updated the module header,
+`applyMove`'s and `applyAttack`'s doc comments, and
+`assertFightInvariants`' doc comment and thrown message to say vacating runs
+afterwards, separately, per D11. Added the D12 announcement clause: a
+private `nodeVacatedClause` plus a filter prepended inside
+`actionEndingClauses`, so all four assembly paths in `announcements.ts` get
+it in one place, positioned after the action's own sentence and before the
+end-of-turn clauses. Added `src/rules/vacating.test.ts` (10 tests exercising
+`applyVacating` directly against hand-built before/after pairs — the
+D11-table cases, two-at-once ordering, an inert non-charged site, and an
+unclamped carry above capacity), 9 new tests in `src/rules/ply.test.ts`
+under a `§8.7` describe block (move-off, arrival-is-not-a-departure,
+defender-beaten, drawn-fight, winner-advances-off-origin, losing-attacker-
+pushed-off-its-own-node, two-at-once via `applyAttack`, and no energy/shield
+for a node left this turn) plus one new `assertFightInvariants` throw test
+for a site changed during the fight itself, and 3 new tests in
+`announcements.test.ts` covering the clause's placement (mid-ply, ahead of
+end-of-turn clauses) and reading twice in a row. `npm test` (712/712, up
+from 690), `npm run typecheck`, `npm run lint` and `npm run format:check`
+all pass.
+
+Deviation from the plan, forced rather than chosen: the plan's own test list
+item 5 ("A blocked advance… so the node is left empty and goes dormant")
+cannot be reproduced end-to-end through `applyAttack` against a real site on
+this board. An exhaustive sweep (every board square as attack origin, every
+shield count, every reach entry) found that no reach entry whose destination
+is one of the seventeen `SITES` ever has a bay square anywhere on its lane —
+every site sits far enough from the board's edges, and every bay sits
+exactly on an edge, that a site can never be "beyond" a bay within the
+0–3-square reach table. §7's blocked-advance case is real and still
+implemented and covered (`vacating.test.ts`'s "blocked" case, and the
+pre-existing `winnerAdvance`/`ply.test.ts` "D15 reproduction" test that this
+story didn't touch), but a version of it where the blocked square is
+additionally a charged node is not constructible via real gameplay, so
+`vacating.test.ts` covers it directly against a hand-built before/after
+pair — the same seam `assertFightInvariants`' own tests already use for
+otherwise-impossible states — and `ply.test.ts`'s new describe block carries
+a comment recording why no sibling test sits there. The plan's item 11 (the
+fight-invariants "still throws when a site changes" test) also did not
+already exist in the repository — grepped for and confirmed absent before
+writing it — so it was added fresh here rather than merely re-verified.
 
 Implement §8.7 (**D11**, **D12**). After this commit the game plays 0.12 in
 full, with only the active artwork still to come.

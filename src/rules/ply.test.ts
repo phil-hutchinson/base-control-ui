@@ -1511,6 +1511,21 @@ describe("assertFightInvariants (rules.md §7)", () => {
       assertFightInvariants(before, after, new Set(["red-1"]), undefined),
     ).toThrow(RangeError);
   });
+
+  it("still throws when a site's state changes during the fight itself — the vacating rule (§8.7) is applied separately, afterwards, and is not what this check is about", () => {
+    const before = buildState({
+      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 1)],
+      siteStates: { H8: ["charged", 10] },
+    });
+    const after: GameState = {
+      ...before,
+      siteStates: { ...before.siteStates, H8: { state: "dormant", level: 10 } },
+    };
+
+    expect(() =>
+      assertFightInvariants(before, after, new Set(["red-1"]), undefined),
+    ).toThrow(RangeError);
+  });
 });
 
 describe("applyPassGuard", () => {
@@ -1711,5 +1726,236 @@ describe("applyPassGuard", () => {
     const guarded = applyPassGuard(result.state);
     expect(guarded.state).toEqual(result.state);
     expect(guarded.effect).toBeUndefined();
+  });
+});
+
+describe("§8.7 — leaving a node ends it", () => {
+  it("sends a charged node dormant immediately when a ship moves off it, before the opponent's turn, carrying the drain it had", () => {
+    // red-1 gives red a legal move, so applyPassGuard does not immediately
+    // run a second end-of-turn sequence for a passed red ply — this checks
+    // exactly the state green's own move produces, nothing beyond it.
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
+      siteStates: { H8: ["charged", 23] },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.effects.some((effect) => effect.type === "ply-passed")).toBe(
+      false,
+    );
+    // H8 was charged, not dormant, when this ply began, so step 6's
+    // "dormant before this ply began" filter (§8.6, D8) excludes it: it does
+    // not recover this same sequence, and its drain is exactly what it was.
+    expect(result.state.siteStates.H8).toEqual({
+      state: "dormant",
+      level: 23,
+    });
+    expect(result.effects).toContainEqual({
+      type: "node-vacated",
+      square: squareFromName("H8"),
+      shipId: "green-1",
+      side: "green",
+    });
+  });
+
+  it("leaves a node charged when a ship simply arrives on it — arriving is not a departure", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H7")],
+      siteStates: { H8: ["charged", 5] },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.siteStates.H8.state).toBe("charged");
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "node-vacated" }),
+    );
+  });
+
+  it("leaves a node charged when a beaten defender is replaced by the advancing attacker — the case the rule is shaped around, a node changes hands intact", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H7", 3), ship("red-1", "red", "H8", 0)],
+      siteStates: { H8: ["charged", 41] },
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const winner = result.state.ships.find((s) => s.id === "green-1");
+    expect(winner?.square).toEqual(squareFromName("H8"));
+    // The node is never unoccupied — red-1 stood there, then green-1 does —
+    // so it stays charged. Its drain still rises this ply (§8.3, held table,
+    // since the winner now stands on it), which is a different mechanic;
+    // what matters here is that it never went dormant.
+    expect(result.state.siteStates.H8.state).toBe("charged");
+    expect(result.state.siteStates.H8.level).toBeGreaterThan(41);
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "node-vacated" }),
+    );
+  });
+
+  it("sends a node dormant, at the drain it had, when a drawn fight over it returns both ships to bays", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H7", 2), ship("red-1", "red", "H8", 2)],
+      siteStates: { H8: ["charged", 15] },
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(result.state.siteStates.H8).toEqual({
+      state: "dormant",
+      level: 15,
+    });
+    expect(result.effects).toContainEqual({
+      type: "node-vacated",
+      square: squareFromName("H8"),
+      shipId: "red-1",
+      side: "red",
+    });
+  });
+
+  // A blocked advance — §7's case where the beaten ship's own return bay
+  // lands on the lane the winner would otherwise advance down — cannot be
+  // reproduced through `applyAttack` against a real site on this board: every
+  // one of the seventeen sites sits far enough from every bay that no reach
+  // entry landing on a site ever has a bay square anywhere on its lane
+  // (verified by an exhaustive sweep of every origin, shield count and
+  // reach entry during this step's implementation). `vacating.test.ts`
+  // covers this case directly, against a hand-built before/after pair, the
+  // same way `assertFightInvariants`' own tests reach otherwise-impossible
+  // states.
+
+  it("sends the origin node dormant when its occupant wins a fight and advances off it", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 0)],
+      siteStates: { H8: ["charged", 27] },
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const winner = result.state.ships.find((s) => s.id === "green-1");
+    expect(winner?.square).toEqual(squareFromName("H9"));
+    expect(result.state.siteStates.H8).toEqual({
+      state: "dormant",
+      level: 27,
+    });
+    expect(result.effects).toContainEqual({
+      type: "node-vacated",
+      square: squareFromName("H8"),
+      shipId: "green-1",
+      side: "green",
+    });
+  });
+
+  it("sends a losing attacker's own node dormant when it is pushed back to a bay", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 3)],
+      siteStates: { H8: ["charged", 9] },
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const loser = result.state.ships.find((s) => s.id === "green-1");
+    expect(loser && isBay(loser.square)).toBe(true);
+    expect(result.state.siteStates.H8).toEqual({
+      state: "dormant",
+      level: 9,
+    });
+    expect(result.effects).toContainEqual({
+      type: "node-vacated",
+      square: squareFromName("H8"),
+      shipId: "green-1",
+      side: "green",
+    });
+  });
+
+  it("sends two nodes dormant at once, in SITES order, when a drawn fight vacates both", () => {
+    // F2 and H4 are both real sites and are exactly a diagonal reach of 2
+    // apart — one of the few pairs of sites close enough to attack one
+    // another directly.
+    const state = buildState({
+      ships: [ship("green-1", "green", "F2", 1), ship("red-1", "red", "H4", 1)],
+      siteStates: { F2: ["charged", 8], H4: ["charged", 14] },
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H4"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(result.state.siteStates.F2).toEqual({ state: "dormant", level: 8 });
+    expect(result.state.siteStates.H4).toEqual({
+      state: "dormant",
+      level: 14,
+    });
+    const vacatedEffects = result.effects.filter(
+      (effect) => effect.type === "node-vacated",
+    );
+    expect(vacatedEffects).toEqual([
+      {
+        type: "node-vacated",
+        square: squareFromName("F2"),
+        shipId: "green-1",
+        side: "green",
+      },
+      {
+        type: "node-vacated",
+        square: squareFromName("H4"),
+        shipId: "red-1",
+        side: "red",
+      },
+    ]);
+  });
+
+  it("collects no energy and gains no shield for a node the moving player stepped off this turn", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 1)],
+      siteStates: { H8: ["charged", 5] },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    const plyEnded = result.effects.find(
+      (effect) => effect.type === "ply-ended",
+    );
+    expect(plyEnded).toBeDefined();
+    if (plyEnded?.type !== "ply-ended") {
+      throw new Error("expected a ply-ended effect");
+    }
+    expect(plyEnded.endOfTurn).not.toContainEqual(
+      expect.objectContaining({ type: "energy-collected" }),
+    );
+    expect(plyEnded.endOfTurn).not.toContainEqual(
+      expect.objectContaining({ type: "shield-gained" }),
+    );
   });
 });

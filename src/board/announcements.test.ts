@@ -307,6 +307,134 @@ describe("announcementFor", () => {
   });
 });
 
+describe("announcementFor — a node vacated (rules.md §8.7)", () => {
+  it("announces a node going dormant right after a move that vacated it, before the actions-left clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("H", 8),
+      to: squareAt("H", 9),
+      effects: [
+        {
+          type: "node-vacated",
+          square: squareAt("H", 8),
+          shipId: "green-1",
+          side: "green",
+        },
+      ],
+      actionsRemaining: 1,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from H8 to H9. " +
+        "The node at H8 went dormant when the green ship left it. " +
+        "Green has 1 action left.",
+    );
+  });
+
+  it("announces a node going dormant ahead of the end-of-turn clauses, when the vacating action also ends the ply", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("H", 8),
+      to: squareAt("H", 9),
+      effects: [
+        {
+          type: "node-vacated",
+          square: squareAt("H", 8),
+          shipId: "green-1",
+          side: "green",
+        },
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-collected",
+              side: "green",
+              amount: 1,
+              newTotal: 5,
+              squares: [squareAt("K", 5)],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from H8 to H9. " +
+        "The node at H8 went dormant when the green ship left it. " +
+        "Green collected 1 energy from the node at K5, and now has 5. " +
+        "Red's turn, 1 action left.",
+    );
+  });
+
+  it("reads acceptably twice in a row, when a drawn fight vacates two nodes at once", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      outcome: "mutual-return",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("F", 2),
+        shields: 1,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("H", 4),
+        shields: 1,
+      },
+      returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("F", 2),
+          to: squareAt("D", 1),
+        },
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("H", 4),
+          to: squareAt("L", 1),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("F", 2),
+      target: squareAt("H", 4),
+      effects: [
+        fight,
+        {
+          type: "node-vacated",
+          square: squareAt("F", 2),
+          shipId: "green-1",
+          side: "green",
+        },
+        {
+          type: "node-vacated",
+          square: squareAt("H", 4),
+          shipId: "red-1",
+          side: "red",
+        },
+      ],
+      actionsRemaining: 1,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at F2 attacked the red ship at H4 and both were beaten. " +
+        "The attacker returned to the D1 bay and the defender to the L1 bay, both with no shields. " +
+        "The node at F2 went dormant when the green ship left it. " +
+        "The node at H4 went dormant when the red ship left it. " +
+        "Green has 1 action left.",
+    );
+  });
+});
+
 describe("announcementFor — the node cycle (rules.md §8)", () => {
   it("announces a node running out at the end of a turn", () => {
     const event: MovedEvent = {
