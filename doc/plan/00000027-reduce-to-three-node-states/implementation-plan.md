@@ -1293,7 +1293,12 @@ words, with no mention of waking on touch.
 
 ## Step 7 — Owner play-through
 
-Status: pending
+Status: committed
+
+Notes: The owner ran the app and confirmed all seven checks — the staggered
+opening five, ships changing nothing, nodes lighting and running out one at a
+time on their own, cooling returning a site to active, the two refusal
+sentences, and energy, shields, stranding and combat all still working.
 
 The story's eyeball checks, gathered into one pass. The owner runs `npm run dev`
 in the dev container, opens the app and confirms:
