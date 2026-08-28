@@ -20,10 +20,7 @@ function siteStatuses(
   states: Readonly<Record<string, SiteState>>,
 ): Record<string, SiteStatus> {
   return Object.fromEntries(
-    Object.entries(states).map(([name, state]) => [
-      name,
-      { state, enteredOnPly: 0 },
-    ]),
+    Object.entries(states).map(([name, state]) => [name, { state, level: 0 }]),
   );
 }
 

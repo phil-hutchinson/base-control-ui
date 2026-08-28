@@ -7,10 +7,15 @@
 // plenty of fights, unlike `fullGame.test.ts`'s greedy policy, which only
 // attacks when no ship has a legal move at all.
 //
-// The board's own end-of-turn charge draw (§8.2) is now the main consumer of
-// the seeded stream, alongside bay returns, so the same property is proven
-// for it too: the sequence of sites the draw charges over a game replays
-// identically from the same seed.
+// The board's own end-of-turn charge draw (§8.2) is a consumer of the seeded
+// stream too, alongside bay returns, so the same property is proven for it:
+// the sequence of sites the draw charges over a game replays identically
+// from the same seed. Since 0.12 the stream's bulk is neither of those —
+// every charged node's drain and every dormant site's recovery are drawn
+// every turn (§8.3, §8.2), so a ply now consumes several times as many seed
+// steps as it did under 0.11. Those per-node draws are not tracked
+// separately here; they are exercised indirectly, and their effect on the
+// final state is what the whole-state equality check below proves replays.
 
 import { describe, expect, it } from "vitest";
 import { type Square, squareName } from "./board";
@@ -152,6 +157,15 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
   return { finalState: state, bayReturns, chargedSites };
 }
 
+/** Every site's `level` at the end of a game, keyed by square name — the part of the state the drain and recovery draws write to. */
+function siteLevels(state: GameState): Readonly<Record<string, number>> {
+  const levels: Record<string, number> = {};
+  for (const [name, status] of Object.entries(state.siteStates)) {
+    levels[name] = status.level;
+  }
+  return levels;
+}
+
 describe("a seeded game replays its fights, its bays and its charge draws exactly", () => {
   it("produces plenty of fights and charge draws over a forty-round game — the run is not vacuous", () => {
     const { bayReturns, chargedSites } = playSeededGame(20260819, 40);
@@ -167,6 +181,11 @@ describe("a seeded game replays its fights, its bays and its charge draws exactl
     expect(second.bayReturns).toEqual(first.bayReturns);
     expect(second.chargedSites).toEqual(first.chargedSites);
     expect(second.finalState).toEqual(first.finalState);
+    // The final state's equality above already covers this, but it is
+    // worth naming directly: the drain and recovery draws that now
+    // dominate the seeded stream (§8.2, §8.3) write to every site's
+    // `level`, not only to which sites get charged.
+    expect(siteLevels(second.finalState)).toEqual(siteLevels(first.finalState));
   });
 
   it("produces a different bay sequence and a different charged-site sequence from a different seed", () => {

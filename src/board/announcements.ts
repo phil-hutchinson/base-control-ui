@@ -28,6 +28,7 @@ import type {
   PlyEndedEffect,
 } from "../rules/ply";
 import { MAX_SHIELDS } from "../rules/shields";
+import type { NodeVacatedEffect } from "../rules/vacating";
 import type {
   AttackedEvent,
   MovedEvent,
@@ -234,13 +235,26 @@ function moveSentence(event: MovedEvent): string {
 }
 
 /**
- * How an action's ply ended, if at all: the end-of-turn sequence's own
- * clauses, then the other side's turn if the ply ended, a further pass (with
- * its own end-of-turn clauses) if the resulting side had no legal action at
- * all, or how many actions the acting side has left if the ply simply
- * continues. Shared by a move and an attack — both end a ply the same way.
- * `tailClause`, when given, replaces the "whose turn is next" clause — the
- * substitution `announcementForSession` makes at the end of the game.
+ * A node going dormant the moment the moving player's own action vacated it
+ * (rules.md §8.7). This is a direct consequence of a choice the player just
+ * made, unlike the silent `site-went-active`, so it speaks — a player who
+ * never heard it would not learn that stepping off a node ends it.
+ */
+function nodeVacatedClause(effect: NodeVacatedEffect): string {
+  return `The node at ${squareName(effect.square)} went dormant when the ${effect.side} ship left it.`;
+}
+
+/**
+ * How an action's ply ended, if at all: first any nodes the action itself
+ * vacated (rules.md §8.7), then the end-of-turn sequence's own clauses, then
+ * the other side's turn if the ply ended, a further pass (with its own
+ * end-of-turn clauses) if the resulting side had no legal action at all, or
+ * how many actions the acting side has left if the ply simply continues.
+ * Shared by a move and an attack — both end a ply the same way, and both can
+ * vacate a node the same way. A fight can vacate two nodes at once, on a
+ * drawn fight in which both ships stood on charged nodes. `tailClause`, when
+ * given, replaces the "whose turn is next" clause — the substitution
+ * `announcementForSession` makes at the end of the game.
  */
 function actionEndingClauses(
   side: Side,
@@ -248,6 +262,12 @@ function actionEndingClauses(
   actionsRemaining: number,
   tailClause?: string,
 ): string[] {
+  const vacatedClauses = effects
+    .filter(
+      (effect): effect is NodeVacatedEffect => effect.type === "node-vacated",
+    )
+    .map(nodeVacatedClause);
+
   const plyEndedEffect = effects.find(
     (effect): effect is PlyEndedEffect => effect.type === "ply-ended",
   );
@@ -260,18 +280,26 @@ function actionEndingClauses(
     (effect): effect is PassEffect => effect.type === "ply-passed",
   );
   if (passEffect !== undefined) {
-    return [...plyEndedClauses, ...passSentenceClauses(passEffect, tailClause)];
+    return [
+      ...vacatedClauses,
+      ...plyEndedClauses,
+      ...passSentenceClauses(passEffect, tailClause),
+    ];
   }
 
   if (plyEndedEffect !== undefined) {
     return [
+      ...vacatedClauses,
       ...plyEndedClauses,
       tailClause ??
         `${turnPhrase(plyEndedEffect.sideToMove, ACTIONS_PER_PLY)}.`,
     ];
   }
 
-  return [`${capitalize(side)} has ${actionsPhrase(actionsRemaining)} left.`];
+  return [
+    ...vacatedClauses,
+    `${capitalize(side)} has ${actionsPhrase(actionsRemaining)} left.`,
+  ];
 }
 
 function actionEndingClause(

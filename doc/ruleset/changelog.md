@@ -7,6 +7,81 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.12 — variable node durations
+
+- **A node's fixed nine-turn life is replaced by capacity and drain.** A
+  charged node now has a **capacity** of 60 units and a **drain** that starts
+  at 0 and rises at the end of every turn by an amount drawn at random: 1
+  (20%), 2 (50%) or 3 (30%) while the node stands empty, and 3 (10%), 4
+  (40%), 5 (30%) or 6 (20%) while a ship — either side's — is standing on it.
+  When drain reaches or passes capacity the node is spent and goes dormant,
+  stranding any ship left on it exactly as the nine-turn clock did (section
+  8.3).
+- **A dormant site's fixed nine-turn cooldown is replaced by recovery.** It
+  goes dormant carrying whatever drain it had, and at the end of every turn
+  subtracts an amount drawn at random — 4 (10%), 5 (25%), 6 (30%), 7 (25%) or
+  8 (10%) — going active at 1 pressure once it reaches zero or below. A node
+  ended early comes back sooner, in proportion to how much of it was left
+  (section 8.2).
+- **Active sites now carry pressure**, and the end-of-turn charge draw is
+  weighted by it instead of uniform. A site goes active at 1 pressure and
+  gains 1 for every turn it stays active, capped at 50; each active site's
+  chance of being drawn is its pressure as a share of the total pressure of
+  all active sites, so a site that has waited a long time is likelier to be
+  picked than one that has just cycled, and pressure never below 1 means no
+  site can ever be excluded outright (section 8.2).
+- **The opening five nodes lose their stagger.** The lockstep the stagger
+  guarded against can no longer form, because the five now drain at
+  independently drawn rates, are reached by ships at different turns, and
+  can be ended early — so all five now start at drain 0, and the staggered
+  table and the paragraphs justifying it are deleted (section 8.1).
+- **Leaving a node ends it (new section 8.7).** A charged node that is
+  occupied goes dormant the moment it becomes unoccupied — immediately, as
+  part of resolving the action, not at the end of the turn — and carries its
+  drain into dormancy. A ship that moves off a node, is pushed off one after
+  losing a fight it started, or is on either side of a drawn fight, ends the
+  node it was standing on. An attacker whose advance is blocked by the
+  beaten ship's own return bay does the same to the node it was attacking
+  into.
+- **Taking a node in a fight does not end it.** A beaten defender is
+  replaced by the advancing attacker in the same resolution, so the node is
+  never unoccupied and keeps its drain untouched — a node changes hands
+  intact (section 7, section 8.7).
+- **Section 8.6's end-of-turn order grows from five steps to six**, to make
+  room for the drain draw and pressure: (1) shields, (2) energy, (3) drain,
+  now with the capacity check, (4) the charge draw, now weighted by
+  pressure, (5) pressure gained by every site still active, (6) recovery,
+  now with the random amount, for sites dormant before the turn began. Step
+  6 stays last so a recovered site is active for the whole of the following
+  turn before it is first eligible in a draw; step 5 sits after the draw so
+  a site is drawn at the pressure it held all turn.
+- **Section 8.5's "nodes charged together run out together" is withdrawn.**
+  Nodes now drain at independently drawn rates, so a player holding several
+  of them pays for them one at a time as each runs out under its own ship,
+  rather than all at once.
+- **Section 1's random elements go from two to three**: which site is
+  charged next, which bay a beaten ship is pushed back to, and now how fast
+  a node burns. Section 2 gains **capacity**, **drain** and **pressure** as
+  words used in these rules.
+- **Appendix B is redone around the pressure cap.** With a mixed life of
+  roughly twenty turns, the board charges a site about every four turns,
+  dormancy runs about ten turns, and about nine or ten of the seventeen
+  sites are active at any moment. What is now worth checking when these
+  numbers are retuned is the pressure cap against the average wait between
+  cycles, not the raw pool size.
+- Every number in this version — the capacity of 60, the pressure cap of 50,
+  and all three distributions — is a first guess to be play-tested and
+  retuned.
+- Section 8.3 drops the assurance that a node appears at the same moment for
+  both players and neither is closer to it in time than the other; it is
+  redundant with the symmetry the rest of section 8 already states.
+
+This changes how the game is played — a node's life is now variable instead
+of fixed, leaving a node ends it, and the charge draw is weighted instead of
+uniform — so it would ordinarily be a tagging candidate, but tagging is on
+hold until the game plays (see the project's contribution notes), so no tag
+is made for this version.
+
 ## 0.11 — three node states
 
 - **A site now has three states instead of four**, and the mapping is not a

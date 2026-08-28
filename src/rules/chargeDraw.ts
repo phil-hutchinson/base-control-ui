@@ -1,16 +1,19 @@
 // §8.2's charge draw, run as step 4 of the end-of-turn sequence (§8.6): as
 // many active sites as it takes to bring the charged count back to
-// `TARGET_CHARGED_SITES` are charged, one at a time and at random, each
-// equally likely. The shortfall is computed here, not handed in by the
-// caller — it can exceed the number of nodes that ran out this very ply, if
-// the board was already short from an earlier ply that could not fill it.
-// Running short is a legal outcome: with no active site left to draw from,
-// this simply stops and leaves the board below its target until a future
-// ply's draw can close the gap.
+// `TARGET_CHARGED_SITES` are charged, one at a time, weighted by each
+// candidate's pressure (its `level`) rather than drawn uniformly — a site
+// that has waited longer is likelier to be picked. Pressure is never below
+// 1, so no active site can ever be excluded outright, and the pool's total
+// weight is always positive whenever the pool is non-empty. The shortfall
+// is computed here, not handed in by the caller — it can exceed the number
+// of nodes that ran out this very ply, if the board was already short from
+// an earlier ply that could not fill it. Running short is a legal outcome:
+// with no active site left to draw from, this simply stops and leaves the
+// board below its target until a future ply's draw can close the gap.
 
 import { type Square, squareName } from "./board";
-import { type GameState, siteStateAt } from "./gameState";
-import { drawIndex } from "./random";
+import { type GameState, siteStateAt, siteStatusAt } from "./gameState";
+import { drawWeightedIndex } from "./random";
 import { SITES, TARGET_CHARGED_SITES } from "./sites";
 
 /** A site went from active to charged because the board's end-of-turn draw picked it (rules.md §8.2). */
@@ -30,10 +33,13 @@ export interface ChargeDrawResult {
  * `TARGET_CHARGED_SITES` or the pool runs out, whichever comes first
  * (rules.md §8.2, §8.6 step 4). The pool is every site currently `active`,
  * collected by walking `SITES` in its declared order; occupied active sites
- * are drawn like any other. Each draw removes its site from the pool and
- * advances `state.randomSeed` before the next one, exactly as the 0.10
- * replacement draw did — so a recorded game still replays exactly. The seed
- * does not move at all if nothing is drawn.
+ * are drawn like any other. Each site's weight is its own pressure (its
+ * `level`), so a site that has waited longer is likelier to be picked. Each
+ * draw removes its site from the pool — so the next draw's weights are the
+ * remaining sites' pressures — and advances `state.randomSeed` before the
+ * next one, exactly as the 0.10 uniform replacement draw did — so a
+ * recorded game still replays exactly. The seed does not move at all if
+ * nothing is drawn.
  */
 export function runChargeDraw(state: GameState): ChargeDrawResult {
   const chargedCount = SITES.filter(
@@ -47,7 +53,13 @@ export function runChargeDraw(state: GameState): ChargeDrawResult {
   const effects: SiteChargedEffect[] = [];
 
   while (shortfall > 0 && pool.length > 0) {
-    const [index, nextSeed] = drawIndex(workingState.randomSeed, pool.length);
+    const weights = pool.map(
+      (square) => siteStatusAt(workingState, square)?.level ?? 0,
+    );
+    const [index, nextSeed] = drawWeightedIndex(
+      workingState.randomSeed,
+      weights,
+    );
     const drawn = pool[index];
     const name = squareName(drawn);
 
@@ -55,7 +67,7 @@ export function runChargeDraw(state: GameState): ChargeDrawResult {
       ...workingState,
       siteStates: {
         ...workingState.siteStates,
-        [name]: { state: "charged", enteredOnPly: workingState.plyNumber },
+        [name]: { state: "charged", level: 0 },
       },
       randomSeed: nextSeed,
     };

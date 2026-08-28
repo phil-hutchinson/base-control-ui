@@ -1,8 +1,11 @@
 // The seventeen site squares (rules.md §3.2), the three states a site can be
-// in (rules.md §8.1), and the two nine-ply clocks that govern how long a
-// site stays charged (§8.3) and how long it stays dormant (§8.2).
+// in (rules.md §8.1), and how a site's single `level` number moves within
+// each state: a charged node's capacity and its two drawn drain
+// distributions (§8.3), a dormant site's drawn recovery distribution (§8.2),
+// and the pressure cap an active site's level is capped at (§8.2).
 
 import { type Square, squareAt, squareName } from "./board";
+import { drawWeightedIndex } from "./random";
 
 /**
  * The seventeen site squares, in the row order rules.md §3.2 lists them
@@ -39,16 +42,23 @@ export const SITES: readonly Square[] = [
 export type SiteState = "active" | "charged" | "dormant";
 
 /**
- * How many turns a charged node stays charged (rules.md §8.3), not counting
- * the turn at whose end it was charged.
+ * How much drain a charged node can take before it is spent (rules.md
+ * §8.3). A first guess to be play-tested and retuned, not a claim that 60 is
+ * right.
  */
-export const CHARGED_LIFE_PLIES = 9;
+export const NODE_CAPACITY = 60;
 
 /**
- * How many turns a dormant site cools down for before it goes active again
- * (rules.md §8.2), not counting the turn it went dormant on.
+ * The most pressure an active site can build (rules.md §8.2). A first guess
+ * to be play-tested and retuned, not a claim that 50 is right.
  */
-export const DORMANT_COOLDOWN_PLIES = 9;
+export const PRESSURE_CAP = 50;
+
+/**
+ * The pressure an active site starts at, whether from the opening position
+ * or from finishing recovery (rules.md §8.2, §8.6 step 6).
+ */
+export const STARTING_PRESSURE = 1;
 
 /**
  * How many sites the board aims to keep charged at all times (rules.md
@@ -58,120 +68,123 @@ export const DORMANT_COOLDOWN_PLIES = 9;
  */
 export const TARGET_CHARGED_SITES = 5;
 
+/** One outcome of a weighted draw: an amount, and its share of the total weight. */
+export interface WeightedAmount {
+  readonly amount: number;
+  readonly weight: number;
+}
+
 /**
- * The five sites that start the game charged (rules.md §8.1), and the turn
- * at whose end each one runs out, transcribed literally from the document's
- * staggered-opening table. The other twelve sites start active, and none
- * starts dormant.
+ * How much an empty charged node's drain rises by at the end of a turn no
+ * ship stood on it (rules.md §8.3). Weights are the whole-number
+ * percentages the rules table shows, so the two can be read side by side.
+ * Average 2.1.
  */
-export const STAGGERED_OPENING_CHARGED_SITES: readonly {
-  readonly square: Square;
-  readonly runsOutAtEndOfPly: number;
-}[] = [
-  { square: squareAt("H", 8), runsOutAtEndOfPly: 9 },
-  { square: squareAt("E", 5), runsOutAtEndOfPly: 7 },
-  { square: squareAt("K", 5), runsOutAtEndOfPly: 2 },
-  { square: squareAt("E", 11), runsOutAtEndOfPly: 4 },
-  { square: squareAt("K", 11), runsOutAtEndOfPly: 5 },
+export const EMPTY_NODE_DRAIN_TABLE: readonly WeightedAmount[] = [
+  { amount: 1, weight: 20 },
+  { amount: 2, weight: 50 },
+  { amount: 3, weight: 30 },
 ];
 
 /**
- * `STAGGERED_OPENING_CHARGED_SITES`, keyed by square name, with each site's
- * `enteredOnPly` derived from its run-out ply
- * (`runsOutAtEndOfPly - CHARGED_LIFE_PLIES`). Four of the five come out
- * negative — the site's clock started before the game did, which is exactly
- * what "staggered" means for an opening node: `enteredOnPly` is read only
- * through subtraction, so a negative value is arithmetically fine, and
- * `siteCyclePosition` clamps its result to [0, 1] regardless.
+ * How much a held charged node's drain rises by at the end of a turn a ship
+ * of either side stood on it (rules.md §8.3). Weights are the whole-number
+ * percentages the rules table shows. Average 4.6.
  */
-const STAGGERED_OPENING_BY_NAME: ReadonlyMap<
-  string,
-  { readonly state: "charged"; readonly enteredOnPly: number }
-> = new Map(
-  STAGGERED_OPENING_CHARGED_SITES.map(({ square, runsOutAtEndOfPly }) => [
-    squareName(square),
-    {
-      state: "charged",
-      enteredOnPly: runsOutAtEndOfPly - CHARGED_LIFE_PLIES,
-    },
-  ]),
+export const HELD_NODE_DRAIN_TABLE: readonly WeightedAmount[] = [
+  { amount: 3, weight: 10 },
+  { amount: 4, weight: 40 },
+  { amount: 5, weight: 30 },
+  { amount: 6, weight: 20 },
+];
+
+/**
+ * How much a dormant site's level falls by at the end of a turn (rules.md
+ * §8.2). Weights are the whole-number percentages the rules table shows.
+ * Average 6.
+ */
+export const DORMANT_RECOVERY_TABLE: readonly WeightedAmount[] = [
+  { amount: 4, weight: 10 },
+  { amount: 5, weight: 25 },
+  { amount: 6, weight: 30 },
+  { amount: 7, weight: 25 },
+  { amount: 8, weight: 10 },
+];
+
+/**
+ * Draws one amount from a `WeightedAmount` table, returning the amount and
+ * the next seed. Built on `drawWeightedIndex`, so it advances the seed
+ * exactly once and shares that function's refusals.
+ */
+export function drawTableAmount(
+  seed: number,
+  table: readonly WeightedAmount[],
+): [amount: number, nextSeed: number] {
+  const [index, nextSeed] = drawWeightedIndex(
+    seed,
+    table.map((entry) => entry.weight),
+  );
+  return [table[index].amount, nextSeed];
+}
+
+/** The five sites that start the game charged (rules.md §8.1). */
+const OPENING_CHARGED_SQUARES: readonly Square[] = [
+  squareAt("H", 8),
+  squareAt("E", 5),
+  squareAt("K", 5),
+  squareAt("E", 11),
+  squareAt("K", 11),
+];
+
+const OPENING_CHARGED_SQUARE_NAMES: ReadonlySet<string> = new Set(
+  OPENING_CHARGED_SQUARES.map(squareName),
 );
 
 const SITE_NAMES: ReadonlySet<string> = new Set(SITES.map(squareName));
 
 /**
- * The state and `enteredOnPly` a site starts the game in, or `undefined` if
- * the given square is not a site at all (rules.md §8.1). The staggered
- * opening five are `charged`, with an `enteredOnPly` derived from their
- * run-out ply (see `STAGGERED_OPENING_BY_NAME`); every other site is
- * `active`, with an `enteredOnPly` of 0 — a value nothing reads, since
- * active has no clock.
+ * The state and `level` a site starts the game in, or `undefined` if the
+ * given square is not a site at all (rules.md §8.1). The five opening
+ * sites — H8, E5, K5, E11, K11 — are `charged` at drain 0; every other site
+ * is `active` at pressure 1. Nothing starts dormant.
  */
 export function startingSiteStatus(
   square: Square,
-): { readonly state: SiteState; readonly enteredOnPly: number } | undefined {
+): { readonly state: SiteState; readonly level: number } | undefined {
   const name = squareName(square);
   if (!SITE_NAMES.has(name)) {
     return undefined;
   }
-  const staggered = STAGGERED_OPENING_BY_NAME.get(name);
-  return staggered ?? { state: "active", enteredOnPly: 0 };
-}
-
-/**
- * Whether a node charged on `enteredOnPly` has finished its nine turns as of
- * `plyNumber` (rules.md §8.3). `enteredOnPly` is the ply at whose end the
- * site was charged, so this is true from `enteredOnPly + CHARGED_LIFE_PLIES`
- * onwards.
- */
-export function hasChargedNodeFinished(
-  enteredOnPly: number,
-  plyNumber: number,
-): boolean {
-  return plyNumber - enteredOnPly >= CHARGED_LIFE_PLIES;
-}
-
-/**
- * Whether a site that went dormant on `enteredOnPly` has finished cooling
- * down as of `plyNumber` (rules.md §8.2). `enteredOnPly` is the ply at whose
- * end the site went dormant, so this is true from
- * `enteredOnPly + DORMANT_COOLDOWN_PLIES` onwards.
- */
-export function hasDormantSiteFinishedCooling(
-  enteredOnPly: number,
-  plyNumber: number,
-): boolean {
-  return plyNumber - enteredOnPly >= DORMANT_COOLDOWN_PLIES;
-}
-
-/**
- * How far a charged or dormant site is through its clock, as a proportion
- * from 0 (the first turn it is seen in that state) to 1 (its last). Active
- * has no clock, so this reports `undefined` for it. Both clocked states
- * measure plies since the end of the ply the state was entered on, so
- * neither counts that ply itself: `elapsed` starts at 0 one ply after
- * `enteredOnPly`.
- */
-export function siteCyclePosition(
-  state: SiteState,
-  enteredOnPly: number,
-  plyNumber: number,
-): number | undefined {
-  let denominator: number;
-
-  if (state === "charged") {
-    denominator = CHARGED_LIFE_PLIES - 1;
-  } else if (state === "dormant") {
-    denominator = DORMANT_COOLDOWN_PLIES - 1;
-  } else {
-    return undefined;
+  if (OPENING_CHARGED_SQUARE_NAMES.has(name)) {
+    return { state: "charged", level: 0 };
   }
+  return { state: "active", level: STARTING_PRESSURE };
+}
 
-  const elapsed = plyNumber - enteredOnPly - 1;
+/**
+ * How far a site's `level` has travelled through its state's own artwork
+ * cycle, clamped to [0, 1]: a charged node's drain against `NODE_CAPACITY`,
+ * a dormant site's remaining drain against `NODE_CAPACITY` (so a node ended
+ * early begins its dormancy already part travelled), and an active site's
+ * pressure against `PRESSURE_CAP`, from 1 up. Every state reports a
+ * position; none is undefined.
+ */
+export function siteCyclePosition(state: SiteState, level: number): number {
+  const denominator = state === "active" ? PRESSURE_CAP - 1 : NODE_CAPACITY;
 
   if (denominator <= 0) {
     return 0;
   }
 
-  return Math.min(1, Math.max(0, elapsed / denominator));
+  let raw: number;
+
+  if (state === "charged") {
+    raw = level / denominator;
+  } else if (state === "dormant") {
+    raw = 1 - level / denominator;
+  } else {
+    raw = (level - 1) / denominator;
+  }
+
+  return Math.min(1, Math.max(0, raw));
 }

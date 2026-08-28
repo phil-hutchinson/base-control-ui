@@ -116,3 +116,20 @@ cannot make that separation can lose track of which nodes are still worth
 holding, not merely see a less distinct board.
 
 Where: `src/board/SiteMarker.tsx`, `src/board/SiteMarker.css`.
+
+## From story 29 — variable node durations
+
+Source: `doc/plan/00000029-variable-node-durations/implementation-plan.md`
+decisions D13 and D17, step 6.
+
+### 1. An active site's pressure is visible only in its artwork
+
+An active site now carries pressure (rules.md §8.2), and the marker's size and
+warmth travel from a small pale disc at pressure 1 to today's larger gold disc
+at the cap. That travel is the only place the number appears: the square's
+accessible name still says "active site" and nothing more, so a screen-reader
+user cannot tell a freshly cycled site from one that has waited a long time.
+This joins the charged and dormant cycle position, which already does not
+reach assistive technology.
+
+Where: `src/board/SiteMarker.tsx`, `src/board/squareLabel.ts`.
