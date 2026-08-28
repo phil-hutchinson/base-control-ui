@@ -8,7 +8,12 @@ import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
 import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
-import { NODE_CAPACITY, SITES, startingSiteStatus } from "../rules/sites";
+import {
+  NODE_CAPACITY,
+  PRESSURE_CAP,
+  SITES,
+  startingSiteStatus,
+} from "../rules/sites";
 import { startingGameState, type GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalDestinations } from "../rules/movement";
@@ -433,6 +438,40 @@ describe("Board", () => {
       const { container } = render(<Board session={session} onIntent={noop} />);
 
       expect(middleStopOffset(container, "dormant")).toBe("25%");
+    });
+
+    it("shows two active sites at different pressures with visibly different markers", () => {
+      const state: GameState = {
+        ships: [],
+        siteStates: {
+          [squareName(squareAt("H", 8))]: { state: "active", level: 1 },
+          [squareName(squareAt("E", 5))]: {
+            state: "active",
+            level: PRESSURE_CAP,
+          },
+        },
+        sideToMove: "green",
+        actionsRemaining: 1,
+        actedThisPly: [],
+        plyNumber: 1,
+        randomSeed: 1,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      };
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      const radii = Array.from(
+        container.querySelectorAll(".site-marker--active circle"),
+      ).map((circle) => circle.getAttribute("r"));
+
+      expect(radii).toHaveLength(2);
+      expect(radii).toContain("12");
+      expect(radii).toContain("24");
     });
   });
 

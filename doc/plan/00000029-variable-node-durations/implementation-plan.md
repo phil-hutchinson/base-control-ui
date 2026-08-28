@@ -1416,7 +1416,33 @@ a node you walk away from is spent — and neither may be dropped.
 
 ## Step 6 — The active site's artwork travels with its pressure
 
-Status: pending
+Status: committed
+
+Notes: `SiteMarker.tsx` gained a private `lerpNumber` and `hexLerp`
+(clamped to [0, 1], falling back to the start value when no cycle position
+is given, matching `middleStopOffsetPercent`'s existing fallback
+convention) plus the `ACTIVE_START_*`/`ACTIVE_END_*` constant family, and
+the `active` arm of `siteArtwork` now interpolates radius 12 → 24, inner
+stop colour `#F1DBA5` → `#DAA520`, and outer stop opacity 0.75 → 0.5 at the
+given `cyclePosition`, exactly D14's three interpolations; charged and
+dormant are untouched. The module header, the `siteArtwork` comment and the
+`cyclePosition` prop doc were reworded per D14's note about
+`node-artwork.md`'s pre-0.11 headings and active's loss of its "no clock"
+status. Added the accessibility note to `known-issues.md` under a new "From
+story 29" heading, per D17. Tests: `SiteMarker.test.tsx` gained the hex-lerp
+and radius/opacity checks at cycle position 0, 1, 0.5 (verified the
+midpoint hex value by hand-computing per-channel rounding) and two
+out-of-range clamp cases, plus an explicit active no-cyclePosition fallback
+test; the existing `EXPECTED_ARTWORK.active` fixture now reads from a new
+`ACTIVE_START`/`ACTIVE_END` pair since active's own start is no longer the
+same as its rendered appearance. `Board.test.tsx` gained one wiring test:
+two active sites at pressure 1 and at the cap on the same hand-built board
+render markers of radius 12 and 24 respectively. Deviation: the plan
+offered exporting the hex-lerp helper for direct unit testing "if that
+reads better"; kept it private and tested it through rendered output only,
+consistent with how the pre-existing `middleStopOffsetPercent` travel is
+already tested in this file. `npm test` (719/719, up from 712), `npm run
+typecheck`, `npm run lint` and `npm run format:check` all pass.
 
 Give the active state the start-to-end travel it has never had (**D14**), and
 record the accessibility consequence (**D17**).

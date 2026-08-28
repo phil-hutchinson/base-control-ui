@@ -1,11 +1,12 @@
 // Decorative site-state artwork: one radial-gradient circle at the square's
 // centre, drawn behind any ship on the same square, with one appearance per
-// rules.md §8.1 state. Active is a small disc; charged and dormant are the
-// same larger shape, wider than the square and cropped to it by the outer
-// <svg>, one gold and one grey. Purely decorative - a screen reader gets the
-// site and its state from the occupying square's accessible name (see
-// squareLabel.ts), so the SVG carries no title or description and is hidden
-// from the accessibility tree.
+// rules.md §8.1 state. Active is a disc that grows and warms as the site's
+// pressure builds; charged and dormant are the same larger shape, wider than
+// the square and cropped to it by the outer <svg>, one gold and one grey.
+// Purely decorative - a screen reader gets the site and its state from the
+// occupying square's accessible name (see squareLabel.ts), so the SVG
+// carries no title or description and is hidden from the accessibility
+// tree.
 
 import type { SiteState } from "../rules/sites";
 import "./SiteMarker.css";
@@ -14,9 +15,10 @@ interface SiteMarkerProps {
   readonly state: SiteState;
   readonly squareName: string;
   /**
-   * How far the site is through its charged or dormant clock (0 to 1, see
-   * `siteCyclePosition` in `../rules/sites`). Ignored for active, which has
-   * no clock; falls back to the state's start-of-cycle offset when absent.
+   * How far the site has travelled through its state's own cycle (0 to 1,
+   * see `siteCyclePosition` in `../rules/sites`): drain for charged,
+   * remaining drain for dormant, pressure for active. Falls back to the
+   * state's start-of-cycle appearance when absent.
    */
   readonly cyclePosition?: number;
 }
@@ -56,14 +58,73 @@ function middleStopOffsetPercent(
   );
 }
 
+// Active's start-to-end travel, at a freshly-cycled site's pressure of 1 and
+// at the pressure cap: the small pale disc from node-artwork.md's "Dormant"
+// section growing and warming into the larger disc from that same document's
+// "Active" section (see siteArtwork's comment for why those pre-0.11
+// headings do not mean what they mean in the code).
+const ACTIVE_START_RADIUS = 12;
+const ACTIVE_END_RADIUS = 24;
+const ACTIVE_START_INNER_COLOR = "#F1DBA5";
+const ACTIVE_END_INNER_COLOR = "#DAA520";
+const ACTIVE_OUTER_COLOR = "#DAA520";
+const ACTIVE_START_OUTER_OPACITY = 0.75;
+const ACTIVE_END_OUTER_OPACITY = 0.5;
+
+/** Linear interpolation between two numbers, at a position clamped to [0, 1] (or the start if none is given). */
+function lerpNumber(
+  start: number,
+  end: number,
+  position: number | undefined,
+): number {
+  const clamped = Math.min(1, Math.max(0, position ?? 0));
+  return start + (end - start) * clamped;
+}
+
+/** One colour channel, as a two-digit hex string. */
+function hexChannel(value: number): string {
+  return value.toString(16).padStart(2, "0").toUpperCase();
+}
+
+/** The three 0–255 channels of a six-digit `#RRGGBB` colour. */
+function hexChannels(color: string): readonly [number, number, number] {
+  const digits = color.slice(1);
+  return [
+    parseInt(digits.slice(0, 2), 16),
+    parseInt(digits.slice(2, 4), 16),
+    parseInt(digits.slice(4, 6), 16),
+  ];
+}
+
+/**
+ * Linear interpolation between two six-digit `#RRGGBB` colours, one channel
+ * at a time, at a position clamped to [0, 1] (or the start if none is
+ * given).
+ */
+function hexLerp(
+  start: string,
+  end: string,
+  position: number | undefined,
+): string {
+  const clamped = Math.min(1, Math.max(0, position ?? 0));
+  const startChannels = hexChannels(start);
+  const endChannels = hexChannels(end);
+  const mixed = startChannels.map((channel, index) =>
+    Math.round(channel + (endChannels[index] - channel) * clamped),
+  );
+  return `#${mixed.map(hexChannel).join("")}`;
+}
+
 // Radii, gradient stops, colours and opacities, taken from
 // doc/plan/00000023-update-node-visual/node-artwork.md exactly as specified
-// there (that document's own, pre-0.11 headings: "Active" for the active
-// state below, "Charged" for charged, and "Depleted" for dormant — the
-// document's "Dormant" section, the small pale disc, has no state left to
-// draw and is not used here). One artwork per site state; the exhaustive
-// switch has no default, so a new state is a compile error rather than a
-// silent gap.
+// there (that document's own, pre-0.11 headings, which do not mean what the
+// same words mean in the code: "Charged" for charged and "Depleted" for
+// dormant below. Active now travels between two of that document's
+// sections: its "Dormant" section — the small pale disc — at a freshly
+// cycled site's pressure of 1, and its "Active" section — the larger gold
+// disc, what the code has always drawn for this state — at the pressure
+// cap). One artwork per site state; the exhaustive switch has no default,
+// so a new state is a compile error rather than a silent gap.
 function siteArtwork(
   state: SiteState,
   cyclePosition: number | undefined,
@@ -71,10 +132,30 @@ function siteArtwork(
   switch (state) {
     case "active":
       return {
-        radius: 24,
+        radius: lerpNumber(
+          ACTIVE_START_RADIUS,
+          ACTIVE_END_RADIUS,
+          cyclePosition,
+        ),
         stops: [
-          { offsetPercent: 0, color: "#DAA520", opacity: 1 },
-          { offsetPercent: 100, color: "#DAA520", opacity: 0.5 },
+          {
+            offsetPercent: 0,
+            color: hexLerp(
+              ACTIVE_START_INNER_COLOR,
+              ACTIVE_END_INNER_COLOR,
+              cyclePosition,
+            ),
+            opacity: 1,
+          },
+          {
+            offsetPercent: 100,
+            color: ACTIVE_OUTER_COLOR,
+            opacity: lerpNumber(
+              ACTIVE_START_OUTER_OPACITY,
+              ACTIVE_END_OUTER_OPACITY,
+              cyclePosition,
+            ),
+          },
         ],
       };
     case "charged":

@@ -26,15 +26,27 @@ interface ExpectedArtwork {
 // Radii, stop offsets, colours and opacities as specified in
 // doc/plan/00000023-update-node-visual/node-artwork.md, transcribed here as
 // the expectation an assertion checks against, independently of
-// SiteMarker.tsx's own table.
+// SiteMarker.tsx's own table. Active's own start and end sit at pressure 1
+// and the pressure cap respectively (see SiteMarker.tsx's ACTIVE_*
+// constants).
+const ACTIVE_START: ExpectedArtwork = {
+  radius: "12",
+  stops: [
+    { offset: "0%", color: "#F1DBA5", opacity: "1" },
+    { offset: "100%", color: "#DAA520", opacity: "0.75" },
+  ],
+};
+
+const ACTIVE_END: ExpectedArtwork = {
+  radius: "24",
+  stops: [
+    { offset: "0%", color: "#DAA520", opacity: "1" },
+    { offset: "100%", color: "#DAA520", opacity: "0.5" },
+  ],
+};
+
 const EXPECTED_ARTWORK: Record<SiteState, ExpectedArtwork> = {
-  active: {
-    radius: "24",
-    stops: [
-      { offset: "0%", color: "#DAA520", opacity: "1" },
-      { offset: "100%", color: "#DAA520", opacity: "0.5" },
-    ],
-  },
+  active: ACTIVE_START,
   charged: {
     radius: "70",
     stops: [
@@ -167,6 +179,87 @@ describe("SiteMarker", () => {
 
       const stops = container.querySelectorAll("stop");
       expect(stops[1]).toHaveAttribute("offset", expectedOffset);
+    },
+  );
+
+  it("renders active's pressure-1 appearance at cycle position 0", () => {
+    const { container } = render(
+      <SiteMarker state="active" squareName={SQUARE_NAME} cyclePosition={0} />,
+    );
+
+    const circle = container.querySelector("circle");
+    expect(circle).toHaveAttribute("r", ACTIVE_START.radius);
+
+    const stops = container.querySelectorAll("stop");
+    expect(stops[0]).toHaveAttribute("stop-color", ACTIVE_START.stops[0].color);
+    expect(stops[1]).toHaveAttribute(
+      "stop-opacity",
+      ACTIVE_START.stops[1].opacity,
+    );
+  });
+
+  it("renders today's disc at active's pressure cap, cycle position 1", () => {
+    const { container } = render(
+      <SiteMarker state="active" squareName={SQUARE_NAME} cyclePosition={1} />,
+    );
+
+    const circle = container.querySelector("circle");
+    expect(circle).toHaveAttribute("r", ACTIVE_END.radius);
+
+    const stops = container.querySelectorAll("stop");
+    expect(stops[0]).toHaveAttribute("stop-color", ACTIVE_END.stops[0].color);
+    expect(stops[1]).toHaveAttribute(
+      "stop-opacity",
+      ACTIVE_END.stops[1].opacity,
+    );
+  });
+
+  it("sits halfway between active's two ends at cycle position 0.5", () => {
+    const { container } = render(
+      <SiteMarker
+        state="active"
+        squareName={SQUARE_NAME}
+        cyclePosition={0.5}
+      />,
+    );
+
+    const circle = container.querySelector("circle");
+    expect(circle).toHaveAttribute("r", "18");
+
+    const stops = container.querySelectorAll("stop");
+    // #F1DBA5 -> #DAA520, per channel: F1->DA, DB->A5, A5->20.
+    expect(stops[0]).toHaveAttribute("stop-color", "#E6C063");
+    expect(stops[1]).toHaveAttribute("stop-opacity", "0.625");
+  });
+
+  it("falls back to active's pressure-1 appearance when no cycle position is given", () => {
+    const { container } = render(
+      <SiteMarker state="active" squareName={SQUARE_NAME} />,
+    );
+
+    const circle = container.querySelector("circle");
+    expect(circle).toHaveAttribute("r", ACTIVE_START.radius);
+
+    const stops = container.querySelectorAll("stop");
+    expect(stops[0]).toHaveAttribute("stop-color", ACTIVE_START.stops[0].color);
+  });
+
+  it.each([
+    { cyclePosition: -0.5, expected: ACTIVE_START },
+    { cyclePosition: 1.5, expected: ACTIVE_END },
+  ])(
+    "clamps active's cycle position $cyclePosition to its nearer end",
+    ({ cyclePosition, expected }) => {
+      const { container } = render(
+        <SiteMarker
+          state="active"
+          squareName={SQUARE_NAME}
+          cyclePosition={cyclePosition}
+        />,
+      );
+
+      const circle = container.querySelector("circle");
+      expect(circle).toHaveAttribute("r", expected.radius);
     },
   );
 
