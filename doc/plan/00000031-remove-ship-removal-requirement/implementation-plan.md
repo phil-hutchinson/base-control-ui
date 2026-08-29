@@ -402,7 +402,23 @@ keeping in a rewritten form:
 
 ## Step 1 — Rules 0.13: a ship may stop anywhere, and stranding is deleted
 
-Status: pending
+Status: committed
+
+Notes: Edited `rules.md` exactly as specified — §6's closing paragraph
+deleted, §7's two site-exclusion mentions removed, §8.1's three bullets
+rewritten to describe production and draw eligibility only, §8.2 gained a
+sentence on charging under an occupying ship (with the "owner's next turn"
+timing per D3), §8.3's stranding clause reworded, §8.5 rewritten in place
+keeping its number and title changed to "Standing on a site that is not
+charged", and §8.6 step 3's stranding clause removed. Version bumped to 0.13
+in both `rules.md` and `RULES_VERSION`, and a changelog entry added at the
+top of `changelog.md`. No section renumbered (§8 still runs 8.1–8.7 with no
+gap). No `src/` file other than `rulesVersion.ts` touched, per D1 — the code
+(including `stranded.ts` and the site-state move refusal) is knowingly
+behind the document until later steps. One incidental deviation: rewrapped a
+couple of paragraph lines in §7 that the edits left ragged, to match the
+document's existing ~80-character wrapping style; no wording beyond what the
+step specified was changed.
 
 Edit `doc/ruleset/rules.md`, add a `doc/ruleset/changelog.md` entry, and bump
 `RULES_VERSION` in `src/rules/rulesVersion.ts` to `"0.13"`. **No behaviour

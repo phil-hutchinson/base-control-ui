@@ -7,6 +7,43 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.13 — ships may stay on any site
+
+- **A move may end anywhere a ship can reach.** Section 6's closing
+  restriction — a ship may not end a move on a site that is not charged — is
+  deleted outright. Reach, a clear path and an empty destination square are
+  now the whole of the restriction on where a move ends.
+- **Stranding is deleted, and the word leaves the document.** A ship left
+  standing on a site that is not charged used to owe its owner an action, on
+  pain of every other action being refused until it moved clear. That
+  obligation, and the "stranded" state it created, is gone: a ship may stand
+  on an active or a dormant site for as long as its owner likes, and its
+  owner is free to take any action at all on a later turn.
+- **A site can charge underneath a ship.** Section 8.2 says plainly what was
+  already true of the draw and newly reachable now that a ship may camp on
+  an active site: the charge draw does not look at occupancy, so a site with
+  a ship standing on it can be charged, and that ship is holding a node from
+  that moment — it collects and starts gaining shields at the end of its
+  owner's next turn, exactly as if it had moved onto a node.
+- **A winning attacker's advance is limited by ships alone.** Section 7's
+  advance used to skip a candidate square whose site was not charged; that
+  exclusion is deleted, so the attacker takes the loser's square — the
+  ordinary case — even when that square is not charged. An occupied square,
+  including the beaten ship's own return bay landing on the lane, still
+  stops the advance exactly as before.
+- **Section 8.5 keeps its number but changes its subject.** It no longer
+  forbids standing on a site that is not charged or describes the
+  obligation that followed; it now states plainly that standing on such a
+  site is allowed, ordinary, pays nothing, and that a node running out under
+  its holder simply stops paying rather than costing the holder a later
+  action.
+- **Section 8.1's three site states stop describing where a ship may
+  stop.** Active, charged and dormant now differ only in what they produce
+  and whether they are eligible for the charge draw.
+- **Section 8.3 and section 8.6's step 3 drop their stranding clauses.** A
+  node that reaches capacity still goes dormant; a ship standing on it
+  simply stays there, collecting nothing.
+
 ## 0.12 — variable node durations
 
 - **A node's fixed nine-turn life is replaced by capacity and drain.** A

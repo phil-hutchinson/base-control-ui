@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.12**
+**Rules version: 0.13**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -212,9 +212,6 @@ Moving and attacking are entirely separate: a ship never attacks by moving
 onto its target. Winning a fight can still move the winning ship — see
 section 7's advance, which is not a move.
 
-A ship may not **end** a move on a site that is not charged (section 8.5). It
-may fly over one freely.
-
 ---
 
 ## 7. Combat
@@ -223,10 +220,9 @@ A ship may attack an enemy ship within its **movement range** (section 6) —
 the same distances, the same straight lines, and on the same terms: every
 square the attack passes over must be empty, of either side's ships. The
 target square is of course occupied, by the enemy ship, and the site it
-stands on does not matter — a ship stranded on a site that is not charged
-(section 8.5) can still be attacked. At the two extremes: a ship with 4
-shields reaches only one square orthogonally and cannot strike a diagonal at
-all, while a ship carrying no shields reaches three squares orthogonally.
+stands on does not matter. At the two extremes: a ship with 4 shields reaches
+only one square orthogonally and cannot strike a diagonal at all, while a
+ship carrying no shields reaches three squares orthogonally.
 Attacking is always the attacking player's choice; ships never fight
 automatically. A ship may attack an enemy stronger than itself.
 
@@ -243,11 +239,10 @@ So a 4-shield ship that beats a 2-shield ship comes out of it with 1, and even
 beating an unshielded ship costs a shield.
 
 **The winner advances.** Only an attacking winner does — a winning defender
-holds its ground. The attacker advances along the line it
-attacked down, to the furthest square, working back from the square the
-loser has left, that it may legally end on. "May legally end on" is section
-6's restriction and nothing else — not a site that is not charged
-(section 8.5). The winner also cannot cross a square another ship occupies:
+holds its ground. The attacker advances along the line it attacked down, to
+the furthest square, working back from the square the loser has left, that
+it may legally end on. "May legally end on" is section 6's restriction and
+nothing else. The winner also cannot cross a square another ship occupies:
 if the beaten ship's bay (section 7.1) lies on the lane, it blocks the
 advance there, and the winner stops short of it. In the ordinary case that is
 simply the loser's own square, and the winner takes it. If no square on the
@@ -308,12 +303,11 @@ shields on arrival (section 3.1).
 
 Every site is always in exactly one of three states:
 
-- **Active** — eligible to be charged, but producing nothing. A ship may not
-  end a move here.
-- **Charged** — producing energy. A ship may end a move here, collect from
-  it (section 8.4) and gain shields on it (section 4.1).
-- **Dormant** — cooling down after running out. Not eligible to be charged. A
-  ship may not end a move here.
+- **Active** — eligible to be charged, but producing nothing.
+- **Charged** — producing energy: a ship standing on it collects (section
+  8.4) and gains shields (section 4.1).
+- **Dormant** — recovering after running out. Not eligible to be charged, and
+  producing nothing.
 
 A site cycles active → charged → dormant → active.
 
@@ -338,6 +332,11 @@ charged count back to five are chosen at random, one at a time. If fewer than
 that are active, fewer are charged and the board runs below five until the
 next turn. Charged nodes still run out on schedule whether or not the board
 is at its five.
+
+The draw does not look at occupancy: a site with a ship standing on it can be
+charged like any other. That ship is holding a node from that moment — it
+collects (section 8.4) and starts gaining shields (section 4.1) at the end of
+its owner's next turn, exactly as if it had moved onto a node.
 
 The choice is genuinely random, and neither player can see it coming — but it
 is no longer an equal chance for every active site. An active site carries
@@ -377,8 +376,9 @@ A node runs its drain up whether or not any ship is standing on it — it just
 runs up more than twice as fast when one is.
 
 When drain reaches or passes capacity, the node is spent: it goes dormant at
-the end of that turn, stranding any ship left on it exactly as before
-(section 8.5). An empty node lasts about 28 turns; a held one lasts about 13.
+the end of that turn and simply stops paying. A ship left standing on it
+stays where it is (section 8.5). An empty node lasts about 28 turns; a held
+one lasts about 13.
 Holding a node is what uses it up. Section 8.7 covers the other way a node
 ends: leaving it.
 
@@ -398,33 +398,25 @@ collects nothing.
 | 4                  | 10     |
 | 5                  | 15     |
 
-### 8.5 Active and dormant sites
+### 8.5 Standing on a site that is not charged
 
-A ship may not **end a move** on an active or a dormant site, though it may
-fly over either freely.
+Standing on an active or a dormant site is allowed and ordinary. A ship may
+end a move on either, and may stay there for the rest of the game if its
+owner likes — nothing about it obliges the owner to move it, or anything
+else, on a later turn.
 
-The one way a ship ends up on a dormant site is by holding a node until its
-capacity runs out underneath it (section 8.3) — leaving a node ends it too
-(section 8.7), but the ship that left is by definition no longer on it. A
-ship left standing on a node that ran out under it is **stranded**, and on
-their next turn its owner must spend an action moving it clear. A site
-finishes recovering and goes active about ten turns after a full node ran
-out, sooner if it was ended early (section 8.2). A ship still standing there
-when that happens is equally stuck — section 6 forbids ending a move on
-either state — and stays stranded on the same terms.
+It pays nothing: no energy (section 8.4) and no shields (section 4.1) while
+the site is not charged.
 
-That is a restriction on what an action may be, not a penalty on top of one:
-while any ship still owes an action, each action of the turn must free one.
-A player frees as many stranded ships as their turn has actions; the rest
-wait for a later turn.
+The site's own cycle carries on underneath the ship. A dormant site recovers
+and goes active on schedule regardless of what is standing on it, and an
+active site is eligible for the charge draw whether or not a ship is
+standing on it (section 8.2).
 
-If a stranded ship has no legal move at all, the requirement is simply waived —
-the player is not obliged to attack blockers or shuffle friendly ships out of
-the way, and the ship may sit where it is.
-
-This is the tail cost of holding a node. Nodes drain at independently drawn
-rates, so a player holding several of them pays for them one at a time as
-each runs out under its own ship, rather than all at once.
+The one case that used to be a penalty is now nothing more than the node
+falling quiet: when a node runs out under the ship holding it (section 8.3),
+the node simply stops paying. The ship stays or leaves, exactly as its owner
+prefers.
 
 ### 8.6 End-of-turn order
 
@@ -434,7 +426,8 @@ Everything that happens at the end of a turn happens in this order:
    shield.
 2. The moving player collects energy (section 8.4).
 3. Every charged node adds its drain (section 8.3); any that reaches capacity
-   goes dormant, stranding any ship left on it.
+   goes dormant, and any ship standing on it keeps standing there, collecting
+   nothing.
 4. As many active sites as it takes to bring the board back to five charged
    are charged, drawn by pressure (section 8.2).
 5. Every site still active gains a point of pressure, to the cap of 50
