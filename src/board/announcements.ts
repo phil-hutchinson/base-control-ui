@@ -385,10 +385,6 @@ function rejectionSentence(event: RejectedEvent): string {
       return `Another ship is in the way of ${square}.`;
     case "destination-occupied":
       return `${square} is occupied.`;
-    case "destination-active-site":
-      return `${square} is an active site — nothing has charged there yet, so a ship cannot stop there.`;
-    case "destination-dormant-site":
-      return `${square} is a dormant site — it has run out and is cooling down, so a ship cannot stop there.`;
     case "attacker-in-bay":
       return "A ship in a bay cannot attack. Move it out first.";
     case "target-in-bay":

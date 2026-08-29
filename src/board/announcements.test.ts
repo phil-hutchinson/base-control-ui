@@ -256,16 +256,6 @@ describe("announcementFor", () => {
     ["path-blocked", squareAt("C", 8), "Another ship is in the way of C8."],
     ["destination-occupied", squareAt("C", 7), "C7 is occupied."],
     [
-      "destination-active-site",
-      squareAt("D", 8),
-      "D8 is an active site — nothing has charged there yet, so a ship cannot stop there.",
-    ],
-    [
-      "destination-dormant-site",
-      squareAt("H", 4),
-      "H4 is a dormant site — it has run out and is cooling down, so a ship cannot stop there.",
-    ],
-    [
       "attacker-in-bay",
       squareAt("H", 15),
       "A ship in a bay cannot attack. Move it out first.",

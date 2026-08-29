@@ -1,9 +1,10 @@
 // Movement (rules.md §6): a ship moves in a straight line, orthogonally or
 // diagonally, as far as its shield count allows. `src/rules/moveLegality.ts`
-// holds §6 itself — reach, occupancy and the destination site's state; this
-// module layers §8.5's stranded-ship obligation on top of it. This is the
-// only implementation of §6 in the app; every caller that needs a legal move
-// or the reason one is refused calls the functions here.
+// holds §6 itself — reach and occupancy, with no restriction on the
+// destination site's state; this module layers §8.5's stranded-ship
+// obligation on top of it. This is the only implementation of §6 in the app;
+// every caller that needs a legal move or the reason one is refused calls the
+// functions here.
 
 import type { Square } from "./board";
 import type { ShipId } from "./fleet";

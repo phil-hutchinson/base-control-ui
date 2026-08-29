@@ -561,7 +561,27 @@ inspection:
 
 ## Step 2 — A move may end anywhere a ship can reach
 
-Status: pending
+Status: committed
+
+Notes: `sixOnlyMoveRefusalReason` in `moveLegality.ts` no longer checks
+`siteStateAt` for the destination; `destination-active-site` and
+`destination-dormant-site` are gone from `MoveRefusalReason`, and the now
+unused `siteStateAt` import is removed. The module and function comments
+were rewritten to stop claiming the destination's site state matters, and
+`movement.ts`'s module comment (which made the same now-false claim) was
+also corrected — a one-line deviation from the step's file list, done
+because leaving it would have left an inaccurate doc comment describing a
+check that no longer exists. `announcements.ts` lost the two `rejectionSentence`
+case arms for the removed reasons. `stranded.ts` and `another-ship-stranded`
+are untouched, as specified — a ship on a site that is not charged is still
+stranded until step 3. Tests updated: `movement.test.ts`'s site-exclusion
+case now asserts active, dormant and charged destinations are all legal and
+unrefused, and the two removed-reason rows left the "produces each specific
+reason" table; `session.test.ts`'s two rejection tests became "applies a
+move ending on an active/dormant site"; `announcements.test.ts` lost the two
+rejection-sentence cases. Full suite (723 tests), typecheck and lint all
+pass; `fullGame.test.ts` passed unchanged despite its greedy policy having
+new destinations available, as anticipated by D12.
 
 Delete §6's destination site-state check from the move-legality layer, and with
 it the two refusal reasons that only that check produced.

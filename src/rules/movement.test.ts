@@ -244,7 +244,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(destinations).toContain("H11");
   });
 
-  it("excludes an active or dormant destination, allows flying over either, and allows a charged destination", () => {
+  it("allows a move to end on an active, a dormant or a charged destination alike", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7")],
       siteStates: {
@@ -255,18 +255,18 @@ describe("legalDestinations and moveRefusalReason", () => {
     });
 
     const destinations = legalDestinations(state, "green-1").map(squareName);
-    expect(destinations).not.toContain("G7");
+    expect(destinations).toContain("G7");
     expect(destinations).toContain("H7");
-    expect(destinations).not.toContain("C7");
+    expect(destinations).toContain("C7");
     expect(destinations).toContain("B7");
     expect(destinations).toContain("G9");
 
-    expect(moveRefusalReason(state, "green-1", squareFromName("G7"))).toBe(
-      "destination-active-site",
-    );
-    expect(moveRefusalReason(state, "green-1", squareFromName("C7"))).toBe(
-      "destination-dormant-site",
-    );
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("G7")),
+    ).toBeUndefined();
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("C7")),
+    ).toBeUndefined();
     expect(
       moveRefusalReason(state, "green-1", squareFromName("H7")),
     ).toBeUndefined();
@@ -358,10 +358,6 @@ describe("legalDestinations and moveRefusalReason", () => {
     const blocking = buildState({
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "H10")],
     });
-    const sites = buildState({
-      ships: [ship("green-1", "green", "E7")],
-      siteStates: { G7: "active", C7: "dormant" },
-    });
     const notYourTurn = buildState({
       ships: [ship("green-1", "green", "H8")],
       sideToMove: "red",
@@ -385,8 +381,6 @@ describe("legalDestinations and moveRefusalReason", () => {
       [blocking, "green-1", "O15", "out-of-range"],
       [blocking, "green-1", "H11", "path-blocked"],
       [blocking, "green-1", "H10", "destination-occupied"],
-      [sites, "green-1", "G7", "destination-active-site"],
-      [sites, "green-1", "C7", "destination-dormant-site"],
     ];
 
     for (const [state, shipId, square, reason] of expectations) {

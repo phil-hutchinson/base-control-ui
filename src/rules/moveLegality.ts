@@ -1,9 +1,9 @@
 // §6-only move legality (rules.md §6): whether a destination is legal for a
-// ship judged by reach, occupancy and the destination site's state alone,
-// with no awareness of §8.5's stranded-ship obligation. `stranded.ts` uses
-// this half to ask "does this ship have a legal move" without asking "does
-// the obligation apply to this ship", which would be circular; the public
-// functions in `movement.ts` are built on top of it for every other caller.
+// ship judged by reach, occupancy and nothing else, with no awareness of
+// whether the game has ended. `stranded.ts` uses this half to ask "does this
+// ship have a legal move" without asking "does the obligation apply to this
+// ship", which would be circular; the public functions in `movement.ts` are
+// built on top of it for every other caller.
 
 import {
   COLUMN_LETTERS,
@@ -13,12 +13,7 @@ import {
   squareName,
 } from "./board";
 import type { ShipId } from "./fleet";
-import {
-  type GameState,
-  type Ship,
-  shipsBySquare,
-  siteStateAt,
-} from "./gameState";
+import { type GameState, type Ship, shipsBySquare } from "./gameState";
 import type { ShieldCount } from "./shields";
 
 type DirectionKind = "orthogonal" | "diagonal";
@@ -125,8 +120,6 @@ export type MoveRefusalReason =
   | "out-of-range"
   | "path-blocked"
   | "destination-occupied"
-  | "destination-active-site"
-  | "destination-dormant-site"
   | "game-over";
 
 /** The ship with the given id in this state, or throws if there is none. */
@@ -141,9 +134,9 @@ export function findShip(state: GameState, shipId: ShipId): Ship {
 /**
  * Why `destination` is not a legal move for `shipId` in the given state,
  * under §6 alone: whose ship it is, whether it has already acted, its reach,
- * occupancy along the way, and the destination site's state. Says nothing
- * about §8.5's stranded-ship obligation — `movement.ts` layers that on top
- * for the public `moveRefusalReason`.
+ * and occupancy along the way and at the destination. Says nothing about
+ * §8.5's stranded-ship obligation — `movement.ts` layers that on top for the
+ * public `moveRefusalReason`.
  */
 export function sixOnlyMoveRefusalReason(
   state: GameState,
@@ -173,14 +166,6 @@ export function sixOnlyMoveRefusalReason(
   }
   if (occupied.has(destinationName)) {
     return "destination-occupied";
-  }
-
-  const siteState = siteStateAt(state, destination);
-  if (siteState === "active") {
-    return "destination-active-site";
-  }
-  if (siteState === "dormant") {
-    return "destination-dormant-site";
   }
 
   return undefined;
