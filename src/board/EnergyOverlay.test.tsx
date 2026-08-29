@@ -4,7 +4,10 @@ import { cleanup, render } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { squareAt } from "../rules/board";
-import type { EnergyCollectedEffect } from "../rules/endOfTurn";
+import type {
+  EnergyCollectedEffect,
+  EnergyPenaltyEffect,
+} from "../rules/endOfTurn";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import type { GameState } from "../rules/gameState";
 import type { PassEffect } from "../rules/ply";
@@ -60,6 +63,35 @@ function movedEventWithCollection(
   };
 }
 
+function movedEventWithEndOfTurn(
+  endOfTurn: readonly (EnergyCollectedEffect | EnergyPenaltyEffect)[],
+): MovedEvent {
+  return {
+    type: "moved",
+    shipId: "green-1",
+    side: "green",
+    from: squareAt("C", 7),
+    to: squareAt("C", 6),
+    effects: [
+      {
+        type: "ply-ended",
+        side: "green",
+        sideToMove: "red",
+        endOfTurn,
+      },
+    ],
+    actionsRemaining: 1,
+  };
+}
+
+const TWO_SITE_PENALTY: EnergyPenaltyEffect = {
+  type: "energy-penalty",
+  side: "green",
+  amount: 3,
+  newTotal: 21,
+  squares: [squareAt("D", 8), squareAt("H", 8)],
+};
+
 describe("EnergyOverlay", () => {
   it("renders nothing when the session has no last event at all", () => {
     const { container } = render(
@@ -104,6 +136,98 @@ describe("EnergyOverlay", () => {
     expect(container.querySelectorAll(".energy-overlay__pulse")).toHaveLength(
       0,
     );
+  });
+
+  it("draws one -N and one pulse per paying square, in the paying side's colour", () => {
+    const { container } = render(
+      <EnergyOverlay
+        session={sessionWithEvent(movedEventWithEndOfTurn([TWO_SITE_PENALTY]))}
+      />,
+    );
+
+    const losses = container.querySelectorAll(".energy-overlay__gain");
+    expect(losses).toHaveLength(1);
+    expect(losses[0]).toHaveTextContent("-3");
+    expect(losses[0]).toHaveClass("energy-overlay__gain--negative");
+    expect(losses[0]).toHaveClass("energy-overlay__gain--green");
+
+    const pulses = container.querySelectorAll(".energy-overlay__pulse");
+    expect(pulses).toHaveLength(2);
+    for (const pulse of pulses) {
+      expect(pulse).toHaveClass("energy-overlay__pulse--negative");
+      expect(pulse).toHaveClass("energy-overlay__pulse--green");
+    }
+  });
+
+  it("draws both a +N and a -N when a turn collects and then pays", () => {
+    const { container } = render(
+      <EnergyOverlay
+        session={sessionWithEvent(
+          movedEventWithEndOfTurn([THREE_NODE_COLLECTION, TWO_SITE_PENALTY]),
+        )}
+      />,
+    );
+
+    const amounts = container.querySelectorAll(".energy-overlay__gain");
+    expect(amounts).toHaveLength(2);
+    expect(amounts[0]).toHaveTextContent("+6");
+    expect(amounts[0]).not.toHaveClass("energy-overlay__gain--negative");
+    expect(amounts[1]).toHaveTextContent("-3");
+    expect(amounts[1]).toHaveClass("energy-overlay__gain--negative");
+
+    const gainPulses = container.querySelectorAll(
+      ".energy-overlay__pulse:not(.energy-overlay__pulse--negative)",
+    );
+    expect(gainPulses).toHaveLength(3);
+    const lossPulses = container.querySelectorAll(
+      ".energy-overlay__pulse--negative",
+    );
+    expect(lossPulses).toHaveLength(2);
+  });
+
+  it("draws both sides' settlements when a ply-ending action is followed by the other side's pass, one collecting and one paying", () => {
+    const passPenalty: EnergyPenaltyEffect = {
+      type: "energy-penalty",
+      side: "red",
+      amount: 1,
+      newTotal: 2,
+      squares: [squareAt("K", 5)],
+    };
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [THREE_NODE_COLLECTION],
+        },
+        {
+          type: "ply-passed",
+          side: "red",
+          sideToMove: "green",
+          endOfTurn: [passPenalty],
+        },
+      ],
+      actionsRemaining: 1,
+    };
+
+    const { container } = render(
+      <EnergyOverlay session={sessionWithEvent(event)} />,
+    );
+
+    const amounts = container.querySelectorAll(".energy-overlay__gain");
+    expect(amounts).toHaveLength(2);
+    expect(container.querySelectorAll(".energy-overlay__pulse")).toHaveLength(
+      4,
+    );
+    expect(
+      container.querySelectorAll(".energy-overlay__pulse--negative"),
+    ).toHaveLength(1);
   });
 
   it("draws both collections when a ply-ending action is followed by the other side's pass", () => {

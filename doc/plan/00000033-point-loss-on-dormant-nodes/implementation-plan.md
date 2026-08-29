@@ -972,7 +972,32 @@ the first by temporarily disabling the penalty locally, then restore).
 
 ## Step 6 — The overlay draws the penalty
 
-Status: pending
+Status: committed
+
+Notes: Generalised `collectionsForEvent` into `settlementsForEvent`, which
+gathers both `energy-collected` and `energy-penalty` effects from the same
+places (top-level `ply-passed`, and a `moved`/`attacked` event's own
+`ply-ended` plus a nested `ply-passed`), tagging each as `"positive"` or
+`"negative"`. The rendered `+N`/`-N` and pulse elements keep their existing
+base class names (`energy-overlay__gain`, `energy-overlay__pulse`) so the
+pre-existing collection tests and their `--green`/`--red` class assertions
+pass unchanged, and gain a `--negative` modifier for a penalty (a `--positive`
+modifier was considered but a bare absence of `--negative` already reads as
+the gain case, so only one new modifier was added). React keys now include
+the settlement kind and an index, not just side and ply number. Added two
+keyframe variants in `EnergyOverlay.css` — a sinking fade for `--negative`
+gains (mirroring the floating fade) and a contracting pulse for `--negative`
+pulses (mirroring the expanding one) — plus explicit
+`prefers-reduced-motion` fallback selectors covering both variants, so
+nothing is carried by motion alone. Extended `EnergyOverlay.test.tsx` with
+cases for a lone penalty, a turn that both collects and pays, and a
+ply-ending action followed by the other side's pass where one side collects
+and the other pays; all prior test cases pass unchanged. `npm run
+typecheck`, `npm run lint`, `npm test` (747 passed) and `npm run
+format:check` all pass. No deviation from the plan beyond the internal
+naming choice above (`"positive"`/`"negative"` rather than `"gain"`/`"loss"`
+for the settlement kind, to avoid the doubled-up class name
+`energy-overlay__gain--loss`).
 
 Extend `src/board/EnergyOverlay.tsx` and `EnergyOverlay.css` so a penalty is
 drawn the way a collection is: a pulse on each dormant square that cost
@@ -1125,6 +1150,10 @@ Depends on: Steps 1 to 8.
 
 Run `npm run dev` and open the app. Confirm, in roughly this order:
 
+0. **The minus sign.** The penalty is drawn with an ASCII hyphen (`-3`), not a
+   typographic minus (`−3`), because a U+2212 may not exist in the arcade font
+   stack and would render as a fallback glyph. If the hyphen reads thin or
+   broken beside the collection's `+`, say so and it can be changed.
 1. **A dormant site costs.** Move a ship onto a spent (dark) site and leave it
    there. At the end of that player's turn the announcement says the ship lost a
    shield and that the player lost energy naming that square, the score digits
