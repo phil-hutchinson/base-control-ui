@@ -255,7 +255,8 @@ zero and both are silent:
 The second case means a player on 0 energy sitting on dormant sites hears and
 sees nothing about the energy penalty that turn. That is the correct reading:
 nothing happened to their score. Their ships still lose shields, and that still
-speaks.
+speaks. **The owner confirmed this at the plan gate**: silence is wanted, and
+no "no energy left to lose" sentence is to be added.
 
 **Rejected:** raising an effect reporting the table price with a smaller actual
 change. The story forbids it in as many words.
@@ -373,19 +374,49 @@ every future query. Use a distinct pair (for example
 `score-display__dormant-pip` and a `--on` modifier, inside a
 `score-display__dormant-pips` container).
 
-**How the row is drawn.** The plan sets the constraints and leaves the exact
-treatment to the implementer:
+**How the pips are drawn — decided by the owner at the plan gate, not open.**
+Every pip in **both** rows carries a **border in the side's colour**
+(`--color-green` / `--color-red`), and its **inside is the colour of the kind of
+site it counts**: **gold** for a charged node, **grey** for a dormant site. The
+border says whose it is; the fill says what it is. A pip that is not "on" has no
+fill — the cell's own background shows through — so a row reads as a count of
+filled pips inside a fixed frame of five.
 
-- A dormant pip that is "on" must **not** look like a lit node pip of the same
-  colour. Differ in shape or fill, not in colour alone — a hollow ring in the
-  side's colour with no glow, against the node row's filled and glowing disc, is
-  the recommended treatment.
-- A side standing on nothing dormant must not have a row that **draws the eye**:
-  the row's "off" pips should be dimmer and quieter than the node row's, so an
-  empty penalty row reads as absent rather than as a second scoreboard.
-- Do not use `--focus-ring` (the amber `#ffb703`) for it. That token means
-  keyboard focus everywhere else in the app and must not start meaning two
-  things.
+This is a change to the **existing** node row as well: today a lit node pip is
+filled with the side's colour and glows (`--color-green` / `--color-red` plus a
+`box-shadow`), and an unlit one is `--color-space-raised` with a
+`--color-text-dim` border. After this step a lit node pip is **gold inside a
+green or red border**, and a dormant pip is **grey inside the same border**.
+Record that restyle in the step's Notes; it is a deliberate change, not a
+regression.
+
+The two fill colours are the board's own, so the HUD and the artwork agree at a
+glance:
+
+| Fill | Colour    | Where it comes from                             |
+| ---- | --------- | ----------------------------------------------- |
+| Gold | `#DAA520` | `SiteMarker.tsx`'s charged gradient (goldenrod) |
+| Grey | `#808080` | `SiteMarker.tsx`'s dormant gradient             |
+
+Add both as tokens in `src/index.css` beside the existing `--color-green` and
+`--color-red` — `--color-node-charged` and `--color-node-dormant` are the names
+this plan uses — with a comment naming `SiteMarker.tsx` as where the values come
+from. **Do not refactor `SiteMarker.tsx` to read them**: its gradient stops are
+computed per render in TypeScript, and rewriting that is outside this story's
+scope. The small duplication is deliberate, and the comment is what keeps it
+honest.
+
+Two constraints survive from the original guidance:
+
+- A side standing on nothing dormant must not have a row that **draws the eye**.
+  With no fill on an "off" pip that mostly follows on its own, but if the empty
+  dormant row still reads as a second scoreboard, quieten its border rather than
+  giving it a fill.
+- Do not use `--focus-ring` (the amber `#ffb703`) anywhere in either row. That
+  token means keyboard focus everywhere else in the app and must not start
+  meaning two things. The charged pip's gold `#DAA520` is a different colour
+  serving a different purpose, and the two must stay visually distinct — check
+  them side by side.
 
 ### D9 — `scoreSentence` names both counts, always
 
@@ -902,14 +933,21 @@ Depends on: Step 2 (the occupancy function both the row and the sentence read).
   class name**, not `score-display__pip` — reusing it would break the existing
   tests that count exactly five pips, and would blur the two rows in every
   future query.
-- An "on" dormant pip must not look like a lit node pip of the same colour:
-  differ in shape or fill, not colour alone. A hollow ring in the side's colour
-  with no glow, against the node row's filled glowing disc, is the recommended
-  treatment.
-- An empty dormant row must not draw the eye. Its "off" pips should be quieter
-  than the node row's.
-- Do not use the `--focus-ring` token for it; that colour means keyboard focus
-  everywhere else in the app.
+- Both rows are restyled to the owner's decision in **D8**: every pip gets a
+  **border in the side's colour**, and an "on" pip is **filled with the colour
+  of the kind of site it counts** — gold for a charged node, grey for a dormant
+  one — while an "off" pip has no fill. This changes the **existing**
+  `.score-display__pip--lit` rule too: a lit node pip becomes gold inside a
+  green or red border rather than a filled, glowing disc of the side's own
+  colour. Record that restyle in the step's Notes.
+- Add `--color-node-charged` (`#DAA520`) and `--color-node-dormant` (`#808080`)
+  to `src/index.css`, commented as coming from `SiteMarker.tsx`'s gradients. Do
+  not refactor `SiteMarker.tsx`.
+- An empty dormant row must not draw the eye; quieten its border rather than
+  giving its "off" pips a fill.
+- Do not use the `--focus-ring` token in either row; that amber means keyboard
+  focus everywhere else in the app, and it must stay visually distinct from the
+  charged pip's gold.
 - The row is decorative and `aria-hidden`, like the row above it.
 
 **The sentence.** `scoreSentence` in `src/board/announcements.ts` currently reads
@@ -929,7 +967,8 @@ Verification (automated): extend `src/hud/ScoreDisplay.test.tsx` and
 renders five pips with none "on" for a side standing on nothing dormant; one
 "on" pip per dormant site occupied; **all five on** for a side standing on six
 dormant sites; the opponent's ships on dormant sites light none of this side's
-row; the node row's five pips and its lit count are unaffected by any of it; and
+row; the node row's five pips and its lit **count** are unaffected by any of it (its
+colours change; its structure, class names and counts do not); and
 `scoreSentence` names both counts, with the singular and the zero case covered.
 `npm run typecheck` and `npm run lint` pass. The visual result is confirmed by
 eye in step 9.
