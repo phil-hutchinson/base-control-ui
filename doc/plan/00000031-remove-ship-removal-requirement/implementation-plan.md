@@ -636,7 +636,7 @@ returns nothing.
 
 ## Step 3 — §8.5's obligation deleted, root and branch
 
-Status: implemented
+Status: committed
 
 Notes: Deleted `stranded.ts` and `stranded.test.ts`; dropped
 `another-ship-stranded` from `MoveRefusalReason` and `AttackRefusalReason`
@@ -781,7 +781,7 @@ ship, an attack, or nothing about that ship at all.
 
 ## Step 4 — A winning attacker advances by occupancy alone
 
-Status: implemented
+Status: committed
 
 Notes: `winnerAdvance` in `combat.ts` no longer skips a candidate whose site
 is `active` or `dormant`; the `siteStateAt` check and its now-unused import
@@ -867,7 +867,7 @@ passing.
 
 ## Step 5 — Camping, end to end
 
-Status: implemented
+Status: committed
 
 Notes: Added `src/rules/camping.test.ts`, a new integration test file driving
 `applyMove` (and, for the one negative check that needs it, `moveRefusalReason`
@@ -955,7 +955,7 @@ number.
 
 ## Step 6 — The two-layer split collapses
 
-Status: implemented
+Status: committed
 
 Notes: `src/rules/moveLegality.ts` is deleted; its contents (`reachFrom`,
 `ReachEntry`, the reach table and helpers, `findShip`, `MoveRefusalReason`,
@@ -1068,7 +1068,7 @@ restored.
 
 ## Step 7 — `README.md` and a sweep for the word "stranded"
 
-Status: implemented
+Status: committed
 
 Notes: Replaced the two obsolete sentences in the status blockquote. "A ship
 can only stop on a site that is already lit." became "A ship may stop
@@ -1135,7 +1135,14 @@ waiting for it to light.
 
 ## Step 8 — Owner play-through
 
-Status: pending
+Status: committed
+
+Notes: The owner ran the app and confirmed the story's headline experience —
+a ship may stop anywhere it can reach, nothing marks it afterwards, its owner
+is free the next turn, a site charges under a parked ship, a node running out
+under a ship is quiet, and a winning attacker takes the square. Nothing was
+reported as reading wrongly, so no fixes were needed and this step commits
+only its own status.
 
 The owner runs the app and confirms the story's headline experience. This is
 the pipeline's manual gate; nothing is committed for it beyond any fixes it
