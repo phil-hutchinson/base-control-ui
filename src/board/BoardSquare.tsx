@@ -206,10 +206,8 @@ export function BoardSquare({
   }
 
   // Threads DAMPENED_OPACITY into BoardSquare.css as the one place it is
-  // defined, rather than duplicating the number in the stylesheet. The
-  // blinking ship needs the same value as its blink target, so any
-  // condition sets it, not only the statically dampened ones.
-  const style = condition
+  // defined, rather than duplicating the number in the stylesheet.
+  const style = isDampened
     ? ({ "--dampened-opacity": DAMPENED_OPACITY } as CSSProperties)
     : undefined;
 

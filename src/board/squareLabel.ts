@@ -9,11 +9,11 @@
 // each computed on its own: a ship that has not yet acted can still carry
 // the no-action condition (a pinned ship, selectable but fruitless), and
 // the mark reflects the current selection or highlight independently of
-// both — the condition alone staying mutually exclusive within itself.
-// Ordinary empty squares are named by their square name alone. The shield
-// count is stated even when it is zero, so a listener hearing one square at
-// a time can tell a shieldless ship apart from an app that never reports
-// shields at all.
+// both. `ShipCondition` currently has a single member, and
+// `CONDITION_WORDING` is where its wording lives. Ordinary empty squares
+// are named by their square name alone. The shield count is stated even
+// when it is zero, so a listener hearing one square at a time can tell a
+// shieldless ship apart from an app that never reports shields at all.
 //
 // A target square's mark names the fight's predicted outcome rather than a
 // fixed phrase, so a listener does not have to hold two ships' shield counts
