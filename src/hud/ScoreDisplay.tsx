@@ -5,7 +5,11 @@
 // sentence from `announcements.ts`.
 
 import { scoreSentence } from "../board/announcements";
-import { chargedNodesHeldBy, dormantSitesOccupiedBy } from "../rules/energy";
+import {
+  chargedNodesHeldBy,
+  dormantSitesOccupiedBy,
+  MAX_DORMANT_SITES_PRICED,
+} from "../rules/energy";
 import type { Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
 import "./ScoreDisplay.css";
@@ -14,11 +18,6 @@ import "./ScoreDisplay.css";
  * side can never hold more than five nodes at once — the pip row is a fixed
  * five. */
 const NODES_IN_PLAY = 5;
-
-/** §8.4: the dormant-sites penalty is capped at five, so a side standing on
- * six or seven dormant sites lights the same five pips a side on five
- * does. */
-const DORMANT_SITES_PRICED = 5;
 
 /** A hundred-round game pays at most 15 x 100 = 1500, so four digits is the
  * width that never reflows as the total grows. */
@@ -72,7 +71,7 @@ export function ScoreDisplay({
         }
         aria-hidden="true"
       >
-        {Array.from({ length: DORMANT_SITES_PRICED }, (_, index) => (
+        {Array.from({ length: MAX_DORMANT_SITES_PRICED }, (_, index) => (
           <span
             key={index}
             className={

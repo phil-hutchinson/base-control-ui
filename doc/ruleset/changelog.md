@@ -38,6 +38,10 @@ until the game plays (see the project's contribution notes).
   shield from each of the moving player's ships on a dormant site; step 2
   also pays the penalty after the collection. No step is added and no step
   moves.
+- **Section 8.6's step 3 states the consequence.** A ship left standing on a
+  node that runs out keeps standing there and collecting nothing, as
+  before, and now also pays for it from the end of its owner's next turn
+  (section 8.4).
 
 ## 0.13 — ships may stay on any site
 

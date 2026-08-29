@@ -6,7 +6,11 @@
 // "node", never "ply" or "hub".
 
 import { squareName } from "../rules/board";
-import { chargedNodesHeldBy, dormantSitesOccupiedBy } from "../rules/energy";
+import {
+  chargedNodesHeldBy,
+  dormantSitesOccupiedBy,
+  MAX_DORMANT_SITES_PRICED,
+} from "../rules/energy";
 import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
@@ -193,6 +197,12 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
  * several name their count and squares — the mirror of
  * `energyCollectedClause`. There is at most one of these per sequence, for
  * the same reason there is at most one collection.
+ *
+ * The count priced is capped at `MAX_DORMANT_SITES_PRICED` (§8.4), but every
+ * occupied dormant site is still named — nothing is ranked or selected, the
+ * cap just stops counting. So a side over the cap hears which sites it is
+ * standing on and that five of them are penalised, not that some subset was
+ * chosen.
  */
 function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
   const side = capitalize(effect.side);
@@ -200,7 +210,9 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
   const source =
     squares.length === 1
       ? `the dormant site at ${squares[0]}`
-      : `${squares.length} dormant sites at ${joinWithAnd(squares)}`;
+      : squares.length > MAX_DORMANT_SITES_PRICED
+        ? `${squares.length} dormant sites at ${joinWithAnd(squares)}, five of which are penalised`
+        : `${squares.length} dormant sites at ${joinWithAnd(squares)}`;
   return `${side} lost ${effect.amount} energy to ${source}, and now has ${effect.newTotal}.`;
 }
 

@@ -8,7 +8,7 @@
   pointer-events: none;
 }
 
-.energy-overlay__gain {
+.energy-overlay__amount {
   position: absolute;
   transform: translate(-50%, -50%);
   font-family: var(--font-arcade);
@@ -18,17 +18,17 @@
   animation: energy-overlay-float 1.2s ease-out forwards;
 }
 
-.energy-overlay__gain--green {
+.energy-overlay__amount--green {
   color: var(--color-green);
 }
 
-.energy-overlay__gain--red {
+.energy-overlay__amount--red {
   color: var(--color-red);
 }
 
 /* A penalty sinks and fades, the mirror of a collection's float, so a loss
    never reads as a gain even at a glance. */
-.energy-overlay__gain--negative {
+.energy-overlay__amount--negative {
   animation-name: energy-overlay-sink;
 }
 
@@ -103,8 +103,8 @@
    still appear and fade, just without travelling or scaling - for both a
    gain and a loss. */
 @media (prefers-reduced-motion: reduce) {
-  .energy-overlay__gain,
-  .energy-overlay__gain--negative {
+  .energy-overlay__amount,
+  .energy-overlay__amount--negative {
     animation: energy-overlay-fade 1.2s ease-out forwards;
     transform: translate(-50%, -50%);
   }

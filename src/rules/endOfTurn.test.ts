@@ -841,12 +841,12 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     expect(result.state.energy).toEqual({ green: 5, red: 5 });
   });
 
-  it("pays for a site the ship ends its move on but not one merely flown over", () => {
+  it("prices the dormant site occupied and ignores one with no ship standing on it", () => {
     // green-1 ends on H8, dormant: it pays for that. K5, also dormant, is
-    // never occupied at all here, so it never counts — flying over a
-    // dormant site is not something `runEndOfTurn` itself models (that is
-    // the movement layer's concern), but a site with no ship standing on it
-    // at the moment the count is taken costs nothing regardless of why.
+    // never occupied at all here, so it never counts — a site with no ship
+    // standing on it at the moment the count is taken costs nothing,
+    // regardless of why. (`camping.test.ts` carries the genuine fly-over
+    // case, driven through movement.)
     const state = {
       ...buildState({
         sideToMove: "green",

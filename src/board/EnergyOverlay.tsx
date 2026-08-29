@@ -115,7 +115,7 @@ export function EnergyOverlay({ session }: EnergyOverlayProps) {
           }),
           <span
             key={`${key}-amount`}
-            className={`energy-overlay__gain energy-overlay__gain--${settlement.kind} energy-overlay__gain--${settlement.side}`}
+            className={`energy-overlay__amount energy-overlay__amount--${settlement.kind} energy-overlay__amount--${settlement.side}`}
             style={{
               top: `${position.top}%`,
               left: `${position.left}%`,

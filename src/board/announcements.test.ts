@@ -1069,6 +1069,43 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
     );
   });
 
+  it("names every dormant site occupied and says five are penalised once the cap is passed", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-2",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-penalty",
+              side: "green",
+              amount: 15,
+              newTotal: 0,
+              squares: [
+                squareAt("D", 8),
+                squareAt("H", 8),
+                squareAt("K", 11),
+                squareAt("E", 5),
+                squareAt("K", 5),
+                squareAt("G", 6),
+              ],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green lost 15 energy to 6 dormant sites at D8, H8, K11, E5, K5 and G6, five of which are penalised, and now has 0. Red's turn, 1 action left.",
+    );
+  });
+
   it("produces no clause when nothing was paid", () => {
     const event: MovedEvent = {
       type: "moved",

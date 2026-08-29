@@ -21,7 +21,7 @@ const ENERGY_BY_NODES_HELD: readonly number[] = [0, 1, 3, 6, 10, 15];
  * charged nodes), so the most a turn can cost is capped here at 15 too, and
  * neither half of §8.4 can outrun the other.
  */
-const MAX_DORMANT_SITES_PRICED = ENERGY_BY_NODES_HELD.length - 1;
+export const MAX_DORMANT_SITES_PRICED = ENERGY_BY_NODES_HELD.length - 1;
 
 /**
  * The number of ships one side starts with, and so the most sites of that

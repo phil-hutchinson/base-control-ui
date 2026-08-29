@@ -69,8 +69,10 @@ implementer:
   are charged at once (§8.1, §8.2), which is why `energyForNodesHeld` treats
   6 as a caller bug. **Dormant sites have no such cap** — ten or more can be
   dormant at once, and a side has seven ships — so the penalty is capped
-  instead: **only the five worst count**, and a side standing on six or seven
-  dormant sites pays the same 15 as one standing on five. This is a deliberate
+  instead: **the count stops at five**, and a side standing on six or seven
+  dormant sites pays the same 15 as one standing on five. Every dormant site
+  costs the same; none is ranked or picked out, the cap simply stops
+  counting. This is a deliberate
   choice rather than an arithmetic accident: the most a turn can pay is 15,
   and now the most a turn can cost is 15 too, so neither side of §8.4 can
   outrun the other.

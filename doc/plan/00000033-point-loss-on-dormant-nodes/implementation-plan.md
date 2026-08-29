@@ -505,12 +505,17 @@ changelog entry as specified, bumped `RULES_VERSION` to `"0.14"`, and ran
 `prettier --write` on `rules.md` afterwards to satisfy `format:check` (pure
 rewrapping of the paragraphs touched; no wording changed). No code under
 `src/` other than `rulesVersion.ts` was touched. `git status` shows exactly
-the three expected files changed. The orchestrator then made two wording
-fixes on top before committing: §4.1's new sentence was rewrapped to the
-document's width (Prettier's `proseWrap` is `preserve`, so it does not do
-this), and §8.4's table header went from "Charged nodes held" to "Sites
-counted", since the table now prices dormant sites too and a dormant site
-is stood on rather than held.
+the three expected files changed. The orchestrator then made one wording
+fix on top before committing: §8.4's table header went from "Charged nodes
+held" to "Sites counted", since the table now prices dormant sites too and
+a dormant site is stood on rather than held. §4.1's new sentence was left as
+a single unwrapped line: an earlier attempt to wrap it produced a line
+beginning `0. `, which Markdown reads as an ordered-list item, so
+`prettier --write` joined it back with the line before it. That went
+uncaught at the time (`format:check` cannot see it, since Prettier's
+`proseWrap` is `preserve`) and was fixed at peer review instead, choosing
+break points that never leave a line starting with a digit and a full
+stop.
 
 Edit `doc/ruleset/rules.md`, add a `doc/ruleset/changelog.md` entry, and bump
 `RULES_VERSION` in `src/rules/rulesVersion.ts` to `"0.14"`. **No behaviour

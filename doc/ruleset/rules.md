@@ -168,7 +168,8 @@ its attack range, since an attack travels exactly as far as a move
 
 A ship gains **one shield** at the end of its owner's turn if it is standing on
 a node, up to the maximum of 4. It **loses one shield** at the end of its
-owner's turn if it is standing on a **dormant** site, down to the minimum of 0. An **active** site does neither. A ship reduced to 0 shields is not
+owner's turn if it is standing on a **dormant** site, down to the minimum
+of 0. An **active** site does neither. A ship reduced to 0 shields is not
 destroyed — it is simply at its fastest and its weakest.
 
 ---
@@ -456,7 +457,8 @@ Everything that happens at the end of a turn happens in this order:
    then pays for the dormant sites they occupy (section 8.4).
 3. Every charged node adds its drain (section 8.3); any that reaches capacity
    goes dormant, and any ship standing on it keeps standing there, collecting
-   nothing.
+   nothing and, from the end of its owner's next turn, paying for it
+   (section 8.4).
 4. As many active sites as it takes to bring the board back to five charged
    are charged, drawn by pressure (section 8.2).
 5. Every site still active gains a point of pressure, to the cap of 50

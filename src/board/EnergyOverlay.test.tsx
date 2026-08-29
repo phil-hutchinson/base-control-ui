@@ -98,7 +98,9 @@ describe("EnergyOverlay", () => {
       <EnergyOverlay session={sessionWithEvent(undefined)} />,
     );
 
-    expect(container.querySelectorAll(".energy-overlay__gain")).toHaveLength(0);
+    expect(container.querySelectorAll(".energy-overlay__amount")).toHaveLength(
+      0,
+    );
     expect(container.querySelectorAll(".energy-overlay__pulse")).toHaveLength(
       0,
     );
@@ -113,10 +115,10 @@ describe("EnergyOverlay", () => {
       />,
     );
 
-    const gains = container.querySelectorAll(".energy-overlay__gain");
+    const gains = container.querySelectorAll(".energy-overlay__amount");
     expect(gains).toHaveLength(1);
     expect(gains[0]).toHaveTextContent("+6");
-    expect(gains[0]).toHaveClass("energy-overlay__gain--green");
+    expect(gains[0]).toHaveClass("energy-overlay__amount--green");
 
     const pulses = container.querySelectorAll(".energy-overlay__pulse");
     expect(pulses).toHaveLength(3);
@@ -132,7 +134,9 @@ describe("EnergyOverlay", () => {
       />,
     );
 
-    expect(container.querySelectorAll(".energy-overlay__gain")).toHaveLength(0);
+    expect(container.querySelectorAll(".energy-overlay__amount")).toHaveLength(
+      0,
+    );
     expect(container.querySelectorAll(".energy-overlay__pulse")).toHaveLength(
       0,
     );
@@ -145,11 +149,11 @@ describe("EnergyOverlay", () => {
       />,
     );
 
-    const losses = container.querySelectorAll(".energy-overlay__gain");
+    const losses = container.querySelectorAll(".energy-overlay__amount");
     expect(losses).toHaveLength(1);
     expect(losses[0]).toHaveTextContent("-3");
-    expect(losses[0]).toHaveClass("energy-overlay__gain--negative");
-    expect(losses[0]).toHaveClass("energy-overlay__gain--green");
+    expect(losses[0]).toHaveClass("energy-overlay__amount--negative");
+    expect(losses[0]).toHaveClass("energy-overlay__amount--green");
 
     const pulses = container.querySelectorAll(".energy-overlay__pulse");
     expect(pulses).toHaveLength(2);
@@ -168,12 +172,12 @@ describe("EnergyOverlay", () => {
       />,
     );
 
-    const amounts = container.querySelectorAll(".energy-overlay__gain");
+    const amounts = container.querySelectorAll(".energy-overlay__amount");
     expect(amounts).toHaveLength(2);
     expect(amounts[0]).toHaveTextContent("+6");
-    expect(amounts[0]).not.toHaveClass("energy-overlay__gain--negative");
+    expect(amounts[0]).not.toHaveClass("energy-overlay__amount--negative");
     expect(amounts[1]).toHaveTextContent("-3");
-    expect(amounts[1]).toHaveClass("energy-overlay__gain--negative");
+    expect(amounts[1]).toHaveClass("energy-overlay__amount--negative");
 
     const gainPulses = container.querySelectorAll(
       ".energy-overlay__pulse:not(.energy-overlay__pulse--negative)",
@@ -220,7 +224,7 @@ describe("EnergyOverlay", () => {
       <EnergyOverlay session={sessionWithEvent(event)} />,
     );
 
-    const amounts = container.querySelectorAll(".energy-overlay__gain");
+    const amounts = container.querySelectorAll(".energy-overlay__amount");
     expect(amounts).toHaveLength(2);
     expect(container.querySelectorAll(".energy-overlay__pulse")).toHaveLength(
       4,
@@ -265,7 +269,7 @@ describe("EnergyOverlay", () => {
       <EnergyOverlay session={sessionWithEvent(event)} />,
     );
 
-    const gains = container.querySelectorAll(".energy-overlay__gain");
+    const gains = container.querySelectorAll(".energy-overlay__amount");
     expect(gains).toHaveLength(2);
     expect(container.querySelectorAll(".energy-overlay__pulse")).toHaveLength(
       4,
@@ -292,7 +296,9 @@ describe("EnergyOverlay", () => {
       <EnergyOverlay session={sessionWithEvent(event)} />,
     );
 
-    expect(container.querySelectorAll(".energy-overlay__gain")).toHaveLength(1);
+    expect(container.querySelectorAll(".energy-overlay__amount")).toHaveLength(
+      1,
+    );
     expect(container.querySelectorAll(".energy-overlay__pulse")).toHaveLength(
       2,
     );
