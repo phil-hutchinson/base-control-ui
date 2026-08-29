@@ -15,7 +15,9 @@ Nodes do not last. Standing on one burns it down faster than leaving it
 alone, and holding a node and then walking away spends what is left of it —
 either way it eventually goes dark, and the board lights up a new one
 somewhere else on its own, at the end of a turn, so you will not know where
-until it happens.
+until it happens. A dead site is dangerous ground: a ship left sitting on one
+costs its owner energy and a shield every turn it stays, so it usually pays to
+move on.
 
 This is the game's web app. It runs entirely in your browser — nothing to
 install, no account, no server.
@@ -40,23 +42,28 @@ install, no account, no server.
 > for a while before the board can light it again, coming back sooner if it was
 > spent early rather than burned all the way down. A ship left standing on a
 > node that has just run out simply stays there — it is never forced to move,
-> and its owner is free to spend their next turn however they like. In a fight
-> the ship carrying more shields wins and the beaten one is pushed back to a bay
-> with none — but winning costs the winner a shield more than the loser was
-> carrying. The attacking winner advances onto the square it just cleared, so a
-> won fight can take a node outright, in a single action; and a ship attacks
-> exactly as far as it moves, so heavy shields buy strength at the cost of
-> reach. Two ships carrying the same shields both go home. Which bay a beaten
-> ship lands in is chosen at random from whichever bays are standing empty, so
-> neither of you can know in advance where it will be. A node also pays energy
-> at the end of each turn to the player sitting on it, and holding several at
-> once pays far more than holding them one at a time would. The app keeps score
-> and shows it, along with how many nodes each player holds and which round the
-> game is in. After a hundred rounds the game ends: the player with the most
-> energy wins, an equal score is a draw, and a button starts another game. There
-> is still no way to save or record a game, no computer opponent to play
-> against, and no way to choose how long a game runs. The project is being built
-> up story by story.
+> and its owner is free to spend their next turn however they like. Staying is
+> no longer free, though: once a site goes dark it costs its owner a shield and
+> some energy at the end of every one of their turns, so leaving is usually
+> worth an action, even though nothing forces it. In a fight the ship carrying
+> more shields wins and the beaten one is pushed back to a bay with none — but
+> winning costs the winner a shield more than the loser was carrying. The
+> attacking winner advances onto the square it just cleared, so a won fight can
+> take a node outright, in a single action; and a ship attacks exactly as far as
+> it moves, so heavy shields buy strength at the cost of reach. Two ships
+> carrying the same shields both go home. Which bay a beaten ship lands in is
+> chosen at random from whichever bays are standing empty, so neither of you can
+> know in advance where it will be. A node also pays energy at the end of each
+> turn to the player sitting on it, and holding several at once pays far more
+> than holding them one at a time would — and sitting on several dead sites at
+> once costs far more in the same way. The two are counted separately rather
+> than against each other, so a turn can pay you and charge you at once. The app
+> keeps score and shows it, along with how many nodes each player holds, how
+> many dead sites they are sitting on, and which round the game is in. After a
+> hundred rounds the game ends: the player with the most energy wins, an equal
+> score is a draw, and a button starts another game. There is still no way to
+> save or record a game, no computer opponent to play against, and no way to
+> choose how long a game runs. The project is being built up story by story.
 
 ## The rules
 

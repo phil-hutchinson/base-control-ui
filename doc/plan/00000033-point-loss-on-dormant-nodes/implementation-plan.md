@@ -1129,7 +1129,25 @@ eye in step 9.
 
 ## Step 8 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Added a sentence to the third opening paragraph (nodes do not last)
+saying a dead site is dangerous ground and costs its owner energy and a
+shield every turn it stays, so the top of the file teaches the penalty
+without a player needing to read the rules document. In the status
+blockquote, kept the existing "a ship left standing on a node that has just
+run out simply stays there" sentence and followed it with a new sentence
+describing what now costs, deliberately worded to mirror the earlier "a lit
+node pays a shield" sentence (pays vs. costs). Extended the HUD sentence to
+mention the dead-site count alongside nodes held and the round. The
+`/update-readme` slash command was not available in this session, so the
+rest of the branch diff was reviewed by hand per the plan's fallback
+instruction; nothing else in the diff (rules wording, internal effect
+types, overlay/HUD implementation details) is player-facing in a way the
+README doesn't already cover at its existing level of abstraction, so no
+further changes were made. `npm test` (754 passed), `npm run typecheck`,
+`npm run lint` and `npm run format:check` all pass; `git status` shows only
+`README.md` changed. The orchestrator then added one clause to the status paragraph — that sitting on several dead sites costs far more in the same way holding several nodes pays far more, and that the two are counted separately rather than against each other — and rewrapped that paragraph, which the earlier edits had left ragged.
 
 Bring `README.md` in line with 0.14.
 
