@@ -100,7 +100,7 @@ the player whose ship stands on it, in energy (§8.4) and in a shield (§4.1).
 Active is untouched: eligible to be charged, producing nothing, costing
 nothing.
 
-**§8.4 becomes collection *and* penalty.** The section keeps its number and
+**§8.4 becomes collection _and_ penalty.** The section keeps its number and
 its existing table, and gains the other half:
 
 - The charged-node table is unchanged: 0 → 0, 1 → 1, 2 → 3, 3 → 6, 4 → 10,
@@ -214,6 +214,7 @@ both, in that order, and that the two are distinguishable to the board.
   draws the eye.
 
   The score digits already roll downwards correctly and need nothing.
+
 - **`scoreSentence`** — the hidden text behind the score cell, currently
   "Green: 24 energy, 3 nodes held." — carries the dormant count too, since the
   pips are `aria-hidden` and this sentence is the only channel for them.
