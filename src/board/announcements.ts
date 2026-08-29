@@ -10,6 +10,7 @@ import { chargedNodesHeldBy } from "../rules/energy";
 import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
+  EnergyPenaltyEffect,
   ShieldGainedEffect,
   ShieldLostEffect,
 } from "../rules/endOfTurn";
@@ -177,6 +178,22 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
 }
 
 /**
+ * A single turn's penalty (rules.md §8.4): one dormant site names itself,
+ * several name their count and squares — the mirror of
+ * `energyCollectedClause`. There is at most one of these per sequence, for
+ * the same reason there is at most one collection.
+ */
+function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
+  const side = capitalize(effect.side);
+  const squares = effect.squares.map((square) => squareName(square));
+  const source =
+    squares.length === 1
+      ? `the dormant site at ${squares[0]}`
+      : `${squares.length} dormant sites at ${joinWithAnd(squares)}`;
+  return `${side} lost ${effect.amount} energy to ${source}, and now has ${effect.newTotal}.`;
+}
+
+/**
  * The clauses an end-of-turn sequence produced, in the order the sequence
  * produced them. All of a sequence's shield gains are grouped into one
  * clause, and all of its shield losses into another, gains ahead of losses
@@ -186,9 +203,11 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
  * players are racing towards — while `site-went-active` produces no clause
  * at all, because an active site is not a node, produces nothing and cannot
  * be stopped on, so a site quietly becoming eligible for the charge draw is
- * a board change, not a player event. A zero collection produces no
- * `energy-collected` effect at all (rules.md §8.4), so there is nothing here
- * to skip for that case.
+ * a board change, not a player event. A zero collection or a zero penalty
+ * produces no effect at all (rules.md §8.4), so there is nothing here to
+ * skip for either case — a turn that only pays reads as one sentence, and a
+ * turn that collects and then pays reads as two, in that order, because the
+ * sequence pushes the collection effect before the penalty effect.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -215,6 +234,9 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
         break;
       case "energy-collected":
         clauses.push(energyCollectedClause(effect));
+        break;
+      case "energy-penalty":
+        clauses.push(energyPenaltyClause(effect));
         break;
       case "node-ran-out":
         clauses.push(`The node at ${squareName(effect.square)} ran out.`);

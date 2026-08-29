@@ -1008,6 +1008,142 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
   });
 });
 
+describe("announcementFor — energy penalty (rules.md §8.4)", () => {
+  it("announces one dormant site occupied", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-2",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-penalty",
+              side: "green",
+              amount: 1,
+              newTotal: 4,
+              squares: [squareAt("H", 8)],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green lost 1 energy to the dormant site at H8, and now has 4. Red's turn, 1 action left.",
+    );
+  });
+
+  it("announces several dormant sites occupied, naming the count and every square", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-2",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-penalty",
+              side: "green",
+              amount: 3,
+              newTotal: 0,
+              squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green lost 3 energy to 3 dormant sites at D8, H8 and K11, and now has 0. Red's turn, 1 action left.",
+    );
+  });
+
+  it("produces no clause when nothing was paid", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Red's turn, 1 action left.",
+    );
+  });
+
+  it("reads a turn that both collects and pays as two sentences, collection first", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-2",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-collected",
+              side: "green",
+              amount: 6,
+              newTotal: 6,
+              squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
+            },
+            {
+              type: "energy-penalty",
+              side: "green",
+              amount: 3,
+              newTotal: 3,
+              squares: [squareAt("E", 5), squareAt("K", 5)],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 6. Green lost 3 energy to 2 dormant sites at E5 and K5, and now has 3. Red's turn, 1 action left.",
+    );
+  });
+
+  it("a passed turn still carries its own penalty clause", () => {
+    const event: PassEffect = {
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      endOfTurn: [
+        {
+          type: "energy-penalty",
+          side: "red",
+          amount: 3,
+          newTotal: 0,
+          squares: [squareAt("E", 5), squareAt("K", 5)],
+        },
+      ],
+    };
+    expect(announcementFor(event)).toBe(
+      "Red has no legal action, so the turn passes. Red lost 3 energy to 2 dormant sites at E5 and K5, and now has 0. Green's turn, 1 action left.",
+    );
+  });
+});
+
 describe("resultSentence", () => {
   it("names green as the winner, with both totals", () => {
     const result: GameResult = {

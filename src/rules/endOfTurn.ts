@@ -17,7 +17,12 @@
 import type { Square } from "./board";
 import { squareName } from "./board";
 import { type SiteChargedEffect, runChargeDraw } from "./chargeDraw";
-import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
+import {
+  chargedNodesHeldBy,
+  dormantSitesOccupiedBy,
+  energyForDormantSites,
+  energyForNodesHeld,
+} from "./energy";
 import type { Side, ShipId } from "./fleet";
 import {
   type GameState,
@@ -64,6 +69,21 @@ export interface EnergyCollectedEffect {
   readonly squares: readonly Square[];
 }
 
+/**
+ * The side that just played paid energy for the dormant sites it occupies
+ * (§8.6 step 2, §8.4). `amount` is the energy actually deducted, never more
+ * than the side had — where §8.4's floor of 0 bites, `amount` is smaller
+ * than the table price, so `newTotal` is always `previousTotal - amount`
+ * exactly.
+ */
+export interface EnergyPenaltyEffect {
+  readonly type: "energy-penalty";
+  readonly side: Side;
+  readonly amount: number;
+  readonly newTotal: number;
+  readonly squares: readonly Square[];
+}
+
 /** A charged node's drain reached its capacity and it went dormant (§8.6 step 3, §8.3). */
 export interface NodeRanOutEffect {
   readonly type: "node-ran-out";
@@ -81,6 +101,7 @@ export type EndOfTurnEffect =
   | ShieldGainedEffect
   | ShieldLostEffect
   | EnergyCollectedEffect
+  | EnergyPenaltyEffect
   | NodeRanOutEffect
   | SiteChargedEffect
   | SiteWentActiveEffect;
@@ -171,6 +192,33 @@ export function runEndOfTurn(
       amount,
       newTotal,
       squares: heldSquares,
+    });
+  }
+
+  // Step 2 (continued): the moving side then pays for the dormant sites it
+  // occupies right now (§8.4), taken from the total the collection above
+  // has already raised. The table price is clamped to a count of five
+  // dormant sites; the amount actually taken is floored so the side's total
+  // never goes below 0, and it is that floored amount — not the table
+  // price — that is reported, so `newTotal` is always exactly
+  // `previousTotal - amount`. A zero deduction is not an event, whether
+  // because nothing dormant is occupied or because there is nothing left to
+  // take: no effect, no other state change.
+  const dormantSquares = dormantSitesOccupiedBy(workingState, side);
+  const price = energyForDormantSites(dormantSquares.length);
+  const penalty = Math.min(price, workingState.energy[side]);
+  if (penalty > 0) {
+    const newTotal = workingState.energy[side] - penalty;
+    workingState = {
+      ...workingState,
+      energy: { ...workingState.energy, [side]: newTotal },
+    };
+    effects.push({
+      type: "energy-penalty",
+      side,
+      amount: penalty,
+      newTotal,
+      squares: dormantSquares,
     });
   }
 

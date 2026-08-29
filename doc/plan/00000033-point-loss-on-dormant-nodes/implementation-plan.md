@@ -794,7 +794,31 @@ typecheck` and `npm run lint` pass.
 
 ## Step 4 — The energy penalty (§8.6 step 2, §8.4)
 
-Status: pending
+Status: committed
+
+Notes: Extended `runEndOfTurn`'s step 2 in `endOfTurn.ts` to subtract the
+dormant-site penalty from the total the collection just raised, floored at
+0, reporting the amount actually deducted and pushing a new
+`EnergyPenaltyEffect` (added to the `EndOfTurnEffect` union) after the
+collection effect; a zero deduction (nothing dormant occupied, or nothing
+left to take) raises no effect, per D4. Added `energyPenaltyClause` to
+`announcements.ts`, mirroring `energyCollectedClause`, wired into
+`endOfTurnClauses`'s switch after the collection case so ordering falls out
+of the sequence's own effect order; updated that function's doc comment.
+Extended `fullGame.test.ts`'s ledger to collections minus penalties (D10) —
+this passed unchanged in both games, and both sides' final totals stayed
+above 0, so the "greater than 0" assertions were left as they were, not
+weakened. Added new test blocks to `endOfTurn.test.ts` (the price table
+through six/seven, not-netted collection-then-penalty, the floor and its
+reported amount, the two zero-effect cases, the opponent's-ships case, the
+"ends its move on" vs "flown over" case, and a passed-ply penalty case) and
+to `announcements.test.ts` (one site, several sites, no clause when nothing
+paid, collect-then-pay as two sentences, and a passed turn's own penalty
+clause). Checked `ply.test.ts` per the plan's instruction: its exact-match
+`endOfTurn` assertions all involve ships on charged sites only, so none
+newly see a penalty effect and none needed updating. `npm run typecheck`,
+`npm run lint`, `npm test` (740 passed, `seededReplay.test.ts` unchanged)
+and `npm run format:check` all pass. No deviation from the plan.
 
 Extend `runEndOfTurn`'s step 2 so the moving side pays for the dormant sites it
 occupies, after collecting for the charged nodes it holds, with the total
