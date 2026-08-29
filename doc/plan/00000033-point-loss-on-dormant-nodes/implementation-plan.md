@@ -654,7 +654,18 @@ halves.
 
 ## Step 2 — `energy.ts` carries both halves of §8.4
 
-Status: pending
+Status: committed
+
+Notes: Added `dormantSitesOccupiedBy` (mirroring `chargedNodesHeldBy`) and
+`energyForDormantSites` (reading the same `ENERGY_BY_NODES_HELD` table,
+clamped to `MAX_DORMANT_SITES_PRICED` and range-checked only up to
+`SHIPS_PER_SIDE`, derived from `STARTING_FLEET` rather than a literal 7).
+`energyForNodesHeld` is untouched, including its `RangeError` above five.
+Rewrote the module comment to describe both directions of §8.4. Extended
+`energy.test.ts` with cases for the price table 0–5, the clamp at 6 and 7,
+the three throw cases, and the mirrored occupancy cases. No behaviour
+changes elsewhere; nothing calls the new functions yet. No deviations from
+the plan.
 
 Add the dormant half of §8.4 to `src/rules/energy.ts`. This step is a pure
 addition: nothing calls the new functions yet, and no behaviour changes.
