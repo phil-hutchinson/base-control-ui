@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.13**
+**Rules version: 0.14**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -20,7 +20,9 @@ the edge of the board and rejoins the game from there.
 
 A ship carries **shields**, which make it stronger in a fight but slower to
 move. Shields are gained by sitting on a node and spent by winning fights, so a
-ship's strength and its speed pull permanently against each other.
+ship's strength and its speed pull permanently against each other. A site that
+has burned out is a bad place to leave a ship: it costs its owner energy and a
+shield every turn.
 
 The game has three random elements: which site is charged next, which bay a
 beaten ship is pushed back to, and how fast a node burns.
@@ -165,8 +167,9 @@ its attack range, since an attack travels exactly as far as a move
 (section 7).
 
 A ship gains **one shield** at the end of its owner's turn if it is standing on
-a node, up to the maximum of 4. A ship reduced to 0 shields is not destroyed —
-it is simply at its fastest and its weakest.
+a node, up to the maximum of 4. It **loses one shield** at the end of its
+owner's turn if it is standing on a **dormant** site, down to the minimum of 0. An **active** site does neither. A ship reduced to 0 shields is not
+destroyed — it is simply at its fastest and its weakest.
 
 ---
 
@@ -303,11 +306,14 @@ shields on arrival (section 3.1).
 
 Every site is always in exactly one of three states:
 
-- **Active** — eligible to be charged, but producing nothing.
+- **Active** — eligible to be charged, producing nothing, and costing
+  nothing.
 - **Charged** — producing energy: a ship standing on it collects (section
   8.4) and gains shields (section 4.1).
-- **Dormant** — recovering after running out. Not eligible to be charged, and
-  producing nothing.
+- **Dormant** — recovering after running out. Not eligible to be charged,
+  producing nothing, and costing the player whose ship stands on it: energy
+  (section 8.4) and a shield (section 4.1), at the end of each of that
+  player's turns.
 
 A site cycles active → charged → dormant → active.
 
@@ -385,18 +391,38 @@ ends: leaving it.
 ### 8.4 Energy
 
 At the end of each player's turn, that player collects energy for the
-charged nodes they are **standing on**. A node counts only if one of that
-player's ships is on it at that moment — flying across a node and moving on
-collects nothing.
+charged nodes they are **standing on**, and then pays for the dormant sites
+they are **standing on**. A site counts for either half only if one of that
+player's ships is on it at that moment — flying across a node or a
+dormant site and moving on neither collects nor costs anything.
 
-| Charged nodes held | Energy |
-| ------------------ | ------ |
-| 0                  | 0      |
-| 1                  | 1      |
-| 2                  | 3      |
-| 3                  | 6      |
-| 4                  | 10     |
-| 5                  | 15     |
+| Sites counted | Energy |
+| ------------- | ------ |
+| 0             | 0      |
+| 1             | 1      |
+| 2             | 3      |
+| 3             | 6      |
+| 4             | 10     |
+| 5             | 15     |
+
+The charged nodes a player holds are priced off this table exactly as
+before. Unlike charged nodes there is no limit on how many sites are dormant
+at once — up to twelve of the seventeen can be, since at most five are
+ever charged — so the dormant count is **capped at five** before it is
+priced: six or seven dormant sites cost the same 15 that five do. The most a
+turn can pay is 15, so the most a turn can cost is now exactly 15 too —
+neither half of this section can outrun the other.
+
+The two halves are applied in that order — collect, then pay — and
+they are **not netted**. Holding nodes and sitting on dormant ones are
+separately priced, and both are priced steeply: a player holding three
+charged nodes while standing on two dormant sites collects 6 and then pays
+3, for a net of **+3**, not the +1 that a net count of one node held would
+have paid.
+
+**A player's total energy never falls below zero.** Where a turn's penalty
+is larger than the energy the player has, their total lands on 0 rather
+than going negative.
 
 ### 8.5 Standing on a site that is not charged
 
@@ -405,26 +431,29 @@ end a move on either, and may stay there for the rest of the game if its
 owner likes — nothing about it obliges the owner to move it, or anything
 else, on a later turn.
 
-It pays nothing: no energy (section 8.4) and no shields (section 4.1) while
-the site is not charged.
+The two are no longer the same. An **active** site pays nothing and costs
+nothing, so waiting on one for the charge draw is free. A **dormant** site
+pays nothing and **costs**: an energy penalty (section 8.4) and a shield
+(section 4.1) at the end of each of the owner's turns.
 
 The site's own cycle carries on underneath the ship. A dormant site recovers
 and goes active on schedule regardless of what is standing on it, and an
 active site is eligible for the charge draw whether or not a ship is
 standing on it (section 8.2).
 
-The one case that used to be a penalty is now nothing more than the node
-falling quiet: when a node runs out under the ship holding it (section 8.3),
-the node simply stops paying. The ship stays or leaves, exactly as its owner
-prefers.
+When a node runs out under the ship holding it (section 8.3), the node
+stops paying and starts costing: the holder pays from the end of its
+owner's next turn unless it leaves. The ship stays or leaves, exactly as its
+owner prefers.
 
 ### 8.6 End-of-turn order
 
 Everything that happens at the end of a turn happens in this order:
 
 1. Each of the moving player's ships standing on a charged node gains a
-   shield.
-2. The moving player collects energy (section 8.4).
+   shield, and each standing on a dormant site loses one (section 4.1).
+2. The moving player collects energy for the charged nodes they hold and
+   then pays for the dormant sites they occupy (section 8.4).
 3. Every charged node adds its drain (section 8.3); any that reaches capacity
    goes dormant, and any ship standing on it keeps standing there, collecting
    nothing.
@@ -439,7 +468,9 @@ Everything that happens at the end of a turn happens in this order:
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
 which an action was taken. The clocks still tick, and a ship of the passing
-player standing on a charged node still gains its shield.
+player standing on a charged node still gains its shield and one standing on
+a dormant site still loses one; the passing player still collects and still
+pays exactly as they would if they had acted.
 
 Step 6 is last **deliberately**, for the same reason as before: it is what
 makes a site spend at least one whole turn active before it can be charged. A

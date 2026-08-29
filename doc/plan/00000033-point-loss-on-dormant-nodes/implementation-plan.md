@@ -498,7 +498,19 @@ artwork; and §8.7, combat, movement, bays and the charge draw.
 
 ## Step 1 — Rules 0.14: a dormant site costs energy and a shield
 
-Status: pending
+Status: committed
+
+Notes: Edited `rules.md` (§1, §4.1, §8.1, §8.4, §8.5, §8.6) and added the 0.14
+changelog entry as specified, bumped `RULES_VERSION` to `"0.14"`, and ran
+`prettier --write` on `rules.md` afterwards to satisfy `format:check` (pure
+rewrapping of the paragraphs touched; no wording changed). No code under
+`src/` other than `rulesVersion.ts` was touched. `git status` shows exactly
+the three expected files changed. The orchestrator then made two wording
+fixes on top before committing: §4.1's new sentence was rewrapped to the
+document's width (Prettier's `proseWrap` is `preserve`, so it does not do
+this), and §8.4's table header went from "Charged nodes held" to "Sites
+counted", since the table now prices dormant sites too and a dormant site
+is stood on rather than held.
 
 Edit `doc/ruleset/rules.md`, add a `doc/ruleset/changelog.md` entry, and bump
 `RULES_VERSION` in `src/rules/rulesVersion.ts` to `"0.14"`. **No behaviour
