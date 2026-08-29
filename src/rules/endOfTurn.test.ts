@@ -131,6 +131,91 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
   });
 });
 
+describe("runEndOfTurn — step 1, the shield loss (§4.1)", () => {
+  it("loses a shield only for the moving side's ships standing on a dormant site", () => {
+    const state = buildState({
+      sideToMove: "green",
+      siteStates: {
+        H8: ["dormant", 1],
+        K5: ["active", 1],
+      },
+      ships: [
+        ship("green-1", "green", "H8", 2), // dormant: loses, 2 -> 1
+        ship("green-2", "green", "K5", 2), // active: loses nothing
+        ship("green-3", "green", "D2", 2), // not a site: loses nothing
+        ship("red-1", "red", "H8", 2), // dormant, but not the mover
+      ],
+    });
+
+    const result = runEndOfTurnFresh(state);
+
+    const shipShields = (id: ShipId): ShieldCount | undefined =>
+      result.state.ships.find((s) => s.id === id)?.shields;
+
+    expect(shipShields("green-1")).toBe(1);
+    expect(shipShields("green-2")).toBe(2);
+    expect(shipShields("green-3")).toBe(2);
+    expect(shipShields("red-1")).toBe(2);
+
+    expect(result.effects).toContainEqual({
+      type: "shield-lost",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+      shields: 1,
+    });
+    expect(result.effects.filter((e) => e.type === "shield-lost")).toHaveLength(
+      1,
+    );
+  });
+
+  it("leaves a ship already on 0 shields at 0 and raises no effect for it", () => {
+    const state = buildState({
+      sideToMove: "green",
+      siteStates: { H8: ["dormant", 1] },
+      ships: [ship("green-1", "green", "H8", 0)],
+    });
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(result.state.ships.find((s) => s.id === "green-1")?.shields).toBe(0);
+    expect(result.effects.some((effect) => effect.type === "shield-lost")).toBe(
+      false,
+    );
+  });
+
+  it("reports both a gain and a loss when one ship holds a node while another sits on a dormant site", () => {
+    const state = buildState({
+      sideToMove: "green",
+      siteStates: {
+        H8: ["charged", 1],
+        K5: ["dormant", 1],
+      },
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("green-2", "green", "K5", 2),
+      ],
+    });
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(result.effects).toContainEqual({
+      type: "shield-gained",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+      shields: 2,
+    });
+    expect(result.effects).toContainEqual({
+      type: "shield-lost",
+      shipId: "green-2",
+      side: "green",
+      square: squareFromName("K5"),
+      shields: 1,
+    });
+  });
+});
+
 describe("runEndOfTurn — step 3, drain (§8.3)", () => {
   it("rises an empty node's drain by 1, 2 or 3, and never anything else", () => {
     const observed = new Set<number>();

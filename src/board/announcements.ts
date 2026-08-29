@@ -11,6 +11,7 @@ import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
   ShieldGainedEffect,
+  ShieldLostEffect,
 } from "../rules/endOfTurn";
 import type { Side } from "../rules/fleet";
 import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
@@ -27,7 +28,7 @@ import type {
   PassEffect,
   PlyEndedEffect,
 } from "../rules/ply";
-import { MAX_SHIELDS } from "../rules/shields";
+import { MAX_SHIELDS, MIN_SHIELDS } from "../rules/shields";
 import type { NodeVacatedEffect } from "../rules/vacating";
 import type {
   AttackedEvent,
@@ -134,6 +135,33 @@ function shieldGainedClause(effects: readonly ShieldGainedEffect[]): string {
 }
 
 /**
+ * All of a sequence's shield losses as one clause, the mirror of
+ * `shieldGainedClause`: the squares named once rather than repeating a
+ * sentence per ship. A ship reaching 0 is named as such.
+ */
+function shieldLostClause(effects: readonly ShieldLostEffect[]): string {
+  const side = capitalize(effects[0].side);
+  const atFloor = effects
+    .filter((effect) => effect.shields === MIN_SHIELDS)
+    .map((effect) => squareName(effect.square));
+
+  if (effects.length === 1) {
+    const [effect] = effects;
+    const square = squareName(effect.square);
+    return effect.shields === MIN_SHIELDS
+      ? `${side} ship at ${square} lost a shield, reaching 0.`
+      : `${side} ship at ${square} lost a shield, now on ${effect.shields}.`;
+  }
+
+  const squares = effects.map((effect) => squareName(effect.square));
+  const base = `${side} ships at ${joinWithAnd(squares)} each lost a shield.`;
+  if (atFloor.length === 0) {
+    return base;
+  }
+  return `${base} ${joinWithAnd(atFloor)} reached 0.`;
+}
+
+/**
  * A single turn's collection (rules.md §8.4): one node names itself, several
  * name their count and squares. There is at most one of these per sequence —
  * §8.4 pays once, for the count of nodes held, never once per node.
@@ -151,14 +179,16 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
 /**
  * The clauses an end-of-turn sequence produced, in the order the sequence
  * produced them. All of a sequence's shield gains are grouped into one
- * clause. The two board-only site transitions are judged separately:
- * `site-charged` speaks — a node appearing is the only way one ever appears
- * now, and it is the thing both players are racing towards — while
- * `site-went-active` produces no clause at all, because an active site is
- * not a node, produces nothing and cannot be stopped on, so a site quietly
- * becoming eligible for the charge draw is a board change, not a player
- * event. A zero collection produces no `energy-collected` effect at all
- * (rules.md §8.4), so there is nothing here to skip for that case.
+ * clause, and all of its shield losses into another, gains ahead of losses
+ * (§4.1's mirror pair) and both ahead of the rest. The two board-only site
+ * transitions are judged separately: `site-charged` speaks — a node
+ * appearing is the only way one ever appears now, and it is the thing both
+ * players are racing towards — while `site-went-active` produces no clause
+ * at all, because an active site is not a node, produces nothing and cannot
+ * be stopped on, so a site quietly becoming eligible for the charge draw is
+ * a board change, not a player event. A zero collection produces no
+ * `energy-collected` effect at all (rules.md §8.4), so there is nothing here
+ * to skip for that case.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -170,9 +200,17 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
     clauses.push(shieldGainedClause(shieldGains));
   }
 
+  const shieldLosses = effects.filter(
+    (effect): effect is ShieldLostEffect => effect.type === "shield-lost",
+  );
+  if (shieldLosses.length > 0) {
+    clauses.push(shieldLostClause(shieldLosses));
+  }
+
   for (const effect of effects) {
     switch (effect.type) {
       case "shield-gained":
+      case "shield-lost":
       case "site-went-active":
         break;
       case "energy-collected":

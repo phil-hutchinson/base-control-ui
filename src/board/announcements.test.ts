@@ -621,6 +621,177 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
+  it("announces one shield lost, naming the square and the new count", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-lost",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 1,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at H8 lost a shield, now on 1. Red's turn, 1 action left.",
+    );
+  });
+
+  it("groups several shields lost in one sequence into one clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-lost",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 2,
+            },
+            {
+              type: "shield-lost",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 1,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a shield. Red's turn, 1 action left.",
+    );
+  });
+
+  it("says which ship reached 0 shields, within a grouped clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-lost",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 1,
+            },
+            {
+              type: "shield-lost",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 0,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a shield. K5 reached 0. Red's turn, 1 action left.",
+    );
+  });
+
+  it("says a single ship reached 0 shields", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-lost",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 0,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at K5 lost a shield, reaching 0. Red's turn, 1 action left.",
+    );
+  });
+
+  it("reads gains before losses when a sequence has both", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-gained",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 2,
+            },
+            {
+              type: "shield-lost",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 1,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at H8 gained a shield, now on 2. Green ship at K5 lost a shield, now on 1. Red's turn, 1 action left.",
+    );
+  });
+
   it("announces a full end-of-turn sequence in the order it was produced", () => {
     const event: MovedEvent = {
       type: "moved",

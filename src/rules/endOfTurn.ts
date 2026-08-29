@@ -35,11 +35,20 @@ import {
   STARTING_PRESSURE,
   drawTableAmount,
 } from "./sites";
-import { MAX_SHIELDS, type ShieldCount } from "./shields";
+import { MAX_SHIELDS, MIN_SHIELDS, type ShieldCount } from "./shields";
 
 /** A ship on a charged node gained a shield at the end of its side's turn (§8.6 step 1, §4.1). */
 export interface ShieldGainedEffect {
   readonly type: "shield-gained";
+  readonly shipId: ShipId;
+  readonly side: Side;
+  readonly square: Square;
+  readonly shields: ShieldCount;
+}
+
+/** A ship on a dormant site lost a shield at the end of its side's turn (§8.6 step 1, §4.1). */
+export interface ShieldLostEffect {
+  readonly type: "shield-lost";
   readonly shipId: ShipId;
   readonly side: Side;
   readonly square: Square;
@@ -70,6 +79,7 @@ export interface SiteWentActiveEffect {
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
 export type EndOfTurnEffect =
   | ShieldGainedEffect
+  | ShieldLostEffect
   | EnergyCollectedEffect
   | NodeRanOutEffect
   | SiteChargedEffect
@@ -108,24 +118,38 @@ export function runEndOfTurn(
   const effects: EndOfTurnEffect[] = [];
 
   // Step 1: the moving player's ships on charged nodes gain a shield,
-  // capped at 4 (§4.1). An active site grants nothing.
+  // capped at 4, and those on dormant sites lose one, floored at 0 (§4.1).
+  // An active site does neither. One pass over the fleet, so the effects
+  // come out in fleet order with gains and losses interleaved exactly as
+  // the ships are ordered.
   const ships = state.ships.map((ship) => {
-    if (
-      ship.side !== side ||
-      ship.shields >= MAX_SHIELDS ||
-      siteStateAt(state, ship.square) !== "charged"
-    ) {
+    if (ship.side !== side) {
       return ship;
     }
-    const shields = (ship.shields + 1) as ShieldCount;
-    effects.push({
-      type: "shield-gained",
-      shipId: ship.id,
-      side: ship.side,
-      square: ship.square,
-      shields,
-    });
-    return { ...ship, shields };
+    const siteState = siteStateAt(state, ship.square);
+    if (siteState === "charged" && ship.shields < MAX_SHIELDS) {
+      const shields = (ship.shields + 1) as ShieldCount;
+      effects.push({
+        type: "shield-gained",
+        shipId: ship.id,
+        side: ship.side,
+        square: ship.square,
+        shields,
+      });
+      return { ...ship, shields };
+    }
+    if (siteState === "dormant" && ship.shields > MIN_SHIELDS) {
+      const shields = (ship.shields - 1) as ShieldCount;
+      effects.push({
+        type: "shield-lost",
+        shipId: ship.id,
+        side: ship.side,
+        square: ship.square,
+        shields,
+      });
+      return { ...ship, shields };
+    }
+    return ship;
   });
   let workingState: GameState = { ...state, ships };
 

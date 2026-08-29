@@ -357,7 +357,10 @@ describe("camping — a node running out under a ship is quiet (§8.3, §8.5)", 
       (candidate) => candidate.id === "green-camper",
     );
     expect(camperAfterNextTurn?.square).toEqual(squareFromName("H8"));
-    expect(camperAfterNextTurn?.shields).toBe(1);
+    // H8 ran out during green's own previous turn, so this is the first
+    // end-of-turn sequence to find green-camper standing on it while it is
+    // dormant — it pays the shield loss here (§4.1, §8.6 step 1).
+    expect(camperAfterNextTurn?.shields).toBe(0);
   });
 });
 

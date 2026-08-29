@@ -724,7 +724,26 @@ standing on no dormant site. `npm run typecheck` and `npm run lint` pass.
 
 ## Step 3 — A ship on a dormant site loses a shield (§8.6 step 1, §4.1)
 
-Status: pending
+Status: committed
+
+Notes: Extended step 1's single `state.ships.map(...)` pass to branch on
+`charged` (grants, unchanged) vs `dormant` (takes, floored at `MIN_SHIELDS`)
+vs anything else (does neither), added `ShieldLostEffect` to the
+`EndOfTurnEffect` union, and added `shieldLostClause`/grouping in
+`announcements.ts` mirroring the gain clause, with the new type handled as a
+no-op in `endOfTurnClauses`'s switch per D3's warning. Extended
+`endOfTurn.test.ts` and `announcements.test.ts` with the cases the step
+calls for. Deviation from the plan: fixing two pre-existing tests whose
+expectations this step's behaviour change genuinely falsifies —
+`camping.test.ts`'s "a node running out under a ship is quiet" (the camper
+now loses its shield, 1 → 0, at the end of its owner's next turn once H8 is
+dormant) and `ply.test.ts`'s "advances onto the loser's square when it is a
+dormant site" (the winning ship immediately loses the shield it just won,
+2 → 1 → 0, because it advances onto an already-dormant site in the same ply
+that ends its turn). Both are documented consequences of §4.1/§8.6 step 1
+(D5) rather than bugs, and were updated with an explanatory comment rather
+than weakened. All four checks (`typecheck`, `lint`, `test`,
+`format:check`) pass.
 
 Extend `runEndOfTurn`'s step 1 in `src/rules/endOfTurn.ts` so that each of the
 **moving side's** ships standing on a dormant site loses one shield, floored at
