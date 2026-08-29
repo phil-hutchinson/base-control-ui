@@ -1068,7 +1068,33 @@ restored.
 
 ## Step 7 — `README.md` and a sweep for the word "stranded"
 
-Status: pending
+Status: implemented
+
+Notes: Replaced the two obsolete sentences in the status blockquote. "A ship
+can only stop on a site that is already lit." became "A ship may stop
+anywhere it can reach, including a site that is not yet lit, and can camp
+there for as long as its owner likes while it waits to light." "A ship still
+standing on a node that has just run out has to be moved clear, and that is
+what its owner's next turn is spent on." became "A ship left standing on a
+node that has just run out simply stays there — it is never forced to
+move, and its owner is free to spend their next turn however they like."
+One deviation from the step's letter: rather than only patching the two
+sentences in place and running `/update-readme` for the rest of the diff (no
+such command was available to invoke directly in this session), reflowed the
+whole status paragraph to consistent ~78-character lines, since the two
+edits left several lines ragged and prettier's `proseWrap: preserve`
+(the repository's default) does not reflow markdown prose itself; no other
+wording in the blockquote was touched. Swept `README.md`, `doc/ruleset` and
+`src` for "strand" (case-insensitive): the only hits are in
+`doc/ruleset/changelog.md`, all inside the 0.13 entry (describing what this
+story removed) or sections 0.11 and earlier (historical record of what the
+rules said at the time), matching the plan's carve-out. Swept this story's
+own `story.md` and `implementation-plan.md`: hits are all inside prose
+describing what was removed, which the step says is fine. `npm test` (700
+passed), `npm run typecheck` and `npm run lint` all pass with no changes
+outside `README.md`. `npm run format:check` reports one pre-existing warning
+on `doc/plan/00000031-remove-ship-removal-requirement/story.md`, unrelated
+to this step's change and present before it.
 
 Bring `README.md` back in line with 0.13 and confirm the removed rule has left
 the repository's prose.

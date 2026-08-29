@@ -220,7 +220,7 @@ behaviour, record it there.
   against: a site charges under whoever is standing on it.
 - **Any penalty for camping**, and any balance retune of drain, recovery,
   pressure or energy. Sitting on a spent site all game is now legal and cheap;
-  whether it is *good* is a play-testing question, and if it turns out to be
+  whether it is _good_ is a play-testing question, and if it turns out to be
   too good that is a later story with numbers in it.
 - **§8.7.** Leaving a charged node still ends it, on exactly today's terms.
 - **Penalising a ship that fails to vacate** — anticipated by story 29's
