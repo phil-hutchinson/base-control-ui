@@ -898,7 +898,38 @@ then pays reading as two sentences in that order. `npm run typecheck` and
 
 ## Step 5 — Camping on a dead site, end to end
 
-Status: pending
+Status: committed
+
+Notes: Added four new `describe` blocks to `camping.test.ts` — a dormant
+site costing a shield and energy on every one of the camper's owner's own
+turns and recurring on the next (not firing once); an active site staying
+free across two full rounds with non-zero shields and energy in play (so
+the silence is not a floor coincidence); leaving a dormant site stopping
+the cost the very turn it is left; and flying across a dormant site (a
+distance-3 move at 0 shields) costing nothing — all driven through
+`applyMove`/`applyPassGuard`-free single moves, per the file's existing
+style, with `energy` overridden by spreading `buildState`'s result rather
+than adding a parameter to the helper. Also extended two existing tests
+rather than leaving them stale: "a node running out under a ship" now
+asserts the `shield-lost` and `energy-penalty` effects explicitly (not
+just the ship's final shield count) at the end of the camper's owner's
+next turn, pinning D5's timing for both halves; and the old "a site that
+is not charged pays nothing" test was retitled and commented to make clear
+it is now the floor corner case (0 starting shields, 0 starting energy)
+rather than a general claim that dormant sites are free, with its
+untouched-assertions widened to also check for absent `shield-lost` /
+`energy-penalty` effects and for the side's energy staying at 0. Sanity-checked
+by temporarily zeroing the penalty deduction in `endOfTurn.ts` and
+confirming the two `energy-penalty` assertions in the new "costs and
+recurs" test failed, then restored the file exactly (`git diff` on
+`endOfTurn.ts` was empty afterwards). No deviation from the plan beyond
+the two existing-test edits just described, which the step's own
+"Add cases" framing and the file's existing character (proving the rule
+end to end, not leaving a now-misleading test behind) both support.
+
+`npm run typecheck`, `npm run lint`, `npm test` (744 passed) and
+`npm run format:check` all pass. `git status` shows only
+`src/rules/camping.test.ts` changed.
 
 Add integration cover to `src/rules/camping.test.ts` proving the new cost
 through the public rules API, not by calling `runEndOfTurn` directly.
