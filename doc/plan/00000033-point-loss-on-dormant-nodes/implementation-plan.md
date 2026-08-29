@@ -1188,7 +1188,12 @@ forced to leave it.
 
 ## Step 9 — Owner play-through
 
-Status: pending
+Status: committed
+
+Notes: The owner ran the play-through and reported the story working as
+expected, with nothing to change. The two things flagged for judgement at
+this gate were both accepted as they stand: the ASCII hyphen in the
+overlay's "-N", and the dormant pip row's quietness and its grey fill.
 
 The owner runs the app and confirms the story's headline experience. This is the
 pipeline's manual gate; nothing is committed for it beyond any fixes it turns
