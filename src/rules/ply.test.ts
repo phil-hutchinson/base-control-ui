@@ -1099,7 +1099,7 @@ describe("the winner's advance (rules.md §7)", () => {
     },
   );
 
-  it("stops the advance one square short when the loser's square is a dormant site, a reachable version of the stop-short rule", () => {
+  it("advances onto the loser's square when it is a dormant site", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H6", 2), ship("red-1", "red", "H8", 0)],
       siteStates: { H8: "dormant" },
@@ -1112,13 +1112,13 @@ describe("the winner's advance (rules.md §7)", () => {
       throw new Error("expected the attack to be applied");
     }
     const winner = result.state.ships.find((s) => s.id === "green-1");
-    expect(winner?.square).toEqual(squareFromName("H7"));
+    expect(winner?.square).toEqual(squareFromName("H8"));
     expect(winner?.shields).toBe(1);
     const loser = result.state.ships.find((s) => s.id === "red-1");
     expect(loser && isBay(loser.square)).toBe(true);
   });
 
-  it("holds its ground on an adjacent attack onto an active site", () => {
+  it("advances onto the loser's square when it is an active site", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H7", 3), ship("red-1", "red", "H8", 0)],
       siteStates: { H8: ["active", 1] },
@@ -1131,7 +1131,7 @@ describe("the winner's advance (rules.md §7)", () => {
       throw new Error("expected the attack to be applied");
     }
     const winner = result.state.ships.find((s) => s.id === "green-1");
-    expect(winner?.square).toEqual(squareFromName("H7"));
+    expect(winner?.square).toEqual(squareFromName("H8"));
 
     const fightResolved = result.effects[0];
     if (fightResolved.type !== "fight-resolved") {
@@ -1140,16 +1140,15 @@ describe("the winner's advance (rules.md §7)", () => {
     expect(fightResolved.winner).toEqual({
       shipId: "green-1",
       remainingShields: 2,
-      square: squareFromName("H7"),
-      advanced: false,
+      square: squareFromName("H8"),
+      advanced: true,
     });
   });
 
   it("landing on a charged site during a winning advance leaves it charged", () => {
-    // A winner may only ever end an advance on a charged site (rules.md
-    // §7) — an active or dormant candidate is skipped in favour of the
-    // furthest charged or ordinary square on the lane. G7/G8: column G
-    // carries no site at any row, so G8 is the only site in play.
+    // A winner's advance is limited by occupancy alone (rules.md §7); site
+    // state never skips a candidate. G7/G8: column G carries no site at
+    // any row, so G8 is the only site in play.
     const state = buildState({
       ships: [ship("green-1", "green", "G7", 4), ship("red-1", "red", "G8", 0)],
       siteStates: { G8: ["charged", 1] },

@@ -12,7 +12,7 @@ import { BAYS, isBay } from "./bays";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type ReachEntry, findShip, reachFrom } from "./moveLegality";
-import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
+import { type GameState, shipsBySquare } from "./gameState";
 import { drawIndex } from "./random";
 import { type ShieldCount, isShieldCount } from "./shields";
 
@@ -40,11 +40,10 @@ export function attackReach(
 /**
  * Where a winning attacker ends up (rules.md §7): scanning `reach`'s lane
  * backwards from the loser's square towards the attacker, the furthest
- * square it may legally end on — §6's site restriction and nothing else, not
- * an active site, not a dormant site — shaped as the sub-lane the winner
- * actually travels (`destination` is the square it stops on, `passedOver` the
- * lane squares before it). `undefined` when no square on the lane qualifies,
- * meaning the winner holds its ground.
+ * square it may legally end on — §6's restriction, which is occupancy alone.
+ * Shaped as the sub-lane the winner actually travels (`destination` is the
+ * square it stops on, `passedOver` the lane squares before it). `undefined`
+ * when no square on the lane qualifies, meaning the winner holds its ground.
  *
  * `reach` is the attack's own `ReachEntry`, exactly as `attackReach` found
  * it. Occupancy is re-checked here even though the lane was clear when the
@@ -61,10 +60,6 @@ export function winnerAdvance(
 
   for (let index = lane.length - 1; index >= 0; index--) {
     const candidate = lane[index];
-    const siteState = siteStateAt(state, candidate);
-    if (siteState === "active" || siteState === "dormant") {
-      continue;
-    }
     if (occupiedSquareNames.has(squareName(candidate))) {
       continue;
     }

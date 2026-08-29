@@ -781,7 +781,41 @@ ship, an attack, or nothing about that ship at all.
 
 ## Step 4 — A winning attacker advances by occupancy alone
 
-Status: pending
+Status: implemented
+
+Notes: `winnerAdvance` in `combat.ts` no longer skips a candidate whose site
+is `active` or `dormant`; the `siteStateAt` check and its now-unused import
+are deleted, and the function's doc comment now says the restriction is
+occupancy alone, per D10. Occupied-candidate skipping, the blocked-path
+skip and the `undefined`/holds-its-ground fallback are untouched, per D10
+and D11. In `combat.test.ts`'s `winnerAdvance` group, the two "stops ...
+short when ... dead site" cases and the "holds its ground when the only
+square on the lane is dead" case became "lands on the loser's square when
+it is an active/dormant site" (landing, not stopping short); the occupancy
+tests are untouched, and the bay sweep now runs against both an all-dormant
+and an all-charged board and asserts the two produce identical
+`winnerAdvance` results, directly pinning "site state no longer affects the
+advance" per D10/D11. In `ply.test.ts`, "stops the advance one square short
+when the loser's square is a dormant site" became "advances onto the
+loser's square when it is a dormant site", and "holds its ground on an
+adjacent attack onto an active site" became "advances onto the loser's
+square when it is an active site" (with `advanced: true` and the winner's
+square updated); "landing on a charged site during a winning advance leaves
+it charged" keeps its assertions with its comment reworded to stop claiming
+charged is the only state a winner may end on. The "D15 reproduction" test
+and all three §8.7 regression cases (a node changing hands intact, a drawn
+fight, a blocked advance across the loser's own return bay leaving the node
+empty and dormant) were left untouched and still pass, confirming the
+§8.7 cover survives per the task's instruction. One correction during
+verification: the first draft of the new "advances onto the loser's square
+when it is an active site" case kept the old `remainingShields: 3`
+expectation from the case it replaced; the fight is attacker (3 shields) vs
+defender (0 shields), so the winner's remaining shields are `3 - (0 + 1) =
+2` — fixed once the test run flagged the mismatch. `npm run typecheck`,
+`npm run lint` and `npm test` (695 passed) all pass. No production files
+outside `combat.ts` were touched, and the two-layer split (`sevenOnly*`,
+`moveLegality.ts`) was left exactly as it was, per the task's instruction
+that step 6 owns that collapse.
 
 Make §7's advance stop for ships and nothing else.
 

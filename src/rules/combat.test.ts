@@ -565,32 +565,25 @@ describe("winnerAdvance", () => {
     expect(squareNames(advance!.passedOver)).toEqual(["H6", "H7"]);
   });
 
-  it("stops one square short when the loser's square is a dead site", () => {
+  it("lands on the loser's square when it is an active site", () => {
     const state = buildState({ ships: [], siteStates: { H8: "active" } });
     const advance = winnerAdvance(state, laneOf("H5", "H8"));
 
     expect(advance).toBeDefined();
-    expect(squareName(advance!.destination)).toBe("H7");
-    expect(squareNames(advance!.passedOver)).toEqual(["H6"]);
+    expect(squareName(advance!.destination)).toBe("H8");
+    expect(squareNames(advance!.passedOver)).toEqual(["H6", "H7"]);
   });
 
-  it("stops two squares short when the loser's square and the one before it are both dead", () => {
+  it("lands on the loser's square when it is a dormant site", () => {
     const state = buildState({
       ships: [],
-      siteStates: { H7: "dormant", H8: "active" },
+      siteStates: { H7: "dormant", H8: "dormant" },
     });
     const advance = winnerAdvance(state, laneOf("H5", "H8"));
 
     expect(advance).toBeDefined();
-    expect(squareName(advance!.destination)).toBe("H6");
-    expect(squareNames(advance!.passedOver)).toEqual([]);
-  });
-
-  it("holds its ground when the only square on the lane is dead", () => {
-    const state = buildState({ ships: [], siteStates: { H6: "active" } });
-    const advance = winnerAdvance(state, laneOf("H5", "H6"));
-
-    expect(advance).toBeUndefined();
+    expect(squareName(advance!.destination)).toBe("H8");
+    expect(squareNames(advance!.passedOver)).toEqual(["H6", "H7"]);
   });
 
   it("stops short of an occupied lane square, whether the occupant sits on the candidate itself or between it and the attacker", () => {
@@ -604,7 +597,7 @@ describe("winnerAdvance", () => {
     expect(squareNames(advance!.passedOver)).toEqual([]);
   });
 
-  it("ignores an occupied square that lies beyond the square the winner actually stops on", () => {
+  it("stops short of an occupied square even though its site is not charged", () => {
     const state = buildState({
       ships: [ship("red-1", "red", "H8", 0)],
       siteStates: { H8: "active" },
@@ -616,13 +609,13 @@ describe("winnerAdvance", () => {
     expect(squareNames(advance!.passedOver)).toEqual(["H6"]);
   });
 
-  it("never lands the winner in a bay, swept across every non-bay origin, every shield count and every lane it offers whose target is itself not a bay, under two extreme site configurations", () => {
+  it("never lands the winner in a bay, swept across every non-bay origin, every shield count and every lane it offers whose target is itself not a bay, and produces identical results whatever site state the board is in", () => {
     // A lane whose destination is a bay is not one `winnerAdvance` is ever
     // handed in real play: `sevenOnlyAttackRefusalReason` refuses a bay
     // target (rules.md §3.1) before `attackReach`'s lane is ever passed to
     // it. The sweep mirrors that precondition rather than re-deriving it.
-    // Every site blocks the advance in one extreme (dormant) and none does
-    // in the other (charged is the only state a winner may end on).
+    // Site state no longer affects the advance at all (§7), so the
+    // all-dormant and all-charged sweeps must produce identical results.
     const allDormant = siteStatuses(
       Object.fromEntries(
         SITES.map((site) => [squareName(site), "dormant" as SiteState]),
@@ -634,7 +627,15 @@ describe("winnerAdvance", () => {
       ),
     );
 
-    for (const siteStates of [allDormant, allCharged]) {
+    const results: Record<string, Array<ReachEntry | undefined>> = {
+      dormant: [],
+      charged: [],
+    };
+
+    for (const [label, siteStates] of [
+      ["dormant", allDormant],
+      ["charged", allCharged],
+    ] as const) {
       const state: GameState = { ...buildState({ ships: [] }), siteStates };
 
       for (const column of COLUMN_LETTERS) {
@@ -654,10 +655,13 @@ describe("winnerAdvance", () => {
               if (advance !== undefined) {
                 expect(isBay(advance.destination)).toBe(false);
               }
+              results[label].push(advance);
             }
           }
         }
       }
     }
+
+    expect(results.dormant).toEqual(results.charged);
   });
 });
