@@ -10,6 +10,12 @@
   --color-green: #3fa66b;
   --color-red: #c8503f;
   --focus-ring: #ffb703;
+  /* Matches the fill of a charged / dormant site's gradient in
+     `SiteMarker.tsx`, so the HUD's node pips agree with the board's own
+     artwork. Kept as separate tokens rather than read from there, since
+     that gradient's stops are computed per render in TypeScript. */
+  --color-node-charged: #daa520;
+  --color-node-dormant: #808080;
 
   /* Arcade type: a monospace system stack with letter-spacing, weight and
      glow standing in for a downloaded face. The app deploys from a static

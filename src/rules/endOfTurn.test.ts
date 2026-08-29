@@ -131,6 +131,91 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
   });
 });
 
+describe("runEndOfTurn — step 1, the shield loss (§4.1)", () => {
+  it("loses a shield only for the moving side's ships standing on a dormant site", () => {
+    const state = buildState({
+      sideToMove: "green",
+      siteStates: {
+        H8: ["dormant", 1],
+        K5: ["active", 1],
+      },
+      ships: [
+        ship("green-1", "green", "H8", 2), // dormant: loses, 2 -> 1
+        ship("green-2", "green", "K5", 2), // active: loses nothing
+        ship("green-3", "green", "D2", 2), // not a site: loses nothing
+        ship("red-1", "red", "H8", 2), // dormant, but not the mover
+      ],
+    });
+
+    const result = runEndOfTurnFresh(state);
+
+    const shipShields = (id: ShipId): ShieldCount | undefined =>
+      result.state.ships.find((s) => s.id === id)?.shields;
+
+    expect(shipShields("green-1")).toBe(1);
+    expect(shipShields("green-2")).toBe(2);
+    expect(shipShields("green-3")).toBe(2);
+    expect(shipShields("red-1")).toBe(2);
+
+    expect(result.effects).toContainEqual({
+      type: "shield-lost",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+      shields: 1,
+    });
+    expect(result.effects.filter((e) => e.type === "shield-lost")).toHaveLength(
+      1,
+    );
+  });
+
+  it("leaves a ship already on 0 shields at 0 and raises no effect for it", () => {
+    const state = buildState({
+      sideToMove: "green",
+      siteStates: { H8: ["dormant", 1] },
+      ships: [ship("green-1", "green", "H8", 0)],
+    });
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(result.state.ships.find((s) => s.id === "green-1")?.shields).toBe(0);
+    expect(result.effects.some((effect) => effect.type === "shield-lost")).toBe(
+      false,
+    );
+  });
+
+  it("reports both a gain and a loss when one ship holds a node while another sits on a dormant site", () => {
+    const state = buildState({
+      sideToMove: "green",
+      siteStates: {
+        H8: ["charged", 1],
+        K5: ["dormant", 1],
+      },
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("green-2", "green", "K5", 2),
+      ],
+    });
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(result.effects).toContainEqual({
+      type: "shield-gained",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+      shields: 2,
+    });
+    expect(result.effects).toContainEqual({
+      type: "shield-lost",
+      shipId: "green-2",
+      side: "green",
+      square: squareFromName("K5"),
+      shields: 1,
+    });
+  });
+});
+
 describe("runEndOfTurn — step 3, drain (§8.3)", () => {
   it("rises an empty node's drain by 1, 2 or 3, and never anything else", () => {
     const observed = new Set<number>();
@@ -552,7 +637,239 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   });
 });
 
-describe("runEndOfTurn — a passed ply still collects (§8.6 runs in full for a pass)", () => {
+describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
+  it("prices one, two, three, four and five dormant sites off the collection table", () => {
+    const cases: readonly [number, number][] = [
+      [1, 1],
+      [2, 3],
+      [3, 6],
+      [4, 10],
+      [5, 15],
+    ];
+    for (const [dormantCount, expectedAmount] of cases) {
+      const names = ["H8", "K5", "L8", "D8", "K11"].slice(0, dormantCount);
+      const state = {
+        ...buildState({
+          sideToMove: "green",
+          siteStates: Object.fromEntries(
+            names.map((name) => [name, ["dormant", 0] as const]),
+          ),
+          ships: names.map((name, index) =>
+            ship(`green-${index + 1}` as ShipId, "green", name, 4),
+          ),
+        }),
+        energy: { green: 100, red: 0 },
+      };
+
+      const result = runEndOfTurnFresh(state);
+
+      const penalty = result.effects.find(
+        (effect) => effect.type === "energy-penalty",
+      );
+      expect(penalty).toMatchObject({
+        type: "energy-penalty",
+        side: "green",
+        amount: expectedAmount,
+        newTotal: 100 - expectedAmount,
+      });
+      expect(result.state.energy.green).toBe(100 - expectedAmount);
+    }
+  });
+
+  it("prices six and seven dormant sites the same as five, raising no error", () => {
+    const sixNames = ["H8", "K5", "L8", "D8", "K11", "E5"];
+    const state = {
+      ...buildState({
+        sideToMove: "green",
+        siteStates: Object.fromEntries(
+          sixNames.map((name) => [name, ["dormant", 0] as const]),
+        ),
+        ships: sixNames.map((name, index) =>
+          ship(`green-${index + 1}` as ShipId, "green", name, 4),
+        ),
+      }),
+      energy: { green: 100, red: 0 },
+    };
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(result.effects).toContainEqual(
+      expect.objectContaining({ type: "energy-penalty", amount: 15 }),
+    );
+    expect(result.state.energy.green).toBe(85);
+  });
+
+  it("collects for the charged nodes held and then pays for the dormant sites occupied, not netted", () => {
+    const state = {
+      ...buildState({
+        sideToMove: "green",
+        siteStates: {
+          H8: ["charged", 1],
+          K5: ["charged", 1],
+          L8: ["charged", 1],
+          D8: ["dormant", 0],
+          K11: ["dormant", 0],
+        },
+        ships: [
+          ship("green-1", "green", "H8", 4),
+          ship("green-2", "green", "K5", 4),
+          ship("green-3", "green", "L8", 4),
+          ship("green-4", "green", "D8", 0),
+          ship("green-5", "green", "K11", 0),
+        ],
+      }),
+      energy: { green: 0, red: 0 },
+    };
+
+    const result = runEndOfTurnFresh(state);
+
+    const collectedIndex = result.effects.findIndex(
+      (effect) => effect.type === "energy-collected",
+    );
+    const penaltyIndex = result.effects.findIndex(
+      (effect) => effect.type === "energy-penalty",
+    );
+    expect(collectedIndex).toBeGreaterThanOrEqual(0);
+    expect(penaltyIndex).toBeGreaterThan(collectedIndex);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-collected",
+      side: "green",
+      amount: 6,
+      newTotal: 6,
+      squares: [
+        squareFromName("K5"),
+        squareFromName("H8"),
+        squareFromName("L8"),
+      ],
+    });
+    expect(result.effects).toContainEqual({
+      type: "energy-penalty",
+      side: "green",
+      amount: 3,
+      newTotal: 3,
+      squares: [squareFromName("D8"), squareFromName("K11")],
+    });
+    expect(result.state.energy.green).toBe(3);
+  });
+
+  it("floors a penalty larger than the side's energy at 0, reporting only what was actually deducted", () => {
+    const state = {
+      ...buildState({
+        sideToMove: "green",
+        siteStates: {
+          H8: ["dormant", 0],
+          K5: ["dormant", 0],
+          L8: ["dormant", 0],
+        },
+        ships: [
+          ship("green-1", "green", "H8", 0),
+          ship("green-2", "green", "K5", 0),
+          ship("green-3", "green", "L8", 0),
+        ],
+      }),
+      energy: { green: 2, red: 0 },
+    };
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-penalty",
+      side: "green",
+      amount: 2,
+      newTotal: 0,
+      squares: [
+        squareFromName("K5"),
+        squareFromName("H8"),
+        squareFromName("L8"),
+      ],
+    });
+    expect(result.state.energy.green).toBe(0);
+  });
+
+  it("raises no penalty effect for a side with 0 energy standing on dormant sites", () => {
+    const state = {
+      ...buildState({
+        sideToMove: "green",
+        siteStates: { H8: ["dormant", 0] },
+        ships: [ship("green-1", "green", "H8", 0)],
+      }),
+      energy: { green: 0, red: 0 },
+    };
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(
+      result.effects.some((effect) => effect.type === "energy-penalty"),
+    ).toBe(false);
+    expect(result.state.energy.green).toBe(0);
+  });
+
+  it("raises no penalty effect for a side standing on no dormant site", () => {
+    const state = {
+      ...buildState({
+        sideToMove: "green",
+        siteStates: { H8: ["active", 1] },
+        ships: [ship("green-1", "green", "H8", 4)],
+      }),
+      energy: { green: 5, red: 0 },
+    };
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(
+      result.effects.some((effect) => effect.type === "energy-penalty"),
+    ).toBe(false);
+    expect(result.state.energy.green).toBe(5);
+  });
+
+  it("costs this side nothing for a dormant site occupied by the opponent", () => {
+    const state = {
+      ...buildState({
+        sideToMove: "green",
+        siteStates: { H8: ["dormant", 0] },
+        ships: [ship("red-1", "red", "H8", 4)],
+      }),
+      energy: { green: 5, red: 5 },
+    };
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(
+      result.effects.some((effect) => effect.type === "energy-penalty"),
+    ).toBe(false);
+    expect(result.state.energy).toEqual({ green: 5, red: 5 });
+  });
+
+  it("prices the dormant site occupied and ignores one with no ship standing on it", () => {
+    // green-1 ends on H8, dormant: it pays for that. K5, also dormant, is
+    // never occupied at all here, so it never counts — a site with no ship
+    // standing on it at the moment the count is taken costs nothing,
+    // regardless of why. (`camping.test.ts` carries the genuine fly-over
+    // case, driven through movement.)
+    const state = {
+      ...buildState({
+        sideToMove: "green",
+        siteStates: { H8: ["dormant", 0], K5: ["dormant", 0] },
+        ships: [ship("green-1", "green", "H8", 4)],
+      }),
+      energy: { green: 5, red: 0 },
+    };
+
+    const result = runEndOfTurnFresh(state);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-penalty",
+      side: "green",
+      amount: 1,
+      newTotal: 4,
+      squares: [squareFromName("H8")],
+    });
+    expect(result.state.energy.green).toBe(4);
+  });
+});
+
+describe("runEndOfTurn — a passed ply still settles both directions in full (§8.6 runs in full for a pass)", () => {
   it("pays the side that passes while standing on a charged node, through applyPassGuard", () => {
     // green-1 sits on K5, a charged site, having already acted this ply: it
     // has no move left (already acted) and no enemy stands anywhere near it
@@ -588,6 +905,31 @@ describe("runEndOfTurn — a passed ply still collects (§8.6 runs in full for a
       },
     ]);
     expect(result.state.energy).toEqual({ green: 1, red: 0 });
+  });
+
+  it("pays the side that passes while standing on a dormant site, through applyPassGuard", () => {
+    const state = {
+      ...buildState({
+        sideToMove: "green",
+        siteStates: { K5: ["dormant", 0] },
+        ships: [ship("green-1", "green", "K5", 3)],
+      }),
+      actedThisPly: ["green-1" as ShipId],
+      actionsRemaining: 1,
+      energy: { green: 5, red: 0 },
+    };
+
+    const result = applyPassGuard(state);
+
+    expect(result.effect?.type).toBe("ply-passed");
+    expect(result.effect?.endOfTurn).toContainEqual({
+      type: "energy-penalty",
+      side: "green",
+      amount: 1,
+      newTotal: 4,
+      squares: [squareFromName("K5")],
+    });
+    expect(result.state.energy).toEqual({ green: 4, red: 0 });
   });
 });
 

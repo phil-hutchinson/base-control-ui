@@ -250,7 +250,9 @@ describe("GameOverPanel", () => {
       ).toHaveTextContent("7");
       expect(screen.queryByRole("grid")).not.toBeInTheDocument();
       expect(
-        screen.queryByText("Red: 7 energy, 1 node held."),
+        screen.queryByText(
+          "Red: 7 energy, 1 node held, standing on no dormant sites.",
+        ),
       ).not.toBeInTheDocument();
     });
 
@@ -267,10 +269,14 @@ describe("GameOverPanel", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
       expect(screen.getByText("1/1")).toBeInTheDocument();
       expect(
-        screen.getByText("Green: 0 energy, no nodes held."),
+        screen.getByText(
+          "Green: 0 energy, no nodes held, standing on no dormant sites.",
+        ),
       ).toBeInTheDocument();
       expect(
-        screen.getByText("Red: 0 energy, no nodes held."),
+        screen.getByText(
+          "Red: 0 energy, no nodes held, standing on no dormant sites.",
+        ),
       ).toBeInTheDocument();
       expect(screen.getByText("Green to play")).toBeInTheDocument();
 

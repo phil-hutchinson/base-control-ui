@@ -621,6 +621,177 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
+  it("announces one shield lost, naming the square and the new count", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-lost",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 1,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at H8 lost a shield, now on 1. Red's turn, 1 action left.",
+    );
+  });
+
+  it("groups several shields lost in one sequence into one clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-lost",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 2,
+            },
+            {
+              type: "shield-lost",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 1,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a shield. Red's turn, 1 action left.",
+    );
+  });
+
+  it("says which ship reached 0 shields, within a grouped clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-lost",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 1,
+            },
+            {
+              type: "shield-lost",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 0,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a shield. K5 reached 0. Red's turn, 1 action left.",
+    );
+  });
+
+  it("says a single ship reached 0 shields", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-lost",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 0,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at K5 lost a shield, reaching 0. Red's turn, 1 action left.",
+    );
+  });
+
+  it("reads gains before losses when a sequence has both", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "shield-gained",
+              shipId: "green-1",
+              side: "green",
+              square: squareAt("H", 8),
+              shields: 2,
+            },
+            {
+              type: "shield-lost",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("K", 5),
+              shields: 1,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at H8 gained a shield, now on 2. Green ship at K5 lost a shield, now on 1. Red's turn, 1 action left.",
+    );
+  });
+
   it("announces a full end-of-turn sequence in the order it was produced", () => {
     const event: MovedEvent = {
       type: "moved",
@@ -833,6 +1004,179 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Red has no legal action, so the turn passes. Red collected 3 energy from 2 nodes at E5 and K5, and now has 3. Green's turn, 1 action left.",
+    );
+  });
+});
+
+describe("announcementFor — energy penalty (rules.md §8.4)", () => {
+  it("announces one dormant site occupied", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-2",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-penalty",
+              side: "green",
+              amount: 1,
+              newTotal: 4,
+              squares: [squareAt("H", 8)],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green lost 1 energy to the dormant site at H8, and now has 4. Red's turn, 1 action left.",
+    );
+  });
+
+  it("announces several dormant sites occupied, naming the count and every square", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-2",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-penalty",
+              side: "green",
+              amount: 3,
+              newTotal: 0,
+              squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green lost 3 energy to 3 dormant sites at D8, H8 and K11, and now has 0. Red's turn, 1 action left.",
+    );
+  });
+
+  it("names every dormant site occupied and says five are penalised once the cap is passed", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-2",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-penalty",
+              side: "green",
+              amount: 15,
+              newTotal: 0,
+              squares: [
+                squareAt("D", 8),
+                squareAt("H", 8),
+                squareAt("K", 11),
+                squareAt("E", 5),
+                squareAt("K", 5),
+                squareAt("G", 6),
+              ],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green lost 15 energy to 6 dormant sites at D8, H8, K11, E5, K5 and G6, five of which are penalised, and now has 0. Red's turn, 1 action left.",
+    );
+  });
+
+  it("produces no clause when nothing was paid", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Red's turn, 1 action left.",
+    );
+  });
+
+  it("reads a turn that both collects and pays as two sentences, collection first", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-2",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "energy-collected",
+              side: "green",
+              amount: 6,
+              newTotal: 6,
+              squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
+            },
+            {
+              type: "energy-penalty",
+              side: "green",
+              amount: 3,
+              newTotal: 3,
+              squares: [squareAt("E", 5), squareAt("K", 5)],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 6. Green lost 3 energy to 2 dormant sites at E5 and K5, and now has 3. Red's turn, 1 action left.",
+    );
+  });
+
+  it("a passed turn still carries its own penalty clause", () => {
+    const event: PassEffect = {
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      endOfTurn: [
+        {
+          type: "energy-penalty",
+          side: "red",
+          amount: 3,
+          newTotal: 0,
+          squares: [squareAt("E", 5), squareAt("K", 5)],
+        },
+      ],
+    };
+    expect(announcementFor(event)).toBe(
+      "Red has no legal action, so the turn passes. Red lost 3 energy to 2 dormant sites at E5 and K5, and now has 0. Green's turn, 1 action left.",
     );
   });
 });
@@ -1426,10 +1770,17 @@ describe("HUD wording", () => {
       shields: 0 | 1 | 2 | 3 | 4;
     }[];
     charged?: readonly string[];
+    dormant?: readonly string[];
   }): GameState {
-    const siteStates: Record<string, { state: "charged"; level: number }> = {};
+    const siteStates: Record<
+      string,
+      { state: "charged" | "dormant"; level: number }
+    > = {};
     for (const square of config.charged ?? []) {
       siteStates[square] = { state: "charged", level: 1 };
+    }
+    for (const square of config.dormant ?? []) {
+      siteStates[square] = { state: "dormant", level: 1 };
     }
     return {
       ships: config.ships ?? [],
@@ -1452,7 +1803,7 @@ describe("HUD wording", () => {
         plyNumber: 1,
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held.",
+        "Green: 0 energy, no nodes held, standing on no dormant sites.",
       );
     });
 
@@ -1472,7 +1823,7 @@ describe("HUD wording", () => {
         charged: ["H8"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 7 energy, 1 node held.",
+        "Green: 7 energy, 1 node held, standing on no dormant sites.",
       );
     });
 
@@ -1498,7 +1849,7 @@ describe("HUD wording", () => {
         charged: ["H8", "E5"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 24 energy, 2 nodes held.",
+        "Green: 24 energy, 2 nodes held, standing on no dormant sites.",
       );
     });
 
@@ -1518,7 +1869,70 @@ describe("HUD wording", () => {
         ],
         charged: ["K5", "H8"],
       });
-      expect(scoreSentence(state, "red")).toBe("Red: 1 energy, 1 node held.");
+      expect(scoreSentence(state, "red")).toBe(
+        "Red: 1 energy, 1 node held, standing on no dormant sites.",
+      );
+    });
+
+    it("uses the singular at one dormant site occupied", () => {
+      const state = stateWith({
+        energy: { green: 4, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 5,
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 0,
+          },
+        ],
+        dormant: ["H8"],
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 4 energy, no nodes held, standing on 1 dormant site.",
+      );
+    });
+
+    it("counts several dormant sites occupied, plural", () => {
+      const state = stateWith({
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 5,
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 0,
+          },
+          {
+            id: "green-2",
+            side: "green",
+            square: squareAt("E", 5),
+            shields: 0,
+          },
+        ],
+        dormant: ["H8", "E5"],
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 0 energy, no nodes held, standing on 2 dormant sites.",
+      );
+    });
+
+    it("does not count the opponent's ships on dormant sites", () => {
+      const state = stateWith({
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 5,
+        ships: [
+          { id: "red-1", side: "red", square: squareAt("H", 8), shields: 0 },
+        ],
+        dormant: ["H8"],
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 0 energy, no nodes held, standing on no dormant sites.",
+      );
     });
   });
 

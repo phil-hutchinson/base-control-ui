@@ -1468,7 +1468,7 @@ describe("energy overlay composition", () => {
     expect(screen.getByRole("grid")).not.toContainElement(
       overlay as HTMLElement,
     );
-    expect(overlay?.querySelector(".energy-overlay__gain")).toHaveTextContent(
+    expect(overlay?.querySelector(".energy-overlay__amount")).toHaveTextContent(
       "+1",
     );
 

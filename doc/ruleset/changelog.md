@@ -7,6 +7,42 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.14 — dormant sites cost energy and a shield
+
+- **Section 4.1 gains the mirror of the shield gain.** A ship standing on a
+  node still gains a shield at the end of its owner's turn; a ship standing
+  on a **dormant** site now **loses** one, down to the minimum of 0. An
+  active site does neither.
+- **Section 8.4 becomes collection and penalty.** The section keeps its
+  table (0, 1, 3, 6, 10, 15) and its number, but now prices both directions:
+  a player collects for the charged nodes they hold and then pays for the
+  dormant sites they occupy, in that order and **not netted** — three
+  charged nodes and two dormant sites pay 6 and cost 3, for +3, not the +1 a
+  net count of one node would have paid.
+- **The dormant count is capped at five.** Unlike charged nodes, which the
+  board never lets exceed five, dormant sites have no such ceiling; the
+  penalty counts at most five of them, so six or seven cost the same 15
+  that five do, and the most a turn can cost is exactly the most it can
+  pay.
+- **A player's energy never falls below zero.** Where a turn's penalty
+  exceeds the energy the player has, their total lands on 0.
+- **Section 8.1's dormant state stops being merely inert.** It now costs
+  the player whose ship stands on it, in energy (section 8.4) and a shield
+  (section 4.1); active is unchanged — eligible to be charged, producing
+  nothing, and costing nothing.
+- **Section 8.5 stops saying dormancy is free.** An active site pays
+  nothing and costs nothing; a dormant site pays nothing and now costs. A
+  node that falls quiet under its holder starts costing the holder from the
+  end of their next turn unless they leave.
+- **Section 8.6's steps 1 and 2 take the new work.** Step 1 also loses a
+  shield from each of the moving player's ships on a dormant site; step 2
+  also pays the penalty after the collection. No step is added and no step
+  moves.
+- **Section 8.6's step 3 states the consequence.** A ship left standing on a
+  node that runs out keeps standing there and collecting nothing, as
+  before, and now also pays for it from the end of its owner's next turn
+  (section 8.4).
+
 ## 0.13 — ships may stay on any site
 
 - **A move may end anywhere a ship can reach.** Section 6's closing

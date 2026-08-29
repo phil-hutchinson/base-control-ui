@@ -17,7 +17,12 @@
 import type { Square } from "./board";
 import { squareName } from "./board";
 import { type SiteChargedEffect, runChargeDraw } from "./chargeDraw";
-import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
+import {
+  chargedNodesHeldBy,
+  dormantSitesOccupiedBy,
+  energyForDormantSites,
+  energyForNodesHeld,
+} from "./energy";
 import type { Side, ShipId } from "./fleet";
 import {
   type GameState,
@@ -35,7 +40,7 @@ import {
   STARTING_PRESSURE,
   drawTableAmount,
 } from "./sites";
-import { MAX_SHIELDS, type ShieldCount } from "./shields";
+import { MAX_SHIELDS, MIN_SHIELDS, type ShieldCount } from "./shields";
 
 /** A ship on a charged node gained a shield at the end of its side's turn (§8.6 step 1, §4.1). */
 export interface ShieldGainedEffect {
@@ -46,9 +51,33 @@ export interface ShieldGainedEffect {
   readonly shields: ShieldCount;
 }
 
+/** A ship on a dormant site lost a shield at the end of its side's turn (§8.6 step 1, §4.1). */
+export interface ShieldLostEffect {
+  readonly type: "shield-lost";
+  readonly shipId: ShipId;
+  readonly side: Side;
+  readonly square: Square;
+  readonly shields: ShieldCount;
+}
+
 /** The side that just played collected energy for the charged nodes it holds (§8.6 step 2, §8.4). */
 export interface EnergyCollectedEffect {
   readonly type: "energy-collected";
+  readonly side: Side;
+  readonly amount: number;
+  readonly newTotal: number;
+  readonly squares: readonly Square[];
+}
+
+/**
+ * The side that just played paid energy for the dormant sites it occupies
+ * (§8.6 step 2, §8.4). `amount` is the energy actually deducted, never more
+ * than the side had — where §8.4's floor of 0 bites, `amount` is smaller
+ * than the table price, so `newTotal` is always `previousTotal - amount`
+ * exactly.
+ */
+export interface EnergyPenaltyEffect {
+  readonly type: "energy-penalty";
   readonly side: Side;
   readonly amount: number;
   readonly newTotal: number;
@@ -70,7 +99,9 @@ export interface SiteWentActiveEffect {
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
 export type EndOfTurnEffect =
   | ShieldGainedEffect
+  | ShieldLostEffect
   | EnergyCollectedEffect
+  | EnergyPenaltyEffect
   | NodeRanOutEffect
   | SiteChargedEffect
   | SiteWentActiveEffect;
@@ -108,24 +139,38 @@ export function runEndOfTurn(
   const effects: EndOfTurnEffect[] = [];
 
   // Step 1: the moving player's ships on charged nodes gain a shield,
-  // capped at 4 (§4.1). An active site grants nothing.
+  // capped at 4, and those on dormant sites lose one, floored at 0 (§4.1).
+  // An active site does neither. One pass over the fleet, so the effects
+  // come out in fleet order with gains and losses interleaved exactly as
+  // the ships are ordered.
   const ships = state.ships.map((ship) => {
-    if (
-      ship.side !== side ||
-      ship.shields >= MAX_SHIELDS ||
-      siteStateAt(state, ship.square) !== "charged"
-    ) {
+    if (ship.side !== side) {
       return ship;
     }
-    const shields = (ship.shields + 1) as ShieldCount;
-    effects.push({
-      type: "shield-gained",
-      shipId: ship.id,
-      side: ship.side,
-      square: ship.square,
-      shields,
-    });
-    return { ...ship, shields };
+    const siteState = siteStateAt(state, ship.square);
+    if (siteState === "charged" && ship.shields < MAX_SHIELDS) {
+      const shields = (ship.shields + 1) as ShieldCount;
+      effects.push({
+        type: "shield-gained",
+        shipId: ship.id,
+        side: ship.side,
+        square: ship.square,
+        shields,
+      });
+      return { ...ship, shields };
+    }
+    if (siteState === "dormant" && ship.shields > MIN_SHIELDS) {
+      const shields = (ship.shields - 1) as ShieldCount;
+      effects.push({
+        type: "shield-lost",
+        shipId: ship.id,
+        side: ship.side,
+        square: ship.square,
+        shields,
+      });
+      return { ...ship, shields };
+    }
+    return ship;
   });
   let workingState: GameState = { ...state, ships };
 
@@ -147,6 +192,33 @@ export function runEndOfTurn(
       amount,
       newTotal,
       squares: heldSquares,
+    });
+  }
+
+  // Step 2 (continued): the moving side then pays for the dormant sites it
+  // occupies right now (§8.4), taken from the total the collection above
+  // has already raised. The table price is clamped to a count of five
+  // dormant sites; the amount actually taken is floored so the side's total
+  // never goes below 0, and it is that floored amount — not the table
+  // price — that is reported, so `newTotal` is always exactly
+  // `previousTotal - amount`. A zero deduction is not an event, whether
+  // because nothing dormant is occupied or because there is nothing left to
+  // take: no effect, no other state change.
+  const dormantSquares = dormantSitesOccupiedBy(workingState, side);
+  const price = energyForDormantSites(dormantSquares.length);
+  const penalty = Math.min(price, workingState.energy[side]);
+  if (penalty > 0) {
+    const newTotal = workingState.energy[side] - penalty;
+    workingState = {
+      ...workingState,
+      energy: { ...workingState.energy, [side]: newTotal },
+    };
+    effects.push({
+      type: "energy-penalty",
+      side,
+      amount: penalty,
+      newTotal,
+      squares: dormantSquares,
     });
   }
 

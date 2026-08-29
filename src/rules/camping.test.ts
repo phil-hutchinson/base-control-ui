@@ -224,8 +224,15 @@ describe("camping — a ship on a dormant site outlasts recovery, then a charge 
   });
 });
 
-describe("camping — a site that is not charged pays nothing (§8.5)", () => {
-  it("grants no shield and collects no energy for a ship on an active or a dormant site", () => {
+describe("camping — a site that grants or takes nothing has nothing left to give or take (§8.5)", () => {
+  it("grants no shield and collects no energy for a ship on an active site, and a ship already at 0 shields on a dormant site loses nothing further", () => {
+    // green-dormant-camper starts at 0 shields and green starts this test
+    // at 0 energy (buildState's default), so this is not a claim that
+    // dormant sites are free under 0.14 — it is the floor corner case: a
+    // ship with no shield left to lose and a side with no energy left to
+    // take raise neither a shield-lost nor an energy-penalty effect. See
+    // the dedicated "a dormant site costs" tests below for the general
+    // case, where both are non-zero and both effects fire.
     const initial = buildState({
       ships: [
         ship("green-active-camper", "green", "H4"),
@@ -257,6 +264,7 @@ describe("camping — a site that is not charged pays nothing (§8.5)", () => {
       expect(active?.shields).toBe(0);
       expect(dormant?.square).toEqual(squareFromName("N4"));
       expect(dormant?.shields).toBe(0);
+      expect(state.energy.green).toBe(0);
     }
 
     // The board is already at its target of five charged sites, so H4
@@ -268,7 +276,10 @@ describe("camping — a site that is not charged pays nothing (§8.5)", () => {
     expect(
       greenTurnEffects.some(
         (effect) =>
-          effect.type === "shield-gained" || effect.type === "energy-collected",
+          effect.type === "shield-gained" ||
+          effect.type === "shield-lost" ||
+          effect.type === "energy-collected" ||
+          effect.type === "energy-penalty",
       ),
     ).toBe(false);
     assertUntouched(afterGreenTurn.state);
@@ -280,7 +291,10 @@ describe("camping — a site that is not charged pays nothing (§8.5)", () => {
     expect(
       redTurnEffects.some(
         (effect) =>
-          effect.type === "shield-gained" || effect.type === "energy-collected",
+          effect.type === "shield-gained" ||
+          effect.type === "shield-lost" ||
+          effect.type === "energy-collected" ||
+          effect.type === "energy-penalty",
       ),
     ).toBe(false);
     assertUntouched(afterRedTurn.state);
@@ -353,11 +367,30 @@ describe("camping — a node running out under a ship is quiet (§8.3, §8.5)", 
         squareFromName("H9"),
       ),
     ).toBeUndefined();
+    const greenNextTurnEffects = endOfTurnEffects(afterGreenNextTurn.effects);
+    // H8 ran out during green's own previous turn, so this is the first
+    // end-of-turn sequence to find green-camper standing on it while it is
+    // dormant — it first loses its shield and first pays for it here (§4.1,
+    // §8.4, §8.6 step 1), not on the turn the node ran out.
+    expect(greenNextTurnEffects).toContainEqual({
+      type: "shield-lost",
+      shipId: "green-camper",
+      side: "green",
+      square: squareFromName("H8"),
+      shields: 0,
+    });
+    expect(greenNextTurnEffects).toContainEqual({
+      type: "energy-penalty",
+      side: "green",
+      amount: 1,
+      newTotal: 0,
+      squares: [squareFromName("H8")],
+    });
     const camperAfterNextTurn = afterGreenNextTurn.state.ships.find(
       (candidate) => candidate.id === "green-camper",
     );
     expect(camperAfterNextTurn?.square).toEqual(squareFromName("H8"));
-    expect(camperAfterNextTurn?.shields).toBe(1);
+    expect(camperAfterNextTurn?.shields).toBe(0);
   });
 });
 
@@ -399,5 +432,236 @@ describe("camping — leaving a node for a dormant site (§8.5, §8.7)", () => {
       (candidate) => candidate.id === "green-1",
     );
     expect(movedShip?.square).toEqual(squareFromName("H4"));
+  });
+});
+
+describe("camping — a dormant site costs a shield and energy, every one of its owner's turns (§4.1, §8.4)", () => {
+  it("takes a shield and pays energy at the end of each of the camper's owner's own turns, and does so again the next", () => {
+    const initial: GameState = {
+      ...buildState({
+        ships: [
+          ship("green-camper", "green", "H8", 2),
+          ship("green-mover", "green", "A1"),
+          ship("red-mover", "red", "O4"),
+        ],
+        siteStates: {
+          // Comfortably above the recovery table's largest single draw (8),
+          // so it stays dormant through every recovery tick in this test.
+          H8: ["dormant", 60],
+        },
+      }),
+      energy: { green: 10, red: 0 },
+    };
+
+    // Green's turn: green-camper never acts — its owner spends the turn
+    // moving a different ship — but the camper still pays for standing on
+    // H8, exactly as it would if it had moved.
+    const afterGreenTurn = appliedOrThrow(
+      applyMove(initial, "green-mover", squareFromName("A4")),
+    );
+    const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
+    expect(greenTurnEffects).toContainEqual({
+      type: "shield-lost",
+      shipId: "green-camper",
+      side: "green",
+      square: squareFromName("H8"),
+      shields: 1,
+    });
+    expect(greenTurnEffects).toContainEqual({
+      type: "energy-penalty",
+      side: "green",
+      amount: 1,
+      newTotal: 9,
+      squares: [squareFromName("H8")],
+    });
+    const camperAfterGreenTurn = afterGreenTurn.state.ships.find(
+      (candidate) => candidate.id === "green-camper",
+    );
+    expect(camperAfterGreenTurn?.square).toEqual(squareFromName("H8"));
+    expect(camperAfterGreenTurn?.shields).toBe(1);
+    expect(afterGreenTurn.state.energy.green).toBe(9);
+
+    // Red's turn: each side pays on its own turn only, so green's camper on
+    // a dormant site costs green nothing at the end of red's turn.
+    const afterRedTurn = appliedOrThrow(
+      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O7")),
+    );
+    const redTurnEffects = endOfTurnEffects(afterRedTurn.effects);
+    expect(
+      redTurnEffects.some(
+        (effect) =>
+          effect.type === "shield-lost" || effect.type === "energy-penalty",
+      ),
+    ).toBe(false);
+    expect(afterRedTurn.state.energy.green).toBe(9);
+
+    // Green's next turn: the cost recurs rather than firing once.
+    const afterGreenNextTurn = appliedOrThrow(
+      applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
+    );
+    const greenNextTurnEffects = endOfTurnEffects(afterGreenNextTurn.effects);
+    expect(greenNextTurnEffects).toContainEqual({
+      type: "shield-lost",
+      shipId: "green-camper",
+      side: "green",
+      square: squareFromName("H8"),
+      shields: 0,
+    });
+    expect(greenNextTurnEffects).toContainEqual({
+      type: "energy-penalty",
+      side: "green",
+      amount: 1,
+      newTotal: 8,
+      squares: [squareFromName("H8")],
+    });
+    const camperAfterGreenNextTurn = afterGreenNextTurn.state.ships.find(
+      (candidate) => candidate.id === "green-camper",
+    );
+    expect(camperAfterGreenNextTurn?.shields).toBe(0);
+    expect(afterGreenNextTurn.state.energy.green).toBe(8);
+  });
+});
+
+describe("camping — an active site still pays nothing, for as many turns as a ship stays on it (§8.5)", () => {
+  it("grants no shield and costs no shield or energy, across several turns, with non-zero shields and energy to lose", () => {
+    const initial: GameState = {
+      ...buildState({
+        ships: [
+          ship("green-camper", "green", "H4", 2),
+          ship("green-mover", "green", "A1"),
+          ship("red-mover", "red", "O4"),
+        ],
+        siteStates: {
+          H4: ["active", 5],
+          F2: ["charged", 0],
+          J2: ["charged", 0],
+          B4: ["charged", 0],
+          L8: ["charged", 0],
+          D8: ["charged", 0],
+        },
+      }),
+      energy: { green: 10, red: 0 },
+    };
+
+    function assertUntouched(state: GameState) {
+      const camper = state.ships.find(
+        (candidate) => candidate.id === "green-camper",
+      );
+      expect(camper?.square).toEqual(squareFromName("H4"));
+      expect(camper?.shields).toBe(2);
+      expect(state.energy.green).toBe(10);
+    }
+
+    function assertNoSettlement(effects: readonly MoveEffect[]) {
+      const plyEffects = endOfTurnEffects(effects);
+      expect(
+        plyEffects.some(
+          (effect) =>
+            effect.type === "shield-gained" ||
+            effect.type === "shield-lost" ||
+            effect.type === "energy-collected" ||
+            effect.type === "energy-penalty",
+        ),
+      ).toBe(false);
+    }
+
+    // The board is already at its target of five charged sites, so H4
+    // never gets drawn during this test — it is a clean, indefinite control,
+    // proven across two full rounds rather than one.
+    const afterGreenTurn = appliedOrThrow(
+      applyMove(initial, "green-mover", squareFromName("A4")),
+    );
+    assertNoSettlement(afterGreenTurn.effects);
+    assertUntouched(afterGreenTurn.state);
+
+    const afterRedTurn = appliedOrThrow(
+      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O7")),
+    );
+    assertUntouched(afterRedTurn.state);
+
+    const afterGreenNextTurn = appliedOrThrow(
+      applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
+    );
+    assertNoSettlement(afterGreenNextTurn.effects);
+    assertUntouched(afterGreenNextTurn.state);
+
+    const afterRedNextTurn = appliedOrThrow(
+      applyMove(afterGreenNextTurn.state, "red-mover", squareFromName("O4")),
+    );
+    assertUntouched(afterRedNextTurn.state);
+  });
+});
+
+describe("camping — leaving a dormant site stops the cost immediately (§8.4, §8.5)", () => {
+  it("pays nothing at the end of the turn a ship moves off a dormant site it was standing on", () => {
+    const initial: GameState = {
+      ...buildState({
+        ships: [
+          ship("green-camper", "green", "H8", 2),
+          ship("red-mover", "red", "O4"),
+        ],
+        siteStates: {
+          H8: ["dormant", 60],
+        },
+      }),
+      energy: { green: 10, red: 0 },
+    };
+
+    // green-camper is not standing on H8 when the end-of-turn count is
+    // taken, because it moved off it during this very ply — the "standing
+    // on at that moment" rule (§8.4) governs the penalty exactly as it
+    // governs the collection.
+    const result = appliedOrThrow(
+      applyMove(initial, "green-camper", squareFromName("H9")),
+    );
+    const effects = endOfTurnEffects(result.effects);
+    expect(
+      effects.some(
+        (effect) =>
+          effect.type === "shield-lost" || effect.type === "energy-penalty",
+      ),
+    ).toBe(false);
+    expect(result.state.energy.green).toBe(10);
+    const camper = result.state.ships.find(
+      (candidate) => candidate.id === "green-camper",
+    );
+    expect(camper?.square).toEqual(squareFromName("H9"));
+    expect(camper?.shields).toBe(2);
+  });
+});
+
+describe("camping — flying across a dormant site costs nothing (§8.4)", () => {
+  it("raises no shield loss or energy penalty for a move that passes over, but does not stop on, a dormant site", () => {
+    const initial: GameState = {
+      ...buildState({
+        ships: [
+          ship("green-flyer", "green", "H6", 0),
+          ship("red-mover", "red", "O4"),
+        ],
+        siteStates: {
+          H8: ["dormant", 60],
+        },
+      }),
+      energy: { green: 10, red: 0 },
+    };
+
+    // At 0 shields green-flyer's reach includes an orthogonal move of 3,
+    // so H6 -> H9 passes over H7 and H8 without stopping on either.
+    const result = appliedOrThrow(
+      applyMove(initial, "green-flyer", squareFromName("H9")),
+    );
+    const effects = endOfTurnEffects(result.effects);
+    expect(
+      effects.some(
+        (effect) =>
+          effect.type === "shield-lost" || effect.type === "energy-penalty",
+      ),
+    ).toBe(false);
+    expect(result.state.energy.green).toBe(10);
+    const flyer = result.state.ships.find(
+      (candidate) => candidate.id === "green-flyer",
+    );
+    expect(flyer?.square).toEqual(squareFromName("H9"));
+    expect(flyer?.shields).toBe(0);
   });
 });

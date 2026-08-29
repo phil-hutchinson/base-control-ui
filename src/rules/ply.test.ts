@@ -1113,7 +1113,11 @@ describe("the winner's advance (rules.md §7)", () => {
     }
     const winner = result.state.ships.find((s) => s.id === "green-1");
     expect(winner?.square).toEqual(squareFromName("H8"));
-    expect(winner?.shields).toBe(1);
+    // The fight itself leaves the winner on 1 shield (2 - (0 + 1)); this
+    // single action also ends the ply, so end-of-turn step 1 sees it
+    // standing on an already-dormant site and takes the shield straight
+    // away, landing it on 0 (§4.1, §8.6 step 1).
+    expect(winner?.shields).toBe(0);
     const loser = result.state.ships.find((s) => s.id === "red-1");
     expect(loser && isBay(loser.square)).toBe(true);
   });

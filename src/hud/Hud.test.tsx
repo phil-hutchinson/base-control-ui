@@ -19,10 +19,14 @@ describe("Hud", () => {
     render(<Hud state={state} displayedEnergy={state.energy} />);
 
     expect(
-      screen.getByText("Green: 24 energy, no nodes held."),
+      screen.getByText(
+        "Green: 24 energy, no nodes held, standing on no dormant sites.",
+      ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Red: 9 energy, no nodes held."),
+      screen.getByText(
+        "Red: 9 energy, no nodes held, standing on no dormant sites.",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText("35/100")).toBeInTheDocument();
     expect(screen.getByText("Green to play")).toBeInTheDocument();

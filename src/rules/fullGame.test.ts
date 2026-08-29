@@ -16,7 +16,7 @@ import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import { gameResult, isGameOver, pliesForGameLength } from "./gameLength";
 import { type GameState, siteStateAt, startingGameState } from "./gameState";
-import type { EnergyCollectedEffect } from "./endOfTurn";
+import type { EnergyCollectedEffect, EnergyPenaltyEffect } from "./endOfTurn";
 import { legalDestinations } from "./movement";
 import {
   type AttackEffect,
@@ -143,6 +143,23 @@ function energyCollectedEffects(
   return collected;
 }
 
+/** The `energy-penalty` effects nested inside a ply's end-of-turn effects, if any. */
+function energyPenaltyEffects(
+  effects: readonly (MoveEffect | AttackEffect)[] | readonly [PassEffect],
+): readonly EnergyPenaltyEffect[] {
+  const penalties: EnergyPenaltyEffect[] = [];
+  for (const effect of effects) {
+    if (effect.type === "ply-ended" || effect.type === "ply-passed") {
+      for (const sub of effect.endOfTurn) {
+        if (sub.type === "energy-penalty") {
+          penalties.push(sub);
+        }
+      }
+    }
+  }
+  return penalties;
+}
+
 /** A hard ceiling on actions applied, so a regression hangs the assertion, not the test runner. */
 const MAX_ACTIONS = 10_000;
 
@@ -150,6 +167,8 @@ interface PlayedGame {
   readonly finalState: GameState;
   readonly greenCollected: readonly EnergyCollectedEffect[];
   readonly redCollected: readonly EnergyCollectedEffect[];
+  readonly greenPenalized: readonly EnergyPenaltyEffect[];
+  readonly redPenalized: readonly EnergyPenaltyEffect[];
 }
 
 /** Plays a whole game from `seed` at `lengthInRounds` using the greedy policy above. */
@@ -157,6 +176,8 @@ function playFullGame(seed: number, lengthInRounds: number): PlayedGame {
   let state = startingGameState(seed, lengthInRounds);
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
+  const greenPenalized: EnergyPenaltyEffect[] = [];
+  const redPenalized: EnergyPenaltyEffect[] = [];
 
   let actionsApplied = 0;
   while (!isGameOver(state)) {
@@ -199,9 +220,20 @@ function playFullGame(seed: number, lengthInRounds: number): PlayedGame {
         collected,
       );
     }
+    for (const penalized of energyPenaltyEffects(effects)) {
+      (penalized.side === "green" ? greenPenalized : redPenalized).push(
+        penalized,
+      );
+    }
   }
 
-  return { finalState: state, greenCollected, redCollected };
+  return {
+    finalState: state,
+    greenCollected,
+    redCollected,
+    greenPenalized,
+    redPenalized,
+  };
 }
 
 /**
@@ -283,23 +315,37 @@ function assertRefusesEverything(state: GameState): boolean {
   return foundAttack;
 }
 
-function sumAmounts(effects: readonly EnergyCollectedEffect[]): number {
+function sumAmounts(
+  effects: readonly (EnergyCollectedEffect | EnergyPenaltyEffect)[],
+): number {
   return effects.reduce((total, effect) => total + effect.amount, 0);
 }
 
 describe("a full game, end to end", () => {
   it("plays a hundred-round game to its end, with totals consistent throughout", () => {
     const seed = 20260819;
-    const { finalState, greenCollected, redCollected } = playFullGame(
-      seed,
-      100,
-    );
+    const {
+      finalState,
+      greenCollected,
+      redCollected,
+      greenPenalized,
+      redPenalized,
+    } = playFullGame(seed, 100);
 
     expect(finalState.plyNumber).toBe(pliesForGameLength(100) + 1);
     expect(isGameOver(finalState)).toBe(true);
 
-    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
-    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+    // The ledger holds exactly (§8.4, §8.6 step 2): a side's final total is
+    // what it collected for the charged nodes it held minus what it paid
+    // for the dormant sites it occupied, penny for penny — the penalty
+    // effect always reports the energy actually deducted, never the table
+    // price, so a floored turn still balances this identity.
+    expect(finalState.energy.green).toBe(
+      sumAmounts(greenCollected) - sumAmounts(greenPenalized),
+    );
+    expect(finalState.energy.red).toBe(
+      sumAmounts(redCollected) - sumAmounts(redPenalized),
+    );
 
     // The policy should actually score, not merely reach the end.
     expect(finalState.energy.green).toBeGreaterThan(0);
@@ -327,13 +373,23 @@ describe("a full game, end to end", () => {
 
   it("plays a three-round game to its end, by the same route", () => {
     const seed = 20260819;
-    const { finalState, greenCollected, redCollected } = playFullGame(seed, 3);
+    const {
+      finalState,
+      greenCollected,
+      redCollected,
+      greenPenalized,
+      redPenalized,
+    } = playFullGame(seed, 3);
 
     expect(finalState.plyNumber).toBe(pliesForGameLength(3) + 1);
     expect(isGameOver(finalState)).toBe(true);
 
-    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
-    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+    expect(finalState.energy.green).toBe(
+      sumAmounts(greenCollected) - sumAmounts(greenPenalized),
+    );
+    expect(finalState.energy.red).toBe(
+      sumAmounts(redCollected) - sumAmounts(redPenalized),
+    );
 
     const result = gameResult(finalState);
     if (finalState.energy.green > finalState.energy.red) {

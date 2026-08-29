@@ -31,27 +31,48 @@
   text-shadow: 0 0 0.4em currentcolor;
 }
 
-.score-display__pips {
+.score-display__pips,
+.score-display__dormant-pips {
   display: flex;
   gap: 0.35em;
 }
 
-.score-display__pip {
+.score-display__pip,
+.score-display__dormant-pip {
   width: 0.6em;
   height: 0.6em;
   border-radius: 50%;
-  background-color: var(--color-space-raised);
+  background-color: transparent;
   border: 1px solid var(--color-text-dim);
 }
 
-.score-display--green .score-display__pip--lit {
-  background-color: var(--color-green);
+/* Every pip's border is the side's own colour; a pip that is "on" fills
+   with the colour of the kind of site it counts — gold for a charged node,
+   grey for a dormant site — so the border says whose it is and the fill
+   says what it is. */
+.score-display--green .score-display__pip,
+.score-display--green .score-display__dormant-pip {
   border-color: var(--color-green);
-  box-shadow: 0 0 0.4em var(--color-green);
 }
 
-.score-display--red .score-display__pip--lit {
-  background-color: var(--color-red);
+.score-display--red .score-display__pip,
+.score-display--red .score-display__dormant-pip {
   border-color: var(--color-red);
-  box-shadow: 0 0 0.4em var(--color-red);
+}
+
+.score-display__pip--lit {
+  background-color: var(--color-node-charged);
+  box-shadow: 0 0 0.4em var(--color-node-charged);
+}
+
+.score-display__dormant-pip--on {
+  background-color: var(--color-node-dormant);
+  box-shadow: 0 0 0.4em var(--color-node-dormant);
+}
+
+/* A side standing on nothing dormant should not have a row that draws the
+   eye: quieten the border rather than giving the empty pips a fill. */
+.score-display__dormant-pips--empty .score-display__dormant-pip {
+  border-color: var(--color-text-dim);
+  opacity: 0.5;
 }
