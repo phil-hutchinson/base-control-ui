@@ -214,57 +214,6 @@ describe("BoardSquare", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the chevron and does not apply the dampened class for owes-action, applying the owes-action class instead", () => {
-    const { container } = render(
-      <BoardSquare
-        isBay={false}
-        squareName="H8"
-        occupant={{ side: "green", shields: 0 }}
-        condition="owes-action"
-      />,
-    );
-
-    expect(
-      container.querySelector(".board-square__mark--owes-action"),
-    ).toBeInTheDocument();
-    expect(container.querySelector(".board-square--dampened")).toBeNull();
-    expect(
-      container.querySelector(".board-square--owes-action"),
-    ).toBeInTheDocument();
-  });
-
-  it("distinguishes the two condition marks from one another by shape, not only by class name", () => {
-    const conditions: readonly ShipCondition[] = ["no-action", "owes-action"];
-    const shapes = conditions.map((condition) => {
-      const { container } = render(
-        <BoardSquare
-          isBay={false}
-          squareName="H8"
-          occupant={{ side: "green", shields: 0 }}
-          condition={condition}
-        />,
-      );
-      const mark = container.querySelector(".board-square__mark");
-      return mark?.firstElementChild?.tagName;
-    });
-
-    // A hollow rect and a chevron path are two distinct element/attribute
-    // shapes, so the layer survives greyscale.
-    expect(shapes).toEqual(["rect", "path"]);
-    const { container: noActionContainer } = render(
-      <BoardSquare
-        isBay={false}
-        squareName="H8"
-        occupant={{ side: "green", shields: 0 }}
-        condition="no-action"
-      />,
-    );
-    const noActionBar = noActionContainer.querySelector(
-      ".board-square__mark rect",
-    );
-    expect(noActionBar?.getAttribute("fill")).toBe("none");
-  });
-
   it("distinguishes the already-acted bar from the no-action bar by fill, not only by class name", () => {
     const { container } = render(
       <BoardSquare
@@ -286,13 +235,13 @@ describe("BoardSquare", () => {
         isBay={false}
         squareName="H8"
         occupant={{ side: "green", shields: 0 }}
-        condition="owes-action"
+        condition="no-action"
         mark="selected"
       />,
     );
 
     expect(
-      container.querySelector(".board-square__mark--owes-action"),
+      container.querySelector(".board-square__mark--no-action"),
     ).toBeInTheDocument();
     expect(
       container.querySelector(".board-square__mark--selected"),
@@ -311,7 +260,6 @@ describe("BoardSquare", () => {
     );
 
     expect(container.querySelector(".board-square--dampened")).toBeNull();
-    expect(container.querySelector(".board-square--owes-action")).toBeNull();
     expect(container.querySelectorAll(".board-square__mark")).toHaveLength(1);
     expect(
       container.querySelector(".board-square__mark--destination"),
@@ -322,7 +270,6 @@ describe("BoardSquare", () => {
     const conditions: readonly (ShipCondition | undefined)[] = [
       undefined,
       "no-action",
-      "owes-action",
     ];
     const hasActedValues: readonly boolean[] = [false, true];
     for (const condition of conditions) {

@@ -12,12 +12,11 @@ import {
   squareFromName,
   squareName,
 } from "./board";
-import { legalTargets, sevenOnlyLegalTargets } from "./combat";
+import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import { gameResult, isGameOver, pliesForGameLength } from "./gameLength";
 import { type GameState, siteStateAt, startingGameState } from "./gameState";
 import type { EnergyCollectedEffect } from "./endOfTurn";
-import { sixOnlyLegalDestinations } from "./moveLegality";
 import { legalDestinations } from "./movement";
 import {
   type AttackEffect,
@@ -206,15 +205,20 @@ function playFullGame(seed: number, lengthInRounds: number): PlayedGame {
 }
 
 /**
- * A move that the six-only legality layer (game-over-unaware by design)
- * still calls legal on `state` — i.e. one that would have been legal a
- * moment earlier, before the game ended.
+ * A move legal against a copy of `state` whose game has not ended (its
+ * `lengthInRounds` raised by one round) — i.e. one that would have been
+ * legal a moment earlier, before the game ended. Used to prove the same
+ * move is refused as `"game-over"` in the real, ended `state`.
  */
 function findMoveLegalAMomentEarlier(
   state: GameState,
 ): { shipId: ShipId; destination: Square } | undefined {
+  const notEnded: GameState = {
+    ...state,
+    lengthInRounds: state.lengthInRounds + 1,
+  };
   for (const ship of state.ships) {
-    const [destination] = sixOnlyLegalDestinations(state, ship.id);
+    const [destination] = legalDestinations(notEnded, ship.id);
     if (destination !== undefined) {
       return { shipId: ship.id, destination };
     }
@@ -223,15 +227,20 @@ function findMoveLegalAMomentEarlier(
 }
 
 /**
- * An attack that the seven-only legality layer (game-over-unaware by
- * design) still calls legal on `state` — i.e. one that would have been
- * legal a moment earlier, before the game ended.
+ * An attack legal against a copy of `state` whose game has not ended (its
+ * `lengthInRounds` raised by one round) — i.e. one that would have been
+ * legal a moment earlier, before the game ended. Used to prove the same
+ * attack is refused as `"game-over"` in the real, ended `state`.
  */
 function findAttackLegalAMomentEarlier(
   state: GameState,
 ): { shipId: ShipId; target: Square } | undefined {
+  const notEnded: GameState = {
+    ...state,
+    lengthInRounds: state.lengthInRounds + 1,
+  };
   for (const ship of state.ships) {
-    const [target] = sevenOnlyLegalTargets(state, ship.id);
+    const [target] = legalTargets(notEnded, ship.id);
     if (target !== undefined) {
       return { shipId: ship.id, target };
     }

@@ -10,7 +10,6 @@ import {
   reachFrom,
   sideToMoveHasLegalMove,
 } from "./movement";
-import { sixOnlyLegalDestinations } from "./moveLegality";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
 
@@ -244,7 +243,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(destinations).toContain("H11");
   });
 
-  it("excludes an active or dormant destination, allows flying over either, and allows a charged destination", () => {
+  it("allows a move to end on an active, a dormant or a charged destination alike", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7")],
       siteStates: {
@@ -255,18 +254,18 @@ describe("legalDestinations and moveRefusalReason", () => {
     });
 
     const destinations = legalDestinations(state, "green-1").map(squareName);
-    expect(destinations).not.toContain("G7");
+    expect(destinations).toContain("G7");
     expect(destinations).toContain("H7");
-    expect(destinations).not.toContain("C7");
+    expect(destinations).toContain("C7");
     expect(destinations).toContain("B7");
     expect(destinations).toContain("G9");
 
-    expect(moveRefusalReason(state, "green-1", squareFromName("G7"))).toBe(
-      "destination-active-site",
-    );
-    expect(moveRefusalReason(state, "green-1", squareFromName("C7"))).toBe(
-      "destination-dormant-site",
-    );
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("G7")),
+    ).toBeUndefined();
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("C7")),
+    ).toBeUndefined();
     expect(
       moveRefusalReason(state, "green-1", squareFromName("H7")),
     ).toBeUndefined();
@@ -327,8 +326,6 @@ describe("legalDestinations and moveRefusalReason", () => {
         shipId: "green-1",
       },
       {
-        // green-2 is not stranded, but green-1 is, and the obligation binds
-        // the turn's action — so every square is refused for green-2.
         state: buildState({
           ships: [
             ship("green-1", "green", "E7"),
@@ -358,10 +355,6 @@ describe("legalDestinations and moveRefusalReason", () => {
     const blocking = buildState({
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "H10")],
     });
-    const sites = buildState({
-      ships: [ship("green-1", "green", "E7")],
-      siteStates: { G7: "active", C7: "dormant" },
-    });
     const notYourTurn = buildState({
       ships: [ship("green-1", "green", "H8")],
       sideToMove: "red",
@@ -370,23 +363,15 @@ describe("legalDestinations and moveRefusalReason", () => {
       ships: [ship("green-1", "green", "H8")],
       actedThisPly: ["green-1"],
     });
-    const stranded = buildState({
-      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "active" },
-      actionsRemaining: 1,
-    });
 
     const expectations: ReadonlyArray<
       readonly [GameState, ShipId, string, MoveRefusalReason]
     > = [
       [notYourTurn, "green-1", "H9", "not-your-ship"],
       [alreadyMoved, "green-1", "H9", "ship-already-acted"],
-      [stranded, "green-2", "A2", "another-ship-stranded"],
       [blocking, "green-1", "O15", "out-of-range"],
       [blocking, "green-1", "H11", "path-blocked"],
       [blocking, "green-1", "H10", "destination-occupied"],
-      [sites, "green-1", "G7", "destination-active-site"],
-      [sites, "green-1", "C7", "destination-dormant-site"],
     ];
 
     for (const [state, shipId, square, reason] of expectations) {
@@ -423,55 +408,21 @@ describe("sideToMoveHasLegalMove", () => {
     });
     expect(sideToMoveHasLegalMove(cannotMove)).toBe(false);
   });
-
-  it("stays unaffected by the §8.5 obligation: a side that can move can still move", () => {
-    // green-1 is stranded on an active site and the obligation binds, so
-    // moving green-2 is refused — but the side still has a legal move
-    // (green-1's own), so the §5 pass guard must not fire.
-    const state = buildState({
-      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "active" },
-      actionsRemaining: 1,
-    });
-
-    expect(moveRefusalReason(state, "green-2", squareFromName("A2"))).toBe(
-      "another-ship-stranded",
-    );
-    expect(sideToMoveHasLegalMove(state)).toBe(true);
-  });
 });
 
-describe("legalDestinations and the §8.5 obligation", () => {
-  it("stays unrestricted when no ship is stranded", () => {
+describe("legalDestinations on a site that is not charged (§8.5)", () => {
+  it("leaves a ship standing on a dormant site free to move a different ship, with no refusal anywhere", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
+      siteStates: { E7: "dormant" },
       actionsRemaining: 1,
     });
 
     expect(legalDestinations(state, "green-2").length).toBeGreaterThan(0);
     expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
-  });
-
-  it("empties for a non-owed ship with one stranded ship, and stays open for the owed one", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "active" },
-      actionsRemaining: 1,
-    });
-
-    expect(legalDestinations(state, "green-2")).toEqual([]);
-    expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
-  });
-
-  it("reopens for the rest of the fleet once the stranded ship has moved", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "active" },
-      actedThisPly: ["green-1"],
-      actionsRemaining: 1,
-    });
-
-    expect(legalDestinations(state, "green-2").length).toBeGreaterThan(0);
+    expect(
+      moveRefusalReason(state, "green-2", squareFromName("A2")),
+    ).toBeUndefined();
   });
 
   it("does not blow the stack: a repeated sweep completes promptly", () => {
@@ -524,16 +475,15 @@ describe("moveRefusalReason and legalDestinations once the game is over", () => 
     ).toBe("game-over");
   });
 
-  it("empties legalDestinations while the §6-only layer stays unchanged, pinning the layering", () => {
-    const state = buildState({
+  it("legalDestinations contains a destination legal before the game ends, and is empty in the same state once it has", () => {
+    const beforeEnd = buildState({
       ships: [ship("green-1", "green", "H8")],
-      plyNumber: 201,
+      plyNumber: 200,
     });
+    const afterEnd: GameState = { ...beforeEnd, plyNumber: 201 };
 
-    expect(legalDestinations(state, "green-1")).toEqual([]);
-    expect(sixOnlyLegalDestinations(state, "green-1").length).toBeGreaterThan(
-      0,
-    );
+    expect(legalDestinations(beforeEnd, "green-1").length).toBeGreaterThan(0);
+    expect(legalDestinations(afterEnd, "green-1")).toEqual([]);
   });
 
   it("judges game-over against the state's own length, not the default", () => {

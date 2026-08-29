@@ -334,39 +334,59 @@ describe("sessionReducer — a ship is selected", () => {
       });
     });
 
-    it("rejects an active site as destination-active-site", () => {
+    it("applies a move ending on an active site", () => {
       const state = buildState({
         ships: [ship("green-1", "green", "H8")],
         siteStates: { H9: "active" },
       });
       const selected = activate(sessionFor(state), "H8");
+      const destination = squareFromName("H9");
 
       const result = activate(selected, "H9");
 
-      expect(result.selectedShipId).toBe("green-1");
-      expect(result.state).toBe(state);
+      expect(result.selectedShipId).toBeUndefined();
+      const direct = applyMove(state, "green-1", destination);
+      expect(direct.outcome).toBe("applied");
+      if (direct.outcome !== "applied") {
+        throw new Error("expected the move to be applied");
+      }
+      expect(result.state).toEqual(direct.state);
       expect(result.lastEvent).toEqual({
-        type: "rejected",
-        reason: "destination-active-site",
-        square: squareFromName("H9"),
+        type: "moved",
+        shipId: "green-1",
+        side: "green",
+        from: squareFromName("H8"),
+        to: destination,
+        effects: direct.effects,
+        actionsRemaining: direct.state.actionsRemaining,
       });
     });
 
-    it("rejects a dormant site as destination-dormant-site", () => {
+    it("applies a move ending on a dormant site", () => {
       const state = buildState({
         ships: [ship("green-1", "green", "H8")],
         siteStates: { H9: "dormant" },
       });
       const selected = activate(sessionFor(state), "H8");
+      const destination = squareFromName("H9");
 
       const result = activate(selected, "H9");
 
-      expect(result.selectedShipId).toBe("green-1");
-      expect(result.state).toBe(state);
+      expect(result.selectedShipId).toBeUndefined();
+      const direct = applyMove(state, "green-1", destination);
+      expect(direct.outcome).toBe("applied");
+      if (direct.outcome !== "applied") {
+        throw new Error("expected the move to be applied");
+      }
+      expect(result.state).toEqual(direct.state);
       expect(result.lastEvent).toEqual({
-        type: "rejected",
-        reason: "destination-dormant-site",
-        square: squareFromName("H9"),
+        type: "moved",
+        shipId: "green-1",
+        side: "green",
+        from: squareFromName("H8"),
+        to: destination,
+        effects: direct.effects,
+        actionsRemaining: direct.state.actionsRemaining,
       });
     });
   });

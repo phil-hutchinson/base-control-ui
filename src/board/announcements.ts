@@ -184,11 +184,6 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
       case "site-charged":
         clauses.push(`A new node charged at ${squareName(effect.square)}.`);
         break;
-      case "ship-stranded":
-        clauses.push(
-          `${capitalize(effect.side)} ship at ${squareName(effect.square)} is stranded and must be moved clear next turn.`,
-        );
-        break;
     }
   }
 
@@ -375,8 +370,6 @@ function rejectionSentence(event: RejectedEvent): string {
       return "That is your opponent's ship. Choose one of your own.";
     case "ship-already-acted":
       return "That ship has already acted this turn. Choose another.";
-    case "another-ship-stranded":
-      return "A stranded ship must be moved clear this turn. Only a move will free it — choose one of those.";
     case "nothing-to-select":
       return `No ship on ${square}. Choose one of your own ships.`;
     case "out-of-range":
@@ -385,10 +378,6 @@ function rejectionSentence(event: RejectedEvent): string {
       return `Another ship is in the way of ${square}.`;
     case "destination-occupied":
       return `${square} is occupied.`;
-    case "destination-active-site":
-      return `${square} is an active site — nothing has charged there yet, so a ship cannot stop there.`;
-    case "destination-dormant-site":
-      return `${square} is a dormant site — it has run out and is cooling down, so a ship cannot stop there.`;
     case "attacker-in-bay":
       return "A ship in a bay cannot attack. Move it out first.";
     case "target-in-bay":

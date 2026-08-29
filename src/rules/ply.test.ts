@@ -20,7 +20,6 @@ import {
 import { drawIndex } from "./random";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
-import { strandedShipIds } from "./stranded";
 
 function ship(
   id: ShipId,
@@ -946,7 +945,7 @@ describe("applyAttack", () => {
     });
   });
 
-  it("un-strands by force: a ship stranded on a dormant site that is beaten in a fight is in a bay and owes nothing on its owner's next turn", () => {
+  it("beats a ship standing on a dormant site into a bay, with nothing constraining its owner's next turn (§8.5)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E5", 0), ship("red-1", "red", "F5", 2)],
       siteStates: { E5: "dormant" },
@@ -965,7 +964,6 @@ describe("applyAttack", () => {
     expect(beatenShip).toBeDefined();
     expect(beatenShip && isBay(beatenShip.square)).toBe(true);
     expect(beatenShip?.shields).toBe(0);
-    expect(strandedShipIds(result.state)).not.toContain("green-1");
   });
 
   it("marks the attacker as having acted on a mutual return, even though it ends the action in a bay itself", () => {
@@ -1101,7 +1099,7 @@ describe("the winner's advance (rules.md §7)", () => {
     },
   );
 
-  it("stops the advance one square short when the loser's square is a dormant site, a reachable version of the stop-short rule", () => {
+  it("advances onto the loser's square when it is a dormant site", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H6", 2), ship("red-1", "red", "H8", 0)],
       siteStates: { H8: "dormant" },
@@ -1114,13 +1112,13 @@ describe("the winner's advance (rules.md §7)", () => {
       throw new Error("expected the attack to be applied");
     }
     const winner = result.state.ships.find((s) => s.id === "green-1");
-    expect(winner?.square).toEqual(squareFromName("H7"));
+    expect(winner?.square).toEqual(squareFromName("H8"));
     expect(winner?.shields).toBe(1);
     const loser = result.state.ships.find((s) => s.id === "red-1");
     expect(loser && isBay(loser.square)).toBe(true);
   });
 
-  it("holds its ground on an adjacent attack onto an active site", () => {
+  it("advances onto the loser's square when it is an active site", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H7", 3), ship("red-1", "red", "H8", 0)],
       siteStates: { H8: ["active", 1] },
@@ -1133,7 +1131,7 @@ describe("the winner's advance (rules.md §7)", () => {
       throw new Error("expected the attack to be applied");
     }
     const winner = result.state.ships.find((s) => s.id === "green-1");
-    expect(winner?.square).toEqual(squareFromName("H7"));
+    expect(winner?.square).toEqual(squareFromName("H8"));
 
     const fightResolved = result.effects[0];
     if (fightResolved.type !== "fight-resolved") {
@@ -1142,16 +1140,15 @@ describe("the winner's advance (rules.md §7)", () => {
     expect(fightResolved.winner).toEqual({
       shipId: "green-1",
       remainingShields: 2,
-      square: squareFromName("H7"),
-      advanced: false,
+      square: squareFromName("H8"),
+      advanced: true,
     });
   });
 
   it("landing on a charged site during a winning advance leaves it charged", () => {
-    // A winner may only ever end an advance on a charged site (rules.md
-    // §7) — an active or dormant candidate is skipped in favour of the
-    // furthest charged or ordinary square on the lane. G7/G8: column G
-    // carries no site at any row, so G8 is the only site in play.
+    // A winner's advance is limited by occupancy alone (rules.md §7); site
+    // state never skips a candidate. G7/G8: column G carries no site at
+    // any row, so G8 is the only site in play.
     const state = buildState({
       ships: [ship("green-1", "green", "G7", 4), ship("red-1", "red", "G8", 0)],
       siteStates: { G8: ["charged", 1] },
@@ -1200,9 +1197,6 @@ describe("the winner's advance (rules.md §7)", () => {
   });
 
   it("changes no site on a defender's win, even with active sites on the lane and on the bay the loser is placed in", () => {
-    // The attacker's own square is charged, not active — an active site
-    // would strand the attacker itself (§8.5) and refuse the attack before
-    // any of this could be observed.
     const state = buildState({
       ships: [ship("green-1", "green", "H6", 1), ship("red-1", "red", "H8", 3)],
       siteStates: { H6: "charged", H7: "active", H15: "active" },
@@ -1222,12 +1216,10 @@ describe("the winner's advance (rules.md §7)", () => {
   });
 
   it("changes no site on a mutual return, even with an active site on the defender's own square, on the lane, and on both bays the ships are placed in", () => {
-    // The attacker's own square is charged, not active — an active site
-    // would strand the attacker itself (§8.5) and refuse the attack before
-    // any of this could be observed. Five sites elsewhere are also charged,
-    // so the end-of-turn charge draw the fight's own ply-end triggers has
-    // no shortfall to fill and cannot touch H8 either — the only source of
-    // any site-state change under test here is the fight itself.
+    // Five sites elsewhere are already charged, so the end-of-turn charge
+    // draw the fight's own ply-end triggers has no shortfall to fill and
+    // cannot touch H8 either — the only source of any site-state change
+    // under test here is the fight itself.
     const state = buildState({
       ships: [ship("green-1", "green", "H6", 2), ship("red-1", "red", "H8", 2)],
       siteStates: {
@@ -1547,13 +1539,12 @@ describe("applyPassGuard", () => {
     expect(result.effect).toBeUndefined();
   });
 
-  it("passes the ply when its one ship with a nearby target has already acted — the already-acted check must live in the seven-only layer", () => {
+  it("passes the ply when its one ship with a nearby target has already acted", () => {
     // green-1 is boxed in for movement exactly as above, and red-1 stands
     // right next to it — a legal attack target, if green-1 had not already
-    // spent its one action this ply. If the already-acted check lived only
-    // in the public `attackRefusalReason` and not in
-    // `sevenOnlyAttackRefusalReason`, `sideToMoveHasLegalAction` would still
-    // see this as a legal attack and the guard would never pass.
+    // spent its one action this ply. If `sideToMoveHasLegalAction` did not
+    // consult the already-acted check, it would still see this as a legal
+    // attack and the guard would never pass.
     const state = buildState({
       ships: [
         ship("green-1", "green", "A1", 4),

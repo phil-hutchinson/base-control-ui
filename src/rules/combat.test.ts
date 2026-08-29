@@ -14,14 +14,12 @@ import {
   drawReturnBay,
   legalTargets,
   resolveFight,
-  sevenOnlyAttackRefusalReason,
-  sevenOnlyLegalTargets,
   winnerAdvance,
 } from "./combat";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, SiteStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
-import { type ReachEntry, reachFrom } from "./moveLegality";
+import { type ReachEntry, reachFrom } from "./movement";
 import { MAX_SHIELDS, MIN_SHIELDS, type ShieldCount } from "./shields";
 import { SITES } from "./sites";
 import type { SiteState } from "./sites";
@@ -120,7 +118,7 @@ describe("attackReach", () => {
   });
 });
 
-describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
+describe("attackRefusalReason / legalTargets", () => {
   it("a 4-shield ship's targets are its four orthogonal neighbours, and never a diagonal one", () => {
     const orthogonalNeighbours = ["G8", "I8", "H7", "H9"];
     const diagonalNeighbours = ["G7", "G9", "I7", "I9"];
@@ -136,12 +134,12 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
       ],
     });
 
-    expect(squareNames(sevenOnlyLegalTargets(state, "green-1"))).toEqual(
+    expect(squareNames(legalTargets(state, "green-1"))).toEqual(
       squareNames(orthogonalNeighbours.map(squareFromName)),
     );
-    expect(
-      sevenOnlyAttackRefusalReason(state, "green-1", squareFromName("G7")),
-    ).toBe("target-out-of-range");
+    expect(attackRefusalReason(state, "green-1", squareFromName("G7"))).toBe(
+      "target-out-of-range",
+    );
   });
 
   it("a 3-shield ship's targets are exactly the eight neighbours around it", () => {
@@ -155,7 +153,7 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
       ],
     });
 
-    expect(squareNames(sevenOnlyLegalTargets(state, "green-1"))).toEqual(
+    expect(squareNames(legalTargets(state, "green-1"))).toEqual(
       squareNames(neighbours.map(squareFromName)),
     );
   });
@@ -170,10 +168,10 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
     });
 
     expect(
-      sevenOnlyAttackRefusalReason(state, "green-1", squareFromName("H11")),
+      attackRefusalReason(state, "green-1", squareFromName("H11")),
     ).toBeUndefined();
     expect(
-      sevenOnlyAttackRefusalReason(state, "green-1", squareFromName("J10")),
+      attackRefusalReason(state, "green-1", squareFromName("J10")),
     ).toBeUndefined();
   });
 
@@ -200,21 +198,13 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
     });
 
     expect(
-      sevenOnlyAttackRefusalReason(
-        withBlocker,
-        "green-1",
-        squareFromName("H10"),
-      ),
+      attackRefusalReason(withBlocker, "green-1", squareFromName("H10")),
     ).toBe("attack-path-blocked");
     expect(
-      sevenOnlyAttackRefusalReason(
-        withEnemyBlocker,
-        "green-1",
-        squareFromName("H10"),
-      ),
+      attackRefusalReason(withEnemyBlocker, "green-1", squareFromName("H10")),
     ).toBe("attack-path-blocked");
     expect(
-      sevenOnlyAttackRefusalReason(cleared, "green-1", squareFromName("H10")),
+      attackRefusalReason(cleared, "green-1", squareFromName("H10")),
     ).toBeUndefined();
   });
 
@@ -226,9 +216,9 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
       ],
     });
 
-    expect(
-      sevenOnlyAttackRefusalReason(state, "green-1", squareFromName("H11")),
-    ).toBe("target-out-of-range");
+    expect(attackRefusalReason(state, "green-1", squareFromName("H11"))).toBe(
+      "target-out-of-range",
+    );
   });
 
   it("refuses an attacker standing in a bay", () => {
@@ -239,10 +229,10 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
       ],
     });
 
-    expect(
-      sevenOnlyAttackRefusalReason(state, "green-1", squareFromName("H14")),
-    ).toBe("attacker-in-bay");
-    expect(sevenOnlyLegalTargets(state, "green-1")).toEqual([]);
+    expect(attackRefusalReason(state, "green-1", squareFromName("H14"))).toBe(
+      "attacker-in-bay",
+    );
+    expect(legalTargets(state, "green-1")).toEqual([]);
   });
 
   it("refuses a target standing in a bay, distinguishably from the attacker's own", () => {
@@ -253,9 +243,9 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
       ],
     });
 
-    expect(
-      sevenOnlyAttackRefusalReason(state, "green-1", squareFromName("H15")),
-    ).toBe("target-in-bay");
+    expect(attackRefusalReason(state, "green-1", squareFromName("H15"))).toBe(
+      "target-in-bay",
+    );
   });
 
   it("refuses an empty target square, and a friendly target", () => {
@@ -266,12 +256,12 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
       ],
     });
 
-    expect(
-      sevenOnlyAttackRefusalReason(state, "green-1", squareFromName("H7")),
-    ).toBe("no-target-there");
-    expect(
-      sevenOnlyAttackRefusalReason(state, "green-1", squareFromName("H9")),
-    ).toBe("target-is-friendly");
+    expect(attackRefusalReason(state, "green-1", squareFromName("H7"))).toBe(
+      "no-target-there",
+    );
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "target-is-friendly",
+    );
   });
 
   it("refuses an enemy ship attempting to attack", () => {
@@ -280,9 +270,9 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
       sideToMove: "green",
     });
 
-    expect(
-      sevenOnlyAttackRefusalReason(state, "red-1", squareFromName("H8")),
-    ).toBe("not-your-ship");
+    expect(attackRefusalReason(state, "red-1", squareFromName("H8"))).toBe(
+      "not-your-ship",
+    );
   });
 
   it("refuses a ship that has already acted this ply, leaving it with no targets", () => {
@@ -292,77 +282,24 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
       actionsRemaining: 1,
     });
 
-    expect(
-      sevenOnlyAttackRefusalReason(state, "green-1", squareFromName("H9")),
-    ).toBe("ship-already-acted");
-    expect(sevenOnlyLegalTargets(state, "green-1")).toEqual([]);
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "ship-already-acted",
+    );
+    expect(legalTargets(state, "green-1")).toEqual([]);
   });
 });
 
-describe("attackRefusalReason / legalTargets with the §8.5 obligation", () => {
-  it("refuses every attack, including the owing ship's own, while any ship owes an action", () => {
+describe("attackRefusalReason / legalTargets on a site that is not charged (§8.5)", () => {
+  it("neither blocks an attack nor blocks the attacker's ship from being attacked", () => {
     const state = buildState({
-      ships: [
-        ship("green-1", "green", "E7", 4),
-        ship("green-2", "green", "A1", 2),
-        ship("red-1", "red", "E8", 0),
-        ship("red-2", "red", "A2", 0),
-      ],
-      siteStates: { E7: "active" },
-    });
-
-    expect(attackRefusalReason(state, "green-2", squareFromName("A2"))).toBe(
-      "another-ship-stranded",
-    );
-    expect(attackRefusalReason(state, "green-1", squareFromName("E8"))).toBe(
-      "another-ship-stranded",
-    );
-    expect(legalTargets(state, "green-1")).toEqual([]);
-    expect(legalTargets(state, "green-2")).toEqual([]);
-  });
-
-  it("attacks are legal again for the rest of the side once the freeing move is made, but not with the ship that just made it: one action per ship (rules.md §5)", () => {
-    const state = buildState({
-      ships: [
-        ship("green-1", "green", "E8", 4),
-        ship("green-2", "green", "B2", 2),
-        ship("red-1", "red", "E9", 0),
-        ship("red-2", "red", "B1", 0),
-      ],
-      actedThisPly: ["green-1"],
-      actionsRemaining: 1,
-    });
-
-    expect(attackRefusalReason(state, "green-1", squareFromName("E9"))).toBe(
-      "ship-already-acted",
-    );
-    expect(
-      attackRefusalReason(state, "green-2", squareFromName("B1")),
-    ).toBeUndefined();
-  });
-
-  it("leaves attacks legal for the whole side when a stranded ship's obligation is waived", () => {
-    const boxedInSquare = "H8";
-    const state = buildState({
-      ships: [
-        ship("green-1", "green", boxedInSquare, 4),
-        ship("red-1", "red", "H9", 0),
-        ship("red-2", "red", "H7", 0),
-        ship("red-3", "red", "I8", 0),
-        ship("red-4", "red", "G8", 0),
-        ship("green-2", "green", "B2", 2),
-        ship("red-5", "red", "B1", 0),
-      ],
-      siteStates: { [boxedInSquare]: "dormant" },
-      actionsRemaining: 1,
+      ships: [ship("green-1", "green", "E7", 4), ship("red-1", "red", "E8", 0)],
+      siteStates: { E7: "active", E8: "dormant" },
     });
 
     expect(
-      attackRefusalReason(state, "green-1", squareFromName("H9")),
+      attackRefusalReason(state, "green-1", squareFromName("E8")),
     ).toBeUndefined();
-    expect(
-      attackRefusalReason(state, "green-2", squareFromName("B1")),
-    ).toBeUndefined();
+    expect(legalTargets(state, "green-1")).toContainEqual(squareFromName("E8"));
   });
 });
 
@@ -397,14 +334,17 @@ describe("attackRefusalReason and legalTargets once the game is over", () => {
     ).toBe("game-over");
   });
 
-  it("empties legalTargets while the §7-only layer stays unchanged, pinning the layering", () => {
-    const state = buildState({
+  it("legalTargets contains a target legal before the game ends, and is empty in the same state once it has", () => {
+    const beforeEnd = buildState({
       ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
-      plyNumber: 201,
+      plyNumber: 200,
     });
+    const afterEnd: GameState = { ...beforeEnd, plyNumber: 201 };
 
-    expect(legalTargets(state, "green-1")).toEqual([]);
-    expect(sevenOnlyLegalTargets(state, "green-1").length).toBeGreaterThan(0);
+    expect(legalTargets(beforeEnd, "green-1")).toContainEqual(
+      squareFromName("H9"),
+    );
+    expect(legalTargets(afterEnd, "green-1")).toEqual([]);
   });
 
   it("judges game-over against the state's own length, not the default", () => {
@@ -618,32 +558,25 @@ describe("winnerAdvance", () => {
     expect(squareNames(advance!.passedOver)).toEqual(["H6", "H7"]);
   });
 
-  it("stops one square short when the loser's square is a dead site", () => {
+  it("lands on the loser's square when it is an active site", () => {
     const state = buildState({ ships: [], siteStates: { H8: "active" } });
     const advance = winnerAdvance(state, laneOf("H5", "H8"));
 
     expect(advance).toBeDefined();
-    expect(squareName(advance!.destination)).toBe("H7");
-    expect(squareNames(advance!.passedOver)).toEqual(["H6"]);
+    expect(squareName(advance!.destination)).toBe("H8");
+    expect(squareNames(advance!.passedOver)).toEqual(["H6", "H7"]);
   });
 
-  it("stops two squares short when the loser's square and the one before it are both dead", () => {
+  it("lands on the loser's square when it is a dormant site", () => {
     const state = buildState({
       ships: [],
-      siteStates: { H7: "dormant", H8: "active" },
+      siteStates: { H7: "dormant", H8: "dormant" },
     });
     const advance = winnerAdvance(state, laneOf("H5", "H8"));
 
     expect(advance).toBeDefined();
-    expect(squareName(advance!.destination)).toBe("H6");
-    expect(squareNames(advance!.passedOver)).toEqual([]);
-  });
-
-  it("holds its ground when the only square on the lane is dead", () => {
-    const state = buildState({ ships: [], siteStates: { H6: "active" } });
-    const advance = winnerAdvance(state, laneOf("H5", "H6"));
-
-    expect(advance).toBeUndefined();
+    expect(squareName(advance!.destination)).toBe("H8");
+    expect(squareNames(advance!.passedOver)).toEqual(["H6", "H7"]);
   });
 
   it("stops short of an occupied lane square, whether the occupant sits on the candidate itself or between it and the attacker", () => {
@@ -657,7 +590,7 @@ describe("winnerAdvance", () => {
     expect(squareNames(advance!.passedOver)).toEqual([]);
   });
 
-  it("ignores an occupied square that lies beyond the square the winner actually stops on", () => {
+  it("stops short of an occupied square even though its site is not charged", () => {
     const state = buildState({
       ships: [ship("red-1", "red", "H8", 0)],
       siteStates: { H8: "active" },
@@ -669,13 +602,13 @@ describe("winnerAdvance", () => {
     expect(squareNames(advance!.passedOver)).toEqual(["H6"]);
   });
 
-  it("never lands the winner in a bay, swept across every non-bay origin, every shield count and every lane it offers whose target is itself not a bay, under two extreme site configurations", () => {
+  it("never lands the winner in a bay, swept across every non-bay origin, every shield count and every lane it offers whose target is itself not a bay, and produces identical results whatever site state the board is in", () => {
     // A lane whose destination is a bay is not one `winnerAdvance` is ever
-    // handed in real play: `sevenOnlyAttackRefusalReason` refuses a bay
-    // target (rules.md §3.1) before `attackReach`'s lane is ever passed to
-    // it. The sweep mirrors that precondition rather than re-deriving it.
-    // Every site blocks the advance in one extreme (dormant) and none does
-    // in the other (charged is the only state a winner may end on).
+    // handed in real play: `attackRefusalReason` refuses a bay target
+    // (rules.md §3.1) before `attackReach`'s lane is ever passed to it. The
+    // sweep mirrors that precondition rather than re-deriving it.
+    // Site state no longer affects the advance at all (§7), so the
+    // all-dormant and all-charged sweeps must produce identical results.
     const allDormant = siteStatuses(
       Object.fromEntries(
         SITES.map((site) => [squareName(site), "dormant" as SiteState]),
@@ -687,7 +620,15 @@ describe("winnerAdvance", () => {
       ),
     );
 
-    for (const siteStates of [allDormant, allCharged]) {
+    const results: Record<string, Array<ReachEntry | undefined>> = {
+      dormant: [],
+      charged: [],
+    };
+
+    for (const [label, siteStates] of [
+      ["dormant", allDormant],
+      ["charged", allCharged],
+    ] as const) {
       const state: GameState = { ...buildState({ ships: [] }), siteStates };
 
       for (const column of COLUMN_LETTERS) {
@@ -707,10 +648,13 @@ describe("winnerAdvance", () => {
               if (advance !== undefined) {
                 expect(isBay(advance.destination)).toBe(false);
               }
+              results[label].push(advance);
             }
           }
         }
       }
     }
+
+    expect(results.dormant).toEqual(results.charged);
   });
 });

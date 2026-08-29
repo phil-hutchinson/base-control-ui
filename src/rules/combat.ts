@@ -1,4 +1,4 @@
-// Combat (rules.md §7, §3.1, §8.5): who may attack whom, and where a winning
+// Combat (rules.md §7, §3.1): who may attack whom, and where a winning
 // attacker ends up. This is the only implementation of §7 in the app, the way
 // `movement.ts` is the only implementation of §6. Attack range **is** §6's
 // movement range: a ship attacks exactly as far as it moves, path and all, so
@@ -11,11 +11,10 @@ import { type Square, squareName } from "./board";
 import { BAYS, isBay } from "./bays";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
-import { type ReachEntry, findShip, reachFrom } from "./moveLegality";
-import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
+import { type GameState, shipsBySquare } from "./gameState";
+import { type ReachEntry, findShip, reachFrom } from "./movement";
 import { drawIndex } from "./random";
 import { type ShieldCount, isShieldCount } from "./shields";
-import { strandedShipIds } from "./stranded";
 
 /**
  * The lane `shipId` would attack down to reach `target`: the `ReachEntry`
@@ -41,11 +40,10 @@ export function attackReach(
 /**
  * Where a winning attacker ends up (rules.md §7): scanning `reach`'s lane
  * backwards from the loser's square towards the attacker, the furthest
- * square it may legally end on — §6's site restriction and nothing else, not
- * an active site, not a dormant site — shaped as the sub-lane the winner
- * actually travels (`destination` is the square it stops on, `passedOver` the
- * lane squares before it). `undefined` when no square on the lane qualifies,
- * meaning the winner holds its ground.
+ * square it may legally end on — §6's restriction, which is occupancy alone.
+ * Shaped as the sub-lane the winner actually travels (`destination` is the
+ * square it stops on, `passedOver` the lane squares before it). `undefined`
+ * when no square on the lane qualifies, meaning the winner holds its ground.
  *
  * `reach` is the attack's own `ReachEntry`, exactly as `attackReach` found
  * it. Occupancy is re-checked here even though the lane was clear when the
@@ -62,10 +60,6 @@ export function winnerAdvance(
 
   for (let index = lane.length - 1; index >= 0; index--) {
     const candidate = lane[index];
-    const siteState = siteStateAt(state, candidate);
-    if (siteState === "active" || siteState === "dormant") {
-      continue;
-    }
     if (occupiedSquareNames.has(squareName(candidate))) {
       continue;
     }
@@ -94,7 +88,6 @@ export function winnerAdvance(
 export type AttackRefusalReason =
   | "not-your-ship"
   | "ship-already-acted"
-  | "another-ship-stranded"
   | "attacker-in-bay"
   | "target-in-bay"
   | "no-target-there"
@@ -104,23 +97,26 @@ export type AttackRefusalReason =
   | "game-over";
 
 /**
- * Why `target` is not a legal attack for `shipId` in the given state, under
- * §7 and §3.1 alone, with no awareness of §8.5's stranded-ship obligation.
- * This layer exists so the §5 pass guard can ask "is any action legal here"
- * without §8.5's answer depending on the question, exactly as
- * `sixOnlyMoveRefusalReason` does for §6.
+ * Why `target` is not a legal attack for `shipId` in the given state, as a
+ * structured reason, or `undefined` when the attack is legal.
  *
- * Checked most fundamental first: whose ship it is, then whether it has
- * already acted, then the attacker's own bay, then everything about the
- * target — no ship there, a friendly ship, a ship in a bay — and only then
- * range and path, which come last so a bay target within reach is still
- * refused as `"target-in-bay"` rather than as an out-of-range square.
+ * Checked most fundamental first: whether the game is even still being
+ * played, then whose ship it is, then whether it has already acted, then the
+ * attacker's own bay, then everything about the target — no ship there, a
+ * friendly ship, a ship in a bay — and only then range and path, which come
+ * last so a bay target within reach is still refused as `"target-in-bay"`
+ * rather than as an out-of-range square. Once the game has ended, no attack
+ * is legal for anyone, including one that would have been refused anyway.
  */
-export function sevenOnlyAttackRefusalReason(
+export function attackRefusalReason(
   state: GameState,
   shipId: ShipId,
   target: Square,
 ): AttackRefusalReason | undefined {
+  if (isGameOver(state)) {
+    return "game-over";
+  }
+
   const attacker = findShip(state, shipId);
 
   if (attacker.side !== state.sideToMove) {
@@ -158,14 +154,18 @@ export function sevenOnlyAttackRefusalReason(
 }
 
 /**
- * Every square `shipId` may legally attack in the given state, under §7 and
- * §3.1 alone, ignoring §8.5's stranded-ship obligation. The §7-only
- * counterpart to the public `legalTargets`.
+ * Every square `shipId` may legally attack in the given state: every square
+ * within its §6 movement reach holding an enemy ship, with §9's game-over
+ * check applied first — empty once the game is over.
  */
-export function sevenOnlyLegalTargets(
+export function legalTargets(
   state: GameState,
   shipId: ShipId,
 ): readonly Square[] {
+  if (isGameOver(state)) {
+    return [];
+  }
+
   const attacker = findShip(state, shipId);
   if (
     attacker.side !== state.sideToMove ||
@@ -178,84 +178,8 @@ export function sevenOnlyLegalTargets(
   return reachFrom(attacker.square, attacker.shields)
     .map((entry) => entry.destination)
     .filter(
-      (square) =>
-        sevenOnlyAttackRefusalReason(state, shipId, square) === undefined,
+      (square) => attackRefusalReason(state, shipId, square) === undefined,
     );
-}
-
-/**
- * Why `target` is not a legal attack for `shipId` in the given state, as a
- * structured reason, or `undefined` when the attack is legal. Layers §9's
- * game-over check and §8.5's stranded-ship obligation on top of
- * `sevenOnlyAttackRefusalReason`.
- *
- * The game-over check runs first, ahead of ownership: once the game has
- * ended, no attack is legal for anyone, including one that would have been
- * refused anyway. It is deliberately absent from `sevenOnlyAttackRefusalReason`
- * — that layer exists so the §5 pass guard can ask "is any action legal
- * here" without this question answering it; see `applyPassGuard` in
- * `ply.ts`.
- *
- * Ownership and the already-acted check are duplicated here ahead of §8.5's
- * stranded check, exactly as `moveRefusalReason` duplicates them ahead of
- * its own stranded check, so the refusal a player hears has the same
- * priority whichever action they attempted: a ship that has already acted is
- * told so, rather than being told a stranded ship elsewhere needs moving.
- *
- * §8.5 refuses **every** attack while any ship owes an action — including an
- * attack by the owing ship itself. Unlike `moveRefusalReason`, which excuses
- * the ships that owe (`!owed.includes(shipId)`), there is no exception here:
- * §8.5 requires the freeing action to be a move, so while the obligation
- * binds it blocks every attack the same way, whoever it is by. The reason
- * string is the same `"another-ship-stranded"` moves use, so the player
- * hears one sentence whichever action they tried.
- */
-export function attackRefusalReason(
-  state: GameState,
-  shipId: ShipId,
-  target: Square,
-): AttackRefusalReason | undefined {
-  if (isGameOver(state)) {
-    return "game-over";
-  }
-
-  const attacker = findShip(state, shipId);
-
-  if (attacker.side !== state.sideToMove) {
-    return "not-your-ship";
-  }
-  if (state.actedThisPly.includes(shipId)) {
-    return "ship-already-acted";
-  }
-  if (strandedShipIds(state).length > 0) {
-    return "another-ship-stranded";
-  }
-
-  return sevenOnlyAttackRefusalReason(state, shipId, target);
-}
-
-/**
- * Every square `shipId` may legally attack in the given state: every square
- * within its §6 movement reach holding an enemy ship, with §9's game-over
- * check and §8.5's obligation applied at the ship level exactly as in
- * `attackRefusalReason` — empty once the game is over, and refusing every
- * ship's attacks, including the owing ship's own, while any ship owes an
- * action.
- */
-export function legalTargets(
-  state: GameState,
-  shipId: ShipId,
-): readonly Square[] {
-  if (isGameOver(state)) {
-    return [];
-  }
-
-  const attacker = findShip(state, shipId);
-  if (attacker.side !== state.sideToMove || strandedShipIds(state).length > 0) {
-    return [];
-  }
-
-  return sevenOnlyLegalTargets(state, shipId);
 }
 
 /**

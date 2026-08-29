@@ -23,40 +23,40 @@ install, no account, no server.
 > **Status:** early development. The app now plays a whole game, from the
 > opening position to the final score. Opening it shows the board in its
 > starting position, with all fourteen ships lined up in their bays and the
-> seventeen sites marked, five of them already lit as charged nodes. Green
-> goes first, and each player takes one action a turn — a move or an attack —
-> by mouse or by keyboard. Nodes light up on their own: at the end of every
-> turn the board tops itself back up to five charged sites among the
-> seventeen, picking the new ones at random as older ones run out — and a
-> site that has been waiting longer is more likely to be picked next, which
-> shows in how it looks: a site that is waiting to be lit grows and
-> brightens the longer it waits. A ship can only stop on a site that is
-> already lit. A lit
-> node pays a shield to the player sitting on it at the end of each of their
-> own turns. A node's glow shifts as it burns down, so you can see roughly
-> how much life it has left, and it runs out at a random pace — faster while
-> a ship is sitting on it than while it stands empty, and instantly the
-> moment a ship that was holding it moves away. Once it runs out it stays
-> dark for a while before the board can light it again, coming back sooner
-> if it was spent early rather than burned all the way down.
-> A ship still standing on a node that has just run out has to be moved
-> clear, and that is what its owner's next turn is spent on. In a fight the
-> ship carrying more shields wins and the beaten one is pushed back to a bay
+> seventeen sites marked, five of them already lit as charged nodes. Green goes
+> first, and each player takes one action a turn — a move or an attack — by
+> mouse or by keyboard. Nodes light up on their own: at the end of every turn
+> the board tops itself back up to five charged sites among the seventeen,
+> picking the new ones at random as older ones run out — and a site that has
+> been waiting longer is more likely to be picked next, which shows in how it
+> looks: a site that is waiting to be lit grows and brightens the longer it
+> waits. A ship may stop anywhere it can reach, including a site that is not yet
+> lit, and can camp there for as long as its owner likes while it waits to
+> light. A lit node pays a shield to the player sitting on it at the end of each
+> of their own turns. A node's glow shifts as it burns down, so you can see
+> roughly how much life it has left, and it runs out at a random pace — faster
+> while a ship is sitting on it than while it stands empty, and instantly the
+> moment a ship that was holding it moves away. Once it runs out it stays dark
+> for a while before the board can light it again, coming back sooner if it was
+> spent early rather than burned all the way down. A ship left standing on a
+> node that has just run out simply stays there — it is never forced to move,
+> and its owner is free to spend their next turn however they like. In a fight
+> the ship carrying more shields wins and the beaten one is pushed back to a bay
 > with none — but winning costs the winner a shield more than the loser was
-> carrying. The attacking winner advances onto the square it just cleared,
-> so a won fight can take a node outright, in a single action; and a ship
-> attacks exactly as far as it moves, so heavy shields buy strength at the
-> cost of reach. Two ships carrying the same shields both go home. Which bay
-> a beaten ship lands in is chosen at random from whichever bays are
-> standing empty, so neither of you can know in advance where it will be. A
-> node also pays energy at the end of each turn to the player sitting on it,
-> and holding several at once pays far more than holding them one at a time
-> would. The app keeps score and shows it, along with how many nodes each
-> player holds and which round the game is in. After a hundred rounds the
-> game ends: the player with the most energy wins, an equal score is a draw,
-> and a button starts another game. There is still no way to save or record
-> a game, no computer opponent to play against, and no way to choose how
-> long a game runs. The project is being built up story by story.
+> carrying. The attacking winner advances onto the square it just cleared, so a
+> won fight can take a node outright, in a single action; and a ship attacks
+> exactly as far as it moves, so heavy shields buy strength at the cost of
+> reach. Two ships carrying the same shields both go home. Which bay a beaten
+> ship lands in is chosen at random from whichever bays are standing empty, so
+> neither of you can know in advance where it will be. A node also pays energy
+> at the end of each turn to the player sitting on it, and holding several at
+> once pays far more than holding them one at a time would. The app keeps score
+> and shows it, along with how many nodes each player holds and which round the
+> game is in. After a hundred rounds the game ends: the player with the most
+> energy wins, an equal score is a draw, and a button starts another game. There
+> is still no way to save or record a game, no computer opponent to play
+> against, and no way to choose how long a game runs. The project is being built
+> up story by story.
 
 ## The rules
 

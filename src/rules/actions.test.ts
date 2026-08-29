@@ -3,7 +3,7 @@ import { squareFromName } from "./board";
 import { shipHasLegalAction, sideToMoveHasLegalAction } from "./actions";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, SiteStatus } from "./gameState";
-import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
+import { DEFAULT_GAME_LENGTH_ROUNDS, pliesForGameLength } from "./gameLength";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
 
@@ -29,6 +29,7 @@ function buildState(config: {
   sideToMove?: "green" | "red";
   actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
+  plyNumber?: number;
 }): GameState {
   return {
     ships: config.ships,
@@ -36,7 +37,7 @@ function buildState(config: {
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: 1,
     actedThisPly: config.actedThisPly ?? [],
-    plyNumber: 1,
+    plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
@@ -83,6 +84,18 @@ describe("sideToMoveHasLegalAction", () => {
 
     expect(sideToMoveHasLegalAction(state)).toBe(false);
   });
+
+  it("answers false once the game has ended, even with an obvious legal move (rules.md §9)", () => {
+    const ships = [ship("green-1", "green", "H8")];
+    const lastPly = pliesForGameLength(DEFAULT_GAME_LENGTH_ROUNDS);
+
+    expect(
+      sideToMoveHasLegalAction(buildState({ ships, plyNumber: lastPly })),
+    ).toBe(true);
+    expect(
+      sideToMoveHasLegalAction(buildState({ ships, plyNumber: lastPly + 1 })),
+    ).toBe(false);
+  });
 });
 
 describe("shipHasLegalAction", () => {
@@ -104,7 +117,7 @@ describe("shipHasLegalAction", () => {
     expect(shipHasLegalAction(state, "green-1")).toBe(false);
   });
 
-  it("is false for a ship held back by another ship's stranded obligation, even though it could otherwise attack", () => {
+  it("is true for a ship standing on a dormant site, and for a sibling elsewhere, with neither held back (§8.5)", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "E5", 0),
@@ -114,20 +127,7 @@ describe("shipHasLegalAction", () => {
       siteStates: { E5: "dormant" },
     });
 
-    expect(shipHasLegalAction(state, "green-2")).toBe(false);
-  });
-
-  it("is true once the freeing move is made, for the ship just freed", () => {
-    const state = buildState({
-      ships: [
-        ship("green-1", "green", "E5", 0),
-        ship("green-2", "green", "H9", 3),
-        ship("red-1", "red", "H10"),
-      ],
-      siteStates: { E5: "dormant" },
-      actedThisPly: ["green-1"],
-    });
-
+    expect(shipHasLegalAction(state, "green-1")).toBe(true);
     expect(shipHasLegalAction(state, "green-2")).toBe(true);
   });
 });
