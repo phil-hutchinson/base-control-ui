@@ -867,7 +867,44 @@ passing.
 
 ## Step 5 — Camping, end to end
 
-Status: pending
+Status: implemented
+
+Notes: Added `src/rules/camping.test.ts`, a new integration test file driving
+`applyMove` (and, for the one negative check that needs it, `moveRefusalReason`
+directly) rather than `runEndOfTurn`/`runChargeDraw` in isolation, per the
+step's instruction to prove the same thing a player's turn would. Five cases:
+(1) a ship parked on the board's only active site is charged under it with no
+move of its own, gaining its shield and collecting energy only at the end of
+its owner's own next turn — two plies later, with the opponent's intervening
+turn paying nothing, pinning D3's timing exactly; (2) a ship on a dormant site
+stays put through recovery to active and then through the very next ply's
+charge draw, since that site is then the board's only active candidate; (3) a
+negative control: ships parked on an active and a dormant site (with the board
+already at its five-charged target, so the active one is never drawn) collect
+nothing and gain no shields across two full plies; (4) a node running out
+under a ship raises only `node-ran-out`, leaves the ship's square and shields
+untouched, and leaves both a different ship's move and `moveRefusalReason` for
+the parked ship itself unrefused on the following turn; (5) a ship moving off
+a charged node onto a dormant site produces a `node-vacated` effect for the
+node it left and ends up standing on the dormant site, which keeps recovering
+underneath it in the very same sequence since it was already dormant when the
+ply began. No production code was touched, matching the step's constraint;
+nothing surfaced that looked like a bug rather than a gap in cover. One
+deviation from the initial draft, caught by the tests themselves rather than
+predicted up front: the two single-ship states first tried for case 5 (no
+second ship for the side passed to) triggered `applyPassGuard`'s immediate
+forced pass for the side with no ships at all, which correctly runs a second
+end-of-turn sequence for that passed ply — a real rules consequence, not a
+bug — and moved the departed node's drain and recovery further than a single
+green move alone would. Fixed by giving the state a second, red ship with a
+legal move so the ply genuinely ends after green's one action, matching every
+other case's setup. `npm test` (700 passed, up from 695), `npm run typecheck`,
+`npm run lint` and `npm run format:check` all pass; `seededReplay.test.ts` and
+`sitePool.test.ts` passed unchanged, confirming no new randomness was drawn.
+The §5 pass guard was confirmed rather than duplicated: `ply.test.ts`'s
+existing pass-guard tests (including `endOfTurn.test.ts`'s "a passed ply still
+collects" case) already exercise it and continue to pass; no new pass-guard
+case was needed since the existing cover was not disturbed by this story.
 
 Add the integration cover for the consequences the story cares most about.
 **No production code changes in this step** — every behaviour it pins is
