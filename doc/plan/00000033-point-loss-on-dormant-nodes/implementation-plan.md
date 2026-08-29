@@ -1039,7 +1039,37 @@ result is confirmed by eye in step 9.
 
 ## Step 7 — The HUD shows what a side is paying
 
-Status: pending
+Status: committed
+
+Notes: Added a second `score-display__dormant-pips` row of five
+`score-display__dormant-pip` spans (own base class, per D8), lit with an
+`--on` modifier for each dormant site `dormantSitesOccupiedBy` reports,
+clamped naturally at five since the row is only ever five elements long.
+Restyled **both** rows per the owner's D8 decision: every pip now has a
+transparent background and a border in the side's colour
+(`--color-green`/`--color-red`); an "on" node pip fills with the new
+`--color-node-charged` (`#DAA520`) token and an "on" dormant pip fills with
+the new `--color-node-dormant` (`#808080`) token, both added to
+`src/index.css` with a comment pointing at `SiteMarker.tsx` as their
+source, without touching that component. This is a deliberate restyle of
+the _existing_ lit node pip, which previously filled with the side's own
+colour and glowed in it — it now glows gold instead, inside the
+side-coloured border, exactly as D8 specifies. An empty dormant row gets a
+`--dormant-pips--empty` modifier that dims its border/opacity rather than
+giving its off pips a fill, so it does not draw the eye; `--focus-ring` is
+not used anywhere in either row. Added `dormantSitesOccupiedPhrase` beside
+`nodesHeldPhrase` in `announcements.ts` and extended `scoreSentence` to
+always name the dormant count, including "no dormant sites" at zero (D9) —
+e.g. "Green: 24 energy, 3 nodes held, standing on 2 dormant sites." Updated
+every existing test with a hard-coded `scoreSentence` string
+(`ScoreDisplay.test.tsx`, `announcements.test.ts`, `Hud.test.tsx`,
+`App.test.tsx`, `GameOverPanel.test.tsx` — the last two outside the plan's
+named list but broken by the sentence's new shape all the same) and added
+new cases for the dormant pip row and phrase (zero, one, plural, six
+dormant sites lighting only five pips, and the opponent's ships not
+counting), following the verification list. `npm run typecheck`,
+`npm run lint`, `npm test` (754 passed) and `npm run format:check` all
+pass.
 
 Give `ScoreDisplay` a second, separate pip row counting the dormant sites that
 side's ships are standing on, and add the dormant count to `scoreSentence`.

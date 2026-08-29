@@ -6,7 +6,7 @@
 // "node", never "ply" or "hub".
 
 import { squareName } from "../rules/board";
-import { chargedNodesHeldBy } from "../rules/energy";
+import { chargedNodesHeldBy, dormantSitesOccupiedBy } from "../rules/energy";
 import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
@@ -69,6 +69,17 @@ function nodesHeldPhrase(count: number): string {
     return "no nodes held";
   }
   return `${count} ${count === 1 ? "node" : "nodes"} held`;
+}
+
+/** "standing on 2 dormant sites", "standing on 1 dormant site", "standing on
+ * no dormant sites" — for the HUD's hidden score sentence. Named even when
+ * zero (§8.4), so the sentence keeps one shape whether a side is paying or
+ * not. */
+function dormantSitesOccupiedPhrase(count: number): string {
+  if (count === 0) {
+    return "standing on no dormant sites";
+  }
+  return `standing on ${count} dormant ${count === 1 ? "site" : "sites"}`;
 }
 
 /**
@@ -549,10 +560,12 @@ export function announcementForSession(session: Session): string {
   }
 }
 
-/** "Green: 24 energy, 3 nodes held." — the HUD score cell's hidden text. */
+/** "Green: 24 energy, 3 nodes held, standing on 2 dormant sites." — the HUD
+ * score cell's hidden text. */
 export function scoreSentence(state: GameState, side: Side): string {
   const nodesHeld = chargedNodesHeldBy(state, side).length;
-  return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}.`;
+  const dormantOccupied = dormantSitesOccupiedBy(state, side).length;
+  return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}, ${dormantSitesOccupiedPhrase(dormantOccupied)}.`;
 }
 
 /** "35/100" — the HUD round counter's visible text, clamped at game over. */

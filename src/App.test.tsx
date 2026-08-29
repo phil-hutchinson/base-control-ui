@@ -29,10 +29,14 @@ describe("App", () => {
     render(<App />);
 
     expect(
-      screen.getByText("Green: 0 energy, no nodes held."),
+      screen.getByText(
+        "Green: 0 energy, no nodes held, standing on no dormant sites.",
+      ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Red: 0 energy, no nodes held."),
+      screen.getByText(
+        "Red: 0 energy, no nodes held, standing on no dormant sites.",
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText("1/100")).toBeInTheDocument();
   });

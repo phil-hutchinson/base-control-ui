@@ -1733,10 +1733,17 @@ describe("HUD wording", () => {
       shields: 0 | 1 | 2 | 3 | 4;
     }[];
     charged?: readonly string[];
+    dormant?: readonly string[];
   }): GameState {
-    const siteStates: Record<string, { state: "charged"; level: number }> = {};
+    const siteStates: Record<
+      string,
+      { state: "charged" | "dormant"; level: number }
+    > = {};
     for (const square of config.charged ?? []) {
       siteStates[square] = { state: "charged", level: 1 };
+    }
+    for (const square of config.dormant ?? []) {
+      siteStates[square] = { state: "dormant", level: 1 };
     }
     return {
       ships: config.ships ?? [],
@@ -1759,7 +1766,7 @@ describe("HUD wording", () => {
         plyNumber: 1,
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held.",
+        "Green: 0 energy, no nodes held, standing on no dormant sites.",
       );
     });
 
@@ -1779,7 +1786,7 @@ describe("HUD wording", () => {
         charged: ["H8"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 7 energy, 1 node held.",
+        "Green: 7 energy, 1 node held, standing on no dormant sites.",
       );
     });
 
@@ -1805,7 +1812,7 @@ describe("HUD wording", () => {
         charged: ["H8", "E5"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 24 energy, 2 nodes held.",
+        "Green: 24 energy, 2 nodes held, standing on no dormant sites.",
       );
     });
 
@@ -1825,7 +1832,70 @@ describe("HUD wording", () => {
         ],
         charged: ["K5", "H8"],
       });
-      expect(scoreSentence(state, "red")).toBe("Red: 1 energy, 1 node held.");
+      expect(scoreSentence(state, "red")).toBe(
+        "Red: 1 energy, 1 node held, standing on no dormant sites.",
+      );
+    });
+
+    it("uses the singular at one dormant site occupied", () => {
+      const state = stateWith({
+        energy: { green: 4, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 5,
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 0,
+          },
+        ],
+        dormant: ["H8"],
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 4 energy, no nodes held, standing on 1 dormant site.",
+      );
+    });
+
+    it("counts several dormant sites occupied, plural", () => {
+      const state = stateWith({
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 5,
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            shields: 0,
+          },
+          {
+            id: "green-2",
+            side: "green",
+            square: squareAt("E", 5),
+            shields: 0,
+          },
+        ],
+        dormant: ["H8", "E5"],
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 0 energy, no nodes held, standing on 2 dormant sites.",
+      );
+    });
+
+    it("does not count the opponent's ships on dormant sites", () => {
+      const state = stateWith({
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 5,
+        ships: [
+          { id: "red-1", side: "red", square: squareAt("H", 8), shields: 0 },
+        ],
+        dormant: ["H8"],
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 0 energy, no nodes held, standing on no dormant sites.",
+      );
     });
   });
 

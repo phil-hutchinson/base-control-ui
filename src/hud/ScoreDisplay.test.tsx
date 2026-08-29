@@ -66,7 +66,9 @@ describe("ScoreDisplay", () => {
     );
 
     expect(
-      screen.getByText("Green: 24 energy, no nodes held."),
+      screen.getByText(
+        "Green: 24 energy, no nodes held, standing on no dormant sites.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -91,7 +93,9 @@ describe("ScoreDisplay", () => {
     expect(container).toHaveTextContent("0024");
     expect(container).toHaveTextContent("0009");
     expect(
-      screen.getByText("Red: 9 energy, no nodes held."),
+      screen.getByText(
+        "Red: 9 energy, no nodes held, standing on no dormant sites.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -126,7 +130,9 @@ describe("ScoreDisplay", () => {
       2,
     );
     expect(
-      screen.getByText("Green: 0 energy, 2 nodes held."),
+      screen.getByText(
+        "Green: 0 energy, 2 nodes held, standing on no dormant sites.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -143,6 +149,89 @@ describe("ScoreDisplay", () => {
     expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
       0,
     );
+  });
+
+  it("renders five dormant pips, none on when the side stands on nothing dormant", () => {
+    const state = buildState({});
+
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
+
+    expect(
+      container.querySelectorAll(".score-display__dormant-pip"),
+    ).toHaveLength(5);
+    expect(
+      container.querySelectorAll(".score-display__dormant-pip--on"),
+    ).toHaveLength(0);
+  });
+
+  it("lights one dormant pip per dormant site the side is standing on", () => {
+    const state = buildState({
+      siteStates: { H8: "dormant", E5: "dormant", K5: "active" },
+      ships: [
+        ship("green-1", "green", "H8"),
+        ship("green-2", "green", "E5"),
+        ship("red-1", "red", "K5"),
+      ],
+    });
+
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
+
+    expect(
+      container.querySelectorAll(".score-display__dormant-pip--on"),
+    ).toHaveLength(2);
+    expect(
+      screen.getByText(
+        "Green: 0 energy, no nodes held, standing on 2 dormant sites.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("lights all five dormant pips when the side stands on six dormant sites", () => {
+    const state = buildState({
+      siteStates: {
+        H8: "dormant",
+        E5: "dormant",
+        K5: "dormant",
+        F2: "dormant",
+        J2: "dormant",
+        B4: "dormant",
+      },
+      ships: [
+        ship("green-1", "green", "H8"),
+        ship("green-2", "green", "E5"),
+        ship("green-3", "green", "K5"),
+        ship("green-4", "green", "F2"),
+        ship("green-5", "green", "J2"),
+        ship("green-6", "green", "B4"),
+      ],
+    });
+
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
+
+    expect(
+      container.querySelectorAll(".score-display__dormant-pip--on"),
+    ).toHaveLength(5);
+  });
+
+  it("does not light a dormant pip for a dormant site the opposing side stands on", () => {
+    const state = buildState({
+      siteStates: { K5: "dormant" },
+      ships: [ship("red-1", "red", "K5")],
+    });
+
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
+
+    expect(
+      container.querySelectorAll(".score-display__dormant-pip--on"),
+    ).toHaveLength(0);
   });
 
   it("has no static accessibility violations", async () => {
@@ -175,7 +264,9 @@ describe("ScoreDisplay", () => {
     render(<ScoreDisplay state={state} side="green" displayedTotal={0} />);
 
     expect(
-      screen.getByText("Green: 6 energy, no nodes held."),
+      screen.getByText(
+        "Green: 6 energy, no nodes held, standing on no dormant sites.",
+      ),
     ).toBeInTheDocument();
   });
 });
