@@ -955,7 +955,51 @@ number.
 
 ## Step 6 — The two-layer split collapses
 
-Status: pending
+Status: implemented
+
+Notes: `src/rules/moveLegality.ts` is deleted; its contents (`reachFrom`,
+`ReachEntry`, the reach table and helpers, `findShip`, `MoveRefusalReason`,
+and the bodies of `sixOnlyMoveRefusalReason`/`sixOnlyLegalDestinations`) now
+live in `src/rules/movement.ts`, merged into `moveRefusalReason` and
+`legalDestinations` with the game-over check first, per D5.
+`sideToMoveHasLegalMove` reads `legalDestinations`. `movement.ts`'s module
+comment is rewritten to describe one module for §6 with §9's check layered
+in front, with no split. In `combat.ts`, `sevenOnlyAttackRefusalReason`
+merged into `attackRefusalReason` and `sevenOnlyLegalTargets` into
+`legalTargets`, in the check order the seven-only functions had (game-over
+first, then ownership, already-acted, attacker's bay, target checks, then
+range and path), per D6; its `ReachEntry`/`findShip`/`reachFrom` import
+moved from `./moveLegality` to `./movement`. `actions.ts`'s
+`sideToMoveHasLegalAction` now reads `sideToMoveHasLegalMove` and
+`legalTargets` directly (no `sevenOnlyLegalTargets` import left), with its
+doc comment rewritten per D7 to explain why this is safe:
+`applyPassGuard`'s own `isGameOver` early return in `ply.ts`, confirmed
+untouched, is what keeps an ended game from passing plies forever;
+`shipHasLegalAction`'s doc comment was trimmed of its "public §6 and §7
+layers" phrasing since there is now only one. `ply.ts` needed no import or
+comment change — it already named `movement.ts`/`combat.ts` as modules, not
+layers. Tests updated per D14: `movement.test.ts`'s "pinning the layering"
+case became "legalDestinations contains a destination legal before the game
+ends, and is empty in the same state once it has", built from one state
+copied with a later `plyNumber`; `combat.test.ts` got the analogous
+treatment for its own "empties legalTargets ... pinning the layering" case
+(not one of D14's three, but the same pattern applied for symmetry since
+step 6 collapses combat.ts on the same terms), and its `sevenOnly*`
+describe block was renamed to `attackRefusalReason / legalTargets` with
+every call switched to the public functions, unaffected by the game-over
+check since `buildState`'s defaults leave the game in progress;
+`fullGame.test.ts`'s `findMoveLegalAMomentEarlier` and
+`findAttackLegalAMomentEarlier` were rebuilt to call the public functions
+against a copy of the state with `lengthInRounds` raised by one round
+(rather than lowering `plyNumber`, an equally valid choice under
+`isGameOver`'s arithmetic) and are unchanged in what they return to
+`assertRefusesEverything`; `ply.test.ts`'s "must live in the seven-only
+layer" test was renamed and its comment reworded to stop naming a layer,
+with its assertions untouched. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (700 passed, unchanged from step 5,
+confirming no cover was lost) all pass. `grep -rn "sixOnly\|sevenOnly\|moveLegality" src`
+returns nothing, and `src/rules/moveLegality.ts` no longer exists. No
+deviation from the plan's file list or design decisions.
 
 Remove the scaffolding §8.5 needed. **No behaviour change in this step**: every
 test that passed at the end of step 5 must still pass at the end of this one,

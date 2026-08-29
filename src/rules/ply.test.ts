@@ -1539,13 +1539,12 @@ describe("applyPassGuard", () => {
     expect(result.effect).toBeUndefined();
   });
 
-  it("passes the ply when its one ship with a nearby target has already acted — the already-acted check must live in the seven-only layer", () => {
+  it("passes the ply when its one ship with a nearby target has already acted", () => {
     // green-1 is boxed in for movement exactly as above, and red-1 stands
     // right next to it — a legal attack target, if green-1 had not already
-    // spent its one action this ply. If the already-acted check lived only
-    // in the public `attackRefusalReason` and not in
-    // `sevenOnlyAttackRefusalReason`, `sideToMoveHasLegalAction` would still
-    // see this as a legal attack and the guard would never pass.
+    // spent its one action this ply. If `sideToMoveHasLegalAction` did not
+    // consult the already-acted check, it would still see this as a legal
+    // attack and the guard would never pass.
     const state = buildState({
       ships: [
         ship("green-1", "green", "A1", 4),

@@ -11,8 +11,8 @@ import { type Square, squareName } from "./board";
 import { BAYS, isBay } from "./bays";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
-import { type ReachEntry, findShip, reachFrom } from "./moveLegality";
 import { type GameState, shipsBySquare } from "./gameState";
+import { type ReachEntry, findShip, reachFrom } from "./movement";
 import { drawIndex } from "./random";
 import { type ShieldCount, isShieldCount } from "./shields";
 
@@ -97,23 +97,26 @@ export type AttackRefusalReason =
   | "game-over";
 
 /**
- * Why `target` is not a legal attack for `shipId` in the given state, under
- * §7 and §3.1 alone, with no awareness of whether the game has ended. This
- * layer exists so the §5 pass guard can ask "is any action legal here"
- * without that question answering itself, exactly as
- * `sixOnlyMoveRefusalReason` does for §6.
+ * Why `target` is not a legal attack for `shipId` in the given state, as a
+ * structured reason, or `undefined` when the attack is legal.
  *
- * Checked most fundamental first: whose ship it is, then whether it has
- * already acted, then the attacker's own bay, then everything about the
- * target — no ship there, a friendly ship, a ship in a bay — and only then
- * range and path, which come last so a bay target within reach is still
- * refused as `"target-in-bay"` rather than as an out-of-range square.
+ * Checked most fundamental first: whether the game is even still being
+ * played, then whose ship it is, then whether it has already acted, then the
+ * attacker's own bay, then everything about the target — no ship there, a
+ * friendly ship, a ship in a bay — and only then range and path, which come
+ * last so a bay target within reach is still refused as `"target-in-bay"`
+ * rather than as an out-of-range square. Once the game has ended, no attack
+ * is legal for anyone, including one that would have been refused anyway.
  */
-export function sevenOnlyAttackRefusalReason(
+export function attackRefusalReason(
   state: GameState,
   shipId: ShipId,
   target: Square,
 ): AttackRefusalReason | undefined {
+  if (isGameOver(state)) {
+    return "game-over";
+  }
+
   const attacker = findShip(state, shipId);
 
   if (attacker.side !== state.sideToMove) {
@@ -151,14 +154,18 @@ export function sevenOnlyAttackRefusalReason(
 }
 
 /**
- * Every square `shipId` may legally attack in the given state, under §7 and
- * §3.1 alone, with no awareness of whether the game has ended. The §7-only
- * counterpart to the public `legalTargets`.
+ * Every square `shipId` may legally attack in the given state: every square
+ * within its §6 movement reach holding an enemy ship, with §9's game-over
+ * check applied first — empty once the game is over.
  */
-export function sevenOnlyLegalTargets(
+export function legalTargets(
   state: GameState,
   shipId: ShipId,
 ): readonly Square[] {
+  if (isGameOver(state)) {
+    return [];
+  }
+
   const attacker = findShip(state, shipId);
   if (
     attacker.side !== state.sideToMove ||
@@ -171,64 +178,8 @@ export function sevenOnlyLegalTargets(
   return reachFrom(attacker.square, attacker.shields)
     .map((entry) => entry.destination)
     .filter(
-      (square) =>
-        sevenOnlyAttackRefusalReason(state, shipId, square) === undefined,
+      (square) => attackRefusalReason(state, shipId, square) === undefined,
     );
-}
-
-/**
- * Why `target` is not a legal attack for `shipId` in the given state, as a
- * structured reason, or `undefined` when the attack is legal. Layers §9's
- * game-over check on top of `sevenOnlyAttackRefusalReason`.
- *
- * The game-over check runs first, ahead of ownership: once the game has
- * ended, no attack is legal for anyone, including one that would have been
- * refused anyway. It is deliberately absent from `sevenOnlyAttackRefusalReason`
- * — that layer exists so the §5 pass guard can ask "is any action legal
- * here" without this question answering it; see `applyPassGuard` in
- * `ply.ts`.
- */
-export function attackRefusalReason(
-  state: GameState,
-  shipId: ShipId,
-  target: Square,
-): AttackRefusalReason | undefined {
-  if (isGameOver(state)) {
-    return "game-over";
-  }
-
-  const attacker = findShip(state, shipId);
-
-  if (attacker.side !== state.sideToMove) {
-    return "not-your-ship";
-  }
-  if (state.actedThisPly.includes(shipId)) {
-    return "ship-already-acted";
-  }
-
-  return sevenOnlyAttackRefusalReason(state, shipId, target);
-}
-
-/**
- * Every square `shipId` may legally attack in the given state: every square
- * within its §6 movement reach holding an enemy ship, with §9's game-over
- * check applied at the ship level exactly as in `attackRefusalReason` —
- * empty once the game is over.
- */
-export function legalTargets(
-  state: GameState,
-  shipId: ShipId,
-): readonly Square[] {
-  if (isGameOver(state)) {
-    return [];
-  }
-
-  const attacker = findShip(state, shipId);
-  if (attacker.side !== state.sideToMove) {
-    return [];
-  }
-
-  return sevenOnlyLegalTargets(state, shipId);
 }
 
 /**

@@ -10,7 +10,6 @@ import {
   reachFrom,
   sideToMoveHasLegalMove,
 } from "./movement";
-import { sixOnlyLegalDestinations } from "./moveLegality";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
 
@@ -476,16 +475,15 @@ describe("moveRefusalReason and legalDestinations once the game is over", () => 
     ).toBe("game-over");
   });
 
-  it("empties legalDestinations while the §6-only layer stays unchanged, pinning the layering", () => {
-    const state = buildState({
+  it("legalDestinations contains a destination legal before the game ends, and is empty in the same state once it has", () => {
+    const beforeEnd = buildState({
       ships: [ship("green-1", "green", "H8")],
-      plyNumber: 201,
+      plyNumber: 200,
     });
+    const afterEnd: GameState = { ...beforeEnd, plyNumber: 201 };
 
-    expect(legalDestinations(state, "green-1")).toEqual([]);
-    expect(sixOnlyLegalDestinations(state, "green-1").length).toBeGreaterThan(
-      0,
-    );
+    expect(legalDestinations(beforeEnd, "green-1").length).toBeGreaterThan(0);
+    expect(legalDestinations(afterEnd, "green-1")).toEqual([]);
   });
 
   it("judges game-over against the state's own length, not the default", () => {
