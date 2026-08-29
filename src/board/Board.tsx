@@ -11,7 +11,6 @@ import { legalTargets, resolveFight } from "../rules/combat";
 import { shipsBySquare, siteStatusAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
 import { siteCyclePosition } from "../rules/sites";
-import { strandedShipIds } from "../rules/stranded";
 import type { Session, SessionIntent } from "../game/session";
 import { announcementForSession } from "./announcements";
 import { squareForGridPosition } from "./boardView";
@@ -73,22 +72,16 @@ export function Board({ session, onIntent }: BoardProps) {
         ? legalTargets(session.state, selectedShip.id).map(squareName)
         : [],
     );
-    const owedShipIds = new Set(strandedShipIds(session.state));
-
     // A ship's condition, for the side to move only: an opponent's ship
-    // never carries one. Owing an action takes precedence from the start of
-    // the turn, when the obligation already binds; then having no legal
-    // action at all — no legal move and no legal attack target — which
-    // covers a pinned ship, a ship held back by the obligation elsewhere,
-    // and every ship that has already acted: an acted ship never has a
-    // legal move or attack left. Having acted is a separate, independent
-    // fact (`hasActed` below) and no longer contributes to the condition.
+    // never carries one. The only condition is having no legal action at
+    // all — no legal move and no legal attack target — which covers a
+    // pinned ship and every ship that has already acted: an acted ship
+    // never has a legal move or attack left. Having acted is a separate,
+    // independent fact (`hasActed` below) and no longer contributes to the
+    // condition.
     function shipCondition(ship: Ship): ShipCondition | undefined {
       if (ship.side !== session.state.sideToMove) {
         return undefined;
-      }
-      if (owedShipIds.has(ship.id)) {
-        return "owes-action";
       }
       if (!shipHasLegalAction(session.state, ship.id)) {
         return "no-action";

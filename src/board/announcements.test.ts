@@ -239,11 +239,6 @@ describe("announcementFor", () => {
       "That ship has already acted this turn. Choose another.",
     ],
     [
-      "another-ship-stranded",
-      squareAt("G", 7),
-      "A stranded ship must be moved clear this turn. Only a move will free it — choose one of those.",
-    ],
-    [
       "nothing-to-select",
       squareAt("G", 4),
       "No ship on G4. Choose one of your own ships.",
@@ -492,35 +487,6 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("announces a ship becoming stranded, naming the square", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-3",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "ship-stranded",
-              shipId: "green-1",
-              side: "green",
-              square: squareAt("K", 5),
-            },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at K5 is stranded and must be moved clear next turn. Red's turn, 1 action left.",
-    );
-  });
-
   it("announces one shield gained, naming the square and the new count", () => {
     const event: MovedEvent = {
       type: "moved",
@@ -676,12 +642,6 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               shields: 4,
             },
             { type: "node-ran-out", square: squareAt("K", 5) },
-            {
-              type: "ship-stranded",
-              shipId: "green-1",
-              side: "green",
-              square: squareAt("K", 5),
-            },
             { type: "site-went-active", square: squareAt("N", 4) },
           ],
         },
@@ -692,7 +652,6 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       "Green ship moved from K4 to K5. " +
         "Green ship at K5 gained a shield, reaching the cap of 4. " +
         "The node at K5 ran out. " +
-        "Green ship at K5 is stranded and must be moved clear next turn. " +
         "Red's turn, 1 action left.",
     );
   });

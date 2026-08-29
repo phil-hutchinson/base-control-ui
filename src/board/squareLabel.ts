@@ -2,18 +2,18 @@
 // square name first, then "bay" or "<state> site" if the square is one of
 // those, then which side's ship (if any) stands there, then that ship's
 // shield count, then whether it has already acted this ply, then its
-// condition (no action available, or owing an action), then last of all a
-// mark saying that the square is selected, a legal destination, or a legal
-// attack target. A square is never both a bay and a site, so the two share
-// one slot. Having acted, the condition and the mark are three separately
-// optional fields, each computed on its own: a ship that has not yet acted
-// can still carry the no-action condition (a pinned ship, selectable but
-// fruitless), and the mark reflects the current selection or highlight
-// independently of both — the condition alone staying mutually exclusive
-// within itself. Ordinary empty squares are named by their square name
-// alone. The shield count is stated even when it is zero, so a listener
-// hearing one square at a time can tell a shieldless ship apart from an app
-// that never reports shields at all.
+// condition (no action available), then last of all a mark saying that the
+// square is selected, a legal destination, or a legal attack target. A
+// square is never both a bay and a site, so the two share one slot. Having
+// acted, the condition and the mark are three separately optional fields,
+// each computed on its own: a ship that has not yet acted can still carry
+// the no-action condition (a pinned ship, selectable but fruitless), and
+// the mark reflects the current selection or highlight independently of
+// both — the condition alone staying mutually exclusive within itself.
+// Ordinary empty squares are named by their square name alone. The shield
+// count is stated even when it is zero, so a listener hearing one square at
+// a time can tell a shieldless ship apart from an app that never reports
+// shields at all.
 //
 // A target square's mark names the fight's predicted outcome rather than a
 // fixed phrase, so a listener does not have to hold two ships' shield counts
@@ -72,15 +72,13 @@ const ALREADY_ACTED_WORDING = "already acted this turn";
 /**
  * A ship's own condition, independent of the current selection and of
  * whether it has acted: it has no legal action available at all — no legal
- * move and no legal attack target — or it owes its owner an action under
- * §8.5.
+ * move and no legal attack target.
  */
-export type ShipCondition = "no-action" | "owes-action";
+export type ShipCondition = "no-action";
 
 /** How each condition reads in a square's accessible name, in the players' vocabulary. */
 const CONDITION_WORDING: Record<ShipCondition, string> = {
   "no-action": "no action available this turn",
-  "owes-action": "stranded, must move this turn",
 };
 
 /** The information a square's accessible name is built from. */

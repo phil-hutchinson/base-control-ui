@@ -7,7 +7,6 @@ import type { GameState, Ship, SiteStatus } from "./gameState";
 import { drawWeightedIndex } from "./random";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
-import { strandedShipIds } from "./stranded";
 
 function ship(
   id: ShipId,
@@ -227,7 +226,6 @@ describe("runChargeDraw — the pool", () => {
     });
     const occupant = result.state.ships.find((s) => s.id === "green-1");
     expect(occupant?.square).toEqual(squareFromName("F2"));
-    expect(strandedShipIds(result.state)).not.toContain("green-1");
   });
 });
 

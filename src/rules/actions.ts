@@ -11,13 +11,9 @@ import { legalDestinations, sideToMoveHasLegalMove } from "./movement";
 /**
  * Whether the side to move has any legal action at all — a legal move or a
  * legal attack target, with any ship that has not yet acted this ply —
- * judged by the §6-only and §7-only layers, with no awareness of §8.5's
- * stranded-ship obligation.
- * Used by the §5 pass guard, which must keep working regardless of the
- * obligation: the obligation only ever binds when at least one ship has a
- * legal §6 move, so a side that is obliged always has an action available
- * (the same reasoning `sideToMoveHasLegalMove` already relies on, which this
- * is built on top of).
+ * judged by the §6-only and §7-only layers, which differ from the public
+ * layers only in having no awareness of whether the game has ended. Used by
+ * the §5 pass guard.
  */
 export function sideToMoveHasLegalAction(state: GameState): boolean {
   if (sideToMoveHasLegalMove(state)) {
@@ -31,10 +27,10 @@ export function sideToMoveHasLegalAction(state: GameState): boolean {
 
 /**
  * Whether `shipId` has any legal action of its own: a legal move or a legal
- * attack target, judged by the public §6 and §7 layers, so §8.5's obligation
- * applies. Used by the board for the `no-action` condition; a ship that has
- * already acted this ply always answers false, since it has no legal move or
- * attack target left to offer.
+ * attack target, judged by the public §6 and §7 layers. Used by the board
+ * for the `no-action` condition; a ship that has already acted this ply
+ * always answers false, since it has no legal move or attack target left to
+ * offer.
  */
 export function shipHasLegalAction(state: GameState, shipId: ShipId): boolean {
   return (

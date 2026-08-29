@@ -1,9 +1,8 @@
 // §6-only move legality (rules.md §6): whether a destination is legal for a
 // ship judged by reach, occupancy and nothing else, with no awareness of
-// whether the game has ended. `stranded.ts` uses this half to ask "does this
-// ship have a legal move" without asking "does the obligation apply to this
-// ship", which would be circular; the public functions in `movement.ts` are
-// built on top of it for every other caller.
+// whether the game has ended. The public functions in `movement.ts` are
+// built on top of it for every other caller; the game-over check lives only
+// in that public layer.
 
 import {
   COLUMN_LETTERS,
@@ -116,7 +115,6 @@ export function reachFrom(
 export type MoveRefusalReason =
   | "not-your-ship"
   | "ship-already-acted"
-  | "another-ship-stranded"
   | "out-of-range"
   | "path-blocked"
   | "destination-occupied"
@@ -135,7 +133,7 @@ export function findShip(state: GameState, shipId: ShipId): Ship {
  * Why `destination` is not a legal move for `shipId` in the given state,
  * under §6 alone: whose ship it is, whether it has already acted, its reach,
  * and occupancy along the way and at the destination. Says nothing about
- * §8.5's stranded-ship obligation — `movement.ts` layers that on top for the
+ * whether the game has ended — `movement.ts` layers that on top for the
  * public `moveRefusalReason`.
  */
 export function sixOnlyMoveRefusalReason(
@@ -173,8 +171,8 @@ export function sixOnlyMoveRefusalReason(
 
 /**
  * Every square `shipId` may legally move to in the given state under §6
- * alone, ignoring §8.5's stranded-ship obligation. The §6-only counterpart to
- * the public `legalDestinations` in `movement.ts`; see
+ * alone, with no awareness of whether the game has ended. The §6-only
+ * counterpart to the public `legalDestinations` in `movement.ts`; see
  * `sixOnlyMoveRefusalReason` for why it exists.
  */
 export function sixOnlyLegalDestinations(

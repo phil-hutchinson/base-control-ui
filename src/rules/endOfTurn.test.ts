@@ -165,7 +165,7 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     }
   });
 
-  it("goes dormant, carrying its level unclamped, once drain reaches or passes capacity, stranding a ship left on it", () => {
+  it("goes dormant, carrying its level unclamped, once drain reaches or passes capacity, leaving a ship on it untouched (§8.5)", () => {
     // Any drawn amount (empty table's minimum is 1) crosses capacity from
     // NODE_CAPACITY - 1, so this is deterministic without pinning a seed.
     const state = buildState({
@@ -179,24 +179,32 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     expect(result.state.siteStates.H8.level).toBeGreaterThanOrEqual(
       NODE_CAPACITY,
     );
-    expect(result.effects).toContainEqual({
-      type: "node-ran-out",
-      square: squareFromName("H8"),
-    });
-    expect(result.effects).toContainEqual({
-      type: "ship-stranded",
-      shipId: "green-1",
-      side: "green",
-      square: squareFromName("H8"),
-    });
+    expect(result.effects).toEqual([
+      {
+        type: "shield-gained",
+        shipId: "green-1",
+        side: "green",
+        square: squareFromName("H8"),
+        shields: 4,
+      },
+      {
+        type: "energy-collected",
+        side: "green",
+        amount: 1,
+        newTotal: 1,
+        squares: [squareFromName("H8")],
+      },
+      { type: "node-ran-out", square: squareFromName("H8") },
+    ]);
     // Step 1 grants green's own ship a shield for standing on a charged
     // node before step 3 spends the node — 3 rises to 4 first, then the
-    // node runs out from under it.
-    const strandedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(strandedShip?.shields).toBe(4);
+    // node runs out from under it, and the ship simply stays there.
+    const untouchedShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(untouchedShip?.shields).toBe(4);
+    expect(untouchedShip?.square).toEqual(squareFromName("H8"));
   });
 
-  it("goes dormant with no ship to strand when the node was empty", () => {
+  it("goes dormant with nothing further to report when the node was empty", () => {
     const state = buildState({
       siteStates: { H8: ["charged", NODE_CAPACITY - 1] },
     });
@@ -204,9 +212,9 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     const result = runEndOfTurnFresh(state);
 
     expect(result.state.siteStates.H8.state).toBe("dormant");
-    expect(
-      result.effects.some((effect) => effect.type === "ship-stranded"),
-    ).toBe(false);
+    expect(result.effects).toEqual([
+      { type: "node-ran-out", square: squareFromName("H8") },
+    ]);
   });
 
   it("stays charged, unaffected, when drain is nowhere near capacity", () => {

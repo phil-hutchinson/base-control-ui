@@ -145,28 +145,17 @@ describe("squareLabel", () => {
     ).toBe("M10, green ship, 4 shields, no action available this turn");
   });
 
-  it("adds 'stranded, must move this turn' as the condition", () => {
-    expect(
-      squareLabel({
-        square: squareAt("M", 10),
-        isBay: false,
-        occupant: { side: "green", shields: 4 },
-        condition: "owes-action",
-      }),
-    ).toBe("M10, green ship, 4 shields, stranded, must move this turn");
-  });
-
   it("puts the condition before the mark, when a square carries both", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
         occupant: { side: "green", shields: 4 },
-        condition: "owes-action",
+        condition: "no-action",
         mark: "selected",
       }),
     ).toBe(
-      "M10, green ship, 4 shields, stranded, must move this turn, selected",
+      "M10, green ship, 4 shields, no action available this turn, selected",
     );
   });
 

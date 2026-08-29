@@ -299,70 +299,17 @@ describe("sevenOnlyAttackRefusalReason / sevenOnlyLegalTargets", () => {
   });
 });
 
-describe("attackRefusalReason / legalTargets with the §8.5 obligation", () => {
-  it("refuses every attack, including the owing ship's own, while any ship owes an action", () => {
+describe("attackRefusalReason / legalTargets on a site that is not charged (§8.5)", () => {
+  it("neither blocks an attack nor blocks the attacker's ship from being attacked", () => {
     const state = buildState({
-      ships: [
-        ship("green-1", "green", "E7", 4),
-        ship("green-2", "green", "A1", 2),
-        ship("red-1", "red", "E8", 0),
-        ship("red-2", "red", "A2", 0),
-      ],
-      siteStates: { E7: "active" },
-    });
-
-    expect(attackRefusalReason(state, "green-2", squareFromName("A2"))).toBe(
-      "another-ship-stranded",
-    );
-    expect(attackRefusalReason(state, "green-1", squareFromName("E8"))).toBe(
-      "another-ship-stranded",
-    );
-    expect(legalTargets(state, "green-1")).toEqual([]);
-    expect(legalTargets(state, "green-2")).toEqual([]);
-  });
-
-  it("attacks are legal again for the rest of the side once the freeing move is made, but not with the ship that just made it: one action per ship (rules.md §5)", () => {
-    const state = buildState({
-      ships: [
-        ship("green-1", "green", "E8", 4),
-        ship("green-2", "green", "B2", 2),
-        ship("red-1", "red", "E9", 0),
-        ship("red-2", "red", "B1", 0),
-      ],
-      actedThisPly: ["green-1"],
-      actionsRemaining: 1,
-    });
-
-    expect(attackRefusalReason(state, "green-1", squareFromName("E9"))).toBe(
-      "ship-already-acted",
-    );
-    expect(
-      attackRefusalReason(state, "green-2", squareFromName("B1")),
-    ).toBeUndefined();
-  });
-
-  it("leaves attacks legal for the whole side when a stranded ship's obligation is waived", () => {
-    const boxedInSquare = "H8";
-    const state = buildState({
-      ships: [
-        ship("green-1", "green", boxedInSquare, 4),
-        ship("red-1", "red", "H9", 0),
-        ship("red-2", "red", "H7", 0),
-        ship("red-3", "red", "I8", 0),
-        ship("red-4", "red", "G8", 0),
-        ship("green-2", "green", "B2", 2),
-        ship("red-5", "red", "B1", 0),
-      ],
-      siteStates: { [boxedInSquare]: "dormant" },
-      actionsRemaining: 1,
+      ships: [ship("green-1", "green", "E7", 4), ship("red-1", "red", "E8", 0)],
+      siteStates: { E7: "active", E8: "dormant" },
     });
 
     expect(
-      attackRefusalReason(state, "green-1", squareFromName("H9")),
+      attackRefusalReason(state, "green-1", squareFromName("E8")),
     ).toBeUndefined();
-    expect(
-      attackRefusalReason(state, "green-2", squareFromName("B1")),
-    ).toBeUndefined();
+    expect(legalTargets(state, "green-1")).toContainEqual(squareFromName("E8"));
   });
 });
 

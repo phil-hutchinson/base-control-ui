@@ -61,14 +61,6 @@ export interface NodeRanOutEffect {
   readonly square: Square;
 }
 
-/** A ship was left standing on a site that ran out underneath it (§8.6 step 3, §8.5). */
-export interface ShipStrandedEffect {
-  readonly type: "ship-stranded";
-  readonly shipId: ShipId;
-  readonly side: Side;
-  readonly square: Square;
-}
-
 /** A dormant site finished recovering and went active, at pressure 1 (§8.6 step 6, §8.2). */
 export interface SiteWentActiveEffect {
   readonly type: "site-went-active";
@@ -80,7 +72,6 @@ export type EndOfTurnEffect =
   | ShieldGainedEffect
   | EnergyCollectedEffect
   | NodeRanOutEffect
-  | ShipStrandedEffect
   | SiteChargedEffect
   | SiteWentActiveEffect;
 
@@ -162,7 +153,8 @@ export function runEndOfTurn(
   // Step 3: every charged node adds its drain — drawn from the held table if
   // a ship of either side is standing on it right now, the empty table
   // otherwise — and any that reaches capacity goes dormant carrying its
-  // drain unclamped (§8.3), stranding any ship left standing on it (§8.5).
+  // drain unclamped (§8.3). A ship left standing on it simply stays there,
+  // collecting nothing (§8.5).
   for (const square of SITES) {
     const name = squareName(square);
     const status = workingState.siteStates[name];
@@ -189,16 +181,6 @@ export function runEndOfTurn(
 
     if (nextStatus.state === "dormant") {
       effects.push({ type: "node-ran-out", square });
-
-      const occupant = occupants.get(name);
-      if (occupant !== undefined) {
-        effects.push({
-          type: "ship-stranded",
-          shipId: occupant.id,
-          side: occupant.side,
-          square,
-        });
-      }
     }
   }
 

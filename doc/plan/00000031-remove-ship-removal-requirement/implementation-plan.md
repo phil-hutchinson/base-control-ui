@@ -636,7 +636,45 @@ returns nothing.
 
 ## Step 3 — §8.5's obligation deleted, root and branch
 
-Status: pending
+Status: implemented
+
+Notes: Deleted `stranded.ts` and `stranded.test.ts`; dropped
+`another-ship-stranded` from `MoveRefusalReason` and `AttackRefusalReason`
+and the obligation checks that consulted it in `movement.ts` and
+`combat.ts`; removed `ShipStrandedEffect` from `endOfTurn.ts` and step 3's
+raising of it (the `occupants` lookup it used stays, still needed for the
+held/empty drain table choice); reworded doc comments in `moveLegality.ts`,
+`movement.ts`, `combat.ts` and `actions.ts` that named §8.5 as the reason
+for the two-layer split, without collapsing the split itself (that is step
+6's job). On the board: removed `owedShipIds`/`strandedShipIds` and the
+`owes-action` branch from `Board.tsx`'s `shipCondition`; reduced
+`ShipCondition` to the single member `"no-action"` in `squareLabel.ts`,
+dropping its wording row (D9); deleted `OwesActionMark` and its now-unused
+`CHEVRON_*` constants from `BoardSquare.tsx`; deleted the blink keyframes,
+the owes-action class rule and its reduced-motion override from
+`BoardSquare.css`; dropped the `ship-stranded` clause and the
+`another-ship-stranded` rejection sentence from `announcements.ts`. Updated
+every test file the plan named (`movement.test.ts`, `combat.test.ts`,
+`endOfTurn.test.ts`, `actions.test.ts`, `ply.test.ts`, `chargeDraw.test.ts`,
+`Board.test.tsx`, `BoardSquare.test.tsx`, `squareLabel.test.ts`,
+`announcements.test.ts`), replacing each obligation-era case with one
+proving the corresponding new-rule fact (a ship on a dormant/active site is
+free, its fleet-mates are unaffected, and a node running out under a ship
+raises only `node-ran-out` and leaves the ship in place). One test needed a
+correction beyond the plan's description: `endOfTurn.test.ts`'s rewritten
+"leaving a ship on it untouched" case initially omitted the
+`energy-collected` effect that step 2 still produces for the ship's last
+turn holding the node before it runs out in step 3 — added it once the
+first run flagged the mismatch, rather than dropping the assertion. Also
+reworded two stray comments in `ply.test.ts` (§8.7 regression tests) that
+justified a charged-not-active attacker square by citing the now-deleted
+stranding refusal; the constraint itself was left as unnecessary but
+harmless test setup, per the step's "no behaviour change beyond §8.5"
+scope. `npm run typecheck`, `npm run lint`, `npm test` (696 passed) and
+`npm run format:check` all pass; `grep -rni "strand" src` returns nothing.
+`winnerAdvance`'s site-state skip and the `sixOnly`/`sevenOnly` layering
+were deliberately left untouched, per the plan's step 4 and step 6
+boundaries.
 
 Delete stranding from the rules layer, from the end-of-turn effects and from
 the board, in one step. **D8** explains why it is one step and not several: the

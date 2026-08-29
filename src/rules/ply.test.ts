@@ -20,7 +20,6 @@ import {
 import { drawIndex } from "./random";
 import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
-import { strandedShipIds } from "./stranded";
 
 function ship(
   id: ShipId,
@@ -946,7 +945,7 @@ describe("applyAttack", () => {
     });
   });
 
-  it("un-strands by force: a ship stranded on a dormant site that is beaten in a fight is in a bay and owes nothing on its owner's next turn", () => {
+  it("beats a ship standing on a dormant site into a bay, with nothing constraining its owner's next turn (§8.5)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E5", 0), ship("red-1", "red", "F5", 2)],
       siteStates: { E5: "dormant" },
@@ -965,7 +964,6 @@ describe("applyAttack", () => {
     expect(beatenShip).toBeDefined();
     expect(beatenShip && isBay(beatenShip.square)).toBe(true);
     expect(beatenShip?.shields).toBe(0);
-    expect(strandedShipIds(result.state)).not.toContain("green-1");
   });
 
   it("marks the attacker as having acted on a mutual return, even though it ends the action in a bay itself", () => {
@@ -1200,9 +1198,6 @@ describe("the winner's advance (rules.md §7)", () => {
   });
 
   it("changes no site on a defender's win, even with active sites on the lane and on the bay the loser is placed in", () => {
-    // The attacker's own square is charged, not active — an active site
-    // would strand the attacker itself (§8.5) and refuse the attack before
-    // any of this could be observed.
     const state = buildState({
       ships: [ship("green-1", "green", "H6", 1), ship("red-1", "red", "H8", 3)],
       siteStates: { H6: "charged", H7: "active", H15: "active" },
@@ -1222,12 +1217,10 @@ describe("the winner's advance (rules.md §7)", () => {
   });
 
   it("changes no site on a mutual return, even with an active site on the defender's own square, on the lane, and on both bays the ships are placed in", () => {
-    // The attacker's own square is charged, not active — an active site
-    // would strand the attacker itself (§8.5) and refuse the attack before
-    // any of this could be observed. Five sites elsewhere are also charged,
-    // so the end-of-turn charge draw the fight's own ply-end triggers has
-    // no shortfall to fill and cannot touch H8 either — the only source of
-    // any site-state change under test here is the fight itself.
+    // Five sites elsewhere are already charged, so the end-of-turn charge
+    // draw the fight's own ply-end triggers has no shortfall to fill and
+    // cannot touch H8 either — the only source of any site-state change
+    // under test here is the fight itself.
     const state = buildState({
       ships: [ship("green-1", "green", "H6", 2), ship("red-1", "red", "H8", 2)],
       siteStates: {

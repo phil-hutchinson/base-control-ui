@@ -6,17 +6,14 @@
 // is spoken, not drawn: the ring here is a plain cue, the same for a win, a
 // loss or a mutual return.
 //
-// Having moved this ply and a ship's condition (no action available, or
-// owing an action) are separate, independently optional fields from each
-// other and from the selection mark, so a square can carry any combination
-// of the three at once. A ship with no legal action available at all —
-// because it is pinned, because it has moved and has no attack target left,
-// or because an obligation elsewhere in the fleet is holding it back — is
-// drawn dampened; a ship that owes an action blinks between full and
-// dampened opacity instead, its static mark alone carrying the meaning under
-// prefers-reduced-motion. Having moved never dampens a ship by itself: it
-// stays a plain fact, drawn as a bar at the square's top edge so it cannot
-// collide with a condition mark at the bottom.
+// Having moved this ply and a ship's condition (no action available) are
+// separate, independently optional fields from each other and from the
+// selection mark, so a square can carry any combination of the three at
+// once. A ship with no legal action available at all — because it is
+// pinned, or because it has moved and has no attack target left — is drawn
+// dampened. Having moved never dampens a ship by itself: it stays a plain
+// fact, drawn as a bar at the square's top edge so it cannot collide with a
+// condition mark at the bottom.
 
 import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
@@ -49,10 +46,6 @@ const CONDITION_BAR_HEIGHT = 5;
 const CONDITION_BAR_BOTTOM_INSET = 8;
 const CONDITION_BAR_STROKE_WIDTH = 2;
 const ALREADY_ACTED_BAR_TOP_INSET = 8;
-const CHEVRON_WIDTH = 24;
-const CHEVRON_HEIGHT = 10;
-const CHEVRON_BOTTOM_INSET = 8;
-const CHEVRON_STROKE_WIDTH = 5;
 const DAMPENED_OPACITY = 0.45;
 
 interface BracketCorner {
@@ -192,28 +185,6 @@ function NoActionMark() {
   );
 }
 
-/** A chevron near the bottom edge, pointing up at the ship that owes an action: "this one". */
-function OwesActionMark() {
-  const tipY = 100 - CHEVRON_BOTTOM_INSET - CHEVRON_HEIGHT;
-  const baseY = 100 - CHEVRON_BOTTOM_INSET;
-  return (
-    <svg
-      className="board-square__mark board-square__mark--owes-action"
-      viewBox="0 0 100 100"
-      aria-hidden="true"
-    >
-      <path
-        d={`M ${50 - CHEVRON_WIDTH / 2} ${baseY} L 50 ${tipY} L ${50 + CHEVRON_WIDTH / 2} ${baseY}`}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={CHEVRON_STROKE_WIDTH}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 /** One square's visible contents: a site marker, a ship, and a selection marking, each if present. */
 export function BoardSquare({
   isBay,
@@ -232,9 +203,6 @@ export function BoardSquare({
   const isDampened = condition === "no-action";
   if (isDampened) {
     classNames.push("board-square--dampened");
-  }
-  if (condition === "owes-action") {
-    classNames.push("board-square--owes-action");
   }
 
   // Threads DAMPENED_OPACITY into BoardSquare.css as the one place it is
@@ -260,7 +228,6 @@ export function BoardSquare({
       {typeof mark === "object" && mark.kind === "target" && <TargetMark />}
       {hasActed && <AlreadyActedMark />}
       {condition === "no-action" && <NoActionMark />}
-      {condition === "owes-action" && <OwesActionMark />}
     </div>
   );
 }

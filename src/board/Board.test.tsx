@@ -895,11 +895,11 @@ describe("Board", () => {
   });
 
   describe("ship conditions", () => {
-    // A minimal, hand-built state: green-1 owes an action on a dormant
-    // site, green-2 and green-3 are ordinary green ships elsewhere with a
-    // normal move available (until the obligation binds), and red-1 is the
-    // opponent, present to confirm it never carries a condition.
-    function strandedState(actionsRemaining: number): GameState {
+    // A minimal, hand-built state: green-1 stands on a dormant site,
+    // green-2 and green-3 are ordinary green ships elsewhere with a normal
+    // move available, and red-1 is the opponent, present to confirm it
+    // never carries a condition.
+    function dormantSiteState(actionsRemaining: number): GameState {
       return {
         ships: [
           {
@@ -938,9 +938,9 @@ describe("Board", () => {
       };
     }
 
-    it("names the stranded ship's square, and dampens the rest of the fleet from the same moment", () => {
+    it("names a ship standing on a dormant site plainly, with no condition, and leaves the rest of the fleet ordinary", () => {
       const session: Session = {
-        state: strandedState(1),
+        state: dormantSiteState(1),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -948,26 +948,22 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, dormant site, green ship, 0 shields, stranded, must move this turn",
+          name: "H4, dormant site, green ship, 0 shields",
         }),
       ).toBeInTheDocument();
-      // The obligation binds the turn's action, so green-2 and green-3 read
-      // as having no action available even though neither has acted yet.
+      // Nothing holds the rest of the fleet back: green-2 and green-3 both
+      // have an ordinary move available and carry no condition.
       expect(
-        screen.getByRole("gridcell", {
-          name: "A1, green ship, 0 shields, no action available this turn",
-        }),
+        screen.getByRole("gridcell", { name: "A1, green ship, 0 shields" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", {
-          name: "B2, green ship, 0 shields, no action available this turn",
-        }),
+        screen.getByRole("gridcell", { name: "B2, green ship, 0 shields" }),
       ).toBeInTheDocument();
     });
 
-    it("combines a condition and a selection mark, condition first", () => {
+    it("combines the selected mark with an otherwise plain name for a ship on a dormant site", () => {
       const session: Session = {
-        state: strandedState(1),
+        state: dormantSiteState(1),
         selectedShipId: "green-1",
         lastEvent: undefined,
       };
@@ -975,14 +971,14 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, dormant site, green ship, 0 shields, stranded, must move this turn, selected",
+          name: "H4, dormant site, green ship, 0 shields, selected",
         }),
       ).toBeInTheDocument();
     });
 
-    it("dampens the rest of the moving side once the obligation binds, but not the owed ship", () => {
+    it("reads a ship that has already acted as such, without holding the rest of the fleet back", () => {
       const state: GameState = {
-        ...strandedState(1),
+        ...dormantSiteState(1),
         actedThisPly: ["green-2"],
       };
       const session: Session = {
@@ -994,31 +990,27 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, dormant site, green ship, 0 shields, stranded, must move this turn",
+          name: "H4, dormant site, green ship, 0 shields",
         }),
       ).toBeInTheDocument();
-      // Green-2 has already acted this ply moving elsewhere, has no enemy
-      // adjacent to attack, and the obligation would refuse the attack
-      // anyway — so it reads as both "already acted" and "no action
-      // available", dampened.
+      // Green-2 has already acted this ply moving elsewhere, and has no
+      // enemy adjacent to attack, so it reads as both "already acted" and
+      // "no action available", dampened.
       expect(
         screen.getByRole("gridcell", {
           name: "A1, green ship, 0 shields, already acted this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
-      // Green-3 has not moved and would have a normal move under §6 alone,
-      // but the obligation now binds every action, so it reads as having no
-      // action available — not as "already acted".
+      // Green-3 has not acted and has a normal move available under §6, so
+      // it carries no condition at all.
       expect(
-        screen.getByRole("gridcell", {
-          name: "B2, green ship, 0 shields, no action available this turn",
-        }),
+        screen.getByRole("gridcell", { name: "B2, green ship, 0 shields" }),
       ).toBeInTheDocument();
     });
 
-    it("never gives the opponent's ship a condition, whatever the moving side's ships owe", () => {
+    it("never gives the opponent's ship a condition", () => {
       const session: Session = {
-        state: strandedState(1),
+        state: dormantSiteState(1),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -1029,7 +1021,7 @@ describe("Board", () => {
       ).toBeInTheDocument();
     });
 
-    it("names a pinned ship 'no action available', with nothing stranded anywhere", () => {
+    it("names a pinned ship 'no action available'", () => {
       // green-1 sits at H8 with 4 shields, so its only reach is the four
       // orthogonal neighbours (rules.md §6) — all four occupied by *friendly*
       // ships, leaving it with no legal destination. Blocking with green
