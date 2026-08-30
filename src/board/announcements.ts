@@ -59,10 +59,6 @@ function targetsPhrase(count: number): string {
   return `${count} ${count === 1 ? "target" : "targets"}`;
 }
 
-function shieldsPhrase(count: number): string {
-  return `${count} ${count === 1 ? "shield" : "shields"}`;
-}
-
 function roundsPhrase(count: number): string {
   return `${count} ${count === 1 ? "round" : "rounds"}`;
 }
@@ -389,24 +385,10 @@ function actionEndingClause(
 }
 
 /**
- * The winning attacker's advance clause (rules.md §7): where it ended up, or
- * that it held its ground when no square on the lane was legal to end on.
- */
-function winnerAdvanceClause(
-  winner: NonNullable<FightResolvedEffect["winner"]>,
-): string {
-  if (!winner.advanced) {
-    return "It held its ground.";
-  }
-
-  return `It advanced to ${squareName(winner.square)} and took it.`;
-}
-
-/**
  * The fight's own sentence (rules.md §7), from the single `fight-resolved`
- * effect an attack always carries. The losing-attacker sentence reads as a
- * deliberate choice, not an error: §7 permits attacking a stronger enemy, and
- * stripping its shields at the cost of the attacker's own is a real tactic.
+ * effect an attack always carries: who attacked whom, that both were beaten,
+ * and the two bays they landed in with no shields. There is no winner and no
+ * advance to report — every fight has the same outcome.
  */
 function fightSentence(event: AttackedEvent): string {
   const fight = event.effects.find(
@@ -423,27 +405,8 @@ function fightSentence(event: AttackedEvent): string {
   const attackerSide = capitalize(fight.attacker.side);
   const opening = `${attackerSide} ship at ${attackerSquare} attacked the ${fight.defender.side} ship at ${defenderSquare}`;
 
-  if (fight.outcome === "mutual-return") {
-    const [attackerReturn, defenderReturn] = fight.returns;
-    return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both with no shields.`;
-  }
-
-  if (fight.winner === undefined) {
-    throw new RangeError(
-      "a decided fight always carries a winner: rules.md §7",
-    );
-  }
-
-  if (fight.outcome === "attacker-won") {
-    const [defenderReturn] = fight.returns;
-    const cost = fight.defender.shields + 1;
-    const advanceClause = winnerAdvanceClause(fight.winner);
-    return `${opening} and won. ${advanceClause} The beaten ship returned to the ${squareName(defenderReturn.to)} bay with no shields. The fight cost ${shieldsPhrase(cost)}, leaving the winner on ${fight.winner.remainingShields}.`;
-  }
-
-  const [attackerReturn] = fight.returns;
-  const cost = fight.attacker.shields + 1;
-  return `${opening} and lost. The beaten ship returned to the ${squareName(attackerReturn.to)} bay with no shields. The fight cost the defender ${shieldsPhrase(cost)}, leaving it on ${fight.winner.remainingShields}.`;
+  const [attackerReturn, defenderReturn] = fight.returns;
+  return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both with no shields.`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {

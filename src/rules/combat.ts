@@ -1,11 +1,10 @@
-// Combat (rules.md §7, §3.1): who may attack whom, and where a winning
-// attacker ends up. This is the only implementation of §7 in the app, the way
+// Combat (rules.md §7, §3.1): who may attack whom, and where a returning
+// ship lands. This is the only implementation of §7 in the app, the way
 // `movement.ts` is the only implementation of §6. Attack range **is** §6's
 // movement range: a ship attacks exactly as far as it moves, path and all, so
 // `attackReach` reads `reachFrom` (rules.md §6) rather than carrying a second
 // copy of the table. There is one implementation of the table, and both
-// sections read it. `winnerAdvance` walks that same lane backwards from the
-// loser's square to find where the winner may legally come to rest.
+// sections read it.
 
 import { type Square, squareName } from "./board";
 import { BAYS, isBay } from "./bays";
@@ -14,15 +13,14 @@ import { isGameOver } from "./gameLength";
 import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
 import { type ReachEntry, findShip, reachFrom } from "./movement";
 import { drawIndex } from "./random";
-import { type ShieldCount, isShieldCount } from "./shields";
 
 /**
  * The lane `shipId` would attack down to reach `target`: the `ReachEntry`
  * from `reachFrom(attacker.square, attacker.shields)` whose `destination` is
  * `target`, or `undefined` when `target` is outside the attacker's reach
  * altogether. Purely geometric — no ownership, no bays, no occupancy, no
- * awareness of whose ply it is — so both the legality check below and
- * `winnerAdvance` share one answer to "what lane is this".
+ * awareness of whose ply it is — so the legality check below is the only
+ * reader of this answer to "what lane is this".
  */
 export function attackReach(
   state: GameState,
@@ -35,45 +33,6 @@ export function attackReach(
   return reachFrom(attacker.square, attacker.shields).find(
     (entry) => squareName(entry.destination) === targetName,
   );
-}
-
-/**
- * Where a winning attacker ends up (rules.md §7): scanning `reach`'s lane
- * backwards from the loser's square towards the attacker, the furthest
- * square it may legally end on — §6's restriction, which is occupancy alone.
- * Shaped as the sub-lane the winner actually travels (`destination` is the
- * square it stops on, `passedOver` the lane squares before it). `undefined`
- * when no square on the lane qualifies, meaning the winner holds its ground.
- *
- * `reach` is the attack's own `ReachEntry`, exactly as `attackReach` found
- * it. Occupancy is re-checked here even though the lane was clear when the
- * attack was judged, because the loser's return may have placed it on a bay
- * that sits on that same lane; a candidate the winner cannot reach without
- * crossing an occupied square is skipped, as is an occupied candidate itself.
- */
-export function winnerAdvance(
-  state: GameState,
-  reach: ReachEntry,
-): ReachEntry | undefined {
-  const lane = [...reach.passedOver, reach.destination];
-  const occupiedSquareNames = shipsBySquare(state);
-
-  for (let index = lane.length - 1; index >= 0; index--) {
-    const candidate = lane[index];
-    if (occupiedSquareNames.has(squareName(candidate))) {
-      continue;
-    }
-    if (
-      lane
-        .slice(0, index)
-        .some((square) => occupiedSquareNames.has(squareName(square)))
-    ) {
-      continue;
-    }
-    return { destination: candidate, passedOver: lane.slice(0, index) };
-  }
-
-  return undefined;
 }
 
 /**
@@ -194,59 +153,6 @@ export function legalTargets(
 }
 
 /**
- * The outcome of a fight (rules.md §7), decided by shield count alone.
- * `winnerRemainingShields` is the winner's shield count after the fight,
- * `winner − (loser + 1)` — always present with a winner, and always a valid
- * `ShieldCount`, because the winner by definition carries more shields than
- * the loser plus the one shield the fight costs.
- */
-export type FightOutcome =
-  | {
-      readonly result: "attacker-won";
-      readonly winnerRemainingShields: ShieldCount;
-    }
-  | {
-      readonly result: "defender-won";
-      readonly winnerRemainingShields: ShieldCount;
-    }
-  | { readonly result: "mutual-return" };
-
-/**
- * Decides a fight from the two ships' shield counts alone (rules.md §7). The
- * stronger ship wins and keeps `winner − (loser + 1)` shields; the weaker
- * ship is beaten — including when the **defender** is stronger, in which
- * case the defender wins and the attacker is the one sent home; equal
- * counts send both ships home.
- *
- * `winner − (loser + 1)` is asserted to be a valid `ShieldCount`: the winner
- * by definition carries strictly more shields than the loser, so
- * `winner ≥ loser + 1` and the result can never be negative.
- */
-export function resolveFight(
-  attackerShields: ShieldCount,
-  defenderShields: ShieldCount,
-): FightOutcome {
-  if (attackerShields === defenderShields) {
-    return { result: "mutual-return" };
-  }
-
-  const winnerShields =
-    attackerShields > defenderShields
-      ? attackerShields - (defenderShields + 1)
-      : defenderShields - (attackerShields + 1);
-
-  if (!isShieldCount(winnerShields)) {
-    throw new RangeError(
-      `a fight's winner cannot end with ${winnerShields} shields`,
-    );
-  }
-
-  return attackerShields > defenderShields
-    ? { result: "attacker-won", winnerRemainingShields: winnerShields }
-    : { result: "defender-won", winnerRemainingShields: winnerShields };
-}
-
-/**
  * The bay a returning ship lands in, drawn at random from the bays that are
  * empty right now (rules.md §7.1): a seed in, `[bay: Square, nextSeed: number]`
  * out, in the shape `drawIndex` and `mulberry32` already use. The pool
@@ -255,8 +161,8 @@ export function resolveFight(
  * a ship moving out of a bay as one action can change the answer for a later
  * one. The caller must store the returned seed.
  *
- * On a mutual return, call this once to place the attacker, then call it
- * again against the state that already holds the attacker **and the
+ * Every fight returns two ships: call this once to place the attacker, then
+ * call it again against the state that already holds the attacker **and the
  * advanced seed** to place the defender — there is no separate "second
  * draw" function.
  *

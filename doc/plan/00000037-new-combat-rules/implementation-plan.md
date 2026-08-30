@@ -1000,7 +1000,52 @@ either ship's shields, and the ring drawn on the board is unchanged.
 
 ## Step 4 — Every fight is a draw
 
-Status: pending
+Status: committed
+
+Notes: `combat.ts` lost `FightOutcome`, `resolveFight` and `winnerAdvance`
+(with the now-unused `ShieldCount`/`isShieldCount` imports), kept
+`attackReach` and `drawReturnBay` with corrected comments, and the module
+comment now describes "who may attack whom, and where a returning ship
+lands." `ply.ts`'s `FightResolvedEffect` lost `outcome` and `winner`,
+`AdvancingWinner` is deleted, `assertFightInvariants` dropped its fourth
+parameter and every lane/crossing check (per D7, its site-state check
+message still cites the vacating rule applied afterwards — correct for this
+step, step 5's job to fix), and `applyAttack` collapsed to the single
+mutual-return body. `announcements.ts` deleted `winnerAdvanceClause` and the
+now-dead `shieldsPhrase` helper (unused once the two decided-fight sentences
+it served were removed — not called out explicitly in the plan text but
+required by `noUnusedLocals`), and `fightSentence` collapsed to the one
+sentence per D13.
+
+Tests: rewrote `combat.test.ts`'s deleted `resolveFight`/`winnerAdvance`
+describes away along with their now-unused imports
+(`COLUMN_LETTERS`/`squareAt`/`BOARD_SIZE`/`ReachEntry`/`reachFrom`/`MAX_SHIELDS`/
+`MIN_SHIELDS`/`SITES`/`ALL_SHIELD_COUNTS`); reworked `ply.test.ts`'s
+`applyAttack` describe into the single-outcome shape (a parameterised
+4-vs-0/2-vs-2/0-vs-4 case, seed-advances-twice, both-bays-distinct, and the
+"marks the attacker as acted" case), deleted the "winner's advance" describe
+outright (its every case is now illegal or meaningless), fixed the fight leg
+of "nothing a ship does changes any site's state" and `assertFightInvariants`
+(dropped the two lane/crossing cases, all remaining calls lose their fourth
+argument), and deleted the now-unused `shipsFillingEveryBayExcept` helper;
+`fullGame.test.ts`'s two "draws a beaten ship's return only from the bays
+empty at the start" cases now expect two returns as D9/the plan's own
+verification anticipated; `announcements.test.ts`'s combat describe
+collapsed to four cases proving the one sentence (naming both ships and both
+bays, never a winner), and its two other `FightResolvedEffect` fixtures
+(the §8.7 node-vacated-by-a-fight case, and the game-ending-attack case) lost
+`outcome`/`winner` and gained a second `returns` entry; `Board.test.tsx`'s
+"keeps focus on the attacked square" test was retitled and now asserts the
+square is empty afterwards with the new sentence, rather than showing a
+"winner". `seededReplay.test.ts` needed no edit, exactly as D9 predicted.
+
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+all pass (772 tests). `grep -rn "winnerAdvance\|resolveFight\|FightOutcome\|attacker-won\|defender-won" src/`
+and a separate check for `AdvancingWinner`/`PredictedFightOutcome` both
+return nothing. No deviation from the plan beyond the `shieldsPhrase`
+deletion noted above, which the plan didn't call out by name but which
+`noUnusedLocals` requires once its only two call sites were removed with the
+decided-fight sentences.
 
 Collapse combat to its single outcome. This is the story's central change and it
 is one behaviour with one verification point: **any two ships that fight both

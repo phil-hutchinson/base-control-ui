@@ -369,7 +369,6 @@ describe("announcementFor — a node vacated (rules.md §8.7)", () => {
   it("reads acceptably twice in a row, when a drawn fight vacates two nodes at once", () => {
     const fight: FightResolvedEffect = {
       type: "fight-resolved",
-      outcome: "mutual-return",
       attacker: {
         shipId: "green-1",
         side: "green",
@@ -1330,7 +1329,6 @@ describe("announcementForSession", () => {
     });
     const fight: FightResolvedEffect = {
       type: "fight-resolved",
-      outcome: "attacker-won",
       attacker: {
         shipId: "green-1",
         side: "green",
@@ -1343,13 +1341,13 @@ describe("announcementForSession", () => {
         square: squareAt("H", 9),
         shields: 1,
       },
-      winner: {
-        shipId: "green-1",
-        remainingShields: 1,
-        square: squareAt("H", 9),
-        advanced: true,
-      },
       returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("H", 8),
+          to: squareAt("A", 1),
+        },
         {
           shipId: "red-1",
           side: "red",
@@ -1376,7 +1374,7 @@ describe("announcementForSession", () => {
       lastEvent: event,
     };
     expect(announcementForSession(session)).toBe(
-      "Green ship at H8 attacked the red ship at H9 and won. It advanced to H9 and took it. The beaten ship returned to the A8 bay with no shields. The fight cost 2 shields, leaving the winner on 1. The game is over after 3 rounds. Green wins, 9 energy to 2.",
+      "Green ship at H8 attacked the red ship at H9 and both were beaten. The attacker returned to the A1 bay and the defender to the A8 bay, both with no shields. The game is over after 3 rounds. Green wins, 9 energy to 2.",
     );
   });
 
@@ -1418,108 +1416,10 @@ describe("announcementForSession", () => {
   });
 });
 
-describe("announcementFor — combat (rules.md \u00a77)", () => {
-  it("announces the attacker winning: outcome, bay and shield cost", () => {
+describe("announcementFor — combat (rules.md §7)", () => {
+  it("announces a fight, naming both ships and both bays", () => {
     const fight: FightResolvedEffect = {
       type: "fight-resolved",
-      outcome: "attacker-won",
-      attacker: {
-        shipId: "green-1",
-        side: "green",
-        square: squareAt("J", 4),
-        shields: 4,
-      },
-      defender: {
-        shipId: "red-1",
-        side: "red",
-        square: squareAt("K", 5),
-        shields: 0,
-      },
-      winner: {
-        shipId: "green-1",
-        remainingShields: 3,
-        square: squareAt("K", 5),
-        advanced: true,
-      },
-      returns: [
-        {
-          shipId: "red-1",
-          side: "red",
-          from: squareAt("K", 5),
-          to: squareAt("D", 1),
-        },
-      ],
-    };
-    const event: AttackedEvent = {
-      type: "attacked",
-      shipId: "green-1",
-      side: "green",
-      from: squareAt("J", 4),
-      target: squareAt("K", 5),
-      effects: [fight],
-      actionsRemaining: 1,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship at J4 attacked the red ship at K5 and won. " +
-        "It advanced to K5 and took it. " +
-        "The beaten ship returned to the D1 bay with no shields. " +
-        "The fight cost 1 shield, leaving the winner on 3. " +
-        "Green has 1 action left.",
-    );
-  });
-
-  it("announces the defender winning, read as a real choice rather than an error", () => {
-    const fight: FightResolvedEffect = {
-      type: "fight-resolved",
-      outcome: "defender-won",
-      attacker: {
-        shipId: "green-1",
-        side: "green",
-        square: squareAt("G", 9),
-        shields: 1,
-      },
-      defender: {
-        shipId: "red-1",
-        side: "red",
-        square: squareAt("H", 9),
-        shields: 3,
-      },
-      winner: {
-        shipId: "red-1",
-        remainingShields: 1,
-        square: squareAt("H", 9),
-        advanced: false,
-      },
-      returns: [
-        {
-          shipId: "green-1",
-          side: "green",
-          from: squareAt("G", 9),
-          to: squareAt("D", 1),
-        },
-      ],
-    };
-    const event: AttackedEvent = {
-      type: "attacked",
-      shipId: "green-1",
-      side: "green",
-      from: squareAt("G", 9),
-      target: squareAt("H", 9),
-      effects: [fight],
-      actionsRemaining: 1,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship at G9 attacked the red ship at H9 and lost. " +
-        "The beaten ship returned to the D1 bay with no shields. " +
-        "The fight cost the defender 2 shields, leaving it on 1. " +
-        "Green has 1 action left.",
-    );
-  });
-
-  it("announces a mutual return, naming both bays", () => {
-    const fight: FightResolvedEffect = {
-      type: "fight-resolved",
-      outcome: "mutual-return",
       attacker: {
         shipId: "green-1",
         side: "green",
@@ -1563,10 +1463,57 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
     );
   });
 
+  it("announces a fight whatever shields either ship carried, never naming a winner", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("J", 4),
+        shields: 4,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("K", 5),
+        shields: 0,
+      },
+      returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("J", 4),
+          to: squareAt("A", 6),
+        },
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("K", 5),
+          to: squareAt("D", 1),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("J", 4),
+      target: squareAt("K", 5),
+      effects: [fight],
+      actionsRemaining: 1,
+    };
+    const sentence = announcementFor(event);
+    expect(sentence).toBe(
+      "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
+        "The attacker returned to the A6 bay and the defender to the D1 bay, both with no shields. " +
+        "Green has 1 action left.",
+    );
+    expect(sentence).not.toMatch(/won|lost|advance|held its ground/);
+  });
+
   it("carries the same ending clause a move uses when an attack ends the ply", () => {
     const fight: FightResolvedEffect = {
       type: "fight-resolved",
-      outcome: "attacker-won",
       attacker: {
         shipId: "green-1",
         side: "green",
@@ -1579,13 +1526,13 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
         square: squareAt("K", 5),
         shields: 0,
       },
-      winner: {
-        shipId: "green-1",
-        remainingShields: 0,
-        square: squareAt("K", 5),
-        advanced: true,
-      },
       returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("J", 4),
+          to: squareAt("A", 6),
+        },
         {
           shipId: "red-1",
           side: "red",
@@ -1607,10 +1554,8 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship at J4 attacked the red ship at K5 and won. " +
-        "It advanced to K5 and took it. " +
-        "The beaten ship returned to the D1 bay with no shields. " +
-        "The fight cost 1 shield, leaving the winner on 0. " +
+      "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
+        "The attacker returned to the A6 bay and the defender to the D1 bay, both with no shields. " +
         "Red's turn, 1 action left.",
     );
   });
@@ -1618,7 +1563,6 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
   it("carries a following pass when the fight leaves the other side with nothing to do", () => {
     const fight: FightResolvedEffect = {
       type: "fight-resolved",
-      outcome: "attacker-won",
       attacker: {
         shipId: "green-1",
         side: "green",
@@ -1631,13 +1575,13 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
         square: squareAt("K", 5),
         shields: 0,
       },
-      winner: {
-        shipId: "green-1",
-        remainingShields: 0,
-        square: squareAt("K", 5),
-        advanced: true,
-      },
       returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("J", 4),
+          to: squareAt("A", 6),
+        },
         {
           shipId: "red-1",
           side: "red",
@@ -1660,60 +1604,9 @@ describe("announcementFor — combat (rules.md \u00a77)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship at J4 attacked the red ship at K5 and won. " +
-        "It advanced to K5 and took it. " +
-        "The beaten ship returned to the D1 bay with no shields. " +
-        "The fight cost 1 shield, leaving the winner on 0. " +
+      "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
+        "The attacker returned to the A6 bay and the defender to the D1 bay, both with no shields. " +
         "Red has no legal action, so the turn passes. Green's turn, 1 action left.",
-    );
-  });
-
-  it("announces a winner that held its ground, with no square named", () => {
-    const fight: FightResolvedEffect = {
-      type: "fight-resolved",
-      outcome: "attacker-won",
-      attacker: {
-        shipId: "green-1",
-        side: "green",
-        square: squareAt("A", 6),
-        shields: 4,
-      },
-      defender: {
-        shipId: "red-1",
-        side: "red",
-        square: squareAt("B", 6),
-        shields: 3,
-      },
-      winner: {
-        shipId: "green-1",
-        remainingShields: 3,
-        square: squareAt("A", 6),
-        advanced: false,
-      },
-      returns: [
-        {
-          shipId: "red-1",
-          side: "red",
-          from: squareAt("B", 6),
-          to: squareAt("D", 1),
-        },
-      ],
-    };
-    const event: AttackedEvent = {
-      type: "attacked",
-      shipId: "green-1",
-      side: "green",
-      from: squareAt("A", 6),
-      target: squareAt("B", 6),
-      effects: [fight],
-      actionsRemaining: 1,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship at A6 attacked the red ship at B6 and won. " +
-        "It held its ground. " +
-        "The beaten ship returned to the D1 bay with no shields. " +
-        "The fight cost 4 shields, leaving the winner on 3. " +
-        "Green has 1 action left.",
     );
   });
 });
