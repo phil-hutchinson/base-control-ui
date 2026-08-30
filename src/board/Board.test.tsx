@@ -137,27 +137,29 @@ describe("Board", () => {
       BAYS.length,
     );
 
-    const greenPath = container.querySelector(".ship-icon--green path");
-    const redPath = container.querySelector(".ship-icon--red path");
-    expect(greenPath).toHaveAttribute("d");
-    expect(redPath).toHaveAttribute("d");
-    expect(greenPath?.getAttribute("d")).not.toBe(redPath?.getAttribute("d"));
+    const greenUse = container.querySelector(".ship-model--green > use");
+    const redUse = container.querySelector(".ship-model--red > use");
+    expect(greenUse).toHaveAttribute("href");
+    expect(redUse).toHaveAttribute("href");
+    expect(greenUse?.getAttribute("href")).not.toBe(
+      redUse?.getAttribute("href"),
+    );
   });
 
-  it("draws exactly as many lit shield arcs as the starting fleet carries, four arcs per ship", () => {
+  it("draws exactly as many lit gauge slots as the starting fleet carries shields, four slots per ship", () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,
     );
 
-    const expectedLitArcs = STARTING_FLEET.reduce(
+    const expectedLitSlots = STARTING_FLEET.reduce(
       (total, entry) => total + entry.shields,
       0,
     );
-    expect(container.querySelectorAll("[data-arc-position]")).toHaveLength(
+    expect(container.querySelectorAll("[data-gauge-slot]")).toHaveLength(
       STARTING_FLEET.length * 4,
     );
-    expect(container.querySelectorAll(".ship-icon__arc--lit")).toHaveLength(
-      expectedLitArcs,
+    expect(container.querySelectorAll('[data-gauge-lit="true"]')).toHaveLength(
+      expectedLitSlots,
     );
   });
 
@@ -359,12 +361,12 @@ describe("Board", () => {
       name: "H8, charged site, green ship, 0 shields",
     });
     expect(cell).toBeInTheDocument();
-    expect(cell.querySelector(".ship-icon--green")).toBeInTheDocument();
+    expect(cell.querySelector(".ship-model--green")).toBeInTheDocument();
     // The bay green-1 started in is empty now.
     expect(
       screen.getByRole("gridcell", { name: "H15, bay" }),
     ).toBeInTheDocument();
-    expect(container.querySelectorAll(".ship-icon--green")).toHaveLength(7);
+    expect(container.querySelectorAll(".ship-model--green")).toHaveLength(7);
   });
 
   describe("the site cycle position reaching the marker", () => {

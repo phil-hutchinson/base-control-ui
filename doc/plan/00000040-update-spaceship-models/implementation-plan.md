@@ -635,7 +635,7 @@ in `ShipModel.test.tsx`); nothing renders `ShipModel` yet, so `ShipIcon` and
 
 ## Step 4 — The board draws the new model; the old icon and arcs are deleted
 
-Status: pending
+Status: committed
 
 Switch the board over:
 
@@ -673,6 +673,35 @@ Verification (automated): `npm run typecheck`, `npm run lint`,
 anywhere in `src/` to `ShipIcon`, `shieldArcs`, `ship-icon` or
 `data-arc-position`, and the new document-wide id-uniqueness assertion passing
 on a board holding both full fleets.
+
+**Notes:** `BoardSquare.tsx` now renders `ShipModel` (from `src/ships/`) in
+place of `ShipIcon`, unchanged otherwise; `BoardSquare.css`'s dampening rule
+and comment now target `.ship-model`. Deleted `src/board/ShipIcon.tsx`,
+`.css`, `.test.tsx` and `src/board/shieldArcs.ts`, `.test.ts`. Confirmed
+nothing else referenced them with a repo-wide grep for `ShipIcon`,
+`shieldArcs`, `ship-icon` and `data-arc-position` before and after (clean
+after). Updated the surviving references: `BoardSquare.test.tsx`'s two
+`.ship-icon` selectors moved to `.ship-model`; `Board.test.tsx`'s
+"different silhouettes" test now compares the two sides' hull `<use
+href>` values instead of `<path d>`, its arc-count test became a
+gauge-slot-count test (`data-gauge-slot`/`data-gauge-lit`, same
+`STARTING_FLEET.length * 4` total and per-shield lit count), and its two
+`.ship-icon--green` selectors moved to `.ship-model--green`;
+`SiteMarker.css`'s comment now points at `ShipModel.css` instead of the
+deleted `ShipIcon.css`; `ShipModel.css`'s own comment (written in step 3,
+before this step existed) dropped its now-dangling mention of
+`ShipIcon.css` for the same reason — a small deviation from the plan's
+file list, noted here since it wasn't itself a file the plan named for
+this step, but left as one-line-stale prose would have been a comment
+describing a file that no longer exists. Added the story's section-2 check
+as a new `App.test.tsx` case: presses PLAY, confirms fourteen ship cells,
+collects every element carrying an `id` and asserts the set of values is
+exactly as large as the list — i.e. no id repeats — proving the shared
+sprite resolves without collision across a full fourteen-ship board. No
+other deviation. `npm run typecheck`, `npm run lint`, `npm run
+format:check` and `npm test` all pass (769 tests, including the new
+`App.test.tsx` case, net one fewer test file after deleting
+`ShipIcon.test.tsx` and `shieldArcs.test.ts`).
 
 ---
 

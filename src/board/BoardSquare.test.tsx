@@ -13,7 +13,7 @@ describe("BoardSquare", () => {
     const { container } = render(<BoardSquare isBay={false} squareName="H8" />);
 
     expect(container.querySelector(".site-marker")).toBeNull();
-    expect(container.querySelector(".ship-icon")).toBeNull();
+    expect(container.querySelector(".ship-model")).toBeNull();
   });
 
   it("draws the bay modifier class only when the square is a bay", () => {
@@ -45,7 +45,7 @@ describe("BoardSquare", () => {
       child.classList.contains("site-marker"),
     );
     const shipIndex = children.findIndex((child) =>
-      child.classList.contains("ship-icon"),
+      child.classList.contains("ship-model"),
     );
 
     expect(markerIndex).toBeGreaterThanOrEqual(0);

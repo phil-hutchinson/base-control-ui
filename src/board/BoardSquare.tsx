@@ -18,7 +18,7 @@
 import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
 import type { SiteState } from "../rules/sites";
-import { ShipIcon } from "./ShipIcon";
+import { ShipModel } from "../ships/ShipModel";
 import { SiteMarker } from "./SiteMarker";
 import "./BoardSquare.css";
 
@@ -33,7 +33,7 @@ export interface BoardSquareProps {
   readonly mark?: SquareMark;
 }
 
-// Geometry for the markings, in the same 0-100 viewBox ShipIcon and
+// Geometry for the markings, in the same 0-100 viewBox ShipModel and
 // SiteMarker use, so they scale with the square exactly as those do.
 const DESTINATION_DISC_RADIUS = 9;
 const TARGET_RING_RADIUS = 32;
@@ -220,7 +220,9 @@ export function BoardSquare({
           cyclePosition={cyclePosition}
         />
       )}
-      {occupant && <ShipIcon side={occupant.side} shields={occupant.shields} />}
+      {occupant && (
+        <ShipModel side={occupant.side} shields={occupant.shields} />
+      )}
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}
       {mark === "target" && <TargetMark />}

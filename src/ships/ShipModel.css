@@ -1,5 +1,5 @@
 /* Fills whatever square or wrapper the model is put in, exactly as
-   ShipIcon.css and SiteMarker.css do. No fill/stroke here: the artwork's
+   SiteMarker.css does. No fill/stroke here: the artwork's
    colours arrive as attributes, and the gauge icons rely on each `<use>`
    element's own fill/stroke being inherited into the referenced geometry,
    which a stylesheet rule would override. */
