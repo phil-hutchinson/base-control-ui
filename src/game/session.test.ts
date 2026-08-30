@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { squareFromName } from "../rules/board";
-import type { ShipId, Side } from "../rules/fleet";
+import { squareFromName, squareName } from "../rules/board";
+import {
+  DEFAULT_FLEET_SIZE,
+  startingFleet,
+  type FleetSize,
+  type ShipId,
+  type Side,
+} from "../rules/fleet";
 import {
   ACTIONS_PER_PLY,
   type GameState,
@@ -586,6 +592,7 @@ describe("sessionReducer — new-game", () => {
       type: "new-game",
       randomSeed: 42,
       lengthInRounds: 100,
+      fleetSize: DEFAULT_FLEET_SIZE,
     });
 
     expect(result.selectedShipId).toBeUndefined();
@@ -602,6 +609,7 @@ describe("sessionReducer — new-game", () => {
       type: "new-game",
       randomSeed: 7,
       lengthInRounds: 3,
+      fleetSize: DEFAULT_FLEET_SIZE,
     });
 
     expect(result.state.lengthInRounds).toBe(3);
@@ -614,13 +622,45 @@ describe("sessionReducer — new-game", () => {
       type: "new-game",
       randomSeed: 1,
       lengthInRounds: 5,
+      fleetSize: DEFAULT_FLEET_SIZE,
     });
     const second = sessionReducer(session, {
       type: "new-game",
       randomSeed: 2,
       lengthInRounds: 5,
+      fleetSize: DEFAULT_FLEET_SIZE,
     });
 
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
   });
+
+  it.each<FleetSize>([5, 6, 7])(
+    "honours the given fleet size, dealing %i ships a side on its own layout",
+    (fleetSize) => {
+      const session = sessionFor(buildState({ ships: [] }));
+
+      const result = sessionReducer(session, {
+        type: "new-game",
+        randomSeed: 9,
+        lengthInRounds: 30,
+        fleetSize,
+      });
+
+      const expectedFleet = startingFleet(fleetSize);
+      expect(result.state.ships).toHaveLength(expectedFleet.length);
+      expect(
+        result.state.ships.filter((ship) => ship.side === "green"),
+      ).toHaveLength(fleetSize);
+      expect(
+        result.state.ships.filter((ship) => ship.side === "red"),
+      ).toHaveLength(fleetSize);
+      expect(
+        new Set(result.state.ships.map((ship) => squareName(ship.square))),
+      ).toEqual(
+        new Set(expectedFleet.map((entry) => squareName(entry.square))),
+      );
+      expect(result.state.randomSeed).toBe(9);
+      expect(result.state.lengthInRounds).toBe(30);
+    },
+  );
 });

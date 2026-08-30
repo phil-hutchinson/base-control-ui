@@ -5,13 +5,26 @@ import { createSession, sessionReducer } from "./game/session";
 import { GameOverPanel } from "./hud/GameOverPanel";
 import { Hud } from "./hud/Hud";
 import { useDisplayedEnergy } from "./hud/useDisplayedEnergy";
+import { isFleetSize } from "./rules/fleet";
 import { isGameOver } from "./rules/gameLength";
-import { startingGameState } from "./rules/gameState";
+import { type GameState, startingGameState } from "./rules/gameState";
 import "./App.css";
 
 /** The starting session, built from the real starting position with a fresh seed. */
 function createStartingSession() {
   return createSession(startingGameState(freshSeed()));
+}
+
+/**
+ * A game's fleet size, as the count of one side's ships in its state.
+ * Fleet size is never stored on `GameState` itself.
+ */
+function fleetSizeOf(state: GameState) {
+  const count = state.ships.filter((ship) => ship.side === "green").length;
+  if (!isFleetSize(count)) {
+    throw new RangeError(`unexpected fleet size ${count}`);
+  }
+  return count;
 }
 
 /**
@@ -35,6 +48,7 @@ export function App() {
       type: "new-game",
       randomSeed: freshSeed(),
       lengthInRounds: session.state.lengthInRounds,
+      fleetSize: fleetSizeOf(session.state),
     });
   }
 

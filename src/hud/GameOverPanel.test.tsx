@@ -7,7 +7,7 @@ import { useReducer } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Board } from "../board/Board";
 import { squareAt, squareName } from "../rules/board";
-import { startingFleet } from "../rules/fleet";
+import { DEFAULT_FLEET_SIZE, startingFleet } from "../rules/fleet";
 import { isGameOver } from "../rules/gameLength";
 import type { GameState } from "../rules/gameState";
 import { freshSeed } from "../game/seed";
@@ -140,6 +140,7 @@ describe("GameOverPanel", () => {
           type: "new-game",
           randomSeed: freshSeed(),
           lengthInRounds: session.state.lengthInRounds,
+          fleetSize: DEFAULT_FLEET_SIZE,
         });
       }
 

@@ -792,7 +792,29 @@ step's gate — and see the round counter open at `1/30`.
 
 ## Step 6 — The `new-game` intent carries the fleet size
 
-Status: pending
+Status: committed
+
+Notes: `SessionIntent`'s `new-game` variant gained a required `fleetSize:
+FleetSize` field, and `sessionReducer` now passes it straight through to
+`startingGameState`; the doc comments on both were updated to say it carries
+all three. `App.tsx`'s `handlePlayAgain` dispatch was updated to pass the
+finished game's own fleet size via a new local `fleetSizeOf(state)` helper
+that counts green ships in `state.ships` and narrows with `isFleetSize`,
+throwing if the count is somehow not 5/6/7 (it never is in real play).
+`GameOverPanel.test.tsx`'s harness dispatch, however, could not use the same
+derivation: its hand-built `nearEndState`/`scoringNearEndState` fixtures are
+minimal stand-ins (one or two ships, all one side, zero green ships), not
+real fleets, so counting green ships would throw. Its "play again" test
+already asserts a full seven-ship game reappears afterwards, so the harness
+passes `DEFAULT_FLEET_SIZE` instead — a deviation from the plan's literal
+"derived from `state.ships`" wording for this one call site, needed because
+that derivation is inapplicable to the test's deliberately minimal states.
+`session.test.ts` gained `fleetSize: DEFAULT_FLEET_SIZE` on its three
+existing `new-game` dispatches (now required by the type) and a new
+`it.each([5, 6, 7])` case asserting the resulting session's ships match
+`startingFleet(fleetSize)`'s squares and counts per side, while still
+honouring the given seed and length. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (788 passed) all pass.
 
 In `src/game/session.ts`, the `new-game` intent grows a **fleet-size** field
 beside the `randomSeed` and `lengthInRounds` it already carries, typed as the
