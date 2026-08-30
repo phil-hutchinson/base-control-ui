@@ -16,3 +16,17 @@
   gap: clamp(1.5rem, 6vw, 4rem);
   width: 100%;
 }
+
+/* Landscape: the info region reads down as one column — title, green side,
+   round, red side, turn indicator — so this row becomes another step in that
+   column. No markup changes; `.hud`'s own column direction already puts the
+   row above the turn indicator. The portrait gap grows with the window's
+   width up to 4rem, which as a vertical gap on a wide monitor would push the
+   column far past the info region's fixed extent, so it is replaced with a
+   small fixed gap here. */
+@media (orientation: landscape) {
+  .hud__row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}

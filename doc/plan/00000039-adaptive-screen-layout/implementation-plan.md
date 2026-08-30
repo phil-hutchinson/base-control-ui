@@ -643,7 +643,33 @@ the pipeline.
 
 ## Step 3 — Landscape: three columns, and an info region that reads down
 
-Status: pending
+Status: committed
+
+Notes: `App.css` gained a landscape `@media` block that redefines
+`--region-extent` as a plain `10rem` and `--play-size` with the swapped
+formula (`min(H, W - 2(P + g))`), turns `.app__screen` into a row (same gap,
+same `safe center` centring, inherited unchanged), and gives `.app__info` and
+`.app__reserved` that width, height left to content. `10rem` was derived, not
+guessed: the widest column contents at their chosen landscape sizes are the
+title "GREED" at 2rem (~7.2rem wide, monospace + 0.12em letter-spacing) and
+the turn indicator's longest wording "Green to play" at 1.1rem (~7.15rem
+wide, proportional font, ~13 characters averaging ~0.5em), with the score
+digits, round counter and pip row narrower still; `10rem` leaves ~3rem of
+clearance beyond that pair. It was also checked against D5's own near-square
+worked example (a window with ~1000px of long-axis interior), where `10rem`
+keeps `S` at 648px — above the 600px floor — while `12rem` would drop it to
+584px, under the floor; the full derivation is written into the CSS comment
+above the media block. `.app__title` gained a landscape override
+(`font-size: 2rem`). `Hud.css` gained a landscape override making `.hud__row`
+a column with a `0.75rem` gap in place of the portrait row's
+`clamp(1.5rem, 6vw, 4rem)`. `ScoreDisplay.css`, `RoundCounter.css` and
+`TurnIndicator.css` each gained a landscape-only override replacing their
+`vw`-keyed size(s) with a fixed `rem` (score name `0.85rem`, digits `1.75rem`,
+round label `0.85rem`, round value `1.25rem`, turn indicator `1.1rem`), per
+D8's full list — not just the title. No DOM change anywhere in this step.
+`npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (764
+tests, unchanged) and `npm run build` all pass. No deviation from the step as
+written.
 
 Add the wider-than-tall arrangement as an override on step 2's rules.
 

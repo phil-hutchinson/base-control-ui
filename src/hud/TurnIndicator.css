@@ -12,3 +12,13 @@
 .turn-indicator--red {
   color: var(--color-red);
 }
+
+/* Landscape: the portrait size is keyed to the window's width, which the
+   fixed-width info column cannot follow, so it gets a fixed size here. This
+   is one of the two widest things in the column at its landscape size — see
+   the derivation in `App.css` — sized to still fit with room to spare. */
+@media (orientation: landscape) {
+  .turn-indicator {
+    font-size: 1.1rem;
+  }
+}

@@ -21,3 +21,17 @@
   color: var(--glow-text);
   text-shadow: 0 0 0.4em var(--glow-text);
 }
+
+/* Landscape: the label and the value are both sized from the window's
+   width in portrait, which the fixed-width info column cannot follow, so
+   both get a fixed size here instead. Neither is close to the widest thing
+   in the column at these sizes (see the derivation in `App.css`). */
+@media (orientation: landscape) {
+  .round-counter__label {
+    font-size: 0.85rem;
+  }
+
+  .round-counter__value {
+    font-size: 1.25rem;
+  }
+}

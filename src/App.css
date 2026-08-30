@@ -168,3 +168,66 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
+
+/* Landscape: the three regions sit side by side instead of stacked, so `P`
+   becomes a width and the play-area formula swaps which window dimension it
+   floors against. The info region's own contents restack into a column in
+   `Hud.css`; every size in that column that used to track the window's width
+   is re-keyed to a fixed size here and in the HUD's own stylesheets, because
+   a column of fixed width `P` cannot hold type sized from a window that can
+   be many times wider than the column itself.
+
+   `--region-extent` here is a plain fixed length, not a clamp, because
+   nothing left in the column varies with window width once that re-keying is
+   done. It was sized against the widest things the column holds at their
+   landscape sizes: the title "GREED" at 2rem (monospace, 0.12em
+   letter-spacing, ~7.2rem wide — see `.app__title` below) and the turn
+   indicator's longest wording, "Green to play", at 1.1rem (a proportional
+   font, roughly 13 characters averaging ~0.5em each, ~7.15rem wide) come out
+   within a whisker of each other; the score digits, the round counter and
+   the pip row are all narrower still at their own landscape sizes. `10rem`
+   leaves close to `3rem` of clearance beyond the widest of them — room to
+   breathe without being generous enough to threaten the board's floor: the
+   near-square case is the one to watch, because the mirrored reserved region
+   costs the long axis a second `P + g`, and a wider `P` than this starts
+   eating into the 600px floor exactly there (e.g. a window with ~1000px of
+   interior on its long axis leaves `S` = 648px at `P` = 10rem but only 584px
+   — under the floor — at `P` = 12rem). */
+@media (orientation: landscape) {
+  :root {
+    --region-extent: 10rem;
+    --play-size: max(
+      var(--board-floor),
+      min(
+        calc(100vh - (2 * var(--frame-inset))),
+        calc(
+          100vw - (2 * var(--frame-inset)) -
+            (2 * (var(--region-extent) + var(--region-gap)))
+        )
+      )
+    );
+  }
+
+  .app__screen {
+    /* Same regions, same gap, same `safe center` group-centring — a row
+       instead of a column, so the leftover room on an oblong window still
+       collects at the far left and far right rather than opening up next to
+       the board. */
+    flex-direction: row;
+  }
+
+  .app__info,
+  .app__reserved {
+    /* `P` is now a width; each region's height is left to its content and
+       centred against the play area by `.app__screen`'s existing cross-axis
+       centring. */
+    width: var(--region-extent);
+  }
+
+  .app__title {
+    /* The portrait `clamp(1.5rem, 4vw, 3.5rem)` grows with the window's
+       width and would overrun the fixed-width column; 2rem holds "GREED"
+       comfortably inside `--region-extent` (see the derivation above). */
+    font-size: 2rem;
+  }
+}

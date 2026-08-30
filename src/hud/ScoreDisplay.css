@@ -76,3 +76,17 @@
   border-color: var(--color-text-dim);
   opacity: 0.5;
 }
+
+/* Landscape: the name and the digits are both sized from the window's
+   width in portrait, which the fixed-width info column cannot follow, so
+   both get a fixed size here instead. Neither is close to the widest thing
+   in the column at these sizes (see the derivation in `App.css`). */
+@media (orientation: landscape) {
+  .score-display__name {
+    font-size: 0.85rem;
+  }
+
+  .score-display__digits {
+    font-size: 1.75rem;
+  }
+}
