@@ -6,7 +6,16 @@ import type { EnergyTotals, GameState } from "./gameState";
 import type { Side } from "./fleet";
 
 /** §9's default game length in rounds. The one named place this number lives. */
-export const DEFAULT_GAME_LENGTH_ROUNDS = 100;
+export const DEFAULT_GAME_LENGTH_ROUNDS = 30;
+
+/**
+ * §9's offered game lengths, shortest first — what the start screen lets a
+ * player choose between, not a restriction on what a state may hold.
+ * `isGameLengthRounds` goes on accepting any positive whole number, because
+ * the rules layer must go on accepting the short games the test suite
+ * builds; this list constrains the UI only.
+ */
+export const GAME_LENGTH_OPTIONS_ROUNDS: readonly number[] = [30, 50, 75, 100];
 
 /** Whether a value is a valid game length in rounds: a positive whole number. */
 export function isGameLengthRounds(value: number): boolean {

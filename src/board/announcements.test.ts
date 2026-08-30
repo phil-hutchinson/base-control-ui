@@ -1941,13 +1941,13 @@ describe("HUD wording", () => {
       const state = stateWith({
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        plyNumber: 69,
+        plyNumber: 39,
       });
-      expect(roundCounterText(state)).toBe("35/100");
-      expect(roundCounterSpokenText(state)).toBe("Round 35 of 100.");
+      expect(roundCounterText(state)).toBe("20/30");
+      expect(roundCounterSpokenText(state)).toBe("Round 20 of 30.");
     });
 
-    it("holds at the game's own length once the game is over, never naming a hundred", () => {
+    it("holds at the game's own length once the game is over, never naming the default length", () => {
       const state = stateWith({
         energy: { green: 0, red: 0 },
         lengthInRounds: 3,

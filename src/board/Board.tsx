@@ -4,6 +4,7 @@
 // gives it its accessible name.
 
 import { useCallback, useMemo } from "react";
+import { GAME_NAME } from "../gameName";
 import { BOARD_SIZE, squareName } from "../rules/board";
 import { isBay } from "../rules/bays";
 import { shipHasLegalAction } from "../rules/actions";
@@ -152,7 +153,7 @@ export function Board({ session, onIntent }: BoardProps) {
   return (
     <div className="board-frame">
       <AccessibleGrid
-        label="Base Control board"
+        label={`${GAME_NAME} board`}
         rows={rows}
         className="board"
         onActivate={handleActivate}

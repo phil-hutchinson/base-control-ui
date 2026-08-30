@@ -2,22 +2,30 @@ import { useReducer } from "react";
 import { Board } from "./board/Board";
 import { freshSeed } from "./game/seed";
 import { createSession, sessionReducer } from "./game/session";
+import { GAME_NAME } from "./gameName";
 import { GameOverPanel } from "./hud/GameOverPanel";
 import { Hud } from "./hud/Hud";
 import { useDisplayedEnergy } from "./hud/useDisplayedEnergy";
 import { isGameOver } from "./rules/gameLength";
 import { startingGameState } from "./rules/gameState";
+import { StartScreen } from "./start/StartScreen";
+import { useAppScreen } from "./useAppScreen";
 import "./App.css";
 
-/** The starting session, built from the real starting position with a fresh seed. */
+/**
+ * The session reducer's initial value: a real starting position, built at
+ * mount from a fresh seed, but never shown — the app opens on the start
+ * screen and this is replaced by the first PLAY press.
+ */
 function createStartingSession() {
   return createSession(startingGameState(freshSeed()));
 }
 
 /**
- * The app shell: one cabinet box holding the title, the HUD and the board,
- * drawn from the game session, swapped in full for the game-over panel once
- * the game has ended and the last turn's score roll has settled.
+ * The app shell: the start screen until PLAY is pressed, then one cabinet
+ * box holding the title, the HUD and the board, drawn from the game
+ * session, swapped in full for the game-over panel once the game has ended
+ * and the last turn's score roll has settled.
  */
 export function App() {
   const [session, dispatch] = useReducer(
@@ -25,18 +33,18 @@ export function App() {
     undefined,
     createStartingSession,
   );
+  const {
+    screen,
+    fleetSize,
+    setFleetSize,
+    lengthInRounds,
+    setLengthInRounds,
+    handlePlay,
+    handleReturnToStart,
+  } = useAppScreen(dispatch);
   const { displayed: displayedEnergy, settled } = useDisplayedEnergy(
     session.state.energy,
   );
-
-  /** Play again: a fresh seed, the finished game's own length, nothing else. */
-  function handlePlayAgain() {
-    dispatch({
-      type: "new-game",
-      randomSeed: freshSeed(),
-      lengthInRounds: session.state.lengthInRounds,
-    });
-  }
 
   // The panel takes over the whole cabinet once the game has ended and the
   // last turn's score roll has settled — until then the game stays on
@@ -46,11 +54,22 @@ export function App() {
   return (
     <main className="app">
       <div className="app__cabinet">
-        {gameOver ? (
-          <GameOverPanel state={session.state} onPlayAgain={handlePlayAgain} />
+        {screen === "start" ? (
+          <StartScreen
+            fleetSize={fleetSize}
+            onFleetSizeChange={setFleetSize}
+            lengthInRounds={lengthInRounds}
+            onLengthInRoundsChange={setLengthInRounds}
+            onPlay={handlePlay}
+          />
+        ) : gameOver ? (
+          <GameOverPanel
+            state={session.state}
+            onReturnToStart={handleReturnToStart}
+          />
         ) : (
           <>
-            <h1 className="app__title">Base Control</h1>
+            <h1 className="app__title">{GAME_NAME}</h1>
             <Hud state={session.state} displayedEnergy={displayedEnergy} />
             <div className="app__board">
               <Board session={session} onIntent={dispatch} />

@@ -12,11 +12,23 @@ import {
   squareFromName,
   squareName,
 } from "./board";
+import { BAYS } from "./bays";
 import { legalTargets } from "./combat";
-import type { ShipId } from "./fleet";
+import { DEFAULT_FLEET_SIZE, type FleetSize, type ShipId } from "./fleet";
 import { gameResult, isGameOver, pliesForGameLength } from "./gameLength";
-import { type GameState, siteStateAt, startingGameState } from "./gameState";
-import type { EnergyCollectedEffect, EnergyPenaltyEffect } from "./endOfTurn";
+import {
+  dormantSiteNames,
+  type GameState,
+  type Ship,
+  type SiteStatus,
+  siteStateAt,
+  startingGameState,
+} from "./gameState";
+import {
+  type EnergyCollectedEffect,
+  type EnergyPenaltyEffect,
+  runEndOfTurn,
+} from "./endOfTurn";
 import { legalDestinations } from "./movement";
 import {
   type AttackEffect,
@@ -171,9 +183,16 @@ interface PlayedGame {
   readonly redPenalized: readonly EnergyPenaltyEffect[];
 }
 
-/** Plays a whole game from `seed` at `lengthInRounds` using the greedy policy above. */
-function playFullGame(seed: number, lengthInRounds: number): PlayedGame {
-  let state = startingGameState(seed, lengthInRounds);
+/**
+ * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
+ * above, dealt with `fleetSize` ships a side (rules.md §4, default seven).
+ */
+function playFullGame(
+  seed: number,
+  lengthInRounds: number,
+  fleetSize: FleetSize = DEFAULT_FLEET_SIZE,
+): PlayedGame {
+  let state = startingGameState(seed, lengthInRounds, fleetSize);
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
   const greenPenalized: EnergyPenaltyEffect[] = [];
@@ -321,6 +340,25 @@ function sumAmounts(
   return effects.reduce((total, effect) => total + effect.amount, 0);
 }
 
+/** One ship, for building a state by hand rather than dealing it. */
+function ship(id: ShipId, side: "green" | "red", square: string): Ship {
+  return { id, side, square: squareFromName(square), shields: 0 };
+}
+
+/**
+ * A ship parked on every bay except those named in `emptyBayNames`, so a
+ * return draw's pool (`drawReturnBay`, rules.md §7.1) is exactly those bays.
+ */
+function shipsFillingBaysExcept(
+  emptyBayNames: readonly string[],
+): readonly Ship[] {
+  return BAYS.filter(
+    (square) => !emptyBayNames.includes(squareName(square)),
+  ).map((square, index) =>
+    ship(`filler-${index}` as ShipId, "red", squareName(square)),
+  );
+}
+
 describe("a full game, end to end", () => {
   it("plays a hundred-round game to its end, with totals consistent throughout", () => {
     const seed = 20260819;
@@ -439,5 +477,226 @@ describe("a full game, end to end", () => {
 
     expect(isGameOver(state)).toBe(true);
     expect(assertRefusesEverything(state)).toBe(true);
+  });
+});
+
+describe("smaller fleets play end to end (rules.md §4)", () => {
+  it("plays a five-a-side game to its end, with totals consistent throughout", () => {
+    const seed = 20260819;
+    const {
+      finalState,
+      greenCollected,
+      redCollected,
+      greenPenalized,
+      redPenalized,
+    } = playFullGame(seed, 30, 5);
+
+    expect(finalState.ships).toHaveLength(10);
+    expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+    expect(isGameOver(finalState)).toBe(true);
+
+    expect(finalState.energy.green).toBe(
+      sumAmounts(greenCollected) - sumAmounts(greenPenalized),
+    );
+    expect(finalState.energy.red).toBe(
+      sumAmounts(redCollected) - sumAmounts(redPenalized),
+    );
+  });
+
+  it("plays a six-a-side game to its end, with totals consistent throughout", () => {
+    const seed = 20260819;
+    const {
+      finalState,
+      greenCollected,
+      redCollected,
+      greenPenalized,
+      redPenalized,
+    } = playFullGame(seed, 30, 6);
+
+    expect(finalState.ships).toHaveLength(12);
+    expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+    expect(isGameOver(finalState)).toBe(true);
+
+    expect(finalState.energy.green).toBe(
+      sumAmounts(greenCollected) - sumAmounts(greenPenalized),
+    );
+    expect(finalState.energy.red).toBe(
+      sumAmounts(redCollected) - sumAmounts(redPenalized),
+    );
+  });
+
+  it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, and lets a ship move into one of them", () => {
+    const state = startingGameState(20260819, 30, 5);
+    const occupiedBayNames = new Set(
+      state.ships
+        .map((s) => squareName(s.square))
+        .filter((name) => BAYS.some((bay) => squareName(bay) === name)),
+    );
+
+    expect(occupiedBayNames.has("H15")).toBe(true);
+    for (const emptyBay of ["O14", "O2", "A14", "A2"]) {
+      expect(occupiedBayNames.has(emptyBay)).toBe(false);
+    }
+
+    // green-1 (H15 at the start of a five-ship game) relocated within reach
+    // of O14, one of the bays that started empty: it is an ordinary
+    // destination like any other.
+    const nearO14: GameState = {
+      ...state,
+      ships: state.ships.map((s) =>
+        s.id === "green-1" ? { ...s, square: squareFromName("O11") } : s,
+      ),
+    };
+    expect(legalDestinations(nearO14, "green-1")).toContainEqual(
+      squareFromName("O14"),
+    );
+  });
+
+  it("starts a six-ship game with L15 occupied and H15, H1 empty, and lets a ship move into one of them", () => {
+    const state = startingGameState(20260819, 30, 6);
+    const occupiedBayNames = new Set(
+      state.ships
+        .map((s) => squareName(s.square))
+        .filter((name) => BAYS.some((bay) => squareName(bay) === name)),
+    );
+
+    expect(occupiedBayNames.has("L15")).toBe(true);
+    for (const emptyBay of ["H15", "H1"]) {
+      expect(occupiedBayNames.has(emptyBay)).toBe(false);
+    }
+
+    // green-1 (O14 at the start of a six-ship game) relocated within reach
+    // of H15, one of the two bays that started empty.
+    const nearH15: GameState = {
+      ...state,
+      ships: state.ships.map((s) =>
+        s.id === "green-1" ? { ...s, square: squareFromName("H12") } : s,
+      ),
+    };
+    expect(legalDestinations(nearH15, "green-1")).toContainEqual(
+      squareFromName("H15"),
+    );
+  });
+
+  it("draws a beaten ship's return only from the bays empty at the start, in a five-ship game", () => {
+    const emptyBayNames = ["O14", "O2", "A14", "A2"];
+    const state: GameState = {
+      ships: [
+        ...shipsFillingBaysExcept(emptyBayNames),
+        ship("green-1", "green", "H8"),
+        ship("red-1", "red", "H9"),
+      ],
+      siteStates: {},
+      sideToMove: "green",
+      actionsRemaining: 1,
+      actedThisPly: [],
+      plyNumber: 1,
+      randomSeed: 1,
+      energy: { green: 0, red: 0 },
+      lengthInRounds: 30,
+    };
+    // Adjacent squares with equal shields (0 each) is a mutual return, so
+    // exactly one ship — the one built with more shields — must win instead;
+    // give green the edge so red alone returns.
+    const withAttackerShields: GameState = {
+      ...state,
+      ships: state.ships.map((s) =>
+        s.id === "green-1" ? { ...s, shields: 1 } : s,
+      ),
+    };
+
+    const result = applyAttack(
+      withAttackerShields,
+      "green-1",
+      squareFromName("H9"),
+    );
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const fightResolved = result.effects.find(
+      (effect) => effect.type === "fight-resolved",
+    );
+    if (
+      fightResolved === undefined ||
+      fightResolved.type !== "fight-resolved"
+    ) {
+      throw new Error("expected a fight-resolved effect");
+    }
+    expect(fightResolved.returns).toHaveLength(1);
+    expect(emptyBayNames).toContain(squareName(fightResolved.returns[0].to));
+  });
+
+  it("draws a beaten ship's return only from the bays empty at the start, in a six-ship game", () => {
+    const emptyBayNames = ["H15", "H1"];
+    const state: GameState = {
+      ships: [
+        ...shipsFillingBaysExcept(emptyBayNames),
+        ship("green-1", "green", "H8"),
+        ship("red-1", "red", "H9"),
+      ],
+      siteStates: {},
+      sideToMove: "green",
+      actionsRemaining: 1,
+      actedThisPly: [],
+      plyNumber: 1,
+      randomSeed: 1,
+      energy: { green: 0, red: 0 },
+      lengthInRounds: 30,
+    };
+    const withAttackerShields: GameState = {
+      ...state,
+      ships: state.ships.map((s) =>
+        s.id === "green-1" ? { ...s, shields: 1 } : s,
+      ),
+    };
+
+    const result = applyAttack(
+      withAttackerShields,
+      "green-1",
+      squareFromName("H9"),
+    );
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const fightResolved = result.effects.find(
+      (effect) => effect.type === "fight-resolved",
+    );
+    if (
+      fightResolved === undefined ||
+      fightResolved.type !== "fight-resolved"
+    ) {
+      throw new Error("expected a fight-resolved effect");
+    }
+    expect(fightResolved.returns).toHaveLength(1);
+    expect(emptyBayNames).toContain(squareName(fightResolved.returns[0].to));
+  });
+
+  it("settles a five-ship game with no throw when a side occupies five dormant sites (regression for energy.ts's ships-per-side bound)", () => {
+    const dormantSites = SITES.slice(0, 5);
+    const ships: readonly Ship[] = dormantSites.map((site, index) => ({
+      id: `green-${index + 1}` as ShipId,
+      side: "green",
+      square: site,
+      shields: 0,
+    }));
+    const siteStates: Record<string, SiteStatus> = {};
+    for (const site of dormantSites) {
+      siteStates[squareName(site)] = { state: "dormant", level: 1 };
+    }
+    const state: GameState = {
+      ships,
+      siteStates,
+      sideToMove: "green",
+      actionsRemaining: 1,
+      actedThisPly: [],
+      plyNumber: 1,
+      randomSeed: 1,
+      energy: { green: 50, red: 0 },
+      lengthInRounds: 30,
+    };
+
+    expect(() => runEndOfTurn(state, dormantSiteNames(state))).not.toThrow();
   });
 });

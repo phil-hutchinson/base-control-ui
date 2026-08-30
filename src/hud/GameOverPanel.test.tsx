@@ -7,10 +7,8 @@ import { useReducer } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Board } from "../board/Board";
 import { squareAt, squareName } from "../rules/board";
-import { STARTING_FLEET } from "../rules/fleet";
 import { isGameOver } from "../rules/gameLength";
 import type { GameState } from "../rules/gameState";
-import { freshSeed } from "../game/seed";
 import { createSession, sessionReducer } from "../game/session";
 import { GameOverPanel } from "./GameOverPanel";
 import { Hud } from "./Hud";
@@ -37,7 +35,7 @@ function finishedState(overrides: Partial<GameState> = {}): GameState {
 describe("GameOverPanel", () => {
   it("names the winner and shows both final totals", () => {
     const { container } = render(
-      <GameOverPanel state={finishedState()} onPlayAgain={() => {}} />,
+      <GameOverPanel state={finishedState()} onReturnToStart={() => {}} />,
     );
 
     expect(screen.getByText("Red wins, 7 energy to 4.")).toBeInTheDocument();
@@ -54,7 +52,9 @@ describe("GameOverPanel", () => {
   });
 
   it("keeps the result sentence out of the panel's visible layout, while it stays findable as accessible text", () => {
-    render(<GameOverPanel state={finishedState()} onPlayAgain={() => {}} />);
+    render(
+      <GameOverPanel state={finishedState()} onReturnToStart={() => {}} />,
+    );
 
     const resultSentence = screen.getByText("Red wins, 7 energy to 4.");
     expect(resultSentence).toHaveClass("visually-hidden");
@@ -65,7 +65,7 @@ describe("GameOverPanel", () => {
     render(
       <GameOverPanel
         state={finishedState({ energy: { green: 5, red: 5 } })}
-        onPlayAgain={() => {}}
+        onReturnToStart={() => {}}
       />,
     );
 
@@ -75,40 +75,52 @@ describe("GameOverPanel", () => {
   });
 
   it("is a labelled dialog, focused when it appears", () => {
-    render(<GameOverPanel state={finishedState()} onPlayAgain={() => {}} />);
+    render(
+      <GameOverPanel state={finishedState()} onReturnToStart={() => {}} />,
+    );
 
     const dialog = screen.getByRole("dialog", { name: "Game over" });
     expect(dialog).toHaveFocus();
   });
 
-  it("the play-again button is reachable and operable by keyboard", async () => {
+  it("the return-to-start button is reachable and operable by keyboard", async () => {
     const user = userEvent.setup();
-    const onPlayAgain = vi.fn();
-    render(<GameOverPanel state={finishedState()} onPlayAgain={onPlayAgain} />);
+    const onReturnToStart = vi.fn();
+    render(
+      <GameOverPanel
+        state={finishedState()}
+        onReturnToStart={onReturnToStart}
+      />,
+    );
 
     await user.tab();
-    expect(screen.getByRole("button", { name: "Play again" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Back to start" })).toHaveFocus();
 
     await user.keyboard("[Enter]");
-    expect(onPlayAgain).toHaveBeenCalledTimes(1);
+    expect(onReturnToStart).toHaveBeenCalledTimes(1);
 
     await user.keyboard("[Space]");
-    expect(onPlayAgain).toHaveBeenCalledTimes(2);
+    expect(onReturnToStart).toHaveBeenCalledTimes(2);
   });
 
-  it("calls onPlayAgain when the button is clicked", async () => {
+  it("calls onReturnToStart when the button is clicked", async () => {
     const user = userEvent.setup();
-    const onPlayAgain = vi.fn();
-    render(<GameOverPanel state={finishedState()} onPlayAgain={onPlayAgain} />);
+    const onReturnToStart = vi.fn();
+    render(
+      <GameOverPanel
+        state={finishedState()}
+        onReturnToStart={onReturnToStart}
+      />,
+    );
 
-    await user.click(screen.getByRole("button", { name: "Play again" }));
+    await user.click(screen.getByRole("button", { name: "Back to start" }));
 
-    expect(onPlayAgain).toHaveBeenCalledTimes(1);
+    expect(onReturnToStart).toHaveBeenCalledTimes(1);
   });
 
   it("has no static accessibility violations", async () => {
     const { container } = render(
-      <GameOverPanel state={finishedState()} onPlayAgain={() => {}} />,
+      <GameOverPanel state={finishedState()} onReturnToStart={() => {}} />,
     );
 
     const results = await axe.run(container, {
@@ -119,13 +131,20 @@ describe("GameOverPanel", () => {
   });
 
   describe("wired into the board, as App.tsx wires it", () => {
-    // A stand-in for App.tsx's own useReducer wiring and its play-again
-    // handler, parameterized by a starting state, so these tests exercise
-    // the real session reducer end to end rather than a hand-built session.
-    // Mirrors App.tsx: the panel takes the place of the HUD and board once
-    // the game is over and the score roll has settled, rather than covering
-    // them.
-    function Harness({ initial }: { initial: GameState }) {
+    // A stand-in for App.tsx's own useReducer wiring, parameterized by a
+    // starting state, so these tests exercise the real session reducer end
+    // to end rather than a hand-built session. Mirrors App.tsx: the panel
+    // takes the place of the HUD and board once the game is over and the
+    // score roll has settled, rather than covering them. It takes
+    // `onReturnToStart` as a prop and proves only the panel's own
+    // appearance and that its button calls it — not what happens after.
+    function Harness({
+      initial,
+      onReturnToStart,
+    }: {
+      initial: GameState;
+      onReturnToStart: () => void;
+    }) {
       const [session, dispatch] = useReducer(
         sessionReducer,
         initial,
@@ -135,18 +154,13 @@ describe("GameOverPanel", () => {
         session.state.energy,
       );
 
-      function handlePlayAgain() {
-        dispatch({
-          type: "new-game",
-          randomSeed: freshSeed(),
-          lengthInRounds: session.state.lengthInRounds,
-        });
-      }
-
       const gameOver = isGameOver(session.state) && settled;
 
       return gameOver ? (
-        <GameOverPanel state={session.state} onPlayAgain={handlePlayAgain} />
+        <GameOverPanel
+          state={session.state}
+          onReturnToStart={onReturnToStart}
+        />
       ) : (
         <>
           <Hud state={session.state} displayedEnergy={displayedEnergy} />
@@ -205,7 +219,7 @@ describe("GameOverPanel", () => {
 
     it("is absent while the game is in progress, and appears once the last action ends it", async () => {
       const user = userEvent.setup();
-      render(<Harness initial={nearEndState()} />);
+      render(<Harness initial={nearEndState()} onReturnToStart={() => {}} />);
 
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
@@ -222,7 +236,9 @@ describe("GameOverPanel", () => {
 
     it("holds the panel back while the last turn's score rolls, keeping the board and HUD on screen and the live region announcing the result, then shows the settled total once it appears", async () => {
       const user = userEvent.setup();
-      const { container } = render(<Harness initial={scoringNearEndState()} />);
+      const { container } = render(
+        <Harness initial={scoringNearEndState()} onReturnToStart={() => {}} />,
+      );
 
       await user.click(screen.getByRole("gridcell", { name: /^G1,/ }));
       await user.click(
@@ -256,38 +272,20 @@ describe("GameOverPanel", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("play again starts a fresh game of the same length: ply 1, both scores 0, the panel gone, the board accepting clicks again", async () => {
+    it("calls onReturnToStart when the panel's button is pressed, once the game has ended", async () => {
       const user = userEvent.setup();
-      render(<Harness initial={nearEndState()} />);
+      const onReturnToStart = vi.fn();
+      render(
+        <Harness initial={nearEndState()} onReturnToStart={onReturnToStart} />,
+      );
 
       await user.click(screen.getByRole("gridcell", { name: /^H8,/ }));
       await user.click(
         screen.getByRole("gridcell", { name: /^H9,.*can move here$/ }),
       );
-      await user.click(screen.getByRole("button", { name: "Play again" }));
+      await user.click(screen.getByRole("button", { name: "Back to start" }));
 
-      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-      expect(screen.getByText("1/1")).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          "Green: 0 energy, no nodes held, standing on no dormant sites.",
-        ),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          "Red: 0 energy, no nodes held, standing on no dormant sites.",
-        ),
-      ).toBeInTheDocument();
-      expect(screen.getByText("Green to play")).toBeInTheDocument();
-
-      const greenStart = STARTING_FLEET[0];
-      await user.click(
-        screen.getByRole("gridcell", {
-          name: new RegExp(`^${squareName(greenStart.square)},`),
-        }),
-      );
-
-      expect(liveRegion()).toHaveTextContent(/selected/);
+      expect(onReturnToStart).toHaveBeenCalledTimes(1);
     });
   });
 });

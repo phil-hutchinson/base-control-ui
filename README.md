@@ -1,9 +1,10 @@
 # Base Control — Play in Your Browser
 
-Base Control is a game for two players. Each of you commands a fleet of seven
-ships on a 15 x 15 board, competing for the handful of contested nodes that
-light up across it. Hold a node and it pays you energy every turn. The
-player with the most energy at the end wins.
+Base Control is a game for two players. Each of you commands a fleet of five,
+six or seven ships — you choose the size before play begins — on a 15 x 15
+board, competing for the handful of contested nodes that light up across it.
+Hold a node and it pays you energy every turn. The player with the most
+energy at the end wins.
 
 Your ships carry shields. Shields win fights — but every shield a ship carries
 slows it down, so the strongest ship on the board is also the slowest. Sitting
@@ -23,11 +24,16 @@ This is the game's web app. It runs entirely in your browser — nothing to
 install, no account, no server.
 
 > **Status:** early development. The app now plays a whole game, from the
-> opening position to the final score. Opening it shows the board in its
-> starting position, with all fourteen ships lined up in their bays and the
-> seventeen sites marked, five of them already lit as charged nodes. Green goes
-> first, and each player takes one action a turn — a move or an attack — by
-> mouse or by keyboard. Nodes light up on their own: at the end of every turn
+> opening position to the final score. Opening it shows a start screen, not
+> the board: the game's name, a choice of how many ships a side (five, six or
+> seven, seven to start), a choice of how many rounds the game lasts (thirty,
+> fifty, seventy-five or a hundred, thirty to start) and a PLAY button.
+> Changing either choice starts nothing — the board only appears once PLAY is
+> pressed, dealt with the choices you made. A smaller fleet starts from fewer
+> of the board's fourteen bays, leaving the rest empty; an empty bay plays no
+> differently from any other. Green goes first, and each player takes one
+> action a turn — a move or an attack — by mouse or by keyboard. Nodes light
+> up on their own: at the end of every turn
 > the board tops itself back up to five charged sites among the seventeen,
 > picking the new ones at random as older ones run out — and a site that has
 > been waiting longer is more likely to be picked next, which shows in how it
@@ -59,11 +65,12 @@ install, no account, no server.
 > once costs far more in the same way. The two are counted separately rather
 > than against each other, so a turn can pay you and charge you at once. The app
 > keeps score and shows it, along with how many nodes each player holds, how
-> many dead sites they are sitting on, and which round the game is in. After a
-> hundred rounds the game ends: the player with the most energy wins, an equal
-> score is a draw, and a button starts another game. There is still no way to
-> save or record a game, no computer opponent to play against, and no way to
-> choose how long a game runs. The project is being built up story by story.
+> many dead sites they are sitting on, and which round the game is in. Once
+> the game reaches the number of rounds you chose, it ends: the player with
+> the most energy wins, an equal score is a draw, and a button returns you to
+> the start screen with the same choices still set, ready to play again.
+> There is still no way to save or record a game and no computer opponent to
+> play against. The project is being built up story by story.
 
 ## The rules
 

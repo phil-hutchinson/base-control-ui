@@ -133,3 +133,16 @@ This joins the charged and dormant cycle position, which already does not
 reach assistive technology.
 
 Where: `src/board/SiteMarker.tsx`, `src/board/squareLabel.ts`.
+
+## From story 35 — a start screen, a new name, and two options
+
+Source: comment 12 of `doc/plan/00000035-splash-screen-and-options/peer-review.md`.
+
+### 1. Neither new screen swap moves focus
+
+This story adds two whole-screen swaps — PLAY, and the game-over panel's
+button back to the start screen — and neither moves focus. A keyboard or
+screen-reader user lands wherever focus already was (often the document
+root) each time, rather than at the screen that just appeared.
+
+Where: `src/App.tsx`, `src/useAppScreen.ts`.

@@ -6,7 +6,7 @@
 import { type Square, squareName } from "./board";
 import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
 import { SITES } from "./sites";
-import { STARTING_FLEET, type Side } from "./fleet";
+import { MAX_SHIPS_PER_SIDE, type Side } from "./fleet";
 
 /**
  * §8.4's table: the energy paid for a count of charged nodes held, and the
@@ -22,14 +22,6 @@ const ENERGY_BY_NODES_HELD: readonly number[] = [0, 1, 3, 6, 10, 15];
  * neither half of §8.4 can outrun the other.
  */
 export const MAX_DORMANT_SITES_PRICED = ENERGY_BY_NODES_HELD.length - 1;
-
-/**
- * The number of ships one side starts with, and so the most sites of that
- * side's it could ever be standing on at once.
- */
-const SHIPS_PER_SIDE = STARTING_FLEET.filter(
-  (entry) => entry.side === "green",
-).length;
 
 /**
  * The energy paid for holding `nodesHeld` charged nodes (rules.md §8.4).
@@ -113,10 +105,10 @@ export function energyForDormantSites(dormantSites: number): number {
   if (
     !Number.isInteger(dormantSites) ||
     dormantSites < 0 ||
-    dormantSites > SHIPS_PER_SIDE
+    dormantSites > MAX_SHIPS_PER_SIDE
   ) {
     throw new RangeError(
-      `energyForDormantSites: dormantSites must be an integer from 0 to ${SHIPS_PER_SIDE}, got ${dormantSites}`,
+      `energyForDormantSites: dormantSites must be an integer from 0 to ${MAX_SHIPS_PER_SIDE}, got ${dormantSites}`,
     );
   }
   const priced = Math.min(dormantSites, MAX_DORMANT_SITES_PRICED);

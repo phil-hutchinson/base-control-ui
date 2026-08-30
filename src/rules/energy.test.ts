@@ -165,7 +165,13 @@ describe("energyForDormantSites", () => {
     expect(() => energyForDormantSites(2.5)).toThrow(RangeError);
   });
 
-  it("throws for a count above the number of ships a side has", () => {
+  it("throws for a count above the most ships a side can ever have", () => {
+    expect(() => energyForDormantSites(8)).toThrow(RangeError);
+  });
+
+  it("prices seven dormant sites the same as five, without throwing — the bound is the maximum fleet, not the current game's", () => {
+    expect(energyForDormantSites(7)).toBe(15);
+    expect(energyForDormantSites(7)).toBe(energyForDormantSites(5));
     expect(() => energyForDormantSites(8)).toThrow(RangeError);
   });
 });

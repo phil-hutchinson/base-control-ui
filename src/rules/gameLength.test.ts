@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_GAME_LENGTH_ROUNDS,
+  GAME_LENGTH_OPTIONS_ROUNDS,
   currentRound,
   gameResult,
   isGameLengthRounds,
@@ -13,8 +14,20 @@ import { startingGameState } from "./gameState";
 const SEED = 12345;
 
 describe("DEFAULT_GAME_LENGTH_ROUNDS", () => {
-  it("is 100 (rules.md §9)", () => {
-    expect(DEFAULT_GAME_LENGTH_ROUNDS).toBe(100);
+  it("is 30 (rules.md §9)", () => {
+    expect(DEFAULT_GAME_LENGTH_ROUNDS).toBe(30);
+  });
+});
+
+describe("GAME_LENGTH_OPTIONS_ROUNDS", () => {
+  it("offers 30, 50, 75 and 100, shortest first, and includes the default", () => {
+    expect(GAME_LENGTH_OPTIONS_ROUNDS).toEqual([30, 50, 75, 100]);
+    expect(GAME_LENGTH_OPTIONS_ROUNDS).toContain(DEFAULT_GAME_LENGTH_ROUNDS);
+  });
+
+  it("does not restrict isGameLengthRounds to the offered values", () => {
+    expect(isGameLengthRounds(1)).toBe(true);
+    expect(isGameLengthRounds(3)).toBe(true);
   });
 });
 
@@ -65,13 +78,13 @@ describe("isGameLengthRounds", () => {
 });
 
 describe("isGameOver", () => {
-  it("is not over at ply 200 of a default-length game", () => {
-    const state = { ...startingGameState(SEED), plyNumber: 200 };
+  it("is not over at ply 60 of a default-length game", () => {
+    const state = { ...startingGameState(SEED), plyNumber: 60 };
     expect(isGameOver(state)).toBe(false);
   });
 
-  it("is over at ply 201 of a default-length game", () => {
-    const state = { ...startingGameState(SEED), plyNumber: 201 };
+  it("is over at ply 61 of a default-length game", () => {
+    const state = { ...startingGameState(SEED), plyNumber: 61 };
     expect(isGameOver(state)).toBe(true);
   });
 
@@ -88,9 +101,9 @@ describe("isGameOver", () => {
 
 describe("currentRound", () => {
   it.each([
-    [199, 100],
-    [200, 100],
-    [201, 100],
+    [59, 30],
+    [60, 30],
+    [61, 30],
   ])("reads %i as round %i in a default-length game", (plyNumber, round) => {
     const state = { ...startingGameState(SEED), plyNumber };
     expect(currentRound(state)).toBe(round);
@@ -109,7 +122,7 @@ describe("gameResult", () => {
   it("names green the winner when green's total is higher", () => {
     const state = {
       ...startingGameState(SEED),
-      plyNumber: 201,
+      plyNumber: 61,
       energy: { green: 10, red: 4 },
     };
     expect(gameResult(state)).toEqual({
@@ -122,7 +135,7 @@ describe("gameResult", () => {
   it("names red the winner when red's total is higher", () => {
     const state = {
       ...startingGameState(SEED),
-      plyNumber: 201,
+      plyNumber: 61,
       energy: { green: 4, red: 10 },
     };
     expect(gameResult(state)).toEqual({
@@ -135,7 +148,7 @@ describe("gameResult", () => {
   it("is a draw when both totals are equal", () => {
     const state = {
       ...startingGameState(SEED),
-      plyNumber: 201,
+      plyNumber: 61,
       energy: { green: 7, red: 7 },
     };
     expect(gameResult(state)).toEqual({
@@ -145,7 +158,7 @@ describe("gameResult", () => {
   });
 
   it("throws when the game is not over", () => {
-    const state = { ...startingGameState(SEED), plyNumber: 200 };
+    const state = { ...startingGameState(SEED), plyNumber: 60 };
     expect(() => gameResult(state)).toThrow(RangeError);
   });
 });

@@ -18,7 +18,7 @@ const SIDES: readonly Side[] = ["green", "red"];
 
 interface GameOverPanelProps {
   readonly state: GameState;
-  readonly onPlayAgain: () => void;
+  readonly onReturnToStart: () => void;
 }
 
 /**
@@ -26,7 +26,7 @@ interface GameOverPanelProps {
  * `aria-modal`, and no focus trap: the board behind it refuses every
  * activation once the game is over.
  */
-export function GameOverPanel({ state, onPlayAgain }: GameOverPanelProps) {
+export function GameOverPanel({ state, onReturnToStart }: GameOverPanelProps) {
   const headingId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -65,10 +65,10 @@ export function GameOverPanel({ state, onPlayAgain }: GameOverPanelProps) {
       <p className="visually-hidden">{resultSentence(result)}</p>
       <button
         type="button"
-        className="game-over-panel__play-again"
-        onClick={onPlayAgain}
+        className="game-over-panel__button"
+        onClick={onReturnToStart}
       >
-        Play again
+        Back to start
       </button>
     </div>
   );

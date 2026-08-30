@@ -11,7 +11,7 @@ afterEach(cleanup);
 describe("Hud", () => {
   it("renders both scores, the round counter and the turn indicator", () => {
     const state = {
-      ...startingGameState(1),
+      ...startingGameState(1, 100),
       energy: { green: 24, red: 9 },
       plyNumber: 69,
     };

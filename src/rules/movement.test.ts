@@ -448,7 +448,7 @@ describe("moveRefusalReason and legalDestinations once the game is over", () => 
   it("refuses a move that would otherwise be legal, with game-over ahead of any other reason", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      plyNumber: 201,
+      plyNumber: 61,
     });
 
     expect(moveRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
@@ -459,12 +459,12 @@ describe("moveRefusalReason and legalDestinations once the game is over", () => 
   it("refuses a move that would have been illegal anyway, still with game-over", () => {
     const outOfRange = buildState({
       ships: [ship("green-1", "green", "H8")],
-      plyNumber: 201,
+      plyNumber: 61,
     });
     const notYourShip = buildState({
       ships: [ship("green-1", "green", "H8")],
       sideToMove: "red",
-      plyNumber: 201,
+      plyNumber: 61,
     });
 
     expect(
@@ -478,9 +478,9 @@ describe("moveRefusalReason and legalDestinations once the game is over", () => 
   it("legalDestinations contains a destination legal before the game ends, and is empty in the same state once it has", () => {
     const beforeEnd = buildState({
       ships: [ship("green-1", "green", "H8")],
-      plyNumber: 200,
+      plyNumber: 60,
     });
-    const afterEnd: GameState = { ...beforeEnd, plyNumber: 201 };
+    const afterEnd: GameState = { ...beforeEnd, plyNumber: 61 };
 
     expect(legalDestinations(beforeEnd, "green-1").length).toBeGreaterThan(0);
     expect(legalDestinations(afterEnd, "green-1")).toEqual([]);

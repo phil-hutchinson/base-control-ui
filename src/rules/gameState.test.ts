@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { squareFromName, squareName } from "./board";
-import { STARTING_FLEET } from "./fleet";
+import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
   shipsBySquare,
@@ -10,6 +10,7 @@ import {
 } from "./gameState";
 
 const SEED = 12345;
+const STARTING_FLEET = startingFleet(7);
 
 describe("startingGameState", () => {
   it("has fourteen ships matching STARTING_FLEET entry for entry", () => {
@@ -144,4 +145,61 @@ describe("startingGameState", () => {
   it.each([0, -1, 2.5])("throws a RangeError for a length of %s", (length) => {
     expect(() => startingGameState(SEED, length)).toThrow(RangeError);
   });
+
+  it("defaults to a seven-a-side fleet when none is given", () => {
+    const state = startingGameState(SEED);
+    const expected = startingFleet(DEFAULT_FLEET_SIZE);
+
+    expect(state.ships).toHaveLength(14);
+    state.ships.forEach((ship, index) => {
+      expect(ship.id).toBe(expected[index].id);
+      expect(ship.side).toBe(expected[index].side);
+      expect(ship.square).toEqual(expected[index].square);
+    });
+  });
+
+  it("takes a given fleet size, dealing that layout's ships", () => {
+    const fiveASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 5);
+    const sixASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 6);
+
+    const expectedFive = startingFleet(5);
+    expect(fiveASide.ships).toHaveLength(10);
+    fiveASide.ships.forEach((ship, index) => {
+      const entry = expectedFive[index];
+      expect(ship.id).toBe(entry.id);
+      expect(ship.side).toBe(entry.side);
+      expect(ship.square).toEqual(entry.square);
+    });
+
+    const expectedSix = startingFleet(6);
+    expect(sixASide.ships).toHaveLength(12);
+    sixASide.ships.forEach((ship, index) => {
+      const entry = expectedSix[index];
+      expect(ship.id).toBe(entry.id);
+      expect(ship.side).toBe(entry.side);
+      expect(ship.square).toEqual(entry.square);
+    });
+  });
+
+  it("starts every ship on 0 shields whatever the fleet size", () => {
+    for (const fleetSize of [5, 6, 7] as const) {
+      const state = startingGameState(
+        SEED,
+        DEFAULT_GAME_LENGTH_ROUNDS,
+        fleetSize,
+      );
+      for (const ship of state.ships) {
+        expect(ship.shields).toBe(0);
+      }
+    }
+  });
+
+  it.each([4, 8, 6.5])(
+    "throws a RangeError for a fleet size of %s",
+    (fleetSize) => {
+      expect(() =>
+        startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, fleetSize),
+      ).toThrow(RangeError);
+    },
+  );
 });

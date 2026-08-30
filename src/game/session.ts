@@ -7,7 +7,7 @@
 
 import { type Square, squareName } from "../rules/board";
 import { type AttackRefusalReason, legalTargets } from "../rules/combat";
-import type { Side, ShipId } from "../rules/fleet";
+import type { FleetSize, Side, ShipId } from "../rules/fleet";
 import {
   type GameState,
   shipsBySquare,
@@ -98,9 +98,9 @@ export type SessionEvent =
 
 /**
  * An intent a player's input turns into: activate a square, dismiss a
- * selection, or start a new game. `new-game` carries both the seed and the
- * length in rounds the new game starts from — the reducer uses what it is
- * handed and never draws a seed or reaches for a default length itself.
+ * selection, or start a new game. `new-game` carries the seed, the length in
+ * rounds and the fleet size the new game starts from — the reducer uses what
+ * it is handed and never draws a seed or reaches for a default itself.
  */
 export type SessionIntent =
   | { readonly type: "activate"; readonly square: Square }
@@ -109,6 +109,7 @@ export type SessionIntent =
       readonly type: "new-game";
       readonly randomSeed: number;
       readonly lengthInRounds: number;
+      readonly fleetSize: FleetSize;
     };
 
 /** The game state, the selected ship if any, and the last thing that happened. */
@@ -276,7 +277,11 @@ export function sessionReducer(
 ): Session {
   if (intent.type === "new-game") {
     return createSession(
-      startingGameState(intent.randomSeed, intent.lengthInRounds),
+      startingGameState(
+        intent.randomSeed,
+        intent.lengthInRounds,
+        intent.fleetSize,
+      ),
     );
   }
 
