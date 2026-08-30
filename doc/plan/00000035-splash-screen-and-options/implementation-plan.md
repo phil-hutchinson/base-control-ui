@@ -976,7 +976,37 @@ unchanged — the screen is not yet rendered anywhere.
 
 ## Step 9 — Wiring: `App` owns the screen and the two options
 
-Status: pending
+Status: committed
+
+Notes: `App` gained `screen` (`"start" | "game"`), `fleetSize` and
+`lengthInRounds` state as described, replaced `handlePlayAgain`/the removed
+`fleetSizeOf` helper with `handlePlay` (dispatches `new-game` with a fresh
+seed and the two selected options, then switches to `"game"`) and
+`handleReturnToStart` (switches back to `"start"`, nothing else), and now
+renders `StartScreen` on `"start"`. `createStartingSession`'s doc comment
+was rewritten to say it is the reducer's initial value, never shown.
+`GameOverPanel`'s prop is now `onReturnToStart` and its button reads "Back to
+start" (D12); its CSS class name (`.game-over-panel__play-again`) was left
+unchanged, since the plan named only the prop and the wording. `App.test.tsx`
+was reworked around the new front door per the step: opening the app shows
+the start screen with no board and no HUD; PLAY with the defaults shows a
+seven-a-side, thirty-round game (round counter `1/30`, fourteen ship
+gridcells); PLAY after choosing 5 ships shows ten. `GameOverPanel.test.tsx`'s
+"wired into the board" harness was narrowed rather than mirroring the whole
+app: it now takes `onReturnToStart` as a prop and proves only the panel's
+appearance and that its button calls the handler, since what the button now
+leads to (App's start screen) is App-level wiring outside the panel's own
+contract; its old "play again starts a fresh game" case, which asserted
+post-press board state, was replaced with a narrower "calls onReturnToStart
+when pressed" case. Deviation: the plan's suggested "choose 5 and 50, play a
+one-round game, press Back to start, see 5 and 50 still selected" test was
+not added — `App` has no prop to seed a hand-built near-end state the way
+`GameOverPanel.test.tsx`'s harness does, and the shortest length the real
+`StartScreen` offers is 30 rounds (60 plies), so proving this end to end
+through actual UI clicks is not the cheap, short-length case the plan
+describes; the plan itself allows recording this rather than building it.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(794 passed) all pass.
 
 Make the start screen the app's front door and the game-over panel the way back
 to it.
