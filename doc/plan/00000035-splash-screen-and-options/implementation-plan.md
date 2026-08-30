@@ -1179,7 +1179,38 @@ next to the in-game one.
 
 ## Step 12 — The splash title gets the marquee halo
 
-Status: pending
+Status: committed
+
+Notes: Added a `radial-gradient(ellipse 80% 60% at 50% 50%, var(--glow-text), var(--color-space-raised) 70%)`
+background plus matching padding to `.start-screen__title` in
+`src/start/StartScreen.css`, mirroring `.app`'s own gradient's two-stop,
+percentage-sized ellipse idiom but built from the glow colour fading out to
+the cabinet's own background colour (the same solid colour `.app__cabinet`
+already paints behind the whole screen), so the rectangular background box
+disappears into its surroundings rather than reading as an edge. No other
+rule, file or markup touched. `npm run typecheck`, `npm run lint`, `npm test`
+(798 passed) and `npm run format:check` all pass. No deviation from the
+plan.
+
+**Correction:** the first attempt was wrong. `--glow-text` is a near-white
+(`#eef2ff`), and it was both the gradient's centre stop and the title text's
+own `color`, so the bright stop sat directly behind the glyphs — near-white
+text on a near-white pool, worsened by the near-white `text-shadow`. `.app`'s
+gradient works because both its stops are dark (`--color-space-raised` to
+`--color-space`); it lifts a dark ground rather than filling a light one, and
+copying that idiom with a light colour swapped in broke exactly the property
+that made it read as a halo instead of a wash-out. Replaced the two colour
+stops with `color-mix(in srgb, var(--glow-text) 18%, transparent)` fading to
+`color-mix(in srgb, var(--glow-text) 0%, transparent)` at 70% — a low-alpha
+wash of the glow colour at the centre, fully transparent by the outer stop,
+so the background never approaches the text's own full-strength colour and
+the letters stay the brightest thing on screen. `color-mix` against a
+zero-alpha version of the same colour is used instead of the `transparent`
+keyword to avoid a grey fringe some engines produce when interpolating
+between an opaque colour and the keyword. Re-ran `npm run typecheck`,
+`npm run lint`, `npm test` (798 passed) and `npm run format:check`; all pass.
+Padding and every other rule/file/markup constraint from the original step
+are unchanged.
 
 Give `.start-screen__title` a soft radial glow of its own, behind the text,
 in `src/start/StartScreen.css`.

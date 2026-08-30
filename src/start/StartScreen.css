@@ -17,6 +17,7 @@
   /* Same marquee tokens as `.app__title`, through its own class rather than
      that one — a component's CSS file owns its own classes. */
   margin: 0;
+  padding: 1.5rem 3rem;
   font-family: var(--font-arcade);
   font-size: clamp(1.5rem, 4vw, 3.5rem);
   font-weight: 700;
@@ -26,6 +27,20 @@
   text-shadow:
     0 0 0.3em var(--glow-text),
     0 0 0.6em var(--glow-text);
+  /* A marquee halo of its own: the in-game title sits under `.app`'s
+     page-top gradient and picks up its glow for free, but this screen
+     centres its content well below that, so the title needs its own pool
+     of light. Same soft-ellipse idiom as `.app`'s gradient, but this one
+     must be a faint wash over the dark ground, not a fill: the centre stop
+     is the glow colour at a low alpha, fading to a zero-alpha version of
+     that same colour (not the `transparent` keyword, which can fringe grey)
+     by the outer stop, so the letters — set in the same colour at full
+     strength — stay the brightest thing there. */
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 50%,
+    color-mix(in srgb, var(--glow-text) 18%, transparent),
+    color-mix(in srgb, var(--glow-text) 0%, transparent) 70%
+  );
 }
 
 .start-screen__options {
