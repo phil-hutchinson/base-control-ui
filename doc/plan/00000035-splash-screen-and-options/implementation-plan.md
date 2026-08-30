@@ -1130,7 +1130,7 @@ in them is something a player can now see.
 
 ## Step 11 — Owner play-through
 
-Status: pending
+Status: committed
 
 The owner runs the app (`npm run dev`) and confirms the story's own
 verification list. This is the story's manual gate; nothing here is automated,
@@ -1170,3 +1170,41 @@ Depends on: Step 10 (the whole story is built).
 Verification (manual): the owner confirms each of the twelve observations above
 in a running app and says so. Anything that fails comes back as a fix to the
 step that owns it, not as a patch here.
+
+Notes: The owner ran the app and confirmed the story plays well. Step 12
+follows from that same play-through: the start screen's title reads flat
+next to the in-game one.
+
+---
+
+## Step 12 — The splash title gets the marquee halo
+
+Status: pending
+
+Give `.start-screen__title` a soft radial glow of its own, behind the text,
+in `src/start/StartScreen.css`.
+
+Why it is needed: `.app` paints the cabinet's marquee glow as a radial
+gradient high in the frame (`App.css`, `ellipse 80% 40% at 50% 0%`). The game
+screen's title sits directly under it and picks it up. The start screen
+centres its content vertically, so its title sits well below that gradient
+and reads flat by comparison, even though it carries the same `text-shadow`
+treatment. The halo is what the in-game title gets from its position and the
+splash title does not.
+
+How to do it: behind the title only, built from the existing palette tokens
+(`--glow-text` over `--color-space-raised`), in the same soft-ellipse idiom
+as `.app`'s gradient rather than a new effect. It must not read as a box or a
+hard edge — the marquee glow is a diffuse pool of light, and the title sits
+in it. Keep it in `.start-screen__title`'s own block, per D10.
+
+Out of scope: `.app`'s own gradient, the in-game title, the option groups,
+the PLAY button, and any new colour outside the existing tokens. No change
+to the markup, so no test moves.
+
+Depends on: Step 8 (the start screen and its title class) and Step 9 (the
+screen is reachable to look at).
+
+Verification (manual): the owner runs `npm run dev`, opens the start screen,
+and confirms the title sits in a pool of light like a lit cabinet marquee,
+with no visible box or edge, and that nothing else on the screen changed.
