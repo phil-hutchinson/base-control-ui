@@ -166,9 +166,7 @@ export function siteStatusAt(
 
 /**
  * The square names of every site that is `dormant` in the given state. Built
- * fresh from whatever state is handed to it — this is how a caller captures
- * "dormant before the ply began" for `runEndOfTurn`'s second argument (see
- * that function's doc comment).
+ * fresh from whatever state is handed to it.
  */
 export function dormantSiteNames(state: GameState): ReadonlySet<string> {
   const names = new Set<string>();

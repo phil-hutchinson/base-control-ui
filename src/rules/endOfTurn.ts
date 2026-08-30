@@ -12,7 +12,8 @@
 // clocks are symmetric about the turn a state is entered: a node charged
 // in step 4 of turn N first drains in step 3 of turn N+1, and a node that
 // goes dormant in step 3 of turn N first recovers in step 6 of turn N+1 —
-// which is what this file's second argument is for.
+// which is why step 6 works from the dormant set captured at entry, before
+// step 3 runs.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
@@ -27,6 +28,7 @@ import type { Side, ShipId } from "./fleet";
 import {
   type GameState,
   type SiteStatus,
+  dormantSiteNames,
   shipsBySquare,
   siteStateAt,
 } from "./gameState";
@@ -118,21 +120,15 @@ export interface EndOfTurnResult {
  * `plyNumber` as the ply itself — the caller runs this **before** swapping
  * sides or advancing the ply counter.
  *
- * `dormantBeforePly` is the square names of every site that was dormant
- * before the ply began (§8.6 step 6). It is required, not optional, because
- * there is no safe default: step 6 must recover exactly those sites, never
- * one that only went dormant during this very ply, in step 3 below, and
- * nothing in `state` distinguishes such a site from one that has been
- * dormant for turns. Because `ACTIONS_PER_PLY` is 1 (rules.md §5), the state
- * before a ply's one action **is** the state at the start of the ply, so a
- * caller can build this set from that state with `dormantSiteNames`. A
- * future ruleset with more than one action per ply would need a genuine
- * start-of-ply snapshot carried in `GameState` instead.
+ * Step 6 must recover exactly the sites that were dormant before this ply
+ * began, never one that only goes dormant during this very sequence, in step
+ * 3 below. The set is captured here, at entry, before step 3 runs — it is
+ * exact because no action changes a site's state (rules.md §8.6), so the set
+ * of dormant sites when this function is entered is exactly the set from the
+ * start of the ply.
  */
-export function runEndOfTurn(
-  state: GameState,
-  dormantBeforePly: ReadonlySet<string>,
-): EndOfTurnResult {
+export function runEndOfTurn(state: GameState): EndOfTurnResult {
+  const dormantBeforePly = dormantSiteNames(state);
   const side = state.sideToMove;
   const occupants = shipsBySquare(state);
   const effects: EndOfTurnEffect[] = [];
@@ -285,12 +281,12 @@ export function runEndOfTurn(
     };
   }
 
-  // Step 6: every site that was dormant before this ply began (see this
-  // function's doc comment on `dormantBeforePly`) subtracts its recovery;
-  // any that reaches zero or below goes active, at pressure 1 (§8.2). A
-  // site that only went dormant during this very sequence — in step 3
-  // above — was charged when the ply began, so it is excluded and first
-  // recovers at the end of the next ply.
+  // Step 6: every site that was dormant before this ply began (the
+  // `dormantBeforePly` set captured at entry, above) subtracts its
+  // recovery; any that reaches zero or below goes active, at pressure 1
+  // (§8.2). A site that only went dormant during this very sequence — in
+  // step 3 above — was charged when the ply began, so it is excluded and
+  // first recovers at the end of the next ply.
   for (const square of SITES) {
     const name = squareName(square);
     const status = workingState.siteStates[name];

@@ -1188,7 +1188,7 @@ describe, since the event it covered no longer occurs.
 Deviation: none from the plan's substance. One point of tension worth
 recording: the plan's own verification line asks for `grep -rn "vacat" src/`
 to return nothing, but the plan's own test instructions for this step (and
-step 7's later cases) require asserting the *absence* of a `node-vacated`
+step 7's later cases) require asserting the _absence_ of a `node-vacated`
 effect, which necessarily puts the string `"node-vacated"` in test code
 (`ply.test.ts`, `camping.test.ts`) — a handful of unrelated hits on the
 ordinary English word "vacated" also remain in `combat.test.ts` and
@@ -1273,7 +1273,42 @@ the empty-rate draw, and no announcement made about it.
 
 ## Step 6 — `runEndOfTurn` works out its own start-of-ply dormant set
 
-Status: pending
+Status: committed
+
+Notes: `runEndOfTurn` now takes only `state` and computes `dormantBeforePly`
+internally via `dormantSiteNames(state)` at entry, per D4; its doc comment
+and the module comment's closing line were rewritten to explain why the
+set captured at entry is exact rather than describing a parameter. Dropped
+the parameter from `applyEndOfActionTail` in `ply.ts` and both its call
+sites (`applyMove`, `applyAttack`), and from the two direct `runEndOfTurn`
+callers in `applyPassGuard`; the `dormantSiteNames` import left `ply.ts`
+entirely. Rewrote `dormantSiteNames`' doc comment in `gameState.ts` to drop
+its reference to the deleted second argument.
+
+In `endOfTurn.test.ts`, inlined the now-unnecessary `runEndOfTurnFresh`
+helper (every call is fresh) and rewrote the four cases that drove step 6
+by passing an explicit `dormantBeforePly` set: all four already had a
+fixture that was genuinely charged or genuinely dormant at the moment
+`runEndOfTurn` was called, so the explicit sets were dropped outright with
+no fixture changes needed beyond that — the real state already carried
+the set `runEndOfTurn` now derives on its own. The two-call test ("does
+not recover a site that only went dormant during this very sequence")
+keeps its structure (first call proves no early recovery, second call on
+`result.state` proves recovery at the end of the next sequence) but now
+drives both calls through the genuine state rather than a hand-built set,
+which is the better test D4 anticipated. Dropped the `dormantSiteNames`
+import from `endOfTurn.test.ts`, `fullGame.test.ts` and `sitePool.test.ts`
+along with their now-argumentless `runEndOfTurn` calls; per D10,
+`sitePool.test.ts` needed no other change and its tolerances did not move.
+
+No deviation from the plan. `npm run typecheck`, `npm run lint` and
+`npm test` all pass (759 tests, unchanged from step 5 — this step edits
+existing tests rather than adding new ones). `npm run format:check` flags
+only the pre-existing `implementation-plan.md` warning that predates this
+step (confirmed present on the unmodified step-5 commit via `git stash`).
+`grep -rn "dormantBeforePly" src/` finds only the internal local variable
+and comments inside `runEndOfTurn` itself, and `grep -rn "second argument"
+src/` finds nothing.
 
 Remove `runEndOfTurn`'s `dormantBeforePly` parameter and have the function
 derive the set itself. See **D4** for the full reasoning, including why this is

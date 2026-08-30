@@ -25,7 +25,6 @@ import type { Side, ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import {
   ACTIONS_PER_PLY,
-  dormantSiteNames,
   type GameState,
   type Ship,
   shipsBySquare,
@@ -161,7 +160,7 @@ export function applyPassGuard(state: GameState): {
 
   const side = state.sideToMove;
   const sideToMove = otherSide(side);
-  const endOfTurn = runEndOfTurn(state, dormantSiteNames(state));
+  const endOfTurn = runEndOfTurn(state);
   const passedState: GameState = {
     ...endOfTurn.state,
     plyNumber: endOfTurn.state.plyNumber + 1,
@@ -192,17 +191,12 @@ export function applyPassGuard(state: GameState): {
  * id. Mutates `effects` by appending whichever of the two end-of-action effects
  * fired, and returns the resulting state. `effects` is typed to accept
  * either caller's effect list, since both `MoveEffect` and `AttackEffect`
- * include `EndOfActionEffect` as one of their members. `dormantBeforePly` is
- * passed straight through to `runEndOfTurn` when the ply ends here — it must
- * be built by the caller from the state before this action, which callers
- * hold cheaply since `ACTIONS_PER_PLY` is 1 (see `runEndOfTurn`'s doc
- * comment).
+ * include `EndOfActionEffect` as one of their members.
  */
 function applyEndOfActionTail(
   state: GameState,
   effects: (MoveEffect | AttackEffect)[],
   actedShipId: ShipId,
-  dormantBeforePly: ReadonlySet<string>,
 ): GameState {
   const actionsRemaining = state.actionsRemaining - 1;
   let next: GameState;
@@ -215,7 +209,7 @@ function applyEndOfActionTail(
   } else {
     const side = state.sideToMove;
     const sideToMove = otherSide(side);
-    const endOfTurn = runEndOfTurn(state, dormantBeforePly);
+    const endOfTurn = runEndOfTurn(state);
     next = {
       ...endOfTurn.state,
       plyNumber: endOfTurn.state.plyNumber + 1,
@@ -282,12 +276,7 @@ export function applyMove(
   }
 
   const afterMove: GameState = { ...state, ships };
-  const settled = applyEndOfActionTail(
-    afterMove,
-    effects,
-    shipId,
-    dormantSiteNames(state),
-  );
+  const settled = applyEndOfActionTail(afterMove, effects, shipId);
 
   return { outcome: "applied", state: settled, effects };
 }
@@ -483,12 +472,7 @@ export function applyAttack(
     },
   ];
 
-  const settled = applyEndOfActionTail(
-    nextState,
-    effects,
-    attackerShip.id,
-    dormantSiteNames(state),
-  );
+  const settled = applyEndOfActionTail(nextState, effects, attackerShip.id);
 
   return { outcome: "applied", state: settled, effects };
 }

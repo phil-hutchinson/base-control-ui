@@ -17,7 +17,6 @@ import { legalTargets } from "./combat";
 import { DEFAULT_FLEET_SIZE, type FleetSize, type ShipId } from "./fleet";
 import { gameResult, isGameOver, pliesForGameLength } from "./gameLength";
 import {
-  dormantSiteNames,
   type GameState,
   type Ship,
   type SiteStatus,
@@ -687,6 +686,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       lengthInRounds: 30,
     };
 
-    expect(() => runEndOfTurn(state, dormantSiteNames(state))).not.toThrow();
+    expect(() => runEndOfTurn(state)).not.toThrow();
   });
 });
