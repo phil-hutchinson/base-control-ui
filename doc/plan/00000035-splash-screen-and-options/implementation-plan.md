@@ -1077,7 +1077,27 @@ complete; the owner's own check of it is step 11.
 
 ## Step 10 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Updated the opening paragraph's "a fleet of seven ships" to "a fleet
+of five, six or seven ships — you choose the size before play begins", and
+rewrote the Status note to describe the app opening on a start screen (the
+name, the ships choice at 5/6/7 default 7, the rounds choice at
+30/50/75/100 default 30, and PLAY), that changing an option starts nothing,
+that a smaller fleet leaves some of the fourteen bays empty, and that
+finishing a game returns to the start screen with the same choices set
+rather than dealing a new game outright; "After a hundred rounds the game
+ends" became "Once the game reaches the number of rounds you chose, it
+ends", and the stale "no way to choose how long a game runs" caveat was
+dropped since that is now possible. The README's name stays Base Control
+throughout, per the story's out-of-scope list. Reviewed the rest of the
+branch diff (`/update-readme`'s brief) and found nothing else warranting a
+README change — the rules-document and rules-version links, the
+Development section and CONTRIBUTING.md pointer are all unaffected.
+`npm run format:check`, `npm run typecheck`, `npm run lint` and `npm test`
+(794 passed) all pass; re-read the changed paragraphs against the built app
+and every claim in them matches what steps 1-9 implemented. No deviation
+from the plan.
 
 `README.md` keeps the name **Base Control** (story, section 6) and updates what
 it says about the game and the app:
