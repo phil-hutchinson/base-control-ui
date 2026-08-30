@@ -1,4 +1,4 @@
-import { useReducer, useState } from "react";
+import { useReducer } from "react";
 import { Board } from "./board/Board";
 import { freshSeed } from "./game/seed";
 import { createSession, sessionReducer } from "./game/session";
@@ -6,10 +6,10 @@ import { GAME_NAME } from "./gameName";
 import { GameOverPanel } from "./hud/GameOverPanel";
 import { Hud } from "./hud/Hud";
 import { useDisplayedEnergy } from "./hud/useDisplayedEnergy";
-import { DEFAULT_FLEET_SIZE, type FleetSize } from "./rules/fleet";
-import { DEFAULT_GAME_LENGTH_ROUNDS, isGameOver } from "./rules/gameLength";
+import { isGameOver } from "./rules/gameLength";
 import { startingGameState } from "./rules/gameState";
 import { StartScreen } from "./start/StartScreen";
+import { useAppScreen } from "./useAppScreen";
 import "./App.css";
 
 /**
@@ -28,35 +28,23 @@ function createStartingSession() {
  * and the last turn's score roll has settled.
  */
 export function App() {
-  const [screen, setScreen] = useState<"start" | "game">("start");
-  const [fleetSize, setFleetSize] = useState<FleetSize>(DEFAULT_FLEET_SIZE);
-  const [lengthInRounds, setLengthInRounds] = useState(
-    DEFAULT_GAME_LENGTH_ROUNDS,
-  );
   const [session, dispatch] = useReducer(
     sessionReducer,
     undefined,
     createStartingSession,
   );
+  const {
+    screen,
+    fleetSize,
+    setFleetSize,
+    lengthInRounds,
+    setLengthInRounds,
+    handlePlay,
+    handleReturnToStart,
+  } = useAppScreen(dispatch);
   const { displayed: displayedEnergy, settled } = useDisplayedEnergy(
     session.state.energy,
   );
-
-  /** PLAY: a fresh seed, the chosen length and fleet size, then the game screen. */
-  function handlePlay() {
-    dispatch({
-      type: "new-game",
-      randomSeed: freshSeed(),
-      lengthInRounds,
-      fleetSize,
-    });
-    setScreen("game");
-  }
-
-  /** The game-over panel's button: back to the start screen, nothing else. */
-  function handleReturnToStart() {
-    setScreen("start");
-  }
 
   // The panel takes over the whole cabinet once the game has ended and the
   // last turn's score roll has settled — until then the game stays on

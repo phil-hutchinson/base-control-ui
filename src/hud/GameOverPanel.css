@@ -71,7 +71,7 @@
   text-shadow: 0 0 0.4em currentcolor;
 }
 
-.game-over-panel__play-again {
+.game-over-panel__button {
   padding: 0.75em 2em;
   font-family: var(--font-arcade);
   font-size: clamp(1rem, 2vw, 1.25rem);
@@ -85,15 +85,15 @@
   cursor: pointer;
 }
 
-.game-over-panel__play-again:hover {
+.game-over-panel__button:hover {
   border-color: var(--color-text-bright);
 }
 
-.game-over-panel__play-again:focus {
+.game-over-panel__button:focus {
   outline: none;
 }
 
-.game-over-panel__play-again:focus-visible {
+.game-over-panel__button:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }

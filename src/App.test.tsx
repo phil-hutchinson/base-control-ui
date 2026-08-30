@@ -75,7 +75,7 @@ describe("App", () => {
     expect(shipCells()).toHaveLength(14);
   });
 
-  it("pressing PLAY after choosing 5 ships deals the five-a-side layout", async () => {
+  it("pressing PLAY after choosing 5 ships deals a five-a-side game", async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -83,6 +83,16 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Play" }));
 
     expect(shipCells()).toHaveLength(10);
+  });
+
+  it("pressing PLAY after choosing 50 rounds starts a game of that length", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("radio", { name: "50" }));
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    expect(screen.getByText("1/50")).toBeInTheDocument();
   });
 
   it("has no static accessibility violations once a game is in progress", async () => {

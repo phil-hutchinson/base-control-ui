@@ -82,20 +82,20 @@
 
 /* The selected value: the loud, filled treatment, unmistakable next to the
    quiet, outlined unselected ones. */
-.visually-hidden:checked + .start-screen__label {
+.start-screen__choice input:checked + .start-screen__label {
   color: var(--color-space);
   background-color: var(--glow-text);
   border-color: var(--glow-text);
   box-shadow: 0 0 0.6em var(--glow-text);
 }
 
-.visually-hidden:focus-visible + .start-screen__label {
+.start-screen__choice input:focus-visible + .start-screen__label {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .start-screen__play {
-  /* Built up from `.game-over-panel__play-again`: bigger, brighter, the
+  /* Built up from `.game-over-panel__button`: bigger, brighter, the
      loudest thing on the screen. */
   padding: 0.85em 3em;
   font-family: var(--font-arcade);

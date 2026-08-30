@@ -165,7 +165,7 @@ describe("energyForDormantSites", () => {
     expect(() => energyForDormantSites(2.5)).toThrow(RangeError);
   });
 
-  it("throws for a count above the number of ships a side has", () => {
+  it("throws for a count above the most ships a side can ever have", () => {
     expect(() => energyForDormantSites(8)).toThrow(RangeError);
   });
 

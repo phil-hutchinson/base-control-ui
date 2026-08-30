@@ -135,11 +135,8 @@ describe("GameOverPanel", () => {
     // starting state, so these tests exercise the real session reducer end
     // to end rather than a hand-built session. Mirrors App.tsx: the panel
     // takes the place of the HUD and board once the game is over and the
-    // score roll has settled, rather than covering them. Narrowed from an
-    // earlier version that also mirrored App's "play again" dispatch:
-    // pressing the panel's button now only returns App to its start screen,
-    // which is App-level wiring covered by App.test.tsx, so this harness
-    // takes `onReturnToStart` as a prop and proves only the panel's own
+    // score roll has settled, rather than covering them. It takes
+    // `onReturnToStart` as a prop and proves only the panel's own
     // appearance and that its button calls it — not what happens after.
     function Harness({
       initial,

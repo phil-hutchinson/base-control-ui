@@ -65,7 +65,7 @@ export function GameOverPanel({ state, onReturnToStart }: GameOverPanelProps) {
       <p className="visually-hidden">{resultSentence(result)}</p>
       <button
         type="button"
-        className="game-over-panel__play-again"
+        className="game-over-panel__button"
         onClick={onReturnToStart}
       >
         Back to start

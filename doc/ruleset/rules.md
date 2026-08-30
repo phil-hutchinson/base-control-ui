@@ -191,9 +191,11 @@ is not removed from the board and it is not reserved: either player may move
 into it, and section 7.1's random return may send a beaten ship to it, exactly
 as it would to any other empty bay.
 
-Because the bays are spaced evenly and there are fourteen of them, each
-player's starting fleet is exactly the half-turn rotation of the other's in
-all three layouts, so neither side begins with better ground.
+The bays are spaced evenly, and each layout leaves its empty bays in
+half-turn-opposite pairs — none at seven a side, H15 and H1 at six, O14/O2
+and A14/A2 at five, with the colours flipping to match. So in all three
+layouts each player's starting fleet is exactly the half-turn rotation of
+the other's, and neither side begins with better ground.
 
 Every ship starts with 0 shields.
 

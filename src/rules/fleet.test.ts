@@ -9,13 +9,6 @@ import {
 } from "./fleet";
 import { isShieldCount } from "./shields";
 
-/** Ships a side, per fleet size, for the counts §4 states. */
-const SHIPS_PER_SIDE: Readonly<Record<FleetSize, number>> = {
-  5: 5,
-  6: 6,
-  7: 7,
-};
-
 /** §4's seven-a-side layout, clockwise from H15. */
 const SEVEN_A_SIDE: readonly [string, "green" | "red"][] = [
   ["H15", "green"],
@@ -105,12 +98,12 @@ describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
     ).toEqual(expectedLayout);
   });
 
-  it(`has ${SHIPS_PER_SIDE[fleetSize] * 2} ships, ${SHIPS_PER_SIDE[fleetSize]} a side`, () => {
-    expect(fleet).toHaveLength(SHIPS_PER_SIDE[fleetSize] * 2);
+  it(`has ${fleetSize * 2} ships, ${fleetSize} a side`, () => {
+    expect(fleet).toHaveLength(fleetSize * 2);
     const green = fleet.filter((entry) => entry.side === "green");
     const red = fleet.filter((entry) => entry.side === "red");
-    expect(green).toHaveLength(SHIPS_PER_SIDE[fleetSize]);
-    expect(red).toHaveLength(SHIPS_PER_SIDE[fleetSize]);
+    expect(green).toHaveLength(fleetSize);
+    expect(red).toHaveLength(fleetSize);
   });
 
   it("stands every ship on a bay, one ship per bay, and leaves §4's empty bays empty", () => {
@@ -142,7 +135,7 @@ describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
     expect(new Set(ids).size).toBe(ids.length);
 
     const expectedNumbers = Array.from(
-      { length: SHIPS_PER_SIDE[fleetSize] },
+      { length: fleetSize },
       (_, index) => index + 1,
     );
 
@@ -161,7 +154,7 @@ describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
 
   it("numbers each side's ids in ascending order within the fleet list", () => {
     const expectedNumbers = Array.from(
-      { length: SHIPS_PER_SIDE[fleetSize] },
+      { length: fleetSize },
       (_, index) => index + 1,
     );
 
@@ -205,8 +198,7 @@ describe("alternation around the clockwise ring", () => {
   // Holds for the seven- and five-ship layouts, which alternate all the way
   // round, including the wraparound. It does not hold for the six-ship
   // layout by design (rules.md §4): dropping H15 leaves D15 red next to L15
-  // red, and dropping H1 leaves L1 green next to D1 green. See D3 in the
-  // implementation plan.
+  // red, and dropping H1 leaves L1 green next to D1 green.
   it.each([7, 5] as const)(
     "alternates sides around the clockwise ring, including the wraparound, at %i a side",
     (fleetSize) => {

@@ -24,13 +24,6 @@ const ENERGY_BY_NODES_HELD: readonly number[] = [0, 1, 3, 6, 10, 15];
 export const MAX_DORMANT_SITES_PRICED = ENERGY_BY_NODES_HELD.length - 1;
 
 /**
- * The most ships a side can ever have (rules.md §4), and so the most sites
- * of that side's it could ever be standing on at once — not the current
- * game's fleet size, which may be smaller.
- */
-const SHIPS_PER_SIDE = MAX_SHIPS_PER_SIDE;
-
-/**
  * The energy paid for holding `nodesHeld` charged nodes (rules.md §8.4).
  * Throws a `RangeError` outside 0–5: the board never charges more than five
  * sites at once (§8.1, §8.2), so a sixth held node is a bug in the caller,
@@ -112,10 +105,10 @@ export function energyForDormantSites(dormantSites: number): number {
   if (
     !Number.isInteger(dormantSites) ||
     dormantSites < 0 ||
-    dormantSites > SHIPS_PER_SIDE
+    dormantSites > MAX_SHIPS_PER_SIDE
   ) {
     throw new RangeError(
-      `energyForDormantSites: dormantSites must be an integer from 0 to ${SHIPS_PER_SIDE}, got ${dormantSites}`,
+      `energyForDormantSites: dormantSites must be an integer from 0 to ${MAX_SHIPS_PER_SIDE}, got ${dormantSites}`,
     );
   }
   const priced = Math.min(dormantSites, MAX_DORMANT_SITES_PRICED);
