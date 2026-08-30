@@ -1,3 +1,5 @@
+/* This cell's portrait size feeds the `--region-extent` derivation in
+   `App.css`. */
 .round-counter {
   display: flex;
   flex-direction: column;
@@ -20,4 +22,20 @@
   letter-spacing: 0.1em;
   color: var(--glow-text);
   text-shadow: 0 0 0.4em var(--glow-text);
+}
+
+/* Landscape: the label and the value are both sized from the window's
+   width in portrait, which the fixed-width info column cannot follow, so
+   both are sized as a fraction of `--region-extent` (`App.css`) here
+   instead, keeping them in the same proportion to `P` as before while `P`
+   itself now tracks the window. Neither is close to the widest thing in the
+   column at these sizes (see the derivation in `App.css`). */
+@media (orientation: landscape) {
+  .round-counter__label {
+    font-size: calc(var(--region-extent) * 0.085);
+  }
+
+  .round-counter__value {
+    font-size: calc(var(--region-extent) * 0.125);
+  }
 }

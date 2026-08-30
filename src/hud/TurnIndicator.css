@@ -1,3 +1,4 @@
+/* This size feeds the portrait `--region-extent` derivation in `App.css`. */
 .turn-indicator {
   margin: 0;
   font-size: clamp(1rem, 2.5vw, 1.25rem);
@@ -11,4 +12,16 @@
 
 .turn-indicator--red {
   color: var(--color-red);
+}
+
+/* Landscape: the portrait size is keyed to the window's width, which the
+   fixed-width info column cannot follow, so it is sized as a fraction of
+   `--region-extent` (`App.css`) instead — alongside the title, one of the
+   two next-widest things in the column behind the pip row (see the
+   derivation in `App.css`), sized to still fit with room to spare as `P`
+   tracks the window. */
+@media (orientation: landscape) {
+  .turn-indicator {
+    font-size: calc(var(--region-extent) * 0.11);
+  }
 }

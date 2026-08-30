@@ -51,6 +51,49 @@ describe("App", () => {
     expect(results.violations).toEqual([]);
   });
 
+  it("renders no in-game regions on the start screen", () => {
+    const { container } = render(<App />);
+
+    expect(container.querySelector(".app__screen")).not.toBeInTheDocument();
+    expect(container.querySelector(".app__info")).not.toBeInTheDocument();
+    expect(container.querySelector(".app__play")).not.toBeInTheDocument();
+    expect(container.querySelector(".app__reserved")).not.toBeInTheDocument();
+  });
+
+  it("lays the in-game screen out as three regions, info, play, reserved, in that DOM order", async () => {
+    // jsdom has no layout engine and applies no CSS, so this reaches for
+    // class names via querySelector rather than role or text — a region
+    // wrapper has no accessible role or name of its own to find it by, the
+    // same reasoning as the `.board-square__mark--*` queries in
+    // BoardSquare.test.tsx.
+    const { container } = render(<App />);
+    await pressPlay();
+
+    const screenEl = container.querySelector(".app__screen");
+    expect(screenEl).toBeInTheDocument();
+
+    const regions = screenEl!.querySelectorAll(
+      ":scope > .app__info, :scope > .app__play, :scope > .app__reserved",
+    );
+    expect(Array.from(regions).map((el) => el.className)).toEqual([
+      "app__info",
+      "app__play",
+      "app__reserved",
+    ]);
+
+    const info = screenEl!.querySelector(".app__info")!;
+    expect(info.querySelector("h1")?.textContent).toBe(GAME_NAME);
+    expect(info.textContent).toContain("Green to play");
+
+    const play = screenEl!.querySelector(".app__play")!;
+    expect(play.querySelector('[role="grid"]')).toBeInTheDocument();
+
+    const reserved = screenEl!.querySelector(".app__reserved")!;
+    expect(reserved.textContent).toBe("RESERVED");
+    expect(info.textContent).not.toContain("RESERVED");
+    expect(play.textContent).not.toContain("RESERVED");
+  });
+
   it("pressing PLAY with the defaults deals a seven-a-side, thirty-round game", async () => {
     render(<App />);
 

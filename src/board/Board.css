@@ -1,7 +1,8 @@
 /* Board grid geometry. `--square` drives every square's size from one place,
-   sized from the board's own container (`.app__board`) rather than the
-   viewport, so the board fills whatever room it is actually given: it grows
-   with no ceiling, and shrinks no further than a floor kept for legibility.
+   measured against whatever box the board is placed in (`.app__play`) —
+   that box's size is `App.css`'s to decide, not this file's — so the board
+   fills whatever room it is actually given: it grows with no ceiling, and
+   shrinks no further than a floor kept for legibility.
    Ordinary squares get a thin border to read as a grid; bays get a different
    fill and a heavier, differently coloured border so they read as distinct at
    a glance rather than a barely-different shade.
@@ -12,9 +13,9 @@
 
 .board-frame {
   /* `.board-frame` is fifteen tracks wide and fifteen tall, so a square is
-     one fifteenth of the container's smaller dimension, floored at 40px for
-     legibility. */
-  --square: max(40px, calc(100cqmin / 15));
+     one fifteenth of the container's smaller dimension, floored at
+     `--board-square-floor` (`index.css`) for legibility. */
+  --square: max(var(--board-square-floor), calc(100cqmin / 15));
   display: inline-grid;
   grid-template-columns: repeat(15, var(--square));
   grid-template-rows: repeat(15, var(--square));

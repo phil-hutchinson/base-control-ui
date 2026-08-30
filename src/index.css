@@ -33,6 +33,14 @@
     Roboto,
     sans-serif;
   line-height: 1.5;
+
+  /* The board's floor: the smallest a square is ever allowed to draw at, and
+     the fifteen-square board size that follows from it. The one place either
+     number is stated — `Board.css` reads the square floor for `--square`,
+     `App.css` reads the board floor when sizing the play region, so neither
+     hard-codes `40px` or `600px` and the two cannot drift apart. */
+  --board-square-floor: 40px;
+  --board-floor: calc(var(--board-square-floor) * 15);
 }
 
 * {
