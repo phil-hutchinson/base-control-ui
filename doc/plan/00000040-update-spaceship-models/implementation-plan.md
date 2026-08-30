@@ -540,7 +540,7 @@ the new `App.test.tsx` case).
 
 ## Step 2 — The gauge's lit/unlit rule as a plain module
 
-Status: pending
+Status: committed
 
 Add `src/ships/shieldGauge.ts` and `src/ships/shieldGauge.test.ts`: given a
 `ShieldCount` (0–4, from `src/rules/shields.ts`), produce the four gauge slots
@@ -559,6 +559,14 @@ Verification (automated): `npm run typecheck`, `npm run lint`,
 `npm run format:check` and `npm test` pass, and `shieldGauge.test.ts` covers
 all five counts — 0 lights none, 4 lights all, and the intermediate counts
 light a left-to-right prefix — asserting the returned length is always four.
+
+**Notes:** Added `src/ships/shieldGauge.ts` (`gaugeSlots(shields)`, returning
+the four slots in fixed left-to-right order with an `index`/`lit` pair each,
+built from `GAUGE_SLOT_COUNT` in `shipArt.ts` rather than a loose `4`) and
+`src/ships/shieldGauge.test.ts`, mirroring the shape of the existing
+`shieldArcs.ts`/`.test.ts` it replaces. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+all pass (774 tests, including 6 new in `shieldGauge.test.ts`).
 
 ---
 
