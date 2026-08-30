@@ -572,7 +572,7 @@ all pass (774 tests, including 6 new in `shieldGauge.test.ts`).
 
 ## Step 3 — `ShipModel`: one ship drawn from the sprite, gauge optional
 
-Status: pending
+Status: committed
 
 Add `src/ships/ShipModel.tsx` and `src/ships/ShipModel.css`.
 
@@ -617,6 +617,19 @@ Verification (automated): `npm run typecheck`, `npm run lint`,
 - the gauge count agrees with the words in `squareLabel.ts` for the same
   occupant — carried over from the deleted `ShipIcon.test.tsx`, which held the
   equivalent check for arcs.
+
+**Notes:** Added `src/ships/ShipModel.tsx`/`.css` and
+`src/ships/ShipModel.test.tsx`. The component draws a `<use>` of the side's
+hull id from `shipArt.ts` plus, only when `shields` is given, a `<g>` of four
+gauge slots built from `shieldGauge.ts`'s `gaugeSlots`, each carrying
+`data-gauge-slot`/`data-gauge-lit`, drawing the separator underlay `<use>`,
+the icon `<use>`, and (lit only) the two coincident bars, all per the "Gauge
+data" table and the constants added to `shipArt.ts` in step 1. `ShipModel.css`
+sets only `display`/`width`/`height`, no `fill`/`stroke`, per the step's
+instruction. No deviation from the plan. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` all pass (797 tests, including 23 new
+in `ShipModel.test.tsx`); nothing renders `ShipModel` yet, so `ShipIcon` and
+`shieldArcs` are untouched and still pass their own existing tests.
 
 ---
 
