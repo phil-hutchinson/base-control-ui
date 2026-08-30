@@ -17,7 +17,6 @@ import { legalTargets } from "./combat";
 import { DEFAULT_FLEET_SIZE, type FleetSize, type ShipId } from "./fleet";
 import { gameResult, isGameOver, pliesForGameLength } from "./gameLength";
 import {
-  dormantSiteNames,
   type GameState,
   type Ship,
   type SiteStatus,
@@ -578,7 +577,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     );
   });
 
-  it("draws a beaten ship's return only from the bays empty at the start, in a five-ship game", () => {
+  it("draws both fighting ships' returns only from the bays empty at the start, in a five-ship game", () => {
     const emptyBayNames = ["O14", "O2", "A14", "A2"];
     const state: GameState = {
       ships: [
@@ -595,21 +594,8 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       energy: { green: 0, red: 0 },
       lengthInRounds: 30,
     };
-    // Adjacent squares with equal shields (0 each) is a mutual return, so
-    // exactly one ship — the one built with more shields — must win instead;
-    // give green the edge so red alone returns.
-    const withAttackerShields: GameState = {
-      ...state,
-      ships: state.ships.map((s) =>
-        s.id === "green-1" ? { ...s, shields: 1 } : s,
-      ),
-    };
 
-    const result = applyAttack(
-      withAttackerShields,
-      "green-1",
-      squareFromName("H9"),
-    );
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
@@ -623,11 +609,20 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     ) {
       throw new Error("expected a fight-resolved effect");
     }
-    expect(fightResolved.returns).toHaveLength(1);
-    expect(emptyBayNames).toContain(squareName(fightResolved.returns[0].to));
+    // Both ships were on the board and not in a bay, so exactly two bays
+    // are free — §7.1's "there is always somewhere to go", in its two-ship
+    // form.
+    expect(fightResolved.returns).toHaveLength(2);
+    const returnedBayNames = fightResolved.returns.map((entry) =>
+      squareName(entry.to),
+    );
+    for (const bayName of returnedBayNames) {
+      expect(emptyBayNames).toContain(bayName);
+    }
+    expect(new Set(returnedBayNames).size).toBe(2);
   });
 
-  it("draws a beaten ship's return only from the bays empty at the start, in a six-ship game", () => {
+  it("draws both fighting ships' returns only from the bays empty at the start, in a six-ship game", () => {
     const emptyBayNames = ["H15", "H1"];
     const state: GameState = {
       ships: [
@@ -644,18 +639,8 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       energy: { green: 0, red: 0 },
       lengthInRounds: 30,
     };
-    const withAttackerShields: GameState = {
-      ...state,
-      ships: state.ships.map((s) =>
-        s.id === "green-1" ? { ...s, shields: 1 } : s,
-      ),
-    };
 
-    const result = applyAttack(
-      withAttackerShields,
-      "green-1",
-      squareFromName("H9"),
-    );
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
@@ -669,8 +654,12 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     ) {
       throw new Error("expected a fight-resolved effect");
     }
-    expect(fightResolved.returns).toHaveLength(1);
-    expect(emptyBayNames).toContain(squareName(fightResolved.returns[0].to));
+    // Exactly two bays are free, and this fight's two ships must fill both.
+    expect(fightResolved.returns).toHaveLength(2);
+    const returnedBayNames = fightResolved.returns.map((entry) =>
+      squareName(entry.to),
+    );
+    expect(new Set(returnedBayNames)).toEqual(new Set(emptyBayNames));
   });
 
   it("settles a five-ship game with no throw when a side occupies five dormant sites (regression for energy.ts's ships-per-side bound)", () => {
@@ -697,6 +686,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       lengthInRounds: 30,
     };
 
-    expect(() => runEndOfTurn(state, dormantSiteNames(state))).not.toThrow();
+    expect(() => runEndOfTurn(state)).not.toThrow();
   });
 });

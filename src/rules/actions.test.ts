@@ -85,6 +85,25 @@ describe("sideToMoveHasLegalAction", () => {
     expect(sideToMoveHasLegalAction(state)).toBe(false);
   });
 
+  it("is false when the side's only ship holds a charged node and has no legal move, even surrounded by enemies (rules.md §7)", () => {
+    // Without the charged-node protection, every one of these four
+    // neighbours would be a legal target — see the "is true with a legal
+    // target and no legal move" case above. Standing on a charged node
+    // removes the attack entirely, so the side has no legal action at all.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 4),
+        ship("red-1", "red", "G8"),
+        ship("red-2", "red", "I8"),
+        ship("red-3", "red", "H7"),
+        ship("red-4", "red", "H9"),
+      ],
+      siteStates: { H8: "charged" },
+    });
+
+    expect(sideToMoveHasLegalAction(state)).toBe(false);
+  });
+
   it("answers false once the game has ended, even with an obvious legal move (rules.md §9)", () => {
     const ships = [ship("green-1", "green", "H8")];
     const lastPly = pliesForGameLength(DEFAULT_GAME_LENGTH_ROUNDS);
@@ -115,6 +134,30 @@ describe("shipHasLegalAction", () => {
     });
 
     expect(shipHasLegalAction(state, "green-1")).toBe(false);
+  });
+
+  it("is false for a ship holding a charged node with no legal move, even with an enemy in range (rules.md §7)", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9")],
+      siteStates: { H8: "charged" },
+    });
+
+    expect(shipHasLegalAction(state, "green-1")).toBe(true);
+    // The move above is still legal from H8's other three neighbours; pin
+    // the case where every one of them is also blocked, leaving only the
+    // (refused) attack.
+    const boxedIn = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 4),
+        ship("green-2", "green", "G8"),
+        ship("green-3", "green", "I8"),
+        ship("green-4", "green", "H7"),
+        ship("red-1", "red", "H9"),
+      ],
+      siteStates: { H8: "charged" },
+    });
+
+    expect(shipHasLegalAction(boxedIn, "green-1")).toBe(false);
   });
 
   it("is true for a ship standing on a dormant site, and for a sibling elsewhere, with neither held back (§8.5)", () => {

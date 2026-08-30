@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.15**
+**Rules version: 0.16**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -15,17 +15,18 @@ commands a fleet of five, six or seven ships and competes to occupy the
 board's contested nodes, collecting **energy** for every turn they hold one.
 The player with the most energy when the game ends is the winner.
 
-Ships are never destroyed. A ship that loses a fight is pushed back to a bay on
-the edge of the board and rejoins the game from there.
+Ships are never destroyed. A fight has no winner — both ships involved are
+pushed back to a bay on the edge of the board, stripped of their shields, and
+rejoin the game from there.
 
-A ship carries **shields**, which make it stronger in a fight but slower to
-move. Shields are gained by sitting on a node and spent by winning fights, so a
-ship's strength and its speed pull permanently against each other. A site that
-has burned out is a bad place to leave a ship: it costs its owner energy and a
-shield every turn.
+A ship carries **shields**, which slow it down and do nothing else. Shields
+are gained by sitting on a node, so the longer a ship holds one, the harder it
+becomes to move and to leave. A ship holding a node cannot be attacked while
+it holds it. A site that has burned out is a bad place to leave a ship: it
+costs its owner energy and a shield every turn.
 
-The game has three random elements: which site is charged next, which bay a
-beaten ship is pushed back to, and how fast a node burns.
+The game has three random elements: which site is charged next, which bays
+the two ships in a fight are pushed back to, and how fast a node burns.
 
 ---
 
@@ -201,17 +202,18 @@ Every ship starts with 0 shields.
 
 ### 4.1 Shields
 
-A ship carries between 0 and 4 shields. Shields do two things, in opposite
-directions: they decide who wins a fight (section 7), and each one a ship
-carries takes away part of its movement (section 6) — and with it, part of
-its attack range, since an attack travels exactly as far as a move
-(section 7).
+A ship carries between 0 and 4 shields. A shield is the weight a ship picks
+up by holding a node: each one it carries takes away part of its movement
+(section 6) — and with it, part of its attack range, since an attack travels
+exactly as far as a move (section 7). It does nothing in a fight.
 
 A ship gains **one shield** at the end of its owner's turn if it is standing on
 a node, up to the maximum of 4. It **loses one shield** at the end of its
 owner's turn if it is standing on a **dormant** site, down to the minimum
-of 0. An **active** site does neither. A ship reduced to 0 shields is not
-destroyed — it is simply at its fastest and its weakest.
+of 0. An **active** site does neither. Shields are stripped entirely when a
+ship returns to a bay, whether that return is forced by a fight (section 7.1)
+or chosen (section 7.2, section 3.1). A ship reduced to 0 shields is not
+destroyed — it is simply at its fastest.
 
 ---
 
@@ -225,9 +227,10 @@ Green takes the first turn, and the players alternate. On a turn a player takes
 
 A player must take as many of their turn's actions as are available. If a
 player has no legal action at all, their turn passes. This should be
-uncommon — a player always has at least five ships — but an attack reaches
-only as far as the attacker's shields allow, so an action is not always
-available; the rule is here so the game can never deadlock.
+uncommon — a player always has at least five ships — but an action is not
+always available: an attack reaches only as far as the attacker's shields
+allow, and a ship holding a node has no attack available to it at all. The
+rule is here so the game can never deadlock.
 
 ---
 
@@ -254,8 +257,7 @@ land on a square another ship occupies — neither a friendly ship nor an enemy
 one.
 
 Moving and attacking are entirely separate: a ship never attacks by moving
-onto its target. Winning a fight can still move the winning ship — see
-section 7's advance, which is not a move.
+onto its target.
 
 ---
 
@@ -264,54 +266,34 @@ section 7's advance, which is not a move.
 A ship may attack an enemy ship within its **movement range** (section 6) —
 the same distances, the same straight lines, and on the same terms: every
 square the attack passes over must be empty, of either side's ships. The
-target square is of course occupied, by the enemy ship, and the site it
-stands on does not matter. At the two extremes: a ship with 4 shields reaches
-only one square orthogonally and cannot strike a diagonal at all, while a
-ship carrying no shields reaches three squares orthogonally.
-Attacking is always the attacking player's choice; ships never fight
-automatically. A ship may attack an enemy stronger than itself.
+target square is of course occupied, by the enemy ship. At the two extremes:
+a ship with 4 shields reaches only one square orthogonally and cannot strike
+a diagonal at all, while a ship carrying no shields reaches three squares
+orthogonally. Attacking is always the attacking player's choice; ships never
+fight automatically.
 
 Neither ship may be in a bay: a ship in a bay cannot attack, and cannot be
-attacked.
+attacked. And neither ship may be standing on a **charged node**: a ship
+holding a node cannot attack, and cannot be attacked. This is not only
+protection — a ship holding a node has given up striking out while it stands
+there. It applies to charged sites alone: a ship standing on an **active** or
+a **dormant** site is an ordinary target, and fights and is fought exactly
+like a ship on any other square (section 8.5).
 
-The ship with **more shields wins**. The loser is returned to a bay
-(section 7.1) with 0 shields. The winner survives, but the fight costs it
-shields — **one more than the loser was carrying**:
+**There is no winner.** Both ships — the attacker and the ship it attacked —
+are returned to bays (section 7.1) stripped of every shield they carried, and
+both squares are left empty. Shields do not enter into it: a 4-shield ship
+and an unshielded one come out of a fight identically.
 
-> winner's remaining shields = winner's shields − (loser's shields + 1)
+An attack is a **trade**: a player spends their own ship's position and
+shields to take away their opponent's. It is worth making when the enemy ship
+stands better than the attacker's own — beside a node, in the way, deep in
+the attacker's own half — and not worth making otherwise.
 
-So a 4-shield ship that beats a 2-shield ship comes out of it with 1, and even
-beating an unshielded ship costs a shield.
-
-**The winner advances.** Only an attacking winner does — a winning defender
-holds its ground. The attacker advances along the line it attacked down, to
-the furthest square, working back from the square the loser has left, that
-it may legally end on. "May legally end on" is section 6's restriction and
-nothing else. The winner also cannot cross a square another ship occupies:
-if the beaten ship's bay (section 7.1) lies on the lane, it blocks the
-advance there, and the winner stops short of it. In the ordinary case that is
-simply the loser's own square, and the winner takes it. If no square on the
-lane is one it may legally end on, the winner holds its ground instead.
-
-When the loser's own square is a charged node, the winner's advance onto it
-means **the node changes hands intact**: the attacker takes the square the
-instant the fight resolves, so the node is never left unoccupied and keeps
-the drain it already had (section 8.7). A drawn fight and a blocked advance
-leave the node empty instead — see section 8.7 for both.
-
-If both ships carry **the same number of shields**, both are returned to bays
-with 0 shields. The attacker is placed first, then the defender, and both
-squares are left empty. If either was a charged node, it is left unoccupied
-and goes dormant (section 8.7).
-
-Because a fight always costs the winner more shields than the loser was
-carrying, attacking a nearly-equal opponent leaves the winner badly exposed.
-Attacking a much weaker ship is cheap.
-
-And because the winner advances, driving an enemy off a node and taking it
-can now be a single action: a won fight can take a node outright. Heavy
-shields buy strength at the cost of reach, so the ship most likely to win a
-fight is the one least able to start one at a distance.
+Two things follow about nodes. A ship that reaches a node first cannot be
+driven off it, so nodes are contested by arriving rather than by force. And a
+holder who chooses to leave gives the node up **still lit** (section 8.3), so
+the square it vacates is worth racing for.
 
 ### 7.1 Returning to a bay
 
@@ -322,16 +304,14 @@ The choice is genuinely random, and neither player can see it coming — the
 same assurance section 8.2 gives for the charge draw.
 
 A returning ship is placed **immediately**, as part of resolving the fight,
-before anything else happens. When both ships return, the attacker is placed
-first, and the defender's bay is then drawn from the bays still empty. Which
-ship is placed first makes no difference to the odds, but fixing the order is
-what lets a recorded game replay exactly.
+before anything else happens. Every fight returns two ships: the attacker is
+placed first, and the defender's bay is then drawn from the bays still empty.
+Which ship is placed first makes no difference to the odds, but fixing the
+order is what lets a recorded game replay exactly.
 
-There is always somewhere to go: a ship being returned was by definition on the
-board and not in a bay, so at least one bay is empty. The same argument covers
-the case above, where two ships return from one fight: both were by
-definition on the board and not in a bay, so at least two bays are empty, and
-the attacker's placement can never leave the defender without one.
+There is always somewhere to go: both ships in a fight were by definition on
+the board and not in a bay, so at least two bays are empty, and the
+attacker's placement can never leave the defender without one.
 
 ### 7.2 Returning by choice
 
@@ -351,7 +331,8 @@ Every site is always in exactly one of three states:
 - **Active** — eligible to be charged, producing nothing, and costing
   nothing.
 - **Charged** — producing energy: a ship standing on it collects (section
-  8.4) and gains shields (section 4.1).
+  8.4) and gains shields (section 4.1), and can neither attack nor be
+  attacked (section 7).
 - **Dormant** — recovering after running out. Not eligible to be charged,
   producing nothing, and costing the player whose ship stands on it: energy
   (section 8.4) and a shield (section 4.1), at the end of each of that
@@ -369,9 +350,8 @@ charges what it can and simply runs short until the next turn.
 active. Nothing is dormant at the start.
 
 Nothing needs to spread their expiries out by hand. Each of the five drains
-at an independently drawn rate, is reached by ships at different turns, and
-can be ended early by a ship stepping off it (section 8.7), so they spread
-apart on their own within the first few turns.
+at an independently drawn rate and is reached by ships at different turns, so
+they spread apart on their own within the first few turns.
 
 ### 8.2 Charging a site
 
@@ -395,18 +375,18 @@ sites, so a site that has been waiting a long time is more likely to be
 picked than one that has just cycled. Because pressure is never less than 1,
 no active site can ever be excluded outright.
 
-A dormant site **recovers** instead of simply cooling down. It goes dormant
-carrying whatever drain it had (section 8.3), and at the end of every turn
-subtracts an amount drawn at random:
+A dormant site **recovers** instead of simply cooling down. A node goes
+dormant at its capacity, or a little past it — the drain draw that tips it
+over may overshoot — and at the end of every turn subtracts an amount drawn
+at random:
 
 | Recovery | 4   | 5   | 6   | 7   | 8   | Average |
 | -------- | --- | --- | --- | --- | --- | ------- |
 | Dormant  | 10% | 25% | 30% | 25% | 10% | 6       |
 
 When it reaches zero or below, it goes active, at 1 pressure, where it
-becomes eligible to be charged. From a full 60 that takes about ten turns; a
-node ended early comes back sooner, in proportion to how much of it was
-left when it went dormant.
+becomes eligible to be charged. Recovery always starts from about the same
+level, so it always takes about ten turns.
 
 ### 8.3 How long a node lives
 
@@ -423,12 +403,12 @@ that moment — either player's ship; it makes no difference whose:
 A node runs its drain up whether or not any ship is standing on it — it just
 runs up more than twice as fast when one is.
 
-When drain reaches or passes capacity, the node is spent: it goes dormant at
-the end of that turn and simply stops paying. A ship left standing on it
-stays where it is (section 8.5). An empty node lasts about 28 turns; a held
-one lasts about 13.
-Holding a node is what uses it up. Section 8.7 covers the other way a node
-ends: leaving it.
+A node ends **one** way: when its drain reaches or passes capacity, it is
+spent, and it goes dormant at the end of that turn and simply stops paying. A
+ship left standing on it stays where it is (section 8.5). A ship that leaves
+a node does not end it — the node simply reverts to the slower empty rate
+and burns on. An empty node lasts about 28 turns; a held one
+lasts about 13, and those two figures now bracket every node's life.
 
 ### 8.4 Energy
 
@@ -478,15 +458,21 @@ nothing, so waiting on one for the charge draw is free. A **dormant** site
 pays nothing and **costs**: an energy penalty (section 8.4) and a shield
 (section 4.1) at the end of each of the owner's turns.
 
+Neither an active nor a dormant site offers what a charged node offers: a
+ship standing on one can be attacked like any other ship, and may attack
+like any other ship (section 7).
+
 The site's own cycle carries on underneath the ship. A dormant site recovers
 and goes active on schedule regardless of what is standing on it, and an
 active site is eligible for the charge draw whether or not a ship is
 standing on it (section 8.2).
 
-When a node runs out under the ship holding it (section 8.3), the node
-stops paying and starts costing: the holder pays from the end of its
-owner's next turn unless it leaves. The ship stays or leaves, exactly as its
-owner prefers.
+When a node runs out under the ship holding it (section 8.3), the ship
+loses its protection at that same instant — it stops being a node, and so
+stops being a refuge (section 7) — even though it does not start costing
+anything straight away: the holder pays from the end of its owner's next
+turn unless it leaves before then. The ship stays or leaves, exactly as its
+owner prefers, and leaving now costs the node nothing.
 
 ### 8.6 End-of-turn order
 
@@ -530,32 +516,12 @@ draw is at weight 1, not 2.
 
 The two clocks are symmetric about the turn a state is entered. A node
 charged in step 4 of turn N first drains in step 3 of turn N+1, and a node
-that goes dormant in step 3 of turn N — or mid-turn, by the vacating rule
-(section 8.7) — first recovers in step 6 of turn N+1, which is what step 6's
-"dormant before this turn began" is for: a node must not drain or recover on
-the very turn it entered its new state.
+that goes dormant in step 3 of turn N first recovers in step 6 of turn N+1,
+which is what step 6's "dormant before this turn began" is for: a node must
+not drain or recover on the very turn it entered its new state.
 
-### 8.7 Leaving a node ends it
-
-**A charged node that is occupied goes dormant the moment it becomes
-unoccupied.** It happens immediately, as part of resolving the action that
-vacates it, not at the end of the turn, and the node carries its drain into
-dormancy exactly as if it had reached capacity on its own.
-
-The consequences follow from that one sentence:
-
-- A ship that **moves off** a node ends it. Holding a node and then leaving
-  is a choice to spend it.
-- A ship **pushed off** a node after losing a fight it started ends it too.
-- A **drawn fight** over a node ends it: both ships go to bays (section 7),
-  so the node is left empty.
-- A **defender beaten on a node does not end it.** The attacker advances onto
-  the square as part of resolving the fight (section 7), so the node is
-  never unoccupied, and it stays charged with its drain untouched. This is
-  the case the rule is shaped around: a node changes hands intact.
-- If the attacker's **advance is blocked** — section 7's case where the
-  beaten ship's own return bay lands on the lane — the node **is** left
-  empty, and it goes dormant like any other.
+A site's state changes only in this sequence, and never as part of resolving
+an action.
 
 ---
 

@@ -3,7 +3,6 @@ import { squareFromName, squareName } from "./board";
 import { runEndOfTurn } from "./endOfTurn";
 import type { ShipId } from "./fleet";
 import {
-  dormantSiteNames,
   type GameState,
   type Ship,
   type SiteStatus,
@@ -54,11 +53,6 @@ function buildState(config: {
   };
 }
 
-/** Runs `runEndOfTurn`, deriving the "dormant before this ply began" set from `state` itself. */
-function runEndOfTurnFresh(state: GameState) {
-  return runEndOfTurn(state, dormantSiteNames(state));
-}
-
 describe("runEndOfTurn — step 1, the shield grant", () => {
   it("gains a shield only for the moving side's ships standing on a charged node", () => {
     const state = buildState({
@@ -80,7 +74,7 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
       ],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     const shipShields = (id: ShipId): ShieldCount | undefined =>
       result.state.ships.find((s) => s.id === id)?.shields;
@@ -147,7 +141,7 @@ describe("runEndOfTurn — step 1, the shield loss (§4.1)", () => {
       ],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     const shipShields = (id: ShipId): ShieldCount | undefined =>
       result.state.ships.find((s) => s.id === id)?.shields;
@@ -176,7 +170,7 @@ describe("runEndOfTurn — step 1, the shield loss (§4.1)", () => {
       ships: [ship("green-1", "green", "H8", 0)],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.state.ships.find((s) => s.id === "green-1")?.shields).toBe(0);
     expect(result.effects.some((effect) => effect.type === "shield-lost")).toBe(
@@ -197,7 +191,7 @@ describe("runEndOfTurn — step 1, the shield loss (§4.1)", () => {
       ],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.effects).toContainEqual({
       type: "shield-gained",
@@ -224,7 +218,7 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
         siteStates: { H8: ["charged", 0] },
         randomSeed: seed,
       });
-      const result = runEndOfTurnFresh(state);
+      const result = runEndOfTurn(state);
       const level = result.state.siteStates.H8.level;
       expect([1, 2, 3]).toContain(level);
       observed.add(level);
@@ -241,7 +235,7 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
           ships: [ship("ship-1", side, "H8", 0)],
           randomSeed: seed,
         });
-        const result = runEndOfTurnFresh(state);
+        const result = runEndOfTurn(state);
         const level = result.state.siteStates.H8.level;
         expect([3, 4, 5, 6]).toContain(level);
         observed.add(level);
@@ -258,7 +252,7 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
       ships: [ship("green-1", "green", "H8", 3)],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.state.siteStates.H8.state).toBe("dormant");
     expect(result.state.siteStates.H8.level).toBeGreaterThanOrEqual(
@@ -294,7 +288,7 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
       siteStates: { H8: ["charged", NODE_CAPACITY - 1] },
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.state.siteStates.H8.state).toBe("dormant");
     expect(result.effects).toEqual([
@@ -307,7 +301,7 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
       siteStates: { H8: ["charged", 0] },
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.state.siteStates.H8.state).toBe("charged");
     expect(
@@ -330,7 +324,7 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
     });
     let plies = 0;
     for (;;) {
-      const result = runEndOfTurnFresh(state);
+      const result = runEndOfTurn(state);
       plies += 1;
       if (result.state.siteStates.H8.state === "dormant") {
         return plies;
@@ -368,7 +362,7 @@ describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
       siteStates: { H8: ["dormant", 4] },
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.state.siteStates.H8).toEqual({ state: "active", level: 1 });
     expect(result.effects).toEqual([
@@ -378,22 +372,24 @@ describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
 
   it("does not recover a site that only went dormant during this very sequence", () => {
     // H8's level guarantees it crosses capacity in step 3 (see the drain
-    // tests above). Passing an empty `dormantBeforePly` set — it was
-    // charged, not dormant, when this ply began — must stop step 6 from
-    // touching it even though it is dormant by the time step 6 runs.
+    // tests above): it is genuinely `charged`, not `dormant`, at the start
+    // of this state, so `runEndOfTurn` derives an empty dormant-before-ply
+    // set on its own and step 6 must not touch H8 even though it is
+    // dormant by the time step 6 runs.
     const state = buildState({
       siteStates: { H8: ["charged", NODE_CAPACITY - 1] },
     });
 
-    const result = runEndOfTurn(state, new Set());
+    const result = runEndOfTurn(state);
 
     expect(result.state.siteStates.H8.state).toBe("dormant");
     expect(
       result.effects.some((effect) => effect.type === "site-went-active"),
     ).toBe(false);
     // It first recovers at the end of the next ply, once it truly was
-    // dormant before that one began.
-    const nextResult = runEndOfTurn(result.state, new Set(["H8"]));
+    // dormant when that one began — `result.state` genuinely has H8
+    // dormant, so this second call derives it into the set on its own.
+    const nextResult = runEndOfTurn(result.state);
     expect(nextResult.state.siteStates.H8.level).toBeLessThan(
       result.state.siteStates.H8.level,
     );
@@ -407,8 +403,7 @@ describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
       });
       let plies = 0;
       for (;;) {
-        const dormantBefore = new Set(["H8"]);
-        const result = runEndOfTurn(state, dormantBefore);
+        const result = runEndOfTurn(state);
         plies += 1;
         if (result.state.siteStates.H8.state === "active") {
           return plies;
@@ -433,8 +428,9 @@ describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
 describe("runEndOfTurn — step 4, the charge draw never charges a site that went active in the same sequence (§8.6 step ordering)", () => {
   it("leaves the board with nothing charged when the only active candidate finishes recovering this very ply", () => {
     // H8 is guaranteed to recover this ply (level 4, see above); F2 is
-    // guaranteed to run out this ply (level NODE_CAPACITY - 1, empty). Only
-    // H8 was dormant before this ply began.
+    // guaranteed to run out this ply (level NODE_CAPACITY - 1, empty). H8 is
+    // genuinely dormant, and F2 genuinely charged, before this ply begins,
+    // so `runEndOfTurn` derives the right dormant-before-ply set on its own.
     const state = buildState({
       siteStates: {
         H8: ["dormant", 4],
@@ -442,7 +438,7 @@ describe("runEndOfTurn — step 4, the charge draw never charges a site that wen
       },
     });
 
-    const result = runEndOfTurn(state, new Set(["H8"]));
+    const result = runEndOfTurn(state);
 
     expect(result.state.siteStates.H8).toEqual({ state: "active", level: 1 });
     expect(result.state.siteStates.F2.state).toBe("dormant");
@@ -475,7 +471,7 @@ describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
       },
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.state.siteStates.H8).toEqual({
       state: "active",
@@ -495,7 +491,7 @@ describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
       },
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.state.siteStates.H8).toEqual({
       state: "active",
@@ -514,7 +510,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("green-1", "green", "D2")],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(
       result.effects.filter((effect) => effect.type !== "site-went-active"),
@@ -529,7 +525,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("green-1", "green", "H8", 4)],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -556,7 +552,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -579,7 +575,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("green-1", "green", "H8", 4)],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -599,7 +595,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("green-1", "green", "H8", 3)],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     const shieldEffectIndex = result.effects.findIndex(
       (effect) => effect.type === "shield-gained",
@@ -628,7 +624,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("red-1", "red", "H8", 1)],
     });
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(
       result.effects.some((effect) => effect.type === "energy-collected"),
@@ -661,7 +657,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
         energy: { green: 100, red: 0 },
       };
 
-      const result = runEndOfTurnFresh(state);
+      const result = runEndOfTurn(state);
 
       const penalty = result.effects.find(
         (effect) => effect.type === "energy-penalty",
@@ -691,7 +687,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       energy: { green: 100, red: 0 },
     };
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.effects).toContainEqual(
       expect.objectContaining({ type: "energy-penalty", amount: 15 }),
@@ -721,7 +717,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       energy: { green: 0, red: 0 },
     };
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     const collectedIndex = result.effects.findIndex(
       (effect) => effect.type === "energy-collected",
@@ -771,7 +767,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       energy: { green: 2, red: 0 },
     };
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.effects).toContainEqual({
       type: "energy-penalty",
@@ -797,7 +793,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       energy: { green: 0, red: 0 },
     };
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(
       result.effects.some((effect) => effect.type === "energy-penalty"),
@@ -815,7 +811,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       energy: { green: 5, red: 0 },
     };
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(
       result.effects.some((effect) => effect.type === "energy-penalty"),
@@ -833,7 +829,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       energy: { green: 5, red: 5 },
     };
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(
       result.effects.some((effect) => effect.type === "energy-penalty"),
@@ -856,7 +852,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       energy: { green: 5, red: 0 },
     };
 
-    const result = runEndOfTurnFresh(state);
+    const result = runEndOfTurn(state);
 
     expect(result.effects).toContainEqual({
       type: "energy-penalty",
@@ -944,7 +940,7 @@ describe("runEndOfTurn — the opening board does not fall into lockstep (§8.1)
       const runOutPly = new Map<string, number>();
 
       for (let ply = 1; ply <= PLIES_TO_RUN; ply++) {
-        const result = runEndOfTurnFresh(state);
+        const result = runEndOfTurn(state);
         for (const effect of result.effects) {
           if (effect.type === "node-ran-out") {
             const name = squareName(effect.square);

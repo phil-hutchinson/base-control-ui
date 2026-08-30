@@ -34,7 +34,6 @@ import type {
   PlyEndedEffect,
 } from "../rules/ply";
 import { MAX_SHIELDS, MIN_SHIELDS } from "../rules/shields";
-import type { NodeVacatedEffect } from "../rules/vacating";
 import type {
   AttackedEvent,
   MovedEvent,
@@ -57,10 +56,6 @@ function movesPhrase(count: number): string {
 
 function targetsPhrase(count: number): string {
   return `${count} ${count === 1 ? "target" : "targets"}`;
-}
-
-function shieldsPhrase(count: number): string {
-  return `${count} ${count === 1 ? "shield" : "shields"}`;
 }
 
 function roundsPhrase(count: number): string {
@@ -313,26 +308,14 @@ function moveSentence(event: MovedEvent): string {
 }
 
 /**
- * A node going dormant the moment the moving player's own action vacated it
- * (rules.md §8.7). This is a direct consequence of a choice the player just
- * made, unlike the silent `site-went-active`, so it speaks — a player who
- * never heard it would not learn that stepping off a node ends it.
- */
-function nodeVacatedClause(effect: NodeVacatedEffect): string {
-  return `The node at ${squareName(effect.square)} went dormant when the ${effect.side} ship left it.`;
-}
-
-/**
- * How an action's ply ended, if at all: first any nodes the action itself
- * vacated (rules.md §8.7), then the end-of-turn sequence's own clauses, then
- * the other side's turn if the ply ended, a further pass (with its own
- * end-of-turn clauses) if the resulting side had no legal action at all, or
- * how many actions the acting side has left if the ply simply continues.
- * Shared by a move and an attack — both end a ply the same way, and both can
- * vacate a node the same way. A fight can vacate two nodes at once, on a
- * drawn fight in which both ships stood on charged nodes. `tailClause`, when
- * given, replaces the "whose turn is next" clause — the substitution
- * `announcementForSession` makes at the end of the game.
+ * How an action's ply ended, if at all: if the ply ended, the end-of-turn
+ * sequence's own clauses followed by the other side's turn, a further pass
+ * (with its own end-of-turn clauses) if the resulting side had no legal
+ * action at all, or how many actions the acting side has left if the ply
+ * simply continues. Shared by a move and an attack — both end a ply the
+ * same way. `tailClause`, when given, replaces the "whose turn is next"
+ * clause — the substitution `announcementForSession` makes at the end of the
+ * game.
  */
 function actionEndingClauses(
   side: Side,
@@ -340,12 +323,6 @@ function actionEndingClauses(
   actionsRemaining: number,
   tailClause?: string,
 ): string[] {
-  const vacatedClauses = effects
-    .filter(
-      (effect): effect is NodeVacatedEffect => effect.type === "node-vacated",
-    )
-    .map(nodeVacatedClause);
-
   const plyEndedEffect = effects.find(
     (effect): effect is PlyEndedEffect => effect.type === "ply-ended",
   );
@@ -358,26 +335,18 @@ function actionEndingClauses(
     (effect): effect is PassEffect => effect.type === "ply-passed",
   );
   if (passEffect !== undefined) {
-    return [
-      ...vacatedClauses,
-      ...plyEndedClauses,
-      ...passSentenceClauses(passEffect, tailClause),
-    ];
+    return [...plyEndedClauses, ...passSentenceClauses(passEffect, tailClause)];
   }
 
   if (plyEndedEffect !== undefined) {
     return [
-      ...vacatedClauses,
       ...plyEndedClauses,
       tailClause ??
         `${turnPhrase(plyEndedEffect.sideToMove, ACTIONS_PER_PLY)}.`,
     ];
   }
 
-  return [
-    ...vacatedClauses,
-    `${capitalize(side)} has ${actionsPhrase(actionsRemaining)} left.`,
-  ];
+  return [`${capitalize(side)} has ${actionsPhrase(actionsRemaining)} left.`];
 }
 
 function actionEndingClause(
@@ -389,24 +358,10 @@ function actionEndingClause(
 }
 
 /**
- * The winning attacker's advance clause (rules.md §7): where it ended up, or
- * that it held its ground when no square on the lane was legal to end on.
- */
-function winnerAdvanceClause(
-  winner: NonNullable<FightResolvedEffect["winner"]>,
-): string {
-  if (!winner.advanced) {
-    return "It held its ground.";
-  }
-
-  return `It advanced to ${squareName(winner.square)} and took it.`;
-}
-
-/**
  * The fight's own sentence (rules.md §7), from the single `fight-resolved`
- * effect an attack always carries. The losing-attacker sentence reads as a
- * deliberate choice, not an error: §7 permits attacking a stronger enemy, and
- * stripping its shields at the cost of the attacker's own is a real tactic.
+ * effect an attack always carries: who attacked whom, that both were beaten,
+ * and the two bays they landed in with no shields. There is no winner and no
+ * advance to report — every fight has the same outcome.
  */
 function fightSentence(event: AttackedEvent): string {
   const fight = event.effects.find(
@@ -423,27 +378,11 @@ function fightSentence(event: AttackedEvent): string {
   const attackerSide = capitalize(fight.attacker.side);
   const opening = `${attackerSide} ship at ${attackerSquare} attacked the ${fight.defender.side} ship at ${defenderSquare}`;
 
-  if (fight.outcome === "mutual-return") {
-    const [attackerReturn, defenderReturn] = fight.returns;
-    return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both with no shields.`;
+  if (fight.returns.length !== 2) {
+    throw new RangeError("a fight-resolved effect always carries two returns");
   }
-
-  if (fight.winner === undefined) {
-    throw new RangeError(
-      "a decided fight always carries a winner: rules.md §7",
-    );
-  }
-
-  if (fight.outcome === "attacker-won") {
-    const [defenderReturn] = fight.returns;
-    const cost = fight.defender.shields + 1;
-    const advanceClause = winnerAdvanceClause(fight.winner);
-    return `${opening} and won. ${advanceClause} The beaten ship returned to the ${squareName(defenderReturn.to)} bay with no shields. The fight cost ${shieldsPhrase(cost)}, leaving the winner on ${fight.winner.remainingShields}.`;
-  }
-
-  const [attackerReturn] = fight.returns;
-  const cost = fight.attacker.shields + 1;
-  return `${opening} and lost. The beaten ship returned to the ${squareName(attackerReturn.to)} bay with no shields. The fight cost the defender ${shieldsPhrase(cost)}, leaving it on ${fight.winner.remainingShields}.`;
+  const [attackerReturn, defenderReturn] = fight.returns;
+  return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both with no shields.`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {
@@ -463,8 +402,12 @@ function rejectionSentence(event: RejectedEvent): string {
       return `${square} is occupied.`;
     case "attacker-in-bay":
       return "A ship in a bay cannot attack. Move it out first.";
+    case "attacker-on-charged-node":
+      return "A ship holding a charged node cannot attack while it stands there. Move it off first.";
     case "target-in-bay":
       return "A ship in a bay cannot be attacked.";
+    case "target-on-charged-node":
+      return "A ship holding a charged node cannot be attacked.";
     case "target-out-of-range":
       return `${square} is out of attack range. A ship attacks as far as it moves, so shields shorten its reach — a ship with four shields can only strike one square up, down, left or right.`;
     case "attack-path-blocked":

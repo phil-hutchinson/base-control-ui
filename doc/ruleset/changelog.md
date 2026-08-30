@@ -7,6 +7,48 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.16 — every fight is a draw, and a node runs its course
+
+This is a gameplay change made of two halves that land together, because each
+removes the reason the other's edge cases existed. Tagging stays on hold
+until the game plays (see the project's contribution notes).
+
+- **Section 7 is rewritten: there is no winner.** Both ships in a fight — the
+  attacker and the ship it attacked — are returned to bays (section 7.1)
+  stripped of every shield, and both squares are left empty. The shield
+  comparison, the `winner − (loser + 1)` cost and the winner's advance are
+  all deleted, and section 6 loses its closing sentence noting that a
+  fight's winner could still move as part of the advance, which was not
+  itself a move.
+- **A ship standing on a charged node can neither attack nor be attacked.**
+  The same protection a bay already gives, extended to a node a ship is
+  holding. Only a **charged** site protects; a ship on an active or a
+  dormant site is an ordinary target and may attack like any other ship.
+- **Section 7.1 keeps one shape of return.** Every fight now returns two
+  ships, the attacker placed first and the defender's bay drawn from the
+  bays still empty, which is what lets a recorded game replay exactly.
+- **Section 4.1 reframes what a shield is.** A shield does nothing in a
+  fight; it is the weight a ship picks up by holding a node, taking away
+  part of its movement and, with it, part of its attack range. Sections 1
+  and 5 follow: the overview drops the old "stronger in a fight" framing and
+  gains the node refuge, and section 5's aside on when an action is not
+  available gains a ship holding a node having no attack at all.
+- **Section 8.7 is deleted outright**, heading and all. A charged node that
+  becomes unoccupied stays charged, and carries on draining at the slower
+  empty rate (section 8.3) until its drain reaches capacity, at which point
+  it goes dormant. Leaving a node no longer ends it.
+- **Every node now goes dormant at, or a little past, capacity.** Section
+  8.2's recovery always starts from about the same level, so it always takes
+  about ten turns; "a node ended early comes back sooner" is deleted.
+- **Section 8.1 loses its early-ending clause**, and section 8.5 states the
+  other side of the node's protection: an active or a dormant site protects
+  nothing, and a ship loses its protection the instant its node runs out
+  under it, even though it does not start paying until the end of its
+  owner's next turn.
+- **Section 8.6's ordering tail drops its mid-turn case.** A site's state now
+  changes only in the end-of-turn sequence, and never while an action is
+  being resolved. The six steps themselves are unchanged.
+
 ## 0.15 — fleet size and game length become choices
 
 This is a gameplay change: both numbers now affect how a game is played, so

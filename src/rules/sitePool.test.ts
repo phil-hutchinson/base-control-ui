@@ -18,12 +18,7 @@
 import { describe, expect, it } from "vitest";
 import { squareName } from "./board";
 import { runEndOfTurn } from "./endOfTurn";
-import {
-  dormantSiteNames,
-  type GameState,
-  siteStateAt,
-  startingGameState,
-} from "./gameState";
+import { type GameState, siteStateAt, startingGameState } from "./gameState";
 import { SITES, type SiteState, TARGET_CHARGED_SITES } from "./sites";
 
 /** A generous game length: this test drives `runEndOfTurn` directly and never consults `isGameOver`. */
@@ -92,7 +87,7 @@ function runEconomy(seed: number, plies: number): readonly EconomySample[] {
   const samples: EconomySample[] = [];
 
   for (let i = 0; i < plies; i++) {
-    const result = runEndOfTurn(state, dormantSiteNames(state));
+    const result = runEndOfTurn(state);
     samples.push({
       charged: countInState(result.state, "charged"),
       active: countInState(result.state, "active"),
