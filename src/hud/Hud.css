@@ -2,7 +2,8 @@
   /* No border or background of its own: `.app__cabinet` supplies both. The
      gap between the info region and the play area is now `--region-gap`
      (`App.css`), owned by the layout container, so this element carries no
-     margin of its own. */
+     margin of its own. The row-to-turn-indicator gap below is deliberately
+     fixed rather than scaled with `--region-extent`. */
   display: flex;
   flex-direction: column;
   align-items: center;

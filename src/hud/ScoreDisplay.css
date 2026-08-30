@@ -1,3 +1,5 @@
+/* This cell's portrait size — name, digits and pip rows — feeds the
+   `--region-extent` derivation in `App.css`. */
 .score-display {
   display: flex;
   flex-direction: column;
@@ -81,14 +83,23 @@
    width in portrait, which the fixed-width info column cannot follow, so
    both are sized as a fraction of `--region-extent` (`App.css`) here
    instead, keeping them in the same proportion to `P` as before while `P`
-   itself now tracks the window. Neither is close to the widest thing in the
-   column at these sizes (see the derivation in `App.css`). */
+   itself now tracks the window. */
 @media (orientation: landscape) {
   .score-display__name {
     font-size: calc(var(--region-extent) * 0.085);
   }
 
   .score-display__digits {
+    font-size: calc(var(--region-extent) * 0.175);
+  }
+
+  /* The pip rows are otherwise unscaled, sized off the inherited root font
+     rather than the digits above them. Giving them the digits' own
+     font-size lets their existing `0.6em` diameter and `0.35em` gap scale
+     with it, which keeps the cell proportionate and makes the five-pip row
+     the widest thing in the column (see `App.css`). */
+  .score-display__pips,
+  .score-display__dormant-pips {
     font-size: calc(var(--region-extent) * 0.175);
   }
 }

@@ -1,3 +1,5 @@
+/* This cell's portrait size feeds the `--region-extent` derivation in
+   `App.css`. */
 .round-counter {
   display: flex;
   flex-direction: column;

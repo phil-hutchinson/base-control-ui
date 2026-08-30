@@ -312,6 +312,14 @@ the column's contents keep scaling with `P` as `P` itself now scales with the
 window, and the doubling the owner asked for happens through that scaling
 rather than through a second magic number.
 
+**Peer-review fix:** `S`'s expression had been written out in full once per
+orientation, differing only in which of `100vw`/`100vh` came first — a
+duplication a later change could silently only make in one copy. `App.css`
+now names the window's short and long axes as `--window-short` and
+`--window-long`, states the `S` formula once in terms of them, and the
+landscape media query swaps only the two axis tokens (and `--region-extent`)
+rather than restating the formula.
+
 ### D6 — The board's 40px floor becomes a shared token; `S` carries the floor too
 
 `Board.css` floors a square at `40px` (`max(40px, calc(100cqmin / 15))`), which
@@ -407,6 +415,20 @@ one that is itself window-tracking rather than fixed, and the type follows it
 mechanically rather than being retuned by hand each time. The reserved
 placeholder (D9) was brought into the same scheme, at the turn indicator's
 fraction, applying in both orientations.
+
+**Peer-review fix:** the node pips were left out of this scheme — still
+`0.6em` of the inherited, un-scaled root font, a sixth the size of the score
+digits they sit under. In landscape, `.score-display__pips` and
+`.score-display__dormant-pips` now take the same
+`calc(var(--region-extent) * 0.175)` font-size as the digits, so their
+existing `0.6em` diameter and `0.35em` gap scale with `P` along with
+everything else in the column. The five-pip row then comes to roughly
+`0.77P`, making it the widest thing in the column — ahead of the title
+(`0.2P`) and the turn indicator's longest wording (`0.11P`), which had
+previously been the two widest and land close to each other at roughly
+`0.72P` once their text width is accounted for. `.hud`'s row gap and the
+title's bottom margin were left as they were — fixed `rem` values, noted as
+deliberately so where they live — since only the pips were asked for.
 
 ### D9 — The reserved region is a bare element with a word, and nothing else
 

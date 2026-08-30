@@ -12,6 +12,13 @@
     var(--app-padding) + var(--cabinet-border) + var(--cabinet-padding)
   );
 
+  /* The window's short and long axes, named so the play-size formula below
+     is stated once instead of once per orientation. In portrait the short
+     axis is the window's width and the long axis its height; the landscape
+     media query swaps both tokens rather than restating the formula. */
+  --window-short: 100vw;
+  --window-long: 100vh;
+
   /* The side regions' extent (`P`) and the gap between regions (`g`) from
      the sizing formula. Portrait `P` is derived from the info region's own
      content — the title, the HUD row and the turn indicator — at the
@@ -32,17 +39,20 @@
   --region-extent: clamp(10.75rem, 26vw, 16rem);
   --region-gap: 1rem;
 
-  /* The play area's side, `S`, from the story's section 4. `W` and `H` are
-     the room inside the cabinet's frame — a full viewport dimension less
-     `--frame-inset` on both edges. Portrait: `S = min(W, H - 2(P + g))`,
-     floored so the board never draws smaller than `--board-floor`
-     (`index.css`). Landscape swaps `W` and `H` in its own media query. */
+  /* The play area's side, `S`, from the story's section 4, stated once for
+     both orientations via the axis tokens above:
+       S = max(--board-floor, min(short - 2·inset, long - 2·inset -
+                                   2·(P + g)))
+     where `short`/`long` are `--window-short`/`--window-long`, `inset` is
+     `--frame-inset`, `P` is `--region-extent` and `g` is `--region-gap`.
+     Floored so the board never draws smaller than `--board-floor`
+     (`index.css`). */
   --play-size: max(
     var(--board-floor),
     min(
-      calc(100vw - (2 * var(--frame-inset))),
+      calc(var(--window-short) - (2 * var(--frame-inset))),
       calc(
-        100vh - (2 * var(--frame-inset)) -
+        var(--window-long) - (2 * var(--frame-inset)) -
           (2 * (var(--region-extent) + var(--region-gap)))
       )
     )
@@ -66,6 +76,8 @@
 }
 
 .app__title {
+  /* Portrait: this size feeds the `--region-extent` derivation above. The
+     bottom margin is deliberately fixed rather than scaled with `P`. */
   margin: 0 0 1rem;
   font-family: var(--font-arcade);
   font-size: clamp(1.5rem, 4vw, 3.5rem);
@@ -85,11 +97,12 @@
      bezel per screen. The padding here is that frame's thickness, taken out
      of the room the in-game screen has to lay its regions out in.
      `flex: 1; min-height: 0` gives the cabinet itself a resolved height
-     from `.app`'s flex column, which its children — the start screen, the
-     game-over panel, or `.app__screen` — in turn need a share of to resolve
-     their own. Once the game ends and its score roll settles, the
-     game-over panel takes this box's place: the in-game screen is switched
-     off and the panel fills the cabinet on its own. */
+     from `.app`'s flex column, which the start screen and the game-over
+     panel — its other two children — need a share of to resolve their own;
+     `.app__screen` only uses it to centre its group of regions, not to size
+     them. Once the game ends and its score roll settles, the game-over
+     panel takes this box's place: the in-game screen is switched off and
+     the panel fills the cabinet on its own. */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -112,14 +125,18 @@
      regions — info, play, reserved — in that order, each sized rigidly
      (`.app__info` and `.app__reserved` to `--region-extent`, `.app__play` to
      `--play-size`) rather than by flex-grow, so no size flows down this
-     box. `safe center` centres the group on the main axis when there is
-     room and falls back to start alignment rather than overflowing in both
-     directions when there is not — the below-the-floor case, which is
-     meant to overflow and scroll, not clip unreachably. Still today's
-     stacked column; the orientation switch lands in the next step. */
+     box. `safe center` on both axes centres the group when there is room
+     and falls back to start alignment when there is not, so any overrun
+     falls into scrollable space rather than out of reach. On the main axis
+     that is a window below the board's floor. The cross axis carries the
+     same hazard turned sideways: in landscape a short window can make the
+     info column's content-driven height taller than the screen, and in
+     portrait a narrow window can make the floored board wider than it —
+     plain `center` would push either case's overrun above or to the left of
+     the viewport, out of scroll reach. */
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: safe center;
   justify-content: safe center;
   flex: 1;
   min-height: 0;
@@ -142,9 +159,10 @@
      definite width and height computed directly from the window (see the
      `:root` token above), rather than one inherited down a flex chain, so
      `flex: 0 0 auto` — it neither grows into nor shrinks out of the size
-     already computed for it. Aligned to the block-axis start rather than
-     centred, so a board too large for the container overflows downward
-     into scrollable space instead of being clipped off the top. */
+     already computed for it. The board is always exactly this container's
+     size, so `justify-content: center` and `align-items: flex-start` have
+     nothing left to do; they stay as belt-and-braces against a container
+     that can no longer be undersized. */
   container-type: size;
   display: flex;
   flex: 0 0 auto;
@@ -174,60 +192,27 @@
   text-transform: uppercase;
 }
 
-/* Landscape: the three regions sit side by side instead of stacked, so `P`
-   becomes a width and the play-area formula swaps which window dimension it
-   floors against. The info region's own contents restack into a column in
-   `Hud.css`; every size in that column that used to track the window's width
-   is re-keyed to a fraction of `--region-extent` here and in the HUD's own
-   stylesheets, because a column of fixed width `P` cannot hold type sized
-   from a window that can be many times wider than the column itself.
+/* Landscape: the three regions sit side by side instead of stacked, so the
+   axis tokens above swap and `P` becomes a width. The info region's own
+   contents restack into a column in `Hud.css`; every size in that column
+   that used to track the window's width is re-keyed to a fraction of
+   `--region-extent` here and in the HUD's own stylesheets, because a column
+   of fixed width `P` cannot hold type sized from a window that can be many
+   times wider than the column itself.
 
-   `--region-extent` is a `clamp()` that tracks the window's own width
-   (`14vw`), capped at both ends, rather than a flat length: the owner asked
-   for the column's type to read at roughly twice its original size, and a
-   flat doubling (~20rem) costs the long axis a second `P + g` for the
-   mirrored reserved region, which pushes `S` under the 600px floor at
-   ordinary landscape sizes (a 1280x800 window would already overflow).
-   Tracking the window's width instead keeps `P` — and so the board — sized
-   to the window actually in front of the player: `clamp(12rem, 14vw,
-   22rem)` sits at its floor on everything up to a roughly 1370px-wide
-   window, grows with the window from there, and is capped at 22rem so an
-   ultra-wide monitor does not hand the column an ever-larger `P`. Worked
-   against four representative windows (`rem` = 16px, `--frame-inset`
-   recomputed from each window's own `cabinet-padding` clamp):
-     - 3440x1440 (the owner's): `cabinet-padding` clamps to its 1.5rem
-       maximum, `--frame-inset` = 50px/side; `P` clamps to its 22rem maximum
-       (352px); `S` = min(H, W - 2(P+g)) = min(1340, 2604) = 1340px.
-     - 1920x1080: `--frame-inset` = 50px/side; `14vw` = 268.8px, inside the
-       clamp's range, so `P` = 268.8px; `S` = min(980, 1250.4) = 980px.
-     - 1280x800: `--frame-inset` = 50px/side; `14vw` = 179.2px, below the
-       clamp's 12rem floor, so `P` = 192px; `S` = min(700, 764) = 700px.
-     - 1100x1000 (near-square): `--frame-inset` = 48px/side; `P` clamps to
-       its 12rem floor (192px); `S` = min(904, 588), which is below the
-       600px floor, so the board floors at 600px and the window scrolls a
-       little on its long axis. This is the deliberately-too-small case the
-       600px floor already exists to handle (see the story's section 4), not
-       a regression this change introduces — a window this close to square
-       was already the tight case before the type was enlarged.
-   The column's own type sizes are expressed below and in the HUD's
-   stylesheets as fractions of `--region-extent` rather than fixed `rem`
-   values, at the same proportions the previous flat `10rem` derivation used
-   (e.g. the title at `0.2 * P`, the turn indicator at `0.11 * P`), so the
-   column's contents keep scaling with `P` as it tracks the window instead of
-   being pinned to one window size's worth of headroom. */
+   `--region-extent` tracks the window's own width (`14vw`) between a floor
+   and a cap, rather than a flat length: the mirrored reserved region charges
+   the window's long axis a second `P + g`, so an unbounded `P` would push
+   the board under `--board-floor` on an ordinary window as it grew with the
+   type it carries. The widest thing in the column is the five-pip row, which
+   draws about `0.77P` across (`ScoreDisplay.css`), narrowly ahead of the
+   title and the turn indicator's longest wording at roughly `0.72P` each.
+   Those are widths; the fractions each rule sets below are font sizes. */
 @media (orientation: landscape) {
   :root {
+    --window-short: 100vh;
+    --window-long: 100vw;
     --region-extent: clamp(12rem, 14vw, 22rem);
-    --play-size: max(
-      var(--board-floor),
-      min(
-        calc(100vh - (2 * var(--frame-inset))),
-        calc(
-          100vw - (2 * var(--frame-inset)) -
-            (2 * (var(--region-extent) + var(--region-gap)))
-        )
-      )
-    );
   }
 
   .app__screen {
