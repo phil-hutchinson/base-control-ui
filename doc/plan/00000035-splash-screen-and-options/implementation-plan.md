@@ -897,7 +897,24 @@ them, and that `README.md`, the rules and the package still say Base Control.
 
 ## Step 8 — The start screen component
 
-Status: pending
+Status: committed
+
+Notes: Added `src/start/StartScreen.tsx` and `src/start/StartScreen.css`
+(controlled, per D10), each option group a `fieldset`/`legend` reading its
+values from `FLEET_SIZES` and `GAME_LENGTH_OPTIONS_ROUNDS` rather than a
+hard-coded list, radios visually hidden with the shared `.visually-hidden`
+utility class (used directly, matching `GameOverPanel`'s existing usage,
+rather than duplicating it locally), styled `label`s carrying the selected
+and focus-visible treatment, and radio `name`s scoped per group with
+`useId`. The PLAY button is built up from `.game-over-panel__play-again`,
+bigger and filled rather than outlined, as the loudest element on the
+screen. Added `src/start/StartScreen.test.tsx` covering the heading, both
+groups' values and checked state, that changing an option calls only its
+own handler (never `onPlay`), and that PLAY calls `onPlay` once; no
+accessibility-specific test was added, per the step and `CLAUDE.md`. Nothing
+renders `StartScreen` yet — step 9 wires it into `App`. `npm run typecheck`,
+`npm run lint`, `npm test` (794 passed) and `npm run format:check` all pass.
+No deviation from the plan.
 
 Add `src/start/StartScreen.tsx` and `src/start/StartScreen.css`. Nothing
 renders it yet — this step builds the screen, step 9 wires it (scaffolding

@@ -1,0 +1,125 @@
+.start-screen {
+  /* Fills the cabinet, the way `.game-over-panel` does: this is the only
+     thing in the box while no game is in progress. */
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.start-screen__title {
+  /* Same marquee tokens as `.app__title`, through its own class rather than
+     that one — a component's CSS file owns its own classes. */
+  margin: 0;
+  font-family: var(--font-arcade);
+  font-size: clamp(1.5rem, 4vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--glow-text);
+  text-shadow:
+    0 0 0.3em var(--glow-text),
+    0 0 0.6em var(--glow-text);
+}
+
+.start-screen__options {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.start-screen__legend {
+  padding: 0;
+  font-family: var(--font-arcade);
+  font-size: clamp(0.75rem, 1.5vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+
+.start-screen__choices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.start-screen__choice {
+  display: inline-flex;
+}
+
+.start-screen__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3em;
+  padding: 0.5em 1em;
+  font-family: var(--font-arcade);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-weight: 700;
+  color: var(--color-text-dim);
+  background-color: var(--color-space-raised);
+  border: 1px solid var(--color-text-dim);
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.start-screen__label:hover {
+  color: var(--color-text-bright);
+  border-color: var(--color-text-bright);
+}
+
+/* The selected value: the loud, filled treatment, unmistakable next to the
+   quiet, outlined unselected ones. */
+.visually-hidden:checked + .start-screen__label {
+  color: var(--color-space);
+  background-color: var(--glow-text);
+  border-color: var(--glow-text);
+  box-shadow: 0 0 0.6em var(--glow-text);
+}
+
+.visually-hidden:focus-visible + .start-screen__label {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.start-screen__play {
+  /* Built up from `.game-over-panel__play-again`: bigger, brighter, the
+     loudest thing on the screen. */
+  padding: 0.85em 3em;
+  font-family: var(--font-arcade);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-space);
+  background-color: var(--glow-text);
+  border: 1px solid var(--glow-text);
+  border-radius: 0.75rem;
+  box-shadow: 0 0 1em var(--glow-text);
+  cursor: pointer;
+}
+
+.start-screen__play:hover {
+  box-shadow: 0 0 1.5em var(--glow-text);
+}
+
+.start-screen__play:focus {
+  outline: none;
+}
+
+.start-screen__play:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
