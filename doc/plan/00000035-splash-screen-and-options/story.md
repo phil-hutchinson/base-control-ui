@@ -55,7 +55,7 @@ What exists today:
   `isGameLengthRounds`, and the round arithmetic that already reads a state's
   own `lengthInRounds` rather than the default.
 - **`src/rules/gameState.ts`** — `startingGameState(randomSeed,
-  lengthInRounds = DEFAULT_GAME_LENGTH_ROUNDS)`, which builds `state.ships`
+lengthInRounds = DEFAULT_GAME_LENGTH_ROUNDS)`, which builds `state.ships`
   from `STARTING_FLEET` and stores `lengthInRounds` on the state.
 - **`src/game/session.ts`** — the `new-game` intent, which **already** carries
   both the seed and the length and never reaches for a default itself.
@@ -79,7 +79,7 @@ implementer:
 - **Fleet size does not need to be stored on `GameState`.** A game's ships
   are `state.ships`; how many a side has is derivable from them. The choice
   belongs to the app's start screen and to the `new-game` intent, not to a
-  new state field. Contrast `lengthInRounds`, which *is* stored, because
+  new state field. Contrast `lengthInRounds`, which _is_ stored, because
   nothing else in the state records it.
 - **`src/rules/energy.ts` derives `SHIPS_PER_SIDE` from `STARTING_FLEET`.**
   It is a range check on the dormant-site count (§8.4), and it wants the
@@ -97,24 +97,24 @@ colours on the left and right edges.
 **Seven a side (14 ships, today's layout, unchanged).** Alternating clockwise
 from H15.
 
-| Edge   | Bays, left to right / top to bottom            |
-| ------ | ---------------------------------------------- |
-| Top    | D15 red, H15 green, L15 red                    |
-| Right  | O14 green, O10 red, O6 green, O2 red           |
-| Bottom | D1 green, H1 red, L1 green                     |
-| Left   | A14 green, A10 red, A6 green, A2 red           |
+| Edge   | Bays, left to right / top to bottom  |
+| ------ | ------------------------------------ |
+| Top    | D15 red, H15 green, L15 red          |
+| Right  | O14 green, O10 red, O6 green, O2 red |
+| Bottom | D1 green, H1 red, L1 green           |
+| Left   | A14 green, A10 red, A6 green, A2 red |
 
 **Six a side (12 ships).** The **middle bay of the top edge and of the bottom
 edge** — H15 and H1, the two three-bay edges — start empty. Every other bay
 holds exactly the ship and the colour it holds in a seven-ship game; nothing
 is recoloured.
 
-| Edge   | Bays                                           |
-| ------ | ---------------------------------------------- |
-| Top    | D15 red, **H15 empty**, L15 red                |
-| Right  | O14 green, O10 red, O6 green, O2 red           |
-| Bottom | D1 green, **H1 empty**, L1 green               |
-| Left   | A14 green, A10 red, A6 green, A2 red           |
+| Edge   | Bays                                 |
+| ------ | ------------------------------------ |
+| Top    | D15 red, **H15 empty**, L15 red      |
+| Right  | O14 green, O10 red, O6 green, O2 red |
+| Bottom | D1 green, **H1 empty**, L1 green     |
+| Left   | A14 green, A10 red, A6 green, A2 red |
 
 Green: O14, O6, D1, L1, A14, A6. Red: D15, L15, O10, O2, A10, A2.
 
@@ -123,12 +123,12 @@ O14, O2, A14, A2 — start empty, and the colours on those two edges are
 **reversed** from the seven-ship game. The three-bay edges are untouched, so
 the top still reads red-green-red and the bottom still reads green-red-green.
 
-| Edge   | Bays                                                          |
-| ------ | ------------------------------------------------------------- |
-| Top    | D15 red, H15 green, L15 red                                   |
-| Right  | **O14 empty**, O10 **green**, O6 **red**, **O2 empty**        |
-| Bottom | D1 green, H1 red, L1 green                                    |
-| Left   | **A14 empty**, A10 **green**, A6 **red**, **A2 empty**        |
+| Edge   | Bays                                                   |
+| ------ | ------------------------------------------------------ |
+| Top    | D15 red, H15 green, L15 red                            |
+| Right  | **O14 empty**, O10 **green**, O6 **red**, **O2 empty** |
+| Bottom | D1 green, H1 red, L1 green                             |
+| Left   | **A14 empty**, A10 **green**, A6 **red**, **A2 empty** |
 
 Green: H15, O10, A10, D1, L1. Red: D15, L15, O6, A6, H1.
 

@@ -390,7 +390,19 @@ names, per the story's out-of-scope list.
 
 ## Step 1 — Rules 0.15: fleet size and game length become choices
 
-Status: pending
+Status: implemented
+
+Notes: Edited `doc/ruleset/rules.md` (§1, §2, §4, §5, §9) to 0.15, added a
+`## 0.15` entry to `doc/ruleset/changelog.md`, and bumped `RULES_VERSION` in
+`src/rules/rulesVersion.ts`. §4's six- and five-ship layouts are given as edge
+tables (the plan's "table" option), each followed by the explicit green/red
+bay lists so a later step can check the code against them by eye, plus the
+owner-approved minimal reword of §5's aside. `npx prettier --write` was run on
+`rules.md` after editing, since the new tables needed column padding; no
+content changed as a result. `npm run typecheck`, `npm run lint`, `npm test`
+(755 passed) and `npm run format:check` all pass; the only format warning is
+the pre-existing one on this story's own `story.md`, noted in the plan as not
+this story's to fix.
 
 Edit `doc/ruleset/rules.md`, add a `doc/ruleset/changelog.md` entry and bump
 `src/rules/rulesVersion.ts` to `"0.15"`. This is the whole of this step: no
