@@ -846,7 +846,21 @@ pass with the new `session.test.ts` cases.
 
 ## Step 7 — The name on screen becomes GREED
 
-Status: pending
+Status: committed
+
+Notes: Added `src/gameName.ts` exporting `GAME_NAME = "GREED"` with the
+doc comment `D13` describes; pointed `App.tsx`'s `<h1>` and `Board.tsx`'s
+grid label (now `` `${GAME_NAME} board` ``) at it, and changed `index.html`'s
+`<title>` to the literal `GREED`. `App.test.tsx`'s heading assertion now
+imports and asserts against `GAME_NAME` rather than a re-typed string, per
+the step's preference. No other test needed updating — `Board.test.tsx`'s
+and `GameOverPanel.test.tsx`'s grid queries use `getByRole("grid")` with no
+`name` filter, so none asserted the old literal. A repository-wide search
+for "Base Control" after the change turns up only `gameName.ts`'s own doc
+comment, `CLAUDE.md`, `README.md`, `doc/ruleset/rules.md` and prior stories'
+plan documents — nothing else was touched. `npm run typecheck`, `npm run
+lint`, `npm test` (788 passed) and `npm run format:check` all pass. No
+deviation from the plan.
 
 Add `src/gameName.ts` exporting the single on-screen name constant, with a doc
 comment saying it is the **on-screen** name only — a working title — and that

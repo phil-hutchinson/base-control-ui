@@ -2,6 +2,7 @@ import { useReducer } from "react";
 import { Board } from "./board/Board";
 import { freshSeed } from "./game/seed";
 import { createSession, sessionReducer } from "./game/session";
+import { GAME_NAME } from "./gameName";
 import { GameOverPanel } from "./hud/GameOverPanel";
 import { Hud } from "./hud/Hud";
 import { useDisplayedEnergy } from "./hud/useDisplayedEnergy";
@@ -64,7 +65,7 @@ export function App() {
           <GameOverPanel state={session.state} onPlayAgain={handlePlayAgain} />
         ) : (
           <>
-            <h1 className="app__title">Base Control</h1>
+            <h1 className="app__title">{GAME_NAME}</h1>
             <Hud state={session.state} displayedEnergy={displayedEnergy} />
             <div className="app__board">
               <Board session={session} onIntent={dispatch} />

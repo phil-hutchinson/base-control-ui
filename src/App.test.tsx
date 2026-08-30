@@ -4,6 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { App } from "./App";
+import { GAME_NAME } from "./gameName";
 
 // Vitest's globals are off (see vite.config.ts), so Testing Library's
 // automatic afterEach cleanup never registers itself; without this, each
@@ -15,7 +16,7 @@ describe("App", () => {
     render(<App />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "Base Control" }),
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
     ).toBeInTheDocument();
   });
 
