@@ -16,8 +16,8 @@ function atPly(plyNumber: number, lengthInRounds?: number) {
 }
 
 describe("RoundCounter", () => {
-  it("reads 35/100 for a default-length game at ply 69", () => {
-    const state = atPly(69);
+  it("reads 35/100 for a hundred-round game at ply 69", () => {
+    const state = atPly(69, 100);
 
     render(<RoundCounter state={state} />);
 
@@ -26,7 +26,7 @@ describe("RoundCounter", () => {
   });
 
   it("holds at 100/100 once the game is over, not 101/100", () => {
-    const state = atPly(201);
+    const state = atPly(201, 100);
 
     render(<RoundCounter state={state} />);
 
@@ -42,7 +42,7 @@ describe("RoundCounter", () => {
   });
 
   it("labels itself ROUND decoratively, leaving the spoken form as the only accessible text", () => {
-    const state = atPly(69);
+    const state = atPly(69, 100);
 
     render(<RoundCounter state={state} />);
 

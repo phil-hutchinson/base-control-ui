@@ -307,7 +307,7 @@ describe("attackRefusalReason and legalTargets once the game is over", () => {
   it("refuses an attack that would otherwise be legal, with game-over ahead of any other reason", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
-      plyNumber: 201,
+      plyNumber: 61,
     });
 
     expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
@@ -318,12 +318,12 @@ describe("attackRefusalReason and legalTargets once the game is over", () => {
   it("refuses an attack that would have been illegal anyway, still with game-over", () => {
     const notAdjacent = buildState({
       ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "K5", 0)],
-      plyNumber: 201,
+      plyNumber: 61,
     });
     const notYourShip = buildState({
       ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
       sideToMove: "red",
-      plyNumber: 201,
+      plyNumber: 61,
     });
 
     expect(
@@ -337,9 +337,9 @@ describe("attackRefusalReason and legalTargets once the game is over", () => {
   it("legalTargets contains a target legal before the game ends, and is empty in the same state once it has", () => {
     const beforeEnd = buildState({
       ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
-      plyNumber: 200,
+      plyNumber: 60,
     });
-    const afterEnd: GameState = { ...beforeEnd, plyNumber: 201 };
+    const afterEnd: GameState = { ...beforeEnd, plyNumber: 61 };
 
     expect(legalTargets(beforeEnd, "green-1")).toContainEqual(
       squareFromName("H9"),

@@ -38,7 +38,7 @@ describe("App", () => {
         "Red: 0 energy, no nodes held, standing on no dormant sites.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("1/100")).toBeInTheDocument();
+    expect(screen.getByText("1/30")).toBeInTheDocument();
   });
 
   it("has no result panel while the game is in progress", () => {

@@ -718,7 +718,34 @@ least one of them.
 
 ## Step 5 — The default game length becomes 30, and the offered lengths get a name
 
-Status: pending
+Status: committed
+
+Notes: `DEFAULT_GAME_LENGTH_ROUNDS` is now 30, and `gameLength.ts` gains
+`GAME_LENGTH_OPTIONS_ROUNDS` (`[30, 50, 75, 100]`) with a doc comment saying
+it constrains the screen, not `isGameLengthRounds`, which is unchanged.
+Re-anchored the known 200/201 sites to 60/61 in `gameLength.test.ts`,
+`movement.test.ts`, `combat.test.ts`, `ply.test.ts` and `session.test.ts`
+(all built from a `buildState`/`stateWith` helper defaulting to
+`DEFAULT_GAME_LENGTH_ROUNDS`); left the two 200-count loop bounds in
+`combat.test.ts` and `ply.test.ts` untouched since they are iteration
+counts, not plies. `RoundCounter.test.tsx`'s "35/100" cases were made
+explicit hundred-round games (`atPly(69, 100)` etc.) rather than re-anchored,
+keeping their wording; its "reads against a shorter game's own length"
+case already covers "the counter reads the state's own length". Same
+treatment for `announcements.test.ts`'s one default-length "35/100" case,
+re-anchored instead to `20/30` at ply 39 since its point was specifically
+"a default-length game's own length" rather than a fixed 100.
+`App.test.tsx`'s opening round counter now reads `1/30`. Deviation: the full
+suite additionally surfaced `src/hud/Hud.test.tsx`, not named in the plan's
+known-sites list, whose "35/100" case also defaulted to
+`DEFAULT_GAME_LENGTH_ROUNDS`; re-anchored the same way as `RoundCounter.test.tsx`
+by making the length explicit (`startingGameState(1, 100)`), per the step's
+own instruction to run the whole suite and fix what it surfaces.
+`seededReplay.test.ts` and `fullGame.test.ts` were checked and needed no
+change — both already build at explicit lengths. `npm run typecheck`,
+`npm run lint`, `npm run format:check` and `npm test` (785 passed) all pass.
+The `npm run dev` courtesy check was not run interactively; `App.test.tsx`'s
+passing `1/30` assertion covers the same claim.
 
 In `src/rules/gameLength.ts`:
 

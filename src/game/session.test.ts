@@ -500,7 +500,7 @@ describe("createSession", () => {
 describe("sessionReducer — once the game is over", () => {
   const state = buildState({
     ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "H9")],
-    plyNumber: 201,
+    plyNumber: 61,
   });
 
   it("rejects activating a friendly ship with game-over", () => {
@@ -574,7 +574,7 @@ describe("sessionReducer — new-game", () => {
   it("starts a fresh session at ply 1, both totals 0, with the given seed and length", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      plyNumber: 201,
+      plyNumber: 61,
     });
     const session: Session = {
       state,
