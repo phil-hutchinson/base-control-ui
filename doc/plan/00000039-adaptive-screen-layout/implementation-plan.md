@@ -479,7 +479,25 @@ fault found at the gate has the whole story as its suspect list.
 
 ## Step 1 — Three regions in the DOM
 
-Status: pending
+Status: committed
+
+Notes: Wrapped the in-game branch of `App.tsx` in `.app__screen`, holding
+`.app__info` (the existing `h1` and `<Hud />`, unchanged), `.app__play`
+(renamed from `.app__board`, unchanged contents) and `.app__reserved` (the
+bare word `RESERVED`), in that DOM order. `App.css` renamed the `.app__board`
+rule to `.app__play`, added `.app__screen`, `.app__info` and `.app__reserved`
+rules that keep the screen reading as it does today (no sizing formula, no
+media query), and refreshed the comments on `.app__cabinet` and `.app__play`
+to describe the new structure. `Board.css`'s header comment now points at
+`.app__play`. `App.test.tsx` gained two structural tests reaching for the
+region class names via `container.querySelector` (jsdom has no layout or
+roles for a bare wrapper), asserting the DOM order, that the `h1` and HUD
+text live in the info region, that the board's `role="grid"` lives in the
+play region, and that only the reserved region holds the word `RESERVED`, plus
+a start-screen test confirming none of the three region classes render there.
+`known-issues.md` gained a "From story 39" section recording D9's accepted
+cost: the placeholder's bare text has no role, name or `aria-hidden`. No
+deviation from the step as written.
 
 Restructure the in-game screen in `src/App.tsx` into a screen wrapper holding
 three region elements, and add the reserved placeholder. **Appearance stays as

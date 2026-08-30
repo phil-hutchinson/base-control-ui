@@ -1,5 +1,5 @@
 /* Board grid geometry. `--square` drives every square's size from one place,
-   sized from the board's own container (`.app__board`) rather than the
+   sized from the board's own container (`.app__play`) rather than the
    viewport, so the board fills whatever room it is actually given: it grows
    with no ceiling, and shrinks no further than a floor kept for legibility.
    Ordinary squares get a thin border to read as a grid; bays get a different

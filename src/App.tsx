@@ -68,13 +68,16 @@ export function App() {
             onReturnToStart={handleReturnToStart}
           />
         ) : (
-          <>
-            <h1 className="app__title">{GAME_NAME}</h1>
-            <Hud state={session.state} displayedEnergy={displayedEnergy} />
-            <div className="app__board">
+          <div className="app__screen">
+            <div className="app__info">
+              <h1 className="app__title">{GAME_NAME}</h1>
+              <Hud state={session.state} displayedEnergy={displayedEnergy} />
+            </div>
+            <div className="app__play">
               <Board session={session} onIntent={dispatch} />
             </div>
-          </>
+            <div className="app__reserved">RESERVED</div>
+          </div>
         )}
       </div>
     </main>

@@ -28,17 +28,17 @@
 }
 
 .app__cabinet {
-  /* The one console box: the title, the HUD strip and the board area, all
-     inside a single raised frame, the way an arcade cabinet's whole front
-     panel is one surround rather than a separate bezel per screen. The
-     padding here is that frame's thickness, taken out of the room
-     `.app__board` measures itself against — the board still grows and
-     shrinks with no ceiling of its own, just from a smaller starting box.
+  /* The one console box: the title, the HUD strip, the board and the
+     reserved region all inside a single raised frame, the way an arcade
+     cabinet's whole front panel is one surround rather than a separate
+     bezel per screen. The padding here is that frame's thickness, taken out
+     of the room the in-game screen has to lay its regions out in.
      `flex: 1; min-height: 0` gives the cabinet itself a resolved height
-     from `.app`'s flex column, which `.app__board` in turn needs a share
-     of to resolve its own. Once the game ends and its score roll settles,
-     the game-over panel takes this box's place: the title, HUD and board
-     are switched off and the panel fills the cabinet on its own. */
+     from `.app`'s flex column, which its children — the start screen, the
+     game-over panel, or `.app__screen` — in turn need a share of to resolve
+     their own. Once the game ends and its score roll settles, the
+     game-over panel takes this box's place: the in-game screen is switched
+     off and the panel fills the cabinet on its own. */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -54,13 +54,34 @@
     0 0 1.5rem rgb(0 0 0 / 40%);
 }
 
-.app__board {
+.app__screen {
+  /* The in-game screen's layout container: a single `flex: 1` child of the
+     cabinet, exactly like `.start-screen` and `.game-over-panel`, so the
+     cabinet's own rules do not need to know about it. Holds the three
+     regions — info, play, reserved — in that order. Still today's stacked
+     column; the sizing formula and the orientation switch land in later
+     steps. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.app__info {
+  /* The title and the HUD, unchanged in content and order. No sizing rules
+     of its own yet — those arrive with the sizing formula. */
+  width: 100%;
+}
+
+.app__play {
   /* A size container so `.board-frame` can measure its square size against
      the room this element actually has, in each axis. `flex: 1` with
      `min-height: 0` gives it a resolved height to measure, taken from the
-     `.app__cabinet` box's own resolved height, once the title and the HUD
-     above it have taken their share. Aligned to the block-axis start rather
-     than centred, so a board too large for the container overflows downward
+     `.app__screen` box's own resolved height, once the info region above it
+     has taken its share. Aligned to the block-axis start rather than
+     centred, so a board too large for the container overflows downward
      into scrollable space instead of being clipped off the top. */
   container-type: size;
   display: flex;
@@ -69,4 +90,13 @@
   width: 100%;
   justify-content: center;
   align-items: flex-start;
+}
+
+.app__reserved {
+  /* A placeholder standing in for a later story's content: just enough
+     styling to read as present, nothing else. */
+  color: var(--color-text-dim);
+  font-family: var(--font-arcade);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }

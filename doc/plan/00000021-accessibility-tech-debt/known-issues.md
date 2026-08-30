@@ -146,3 +146,22 @@ screen-reader user lands wherever focus already was (often the document
 root) each time, rather than at the screen that just appeared.
 
 Where: `src/App.tsx`, `src/useAppScreen.ts`.
+
+## From story 39 — adaptive screen layout
+
+Source: `doc/plan/00000039-adaptive-screen-layout/implementation-plan.md`
+decision D9.
+
+### 1. The reserved placeholder is stray text with no context
+
+The reserved region's only content is the bare word `RESERVED`, added as
+placeholder text so a later story can see the region is there, is the right
+size, and is in the right place. It carries no role, no accessible name and
+no `aria-hidden` — a screen reader passing through the document reads it out
+with nothing saying what it is or why it is there. This is deliberate: giving
+it `aria-hidden` would be a considered accessibility act on a placeholder,
+and pre-release stories do not spend work here (`CLAUDE.md`). The later story
+that fills the region should replace this placeholder rather than build
+around it.
+
+Where: `src/App.tsx`, `src/App.css`.
