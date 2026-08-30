@@ -655,7 +655,26 @@ constructs a smaller game yet, so nothing visible changes.
 
 ## Step 4 — Smaller fleets play, end to end
 
-Status: pending
+Status: committed
+
+Notes: Widened `playFullGame` with an optional `fleetSize` parameter
+(default `DEFAULT_FLEET_SIZE`), passed straight to `startingGameState`, and
+added seven cases to `src/rules/fullGame.test.ts`: a five- and a six-a-side
+game each playing thirty rounds to its end with the energy ledger balancing;
+occupancy checks that a five-ship game's H15 is occupied and O14/O2/A14/A2
+are empty (likewise L15 occupied and H15/H1 empty for six), each paired with
+a `legalDestinations` check that a ship relocated within reach of one of the
+empty bays can move into it; a fight built directly (via a new
+`shipsFillingBaysExcept` helper filling every other bay with filler ships) in
+which the loser's return, reached through `applyAttack`, is asserted to land
+in one of the bays empty at the start, for both five- and six-ship games; and
+a five-ship, five-dormant-site state run through `runEndOfTurn` directly,
+asserting no throw, as the regression for D4. `seededReplay.test.ts` and the
+existing seven-a-side `fullGame.test.ts` cases were checked, not assumed
+(D9): both still pass unchanged, since the new cases are additive and
+`playFullGame`'s default fleet size keeps the seven-a-side stream identical.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(783 passed) all pass. No deviation from the plan.
 
 Prove a smaller game is a real game, not just a constructible one. This is the
 step that guards the two things most likely to break quietly: `energy.ts`'s
