@@ -1368,6 +1368,13 @@ describe("Board", () => {
           }
           return ship;
         }),
+        // H8 starts charged under this seed, and a ship on a charged node
+        // can neither attack nor be attacked (rules.md §7); the attacker
+        // needs an ordinary square to stand on.
+        siteStates: {
+          ...startingGameState(TEST_SEED).siteStates,
+          H8: { state: "active", level: 1 },
+        },
       };
       render(<Harness initial={state} />);
 

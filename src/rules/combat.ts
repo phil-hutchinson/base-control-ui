@@ -11,7 +11,7 @@ import { type Square, squareName } from "./board";
 import { BAYS, isBay } from "./bays";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
-import { type GameState, shipsBySquare } from "./gameState";
+import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
 import { type ReachEntry, findShip, reachFrom } from "./movement";
 import { drawIndex } from "./random";
 import { type ShieldCount, isShieldCount } from "./shields";
@@ -89,7 +89,9 @@ export type AttackRefusalReason =
   | "not-your-ship"
   | "ship-already-acted"
   | "attacker-in-bay"
+  | "attacker-on-charged-node"
   | "target-in-bay"
+  | "target-on-charged-node"
   | "no-target-there"
   | "target-is-friendly"
   | "target-out-of-range"
@@ -102,11 +104,13 @@ export type AttackRefusalReason =
  *
  * Checked most fundamental first: whether the game is even still being
  * played, then whose ship it is, then whether it has already acted, then the
- * attacker's own bay, then everything about the target — no ship there, a
- * friendly ship, a ship in a bay — and only then range and path, which come
- * last so a bay target within reach is still refused as `"target-in-bay"`
- * rather than as an out-of-range square. Once the game has ended, no attack
- * is legal for anyone, including one that would have been refused anyway.
+ * attacker's own bay, then whether the attacker holds a charged node
+ * (rules.md §7 — a ship holding a node cannot attack), then everything about
+ * the target — no ship there, a friendly ship, a ship in a bay, a ship
+ * holding a charged node — and only then range and path, which come last so
+ * a protected or bay target within reach is still refused as such rather
+ * than as an out-of-range square. Once the game has ended, no attack is
+ * legal for anyone, including one that would have been refused anyway.
  */
 export function attackRefusalReason(
   state: GameState,
@@ -128,6 +132,9 @@ export function attackRefusalReason(
   if (isBay(attacker.square)) {
     return "attacker-in-bay";
   }
+  if (siteStateAt(state, attacker.square) === "charged") {
+    return "attacker-on-charged-node";
+  }
 
   const targetShip = shipsBySquare(state).get(squareName(target));
   if (targetShip === undefined) {
@@ -138,6 +145,9 @@ export function attackRefusalReason(
   }
   if (isBay(target)) {
     return "target-in-bay";
+  }
+  if (siteStateAt(state, target) === "charged") {
+    return "target-on-charged-node";
   }
 
   const reach = attackReach(state, shipId, target);
@@ -170,7 +180,8 @@ export function legalTargets(
   if (
     attacker.side !== state.sideToMove ||
     state.actedThisPly.includes(shipId) ||
-    isBay(attacker.square)
+    isBay(attacker.square) ||
+    siteStateAt(state, attacker.square) === "charged"
   ) {
     return [];
   }

@@ -255,7 +255,17 @@ describe("announcementFor", () => {
       squareAt("H", 15),
       "A ship in a bay cannot attack. Move it out first.",
     ],
+    [
+      "attacker-on-charged-node",
+      squareAt("H", 8),
+      "A ship holding a charged node cannot attack while it stands there. Move it off first.",
+    ],
     ["target-in-bay", squareAt("A", 6), "A ship in a bay cannot be attacked."],
+    [
+      "target-on-charged-node",
+      squareAt("H", 8),
+      "A ship holding a charged node cannot be attacked.",
+    ],
     [
       "target-out-of-range",
       squareAt("J", 7),

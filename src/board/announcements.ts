@@ -463,8 +463,12 @@ function rejectionSentence(event: RejectedEvent): string {
       return `${square} is occupied.`;
     case "attacker-in-bay":
       return "A ship in a bay cannot attack. Move it out first.";
+    case "attacker-on-charged-node":
+      return "A ship holding a charged node cannot attack while it stands there. Move it off first.";
     case "target-in-bay":
       return "A ship in a bay cannot be attacked.";
+    case "target-on-charged-node":
+      return "A ship holding a charged node cannot be attacked.";
     case "target-out-of-range":
       return `${square} is out of attack range. A ship attacks as far as it moves, so shields shorten its reach — a ship with four shields can only strike one square up, down, left or right.`;
     case "attack-path-blocked":

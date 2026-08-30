@@ -301,6 +301,68 @@ describe("attackRefusalReason / legalTargets on a site that is not charged (§8.
     ).toBeUndefined();
     expect(legalTargets(state, "green-1")).toContainEqual(squareFromName("E8"));
   });
+
+  it("lets a ship on a dormant site attack a ship on an active site, the roles swapped", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7", 4), ship("red-1", "red", "E8", 0)],
+      siteStates: { E7: "dormant", E8: "active" },
+    });
+
+    expect(
+      attackRefusalReason(state, "green-1", squareFromName("E8")),
+    ).toBeUndefined();
+    expect(legalTargets(state, "green-1")).toContainEqual(squareFromName("E8"));
+  });
+});
+
+describe("attackRefusalReason / legalTargets on a charged node (§7)", () => {
+  it("refuses an attacker standing on a charged node, leaving it with no targets", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 0)],
+      siteStates: { H8: "charged" },
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "attacker-on-charged-node",
+    );
+    expect(legalTargets(state, "green-1")).toEqual([]);
+  });
+
+  it("refuses a target standing on a charged node, and it is absent from legalTargets", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 0)],
+      siteStates: { H9: "charged" },
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "target-on-charged-node",
+    );
+    expect(legalTargets(state, "green-1")).not.toContainEqual(
+      squareFromName("H9"),
+    );
+  });
+
+  it("refuses a protected target within reach as protected, not as out of range", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 0)],
+      siteStates: { H9: "charged" },
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "target-on-charged-node",
+    );
+  });
+
+  it("reports the attacker's own reason ahead of the target's when both stand on charged nodes", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 0)],
+      siteStates: { H8: "charged", H9: "charged" },
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "attacker-on-charged-node",
+    );
+  });
 });
 
 describe("attackRefusalReason and legalTargets once the game is over", () => {

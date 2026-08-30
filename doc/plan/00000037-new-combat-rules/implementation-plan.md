@@ -775,7 +775,73 @@ shields win a fight, that a winner advances, or that leaving a node ends it.
 
 ## Step 2 — A ship on a charged node can neither attack nor be attacked
 
-Status: pending
+Status: committed
+
+Notes: `combat.ts` gained `attacker-on-charged-node` and
+`target-on-charged-node` to `AttackRefusalReason`, checked via `siteStateAt`
+in `attackRefusalReason` at the positions D2 sets out (attacker's own
+condition right after `attacker-in-bay`; target's right after
+`target-in-bay`; both ahead of range and path), and `legalTargets`' early
+exit gained the attacker's charged-node case beside its bay case.
+`announcements.ts` gained the two D12 rejection sentences verbatim. Added
+cases to `combat.test.ts` (a new "on a charged node (§7)" describe: attacker
+refused, target refused and absent from `legalTargets`, a protected target
+within reach refused as protected rather than out of range, the attacker's
+reason ahead of the target's when both are protected; plus one case in the
+existing §8.5 describe proving the roles work swapped — attacker dormant,
+target active), `announcements.test.ts` (the two new rows in the rejection
+table), and `actions.test.ts` (`sideToMoveHasLegalAction` and
+`shipHasLegalAction` both false for a ship boxed in on a charged node that
+would otherwise have a legal target, per D11).
+
+Several existing fixtures in `ply.test.ts` and one in `Board.test.tsx`
+attacked or moved from a ship standing on a charged node and became illegal
+once the refusal landed; per the step's instruction these were fixed, never
+the rule:
+
+- `Board.test.tsx`'s "keeps focus on the attacked square…" test used the
+  default seed's H8, which starts charged; overrode `siteStates.H8` to
+  `active` in that one fixture.
+- `ply.test.ts`'s two fictitious-square cases ("changes no site on a
+  defender's win…", "changes no site on a mutual return…") had the
+  attacker's own square carrying a fictitious `"charged"` label on a square
+  that isn't a real site; changed the label to `"active"`, which exercises
+  the same non-real-site immunity the tests are about.
+- `ply.test.ts`'s "nothing a ship does changes any site's state" fixture had
+  its target (a real site, H8) charged; changed it to `dormant` with a high
+  starting level (so three end-of-turn sequences cannot recover it) — an
+  `active` alternative was tried first and rejected because with only one
+  other real active site in the fixture, the end-of-turn charge draw is
+  certain (pool of one) to charge it on the very first sequence, which
+  contradicted the invariant under test.
+- Six `ply.test.ts` tests had no viable fixture repair, because their entire
+  premise — a fight leaving a winner standing on a charged node, or a fight
+  vacating either side's own charged node — is now categorically
+  impossible: to reach it, either the attacker's origin square or the
+  defender's own square would have had to be charged, and both are now
+  illegal to fight from or onto. This is exactly the "three cases that can
+  no longer happen" the story's own design rationale names. These six were
+  deleted rather than contorted into something they no longer are: "lets a
+  winner reduced to 0 shields advance onto a charged node…", "leaves an
+  already-charged node the winner advances onto charged…", "landing on a
+  charged site during a winning advance leaves it charged", and four of the
+  five fight-based cases under "§8.7 — leaving a node ends it" (the node
+  changing hands, a drawn fight sending a node dormant, an occupant's own
+  origin node going dormant on a win, and a losing attacker's own node going
+  dormant) — replaced with one comment explaining why. This is a deviation
+  from "fix the fixture" read literally, recorded here because the
+  alternative (forcing an active/dormant substitute site into these
+  fixtures) would have made each test assert something unrelated to its own
+  title with no compensating value, and every one of them is already
+  scheduled for full deletion in step 4 or step 5 regardless. The three
+  move-based §8.7 cases (moving off a node, arriving on one, and the
+  no-collection case) are untouched — moving off a node still works exactly
+  as before this step.
+
+Fights themselves are unchanged in this step, as scoped: `resolveFight` and
+`winnerAdvance` are still in place and still decide any fight that is legal
+to have. `npm run typecheck`, `npm run lint`, `npm run format:check` and
+`npm test` all pass (800 tests).
 
 Add §7's new legality rule to `src/rules/combat.ts`, and — because the
 typechecker forces it, see **D12** — the two rejection sentences that go with it
