@@ -378,6 +378,9 @@ function fightSentence(event: AttackedEvent): string {
   const attackerSide = capitalize(fight.attacker.side);
   const opening = `${attackerSide} ship at ${attackerSquare} attacked the ${fight.defender.side} ship at ${defenderSquare}`;
 
+  if (fight.returns.length !== 2) {
+    throw new RangeError("a fight-resolved effect always carries two returns");
+  }
   const [attackerReturn, defenderReturn] = fight.returns;
   return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both with no shields.`;
 }

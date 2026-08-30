@@ -92,19 +92,21 @@ interface PlayedGame {
   readonly finalState: GameState;
   readonly bayReturns: readonly string[];
   readonly chargedSites: readonly string[];
+  readonly fightCount: number;
 }
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the attack-first
  * policy above, and records the square name of every bay a `fight-resolved`
- * effect returned a ship to, in the order the fights happened, and the
- * square name of every site the end-of-turn charge draw (§8.2) charged, in
- * the order it charged them.
+ * effect returned a ship to, in the order the fights happened, how many
+ * fights happened, and the square name of every site the end-of-turn charge
+ * draw (§8.2) charged, in the order it charged them.
  */
 function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
   let state = startingGameState(seed, lengthInRounds);
   const bayReturns: string[] = [];
   const chargedSites: string[] = [];
+  let fightCount = 0;
 
   let actionsApplied = 0;
   while (!isGameOver(state)) {
@@ -136,6 +138,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
       state = result.state;
       for (const effect of result.effects) {
         if (effect.type === "fight-resolved") {
+          fightCount += 1;
           for (const fightReturn of effect.returns) {
             bayReturns.push(squareName(fightReturn.to));
           }
@@ -154,7 +157,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     }
   }
 
-  return { finalState: state, bayReturns, chargedSites };
+  return { finalState: state, bayReturns, chargedSites, fightCount };
 }
 
 /** Every site's `level` at the end of a game, keyed by square name — the part of the state the drain and recovery draws write to. */
@@ -168,8 +171,12 @@ function siteLevels(state: GameState): Readonly<Record<string, number>> {
 
 describe("a seeded game replays its fights, its bays and its charge draws exactly", () => {
   it("produces plenty of fights and charge draws over a forty-round game — the run is not vacuous", () => {
-    const { bayReturns, chargedSites } = playSeededGame(20260819, 40);
+    const { bayReturns, chargedSites, fightCount } = playSeededGame(
+      20260819,
+      40,
+    );
 
+    expect(fightCount).toBeGreaterThanOrEqual(10);
     expect(bayReturns.length).toBeGreaterThanOrEqual(10);
     expect(chargedSites.length).toBeGreaterThanOrEqual(10);
   });

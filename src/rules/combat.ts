@@ -19,8 +19,8 @@ import { drawIndex } from "./random";
  * from `reachFrom(attacker.square, attacker.shields)` whose `destination` is
  * `target`, or `undefined` when `target` is outside the attacker's reach
  * altogether. Purely geometric — no ownership, no bays, no occupancy, no
- * awareness of whose ply it is — so the legality check below is the only
- * reader of this answer to "what lane is this".
+ * awareness of whose ply it is. Exported so the lane geometry can be
+ * unit-tested directly, alongside the legality check below that reads it.
  */
 export function attackReach(
   state: GameState,

@@ -25,8 +25,8 @@ becomes to move and to leave. A ship holding a node cannot be attacked while
 it holds it. A site that has burned out is a bad place to leave a ship: it
 costs its owner energy and a shield every turn.
 
-The game has three random elements: which site is charged next, which bay a
-beaten ship is pushed back to, and how fast a node burns.
+The game has three random elements: which site is charged next, which bays
+the two ships in a fight are pushed back to, and how fast a node burns.
 
 ---
 
@@ -407,7 +407,7 @@ A node ends **one** way: when its drain reaches or passes capacity, it is
 spent, and it goes dormant at the end of that turn and simply stops paying. A
 ship left standing on it stays where it is (section 8.5). A ship that leaves
 a node does not end it — the node simply reverts to the slower empty rate
-(section 8.5) and burns on. An empty node lasts about 28 turns; a held one
+and burns on. An empty node lasts about 28 turns; a held one
 lasts about 13, and those two figures now bracket every node's life.
 
 ### 8.4 Energy
@@ -467,11 +467,12 @@ and goes active on schedule regardless of what is standing on it, and an
 active site is eligible for the charge draw whether or not a ship is
 standing on it (section 8.2).
 
-When a node runs out under the ship holding it (section 8.3), the node
-stops paying and starts costing, and the ship **loses its protection at the
-same moment it starts paying**: the holder pays from the end of its owner's
-next turn unless it leaves. The ship stays or leaves, exactly as its owner
-prefers, and leaving now costs the node nothing.
+When a node runs out under the ship holding it (section 8.3), the ship
+loses its protection at that same instant — it stops being a node, and so
+stops being a refuge (section 7) — even though it does not start costing
+anything straight away: the holder pays from the end of its owner's next
+turn unless it leaves before then. The ship stays or leaves, exactly as its
+owner prefers, and leaving now costs the node nothing.
 
 ### 8.6 End-of-turn order
 

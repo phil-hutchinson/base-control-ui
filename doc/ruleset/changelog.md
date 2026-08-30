@@ -17,7 +17,9 @@ until the game plays (see the project's contribution notes).
   attacker and the ship it attacked — are returned to bays (section 7.1)
   stripped of every shield, and both squares are left empty. The shield
   comparison, the `winner − (loser + 1)` cost and the winner's advance are
-  all deleted.
+  all deleted, and section 6 loses its closing sentence noting that a
+  fight's winner could still move as part of the advance, which was not
+  itself a move.
 - **A ship standing on a charged node can neither attack nor be attacked.**
   The same protection a bay already gives, extended to a node a ship is
   holding. Only a **charged** site protects; a ship on an active or a
@@ -40,8 +42,9 @@ until the game plays (see the project's contribution notes).
   about ten turns; "a node ended early comes back sooner" is deleted.
 - **Section 8.1 loses its early-ending clause**, and section 8.5 states the
   other side of the node's protection: an active or a dormant site protects
-  nothing, and a ship whose node runs out under it loses its protection the
-  moment it starts paying.
+  nothing, and a ship loses its protection the instant its node runs out
+  under it, even though it does not start paying until the end of its
+  owner's next turn.
 - **Section 8.6's ordering tail drops its mid-turn case.** A site's state now
   changes only in the end-of-turn sequence, and never while an action is
   being resolved. The six steps themselves are unchanged.
