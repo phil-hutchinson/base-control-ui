@@ -1588,7 +1588,12 @@ or says that leaving a node ends it.
 
 ## Step 9 — Owner play-through
 
-Status: pending
+Status: committed
+
+Notes: the owner ran the play-through and confirmed all ten observations.
+One change was asked for that is not part of this story's ruleset change — the
+result panel's button to read "New Game" rather than "Back to start" — and it
+is added as step 10 rather than made as a side edit.
 
 The owner plays the app and confirms the story's player-facing verification
 list. This is the story's manual gate; it is the only step the pipeline pauses
@@ -1639,3 +1644,55 @@ Confirm, in the app:
 Verification (manual): the owner confirms each of the ten observations above in
 the running app and reports anything that reads wrong, looks wrong, or contradicts
 `doc/ruleset/rules.md` at 0.16.
+
+---
+
+## Step 10 — The end screen's button says "New Game"
+
+Status: pending
+
+Rename the result panel's button from **"Back to start"** to **"New Game"**.
+
+This step is **not part of the story's ruleset change**. It was asked for by
+the owner at step 9's play-through gate and added here, per
+`.claude/commands/implement-story.md`, because owner feedback that needs work
+becomes a plan step rather than a side edit. Nothing about the rules, the game
+state or `RULES_VERSION` is touched, and `doc/ruleset/` is not edited.
+
+What to change:
+
+- **`src/hud/GameOverPanel.tsx`** — the button's visible text, currently the
+  literal `Back to start` at the end of the component. That string is the
+  button's accessible name too; there is no `aria-label` and no separate
+  wording table for it, so this one literal is the whole of the change.
+- **`src/hud/GameOverPanel.test.tsx`** — three `getByRole("button", { name:
+"Back to start" })` queries (around lines 97, 116 and 286) select the button
+  by that name and will fail until they are updated.
+- **`README.md`** — the status blockquote's closing sentence says "a button
+  returns you to the start screen with the same choices still set, ready to
+  play again". Name the button in it, so a player reading the README knows
+  what to look for.
+
+What **not** to change:
+
+- **The `onReturnToStart` prop keeps its name**, along with `App.tsx`'s
+  `handleReturnToStart`. The button's behaviour is unchanged — it returns to
+  the start screen, with the same choices still set, where the player presses
+  PLAY — and the prop names describe that behaviour accurately. "New Game"
+  is what the player is being offered, not a different thing the code now
+  does. Renaming the prop would touch `App.tsx`, the panel and every test
+  harness in `GameOverPanel.test.tsx` for no gain.
+- **The capitalisation is the owner's**, given as "New Game". The existing
+  label is sentence case ("Back to start") and the start screen's button is
+  "PLAY", so the file has no single convention to defer to; use "New Game"
+  exactly as asked.
+- Nothing else in the panel: the heading, the scores, the hidden result
+  sentence, the focus behaviour and the CSS are all untouched.
+
+Depends on: Step 9 (the owner's play-through, which is where this was asked
+for). Independent of steps 1 to 8 — it would apply equally to the code before
+this story.
+
+Verification (automated): `npm test` passes with the three updated queries,
+and `grep -rn "Back to start" src/ README.md` returns nothing. Then
+`npm run typecheck`, `npm run lint` and `npm run format:check`.
