@@ -951,7 +951,19 @@ live with is recorded in this step's Notes rather than left implicit.
 
 ## Step 7 — README check
 
-Status: pending
+Status: committed
+
+Notes: Reviewed `git diff main...HEAD` against `README.md`. This story's
+diff touches only `src/App.tsx`, `src/App.css`, `src/board/Board.css`,
+`src/hud/Hud.css`, `src/hud/ScoreDisplay.css`, `src/hud/RoundCounter.css`,
+`src/hud/TurnIndicator.css`, `src/index.css` and `src/App.test.tsx` — sizing
+and layout CSS, one structural DOM rewrap, and structural tests. The README
+describes what the app is and how a game goes (fleet size, nodes, energy,
+shields, combat, rounds, the start screen and its choices); it says nothing
+about the screen's shape, orientation, window resizing, or a reserved panel,
+so none of it was falsified by this story. Made **no change** to
+`README.md`, per the step's own guidance not to invent a paragraph about
+window sizes for the sake of having edited something.
 
 Confirm `README.md` is still accurate given this story's changes, and update it
 if it is not. The `/update-readme` command automates this: it reviews the
