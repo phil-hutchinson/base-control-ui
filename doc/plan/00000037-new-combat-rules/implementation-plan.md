@@ -1474,7 +1474,58 @@ each fails for the right reason if its assertion is inverted. `npm run typecheck
 
 ## Step 8 — `README.md`, and a sweep for anything the old rules left behind
 
-Status: pending
+Status: committed
+
+Notes: Rewrote the four passages `README.md` was carrying the old rules in.
+The second paragraph now says a shield does nothing good for the ship
+carrying it, that a shield is built by holding a node, that holding a node
+is a refuge from attack, and that a fight has no winner and sends both
+ships home stripped of shields — keeping "Ships are never destroyed." The
+third paragraph drops "holding a node and then walking away spends what is
+left of it" and says instead that walking away costs the node nothing, so
+it stays lit at its slower pace for either player to reach. The status
+blockquote's combat sentences (shield comparison, the cost of winning, the
+advancing winner taking a node outright, "two ships carrying the same
+shields both go home") are replaced by one passage stating the no-winner
+rule, the random-bay return with shields stripped, and the node refuge,
+while keeping "a ship attacks exactly as far as it moves" verbatim as
+instructed. The blockquote's two node sentences about ending instantly on
+departure and recovering sooner if spent early are deleted with nothing
+substituted, matching the plan's "and that is all." Reflowed the touched
+blockquote lines with a one-off wrap (prettier's `proseWrap: preserve`
+default does not rewrap prose, so this was manual) to keep the paragraph's
+line width consistent with the rest of the file; `prettier --check` and
+`format:check` both pass.
+
+The sweep (`doc/ruleset/`, `README.md`, `src/`, excluding `doc/plan/`) found
+one live hit beyond the four README passages: `src/rules/gameState.ts`'s
+`SiteStatus` doc comment still reasoned that "a node ended early is dormant
+for proportionally less time" as the justification for carrying `level`
+across states in one field rather than three. That reasoning is now false —
+a node only ever goes dormant at or a little past capacity — so the comment
+was rewritten to say recovery now always starts from about the same level,
+keeping the same "one field rather than three" conclusion since that part
+is still true. Everything else the sweep's four bullets named turned up
+only expected, deliberate hits: `doc/ruleset/changelog.md`'s historical
+0.8/0.11/0.16-and-earlier entries (a changelog is a historical record, not
+rewritten, per the same principle that protects `doc/plan/`); `rules.md`'s
+and `announcements.ts`'s live, correct uses of "beaten" applied to _both_
+ships in a fight (not "the only one returning" — announcements.ts's own
+sentence is "and both were beaten"); test fixtures and assertions that
+search for `"node-vacated"` specifically to prove it is **absent**
+(`camping.test.ts`, `ply.test.ts`), exactly like the existing
+`Board.test.tsx` regression case for "beaten ship" in an accessible name;
+and unrelated senses of "winner"/"advance" (the game's §9 winner, and a
+random seed "advancing"). No dead export of `resolveFight`, `FightOutcome`,
+`winnerAdvance`, `applyVacating`, `VacatingResult`, `NodeVacatedEffect`,
+`AdvancingWinner` or `PredictedFightOutcome` remains; `dormantBeforePly` now
+names only a local `const` inside `runEndOfTurn`, not a parameter.
+
+`npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (43
+files, 762 tests) and `npm run build` all pass. `git status` shows only
+`README.md` and `src/rules/gameState.ts` changed. No deviation from the
+plan beyond the one extra fix the sweep itself calls for (the `gameState.ts`
+comment) and the cosmetic rewrap, both recorded above.
 
 Bring `README.md` in line with 0.16 and sweep the repository for stale wording.
 

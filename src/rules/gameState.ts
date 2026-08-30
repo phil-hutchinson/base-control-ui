@@ -37,10 +37,10 @@ export interface Ship {
  * | Dormant | the drain to recover   | the drain it carried    | − the recovery draw   | ≤ 0                |
  *
  * A dormant site's `level` carries over from whatever drain the node had
- * when it went dormant, so a node ended early is dormant for proportionally
- * less time — that carry is a real property of the design, not an
- * implementation convenience, and is why there is one field rather than
- * three.
+ * when it went dormant — always at or a little past capacity, since a node
+ * now ends only that way — so recovery always starts from about the same
+ * level. That carry is a real property of the design, not an implementation
+ * convenience, and is why there is one field rather than three.
  */
 export interface SiteStatus {
   readonly state: SiteState;
