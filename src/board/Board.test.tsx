@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
-import { STARTING_FLEET, type FleetEntry } from "../rules/fleet";
+import { startingFleet, type FleetEntry } from "../rules/fleet";
 import {
   NODE_CAPACITY,
   PRESSURE_CAP,
@@ -32,7 +32,9 @@ afterEach(cleanup);
 
 const noop = () => {};
 
-/** A square-name-keyed lookup of `STARTING_FLEET`, for building expected
+const STARTING_FLEET = startingFleet(7);
+
+/** A square-name-keyed lookup of the seven-a-side starting fleet, for building expected
  * accessible names — nothing in production looks up a starting ship by
  * square any more, so these tests build their own local index. */
 const STARTING_ENTRY_BY_SQUARE: ReadonlyMap<string, FleetEntry> = new Map(

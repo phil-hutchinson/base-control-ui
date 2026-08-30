@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { squareFromName, squareName } from "./board";
-import { STARTING_FLEET } from "./fleet";
+import { startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
   shipsBySquare,
@@ -10,6 +10,7 @@ import {
 } from "./gameState";
 
 const SEED = 12345;
+const STARTING_FLEET = startingFleet(7);
 
 describe("startingGameState", () => {
   it("has fourteen ships matching STARTING_FLEET entry for entry", () => {

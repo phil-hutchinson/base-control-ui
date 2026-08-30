@@ -4,7 +4,12 @@
 // `shipsBySquare` at the point of use instead.
 
 import { type Square, squareName } from "./board";
-import { STARTING_FLEET, type Side, type ShipId } from "./fleet";
+import {
+  DEFAULT_FLEET_SIZE,
+  startingFleet,
+  type Side,
+  type ShipId,
+} from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS, isGameLengthRounds } from "./gameLength";
 import { SITES, type SiteState, startingSiteStatus } from "./sites";
 import type { ShieldCount } from "./shields";
@@ -108,7 +113,7 @@ export function startingGameState(
   }
 
   return {
-    ships: STARTING_FLEET.map((entry) => ({
+    ships: startingFleet(DEFAULT_FLEET_SIZE).map((entry) => ({
       id: entry.id,
       side: entry.side,
       square: entry.square,

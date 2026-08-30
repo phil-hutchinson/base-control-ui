@@ -7,7 +7,7 @@ import { useReducer } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Board } from "../board/Board";
 import { squareAt, squareName } from "../rules/board";
-import { STARTING_FLEET } from "../rules/fleet";
+import { startingFleet } from "../rules/fleet";
 import { isGameOver } from "../rules/gameLength";
 import type { GameState } from "../rules/gameState";
 import { freshSeed } from "../game/seed";
@@ -280,7 +280,7 @@ describe("GameOverPanel", () => {
       ).toBeInTheDocument();
       expect(screen.getByText("Green to play")).toBeInTheDocument();
 
-      const greenStart = STARTING_FLEET[0];
+      const greenStart = startingFleet(7)[0];
       await user.click(
         screen.getByRole("gridcell", {
           name: new RegExp(`^${squareName(greenStart.square)},`),

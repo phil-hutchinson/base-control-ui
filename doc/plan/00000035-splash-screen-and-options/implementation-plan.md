@@ -505,7 +505,34 @@ what the document now says.
 
 ## Step 2 — `fleet.ts`: the starting fleet becomes a function of fleet size
 
-Status: pending
+Status: committed
+
+Notes: `fleet.ts` now exports `FleetSize`, `FLEET_SIZES` (`[5, 6, 7]`),
+`DEFAULT_FLEET_SIZE` (7), `isFleetSize`, `MAX_SHIPS_PER_SIDE` (derived via
+`Math.max(...FLEET_SIZES)`) and `startingFleet(fleetSize)`, backed by three
+internal per-size layout tables transcribed from rules.md §4, in place of the
+old flat `STARTING_FLEET`. `energy.ts`'s `SHIPS_PER_SIDE` now reads
+`MAX_SHIPS_PER_SIDE` with a doc comment saying it is the maximum, not the
+current game's fleet size; `gameState.ts`'s `startingGameState` calls
+`startingFleet(DEFAULT_FLEET_SIZE)` as the like-for-like repoint the step
+calls for (its two stale `STARTING_FLEET` doc comments are left for step 3,
+which the plan explicitly assigns them to). `fleet.test.ts` was reworked
+around `describe.each(FLEET_SIZES)` covering the transcription, counts,
+one-ship-per-bay/empty-bays, shields, id numbering and half-turn symmetry for
+all three sizes, plus a ring-alternation check scoped to seven and five only
+(six is false by design per D3, noted in a test comment) — per the
+orchestrator's note, since the six-a-side ring is not alternating (dropping
+H15 leaves D15 red next to L15 red; dropping H1 leaves L1 green next to D1
+green). `energy.test.ts` gained a case pinning the dormant bound to the
+maximum fleet (seven prices the same as five, eight still throws). Deviation:
+`Board.test.tsx`, `GameOverPanel.test.tsx` and `gameState.test.ts` (the
+latter not named by this step, but its import of the removed `STARTING_FLEET`
+would otherwise fail to compile) were repointed to a local
+`startingFleet(7)`-derived constant rather than the story's named list,
+keeping their existing assertions unchanged; `gameState.test.ts`'s fuller
+rework to cover multiple fleet sizes is left to step 3 as the plan directs.
+`npm run typecheck`, `npm run lint`, `npm test` (770 passed) and
+`npm run format:check` all pass.
 
 Rework `src/rules/fleet.ts` so it answers "the starting fleet for a five-, six-
 or seven-ship game", and repoint everything that used the old flat constant.
