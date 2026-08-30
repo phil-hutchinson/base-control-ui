@@ -7,6 +7,33 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.15 — fleet size and game length become choices
+
+This is a gameplay change: both numbers now affect how a game is played, so
+the version bumps and this entry is written even though tagging stays on
+hold until the game plays (see the project's contribution notes).
+
+- **Section 4 gains a fleet-size choice.** Each player has five, six or seven
+  ships — the same number for both, chosen before play begins — with seven
+  the standard game. The seven-ship layout is unchanged. At six a side, H15
+  and H1 start empty and every other bay keeps its seven-ship colour. At five
+  a side, O14, O2, A14 and A2 start empty and the colours on those two edges
+  are reversed from the seven-ship game.
+- **A bay left empty at the start is an ordinary empty bay.** Section 4 says
+  so explicitly: it is not removed from the board and not reserved, either
+  player may move into it, and section 7.1's random return may send a beaten
+  ship there like any other empty bay.
+- **The symmetry claim now covers all three layouts.** Each player's
+  starting fleet is exactly the half-turn rotation of the other's, whichever
+  fleet size is chosen.
+- **Section 9 gains a game-length choice, and the default drops.** The game
+  now ends after 30, 50, 75 or 100 rounds, chosen before play begins, with
+  **30** the standard game — down from a fixed 100. Section 2's definition of
+  Round moves with it.
+- **Section 5's aside is reworded to match.** "A player always has seven
+  ships" becomes "a player always has at least five ships"; nothing about
+  play changes.
+
 ## 0.14 — dormant sites cost energy and a shield
 
 - **Section 4.1 gains the mirror of the shield gain.** A ship standing on a

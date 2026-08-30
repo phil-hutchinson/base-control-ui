@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.14**
+**Rules version: 0.15**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -11,9 +11,9 @@ is right and the app has a bug.
 ## 1. Overview
 
 Base Control is a two-player game played on a square board. Each player
-commands a fleet of seven ships and competes to occupy the board's contested
-nodes, collecting **energy** for every turn they hold one. The player with
-the most energy when the game ends is the winner.
+commands a fleet of five, six or seven ships and competes to occupy the
+board's contested nodes, collecting **energy** for every turn they hold one.
+The player with the most energy when the game ends is the winner.
 
 Ships are never destroyed. A ship that loses a fight is pushed back to a bay on
 the edge of the board and rejoins the game from there.
@@ -34,7 +34,9 @@ beaten ship is pushed back to, and how fast a node burns.
 **Turn** — everything one player does before play passes to their opponent. A
 turn is one action.
 
-**Round** — one turn for each player. The game lasts 100 rounds.
+**Round** — one turn for each player. The game lasts for the number of
+rounds chosen before play begins — 30, 50, 75 or 100 — and 30 is the
+standard game (section 9).
 
 **Action** — what a player does on their turn: move a ship, or attack with a
 ship.
@@ -143,18 +145,55 @@ any rule.
 
 ## 4. Ships
 
-Each player has seven ships — one player **green**, the other **red**. Green
-takes the first turn.
+Each player has **five, six or seven** ships — the same number for both
+players, chosen before play begins; **seven is the standard game**. One
+player is **green**, the other **red**. Green takes the first turn.
 
-At the start of the game every bay holds one ship, and the two fleets alternate
-around the edge. Starting clockwise from H15:
+The bays never change (section 3.1): there are always fourteen, in the same
+places. What changes with fleet size is which of them hold a ship at the
+start, and — at five a side — the colours on the left and right edges.
+
+**Seven a side (14 ships).** Every bay holds one ship, and the two fleets
+alternate around the edge. Starting clockwise from H15:
 
 > H15 green, L15 red, O14 green, O10 red, O6 green, O2 red, L1 green,
 > H1 red, D1 green, A2 red, A6 green, A10 red, A14 green, D15 red.
 
+**Six a side (12 ships).** The middle bay of the top edge and of the bottom
+edge — **H15 and H1** — start empty. Every other bay holds exactly the ship
+and the colour it holds in the seven-ship game; nothing is recoloured.
+
+| Edge   | Bays, left to right / top to bottom  |
+| ------ | ------------------------------------ |
+| Top    | D15 red, **H15 empty**, L15 red      |
+| Right  | O14 green, O10 red, O6 green, O2 red |
+| Bottom | D1 green, **H1 empty**, L1 green     |
+| Left   | A14 green, A10 red, A6 green, A2 red |
+
+Green: O14, O6, D1, L1, A14, A6. Red: D15, L15, O10, O2, A10, A2.
+
+**Five a side (10 ships).** The top and bottom bay of each four-bay edge —
+**O14, O2, A14 and A2** — start empty, and the colours on those two edges are
+**reversed** from the seven-ship game. The three-bay edges are untouched, so
+the top still reads red-green-red and the bottom still reads green-red-green.
+
+| Edge   | Bays, left to right / top to bottom                    |
+| ------ | ------------------------------------------------------ |
+| Top    | D15 red, H15 green, L15 red                            |
+| Right  | **O14 empty**, O10 **green**, O6 **red**, **O2 empty** |
+| Bottom | D1 green, H1 red, L1 green                             |
+| Left   | **A14 empty**, A10 **green**, A6 **red**, **A2 empty** |
+
+Green: H15, O10, A10, D1, L1. Red: D15, L15, O6, A6, H1.
+
+**A bay left empty at the start is an ordinary empty bay in every way.** It
+is not removed from the board and it is not reserved: either player may move
+into it, and section 7.1's random return may send a beaten ship to it, exactly
+as it would to any other empty bay.
+
 Because the bays are spaced evenly and there are fourteen of them, each
-player's starting fleet is exactly the half-turn rotation of the other's, so
-neither side begins with better ground.
+player's starting fleet is exactly the half-turn rotation of the other's in
+all three layouts, so neither side begins with better ground.
 
 Every ship starts with 0 shields.
 
@@ -184,9 +223,9 @@ Green takes the first turn, and the players alternate. On a turn a player takes
 
 A player must take as many of their turn's actions as are available. If a
 player has no legal action at all, their turn passes. This should be
-uncommon — a player always has seven ships — but an attack reaches only as
-far as the attacker's shields allow, so an action is not always available;
-the rule is here so the game can never deadlock.
+uncommon — a player always has at least five ships — but an attack reaches
+only as far as the attacker's shields allow, so an action is not always
+available; the rule is here so the game can never deadlock.
 
 ---
 
@@ -520,8 +559,9 @@ The consequences follow from that one sentence:
 
 ## 9. Ending the game
 
-The game ends after **100 rounds** — 100 turns each. The player with the most
-energy wins. Equal energy is a draw.
+The game ends after the number of rounds chosen before play begins —
+**30, 50, 75 or 100 rounds**, that many turns each — with **30** the
+standard game. The player with the most energy wins. Equal energy is a draw.
 
 ---
 

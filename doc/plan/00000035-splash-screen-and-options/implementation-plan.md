@@ -390,7 +390,7 @@ names, per the story's out-of-scope list.
 
 ## Step 1 — Rules 0.15: fleet size and game length become choices
 
-Status: implemented
+Status: committed
 
 Notes: Edited `doc/ruleset/rules.md` (§1, §2, §4, §5, §9) to 0.15, added a
 `## 0.15` entry to `doc/ruleset/changelog.md`, and bumped `RULES_VERSION` in
