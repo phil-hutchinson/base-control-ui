@@ -707,7 +707,7 @@ format:check` and `npm test` all pass (769 tests, including the new
 
 ## Step 5 — Manual gate: the board
 
-Status: pending
+Status: committed
 
 Run `npm run dev` and open the app in a browser (Firefox is the reference
 engine used by earlier stories; a second engine is welcome but not required).
@@ -747,6 +747,28 @@ Verification (manual): the owner runs the app and confirms points 1–5, and
 gives a verdict on 6, 7 and 8. Anything wrong in 1–5 comes back as a fix to
 step 1, 3 or 4 and the gate is run again; it does not become a new step tacked
 on the end. Record the owner's verdict on 6, 7 and 8 in this step's `Notes:`.
+
+Notes: Run by the owner on the dev server. Points 1-5 all pass: both models
+draw in full, fourteen at once, the gauge tracks the shield count, the site
+marker stays readable through the clear middle band, and every existing
+marking still reads.
+
+Verdicts on the three judgement calls:
+
+- **6, the gauge/marking overlap — accepted, and largely moot.** The
+  already-acted bar draws nothing meaningful under one action per turn
+  (story 18), so the overlap across gauge slots 2-3 costs nothing today. If
+  multiple actions per turn ever return, that marking would be redesigned
+  anyway. The selected-ship brackets clipping slots 1 and 4 is accepted as
+  it stands.
+- **7, the gauge separator against a bay — accepted.** The separator colour
+  is the ordinary square's background and does not match a bay's lighter
+  fill, but bays are due to change in a later story, so matching them now
+  would be work aimed at a moving target.
+- **8, the palette clash — not a problem, and no follow-up story is
+  wanted.** With the models carrying several colours each, the green/red
+  separation reads clearly against the HUD's pips and the blue interaction
+  marks. `--color-green` / `--color-red` stay as they are.
 
 ---
 
