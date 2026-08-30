@@ -23,10 +23,11 @@
    row above the turn indicator. The portrait gap grows with the window's
    width up to 4rem, which as a vertical gap on a wide monitor would push the
    column far past the info region's fixed extent, so it is replaced with a
-   small fixed gap here. */
+   gap sized as a fraction of `--region-extent` (`App.css`) instead, which
+   scales with the column as `P` tracks the window. */
 @media (orientation: landscape) {
   .hud__row {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: calc(var(--region-extent) * 0.075);
   }
 }

@@ -14,11 +14,13 @@
 }
 
 /* Landscape: the portrait size is keyed to the window's width, which the
-   fixed-width info column cannot follow, so it gets a fixed size here. This
-   is one of the two widest things in the column at its landscape size — see
-   the derivation in `App.css` — sized to still fit with room to spare. */
+   fixed-width info column cannot follow, so it is sized as a fraction of
+   `--region-extent` (`App.css`) instead. This is one of the two widest
+   things in the column at its landscape size — see the derivation in
+   `App.css` — sized to still fit with room to spare as `P` tracks the
+   window. */
 @media (orientation: landscape) {
   .turn-indicator {
-    font-size: 1.1rem;
+    font-size: calc(var(--region-extent) * 0.11);
   }
 }

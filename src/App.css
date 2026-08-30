@@ -157,7 +157,11 @@
 .app__reserved {
   /* A placeholder standing in for a later story's content: just enough
      styling to read as present, nothing else. Mirrors `.app__info`'s extent
-     exactly, which is what keeps the board centred. */
+     exactly, which is what keeps the board centred. Its type is sized as
+     the same fraction of `--region-extent` as the turn indicator's landscape
+     size (0.11 — see the landscape media block below), in both orientations,
+     so the placeholder grows along with the rest of the info column's type
+     rather than staying pinned at its old fixed 1rem. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -165,6 +169,7 @@
   width: 100%;
   color: var(--color-text-dim);
   font-family: var(--font-arcade);
+  font-size: calc(var(--region-extent) * 0.11);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -173,29 +178,46 @@
    becomes a width and the play-area formula swaps which window dimension it
    floors against. The info region's own contents restack into a column in
    `Hud.css`; every size in that column that used to track the window's width
-   is re-keyed to a fixed size here and in the HUD's own stylesheets, because
-   a column of fixed width `P` cannot hold type sized from a window that can
-   be many times wider than the column itself.
+   is re-keyed to a fraction of `--region-extent` here and in the HUD's own
+   stylesheets, because a column of fixed width `P` cannot hold type sized
+   from a window that can be many times wider than the column itself.
 
-   `--region-extent` here is a plain fixed length, not a clamp, because
-   nothing left in the column varies with window width once that re-keying is
-   done. It was sized against the widest things the column holds at their
-   landscape sizes: the title "GREED" at 2rem (monospace, 0.12em
-   letter-spacing, ~7.2rem wide — see `.app__title` below) and the turn
-   indicator's longest wording, "Green to play", at 1.1rem (a proportional
-   font, roughly 13 characters averaging ~0.5em each, ~7.15rem wide) come out
-   within a whisker of each other; the score digits, the round counter and
-   the pip row are all narrower still at their own landscape sizes. `10rem`
-   leaves close to `3rem` of clearance beyond the widest of them — room to
-   breathe without being generous enough to threaten the board's floor: the
-   near-square case is the one to watch, because the mirrored reserved region
-   costs the long axis a second `P + g`, and a wider `P` than this starts
-   eating into the 600px floor exactly there (e.g. a window with ~1000px of
-   interior on its long axis leaves `S` = 648px at `P` = 10rem but only 584px
-   — under the floor — at `P` = 12rem). */
+   `--region-extent` is a `clamp()` that tracks the window's own width
+   (`14vw`), capped at both ends, rather than a flat length: the owner asked
+   for the column's type to read at roughly twice its original size, and a
+   flat doubling (~20rem) costs the long axis a second `P + g` for the
+   mirrored reserved region, which pushes `S` under the 600px floor at
+   ordinary landscape sizes (a 1280x800 window would already overflow).
+   Tracking the window's width instead keeps `P` — and so the board — sized
+   to the window actually in front of the player: `clamp(12rem, 14vw,
+   22rem)` sits at its floor on everything up to a roughly 1370px-wide
+   window, grows with the window from there, and is capped at 22rem so an
+   ultra-wide monitor does not hand the column an ever-larger `P`. Worked
+   against four representative windows (`rem` = 16px, `--frame-inset`
+   recomputed from each window's own `cabinet-padding` clamp):
+     - 3440x1440 (the owner's): `cabinet-padding` clamps to its 1.5rem
+       maximum, `--frame-inset` = 50px/side; `P` clamps to its 22rem maximum
+       (352px); `S` = min(H, W - 2(P+g)) = min(1340, 2604) = 1340px.
+     - 1920x1080: `--frame-inset` = 50px/side; `14vw` = 268.8px, inside the
+       clamp's range, so `P` = 268.8px; `S` = min(980, 1250.4) = 980px.
+     - 1280x800: `--frame-inset` = 50px/side; `14vw` = 179.2px, below the
+       clamp's 12rem floor, so `P` = 192px; `S` = min(700, 764) = 700px.
+     - 1100x1000 (near-square): `--frame-inset` = 48px/side; `P` clamps to
+       its 12rem floor (192px); `S` = min(904, 588), which is below the
+       600px floor, so the board floors at 600px and the window scrolls a
+       little on its long axis. This is the deliberately-too-small case the
+       600px floor already exists to handle (see the story's section 4), not
+       a regression this change introduces — a window this close to square
+       was already the tight case before the type was enlarged.
+   The column's own type sizes are expressed below and in the HUD's
+   stylesheets as fractions of `--region-extent` rather than fixed `rem`
+   values, at the same proportions the previous flat `10rem` derivation used
+   (e.g. the title at `0.2 * P`, the turn indicator at `0.11 * P`), so the
+   column's contents keep scaling with `P` as it tracks the window instead of
+   being pinned to one window size's worth of headroom. */
 @media (orientation: landscape) {
   :root {
-    --region-extent: 10rem;
+    --region-extent: clamp(12rem, 14vw, 22rem);
     --play-size: max(
       var(--board-floor),
       min(
@@ -226,8 +248,9 @@
 
   .app__title {
     /* The portrait `clamp(1.5rem, 4vw, 3.5rem)` grows with the window's
-       width and would overrun the fixed-width column; 2rem holds "GREED"
-       comfortably inside `--region-extent` (see the derivation above). */
-    font-size: 2rem;
+       width and would overrun the fixed-width column; sized as a fraction
+       of `--region-extent` instead so "GREED" keeps fitting comfortably as
+       `P` itself tracks the window (see the derivation above). */
+    font-size: calc(var(--region-extent) * 0.2);
   }
 }

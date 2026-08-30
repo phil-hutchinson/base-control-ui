@@ -296,6 +296,22 @@ orientations.
 container's `gap` and in the `S` expression, so the two cannot drift. `1rem`
 is a sensible start.
 
+**Gate fix (post-step-4):** the owner asked for the landscape info column's
+type — and the reserved placeholder — to read at roughly twice their step-3
+size. A flat doubling of the step-3 `10rem` would have made landscape `P` a
+fixed `20rem`, and the near-square failure mode above shows why that cannot
+stand: it costs the long axis a second `P + g` and pushes `S` under the 600px
+floor at window sizes phase 1 already made comfortable (a 1280x800 window
+would already overflow). So landscape `P` became a clamp that tracks the
+window's own width instead of a flat length —
+`clamp(12rem, 14vw, 22rem)` — capped at both ends so it neither collapses on
+an ordinary window nor runs away on an ultra-wide monitor. The column's own
+type (D8) was re-keyed from fixed `rem` values to fractions of
+`--region-extent` at the same proportions the old `10rem` derivation used, so
+the column's contents keep scaling with `P` as `P` itself now scales with the
+window, and the doubling the owner asked for happens through that scaling
+rather than through a second magic number.
+
 ### D6 — The board's 40px floor becomes a shared token; `S` carries the floor too
 
 `Board.css` floors a square at `40px` (`max(40px, calc(100cqmin / 15))`), which
@@ -374,6 +390,23 @@ for this story as one concept more than the problem needs — `P` is a constant
 the implementer chooses and the owner tunes once, and fixed sizes are easier
 to reason about at the gate. It is a good first move if a later story makes
 `P` variable.
+
+**Gate fix (post-step-4):** `P` stopped being a constant — it became a clamp
+that tracks the window's width (D5) — so the fixed `rem` values chosen here
+would no longer have held their proportion to the column as `P` changed size.
+Each one was re-expressed as `calc(var(--region-extent) * <fraction>)`, using
+the fraction that value already was of the step-3 `10rem` (title `0.2`, score
+digits `0.175`, score name `0.085`, round label `0.085`, round value `0.125`,
+turn indicator `0.11`, `.hud__row`'s landscape gap `0.075`), so the column's
+type keeps the same proportions it had at the gate while scaling with `P` —
+which is also how the owner's request to roughly double the column's type is
+met, since a wider `P` now carries wider type automatically. This is a
+narrower move than the rejected `cqw`/container-query approach above: it
+still leaves `P` as a value the implementer states and the owner tunes, just
+one that is itself window-tracking rather than fixed, and the type follows it
+mechanically rather than being retuned by hand each time. The reserved
+placeholder (D9) was brought into the same scheme, at the turn indicator's
+fraction, applying in both orientations.
 
 ### D9 — The reserved region is a bare element with a word, and nothing else
 
@@ -670,6 +703,36 @@ D8's full list — not just the title. No DOM change anywhere in this step.
 `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (764
 tests, unchanged) and `npm run build` all pass. No deviation from the step as
 written.
+
+**Gate fix, after step 4 (D5, D8):** at the gate the owner asked for the
+landscape info column's type — and the `RESERVED` placeholder — to read at
+roughly twice its size here. Landscape `--region-extent` changed from the
+flat `10rem` above to `clamp(12rem, 14vw, 22rem)`, tracking the window's own
+width instead of a fixed length, because a flat doubling (~20rem) would cost
+the long axis a second `P + g` for the mirrored reserved region and push `S`
+under the 600px floor at ordinary landscape sizes (a 1280x800 window would
+already overflow — see the worked arithmetic in the updated `App.css`
+comment). Every landscape type size named above — the title, the score name
+and digits, the round label and value, the turn indicator, and `.hud__row`'s
+landscape gap — was re-expressed as `calc(var(--region-extent) * <fraction>)`
+using the fraction each fixed value already was of the old `10rem` (title
+`0.2`, score digits `0.175`, score name `0.085`, round label `0.085`, round
+value `0.125`, turn indicator `0.11`, row gap `0.075`), so the same
+proportions hold as `P` now scales with the window. `.app__reserved` gained
+`font-size: calc(var(--region-extent) * 0.11)` — the turn indicator's
+fraction — applied in **both** orientations (portrait `--region-extent` is
+unchanged, so this grows the placeholder there too, from 1rem to roughly
+1.18–1.76rem, which is what the owner asked for). Checked against the four
+window sizes named in the gate-fix task: 3440x1440 gives `S` = 1340px, 1920x1080
+gives `S` = 980px, 1280x800 gives `S` = 700px — all comfortably above the
+600px floor; the near-square 1100x1000 case gives `S` = 588px before
+flooring, so the board floors at 600px and the window scrolls slightly on its
+long axis, the same "too small for the floor" degradation the story already
+accepts (D5's own near-square worked example showed the same case was already
+tight before this change). Portrait was not touched, per the task's
+instruction. `npm run typecheck`, `npm run lint`, `npm test` and
+`npm run format:check` all pass. No deviation from the gate-fix instructions
+as given.
 
 Add the wider-than-tall arrangement as an override on step 2's rules.
 

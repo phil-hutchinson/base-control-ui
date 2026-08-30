@@ -79,14 +79,16 @@
 
 /* Landscape: the name and the digits are both sized from the window's
    width in portrait, which the fixed-width info column cannot follow, so
-   both get a fixed size here instead. Neither is close to the widest thing
-   in the column at these sizes (see the derivation in `App.css`). */
+   both are sized as a fraction of `--region-extent` (`App.css`) here
+   instead, keeping them in the same proportion to `P` as before while `P`
+   itself now tracks the window. Neither is close to the widest thing in the
+   column at these sizes (see the derivation in `App.css`). */
 @media (orientation: landscape) {
   .score-display__name {
-    font-size: 0.85rem;
+    font-size: calc(var(--region-extent) * 0.085);
   }
 
   .score-display__digits {
-    font-size: 1.75rem;
+    font-size: calc(var(--region-extent) * 0.175);
   }
 }
