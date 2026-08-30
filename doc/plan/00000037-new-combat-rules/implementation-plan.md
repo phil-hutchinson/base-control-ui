@@ -1649,7 +1649,14 @@ the running app and reports anything that reads wrong, looks wrong, or contradic
 
 ## Step 10 — The end screen's button says "New Game"
 
-Status: pending
+Status: committed
+
+Notes: Changed the button's literal text in `GameOverPanel.tsx`, updated the
+three `getByRole` queries in `GameOverPanel.test.tsx`, and named the button in
+the README's status blockquote. The README edit also rewrapped just the two
+affected lines to keep them under the paragraph's usual line width, without
+reflowing the rest of the paragraph. `onReturnToStart` and
+`handleReturnToStart` were left unchanged as specified.
 
 Rename the result panel's button from **"Back to start"** to **"New Game"**.
 

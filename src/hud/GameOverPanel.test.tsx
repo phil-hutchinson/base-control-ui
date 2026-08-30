@@ -94,7 +94,7 @@ describe("GameOverPanel", () => {
     );
 
     await user.tab();
-    expect(screen.getByRole("button", { name: "Back to start" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "New Game" })).toHaveFocus();
 
     await user.keyboard("[Enter]");
     expect(onReturnToStart).toHaveBeenCalledTimes(1);
@@ -113,7 +113,7 @@ describe("GameOverPanel", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "Back to start" }));
+    await user.click(screen.getByRole("button", { name: "New Game" }));
 
     expect(onReturnToStart).toHaveBeenCalledTimes(1);
   });
@@ -283,7 +283,7 @@ describe("GameOverPanel", () => {
       await user.click(
         screen.getByRole("gridcell", { name: /^H9,.*can move here$/ }),
       );
-      await user.click(screen.getByRole("button", { name: "Back to start" }));
+      await user.click(screen.getByRole("button", { name: "New Game" }));
 
       expect(onReturnToStart).toHaveBeenCalledTimes(1);
     });

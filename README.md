@@ -65,8 +65,8 @@ install, no account, no server.
 > many nodes each player holds, how many dead sites they are sitting on, and
 > which round the game is in. Once the game reaches the number of rounds you
 > chose, it ends: the player with the most energy wins, an equal score is a
-> draw, and a button returns you to the start screen with the same choices still
-> set, ready to play again. There is still no way to save or record a game and
+> draw, and the "New Game" button returns you to the start screen with the same choices
+> still set, ready to play again. There is still no way to save or record a game and
 > no computer opponent to play against. The project is being built up story by
 > story.
 

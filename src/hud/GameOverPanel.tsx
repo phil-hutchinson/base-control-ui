@@ -68,7 +68,7 @@ export function GameOverPanel({ state, onReturnToStart }: GameOverPanelProps) {
         className="game-over-panel__button"
         onClick={onReturnToStart}
       >
-        Back to start
+        New Game
       </button>
     </div>
   );
