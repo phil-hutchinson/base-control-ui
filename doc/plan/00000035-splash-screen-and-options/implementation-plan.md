@@ -606,7 +606,22 @@ step.
 
 ## Step 3 — `startingGameState` takes a fleet size
 
-Status: pending
+Status: committed
+
+Notes: `startingGameState` gained a third parameter, `fleetSize: number`,
+defaulting to `DEFAULT_FLEET_SIZE` and validated with `isFleetSize`, throwing
+a `RangeError` naming the bad value (mirroring the `lengthInRounds` check);
+it is used to pick the starting fleet via `startingFleet(fleetSize)` and is
+not stored on `GameState`. Rewrote the two stale doc comments — `GameState
+.ships` no longer names the removed `STARTING_FLEET` and now points at
+`startingFleet`'s clockwise order, and `startingGameState`'s comment
+explains the fleet size is derived from `state.ships`, not stored, per the
+orchestrator's note flagging both as leftover from step 2. `gameState.test.ts`
+gained cases for five- and six-ship games (ships on the right layout's bays),
+the seven-ship default re-expressed against `startingFleet(DEFAULT_FLEET_SIZE)`,
+0-shields for all three sizes, and `RangeError` for 4, 8 and 6.5.
+`npm run typecheck`, `npm run lint`, `npm test` (776 passed) and
+`npm run format:check` all pass. No deviation from the plan.
 
 Give `startingGameState` a third parameter, after the seed and the length: the
 fleet size, typed `number`, defaulting to the fleet-size default from

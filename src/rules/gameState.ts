@@ -6,6 +6,7 @@
 import { type Square, squareName } from "./board";
 import {
   DEFAULT_FLEET_SIZE,
+  isFleetSize,
   startingFleet,
   type Side,
   type ShipId,
@@ -51,7 +52,7 @@ export type EnergyTotals = Readonly<Record<Side, number>>;
 
 /** The state of a game in progress. */
 export interface GameState {
-  /** Every ship, in `STARTING_FLEET` order. */
+  /** Every ship, in the starting fleet's clockwise order (`startingFleet`, rules.md §4). */
   readonly ships: readonly Ship[];
   /** Every site's current status, keyed by square name. */
   readonly siteStates: Readonly<Record<string, SiteStatus>>;
@@ -79,7 +80,7 @@ export interface GameState {
 }
 
 /**
- * The state the game starts from: the fourteen `STARTING_FLEET` ships, every
+ * The state the game starts from: `startingFleet(fleetSize)`'s ships, every
  * site's starting state and `level` (five sites charged at drain 0, the
  * rest active at pressure 1 — see `startingSiteStatus`), green to move,
  * `ACTIONS_PER_PLY` actions remaining, nothing moved, ply 1, the given seed,
@@ -93,14 +94,26 @@ export interface GameState {
  * (rules.md §9) and, once set, is fixed for the game's lifetime. It must be
  * a positive whole number; anything else is a caller bug and throws a
  * `RangeError`.
+ *
+ * The fleet size (rules.md §4) defaults to `DEFAULT_FLEET_SIZE` and, like
+ * the length, is fixed for the game's lifetime once set — it must be one of
+ * `fleet.ts`'s valid fleet sizes, or this throws a `RangeError`. It is
+ * **not** stored on the resulting state: `state.ships` is the record of it,
+ * since a side's fleet size is simply the count of its ships.
  */
 export function startingGameState(
   randomSeed: number,
   lengthInRounds: number = DEFAULT_GAME_LENGTH_ROUNDS,
+  fleetSize: number = DEFAULT_FLEET_SIZE,
 ): GameState {
   if (!isGameLengthRounds(lengthInRounds)) {
     throw new RangeError(
       `startingGameState: lengthInRounds must be a positive integer, got ${lengthInRounds}`,
+    );
+  }
+  if (!isFleetSize(fleetSize)) {
+    throw new RangeError(
+      `startingGameState: fleetSize must be 5, 6 or 7, got ${fleetSize}`,
     );
   }
 
@@ -113,7 +126,7 @@ export function startingGameState(
   }
 
   return {
-    ships: startingFleet(DEFAULT_FLEET_SIZE).map((entry) => ({
+    ships: startingFleet(fleetSize).map((entry) => ({
       id: entry.id,
       side: entry.side,
       square: entry.square,
