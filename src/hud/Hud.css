@@ -1,11 +1,12 @@
 .hud {
-  /* No border or background of its own: `.app__cabinet` supplies both.
-     The margin keeps it clear of the title above and the board below. */
+  /* No border or background of its own: `.app__cabinet` supplies both. The
+     gap between the info region and the play area is now `--region-gap`
+     (`App.css`), owned by the layout container, so this element carries no
+     margin of its own. */
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  margin: 0 0 1.5rem;
 }
 
 .hud__row {

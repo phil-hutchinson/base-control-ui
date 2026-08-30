@@ -1,9 +1,60 @@
+:root {
+  /* The cabinet frame's thickness, named so the room inside it (`W` and `H`
+     in the sizing formula below) is computed from the same numbers the frame
+     itself is drawn with, rather than a second copy that could drift out of
+     step. `--frame-inset` is one side's worth — `.app`'s padding, plus
+     `.app__cabinet`'s border, plus its own padding — so the play-size
+     expression subtracts it twice, once per edge. */
+  --app-padding: 1.5rem;
+  --cabinet-border: 2px;
+  --cabinet-padding: clamp(0.75rem, 2vw, 1.5rem);
+  --frame-inset: calc(
+    var(--app-padding) + var(--cabinet-border) + var(--cabinet-padding)
+  );
+
+  /* The side regions' extent (`P`) and the gap between regions (`g`) from
+     the sizing formula. Portrait `P` is derived from the info region's own
+     content — the title, the HUD row and the turn indicator — at the
+     minimum and maximum of their `clamp()`s:
+       - title: line-height 1.5 x clamp(1.5rem, 4vw, 3.5rem) plus its 1rem
+         bottom margin -> 3.25rem .. 6.25rem;
+       - the taller HUD cell, ScoreDisplay: name (1.5 x clamp(0.75rem, 1.5vw,
+         1rem)) + digits (1.5 x clamp(1.5rem, 4vw, 2.5rem)) + two 0.6rem pip
+         rows + three 0.25rem internal gaps -> 5.325rem .. 7.2rem;
+       - the HUD's 0.5rem row gap, plus the turn indicator (line-height 1.5 x
+         clamp(1rem, 2.5vw, 1.25rem)) -> 2rem .. 2.375rem.
+     Summed: roughly 10.6rem at the clamps' minima, 15.8rem at their maxima.
+     `--region-extent` tracks that range with the same viewport-width scale
+     as the content itself, rounded up slightly for breathing room rather
+     than padded generously — an over-generous `P` costs the board's size
+     directly (see the play-size formula below). Landscape overrides this
+     token in its own media query. */
+  --region-extent: clamp(10.75rem, 26vw, 16rem);
+  --region-gap: 1rem;
+
+  /* The play area's side, `S`, from the story's section 4. `W` and `H` are
+     the room inside the cabinet's frame — a full viewport dimension less
+     `--frame-inset` on both edges. Portrait: `S = min(W, H - 2(P + g))`,
+     floored so the board never draws smaller than `--board-floor`
+     (`index.css`). Landscape swaps `W` and `H` in its own media query. */
+  --play-size: max(
+    var(--board-floor),
+    min(
+      calc(100vw - (2 * var(--frame-inset))),
+      calc(
+        100vh - (2 * var(--frame-inset)) -
+          (2 * (var(--region-extent) + var(--region-gap)))
+      )
+    )
+  );
+}
+
 .app {
   display: flex;
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  padding: 1.5rem;
+  padding: var(--app-padding);
   text-align: center;
   /* A soft glow high in the frame, echoing an arcade cabinet's lit marquee,
      without a background image or a second palette. */
@@ -45,8 +96,8 @@
   flex: 1;
   min-height: 0;
   width: 100%;
-  padding: clamp(0.75rem, 2vw, 1.5rem);
-  border: 2px solid var(--color-text-dim);
+  padding: var(--cabinet-padding);
+  border: var(--cabinet-border) solid var(--color-text-dim);
   border-radius: 1rem;
   background-color: var(--color-space-raised);
   box-shadow:
@@ -58,43 +109,60 @@
   /* The in-game screen's layout container: a single `flex: 1` child of the
      cabinet, exactly like `.start-screen` and `.game-over-panel`, so the
      cabinet's own rules do not need to know about it. Holds the three
-     regions — info, play, reserved — in that order. Still today's stacked
-     column; the sizing formula and the orientation switch land in later
-     steps. */
+     regions — info, play, reserved — in that order, each sized rigidly
+     (`.app__info` and `.app__reserved` to `--region-extent`, `.app__play` to
+     `--play-size`) rather than by flex-grow, so no size flows down this
+     box. `safe center` centres the group on the main axis when there is
+     room and falls back to start alignment rather than overflowing in both
+     directions when there is not — the below-the-floor case, which is
+     meant to overflow and scroll, not clip unreachably. Still today's
+     stacked column; the orientation switch lands in the next step. */
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: safe center;
   flex: 1;
   min-height: 0;
   width: 100%;
+  gap: var(--region-gap);
 }
 
 .app__info {
-  /* The title and the HUD, unchanged in content and order. No sizing rules
-     of its own yet — those arrive with the sizing formula. */
+  /* The title and the HUD, unchanged in content and order. Held to
+     `--region-extent` rigidly — it must neither grow nor shrink, so the
+     reserved region below stays its exact mirror and the board stays
+     centred. */
+  flex: 0 0 var(--region-extent);
   width: 100%;
 }
 
 .app__play {
   /* A size container so `.board-frame` can measure its square size against
-     the room this element actually has, in each axis. `flex: 1` with
-     `min-height: 0` gives it a resolved height to measure, taken from the
-     `.app__screen` box's own resolved height, once the info region above it
-     has taken its share. Aligned to the block-axis start rather than
+     the room this element actually has. `--play-size` gives it an explicit,
+     definite width and height computed directly from the window (see the
+     `:root` token above), rather than one inherited down a flex chain, so
+     `flex: 0 0 auto` — it neither grows into nor shrinks out of the size
+     already computed for it. Aligned to the block-axis start rather than
      centred, so a board too large for the container overflows downward
      into scrollable space instead of being clipped off the top. */
   container-type: size;
   display: flex;
-  flex: 1;
-  min-height: 0;
-  width: 100%;
+  flex: 0 0 auto;
+  width: var(--play-size);
+  height: var(--play-size);
   justify-content: center;
   align-items: flex-start;
 }
 
 .app__reserved {
   /* A placeholder standing in for a later story's content: just enough
-     styling to read as present, nothing else. */
+     styling to read as present, nothing else. Mirrors `.app__info`'s extent
+     exactly, which is what keeps the board centred. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--region-extent);
+  width: 100%;
   color: var(--color-text-dim);
   font-family: var(--font-arcade);
   letter-spacing: 0.12em;

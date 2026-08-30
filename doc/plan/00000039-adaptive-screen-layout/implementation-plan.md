@@ -558,7 +558,41 @@ clean.
 
 ## Step 2 — Sizing: the board is computed from the window (portrait)
 
-Status: pending
+Status: committed
+
+Notes: `index.css` gained `--board-square-floor` (`40px`) and `--board-floor`
+(fifteen squares), and `Board.css`'s `--square` now reads the floor token
+instead of the literal `40px`. `App.css` gained a `:root` block with the frame
+tokens `--app-padding`, `--cabinet-border`, `--cabinet-padding` and their sum
+`--frame-inset` (D4), which `.app` and `.app__cabinet` now read instead of
+restating the values; `--region-extent` and `--region-gap` (`P` and `g`); and
+`--play-size`, the story's `S = min(W, H − 2(P + g))` floored at
+`--board-floor`, computed directly from `100vw`/`100vh` less `--frame-inset`
+on both edges (D3). `P` was derived, not guessed, from the info region's own
+content at the minima and maxima of its `clamp()`s — title (line-height 1.5 ×
+`clamp(1.5rem, 4vw, 3.5rem)` plus its `1rem` margin), the taller HUD cell
+(`ScoreDisplay`: name + digits + two pip rows + internal gaps) and the HUD row
+gap plus the turn indicator — summing to roughly 10.6rem at the minima and
+15.8rem at the maxima; the derivation is written into the CSS comment.
+`--region-extent: clamp(10.75rem, 26vw, 16rem)` tracks that range on the same
+viewport-width scale as the content, rounded up only slightly (about 0.2rem
+at each end) rather than padded generously, since an over-generous `P` costs
+the board's size directly (D5's stated failure mode). `.app__screen` is now a
+column flex container with `gap: var(--region-gap)` and
+`justify-content: safe center` (D10); `.app__info` and `.app__reserved` are
+held rigidly to `flex: 0 0 var(--region-extent)` so they stay exact mirrors;
+`.app__play` dropped its `flex: 1` in favour of `flex: 0 0 auto` with
+`width`/`height: var(--play-size)`, since an explicit size and a flex-grow
+basis would otherwise fight each other in a column container. `.app__reserved`
+also gained `display: flex; align-items: center; justify-content: center` to
+centre its word now that it has a fixed extent, which the step's own text
+implied (mirroring `.app__info`) but did not spell out — recorded as the one
+small addition beyond the step as written. `Hud.css` lost `.hud`'s
+`margin: 0 0 1.5rem` (D7). No test changes: this step is CSS-only, per D11.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(764 tests) all pass unchanged, and `npm run build` succeeds. As expected, a
+wide window is now wrong (portrait formula applied to landscape) — step 3's
+to fix, not touched here.
 
 Give the layout its arithmetic, for the stacked (portrait) case only.
 
