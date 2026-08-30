@@ -1,13 +1,18 @@
 // Integration cover for camping: a ship that stays on a site that is not
 // charged owes nothing (rules.md §8.5), and the consequences that follow
 // once a move may end anywhere (§6) and the charge draw does not look at
-// occupancy (§8.2). Driven entirely through the public rules API —
-// `applyMove`, `moveRefusalReason` and the `EndOfTurnEffect`s `applyMove`
+// occupancy (§8.2). It also covers the two consequences of a ship staying on
+// a **charged** node — the refuge it grants while held (§7) and the fact
+// that leaving one no longer ends it (§8.3). Driven entirely through the
+// public rules API — `applyMove`, `applyAttack`, `moveRefusalReason`,
+// `attackRefusalReason`, `legalTargets` and the `EndOfTurnEffect`s an action
 // carries — rather than by calling `runEndOfTurn` or `runChargeDraw`
 // directly, so this proves the same thing a player's turn would.
 
 import { describe, expect, it } from "vitest";
-import { squareFromName } from "./board";
+import { isBay } from "./bays";
+import { squareFromName, squareName } from "./board";
+import { attackRefusalReason, legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import {
   ACTIONS_PER_PLY,
@@ -17,7 +22,12 @@ import {
 } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { moveRefusalReason } from "./movement";
-import { type MoveEffect, type PlyEndedEffect, applyMove } from "./ply";
+import {
+  type MoveEffect,
+  type PlyEndedEffect,
+  applyAttack,
+  applyMove,
+} from "./ply";
 import type { ShieldCount } from "./shields";
 import { NODE_CAPACITY, type SiteState } from "./sites";
 
@@ -660,5 +670,194 @@ describe("camping — flying across a dormant site costs nothing (§8.4)", () =>
     );
     expect(flyer?.square).toEqual(squareFromName("H9"));
     expect(flyer?.shields).toBe(0);
+  });
+});
+
+describe("camping — the node refuge: a ship holding a charged node cannot be attacked, until it runs out under it (rules.md §7)", () => {
+  it("refuses the attack and denies the camper an attack of its own, then both become ordinary the moment the node runs out", () => {
+    const targetSquare = squareFromName("H8");
+    const enemySquare = squareFromName("H11");
+
+    const initial = buildState({
+      ships: [
+        ship("red-camper", "red", "H8", 0),
+        ship("green-enemy", "green", "H11", 0),
+        ship("green-mover", "green", "A1"),
+        ship("red-mover", "red", "O1"),
+      ],
+      siteStates: {
+        // The held table's smallest draw is 3, so one turn spent occupied
+        // is certain to tip this to capacity, whatever is drawn.
+        H8: ["charged", NODE_CAPACITY - 3],
+      },
+    });
+
+    // While H8 is charged, green-enemy cannot attack the ship holding it —
+    // refused as protected, and never offered as a target at all.
+    expect(attackRefusalReason(initial, "green-enemy", targetSquare)).toBe(
+      "target-on-charged-node",
+    );
+    expect(legalTargets(initial, "green-enemy")).toEqual([]);
+
+    // The refusal is about the attacker's own square, not whose turn it
+    // happens to be, so the same state with red to move shows red-camper has
+    // no attack of its own while it holds the node either.
+    const withRedToMove: GameState = { ...initial, sideToMove: "red" };
+    expect(attackRefusalReason(withRedToMove, "red-camper", enemySquare)).toBe(
+      "attacker-on-charged-node",
+    );
+    expect(legalTargets(withRedToMove, "red-camper")).toEqual([]);
+
+    // Green spends its turn elsewhere. H8 is occupied by red-camper, so its
+    // drain is drawn from the held table (rules.md §8.3) and, at the level
+    // chosen above, is certain to reach capacity in this one turn.
+    const afterGreenTurn = appliedOrThrow(
+      applyMove(initial, "green-mover", squareFromName("A4")),
+    );
+    const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
+    expect(greenTurnEffects).toContainEqual({
+      type: "node-ran-out",
+      square: targetSquare,
+    });
+    expect(afterGreenTurn.state.siteStates.H8.state).toBe("dormant");
+    const camperAfterRunout = afterGreenTurn.state.ships.find(
+      (candidate) => candidate.id === "red-camper",
+    );
+    expect(camperAfterRunout?.square).toEqual(targetSquare);
+
+    // A spare red move, changing nothing about H8, just to bring the turn
+    // back to green so the attack below is genuinely green-enemy's to make.
+    const afterRedTurn = appliedOrThrow(
+      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O4")),
+    );
+    expect(afterRedTurn.state.siteStates.H8.state).toBe("dormant");
+
+    // The node's protection is gone at the same moment it starts paying —
+    // without red-camper moving at all, it is now an ordinary target, and
+    // the attack that was refused a moment ago actually resolves.
+    expect(
+      attackRefusalReason(afterRedTurn.state, "green-enemy", targetSquare),
+    ).toBeUndefined();
+    expect(legalTargets(afterRedTurn.state, "green-enemy")).toContainEqual(
+      targetSquare,
+    );
+
+    const attackResult = applyAttack(
+      afterRedTurn.state,
+      "green-enemy",
+      targetSquare,
+    );
+    if (attackResult.outcome !== "applied") {
+      throw new Error(
+        `expected the attack to be applied, was refused as "${attackResult.reason}"`,
+      );
+    }
+    const camperAfterFight = attackResult.state.ships.find(
+      (candidate) => candidate.id === "red-camper",
+    );
+    const enemyAfterFight = attackResult.state.ships.find(
+      (candidate) => candidate.id === "green-enemy",
+    );
+    expect(camperAfterFight?.shields).toBe(0);
+    expect(enemyAfterFight?.shields).toBe(0);
+    expect(isBay(camperAfterFight!.square)).toBe(true);
+    expect(isBay(enemyAfterFight!.square)).toBe(true);
+    const occupiedSquareNames = attackResult.state.ships.map((candidate) =>
+      squareName(candidate.square),
+    );
+    expect(occupiedSquareNames).not.toContain("H8");
+    expect(occupiedSquareNames).not.toContain("H11");
+  });
+});
+
+describe("camping — a node left lit still burns down, and either side may retake it (rules.md §7, §8.3)", () => {
+  it("keeps draining at the empty rate if nobody retakes it, and goes dormant only when its drain reaches capacity", () => {
+    const initial = buildState({
+      ships: [ship("green-1", "green", "F2", 0), ship("red-1", "red", "A1")],
+      siteStates: { F2: ["charged", 0] },
+    });
+
+    const afterDeparture = appliedOrThrow(
+      applyMove(initial, "green-1", squareFromName("F5")),
+    );
+    // F2 stays charged the moment it is left — leaving it no longer ends it.
+    expect(afterDeparture.state.siteStates.F2.state).toBe("charged");
+    expect(afterDeparture.effects).not.toContainEqual(
+      expect.objectContaining({ type: "node-vacated" }),
+    );
+
+    const greenSquares = ["F8", "F5"] as const;
+    const redSquares = ["A4", "A1"] as const;
+    const moves: Array<[ShipId, string]> = [];
+    for (let round = 0; round < 40; round++) {
+      // Green's own move (F2 -> F5, above) already spent green's turn, so
+      // red moves first in every round from here on.
+      moves.push(["red-1", redSquares[round % 2]]);
+      moves.push(["green-1", greenSquares[round % 2]]);
+    }
+
+    let state = afterDeparture.state;
+    let previousLevel = afterDeparture.state.siteStates.F2.level;
+    let ranOut = false;
+    for (const [shipId, square] of moves) {
+      const result = appliedOrThrow(
+        applyMove(state, shipId, squareFromName(square)),
+      );
+      state = result.state;
+      ranOut = endOfTurnEffects(result.effects).some(
+        (effect) => effect.type === "node-ran-out",
+      );
+      if (ranOut) {
+        break;
+      }
+      // Neither ship ever stands on F2 in this scenario, so every one of
+      // these turns draws from the empty table — never the held table's
+      // higher amounts — while the node stays charged.
+      const level = state.siteStates.F2.level;
+      expect(level - previousLevel).toBeGreaterThanOrEqual(1);
+      expect(level - previousLevel).toBeLessThanOrEqual(3);
+      expect(state.siteStates.F2.state).toBe("charged");
+      previousLevel = level;
+    }
+
+    expect(ranOut).toBe(true);
+    expect(state.siteStates.F2.state).toBe("dormant");
+  });
+
+  it("lets the opponent's ship move onto the still-charged node and start collecting there", () => {
+    const initial = buildState({
+      ships: [ship("green-1", "green", "F2", 0), ship("red-1", "red", "C2")],
+      siteStates: { F2: ["charged", 5] },
+    });
+
+    const afterDeparture = appliedOrThrow(
+      applyMove(initial, "green-1", squareFromName("F5")),
+    );
+    expect(afterDeparture.state.siteStates.F2.state).toBe("charged");
+
+    // red-1 is the opponent of the ship that held F2 — the case the story is
+    // about: either side may take a node its holder chose to leave.
+    const afterOpponentArrives = appliedOrThrow(
+      applyMove(afterDeparture.state, "red-1", squareFromName("F2")),
+    );
+    const redAfterArrival = afterOpponentArrives.state.ships.find(
+      (candidate) => candidate.id === "red-1",
+    );
+    expect(redAfterArrival?.square).toEqual(squareFromName("F2"));
+    expect(afterOpponentArrives.state.siteStates.F2.state).toBe("charged");
+
+    const opponentTurnEffects = endOfTurnEffects(afterOpponentArrives.effects);
+    expect(opponentTurnEffects).toContainEqual({
+      type: "shield-gained",
+      shipId: "red-1",
+      side: "red",
+      square: squareFromName("F2"),
+      shields: 1,
+    });
+    expect(
+      opponentTurnEffects.some(
+        (effect) => effect.type === "energy-collected" && effect.side === "red",
+      ),
+    ).toBe(true);
   });
 });

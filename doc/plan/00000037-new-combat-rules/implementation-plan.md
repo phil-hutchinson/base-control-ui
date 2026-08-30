@@ -1374,7 +1374,49 @@ without a test seam.
 
 ## Step 7 — Integration cover: the node refuge and the node left lit
 
-Status: pending
+Status: committed
+
+Notes: Added three `it`s across two new describes in `camping.test.ts`,
+driven through `applyMove`, `applyAttack`, `attackRefusalReason` and
+`legalTargets` exactly as the file's existing discipline requires. Case 1
+("the node refuge") uses a single deterministic fixture: a camper on H8 at
+`NODE_CAPACITY - 3`, guaranteeing the held table's smallest draw (3) tips it
+to dormant in exactly one turn, no loop needed. It checks the refusal from
+both directions — the enemy cannot target the camper, and the camper (its
+own square swapped to `sideToMove`, since the refusal is a property of the
+attacker's square rather than of whose turn it is) has no legal attack of
+its own — then drives one real green move to exhaust the node, a spare red
+move to hand the turn back to green, and finally a real `applyAttack` that
+now resolves, landing both ships in bays at 0 shields. Case 2 ("a node left
+lit") is two `it`s: one runs a capped loop (40 rounds, red then green
+alternating, neither ever touching F2) asserting every single turn's level
+rise is in the empty table's [1,3] range and the site stays charged until
+`node-ran-out` fires, breaking out and asserting dormancy once it does; the
+other has the vacated ship's opponent walk onto the still-charged square and
+shows it immediately gains a shield and collects energy at the end of that
+same arriving turn.
+
+One deviation from the plan's literal wording, recorded for the peer review:
+the plan's third bullet for case 2 says a node taken by an opponent starts
+"collecting from the end of its owner's next turn." Tracing the actual code
+(`runEndOfTurn`'s steps 1 and 2 read the state as it already stands when the
+sequence starts, which includes the ship's own just-completed move) shows
+collection happens at the end of the very turn the ship arrives on an
+already-charged node, not a turn later — confirmed independently with a
+throwaway probe test before writing the real one. The delayed case that
+phrase describes is the different scenario the first "camping" describe
+already covers, where a site charges _during_ someone else's turn, after
+that ply's steps 1–2 have already run. Wrote the assertion to match the
+behaviour the code actually has rather than the plan's paraphrase of it, per
+the instruction not to weaken an assertion — asserting a one-turn delay that
+doesn't exist would have been a false test, not a faithful one.
+
+No `src/` file outside `camping.test.ts` was touched. All three new cases
+were confirmed to fail for the right reason by temporarily reverting the
+underlying behaviour in `combat.ts` and `endOfTurn.ts` (restored
+immediately after) rather than by inspection alone. `npm run typecheck`,
+`npm run lint`, `npm run format:check` and `npm test` all pass (43 files,
+762 tests). `git status` shows only `src/rules/camping.test.ts` changed.
 
 Add the two end-to-end cases the story asks for to
 `src/rules/camping.test.ts`, which is the integration cover for a ship that
