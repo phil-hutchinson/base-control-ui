@@ -85,11 +85,7 @@ describe("BoardSquare", () => {
 
   it("renders the target ring when marked as a legal attack target, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare
-        isBay={false}
-        squareName="H8"
-        mark={{ kind: "target", outcome: "attacker-won" }}
-      />,
+      <BoardSquare isBay={false} squareName="H8" mark="target" />,
     );
     const { container: unmarked } = render(
       <BoardSquare isBay={false} squareName="H8" />,
@@ -103,11 +99,7 @@ describe("BoardSquare", () => {
 
   it("draws the target ring hollow and distinct from the destination's solid disc", () => {
     const { container: target } = render(
-      <BoardSquare
-        isBay={false}
-        squareName="H8"
-        mark={{ kind: "target", outcome: "attacker-won" }}
-      />,
+      <BoardSquare isBay={false} squareName="H8" mark="target" />,
     );
     const { container: destination } = render(
       <BoardSquare isBay={false} squareName="H8" mark="destination" />,
@@ -126,11 +118,7 @@ describe("BoardSquare", () => {
 
   it("renders exactly one mark for the target square, never alongside destination or selected", () => {
     const { container } = render(
-      <BoardSquare
-        isBay={false}
-        squareName="H8"
-        mark={{ kind: "target", outcome: "attacker-won" }}
-      />,
+      <BoardSquare isBay={false} squareName="H8" mark="target" />,
     );
 
     expect(container.querySelectorAll(".board-square__mark")).toHaveLength(1);

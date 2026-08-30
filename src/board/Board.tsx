@@ -8,7 +8,7 @@ import { GAME_NAME } from "../gameName";
 import { BOARD_SIZE, squareName } from "../rules/board";
 import { isBay } from "../rules/bays";
 import { shipHasLegalAction } from "../rules/actions";
-import { legalTargets, resolveFight } from "../rules/combat";
+import { legalTargets } from "../rules/combat";
 import { shipsBySquare, siteStatusAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
 import { siteCyclePosition } from "../rules/sites";
@@ -116,10 +116,7 @@ export function Board({ session, onIntent }: BoardProps) {
         } else if (destinationSquareNames.has(name)) {
           mark = "destination";
         } else if (selectedShip && targetSquareNames.has(name) && ship) {
-          mark = {
-            kind: "target",
-            outcome: resolveFight(selectedShip.shields, ship.shields).result,
-          };
+          mark = "target";
         }
 
         return {

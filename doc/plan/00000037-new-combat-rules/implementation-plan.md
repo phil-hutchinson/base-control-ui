@@ -908,7 +908,34 @@ and being attacked entirely unaffected.
 
 ## Step 3 — A target square reads one way
 
-Status: pending
+Status: committed
+
+Notes: Deleted `PredictedFightOutcome` and `PREDICTED_OUTCOME_WORDING` from
+`squareLabel.ts`; `SquareMark` is now the plain `"selected" | "destination" |
+"target"` union, `MARK_WORDING` carries all three wordings (target reusing
+the existing mutual-return string, per D6), and `squareLabel` dropped its
+`typeof mark === "string"` branch. `Board.tsx` no longer imports
+`resolveFight` and sets `mark = "target"` directly. `BoardSquare.tsx`'s
+render condition is `mark === "target"`; nothing it draws changed, only its
+file comment. Updated `squareLabel.test.ts` (the three outcome cases become
+two, both asserting the one wording), `BoardSquare.test.tsx` (every
+`{ kind: "target", outcome: ... }` construction becomes the plain string
+`"target"`), and `Board.test.tsx` (renamed the two tests that referenced "the
+predicted outcome" to describe what attacking now does, updated their
+expected accessible names, and replaced "produces the right predicted
+outcome for every combination of 0-4 against 0-4" with "reads a legal target
+the same one way whatever shields either ship carries", which sweeps the
+same 0-4 x 0-4 grid but asserts the single wording instead of computing an
+outcome via `resolveFight`; also dropped the now-unused `resolveFight`
+import). No rules-layer file was touched, as scoped. `npm run typecheck`,
+`npm run lint`, `npm run format:check` and `npm test` all pass (799 tests).
+The plan's closing `grep -rn "PredictedFightOutcome\|attacker-won\|defender-won"
+src/board/` still finds hits in `announcements.ts` and `announcements.test.ts`
+— those are `FightResolvedEffect.outcome` (`FightOutcome`'s values from
+`combat.ts`), an unrelated type this step does not touch and step 4 deletes;
+confirmed no hit remains in any file this step edited
+(`squareLabel.ts`/`.test.ts`, `Board.tsx`/`.test.tsx`,
+`BoardSquare.tsx`/`.test.tsx`). No deviation from the plan otherwise.
 
 Collapse the board's three predicted fight outcomes to the single thing that now
 happens. **No rules-layer file changes in this step.** See **D6** for the shape

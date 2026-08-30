@@ -205,38 +205,29 @@ describe("squareLabel", () => {
     ).toBe("D15, bay, can move here");
   });
 
-  it("names the attacker-won outcome on a target square", () => {
+  it("names the one target outcome, last, after the shield count", () => {
     expect(
       squareLabel({
         square: squareAt("H", 9),
         isBay: false,
         occupant: { side: "red", shields: 1 },
-        mark: { kind: "target", outcome: "attacker-won" },
+        mark: "target",
       }),
-    ).toBe("H9, red ship, 1 shield, can attack here, your ship would win");
+    ).toBe(
+      "H9, red ship, 1 shield, can attack here, both ships would return to bays",
+    );
   });
 
-  it("names the defender-won outcome on a target square", () => {
+  it("names the target outcome the same way whatever shields the occupant carries", () => {
     expect(
       squareLabel({
         square: squareAt("H", 9),
         isBay: false,
         occupant: { side: "red", shields: 4 },
-        mark: { kind: "target", outcome: "defender-won" },
-      }),
-    ).toBe("H9, red ship, 4 shields, can attack here, your ship would lose");
-  });
-
-  it("names the mutual-return outcome on a target square", () => {
-    expect(
-      squareLabel({
-        square: squareAt("H", 9),
-        isBay: false,
-        occupant: { side: "red", shields: 2 },
-        mark: { kind: "target", outcome: "mutual-return" },
+        mark: "target",
       }),
     ).toBe(
-      "H9, red ship, 2 shields, can attack here, both ships would return to bays",
+      "H9, red ship, 4 shields, can attack here, both ships would return to bays",
     );
   });
 

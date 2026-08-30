@@ -17,7 +17,7 @@ import {
 import { startingGameState, type GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalDestinations } from "../rules/movement";
-import { legalTargets, resolveFight } from "../rules/combat";
+import { legalTargets } from "../rules/combat";
 import type { ShieldCount } from "../rules/shields";
 import {
   createSession,
@@ -601,7 +601,7 @@ describe("Board", () => {
       };
     }
 
-    it("marks legal targets distinctly from legal destinations, naming the predicted outcome", () => {
+    it("marks legal targets distinctly from legal destinations, naming what attacking does", () => {
       const state = attackState();
       const session: Session = {
         state,
@@ -610,10 +610,9 @@ describe("Board", () => {
       };
       render(<Board session={session} onIntent={noop} />);
 
-      // Attacker 2 shields vs defender 0: the attacker wins.
       expect(
         screen.getByRole("gridcell", {
-          name: "H9, red ship, 0 shields, can attack here, your ship would win",
+          name: "H9, red ship, 0 shields, can attack here, both ships would return to bays",
         }),
       ).toBeInTheDocument();
 
@@ -665,7 +664,7 @@ describe("Board", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("produces the right predicted outcome for every combination of 0-4 against 0-4", () => {
+    it("reads a legal target the same one way whatever shields either ship carries", () => {
       const shieldCounts: readonly ShieldCount[] = [0, 1, 2, 3, 4];
       for (const attackerShields of shieldCounts) {
         for (const defenderShields of shieldCounts) {
@@ -677,18 +676,11 @@ describe("Board", () => {
           };
           render(<Board session={session} onIntent={noop} />);
 
-          const outcome = resolveFight(attackerShields, defenderShields).result;
-          const wording =
-            outcome === "attacker-won"
-              ? "can attack here, your ship would win"
-              : outcome === "defender-won"
-                ? "can attack here, your ship would lose"
-                : "can attack here, both ships would return to bays";
           const unit = defenderShields === 1 ? "shield" : "shields";
 
           expect(
             screen.getByRole("gridcell", {
-              name: `H9, red ship, ${defenderShields} ${unit}, ${wording}`,
+              name: `H9, red ship, ${defenderShields} ${unit}, can attack here, both ships would return to bays`,
             }),
           ).toBeInTheDocument();
 
@@ -768,7 +760,7 @@ describe("Board", () => {
       };
     }
 
-    it("highlights a target two squares away for a 1-shield ship, with the predicted outcome", () => {
+    it("highlights a target two squares away for a 1-shield ship, naming what attacking does", () => {
       const state = rangeState({
         attackerSquare: squareAt("H", 8),
         attackerShields: 1,
@@ -786,7 +778,7 @@ describe("Board", () => {
       // within a 1-shield ship's true reach (rules.md §6, §7).
       expect(
         screen.getByRole("gridcell", {
-          name: "H10, red ship, 0 shields, can attack here, your ship would win",
+          name: "H10, red ship, 0 shields, can attack here, both ships would return to bays",
         }),
       ).toBeInTheDocument();
     });

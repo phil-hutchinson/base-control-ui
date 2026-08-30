@@ -2,9 +2,9 @@
 // on it, then, during ship selection, one of three selection markings — a
 // legal destination, a legal attack target, or the selected ship's own
 // square — all sharing the square in a single-cell grid rather than
-// absolute positioning (see BoardSquare.css). A target's predicted outcome
-// is spoken, not drawn: the ring here is a plain cue, the same for a win, a
-// loss or a mutual return.
+// absolute positioning (see BoardSquare.css). A fight has one outcome, so
+// the target ring is a plain cue rather than a prediction; what attacking
+// here does is spoken in the square's accessible name, not drawn.
 //
 // Having moved this ply and a ship's condition (no action available) are
 // separate, independently optional fields from each other and from the
@@ -223,7 +223,7 @@ export function BoardSquare({
       {occupant && <ShipIcon side={occupant.side} shields={occupant.shields} />}
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}
-      {typeof mark === "object" && mark.kind === "target" && <TargetMark />}
+      {mark === "target" && <TargetMark />}
       {hasActed && <AlreadyActedMark />}
       {condition === "no-action" && <NoActionMark />}
     </div>
