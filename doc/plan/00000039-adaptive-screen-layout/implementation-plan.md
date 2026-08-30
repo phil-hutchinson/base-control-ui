@@ -780,7 +780,22 @@ and must not be skipped.
 
 ## Step 4 — GATE: the owner signs off the layout in Firefox
 
-Status: pending
+Status: committed
+
+Notes: the owner signed the layout off in Firefox. Functionally correct on all
+ten observations at the first pass; one change asked for, and made — the
+landscape info column and the `RESERVED` placeholder read too small, so
+landscape `--region-extent` became `clamp(12rem, 14vw, 22rem)` and every size
+in the column an explicit fraction of it (see step 3's Notes). A flat doubling
+was rejected because it would have forced `P` to ~20rem, which the mirrored
+reserved region charges to the long axis twice, pushing `S` under the 600px
+floor on ordinary landscape windows.
+
+One consequence recorded rather than fixed: the column's 12rem minimum is
+2rem wider than the flat value it replaced, so landscape windows narrower than
+roughly 1110px overflow slightly more than they did — about 88px at 1024x768
+where it was about 24px. Those windows were already below the board's floor and
+already scrolling. The owner was told and accepted it.
 
 **This is the story's phase gate.** Implementation stops here. No work on step
 5 or step 6 may begin until this step's Status reads `committed`.
@@ -843,7 +858,20 @@ recorded in that step's Notes.
 
 ## Step 5 — Look at the layout in Chromium and record what differs
 
-Status: pending
+Status: committed
+
+Notes: the owner walked the app through step 4's ten observations in Chrome
+and reports it looking good there too — the board fills the window the way it
+does in Firefox, which is the specific symptom the story's section 6 was
+written about. **No differences found, so step 6 is closed as not needed.**
+
+This is the outcome D3 predicted. Phase 1 had to compute the board's size
+directly from the window — the mirrored reserved region means the board cannot
+be "whatever is left" — and that is exactly the lead the story's section 6
+gave for Chromium: the old chain of `flex: 1` boxes rooted in a
+`min-height: 100vh` never gave Chromium a definite size to resolve `100cqmin`
+against, and `--play-size` does. Fixing the layout and fixing the browser were
+one change, not two.
 
 With the layout signed off in Firefox, the owner runs `npm run dev` and opens
 the same app in **Chromium**, going through the same ten observations from step
@@ -872,7 +900,14 @@ step 4's ten observations. There is nothing to run beyond `npm run dev`.
 
 ## Step 6 — Make Chromium and Firefox agree
 
-Status: pending
+Status: not needed
+
+Notes: closed by step 5. Chromium already agrees with Firefox, so there was
+nothing for this step to reconcile and no code was written for it. None of the
+four leads above was needed: the container query on `.app__play` stays,
+`100vh`/`100vw` stay, and the cabinet keeps its stretched height. They are left
+in place as a record of where to look first should the two engines diverge
+again.
 
 **The shape of this step depends on what step 5 shows, and it is expected to be
 conversational rather than a clean run** (D12): short cycles of change, look
