@@ -541,7 +541,19 @@ the effect exists at all, and may keep a guard that `returns` has two entries �
 
 ## Step 1 — Rules 0.16: every fight is a draw, and a node runs its course
 
-Status: pending
+Status: committed
+
+Notes: Edited `doc/ruleset/rules.md` (§1, §4.1, §5, §6's closing sentence, §7,
+§7.1, §8.1, §8.2, §8.3, §8.5, §8.6; §8.7 deleted outright), added one `## 0.16`
+entry to `doc/ruleset/changelog.md` covering both halves, and bumped
+`RULES_VERSION` to `"0.16"` in `src/rules/rulesVersion.ts`. No file under
+`src/` other than `rulesVersion.ts` was touched. Followed the plan as written;
+the only judgement calls were exact wording within the sentences the plan
+sketched (e.g. §1's shield paragraph, §8.5's protection paragraph), all within
+the plan's stated content and none introducing a rule the plan didn't call
+for. Verified with `grep` that no reference to "8.7", "vacat", "winner"
+(combat sense) or "advance" (combat sense) survives, and that no wrapped line
+starting with a digit-and-full-stop tripped Prettier's list detection.
 
 Edit `doc/ruleset/rules.md`, add **one** `doc/ruleset/changelog.md` entry
 covering both halves, and bump `RULES_VERSION` in `src/rules/rulesVersion.ts` to
