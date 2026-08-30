@@ -394,8 +394,8 @@ describe("camping — a node running out under a ship is quiet (§8.3, §8.5)", 
   });
 });
 
-describe("camping — leaving a node for a dormant site (§8.5, §8.7)", () => {
-  it("ends the node it left and stands on the dormant site it arrives at", () => {
+describe("camping — leaving a node for a dormant site (§8.5)", () => {
+  it("leaves the node it left charged and stands on the dormant site it arrives at", () => {
     const state = buildState({
       // red-1 gives red a legal move, so applyPassGuard does not
       // immediately run a second end-of-turn sequence for a passed red
@@ -413,16 +413,13 @@ describe("camping — leaving a node for a dormant site (§8.5, §8.7)", () => {
       applyMove(state, "green-1", squareFromName("H4")),
     );
 
-    expect(result.state.siteStates.F2).toEqual({
-      state: "dormant",
-      level: 15,
-    });
-    expect(result.effects).toContainEqual({
-      type: "node-vacated",
-      square: squareFromName("F2"),
-      shipId: "green-1",
-      side: "green",
-    });
+    // F2 stays charged — leaving it no longer ends it (rules.md §8.3). Its
+    // drain only rises by this turn's ordinary empty-rate draw.
+    expect(result.state.siteStates.F2.state).toBe("charged");
+    expect(result.state.siteStates.F2.level).toBeGreaterThan(15);
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "node-vacated" }),
+    );
     // H4 was already dormant when this ply began, so it also ticks a
     // little further towards recovery in the very same sequence — that is
     // the site's own cycle, not something arriving on it changes.

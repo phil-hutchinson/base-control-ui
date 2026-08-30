@@ -1149,7 +1149,57 @@ returns nothing.
 
 ## Step 5 — The vacating rule leaves the code
 
-Status: pending
+Status: committed
+
+Notes: Deleted `src/rules/vacating.ts` and `src/rules/vacating.test.ts` with
+`applyVacating`, `VacatingResult` and `NodeVacatedEffect`. `ply.ts` dropped
+the import and both `applyVacating` calls (in `applyMove` and `applyAttack`,
+each now feeding its own post-action state straight to
+`applyEndOfActionTail`), dropped `NodeVacatedEffect` from `MoveEffect` and
+`AttackEffect`, rewrote the module comment's site-state sentence to "nothing
+a ship does changes a site's state," and corrected `applyMove`'s and
+`applyAttack`'s doc comments plus `assertFightInvariants`' site-state check
+and its thrown message to the unconditional "no action changes a site's
+state" per D7. `announcements.ts` dropped the `vacating` import,
+`nodeVacatedClause`, the `vacatedClauses` list and its ordering in
+`actionEndingClauses`, and rewrote that function's doc comment.
+`endOfTurn.ts`'s two §8.7 citations (the `dormantBeforePly` doc comment and
+step 6's inline comment) were corrected to cite only step 3 as the source of
+mid-sequence dormancy; `dormantBeforePly` itself is untouched, as step 6's
+job.
+
+Tests: retitled and rewrote `ply.test.ts`'s "still throws when a site's
+state changes..." case to drop its §8.7/vacating-rule wording; replaced the
+"§8.7 — leaving a node ends it" describe with "a ship leaving a node no
+longer ends it (rules.md §8.3)", whose first case now asserts a charged
+node stays charged after a ship moves off it, with its drain risen by
+exactly that turn's empty-table draw (computed via `drawTableAmount` and
+`EMPTY_NODE_DRAIN_TABLE`, both newly imported from `./sites`) and no
+`node-vacated` effect anywhere in the result; kept its "arrives" and
+"collects no energy" sibling cases, which were already about the move-based
+behaviour and needed no rule change, and dropped a now-stale comment
+explaining why fight-based cases used to sit there. Rewrote
+`camping.test.ts`'s "leaving a node for a dormant site" describe the same
+way — the vacated node now stays charged with a risen level and no
+`node-vacated` effect — and retitled it without the §8.7 reference.
+Deleted `announcements.test.ts`'s whole "announcementFor — a node vacated"
+describe, since the event it covered no longer occurs.
+
+Deviation: none from the plan's substance. One point of tension worth
+recording: the plan's own verification line asks for `grep -rn "vacat" src/`
+to return nothing, but the plan's own test instructions for this step (and
+step 7's later cases) require asserting the *absence* of a `node-vacated`
+effect, which necessarily puts the string `"node-vacated"` in test code
+(`ply.test.ts`, `camping.test.ts`) — a handful of unrelated hits on the
+ordinary English word "vacated" also remain in `combat.test.ts` and
+`ply.test.ts`, describing bays a ship moved out of, not the deleted rule.
+Treated the grep instruction as being about the rule and its module, not
+about forbidding a negative assertion that proves the rule is gone; no
+reference to `applyVacating`, `NodeVacatedEffect`, `VacatingResult` or
+section 8.7 remains anywhere in `src/`.
+
+Verification: `npm run typecheck`, `npm run lint`, `npm run format:check`
+and `npm test` all pass (43 files, 759 tests).
 
 Delete `src/rules/vacating.ts` and `src/rules/vacating.test.ts`, and every
 reference to them. After this step, a charged node that becomes unoccupied stays

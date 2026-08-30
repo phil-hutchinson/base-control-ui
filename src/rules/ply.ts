@@ -5,14 +5,12 @@
 // the reason from combat.ts, or resolved: both ships are placed in bays at 0
 // shields, drawn at random from the bays standing empty, attacker first, and
 // both squares they left are left empty. There is no winner and no advance.
-// Exactly one thing a ship does changes a site's state: a
-// charged node that is occupied goes dormant the moment it becomes
-// unoccupied, applied by vacating.ts's `applyVacating` right after the
-// action resolves (rules.md §8.7). Every action — a move or an attack —
-// marks the acting ship as having acted this ply, so a further attempt by
-// the same ship this ply is refused. When the ply's actions are all spent,
-// play passes to the other side. The pass guard covers the case §5 sets out
-// for when the side to move has no legal action at all.
+// Nothing a ship does changes a site's state: a site's state changes only in
+// the end-of-turn sequence (rules.md §8.6). Every action — a move or an
+// attack — marks the acting ship as having acted this ply, so a further
+// attempt by the same ship this ply is refused. When the ply's actions are
+// all spent, play passes to the other side. The pass guard covers the case
+// §5 sets out for when the side to move has no legal action at all.
 
 import { sideToMoveHasLegalAction } from "./actions";
 import { isBay } from "./bays";
@@ -34,7 +32,6 @@ import {
 } from "./gameState";
 import { type MoveRefusalReason, moveRefusalReason } from "./movement";
 import type { ShieldCount } from "./shields";
-import { applyVacating, type NodeVacatedEffect } from "./vacating";
 
 function otherSide(side: Side): Side {
   return side === "green" ? "red" : "green";
@@ -65,7 +62,6 @@ export type EndOfActionEffect = PlyEndedEffect | PassEffect;
 /** Something that happened as a result of applying a move, beyond the move itself. */
 export type MoveEffect =
   | { readonly type: "shields-reset"; readonly shipId: ShipId }
-  | NodeVacatedEffect
   | EndOfActionEffect;
 
 /** A move applied successfully, with the resulting state and what happened. */
@@ -117,8 +113,7 @@ export interface FightResolvedEffect {
  * Something that happened as a result of applying an attack, beyond the
  * fight itself.
  */
-export type AttackEffect =
-  FightResolvedEffect | NodeVacatedEffect | EndOfActionEffect;
+export type AttackEffect = FightResolvedEffect | EndOfActionEffect;
 
 /** An attack applied successfully, with the resulting state and what happened. */
 export interface AppliedAttack {
@@ -250,9 +245,9 @@ function applyEndOfActionTail(
  * stands on `destination`, the square it left is empty, the ship is marked as
  * having acted this ply, one action is spent, and — per rules.md §3.1 — the
  * ship's shields are reset to 0 if `destination` is a bay. If the square the
- * ship left was a charged node, it goes dormant immediately (`applyVacating`,
- * rules.md §8.7). When the ply's last action is spent, play passes to the
- * other side and the acted-this-ply marks clear. The result then passes
+ * ship left was a charged node, it stays charged — leaving a node does not
+ * end it (rules.md §8.3). When the ply's last action is spent, play passes to
+ * the other side and the acted-this-ply marks clear. The result then passes
  * through `applyPassGuard`, so a move that leaves the side now to move with
  * no legal move at all is followed immediately by a pass.
  */
@@ -287,10 +282,8 @@ export function applyMove(
   }
 
   const afterMove: GameState = { ...state, ships };
-  const vacating = applyVacating(state, afterMove);
-  effects.push(...vacating.effects);
   const settled = applyEndOfActionTail(
-    vacating.state,
+    afterMove,
     effects,
     shipId,
     dormantSiteNames(state),
@@ -320,13 +313,9 @@ function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
  * ships either side has.
  *
  * The site-state check is a plain identity comparison: no site's state or
- * `level` may differ between `before` and `after` at all. This is about the
- * fight's own resolution and nothing else — a fight never changes a site
- * (rules.md §8.2). It does **not** contradict rules.md §8.7: `applyAttack`
- * applies the vacating rule separately, to this function's own `after`, only
- * once these invariants have already passed, so a node either ship's
- * departure sends dormant is not yet reflected in the `after` this check
- * receives.
+ * `level` may differ between `before` and `after` at all. No action changes
+ * a site's state, full stop — a site's state changes only in the end-of-turn
+ * sequence (rules.md §8.6), never while an action is being resolved.
  *
  * The returned-ship checks pin what §7.1's random draw guarantees: each of
  * the two returned ships ends on a bay square, they do not share a bay, and
@@ -410,7 +399,7 @@ export function assertFightInvariants(
       beforeStatus.level === afterStatus.level;
     if (!unchanged) {
       throw new RangeError(
-        `site "${name}" changed from "${beforeStatus?.state}" to "${afterStatus?.state}" while the fight itself was resolving: the vacating rule (rules.md §8.7) is applied afterwards, separately, and is not what this check is about`,
+        `site "${name}" changed from "${beforeStatus?.state}" to "${afterStatus?.state}": no action changes a site's state, rules.md §8.6 says a site's state changes only in the end-of-turn sequence`,
       );
     }
   }
@@ -423,13 +412,12 @@ export function assertFightInvariants(
  * (`drawReturnBay`), the attacker's bay drawn first and the defender's from
  * the bays still empty afterwards, advancing `randomSeed` once per ship.
  * Both squares the ships fought from are left empty; there is no winner and
- * no advance. Once the fight is fully resolved, any charged node left
- * unoccupied by it goes dormant immediately (`applyVacating`, rules.md
- * §8.7). The attacking ship is added to `actedThisPly` even though it ends
- * the action in a bay itself: it spent its one action regardless (rules.md
- * §5). One action is spent; when the ply's last action is spent, play
- * passes to the other side exactly as it does after a move, and the result
- * then passes through `applyPassGuard`.
+ * no advance. Neither square's site changes state: leaving a node does not
+ * end it (rules.md §8.3). The attacking ship is added to `actedThisPly` even
+ * though it ends the action in a bay itself: it spent its one action
+ * regardless (rules.md §5). One action is spent; when the ply's last action
+ * is spent, play passes to the other side exactly as it does after a move,
+ * and the result then passes through `applyPassGuard`.
  */
 export function applyAttack(
   state: GameState,
@@ -495,11 +483,8 @@ export function applyAttack(
     },
   ];
 
-  const vacating = applyVacating(state, nextState);
-  effects.push(...vacating.effects);
-
   const settled = applyEndOfActionTail(
-    vacating.state,
+    nextState,
     effects,
     attackerShip.id,
     dormantSiteNames(state),

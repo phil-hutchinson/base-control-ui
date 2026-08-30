@@ -121,9 +121,8 @@ export interface EndOfTurnResult {
  * `dormantBeforePly` is the square names of every site that was dormant
  * before the ply began (§8.6 step 6). It is required, not optional, because
  * there is no safe default: step 6 must recover exactly those sites, never
- * one that only went dormant during this very ply — whether by reaching
- * capacity in step 3 below, or mid-ply because its occupant left it (§8.7) —
- * and nothing in `state` distinguishes such a site from one that has been
+ * one that only went dormant during this very ply, in step 3 below, and
+ * nothing in `state` distinguishes such a site from one that has been
  * dormant for turns. Because `ACTIONS_PER_PLY` is 1 (rules.md §5), the state
  * before a ply's one action **is** the state at the start of the ply, so a
  * caller can build this set from that state with `dormantSiteNames`. A
@@ -290,9 +289,8 @@ export function runEndOfTurn(
   // function's doc comment on `dormantBeforePly`) subtracts its recovery;
   // any that reaches zero or below goes active, at pressure 1 (§8.2). A
   // site that only went dormant during this very sequence — in step 3
-  // above, or earlier in the ply because its occupant left it (§8.7) — was
-  // charged when the ply began, so it is excluded and first recovers at the
-  // end of the next ply.
+  // above — was charged when the ply began, so it is excluded and first
+  // recovers at the end of the next ply.
   for (const square of SITES) {
     const name = squareName(square);
     const status = workingState.siteStates[name];

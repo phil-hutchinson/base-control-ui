@@ -18,7 +18,11 @@ import {
 } from "./ply";
 import { drawIndex } from "./random";
 import type { ShieldCount } from "./shields";
-import type { SiteState } from "./sites";
+import {
+  drawTableAmount,
+  EMPTY_NODE_DRAIN_TABLE,
+  type SiteState,
+} from "./sites";
 
 function ship(
   id: ShipId,
@@ -946,7 +950,7 @@ describe("assertFightInvariants (rules.md §7)", () => {
     ).toThrow(RangeError);
   });
 
-  it("still throws when a site's state changes during the fight itself — the vacating rule (§8.7) is applied separately, afterwards, and is not what this check is about", () => {
+  it("still throws when a site's state changes at all — no action changes a site's state (rules.md §8.6)", () => {
     const before = buildState({
       ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 1)],
       siteStates: { H8: ["charged", 10] },
@@ -1211,8 +1215,8 @@ describe("applyPassGuard", () => {
   });
 });
 
-describe("§8.7 — leaving a node ends it", () => {
-  it("sends a charged node dormant immediately when a ship moves off it, before the opponent's turn, carrying the drain it had", () => {
+describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
+  it("leaves a charged node charged when a ship moves off it, its drain risen only by that turn's empty-rate draw", () => {
     // red-1 gives red a legal move, so applyPassGuard does not immediately
     // run a second end-of-turn sequence for a passed red ply — this checks
     // exactly the state green's own move produces, nothing beyond it.
@@ -1230,19 +1234,21 @@ describe("§8.7 — leaving a node ends it", () => {
     expect(result.effects.some((effect) => effect.type === "ply-passed")).toBe(
       false,
     );
-    // H8 was charged, not dormant, when this ply began, so step 6's
-    // "dormant before this ply began" filter (§8.6) excludes it: it does
-    // not recover this same sequence, and its drain is exactly what it was.
+    // H8 was charged when this ply began and stays charged — leaving it no
+    // longer ends it. Since green-1 has left, its drain comes from the
+    // empty table (rules.md §8.3), not the held one, and no announcement is
+    // made about it.
+    const [emptyDrawAmount] = drawTableAmount(
+      state.randomSeed,
+      EMPTY_NODE_DRAIN_TABLE,
+    );
     expect(result.state.siteStates.H8).toEqual({
-      state: "dormant",
-      level: 23,
+      state: "charged",
+      level: 23 + emptyDrawAmount,
     });
-    expect(result.effects).toContainEqual({
-      type: "node-vacated",
-      square: squareFromName("H8"),
-      shipId: "green-1",
-      side: "green",
-    });
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "node-vacated" }),
+    );
   });
 
   it("leaves a node charged when a ship simply arrives on it — arriving is not a departure", () => {
@@ -1262,12 +1268,6 @@ describe("§8.7 — leaving a node ends it", () => {
       expect.objectContaining({ type: "node-vacated" }),
     );
   });
-
-  // A fight can no longer vacate a node at all (rules.md §7): every case
-  // that used to sit here needed a ship standing on a charged node to be a
-  // legal attacker or a legal target, which is now forbidden outright.
-  // Only a ship's own choice to move off a node can leave it, which the
-  // cases above cover.
 
   it("collects no energy and gains no shield for a node the moving player stepped off this turn", () => {
     const state = buildState({
