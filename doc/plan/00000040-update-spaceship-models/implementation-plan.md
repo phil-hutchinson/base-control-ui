@@ -466,7 +466,7 @@ axe run is added.
 
 ## Step 1 — Lift the artwork into a shared, hidden sprite
 
-Status: implemented
+Status: committed
 
 Create `src/ships/` and, in it:
 
