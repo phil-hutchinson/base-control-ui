@@ -516,7 +516,18 @@ the opening anywhere. `git status --short` shows only the three intended files.
 
 ## Step 2 — The two opening tables in `sites.ts`
 
-Status: pending
+Status: committed
+
+Notes: Added `OPENING_DRAIN_TABLE` and `OPENING_PRESSURE_TABLE` to
+`src/rules/sites.ts`, placed directly above `EMPTY_NODE_DRAIN_TABLE` so all
+five tables sit together, with the exact percentages from D6 (drain average
+14, pressure average 12.79). Extended `sites.test.ts`'s shared
+`describe.each` with both tables (outcomes, weight-sum-to-100, average,
+20,000-draw frequency check) and added a small new `describe` block
+asserting no opening drain outcome exceeds two-thirds of `NODE_CAPACITY` and
+the largest still leaves 20 capacity. Nothing consumes the tables yet, as
+specified. No deviation from the plan. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (788 passed, up from 779) all pass.
 
 Add the **opening drain table** and the **opening pressure table** to
 `src/rules/sites.ts` as exported `WeightedAmount` tables, beside the three that

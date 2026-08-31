@@ -75,6 +75,42 @@ export interface WeightedAmount {
 }
 
 /**
+ * The drain a dealt node opens at, drawn once for each of the five sites
+ * the opening deal charges (rules.md §8.1). Weights are the whole-number
+ * percentages the rules table shows, so the two can be read side by side.
+ * Average 14. Never exceeds two-thirds of `NODE_CAPACITY`, so the deepest
+ * dealt node still has 20 capacity left.
+ */
+export const OPENING_DRAIN_TABLE: readonly WeightedAmount[] = [
+  { amount: 0, weight: 20 },
+  { amount: 5, weight: 18 },
+  { amount: 10, weight: 15 },
+  { amount: 15, weight: 12 },
+  { amount: 20, weight: 10 },
+  { amount: 25, weight: 8 },
+  { amount: 30, weight: 7 },
+  { amount: 35, weight: 6 },
+  { amount: 40, weight: 4 },
+];
+
+/**
+ * The pressure a dealt site opens at, drawn once for each of the twelve
+ * sites the opening deal leaves active (rules.md §8.1). Weights are the
+ * whole-number percentages the rules table shows. Average 12.79.
+ */
+export const OPENING_PRESSURE_TABLE: readonly WeightedAmount[] = [
+  { amount: 1, weight: 24 },
+  { amount: 5, weight: 20 },
+  { amount: 10, weight: 16 },
+  { amount: 15, weight: 12 },
+  { amount: 20, weight: 9 },
+  { amount: 25, weight: 7 },
+  { amount: 30, weight: 5 },
+  { amount: 40, weight: 4 },
+  { amount: 50, weight: 3 },
+];
+
+/**
  * How much an empty charged node's drain rises by at the end of a turn no
  * ship stood on it (rules.md §8.3). Weights are the whole-number
  * percentages the rules table shows, so the two can be read side by side.

@@ -6,6 +6,8 @@ import {
   EMPTY_NODE_DRAIN_TABLE,
   HELD_NODE_DRAIN_TABLE,
   NODE_CAPACITY,
+  OPENING_DRAIN_TABLE,
+  OPENING_PRESSURE_TABLE,
   PRESSURE_CAP,
   SITES,
   TARGET_CHARGED_SITES,
@@ -176,6 +178,18 @@ function expectedAverage(table: readonly WeightedAmount[]): number {
 
 describe.each([
   {
+    name: "the opening drain table",
+    table: OPENING_DRAIN_TABLE,
+    outcomes: [0, 5, 10, 15, 20, 25, 30, 35, 40],
+    average: 14,
+  },
+  {
+    name: "the opening pressure table",
+    table: OPENING_PRESSURE_TABLE,
+    outcomes: [1, 5, 10, 15, 20, 25, 30, 40, 50],
+    average: 12.79,
+  },
+  {
     name: "the empty-node drain table",
     table: EMPTY_NODE_DRAIN_TABLE,
     outcomes: [1, 2, 3],
@@ -193,7 +207,7 @@ describe.each([
     outcomes: [4, 5, 6, 7, 8],
     average: 6.0,
   },
-])("$name (rules.md §8.2, §8.3)", ({ table, outcomes, average }) => {
+])("$name (rules.md §8.1, §8.2, §8.3)", ({ table, outcomes, average }) => {
   it("has exactly the outcomes the rules table lists", () => {
     expect(amounts(table)).toEqual(outcomes);
   });
@@ -223,6 +237,15 @@ describe.each([
       const expectedShare = entry.weight / 100;
       expect(observedShare).toBeGreaterThan(expectedShare - 0.03);
       expect(observedShare).toBeLessThan(expectedShare + 0.03);
+    }
+  });
+});
+
+describe("the opening drain table's cap (rules.md §8.1, §8.3)", () => {
+  it("never exceeds two-thirds of capacity, leaving at least 20 to reach", () => {
+    for (const entry of OPENING_DRAIN_TABLE) {
+      expect(entry.amount).toBeLessThanOrEqual((2 / 3) * NODE_CAPACITY);
+      expect(NODE_CAPACITY - entry.amount).toBeGreaterThanOrEqual(20);
     }
   });
 });
