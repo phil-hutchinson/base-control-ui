@@ -1258,7 +1258,17 @@ node gives a ship anything.
 
 ## Step 8 — Owner play-through
 
-Status: pending
+Status: committed
+
+Notes: The owner played the app and confirmed all eleven observations pass —
+the fresh game at full power, the node draining and the dormant site
+restoring, the active site doing neither, a drained ship still moving, a
+fight leaving both gauges exactly as they were, the bay restoring a point a
+turn (including the turn of arrival) with no energy either way, leaving a bay
+early with only what was recovered, a beaten drained ship recovering, the
+gauge reading the right way up, and a whole game finishing. Nothing was
+reported as reading wrong, looking wrong, or contradicting `rules.md` at
+0.17, so no follow-up step was added.
 
 The owner plays the app and confirms the story's player-facing verification
 list. This is the story's manual gate, and the only step the pipeline pauses for
