@@ -774,7 +774,30 @@ Verdicts on the three judgement calls:
 
 ## Step 6 — The two models flank the start screen
 
-Status: committed
+Status: withdrawn
+
+Notes: Implemented, shown to the owner, and **withdrawn on sight**: he did
+not like the look of the start screen with the two models flanking the
+column, and asked for the start screen to be left exactly as it was. The
+commit that added it (`0078daf`) was reverted in full — `StartScreen.tsx`,
+`StartScreen.css` and `StartScreen.test.tsx` are back to their pre-story
+state, and the start screen renders no ships. The `App.test.tsx` change that
+came with the step was kept, because it is independent of the ships: the
+sprite (`ShipDefs`) is mounted at the app root and so is present on the start
+screen, and the id-uniqueness assertion there is still checking something
+real.
+
+Nothing in the story's section 1 (the board) depends on this step, so the
+withdrawal costs the rest of the story nothing. `ShipModel`'s optional
+`shields` prop — the mechanism that let a ship draw without a gauge — is now
+unused by any caller; it is kept, because "a gauge only when there is a
+shield count" is the honest shape of the component and dropping it would make
+the gauge unconditional. Nothing else from steps 1-4 was written for the
+start screen.
+
+Not a defect and not a failed step: the story asked for a look, the owner
+looked at it and decided against it. Whether the start screen gets ship
+artwork in some other form is a later story's question, not this one's.
 
 Rework `src/start/StartScreen.tsx` and `StartScreen.css` per **D6**, **D7** and
 **D8**:
@@ -816,33 +839,14 @@ Verification (automated): `npm run typecheck`, `npm run lint`,
 `npm run format:check` and `npm test` all pass, including the new structural
 assertions and the unchanged existing `StartScreen` tests.
 
-**Notes:** `StartScreen.tsx` now renders a green `ShipModel` wrapper, the
-existing controls moved wholesale into a new `.start-screen__column`, and a
-red `ShipModel` wrapper, in that DOM order; both ship wrappers carry
-`aria-hidden="true"` (belt-and-braces alongside `ShipModel`'s own
-`aria-hidden` svg) and omit the `shields` prop entirely, so no gauge is
-drawn. `StartScreen.css` turns `.start-screen` into the three-area grid from
-D7 (`"green column red"`, side tracks `1fr`, `align-items: center`), adds the
-`@media (max-width: 48rem)` restack to `"column column" / "green red"`, gives
-`.start-screen__column` the flex-column rules `.start-screen` used to carry
-directly, and sizes each `.start-screen__ship` wrapper at `--play-size / 5`
-(D6) with `pointer-events: none`. Updated `StartScreen.test.tsx` with one new
-structural test (two `.ship-model` elements, one per side, both
-`aria-hidden`, zero `[data-gauge-slot]` anywhere) and extended
-`renderStartScreen`'s return value with `container` to support it; every
-existing test passed unchanged. Extended `App.test.tsx`'s step-4
-id-uniqueness test into two cases sharing a new `assertNoDuplicateIds`
-helper — one on the start screen, one after PLAY with the full board — so
-both screens are now proved free of duplicate ids. No deviation from the
-plan. `npm run typecheck`, `npm run lint`, `npm run format:check` and
-`npm test` all pass (771 tests: net +2 versus step 4's 769 — one new
-`StartScreen` test and one new `App` test).
-
 ---
 
 ## Step 7 — Manual gate: the start screen
 
-Status: pending
+Status: withdrawn
+
+Notes: Not run. This gate exists only to verify step 6, which was withdrawn
+by the owner (see step 6's notes), so there is nothing left for it to check.
 
 Run `npm run dev` and look at the start screen (the app opens on it; the
 game-over panel's button returns to it).

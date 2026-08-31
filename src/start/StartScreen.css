@@ -1,60 +1,16 @@
 .start-screen {
   /* Fills the cabinet, the way `.game-over-panel` does: this is the only
-     thing in the box while no game is in progress. A three-area grid, not a
-     flex row, because a narrow window needs both ships to drop below the
-     column and sit side by side — `flex-wrap` on [ship, column, ship] would
-     wrap into three stacked rows instead (implementation-plan.md D7). */
-  display: grid;
+     thing in the box while no game is in progress. */
+  display: flex;
   flex: 1;
   min-height: 0;
   width: 100%;
-  grid-template-columns: 1fr auto 1fr;
-  grid-template-areas: "green column red";
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
+  justify-content: center;
   gap: 1.5rem;
   padding: 2rem;
   text-align: center;
-}
-
-/* Below the breakpoint the column no longer has room either side; the pair
-   drops beneath it and sits side by side at unchanged size, rather than
-   squeezing or hiding (implementation-plan.md D7, story section "In scope"
-   item 3). The column is visually first here but second in the DOM — the
-   ships are `aria-hidden` decoration, so this costs nothing in the reading
-   order. */
-@media (max-width: 48rem) {
-  .start-screen {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "column column"
-      "green red";
-  }
-}
-
-.start-screen__column {
-  grid-area: column;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-  text-align: center;
-}
-
-.start-screen__ship {
-  /* Decoration only: never a click target, per the story's "not focusable,
-     not announced, pressing them does nothing". */
-  pointer-events: none;
-  width: calc(var(--play-size) / 5);
-  height: calc(var(--play-size) / 5);
-}
-
-.start-screen__ship--green {
-  grid-area: green;
-}
-
-.start-screen__ship--red {
-  grid-area: red;
 }
 
 .start-screen__title {

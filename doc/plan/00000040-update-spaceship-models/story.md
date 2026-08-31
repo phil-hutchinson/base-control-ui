@@ -86,6 +86,13 @@ pressing them does nothing.
 column, the pair restacks — both ships move below the column, side by side —
 rather than squeezing or hiding.
 
+> **Withdrawn during implementation.** This section was built and shown to
+> the owner, who did not like how the start screen looked with the ships on
+> it and asked for it to be left exactly as it was. The work was reverted;
+> the start screen is unchanged by this story, and the story delivered
+> section 1 alone. Ship artwork on the start screen, in some other form, is
+> a question for a later story.
+
 ## Out of scope
 
 - **The palette.** The new models carry brighter, more saturated greens and
