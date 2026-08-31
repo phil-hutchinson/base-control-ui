@@ -5,7 +5,7 @@
 // and the pressure cap an active site's level is capped at (§8.2).
 
 import { type Square, squareAt, squareName } from "./board";
-import { drawWeightedIndex } from "./random";
+import { drawIndex, drawWeightedIndex } from "./random";
 
 /**
  * The seventeen site squares, in the row order rules.md §3.2 lists them
@@ -161,6 +161,64 @@ export function drawTableAmount(
     table.map((entry) => entry.weight),
   );
   return [table[index].amount, nextSeed];
+}
+
+/**
+ * Deals a whole opening board (rules.md §8.1): a seed in, the seventeen
+ * site statuses keyed by `squareName`, and the next seed out. Replaces a
+ * per-square answer, which cannot express a without-replacement draw or
+ * carry a seed forward — see the design record for story 44.
+ *
+ * The draw order is fixed and must not change, because a recorded game
+ * replays by replaying the seed:
+ *
+ * 1. Draw `TARGET_CHARGED_SITES` (5) sites, one at a time and uniformly,
+ *    from a pool that starts as all of `SITES` in declared order. Each
+ *    draw is `drawIndex(seed, pool.length)` — uniform, since at the deal
+ *    no site has any pressure to weight by — removes the drawn site from
+ *    the pool, and advances the seed. This is the shrinking-pool shape
+ *    `runChargeDraw` uses for its (weighted) draw.
+ * 2. Walk `SITES` in declared order. For each site, one `drawTableAmount`
+ *    call: the opening drain table if the site was drawn charged in step
+ *    1, the opening pressure table otherwise. The result becomes the
+ *    site's `level`; its state is `charged` or `active` to match.
+ *
+ * That is 5 + 17 = 22 seed steps before green's first turn, where today
+ * there are none. Nothing is dealt `dormant`.
+ */
+export function dealOpeningBoard(
+  seed: number,
+): [
+  siteStates: Readonly<
+    Record<string, { readonly state: SiteState; readonly level: number }>
+  >,
+  nextSeed: number,
+] {
+  let pool = [...SITES];
+  let workingSeed = seed;
+  const chargedNames = new Set<string>();
+
+  for (let count = 0; count < TARGET_CHARGED_SITES; count++) {
+    const [index, nextSeed] = drawIndex(workingSeed, pool.length);
+    chargedNames.add(squareName(pool[index]));
+    pool = pool.filter((_, poolIndex) => poolIndex !== index);
+    workingSeed = nextSeed;
+  }
+
+  const siteStates: Record<string, { state: SiteState; level: number }> = {};
+
+  for (const site of SITES) {
+    const name = squareName(site);
+    const charged = chargedNames.has(name);
+    const [level, nextSeed] = drawTableAmount(
+      workingSeed,
+      charged ? OPENING_DRAIN_TABLE : OPENING_PRESSURE_TABLE,
+    );
+    siteStates[name] = { state: charged ? "charged" : "active", level };
+    workingSeed = nextSeed;
+  }
+
+  return [siteStates, workingSeed];
 }
 
 /** The five sites that start the game charged (rules.md §8.1). */

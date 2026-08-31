@@ -569,7 +569,25 @@ the document means them. `npm run typecheck`, `npm run lint`,
 
 ## Step 3 — The whole-board deal, in `sites.ts`
 
-Status: pending
+Status: committed
+
+Notes: Added `dealOpeningBoard(seed)` to `src/rules/sites.ts`, returning a
+tuple of `[siteStates, nextSeed]` (structural `{ state: SiteState; level:
+number }` values, per D3 — no import from `gameState.ts`), placed just above
+the existing `OPENING_CHARGED_SQUARES` constant. It draws five sites
+uniformly without replacement via `drawIndex` over a pool seeded from `SITES`
+in declared order, then walks `SITES` once more calling `drawTableAmount`
+against the drain or pressure table per site — 22 seed steps total, exactly
+as D4 specifies. Added a `describe("dealing the opening board …")` block to
+`sites.test.ts` covering shape, table membership, the two-thirds cap,
+determinism, a distinct-seed pair, the exact 22-step seed advance (checked
+against 22 chained `mulberry32` calls), and a combined 20,000-deal loop
+checking both the per-site charge share (±0.02 of 5/17) and the two tables'
+draw frequencies (±0.03 of their weights). Nothing calls the deal outside
+the new tests; `startingSiteStatus` and `startingGameState` are untouched.
+`npm run typecheck`, `npm run lint` and `npm run format:check` all pass;
+`npm test` rose from 788 to 795 (7 new cases), with no existing test
+changed. No deviation from the plan.
 
 Add to `src/rules/sites.ts` a function that deals a whole opening board: it
 takes a seed and returns the seventeen site statuses keyed by square name
