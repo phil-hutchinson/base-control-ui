@@ -13,34 +13,34 @@ describe("squareLabel", () => {
     );
   });
 
-  it("names an occupied bay for the green side, stating zero shields", () => {
+  it("names an occupied bay for the green side, stating zero power", () => {
     expect(
       squareLabel({
         square: squareAt("H", 15),
         isBay: true,
-        occupant: { side: "green", shields: 0 },
+        occupant: { side: "green", power: 0 },
       }),
-    ).toBe("H15, bay, green ship, 0 shields");
+    ).toBe("H15, bay, green ship, power 0 of 4");
   });
 
-  it("uses the singular at one shield", () => {
+  it("reads the same shape at any power level", () => {
     expect(
       squareLabel({
         square: squareAt("L", 15),
         isBay: true,
-        occupant: { side: "red", shields: 1 },
+        occupant: { side: "red", power: 1 },
       }),
-    ).toBe("L15, bay, red ship, 1 shield");
+    ).toBe("L15, bay, red ship, power 1 of 4");
   });
 
-  it("uses the plural at a middle count", () => {
+  it("reads the same shape at a middle level", () => {
     expect(
       squareLabel({
         square: squareAt("D", 15),
         isBay: true,
-        occupant: { side: "red", shields: 3 },
+        occupant: { side: "red", power: 3 },
       }),
-    ).toBe("D15, bay, red ship, 3 shields");
+    ).toBe("D15, bay, red ship, power 3 of 4");
   });
 
   it("names an occupied ordinary square, for completeness of the contract", () => {
@@ -48,9 +48,9 @@ describe("squareLabel", () => {
       squareLabel({
         square: squareAt("H", 8),
         isBay: false,
-        occupant: { side: "green", shields: 4 },
+        occupant: { side: "green", power: 4 },
       }),
-    ).toBe("H8, green ship, 4 shields");
+    ).toBe("H8, green ship, power 4 of 4");
   });
 
   it("names each site state", () => {
@@ -82,31 +82,31 @@ describe("squareLabel", () => {
       squareLabel({
         square: squareAt("H", 8),
         isBay: false,
-        occupant: { side: "green", shields: 0 },
+        occupant: { side: "green", power: 0 },
       }),
-    ).toBe("H8, green ship, 0 shields");
+    ).toBe("H8, green ship, power 0 of 4");
   });
 
-  it("adds 'selected' last, after the shield count", () => {
+  it("adds 'selected' last, after the power level", () => {
     expect(
       squareLabel({
         square: squareAt("G", 7),
         isBay: false,
-        occupant: { side: "green", shields: 0 },
+        occupant: { side: "green", power: 0 },
         mark: "selected",
       }),
-    ).toBe("G7, green ship, 0 shields, selected");
+    ).toBe("G7, green ship, power 0 of 4, selected");
   });
 
-  it("adds 'already acted this turn' when hasActed is true, after the shield count", () => {
+  it("adds 'already acted this turn' when hasActed is true, after the power level", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
-        occupant: { side: "green", shields: 4 },
+        occupant: { side: "green", power: 4 },
         hasActed: true,
       }),
-    ).toBe("M10, green ship, 4 shields, already acted this turn");
+    ).toBe("M10, green ship, power 4 of 4, already acted this turn");
   });
 
   it("says nothing about having acted when hasActed is false or absent", () => {
@@ -114,10 +114,10 @@ describe("squareLabel", () => {
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
-        occupant: { side: "green", shields: 4 },
+        occupant: { side: "green", power: 4 },
         hasActed: false,
       }),
-    ).toBe("M10, green ship, 4 shields");
+    ).toBe("M10, green ship, power 4 of 4");
   });
 
   it("combines having acted with the no-action condition, acted first", () => {
@@ -125,12 +125,12 @@ describe("squareLabel", () => {
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
-        occupant: { side: "green", shields: 4 },
+        occupant: { side: "green", power: 4 },
         hasActed: true,
         condition: "no-action",
       }),
     ).toBe(
-      "M10, green ship, 4 shields, already acted this turn, no action available this turn",
+      "M10, green ship, power 4 of 4, already acted this turn, no action available this turn",
     );
   });
 
@@ -139,10 +139,10 @@ describe("squareLabel", () => {
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
-        occupant: { side: "green", shields: 4 },
+        occupant: { side: "green", power: 4 },
         condition: "no-action",
       }),
-    ).toBe("M10, green ship, 4 shields, no action available this turn");
+    ).toBe("M10, green ship, power 4 of 4, no action available this turn");
   });
 
   it("puts the condition before the mark, when a square carries both", () => {
@@ -150,27 +150,27 @@ describe("squareLabel", () => {
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
-        occupant: { side: "green", shields: 4 },
+        occupant: { side: "green", power: 4 },
         condition: "no-action",
         mark: "selected",
       }),
     ).toBe(
-      "M10, green ship, 4 shields, no action available this turn, selected",
+      "M10, green ship, power 4 of 4, no action available this turn, selected",
     );
   });
 
-  it("orders having acted, the condition and the mark: shields, acted, condition, mark", () => {
+  it("orders having acted, the condition and the mark: power, acted, condition, mark", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isBay: false,
-        occupant: { side: "green", shields: 2 },
+        occupant: { side: "green", power: 2 },
         hasActed: true,
         condition: "no-action",
         mark: "selected",
       }),
     ).toBe(
-      "M10, green ship, 2 shields, already acted this turn, no action available this turn, selected",
+      "M10, green ship, power 2 of 4, already acted this turn, no action available this turn, selected",
     );
   });
 
@@ -205,48 +205,48 @@ describe("squareLabel", () => {
     ).toBe("D15, bay, can move here");
   });
 
-  it("names the one target outcome, last, after the shield count", () => {
+  it("names the one target outcome, last, after the power level", () => {
     expect(
       squareLabel({
         square: squareAt("H", 9),
         isBay: false,
-        occupant: { side: "red", shields: 1 },
+        occupant: { side: "red", power: 1 },
         mark: "target",
       }),
     ).toBe(
-      "H9, red ship, 1 shield, can attack here, both ships would return to bays",
+      "H9, red ship, power 1 of 4, can attack here, both ships would return to bays",
     );
   });
 
-  it("names the target outcome the same way whatever shields the occupant carries", () => {
+  it("names the target outcome the same way whatever power the occupant carries", () => {
     expect(
       squareLabel({
         square: squareAt("H", 9),
         isBay: false,
-        occupant: { side: "red", shields: 4 },
+        occupant: { side: "red", power: 4 },
         mark: "target",
       }),
     ).toBe(
-      "H9, red ship, 4 shields, can attack here, both ships would return to bays",
+      "H9, red ship, power 4 of 4, can attack here, both ships would return to bays",
     );
   });
 
-  it("names an occupied site for each side, with its shield count", () => {
+  it("names an occupied site for each side, with its power level", () => {
     expect(
       squareLabel({
         square: squareAt("H", 8),
         isBay: false,
         siteState: "charged",
-        occupant: { side: "green", shields: 2 },
+        occupant: { side: "green", power: 2 },
       }),
-    ).toBe("H8, charged site, green ship, 2 shields");
+    ).toBe("H8, charged site, green ship, power 2 of 4");
     expect(
       squareLabel({
         square: squareAt("H", 4),
         isBay: false,
         siteState: "dormant",
-        occupant: { side: "red", shields: 0 },
+        occupant: { side: "red", power: 0 },
       }),
-    ).toBe("H4, dormant site, red ship, 0 shields");
+    ).toBe("H4, dormant site, red ship, power 0 of 4");
   });
 });

@@ -10,20 +10,20 @@ import {
   reachFrom,
   sideToMoveHasLegalMove,
 } from "./movement";
-import type { ShieldCount } from "./shields";
+import type { PowerLevel } from "./power";
 import type { SiteState } from "./sites";
 
-function destinationNames(origin: string, shields: ShieldCount): string[] {
-  return reachFrom(squareFromName(origin), shields)
+function destinationNames(origin: string, power: PowerLevel): string[] {
+  return reachFrom(squareFromName(origin), power)
     .map((entry) => squareName(entry.destination))
     .sort();
 }
 
 describe("reachFrom", () => {
   it("matches §6's table exactly from an unobstructed centre square", () => {
-    expect(destinationNames("H8", 4)).toEqual(["G8", "H7", "H9", "I8"].sort());
+    expect(destinationNames("H8", 0)).toEqual(["G8", "H7", "H9", "I8"].sort());
 
-    expect(destinationNames("H8", 3)).toEqual(
+    expect(destinationNames("H8", 1)).toEqual(
       ["G7", "G8", "G9", "H7", "H9", "I7", "I8", "I9"].sort(),
     );
 
@@ -44,7 +44,7 @@ describe("reachFrom", () => {
       ].sort(),
     );
 
-    expect(destinationNames("H8", 1)).toEqual(
+    expect(destinationNames("H8", 3)).toEqual(
       [
         "F6",
         "F8",
@@ -65,7 +65,7 @@ describe("reachFrom", () => {
       ].sort(),
     );
 
-    expect(destinationNames("H8", 0)).toEqual(
+    expect(destinationNames("H8", 4)).toEqual(
       [
         "E8",
         "F6",
@@ -90,42 +90,40 @@ describe("reachFrom", () => {
       ].sort(),
     );
 
-    expect(destinationNames("H8", 4)).toHaveLength(4);
-    expect(destinationNames("H8", 3)).toHaveLength(8);
+    expect(destinationNames("H8", 0)).toHaveLength(4);
+    expect(destinationNames("H8", 1)).toHaveLength(8);
     expect(destinationNames("H8", 2)).toHaveLength(12);
-    expect(destinationNames("H8", 1)).toHaveLength(16);
-    expect(destinationNames("H8", 0)).toHaveLength(20);
+    expect(destinationNames("H8", 3)).toHaveLength(16);
+    expect(destinationNames("H8", 4)).toHaveLength(20);
   });
 
-  it("accumulates downward: each shield count's set is a superset of the next higher's", () => {
-    const shieldCounts: readonly ShieldCount[] = [4, 3, 2, 1, 0];
+  it("accumulates upward: each power level's set is a superset of the previous", () => {
+    const powerLevels: readonly PowerLevel[] = [0, 1, 2, 3, 4];
 
-    for (let index = 0; index < shieldCounts.length - 1; index++) {
-      const fewerShieldsSet = new Set(
-        destinationNames("H8", shieldCounts[index]),
-      );
-      const moreShieldsSet = new Set(
-        destinationNames("H8", shieldCounts[index + 1]),
+    for (let index = 0; index < powerLevels.length - 1; index++) {
+      const lowerPowerSet = new Set(destinationNames("H8", powerLevels[index]));
+      const higherPowerSet = new Set(
+        destinationNames("H8", powerLevels[index + 1]),
       );
 
-      for (const square of fewerShieldsSet) {
-        expect(moreShieldsSet.has(square)).toBe(true);
+      for (const square of lowerPowerSet) {
+        expect(higherPowerSet.has(square)).toBe(true);
       }
     }
   });
 
-  it("never reaches three squares diagonally, at any shield count", () => {
-    for (const shields of [0, 1, 2, 3, 4] as const) {
-      const destinations = destinationNames("H8", shields);
+  it("never reaches three squares diagonally, at any power level", () => {
+    for (const power of [0, 1, 2, 3, 4] as const) {
+      const destinations = destinationNames("H8", power);
       expect(destinations).not.toContain("K11");
       expect(destinations).not.toContain("E5");
     }
   });
 
   it("is clipped by the board's edges", () => {
-    for (const shields of [0, 1, 2, 3, 4] as const) {
-      const cornerEntries = reachFrom(squareFromName("A1"), shields);
-      const edgeEntries = reachFrom(squareFromName("A8"), shields);
+    for (const power of [0, 1, 2, 3, 4] as const) {
+      const cornerEntries = reachFrom(squareFromName("A1"), power);
+      const edgeEntries = reachFrom(squareFromName("A8"), power);
 
       for (const entry of [...cornerEntries, ...edgeEntries]) {
         expect(isOnBoard(entry.destination.column, entry.destination.row)).toBe(
@@ -136,7 +134,7 @@ describe("reachFrom", () => {
         }
       }
 
-      const unobstructedCount = destinationNames("H8", shields).length;
+      const unobstructedCount = destinationNames("H8", power).length;
       expect(cornerEntries.length).toBeLessThan(unobstructedCount);
       expect(edgeEntries.length).toBeLessThan(unobstructedCount);
     }
@@ -145,7 +143,7 @@ describe("reachFrom", () => {
   it("names the squares passed over, excluding the origin and the destination", () => {
     const origin = squareFromName("H8");
 
-    const threeSquareEntry = reachFrom(origin, 0).find(
+    const threeSquareEntry = reachFrom(origin, 4).find(
       (entry) => squareName(entry.destination) === "K8",
     );
     expect(threeSquareEntry).toBeDefined();
@@ -157,7 +155,7 @@ describe("reachFrom", () => {
     expect(twoSquareEntry).toBeDefined();
     expect(twoSquareEntry?.passedOver.map(squareName)).toEqual(["I8"]);
 
-    const oneSquareEntry = reachFrom(origin, 4).find(
+    const oneSquareEntry = reachFrom(origin, 0).find(
       (entry) => squareName(entry.destination) === "I8",
     );
     expect(oneSquareEntry).toBeDefined();
@@ -169,9 +167,9 @@ function ship(
   id: ShipId,
   side: "green" | "red",
   square: string,
-  shields: ShieldCount = 0,
+  power: PowerLevel = 4,
 ): Ship {
-  return { id, side, square: squareFromName(square), shields };
+  return { id, side, square: squareFromName(square), power };
 }
 
 function siteStatuses(

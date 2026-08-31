@@ -16,7 +16,7 @@ import { drawIndex } from "./random";
 
 /**
  * The lane `shipId` would attack down to reach `target`: the `ReachEntry`
- * from `reachFrom(attacker.square, attacker.shields)` whose `destination` is
+ * from `reachFrom(attacker.square, attacker.power)` whose `destination` is
  * `target`, or `undefined` when `target` is outside the attacker's reach
  * altogether. Purely geometric — no ownership, no bays, no occupancy, no
  * awareness of whose ply it is. Exported so the lane geometry can be
@@ -30,7 +30,7 @@ export function attackReach(
   const attacker = findShip(state, shipId);
   const targetName = squareName(target);
 
-  return reachFrom(attacker.square, attacker.shields).find(
+  return reachFrom(attacker.square, attacker.power).find(
     (entry) => squareName(entry.destination) === targetName,
   );
 }
@@ -145,7 +145,7 @@ export function legalTargets(
     return [];
   }
 
-  return reachFrom(attacker.square, attacker.shields)
+  return reachFrom(attacker.square, attacker.power)
     .map((entry) => entry.destination)
     .filter(
       (square) => attackRefusalReason(state, shipId, square) === undefined,

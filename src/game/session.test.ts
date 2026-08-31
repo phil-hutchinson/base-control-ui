@@ -17,7 +17,7 @@ import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalTargets } from "../rules/combat";
 import { legalDestinations } from "../rules/movement";
 import { applyAttack, applyMove } from "../rules/ply";
-import type { ShieldCount } from "../rules/shields";
+import type { PowerLevel } from "../rules/power";
 import type { SiteState } from "../rules/sites";
 import { createSession, type Session, sessionReducer } from "./session";
 
@@ -25,9 +25,9 @@ function ship(
   id: ShipId,
   side: Side,
   square: string,
-  shields: ShieldCount = 0,
+  power: PowerLevel = 4,
 ): Ship {
-  return { id, side, square: squareFromName(square), shields };
+  return { id, side, square: squareFromName(square), power };
 }
 
 function siteStatuses(
@@ -93,8 +93,8 @@ describe("sessionReducer — nothing selected", () => {
   it("reports a target count that includes a target beyond the eight neighbours", () => {
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H8", 1),
-        ship("red-1", "red", "H10", 0),
+        ship("green-1", "green", "H8", 3),
+        ship("red-1", "red", "H10", 4),
       ],
     });
     const result = activate(sessionFor(state), "H8");
@@ -220,8 +220,8 @@ describe("sessionReducer — a ship is selected", () => {
     it("attacks an adjacent enemy ship, clearing the selection", () => {
       const state = buildState({
         ships: [
-          ship("green-1", "green", "H8", 4),
-          ship("red-1", "red", "H9", 0),
+          ship("green-1", "green", "H8", 0),
+          ship("red-1", "red", "H9", 4),
         ],
       });
       const selected = activate(sessionFor(state), "H8");
@@ -474,7 +474,7 @@ describe("createSession", () => {
   });
 
   it("runs the pass guard once, so a stuck starting position passes immediately", () => {
-    // green-1 is in the A2 bay, with 0 shields: every one of its reachable
+    // green-1 is in the A2 bay, at full power: every one of its reachable
     // squares is either occupied by a red ship one square away or blocked
     // along the way to a farther one, and §3.1 forbids it to attack from a
     // bay regardless.

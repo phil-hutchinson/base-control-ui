@@ -341,7 +341,7 @@ function sumAmounts(
 
 /** One ship, for building a state by hand rather than dealing it. */
 function ship(id: ShipId, side: "green" | "red", square: string): Ship {
-  return { id, side, square: squareFromName(square), shields: 0 };
+  return { id, side, square: squareFromName(square), power: 4 };
 }
 
 /**
@@ -448,20 +448,20 @@ describe("a full game, end to end", () => {
     // Built rather than played out, so the attack refusal does not depend
     // on two ships happening to end a played game within range of each
     // other: green-1 and red-1 sit three squares apart with a clear lane
-    // between them, well within a zero-shield ship's reach (rules.md §6).
+    // between them, well within a full-power ship's reach (rules.md §6).
     const state: GameState = {
       ships: [
         {
           id: "green-1" as ShipId,
           side: "green",
           square: squareFromName("G8"),
-          shields: 0,
+          power: 4,
         },
         {
           id: "red-1" as ShipId,
           side: "red",
           square: squareFromName("G11"),
-          shields: 0,
+          power: 4,
         },
       ],
       siteStates: {},
@@ -668,7 +668,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       id: `green-${index + 1}` as ShipId,
       side: "green",
       square: site,
-      shields: 0,
+      power: 4,
     }));
     const siteStates: Record<string, SiteStatus> = {};
     for (const site of dormantSites) {

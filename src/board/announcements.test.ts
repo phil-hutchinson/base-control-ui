@@ -154,15 +154,15 @@ describe("announcementFor", () => {
       side: "red",
       from: squareAt("A", 11),
       to: squareAt("A", 10),
-      effects: [{ type: "shields-reset", shipId: "red-2" }],
+      effects: [],
       actionsRemaining: 1,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 into the A10 bay and lost its shields. Red has 1 action left.",
+      "Red ship moved from A11 into the A10 bay. Red has 1 action left.",
     );
   });
 
-  it("announces a move into a bay by a ship with no shields to lose as a plain move", () => {
+  it("announces a move into a bay the same way whatever power the ship arrives with", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "red-2",
@@ -173,7 +173,7 @@ describe("announcementFor", () => {
       actionsRemaining: 1,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 to A10. Red has 1 action left.",
+      "Red ship moved from A11 into the A10 bay. Red has 1 action left.",
     );
   });
 
@@ -185,13 +185,12 @@ describe("announcementFor", () => {
       from: squareAt("A", 11),
       to: squareAt("A", 10),
       effects: [
-        { type: "shields-reset", shipId: "red-2" },
         { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 into the A10 bay and lost its shields. Green's turn, 1 action left.",
+      "Red ship moved from A11 into the A10 bay. Green's turn, 1 action left.",
     );
   });
 
@@ -269,7 +268,7 @@ describe("announcementFor", () => {
     [
       "target-out-of-range",
       squareAt("J", 7),
-      "J7 is out of attack range. A ship attacks as far as it moves, so shields shorten its reach — a ship with four shields can only strike one square up, down, left or right.",
+      "J7 is out of attack range. A ship attacks as far as it moves, so a drained ship barely strikes at all — a ship at 0 power can only strike one square up, down, left or right.",
     ],
     [
       "attack-path-blocked",
@@ -369,7 +368,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("announces one shield gained, naming the square and the new count", () => {
+  it("announces one point of power lost, naming the square and the new count", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -383,11 +382,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-gained",
+              type: "power-lost",
               shipId: "green-2",
               side: "green",
               square: squareAt("H", 8),
-              shields: 2,
+              power: 2,
             },
           ],
         },
@@ -395,11 +394,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at H8 gained a shield, now on 2. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at H8 lost a point of power, now on 2. Red's turn, 1 action left.",
     );
   });
 
-  it("groups several shields gained in one sequence into one clause", () => {
+  it("groups several points of power lost in one sequence into one clause", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -413,18 +412,18 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-gained",
+              type: "power-lost",
               shipId: "green-1",
               side: "green",
               square: squareAt("H", 8),
-              shields: 2,
+              power: 2,
             },
             {
-              type: "shield-gained",
+              type: "power-lost",
               shipId: "green-2",
               side: "green",
               square: squareAt("K", 5),
-              shields: 3,
+              power: 1,
             },
           ],
         },
@@ -432,11 +431,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a shield. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a point of power. Red's turn, 1 action left.",
     );
   });
 
-  it("says which ship reached the shield cap of 4, within a grouped clause", () => {
+  it("says which ship reached 0, within a grouped clause", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -450,18 +449,18 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-gained",
+              type: "power-lost",
               shipId: "green-1",
               side: "green",
               square: squareAt("H", 8),
-              shields: 2,
+              power: 2,
             },
             {
-              type: "shield-gained",
+              type: "power-lost",
               shipId: "green-2",
               side: "green",
               square: squareAt("K", 5),
-              shields: 4,
+              power: 0,
             },
           ],
         },
@@ -469,11 +468,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a shield. K5 reached the cap of 4. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a point of power. K5 reached 0. Red's turn, 1 action left.",
     );
   });
 
-  it("says a single ship reached the shield cap of 4", () => {
+  it("says a single ship reached 0", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -487,11 +486,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-gained",
+              type: "power-lost",
               shipId: "green-1",
               side: "green",
               square: squareAt("K", 5),
-              shields: 4,
+              power: 0,
             },
           ],
         },
@@ -499,11 +498,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at K5 gained a shield, reaching the cap of 4. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at K5 lost a point of power, reaching 0. Red's turn, 1 action left.",
     );
   });
 
-  it("announces one shield lost, naming the square and the new count", () => {
+  it("announces one point of power gained, naming the square and the new count", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -517,11 +516,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-lost",
+              type: "power-gained",
               shipId: "green-2",
               side: "green",
               square: squareAt("H", 8),
-              shields: 1,
+              power: 3,
             },
           ],
         },
@@ -529,11 +528,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at H8 lost a shield, now on 1. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at H8 gained a point of power, now on 3. Red's turn, 1 action left.",
     );
   });
 
-  it("groups several shields lost in one sequence into one clause", () => {
+  it("announces a point of power gained in a bay the same way as on a dormant site", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -547,18 +546,48 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-lost",
+              type: "power-gained",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("A", 2),
+              power: 3,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at A2 gained a point of power, now on 3. Red's turn, 1 action left.",
+    );
+  });
+
+  it("groups several points of power gained in one sequence into one clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "power-gained",
               shipId: "green-1",
               side: "green",
               square: squareAt("H", 8),
-              shields: 2,
+              power: 2,
             },
             {
-              type: "shield-lost",
+              type: "power-gained",
               shipId: "green-2",
               side: "green",
               square: squareAt("K", 5),
-              shields: 1,
+              power: 3,
             },
           ],
         },
@@ -566,11 +595,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a shield. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a point of power. Red's turn, 1 action left.",
     );
   });
 
-  it("says which ship reached 0 shields, within a grouped clause", () => {
+  it("says which ship reached the maximum of 4, within a grouped clause", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -584,18 +613,18 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-lost",
+              type: "power-gained",
               shipId: "green-1",
               side: "green",
               square: squareAt("H", 8),
-              shields: 1,
+              power: 3,
             },
             {
-              type: "shield-lost",
+              type: "power-gained",
               shipId: "green-2",
               side: "green",
               square: squareAt("K", 5),
-              shields: 0,
+              power: 4,
             },
           ],
         },
@@ -603,11 +632,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a shield. K5 reached 0. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a point of power. K5 reached the maximum of 4. Red's turn, 1 action left.",
     );
   });
 
-  it("says a single ship reached 0 shields", () => {
+  it("says a single ship reached the maximum of 4", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -621,11 +650,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-lost",
+              type: "power-gained",
               shipId: "green-1",
               side: "green",
               square: squareAt("K", 5),
-              shields: 0,
+              power: 4,
             },
           ],
         },
@@ -633,11 +662,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at K5 lost a shield, reaching 0. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at K5 gained a point of power, reaching the maximum of 4. Red's turn, 1 action left.",
     );
   });
 
-  it("reads gains before losses when a sequence has both", () => {
+  it("reads losses before gains when a sequence has both", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -651,18 +680,18 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-gained",
+              type: "power-lost",
               shipId: "green-1",
               side: "green",
               square: squareAt("H", 8),
-              shields: 2,
+              power: 2,
             },
             {
-              type: "shield-lost",
+              type: "power-gained",
               shipId: "green-2",
               side: "green",
               square: squareAt("K", 5),
-              shields: 1,
+              power: 3,
             },
           ],
         },
@@ -670,7 +699,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at H8 gained a shield, now on 2. Green ship at K5 lost a shield, now on 1. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at H8 lost a point of power, now on 2. Green ship at K5 gained a point of power, now on 3. Red's turn, 1 action left.",
     );
   });
 
@@ -688,11 +717,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-gained",
+              type: "power-lost",
               shipId: "green-1",
               side: "green",
               square: squareAt("K", 5),
-              shields: 4,
+              power: 0,
             },
             { type: "node-ran-out", square: squareAt("K", 5) },
             { type: "site-went-active", square: squareAt("N", 4) },
@@ -703,7 +732,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from K4 to K5. " +
-        "Green ship at K5 gained a shield, reaching the cap of 4. " +
+        "Green ship at K5 lost a point of power, reaching 0. " +
         "The node at K5 ran out. " +
         "Red's turn, 1 action left.",
     );
@@ -740,16 +769,16 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       sideToMove: "green",
       endOfTurn: [
         {
-          type: "shield-gained",
+          type: "power-lost",
           shipId: "red-1",
           side: "red",
           square: squareAt("K", 11),
-          shields: 2,
+          power: 2,
         },
       ],
     };
     expect(announcementFor(event)).toBe(
-      "Red has no legal action, so the turn passes. Red ship at K11 gained a shield, now on 2. Green's turn, 1 action left.",
+      "Red has no legal action, so the turn passes. Red ship at K11 lost a point of power, now on 2. Green's turn, 1 action left.",
     );
   });
 });
@@ -832,7 +861,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
     );
   });
 
-  it("orders the collection after the shield clause and before a node running out", () => {
+  it("orders the collection after the power clause and before a node running out", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-1",
@@ -846,11 +875,11 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "shield-gained",
+              type: "power-lost",
               shipId: "green-2",
               side: "green",
               square: squareAt("H", 8),
-              shields: 2,
+              power: 2,
             },
             {
               type: "energy-collected",
@@ -866,7 +895,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at H8 gained a shield, now on 2. Green collected 1 energy from the node at H8, and now has 5. The node at K5 ran out. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at H8 lost a point of power, now on 2. Green collected 1 energy from the node at H8, and now has 5. The node at K5 ran out. Red's turn, 1 action left.",
     );
   });
 
@@ -1206,13 +1235,13 @@ describe("announcementForSession", () => {
         shipId: "green-1",
         side: "green",
         square: squareAt("H", 8),
-        shields: 2,
+        power: 2,
       },
       defender: {
         shipId: "red-1",
         side: "red",
         square: squareAt("H", 9),
-        shields: 1,
+        power: 3,
       },
       returns: [
         {
@@ -1247,7 +1276,7 @@ describe("announcementForSession", () => {
       lastEvent: event,
     };
     expect(announcementForSession(session)).toBe(
-      "Green ship at H8 attacked the red ship at H9 and both were beaten. The attacker returned to the A1 bay and the defender to the A8 bay, both with no shields. The game is over after 3 rounds. Green wins, 9 energy to 2.",
+      "Green ship at H8 attacked the red ship at H9 and both were beaten. The attacker returned to the A1 bay and the defender to the A8 bay, both keeping the power they were carrying. The game is over after 3 rounds. Green wins, 9 energy to 2.",
     );
   });
 
@@ -1297,13 +1326,13 @@ describe("announcementFor — combat (rules.md §7)", () => {
         shipId: "green-1",
         side: "green",
         square: squareAt("C", 6),
-        shields: 2,
+        power: 2,
       },
       defender: {
         shipId: "red-1",
         side: "red",
         square: squareAt("C", 7),
-        shields: 2,
+        power: 2,
       },
       returns: [
         {
@@ -1331,25 +1360,25 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at C6 attacked the red ship at C7 and both were beaten. " +
-        "The attacker returned to the D1 bay and the defender to the A2 bay, both with no shields. " +
+        "The attacker returned to the D1 bay and the defender to the A2 bay, both keeping the power they were carrying. " +
         "Green has 1 action left.",
     );
   });
 
-  it("announces a fight whatever shields either ship carried, never naming a winner", () => {
+  it("announces a fight whatever power either ship carried, never naming a winner", () => {
     const fight: FightResolvedEffect = {
       type: "fight-resolved",
       attacker: {
         shipId: "green-1",
         side: "green",
         square: squareAt("J", 4),
-        shields: 4,
+        power: 0,
       },
       defender: {
         shipId: "red-1",
         side: "red",
         square: squareAt("K", 5),
-        shields: 0,
+        power: 4,
       },
       returns: [
         {
@@ -1378,7 +1407,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     const sentence = announcementFor(event);
     expect(sentence).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 bay and the defender to the D1 bay, both with no shields. " +
+        "The attacker returned to the A6 bay and the defender to the D1 bay, both keeping the power they were carrying. " +
         "Green has 1 action left.",
     );
     expect(sentence).not.toMatch(/won|lost|advance|held its ground/);
@@ -1391,13 +1420,13 @@ describe("announcementFor — combat (rules.md §7)", () => {
         shipId: "green-1",
         side: "green",
         square: squareAt("J", 4),
-        shields: 1,
+        power: 3,
       },
       defender: {
         shipId: "red-1",
         side: "red",
         square: squareAt("K", 5),
-        shields: 0,
+        power: 4,
       },
       returns: [
         {
@@ -1428,7 +1457,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 bay and the defender to the D1 bay, both with no shields. " +
+        "The attacker returned to the A6 bay and the defender to the D1 bay, both keeping the power they were carrying. " +
         "Red's turn, 1 action left.",
     );
   });
@@ -1440,13 +1469,13 @@ describe("announcementFor — combat (rules.md §7)", () => {
         shipId: "green-1",
         side: "green",
         square: squareAt("J", 4),
-        shields: 1,
+        power: 3,
       },
       defender: {
         shipId: "red-1",
         side: "red",
         square: squareAt("K", 5),
-        shields: 0,
+        power: 4,
       },
       returns: [
         {
@@ -1478,7 +1507,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 bay and the defender to the D1 bay, both with no shields. " +
+        "The attacker returned to the A6 bay and the defender to the D1 bay, both keeping the power they were carrying. " +
         "Red has no legal action, so the turn passes. Green's turn, 1 action left.",
     );
   });
@@ -1543,7 +1572,7 @@ describe("HUD wording", () => {
       id: string;
       side: "green" | "red";
       square: ReturnType<typeof squareAt>;
-      shields: 0 | 1 | 2 | 3 | 4;
+      power: 0 | 1 | 2 | 3 | 4;
     }[];
     charged?: readonly string[];
     dormant?: readonly string[];
@@ -1593,7 +1622,7 @@ describe("HUD wording", () => {
             id: "green-1",
             side: "green",
             square: squareAt("H", 8),
-            shields: 0,
+            power: 4,
           },
         ],
         charged: ["H8"],
@@ -1613,13 +1642,13 @@ describe("HUD wording", () => {
             id: "green-1",
             side: "green",
             square: squareAt("H", 8),
-            shields: 0,
+            power: 4,
           },
           {
             id: "green-2",
             side: "green",
             square: squareAt("E", 5),
-            shields: 0,
+            power: 4,
           },
         ],
         charged: ["H8", "E5"],
@@ -1635,12 +1664,12 @@ describe("HUD wording", () => {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         plyNumber: 4,
         ships: [
-          { id: "red-1", side: "red", square: squareAt("K", 5), shields: 0 },
+          { id: "red-1", side: "red", square: squareAt("K", 5), power: 4 },
           {
             id: "green-1",
             side: "green",
             square: squareAt("H", 8),
-            shields: 0,
+            power: 4,
           },
         ],
         charged: ["K5", "H8"],
@@ -1660,7 +1689,7 @@ describe("HUD wording", () => {
             id: "green-1",
             side: "green",
             square: squareAt("H", 8),
-            shields: 0,
+            power: 4,
           },
         ],
         dormant: ["H8"],
@@ -1680,13 +1709,13 @@ describe("HUD wording", () => {
             id: "green-1",
             side: "green",
             square: squareAt("H", 8),
-            shields: 0,
+            power: 4,
           },
           {
             id: "green-2",
             side: "green",
             square: squareAt("E", 5),
-            shields: 0,
+            power: 4,
           },
         ],
         dormant: ["H8", "E5"],
@@ -1702,7 +1731,7 @@ describe("HUD wording", () => {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         plyNumber: 5,
         ships: [
-          { id: "red-1", side: "red", square: squareAt("H", 8), shields: 0 },
+          { id: "red-1", side: "red", square: squareAt("H", 8), power: 4 },
         ],
         dormant: ["H8"],
       });

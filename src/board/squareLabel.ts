@@ -1,7 +1,7 @@
 // The wording of a square's accessible name: comma-separated segments, the
 // square name first, then "bay" or "<state> site" if the square is one of
 // those, then which side's ship (if any) stands there, then that ship's
-// shield count, then whether it has already acted this ply, then its
+// power level, then whether it has already acted this ply, then its
 // condition (no action available), then last of all a mark saying that the
 // square is selected, a legal destination, or a legal attack target. A
 // square is never both a bay and a site, so the two share one slot. Having
@@ -11,9 +11,9 @@
 // the mark reflects the current selection or highlight independently of
 // both. `ShipCondition` currently has a single member, and
 // `CONDITION_WORDING` is where its wording lives. Ordinary empty squares
-// are named by their square name alone. The shield count is stated even
+// are named by their square name alone. The power level is stated even
 // when it is zero, so a listener hearing one square at a time can tell a
-// shieldless ship apart from an app that never reports shields at all.
+// drained ship apart from an app that never reports power at all.
 //
 // A fight has one outcome (rules.md §7), so a target square's mark is a
 // fixed phrase saying what attacking there does, the same as the selected
@@ -21,13 +21,13 @@
 
 import { squareName, type Square } from "../rules/board";
 import type { Side } from "../rules/fleet";
-import type { ShieldCount } from "../rules/shields";
+import type { PowerLevel } from "../rules/power";
 import type { SiteState } from "../rules/sites";
 
 /** A square's occupant, as far as its accessible name is concerned. */
 export interface SquareOccupant {
   readonly side: Side;
-  readonly shields: ShieldCount;
+  readonly power: PowerLevel;
 }
 
 /**
@@ -90,8 +90,7 @@ export function squareLabel({
   }
   if (occupant) {
     segments.push(`${occupant.side} ship`);
-    const unit = occupant.shields === 1 ? "shield" : "shields";
-    segments.push(`${occupant.shields} ${unit}`);
+    segments.push(`power ${occupant.power} of 4`);
   }
   if (hasActed) {
     segments.push(ALREADY_ACTED_WORDING);

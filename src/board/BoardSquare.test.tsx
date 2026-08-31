@@ -34,7 +34,7 @@ describe("BoardSquare", () => {
         isBay={false}
         squareName="H8"
         siteState="charged"
-        occupant={{ side: "green", shields: 2 }}
+        occupant={{ side: "green", power: 2 }}
       />,
     );
 
@@ -133,7 +133,7 @@ describe("BoardSquare", () => {
       <BoardSquare
         isBay={false}
         squareName="H8"
-        occupant={{ side: "green", shields: 0 }}
+        occupant={{ side: "green", power: 0 }}
         hasActed={true}
       />,
     );
@@ -141,7 +141,7 @@ describe("BoardSquare", () => {
       <BoardSquare
         isBay={false}
         squareName="H8"
-        occupant={{ side: "green", shields: 0 }}
+        occupant={{ side: "green", power: 0 }}
       />,
     );
 
@@ -161,7 +161,7 @@ describe("BoardSquare", () => {
       <BoardSquare
         isBay={false}
         squareName="H8"
-        occupant={{ side: "green", shields: 0 }}
+        occupant={{ side: "green", power: 0 }}
         condition="no-action"
       />,
     );
@@ -185,7 +185,7 @@ describe("BoardSquare", () => {
       <BoardSquare
         isBay={false}
         squareName="H8"
-        occupant={{ side: "green", shields: 0 }}
+        occupant={{ side: "green", power: 0 }}
         hasActed={true}
         condition="no-action"
       />,
@@ -207,7 +207,7 @@ describe("BoardSquare", () => {
       <BoardSquare
         isBay={false}
         squareName="H8"
-        occupant={{ side: "green", shields: 0 }}
+        occupant={{ side: "green", power: 0 }}
         hasActed={true}
       />,
     );
@@ -222,7 +222,7 @@ describe("BoardSquare", () => {
       <BoardSquare
         isBay={false}
         squareName="H8"
-        occupant={{ side: "green", shields: 0 }}
+        occupant={{ side: "green", power: 0 }}
         condition="no-action"
         mark="selected"
       />,
@@ -242,7 +242,7 @@ describe("BoardSquare", () => {
         isBay={false}
         squareName="H8"
         siteState="active"
-        occupant={{ side: "red", shields: 3 }}
+        occupant={{ side: "red", power: 3 }}
         mark="destination"
       />,
     );
@@ -266,7 +266,7 @@ describe("BoardSquare", () => {
           <BoardSquare
             isBay={false}
             squareName="H8"
-            occupant={{ side: "green", shields: 1 }}
+            occupant={{ side: "green", power: 1 }}
             hasActed={hasActed}
             condition={condition}
             mark="selected"

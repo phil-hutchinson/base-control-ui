@@ -7,7 +7,7 @@ import {
   type FleetEntry,
   type FleetSize,
 } from "./fleet";
-import { isShieldCount } from "./shields";
+import { isPowerLevel, MAX_POWER } from "./power";
 
 /** §4's seven-a-side layout, clockwise from H15. */
 const SEVEN_A_SIDE: readonly [string, "green" | "red"][] = [
@@ -123,10 +123,10 @@ describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
     );
   });
 
-  it("gives every ship a shield count within the 0-4 range, and starts every ship on 0 shields", () => {
+  it("gives every ship a power level within the 0-4 range, and starts every ship at full power", () => {
     for (const entry of fleet) {
-      expect(isShieldCount(entry.shields)).toBe(true);
-      expect(entry.shields).toBe(0);
+      expect(isPowerLevel(entry.power)).toBe(true);
+      expect(entry.power).toBe(MAX_POWER);
     }
   });
 

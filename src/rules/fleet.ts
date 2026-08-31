@@ -2,7 +2,7 @@
 // ships a side, chosen before play begins, one per occupied bay.
 
 import { type Square, squareAt } from "./board";
-import type { ShieldCount } from "./shields";
+import { MAX_POWER, type PowerLevel } from "./power";
 
 /** The two sides (rules.md §4). */
 export type Side = "green" | "red";
@@ -10,12 +10,12 @@ export type Side = "green" | "red";
 /** A ship's stable identity, distinct from the square it currently occupies. */
 export type ShipId = string;
 
-/** One ship's starting square, side and shield count. */
+/** One ship's starting square, side and power level. */
 export interface FleetEntry {
   readonly id: ShipId;
   readonly square: Square;
   readonly side: Side;
-  readonly shields: ShieldCount;
+  readonly power: PowerLevel;
 }
 
 /** How many ships one side has (rules.md §4): five, six or seven. */
@@ -114,7 +114,7 @@ const LAYOUTS_BY_FLEET_SIZE: Readonly<
 
 /**
  * The starting fleet for a game with `fleetSize` ships a side, in the
- * layout's clockwise order (rules.md §4). Every ship starts on 0 shields.
+ * layout's clockwise order (rules.md §4). Every ship starts at full power.
  * Ids are `green-N` / `red-N`, numbered 1..`fleetSize` per side in that same
  * clockwise order.
  */
@@ -128,7 +128,7 @@ export function startingFleet(fleetSize: FleetSize): readonly FleetEntry[] {
       id: `${entry.side}-${number}`,
       square: entry.square,
       side: entry.side,
-      shields: 0,
+      power: MAX_POWER,
     };
   });
 }

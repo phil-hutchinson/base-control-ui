@@ -1,5 +1,5 @@
 // Movement (rules.md §6): a ship moves in a straight line, orthogonally or
-// diagonally, as far as its shield count allows, ending on any square it can
+// diagonally, as far as its power allows, ending on any square it can
 // reach that no ship occupies — reach, a clear path and an empty destination
 // are the whole of the restriction. This is the only implementation of §6 in
 // the app; every caller that needs a legal move or the reason one is refused
@@ -16,7 +16,7 @@ import {
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type GameState, type Ship, shipsBySquare } from "./gameState";
-import type { ShieldCount } from "./shields";
+import type { PowerLevel } from "./power";
 
 type DirectionKind = "orthogonal" | "diagonal";
 
@@ -41,19 +41,19 @@ function directionsFor(
 }
 
 interface ReachOption {
-  /** The shield count at which this option unlocks. A ship keeps every option whose figure is at or above its own shield count. */
-  readonly unlockedAtShields: ShieldCount;
+  /** The power level at which this option unlocks. A ship keeps every option whose figure is at or below its own power. */
+  readonly unlockedAtPower: PowerLevel;
   readonly kind: DirectionKind;
   readonly distance: number;
 }
 
 /** §6's range table, transcribed row for row. */
 const REACH_OPTIONS: readonly ReachOption[] = [
-  { unlockedAtShields: 4, kind: "orthogonal", distance: 1 },
-  { unlockedAtShields: 3, kind: "diagonal", distance: 1 },
-  { unlockedAtShields: 2, kind: "orthogonal", distance: 2 },
-  { unlockedAtShields: 1, kind: "diagonal", distance: 2 },
-  { unlockedAtShields: 0, kind: "orthogonal", distance: 3 },
+  { unlockedAtPower: 0, kind: "orthogonal", distance: 1 },
+  { unlockedAtPower: 1, kind: "diagonal", distance: 1 },
+  { unlockedAtPower: 2, kind: "orthogonal", distance: 2 },
+  { unlockedAtPower: 3, kind: "diagonal", distance: 2 },
+  { unlockedAtPower: 4, kind: "orthogonal", distance: 3 },
 ];
 
 /**
@@ -67,19 +67,19 @@ export interface ReachEntry {
 }
 
 /**
- * Every square a ship at `origin` carrying `shields` could move to on an
+ * Every square a ship at `origin` carrying `power` could move to on an
  * otherwise empty board (rules.md §6). Moves that would leave the board are
  * omitted entirely. Says nothing about occupancy, sites or whose ply it is.
  */
 export function reachFrom(
   origin: Square,
-  shields: ShieldCount,
+  power: PowerLevel,
 ): readonly ReachEntry[] {
   const originColumnIndex = COLUMN_LETTERS.indexOf(origin.column);
   const entries: ReachEntry[] = [];
 
   for (const option of REACH_OPTIONS) {
-    if (option.unlockedAtShields < shields) {
+    if (option.unlockedAtPower > power) {
       continue;
     }
 
@@ -159,7 +159,7 @@ export function moveRefusalReason(
   }
 
   const destinationName = squareName(destination);
-  const entry = reachFrom(ship.square, ship.shields).find(
+  const entry = reachFrom(ship.square, ship.power).find(
     (candidate) => squareName(candidate.destination) === destinationName,
   );
   if (entry === undefined) {
@@ -196,7 +196,7 @@ export function legalDestinations(
     return [];
   }
 
-  return reachFrom(ship.square, ship.shields)
+  return reachFrom(ship.square, ship.power)
     .map((entry) => entry.destination)
     .filter(
       (destination) =>

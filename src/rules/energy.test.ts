@@ -9,16 +9,16 @@ import {
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, SiteStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
-import type { ShieldCount } from "./shields";
+import type { PowerLevel } from "./power";
 import { SITES, type SiteState } from "./sites";
 
 function ship(
   id: ShipId,
   side: "green" | "red",
   square: string,
-  shields: ShieldCount = 0,
+  power: PowerLevel = 4,
 ): Ship {
-  return { id, side, square: squareFromName(square), shields };
+  return { id, side, square: squareFromName(square), power };
 }
 
 function siteStatuses(

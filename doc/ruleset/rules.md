@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.16**
+**Rules version: 0.17**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -16,14 +16,15 @@ board's contested nodes, collecting **energy** for every turn they hold one.
 The player with the most energy when the game ends is the winner.
 
 Ships are never destroyed. A fight has no winner — both ships involved are
-pushed back to a bay on the edge of the board, stripped of their shields, and
-rejoin the game from there.
+pushed back to a bay on the edge of the board, carrying exactly what they
+carried before the fight, and rejoin the game from there.
 
-A ship carries **shields**, which slow it down and do nothing else. Shields
-are gained by sitting on a node, so the longer a ship holds one, the harder it
-becomes to move and to leave. A ship holding a node cannot be attacked while
-it holds it. A site that has burned out is a bad place to leave a ship: it
-costs its owner energy and a shield every turn.
+A ship carries **power**, which is what lets it move. Holding a node drains
+it, so the longer a ship holds one, the harder it becomes to move and to
+leave. A ship holding a node cannot be attacked while it holds it. A site
+that has burned out still costs its owner energy every turn — but it now
+gives power back, so it is where a ship pays energy for the recovery a bay
+gives free of charge.
 
 The game has three random elements: which site is charged next, which bays
 the two ships in a fight are pushed back to, and how fast a node burns.
@@ -41,6 +42,9 @@ standard game (section 9).
 
 **Action** — what a player does on their turn: move a ship, or attack with a
 ship.
+
+**Power** — what a ship carries and what lets it move: how far it can go, and
+what a node takes from it while it stands there.
 
 **Site** — one of the fixed positions on the board where a node can appear.
 Sites never move; which of them is in play changes during the game.
@@ -82,8 +86,12 @@ fourth square around the edge, and none of them is a corner:
 A bay is an ordinary square in every way except two:
 
 - A ship standing in a bay cannot attack and cannot be attacked.
-- A ship that **ends a move** in a bay loses all its shields. Flying over an
-  empty bay does nothing.
+- A ship standing in a bay **at the end of its owner's turn** gains one power,
+  to the maximum of 4 (section 4.1). Flying over an empty bay does nothing —
+  only standing in one at the end of the turn counts — and arriving in one
+  does nothing by itself either; the first point comes at the end of that
+  turn like any other. A bay is where a ship goes to recover, at a point per
+  turn.
 
 Bays are not owned. Either player's ships may use any bay.
 
@@ -198,22 +206,21 @@ and A14/A2 at five, with the colours flipping to match. So in all three
 layouts each player's starting fleet is exactly the half-turn rotation of
 the other's, and neither side begins with better ground.
 
-Every ship starts with 0 shields.
+Every ship starts at full power (4).
 
-### 4.1 Shields
+### 4.1 Power
 
-A ship carries between 0 and 4 shields. A shield is the weight a ship picks
-up by holding a node: each one it carries takes away part of its movement
-(section 6) — and with it, part of its attack range, since an attack travels
-exactly as far as a move (section 7). It does nothing in a fight.
+A ship carries between 0 and 4 power. Power is what lets it move: each point
+unlocks a further option in section 6's table, and with it a further option
+for its attack range (section 7). It does nothing in a fight.
 
-A ship gains **one shield** at the end of its owner's turn if it is standing on
-a node, up to the maximum of 4. It **loses one shield** at the end of its
-owner's turn if it is standing on a **dormant** site, down to the minimum
-of 0. An **active** site does neither. Shields are stripped entirely when a
-ship returns to a bay, whether that return is forced by a fight (section 7.1)
-or chosen (section 7.2, section 3.1). A ship reduced to 0 shields is not
-destroyed — it is simply at its fastest.
+A ship **loses one power** at the end of its owner's turn standing on a
+**charged node** — the node is drawing on the ship as it pays out — down to
+the minimum of 0. It **gains one power** at the end of its owner's turn
+standing on a **dormant** site or **in a bay**, up to the maximum of 4. An
+**active** site does neither. A fight never changes a ship's power (section
+7). A ship at 0 power is not destroyed and is not stuck: it still has one
+square orthogonally, and a bay will refill it.
 
 ---
 
@@ -228,8 +235,8 @@ Green takes the first turn, and the players alternate. On a turn a player takes
 A player must take as many of their turn's actions as are available. If a
 player has no legal action at all, their turn passes. This should be
 uncommon — a player always has at least five ships — but an action is not
-always available: an attack reaches only as far as the attacker's shields
-allow, and a ship holding a node has no attack available to it at all. The
+always available: an attack reaches only as far as the attacker's power
+allows, and a ship holding a node has no attack available to it at all. The
 rule is here so the game can never deadlock.
 
 ---
@@ -237,19 +244,19 @@ rule is here so the game can never deadlock.
 ## 6. Movement
 
 A ship moves in a **straight line**, orthogonally or diagonally. How far it may
-go depends on how many shields it is carrying: each shield a ship sheds unlocks
-a further option, and the options accumulate.
+go depends on how much power it is carrying: each point unlocks a further
+option, and the options accumulate as power rises.
 
-| Shields | Movement                                   |
-| ------- | ------------------------------------------ |
-| 4       | one square orthogonally                    |
-| 3       | the above, plus one square diagonally      |
-| 2       | the above, plus two squares orthogonally   |
-| 1       | the above, plus two squares diagonally     |
-| 0       | the above, plus three squares orthogonally |
+| Power | Movement                                   |
+| ----- | ------------------------------------------ |
+| 0     | one square orthogonally                    |
+| 1     | the above, plus one square diagonally      |
+| 2     | the above, plus two squares orthogonally   |
+| 3     | the above, plus two squares diagonally     |
+| 4     | the above, plus three squares orthogonally |
 
-So a ship with 4 shields has four squares it can reach, and a ship with none
-has twenty.
+So a ship at full power has twenty squares it can reach, and a ship at 0
+power has four.
 
 **The path must be clear.** Every square the ship passes over, and the square it
 lands on, must be empty. Ships never fly over one another, and a ship can never
@@ -267,8 +274,8 @@ A ship may attack an enemy ship within its **movement range** (section 6) —
 the same distances, the same straight lines, and on the same terms: every
 square the attack passes over must be empty, of either side's ships. The
 target square is of course occupied, by the enemy ship. At the two extremes:
-a ship with 4 shields reaches only one square orthogonally and cannot strike
-a diagonal at all, while a ship carrying no shields reaches three squares
+a ship at 0 power reaches only one square orthogonally and cannot strike a
+diagonal at all, while a ship at full power reaches three squares
 orthogonally. Attacking is always the attacking player's choice; ships never
 fight automatically.
 
@@ -281,12 +288,11 @@ a **dormant** site is an ordinary target, and fights and is fought exactly
 like a ship on any other square (section 8.5).
 
 **There is no winner.** Both ships — the attacker and the ship it attacked —
-are returned to bays (section 7.1) stripped of every shield they carried, and
-both squares are left empty. Shields do not enter into it: a 4-shield ship
-and an unshielded one come out of a fight identically.
+are returned to bays (section 7.1), and both squares are left empty, but each
+ship arrives carrying the power it had.
 
-An attack is a **trade**: a player spends their own ship's position and
-shields to take away their opponent's. It is worth making when the enemy ship
+An attack is a **trade**: a player spends their own ship's position — not its
+power — to take away their opponent's. It is worth making when the enemy ship
 stands better than the attacker's own — beside a node, in the way, deep in
 the attacker's own half — and not worth making otherwise.
 
@@ -317,8 +323,9 @@ attacker's placement can never leave the defender without one.
 
 A ship may also go back to a bay deliberately. This is not a special action —
 it is an ordinary move that ends on an empty bay, and like any move it must
-be within the ship's range and have a clear path. The ship loses all its
-shields on arrival (section 3.1).
+be within the ship's range and have a clear path. What it gets there is
+recovery at a point per turn (section 3.1, section 4.1), not an instant
+refill.
 
 ---
 
@@ -331,12 +338,12 @@ Every site is always in exactly one of three states:
 - **Active** — eligible to be charged, producing nothing, and costing
   nothing.
 - **Charged** — producing energy: a ship standing on it collects (section
-  8.4) and gains shields (section 4.1), and can neither attack nor be
-  attacked (section 7).
+  8.4) and the node takes power from it (section 4.1) as it pays out, and can
+  neither attack nor be attacked (section 7).
 - **Dormant** — recovering after running out. Not eligible to be charged,
   producing nothing, and costing the player whose ship stands on it: energy
-  (section 8.4) and a shield (section 4.1), at the end of each of that
-  player's turns.
+  (section 8.4), while giving power back (section 4.1), at the end of each of
+  that player's turns.
 
 A site cycles active → charged → dormant → active.
 
@@ -363,7 +370,7 @@ is at its five.
 
 The draw does not look at occupancy: a site with a ship standing on it can be
 charged like any other. That ship is holding a node from that moment — it
-collects (section 8.4) and starts gaining shields (section 4.1) at the end of
+collects (section 8.4) and starts losing power (section 4.1) at the end of
 its owner's next turn, exactly as if it had moved onto a node.
 
 The choice is genuinely random, and neither player can see it coming — but it
@@ -454,9 +461,11 @@ owner likes — nothing about it obliges the owner to move it, or anything
 else, on a later turn.
 
 The two are no longer the same. An **active** site pays nothing and costs
-nothing, so waiting on one for the charge draw is free. A **dormant** site
-pays nothing and **costs**: an energy penalty (section 8.4) and a shield
-(section 4.1) at the end of each of the owner's turns.
+nothing, so waiting on one for the charge draw is free, and it neither takes
+nor gives power. A **dormant** site pays nothing and **costs**: an energy
+penalty (section 8.4) at the end of each of the owner's turns — but it gives
+power back (section 4.1). A **charged** node, by contrast, takes power from
+the ship holding it as it pays out (section 8.1).
 
 Neither an active nor a dormant site offers what a charged node offers: a
 ship standing on one can be attacked like any other ship, and may attack
@@ -478,8 +487,9 @@ owner prefers, and leaving now costs the node nothing.
 
 Everything that happens at the end of a turn happens in this order:
 
-1. Each of the moving player's ships standing on a charged node gains a
-   shield, and each standing on a dormant site loses one (section 4.1).
+1. Each of the moving player's ships standing on a charged node loses a
+   point of power, and each standing on a dormant site or in a bay gains one
+   (section 4.1).
 2. The moving player collects energy for the charged nodes they hold and
    then pays for the dormant sites they occupy (section 8.4).
 3. Every charged node adds its drain (section 8.3); any that reaches capacity
@@ -497,9 +507,9 @@ Everything that happens at the end of a turn happens in this order:
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
 which an action was taken. The clocks still tick, and a ship of the passing
-player standing on a charged node still gains its shield and one standing on
-a dormant site still loses one; the passing player still collects and still
-pays exactly as they would if they had acted.
+player standing on a charged node still loses its point of power and one
+standing on a dormant site or in a bay still gains one; the passing player
+still collects and still pays exactly as they would if they had acted.
 
 Step 6 is last **deliberately**, for the same reason as before: it is what
 makes a site spend at least one whole turn active before it can be charged. A

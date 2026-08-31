@@ -1,16 +1,18 @@
 // Applying an action, and the ply it belongs to (rules.md §5, §3.1, §7). An
 // action is a move or an attack. A move is either refused, with the reason
-// from movement.ts, or applied: the ship arrives, spends one action, and
-// loses its shields if it ends in a bay. An attack is either refused, with
-// the reason from combat.ts, or resolved: both ships are placed in bays at 0
-// shields, drawn at random from the bays standing empty, attacker first, and
-// both squares they left are left empty. There is no winner and no advance.
-// Nothing a ship does changes a site's state: a site's state changes only in
-// the end-of-turn sequence (rules.md §8.6). Every action — a move or an
-// attack — marks the acting ship as having acted this ply, so a further
-// attempt by the same ship this ply is refused. When the ply's actions are
-// all spent, play passes to the other side. The pass guard covers the case
-// §5 sets out for when the side to move has no legal action at all.
+// from movement.ts, or applied: the ship arrives with the power it had and
+// spends one action. A ship that ends a move in a bay recovers there at a
+// point per turn (§3.1, §4.1), through the end-of-turn sequence — not on
+// arrival. An attack is either refused, with the reason from combat.ts, or
+// resolved: both ships are placed in bays drawn at random from the bays
+// standing empty, attacker first, carrying the power each had before the
+// fight, and both squares they left are left empty. There is no winner and no
+// advance. Nothing a ship does changes a site's state: a site's state changes
+// only in the end-of-turn sequence (rules.md §8.6). Every action — a move or
+// an attack — marks the acting ship as having acted this ply, so a further
+// attempt by the same ship this ply is refused. When the ply's actions are all
+// spent, play passes to the other side. The pass guard covers the case §5 sets
+// out for when the side to move has no legal action at all.
 
 import { sideToMoveHasLegalAction } from "./actions";
 import { isBay } from "./bays";
@@ -30,7 +32,7 @@ import {
   shipsBySquare,
 } from "./gameState";
 import { type MoveRefusalReason, moveRefusalReason } from "./movement";
-import type { ShieldCount } from "./shields";
+import type { PowerLevel } from "./power";
 
 function otherSide(side: Side): Side {
   return side === "green" ? "red" : "green";
@@ -59,9 +61,7 @@ export interface PlyEndedEffect {
 export type EndOfActionEffect = PlyEndedEffect | PassEffect;
 
 /** Something that happened as a result of applying a move, beyond the move itself. */
-export type MoveEffect =
-  | { readonly type: "shields-reset"; readonly shipId: ShipId }
-  | EndOfActionEffect;
+export type MoveEffect = EndOfActionEffect;
 
 /** A move applied successfully, with the resulting state and what happened. */
 export interface AppliedMove {
@@ -78,12 +78,12 @@ export interface RefusedMove {
 
 export type ApplyMoveResult = AppliedMove | RefusedMove;
 
-/** One ship's identity, side, square and shield count, as they stood before a fight. */
+/** One ship's identity, side, square and power level, as they stood before a fight. */
 export interface FightShip {
   readonly shipId: ShipId;
   readonly side: Side;
   readonly square: Square;
-  readonly shields: ShieldCount;
+  readonly power: PowerLevel;
 }
 
 /** One ship's journey back to a bay, from where it stood to where it landed. */
@@ -98,7 +98,7 @@ export interface FightReturn {
  * A fight, resolved in full (rules.md §7): one effect for the whole fight
  * rather than several, since a fight is one fact. `attacker` and `defender`
  * describe both ships as they stood **before** the fight, including the
- * shields each was carrying. `returns` lists both ships placed in a bay,
+ * power each was carrying. `returns` lists both ships placed in a bay,
  * attacker first — every fight returns exactly two ships.
  */
 export interface FightResolvedEffect {
@@ -236,12 +236,14 @@ function applyEndOfActionTail(
 /**
  * Applies a move of `shipId` to `destination` in `state`, or refuses it. A
  * legal move never mutates `state`: it returns a new state in which the ship
- * stands on `destination`, the square it left is empty, the ship is marked as
- * having acted this ply, one action is spent, and — per rules.md §3.1 — the
- * ship's shields are reset to 0 if `destination` is a bay. If the square the
- * ship left was a charged node, it stays charged — leaving a node does not
- * end it (rules.md §8.3). When the ply's last action is spent, play passes to
- * the other side and the acted-this-ply marks clear. The result then passes
+ * stands on `destination` carrying the power it already had, the square it
+ * left is empty, the ship is marked as having acted this ply, and one action
+ * is spent. A ship that ends the move in a bay does not gain anything on
+ * arrival — it recovers a point at a time, through the end-of-turn sequence
+ * (rules.md §3.1, §4.1), like any other bay stay. If the square the ship left
+ * was a charged node, it stays charged — leaving a node does not end it
+ * (rules.md §8.3). When the ply's last action is spent, play passes to the
+ * other side and the acted-this-ply marks clear. The result then passes
  * through `applyPassGuard`, so a move that leaves the side now to move with
  * no legal move at all is followed immediately by a pass.
  */
@@ -256,24 +258,10 @@ export function applyMove(
   }
 
   const effects: MoveEffect[] = [];
-  const endsInBay = isBay(destination);
-  const movingShip = state.ships.find((ship) => ship.id === shipId);
-  if (movingShip === undefined) {
-    throw new RangeError(`no ship with id "${shipId}" in this state`);
-  }
 
   const ships = state.ships.map((ship) =>
-    ship.id === shipId
-      ? {
-          ...ship,
-          square: destination,
-          shields: endsInBay ? 0 : ship.shields,
-        }
-      : ship,
+    ship.id === shipId ? { ...ship, square: destination } : ship,
   );
-  if (endsInBay && movingShip.shields > 0) {
-    effects.push({ type: "shields-reset", shipId });
-  }
 
   const afterMove: GameState = { ...state, ships };
   const settled = applyEndOfActionTail(afterMove, effects, shipId);
@@ -281,12 +269,12 @@ export function applyMove(
   return { outcome: "applied", state: settled, effects };
 }
 
-/** Places `shipId` in `bay`, resetting its shields to 0 (rules.md §7.1, §3.1). */
+/** Places `shipId` in `bay`, leaving its power exactly as it was (rules.md §7). */
 function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
   return {
     ...state,
     ships: state.ships.map((ship) =>
-      ship.id === shipId ? { ...ship, square: bay, shields: 0 } : ship,
+      ship.id === shipId ? { ...ship, square: bay } : ship,
     ),
   };
 }
@@ -309,7 +297,9 @@ function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
  * The returned-ship checks pin what §7.1's random draw guarantees: each of
  * the two returned ships ends on a bay square, they do not share a bay, and
  * each lands in a bay that held no ship in `before` — together, exactly what
- * "there is always somewhere to go" promises.
+ * "there is always somewhere to go" promises. Each returned ship's power
+ * must also be exactly what it was in `before`: a fight never changes what a
+ * ship carries (rules.md §7).
  *
  * Exported so a test can hand-construct an otherwise-impossible before/after
  * pair, since it has no other seam.
@@ -359,6 +349,11 @@ export function assertFightInvariants(
           `returned ship "${ship.id}" ended in bay "${updatedName}", which held a ship before the fight: rules.md §7.1 draws only from bays empty at the moment`,
         );
       }
+      if (updated.power !== ship.power) {
+        throw new RangeError(
+          `returned ship "${ship.id}" had ${ship.power} power before the fight and ${updated.power} after: rules.md §7 never changes what a ship carries`,
+        );
+      }
     }
   }
 
@@ -396,10 +391,11 @@ export function assertFightInvariants(
 
 /**
  * Applies an attack by `shipId` on `target` in `state`, or refuses it
- * (rules.md §7). A legal attack never mutates `state`: both ships are placed
- * at 0 shields in a bay drawn at random from the bays standing empty
- * (`drawReturnBay`), the attacker's bay drawn first and the defender's from
- * the bays still empty afterwards, advancing `randomSeed` once per ship.
+ * (rules.md §7). A legal attack never mutates `state`: both ships are placed,
+ * carrying the power each had before the fight, in a bay drawn at random
+ * from the bays standing empty (`drawReturnBay`), the attacker's bay drawn
+ * first and the defender's from the bays still empty afterwards, advancing
+ * `randomSeed` once per ship.
  * Both squares the ships fought from are left empty; there is no winner and
  * no advance. Neither square's site changes state: leaving a node does not
  * end it (rules.md §8.3). The attacking ship is added to `actedThisPly` even
@@ -477,12 +473,12 @@ export function applyAttack(
   return { outcome: "applied", state: settled, effects };
 }
 
-/** A ship's identity, side, square and shield count, snapshotted for a `FightResolvedEffect`. */
+/** A ship's identity, side, square and power level, snapshotted for a `FightResolvedEffect`. */
 function toFightShip(ship: Ship): FightShip {
   return {
     shipId: ship.id,
     side: ship.side,
     square: ship.square,
-    shields: ship.shields,
+    power: ship.power,
   };
 }

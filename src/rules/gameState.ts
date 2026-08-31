@@ -12,18 +12,18 @@ import {
   type ShipId,
 } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS, isGameLengthRounds } from "./gameLength";
+import type { PowerLevel } from "./power";
 import { SITES, type SiteState, startingSiteStatus } from "./sites";
-import type { ShieldCount } from "./shields";
 
 /** How many actions a side takes each ply (rules.md §5). */
 export const ACTIONS_PER_PLY = 1;
 
-/** One ship: its stable identity, side, current square and shield count. */
+/** One ship: its stable identity, side, current square and power level. */
 export interface Ship {
   readonly id: ShipId;
   readonly side: Side;
   readonly square: Square;
-  readonly shields: ShieldCount;
+  readonly power: PowerLevel;
 }
 
 /**
@@ -130,7 +130,7 @@ export function startingGameState(
       id: entry.id,
       side: entry.side,
       square: entry.square,
-      shields: entry.shields,
+      power: entry.power,
     })),
     siteStates,
     sideToMove: "green",

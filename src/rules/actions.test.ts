@@ -4,16 +4,16 @@ import { shipHasLegalAction, sideToMoveHasLegalAction } from "./actions";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, SiteStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS, pliesForGameLength } from "./gameLength";
-import type { ShieldCount } from "./shields";
+import type { PowerLevel } from "./power";
 import type { SiteState } from "./sites";
 
 function ship(
   id: ShipId,
   side: "green" | "red",
   square: string,
-  shields: ShieldCount = 0,
+  power: PowerLevel = 4,
 ): Ship {
-  return { id, side, square: squareFromName(square), shields };
+  return { id, side, square: squareFromName(square), power };
 }
 
 function siteStatuses(
@@ -52,12 +52,12 @@ describe("sideToMoveHasLegalAction", () => {
   });
 
   it("is true with a legal target and no legal move", () => {
-    // green-1 at H8 (3 shields) reaches only its eight neighbours, every
+    // green-1 at H8 (1 power) reaches only its eight neighbours, every
     // one of which is occupied by a red ship: no legal move, but every one
     // of those red ships is a legal attack target.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H8", 3),
+        ship("green-1", "green", "H8", 1),
         ship("red-1", "red", "G7"),
         ship("red-2", "red", "H7"),
         ship("red-3", "red", "I7"),
@@ -75,7 +75,7 @@ describe("sideToMoveHasLegalAction", () => {
   it("is false with neither a legal move nor a legal target", () => {
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A2", 4),
+        ship("green-1", "green", "A2", 0),
         ship("red-1", "red", "A1"),
         ship("red-2", "red", "A3"),
         ship("red-3", "red", "B2"),
@@ -92,7 +92,7 @@ describe("sideToMoveHasLegalAction", () => {
     // removes the attack entirely, so the side has no legal action at all.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H8", 4),
+        ship("green-1", "green", "H8", 0),
         ship("red-1", "red", "G8"),
         ship("red-2", "red", "I8"),
         ship("red-3", "red", "H7"),
@@ -120,7 +120,7 @@ describe("sideToMoveHasLegalAction", () => {
 describe("shipHasLegalAction", () => {
   it("is false for a ship that has moved, even with an enemy in range: one action per ship (rules.md §5)", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H9", 3), ship("red-1", "red", "H10")],
+      ships: [ship("green-1", "green", "H9", 1), ship("red-1", "red", "H10")],
       actedThisPly: ["green-1"],
     });
 
@@ -129,7 +129,7 @@ describe("shipHasLegalAction", () => {
 
   it("is false for a ship that has moved and has no legal target", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H9", 3)],
+      ships: [ship("green-1", "green", "H9", 1)],
       actedThisPly: ["green-1"],
     });
 
@@ -138,7 +138,7 @@ describe("shipHasLegalAction", () => {
 
   it("is false for a ship holding a charged node with no legal move, even with an enemy in range (rules.md §7)", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9")],
+      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9")],
       siteStates: { H8: "charged" },
     });
 
@@ -148,7 +148,7 @@ describe("shipHasLegalAction", () => {
     // (refused) attack.
     const boxedIn = buildState({
       ships: [
-        ship("green-1", "green", "H8", 4),
+        ship("green-1", "green", "H8", 0),
         ship("green-2", "green", "G8"),
         ship("green-3", "green", "I8"),
         ship("green-4", "green", "H7"),
@@ -163,8 +163,8 @@ describe("shipHasLegalAction", () => {
   it("is true for a ship standing on a dormant site, and for a sibling elsewhere, with neither held back (§8.5)", () => {
     const state = buildState({
       ships: [
-        ship("green-1", "green", "E5", 0),
-        ship("green-2", "green", "H9", 3),
+        ship("green-1", "green", "E5", 4),
+        ship("green-2", "green", "H9", 1),
         ship("red-1", "red", "H10"),
       ],
       siteStates: { E5: "dormant" },

@@ -16,8 +16,8 @@ import {
   applyPassGuard,
   assertFightInvariants,
 } from "./ply";
+import type { PowerLevel } from "./power";
 import { drawIndex } from "./random";
-import type { ShieldCount } from "./shields";
 import {
   drawTableAmount,
   EMPTY_NODE_DRAIN_TABLE,
@@ -28,9 +28,9 @@ function ship(
   id: ShipId,
   side: "green" | "red",
   square: string,
-  shields: ShieldCount = 0,
+  power: PowerLevel = 4,
 ): Ship {
-  return { id, side, square: squareFromName(square), shields };
+  return { id, side, square: squareFromName(square), power };
 }
 
 function siteStatuses(
@@ -99,9 +99,16 @@ describe("applyMove", () => {
     expect(state).toEqual(before);
   });
 
-  it("resets shields to 0 when a move ends in a bay, but not when it only passes over one", () => {
+  it("keeps the power a ship had when a move ends in a bay, exactly as when it only passes over one (rules.md §3.1)", () => {
+    // A move never touches a ship's power itself (§3.1) — recovery is the
+    // end-of-turn step's doing (§8.6 step 1), which this move triggers as
+    // the ply's last action. Proving the bay case through that step's own
+    // power-gained effect rules out an instant refill: a refill would leave
+    // the ship at 4 and raise no gain effect at all, where the move only
+    // ever carries the ship's power unchanged into the bay for the
+    // end-of-turn step to then act on.
     const endsInBay = buildState({
-      ships: [ship("green-1", "green", "A11", 2)],
+      ships: [ship("green-1", "green", "A11", 2), ship("red-1", "red", "O15")],
     });
     const endResult = applyMove(endsInBay, "green-1", squareFromName("A10"));
     expect(endResult.outcome).toBe("applied");
@@ -109,14 +116,26 @@ describe("applyMove", () => {
       throw new Error("expected the move to be applied");
     }
     const landedShip = endResult.state.ships.find((s) => s.id === "green-1");
-    expect(landedShip?.shields).toBe(0);
-    expect(endResult.effects).toContainEqual({
-      type: "shields-reset",
-      shipId: "green-1",
-    });
+    expect(landedShip?.power).toBe(3);
+    expect(endResult.effects).toEqual([
+      {
+        type: "ply-ended",
+        side: "green",
+        sideToMove: "red",
+        endOfTurn: [
+          {
+            type: "power-gained",
+            shipId: "green-1",
+            side: "green",
+            square: squareFromName("A10"),
+            power: 3,
+          },
+        ],
+      },
+    ]);
 
     const passesOverBay = buildState({
-      ships: [ship("green-1", "green", "A11", 2)],
+      ships: [ship("green-1", "green", "A11", 2), ship("red-1", "red", "O15")],
     });
     const passResult = applyMove(
       passesOverBay,
@@ -128,26 +147,10 @@ describe("applyMove", () => {
       throw new Error("expected the move to be applied");
     }
     const flownShip = passResult.state.ships.find((s) => s.id === "green-1");
-    expect(flownShip?.shields).toBe(2);
-    expect(passResult.effects).not.toContainEqual(
-      expect.objectContaining({ type: "shields-reset" }),
-    );
-  });
-
-  it("does not report a shields-reset effect for a ship that had no shields to lose", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "A11", 0)],
-    });
-    const result = applyMove(state, "green-1", squareFromName("A10"));
-    expect(result.outcome).toBe("applied");
-    if (result.outcome !== "applied") {
-      throw new Error("expected the move to be applied");
-    }
-    const landedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(landedShip?.shields).toBe(0);
-    expect(result.effects).not.toContainEqual(
-      expect.objectContaining({ type: "shields-reset" }),
-    );
+    expect(flownShip?.power).toBe(2);
+    expect(passResult.effects).toEqual([
+      { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+    ]);
   });
 
   it("landing on a charged site leaves it charged: nothing a ship does changes a site's state (rules.md §8.2)", () => {
@@ -298,27 +301,27 @@ describe("applyMove", () => {
 describe("applyAttack", () => {
   it.each([
     {
-      label: "4 against 0",
-      attackerShields: 4 as ShieldCount,
-      defenderShields: 0 as ShieldCount,
+      label: "0 against 4",
+      attackerPower: 0 as PowerLevel,
+      defenderPower: 4 as PowerLevel,
     },
     {
       label: "2 against 2",
-      attackerShields: 2 as ShieldCount,
-      defenderShields: 2 as ShieldCount,
+      attackerPower: 2 as PowerLevel,
+      defenderPower: 2 as PowerLevel,
     },
     {
-      label: "0 against 4",
-      attackerShields: 0 as ShieldCount,
-      defenderShields: 4 as ShieldCount,
+      label: "4 against 0",
+      attackerPower: 4 as PowerLevel,
+      defenderPower: 0 as PowerLevel,
     },
   ])(
-    "sends both ships home at 0 shields and leaves both squares empty, whatever shields either side carries ($label)",
-    ({ attackerShields, defenderShields }) => {
+    "the fight changes neither ship's power, and the attacker then gains its bay point as the same turn ends, leaving both squares empty ($label)",
+    ({ attackerPower, defenderPower }) => {
       const state = buildState({
         ships: [
-          ship("green-1", "green", "H8", attackerShields),
-          ship("red-1", "red", "H9", defenderShields),
+          ship("green-1", "green", "H8", attackerPower),
+          ship("red-1", "red", "H9", defenderPower),
         ],
       });
       const before = structuredClone(state);
@@ -331,8 +334,14 @@ describe("applyAttack", () => {
       }
       const attacker = result.state.ships.find((s) => s.id === "green-1");
       const defender = result.state.ships.find((s) => s.id === "red-1");
-      expect(attacker?.shields).toBe(0);
-      expect(defender?.shields).toBe(0);
+      // The fight itself leaves both ships' power exactly as it found them
+      // (asserted below, from the fight-resolved snapshot). The attack is
+      // this ply's only action, though, so it also ends the ply — and the
+      // attacker (the moving side) then gains a point in its bay under
+      // §8.6 step 1 if it has anything left to gain; the defender, not the
+      // moving side this ply, does not.
+      expect(attacker?.power).toBe(Math.min(attackerPower + 1, 4));
+      expect(defender?.power).toBe(defenderPower);
       expect(isBay(attacker!.square)).toBe(true);
       expect(isBay(defender!.square)).toBe(true);
       expect(squareName(attacker!.square)).not.toBe(
@@ -351,13 +360,13 @@ describe("applyAttack", () => {
           shipId: "green-1",
           side: "green",
           square: squareFromName("H8"),
-          shields: attackerShields,
+          power: attackerPower,
         },
         defender: {
           shipId: "red-1",
           side: "red",
           square: squareFromName("H9"),
-          shields: defenderShields,
+          power: defenderPower,
         },
         returns: [
           {
@@ -420,14 +429,14 @@ describe("applyAttack", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "H8", 2),
-        ship("green-2", "green", "A1", 1),
+        ship("green-2", "green", "A1", 3),
         ship("green-3", "green", "A3"),
         ship("green-4", "green", "A5"),
         ship("green-5", "green", "A7"),
         ship("green-6", "green", "A9"),
         ship("green-7", "green", "A11"),
-        ship("red-1", "red", "H9", 1),
-        ship("red-2", "red", "B1", 1),
+        ship("red-1", "red", "H9", 3),
+        ship("red-2", "red", "B1", 3),
         ship("red-3", "red", "B3"),
         ship("red-4", "red", "B5"),
         ship("red-5", "red", "B7"),
@@ -465,9 +474,9 @@ describe("applyAttack", () => {
     // for the fight the next ply brings.
     const state = buildState({
       ships: [
-        ship("green-2", "green", "H15", 4),
-        ship("green-1", "green", "H9", 0),
-        ship("red-1", "red", "H8", 3),
+        ship("green-2", "green", "H15", 0),
+        ship("green-1", "green", "H9", 4),
+        ship("red-1", "red", "H8", 1),
         ...BAYS.filter(
           (square) => !["H15", "L15"].includes(squareName(square)),
         ).map((square, index) =>
@@ -592,7 +601,7 @@ describe("applyAttack", () => {
     // never seen again — by its own side — until the side's next turn.
     // This stands for the moment right after green-1's fight at H9.
     const state = buildState({
-      ships: [ship("green-1", "green", "H9", 2), ship("red-2", "red", "G9", 0)],
+      ships: [ship("green-1", "green", "H9", 2), ship("red-2", "red", "G9", 4)],
       actedThisPly: ["green-1"],
     });
 
@@ -607,7 +616,7 @@ describe("applyAttack", () => {
   it("refuses a move by a ship that has already acted this ply", () => {
     // Built directly rather than played into (rules.md §5).
     const state = buildState({
-      ships: [ship("green-1", "green", "H9", 1)],
+      ships: [ship("green-1", "green", "H9", 3)],
       actedThisPly: ["green-1"],
     });
 
@@ -622,7 +631,7 @@ describe("applyAttack", () => {
   it("refuses an attack by a ship that has already acted this ply", () => {
     // Built directly rather than played into (rules.md §5).
     const state = buildState({
-      ships: [ship("green-1", "green", "H9", 0), ship("red-1", "red", "H10")],
+      ships: [ship("green-1", "green", "H9", 4), ship("red-1", "red", "H10")],
       actedThisPly: ["green-1"],
     });
 
@@ -637,10 +646,10 @@ describe("applyAttack", () => {
   it("lets a ship on each side attack in turn, one action per round", () => {
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H8", 3),
-        ship("green-2", "green", "A1", 0),
-        ship("red-1", "red", "H9", 1),
-        ship("red-2", "red", "B1", 0),
+        ship("green-1", "green", "H8", 1),
+        ship("green-2", "green", "A1", 4),
+        ship("red-1", "red", "H9", 3),
+        ship("red-2", "red", "B1", 4),
       ],
     });
 
@@ -658,9 +667,9 @@ describe("applyAttack", () => {
   it("lets one side move and the other attack, in either order, as a round's two actions", () => {
     const moveThenAttack = buildState({
       ships: [
-        ship("green-1", "green", "H8", 3),
-        ship("green-2", "green", "A1", 0),
-        ship("red-1", "red", "B1", 0),
+        ship("green-1", "green", "H8", 1),
+        ship("green-2", "green", "A1", 4),
+        ship("red-1", "red", "B1", 4),
       ],
     });
     const firstMove = applyMove(
@@ -682,9 +691,9 @@ describe("applyAttack", () => {
 
     const attackThenMove = buildState({
       ships: [
-        ship("green-1", "green", "H8", 3),
-        ship("red-1", "red", "H9", 1),
-        ship("red-2", "red", "B1", 0),
+        ship("green-1", "green", "H8", 1),
+        ship("red-1", "red", "H9", 3),
+        ship("red-2", "red", "B1", 4),
       ],
     });
     const firstAttack = applyAttack(
@@ -709,8 +718,8 @@ describe("applyAttack", () => {
     // Built directly rather than played into (rules.md §5).
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H9", 3),
-        ship("red-1", "red", "H10", 1),
+        ship("green-1", "green", "H9", 1),
+        ship("red-1", "red", "H10", 3),
       ],
       actedThisPly: ["green-1"],
     });
@@ -730,7 +739,7 @@ describe("applyAttack", () => {
 
   it("sends both ships to bays when the target stands on a dormant site, with nothing constraining either side's next turn (§8.5)", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "E5", 0), ship("red-1", "red", "F5", 2)],
+      ships: [ship("green-1", "green", "E5", 4), ship("red-1", "red", "F5", 2)],
       siteStates: { E5: "dormant" },
       sideToMove: "red",
       actionsRemaining: 1,
@@ -746,9 +755,13 @@ describe("applyAttack", () => {
     const attacker = result.state.ships.find((s) => s.id === "red-1");
     const target = result.state.ships.find((s) => s.id === "green-1");
     expect(attacker && isBay(attacker.square)).toBe(true);
-    expect(attacker?.shields).toBe(0);
+    // The attack is this ply's only action, so it also ends the ply — the
+    // attacker (red, the moving side) then gains a point in its bay under
+    // §8.6 step 1; the target (green, not the moving side this ply) does
+    // not.
+    expect(attacker?.power).toBe(3);
     expect(target && isBay(target.square)).toBe(true);
-    expect(target?.shields).toBe(0);
+    expect(target?.power).toBe(4);
   });
 
   it("marks the attacker as having acted, even though it ends the action in a bay itself", () => {
@@ -764,12 +777,22 @@ describe("applyAttack", () => {
     const returnedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(isBay(returnedShip!.square)).toBe(true);
     // Its one action is spent even though it ends inside a bay itself, so
-    // the ply ends here rather than waiting for a further action.
+    // the ply ends here rather than waiting for a further action — and
+    // that end-of-turn step also gives the returned ship a point of power
+    // in its bay (§8.6 step 1, §3.1), since it is the moving side.
     expect(result.effects).toContainEqual({
       type: "ply-ended",
       side: "green",
       sideToMove: "red",
-      endOfTurn: [],
+      endOfTurn: [
+        {
+          type: "power-gained",
+          shipId: "green-1",
+          side: "green",
+          square: returnedShip!.square,
+          power: 3,
+        },
+      ],
     });
 
     // Built directly rather than played into (rules.md §5): this stands
@@ -777,7 +800,7 @@ describe("applyAttack", () => {
     // actedThisPly for the next ply — a further attempt by the same ship
     // is still refused.
     const alreadyActed = buildState({
-      ships: [ship("green-1", "green", "H15", 0)],
+      ships: [ship("green-1", "green", "H15", 4)],
       actedThisPly: ["green-1"],
     });
     const secondAttempt = applyMove(
@@ -793,7 +816,7 @@ describe("applyAttack", () => {
 
   it("refuses an illegal attack, leaving the state exactly as it went in", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "A1")],
+      ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "A1")],
     });
     const before = structuredClone(state);
 
@@ -821,10 +844,10 @@ describe("nothing a ship does changes any site's state (rules.md §8.2)", () => 
     // three end-of-turn sequences cannot bring it back to active.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "G8", 4),
-        ship("green-2", "green", "A5", 0),
-        ship("red-1", "red", "H8", 0),
-        ship("red-2", "red", "O5", 0),
+        ship("green-1", "green", "G8", 0),
+        ship("green-2", "green", "A5", 4),
+        ship("red-1", "red", "H8", 4),
+        ship("red-2", "red", "O5", 4),
       ],
       siteStates: {
         H8: ["dormant", 50],
@@ -879,9 +902,9 @@ describe("assertFightInvariants (rules.md §7)", () => {
   it("throws when an uninvolved ship's square changed", () => {
     const before = buildState({
       ships: [
-        ship("green-1", "green", "H8", 3),
+        ship("green-1", "green", "H8", 1),
         ship("green-2", "green", "A1", 2),
-        ship("red-1", "red", "H9", 1),
+        ship("red-1", "red", "H9", 3),
       ],
     });
     const after: GameState = {
@@ -898,7 +921,7 @@ describe("assertFightInvariants (rules.md §7)", () => {
 
   it("throws when a returned ship did not end on a bay square", () => {
     const before = buildState({
-      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 1)],
+      ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
     });
     const after: GameState = {
       ...before,
@@ -933,9 +956,9 @@ describe("assertFightInvariants (rules.md §7)", () => {
   it("throws when a returned ship lands in a bay that held a ship before the fight", () => {
     const before = buildState({
       ships: [
-        ship("green-1", "green", "H8", 3),
-        ship("red-1", "red", "H9", 1),
-        ship("red-2", "red", "H15", 0),
+        ship("green-1", "green", "H8", 1),
+        ship("red-1", "red", "H9", 3),
+        ship("red-2", "red", "H15", 4),
       ],
     });
     const after: GameState = {
@@ -950,9 +973,27 @@ describe("assertFightInvariants (rules.md §7)", () => {
     ).toThrow(RangeError);
   });
 
+  it("throws when a returned ship's power changed", () => {
+    const before = buildState({
+      ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
+    });
+    const after: GameState = {
+      ...before,
+      ships: before.ships.map((s) =>
+        s.id === "red-1"
+          ? { ...s, square: squareFromName("H15"), power: 4 }
+          : s,
+      ),
+    };
+
+    expect(() =>
+      assertFightInvariants(before, after, new Set(["red-1"])),
+    ).toThrow(RangeError);
+  });
+
   it("still throws when a site's state changes at all — no action changes a site's state (rules.md §8.6)", () => {
     const before = buildState({
-      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 1)],
+      ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
       siteStates: { H8: ["charged", 10] },
     });
     const after: GameState = {
@@ -968,12 +1009,12 @@ describe("assertFightInvariants (rules.md §7)", () => {
 
 describe("applyPassGuard", () => {
   it("does not pass the ply when the side to move has no legal move but has a legal attack", () => {
-    // green-1 on A1 (4 shields, not a bay) is boxed in for movement — its
+    // green-1 on A1 (0 power, not a bay) is boxed in for movement — its
     // only two on-board orthogonal squares, A2 and B1, are both occupied —
     // but B1 is a legal attack target, so the side still has an action.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A1", 4),
+        ship("green-1", "green", "A1", 0),
         ship("red-1", "red", "B1"),
         ship("red-2", "red", "A2"),
       ],
@@ -993,7 +1034,7 @@ describe("applyPassGuard", () => {
     // attack and the guard would never pass.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A1", 4),
+        ship("green-1", "green", "A1", 0),
         ship("red-1", "red", "B1"),
         ship("red-2", "red", "A2"),
       ],
@@ -1018,7 +1059,7 @@ describe("applyPassGuard", () => {
     // A1, A3 and B2, its only on-board orthogonal neighbours — is occupied.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A2", 4),
+        ship("green-1", "green", "A2", 0),
         ship("red-1", "red", "A1"),
         ship("red-2", "red", "A3"),
         ship("red-3", "red", "B2"),
@@ -1031,11 +1072,22 @@ describe("applyPassGuard", () => {
     expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
     expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
+    // The pass still runs the end-of-turn sequence in full, and green-1 is
+    // sitting in its bay, so it gains a point of power there (§8.6 step 1,
+    // §3.1).
     expect(result.effect).toEqual({
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
-      endOfTurn: [],
+      endOfTurn: [
+        {
+          type: "power-gained",
+          shipId: "green-1",
+          side: "green",
+          square: squareFromName("A2"),
+          power: 1,
+        },
+      ],
     });
   });
 
@@ -1043,11 +1095,12 @@ describe("applyPassGuard", () => {
     // Without the charged-node protection every one of green-1's eight
     // neighbours would be a legal attack (as in the plain "eight
     // neighbours" case in combat.test.ts); with it, the side has no legal
-    // action, and standing on the node still gains it a shield and its
-    // side energy at the end of the turn the pass still runs.
+    // action, and standing on the node still costs it a point of power,
+    // while its side still collects energy, at the end of the turn the
+    // pass still runs.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H8", 3),
+        ship("green-1", "green", "H8", 1),
         ship("red-1", "red", "G7"),
         ship("red-2", "red", "H7"),
         ship("red-3", "red", "I7"),
@@ -1064,18 +1117,18 @@ describe("applyPassGuard", () => {
 
     expect(result.state.sideToMove).toBe("red");
     const winner = result.state.ships.find((s) => s.id === "green-1");
-    expect(winner?.shields).toBe(4);
+    expect(winner?.power).toBe(0);
     expect(result.effect).toEqual({
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
       endOfTurn: [
         {
-          type: "shield-gained",
+          type: "power-lost",
           shipId: "green-1",
           side: "green",
           square: squareFromName("H8"),
-          shields: 4,
+          power: 0,
         },
         {
           type: "energy-collected",
@@ -1125,13 +1178,13 @@ describe("applyPassGuard", () => {
     }
   });
 
-  it("runs the end-of-turn sequence for the passing side, so a ship that has moved and has no attack left still gains a shield", () => {
+  it("runs the end-of-turn sequence for the passing side, so a ship that has moved and has no attack left still loses a point of power", () => {
     // green-1 sits on K5, a charged site, having already spent this ply's
     // first action on a move: it has no move left (already acted) and no
     // enemy stands anywhere near it to attack, so it passes with its second
     // action still nominally available.
     const state = buildState({
-      ships: [ship("green-1", "green", "K5", 3)],
+      ships: [ship("green-1", "green", "K5", 1)],
       siteStates: { K5: "charged" },
       actedThisPly: ["green-1"],
       actionsRemaining: 1,
@@ -1145,11 +1198,11 @@ describe("applyPassGuard", () => {
       sideToMove: "red",
       endOfTurn: [
         {
-          type: "shield-gained",
+          type: "power-lost",
           shipId: "green-1",
           side: "green",
           square: squareFromName("K5"),
-          shields: 4,
+          power: 0,
         },
         {
           type: "energy-collected",
@@ -1161,7 +1214,7 @@ describe("applyPassGuard", () => {
       ],
     });
     const passedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(passedShip?.shields).toBe(4);
+    expect(passedShip?.power).toBe(0);
   });
 
   it("the trap: returns the state untouched once the game is over, rather than passing an unbounded number of times", () => {
@@ -1269,9 +1322,9 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
     );
   });
 
-  it("collects no energy and gains no shield for a node the moving player stepped off this turn", () => {
+  it("collects no energy and loses no power for a node the moving player stepped off this turn", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 1)],
+      ships: [ship("green-1", "green", "H8", 3)],
       siteStates: { H8: ["charged", 5] },
     });
 
@@ -1292,7 +1345,7 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
       expect.objectContaining({ type: "energy-collected" }),
     );
     expect(plyEnded.endOfTurn).not.toContainEqual(
-      expect.objectContaining({ type: "shield-gained" }),
+      expect.objectContaining({ type: "power-lost" }),
     );
   });
 });
