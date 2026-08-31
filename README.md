@@ -35,15 +35,20 @@ install, no account, no server.
 > pressed, dealt with the choices you made. A smaller fleet starts from fewer
 > of the board's fourteen bays, leaving the rest empty; an empty bay plays no
 > differently from any other. Green goes first, and each player takes one
-> action a turn — a move or an attack — by mouse or by keyboard. Nodes light up
-> on their own: at the end of every turn the board tops itself back up to five
-> charged sites among the seventeen, picking the new ones at random as older
-> ones run out — and a site that has been waiting longer is more likely to be
-> picked next, which shows in how it looks: a site that is waiting to be lit
-> grows and brightens the longer it waits. A ship may stop anywhere it can
-> reach, including a site that is not yet lit, and can camp there for as long
-> as its owner likes while it waits to light. A lit node drains power from the
-> ship sitting on it, at the end of each of that player's own turns. A node's
+> action a turn — a move or an attack — by mouse or by keyboard. Every game
+> deals a different opening board: five of the seventeen sites are lit, chosen
+> at random, and they do not all start fresh — some are already part-way
+> through their life and will run out sooner than the rest. The sites that
+> start dark have not all been waiting the same length of time either, which
+> is why some of them already look bigger and warmer than others on your very
+> first turn. After that the board keeps itself topped up to five lit sites,
+> lighting new ones at random as older ones run out — and a site that has been
+> waiting longer is more likely to be picked next, which shows in how it
+> looks: a site waiting to be lit grows and brightens the longer it waits. A
+> ship may stop anywhere it can reach, including a site that is not yet lit,
+> and can camp there for as long as its owner likes while it waits to light. A
+> lit node drains power from the ship sitting on it, at the end of each of
+> that player's own turns. A node's
 > glow shifts as it burns down, so you can see roughly how much life it has
 > left, and it runs out at a random pace — faster while a ship is sitting on it
 > than while it stands empty. Once it runs out it stays dark for a while before

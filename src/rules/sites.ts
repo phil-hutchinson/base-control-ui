@@ -55,8 +55,10 @@ export const NODE_CAPACITY = 60;
 export const PRESSURE_CAP = 50;
 
 /**
- * The pressure an active site starts at, whether from the opening position
- * or from finishing recovery (rules.md §8.2, §8.6 step 6).
+ * The pressure an active site starts at when it finishes recovering
+ * (rules.md §8.2, §8.6 step 6). The opening deal is the one exception: it
+ * draws each active site's opening pressure from `OPENING_PRESSURE_TABLE`
+ * instead (rules.md §8.1).
  */
 export const STARTING_PRESSURE = 1;
 

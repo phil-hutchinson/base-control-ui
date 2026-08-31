@@ -47,10 +47,11 @@ const TEST_SEED = 1;
 
 /**
  * The board this file has always been rendered against: H8, E5, K5, E11 and
- * K11 charged at drain 0, the other twelve sites active at pressure 1
- * (rules.md §3.2, §8.1). Transcribed by hand, not built by calling any of
- * `sites.ts`'s production functions, so a change to how the opening is dealt
- * cannot quietly change what this file expects.
+ * K11 charged at drain 0, the other twelve sites active at pressure 1 — an
+ * arbitrary fixed board, not the opening rules.md §8.1 deals since 0.18.
+ * Transcribed by hand from the seventeen sites of rules.md §3.2, not built by
+ * calling any of `sites.ts`'s production functions, so a change to how the
+ * opening is dealt cannot quietly change what this file expects.
  */
 const STATED_SITE_STATES: Readonly<Record<string, SiteStatus>> = {
   F2: { state: "active", level: 1 },
@@ -260,8 +261,10 @@ describe("Board", () => {
   });
 
   describe("sites on the starting board", () => {
-    // Literal, hand-transcribed from rules.md §3.2 and §8.1, not derived by
-    // calling the same production lookups the component uses.
+    // Literal, hand-transcribed from rules.md §3.2's seventeen sites, with
+    // the fixed charged five of STATED_SITE_STATES above (no longer the
+    // opening rules.md §8.1 deals since 0.18), not derived by calling the
+    // same production lookups the component uses.
     const SITE_SQUARES = [
       "F2",
       "J2",

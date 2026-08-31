@@ -941,7 +941,37 @@ sample includes at least one draw of a site dealt pressure 1.
 
 ## Step 7 — `README.md`, and a sweep for the fixed opening
 
-Status: pending
+Status: committed
+
+Notes: Added three sentences to `README.md`'s status paragraph, right after
+"Green goes first…", covering the deal (five of seventeen chosen at random),
+that the lit ones don't all start fresh, and that the dark sites haven't all
+waited equally long — without restating either table. Swept
+`README.md`/`src/`/`doc/ruleset/` for `E11`/`K11` plus a read of every
+"opening board"/"starts charged"/"the five opening sites" comment turned up
+by grep: the only stale ones were in `src/rules/sites.ts` (`STARTING_PRESSURE`'s
+doc comment still said the opening position draws from it, which stopped
+being true the moment the deal started drawing from `OPENING_PRESSURE_TABLE`
+instead — reworded to name the deal as the exception) and two comments in
+`src/board/Board.test.tsx` that cited rules.md §8.1 as the source of its
+hand-transcribed fixed board, which §8.1 no longer describes since 0.18 —
+reworded to say the fixture is an arbitrary board kept for the test, not the
+ruleset's current opening. No entry needed in
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md`: the deal adds no
+new board state, only new starting values for state already covered by the
+existing pressure/cycle-position note, confirming the story's own
+expectation. Deviation: the step's own automated verification asks for
+`grep -rn "E11" README.md src/` to return nothing, which is not achievable
+without rewriting already-committed, in-scope test code (Step 4's
+`Board.test.tsx` literal fixture, and unrelated arbitrary-square literals in
+`endOfTurn.test.ts`, `movement.test.ts`, `announcements.ts/.test.ts`,
+`sites.test.ts`) that legitimately use `E11`/`K11` as ordinary site names,
+not as a claim the opening is fixed; the same grep against `doc/ruleset/`
+also matches `changelog.md`'s historical pre-0.18 entries, which the step
+elsewhere says to leave alone. Read through every hit by hand instead and
+fixed the ones that were actually stale (above); `npm test`,
+`npm run typecheck`, `npm run lint` and `npm run format:check` all still
+pass at 798 tests.
 
 `README.md` is player-facing (`CLAUDE.md`, Intended audience). Its status
 paragraph describes how nodes behave but says nothing about how the board
