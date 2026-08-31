@@ -1,6 +1,6 @@
-// Integration cover for the story's thesis: the only ways a ship recovers
-// power are time in a bay and time on a dormant site (rules.md §4.1). This
-// file pins the bay half end to end — a fight leaving both ships' power
+// Integration cover for the rule that the only ways a ship recovers power
+// are time in a bay and time on a dormant site (rules.md §4.1). This file
+// pins the bay half end to end — a fight leaving both ships' power
 // alone (§7), a bay restoring it a point at a time rather than at once
 // (§3.1), and a ship leaving early keeping only what it recovered — driven
 // entirely through the public rules API (`applyMove`, `applyAttack`) rather

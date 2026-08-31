@@ -514,12 +514,11 @@ Notes: Edited `rules.md` (§1, §2, §3.1, §4 closing line, §4.1, §5, §6, §
 §7.2, §8.1, §8.2, §8.5, §8.6) per the plan, bumped the version line to 0.17,
 added one `## 0.17` changelog entry covering all three changes, and bumped
 `RULES_VERSION` to `"0.17"`. `grep -in "shield" doc/ruleset/rules.md` returns
-nothing; `git status` shows only `doc/ruleset/rules.md`,
-`doc/ruleset/changelog.md` and `src/rules/rulesVersion.ts` changed. No
-deviation from the plan. `npm run format:check` reports a pre-existing,
-unrelated warning on `doc/plan/00000041-spaceship-charge-changes/story.md`
-(not modified by this step, not in `git status`), left untouched as out of
-scope.
+nothing. The commit (`b234990`) also reflows
+`doc/plan/00000041-spaceship-charge-changes/story.md`, which had been
+committed unformatted; that file carries no rule content, so this is a
+formatting fix picked up alongside the step's own changes, not a deviation
+from it.
 
 Edit `doc/ruleset/rules.md`, add **one** `doc/ruleset/changelog.md` entry
 covering all three changes, and bump `RULES_VERSION` in
@@ -995,6 +994,17 @@ only `endOfTurn.test.ts` and `announcements.test.ts`.
 
 `npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
 (777/777) all pass.
+
+**Clarification on the story's combat verification and play-through item 6**
+(peer review comment 7): a fight changes neither ship's power (§7). Because a
+turn is one action, though, an attack that is the ply's last action ends the
+turn in the same call, and the attacker's own bay may then gain its point
+under §8.6 step 1 before the call returns. So a below-maximum attacker's
+gauge legitimately moves by one as the turn ends — not because the fight
+touched it, but because the end-of-turn step that follows it in the same
+call did. `story.md` is left as written (a story records what was requested
+and is not rewritten after the fact); this note is where the clarification
+lives instead.
 
 Implement §3.1's and §8.6 step 1's new bay case: a ship of the moving side
 standing **in a bay** at the end of its owner's turn gains one power, to the

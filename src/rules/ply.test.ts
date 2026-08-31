@@ -100,18 +100,15 @@ describe("applyMove", () => {
   });
 
   it("keeps the power a ship had when a move ends in a bay, exactly as when it only passes over one (rules.md §3.1)", () => {
-    // Not the ply's last action, and a second, unmoved green ship keeps
-    // green with a legal action of its own, so neither
-    // applyEndOfActionTail's own end-of-turn call nor applyPassGuard's runs
-    // it within this call — a bay's own recovery is a separate, per-turn
-    // thing (endOfTurn.test.ts), not something arriving does. This isolates
-    // the move itself: no refill, no other effect.
+    // A move never touches a ship's power itself (§3.1) — recovery is the
+    // end-of-turn step's doing (§8.6 step 1), which this move triggers as
+    // the ply's last action. Proving the bay case through that step's own
+    // power-gained effect rules out an instant refill: a refill would leave
+    // the ship at 4 and raise no gain effect at all, where the move only
+    // ever carries the ship's power unchanged into the bay for the
+    // end-of-turn step to then act on.
     const endsInBay = buildState({
-      ships: [
-        ship("green-1", "green", "A11", 2),
-        ship("green-2", "green", "H8"),
-      ],
-      actionsRemaining: 2,
+      ships: [ship("green-1", "green", "A11", 2), ship("red-1", "red", "O15")],
     });
     const endResult = applyMove(endsInBay, "green-1", squareFromName("A10"));
     expect(endResult.outcome).toBe("applied");
@@ -119,15 +116,26 @@ describe("applyMove", () => {
       throw new Error("expected the move to be applied");
     }
     const landedShip = endResult.state.ships.find((s) => s.id === "green-1");
-    expect(landedShip?.power).toBe(2);
-    expect(endResult.effects).toEqual([]);
+    expect(landedShip?.power).toBe(3);
+    expect(endResult.effects).toEqual([
+      {
+        type: "ply-ended",
+        side: "green",
+        sideToMove: "red",
+        endOfTurn: [
+          {
+            type: "power-gained",
+            shipId: "green-1",
+            side: "green",
+            square: squareFromName("A10"),
+            power: 3,
+          },
+        ],
+      },
+    ]);
 
     const passesOverBay = buildState({
-      ships: [
-        ship("green-1", "green", "A11", 2),
-        ship("green-2", "green", "H8"),
-      ],
-      actionsRemaining: 2,
+      ships: [ship("green-1", "green", "A11", 2), ship("red-1", "red", "O15")],
     });
     const passResult = applyMove(
       passesOverBay,
@@ -140,7 +148,9 @@ describe("applyMove", () => {
     }
     const flownShip = passResult.state.ships.find((s) => s.id === "green-1");
     expect(flownShip?.power).toBe(2);
-    expect(passResult.effects).toEqual([]);
+    expect(passResult.effects).toEqual([
+      { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+    ]);
   });
 
   it("landing on a charged site leaves it charged: nothing a ship does changes a site's state (rules.md §8.2)", () => {
@@ -306,7 +316,7 @@ describe("applyAttack", () => {
       defenderPower: 0 as PowerLevel,
     },
   ])(
-    "sends both ships home carrying the power they had and leaves both squares empty, whatever power either side carries ($label)",
+    "the fight changes neither ship's power, and the attacker then gains its bay point as the same turn ends, leaving both squares empty ($label)",
     ({ attackerPower, defenderPower }) => {
       const state = buildState({
         ships: [

@@ -3,17 +3,16 @@
 // from movement.ts, or applied: the ship arrives with the power it had and
 // spends one action. A ship that ends a move in a bay recovers there at a
 // point per turn (§3.1, §4.1), through the end-of-turn sequence — not on
-// arrival. An attack is either refused,
-// with the reason from combat.ts, or resolved: both ships are placed in
-// bays drawn at random from the bays standing empty, attacker first,
-// carrying the power each had before the fight, and both squares they left
-// are left empty. There is no winner and no advance.
-// Nothing a ship does changes a site's state: a site's state changes only in
-// the end-of-turn sequence (rules.md §8.6). Every action — a move or an
-// attack — marks the acting ship as having acted this ply, so a further
-// attempt by the same ship this ply is refused. When the ply's actions are
-// all spent, play passes to the other side. The pass guard covers the case
-// §5 sets out for when the side to move has no legal action at all.
+// arrival. An attack is either refused, with the reason from combat.ts, or
+// resolved: both ships are placed in bays drawn at random from the bays
+// standing empty, attacker first, carrying the power each had before the
+// fight, and both squares they left are left empty. There is no winner and no
+// advance. Nothing a ship does changes a site's state: a site's state changes
+// only in the end-of-turn sequence (rules.md §8.6). Every action — a move or
+// an attack — marks the acting ship as having acted this ply, so a further
+// attempt by the same ship this ply is refused. When the ply's actions are all
+// spent, play passes to the other side. The pass guard covers the case §5 sets
+// out for when the side to move has no legal action at all.
 
 import { sideToMoveHasLegalAction } from "./actions";
 import { isBay } from "./bays";
@@ -259,10 +258,6 @@ export function applyMove(
   }
 
   const effects: MoveEffect[] = [];
-  const movingShip = state.ships.find((ship) => ship.id === shipId);
-  if (movingShip === undefined) {
-    throw new RangeError(`no ship with id "${shipId}" in this state`);
-  }
 
   const ships = state.ships.map((ship) =>
     ship.id === shipId ? { ...ship, square: destination } : ship,
