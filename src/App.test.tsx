@@ -36,6 +36,20 @@ describe("App", () => {
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
   });
 
+  it("mounts exactly one hidden ship sprite, on the start screen and once a game is in progress", async () => {
+    const { container } = render(<App />);
+
+    const beforePlay = container.querySelectorAll(".ship-defs");
+    expect(beforePlay).toHaveLength(1);
+    expect(beforePlay[0]).toHaveAttribute("aria-hidden", "true");
+
+    await pressPlay();
+
+    const afterPlay = container.querySelectorAll(".ship-defs");
+    expect(afterPlay).toHaveLength(1);
+    expect(afterPlay[0]).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("has no static accessibility violations on the start screen", async () => {
     const { container } = render(<App />);
 
@@ -150,5 +164,29 @@ describe("App", () => {
     });
 
     expect(results.violations).toEqual([]);
+  });
+
+  function assertNoDuplicateIds(container: HTMLElement) {
+    const ids = Array.from(container.querySelectorAll("[id]")).map(
+      (element) => element.id,
+    );
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+  }
+
+  it("never repeats an id in the rendered document, on the start screen", () => {
+    const { container } = render(<App />);
+
+    assertNoDuplicateIds(container);
+  });
+
+  it("never repeats an id in the rendered document, with a full fourteen-ship board on screen", async () => {
+    const { container } = render(<App />);
+
+    await pressPlay();
+
+    expect(shipCells()).toHaveLength(14);
+
+    assertNoDuplicateIds(container);
   });
 });

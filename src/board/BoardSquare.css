@@ -43,6 +43,6 @@
    hollow bar, so "dampened" is a deliberate marking rather than a lightness
    accident. Having moved is drawn separately, at the square's top edge, and
    never dampens a ship by itself. */
-.board-square--dampened .ship-icon {
+.board-square--dampened .ship-model {
   opacity: var(--dampened-opacity, 1);
 }

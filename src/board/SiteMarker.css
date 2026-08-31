@@ -1,7 +1,7 @@
 /* The site-state artwork - its gradient, geometry, colours and opacities -
    lives in SiteMarker.tsx, since the middle gradient stop is computed per
    render. This file sets only the element's box, so it fills the square
-   the same way ShipIcon.css does. */
+   the same way ShipModel.css does. */
 
 .site-marker {
   display: block;

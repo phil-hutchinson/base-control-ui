@@ -8,6 +8,7 @@ import { Hud } from "./hud/Hud";
 import { useDisplayedEnergy } from "./hud/useDisplayedEnergy";
 import { isGameOver } from "./rules/gameLength";
 import { startingGameState } from "./rules/gameState";
+import { ShipDefs } from "./ships/ShipDefs";
 import { StartScreen } from "./start/StartScreen";
 import { useAppScreen } from "./useAppScreen";
 import "./App.css";
@@ -53,6 +54,7 @@ export function App() {
 
   return (
     <main className="app">
+      <ShipDefs />
       <div className="app__cabinet">
         {screen === "start" ? (
           <StartScreen

@@ -1,0 +1,10 @@
+/* Takes the sprite out of layout entirely, so mounting it disturbs nothing
+   else on either screen. Hidden by zero size, not by `display`, so a
+   `<use>` reference into this subtree still resolves. */
+
+.ship-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
