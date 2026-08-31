@@ -851,7 +851,34 @@ Verification (automated): `npm test` passes in full, including
 
 ## Step 6 — Integration cover: a game played from a dealt board
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/openingBoard.test.ts` with three `describe` blocks:
+a game played from a dealt board runs to completion over three seeds and
+500 plies (every dealt node runs out at least once, at least one dormant
+site recovers, every one of the seventeen sites is charged at least once,
+and the board is back at five charged by the end); the first charge draw
+favours the higher-pressure half of the pool (measured ~0.83 across 5,000
+trials in a throwaway probe, asserted here at >0.65 over 3,000 trials) while
+still sometimes drawing a site dealt pressure 1, tested via `runChargeDraw`
+directly on a dealt board with one charged site forced dormant to make room
+for exactly one draw; and a node dealt at drain 40 runs out sooner than one
+dealt at drain 0 (measured averages ~9.9 and ~29.1 over 30 seeds each in a
+throwaway probe, asserted here with generous bounds of (5, 18) and (20, 40)).
+Extended `seededReplay.test.ts`: the header comment now describes the 22
+seed steps the opening deal consumes before ply 1; `PlayedGame` gained an
+`openingBoard` field (the state's `siteStates` captured immediately after
+`startingGameState`, before any action is applied); the same-seed case
+asserts the two runs deal the same opening board, and the different-seed
+case asserts the two seeds already used deal different ones. All three of
+the file's existing non-vacuity guards (≥10 fights, ≥10 bay returns, ≥10
+charge draws) still passed unchanged from a dealt opening, so nothing
+needed re-recording. Added a comment-only paragraph to `sitePool.test.ts`'s
+header noting its "opening position" now varies per seed under 0.18, and
+that this changes nothing about the file's bounds or seeds. `npm run
+typecheck`, `npm run lint`, `npm run format:check` and `npm test` all pass
+(798 passed, up from 793 — 5 new cases in `openingBoard.test.ts`; no
+existing test count changed elsewhere). No deviation from the plan.
 
 Cover the story's remaining verification points, which need a board and a run
 rather than a single draw. Add `src/rules/openingBoard.test.ts` with a short

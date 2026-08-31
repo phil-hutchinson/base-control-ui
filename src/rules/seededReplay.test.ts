@@ -16,6 +16,14 @@
 // steps as it did under 0.11. Those per-node draws are not tracked
 // separately here; they are exercised indirectly, and their effect on the
 // final state is what the whole-state equality check below proves replays.
+//
+// Since 0.18 the stream starts even earlier than green's first turn: the
+// opening board itself is dealt from the same seed (`dealOpeningBoard`,
+// §8.1), consuming 22 steps — five site draws and seventeen level draws —
+// before a single ply is played. `startingGameState` is what a recorded
+// game would call to reproduce that deal, so the property under test now
+// covers it too: the same seed deals the same opening board, and a
+// different seed deals a different one.
 
 import { describe, expect, it } from "vitest";
 import { type Square, squareName } from "./board";
@@ -90,6 +98,9 @@ const MAX_ACTIONS = 10_000;
 
 interface PlayedGame {
   readonly finalState: GameState;
+  readonly openingBoard: Readonly<
+    Record<string, GameState["siteStates"][string]>
+  >;
   readonly bayReturns: readonly string[];
   readonly chargedSites: readonly string[];
   readonly fightCount: number;
@@ -97,13 +108,15 @@ interface PlayedGame {
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the attack-first
- * policy above, and records the square name of every bay a `fight-resolved`
- * effect returned a ship to, in the order the fights happened, how many
- * fights happened, and the square name of every site the end-of-turn charge
- * draw (§8.2) charged, in the order it charged them.
+ * policy above, and records the opening board the seed dealt (§8.1) before
+ * play began, the square name of every bay a `fight-resolved` effect
+ * returned a ship to, in the order the fights happened, how many fights
+ * happened, and the square name of every site the end-of-turn charge draw
+ * (§8.2) charged, in the order it charged them.
  */
 function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
   let state = startingGameState(seed, lengthInRounds);
+  const openingBoard = state.siteStates;
   const bayReturns: string[] = [];
   const chargedSites: string[] = [];
   let fightCount = 0;
@@ -157,7 +170,13 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     }
   }
 
-  return { finalState: state, bayReturns, chargedSites, fightCount };
+  return {
+    finalState: state,
+    openingBoard,
+    bayReturns,
+    chargedSites,
+    fightCount,
+  };
 }
 
 /** Every site's `level` at the end of a game, keyed by square name — the part of the state the drain and recovery draws write to. */
@@ -169,7 +188,7 @@ function siteLevels(state: GameState): Readonly<Record<string, number>> {
   return levels;
 }
 
-describe("a seeded game replays its fights, its bays and its charge draws exactly", () => {
+describe("a seeded game replays its opening board, its fights, its bays and its charge draws exactly", () => {
   it("produces plenty of fights and charge draws over a forty-round game — the run is not vacuous", () => {
     const { bayReturns, chargedSites, fightCount } = playSeededGame(
       20260819,
@@ -181,10 +200,11 @@ describe("a seeded game replays its fights, its bays and its charge draws exactl
     expect(chargedSites.length).toBeGreaterThanOrEqual(10);
   });
 
-  it("replays the same bay sequence, the same charged-site sequence and the same final state from the same seed", () => {
+  it("replays the same opening board, the same bay sequence, the same charged-site sequence and the same final state from the same seed", () => {
     const first = playSeededGame(20260819, 40);
     const second = playSeededGame(20260819, 40);
 
+    expect(second.openingBoard).toEqual(first.openingBoard);
     expect(second.bayReturns).toEqual(first.bayReturns);
     expect(second.chargedSites).toEqual(first.chargedSites);
     expect(second.finalState).toEqual(first.finalState);
@@ -195,13 +215,14 @@ describe("a seeded game replays its fights, its bays and its charge draws exactl
     expect(siteLevels(second.finalState)).toEqual(siteLevels(first.finalState));
   });
 
-  it("produces a different bay sequence and a different charged-site sequence from a different seed", () => {
+  it("deals a different opening board, and produces a different bay sequence and a different charged-site sequence, from a different seed", () => {
     // Any pair of distinct seeds is expected to diverge; these two are
     // confirmed to by running this test. If a future change to the game
     // happens to make this pair coincide, pick another pair.
     const first = playSeededGame(20260819, 40);
     const second = playSeededGame(20260820, 40);
 
+    expect(second.openingBoard).not.toEqual(first.openingBoard);
     expect(second.bayReturns).not.toEqual(first.bayReturns);
     expect(second.chargedSites).not.toEqual(first.chargedSites);
   });
