@@ -879,7 +879,7 @@ back as a fix to step 6, re-verified here.
 
 ## Step 8 — README check
 
-Status: pending
+Status: committed
 
 Confirm `README.md` is still accurate given this story's changes, and update it
 if it is not. The `/update-readme` command automates this: it reviews the
@@ -899,3 +899,12 @@ Verification (automated): `npm run typecheck`, `npm run lint`,
 `npm run format:check` and `npm test` pass, and — if the README was edited —
 every claim in the changed paragraphs is something a player can actually see in
 the running app.
+
+**Notes:** Read the current `README.md` in full and confirmed it never
+describes what a ship looks like — no mention of shape, silhouette, icon,
+arcs, or artwork — only the shield *rule* (a shield slows a ship down),
+which this story left untouched. Since the story replaced the ship
+artwork and the shield-arc ring with a gauge but changed no rule, no
+control and no player-facing wording, nothing in the README was
+falsified. No change made. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` all pass (770 tests).
