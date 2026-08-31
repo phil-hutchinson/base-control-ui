@@ -11,7 +11,7 @@ import {
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { PowerLevel } from "./power";
-import { NODE_CAPACITY, PRESSURE_CAP, type SiteState } from "./sites";
+import { NODE_CAPACITY, PRESSURE_CAP, SITES, type SiteState } from "./sites";
 
 function ship(
   id: ShipId,
@@ -1031,12 +1031,15 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
 
 describe("runEndOfTurn — the opening board does not fall into lockstep (§8.1)", () => {
   it("does not run all five opening nodes out on the same ply", () => {
-    const OPENING_SQUARES = ["H8", "E5", "K5", "E11", "K11"];
     const SEEDS = [20260828, 20260829, 20260830, 20260831, 20260832];
     const PLIES_TO_RUN = 60;
 
     for (const seed of SEEDS) {
       let state = startingGameState(seed, DEFAULT_GAME_LENGTH_ROUNDS);
+      // Whichever nodes the game opened with, not a fixed list.
+      const openingSquares = SITES.map(squareName).filter(
+        (name) => state.siteStates[name]?.state === "charged",
+      );
       const runOutPly = new Map<string, number>();
 
       for (let ply = 1; ply <= PLIES_TO_RUN; ply++) {
@@ -1044,7 +1047,7 @@ describe("runEndOfTurn — the opening board does not fall into lockstep (§8.1)
         for (const effect of result.effects) {
           if (effect.type === "node-ran-out") {
             const name = squareName(effect.square);
-            if (OPENING_SQUARES.includes(name) && !runOutPly.has(name)) {
+            if (openingSquares.includes(name) && !runOutPly.has(name)) {
               runOutPly.set(name, ply);
             }
           }
@@ -1052,10 +1055,10 @@ describe("runEndOfTurn — the opening board does not fall into lockstep (§8.1)
         state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
       }
 
-      const plies = OPENING_SQUARES.filter((name) => runOutPly.has(name)).map(
-        (name) => runOutPly.get(name),
-      );
-      if (plies.length === OPENING_SQUARES.length) {
+      const plies = openingSquares
+        .filter((name) => runOutPly.has(name))
+        .map((name) => runOutPly.get(name));
+      if (plies.length === openingSquares.length) {
         expect(new Set(plies).size).toBeGreaterThan(1);
       }
     }

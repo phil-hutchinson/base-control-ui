@@ -659,7 +659,28 @@ block; the rest of the suite is untouched because nothing calls the deal yet
 
 ## Step 4 — The tests state the board they want (no behaviour change)
 
-Status: pending
+Status: committed
+
+Notes: `Board.test.tsx` gained the hand-transcribed `STATED_SITE_STATES`
+record and a `statedOpeningState()` helper (D9); the module-level
+`startingSession`, the "renders from the game state it is given" case, the
+`baseState()` helper and the "keeps focus on the attacked square" case all
+build from it now, its four `startingSiteStatus` calls became lookups into
+the record, and the `startingSiteStatus` import was dropped. The two named
+comments plus the similarly-worded one in the "renders from the game state
+it is given" case were reworded to say the file states the board rather than
+inherits it. `endOfTurn.test.ts`'s lockstep case now reads its charged
+squares from the state it starts from (`SITES.map(squareName).filter(...)`)
+instead of a literal list. `session.test.ts`'s two seed-literal assertions
+now compare against `startingGameState(...).randomSeed` for the same
+arguments, per D5. Left untouched, as scoped: the "selection markings" state,
+the attack-state helpers, and the "energy overlay composition" case, none of
+which read any site's charged/active status. `npm test` (795, unchanged),
+`npm run typecheck`, `npm run lint` and `npm run format:check` all pass
+(prettier reformatted `endOfTurn.test.ts`'s edited block); `grep -rn
+"startingSiteStatus" src/` returns hits only in `src/rules/sites.ts`,
+`src/rules/sites.test.ts` and `src/rules/gameState.ts` (Step 5's territory,
+untouched here). No deviation from the plan.
 
 **Nothing about the game changes in this step.** The fixed opening is still in
 force; every test still passes; the point is to remove the _assumption_ that it

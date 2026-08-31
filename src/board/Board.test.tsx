@@ -8,13 +8,12 @@ import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
 import { startingFleet, type FleetEntry } from "../rules/fleet";
+import { NODE_CAPACITY, PRESSURE_CAP, SITES } from "../rules/sites";
 import {
-  NODE_CAPACITY,
-  PRESSURE_CAP,
-  SITES,
-  startingSiteStatus,
-} from "../rules/sites";
-import { startingGameState, type GameState } from "../rules/gameState";
+  startingGameState,
+  type GameState,
+  type SiteStatus,
+} from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalDestinations } from "../rules/movement";
 import { legalTargets } from "../rules/combat";
@@ -46,7 +45,44 @@ function startingShipAt(square: Square): FleetEntry | undefined {
 
 const TEST_SEED = 1;
 
-const startingSession = createSession(startingGameState(TEST_SEED));
+/**
+ * The board this file has always been rendered against: H8, E5, K5, E11 and
+ * K11 charged at drain 0, the other twelve sites active at pressure 1
+ * (rules.md §3.2, §8.1). Transcribed by hand, not built by calling any of
+ * `sites.ts`'s production functions, so a change to how the opening is dealt
+ * cannot quietly change what this file expects.
+ */
+const STATED_SITE_STATES: Readonly<Record<string, SiteStatus>> = {
+  F2: { state: "active", level: 1 },
+  J2: { state: "active", level: 1 },
+  B4: { state: "active", level: 1 },
+  H4: { state: "active", level: 1 },
+  N4: { state: "active", level: 1 },
+  E5: { state: "charged", level: 0 },
+  K5: { state: "charged", level: 0 },
+  D8: { state: "active", level: 1 },
+  H8: { state: "charged", level: 0 },
+  L8: { state: "active", level: 1 },
+  E11: { state: "charged", level: 0 },
+  K11: { state: "charged", level: 0 },
+  B12: { state: "active", level: 1 },
+  H12: { state: "active", level: 1 },
+  N12: { state: "active", level: 1 },
+  F14: { state: "active", level: 1 },
+  J14: { state: "active", level: 1 },
+};
+
+/** `startingGameState(TEST_SEED)`, with its sites replaced by the board this
+ * file states (`STATED_SITE_STATES`) rather than whatever it happens to
+ * deal. Ships, seed, ply and length still come from `startingGameState`. */
+function statedOpeningState(): GameState {
+  return {
+    ...startingGameState(TEST_SEED),
+    siteStates: STATED_SITE_STATES,
+  };
+}
+
+const startingSession = createSession(statedOpeningState());
 
 describe("Board", () => {
   it("renders 225 gridcells in 15 rows", () => {
@@ -67,8 +103,8 @@ describe("Board", () => {
   it("names the centre and the far corners correctly", () => {
     render(<Board session={startingSession} onIntent={noop} />);
 
-    // H8 is the centre square and one of the five sites the opening board
-    // starts charged.
+    // H8 is the centre square, and this file states it charged
+    // (STATED_SITE_STATES above).
     expect(
       screen.getByRole("gridcell", { name: "H8, charged site" }),
     ).toBeInTheDocument();
@@ -105,7 +141,7 @@ describe("Board", () => {
       const label = squareLabel({
         square,
         isBay: true,
-        siteState: startingSiteStatus(square)?.state,
+        siteState: STATED_SITE_STATES[squareName(square)]?.state,
         occupant: startingShipAt(square),
       });
       expect(screen.getByRole("gridcell", { name: label })).toBeInTheDocument();
@@ -119,7 +155,7 @@ describe("Board", () => {
         name: squareLabel({
           square: nonBaySquare,
           isBay: false,
-          siteState: startingSiteStatus(nonBaySquare)?.state,
+          siteState: STATED_SITE_STATES[squareName(nonBaySquare)]?.state,
           occupant: startingShipAt(nonBaySquare),
         }),
       }),
@@ -171,7 +207,7 @@ describe("Board", () => {
         name: squareLabel({
           square: entry.square,
           isBay: isBay(entry.square),
-          siteState: startingSiteStatus(entry.square)?.state,
+          siteState: STATED_SITE_STATES[squareName(entry.square)]?.state,
           occupant: entry,
         }),
       });
@@ -189,7 +225,7 @@ describe("Board", () => {
     const label = squareLabel({
       square,
       isBay: isBay(square),
-      siteState: startingSiteStatus(square)?.state,
+      siteState: STATED_SITE_STATES[squareName(square)]?.state,
       occupant: startingShipAt(square),
     });
     const cell = screen.getByRole("gridcell", { name: label });
@@ -346,8 +382,8 @@ describe("Board", () => {
 
   it("renders from the game state it is given, not the starting position", () => {
     const state: GameState = {
-      ...startingGameState(TEST_SEED),
-      ships: startingGameState(TEST_SEED).ships.map((ship) =>
+      ...statedOpeningState(),
+      ships: statedOpeningState().ships.map((ship) =>
         ship.id === "green-1" ? { ...ship, square: squareAt("H", 8) } : ship,
       ),
     };
@@ -355,8 +391,8 @@ describe("Board", () => {
 
     const { container } = render(<Board session={session} onIntent={noop} />);
 
-    // H8 is a site as well as this ship's new square; both are named. It
-    // is one of the five sites the opening board starts charged.
+    // H8 is a site as well as this ship's new square; both are named. This
+    // file states H8 charged.
     const cell = screen.getByRole("gridcell", {
       name: "H8, charged site, green ship, power 4 of 4",
     });
@@ -1169,8 +1205,8 @@ describe("Board", () => {
     // destinations against. Every other ship stays in its starting bay.
     function baseState(): GameState {
       return {
-        ...startingGameState(TEST_SEED),
-        ships: startingGameState(TEST_SEED).ships.map((ship) =>
+        ...statedOpeningState(),
+        ships: statedOpeningState().ships.map((ship) =>
           ship.id === "green-1"
             ? { ...ship, square: squareAt("H", 8), power: 2 }
             : ship,
@@ -1350,8 +1386,8 @@ describe("Board", () => {
     it("keeps focus on the attacked square, which is now empty: both ships return to bays", async () => {
       const user = userEvent.setup();
       const state: GameState = {
-        ...startingGameState(TEST_SEED),
-        ships: startingGameState(TEST_SEED).ships.map((ship) => {
+        ...statedOpeningState(),
+        ships: statedOpeningState().ships.map((ship) => {
           if (ship.id === "green-1") {
             return { ...ship, square: squareAt("H", 8), power: 0 };
           }
@@ -1360,11 +1396,11 @@ describe("Board", () => {
           }
           return ship;
         }),
-        // H8 starts charged under this seed, and a ship on a charged node
-        // can neither attack nor be attacked (rules.md §7); the attacker
-        // needs an ordinary square to stand on.
+        // This file states H8 charged, and a ship on a charged node can
+        // neither attack nor be attacked (rules.md §7); the attacker needs
+        // an ordinary square to stand on.
         siteStates: {
-          ...startingGameState(TEST_SEED).siteStates,
+          ...STATED_SITE_STATES,
           H8: { state: "active", level: 1 },
         },
       };
