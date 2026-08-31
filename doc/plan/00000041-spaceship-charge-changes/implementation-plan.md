@@ -508,7 +508,18 @@ the change.
 
 ## Step 1 — Rules 0.17: power replaces shields, a fight keeps it, a bay restores it
 
-Status: pending
+Status: committed
+
+Notes: Edited `rules.md` (§1, §2, §3.1, §4 closing line, §4.1, §5, §6, §7,
+§7.2, §8.1, §8.2, §8.5, §8.6) per the plan, bumped the version line to 0.17,
+added one `## 0.17` changelog entry covering all three changes, and bumped
+`RULES_VERSION` to `"0.17"`. `grep -in "shield" doc/ruleset/rules.md` returns
+nothing; `git status` shows only `doc/ruleset/rules.md`,
+`doc/ruleset/changelog.md` and `src/rules/rulesVersion.ts` changed. No
+deviation from the plan. `npm run format:check` reports a pre-existing,
+unrelated warning on `doc/plan/00000041-spaceship-charge-changes/story.md`
+(not modified by this step, not in `git status`), left untouched as out of
+scope.
 
 Edit `doc/ruleset/rules.md`, add **one** `doc/ruleset/changelog.md` entry
 covering all three changes, and bump `RULES_VERSION` in

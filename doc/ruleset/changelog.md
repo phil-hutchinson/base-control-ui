@@ -7,6 +7,45 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.17 — power replaces shields, and bays recharge over time
+
+This is a gameplay change made of three parts that land together, because the
+second opens a hole that the third fills and neither reads sensibly on its
+own. Tagging stays on hold until the game plays (see the project's
+contribution notes).
+
+- **A ship's number is reskinned from shields to power, and the polarity
+  reverses.** Section 4.1 is rewritten: a ship carries 0–4 **power** instead
+  of 0–4 shields, `power = 4 − shields` throughout, and every ship now
+  starts at full power (4) instead of 0 shields. Power is what lets a ship
+  move — section 6's table is re-keyed so each point of power unlocks a
+  further option, and section 7's range extremes flip to match. No number,
+  threshold or reachable square moves: this part changes nothing about how
+  the game plays, only which end of the gauge means "fast".
+- **A fight no longer changes a ship's power.** Section 7's "stripped of
+  every shield they carried" is deleted. Both ships in a fight are still
+  returned to bays drawn at random (section 7.1), but each now arrives
+  carrying the power it had when the fight started — an attack spends the
+  attacker's position, not its power.
+- **A bay restores power one point per turn instead of all at once.** Section
+  3.1's instant refill on arrival is replaced with the same rate and the same
+  end-of-turn step a dormant site already uses (section 4.1, section 8.6): a
+  ship standing in a bay at the end of its owner's turn gains one power, up
+  to the maximum of 4, with none of a dormant site's energy cost. Section
+  7.2's deliberate return to a bay follows the same change.
+- **Why these three land together.** Stripping a ship's power on a fight was
+  the fast way to shed weight; removing it (the second change) would leave a
+  beaten, drained ship with no way to recover once a bay stopped refilling it
+  instantly too. The third change is what fills that hole: a bay becomes
+  somewhere a ship goes to recover, a point per turn.
+- **Why "power" and not "charge".** The change was first described as
+  reversing a ship's "charges", but the word is taken — `rules.md` already
+  has charged sites and the charge draw, so section 4.1 would have read "a
+  ship on a charged node loses a charge" one sentence after describing the
+  charge draw. **Power** carries the same meaning with no collision.
+- Sections 1, 2, 3.1, 4, 4.1, 5, 6, 7, 7.2, 8.1, 8.2, 8.5 and 8.6 are all
+  edited to match; no section is renumbered.
+
 ## 0.16 — every fight is a draw, and a node runs its course
 
 This is a gameplay change made of two halves that land together, because each

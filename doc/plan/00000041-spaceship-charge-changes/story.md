@@ -108,7 +108,7 @@ What exists today:
   range.
 - **`src/rules/movement.ts`** — `ReachOption.unlockedAtShields`,
   `REACH_OPTIONS` transcribed from §6's table, and `reachFrom(origin,
-  shields)`'s `option.unlockedAtShields < shields` skip.
+shields)`'s `option.unlockedAtShields < shields` skip.
 - **`src/rules/fleet.ts`** — `Ship.shields`, and the starting fleet built at
   `shields: 0`.
 - **`src/rules/gameState.ts`** — `Ship.shields` on the state's ship entries
