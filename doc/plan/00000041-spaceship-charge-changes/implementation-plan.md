@@ -1119,7 +1119,31 @@ its three thresholds and its two seeds still diverge (**D13**).
 
 ## Step 6 — Integration cover: the fight, the bay and the recovery, end to end
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/recovery.test.ts` with three integration tests driven
+entirely through `applyMove`/`applyAttack`, in `camping.test.ts`'s style. The
+first covers the plan's points 1, 2 and 4 together: a ship fought at 0 power
+lands in a bay (via `applyAttack`), gains a point at the end of each of its
+own side's turns — including the same call the fight itself closes out — and
+never on the other side's, stopping at 4, with no energy effect and no
+energy-total change throughout. The second covers point 3: a ship moves into
+a bay via `applyMove` (proving arrival alone grants nothing — the first point
+comes from that move's own end-of-turn step), recovers two points over two
+more of its owner's turns, then leaves at exactly 2 power with `reachFrom`/
+`legalDestinations` confirmed against the 2-power set rather than the full
+one. The third covers point 5 directly: a 4-power attacker and a 0-power
+defender are both returned unchanged (using an attacker already at the
+maximum sidesteps the same-call recovery interaction entirely, so the
+final-state powers equal the pre-fight ones with no need to reason about
+timing), with both origin squares left empty. Each test was verified to
+fail when the corresponding step's fix (3, 4 and 5 respectively) was
+temporarily reverted locally, then restored, per the step's own
+verification instruction; no diff from that exercise remains. No deviation
+from the plan.
+
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(779/779, all new tests included) pass.
 
 Pin the story's thesis — that the only ways to recover power are time in a bay
 and time on a dormant site — through the **public rules API** (`applyMove`,
