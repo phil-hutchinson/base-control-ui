@@ -372,7 +372,19 @@ any node running out. A constrained or mirrored deal is a possible later story.
 
 ## Step 1 — Rules 0.18: the opening board is dealt
 
-Status: pending
+Status: committed
+
+Notes: Edited `doc/ruleset/rules.md` (version line, §1, §8.1's opening
+paragraph replaced with the deal and both tables, §8.2 and §8.3 each gained a
+pointer back to §8.1, Appendix B gained the steady-state line), added one
+`## 0.18` changelog entry, and bumped `RULES_VERSION` to `"0.18"`. Per the
+orchestrator's notes: the pressure table's average is printed as the exact
+**12.79** throughout (no rounded 12.8), and the `story.md` prettier
+reformatting was already done and committed in an earlier commit, so it was
+not redone here — `git status --short` shows only the three files this step
+was scoped to touch. `npm test` (779 passed), `npm run typecheck`,
+`npm run lint` and `npm run format:check` all pass; the `grep` checks for
+"H8**, **E5" and "E11" outside §3.2 return nothing.
 
 Edit `doc/ruleset/rules.md`, add **one** `doc/ruleset/changelog.md` entry, and
 bump `RULES_VERSION` in `src/rules/rulesVersion.ts` to `"0.18"`. **No

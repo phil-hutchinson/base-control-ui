@@ -7,6 +7,40 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.18 — the opening board is dealt
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **The fixed opening is gone.** Section 8.1 no longer names H8, E5, K5, E11
+  and K11 as the five sites charged at the start. Instead, five of the
+  seventeen sites are chosen at random, every site equally likely and no two
+  the same — no site is privileged, and the centre is not guaranteed.
+- **Each dealt node opens part-drained**, at a drain drawn from a new table
+  weighted towards the start, capped at 40 — two-thirds of the capacity of
+  60 — so every dealt node still has enough life left to be worth racing
+  for.
+- **Every other site opens with pressure of its own**, drawn from a new
+  table weighted towards the low end, with a thin tail up to the cap of 50,
+  rather than the flat 1 every active site used to start at. Section 8.2
+  keeps "an active site goes active at 1" for every site that goes active
+  during play, and points at section 8.1 for the one exception. Section 8.3
+  gets the same pointer for drain.
+- **Nothing starts dormant** — that stays exactly as it was.
+- **Why.** The opening was the one part of the game with no randomness in
+  it at all, which made the opening turns identical every game — the same
+  five squares worth racing for, worth exactly as much as each other. A
+  fixed opening is also not what the board looks like at any other moment:
+  by turn 40 the five nodes are scattered, part-used and unevenly aged, and
+  there was no reason turn 1 should be the one moment they were neat.
+  Appendix B gains a line noting the deal now starts the board closer to
+  its own steady state, so the first twenty turns are no longer an
+  unrepresentative settling-in period.
+- **Both new tables are first guesses**, to be play-tested and retuned like
+  every other number in section 8.
+- Sections 1, 8.1, 8.2, 8.3 and Appendix B are edited to match; no section
+  is renumbered.
+
 ## 0.17 — power replaces shields, and bays recharge over time
 
 This is a gameplay change made of three parts that land together, because the

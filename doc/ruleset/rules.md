@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.17**
+**Rules version: 0.18**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -26,8 +26,10 @@ that has burned out still costs its owner energy every turn — but it now
 gives power back, so it is where a ship pays energy for the recovery a bay
 gives free of charge.
 
-The game has three random elements: which site is charged next, which bays
-the two ships in a fight are pushed back to, and how fast a node burns.
+The game has four random elements: the opening board itself, which site is
+charged next, which bays the two ships in a fight are pushed back to, and how
+fast a node burns. No two games start on the same board, and neither player
+has seen this one before.
 
 ---
 
@@ -352,13 +354,39 @@ every turn it charges as many active sites as it takes to bring the charged
 count back to five (section 8.2). If there are not enough active sites, it
 charges what it can and simply runs short until the next turn.
 
-**At the start of the game**, five sites are charged: **H8**, **E5**, **K5**,
-**E11** and **K11**, all at drain 0 (section 8.3). The other twelve are
-active. Nothing is dormant at the start.
+**The opening board is dealt**, not fixed. At the start of the game:
 
-Nothing needs to spread their expiries out by hand. Each of the five drains
-at an independently drawn rate and is reached by ships at different turns, so
-they spread apart on their own within the first few turns.
+- **Five of the seventeen sites are charged**, chosen at random with every
+  site equally likely and no two the same. No site is privileged; the centre
+  is not guaranteed.
+- **Each of the five starts part-drained**, at a drain drawn from the opening
+  drain table below — never more than 40, two-thirds of the capacity of 60
+  (section 8.3), so every dealt node has enough life left to be worth racing
+  for.
+- **Every other site starts active**, at a pressure drawn from the opening
+  pressure table below, rather than at 1 (section 8.2).
+- **Nothing is dormant at the start.**
+
+| Drain | 0   | 5   | 10  | 15  | 20  | 25  | 30  | 35  | 40  | Average |
+| ----- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ------- |
+| Share | 20% | 18% | 15% | 12% | 10% | 8%  | 7%  | 6%  | 4%  | 14      |
+
+An average opening node has 46 of its capacity left: about 22 turns if
+nobody ever reaches it, about 10 if a ship arrives and holds it from the
+first turn. The most-used opening node has 20 left.
+
+| Pressure | 1   | 5   | 10  | 15  | 20  | 25  | 30  | 40  | 50  | Average |
+| -------- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ------- |
+| Share    | 24% | 20% | 16% | 12% | 9%  | 7%  | 5%  | 4%  | 3%  | 12.79   |
+
+Most sites have waited only a little, but the tail means a game can open
+with one or two sites already close to the cap of 50, which are the sites
+the first charge draw will favour.
+
+Nothing needs to spread their expiries out by hand. The five now open at
+different ages as well as draining at independently drawn rates, so they are
+spread apart from the first turn rather than spreading within the first
+few.
 
 ### 8.2 Charging a site
 
@@ -376,7 +404,9 @@ its owner's next turn, exactly as if it had moved onto a node.
 The choice is genuinely random, and neither player can see it coming — but it
 is no longer an equal chance for every active site. An active site carries
 **pressure**: it goes active at **1** and gains **1** at the end of every
-turn it stays active, up to a maximum of **50**. Each active site's chance of
+turn it stays active, up to a maximum of **50** — except at the start of the
+game, where the opening deal gives each active site a pressure of its own
+(section 8.1). Each active site's chance of
 being drawn is its pressure as a share of the total pressure of all active
 sites, so a site that has been waiting a long time is more likely to be
 picked than one that has just cycled. Because pressure is never less than 1,
@@ -398,7 +428,9 @@ level, so it always takes about ten turns.
 ### 8.3 How long a node lives
 
 A charged node has a **capacity** of 60 units and a **drain** that starts at
-0 and rises at the end of every turn by an amount drawn at random. Which
+0 and rises at the end of every turn by an amount drawn at random — except at
+the start of the game, where the opening deal starts each charged node
+already part-drained (section 8.1). Which
 distribution it draws from depends on whether a ship is standing on it at
 that moment — either player's ship; it makes no difference whose:
 
@@ -575,3 +607,7 @@ check first whenever these numbers are retuned.
 The app guards this with a test that the active pool stays comfortably
 populated over a long run, that expiries stay spread rather than arriving
 together, and that no site waits unboundedly long between cycles.
+
+The opening deal (section 8.1) starts the board closer to this steady state
+than a fixed opening did, so the first twenty turns are no longer an
+unrepresentative settling-in period.
