@@ -1,22 +1,20 @@
 // The shared artwork every ship model `<use>`s: both sides' gradients, the
 // green ship's turbojet group, and each side's whole hull and gauge-icon
-// geometry, declared once here rather than duplicated per ship (see
-// implementation-plan.md D1 - up to fourteen ships are on the board at
-// once, and copying this much markup fourteen times over would repeat every
-// id in it and put well over a thousand extra nodes into the document).
+// geometry, declared once here so every ship's `<use>` shares the same
+// definitions - up to fourteen ships are on the board at once, and each one
+// only needs a reference into this sprite rather than its own copy of every
+// id and every node in it.
 //
 // Mounted once, at the app root, above both the start screen and the game,
 // so it exists whichever screen is showing. It draws nothing itself -
 // everything lives inside `<defs>`, which is never rendered directly but is
 // always referenceable - and is hidden from layout and from the
-// accessibility tree (D2): `position: absolute; width: 0; height: 0;
-// overflow: hidden` in ShipDefs.css, deliberately not `display: none`,
-// which some engines fail to resolve `<use>` references into.
+// accessibility tree: hidden by zero size, not by `display`, in
+// ShipDefs.css, so a `<use>` reference into it still resolves.
 //
-// Ported from `.local/eg_spaceship.html` verbatim (settled decision 1): the
-// only changes from that file are the id renames `shipArt.ts` requires,
-// updated throughout to match, and the SVG-attribute-to-JSX-prop
-// conversion React requires.
+// Ported from `.local/eg_spaceship.html` verbatim: the only changes from
+// that file are the id renames `shipArt.ts` requires, updated throughout
+// to match, and the SVG-attribute-to-JSX-prop conversion React requires.
 
 import { SHIP_ART, SHIP_DEFS_IDS } from "./shipArt";
 import "./ShipDefs.css";

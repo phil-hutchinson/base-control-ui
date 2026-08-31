@@ -6,14 +6,12 @@
 // carries a thick bar just below it; an unlit one is left as a hollow
 // outline with no bar. Icons light left to right (shieldGauge.ts).
 //
-// The gauge sits across the top of the viewBox and the hull low within it
-// (implementation-plan.md D9): the clear band between them is what keeps a
-// site marker, drawn beneath the ship in the same square, readable through
-// the middle of the square. Making the gauge appear only when a shield
-// count is given - rather than a separate boolean flag - keeps "a gauge
-// with no count" and "a count with no gauge" both unrepresentable: the
-// start screen's decorative ships (no game, no shields) simply omit the
-// prop.
+// The gauge sits across the top of the viewBox and the hull low within it:
+// the clear band between them is what keeps a site marker, drawn beneath
+// the ship in the same square, readable through the middle of the square.
+// The shield count is optional: a gauge is drawn only when one is given, so
+// a ship with no shields to show can be drawn without one, keeping "a gauge
+// with no count" and "a count with no gauge" both unrepresentable.
 //
 // Purely decorative - a screen reader gets the ship, and its shield count,
 // from the occupying square's accessible name (squareLabel.ts) - so the SVG

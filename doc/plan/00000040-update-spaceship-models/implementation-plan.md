@@ -166,22 +166,22 @@ should raise it, not act on it.
 
 ## Where the work lands
 
-| File                                                         | What happens to it                                                               |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------- |
-| `src/ships/shipArt.ts` (new)                                 | Sprite id names and the per-side gauge palette/geometry (step 1)                 |
-| `src/ships/ShipDefs.tsx`, `.css` (new)                       | The hidden sprite: both models' defs, mounted once (step 1)                      |
-| `src/ships/ShipDefs.test.tsx` (new)                          | Ids unique and self-consistent inside the sprite (step 1)                        |
-| `src/App.tsx`                                                | Mounts `<ShipDefs />` once, above both screens (step 1)                          |
-| `src/App.test.tsx`                                           | One sprite on both screens (step 1); document-wide id uniqueness (steps 4, 6)    |
-| `src/ships/shieldGauge.ts`, `.test.ts` (new)                 | Which of the four gauge slots are lit at a shield count (step 2)                 |
-| `src/ships/ShipModel.tsx`, `.css`, `.test.tsx` (new)         | One ship, drawn from `<use>` references, gauge optional (step 3)                 |
-| `src/board/BoardSquare.tsx`                                  | Renders `ShipModel` instead of `ShipIcon` (step 4)                               |
-| `src/board/BoardSquare.css`                                  | The dampening selector moves from `.ship-icon` to `.ship-model` (step 4)         |
-| `src/board/ShipIcon.tsx`, `.css`, `.test.tsx`                | **Deleted** (step 4)                                                             |
-| `src/board/shieldArcs.ts`, `.test.ts`                        | **Deleted** (step 4)                                                             |
-| `src/board/Board.test.tsx`, `src/board/BoardSquare.test.tsx` | Selectors move off `.ship-icon` / arcs onto `.ship-model` / gauge slots (step 4) |
-| `src/start/StartScreen.tsx`, `.css`, `.test.tsx`             | The two flanking ships and the three-area layout (step 6)                        |
-| `README.md`                                                  | Checked, updated only if this story falsified something in it (step 8)           |
+| File                                                         | What happens to it                                                                                                     |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `src/ships/shipArt.ts` (new)                                 | Sprite id names and the per-side gauge palette/geometry (step 1)                                                       |
+| `src/ships/ShipDefs.tsx`, `.css` (new)                       | The hidden sprite: both models' defs, mounted once (step 1)                                                            |
+| `src/ships/ShipDefs.test.tsx` (new)                          | Ids unique and self-consistent inside the sprite (step 1)                                                              |
+| `src/App.tsx`                                                | Mounts `<ShipDefs />` once, above both screens (step 1)                                                                |
+| `src/App.test.tsx`                                           | One sprite on both screens (step 1); document-wide id uniqueness (steps 4, 6)                                          |
+| `src/ships/shieldGauge.ts`, `.test.ts` (new)                 | Which of the four gauge slots are lit at a shield count (step 2)                                                       |
+| `src/ships/ShipModel.tsx`, `.css`, `.test.tsx` (new)         | One ship, drawn from `<use>` references, gauge optional (step 3)                                                       |
+| `src/board/BoardSquare.tsx`                                  | Renders `ShipModel` instead of `ShipIcon` (step 4)                                                                     |
+| `src/board/BoardSquare.css`                                  | The dampening selector moves from `.ship-icon` to `.ship-model` (step 4)                                               |
+| `src/board/ShipIcon.tsx`, `.css`, `.test.tsx`                | **Deleted** (step 4)                                                                                                   |
+| `src/board/shieldArcs.ts`, `.test.ts`                        | **Deleted** (step 4)                                                                                                   |
+| `src/board/Board.test.tsx`, `src/board/BoardSquare.test.tsx` | Selectors move off `.ship-icon` / arcs onto `.ship-model` / gauge slots (step 4)                                       |
+| `src/start/StartScreen.tsx`, `.css`, `.test.tsx`             | **Withdrawn** — the two flanking ships and the three-area layout were built, then reverted in full; see step 6's Notes |
+| `README.md`                                                  | Checked, updated only if this story falsified something in it (step 8)                                                 |
 
 Deliberately **not** touched:
 
@@ -318,7 +318,7 @@ values they carry, how many gauge slots are lit — and never "it looks right".
 That is the whole reason steps 5 and 7 are manual gates. Appearance is checked
 by the owner in a real browser, and only there.
 
-### D6 — Start-screen ships are sized from `--play-size`, at exactly one fifth of it
+### D6 — Start-screen ships are sized from `--play-size`, at exactly one fifth of it (withdrawn — see step 6's Notes)
 
 The story asks for "about triple the size they draw at on the board, measured
 against the current viewport — so roughly three board squares across".
@@ -339,7 +339,7 @@ Rejected: a fixed `rem` size, or a `vw`-based clamp of its own — both would
 drift out of step with the board the moment `App.css`'s sizing changes, and
 neither delivers "three board squares" at any particular window size.
 
-### D7 — The start screen becomes a three-area CSS grid with one width breakpoint
+### D7 — The start screen becomes a three-area CSS grid with one width breakpoint (withdrawn — see step 6's Notes)
 
 `.start-screen` is today a centred flex **column** holding the title, two
 option fieldsets and the PLAY button, and is a `flex: 1` child of
@@ -380,7 +380,7 @@ specification.
 second in the DOM. This costs nothing, because the ships are `aria-hidden`
 decoration and are not in the reading order at all.
 
-### D8 — The ships on the start screen are decoration and carry no gauge
+### D8 — The ships on the start screen are decoration and carry no gauge (withdrawn — see step 6's Notes)
 
 `ShipModel` takes an optional shield count. **Given** one, it draws the gauge;
 **omitted**, it draws the hull alone. The start screen omits it — there is no
@@ -902,7 +902,7 @@ the running app.
 
 **Notes:** Read the current `README.md` in full and confirmed it never
 describes what a ship looks like — no mention of shape, silhouette, icon,
-arcs, or artwork — only the shield *rule* (a shield slows a ship down),
+arcs, or artwork — only the shield _rule_ (a shield slows a ship down),
 which this story left untouched. Since the story replaced the ship
 artwork and the shield-arc ring with a gauge but changed no rule, no
 control and no player-facing wording, nothing in the README was

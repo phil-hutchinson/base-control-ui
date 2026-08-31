@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ShipDefs } from "./ShipDefs";
 import { SHIP_ART, SHIP_DEFS_IDS } from "./shipArt";
 
-// jsdom has no SVG rendering (D5): it will not resolve a `<use>` or apply a
+// jsdom has no SVG rendering: it will not resolve a `<use>` or apply a
 // gradient, so every check here is structural - which ids exist, and
 // whether every internal reference resolves to one of them.
 

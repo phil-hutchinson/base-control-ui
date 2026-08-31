@@ -1,10 +1,9 @@
 // The names and numbers behind a ship's artwork: the ids `ShipDefs` gives
 // its shared `<defs>` content and `ShipModel` reads back with `<use>`, plus
 // the shield gauge's geometry and per-side palette. Everything here is
-// lifted verbatim from `.local/eg_spaceship.html` (see
-// implementation-plan.md's "Gauge data" table for the gauge numbers) - this
-// module is the single place an id or a colour is written down, so a rename
-// cannot half-happen between the sprite and the ships that use it.
+// lifted verbatim from `.local/eg_spaceship.html` - this module is the
+// single place an id or a colour is written down, so a rename cannot
+// half-happen between the sprite and the ships that use it.
 //
 // Every id carries a `ship-` prefix so it cannot collide with SiteMarker's
 // `site-<square>-fill` ids or with anything a later story adds.
@@ -59,7 +58,7 @@ export const SHIP_DEFS_IDS = {
 export const GAUGE_SLOT_COUNT = 4;
 
 /** Each slot's x offset in the 0-100 viewBox, left to right, a 23-unit pitch. */
-export const GAUGE_SLOT_X: readonly number[] = [10, 33, 56, 79];
+export const GAUGE_SLOT_X = [10, 33, 56, 79] as const;
 
 /** Every slot's y offset. */
 export const GAUGE_SLOT_Y = 3;
@@ -78,7 +77,7 @@ export const GAUGE_BAR_X2 = 13.5;
 export const GAUGE_BAR_UNDERLAY_STROKE_WIDTH = 8;
 export const GAUGE_BAR_STROKE_WIDTH = 6;
 
-/** A side's gauge colours (implementation-plan.md's "Gauge data" table). */
+/** A side's gauge colours: lit and unlit fill/outline, and the lit bar colour. */
 export interface GaugePalette {
   readonly litFill: string;
   readonly litOutline: string;

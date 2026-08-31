@@ -1,7 +1,6 @@
 /* Takes the sprite out of layout entirely, so mounting it disturbs nothing
-   else on either screen. Not `display: none` - some engines fail to
-   resolve a `<use>` reference into a `display: none` subtree, and the
-   failure mode (every ship invisible) is expensive to diagnose. */
+   else on either screen. Hidden by zero size, not by `display`, so a
+   `<use>` reference into this subtree still resolves. */
 
 .ship-defs {
   position: absolute;
