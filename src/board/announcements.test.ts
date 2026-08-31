@@ -1247,7 +1247,7 @@ describe("announcementForSession", () => {
       lastEvent: event,
     };
     expect(announcementForSession(session)).toBe(
-      "Green ship at H8 attacked the red ship at H9 and both were beaten. The attacker returned to the A1 bay and the defender to the A8 bay, both back to full power. The game is over after 3 rounds. Green wins, 9 energy to 2.",
+      "Green ship at H8 attacked the red ship at H9 and both were beaten. The attacker returned to the A1 bay and the defender to the A8 bay, both keeping the power they were carrying. The game is over after 3 rounds. Green wins, 9 energy to 2.",
     );
   });
 
@@ -1331,7 +1331,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at C6 attacked the red ship at C7 and both were beaten. " +
-        "The attacker returned to the D1 bay and the defender to the A2 bay, both back to full power. " +
+        "The attacker returned to the D1 bay and the defender to the A2 bay, both keeping the power they were carrying. " +
         "Green has 1 action left.",
     );
   });
@@ -1378,7 +1378,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     const sentence = announcementFor(event);
     expect(sentence).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 bay and the defender to the D1 bay, both back to full power. " +
+        "The attacker returned to the A6 bay and the defender to the D1 bay, both keeping the power they were carrying. " +
         "Green has 1 action left.",
     );
     expect(sentence).not.toMatch(/won|lost|advance|held its ground/);
@@ -1428,7 +1428,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 bay and the defender to the D1 bay, both back to full power. " +
+        "The attacker returned to the A6 bay and the defender to the D1 bay, both keeping the power they were carrying. " +
         "Red's turn, 1 action left.",
     );
   });
@@ -1478,7 +1478,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 bay and the defender to the D1 bay, both back to full power. " +
+        "The attacker returned to the A6 bay and the defender to the D1 bay, both keeping the power they were carrying. " +
         "Red has no legal action, so the turn passes. Green's turn, 1 action left.",
     );
   });

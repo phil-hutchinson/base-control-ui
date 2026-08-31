@@ -313,7 +313,7 @@ describe("applyAttack", () => {
       defenderPower: 0 as PowerLevel,
     },
   ])(
-    "sends both ships home at full power and leaves both squares empty, whatever power either side carries ($label)",
+    "sends both ships home carrying the power they had and leaves both squares empty, whatever power either side carries ($label)",
     ({ attackerPower, defenderPower }) => {
       const state = buildState({
         ships: [
@@ -331,8 +331,8 @@ describe("applyAttack", () => {
       }
       const attacker = result.state.ships.find((s) => s.id === "green-1");
       const defender = result.state.ships.find((s) => s.id === "red-1");
-      expect(attacker?.power).toBe(4);
-      expect(defender?.power).toBe(4);
+      expect(attacker?.power).toBe(attackerPower);
+      expect(defender?.power).toBe(defenderPower);
       expect(isBay(attacker!.square)).toBe(true);
       expect(isBay(defender!.square)).toBe(true);
       expect(squareName(attacker!.square)).not.toBe(
@@ -746,7 +746,7 @@ describe("applyAttack", () => {
     const attacker = result.state.ships.find((s) => s.id === "red-1");
     const target = result.state.ships.find((s) => s.id === "green-1");
     expect(attacker && isBay(attacker.square)).toBe(true);
-    expect(attacker?.power).toBe(4);
+    expect(attacker?.power).toBe(2);
     expect(target && isBay(target.square)).toBe(true);
     expect(target?.power).toBe(4);
   });
@@ -942,6 +942,24 @@ describe("assertFightInvariants (rules.md §7)", () => {
       ...before,
       ships: before.ships.map((s) =>
         s.id === "red-1" ? { ...s, square: squareFromName("H15") } : s,
+      ),
+    };
+
+    expect(() =>
+      assertFightInvariants(before, after, new Set(["red-1"])),
+    ).toThrow(RangeError);
+  });
+
+  it("throws when a returned ship's power changed", () => {
+    const before = buildState({
+      ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
+    });
+    const after: GameState = {
+      ...before,
+      ships: before.ships.map((s) =>
+        s.id === "red-1"
+          ? { ...s, square: squareFromName("H15"), power: 4 }
+          : s,
       ),
     };
 

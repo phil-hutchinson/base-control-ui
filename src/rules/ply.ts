@@ -3,9 +3,9 @@
 // from movement.ts, or applied: the ship arrives, spends one action, and
 // refills to full power if it ends in a bay. An attack is either refused,
 // with the reason from combat.ts, or resolved: both ships are placed in
-// bays at full power, drawn at random from the bays standing empty,
-// attacker first, and both squares they left are left empty. There is no
-// winner and no advance.
+// bays drawn at random from the bays standing empty, attacker first,
+// carrying the power each had before the fight, and both squares they left
+// are left empty. There is no winner and no advance.
 // Nothing a ship does changes a site's state: a site's state changes only in
 // the end-of-turn sequence (rules.md §8.6). Every action — a move or an
 // attack — marks the acting ship as having acted this ply, so a further
@@ -281,12 +281,12 @@ export function applyMove(
   return { outcome: "applied", state: settled, effects };
 }
 
-/** Places `shipId` in `bay`, refilling it to full power (rules.md §7.1, §3.1). */
+/** Places `shipId` in `bay`, leaving its power exactly as it was (rules.md §7). */
 function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
   return {
     ...state,
     ships: state.ships.map((ship) =>
-      ship.id === shipId ? { ...ship, square: bay, power: MAX_POWER } : ship,
+      ship.id === shipId ? { ...ship, square: bay } : ship,
     ),
   };
 }
@@ -309,7 +309,9 @@ function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
  * The returned-ship checks pin what §7.1's random draw guarantees: each of
  * the two returned ships ends on a bay square, they do not share a bay, and
  * each lands in a bay that held no ship in `before` — together, exactly what
- * "there is always somewhere to go" promises.
+ * "there is always somewhere to go" promises. Each returned ship's power
+ * must also be exactly what it was in `before`: a fight never changes what a
+ * ship carries (rules.md §7).
  *
  * Exported so a test can hand-construct an otherwise-impossible before/after
  * pair, since it has no other seam.
@@ -359,6 +361,11 @@ export function assertFightInvariants(
           `returned ship "${ship.id}" ended in bay "${updatedName}", which held a ship before the fight: rules.md §7.1 draws only from bays empty at the moment`,
         );
       }
+      if (updated.power !== ship.power) {
+        throw new RangeError(
+          `returned ship "${ship.id}" had ${ship.power} power before the fight and ${updated.power} after: rules.md §7 never changes what a ship carries`,
+        );
+      }
     }
   }
 
@@ -396,10 +403,11 @@ export function assertFightInvariants(
 
 /**
  * Applies an attack by `shipId` on `target` in `state`, or refuses it
- * (rules.md §7). A legal attack never mutates `state`: both ships are placed
- * at full power in a bay drawn at random from the bays standing empty
- * (`drawReturnBay`), the attacker's bay drawn first and the defender's from
- * the bays still empty afterwards, advancing `randomSeed` once per ship.
+ * (rules.md §7). A legal attack never mutates `state`: both ships are placed,
+ * carrying the power each had before the fight, in a bay drawn at random
+ * from the bays standing empty (`drawReturnBay`), the attacker's bay drawn
+ * first and the defender's from the bays still empty afterwards, advancing
+ * `randomSeed` once per ship.
  * Both squares the ships fought from are left empty; there is no winner and
  * no advance. Neither square's site changes state: leaving a node does not
  * end it (rules.md §8.3). The attacking ship is added to `actedThisPly` even

@@ -888,7 +888,33 @@ Verification (automated):
 
 ## Step 3 — A fight leaves both ships' power alone
 
-Status: pending
+Status: committed
+
+Notes: `placeInBay` no longer writes `MAX_POWER`; it places a ship without
+touching its power. `applyAttack`'s and `placeInBay`'s doc comments, and the
+module header comment, now say a returning ship keeps the power it had.
+`assertFightInvariants` gained a check that each returned ship's power is
+unchanged between `before` and `after`, with a new `ply.test.ts` case
+constructing a violation and confirming it throws. `announcements.ts`'s
+`fightSentence` now reads "…both keeping the power they were carrying." in
+place of "both back to full power.", and its doc comment follows.
+`ply.test.ts`'s parameterised fight case now asserts each ship's returned
+power equals its pre-fight power (not 4), and two further fight-power
+assertions elsewhere in the file (one attacker/defender pair that previously
+expected 4/4) were corrected to the ships' actual pre-fight values (2 and 4)
+— these were latent bugs in step 2's fixture conversion, not something this
+step's plan text called out, but they fell out of the same power arithmetic
+this step exists to fix and left them asserting the old reset behaviour if
+untouched. `announcements.test.ts`'s five fight-sentence expectations
+updated to the new wording. No other deviation from the plan.
+
+`npm run typecheck`, `npm run lint` and `npm run format:check` all pass.
+`npm test` passes in full (771/771). `seededReplay.test.ts` passes unedited:
+its three non-vacuity thresholds (>=10 fights, >=10 bay returns, >=10
+charged sites over 40 rounds) still hold and its two seeds still produce
+diverging bay and charged-site sequences, confirming D13 — the games these
+seeds produce legitimately changed at this step and nothing in the file
+needed editing to accommodate that.
 
 Implement §7's change: both ships in a fight are still returned to bays drawn at
 random (§7.1) and both squares are still left empty, but **each ship arrives

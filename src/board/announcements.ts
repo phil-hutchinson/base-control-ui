@@ -362,8 +362,9 @@ function actionEndingClause(
 /**
  * The fight's own sentence (rules.md §7), from the single `fight-resolved`
  * effect an attack always carries: who attacked whom, that both were beaten,
- * and the two bays they landed in, both back to full power. There is no
- * winner and no advance to report — every fight has the same outcome.
+ * and the two bays they landed in, both keeping the power they were
+ * carrying. There is no winner and no advance to report — every fight has
+ * the same outcome.
  */
 function fightSentence(event: AttackedEvent): string {
   const fight = event.effects.find(
@@ -384,7 +385,7 @@ function fightSentence(event: AttackedEvent): string {
     throw new RangeError("a fight-resolved effect always carries two returns");
   }
   const [attackerReturn, defenderReturn] = fight.returns;
-  return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both back to full power.`;
+  return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both keeping the power they were carrying.`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {
