@@ -221,40 +221,6 @@ export function dealOpeningBoard(
   return [siteStates, workingSeed];
 }
 
-/** The five sites that start the game charged (rules.md §8.1). */
-const OPENING_CHARGED_SQUARES: readonly Square[] = [
-  squareAt("H", 8),
-  squareAt("E", 5),
-  squareAt("K", 5),
-  squareAt("E", 11),
-  squareAt("K", 11),
-];
-
-const OPENING_CHARGED_SQUARE_NAMES: ReadonlySet<string> = new Set(
-  OPENING_CHARGED_SQUARES.map(squareName),
-);
-
-const SITE_NAMES: ReadonlySet<string> = new Set(SITES.map(squareName));
-
-/**
- * The state and `level` a site starts the game in, or `undefined` if the
- * given square is not a site at all (rules.md §8.1). The five opening
- * sites — H8, E5, K5, E11, K11 — are `charged` at drain 0; every other site
- * is `active` at pressure 1. Nothing starts dormant.
- */
-export function startingSiteStatus(
-  square: Square,
-): { readonly state: SiteState; readonly level: number } | undefined {
-  const name = squareName(square);
-  if (!SITE_NAMES.has(name)) {
-    return undefined;
-  }
-  if (OPENING_CHARGED_SQUARE_NAMES.has(name)) {
-    return { state: "charged", level: 0 };
-  }
-  return { state: "active", level: STARTING_PRESSURE };
-}
-
 /**
  * How far a site's `level` has travelled through its state's own artwork
  * cycle, clamped to [0, 1]: a charged node's drain against `NODE_CAPACITY`,

@@ -16,7 +16,6 @@ import {
   dealOpeningBoard,
   drawTableAmount,
   siteCyclePosition,
-  startingSiteStatus,
 } from "./sites";
 
 const COLUMN_INDEX = new Map(
@@ -113,47 +112,6 @@ describe("sites", () => {
 describe("the board's charged target (rules.md §8.1, §8.2)", () => {
   it("aims to keep five sites charged", () => {
     expect(TARGET_CHARGED_SITES).toBe(5);
-  });
-});
-
-describe("starting site status (rules.md §8.1)", () => {
-  it("has exactly five sites starting charged at drain 0: H8, E5, K5, E11, K11", () => {
-    const chargedNames = SITES.filter(
-      (site) => startingSiteStatus(site)?.state === "charged",
-    ).map(squareName);
-
-    expect(new Set(chargedNames)).toEqual(
-      new Set(["H8", "E5", "K5", "E11", "K11"]),
-    );
-    expect(chargedNames).toHaveLength(5);
-    for (const site of SITES) {
-      const status = startingSiteStatus(site);
-      if (status?.state === "charged") {
-        expect(status.level).toBe(0);
-      }
-    }
-  });
-
-  it("has the other twelve sites starting active at pressure 1", () => {
-    const activeSites = SITES.filter(
-      (site) => startingSiteStatus(site)?.state === "active",
-    );
-
-    expect(activeSites).toHaveLength(12);
-    for (const site of activeSites) {
-      expect(startingSiteStatus(site)?.level).toBe(1);
-    }
-  });
-
-  it("has no site starting dormant", () => {
-    for (const site of SITES) {
-      expect(startingSiteStatus(site)?.state).not.toBe("dormant");
-    }
-  });
-
-  it("has no site status for a square that is not a site", () => {
-    expect(startingSiteStatus(squareAt("G", 7))).toBeUndefined();
-    expect(startingSiteStatus(squareAt("D", 15))).toBeUndefined();
   });
 });
 

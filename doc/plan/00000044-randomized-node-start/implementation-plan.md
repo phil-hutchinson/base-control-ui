@@ -758,7 +758,28 @@ pass. `grep -rn "startingSiteStatus" src/` returns hits only in
 
 ## Step 5 — `startingGameState` deals the board
 
-Status: pending
+Status: committed
+
+Notes: `gameState.ts`'s `startingGameState` now calls `dealOpeningBoard(randomSeed)`
+after argument validation, storing the returned `siteStates` and the deal's
+advanced seed as `state.randomSeed` (D5); its documentation comment was
+rewritten to describe the dealt opening and to say the seed argument is what
+the deal starts from, not what the first turn draws from. Deleted
+`startingSiteStatus`, `OPENING_CHARGED_SQUARES`, `OPENING_CHARGED_SQUARE_NAMES`
+and `SITE_NAMES` from `sites.ts`; deleted `sites.test.ts`'s "starting site
+status" `describe` block and its now-unused import. Rewrote
+`gameState.test.ts`'s opening assertions against `dealOpeningBoard`'s own
+output for the same seed (exact `siteStates` equality, the advanced-seed
+identity and its inequality with the input seed, the 5/12/0 state counts,
+every level drawn from the matching table, same-seed/different-seed
+determinism); left every non-site case in that file untouched. Confirmed
+(not rewritten) that `sitePool.test.ts`, `fullGame.test.ts`,
+`seededReplay.test.ts` and `endOfTurn.test.ts` all still pass unchanged — no
+bound needed widening. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (793 passed, down from 795: sites.test.ts
+lost 4 cases, gameState.test.ts gained 2) all pass. `grep -rn
+"startingSiteStatus\|OPENING_CHARGED" src/` returns nothing. No deviation from
+the plan.
 
 The behaviour change. In `src/rules/gameState.ts`, `startingGameState` stops
 walking `SITES` calling `startingSiteStatus` and instead calls the deal from
