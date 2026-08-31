@@ -959,7 +959,42 @@ legitimately change here, and nothing in the file is edited to accommodate that.
 
 ## Step 4 — A bay restores a point of power at the end of its owner's turn
 
-Status: pending
+Status: committed
+
+Notes: `endOfTurn.ts` step 1's gain branch now reads `(siteState ===
+"dormant" || isBay(ship.square)) && ship.power < MAX_POWER`, raising the
+same `power-gained` effect (D5); the step-1 comment now names the bay case
+and cites §3.1/§3.2. `announcements.ts` needed no change — its existing gain
+clause and comment were already cause-agnostic — confirmed by reading it and
+by the new passing test. Added five new cases to `endOfTurn.test.ts` (a
+hand-built ship in a bay gains a point; a ship already at 4 in a bay gains
+nothing and raises no effect; no `energy-collected`/`energy-penalty` effect
+and no energy-total change for a ship in a bay; a ship of the other side in
+a bay gains nothing that turn; a bay gain and a node loss in the same ply
+both fire, in fleet order) and one case to `announcements.test.ts` proving
+the gain clause reads the same way for a bay square as for a dormant site.
+Per the step's own note, ships were placed in bays below full power by
+hand-built state rather than by moving them there, since `applyMove`'s
+instant refill (removed only in step 5) would otherwise leave nothing for
+the new rule to give.
+
+**Deviation, not in the plan's step-4 checklist but required to keep the
+suite green:** because `ACTIONS_PER_PLY` is 1, `applyAttack` always runs
+`runEndOfTurn` within the same call (it is always the ply's last action), so
+five pre-existing `ply.test.ts` cases that send a ship into a bay below full
+power as the _moving_ side's ship now legitimately observe that ship gaining
+a point in the same call, immediately after the fight — the very interaction
+step 6's `recovery.test.ts` is planned to pin. Updated those cases' expected
+power values and effect lists to the new, correct behaviour (the fight
+itself still leaves both ships' power exactly as it found them, asserted via
+the unchanged `fight-resolved` snapshot; the subsequent end-of-turn step
+then gives the moving side's returned ship its point, never the non-moving
+side's). This is a consequence of implementing the rule correctly, not a
+change of the rule; recorded here because the plan's step-4 test list named
+only `endOfTurn.test.ts` and `announcements.test.ts`.
+
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(777/777) all pass.
 
 Implement §3.1's and §8.6 step 1's new bay case: a ship of the moving side
 standing **in a bay** at the end of its owner's turn gains one power, to the

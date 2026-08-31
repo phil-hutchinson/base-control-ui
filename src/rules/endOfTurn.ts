@@ -17,6 +17,7 @@
 
 import type { Square } from "./board";
 import { squareName } from "./board";
+import { isBay } from "./bays";
 import { type SiteChargedEffect, runChargeDraw } from "./chargeDraw";
 import {
   chargedNodesHeldBy,
@@ -44,7 +45,7 @@ import {
   drawTableAmount,
 } from "./sites";
 
-/** A ship on a dormant site gained a point of power at the end of its side's turn (§8.6 step 1, §4.1). */
+/** A ship on a dormant site, or in a bay, gained a point of power at the end of its side's turn (§8.6 step 1, §4.1, §3.1). */
 export interface PowerGainedEffect {
   readonly type: "power-gained";
   readonly shipId: ShipId;
@@ -134,10 +135,12 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   const effects: EndOfTurnEffect[] = [];
 
   // Step 1: the moving player's ships on charged nodes lose a point of
-  // power, floored at 0, and those on dormant sites gain one, capped at 4
-  // (§4.1). An active site does neither. One pass over the fleet, so the
-  // effects come out in fleet order with losses and gains interleaved
-  // exactly as the ships are ordered.
+  // power, floored at 0, and those on dormant sites or in a bay gain one,
+  // capped at 4 (§4.1, §3.1). An active site does neither. A bay and a site
+  // can never be the same square (§3.2), so the two gain conditions never
+  // both apply. One pass over the fleet, so the effects come out in fleet
+  // order with losses and gains interleaved exactly as the ships are
+  // ordered.
   const ships = state.ships.map((ship) => {
     if (ship.side !== side) {
       return ship;
@@ -154,7 +157,10 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
       });
       return { ...ship, power };
     }
-    if (siteState === "dormant" && ship.power < MAX_POWER) {
+    if (
+      (siteState === "dormant" || isBay(ship.square)) &&
+      ship.power < MAX_POWER
+    ) {
       const power = (ship.power + 1) as PowerLevel;
       effects.push({
         type: "power-gained",

@@ -331,7 +331,13 @@ describe("applyAttack", () => {
       }
       const attacker = result.state.ships.find((s) => s.id === "green-1");
       const defender = result.state.ships.find((s) => s.id === "red-1");
-      expect(attacker?.power).toBe(attackerPower);
+      // The fight itself leaves both ships' power exactly as it found them
+      // (asserted below, from the fight-resolved snapshot). The attack is
+      // this ply's only action, though, so it also ends the ply — and the
+      // attacker (the moving side) then gains a point in its bay under
+      // §8.6 step 1 if it has anything left to gain; the defender, not the
+      // moving side this ply, does not.
+      expect(attacker?.power).toBe(Math.min(attackerPower + 1, 4));
       expect(defender?.power).toBe(defenderPower);
       expect(isBay(attacker!.square)).toBe(true);
       expect(isBay(defender!.square)).toBe(true);
@@ -746,7 +752,11 @@ describe("applyAttack", () => {
     const attacker = result.state.ships.find((s) => s.id === "red-1");
     const target = result.state.ships.find((s) => s.id === "green-1");
     expect(attacker && isBay(attacker.square)).toBe(true);
-    expect(attacker?.power).toBe(2);
+    // The attack is this ply's only action, so it also ends the ply — the
+    // attacker (red, the moving side) then gains a point in its bay under
+    // §8.6 step 1; the target (green, not the moving side this ply) does
+    // not.
+    expect(attacker?.power).toBe(3);
     expect(target && isBay(target.square)).toBe(true);
     expect(target?.power).toBe(4);
   });
@@ -764,12 +774,22 @@ describe("applyAttack", () => {
     const returnedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(isBay(returnedShip!.square)).toBe(true);
     // Its one action is spent even though it ends inside a bay itself, so
-    // the ply ends here rather than waiting for a further action.
+    // the ply ends here rather than waiting for a further action — and
+    // that end-of-turn step also gives the returned ship a point of power
+    // in its bay (§8.6 step 1, §3.1), since it is the moving side.
     expect(result.effects).toContainEqual({
       type: "ply-ended",
       side: "green",
       sideToMove: "red",
-      endOfTurn: [],
+      endOfTurn: [
+        {
+          type: "power-gained",
+          shipId: "green-1",
+          side: "green",
+          square: returnedShip!.square,
+          power: 3,
+        },
+      ],
     });
 
     // Built directly rather than played into (rules.md §5): this stands
@@ -1049,11 +1069,22 @@ describe("applyPassGuard", () => {
     expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
     expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
+    // The pass still runs the end-of-turn sequence in full, and green-1 is
+    // sitting in its bay, so it gains a point of power there (§8.6 step 1,
+    // §3.1).
     expect(result.effect).toEqual({
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
-      endOfTurn: [],
+      endOfTurn: [
+        {
+          type: "power-gained",
+          shipId: "green-1",
+          side: "green",
+          square: squareFromName("A2"),
+          power: 1,
+        },
+      ],
     });
   });
 

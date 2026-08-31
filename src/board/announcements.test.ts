@@ -533,6 +533,36 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
+  it("announces a point of power gained in a bay the same way as on a dormant site", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "power-gained",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("A", 2),
+              power: 3,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at A2 gained a point of power, now on 3. Red's turn, 1 action left.",
+    );
+  });
+
   it("groups several points of power gained in one sequence into one clause", () => {
     const event: MovedEvent = {
       type: "moved",

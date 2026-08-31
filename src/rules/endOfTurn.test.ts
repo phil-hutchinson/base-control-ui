@@ -210,6 +210,106 @@ describe("runEndOfTurn — step 1, the power gain (§4.1)", () => {
   });
 });
 
+describe("runEndOfTurn — step 1, the bay gain (§3.1, §4.1)", () => {
+  it("gains a point of power for a ship standing in a bay at the end of its owner's turn", () => {
+    const state = buildState({
+      sideToMove: "green",
+      ships: [ship("green-1", "green", "A2", 2)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(3);
+    expect(result.effects).toContainEqual({
+      type: "power-gained",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("A2"),
+      power: 3,
+    });
+  });
+
+  it("leaves a ship already at 4 power in a bay at 4 and raises no effect for it", () => {
+    const state = buildState({
+      sideToMove: "green",
+      ships: [ship("green-1", "green", "A2", 4)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(4);
+    expect(
+      result.effects.some((effect) => effect.type === "power-gained"),
+    ).toBe(false);
+  });
+
+  it("collects and pays no energy for a ship recovering in a bay", () => {
+    const state = buildState({
+      sideToMove: "green",
+      ships: [ship("green-1", "green", "A2", 2)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(
+      result.effects.some((effect) => effect.type === "energy-collected"),
+    ).toBe(false);
+    expect(
+      result.effects.some((effect) => effect.type === "energy-penalty"),
+    ).toBe(false);
+    expect(result.state.energy).toEqual({ green: 0, red: 0 });
+  });
+
+  it("gains nothing for a ship of the other side sitting in a bay this turn", () => {
+    const state = buildState({
+      sideToMove: "green",
+      ships: [ship("red-1", "red", "A2", 2)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.ships.find((s) => s.id === "red-1")?.power).toBe(2);
+    expect(
+      result.effects.some((effect) => effect.type === "power-gained"),
+    ).toBe(false);
+  });
+
+  it("reports both a gain and a loss when one ship recovers in a bay while another holds a node", () => {
+    const state = buildState({
+      sideToMove: "green",
+      siteStates: { H8: ["charged", 1] },
+      ships: [
+        ship("green-1", "green", "A2", 2),
+        ship("green-2", "green", "H8", 3),
+      ],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "power-gained",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("A2"),
+      power: 3,
+    });
+    expect(result.effects).toContainEqual({
+      type: "power-lost",
+      shipId: "green-2",
+      side: "green",
+      square: squareFromName("H8"),
+      power: 2,
+    });
+    const gainIndex = result.effects.findIndex(
+      (effect) => effect.type === "power-gained",
+    );
+    const lossIndex = result.effects.findIndex(
+      (effect) => effect.type === "power-lost",
+    );
+    expect(gainIndex).toBeLessThan(lossIndex);
+  });
+});
+
 describe("runEndOfTurn — step 3, drain (§8.3)", () => {
   it("rises an empty node's drain by 1, 2 or 3, and never anything else", () => {
     const observed = new Set<number>();
