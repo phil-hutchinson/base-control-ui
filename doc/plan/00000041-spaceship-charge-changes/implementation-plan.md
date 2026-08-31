@@ -196,7 +196,7 @@ windows are deliberate; no step should try to paper over the one it sits in:
 | After step | The app behaves like this                                                                                            |
 | ---------- | -------------------------------------------------------------------------------------------------------------------- |
 | 1          | 0.16 in full: shields, gained on a node, stripped by a bay and by a fight                                            |
-| 2          | 0.17's first change in full — power, right way up — with a fight and a bay both still resetting it (now to 0 power)  |
+| 2          | 0.16 exactly, in 0.17's units: power, right way up, with a fight and a bay both still refilling a ship to full power |
 | 3          | As step 2, plus a fight leaves both ships' power alone                                                               |
 | 4          | As step 3, plus a bay restores a point a turn — while _also_ still refilling instantly on arrival                    |
 | 5          | 0.17 in full                                                                                                         |
@@ -710,7 +710,56 @@ refills it at once.
 
 ## Step 2 — The reskin: power replaces shields, everywhere, at once
 
-Status: pending
+Status: committed
+
+Notes: The rename and inversion are complete across all twelve source files
+and eighteen-plus test files (plus `power.ts`/`power.test.ts` and
+`powerGauge.ts`/`powerGauge.test.ts` renamed from their `shields`/
+`shieldGauge` originals). `grep -rin "shield" src/` returns nothing.
+
+**Plan defect found and corrected mid-step.** The plan as first written
+mandated that `applyMove` and `placeInBay` write a literal `0` for a ship
+ending in a bay or returning from a fight, and called this "knowingly the
+wrong game for three commits." That contradicted **D3** (the reskin moves no
+game), **D4** (the conversion rule `power = 4 - shields` applies to every
+literal, including these two: the old code wrote `shields: 0`, a _fully
+mobile_ ship, so the faithful conversion is `MAX_POWER`, not `MIN_POWER`) and
+**D13** (`seededReplay.test.ts` must pass unedited at this step, with any
+diff in its behaviour treated as a bug in the reskin). Implementing the plan
+as first written left `seededReplay.test.ts`'s non-vacuity case short (7
+fights against a threshold of 10, seed 20260819/40 rounds); a controlled A/B
+run (`playSeededGame` against the pre-story code, this step's code as first
+written, and this step's code with the bay/fight reset patched to
+`MAX_POWER`) gave 13 / 7 / 13 fights, isolating the entire divergence to that
+one literal and proving the rest of the reskin — reach included — moved
+nothing. Reported to the orchestrator rather than resolved unilaterally
+(fixing it required either softening `ply.ts` against the plan's explicit
+"do not try to soften it here," or editing a test D13 said must stay
+unedited — not a call to make alone); the orchestrator resolved it in favour
+of D3/D4/D13, corrected the plan text (`ply.ts`'s bullet, the announcements
+bullet, and D1's step-2 behaviour-table row, which now reads "0.16 exactly,
+in 0.17's units" with no wrong-game window), and this step was finished on
+that corrected basis: `applyMove` writes `power: endsInBay ? MAX_POWER :
+ship.power`, `placeInBay` writes `power: MAX_POWER`, the `power-reset` effect
+fires on `power < MAX_POWER` (the mirror of the old `shields > 0`), and the
+two announcement sentences say what the reset now does ("… into the A10 bay
+and refilled to full power." / "… both back to full power.") rather than
+carrying the false "lost its power" / "both with no power" wording a
+mechanical rename would have left behind.
+
+The D3 reach comparison (`reachFrom` at `H8`, `A1`, `A8` for shields
+4,3,2,1,0 against power 0,1,2,3,4) is byte-for-byte identical, entry order
+included — confirmed with a throwaway script outside the repo, per the
+step's verification — so the reach table's re-keying is provably a pure
+reskin. `movement.test.ts`'s expected destination-square literals are
+byte-identical to before (only the `shields`→`power` identifiers and the
+input values changed).
+
+`npm test` passes in full (770/770), `seededReplay.test.ts` **unedited** —
+back to 13 fights, as the A/B run predicted, and both other cases in that
+file (exact replay from the same seed, divergence from a different one)
+hold. `fullGame.test.ts` passes unedited. `npm run typecheck`, `npm run
+lint` and `npm run format:check` all pass.
 
 Rename the ship's number to **power** and invert its polarity throughout the
 app and its tests, in **one** commit. `power = 4 − shields` exactly; no branch
@@ -748,13 +797,26 @@ attacker.shields)` call sites and the comments around them.
   the `EndOfTurnEffect` union.
 - **`src/rules/ply.ts`** — `FightShip.shields` → `FightShip.power`,
   `toFightShip`, and every doc comment that describes shields. `applyMove`
-  still zeroes a ship that ends in a bay, and `placeInBay` still zeroes a
-  returning ship — but the value they write is now `MIN_POWER` (0), which under
-  the flip means _drained_, not _fresh_. **This is knowingly the wrong game for
-  three commits** and is exactly what steps 3 and 5 remove; do not try to
-  soften it here. Rename the `"shields-reset"` `MoveEffect` member to
+  still resets a ship that ends in a bay and `placeInBay` still resets a
+  returning ship, and the value they write is **`MAX_POWER` (4)**. **D4**'s
+  conversion rule applies here exactly as it applies everywhere else: the old
+  code wrote `shields: 0`, which was a **fully mobile** ship, and `4 − 0` is 4.
+  Writing `MIN_POWER` would invert the behaviour rather than reskin it, moving
+  games this step is required to leave exactly where they are (**D3**) — which
+  is precisely what `seededReplay.test.ts` catches (**D13**). The old rule is
+  still in force after this step, restated in the new units; steps 3 and 5 are
+  what remove it. The `power-reset` effect therefore fires when the arriving
+  ship had something to **gain** (`power < MAX_POWER`), the mirror of the old
+  `shields > 0`. Rename the `"shields-reset"` `MoveEffect` member to
   `"power-reset"` so nothing in the codebase still says shield (step 5 deletes
   it outright).
+
+  _Corrected by the orchestrator after the step's first attempt. The plan as
+  written mandated `MIN_POWER` here and called it "knowingly the wrong game for
+  three commits"; that contradicted D3, D4 and D13, and the implementing agent
+  stopped rather than pick a side, which was the right call. There is no
+  wrong-game window: after this step the app plays 0.16 exactly, in 0.17's
+  units._
 
 ### The presentation layer
 
@@ -778,11 +840,13 @@ attacker.shields)` call sites and the comments around them.
 - **`src/board/announcements.ts`** — `shieldGainedClause` / `shieldLostClause`
   become `powerGainedClause` / `powerLostClause` with the wording from **D9**,
   and the clause **order is preserved** so the charged-node (loss) clause comes
-  first (**D7**). The move sentence's bay branch keeps its `and lost its
-shields` tail for now — it still tells the truth this commit — but reads
-  "power" (`… into the A10 bay and lost its power.`); step 5 removes the branch
-  wholesale. The fight sentence's "both with no shields" becomes "both with no
-  power" for the same one commit; step 3 rewrites it. The out-of-range rejection
+  first (**D7**). The move sentence's bay branch stays for now — the
+  reset is still in force this commit — but its tail has to state what the
+  reset now does: `… into the A10 bay and refilled to full power.` Step 5
+  removes the branch wholesale. The fight sentence's "both with no shields"
+  becomes "both back to full power" for the same one commit; step 3 rewrites
+  it. Neither tail may be left as a mechanical rename ("lost its power", "both
+  with no power"): under the flip those sentences are simply false. The out-of-range rejection
   takes its final wording from **D12** now, since it is a statement about reach
   and reach is settled by this step.
 

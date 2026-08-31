@@ -32,6 +32,7 @@ import {
   shipsBySquare,
   siteStateAt,
 } from "./gameState";
+import { MAX_POWER, MIN_POWER, type PowerLevel } from "./power";
 import {
   DORMANT_RECOVERY_TABLE,
   EMPTY_NODE_DRAIN_TABLE,
@@ -42,24 +43,23 @@ import {
   STARTING_PRESSURE,
   drawTableAmount,
 } from "./sites";
-import { MAX_SHIELDS, MIN_SHIELDS, type ShieldCount } from "./shields";
 
-/** A ship on a charged node gained a shield at the end of its side's turn (§8.6 step 1, §4.1). */
-export interface ShieldGainedEffect {
-  readonly type: "shield-gained";
+/** A ship on a dormant site gained a point of power at the end of its side's turn (§8.6 step 1, §4.1). */
+export interface PowerGainedEffect {
+  readonly type: "power-gained";
   readonly shipId: ShipId;
   readonly side: Side;
   readonly square: Square;
-  readonly shields: ShieldCount;
+  readonly power: PowerLevel;
 }
 
-/** A ship on a dormant site lost a shield at the end of its side's turn (§8.6 step 1, §4.1). */
-export interface ShieldLostEffect {
-  readonly type: "shield-lost";
+/** A ship on a charged node lost a point of power at the end of its side's turn (§8.6 step 1, §4.1). */
+export interface PowerLostEffect {
+  readonly type: "power-lost";
   readonly shipId: ShipId;
   readonly side: Side;
   readonly square: Square;
-  readonly shields: ShieldCount;
+  readonly power: PowerLevel;
 }
 
 /** The side that just played collected energy for the charged nodes it holds (§8.6 step 2, §8.4). */
@@ -100,8 +100,8 @@ export interface SiteWentActiveEffect {
 
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
 export type EndOfTurnEffect =
-  | ShieldGainedEffect
-  | ShieldLostEffect
+  | PowerGainedEffect
+  | PowerLostEffect
   | EnergyCollectedEffect
   | EnergyPenaltyEffect
   | NodeRanOutEffect
@@ -133,37 +133,37 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   const occupants = shipsBySquare(state);
   const effects: EndOfTurnEffect[] = [];
 
-  // Step 1: the moving player's ships on charged nodes gain a shield,
-  // capped at 4, and those on dormant sites lose one, floored at 0 (§4.1).
-  // An active site does neither. One pass over the fleet, so the effects
-  // come out in fleet order with gains and losses interleaved exactly as
-  // the ships are ordered.
+  // Step 1: the moving player's ships on charged nodes lose a point of
+  // power, floored at 0, and those on dormant sites gain one, capped at 4
+  // (§4.1). An active site does neither. One pass over the fleet, so the
+  // effects come out in fleet order with losses and gains interleaved
+  // exactly as the ships are ordered.
   const ships = state.ships.map((ship) => {
     if (ship.side !== side) {
       return ship;
     }
     const siteState = siteStateAt(state, ship.square);
-    if (siteState === "charged" && ship.shields < MAX_SHIELDS) {
-      const shields = (ship.shields + 1) as ShieldCount;
+    if (siteState === "charged" && ship.power > MIN_POWER) {
+      const power = (ship.power - 1) as PowerLevel;
       effects.push({
-        type: "shield-gained",
+        type: "power-lost",
         shipId: ship.id,
         side: ship.side,
         square: ship.square,
-        shields,
+        power,
       });
-      return { ...ship, shields };
+      return { ...ship, power };
     }
-    if (siteState === "dormant" && ship.shields > MIN_SHIELDS) {
-      const shields = (ship.shields - 1) as ShieldCount;
+    if (siteState === "dormant" && ship.power < MAX_POWER) {
+      const power = (ship.power + 1) as PowerLevel;
       effects.push({
-        type: "shield-lost",
+        type: "power-gained",
         shipId: ship.id,
         side: ship.side,
         square: ship.square,
-        shields,
+        power,
       });
-      return { ...ship, shields };
+      return { ...ship, power };
     }
     return ship;
   });

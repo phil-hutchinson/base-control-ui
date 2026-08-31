@@ -104,7 +104,7 @@ export function Board({ session, onIntent }: BoardProps) {
           ? siteCyclePosition(siteStatus.state, siteStatus.level)
           : undefined;
         const ship = ships.get(name);
-        const occupant = ship && { side: ship.side, shields: ship.shields };
+        const occupant = ship && { side: ship.side, power: ship.power };
         const condition = ship && shipCondition(ship);
         const hasActed = ship
           ? session.state.actedThisPly.includes(ship.id)

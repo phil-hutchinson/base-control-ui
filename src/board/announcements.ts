@@ -15,8 +15,8 @@ import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
   EnergyPenaltyEffect,
-  ShieldGainedEffect,
-  ShieldLostEffect,
+  PowerGainedEffect,
+  PowerLostEffect,
 } from "../rules/endOfTurn";
 import type { Side } from "../rules/fleet";
 import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
@@ -33,7 +33,7 @@ import type {
   PassEffect,
   PlyEndedEffect,
 } from "../rules/ply";
-import { MAX_SHIELDS, MIN_SHIELDS } from "../rules/shields";
+import { MAX_POWER, MIN_POWER } from "../rules/power";
 import type {
   AttackedEvent,
   MovedEvent,
@@ -119,53 +119,54 @@ function joinWithAnd(items: readonly string[]): string {
 }
 
 /**
- * All of a sequence's shield gains as one clause, naming the squares once
- * rather than repeating a sentence per ship. A ship reaching the cap of 4 is
- * named as such.
+ * All of a sequence's power gains as one clause, naming the squares once
+ * rather than repeating a sentence per ship. A ship reaching the maximum of
+ * 4 is named as such. True of a ship on a dormant site or in a bay alike —
+ * the clause never names which.
  */
-function shieldGainedClause(effects: readonly ShieldGainedEffect[]): string {
+function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
   const side = capitalize(effects[0].side);
-  const atCap = effects
-    .filter((effect) => effect.shields === MAX_SHIELDS)
+  const atMax = effects
+    .filter((effect) => effect.power === MAX_POWER)
     .map((effect) => squareName(effect.square));
 
   if (effects.length === 1) {
     const [effect] = effects;
     const square = squareName(effect.square);
-    return effect.shields === MAX_SHIELDS
-      ? `${side} ship at ${square} gained a shield, reaching the cap of 4.`
-      : `${side} ship at ${square} gained a shield, now on ${effect.shields}.`;
+    return effect.power === MAX_POWER
+      ? `${side} ship at ${square} gained a point of power, reaching the maximum of 4.`
+      : `${side} ship at ${square} gained a point of power, now on ${effect.power}.`;
   }
 
   const squares = effects.map((effect) => squareName(effect.square));
-  const base = `${side} ships at ${joinWithAnd(squares)} each gained a shield.`;
-  if (atCap.length === 0) {
+  const base = `${side} ships at ${joinWithAnd(squares)} each gained a point of power.`;
+  if (atMax.length === 0) {
     return base;
   }
-  return `${base} ${joinWithAnd(atCap)} reached the cap of 4.`;
+  return `${base} ${joinWithAnd(atMax)} reached the maximum of 4.`;
 }
 
 /**
- * All of a sequence's shield losses as one clause, the mirror of
- * `shieldGainedClause`: the squares named once rather than repeating a
+ * All of a sequence's power losses as one clause, the mirror of
+ * `powerGainedClause`: the squares named once rather than repeating a
  * sentence per ship. A ship reaching 0 is named as such.
  */
-function shieldLostClause(effects: readonly ShieldLostEffect[]): string {
+function powerLostClause(effects: readonly PowerLostEffect[]): string {
   const side = capitalize(effects[0].side);
   const atFloor = effects
-    .filter((effect) => effect.shields === MIN_SHIELDS)
+    .filter((effect) => effect.power === MIN_POWER)
     .map((effect) => squareName(effect.square));
 
   if (effects.length === 1) {
     const [effect] = effects;
     const square = squareName(effect.square);
-    return effect.shields === MIN_SHIELDS
-      ? `${side} ship at ${square} lost a shield, reaching 0.`
-      : `${side} ship at ${square} lost a shield, now on ${effect.shields}.`;
+    return effect.power === MIN_POWER
+      ? `${side} ship at ${square} lost a point of power, reaching 0.`
+      : `${side} ship at ${square} lost a point of power, now on ${effect.power}.`;
   }
 
   const squares = effects.map((effect) => squareName(effect.square));
-  const base = `${side} ships at ${joinWithAnd(squares)} each lost a shield.`;
+  const base = `${side} ships at ${joinWithAnd(squares)} each lost a point of power.`;
   if (atFloor.length === 0) {
     return base;
   }
@@ -213,9 +214,10 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
 
 /**
  * The clauses an end-of-turn sequence produced, in the order the sequence
- * produced them. All of a sequence's shield gains are grouped into one
- * clause, and all of its shield losses into another, gains ahead of losses
- * (§4.1's mirror pair) and both ahead of the rest. The two board-only site
+ * produced them. All of a sequence's power losses are grouped into one
+ * clause, and all of its power gains into another, the charged-node loss
+ * clause ahead of the gain clause so it sits next to the energy-collection
+ * sentence that follows it, both ahead of the rest. The two board-only site
  * transitions are judged separately: `site-charged` speaks — a node
  * appearing is the only way one ever appears now, and it is the thing both
  * players are racing towards — while `site-went-active` produces no clause
@@ -230,24 +232,24 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
 
-  const shieldGains = effects.filter(
-    (effect): effect is ShieldGainedEffect => effect.type === "shield-gained",
+  const powerLosses = effects.filter(
+    (effect): effect is PowerLostEffect => effect.type === "power-lost",
   );
-  if (shieldGains.length > 0) {
-    clauses.push(shieldGainedClause(shieldGains));
+  if (powerLosses.length > 0) {
+    clauses.push(powerLostClause(powerLosses));
   }
 
-  const shieldLosses = effects.filter(
-    (effect): effect is ShieldLostEffect => effect.type === "shield-lost",
+  const powerGains = effects.filter(
+    (effect): effect is PowerGainedEffect => effect.type === "power-gained",
   );
-  if (shieldLosses.length > 0) {
-    clauses.push(shieldLostClause(shieldLosses));
+  if (powerGains.length > 0) {
+    clauses.push(powerGainedClause(powerGains));
   }
 
   for (const effect of effects) {
     switch (effect.type) {
-      case "shield-gained":
-      case "shield-lost":
+      case "power-gained":
+      case "power-lost":
       case "site-went-active":
         break;
       case "energy-collected":
@@ -297,11 +299,11 @@ function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);
   const to = squareName(event.to);
   const enteredBay = event.effects.some(
-    (effect) => effect.type === "shields-reset",
+    (effect) => effect.type === "power-reset",
   );
 
   if (enteredBay) {
-    return `${capitalize(event.side)} ship moved from ${from} into the ${to} bay and lost its shields.`;
+    return `${capitalize(event.side)} ship moved from ${from} into the ${to} bay and refilled to full power.`;
   }
 
   return `${capitalize(event.side)} ship moved from ${from} to ${to}.`;
@@ -360,8 +362,8 @@ function actionEndingClause(
 /**
  * The fight's own sentence (rules.md §7), from the single `fight-resolved`
  * effect an attack always carries: who attacked whom, that both were beaten,
- * and the two bays they landed in with no shields. There is no winner and no
- * advance to report — every fight has the same outcome.
+ * and the two bays they landed in, both back to full power. There is no
+ * winner and no advance to report — every fight has the same outcome.
  */
 function fightSentence(event: AttackedEvent): string {
   const fight = event.effects.find(
@@ -382,7 +384,7 @@ function fightSentence(event: AttackedEvent): string {
     throw new RangeError("a fight-resolved effect always carries two returns");
   }
   const [attackerReturn, defenderReturn] = fight.returns;
-  return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both with no shields.`;
+  return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both back to full power.`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {
@@ -409,7 +411,7 @@ function rejectionSentence(event: RejectedEvent): string {
     case "target-on-charged-node":
       return "A ship holding a charged node cannot be attacked.";
     case "target-out-of-range":
-      return `${square} is out of attack range. A ship attacks as far as it moves, so shields shorten its reach — a ship with four shields can only strike one square up, down, left or right.`;
+      return `${square} is out of attack range. A ship attacks as far as it moves, so a drained ship barely strikes at all — a ship at 0 power can only strike one square up, down, left or right.`;
     case "attack-path-blocked":
       return `Another ship stands in the way, so the attack cannot reach ${square}.`;
     // Unreachable through the board's own gesture — activating a friendly

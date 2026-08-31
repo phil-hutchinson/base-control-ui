@@ -10,16 +10,16 @@ import {
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, SiteStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
-import type { ShieldCount } from "./shields";
+import type { PowerLevel } from "./power";
 import type { SiteState } from "./sites";
 
 function ship(
   id: ShipId,
   side: "green" | "red",
   square: string,
-  shields: ShieldCount = 0,
+  power: PowerLevel = 4,
 ): Ship {
-  return { id, side, square: squareFromName(square), shields };
+  return { id, side, square: squareFromName(square), power };
 }
 
 function siteStatuses(
@@ -62,7 +62,7 @@ describe("attackReach", () => {
       buildState({
         ships: [
           ship("green-1", "green", "H8", 2),
-          ship("red-1", "red", "H10", 0),
+          ship("red-1", "red", "H10", 4),
         ],
       }),
       "green-1",
@@ -77,8 +77,8 @@ describe("attackReach", () => {
     const entry = attackReach(
       buildState({
         ships: [
-          ship("green-1", "green", "H8", 1),
-          ship("red-1", "red", "J10", 0),
+          ship("green-1", "green", "H8", 3),
+          ship("red-1", "red", "J10", 4),
         ],
       }),
       "green-1",
@@ -93,8 +93,8 @@ describe("attackReach", () => {
     const entry = attackReach(
       buildState({
         ships: [
-          ship("green-1", "green", "H8", 4),
-          ship("red-1", "red", "A1", 0),
+          ship("green-1", "green", "H8", 0),
+          ship("red-1", "red", "A1", 4),
         ],
       }),
       "green-1",
@@ -106,17 +106,17 @@ describe("attackReach", () => {
 });
 
 describe("attackRefusalReason / legalTargets", () => {
-  it("a 4-shield ship's targets are its four orthogonal neighbours, and never a diagonal one", () => {
+  it("a 0-power ship's targets are its four orthogonal neighbours, and never a diagonal one", () => {
     const orthogonalNeighbours = ["G8", "I8", "H7", "H9"];
     const diagonalNeighbours = ["G7", "G9", "I7", "I9"];
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H8", 4),
+        ship("green-1", "green", "H8", 0),
         ...orthogonalNeighbours.map((square, index) =>
-          ship(`red-o-${index}`, "red", square, 0),
+          ship(`red-o-${index}`, "red", square, 4),
         ),
         ...diagonalNeighbours.map((square, index) =>
-          ship(`red-d-${index}`, "red", square, 0),
+          ship(`red-d-${index}`, "red", square, 4),
         ),
       ],
     });
@@ -129,13 +129,13 @@ describe("attackRefusalReason / legalTargets", () => {
     );
   });
 
-  it("a 3-shield ship's targets are exactly the eight neighbours around it", () => {
+  it("a 1-power ship's targets are exactly the eight neighbours around it", () => {
     const neighbours = ["G7", "G8", "G9", "H7", "H9", "I7", "I8", "I9"];
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H8", 3),
+        ship("green-1", "green", "H8", 1),
         ...neighbours.map((square, index) =>
-          ship(`red-${index}`, "red", square, 0),
+          ship(`red-${index}`, "red", square, 4),
         ),
       ],
     });
@@ -145,12 +145,12 @@ describe("attackRefusalReason / legalTargets", () => {
     );
   });
 
-  it("an unshielded ship can attack three squares orthogonally and two diagonally", () => {
+  it("a full-power ship can attack three squares orthogonally and two diagonally", () => {
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H8", 0),
-        ship("red-orthogonal", "red", "H11", 0),
-        ship("red-diagonal", "red", "J10", 0),
+        ship("green-1", "green", "H8", 4),
+        ship("red-orthogonal", "red", "H11", 4),
+        ship("red-diagonal", "red", "J10", 4),
       ],
     });
 
@@ -166,21 +166,21 @@ describe("attackRefusalReason / legalTargets", () => {
     const withBlocker = buildState({
       ships: [
         ship("green-1", "green", "H8", 2),
-        ship("green-2", "green", "H9", 0),
-        ship("red-1", "red", "H10", 0),
+        ship("green-2", "green", "H9", 4),
+        ship("red-1", "red", "H10", 4),
       ],
     });
     const withEnemyBlocker = buildState({
       ships: [
         ship("green-1", "green", "H8", 2),
-        ship("red-blocker", "red", "H9", 0),
-        ship("red-1", "red", "H10", 0),
+        ship("red-blocker", "red", "H9", 4),
+        ship("red-1", "red", "H10", 4),
       ],
     });
     const cleared = buildState({
       ships: [
         ship("green-1", "green", "H8", 2),
-        ship("red-1", "red", "H10", 0),
+        ship("red-1", "red", "H10", 4),
       ],
     });
 
@@ -198,8 +198,8 @@ describe("attackRefusalReason / legalTargets", () => {
   it("refuses target-out-of-range for a target beyond the reach", () => {
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H8", 4),
-        ship("red-1", "red", "H11", 0),
+        ship("green-1", "green", "H8", 0),
+        ship("red-1", "red", "H11", 4),
       ],
     });
 
@@ -212,7 +212,7 @@ describe("attackRefusalReason / legalTargets", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "H15", 2),
-        ship("red-1", "red", "H14", 0),
+        ship("red-1", "red", "H14", 4),
       ],
     });
 
@@ -226,7 +226,7 @@ describe("attackRefusalReason / legalTargets", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "H14", 2),
-        ship("red-1", "red", "H15", 0),
+        ship("red-1", "red", "H15", 4),
       ],
     });
 
@@ -239,7 +239,7 @@ describe("attackRefusalReason / legalTargets", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "H8", 2),
-        ship("green-2", "green", "H9", 0),
+        ship("green-2", "green", "H9", 4),
       ],
     });
 
@@ -253,7 +253,7 @@ describe("attackRefusalReason / legalTargets", () => {
 
   it("refuses an enemy ship attempting to attack", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
       sideToMove: "green",
     });
 
@@ -264,7 +264,7 @@ describe("attackRefusalReason / legalTargets", () => {
 
   it("refuses a ship that has already acted this ply, leaving it with no targets", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
       actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
@@ -279,7 +279,7 @@ describe("attackRefusalReason / legalTargets", () => {
 describe("attackRefusalReason / legalTargets on a site that is not charged (§8.5)", () => {
   it("neither blocks an attack nor blocks the attacker's ship from being attacked", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "E7", 4), ship("red-1", "red", "E8", 0)],
+      ships: [ship("green-1", "green", "E7", 0), ship("red-1", "red", "E8", 4)],
       siteStates: { E7: "active", E8: "dormant" },
     });
 
@@ -291,7 +291,7 @@ describe("attackRefusalReason / legalTargets on a site that is not charged (§8.
 
   it("lets a ship on a dormant site attack a ship on an active site, the roles swapped", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "E7", 4), ship("red-1", "red", "E8", 0)],
+      ships: [ship("green-1", "green", "E7", 0), ship("red-1", "red", "E8", 4)],
       siteStates: { E7: "dormant", E8: "active" },
     });
 
@@ -305,7 +305,7 @@ describe("attackRefusalReason / legalTargets on a site that is not charged (§8.
 describe("attackRefusalReason / legalTargets on a charged node (§7)", () => {
   it("refuses an attacker standing on a charged node, leaving it with no targets", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
       siteStates: { H8: "charged" },
     });
 
@@ -317,7 +317,7 @@ describe("attackRefusalReason / legalTargets on a charged node (§7)", () => {
 
   it("refuses a target standing on a charged node, and it is absent from legalTargets", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
       siteStates: { H9: "charged" },
     });
 
@@ -331,7 +331,7 @@ describe("attackRefusalReason / legalTargets on a charged node (§7)", () => {
 
   it("refuses a protected target within reach as protected, not as out of range", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 4)],
       siteStates: { H9: "charged" },
     });
 
@@ -342,7 +342,7 @@ describe("attackRefusalReason / legalTargets on a charged node (§7)", () => {
 
   it("reports the attacker's own reason ahead of the target's when both stand on charged nodes", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
       siteStates: { H8: "charged", H9: "charged" },
     });
 
@@ -355,7 +355,7 @@ describe("attackRefusalReason / legalTargets on a charged node (§7)", () => {
 describe("attackRefusalReason and legalTargets once the game is over", () => {
   it("refuses an attack that would otherwise be legal, with game-over ahead of any other reason", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 4)],
       plyNumber: 61,
     });
 
@@ -366,11 +366,11 @@ describe("attackRefusalReason and legalTargets once the game is over", () => {
 
   it("refuses an attack that would have been illegal anyway, still with game-over", () => {
     const notAdjacent = buildState({
-      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "K5", 0)],
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "K5", 4)],
       plyNumber: 61,
     });
     const notYourShip = buildState({
-      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 4)],
       sideToMove: "red",
       plyNumber: 61,
     });
@@ -385,7 +385,7 @@ describe("attackRefusalReason and legalTargets once the game is over", () => {
 
   it("legalTargets contains a target legal before the game ends, and is empty in the same state once it has", () => {
     const beforeEnd = buildState({
-      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 4)],
       plyNumber: 60,
     });
     const afterEnd: GameState = { ...beforeEnd, plyNumber: 61 };
@@ -398,12 +398,12 @@ describe("attackRefusalReason and legalTargets once the game is over", () => {
 
   it("judges game-over against the state's own length, not the default", () => {
     const notOver = buildState({
-      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 4)],
       plyNumber: 6,
       lengthInRounds: 3,
     });
     const over = buildState({
-      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 0)],
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 4)],
       plyNumber: 7,
       lengthInRounds: 3,
     });
@@ -421,9 +421,9 @@ describe("drawReturnBay", () => {
   it("always draws a bay that was empty in the state drawn against", () => {
     const state = buildState({
       ships: [
-        ship("red-1", "red", "H15", 0),
-        ship("red-2", "red", "L15", 0),
-        ship("red-3", "red", "O14", 0),
+        ship("red-1", "red", "H15", 4),
+        ship("red-2", "red", "L15", 4),
+        ship("red-3", "red", "O14", 4),
       ],
     });
     const occupied = new Set(["H15", "L15", "O14"]);
@@ -439,7 +439,7 @@ describe("drawReturnBay", () => {
     const occupiedBays = BAYS.filter((square) => squareName(square) !== "H15");
     const state = buildState({
       ships: occupiedBays.map((square, index) =>
-        ship(`red-${index}`, "red", squareName(square), 0),
+        ship(`red-${index}`, "red", squareName(square), 4),
       ),
     });
 
@@ -451,7 +451,7 @@ describe("drawReturnBay", () => {
 
   it("gives the same bay for the same seed", () => {
     const state = buildState({
-      ships: [ship("red-1", "red", "H15", 0)],
+      ships: [ship("red-1", "red", "H15", 4)],
     });
 
     const [firstBay, firstNextSeed] = drawReturnBay(state);
@@ -472,13 +472,13 @@ describe("drawReturnBay", () => {
 
   it("is live: moving a ship out of a bay changes the answer", () => {
     const occupiedState = buildState({
-      ships: [ship("red-1", "red", "H15", 0)],
+      ships: [ship("red-1", "red", "H15", 4)],
     });
     const [occupiedBay] = drawReturnBay(occupiedState);
     expect(squareName(occupiedBay)).not.toBe("H15");
 
     const vacatedState = buildState({
-      ships: [ship("red-1", "red", "E7", 0)],
+      ships: [ship("red-1", "red", "E7", 4)],
     });
     const otherOccupiedBays = BAYS.filter(
       (square) => squareName(square) !== "H15",
@@ -486,9 +486,9 @@ describe("drawReturnBay", () => {
     const fullyVacatedExceptOne: GameState = {
       ...vacatedState,
       ships: [
-        ship("red-1", "red", "E7", 0),
+        ship("red-1", "red", "E7", 4),
         ...otherOccupiedBays.map((square, index) =>
-          ship(`red-${index + 2}`, "red", squareName(square), 0),
+          ship(`red-${index + 2}`, "red", squareName(square), 4),
         ),
       ],
     };
@@ -499,7 +499,7 @@ describe("drawReturnBay", () => {
   it("throws naming §7.1 when every bay is occupied", () => {
     const state = buildState({
       ships: BAYS.map((square, index) =>
-        ship(`red-${index}`, "red", squareName(square), 0),
+        ship(`red-${index}`, "red", squareName(square), 4),
       ),
     });
 
@@ -510,7 +510,7 @@ describe("drawReturnBay", () => {
     const occupiedBays = new Set(["H15", "O14", "O6", "D1", "A6"]);
     const state = buildState({
       ships: [...occupiedBays].map((name, index) =>
-        ship(`red-${index}`, "red", name, 0),
+        ship(`red-${index}`, "red", name, 4),
       ),
     });
     const emptyBayNames = new Set(

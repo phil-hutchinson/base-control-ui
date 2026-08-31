@@ -1,6 +1,6 @@
 // The names and numbers behind a ship's artwork: the ids `ShipDefs` gives
 // its shared `<defs>` content and `ShipModel` reads back with `<use>`, plus
-// the shield gauge's geometry and per-side palette. Everything here is
+// the power gauge's geometry and per-side palette. Everything here is
 // lifted verbatim from `.local/eg_spaceship.html` - this module is the
 // single place an id or a colour is written down, so a rename cannot
 // half-happen between the sprite and the ships that use it.
@@ -54,7 +54,7 @@ export const SHIP_DEFS_IDS = {
   },
 } as const;
 
-/** How many slots the shield gauge draws - shields run 0-4 (rules.md §4.1, src/rules/shields.ts). */
+/** How many slots the power gauge draws - power runs 0-4 (rules.md §4.1, src/rules/power.ts). */
 export const GAUGE_SLOT_COUNT = 4;
 
 /** Each slot's x offset in the 0-100 viewBox, left to right, a 23-unit pitch. */

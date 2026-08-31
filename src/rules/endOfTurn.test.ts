@@ -10,16 +10,16 @@ import {
 } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
-import type { ShieldCount } from "./shields";
+import type { PowerLevel } from "./power";
 import { NODE_CAPACITY, PRESSURE_CAP, type SiteState } from "./sites";
 
 function ship(
   id: ShipId,
   side: "green" | "red",
   square: string,
-  shields: ShieldCount = 0,
+  power: PowerLevel = 4,
 ): Ship {
-  return { id, side, square: squareFromName(square), shields };
+  return { id, side, square: squareFromName(square), power };
 }
 
 function siteStatuses(
@@ -53,8 +53,8 @@ function buildState(config: {
   };
 }
 
-describe("runEndOfTurn — step 1, the shield grant", () => {
-  it("gains a shield only for the moving side's ships standing on a charged node", () => {
+describe("runEndOfTurn — step 1, the power loss (§4.1)", () => {
+  it("loses a point of power only for the moving side's ships standing on a charged node", () => {
     const state = buildState({
       sideToMove: "green",
       siteStates: {
@@ -65,41 +65,41 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
         H12: ["charged", 1],
       },
       ships: [
-        ship("green-1", "green", "H8", 1), // charged: gains, 1 -> 2
-        ship("green-2", "green", "K5", 1), // active: gains nothing
-        ship("green-3", "green", "D2", 1), // not a site: gains nothing
-        ship("green-4", "green", "L8", 4), // already capped: gains nothing
-        ship("green-5", "green", "H12", 0), // charged: gains, 0 -> 1
-        ship("red-1", "red", "E11", 1), // charged, but not the mover
+        ship("green-1", "green", "H8", 3), // charged: loses, 3 -> 2
+        ship("green-2", "green", "K5", 3), // active: loses nothing
+        ship("green-3", "green", "D2", 3), // not a site: loses nothing
+        ship("green-4", "green", "L8", 0), // already at the floor: loses nothing
+        ship("green-5", "green", "H12", 4), // charged: loses, 4 -> 3
+        ship("red-1", "red", "E11", 3), // charged, but not the mover
       ],
     });
 
     const result = runEndOfTurn(state);
 
-    const shipShields = (id: ShipId): ShieldCount | undefined =>
-      result.state.ships.find((s) => s.id === id)?.shields;
+    const shipPower = (id: ShipId): PowerLevel | undefined =>
+      result.state.ships.find((s) => s.id === id)?.power;
 
-    expect(shipShields("green-1")).toBe(2);
-    expect(shipShields("green-2")).toBe(1);
-    expect(shipShields("green-3")).toBe(1);
-    expect(shipShields("green-4")).toBe(4);
-    expect(shipShields("green-5")).toBe(1);
-    expect(shipShields("red-1")).toBe(1);
+    expect(shipPower("green-1")).toBe(2);
+    expect(shipPower("green-2")).toBe(3);
+    expect(shipPower("green-3")).toBe(3);
+    expect(shipPower("green-4")).toBe(0);
+    expect(shipPower("green-5")).toBe(3);
+    expect(shipPower("red-1")).toBe(3);
 
     expect(result.effects.slice(0, 3)).toEqual([
       {
-        type: "shield-gained",
+        type: "power-lost",
         shipId: "green-1",
         side: "green",
         square: squareFromName("H8"),
-        shields: 2,
+        power: 2,
       },
       {
-        type: "shield-gained",
+        type: "power-lost",
         shipId: "green-5",
         side: "green",
         square: squareFromName("H12"),
-        shields: 1,
+        power: 3,
       },
       {
         type: "energy-collected",
@@ -125,8 +125,8 @@ describe("runEndOfTurn — step 1, the shield grant", () => {
   });
 });
 
-describe("runEndOfTurn — step 1, the shield loss (§4.1)", () => {
-  it("loses a shield only for the moving side's ships standing on a dormant site", () => {
+describe("runEndOfTurn — step 1, the power gain (§4.1)", () => {
+  it("gains a point of power only for the moving side's ships standing on a dormant site", () => {
     const state = buildState({
       sideToMove: "green",
       siteStates: {
@@ -134,48 +134,48 @@ describe("runEndOfTurn — step 1, the shield loss (§4.1)", () => {
         K5: ["active", 1],
       },
       ships: [
-        ship("green-1", "green", "H8", 2), // dormant: loses, 2 -> 1
-        ship("green-2", "green", "K5", 2), // active: loses nothing
-        ship("green-3", "green", "D2", 2), // not a site: loses nothing
+        ship("green-1", "green", "H8", 2), // dormant: gains, 2 -> 3
+        ship("green-2", "green", "K5", 2), // active: gains nothing
+        ship("green-3", "green", "D2", 2), // not a site: gains nothing
         ship("red-1", "red", "H8", 2), // dormant, but not the mover
       ],
     });
 
     const result = runEndOfTurn(state);
 
-    const shipShields = (id: ShipId): ShieldCount | undefined =>
-      result.state.ships.find((s) => s.id === id)?.shields;
+    const shipPower = (id: ShipId): PowerLevel | undefined =>
+      result.state.ships.find((s) => s.id === id)?.power;
 
-    expect(shipShields("green-1")).toBe(1);
-    expect(shipShields("green-2")).toBe(2);
-    expect(shipShields("green-3")).toBe(2);
-    expect(shipShields("red-1")).toBe(2);
+    expect(shipPower("green-1")).toBe(3);
+    expect(shipPower("green-2")).toBe(2);
+    expect(shipPower("green-3")).toBe(2);
+    expect(shipPower("red-1")).toBe(2);
 
     expect(result.effects).toContainEqual({
-      type: "shield-lost",
+      type: "power-gained",
       shipId: "green-1",
       side: "green",
       square: squareFromName("H8"),
-      shields: 1,
+      power: 3,
     });
-    expect(result.effects.filter((e) => e.type === "shield-lost")).toHaveLength(
-      1,
-    );
+    expect(
+      result.effects.filter((e) => e.type === "power-gained"),
+    ).toHaveLength(1);
   });
 
-  it("leaves a ship already on 0 shields at 0 and raises no effect for it", () => {
+  it("leaves a ship already at 4 power on a dormant site at 4 and raises no effect for it", () => {
     const state = buildState({
       sideToMove: "green",
       siteStates: { H8: ["dormant", 1] },
-      ships: [ship("green-1", "green", "H8", 0)],
+      ships: [ship("green-1", "green", "H8", 4)],
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.ships.find((s) => s.id === "green-1")?.shields).toBe(0);
-    expect(result.effects.some((effect) => effect.type === "shield-lost")).toBe(
-      false,
-    );
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(4);
+    expect(
+      result.effects.some((effect) => effect.type === "power-gained"),
+    ).toBe(false);
   });
 
   it("reports both a gain and a loss when one ship holds a node while another sits on a dormant site", () => {
@@ -186,7 +186,7 @@ describe("runEndOfTurn — step 1, the shield loss (§4.1)", () => {
         K5: ["dormant", 1],
       },
       ships: [
-        ship("green-1", "green", "H8", 1),
+        ship("green-1", "green", "H8", 3),
         ship("green-2", "green", "K5", 2),
       ],
     });
@@ -194,18 +194,18 @@ describe("runEndOfTurn — step 1, the shield loss (§4.1)", () => {
     const result = runEndOfTurn(state);
 
     expect(result.effects).toContainEqual({
-      type: "shield-gained",
+      type: "power-lost",
       shipId: "green-1",
       side: "green",
       square: squareFromName("H8"),
-      shields: 2,
+      power: 2,
     });
     expect(result.effects).toContainEqual({
-      type: "shield-lost",
+      type: "power-gained",
       shipId: "green-2",
       side: "green",
       square: squareFromName("K5"),
-      shields: 1,
+      power: 3,
     });
   });
 });
@@ -232,7 +232,7 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
       for (let seed = 1; seed <= 300; seed++) {
         const state = buildState({
           siteStates: { H8: ["charged", 0] },
-          ships: [ship("ship-1", side, "H8", 0)],
+          ships: [ship("ship-1", side, "H8", 4)],
           randomSeed: seed,
         });
         const result = runEndOfTurn(state);
@@ -249,7 +249,7 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     // NODE_CAPACITY - 1, so this is deterministic without pinning a seed.
     const state = buildState({
       siteStates: { H8: ["charged", NODE_CAPACITY - 1] },
-      ships: [ship("green-1", "green", "H8", 3)],
+      ships: [ship("green-1", "green", "H8", 1)],
     });
 
     const result = runEndOfTurn(state);
@@ -260,11 +260,11 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     );
     expect(result.effects).toEqual([
       {
-        type: "shield-gained",
+        type: "power-lost",
         shipId: "green-1",
         side: "green",
         square: squareFromName("H8"),
-        shields: 4,
+        power: 0,
       },
       {
         type: "energy-collected",
@@ -275,11 +275,11 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
       },
       { type: "node-ran-out", square: squareFromName("H8") },
     ]);
-    // Step 1 grants green's own ship a shield for standing on a charged
-    // node before step 3 spends the node — 3 rises to 4 first, then the
-    // node runs out from under it, and the ship simply stays there.
+    // Step 1 takes a point of power from green's own ship for standing on a
+    // charged node before step 3 spends the node — 1 falls to 0 first, then
+    // the node runs out from under it, and the ship simply stays there.
     const untouchedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(untouchedShip?.shields).toBe(4);
+    expect(untouchedShip?.power).toBe(0);
     expect(untouchedShip?.square).toEqual(squareFromName("H8"));
   });
 
@@ -319,7 +319,7 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
   ): number {
     let state = buildState({
       siteStates: { H8: ["charged", startLevel] },
-      ships: held ? [ship("green-1", "green", "H8", 0)] : [],
+      ships: held ? [ship("green-1", "green", "H8", 4)] : [],
       randomSeed: seed,
     });
     let plies = 0;
@@ -522,7 +522,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     const state = buildState({
       sideToMove: "green",
       siteStates: { H8: ["charged", 1] },
-      ships: [ship("green-1", "green", "H8", 4)],
+      ships: [ship("green-1", "green", "H8", 0)],
     });
 
     const result = runEndOfTurn(state);
@@ -546,9 +546,9 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
         L8: ["charged", 1],
       },
       ships: [
-        ship("green-1", "green", "H8", 4),
-        ship("green-2", "green", "K5", 4),
-        ship("green-3", "green", "L8", 4),
+        ship("green-1", "green", "H8", 0),
+        ship("green-2", "green", "K5", 0),
+        ship("green-3", "green", "L8", 0),
       ],
     });
 
@@ -572,7 +572,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     const state = buildState({
       sideToMove: "green",
       siteStates: { H8: ["charged", NODE_CAPACITY - 1] },
-      ships: [ship("green-1", "green", "H8", 4)],
+      ships: [ship("green-1", "green", "H8", 0)],
     });
 
     const result = runEndOfTurn(state);
@@ -588,23 +588,23 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.state.siteStates.H8.state).toBe("dormant");
   });
 
-  it("is unaffected by a ship gaining its fourth shield in step 1", () => {
+  it("is unaffected by a ship losing its last point of power in step 1", () => {
     const state = buildState({
       sideToMove: "green",
       siteStates: { H8: ["charged", 1] },
-      ships: [ship("green-1", "green", "H8", 3)],
+      ships: [ship("green-1", "green", "H8", 1)],
     });
 
     const result = runEndOfTurn(state);
 
-    const shieldEffectIndex = result.effects.findIndex(
-      (effect) => effect.type === "shield-gained",
+    const powerEffectIndex = result.effects.findIndex(
+      (effect) => effect.type === "power-lost",
     );
     const energyEffectIndex = result.effects.findIndex(
       (effect) => effect.type === "energy-collected",
     );
-    expect(shieldEffectIndex).toBeGreaterThanOrEqual(0);
-    expect(shieldEffectIndex).toBeLessThan(energyEffectIndex);
+    expect(powerEffectIndex).toBeGreaterThanOrEqual(0);
+    expect(powerEffectIndex).toBeLessThan(energyEffectIndex);
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -614,14 +614,14 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       squares: [squareFromName("H8")],
     });
     const ship1 = result.state.ships.find((s) => s.id === "green-1");
-    expect(ship1?.shields).toBe(4);
+    expect(ship1?.power).toBe(0);
   });
 
   it("pays this side nothing for a node held by the opponent", () => {
     const state = buildState({
       sideToMove: "green",
       siteStates: { H8: ["charged", 1] },
-      ships: [ship("red-1", "red", "H8", 1)],
+      ships: [ship("red-1", "red", "H8", 3)],
     });
 
     const result = runEndOfTurn(state);
@@ -651,7 +651,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
             names.map((name) => [name, ["dormant", 0] as const]),
           ),
           ships: names.map((name, index) =>
-            ship(`green-${index + 1}` as ShipId, "green", name, 4),
+            ship(`green-${index + 1}` as ShipId, "green", name, 0),
           ),
         }),
         energy: { green: 100, red: 0 },
@@ -681,7 +681,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
           sixNames.map((name) => [name, ["dormant", 0] as const]),
         ),
         ships: sixNames.map((name, index) =>
-          ship(`green-${index + 1}` as ShipId, "green", name, 4),
+          ship(`green-${index + 1}` as ShipId, "green", name, 0),
         ),
       }),
       energy: { green: 100, red: 0 },
@@ -707,11 +707,11 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
           K11: ["dormant", 0],
         },
         ships: [
-          ship("green-1", "green", "H8", 4),
-          ship("green-2", "green", "K5", 4),
-          ship("green-3", "green", "L8", 4),
-          ship("green-4", "green", "D8", 0),
-          ship("green-5", "green", "K11", 0),
+          ship("green-1", "green", "H8", 0),
+          ship("green-2", "green", "K5", 0),
+          ship("green-3", "green", "L8", 0),
+          ship("green-4", "green", "D8", 4),
+          ship("green-5", "green", "K11", 4),
         ],
       }),
       energy: { green: 0, red: 0 },
@@ -759,9 +759,9 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
           L8: ["dormant", 0],
         },
         ships: [
-          ship("green-1", "green", "H8", 0),
-          ship("green-2", "green", "K5", 0),
-          ship("green-3", "green", "L8", 0),
+          ship("green-1", "green", "H8", 4),
+          ship("green-2", "green", "K5", 4),
+          ship("green-3", "green", "L8", 4),
         ],
       }),
       energy: { green: 2, red: 0 },
@@ -788,7 +788,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       ...buildState({
         sideToMove: "green",
         siteStates: { H8: ["dormant", 0] },
-        ships: [ship("green-1", "green", "H8", 0)],
+        ships: [ship("green-1", "green", "H8", 4)],
       }),
       energy: { green: 0, red: 0 },
     };
@@ -806,7 +806,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       ...buildState({
         sideToMove: "green",
         siteStates: { H8: ["active", 1] },
-        ships: [ship("green-1", "green", "H8", 4)],
+        ships: [ship("green-1", "green", "H8", 0)],
       }),
       energy: { green: 5, red: 0 },
     };
@@ -824,7 +824,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       ...buildState({
         sideToMove: "green",
         siteStates: { H8: ["dormant", 0] },
-        ships: [ship("red-1", "red", "H8", 4)],
+        ships: [ship("red-1", "red", "H8", 0)],
       }),
       energy: { green: 5, red: 5 },
     };
@@ -847,7 +847,7 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       ...buildState({
         sideToMove: "green",
         siteStates: { H8: ["dormant", 0], K5: ["dormant", 0] },
-        ships: [ship("green-1", "green", "H8", 4)],
+        ships: [ship("green-1", "green", "H8", 0)],
       }),
       energy: { green: 5, red: 0 },
     };
@@ -875,7 +875,7 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
       ...buildState({
         sideToMove: "green",
         siteStates: { K5: ["charged", 1] },
-        ships: [ship("green-1", "green", "K5", 3)],
+        ships: [ship("green-1", "green", "K5", 1)],
       }),
       actedThisPly: ["green-1" as ShipId],
       actionsRemaining: 1,
@@ -886,11 +886,11 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
     expect(result.effect?.type).toBe("ply-passed");
     expect(result.effect?.endOfTurn.slice(0, 2)).toEqual([
       {
-        type: "shield-gained",
+        type: "power-lost",
         shipId: "green-1",
         side: "green",
         square: squareFromName("K5"),
-        shields: 4,
+        power: 0,
       },
       {
         type: "energy-collected",
@@ -908,7 +908,7 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
       ...buildState({
         sideToMove: "green",
         siteStates: { K5: ["dormant", 0] },
-        ships: [ship("green-1", "green", "K5", 3)],
+        ships: [ship("green-1", "green", "K5", 1)],
       }),
       actedThisPly: ["green-1" as ShipId],
       actionsRemaining: 1,

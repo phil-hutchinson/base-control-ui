@@ -220,9 +220,7 @@ export function BoardSquare({
           cyclePosition={cyclePosition}
         />
       )}
-      {occupant && (
-        <ShipModel side={occupant.side} shields={occupant.shields} />
-      )}
+      {occupant && <ShipModel side={occupant.side} power={occupant.power} />}
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}
       {mark === "target" && <TargetMark />}

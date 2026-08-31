@@ -174,7 +174,7 @@ describe("GameOverPanel", () => {
     function nearEndState(): GameState {
       return {
         ships: [
-          { id: "red-1", side: "red", square: squareAt("H", 8), shields: 0 },
+          { id: "red-1", side: "red", square: squareAt("H", 8), power: 4 },
         ],
         siteStates: {},
         sideToMove: "red",
@@ -198,8 +198,8 @@ describe("GameOverPanel", () => {
     function scoringNearEndState(): GameState {
       return {
         ships: [
-          { id: "red-1", side: "red", square: squareAt("H", 8), shields: 0 },
-          { id: "red-2", side: "red", square: squareAt("G", 1), shields: 0 },
+          { id: "red-1", side: "red", square: squareAt("H", 8), power: 4 },
+          { id: "red-2", side: "red", square: squareAt("G", 1), power: 4 },
         ],
         siteStates: {
           [squareName(squareAt("H", 8))]: {

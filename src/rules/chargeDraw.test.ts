@@ -4,17 +4,17 @@ import { runChargeDraw } from "./chargeDraw";
 import type { ShipId } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { GameState, Ship, SiteStatus } from "./gameState";
+import type { PowerLevel } from "./power";
 import { drawWeightedIndex } from "./random";
-import type { ShieldCount } from "./shields";
 import type { SiteState } from "./sites";
 
 function ship(
   id: ShipId,
   side: "green" | "red",
   square: string,
-  shields: ShieldCount = 0,
+  power: PowerLevel = 4,
 ): Ship {
-  return { id, side, square: squareFromName(square), shields };
+  return { id, side, square: squareFromName(square), power };
 }
 
 function siteStatuses(
@@ -209,7 +209,7 @@ describe("runChargeDraw — the pool", () => {
 
   it("draws an occupied active site like any other, charging it under the ship standing on it", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "F2", 1)],
+      ships: [ship("green-1", "green", "F2", 3)],
       siteStates: {
         F2: ["active", 1],
       },

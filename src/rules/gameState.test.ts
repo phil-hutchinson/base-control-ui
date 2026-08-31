@@ -22,7 +22,7 @@ describe("startingGameState", () => {
       expect(ship.id).toBe(entry.id);
       expect(ship.side).toBe(entry.side);
       expect(ship.square).toEqual(entry.square);
-      expect(ship.shields).toBe(entry.shields);
+      expect(ship.power).toBe(entry.power);
     });
   });
 
@@ -181,7 +181,7 @@ describe("startingGameState", () => {
     });
   });
 
-  it("starts every ship on 0 shields whatever the fleet size", () => {
+  it("starts every ship at full power whatever the fleet size", () => {
     for (const fleetSize of [5, 6, 7] as const) {
       const state = startingGameState(
         SEED,
@@ -189,7 +189,7 @@ describe("startingGameState", () => {
         fleetSize,
       );
       for (const ship of state.ships) {
-        expect(ship.shields).toBe(0);
+        expect(ship.power).toBe(4);
       }
     }
   });

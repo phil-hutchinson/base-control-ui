@@ -12,7 +12,7 @@ import type {
   Ship,
   SiteStatus,
 } from "../rules/gameState";
-import type { ShieldCount } from "../rules/shields";
+import type { PowerLevel } from "../rules/power";
 import type { SiteState } from "../rules/sites";
 import { ScoreDisplay } from "./ScoreDisplay";
 
@@ -22,9 +22,9 @@ function ship(
   id: ShipId,
   side: "green" | "red",
   square: string,
-  shields: ShieldCount = 0,
+  power: PowerLevel = 4,
 ): Ship {
-  return { id, side, square: squareFromName(square), shields };
+  return { id, side, square: squareFromName(square), power };
 }
 
 function siteStatuses(

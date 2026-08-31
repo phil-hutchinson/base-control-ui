@@ -14,7 +14,7 @@ afterEach(cleanup);
 
 /** The ships on the board, one gridcell per ship, by their accessible name. */
 function shipCells() {
-  return screen.getAllByRole("gridcell", { name: /ship, \d+ shields?$/ });
+  return screen.getAllByRole("gridcell", { name: /ship, power \d of 4$/ });
 }
 
 async function pressPlay() {

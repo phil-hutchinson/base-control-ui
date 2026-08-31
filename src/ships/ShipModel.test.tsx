@@ -4,14 +4,14 @@ import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { squareAt } from "../rules/board";
 import type { Side } from "../rules/fleet";
-import type { ShieldCount } from "../rules/shields";
+import type { PowerLevel } from "../rules/power";
 import { squareLabel } from "../board/squareLabel";
 import { GAUGE_SLOT_COUNT, SHIP_ART } from "./shipArt";
 import { ShipModel } from "./ShipModel";
 
 afterEach(cleanup);
 
-const SHIELD_COUNTS: readonly ShieldCount[] = [0, 1, 2, 3, 4];
+const POWER_LEVELS: readonly PowerLevel[] = [0, 1, 2, 3, 4];
 const SIDES: readonly Side[] = ["green", "red"];
 
 describe("ShipModel", () => {
@@ -28,18 +28,16 @@ describe("ShipModel", () => {
     );
   });
 
-  it("draws no gauge at all when no shield count is given", () => {
+  it("draws no gauge at all when no power level is given", () => {
     const { container } = render(<ShipModel side="green" />);
 
     expect(container.querySelectorAll("[data-gauge-slot]")).toHaveLength(0);
   });
 
-  it.each(SHIELD_COUNTS)(
+  it.each(POWER_LEVELS)(
     "draws four gauge slots in order, %i lit left to right",
-    (shields) => {
-      const { container } = render(
-        <ShipModel side="green" shields={shields} />,
-      );
+    (power) => {
+      const { container } = render(<ShipModel side="green" power={power} />);
 
       const slots = container.querySelectorAll("[data-gauge-slot]");
       expect(slots).toHaveLength(GAUGE_SLOT_COUNT);
@@ -50,13 +48,13 @@ describe("ShipModel", () => {
       const litFlags = Array.from(slots).map(
         (slot) => slot.getAttribute("data-gauge-lit") === "true",
       );
-      expect(litFlags.filter(Boolean)).toHaveLength(shields);
-      expect(litFlags).toEqual([0, 1, 2, 3].map((index) => index < shields));
+      expect(litFlags.filter(Boolean)).toHaveLength(power);
+      expect(litFlags).toEqual([0, 1, 2, 3].map((index) => index < power));
     },
   );
 
-  it.each(SHIELD_COUNTS)("draws bars only on lit slots, %i lit", (shields) => {
-    const { container } = render(<ShipModel side="red" shields={shields} />);
+  it.each(POWER_LEVELS)("draws bars only on lit slots, %i lit", (power) => {
+    const { container } = render(<ShipModel side="red" power={power} />);
 
     const slots = container.querySelectorAll("[data-gauge-slot]");
     slots.forEach((slot) => {
@@ -66,7 +64,7 @@ describe("ShipModel", () => {
   });
 
   it("stays hidden from the accessibility tree, gauge or not", () => {
-    const { container } = render(<ShipModel side="red" shields={4} />);
+    const { container } = render(<ShipModel side="red" power={4} />);
 
     const svg = container.querySelector("svg");
     expect(svg).toHaveAttribute("aria-hidden", "true");
@@ -75,25 +73,22 @@ describe("ShipModel", () => {
 
   describe("alongside squareLabel", () => {
     for (const side of SIDES) {
-      it.each(SHIELD_COUNTS)(
-        `draws %i lit slot(s) that match the spoken shield count for a ${side} ship`,
-        (shields) => {
+      it.each(POWER_LEVELS)(
+        `draws %i lit slot(s) that match the spoken power level for a ${side} ship`,
+        (power) => {
           const label = squareLabel({
             square: squareAt("H", 8),
             isBay: false,
-            occupant: { side, shields },
+            occupant: { side, power },
           });
-          const { container } = render(
-            <ShipModel side={side} shields={shields} />,
-          );
+          const { container } = render(<ShipModel side={side} power={power} />);
 
           const litSlots = container.querySelectorAll(
             '[data-gauge-lit="true"]',
           );
-          expect(litSlots).toHaveLength(shields);
+          expect(litSlots).toHaveLength(power);
 
-          const unit = shields === 1 ? "shield" : "shields";
-          expect(label).toBe(`H8, ${side} ship, ${shields} ${unit}`);
+          expect(label).toBe(`H8, ${side} ship, power ${power} of 4`);
         },
       );
     }
