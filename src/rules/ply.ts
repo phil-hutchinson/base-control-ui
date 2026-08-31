@@ -1,7 +1,9 @@
 // Applying an action, and the ply it belongs to (rules.md §5, §3.1, §7). An
 // action is a move or an attack. A move is either refused, with the reason
-// from movement.ts, or applied: the ship arrives, spends one action, and
-// refills to full power if it ends in a bay. An attack is either refused,
+// from movement.ts, or applied: the ship arrives with the power it had and
+// spends one action. A ship that ends a move in a bay recovers there at a
+// point per turn (§3.1, §4.1), through the end-of-turn sequence — not on
+// arrival. An attack is either refused,
 // with the reason from combat.ts, or resolved: both ships are placed in
 // bays drawn at random from the bays standing empty, attacker first,
 // carrying the power each had before the fight, and both squares they left
@@ -31,7 +33,7 @@ import {
   shipsBySquare,
 } from "./gameState";
 import { type MoveRefusalReason, moveRefusalReason } from "./movement";
-import { MAX_POWER, type PowerLevel } from "./power";
+import type { PowerLevel } from "./power";
 
 function otherSide(side: Side): Side {
   return side === "green" ? "red" : "green";
@@ -60,8 +62,7 @@ export interface PlyEndedEffect {
 export type EndOfActionEffect = PlyEndedEffect | PassEffect;
 
 /** Something that happened as a result of applying a move, beyond the move itself. */
-export type MoveEffect =
-  { readonly type: "power-reset"; readonly shipId: ShipId } | EndOfActionEffect;
+export type MoveEffect = EndOfActionEffect;
 
 /** A move applied successfully, with the resulting state and what happened. */
 export interface AppliedMove {
@@ -236,12 +237,14 @@ function applyEndOfActionTail(
 /**
  * Applies a move of `shipId` to `destination` in `state`, or refuses it. A
  * legal move never mutates `state`: it returns a new state in which the ship
- * stands on `destination`, the square it left is empty, the ship is marked as
- * having acted this ply, one action is spent, and — per rules.md §3.1 — the
- * ship's power refills to full if `destination` is a bay. If the square the
- * ship left was a charged node, it stays charged — leaving a node does not
- * end it (rules.md §8.3). When the ply's last action is spent, play passes to
- * the other side and the acted-this-ply marks clear. The result then passes
+ * stands on `destination` carrying the power it already had, the square it
+ * left is empty, the ship is marked as having acted this ply, and one action
+ * is spent. A ship that ends the move in a bay does not gain anything on
+ * arrival — it recovers a point at a time, through the end-of-turn sequence
+ * (rules.md §3.1, §4.1), like any other bay stay. If the square the ship left
+ * was a charged node, it stays charged — leaving a node does not end it
+ * (rules.md §8.3). When the ply's last action is spent, play passes to the
+ * other side and the acted-this-ply marks clear. The result then passes
  * through `applyPassGuard`, so a move that leaves the side now to move with
  * no legal move at all is followed immediately by a pass.
  */
@@ -256,24 +259,14 @@ export function applyMove(
   }
 
   const effects: MoveEffect[] = [];
-  const endsInBay = isBay(destination);
   const movingShip = state.ships.find((ship) => ship.id === shipId);
   if (movingShip === undefined) {
     throw new RangeError(`no ship with id "${shipId}" in this state`);
   }
 
   const ships = state.ships.map((ship) =>
-    ship.id === shipId
-      ? {
-          ...ship,
-          square: destination,
-          power: endsInBay ? MAX_POWER : ship.power,
-        }
-      : ship,
+    ship.id === shipId ? { ...ship, square: destination } : ship,
   );
-  if (endsInBay && movingShip.power < MAX_POWER) {
-    effects.push({ type: "power-reset", shipId });
-  }
 
   const afterMove: GameState = { ...state, ships };
   const settled = applyEndOfActionTail(afterMove, effects, shipId);

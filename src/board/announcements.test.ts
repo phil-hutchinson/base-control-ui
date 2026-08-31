@@ -154,15 +154,15 @@ describe("announcementFor", () => {
       side: "red",
       from: squareAt("A", 11),
       to: squareAt("A", 10),
-      effects: [{ type: "power-reset", shipId: "red-2" }],
+      effects: [],
       actionsRemaining: 1,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 into the A10 bay and refilled to full power. Red has 1 action left.",
+      "Red ship moved from A11 into the A10 bay. Red has 1 action left.",
     );
   });
 
-  it("announces a move into a bay by a ship already at full power as a plain move", () => {
+  it("announces a move into a bay the same way whatever power the ship arrives with", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "red-2",
@@ -173,7 +173,7 @@ describe("announcementFor", () => {
       actionsRemaining: 1,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 to A10. Red has 1 action left.",
+      "Red ship moved from A11 into the A10 bay. Red has 1 action left.",
     );
   });
 
@@ -185,13 +185,12 @@ describe("announcementFor", () => {
       from: squareAt("A", 11),
       to: squareAt("A", 10),
       effects: [
-        { type: "power-reset", shipId: "red-2" },
         { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 into the A10 bay and refilled to full power. Green's turn, 1 action left.",
+      "Red ship moved from A11 into the A10 bay. Green's turn, 1 action left.",
     );
   });
 

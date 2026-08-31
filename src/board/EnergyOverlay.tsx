@@ -11,7 +11,11 @@ import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
 } from "../rules/endOfTurn";
-import type { PassEffect, PlyEndedEffect } from "../rules/ply";
+import type {
+  FightResolvedEffect,
+  PassEffect,
+  PlyEndedEffect,
+} from "../rules/ply";
 import type { Session, SessionEvent } from "../game/session";
 import { centroidPercentPosition } from "./boardView";
 import "./EnergyOverlay.css";
@@ -46,6 +50,28 @@ function settlementsIn(effects: readonly EndOfTurnEffect[]): Settlement[] {
 }
 
 /**
+ * The `ply-ended` and `ply-passed` settlements out of a move's or an
+ * attack's effect list. Takes the two effect lists' common shape rather than
+ * either one by name, since a move's effects and an attack's effects are
+ * otherwise different types (an attack's can also carry a
+ * `FightResolvedEffect`, which carries no settlement of its own).
+ */
+function endOfActionSettlements(
+  effects: readonly (PassEffect | PlyEndedEffect | FightResolvedEffect)[],
+): Settlement[] {
+  const plyEnded = effects.find(
+    (effect): effect is PlyEndedEffect => effect.type === "ply-ended",
+  );
+  const passed = effects.find(
+    (effect): effect is PassEffect => effect.type === "ply-passed",
+  );
+  return [
+    ...(plyEnded ? settlementsIn(plyEnded.endOfTurn) : []),
+    ...(passed ? settlementsIn(passed.endOfTurn) : []),
+  ];
+}
+
+/**
  * Every settlement (collection or penalty) the session's last event
  * reported. An action that ends a ply can be immediately followed by the
  * pass guard firing for the other side, so a `moved` or `attacked` event can
@@ -64,16 +90,7 @@ function settlementsForEvent(
   }
 
   if (event.type === "moved" || event.type === "attacked") {
-    const plyEnded = event.effects.find(
-      (effect): effect is PlyEndedEffect => effect.type === "ply-ended",
-    );
-    const passed = event.effects.find(
-      (effect): effect is PassEffect => effect.type === "ply-passed",
-    );
-    return [
-      ...(plyEnded ? settlementsIn(plyEnded.endOfTurn) : []),
-      ...(passed ? settlementsIn(passed.endOfTurn) : []),
-    ];
+    return endOfActionSettlements(event.effects);
   }
 
   return [];

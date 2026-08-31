@@ -1033,7 +1033,54 @@ Verification (automated): `npm test` passes, including the new
 
 ## Step 5 — Ending a move in a bay no longer refills a ship
 
-Status: pending
+Status: committed
+
+Notes: `applyMove` no longer writes a power value for the moving ship at
+all — it now just carries `square: destination` forward, dropping the
+`endsInBay`/`MAX_POWER` branch and the `"power-reset"` effect it pushed;
+`MoveEffect` is now a plain alias of `EndOfActionEffect`, keeping its name
+and doc comment (D15). The module header and `applyMove`'s own doc comment
+were reworded to say a ship in a bay recovers through the end-of-turn
+sequence, not on arrival. `announcements.ts`'s `moveSentence` now keys the
+bay wording on `isBay(event.to)` (imported from `rules/bays.ts`) instead of
+on the deleted effect, per D11 — `"… moved from A11 into the A10 bay."`
+with no claim about power. `ply.test.ts`'s reset case was replaced by one
+case proving a ship keeps the power it had whether it ends a move in a bay
+or only flies over one, and the "nothing to lose" case was removed with the
+effect it existed for. `announcements.test.ts`'s two bay-move cases lost
+the `power-reset` effect from their fixtures and now expect the new
+sentence; the "ship already at full power" case collapses into the same
+expectation as the plain bay-arrival case, since the wording no longer
+depends on power at all.
+
+**Deviation, required by the collapse of `MoveEffect` to `EndOfActionEffect`
+(D15), not called out in the plan's step-5 checklist:**
+`src/board/EnergyOverlay.tsx`'s `settlementsForEvent` read `event.effects`
+on the combined `event.type === "moved" || event.type === "attacked"`
+branch and called `.find()` on it directly. Once `MoveEffect` became
+structurally identical to `EndOfActionEffect` (a member of `AttackEffect`),
+TypeScript widened `event.effects`'s type for that branch and the
+type-predicate narrowing on the two `.find()` calls stopped applying,
+failing typecheck (`Property 'endOfTurn' does not exist on type '... |
+FightResolvedEffect'`). Fixed by extracting the shared `.find()` logic into
+a new `endOfActionSettlements` helper taking a single, concretely-typed
+`readonly (PassEffect | PlyEndedEffect | FightResolvedEffect)[]` parameter,
+which sidesteps the union-of-array-types narrowing gap; no behaviour
+changed, confirmed by `EnergyOverlay.test.tsx` passing unedited.
+
+**Second deviation, in the new `ply.test.ts` case only:** isolating "the
+move itself does not refill" from the same-call end-of-turn gain (per the
+orchestrator's brief: `applyMove` runs the end-of-turn sequence in the same
+call when it is the ply's last action, since `ACTIONS_PER_PLY` is 1)
+required `actionsRemaining: 2` in the fixture. That alone was not enough:
+with a single green ship, `applyPassGuard` still ran the end-of-turn
+sequence early, on the same side, because green had no further legal
+action once its only ship had acted. Added a second, unmoved green ship
+(`H8`) to both halves of the case so green still has a legal action after
+the move, keeping the case a true isolation of `applyMove`'s own effect
+with no end-of-turn interaction — not a change to what the case proves,
+just what made it provable without the interaction step 6's
+`recovery.test.ts` is planned to pin.
 
 Remove the instant refill, which is the last piece of §3.1's old rule.
 

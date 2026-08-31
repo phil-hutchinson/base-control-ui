@@ -5,6 +5,7 @@
 // unit-tested on its own. The players' vocabulary throughout: "turn" and
 // "node", never "ply" or "hub".
 
+import { isBay } from "../rules/bays";
 import { squareName } from "../rules/board";
 import {
   chargedNodesHeldBy,
@@ -298,12 +299,9 @@ function passSentence(effect: PassEffect): string {
 function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);
   const to = squareName(event.to);
-  const enteredBay = event.effects.some(
-    (effect) => effect.type === "power-reset",
-  );
 
-  if (enteredBay) {
-    return `${capitalize(event.side)} ship moved from ${from} into the ${to} bay and refilled to full power.`;
+  if (isBay(event.to)) {
+    return `${capitalize(event.side)} ship moved from ${from} into the ${to} bay.`;
   }
 
   return `${capitalize(event.side)} ship moved from ${from} to ${to}.`;

@@ -99,9 +99,19 @@ describe("applyMove", () => {
     expect(state).toEqual(before);
   });
 
-  it("refills power to full when a move ends in a bay, but not when it only passes over one", () => {
+  it("keeps the power a ship had when a move ends in a bay, exactly as when it only passes over one (rules.md §3.1)", () => {
+    // Not the ply's last action, and a second, unmoved green ship keeps
+    // green with a legal action of its own, so neither
+    // applyEndOfActionTail's own end-of-turn call nor applyPassGuard's runs
+    // it within this call — a bay's own recovery is a separate, per-turn
+    // thing (endOfTurn.test.ts), not something arriving does. This isolates
+    // the move itself: no refill, no other effect.
     const endsInBay = buildState({
-      ships: [ship("green-1", "green", "A11", 2)],
+      ships: [
+        ship("green-1", "green", "A11", 2),
+        ship("green-2", "green", "H8"),
+      ],
+      actionsRemaining: 2,
     });
     const endResult = applyMove(endsInBay, "green-1", squareFromName("A10"));
     expect(endResult.outcome).toBe("applied");
@@ -109,14 +119,15 @@ describe("applyMove", () => {
       throw new Error("expected the move to be applied");
     }
     const landedShip = endResult.state.ships.find((s) => s.id === "green-1");
-    expect(landedShip?.power).toBe(4);
-    expect(endResult.effects).toContainEqual({
-      type: "power-reset",
-      shipId: "green-1",
-    });
+    expect(landedShip?.power).toBe(2);
+    expect(endResult.effects).toEqual([]);
 
     const passesOverBay = buildState({
-      ships: [ship("green-1", "green", "A11", 2)],
+      ships: [
+        ship("green-1", "green", "A11", 2),
+        ship("green-2", "green", "H8"),
+      ],
+      actionsRemaining: 2,
     });
     const passResult = applyMove(
       passesOverBay,
@@ -129,25 +140,7 @@ describe("applyMove", () => {
     }
     const flownShip = passResult.state.ships.find((s) => s.id === "green-1");
     expect(flownShip?.power).toBe(2);
-    expect(passResult.effects).not.toContainEqual(
-      expect.objectContaining({ type: "power-reset" }),
-    );
-  });
-
-  it("does not report a power-reset effect for a ship already at full power", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "A11", 4)],
-    });
-    const result = applyMove(state, "green-1", squareFromName("A10"));
-    expect(result.outcome).toBe("applied");
-    if (result.outcome !== "applied") {
-      throw new Error("expected the move to be applied");
-    }
-    const landedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(landedShip?.power).toBe(4);
-    expect(result.effects).not.toContainEqual(
-      expect.objectContaining({ type: "power-reset" }),
-    );
+    expect(passResult.effects).toEqual([]);
   });
 
   it("landing on a charged site leaves it charged: nothing a ship does changes a site's state (rules.md §8.2)", () => {
