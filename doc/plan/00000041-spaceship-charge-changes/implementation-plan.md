@@ -1183,7 +1183,38 @@ it. `npm run typecheck`, `npm run lint` and `npm run format:check` pass.
 
 ## Step 7 — `README.md`, and a sweep for anything the old framing left behind
 
-Status: pending
+Status: committed
+
+Notes: Edited `README.md`'s overview paragraph (power replaces shields, the
+node drains rather than builds, a fight keeps what each ship carried), the
+dead-site sentence (energy cost, power returned, and a bay does the same for
+free), and the two quoted-flavour passages in the status block (the node
+"drains power" rather than "pays a shield"; the dead-site line pays energy
+and gives power back; the fight sentence says both ships kept whatever power
+they carried and adds a sentence naming the bay as where a ship recovers, a
+point per turn). Ran `npx prettier --write README.md`, which reported the
+file unchanged. Swept the whole repository (`grep -rin "shield"`, `"strip"`,
+`"refill"`, `"back to full power"`, `"stripped of"`, `"instantly refill"`,
+`"refilled to full"`) outside `doc/plan/**` and pre-0.17 `changelog.md`
+entries; nothing found. `grep -in "shield" doc/ruleset/rules.md` and
+`README.md` both return nothing; the only remaining "shield" mentions in
+`changelog.md` are within pre-0.17 entries (history, left as written) and
+the 0.17 entry's own deliberate references to what it replaced. No deviation
+from the plan.
+
+**Accessibility ledger:** judged, no entry added. The square label's
+occupant segment changed from "2 shields" to "power 2 of 4" (**D10**, landed
+in step 2), but it still states the ship's number in every case including
+zero, and now additionally states the scale (of 4) that the gauge otherwise
+only shows visually — a gain, not a loss, of information reaching assistive
+technology. This matches the plan's own expectation ("No entry … is
+expected") and its stated reasons; no other change in this step touches
+anything accessibility-relevant.
+
+`npm run typecheck`, `npm run lint`, `npm run format:check` all pass.
+`npm test` passes in full (779/779, unchanged from step 6 — this step
+touches only `README.md`). `git status --short` shows only `README.md`
+modified.
 
 `README.md` is player-facing (`CLAUDE.md`, Intended audience) and describes
 shields in its overview and in both quoted-flavour passages. Bring it in line
