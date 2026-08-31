@@ -87,7 +87,7 @@ drawn from:
 
 | Pressure | 1   | 5   | 10  | 15  | 20  | 25  | 30  | 40  | 50  | Average |
 | -------- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ------- |
-| Share    | 24% | 20% | 16% | 12% | 9%  | 7%  | 5%  | 4%  | 3%  | 12.8    |
+| Share    | 24% | 20% | 16% | 12% | 9%  | 7%  | 5%  | 4%  | 3%  | 12.79   |
 
 Most sites have waited only a little — the shape a board reaches naturally,
 where a site that has just cycled is the common case — but the tail means a
@@ -121,7 +121,7 @@ spread from the first turn rather than spreading within a few.
 
 **§8.2 gains the opening pressure**, or rather stops contradicting it: the
 section says an active site "goes active at 1", which stays true of every
-site that goes active *during* the game. The one exception is the deal, and
+site that goes active _during_ the game. The one exception is the deal, and
 §8.2 should point at §8.1 for it rather than repeat the table.
 
 **§8.3 gains the same pointer** — a node's drain "starts at 0" during play,
