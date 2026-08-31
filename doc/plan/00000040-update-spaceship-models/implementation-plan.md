@@ -774,7 +774,7 @@ Verdicts on the three judgement calls:
 
 ## Step 6 — The two models flank the start screen
 
-Status: pending
+Status: committed
 
 Rework `src/start/StartScreen.tsx` and `StartScreen.css` per **D6**, **D7** and
 **D8**:
@@ -815,6 +815,28 @@ references resolve).
 Verification (automated): `npm run typecheck`, `npm run lint`,
 `npm run format:check` and `npm test` all pass, including the new structural
 assertions and the unchanged existing `StartScreen` tests.
+
+**Notes:** `StartScreen.tsx` now renders a green `ShipModel` wrapper, the
+existing controls moved wholesale into a new `.start-screen__column`, and a
+red `ShipModel` wrapper, in that DOM order; both ship wrappers carry
+`aria-hidden="true"` (belt-and-braces alongside `ShipModel`'s own
+`aria-hidden` svg) and omit the `shields` prop entirely, so no gauge is
+drawn. `StartScreen.css` turns `.start-screen` into the three-area grid from
+D7 (`"green column red"`, side tracks `1fr`, `align-items: center`), adds the
+`@media (max-width: 48rem)` restack to `"column column" / "green red"`, gives
+`.start-screen__column` the flex-column rules `.start-screen` used to carry
+directly, and sizes each `.start-screen__ship` wrapper at `--play-size / 5`
+(D6) with `pointer-events: none`. Updated `StartScreen.test.tsx` with one new
+structural test (two `.ship-model` elements, one per side, both
+`aria-hidden`, zero `[data-gauge-slot]` anywhere) and extended
+`renderStartScreen`'s return value with `container` to support it; every
+existing test passed unchanged. Extended `App.test.tsx`'s step-4
+id-uniqueness test into two cases sharing a new `assertNoDuplicateIds`
+helper — one on the start screen, one after PLAY with the full board — so
+both screens are now proved free of duplicate ids. No deviation from the
+plan. `npm run typecheck`, `npm run lint`, `npm run format:check` and
+`npm test` all pass (771 tests: net +2 versus step 4's 769 — one new
+`StartScreen` test and one new `App` test).
 
 ---
 

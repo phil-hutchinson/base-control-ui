@@ -29,7 +29,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   const onFleetSizeChange = overrides.onFleetSizeChange ?? vi.fn();
   const onLengthInRoundsChange = overrides.onLengthInRoundsChange ?? vi.fn();
   const onPlay = overrides.onPlay ?? vi.fn();
-  render(
+  const { container } = render(
     <StartScreen
       fleetSize={overrides.fleetSize ?? DEFAULT_FLEET_SIZE}
       onFleetSizeChange={onFleetSizeChange}
@@ -38,7 +38,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
       onPlay={onPlay}
     />,
   );
-  return { onFleetSizeChange, onLengthInRoundsChange, onPlay };
+  return { onFleetSizeChange, onLengthInRoundsChange, onPlay, container };
 }
 
 describe("StartScreen", () => {
@@ -114,5 +114,18 @@ describe("StartScreen", () => {
     await user.click(screen.getByRole("button", { name: "Play" }));
 
     expect(onPlay).toHaveBeenCalledOnce();
+  });
+
+  it("flanks the column with a green and a red ship, both decorative and gaugeless", () => {
+    const { container } = renderStartScreen();
+
+    const green = container.querySelector(".ship-model--green");
+    const red = container.querySelector(".ship-model--red");
+    expect(green).toBeInTheDocument();
+    expect(red).toBeInTheDocument();
+    expect(green).toHaveAttribute("aria-hidden", "true");
+    expect(red).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelectorAll(".ship-model")).toHaveLength(2);
+    expect(container.querySelectorAll("[data-gauge-slot]")).toHaveLength(0);
   });
 });

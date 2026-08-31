@@ -166,6 +166,20 @@ describe("App", () => {
     expect(results.violations).toEqual([]);
   });
 
+  function assertNoDuplicateIds(container: HTMLElement) {
+    const ids = Array.from(container.querySelectorAll("[id]")).map(
+      (element) => element.id,
+    );
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+  }
+
+  it("never repeats an id in the rendered document, on the start screen", () => {
+    const { container } = render(<App />);
+
+    assertNoDuplicateIds(container);
+  });
+
   it("never repeats an id in the rendered document, with a full fourteen-ship board on screen", async () => {
     const { container } = render(<App />);
 
@@ -173,10 +187,6 @@ describe("App", () => {
 
     expect(shipCells()).toHaveLength(14);
 
-    const ids = Array.from(container.querySelectorAll("[id]")).map(
-      (element) => element.id,
-    );
-    expect(ids.length).toBeGreaterThan(0);
-    expect(new Set(ids).size).toBe(ids.length);
+    assertNoDuplicateIds(container);
   });
 });
