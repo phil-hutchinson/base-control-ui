@@ -370,7 +370,7 @@ left the board with the bay border, so the clause was dropped.
 
 ## Step 3 — The planet catalogue: `planetArt.ts`
 
-Status: pending
+Status: committed
 
 Create `src/board/planetArt.ts`: the fourteen planets' identities, with no
 rendering anywhere in it. For each planet — its gallery number, a short
@@ -391,6 +391,33 @@ Verification (automated): New unit tests in `planetArt.test.ts` — exactly
 fourteen planets, gallery numbers 1–14 with no gaps or repeats, every declared
 id unique across the whole catalogue, and every id carrying the `planet-`
 prefix.
+
+Notes: Read every one of the fourteen `<svg>` blocks in the committed gallery
+to enumerate each planet's gradients, filters and clip paths, then declared
+one id per part via a small `planetId`/`idsFor` helper so every id is built
+from the `planet-<nn>-<part>` scheme rather than typed out by hand. Traits and
+colour families are transcribed verbatim from the _Decisions_ table (cross-
+checked against its own spread-summary bullets — rings at 05/07/08/14, moons
+at 01/02/06/09, craters at 01/06/12, brown at 03/06/07/09 — all matched).
+`PLANETS[i].ids.body` is the id `Planet.tsx` will `<use>`; every other id is
+internal wiring for `PlanetDefs`. The disabled, commented-out `p9moonsheen`
+and `p14ringsheen` gradients are dropped rather than given ids, since the
+_Decisions_ cleanup list already calls for deleting the disabled circles that
+were their only consumers, leaving them dead. Deviation: the fixed part
+vocabulary listed in _Decisions_ (`body`, `surface`, `sheen`, `blur`, `clip`,
+`moon-sheen`, `moon-clip`, `ring`, `ring-sheen`, `ring-whole`, `ring-back`,
+`ring-front`) doesn't cover two things the artwork actually needs — planet 9's
+moon has its own base-colour gradient distinct from its sheen (no `moon-`
+variant of `surface` was listed), and planet 13 is built from three stacked
+wave-band gradients with no single-gradient part to name. Added `moon-surface`
+(planet 9 only) and `band-1`/`band-2`/`band-3` (planet 13 only), both plain
+kebab-case names for what they are, consistent with the scheme's own stated
+intent rather than a new convention. Also renamed what the source calls
+`p1moon-blur`/`p6b-blur`/`p9moonblur` to the generic `blur` part rather than a
+`moon-blur` variant: the vocabulary never lists one, and every planet that
+needs a blur only ever needs one, so there is never a clash requiring
+disambiguation. `npm run typecheck`, `npm run lint`, `npm test` (805 tests, all
+green) and `npm run format:check` all pass.
 
 ## Step 4 — The arrangement: `planetPlacement.ts`
 
