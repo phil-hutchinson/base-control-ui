@@ -403,14 +403,13 @@ its owner's next turn, exactly as if it had moved onto a node.
 
 The choice is genuinely random, and neither player can see it coming — but it
 is no longer an equal chance for every active site. An active site carries
-**pressure**: it goes active at **1** and gains **1** at the end of every
-turn it stays active, up to a maximum of **50** — except at the start of the
-game, where the opening deal gives each active site a pressure of its own
-(section 8.1). Each active site's chance of
-being drawn is its pressure as a share of the total pressure of all active
-sites, so a site that has been waiting a long time is more likely to be
-picked than one that has just cycled. Because pressure is never less than 1,
-no active site can ever be excluded outright.
+**pressure**: it goes active at **1** and gains **1** at the end of every turn
+it stays active, up to a maximum of **50** — except at the start of the game,
+where the opening deal gives each active site a pressure of its own (section
+8.1). Each active site's chance of being drawn is its pressure as a share of
+the total pressure of all active sites, so a site that has been waiting a long
+time is more likely to be picked than one that has just cycled. Because
+pressure is never less than 1, no active site can ever be excluded outright.
 
 A dormant site **recovers** instead of simply cooling down. A node goes
 dormant at its capacity, or a little past it — the drain draw that tips it
@@ -427,12 +426,12 @@ level, so it always takes about ten turns.
 
 ### 8.3 How long a node lives
 
-A charged node has a **capacity** of 60 units and a **drain** that starts at
-0 and rises at the end of every turn by an amount drawn at random — except at
-the start of the game, where the opening deal starts each charged node
-already part-drained (section 8.1). Which
-distribution it draws from depends on whether a ship is standing on it at
-that moment — either player's ship; it makes no difference whose:
+A charged node has a **capacity** of 60 units and a **drain** that starts at 0
+and rises at the end of every turn by an amount drawn at random — except at
+the start of the game, where the opening deal starts each charged node already
+part-drained (section 8.1). Which distribution it draws from depends on
+whether a ship is standing on it at that moment — either player's ship; it
+makes no difference whose:
 
 | Node  | 1   | 2   | 3   | 4   | 5   | 6   | Average |
 | ----- | --- | --- | --- | --- | --- | --- | ------- |

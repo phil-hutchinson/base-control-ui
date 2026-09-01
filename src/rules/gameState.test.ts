@@ -191,6 +191,13 @@ describe("startingGameState", () => {
     });
   });
 
+  it("deals the same board for the same seed whatever the fleet size", () => {
+    const fiveASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 5);
+    const sevenASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 7);
+
+    expect(fiveASide.siteStates).toEqual(sevenASide.siteStates);
+  });
+
   it("starts every ship at full power whatever the fleet size", () => {
     for (const fleetSize of [5, 6, 7] as const) {
       const state = startingGameState(

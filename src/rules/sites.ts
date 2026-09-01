@@ -2,7 +2,9 @@
 // in (rules.md §8.1), and how a site's single `level` number moves within
 // each state: a charged node's capacity and its two drawn drain
 // distributions (§8.3), a dormant site's drawn recovery distribution (§8.2),
-// and the pressure cap an active site's level is capped at (§8.2).
+// and the pressure cap an active site's level is capped at (§8.2). Also the
+// opening deal (§8.1), which draws the whole starting board at once from its
+// own opening drain and opening pressure tables.
 
 import { type Square, squareAt, squareName } from "./board";
 import { drawIndex, drawWeightedIndex } from "./random";
@@ -167,9 +169,7 @@ export function drawTableAmount(
 
 /**
  * Deals a whole opening board (rules.md §8.1): a seed in, the seventeen
- * site statuses keyed by `squareName`, and the next seed out. Replaces a
- * per-square answer, which cannot express a without-replacement draw or
- * carry a seed forward — see the design record for story 44.
+ * site statuses keyed by `squareName`, and the next seed out.
  *
  * The draw order is fixed and must not change, because a recorded game
  * replays by replaying the seed:
@@ -185,8 +185,8 @@ export function drawTableAmount(
  *    1, the opening pressure table otherwise. The result becomes the
  *    site's `level`; its state is `charged` or `active` to match.
  *
- * That is 5 + 17 = 22 seed steps before green's first turn, where today
- * there are none. Nothing is dealt `dormant`.
+ * That is 5 + 17 = 22 seed steps before green's first turn. Nothing is
+ * dealt `dormant`.
  */
 export function dealOpeningBoard(
   seed: number,

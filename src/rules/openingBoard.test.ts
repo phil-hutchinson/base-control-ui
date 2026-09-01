@@ -188,7 +188,7 @@ describe("a node dealt deep into its life runs out sooner than one dealt fresh (
   it("runs out in about 10 plies from drain 40, and about 29 from drain 0", () => {
     const pliesFromZero = RUN_OUT_SEEDS.map((seed) => firstRunOutPly(seed, 0));
     const pliesFromForty = RUN_OUT_SEEDS.map((seed) =>
-      firstRunOutPly(seed + 1_000_000, 40),
+      firstRunOutPly(seed, 40),
     );
 
     const average = (values: readonly number[]): number =>
