@@ -14,17 +14,12 @@
   grid-area: 1 / 1;
 }
 
-.board-square--bay {
-  background: var(--bay-fill);
-  border: 2px solid var(--bay-border);
-}
-
 /* The interaction markings (destination, selected, having moved, and the
    ship condition) share one accent, kept distinct from the side colors,
-   the site marker's gold and grey/white artwork, the bay cyan and the
-   focus-ring amber, so they read as one "you are choosing a move" layer
-   rather than game-state artwork. They differ from each other in shape,
-   not color, so the layer still reads in greyscale. */
+   the site marker's gold and grey/white artwork and the focus-ring amber,
+   so they read as one "you are choosing a move" layer rather than
+   game-state artwork. They differ from each other in shape, not color, so
+   the layer still reads in greyscale. */
 .board-square__mark {
   display: block;
   width: 100%;

@@ -325,7 +325,7 @@ for keeping it. The ignore entry carries that reasoning as a comment.
 
 ## Step 2 — The bay tile loses its fill and its border
 
-Status: pending
+Status: committed
 
 Delete the `.board-square--bay` rule from `BoardSquare.css` and the
 `--bay-fill` and `--bay-border` custom properties from `Board.css`, so a bay
@@ -343,13 +343,30 @@ planets or the missing tile colour caused it.
 
 The board will look worse at the end of this step — bays are marked only by
 their thin border, and on the opening board nothing distinguishes them at all.
-That is expected and temporary; Step 7 is where it comes right.
+That is expected and temporary; Step 6 is where the planets arrive and it comes
+right.
 
 Depends on: nothing.
 
 Verification (automated): `npm test` stays green — the three tests selecting
 `.board-square--bay` are unaffected because the class remains. `grep` for
 `bay-fill` and `bay-border` across `src/` returns nothing.
+
+Notes: Deleted the `.board-square--bay` rule from `BoardSquare.css` and the
+`--bay-fill`/`--bay-border` custom properties from `Board.css`, and reworded
+the `Board.css` header comment (it previously said bays "get a different fill
+and a heavier, differently coloured border") plus the trailing comment that
+listed "bay fill/border" among what `BoardSquare.css` styles. `BoardSquare.tsx`
+was left untouched, so the `board-square--bay` class still gets applied. `grep
+-rn "bay-fill\|bay-border" src/` returns nothing (the only `bay-` hits left are
+unrelated `bay-filler-*` ship ids in `ply.test.ts`). `npm run typecheck`, `npm
+run lint`, `npm test` (799 tests, all green) and `npm run format:check` all
+pass. No deviation from the plan.
+
+Orchestrator follow-up: one further stale reference was left behind — the
+comment above `.board-square__mark` in `BoardSquare.css` listed "the bay cyan"
+among the colours the interaction accent is kept distinct from. That colour
+left the board with the bay border, so the clause was dropped.
 
 ## Step 3 — The planet catalogue: `planetArt.ts`
 

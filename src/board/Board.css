@@ -3,9 +3,9 @@
    that box's size is `App.css`'s to decide, not this file's — so the board
    fills whatever room it is actually given: it grows with no ceiling, and
    shrinks no further than a floor kept for legibility.
-   Ordinary squares get a thin border to read as a grid; bays get a different
-   fill and a heavier, differently coloured border so they read as distinct at
-   a glance rather than a barely-different shade.
+   Ordinary squares get a thin border to read as a grid; a bay square is
+   styled the same as any other, and is marked instead by the planet drawn
+   in it.
 
    `.board-frame` is a plain 15 x 15 wrapper around the grid, with no row or
    column labels drawn on screen — every square's accessible name already
@@ -22,8 +22,6 @@
 }
 
 .board {
-  --bay-fill: #223463;
-  --bay-border: #5fd0e8;
   grid-column: 1 / 16;
   grid-row: 1 / 16;
   display: grid;
@@ -34,5 +32,5 @@
   outline: 2px solid var(--color-text-dim);
 }
 
-/* One square's own contents (site marker, ship, bay fill/border) are styled
-   in BoardSquare.css, which BoardSquare.tsx imports directly. */
+/* One square's own contents (site marker, ship) are styled in
+   BoardSquare.css, which BoardSquare.tsx imports directly. */
