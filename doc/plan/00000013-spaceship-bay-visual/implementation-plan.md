@@ -656,7 +656,7 @@ back; it did not.
 
 ## Step 8 — Rotate every planet one bay clockwise
 
-Status: implemented
+Status: committed
 
 Move every planet one position clockwise around the ring: the planet at ring
 position _i_ moves to position _i + 1_, and the planet at the last position
@@ -725,9 +725,14 @@ O14 -> 6, O2 -> 4, A2 -> 1, A14 -> 12 — all six match the step's table.
 owner's to perform, so it is left open here rather than claimed. No deviation
 from the plan.
 
+Gate: passed. The owner viewed the rotated board and confirmed it. The
+rotation also prompted the finding that became Step 9 — planet 11's yellow
+reading as a charged node — which was visible before the rotation but noticed
+once the board was being looked at closely a second time.
+
 ## Step 9 — Redraw planet 11: rose bands and a storm
 
-Status: implemented
+Status: committed
 
 Recolour planet 11 from its yellow/orange/green banding to a **salmon / rose /
 cream** palette, and give it a **storm spot** — a large oval set off-centre,
@@ -844,6 +849,16 @@ typecheck`, `npm run lint`, `npm run format:check` and `npm run build` all
 pass. No deviation from the plan. The manual gate (viewing the board and
 comparing planet 11 against a charged site and a red ship) is the owner's to
 perform and is left open here rather than claimed.
+
+Gate: passed, first time and unchanged. The owner viewed the redrawn planet
+and accepted it. Worth recording what was checked, since the arithmetic alone
+was not conclusive: the new palette is comfortably clear of the charged-node
+gold `#DAA520` (nothing in it has that colour's collapsed blue channel — the
+nearest, `#D98C86`, is rgb(217,140,134)), but its deepest band `#C97B82` is
+rgb(201,123,130) against the red side colour `#c8503f`'s rgb(200,80,63) — an
+identical red channel, separated only by green and blue. That pairing was the
+reason the gate asked for a direct comparison against a red ship rather than
+trusting the numbers, and by eye it reads clearly pinker and lighter.
 
 ## Step 10 — README check
 
