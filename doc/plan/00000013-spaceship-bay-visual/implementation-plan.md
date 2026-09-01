@@ -195,7 +195,7 @@ board's edge — and the spread invariants are stated against it:
 | Ring position | Bay | Planet                                | Traits                    |
 | ------------- | --- | ------------------------------------- | ------------------------- |
 | 0             | D15 | 08 — turquoise, vertical white ring   | ring, turquoise           |
-| 1             | H15 | 11 — yellow/orange/green bands        | yellow-green              |
+| 1             | H15 | 11 — banded planet (see note)         | rose (see note)           |
 | 2             | L15 | 06 — double planet, banded + cratered | companion, craters, brown |
 | 3             | O14 | 13 — cyan/purple/pink wave bands      | cyan-pink                 |
 | 4             | O10 | 05 — gold, wide horizontal ring       | ring, gold                |
@@ -229,6 +229,15 @@ the unavoidable adjacency fall between different warm families (purple beside
 brown, cream beside brown) rather than between two of the same. Do not treat a
 warm-beside-warm pair as a defect to solve; treat two planets of the _same
 family_ adjacent as one.
+
+**Two later steps changed this table; it is left as first written, with the
+changes recorded rather than edited in.** Step 8 rotated every planet one bay
+clockwise, so each planet now sits one position further round than the "Ring
+position" column says — the ring order and every adjacency are unchanged, since
+a rotation preserves them. Step 9 then redrew planet 11 from yellow/orange/green
+to rose with a storm spot, because its yellow clashed with the charged-node
+accent; its colour family changed from `yellow-green` to `rose`, which is why
+this row reads "see note". The spread reasoning below is unaffected by both.
 
 **The owner approved this arrangement at plan time**, with the explicit
 expectation of flipping individual planets at Step 7 once the board is in front
@@ -716,7 +725,81 @@ O14 -> 6, O2 -> 4, A2 -> 1, A14 -> 12 — all six match the step's table.
 owner's to perform, so it is left open here rather than claimed. No deviation
 from the plan.
 
-## Step 9 — README check
+## Step 9 — Redraw planet 11: rose bands and a storm
+
+Status: pending
+
+Recolour planet 11 from its yellow/orange/green banding to a **salmon / rose /
+cream** palette, and give it a **storm spot** — a large oval set off-centre,
+sitting in the banding like a gas giant's great storm, in a deeper tone of the
+same family with a lighter rim.
+
+**This is the one planet in the story that is deliberately redrawn rather than
+ported.** Everywhere else, "a planet that renders differently from its source
+is a bug". Here it is the point. Record that clearly in `PlanetDefs.tsx`'s
+header comment, which currently claims the port is verbatim apart from a
+listed set of fixes — planet 11 becomes a stated exception, not a silent one,
+or the next reader will diff it against the gallery and think something broke.
+
+### Why
+
+Found by the owner at the Step 8 gate. The charged-node accent is `#DAA520`
+(`--color-node-charged`, and the charged site gradient's inner stop in
+`SiteMarker.tsx`). Planet 11's stops included `#E5AB24`, `#E3B126`, `#DDB32C`
+and `#F2BD2C` — `#DAA520` is rgb(218,165,32) and `#E5AB24` is rgb(229,171,36),
+which is the same colour to the eye. A planet was reading as a game-state cue.
+
+This is **in scope**, not a nicety: `story.md`'s design decisions require a
+planet's palette to "stay clear of … the site accent … so a planet is never
+mistaken for a game-state cue", and that no planet's colour may imply a side or
+a state. Shipping it would have been a knowing violation of the story's own
+constraint.
+
+**Why this planet and not the other two golds.** Planets 5 and 14 are also
+gold-ish and were checked at the same gate; the owner passed them, because
+their rings make them distinctive by _shape_, so hue does not have to carry the
+whole load. Planet 11 has no ring, no moon and no craters — colour was the only
+thing distinguishing it, which is exactly why the clash was fatal for it alone.
+The storm spot exists to give it the same shape-based identity the rings give
+those two, so it is never again one palette change away from being ambiguous.
+
+### Hard constraints
+
+- **No new tracked trait.** Planet 11 sits at L15, between planet 8 (ring,
+  turquoise) at H15 and planet 6 (companion, craters, brown) at O14. Giving it
+  a ring, a moon or craters would collide with a neighbour and fail
+  `planetPlacement.test.ts`. A storm spot is a surface feature, not a tracked
+  trait, so it is free — **do not model it as one**.
+- **Colour family becomes `rose`**, replacing `yellow-green` in
+  `PlanetColorFamily` (planet 11 is its only member, so the old name goes).
+  `rose` must not equal either neighbour's family, which it does not.
+- **Stay clear of the red side colour** `--color-red` (`#c8503f`). Salmon and
+  rose are close to it in hue, so keep the planet's tones lighter, pinker and
+  less saturated than that brick red — including the storm, which is the
+  darkest element and the one most at risk of drifting into it.
+- **Keep the drawing's bones.** It stays a banded disc at the same radius, same
+  rotation, same blur, same clip, same sheen overlay. The bands are recoloured
+  and a storm is added; the structure is not rebuilt.
+- The storm belongs **inside** the existing blurred, clipped, rotated group, so
+  it is softened and clipped exactly as the bands are and turns with them.
+- Any new id (the storm's own gradient, if it gets one) must be declared in
+  `planetArt.ts` like every other, under the same `planet-11-<part>` scheme.
+
+### What must not regress
+
+`planetArt.test.ts`, `planetPlacement.test.ts`, `PlanetDefs.test.tsx` and
+`Board.test.tsx` all pass unmodified. The document-wide id-uniqueness assertion
+in `Board.test.tsx` covers any id the storm adds.
+
+Depends on: Step 8 (planet 11's position, which decides which traits are free).
+
+Verification (manual): The owner views the board at
+`npm run dev -- --port 5373` and confirms planet 11 no longer reads as a
+charged node, that the storm gives it its own identity, and that its rose does
+not read as the red side colour. Compare it directly against a charged site and
+against a red ship. **[gate]**
+
+## Step 10 — README check
 
 Status: pending
 

@@ -91,6 +91,14 @@ var(--bay-border)` (`#5fd0e8`), both defined on `.board` in `Board.css`.
    defined twice, and there is commented-out and dead material. All of it is
    standardised to one scheme and one place, and the dead material is dropped.
    Nothing about how a planet _looks_ changes in the process.
+9. **One planet is redrawn, not ported.** Planet 11's yellow banding was too
+   near the charged-node gold (`#DAA520`) to tell apart, which item 2 of
+   _Design decisions_ forbids outright — a planet may never be mistaken for a
+   game-state cue. It is recoloured to salmon/rose/cream and given a storm
+   spot, so it is distinguished by shape as well as hue and cannot be one
+   palette change away from ambiguity again. This is the single deliberate
+   departure from "port, don't invent", and it is here because the story's own
+   palette constraint requires it. All artwork stays inline SVG.
 
 ## Design decisions & constraints
 
