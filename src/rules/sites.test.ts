@@ -1,18 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { BAYS } from "./bays";
 import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
+import { mulberry32 } from "./random";
 import {
   DORMANT_RECOVERY_TABLE,
   EMPTY_NODE_DRAIN_TABLE,
   HELD_NODE_DRAIN_TABLE,
   NODE_CAPACITY,
+  OPENING_DRAIN_TABLE,
+  OPENING_PRESSURE_TABLE,
   PRESSURE_CAP,
   SITES,
   TARGET_CHARGED_SITES,
   type WeightedAmount,
+  dealOpeningBoard,
   drawTableAmount,
   siteCyclePosition,
-  startingSiteStatus,
 } from "./sites";
 
 const COLUMN_INDEX = new Map(
@@ -112,47 +115,6 @@ describe("the board's charged target (rules.md §8.1, §8.2)", () => {
   });
 });
 
-describe("starting site status (rules.md §8.1)", () => {
-  it("has exactly five sites starting charged at drain 0: H8, E5, K5, E11, K11", () => {
-    const chargedNames = SITES.filter(
-      (site) => startingSiteStatus(site)?.state === "charged",
-    ).map(squareName);
-
-    expect(new Set(chargedNames)).toEqual(
-      new Set(["H8", "E5", "K5", "E11", "K11"]),
-    );
-    expect(chargedNames).toHaveLength(5);
-    for (const site of SITES) {
-      const status = startingSiteStatus(site);
-      if (status?.state === "charged") {
-        expect(status.level).toBe(0);
-      }
-    }
-  });
-
-  it("has the other twelve sites starting active at pressure 1", () => {
-    const activeSites = SITES.filter(
-      (site) => startingSiteStatus(site)?.state === "active",
-    );
-
-    expect(activeSites).toHaveLength(12);
-    for (const site of activeSites) {
-      expect(startingSiteStatus(site)?.level).toBe(1);
-    }
-  });
-
-  it("has no site starting dormant", () => {
-    for (const site of SITES) {
-      expect(startingSiteStatus(site)?.state).not.toBe("dormant");
-    }
-  });
-
-  it("has no site status for a square that is not a site", () => {
-    expect(startingSiteStatus(squareAt("G", 7))).toBeUndefined();
-    expect(startingSiteStatus(squareAt("D", 15))).toBeUndefined();
-  });
-});
-
 describe("capacity and pressure cap (rules.md §8.3, §8.2)", () => {
   it("has a node capacity of 60 and a pressure cap of 50", () => {
     expect(NODE_CAPACITY).toBe(60);
@@ -176,6 +138,18 @@ function expectedAverage(table: readonly WeightedAmount[]): number {
 
 describe.each([
   {
+    name: "the opening drain table",
+    table: OPENING_DRAIN_TABLE,
+    outcomes: [0, 5, 10, 15, 20, 25, 30, 35, 40],
+    average: 14,
+  },
+  {
+    name: "the opening pressure table",
+    table: OPENING_PRESSURE_TABLE,
+    outcomes: [1, 5, 10, 15, 20, 25, 30, 40, 50],
+    average: 12.79,
+  },
+  {
     name: "the empty-node drain table",
     table: EMPTY_NODE_DRAIN_TABLE,
     outcomes: [1, 2, 3],
@@ -193,7 +167,7 @@ describe.each([
     outcomes: [4, 5, 6, 7, 8],
     average: 6.0,
   },
-])("$name (rules.md §8.2, §8.3)", ({ table, outcomes, average }) => {
+])("$name (rules.md §8.1, §8.2, §8.3)", ({ table, outcomes, average }) => {
   it("has exactly the outcomes the rules table lists", () => {
     expect(amounts(table)).toEqual(outcomes);
   });
@@ -223,6 +197,157 @@ describe.each([
       const expectedShare = entry.weight / 100;
       expect(observedShare).toBeGreaterThan(expectedShare - 0.03);
       expect(observedShare).toBeLessThan(expectedShare + 0.03);
+    }
+  });
+});
+
+describe("the opening drain table's cap (rules.md §8.1, §8.3)", () => {
+  it("never exceeds two-thirds of capacity, leaving at least 20 to reach", () => {
+    for (const entry of OPENING_DRAIN_TABLE) {
+      expect(entry.amount).toBeLessThanOrEqual((2 / 3) * NODE_CAPACITY);
+      expect(NODE_CAPACITY - entry.amount).toBeGreaterThanOrEqual(20);
+    }
+  });
+});
+
+describe("dealing the opening board (rules.md §8.1)", () => {
+  const siteNames = new Set(SITES.map(squareName));
+  const drainAmounts = new Set(
+    OPENING_DRAIN_TABLE.map((entry) => entry.amount),
+  );
+  const pressureAmounts = new Set(
+    OPENING_PRESSURE_TABLE.map((entry) => entry.amount),
+  );
+
+  it("deals exactly the seventeen sites, five charged and twelve active, none dormant", () => {
+    const [siteStates] = dealOpeningBoard(1);
+
+    expect(new Set(Object.keys(siteStates))).toEqual(siteNames);
+
+    const charged = Object.values(siteStates).filter(
+      (status) => status.state === "charged",
+    );
+    const active = Object.values(siteStates).filter(
+      (status) => status.state === "active",
+    );
+    const dormant = Object.values(siteStates).filter(
+      (status) => status.state === "dormant",
+    );
+
+    expect(charged).toHaveLength(5);
+    expect(active).toHaveLength(12);
+    expect(dormant).toHaveLength(0);
+  });
+
+  it("draws every charged level from the opening drain table and every active level from the opening pressure table", () => {
+    const [siteStates] = dealOpeningBoard(1);
+
+    for (const status of Object.values(siteStates)) {
+      if (status.state === "charged") {
+        expect(drainAmounts.has(status.level)).toBe(true);
+      } else {
+        expect(pressureAmounts.has(status.level)).toBe(true);
+      }
+    }
+  });
+
+  it("never deals a charged node above two-thirds of capacity, leaving at least 20 to reach", () => {
+    let seed = 1;
+    for (let i = 0; i < 200; i++) {
+      const [siteStates, nextSeed] = dealOpeningBoard(seed);
+      seed = nextSeed;
+      for (const status of Object.values(siteStates)) {
+        if (status.state === "charged") {
+          expect(status.level).toBeLessThanOrEqual((2 / 3) * NODE_CAPACITY);
+          expect(NODE_CAPACITY - status.level).toBeGreaterThanOrEqual(20);
+        }
+      }
+    }
+  });
+
+  it("deals the same board and the same next seed from the same seed", () => {
+    const [firstStates, firstNextSeed] = dealOpeningBoard(12345);
+    const [secondStates, secondNextSeed] = dealOpeningBoard(12345);
+
+    expect(secondStates).toEqual(firstStates);
+    expect(secondNextSeed).toBe(firstNextSeed);
+  });
+
+  it("deals a different board from a different seed (confirmed for this pair; any other distinct pair is expected to work the same way)", () => {
+    const [firstStates] = dealOpeningBoard(12345);
+    const [secondStates] = dealOpeningBoard(54321);
+
+    expect(secondStates).not.toEqual(firstStates);
+  });
+
+  it("advances the seed by exactly 22 steps", () => {
+    const seed = 987654321;
+    const [, nextSeed] = dealOpeningBoard(seed);
+
+    let expectedSeed = seed;
+    for (let i = 0; i < 22; i++) {
+      const [, advanced] = mulberry32(expectedSeed);
+      expectedSeed = advanced;
+    }
+
+    expect(nextSeed).toBe(expectedSeed);
+  });
+
+  it("charges every site in a share close to 5/17 and draws levels at frequencies close to their tables' weights, over many deals", () => {
+    const DEALS = 20_000;
+    const chargeCounts = new Map(SITES.map((site) => [squareName(site), 0]));
+    const drainCounts = new Map(
+      OPENING_DRAIN_TABLE.map((entry) => [entry.amount, 0]),
+    );
+    const pressureCounts = new Map(
+      OPENING_PRESSURE_TABLE.map((entry) => [entry.amount, 0]),
+    );
+
+    let seed = 42;
+    for (let i = 0; i < DEALS; i++) {
+      const [siteStates, nextSeed] = dealOpeningBoard(seed);
+      seed = nextSeed;
+
+      for (const [name, status] of Object.entries(siteStates)) {
+        if (status.state === "charged") {
+          chargeCounts.set(name, (chargeCounts.get(name) ?? 0) + 1);
+          drainCounts.set(
+            status.level,
+            (drainCounts.get(status.level) ?? 0) + 1,
+          );
+        } else {
+          pressureCounts.set(
+            status.level,
+            (pressureCounts.get(status.level) ?? 0) + 1,
+          );
+        }
+      }
+    }
+
+    const expectedChargeShare = TARGET_CHARGED_SITES / SITES.length;
+    for (const count of chargeCounts.values()) {
+      const share = count / DEALS;
+      expect(share).toBeGreaterThan(expectedChargeShare - 0.02);
+      expect(share).toBeLessThan(expectedChargeShare + 0.02);
+    }
+
+    const totalDrains = [...drainCounts.values()].reduce((a, b) => a + b, 0);
+    for (const entry of OPENING_DRAIN_TABLE) {
+      const share = (drainCounts.get(entry.amount) ?? 0) / totalDrains;
+      const expectedShare = entry.weight / 100;
+      expect(share).toBeGreaterThan(expectedShare - 0.03);
+      expect(share).toBeLessThan(expectedShare + 0.03);
+    }
+
+    const totalPressures = [...pressureCounts.values()].reduce(
+      (a, b) => a + b,
+      0,
+    );
+    for (const entry of OPENING_PRESSURE_TABLE) {
+      const share = (pressureCounts.get(entry.amount) ?? 0) / totalPressures;
+      const expectedShare = entry.weight / 100;
+      expect(share).toBeGreaterThan(expectedShare - 0.03);
+      expect(share).toBeLessThan(expectedShare + 0.03);
     }
   });
 });

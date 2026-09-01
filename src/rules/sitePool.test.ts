@@ -14,6 +14,13 @@
 // every node's drain is drawn independently — and two nodes coinciding is
 // now ordinary rather than a bug. What replaces the old assertion is a bound
 // on how often several coincide, not a claim that they never do.
+//
+// 0.18 deals the opening position rather than fixing it (§8.1), so this
+// file's "opening position" now varies per seed — which five sites start
+// charged, and at what drain or pressure, differs from run to run. Nothing
+// here changes as a result: it already runs several seeds, its bounds were
+// measured with margin against a dealt board, and the shape it checks is
+// about the steady state Appendix B describes, not the first few turns.
 
 import { describe, expect, it } from "vitest";
 import { squareName } from "./board";

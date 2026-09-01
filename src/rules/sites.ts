@@ -2,10 +2,12 @@
 // in (rules.md §8.1), and how a site's single `level` number moves within
 // each state: a charged node's capacity and its two drawn drain
 // distributions (§8.3), a dormant site's drawn recovery distribution (§8.2),
-// and the pressure cap an active site's level is capped at (§8.2).
+// and the pressure cap an active site's level is capped at (§8.2). Also the
+// opening deal (§8.1), which draws the whole starting board at once from its
+// own opening drain and opening pressure tables.
 
 import { type Square, squareAt, squareName } from "./board";
-import { drawWeightedIndex } from "./random";
+import { drawIndex, drawWeightedIndex } from "./random";
 
 /**
  * The seventeen site squares, in the row order rules.md §3.2 lists them
@@ -55,8 +57,10 @@ export const NODE_CAPACITY = 60;
 export const PRESSURE_CAP = 50;
 
 /**
- * The pressure an active site starts at, whether from the opening position
- * or from finishing recovery (rules.md §8.2, §8.6 step 6).
+ * The pressure an active site starts at when it finishes recovering
+ * (rules.md §8.2, §8.6 step 6). The opening deal is the one exception: it
+ * draws each active site's opening pressure from `OPENING_PRESSURE_TABLE`
+ * instead (rules.md §8.1).
  */
 export const STARTING_PRESSURE = 1;
 
@@ -73,6 +77,42 @@ export interface WeightedAmount {
   readonly amount: number;
   readonly weight: number;
 }
+
+/**
+ * The drain a dealt node opens at, drawn once for each of the five sites
+ * the opening deal charges (rules.md §8.1). Weights are the whole-number
+ * percentages the rules table shows, so the two can be read side by side.
+ * Average 14. Never exceeds two-thirds of `NODE_CAPACITY`, so the deepest
+ * dealt node still has 20 capacity left.
+ */
+export const OPENING_DRAIN_TABLE: readonly WeightedAmount[] = [
+  { amount: 0, weight: 20 },
+  { amount: 5, weight: 18 },
+  { amount: 10, weight: 15 },
+  { amount: 15, weight: 12 },
+  { amount: 20, weight: 10 },
+  { amount: 25, weight: 8 },
+  { amount: 30, weight: 7 },
+  { amount: 35, weight: 6 },
+  { amount: 40, weight: 4 },
+];
+
+/**
+ * The pressure a dealt site opens at, drawn once for each of the twelve
+ * sites the opening deal leaves active (rules.md §8.1). Weights are the
+ * whole-number percentages the rules table shows. Average 12.79.
+ */
+export const OPENING_PRESSURE_TABLE: readonly WeightedAmount[] = [
+  { amount: 1, weight: 24 },
+  { amount: 5, weight: 20 },
+  { amount: 10, weight: 16 },
+  { amount: 15, weight: 12 },
+  { amount: 20, weight: 9 },
+  { amount: 25, weight: 7 },
+  { amount: 30, weight: 5 },
+  { amount: 40, weight: 4 },
+  { amount: 50, weight: 3 },
+];
 
 /**
  * How much an empty charged node's drain rises by at the end of a turn no
@@ -127,38 +167,60 @@ export function drawTableAmount(
   return [table[index].amount, nextSeed];
 }
 
-/** The five sites that start the game charged (rules.md §8.1). */
-const OPENING_CHARGED_SQUARES: readonly Square[] = [
-  squareAt("H", 8),
-  squareAt("E", 5),
-  squareAt("K", 5),
-  squareAt("E", 11),
-  squareAt("K", 11),
-];
-
-const OPENING_CHARGED_SQUARE_NAMES: ReadonlySet<string> = new Set(
-  OPENING_CHARGED_SQUARES.map(squareName),
-);
-
-const SITE_NAMES: ReadonlySet<string> = new Set(SITES.map(squareName));
-
 /**
- * The state and `level` a site starts the game in, or `undefined` if the
- * given square is not a site at all (rules.md §8.1). The five opening
- * sites — H8, E5, K5, E11, K11 — are `charged` at drain 0; every other site
- * is `active` at pressure 1. Nothing starts dormant.
+ * Deals a whole opening board (rules.md §8.1): a seed in, the seventeen
+ * site statuses keyed by `squareName`, and the next seed out.
+ *
+ * The draw order is fixed and must not change, because a recorded game
+ * replays by replaying the seed:
+ *
+ * 1. Draw `TARGET_CHARGED_SITES` (5) sites, one at a time and uniformly,
+ *    from a pool that starts as all of `SITES` in declared order. Each
+ *    draw is `drawIndex(seed, pool.length)` — uniform, since at the deal
+ *    no site has any pressure to weight by — removes the drawn site from
+ *    the pool, and advances the seed. This is the shrinking-pool shape
+ *    `runChargeDraw` uses for its (weighted) draw.
+ * 2. Walk `SITES` in declared order. For each site, one `drawTableAmount`
+ *    call: the opening drain table if the site was drawn charged in step
+ *    1, the opening pressure table otherwise. The result becomes the
+ *    site's `level`; its state is `charged` or `active` to match.
+ *
+ * That is 5 + 17 = 22 seed steps before green's first turn. Nothing is
+ * dealt `dormant`.
  */
-export function startingSiteStatus(
-  square: Square,
-): { readonly state: SiteState; readonly level: number } | undefined {
-  const name = squareName(square);
-  if (!SITE_NAMES.has(name)) {
-    return undefined;
+export function dealOpeningBoard(
+  seed: number,
+): [
+  siteStates: Readonly<
+    Record<string, { readonly state: SiteState; readonly level: number }>
+  >,
+  nextSeed: number,
+] {
+  let pool = [...SITES];
+  let workingSeed = seed;
+  const chargedNames = new Set<string>();
+
+  for (let count = 0; count < TARGET_CHARGED_SITES; count++) {
+    const [index, nextSeed] = drawIndex(workingSeed, pool.length);
+    chargedNames.add(squareName(pool[index]));
+    pool = pool.filter((_, poolIndex) => poolIndex !== index);
+    workingSeed = nextSeed;
   }
-  if (OPENING_CHARGED_SQUARE_NAMES.has(name)) {
-    return { state: "charged", level: 0 };
+
+  const siteStates: Record<string, { state: SiteState; level: number }> = {};
+
+  for (const site of SITES) {
+    const name = squareName(site);
+    const charged = chargedNames.has(name);
+    const [level, nextSeed] = drawTableAmount(
+      workingSeed,
+      charged ? OPENING_DRAIN_TABLE : OPENING_PRESSURE_TABLE,
+    );
+    siteStates[name] = { state: charged ? "charged" : "active", level };
+    workingSeed = nextSeed;
   }
-  return { state: "active", level: STARTING_PRESSURE };
+
+  return [siteStates, workingSeed];
 }
 
 /**

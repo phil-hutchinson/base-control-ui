@@ -9,6 +9,7 @@ import {
 } from "../rules/fleet";
 import {
   ACTIONS_PER_PLY,
+  startingGameState,
   type GameState,
   type Ship,
   type SiteStatus,
@@ -598,7 +599,12 @@ describe("sessionReducer — new-game", () => {
     expect(result.selectedShipId).toBeUndefined();
     expect(result.state.plyNumber).toBe(1);
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
-    expect(result.state.randomSeed).toBe(42);
+    // Not the literal seed the intent carried: `startingGameState` advances
+    // it dealing the opening board, and the reducer must carry that seed
+    // rather than the one it started from.
+    expect(result.state.randomSeed).toBe(
+      startingGameState(42, 100, DEFAULT_FLEET_SIZE).randomSeed,
+    );
     expect(result.state.lengthInRounds).toBe(100);
   });
 
@@ -659,7 +665,11 @@ describe("sessionReducer — new-game", () => {
       ).toEqual(
         new Set(expectedFleet.map((entry) => squareName(entry.square))),
       );
-      expect(result.state.randomSeed).toBe(9);
+      // Not the literal seed the intent carried — see the seed assertion
+      // above.
+      expect(result.state.randomSeed).toBe(
+        startingGameState(9, 30, fleetSize).randomSeed,
+      );
       expect(result.state.lengthInRounds).toBe(30);
     },
   );

@@ -13,7 +13,7 @@ import {
 } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS, isGameLengthRounds } from "./gameLength";
 import type { PowerLevel } from "./power";
-import { SITES, type SiteState, startingSiteStatus } from "./sites";
+import { dealOpeningBoard, type SiteState } from "./sites";
 
 /** How many actions a side takes each ply (rules.md §5). */
 export const ACTIONS_PER_PLY = 1;
@@ -80,15 +80,18 @@ export interface GameState {
 }
 
 /**
- * The state the game starts from: `startingFleet(fleetSize)`'s ships, every
- * site's starting state and `level` (five sites charged at drain 0, the
- * rest active at pressure 1 — see `startingSiteStatus`), green to move,
- * `ACTIONS_PER_PLY` actions remaining, nothing moved, ply 1, the given seed,
- * both sides at 0 energy, and the given game length.
+ * The state the game starts from: `startingFleet(fleetSize)`'s ships, a
+ * dealt board (`dealOpeningBoard`, rules.md §8.1) — five of the seventeen
+ * sites charged at a drawn drain, the rest active at a drawn pressure,
+ * nothing dormant — green to move, `ACTIONS_PER_PLY` actions remaining,
+ * nothing moved, ply 1, both sides at 0 energy, and the given game length.
  *
- * The seed is a required argument — see `src/game/seed.ts` for where the
- * app's opening seed comes from. Every test passes one explicitly, so a
- * game's opening position is always reproducible.
+ * The seed argument is the seed the **deal** starts from, not the seed the
+ * game's first turn draws from: dealing the board consumes 22 steps of the
+ * stream before play begins, and the resulting state's `randomSeed` is the
+ * seed the deal left behind. See `src/game/seed.ts` for where the app's
+ * opening seed comes from. Every test passes one explicitly, so a game's
+ * opening position is always reproducible.
  *
  * The game's length in rounds defaults to `DEFAULT_GAME_LENGTH_ROUNDS`
  * (rules.md §9) and, once set, is fixed for the game's lifetime. It must be
@@ -117,13 +120,7 @@ export function startingGameState(
     );
   }
 
-  const siteStates: Record<string, SiteStatus> = {};
-  for (const site of SITES) {
-    const status = startingSiteStatus(site);
-    if (status !== undefined) {
-      siteStates[squareName(site)] = status;
-    }
-  }
+  const [siteStates, nextSeed] = dealOpeningBoard(randomSeed);
 
   return {
     ships: startingFleet(fleetSize).map((entry) => ({
@@ -137,7 +134,7 @@ export function startingGameState(
     actionsRemaining: ACTIONS_PER_PLY,
     actedThisPly: [],
     plyNumber: 1,
-    randomSeed,
+    randomSeed: nextSeed,
     energy: { green: 0, red: 0 },
     lengthInRounds,
   };

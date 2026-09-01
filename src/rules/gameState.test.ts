@@ -8,6 +8,11 @@ import {
   siteStatusAt,
   startingGameState,
 } from "./gameState";
+import {
+  OPENING_DRAIN_TABLE,
+  OPENING_PRESSURE_TABLE,
+  dealOpeningBoard,
+} from "./sites";
 
 const SEED = 12345;
 const STARTING_FLEET = startingFleet(7);
@@ -26,45 +31,23 @@ describe("startingGameState", () => {
     });
   });
 
-  it("has green to move, one action remaining, nothing moved, ply 1 and the given seed", () => {
+  it("has green to move, one action remaining, nothing moved, ply 1 and the deal's advanced seed", () => {
     const state = startingGameState(SEED);
+    const [, dealtSeed] = dealOpeningBoard(SEED);
 
     expect(state.sideToMove).toBe("green");
     expect(state.actionsRemaining).toBe(1);
     expect(state.actedThisPly).toEqual([]);
     expect(state.plyNumber).toBe(1);
-    expect(state.randomSeed).toBe(SEED);
+    expect(state.randomSeed).toBe(dealtSeed);
+    expect(state.randomSeed).not.toBe(SEED);
   });
 
-  it("gives every site a status: five charged at drain 0, twelve active at pressure 1, none dormant", () => {
+  it("deals the board dealOpeningBoard deals for the same seed: five charged, twelve active, none dormant", () => {
     const state = startingGameState(SEED);
+    const [dealt] = dealOpeningBoard(SEED);
 
-    const chargedSites = ["H8", "E5", "K5", "E11", "K11"];
-    const activeSites = [
-      "F2",
-      "J2",
-      "B4",
-      "H4",
-      "N4",
-      "D8",
-      "L8",
-      "B12",
-      "H12",
-      "N12",
-      "F14",
-      "J14",
-    ];
-
-    for (const name of chargedSites) {
-      const status = siteStatusAt(state, squareFromName(name));
-      expect(status?.state).toBe("charged");
-      expect(status?.level).toBe(0);
-    }
-    for (const name of activeSites) {
-      const status = siteStatusAt(state, squareFromName(name));
-      expect(status?.state).toBe("active");
-      expect(status?.level).toBe(1);
-    }
+    expect(state.siteStates).toEqual(dealt);
 
     const allStatuses = Object.values(state.siteStates);
     expect(allStatuses).toHaveLength(17);
@@ -77,6 +60,33 @@ describe("startingGameState", () => {
     expect(
       allStatuses.filter((status) => status.state === "dormant"),
     ).toHaveLength(0);
+  });
+
+  it("draws every charged level from the opening drain table and every active level from the opening pressure table", () => {
+    const state = startingGameState(SEED);
+    const drainAmounts = new Set(
+      OPENING_DRAIN_TABLE.map((entry) => entry.amount),
+    );
+    const pressureAmounts = new Set(
+      OPENING_PRESSURE_TABLE.map((entry) => entry.amount),
+    );
+
+    for (const status of Object.values(state.siteStates)) {
+      if (status.state === "charged") {
+        expect(drainAmounts.has(status.level)).toBe(true);
+      } else {
+        expect(pressureAmounts.has(status.level)).toBe(true);
+      }
+    }
+  });
+
+  it("deals the same board for the same seed, and a different board for a different seed", () => {
+    const first = startingGameState(SEED);
+    const second = startingGameState(SEED);
+    const other = startingGameState(SEED + 1);
+
+    expect(second.siteStates).toEqual(first.siteStates);
+    expect(other.siteStates).not.toEqual(first.siteStates);
   });
 
   it("gives a non-site square no state or status", () => {
@@ -179,6 +189,13 @@ describe("startingGameState", () => {
       expect(ship.side).toBe(entry.side);
       expect(ship.square).toEqual(entry.square);
     });
+  });
+
+  it("deals the same board for the same seed whatever the fleet size", () => {
+    const fiveASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 5);
+    const sevenASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 7);
+
+    expect(fiveASide.siteStates).toEqual(sevenASide.siteStates);
   });
 
   it("starts every ship at full power whatever the fleet size", () => {
