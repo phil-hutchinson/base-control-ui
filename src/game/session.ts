@@ -5,11 +5,15 @@
 // game state, so it lives here rather than in `src/rules/`; the event is
 // structured, never a sentence — wording is decided elsewhere.
 
-import { shipHasLegalAction } from "../rules/actions";
 import { type Square, squareName } from "../rules/board";
 import { type AttackRefusalReason, legalTargets } from "../rules/combat";
-import type { Side, ShipId } from "../rules/fleet";
-import { type GameState, shipsBySquare } from "../rules/gameState";
+import type { FleetSize, Side, ShipId } from "../rules/fleet";
+import {
+  type GameState,
+  shipsBySquare,
+  startingGameState,
+} from "../rules/gameState";
+import { isGameOver } from "../rules/gameLength";
 import { type MoveRefusalReason, legalDestinations } from "../rules/movement";
 import {
   type AttackEffect,
@@ -52,8 +56,10 @@ export interface MovedEvent {
 
 /**
  * A ship attacked another, carrying the side that attacked and everything
- * `applyAttack` reported. Neither ship moves (rules.md §7), so `from` is the
- * attacking ship's own square and `target` is the square it attacked.
+ * `applyAttack` reported. `from` is the attacking ship's own square **before**
+ * the fight and `target` is the square it attacked (rules.md §7); both ships
+ * are in bays afterwards, which the `fight-resolved` effect in `effects`
+ * reports.
  */
 export interface AttackedEvent {
   readonly type: "attacked";
@@ -90,10 +96,21 @@ export type SessionEvent =
   | PassEffect
   | RejectedEvent;
 
-/** An intent a player's input turns into: activate a square, or dismiss a selection. */
+/**
+ * An intent a player's input turns into: activate a square, dismiss a
+ * selection, or start a new game. `new-game` carries the seed, the length in
+ * rounds and the fleet size the new game starts from — the reducer uses what
+ * it is handed and never draws a seed or reaches for a default itself.
+ */
 export type SessionIntent =
   | { readonly type: "activate"; readonly square: Square }
-  | { readonly type: "dismiss" };
+  | { readonly type: "dismiss" }
+  | {
+      readonly type: "new-game";
+      readonly randomSeed: number;
+      readonly lengthInRounds: number;
+      readonly fleetSize: FleetSize;
+    };
 
 /** The game state, the selected ship if any, and the last thing that happened. */
 export interface Session {
@@ -159,16 +176,13 @@ function cleared(session: Session): Session {
 }
 
 /**
- * Whether `shipId` may be selected: it has a legal action of its own, or it
- * has not moved this ply yet (so it can still be a first, if currently
- * fruitless, choice — a pinned ship, or one held back by §8.5's obligation).
- * Widened from "has not moved this ply" so a ship that has moved and can
- * still attack (rules.md §5) is selectable too.
+ * Whether `shipId` may be selected: it has not acted this ply yet. A ship
+ * with no legal action at all — a pinned ship — is still a legitimate, if
+ * fruitless, first choice; a ship that has already acted has none left to
+ * offer.
  */
 function isSelectable(state: GameState, shipId: ShipId): boolean {
-  return (
-    shipHasLegalAction(state, shipId) || !state.movedThisPly.includes(shipId)
-  );
+  return !state.actedThisPly.includes(shipId);
 }
 
 /** Activating a square when no ship is currently selected. */
@@ -182,7 +196,7 @@ function activateWithNoSelection(session: Session, square: Square): Session {
     return rejected(session, "not-your-ship", square);
   }
   if (!isSelectable(session.state, ship.id)) {
-    return rejected(session, "ship-already-moved", square);
+    return rejected(session, "ship-already-acted", square);
   }
   return selected(session, ship.id, ship.side, square);
 }
@@ -208,7 +222,7 @@ function activateWithSelection(
 
   if (other !== undefined && other.side === selectedShip.side) {
     if (!isSelectable(session.state, other.id)) {
-      return rejected(session, "ship-already-moved", square);
+      return rejected(session, "ship-already-acted", square);
     }
     return selected(session, other.id, other.side, square);
   }
@@ -261,8 +275,22 @@ export function sessionReducer(
   session: Session,
   intent: SessionIntent,
 ): Session {
+  if (intent.type === "new-game") {
+    return createSession(
+      startingGameState(
+        intent.randomSeed,
+        intent.lengthInRounds,
+        intent.fleetSize,
+      ),
+    );
+  }
+
   if (intent.type === "dismiss") {
     return session.selectedShipId === undefined ? session : cleared(session);
+  }
+
+  if (isGameOver(session.state)) {
+    return rejected(session, "game-over", intent.square);
   }
 
   return session.selectedShipId === undefined

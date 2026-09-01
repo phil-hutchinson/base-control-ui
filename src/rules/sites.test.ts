@@ -1,14 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { BAYS } from "./bays";
 import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
+import { mulberry32 } from "./random";
 import {
-  CHARGED_LIFE_PLIES,
-  DEPLETED_COOLDOWN_PLIES,
+  DORMANT_RECOVERY_TABLE,
+  EMPTY_NODE_DRAIN_TABLE,
+  HELD_NODE_DRAIN_TABLE,
+  NODE_CAPACITY,
+  OPENING_DRAIN_TABLE,
+  OPENING_PRESSURE_TABLE,
+  PRESSURE_CAP,
   SITES,
-  STARTING_ACTIVE_SITES,
-  hasChargedNodeFinished,
-  hasDepletedSiteFinishedCooling,
-  startingSiteState,
+  TARGET_CHARGED_SITES,
+  type WeightedAmount,
+  dealOpeningBoard,
+  drawTableAmount,
+  siteCyclePosition,
 } from "./sites";
 
 const COLUMN_INDEX = new Map(
@@ -102,98 +109,277 @@ describe("sites", () => {
   });
 });
 
-describe("starting site state", () => {
-  it("has exactly five sites starting active: H8, E5, K5, E11, K11", () => {
-    expect(STARTING_ACTIVE_SITES.map(squareName)).toEqual([
-      "H8",
-      "E5",
-      "K5",
-      "E11",
-      "K11",
-    ]);
+describe("the board's charged target (rules.md §8.1, §8.2)", () => {
+  it("aims to keep five sites charged", () => {
+    expect(TARGET_CHARGED_SITES).toBe(5);
+  });
+});
+
+describe("capacity and pressure cap (rules.md §8.3, §8.2)", () => {
+  it("has a node capacity of 60 and a pressure cap of 50", () => {
+    expect(NODE_CAPACITY).toBe(60);
+    expect(PRESSURE_CAP).toBe(50);
+  });
+});
+
+/** Every distinct amount a table can draw, in ascending order. */
+function amounts(table: readonly WeightedAmount[]): readonly number[] {
+  return table.map((entry) => entry.amount);
+}
+
+/** The weighted average a table's outcomes and weights predict. */
+function expectedAverage(table: readonly WeightedAmount[]): number {
+  const totalWeight = table.reduce((sum, entry) => sum + entry.weight, 0);
+  return (
+    table.reduce((sum, entry) => sum + entry.amount * entry.weight, 0) /
+    totalWeight
+  );
+}
+
+describe.each([
+  {
+    name: "the opening drain table",
+    table: OPENING_DRAIN_TABLE,
+    outcomes: [0, 5, 10, 15, 20, 25, 30, 35, 40],
+    average: 14,
+  },
+  {
+    name: "the opening pressure table",
+    table: OPENING_PRESSURE_TABLE,
+    outcomes: [1, 5, 10, 15, 20, 25, 30, 40, 50],
+    average: 12.79,
+  },
+  {
+    name: "the empty-node drain table",
+    table: EMPTY_NODE_DRAIN_TABLE,
+    outcomes: [1, 2, 3],
+    average: 2.1,
+  },
+  {
+    name: "the held-node drain table",
+    table: HELD_NODE_DRAIN_TABLE,
+    outcomes: [3, 4, 5, 6],
+    average: 4.6,
+  },
+  {
+    name: "the dormant recovery table",
+    table: DORMANT_RECOVERY_TABLE,
+    outcomes: [4, 5, 6, 7, 8],
+    average: 6.0,
+  },
+])("$name (rules.md §8.1, §8.2, §8.3)", ({ table, outcomes, average }) => {
+  it("has exactly the outcomes the rules table lists", () => {
+    expect(amounts(table)).toEqual(outcomes);
   });
 
-  it("has the other twelve sites starting dormant", () => {
-    const activeNames = new Set(STARTING_ACTIVE_SITES.map(squareName));
-    const dormantSites = SITES.filter(
-      (site) => !activeNames.has(squareName(site)),
-    );
+  it("has weights that sum to 100", () => {
+    const total = table.reduce((sum, entry) => sum + entry.weight, 0);
+    expect(total).toBe(100);
+  });
 
-    expect(dormantSites).toHaveLength(12);
-    for (const site of dormantSites) {
-      expect(startingSiteState(site)).toBe("dormant");
+  it("has the weighted average the rules table gives", () => {
+    expect(expectedAverage(table)).toBeCloseTo(average, 5);
+  });
+
+  it("draws only the listed outcomes, at frequencies close to their weights", () => {
+    const DRAWS = 20_000;
+    const counts = new Map<number, number>(outcomes.map((o) => [o, 0]));
+    let seed = 7;
+    for (let i = 0; i < DRAWS; i++) {
+      const [amount, nextSeed] = drawTableAmount(seed, table);
+      seed = nextSeed;
+      expect(outcomes).toContain(amount);
+      counts.set(amount, (counts.get(amount) ?? 0) + 1);
     }
-  });
 
-  it("has no site starting charged or depleted", () => {
-    for (const site of SITES) {
-      expect(startingSiteState(site)).not.toBe("charged");
-      expect(startingSiteState(site)).not.toBe("depleted");
-    }
-  });
-
-  it("has every starting-active square in the site list", () => {
-    const siteNames = new Set(SITES.map(squareName));
-    for (const square of STARTING_ACTIVE_SITES) {
-      expect(siteNames.has(squareName(square))).toBe(true);
-    }
-  });
-
-  it("has no site state for a square that is not a site", () => {
-    expect(startingSiteState(squareAt("G", 7))).toBeUndefined();
-    expect(startingSiteState(squareAt("D", 15))).toBeUndefined();
-  });
-
-  it("is itself symmetric about column H and row 8", () => {
-    const names = new Set(STARTING_ACTIVE_SITES.map(squareName));
-
-    for (const site of STARTING_ACTIVE_SITES) {
-      expect(names.has(squareName(mirrorAcrossColumnH(site)))).toBe(true);
-      expect(names.has(squareName(mirrorAcrossRow8(site)))).toBe(true);
+    for (const entry of table) {
+      const observedShare = (counts.get(entry.amount) ?? 0) / DRAWS;
+      const expectedShare = entry.weight / 100;
+      expect(observedShare).toBeGreaterThan(expectedShare - 0.03);
+      expect(observedShare).toBeLessThan(expectedShare + 0.03);
     }
   });
 });
 
-describe("the site clocks (rules.md §8.3, §8.6)", () => {
-  it("has both clocks at nine turns", () => {
-    expect(CHARGED_LIFE_PLIES).toBe(9);
-    expect(DEPLETED_COOLDOWN_PLIES).toBe(9);
-  });
-
-  it("has a charged node finish on its ninth turn, counting the turn it was woken on", () => {
-    const wokenOnPly = 1;
-
-    for (let ply = wokenOnPly; ply <= wokenOnPly + 7; ply++) {
-      expect(hasChargedNodeFinished(wokenOnPly, ply)).toBe(false);
+describe("the opening drain table's cap (rules.md §8.1, §8.3)", () => {
+  it("never exceeds two-thirds of capacity, leaving at least 20 to reach", () => {
+    for (const entry of OPENING_DRAIN_TABLE) {
+      expect(entry.amount).toBeLessThanOrEqual((2 / 3) * NODE_CAPACITY);
+      expect(NODE_CAPACITY - entry.amount).toBeGreaterThanOrEqual(20);
     }
-    expect(hasChargedNodeFinished(wokenOnPly, wokenOnPly + 8)).toBe(true);
-    expect(hasChargedNodeFinished(wokenOnPly, wokenOnPly + 20)).toBe(true);
+  });
+});
+
+describe("dealing the opening board (rules.md §8.1)", () => {
+  const siteNames = new Set(SITES.map(squareName));
+  const drainAmounts = new Set(
+    OPENING_DRAIN_TABLE.map((entry) => entry.amount),
+  );
+  const pressureAmounts = new Set(
+    OPENING_PRESSURE_TABLE.map((entry) => entry.amount),
+  );
+
+  it("deals exactly the seventeen sites, five charged and twelve active, none dormant", () => {
+    const [siteStates] = dealOpeningBoard(1);
+
+    expect(new Set(Object.keys(siteStates))).toEqual(siteNames);
+
+    const charged = Object.values(siteStates).filter(
+      (status) => status.state === "charged",
+    );
+    const active = Object.values(siteStates).filter(
+      (status) => status.state === "active",
+    );
+    const dormant = Object.values(siteStates).filter(
+      (status) => status.state === "dormant",
+    );
+
+    expect(charged).toHaveLength(5);
+    expect(active).toHaveLength(12);
+    expect(dormant).toHaveLength(0);
   });
 
-  it("has a depleted site finish cooling on its ninth turn, not counting the turn it depleted on", () => {
-    const depletedOnPly = 9;
+  it("draws every charged level from the opening drain table and every active level from the opening pressure table", () => {
+    const [siteStates] = dealOpeningBoard(1);
 
-    for (let ply = depletedOnPly; ply <= depletedOnPly + 8; ply++) {
-      expect(hasDepletedSiteFinishedCooling(depletedOnPly, ply)).toBe(false);
+    for (const status of Object.values(siteStates)) {
+      if (status.state === "charged") {
+        expect(drainAmounts.has(status.level)).toBe(true);
+      } else {
+        expect(pressureAmounts.has(status.level)).toBe(true);
+      }
     }
-    expect(
-      hasDepletedSiteFinishedCooling(depletedOnPly, depletedOnPly + 9),
-    ).toBe(true);
-    expect(
-      hasDepletedSiteFinishedCooling(depletedOnPly, depletedOnPly + 20),
-    ).toBe(true);
   });
 
-  it("works the eighteen-ply round trip: woken on ply 1, depletes at the end of ply 9, dormant again at ply 18", () => {
-    const wokenOnPly = 1;
+  it("never deals a charged node above two-thirds of capacity, leaving at least 20 to reach", () => {
+    let seed = 1;
+    for (let i = 0; i < 200; i++) {
+      const [siteStates, nextSeed] = dealOpeningBoard(seed);
+      seed = nextSeed;
+      for (const status of Object.values(siteStates)) {
+        if (status.state === "charged") {
+          expect(status.level).toBeLessThanOrEqual((2 / 3) * NODE_CAPACITY);
+          expect(NODE_CAPACITY - status.level).toBeGreaterThanOrEqual(20);
+        }
+      }
+    }
+  });
 
-    // Charged for plies 1 through 9; finished as of ply 9.
-    expect(hasChargedNodeFinished(wokenOnPly, 8)).toBe(false);
-    expect(hasChargedNodeFinished(wokenOnPly, 9)).toBe(true);
+  it("deals the same board and the same next seed from the same seed", () => {
+    const [firstStates, firstNextSeed] = dealOpeningBoard(12345);
+    const [secondStates, secondNextSeed] = dealOpeningBoard(12345);
 
-    // Depleted with enteredOnPly 9; finished cooling as of ply 18.
-    const depletedOnPly = 9;
-    expect(hasDepletedSiteFinishedCooling(depletedOnPly, 17)).toBe(false);
-    expect(hasDepletedSiteFinishedCooling(depletedOnPly, 18)).toBe(true);
+    expect(secondStates).toEqual(firstStates);
+    expect(secondNextSeed).toBe(firstNextSeed);
+  });
+
+  it("deals a different board from a different seed (confirmed for this pair; any other distinct pair is expected to work the same way)", () => {
+    const [firstStates] = dealOpeningBoard(12345);
+    const [secondStates] = dealOpeningBoard(54321);
+
+    expect(secondStates).not.toEqual(firstStates);
+  });
+
+  it("advances the seed by exactly 22 steps", () => {
+    const seed = 987654321;
+    const [, nextSeed] = dealOpeningBoard(seed);
+
+    let expectedSeed = seed;
+    for (let i = 0; i < 22; i++) {
+      const [, advanced] = mulberry32(expectedSeed);
+      expectedSeed = advanced;
+    }
+
+    expect(nextSeed).toBe(expectedSeed);
+  });
+
+  it("charges every site in a share close to 5/17 and draws levels at frequencies close to their tables' weights, over many deals", () => {
+    const DEALS = 20_000;
+    const chargeCounts = new Map(SITES.map((site) => [squareName(site), 0]));
+    const drainCounts = new Map(
+      OPENING_DRAIN_TABLE.map((entry) => [entry.amount, 0]),
+    );
+    const pressureCounts = new Map(
+      OPENING_PRESSURE_TABLE.map((entry) => [entry.amount, 0]),
+    );
+
+    let seed = 42;
+    for (let i = 0; i < DEALS; i++) {
+      const [siteStates, nextSeed] = dealOpeningBoard(seed);
+      seed = nextSeed;
+
+      for (const [name, status] of Object.entries(siteStates)) {
+        if (status.state === "charged") {
+          chargeCounts.set(name, (chargeCounts.get(name) ?? 0) + 1);
+          drainCounts.set(
+            status.level,
+            (drainCounts.get(status.level) ?? 0) + 1,
+          );
+        } else {
+          pressureCounts.set(
+            status.level,
+            (pressureCounts.get(status.level) ?? 0) + 1,
+          );
+        }
+      }
+    }
+
+    const expectedChargeShare = TARGET_CHARGED_SITES / SITES.length;
+    for (const count of chargeCounts.values()) {
+      const share = count / DEALS;
+      expect(share).toBeGreaterThan(expectedChargeShare - 0.02);
+      expect(share).toBeLessThan(expectedChargeShare + 0.02);
+    }
+
+    const totalDrains = [...drainCounts.values()].reduce((a, b) => a + b, 0);
+    for (const entry of OPENING_DRAIN_TABLE) {
+      const share = (drainCounts.get(entry.amount) ?? 0) / totalDrains;
+      const expectedShare = entry.weight / 100;
+      expect(share).toBeGreaterThan(expectedShare - 0.03);
+      expect(share).toBeLessThan(expectedShare + 0.03);
+    }
+
+    const totalPressures = [...pressureCounts.values()].reduce(
+      (a, b) => a + b,
+      0,
+    );
+    for (const entry of OPENING_PRESSURE_TABLE) {
+      const share = (pressureCounts.get(entry.amount) ?? 0) / totalPressures;
+      const expectedShare = entry.weight / 100;
+      expect(share).toBeGreaterThan(expectedShare - 0.03);
+      expect(share).toBeLessThan(expectedShare + 0.03);
+    }
+  });
+});
+
+describe("the site cycle position (rules.md §8.3, §8.2)", () => {
+  it("has charged report 0 at drain 0 and 1 at capacity", () => {
+    expect(siteCyclePosition("charged", 0)).toBe(0);
+    expect(siteCyclePosition("charged", NODE_CAPACITY)).toBe(1);
+  });
+
+  it("clamps charged outside [0, 1]", () => {
+    expect(siteCyclePosition("charged", -10)).toBe(0);
+    expect(siteCyclePosition("charged", NODE_CAPACITY + 10)).toBe(1);
+  });
+
+  it("has dormant report 0 at a level of capacity (just gone dormant) and 1 at level 0 (fully recovered)", () => {
+    expect(siteCyclePosition("dormant", NODE_CAPACITY)).toBe(0);
+    expect(siteCyclePosition("dormant", 0)).toBe(1);
+  });
+
+  it("clamps dormant outside [0, 1], including a level carried above capacity", () => {
+    expect(siteCyclePosition("dormant", NODE_CAPACITY + 10)).toBe(0);
+    expect(siteCyclePosition("dormant", -10)).toBe(1);
+  });
+
+  it("has active report 0 at pressure 1 and 1 at the pressure cap", () => {
+    expect(siteCyclePosition("active", 1)).toBe(0);
+    expect(siteCyclePosition("active", PRESSURE_CAP)).toBe(1);
+  });
+
+  it("clamps active outside [0, 1]", () => {
+    expect(siteCyclePosition("active", 0)).toBe(0);
+    expect(siteCyclePosition("active", PRESSURE_CAP + 10)).toBe(1);
   });
 });

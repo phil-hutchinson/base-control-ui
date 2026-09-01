@@ -1,55 +1,113 @@
-// §8.7's end-of-turn sequence: the six steps run once at the end of every
-// ply, in the document's order. Reads `state.sideToMove` as the player who
-// just moved and `state.plyNumber` as the ply just played, so `ply.ts` must
-// call this before either changes.
+// §8.6's end-of-turn sequence: the steps run once at the end of every ply,
+// in the document's order. Reads `state.sideToMove` as the player who just
+// moved and `state.plyNumber` as the ply just played, so `ply.ts` must call
+// this before either changes. Two ordering choices matter and both are
+// deliberate (§8.6). Pressure (step 5) is gained after the charge draw
+// (step 4), not before, so a site is drawn at the pressure it held all
+// turn — its first appearance in a draw is at weight 1, never 2.
+// Recovering a dormant site to active (step 6) runs last, after both of
+// those, deliberately: it is what makes a site spend at least one whole
+// turn visibly active before the draw can pick it, rather than going
+// dormant -> active -> charged inside a single sequence. And the two
+// clocks are symmetric about the turn a state is entered: a node charged
+// in step 4 of turn N first drains in step 3 of turn N+1, and a node that
+// goes dormant in step 3 of turn N first recovers in step 6 of turn N+1 —
+// which is why step 6 works from the dormant set captured at entry, before
+// step 3 runs.
 
-import { driftReturnPositionIndex } from "./bays";
 import type { Square } from "./board";
 import { squareName } from "./board";
+import { isBay } from "./bays";
+import { type SiteChargedEffect, runChargeDraw } from "./chargeDraw";
+import {
+  chargedNodesHeldBy,
+  dormantSitesOccupiedBy,
+  energyForDormantSites,
+  energyForNodesHeld,
+} from "./energy";
 import type { Side, ShipId } from "./fleet";
-import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
 import {
-  type SiteCooledEffect,
-  type SiteWokenEffect,
-  drawReplacements,
-} from "./nodes";
+  type GameState,
+  type SiteStatus,
+  dormantSiteNames,
+  shipsBySquare,
+  siteStateAt,
+} from "./gameState";
+import { MAX_POWER, MIN_POWER, type PowerLevel } from "./power";
 import {
-  hasChargedNodeFinished,
-  hasDepletedSiteFinishedCooling,
+  DORMANT_RECOVERY_TABLE,
+  EMPTY_NODE_DRAIN_TABLE,
+  HELD_NODE_DRAIN_TABLE,
+  NODE_CAPACITY,
+  PRESSURE_CAP,
   SITES,
+  STARTING_PRESSURE,
+  drawTableAmount,
 } from "./sites";
-import { MAX_SHIELDS, type ShieldCount } from "./shields";
 
-/** A ship on a charged node gained a shield at the end of its side's turn (§8.7 step 1, §4.1). */
-export interface ShieldGainedEffect {
-  readonly type: "shield-gained";
+/** A ship on a dormant site, or in a bay, gained a point of power at the end of its side's turn (§8.6 step 1, §4.1, §3.1). */
+export interface PowerGainedEffect {
+  readonly type: "power-gained";
   readonly shipId: ShipId;
   readonly side: Side;
   readonly square: Square;
-  readonly shields: ShieldCount;
+  readonly power: PowerLevel;
 }
 
-/** A charged node finished its nine turns and went depleted (§8.7 step 4, §8.3). */
+/** A ship on a charged node lost a point of power at the end of its side's turn (§8.6 step 1, §4.1). */
+export interface PowerLostEffect {
+  readonly type: "power-lost";
+  readonly shipId: ShipId;
+  readonly side: Side;
+  readonly square: Square;
+  readonly power: PowerLevel;
+}
+
+/** The side that just played collected energy for the charged nodes it holds (§8.6 step 2, §8.4). */
+export interface EnergyCollectedEffect {
+  readonly type: "energy-collected";
+  readonly side: Side;
+  readonly amount: number;
+  readonly newTotal: number;
+  readonly squares: readonly Square[];
+}
+
+/**
+ * The side that just played paid energy for the dormant sites it occupies
+ * (§8.6 step 2, §8.4). `amount` is the energy actually deducted, never more
+ * than the side had — where §8.4's floor of 0 bites, `amount` is smaller
+ * than the table price, so `newTotal` is always `previousTotal - amount`
+ * exactly.
+ */
+export interface EnergyPenaltyEffect {
+  readonly type: "energy-penalty";
+  readonly side: Side;
+  readonly amount: number;
+  readonly newTotal: number;
+  readonly squares: readonly Square[];
+}
+
+/** A charged node's drain reached its capacity and it went dormant (§8.6 step 3, §8.3). */
 export interface NodeRanOutEffect {
   readonly type: "node-ran-out";
   readonly square: Square;
 }
 
-/** A ship was left standing on a site that ran out underneath it (§8.7 step 4, §8.5). */
-export interface ShipStrandedEffect {
-  readonly type: "ship-stranded";
-  readonly shipId: ShipId;
-  readonly side: Side;
+/** A dormant site finished recovering and went active, at pressure 1 (§8.6 step 6, §8.2). */
+export interface SiteWentActiveEffect {
+  readonly type: "site-went-active";
   readonly square: Square;
 }
 
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
 export type EndOfTurnEffect =
-  | ShieldGainedEffect
-  | SiteCooledEffect
+  | PowerGainedEffect
+  | PowerLostEffect
+  | EnergyCollectedEffect
+  | EnergyPenaltyEffect
   | NodeRanOutEffect
-  | ShipStrandedEffect
-  | SiteWokenEffect;
+  | SiteChargedEffect
+  | SiteWentActiveEffect;
 
 /** The state resulting from the end-of-turn sequence, and the effects it produced. */
 export interface EndOfTurnResult {
@@ -58,115 +116,212 @@ export interface EndOfTurnResult {
 }
 
 /**
- * Runs §8.7's six steps, in order, for the ply that is ending. `state`'s
- * `sideToMove` is read as the player who just played that ply and
+ * Runs §8.6's end-of-turn steps, in order, for the ply that is ending.
+ * `state`'s `sideToMove` is read as the player who just played that ply and
  * `plyNumber` as the ply itself — the caller runs this **before** swapping
  * sides or advancing the ply counter.
  *
- * Step 2 (influence) is a deliberately empty slot awaiting its own story;
- * every other step, including step 6, runs unconditionally.
+ * Step 6 must recover exactly the sites that were dormant before this ply
+ * began, never one that only goes dormant during this very sequence, in step
+ * 3 below. The set is captured here, at entry, before step 3 runs — it is
+ * exact because no action changes a site's state (rules.md §8.6), so the set
+ * of dormant sites when this function is entered is exactly the set from the
+ * start of the ply.
  */
 export function runEndOfTurn(state: GameState): EndOfTurnResult {
+  const dormantBeforePly = dormantSiteNames(state);
   const side = state.sideToMove;
-  const plyNumber = state.plyNumber;
   const occupants = shipsBySquare(state);
   const effects: EndOfTurnEffect[] = [];
 
-  // Step 1: the moving player's ships on charged nodes gain a shield,
-  // capped at 4 (§4.1). An active site grants nothing.
+  // Step 1: the moving player's ships on charged nodes lose a point of
+  // power, floored at 0, and those on dormant sites or in a bay gain one,
+  // capped at 4 (§4.1, §3.1). An active site does neither. A bay and a site
+  // can never be the same square (§3.2), so the two gain conditions never
+  // both apply. One pass over the fleet, so the effects come out in fleet
+  // order with losses and gains interleaved exactly as the ships are
+  // ordered.
   const ships = state.ships.map((ship) => {
-    if (
-      ship.side !== side ||
-      ship.shields >= MAX_SHIELDS ||
-      siteStateAt(state, ship.square) !== "charged"
-    ) {
+    if (ship.side !== side) {
       return ship;
     }
-    const shields = (ship.shields + 1) as ShieldCount;
-    effects.push({
-      type: "shield-gained",
-      shipId: ship.id,
-      side: ship.side,
-      square: ship.square,
-      shields,
-    });
-    return { ...ship, shields };
+    const siteState = siteStateAt(state, ship.square);
+    if (siteState === "charged" && ship.power > MIN_POWER) {
+      const power = (ship.power - 1) as PowerLevel;
+      effects.push({
+        type: "power-lost",
+        shipId: ship.id,
+        side: ship.side,
+        square: ship.square,
+        power,
+      });
+      return { ...ship, power };
+    }
+    if (
+      (siteState === "dormant" || isBay(ship.square)) &&
+      ship.power < MAX_POWER
+    ) {
+      const power = (ship.power + 1) as PowerLevel;
+      effects.push({
+        type: "power-gained",
+        shipId: ship.id,
+        side: ship.side,
+        square: ship.square,
+        power,
+      });
+      return { ...ship, power };
+    }
+    return ship;
   });
   let workingState: GameState = { ...state, ships };
 
-  // Step 2: influence (§8.4) — awaits its own story. No total is kept.
+  // Step 2: the moving side collects energy for the charged nodes it holds
+  // right now (§8.4). A zero payout is not an event — no effect, no other
+  // state change — so a player standing on nothing does not read as having
+  // had something happen to them.
+  const heldSquares = chargedNodesHeldBy(workingState, side);
+  const amount = energyForNodesHeld(heldSquares.length);
+  if (amount > 0) {
+    const newTotal = workingState.energy[side] + amount;
+    workingState = {
+      ...workingState,
+      energy: { ...workingState.energy, [side]: newTotal },
+    };
+    effects.push({
+      type: "energy-collected",
+      side,
+      amount,
+      newTotal,
+      squares: heldSquares,
+    });
+  }
 
-  // Step 3: depleted sites that have finished cooling go dormant (§8.6).
-  let siteStates = workingState.siteStates;
+  // Step 2 (continued): the moving side then pays for the dormant sites it
+  // occupies right now (§8.4), taken from the total the collection above
+  // has already raised. The table price is clamped to a count of five
+  // dormant sites; the amount actually taken is floored so the side's total
+  // never goes below 0, and it is that floored amount — not the table
+  // price — that is reported, so `newTotal` is always exactly
+  // `previousTotal - amount`. A zero deduction is not an event, whether
+  // because nothing dormant is occupied or because there is nothing left to
+  // take: no effect, no other state change.
+  const dormantSquares = dormantSitesOccupiedBy(workingState, side);
+  const price = energyForDormantSites(dormantSquares.length);
+  const penalty = Math.min(price, workingState.energy[side]);
+  if (penalty > 0) {
+    const newTotal = workingState.energy[side] - penalty;
+    workingState = {
+      ...workingState,
+      energy: { ...workingState.energy, [side]: newTotal },
+    };
+    effects.push({
+      type: "energy-penalty",
+      side,
+      amount: penalty,
+      newTotal,
+      squares: dormantSquares,
+    });
+  }
+
+  // Step 3: every charged node adds its drain — drawn from the held table if
+  // a ship of either side is standing on it right now, the empty table
+  // otherwise — and any that reaches capacity goes dormant carrying its
+  // drain unclamped (§8.3). A ship left standing on it simply stays there,
+  // collecting nothing (§8.5).
   for (const square of SITES) {
     const name = squareName(square);
-    const status = siteStates[name];
+    const status = workingState.siteStates[name];
+    if (status === undefined || status.state !== "charged") {
+      continue;
+    }
+    const table = occupants.has(name)
+      ? HELD_NODE_DRAIN_TABLE
+      : EMPTY_NODE_DRAIN_TABLE;
+    const [drawnAmount, nextSeed] = drawTableAmount(
+      workingState.randomSeed,
+      table,
+    );
+    const level = status.level + drawnAmount;
+    const nextStatus: SiteStatus =
+      level < NODE_CAPACITY
+        ? { state: "charged", level }
+        : { state: "dormant", level };
+    workingState = {
+      ...workingState,
+      siteStates: { ...workingState.siteStates, [name]: nextStatus },
+      randomSeed: nextSeed,
+    };
+
+    if (nextStatus.state === "dormant") {
+      effects.push({ type: "node-ran-out", square });
+    }
+  }
+
+  // Step 4: as many active sites as it takes to bring the board back to
+  // five charged are charged, at random (§8.2, §8.6 step 4). Running short
+  // is legal: with no active site left to draw from, this simply stops.
+  const chargeDraw = runChargeDraw(workingState);
+  workingState = chargeDraw.state;
+  effects.push(...chargeDraw.effects);
+
+  // Step 5: every site still active gains a point of pressure, to the cap
+  // of 50 (§8.2). This runs after the charge draw, so a site is drawn at
+  // the pressure it held all turn — its first appearance in a draw is at
+  // weight 1, not 2 — and it runs before step 6, so a site that goes active
+  // there starts at pressure 1 untouched by this step.
+  for (const square of SITES) {
+    const name = squareName(square);
+    const status = workingState.siteStates[name];
+    if (status === undefined || status.state !== "active") {
+      continue;
+    }
+    if (status.level >= PRESSURE_CAP) {
+      continue;
+    }
+    workingState = {
+      ...workingState,
+      siteStates: {
+        ...workingState.siteStates,
+        [name]: { state: "active", level: status.level + 1 },
+      },
+    };
+  }
+
+  // Step 6: every site that was dormant before this ply began (the
+  // `dormantBeforePly` set captured at entry, above) subtracts its
+  // recovery; any that reaches zero or below goes active, at pressure 1
+  // (§8.2). A site that only went dormant during this very sequence — in
+  // step 3 above — was charged when the ply began, so it is excluded and
+  // first recovers at the end of the next ply.
+  for (const square of SITES) {
+    const name = squareName(square);
+    const status = workingState.siteStates[name];
     if (
       status === undefined ||
-      status.state !== "depleted" ||
-      !hasDepletedSiteFinishedCooling(status.enteredOnPly, plyNumber)
+      status.state !== "dormant" ||
+      !dormantBeforePly.has(name)
     ) {
       continue;
     }
-    siteStates = {
-      ...siteStates,
-      [name]: { state: "dormant", enteredOnPly: plyNumber },
+    const [drawnAmount, nextSeed] = drawTableAmount(
+      workingState.randomSeed,
+      DORMANT_RECOVERY_TABLE,
+    );
+    const level = status.level - drawnAmount;
+    const nextStatus: SiteStatus =
+      level > 0
+        ? { state: "dormant", level }
+        : { state: "active", level: STARTING_PRESSURE };
+    workingState = {
+      ...workingState,
+      siteStates: { ...workingState.siteStates, [name]: nextStatus },
+      randomSeed: nextSeed,
     };
-    effects.push({ type: "site-cooled", square });
-  }
-  workingState = { ...workingState, siteStates };
 
-  // Step 4: charged nodes that have finished their nine turns go depleted
-  // (§8.3), stranding any ship left standing on them (§8.5).
-  let ranOutCount = 0;
-  siteStates = workingState.siteStates;
-  for (const square of SITES) {
-    const name = squareName(square);
-    const status = siteStates[name];
-    if (
-      status === undefined ||
-      status.state !== "charged" ||
-      !hasChargedNodeFinished(status.enteredOnPly, plyNumber)
-    ) {
-      continue;
-    }
-    siteStates = {
-      ...siteStates,
-      [name]: { state: "depleted", enteredOnPly: plyNumber },
-    };
-    effects.push({ type: "node-ran-out", square });
-    ranOutCount += 1;
-
-    const occupant = occupants.get(name);
-    if (occupant !== undefined) {
-      effects.push({
-        type: "ship-stranded",
-        shipId: occupant.id,
-        side: occupant.side,
-        square,
-      });
+    if (nextStatus.state === "active") {
+      effects.push({ type: "site-went-active", square });
     }
   }
-  workingState = { ...workingState, siteStates };
-
-  // Step 5: one replacement draw for each node that just ran out, so five
-  // sites are active or charged again (§8.6). Comes after step 3 so a site
-  // freed this same ply is drawable.
-  if (ranOutCount > 0) {
-    const draw = drawReplacements(workingState, ranOutCount);
-    workingState = draw.state;
-    effects.push(...draw.effects);
-  }
-
-  // Step 6: the bay return position drifts one bay counter-clockwise
-  // (§7.1), silently — no effect is produced, since the board already
-  // carries the return-position cues on every square that needs them.
-  workingState = {
-    ...workingState,
-    returnPositionIndex: driftReturnPositionIndex(
-      workingState.returnPositionIndex,
-    ),
-  };
 
   return { state: workingState, effects };
 }

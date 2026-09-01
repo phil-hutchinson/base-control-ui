@@ -10,15 +10,19 @@ afterEach(cleanup);
 
 describe("BoardSquare", () => {
   it("renders neither a site marker nor a ship on a plain empty square", () => {
-    const { container } = render(<BoardSquare isBay={false} />);
+    const { container } = render(<BoardSquare isBay={false} squareName="H8" />);
 
     expect(container.querySelector(".site-marker")).toBeNull();
-    expect(container.querySelector(".ship-icon")).toBeNull();
+    expect(container.querySelector(".ship-model")).toBeNull();
   });
 
   it("draws the bay modifier class only when the square is a bay", () => {
-    const { container: bay } = render(<BoardSquare isBay={true} />);
-    const { container: plain } = render(<BoardSquare isBay={false} />);
+    const { container: bay } = render(
+      <BoardSquare isBay={true} squareName="C7" />,
+    );
+    const { container: plain } = render(
+      <BoardSquare isBay={false} squareName="H8" />,
+    );
 
     expect(bay.querySelector(".board-square--bay")).toBeInTheDocument();
     expect(plain.querySelector(".board-square--bay")).toBeNull();
@@ -28,8 +32,9 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         siteState="charged"
-        occupant={{ side: "green", shields: 2 }}
+        occupant={{ side: "green", power: 2 }}
       />,
     );
 
@@ -40,7 +45,7 @@ describe("BoardSquare", () => {
       child.classList.contains("site-marker"),
     );
     const shipIndex = children.findIndex((child) =>
-      child.classList.contains("ship-icon"),
+      child.classList.contains("ship-model"),
     );
 
     expect(markerIndex).toBeGreaterThanOrEqual(0);
@@ -50,9 +55,11 @@ describe("BoardSquare", () => {
 
   it("renders the destination mark when marked as a legal destination, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isBay={false} mark="destination" />,
+      <BoardSquare isBay={false} squareName="H8" mark="destination" />,
     );
-    const { container: unmarked } = render(<BoardSquare isBay={false} />);
+    const { container: unmarked } = render(
+      <BoardSquare isBay={false} squareName="H8" />,
+    );
 
     expect(
       marked.querySelector(".board-square__mark--destination"),
@@ -64,9 +71,11 @@ describe("BoardSquare", () => {
 
   it("renders the selected mark when marked as selected, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isBay={false} mark="selected" />,
+      <BoardSquare isBay={false} squareName="H8" mark="selected" />,
     );
-    const { container: unmarked } = render(<BoardSquare isBay={false} />);
+    const { container: unmarked } = render(
+      <BoardSquare isBay={false} squareName="H8" />,
+    );
 
     expect(
       marked.querySelector(".board-square__mark--selected"),
@@ -76,12 +85,11 @@ describe("BoardSquare", () => {
 
   it("renders the target ring when marked as a legal attack target, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare
-        isBay={false}
-        mark={{ kind: "target", outcome: "attacker-won" }}
-      />,
+      <BoardSquare isBay={false} squareName="H8" mark="target" />,
     );
-    const { container: unmarked } = render(<BoardSquare isBay={false} />);
+    const { container: unmarked } = render(
+      <BoardSquare isBay={false} squareName="H8" />,
+    );
 
     expect(
       marked.querySelector(".board-square__mark--target"),
@@ -91,13 +99,10 @@ describe("BoardSquare", () => {
 
   it("draws the target ring hollow and distinct from the destination's solid disc", () => {
     const { container: target } = render(
-      <BoardSquare
-        isBay={false}
-        mark={{ kind: "target", outcome: "attacker-won" }}
-      />,
+      <BoardSquare isBay={false} squareName="H8" mark="target" />,
     );
     const { container: destination } = render(
-      <BoardSquare isBay={false} mark="destination" />,
+      <BoardSquare isBay={false} squareName="H8" mark="destination" />,
     );
 
     const ring = target.querySelector(".board-square__mark--target circle");
@@ -113,10 +118,7 @@ describe("BoardSquare", () => {
 
   it("renders exactly one mark for the target square, never alongside destination or selected", () => {
     const { container } = render(
-      <BoardSquare
-        isBay={false}
-        mark={{ kind: "target", outcome: "attacker-won" }}
-      />,
+      <BoardSquare isBay={false} squareName="H8" mark="target" />,
     );
 
     expect(container.querySelectorAll(".board-square__mark")).toHaveLength(1);
@@ -126,34 +128,40 @@ describe("BoardSquare", () => {
     expect(container.querySelector(".board-square__mark--selected")).toBeNull();
   });
 
-  it("renders the already-moved bar from hasMoved alone, without dampening the square", () => {
+  it("renders the already-acted bar from hasActed alone, without dampening the square", () => {
     const { container: marked } = render(
       <BoardSquare
         isBay={false}
-        occupant={{ side: "green", shields: 0 }}
-        hasMoved={true}
+        squareName="H8"
+        occupant={{ side: "green", power: 0 }}
+        hasActed={true}
       />,
     );
     const { container: unmarked } = render(
-      <BoardSquare isBay={false} occupant={{ side: "green", shields: 0 }} />,
+      <BoardSquare
+        isBay={false}
+        squareName="H8"
+        occupant={{ side: "green", power: 0 }}
+      />,
     );
 
     expect(
-      marked.querySelector(".board-square__mark--already-moved"),
+      marked.querySelector(".board-square__mark--already-acted"),
     ).toBeInTheDocument();
     expect(marked.querySelector(".board-square--dampened")).toBeNull();
 
     expect(
-      unmarked.querySelector(".board-square__mark--already-moved"),
+      unmarked.querySelector(".board-square__mark--already-acted"),
     ).toBeNull();
     expect(unmarked.querySelector(".board-square--dampened")).toBeNull();
   });
 
-  it("renders the hollow bar and the dampened class for no-action, distinct from the solid already-moved bar", () => {
+  it("renders the hollow bar and the dampened class for no-action, distinct from the solid already-acted bar", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
-        occupant={{ side: "green", shields: 0 }}
+        squareName="H8"
+        occupant={{ side: "green", power: 0 }}
         condition="no-action"
       />,
     );
@@ -162,7 +170,7 @@ describe("BoardSquare", () => {
       container.querySelector(".board-square__mark--no-action"),
     ).toBeInTheDocument();
     expect(
-      container.querySelector(".board-square__mark--already-moved"),
+      container.querySelector(".board-square__mark--already-acted"),
     ).toBeNull();
     expect(
       container.querySelector(".board-square--dampened"),
@@ -172,18 +180,19 @@ describe("BoardSquare", () => {
     expect(bar).toHaveAttribute("fill", "none");
   });
 
-  it("renders both the already-moved bar and the no-action bar together, and dampens the square", () => {
+  it("renders both the already-acted bar and the no-action bar together, and dampens the square", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
-        occupant={{ side: "green", shields: 0 }}
-        hasMoved={true}
+        squareName="H8"
+        occupant={{ side: "green", power: 0 }}
+        hasActed={true}
         condition="no-action"
       />,
     );
 
     expect(
-      container.querySelector(".board-square__mark--already-moved"),
+      container.querySelector(".board-square__mark--already-acted"),
     ).toBeInTheDocument();
     expect(
       container.querySelector(".board-square__mark--no-action"),
@@ -193,64 +202,17 @@ describe("BoardSquare", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the chevron and does not apply the dampened class for owes-action, applying the owes-action class instead", () => {
+  it("distinguishes the already-acted bar from the no-action bar by fill, not only by class name", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
-        occupant={{ side: "green", shields: 0 }}
-        condition="owes-action"
-      />,
-    );
-
-    expect(
-      container.querySelector(".board-square__mark--owes-action"),
-    ).toBeInTheDocument();
-    expect(container.querySelector(".board-square--dampened")).toBeNull();
-    expect(
-      container.querySelector(".board-square--owes-action"),
-    ).toBeInTheDocument();
-  });
-
-  it("distinguishes the two condition marks from one another by shape, not only by class name", () => {
-    const conditions: readonly ShipCondition[] = ["no-action", "owes-action"];
-    const shapes = conditions.map((condition) => {
-      const { container } = render(
-        <BoardSquare
-          isBay={false}
-          occupant={{ side: "green", shields: 0 }}
-          condition={condition}
-        />,
-      );
-      const mark = container.querySelector(".board-square__mark");
-      return mark?.firstElementChild?.tagName;
-    });
-
-    // A hollow rect and a chevron path are two distinct element/attribute
-    // shapes, so the layer survives greyscale.
-    expect(shapes).toEqual(["rect", "path"]);
-    const { container: noActionContainer } = render(
-      <BoardSquare
-        isBay={false}
-        occupant={{ side: "green", shields: 0 }}
-        condition="no-action"
-      />,
-    );
-    const noActionBar = noActionContainer.querySelector(
-      ".board-square__mark rect",
-    );
-    expect(noActionBar?.getAttribute("fill")).toBe("none");
-  });
-
-  it("distinguishes the already-moved bar from the no-action bar by fill, not only by class name", () => {
-    const { container } = render(
-      <BoardSquare
-        isBay={false}
-        occupant={{ side: "green", shields: 0 }}
-        hasMoved={true}
+        squareName="H8"
+        occupant={{ side: "green", power: 0 }}
+        hasActed={true}
       />,
     );
     const alreadyMovedBar = container.querySelector(
-      ".board-square__mark--already-moved rect",
+      ".board-square__mark--already-acted rect",
     );
     expect(alreadyMovedBar?.getAttribute("fill")).toBe("currentColor");
   });
@@ -259,14 +221,15 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
-        occupant={{ side: "green", shields: 0 }}
-        condition="owes-action"
+        squareName="H8"
+        occupant={{ side: "green", power: 0 }}
+        condition="no-action"
         mark="selected"
       />,
     );
 
     expect(
-      container.querySelector(".board-square__mark--owes-action"),
+      container.querySelector(".board-square__mark--no-action"),
     ).toBeInTheDocument();
     expect(
       container.querySelector(".board-square__mark--selected"),
@@ -277,83 +240,34 @@ describe("BoardSquare", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
+        squareName="H8"
         siteState="active"
-        occupant={{ side: "red", shields: 3 }}
+        occupant={{ side: "red", power: 3 }}
         mark="destination"
       />,
     );
 
     expect(container.querySelector(".board-square--dampened")).toBeNull();
-    expect(container.querySelector(".board-square--owes-action")).toBeNull();
     expect(container.querySelectorAll(".board-square__mark")).toHaveLength(1);
     expect(
       container.querySelector(".board-square__mark--destination"),
     ).toBeInTheDocument();
   });
 
-  it("renders four stroked corner lines for return position 1, and none with no return cue", () => {
-    const { container: marked } = render(
-      <BoardSquare isBay={true} returnCue="return-position" />,
-    );
-    const { container: unmarked } = render(<BoardSquare isBay={true} />);
-
-    const lines = marked.querySelectorAll(
-      ".board-square__mark--return-position line",
-    );
-    expect(lines).toHaveLength(4);
-    for (const line of lines) {
-      expect(line).toHaveAttribute("stroke", "currentColor");
-    }
-    expect(
-      unmarked.querySelector(".board-square__mark--return-position"),
-    ).toBeNull();
-  });
-
-  it("renders four filled corner triangles for the receptacle, and none with no return cue", () => {
-    const { container: marked } = render(
-      <BoardSquare isBay={true} returnCue="receptacle" />,
-    );
-    const { container: unmarked } = render(<BoardSquare isBay={true} />);
-
-    const triangles = marked.querySelectorAll(
-      ".board-square__mark--receptacle path",
-    );
-    expect(triangles).toHaveLength(4);
-    for (const triangle of triangles) {
-      expect(triangle).toHaveAttribute("fill", "currentColor");
-    }
-    expect(
-      unmarked.querySelector(".board-square__mark--receptacle"),
-    ).toBeNull();
-  });
-
-  it("draws only the solid receptacle triangles when a bay is both position 1 and the receptacle", () => {
-    const { container } = render(
-      <BoardSquare isBay={true} returnCue="return-position-and-receptacle" />,
-    );
-
-    expect(
-      container.querySelectorAll(".board-square__mark--receptacle path"),
-    ).toHaveLength(4);
-    expect(
-      container.querySelector(".board-square__mark--return-position"),
-    ).toBeNull();
-  });
-
   it("reports no axe violations for any condition or having-moved combination, and keeps every mark out of the accessibility tree", async () => {
     const conditions: readonly (ShipCondition | undefined)[] = [
       undefined,
       "no-action",
-      "owes-action",
     ];
-    const hasMovedValues: readonly boolean[] = [false, true];
+    const hasActedValues: readonly boolean[] = [false, true];
     for (const condition of conditions) {
-      for (const hasMoved of hasMovedValues) {
+      for (const hasActed of hasActedValues) {
         const { container } = render(
           <BoardSquare
             isBay={false}
-            occupant={{ side: "green", shields: 1 }}
-            hasMoved={hasMoved}
+            squareName="H8"
+            occupant={{ side: "green", power: 1 }}
+            hasActed={hasActed}
             condition={condition}
             mark="selected"
           />,

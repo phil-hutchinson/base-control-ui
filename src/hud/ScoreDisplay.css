@@ -1,0 +1,105 @@
+/* This cell's portrait size — name, digits and pip rows — feeds the
+   `--region-extent` derivation in `App.css`. */
+.score-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 6ch;
+}
+
+.score-display__name {
+  font-family: var(--font-arcade);
+  font-size: clamp(0.75rem, 1.5vw, 1rem);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.score-display--green .score-display__name,
+.score-display--green .score-display__digits {
+  color: var(--color-green);
+}
+
+.score-display--red .score-display__name,
+.score-display--red .score-display__digits {
+  color: var(--color-red);
+}
+
+.score-display__digits {
+  font-family: var(--font-arcade);
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 0.4em currentcolor;
+}
+
+.score-display__pips,
+.score-display__dormant-pips {
+  display: flex;
+  gap: 0.35em;
+}
+
+.score-display__pip,
+.score-display__dormant-pip {
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background-color: transparent;
+  border: 1px solid var(--color-text-dim);
+}
+
+/* Every pip's border is the side's own colour; a pip that is "on" fills
+   with the colour of the kind of site it counts — gold for a charged node,
+   grey for a dormant site — so the border says whose it is and the fill
+   says what it is. */
+.score-display--green .score-display__pip,
+.score-display--green .score-display__dormant-pip {
+  border-color: var(--color-green);
+}
+
+.score-display--red .score-display__pip,
+.score-display--red .score-display__dormant-pip {
+  border-color: var(--color-red);
+}
+
+.score-display__pip--lit {
+  background-color: var(--color-node-charged);
+  box-shadow: 0 0 0.4em var(--color-node-charged);
+}
+
+.score-display__dormant-pip--on {
+  background-color: var(--color-node-dormant);
+  box-shadow: 0 0 0.4em var(--color-node-dormant);
+}
+
+/* A side standing on nothing dormant should not have a row that draws the
+   eye: quieten the border rather than giving the empty pips a fill. */
+.score-display__dormant-pips--empty .score-display__dormant-pip {
+  border-color: var(--color-text-dim);
+  opacity: 0.5;
+}
+
+/* Landscape: the name and the digits are both sized from the window's
+   width in portrait, which the fixed-width info column cannot follow, so
+   both are sized as a fraction of `--region-extent` (`App.css`) here
+   instead, keeping them in the same proportion to `P` as before while `P`
+   itself now tracks the window. */
+@media (orientation: landscape) {
+  .score-display__name {
+    font-size: calc(var(--region-extent) * 0.085);
+  }
+
+  .score-display__digits {
+    font-size: calc(var(--region-extent) * 0.175);
+  }
+
+  /* The pip rows are otherwise unscaled, sized off the inherited root font
+     rather than the digits above them. Giving them the digits' own
+     font-size lets their existing `0.6em` diameter and `0.35em` gap scale
+     with it, which keeps the cell proportionate and makes the five-pip row
+     the widest thing in the column (see `App.css`). */
+  .score-display__pips,
+  .score-display__dormant-pips {
+    font-size: calc(var(--region-extent) * 0.175);
+  }
+}

@@ -1,0 +1,37 @@
+# Peer Review — 00000031 Ships may stay on any site
+
+## Summary
+
+The branch deletes §6's "a move may not end on a site that is not charged"
+restriction and §8.5's stranded-ship obligation outright, takes `rules.md` from
+0.12 to 0.13 with a matching changelog entry and `RULES_VERSION` bump in its
+own first commit, removes `stranded.ts` and the whole stranded UI (chevron,
+blink, accessible-name wording, announcement, `ShipStrandedEffect`), makes
+`winnerAdvance` consider occupancy alone, collapses the `moveLegality.ts` /
+`movement.ts` and `sevenOnly*` / public splits into one module per rules
+section, adds `camping.test.ts` as end-to-end cover, and updates `README.md`.
+The rules document, the code and the tests agree with each other and with the
+story: every verification bullet in `story.md` is covered by a test, `§8` still
+runs 8.1–8.7 with no renumbering, and `grep -rni "strand"` returns nothing in
+`src`, `README.md` or `rules.md`.
+
+`npm run typecheck` passes, `npm run lint` passes with no findings, and
+`npm test` passes (42 files, 700 tests); `npm run format:check` also passes.
+Every plan step records a Status of `committed` and its deviations in Notes —
+the notable one being step 7, where `/update-readme` was not runnable and the
+README was patched and reflowed by hand instead; I checked the README's status
+paragraph against the branch diff independently and found nothing else in it
+that 0.13 has made untrue. The findings below are all leftovers of the removed
+rule in doc comments, plus one cover gap; no correctness or rule-conformance
+problem was found.
+
+## Comments
+
+### Minor
+
+| #   | Status   | Resolution                                                                                                                                                         | Location                                                                            | Comment                                                                                                                                                                                                                                                                                                                                                                           | Suggested Change                                                                                                                                                                                          | Code Snippet                                                                                                                          |
+| --- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Resolved | `isSelectable`'s doc comment no longer mentions §8.5's obligation; it now names only the pinned-ship case as a reason a ship might have no legal action.           | [src/game/session.ts#L177-L181](../../../src/game/session.ts#L177-L181)             | `isSelectable`'s doc comment still names "§8.5's obligation" as a reason a ship might have no legal action. That obligation no longer exists in `rules.md` 0.13 and its code was deleted in step 3, so a source comment now describes a rule the document does not state. Step 3's and step 7's sweeps were for the word "strand", which does not appear here, so it survived.    | Reword to the reasons that remain: a pinned ship, or one that has already acted. Something like "A ship with no legal action at all — a pinned ship — is still a legitimate, if fruitless, first choice." | `* with no legal action at all — a pinned ship, or one held back by §8.5's`<br>`* obligation — is still a legitimate...`              |
+| 2   | Resolved | The comment now says only that the custom property threads `DAMPENED_OPACITY` into `BoardSquare.css`, and `style` is set from `isDampened`.                        | [src/board/BoardSquare.tsx#L208-L214](../../../src/board/BoardSquare.tsx#L208-L214) | The comment above `style` still explains itself in terms of the blink that this story deleted ("The blinking ship needs the same value as its blink target, so any condition sets it, not only the statically dampened ones"). With `no-action` the only condition left, `condition ? ... : undefined` is exactly `isDampened`, and the stated reason for the wider test is gone. | Rewrite the comment to say only that the custom property carries `DAMPENED_OPACITY` into the stylesheet, and set the style from `isDampened` so the code and the comment agree.                           | `// blinking ship needs the same value as its blink target, so any`<br>`// condition sets it, not only the statically dampened ones.` |
+| 3   | Resolved | Dropped the trailing clause and noted that `ShipCondition` currently has one member, with `CONDITION_WORDING` holding its wording.                                 | [src/board/squareLabel.ts#L12](../../../src/board/squareLabel.ts#L12)               | The module comment still ends "— the condition alone staying mutually exclusive within itself", a distinction that only meant something while `ShipCondition` had two members. With a single-member union it says nothing.                                                                                                                                                        | Drop the trailing clause, or replace it with the fact that matters now: `ShipCondition` currently has one member, and `CONDITION_WORDING` is where a condition's wording lives.                           | `// both — the condition alone staying mutually exclusive within itself.`                                                             |
+| 4   | Resolved | Added a `sideToMoveHasLegalAction` case pinning D7: `true` at the last legal ply, `false` one ply past `pliesForGameLength`. `buildState` now accepts `plyNumber`. | [src/rules/actions.test.ts#L46-L86](../../../src/rules/actions.test.ts#L46-L86)     | D7's one visible behaviour change — `sideToMoveHasLegalAction` now answers `false` for a state whose game is over, where it previously answered `true` — is described in the doc comment but pinned by no test. `ply.test.ts`'s "trap" tests cover `applyPassGuard`, not this function's own reading, so the §9 claim in the comment is unverified.                               | Add one case to the `sideToMoveHasLegalAction` group: a state with an obvious legal move at a `plyNumber` past the game's length answers `false`, with the same state before the end answering `true`.    | `expect(sideToMoveHasLegalAction(endedState)).toBe(false);`                                                                           |

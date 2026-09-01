@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ALL_SQUARES, BOARD_SIZE, squareAt, squareName } from "../rules/board";
-import { gridPositionForSquare, squareForGridPosition } from "./boardView";
+import {
+  centroidPercentPosition,
+  gridPositionForSquare,
+  squareForGridPosition,
+} from "./boardView";
 
 describe("gridPositionForSquare", () => {
   it("maps the four corners", () => {
@@ -77,5 +81,31 @@ describe("squareForGridPosition", () => {
       "O1",
     );
     expect(squareName(squareForGridPosition({ row: 7, column: 7 }))).toBe("H8");
+  });
+});
+
+describe("centroidPercentPosition", () => {
+  it("lands on a single square's own centre", () => {
+    expect(centroidPercentPosition([squareAt("H", 8)])).toEqual({
+      top: 50,
+      left: 50,
+    });
+  });
+
+  it("lands midway between two squares in the same row", () => {
+    // A15 and C15 average to B15's own centre.
+    expect(
+      centroidPercentPosition([squareAt("A", 15), squareAt("C", 15)]),
+    ).toEqual(centroidPercentPosition([squareAt("B", 15)]));
+  });
+
+  it("lands at the centre of a diagonal pair's rectangle", () => {
+    expect(
+      centroidPercentPosition([squareAt("A", 15), squareAt("O", 1)]),
+    ).toEqual({ top: 50, left: 50 });
+  });
+
+  it("throws on an empty list", () => {
+    expect(() => centroidPercentPosition([])).toThrow(/at least one square/);
   });
 });

@@ -1,17 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { STARTING_RETURN_POSITION_INDEX } from "../rules/bays";
-import { squareFromName } from "../rules/board";
-import type { ShipId, Side } from "../rules/fleet";
+import { squareFromName, squareName } from "../rules/board";
+import {
+  DEFAULT_FLEET_SIZE,
+  startingFleet,
+  type FleetSize,
+  type ShipId,
+  type Side,
+} from "../rules/fleet";
 import {
   ACTIONS_PER_PLY,
+  startingGameState,
   type GameState,
   type Ship,
   type SiteStatus,
 } from "../rules/gameState";
+import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalTargets } from "../rules/combat";
 import { legalDestinations } from "../rules/movement";
 import { applyAttack, applyMove } from "../rules/ply";
-import type { ShieldCount } from "../rules/shields";
+import type { PowerLevel } from "../rules/power";
 import type { SiteState } from "../rules/sites";
 import { createSession, type Session, sessionReducer } from "./session";
 
@@ -19,37 +26,37 @@ function ship(
   id: ShipId,
   side: Side,
   square: string,
-  shields: ShieldCount = 0,
+  power: PowerLevel = 4,
 ): Ship {
-  return { id, side, square: squareFromName(square), shields };
+  return { id, side, square: squareFromName(square), power };
 }
 
 function siteStatuses(
   states: Readonly<Record<string, SiteState>>,
 ): Record<string, SiteStatus> {
   return Object.fromEntries(
-    Object.entries(states).map(([name, state]) => [
-      name,
-      { state, enteredOnPly: 0 },
-    ]),
+    Object.entries(states).map(([name, state]) => [name, { state, level: 0 }]),
   );
 }
 
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: Side;
-  movedThisPly?: readonly ShipId[];
+  actedThisPly?: readonly ShipId[];
   siteStates?: Readonly<Record<string, SiteState>>;
+  plyNumber?: number;
+  lengthInRounds?: number;
 }): GameState {
   return {
     ships: config.ships,
     siteStates: siteStatuses(config.siteStates ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: ACTIONS_PER_PLY,
-    movedThisPly: config.movedThisPly ?? [],
-    plyNumber: 1,
+    actedThisPly: config.actedThisPly ?? [],
+    plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
-    returnPositionIndex: STARTING_RETURN_POSITION_INDEX,
+    energy: { green: 0, red: 0 },
+    lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
   };
 }
 
@@ -84,6 +91,27 @@ describe("sessionReducer — nothing selected", () => {
     });
   });
 
+  it("reports a target count that includes a target beyond the eight neighbours", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("red-1", "red", "H10", 4),
+      ],
+    });
+    const result = activate(sessionFor(state), "H8");
+
+    const targets = legalTargets(state, "green-1");
+    expect(targets).toContainEqual(squareFromName("H10"));
+    expect(result.lastEvent).toEqual({
+      type: "selected",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+      destinationCount: legalDestinations(state, "green-1").length,
+      targetCount: targets.length,
+    });
+  });
+
   it("rejects an opponent's ship as not-your-ship", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
@@ -100,10 +128,10 @@ describe("sessionReducer — nothing selected", () => {
     });
   });
 
-  it("rejects an own ship that has already moved this ply as ship-already-moved", () => {
+  it("rejects an own ship that has already acted this ply as ship-already-acted", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      movedThisPly: ["green-1"],
+      actedThisPly: ["green-1"],
     });
     const result = activate(sessionFor(state), "H8");
 
@@ -111,7 +139,7 @@ describe("sessionReducer — nothing selected", () => {
     expect(result.state).toBe(state);
     expect(result.lastEvent).toEqual({
       type: "rejected",
-      reason: "ship-already-moved",
+      reason: "ship-already-acted",
       square: squareFromName("H8"),
     });
   });
@@ -193,8 +221,8 @@ describe("sessionReducer — a ship is selected", () => {
     it("attacks an adjacent enemy ship, clearing the selection", () => {
       const state = buildState({
         ships: [
-          ship("green-1", "green", "H8", 4),
-          ship("red-1", "red", "H9", 0),
+          ship("green-1", "green", "H8", 0),
+          ship("red-1", "red", "H9", 4),
         ],
       });
       const selected = activate(sessionFor(state), "H8");
@@ -232,54 +260,49 @@ describe("sessionReducer — a ship is selected", () => {
       expect(result.state).toBe(state);
       expect(result.lastEvent).toEqual({
         type: "rejected",
-        reason: "target-not-adjacent",
+        reason: "target-out-of-range",
         square: squareFromName("A1"),
       });
     });
 
-    it("re-selects a friendly ship that has moved but can still attack", () => {
-      const state = buildState({
+    it("rejects a friendly ship that has already acted as ship-already-acted, whether or not it still has a target in range", () => {
+      const withTarget = buildState({
         ships: [
           ship("green-1", "green", "H8"),
           ship("green-2", "green", "K5"),
           ship("red-1", "red", "K6"),
         ],
-        movedThisPly: ["green-2"],
+        actedThisPly: ["green-2"],
       });
-      const selected = activate(sessionFor(state), "H8");
+      const selectedWithTarget = activate(sessionFor(withTarget), "H8");
 
-      const result = activate(selected, "K5");
+      const resultWithTarget = activate(selectedWithTarget, "K5");
 
-      expect(result.selectedShipId).toBe("green-2");
-      expect(result.state).toBe(state);
-      expect(result.lastEvent).toEqual({
-        type: "selected",
-        shipId: "green-2",
-        side: "green",
+      expect(resultWithTarget.selectedShipId).toBe("green-1");
+      expect(resultWithTarget.state).toBe(withTarget);
+      expect(resultWithTarget.lastEvent).toEqual({
+        type: "rejected",
+        reason: "ship-already-acted",
         square: squareFromName("K5"),
-        destinationCount: 0,
-        targetCount: 1,
       });
-    });
 
-    it("rejects a friendly ship that has moved and has no target as ship-already-moved", () => {
-      const state = buildState({
+      const withoutTarget = buildState({
         ships: [
           ship("green-1", "green", "H8"),
           ship("green-2", "green", "K5"),
           ship("red-1", "red", "A1"),
         ],
-        movedThisPly: ["green-2"],
+        actedThisPly: ["green-2"],
       });
-      const selected = activate(sessionFor(state), "H8");
+      const selectedWithoutTarget = activate(sessionFor(withoutTarget), "H8");
 
-      const result = activate(selected, "K5");
+      const resultWithoutTarget = activate(selectedWithoutTarget, "K5");
 
-      expect(result.selectedShipId).toBe("green-1");
-      expect(result.state).toBe(state);
-      expect(result.lastEvent).toEqual({
+      expect(resultWithoutTarget.selectedShipId).toBe("green-1");
+      expect(resultWithoutTarget.state).toBe(withoutTarget);
+      expect(resultWithoutTarget.lastEvent).toEqual({
         type: "rejected",
-        reason: "ship-already-moved",
+        reason: "ship-already-acted",
         square: squareFromName("K5"),
       });
     });
@@ -318,39 +341,59 @@ describe("sessionReducer — a ship is selected", () => {
       });
     });
 
-    it("rejects a dormant site as destination-dormant-site", () => {
+    it("applies a move ending on an active site", () => {
+      const state = buildState({
+        ships: [ship("green-1", "green", "H8")],
+        siteStates: { H9: "active" },
+      });
+      const selected = activate(sessionFor(state), "H8");
+      const destination = squareFromName("H9");
+
+      const result = activate(selected, "H9");
+
+      expect(result.selectedShipId).toBeUndefined();
+      const direct = applyMove(state, "green-1", destination);
+      expect(direct.outcome).toBe("applied");
+      if (direct.outcome !== "applied") {
+        throw new Error("expected the move to be applied");
+      }
+      expect(result.state).toEqual(direct.state);
+      expect(result.lastEvent).toEqual({
+        type: "moved",
+        shipId: "green-1",
+        side: "green",
+        from: squareFromName("H8"),
+        to: destination,
+        effects: direct.effects,
+        actionsRemaining: direct.state.actionsRemaining,
+      });
+    });
+
+    it("applies a move ending on a dormant site", () => {
       const state = buildState({
         ships: [ship("green-1", "green", "H8")],
         siteStates: { H9: "dormant" },
       });
       const selected = activate(sessionFor(state), "H8");
+      const destination = squareFromName("H9");
 
       const result = activate(selected, "H9");
 
-      expect(result.selectedShipId).toBe("green-1");
-      expect(result.state).toBe(state);
+      expect(result.selectedShipId).toBeUndefined();
+      const direct = applyMove(state, "green-1", destination);
+      expect(direct.outcome).toBe("applied");
+      if (direct.outcome !== "applied") {
+        throw new Error("expected the move to be applied");
+      }
+      expect(result.state).toEqual(direct.state);
       expect(result.lastEvent).toEqual({
-        type: "rejected",
-        reason: "destination-dormant-site",
-        square: squareFromName("H9"),
-      });
-    });
-
-    it("rejects a depleted site as destination-depleted-site", () => {
-      const state = buildState({
-        ships: [ship("green-1", "green", "H8")],
-        siteStates: { H9: "depleted" },
-      });
-      const selected = activate(sessionFor(state), "H8");
-
-      const result = activate(selected, "H9");
-
-      expect(result.selectedShipId).toBe("green-1");
-      expect(result.state).toBe(state);
-      expect(result.lastEvent).toEqual({
-        type: "rejected",
-        reason: "destination-depleted-site",
-        square: squareFromName("H9"),
+        type: "moved",
+        shipId: "green-1",
+        side: "green",
+        from: squareFromName("H8"),
+        to: destination,
+        effects: direct.effects,
+        actionsRemaining: direct.state.actionsRemaining,
       });
     });
   });
@@ -379,39 +422,22 @@ describe("sessionReducer — dismiss", () => {
 });
 
 describe("sessionReducer — a full ply", () => {
-  it("passes the turn after two actions, and the moved event says so", () => {
+  it("passes the turn after one action, and the moved event says so", () => {
     const state = buildState({
-      ships: [
-        ship("green-1", "green", "H8"),
-        ship("green-2", "green", "A1"),
-        ship("red-1", "red", "O1"),
-      ],
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O1")],
     });
 
     let session = sessionFor(state);
     session = activate(session, "H8");
     session = activate(session, "H9");
 
-    expect(session.state.sideToMove).toBe("green");
-    expect(session.state.actionsRemaining).toBe(1);
+    expect(session.state.sideToMove).toBe("red");
+    expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
+    expect(session.state.actedThisPly).toEqual([]);
     expect(session.lastEvent).toMatchObject({
       type: "moved",
       shipId: "green-1",
-    });
-    if (session.lastEvent?.type === "moved") {
-      expect(session.lastEvent.effects).toEqual([]);
-    }
-
-    session = activate(session, "A1");
-    session = activate(session, "A2");
-
-    expect(session.state.sideToMove).toBe("red");
-    expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(session.state.movedThisPly).toEqual([]);
-    expect(session.lastEvent).toMatchObject({
-      type: "moved",
-      shipId: "green-2",
-      to: squareFromName("A2"),
+      to: squareFromName("H9"),
     });
     if (session.lastEvent?.type === "moved") {
       expect(session.lastEvent.effects).toContainEqual({
@@ -421,6 +447,19 @@ describe("sessionReducer — a full ply", () => {
         endOfTurn: [],
       });
     }
+
+    // Red's own single action, proving the ply really did pass to it.
+    session = activate(session, "O1");
+    session = activate(session, "O2");
+
+    expect(session.state.sideToMove).toBe("green");
+    expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
+    expect(session.state.actedThisPly).toEqual([]);
+    expect(session.lastEvent).toMatchObject({
+      type: "moved",
+      shipId: "red-1",
+      to: squareFromName("O2"),
+    });
   });
 });
 
@@ -436,7 +475,7 @@ describe("createSession", () => {
   });
 
   it("runs the pass guard once, so a stuck starting position passes immediately", () => {
-    // green-1 is in the A2 bay, with 0 shields: every one of its reachable
+    // green-1 is in the A2 bay, at full power: every one of its reachable
     // squares is either occupied by a red ship one square away or blocked
     // along the way to a farther one, and §3.1 forbids it to attack from a
     // bay regardless.
@@ -463,4 +502,175 @@ describe("createSession", () => {
       endOfTurn: [],
     });
   });
+});
+
+describe("sessionReducer — once the game is over", () => {
+  const state = buildState({
+    ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "H9")],
+    plyNumber: 61,
+  });
+
+  it("rejects activating a friendly ship with game-over", () => {
+    const result = activate(sessionFor(state), "H8");
+
+    expect(result.state).toBe(state);
+    expect(result.selectedShipId).toBeUndefined();
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "game-over",
+      square: squareFromName("H8"),
+    });
+  });
+
+  it("rejects activating an enemy ship with game-over", () => {
+    const result = activate(sessionFor(state), "H9");
+
+    expect(result.state).toBe(state);
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "game-over",
+      square: squareFromName("H9"),
+    });
+  });
+
+  it("rejects activating an empty square with game-over", () => {
+    const result = activate(sessionFor(state), "A1");
+
+    expect(result.state).toBe(state);
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "game-over",
+      square: squareFromName("A1"),
+    });
+  });
+
+  it("rejects activating a would-be-legal destination with game-over", () => {
+    // A selection reached this session directly rather than through the
+    // reducer, since the reducer itself now refuses a selection once the
+    // game is over — this exercises the already-selected path's guard too.
+    const withSelection: Session = {
+      ...sessionFor(state),
+      selectedShipId: "green-1",
+    };
+
+    const result = activate(withSelection, "H9");
+
+    expect(result.state).toBe(state);
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "game-over",
+      square: squareFromName("H9"),
+    });
+  });
+
+  it("still clears a selection on dismiss", () => {
+    const withSelection: Session = {
+      ...sessionFor(state),
+      selectedShipId: "green-1",
+    };
+
+    const result = dismiss(withSelection);
+
+    expect(result.state).toBe(state);
+    expect(result.selectedShipId).toBeUndefined();
+    expect(result.lastEvent).toEqual({ type: "selection-cleared" });
+  });
+});
+
+describe("sessionReducer — new-game", () => {
+  it("starts a fresh session at ply 1, both totals 0, with the given seed and length", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8")],
+      plyNumber: 61,
+    });
+    const session: Session = {
+      state,
+      selectedShipId: "green-1",
+      lastEvent: undefined,
+    };
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 42,
+      lengthInRounds: 100,
+      fleetSize: DEFAULT_FLEET_SIZE,
+    });
+
+    expect(result.selectedShipId).toBeUndefined();
+    expect(result.state.plyNumber).toBe(1);
+    expect(result.state.energy).toEqual({ green: 0, red: 0 });
+    // Not the literal seed the intent carried: `startingGameState` advances
+    // it dealing the opening board, and the reducer must carry that seed
+    // rather than the one it started from.
+    expect(result.state.randomSeed).toBe(
+      startingGameState(42, 100, DEFAULT_FLEET_SIZE).randomSeed,
+    );
+    expect(result.state.lengthInRounds).toBe(100);
+  });
+
+  it("honours a non-default length rather than the game's default", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 7,
+      lengthInRounds: 3,
+      fleetSize: DEFAULT_FLEET_SIZE,
+    });
+
+    expect(result.state.lengthInRounds).toBe(3);
+  });
+
+  it("honours the given seed rather than drawing its own", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const first = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 1,
+      lengthInRounds: 5,
+      fleetSize: DEFAULT_FLEET_SIZE,
+    });
+    const second = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 2,
+      lengthInRounds: 5,
+      fleetSize: DEFAULT_FLEET_SIZE,
+    });
+
+    expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
+  });
+
+  it.each<FleetSize>([5, 6, 7])(
+    "honours the given fleet size, dealing %i ships a side on its own layout",
+    (fleetSize) => {
+      const session = sessionFor(buildState({ ships: [] }));
+
+      const result = sessionReducer(session, {
+        type: "new-game",
+        randomSeed: 9,
+        lengthInRounds: 30,
+        fleetSize,
+      });
+
+      const expectedFleet = startingFleet(fleetSize);
+      expect(result.state.ships).toHaveLength(expectedFleet.length);
+      expect(
+        result.state.ships.filter((ship) => ship.side === "green"),
+      ).toHaveLength(fleetSize);
+      expect(
+        result.state.ships.filter((ship) => ship.side === "red"),
+      ).toHaveLength(fleetSize);
+      expect(
+        new Set(result.state.ships.map((ship) => squareName(ship.square))),
+      ).toEqual(
+        new Set(expectedFleet.map((entry) => squareName(entry.square))),
+      );
+      // Not the literal seed the intent carried — see the seed assertion
+      // above.
+      expect(result.state.randomSeed).toBe(
+        startingGameState(9, 30, fleetSize).randomSeed,
+      );
+      expect(result.state.lengthInRounds).toBe(30);
+    },
+  );
 });

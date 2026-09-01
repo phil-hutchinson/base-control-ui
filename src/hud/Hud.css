@@ -1,0 +1,34 @@
+.hud {
+  /* No border or background of its own: `.app__cabinet` supplies both. The
+     gap between the info region and the play area is now `--region-gap`
+     (`App.css`), owned by the layout container, so this element carries no
+     margin of its own. The row-to-turn-indicator gap below is deliberately
+     fixed rather than scaled with `--region-extent`. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hud__row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1.5rem, 6vw, 4rem);
+  width: 100%;
+}
+
+/* Landscape: the info region reads down as one column — title, green side,
+   round, red side, turn indicator — so this row becomes another step in that
+   column. No markup changes; `.hud`'s own column direction already puts the
+   row above the turn indicator. The portrait gap grows with the window's
+   width up to 4rem, which as a vertical gap on a wide monitor would push the
+   column far past the info region's fixed extent, so it is replaced with a
+   gap sized as a fraction of `--region-extent` (`App.css`) instead, which
+   scales with the column as `P` tracks the window. */
+@media (orientation: landscape) {
+  .hud__row {
+    flex-direction: column;
+    gap: calc(var(--region-extent) * 0.075);
+  }
+}

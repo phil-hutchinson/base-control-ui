@@ -1,55 +1,38 @@
-// Combat (rules.md §7, §3.1, §8.5): who may attack whom. This is the only
-// implementation of §7 in the app, the way `movement.ts` is the only
-// implementation of §6. Attack range is a fixed set of eight neighbouring
-// squares, independent of shield count — deliberately written out rather
-// than derived from `reachFrom` (rules.md §6), whose per-shield table §7's
-// range must not be coupled to: a 4-shield ship strikes all eight
-// neighbours while it can only step one square orthogonally.
+// Combat (rules.md §7, §3.1): who may attack whom, and where a returning
+// ship lands. This is the only implementation of §7 in the app, the way
+// `movement.ts` is the only implementation of §6. Attack range **is** §6's
+// movement range: a ship attacks exactly as far as it moves, path and all, so
+// `attackReach` reads `reachFrom` (rules.md §6) rather than carrying a second
+// copy of the table. There is one implementation of the table, and both
+// sections read it.
 
-import {
-  COLUMN_LETTERS,
-  type Square,
-  isOnBoard,
-  squareAt,
-  squareName,
-} from "./board";
-import { CLOCKWISE_BAYS, bayNumberingFrom, isBay } from "./bays";
+import { type Square, squareName } from "./board";
+import { BAYS, isBay } from "./bays";
 import type { ShipId } from "./fleet";
-import { findShip } from "./moveLegality";
-import { type GameState, shipsBySquare } from "./gameState";
-import { type ShieldCount, isShieldCount } from "./shields";
-import { strandedShipIds } from "./stranded";
-
-/** The eight offsets to a square's neighbours, diagonals included. */
-const ADJACENT_OFFSETS: ReadonlyArray<readonly [number, number]> = [
-  [1, 0],
-  [1, 1],
-  [0, 1],
-  [-1, 1],
-  [-1, 0],
-  [-1, -1],
-  [0, -1],
-  [1, -1],
-];
+import { isGameOver } from "./gameLength";
+import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
+import { type ReachEntry, findShip, reachFrom } from "./movement";
+import { drawIndex } from "./random";
 
 /**
- * The eight squares surrounding `square`, diagonals included, filtered to
- * squares actually on the board (five on an edge, three at a corner). §7's
- * whole attack range, fixed and independent of shield count.
+ * The lane `shipId` would attack down to reach `target`: the `ReachEntry`
+ * from `reachFrom(attacker.square, attacker.power)` whose `destination` is
+ * `target`, or `undefined` when `target` is outside the attacker's reach
+ * altogether. Purely geometric — no ownership, no bays, no occupancy, no
+ * awareness of whose ply it is. Exported so the lane geometry can be
+ * unit-tested directly, alongside the legality check below that reads it.
  */
-export function adjacentSquares(square: Square): readonly Square[] {
-  const columnIndex = COLUMN_LETTERS.indexOf(square.column);
-  const squares: Square[] = [];
+export function attackReach(
+  state: GameState,
+  shipId: ShipId,
+  target: Square,
+): ReachEntry | undefined {
+  const attacker = findShip(state, shipId);
+  const targetName = squareName(target);
 
-  for (const [deltaColumn, deltaRow] of ADJACENT_OFFSETS) {
-    const column = COLUMN_LETTERS[columnIndex + deltaColumn];
-    const row = square.row + deltaRow;
-    if (column !== undefined && isOnBoard(column, row)) {
-      squares.push(squareAt(column, row));
-    }
-  }
-
-  return squares;
+  return reachFrom(attacker.square, attacker.power).find(
+    (entry) => squareName(entry.destination) === targetName,
+  );
 }
 
 /**
@@ -63,36 +46,53 @@ export function adjacentSquares(square: Square): readonly Square[] {
  */
 export type AttackRefusalReason =
   | "not-your-ship"
-  | "another-ship-stranded"
+  | "ship-already-acted"
   | "attacker-in-bay"
+  | "attacker-on-charged-node"
   | "target-in-bay"
+  | "target-on-charged-node"
   | "no-target-there"
   | "target-is-friendly"
-  | "target-not-adjacent";
+  | "target-out-of-range"
+  | "attack-path-blocked"
+  | "game-over";
 
 /**
- * Why `target` is not a legal attack for `shipId` in the given state, under
- * §7 and §3.1 alone, with no awareness of §8.5's stranded-ship obligation.
- * This layer exists so the §5 pass guard can ask "is any action legal here"
- * without §8.5's answer depending on the question, exactly as
- * `sixOnlyMoveRefusalReason` does for §6.
+ * Why `target` is not a legal attack for `shipId` in the given state, as a
+ * structured reason, or `undefined` when the attack is legal.
  *
- * Checked most fundamental first: whose ship it is, then the attacker's own
- * bay, then everything about the target — no ship there, a friendly ship, a
- * ship in a bay, not adjacent.
+ * Checked most fundamental first: whether the game is even still being
+ * played, then whose ship it is, then whether it has already acted, then the
+ * attacker's own bay, then whether the attacker holds a charged node
+ * (rules.md §7 — a ship holding a node cannot attack), then everything about
+ * the target — no ship there, a friendly ship, a ship in a bay, a ship
+ * holding a charged node — and only then range and path, which come last so
+ * a protected or bay target within reach is still refused as such rather
+ * than as an out-of-range square. Once the game has ended, no attack is
+ * legal for anyone, including one that would have been refused anyway.
  */
-export function sevenOnlyAttackRefusalReason(
+export function attackRefusalReason(
   state: GameState,
   shipId: ShipId,
   target: Square,
 ): AttackRefusalReason | undefined {
+  if (isGameOver(state)) {
+    return "game-over";
+  }
+
   const attacker = findShip(state, shipId);
 
   if (attacker.side !== state.sideToMove) {
     return "not-your-ship";
   }
+  if (state.actedThisPly.includes(shipId)) {
+    return "ship-already-acted";
+  }
   if (isBay(attacker.square)) {
     return "attacker-in-bay";
+  }
+  if (siteStateAt(state, attacker.square) === "charged") {
+    return "attacker-on-charged-node";
   }
 
   const targetShip = shipsBySquare(state).get(squareName(target));
@@ -105,173 +105,83 @@ export function sevenOnlyAttackRefusalReason(
   if (isBay(target)) {
     return "target-in-bay";
   }
-  if (
-    !adjacentSquares(attacker.square).some(
-      (square) => squareName(square) === squareName(target),
-    )
-  ) {
-    return "target-not-adjacent";
+  if (siteStateAt(state, target) === "charged") {
+    return "target-on-charged-node";
+  }
+
+  const reach = attackReach(state, shipId, target);
+  if (reach === undefined) {
+    return "target-out-of-range";
+  }
+
+  const occupied = shipsBySquare(state);
+  if (reach.passedOver.some((square) => occupied.has(squareName(square)))) {
+    return "attack-path-blocked";
   }
 
   return undefined;
 }
 
 /**
- * Every square `shipId` may legally attack in the given state, under §7 and
- * §3.1 alone, ignoring §8.5's stranded-ship obligation. The §7-only
- * counterpart to the public `legalTargets`.
- */
-export function sevenOnlyLegalTargets(
-  state: GameState,
-  shipId: ShipId,
-): readonly Square[] {
-  const attacker = findShip(state, shipId);
-  if (attacker.side !== state.sideToMove || isBay(attacker.square)) {
-    return [];
-  }
-
-  return adjacentSquares(attacker.square).filter(
-    (square) =>
-      sevenOnlyAttackRefusalReason(state, shipId, square) === undefined,
-  );
-}
-
-/**
- * Why `target` is not a legal attack for `shipId` in the given state, as a
- * structured reason, or `undefined` when the attack is legal. Layers §8.5's
- * stranded-ship obligation on top of `sevenOnlyAttackRefusalReason`.
- *
- * §8.5 refuses **every** attack while any ship owes an action — including an
- * attack by the owing ship itself. Unlike `moveRefusalReason`, which excuses
- * the ships that owe (`!owed.includes(shipId)`), there is no exception here:
- * a move can free a stranded ship, but an attack never does, so while the
- * obligation binds it blocks every attack the same way. The reason string is
- * the same `"another-ship-stranded"` moves use, so the player hears one
- * sentence whichever action they tried.
- */
-export function attackRefusalReason(
-  state: GameState,
-  shipId: ShipId,
-  target: Square,
-): AttackRefusalReason | undefined {
-  const attacker = findShip(state, shipId);
-
-  if (attacker.side !== state.sideToMove) {
-    return "not-your-ship";
-  }
-  if (strandedShipIds(state).length > 0) {
-    return "another-ship-stranded";
-  }
-
-  return sevenOnlyAttackRefusalReason(state, shipId, target);
-}
-
-/**
- * Every square `shipId` may legally attack in the given state: its §7
- * neighbours, with §8.5's obligation applied at the ship level exactly as in
- * `attackRefusalReason` — refusing every ship's attacks, including the
- * owing ship's own, while any ship owes an action.
+ * Every square `shipId` may legally attack in the given state: every square
+ * within its §6 movement reach holding an enemy ship, with §9's game-over
+ * check applied first — empty once the game is over.
  */
 export function legalTargets(
   state: GameState,
   shipId: ShipId,
 ): readonly Square[] {
-  const attacker = findShip(state, shipId);
-  if (attacker.side !== state.sideToMove || strandedShipIds(state).length > 0) {
+  if (isGameOver(state)) {
     return [];
   }
 
-  return sevenOnlyLegalTargets(state, shipId);
-}
-
-/**
- * The outcome of a fight (rules.md §7), decided by shield count alone.
- * `winnerRemainingShields` is the winner's shield count after the fight,
- * `winner − (loser + 1)` — always present with a winner, and always a valid
- * `ShieldCount`, because the winner by definition carries more shields than
- * the loser plus the one shield the fight costs.
- */
-export type FightOutcome =
-  | {
-      readonly result: "attacker-won";
-      readonly winnerRemainingShields: ShieldCount;
-    }
-  | {
-      readonly result: "defender-won";
-      readonly winnerRemainingShields: ShieldCount;
-    }
-  | { readonly result: "mutual-return" };
-
-/**
- * Decides a fight from the two ships' shield counts alone (rules.md §7). The
- * stronger ship wins and keeps `winner − (loser + 1)` shields; the weaker
- * ship is beaten — including when the **defender** is stronger, in which
- * case the defender wins and the attacker is the one sent home; equal
- * counts send both ships home.
- *
- * `winner − (loser + 1)` is asserted to be a valid `ShieldCount`: the winner
- * by definition carries strictly more shields than the loser, so
- * `winner ≥ loser + 1` and the result can never be negative.
- */
-export function resolveFight(
-  attackerShields: ShieldCount,
-  defenderShields: ShieldCount,
-): FightOutcome {
-  if (attackerShields === defenderShields) {
-    return { result: "mutual-return" };
+  const attacker = findShip(state, shipId);
+  if (
+    attacker.side !== state.sideToMove ||
+    state.actedThisPly.includes(shipId) ||
+    isBay(attacker.square) ||
+    siteStateAt(state, attacker.square) === "charged"
+  ) {
+    return [];
   }
 
-  const winnerShields =
-    attackerShields > defenderShields
-      ? attackerShields - (defenderShields + 1)
-      : defenderShields - (attackerShields + 1);
-
-  if (!isShieldCount(winnerShields)) {
-    throw new RangeError(
-      `a fight's winner cannot end with ${winnerShields} shields`,
+  return reachFrom(attacker.square, attacker.power)
+    .map((entry) => entry.destination)
+    .filter(
+      (square) => attackRefusalReason(state, shipId, square) === undefined,
     );
-  }
-
-  return attackerShields > defenderShields
-    ? { result: "attacker-won", winnerRemainingShields: winnerShields }
-    : { result: "defender-won", winnerRemainingShields: winnerShields };
 }
 
 /**
- * Return position 1 (rules.md §7.1): the bay `state.returnPositionIndex`
- * names in `CLOCKWISE_BAYS`.
- */
-export function returnPositionSquare(state: GameState): Square {
-  return CLOCKWISE_BAYS[state.returnPositionIndex];
-}
-
-/**
- * The bay a ship returning to a bay right now would actually land in
- * (rules.md §7.1): the first empty bay counting clockwise from return
- * position 1, judged against `state`'s current occupancy. Recomputed at
- * every point of use and never stored — occupancy changes inside a ply, so
- * a ship moving out of a bay as the first action can change the answer for
- * the second.
+ * The bay a returning ship lands in, drawn at random from the bays that are
+ * empty right now (rules.md §7.1): a seed in, `[bay: Square, nextSeed: number]`
+ * out, in the shape `drawIndex` and `mulberry32` already use. The pool
+ * is every bay in `BAYS` order with no ship on it, judged against `state`'s
+ * current occupancy — recomputed at every point of use and never stored, so
+ * a ship moving out of a bay as one action can change the answer for a later
+ * one. The caller must store the returned seed.
  *
- * On a mutual return, call this once to place the attacker, then call it
- * again against the state that already contains the attacker to place the
- * defender — there is no separate "second receptacle" function.
+ * Every fight returns two ships: call this once to place the attacker, then
+ * call it again against the state that already holds the attacker **and the
+ * advanced seed** to place the defender — there is no separate "second
+ * draw" function.
  *
  * Throws if every bay is occupied. §7.1's argument that there is always
- * somewhere to go guarantees this cannot happen, so this is a bug
- * detector, not a case the caller need handle.
+ * somewhere to go guarantees this cannot happen, so this is a bug detector,
+ * not a case the caller need handle.
  */
-export function receptacleBay(state: GameState): Square {
+export function drawReturnBay(state: GameState): [Square, number] {
   const occupiedSquareNames = new Set(shipsBySquare(state).keys());
-  const receptacle = bayNumberingFrom(state.returnPositionIndex).find(
+  const pool = BAYS.filter(
     (square) => !occupiedSquareNames.has(squareName(square)),
   );
 
-  if (receptacle === undefined) {
+  if (pool.length === 0) {
     throw new RangeError(
       "no empty bay: rules.md §7.1 guarantees this cannot happen",
     );
   }
 
-  return receptacle;
+  const [index, nextSeed] = drawIndex(state.randomSeed, pool.length);
+  return [pool[index], nextSeed];
 }

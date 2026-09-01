@@ -10,6 +10,20 @@
   --color-green: #3fa66b;
   --color-red: #c8503f;
   --focus-ring: #ffb703;
+  /* Matches the fill of a charged / dormant site's gradient in
+     `SiteMarker.tsx`, so the HUD's node pips agree with the board's own
+     artwork. Kept as separate tokens rather than read from there, since
+     that gradient's stops are computed per render in TypeScript. */
+  --color-node-charged: #daa520;
+  --color-node-dormant: #808080;
+
+  /* Arcade type: a monospace system stack with letter-spacing, weight and
+     glow standing in for a downloaded face. The app deploys from a static
+     file host and makes no network requests, so no web font is ever
+     fetched. */
+  --font-arcade:
+    ui-monospace, "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --glow-text: #eef2ff;
 
   color-scheme: dark;
   font-family:
@@ -19,6 +33,14 @@
     Roboto,
     sans-serif;
   line-height: 1.5;
+
+  /* The board's floor: the smallest a square is ever allowed to draw at, and
+     the fifteen-square board size that follows from it. The one place either
+     number is stated — `Board.css` reads the square floor for `--square`,
+     `App.css` reads the board floor when sizing the play region, so neither
+     hard-codes `40px` or `600px` and the two cannot drift apart. */
+  --board-square-floor: 40px;
+  --board-floor: calc(var(--board-square-floor) * 15);
 }
 
 * {
@@ -29,4 +51,20 @@ body {
   margin: 0;
   background-color: var(--color-space);
   color: var(--color-text-bright);
+}
+
+/* The standard clipped-absolute pattern for text meant for assistive
+   technology alone, matching `.accessible-grid__live-region`. Shared here
+   because several HUD elements carry a decorative, `aria-hidden` visual
+   alongside a hidden sentence naming the same fact in words. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
