@@ -36,18 +36,19 @@ version bump, no changelog entry, and no tag.
 - `BoardSquare.css` gives a bay a distinct fill and a heavier border:
   `background: var(--bay-fill)` (`#223463`) and `border: 2px solid
 var(--bay-border)` (`#5fd0e8`), both defined on `.board` in `Board.css`.
-- `SiteMarker.tsx` and `ShipIcon.tsx` establish the convention this story
+- `SiteMarker.tsx` and `ShipModel.tsx` establish the convention this story
   follows: decorative SVG artwork in a **100 x 100 viewBox** centred on the
   square, stacked in `BoardSquare`'s single-cell grid, `aria-hidden`, with
   the meaning carried instead by the square's accessible name from
   `squareLabel.ts`.
+- **Artwork already stacks under a ship and reads fine.** `.board-square` is a
+  single-cell grid whose children all take `grid-area: 1 / 1` and stack in DOM
+  order, marker beneath ship. A ship standing on a site sits over the site
+  marker's circular artwork today without either becoming unreadable, which is
+  the precedent a planet under a ship follows.
 - A bay is never a site (`squareLabel.ts`: "a square is never both a bay and a
-  site"), so a planet never has to share its square with a `SiteMarker`.
-- A bay square may already carry a §7.1 **return-position cue**: small corner
-  triangles in the bay's own cyan, drawn all game regardless of selection —
-  solid ones closing the corners of the bay a beaten ship would land in, a
-  stroked diagonal alone for return position 1. They sit in the same 100 x 100
-  viewBox, with a leg of 22 units along each edge from each corner.
+  site"), so a planet never shares its square with a `SiteMarker` — only ever
+  with a ship.
 
 ## In scope
 
@@ -56,21 +57,40 @@ var(--bay-border)` (`#5fd0e8`), both defined on `.board` in `Board.css`.
    it scales with the board.
 2. **Each planet is visibly its own.** Distinctness comes from more than hue:
    rings of varying width and tilt, one or more moons, size, and surface
-   treatment — banding, a lighter limb, mottling, a terminator. A planet may
-   read as close to a single colour, but **never as a flat disc of one flat
-   colour**; even the plainest one carries some shading or texture. The story
-   deliberately does not specify the fourteen designs — see _Verification_.
-3. **The bay tile itself loses its special colouring.** A bay keeps its
-   heavier cyan border, which is what marks it out as a bay; it drops the
-   distinct `--bay-fill` background and sits on the ordinary square
-   background, so the planet is the thing the eye finds inside the square
-   rather than competing with a coloured tile.
-4. **A planet gets out of the way of a ship.** While a ship stands in the bay
-   its planet is not drawn at all, so the two silhouettes never overlap into
-   mush. The planet returns when the bay empties.
+   treatment — banding, a lighter limb, mottling, a terminator. No planet is a
+   flat disc of one flat colour; even the plainest carries shading or texture.
+   The fourteen designs are not described here because they already exist —
+   see _Where the artwork comes from_.
+3. **The bay tile loses every marking it has.** Both the distinct
+   `--bay-fill` background and the heavier cyan border go: a bay square is
+   styled exactly like an ordinary square, with the same background and the
+   same thin grid border. **The planet becomes the only thing that marks a
+   bay** — nothing in the tile itself does.
+4. **A planet is always drawn, ship or no ship.** A planet is drawn beneath
+   the ship standing on it and both stay readable, exactly as a ship on a site
+   sits over the site marker today. Nothing is hidden, faded or moved aside
+   when a bay is occupied, so a bay looks like itself all game and the opening
+   board — all fourteen ships in their bays (§4) — shows all fourteen planets
+   from the first screen.
 5. **Which planet sits in which bay is fixed.** A static table keyed by bay
    square, identical in every game and every render, so a recorded game
    replays looking exactly as it did.
+6. **Similar planets are spread around the board.** The fourteen bays form a
+   ring around the edge of the board, and the arrangement deliberately spaces
+   like with like: ringed planets apart from other ringed planets, planets
+   with moons apart from other planets with moons, cratered apart from
+   cratered, and a colour scheme apart from its nearest relative. Two planets
+   that resemble each other should never sit in neighbouring bays, and ideally
+   sit as near to opposite each other as the ring allows.
+7. **The artwork is drawn already, and is ported rather than invented.** The
+   fourteen planets exist as hand-drawn SVGs in `.local/eg_planets.html`. This
+   story moves them into the app essentially unchanged — it is a port, not a
+   design exercise.
+8. **The SVGs are cleaned up on the way in.** The ids in the source gallery
+   were named ad hoc (`p1`, `p6b-sheen`, `p12blur`, `p5ringWhole`), one id is
+   defined twice, and there is commented-out and dead material. All of it is
+   standardised to one scheme and one place, and the dead material is dropped.
+   Nothing about how a planet _looks_ changes in the process.
 
 ## Design decisions & constraints
 
@@ -78,11 +98,12 @@ var(--bay-border)` (`#5fd0e8`), both defined on `.board` in `Board.css`.
   nothing to any square's accessible name: a screen-reader user hears "bay"
   exactly as they do today. `squareLabel.ts` and its tests should come out of
   this story unchanged, and that is worth asserting rather than assuming.
-- **An empty opening board is accepted.** All fourteen ships begin in bays
-  (§4), so on the opening screen no planet is visible at all; the artwork
-  appears only as the fleets move out. The owner has decided this is fine and
-  prefers it to dampening a planet behind a ship, so a bay with an occupant
-  draws no planet — not a faded one.
+- **A planet and a ship share the square, and neither is dimmed.** The earlier
+  intent was to hide a planet under a ship; the ship models landed since have
+  made that unnecessary, so the planet stays. Both are drawn at full strength —
+  no fading, no dampening, no shrinking one to make room. If a particular
+  planet turns out to fight the ship on top of it, the answer is to redraw that
+  planet at its gate, not to add a rule about occupancy.
 - **No randomness.** `Math.random` is banned in `src/` by lint, and a planet
   that varied per game would make two recordings of the same game look
   different. The planet table is static data.
@@ -94,25 +115,31 @@ var(--bay-border)` (`#5fd0e8`), both defined on `.board` in `Board.css`.
   interaction accent and the focus ring all have to stay the most legible
   things on the board. Planets sit lower in contrast than any of them, and
   their palette should stay clear of the two side colours (`--color-green`,
-  `--color-red`), the site accent, the bay cyan and the focus-ring amber, so a
-  planet is never mistaken for a game-state cue.
-- **The corners belong to the return cues.** Those cues are game information
-  and a planet is decoration, so the decoration gives way: a planet stays
-  centred and within a radius that leaves the four corner regions clear.
-  Confirm this by eye on a bay actually carrying a cue rather than by
-  arithmetic alone, and do not build anything that assumes the corners are
-  free.
+  `--color-red`), the site accent, the interaction accent and the focus-ring
+  amber, so a planet is never mistaken for a game-state cue. The bay cyan is
+  no longer among them — it leaves the board with the bay border.
+- **Nothing constrains where a planet sits in its square.** The square is the
+  planet's to use: no safe radius, no reserved corners, no clearance rule, no
+  size floor, and nothing in the code that enforces any of them. A planet may
+  run to the edges or sit small in the middle. **Whether it looks right is
+  settled by eye at the manual gates**, which is the only check this needs —
+  so do not write a test, a lint rule or a geometry helper that polices it.
 - **Colour carries no meaning at all here**, which is the one freedom this
   story has that the rest of the board does not — but it also means no
   planet's colour may imply a side or a state.
 - **Still artwork.** No animation: nothing rotates, orbits or pulses. If any
   motion is ever wanted it must be gated behind `prefers-reduced-motion`, and
   this story is not the place to start.
-- **The board must survive losing the bay fill.** Removing the tile colour
-  leaves the border doing the work of marking a bay. If that turns out to read
-  poorly on an _occupied_ bay — where the planet is hidden and the square is
-  then just a bordered tile with a ship on it — the fix belongs in this story,
-  not a later one.
+- **The board must survive losing both bay markings.** With the fill and the
+  border both gone there is no fallback: the planet alone says "bay", under a
+  ship as well as in an empty square. If that turns out to read poorly in play,
+  the fix belongs in this story, not a later one — but the fix is to make the
+  planets carry it, not to quietly put a bay marking back.
+- **`--bay-fill` and `--bay-border` should not survive the change.** If the
+  two custom properties and the `.board-square--bay` rule are left behind with
+  nothing reading them, the next person to touch the board finds dead styling
+  that looks load-bearing. They go, along with the `Board.css` comment that
+  explains them.
 
 ## Out of scope
 
@@ -120,31 +147,34 @@ var(--bay-border)` (`#5fd0e8`), both defined on `.board` in `Board.css`.
   charged, attacked or scored; no rule mentions them.
 - **The ruleset.** No change to `rules.md`, so no version bump, no changelog
   entry, no tag.
-- **Artwork anywhere but the fourteen bays.** Ordinary squares, sites, ships,
-  shields and the board frame are all untouched. In particular this story does
-  **not** restyle `ShipIcon` or `SiteMarker`.
-- **The §7.1 return-position cues.** Already on the board; this story draws
-  around them and does not restyle them.
+- **Artwork anywhere but the fourteen bays.** Ordinary squares, sites, ships
+  and the board frame are all untouched. In particular this story does **not**
+  restyle `ShipModel` or `SiteMarker` — if a planet and the ship over it fight,
+  the planet is what changes.
 - **A background starfield, nebulae, or any other board-wide scenery.** If the
   planets make the rest of the board look bare, that is a later story.
 
-## How this story is staged
+## Where the artwork comes from
 
-The owner is drawing these planets with the assistant rather than receiving
-fourteen finished ones, so the artwork is deliberately split across five
-steps — **1, then 3, then 3, then 3, then 4** — each ending at a manual gate
-where the owner looks at the board and says what to change. Expect the early
-gates to send work back; that is the point of them, and a step is not finished
-because it renders, only because it looks right.
+The fourteen planets are already drawn, in `.local/eg_planets.html` — a plain
+HTML gallery of fourteen 100 x 100 SVGs shown on the board's own background
+colour. That file is the source this story ports from.
 
-**Which bays a step's planets go into is decided at its gate, not fixed
-here.** No planet has any relationship to the bay it sits in, so there is
-nothing to plan: the owner picks as we go, with the board in front of them.
+**`.local/` is gitignored, so the artwork is not in the repository at all.**
+Getting it under version control is part of this story rather than a
+side-effect of it: until the port lands, the only copy of fourteen hand-drawn
+planets is an untracked file in a working directory.
 
-The supporting work — the component, the data table, the tile-colour change,
-the tests — sits wherever the plan needs it, ordinarily landing with or before
-the first planet, and the plan is free to add steps of its own for anything
-this story needs that is not a planet.
+This is the path story 00000040 took for the ship models, and the plan should
+follow that precedent rather than invent a new one: `.local/eg_spaceship.html`
+was ported into `src/ships/`, the ids were renamed to a scheme owned by a
+single module (`shipArt.ts`), and the header comment on `ShipDefs.tsx` records
+where the artwork came from and that the port is otherwise verbatim.
+
+Because the artwork already exists, this story is **not** the drawing exercise
+the board-visual stories before it were. There is no reason to stage the
+planets across several gates for the owner to redraw between: they are ported,
+and then looked at.
 
 ## Verification
 
@@ -155,23 +185,41 @@ Automated tests should cover, at minimum: the table has exactly fourteen
 entries, one for every square in `BAYS` and none for any other square; the
 mapping is deterministic; every planet is distinguishable from every other by
 its specification, not merely by colour; the artwork is `aria-hidden`; square
-accessible names are unchanged from today; and a bay with a ship in it renders
-no planet.
+accessible names are unchanged from today; and a bay renders its planet whether
+or not a ship stands in it.
+
+The **spread** is testable too, and should be tested, because it is the one
+part of the arrangement a later edit could silently undo: no two bays adjacent
+around the ring may hold planets sharing a trait — a ring, a moon, craters, or
+a colour family. Every id the artwork defines must also be unique across the
+whole board, since all fourteen planets are in one document at once.
+
+Nothing tests where a planet sits inside its square or how large it is — see
+_Design decisions_; that is the eye's job, not a test's.
 
 **Manual gates** — the plan should schedule these, and they are the substance
 of this story rather than a formality:
 
-1. **The look, iterated with the owner.** `npm run dev`, open the board, and
-   work through the fourteen designs together. The owner expects several
-   rounds here: the story fixes the intent, not the pixels. Note that this
-   worktree runs alongside the main checkout, so the dev server needs a port
-   of its own (`npm run dev -- --port 5373`).
-2. **A ship arriving and leaving.** Move a ship out of its bay and back, and
-   confirm the planet appears and disappears cleanly and that neither state
-   looks like a rendering fault.
-3. **Bays still read as bays** at the smallest board size, with the tile
-   colour gone.
-4. **Screen reader.** Moving across a bay announces exactly what it announces
+1. **The port is faithful.** `npm run dev`, open the board, and check the
+   fourteen planets against `.local/eg_planets.html` side by side: each one
+   should look like the drawing it came from. This is a fidelity check, not a
+   design round — a planet that renders differently from its source is a port
+   bug. Note that this worktree runs alongside the main checkout, so the dev
+   server needs a port of its own (`npm run dev -- --port 5373`).
+2. **A ship standing on a planet.** With a ship in its bay, confirm the ship
+   still reads cleanly against the planet behind it and that the planet is
+   still recognisably a planet — for every bay, since the fourteen designs
+   differ. This gate also covers how far each planet spreads within its
+   square: whether it crowds the grid lines or its neighbours is judged here,
+   by eye, and nowhere else.
+3. **Bays still read as bays** at the smallest board size, with both the tile
+   colour and the heavier border gone and the planet doing all the work.
+4. **The spread reads as spread.** Stand back from the whole board and confirm
+   the ring of fourteen looks varied all the way round — no run of similar
+   planets, no corner that has gone all one colour. A test can only check the
+   traits the data declares; whether the board _looks_ mixed is this gate's
+   call, and the arrangement is the owner's to reorder here.
+5. **Screen reader.** Moving across a bay announces exactly what it announces
    today, with no mention of a planet.
 
 ## Open items to resolve at plan time
@@ -179,6 +227,6 @@ of this story rather than a formality:
 - How the fourteen designs are parameterised: how many features (rings, moons,
   banding, limb shading) and how much each varies, balancing distinctness
   against a table nobody wants to hand-tune fourteen times.
-- Whether planets need a size floor to stay legible at the 40px square
-  minimum, or whether the smaller ones simply become dots.
-- Whether the bay border needs any adjustment once the fill is gone.
+- How much of a planet a ship may reasonably cover before the design under it
+  stops being worth drawing — a question for the first gate, with a ship
+  parked on the first planet, not one to answer in advance.
