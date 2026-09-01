@@ -1017,7 +1017,14 @@ board opens the same way every time.
 
 ## Step 8 — Owner play-through
 
-Status: pending
+Status: committed
+
+Notes: The owner played the app from the dev server on 2026-08-31 and
+confirmed the eight observations — a different board every game, five lit and
+twelve unlit with nothing dormant, visibly different stages of burn across the
+lit nodes and different sizes and warmths across the unlit sites, a game that
+plays and finishes normally from a dealt board, and nothing on screen
+contradicting rules.md at 0.18. No findings.
 
 The owner plays the app and confirms the story's player-facing verification
 list. This is the story's manual gate and the only step the pipeline pauses for
