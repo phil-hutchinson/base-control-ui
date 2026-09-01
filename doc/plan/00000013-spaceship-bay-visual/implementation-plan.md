@@ -645,22 +645,63 @@ read as bays with no tile colour or border, and the arrangement stands as
 planned — no planets were swapped. The plan expected this gate to send work
 back; it did not.
 
-## Step 8 — Manual gate: the screen reader hears nothing new
+## Step 8 — Rotate every planet one bay clockwise
 
 Status: pending
 
-Move across several bays, empty and occupied, with a screen reader running.
-Each announces exactly what it announced before this story — "bay", its
-coordinates, any occupant — with no mention of a planet, and no extra stop or
-silent element in the traversal.
+Move every planet one position clockwise around the ring: the planet at ring
+position _i_ moves to position _i + 1_, and the planet at the last position
+(A14) wraps to the first (D15). This is a single rotation of `RING_SLOTS`'
+`planetNumber` column in `planetPlacement.ts` — no other file changes.
 
-This is its own gate rather than a bullet in Step 7 because it is a different
-tool and a different kind of failure: an `aria-hidden` that did not take, or a
-stray focusable element, is invisible to the eye check.
+### Why
 
-Depends on: Step 6.
+The owner asked for it at the Step 7 gate, having seen the board. **Not every
+bay holds a ship**: `src/rules/fleet.ts` starts the six-a-side game with H15
+and H1 empty, and the five-a-side game with O14, O2, A14 and A2 empty. Those
+six squares are where a planet is seen whole from the opening screen, with
+nothing drawn over it, so they are the slots that should hold the most
+striking designs.
 
-Verification (manual): The owner confirms bay announcements are unchanged.
+Today they hold mostly plain banded discs. After the rotation they hold the
+showpieces:
+
+| Bay | Empty in | Holds now                          | Holds after                           |
+| --- | -------- | ---------------------------------- | ------------------------------------- |
+| H15 | 6-a-side | 11 — yellow/orange/green bands     | 08 — turquoise, vertical white ring   |
+| H1  | 6-a-side | 10 — magenta with pale lines       | 07 — brown/pink, tilted grey ring     |
+| O14 | 5-a-side | 13 — cyan/pink wave bands          | 06 — double planet, banded + cratered |
+| O2  | 5-a-side | 02 — peru/purple, four moons       | 04 — blue/green water world           |
+| A2  | 5-a-side | 03 — chocolate/burlywood bands     | 01 — tan, with a cratered moon        |
+| A14 | 5-a-side | 09 — banded brown, earth-like moon | 12 — cream/olive crater planet        |
+
+Two ringed planets, the double planet, the water world, the crater planet and
+the cratered-moon planet — the six most distinctive drawings — end up in the
+six squares most likely to be seen unobstructed.
+
+### Why the spread survives untouched
+
+**A rotation preserves every adjacency.** Whatever sat beside what before,
+sits beside it after; the whole ring simply turns. So none of the spread
+invariants can break, `planetPlacement.test.ts` needs no change, and it should
+pass unmodified. **If that test fails, the rotation was applied wrongly** — as
+a shuffle, or one direction confused for the other — not as a sign the
+invariants need revisiting. Do not edit the test to accommodate a failure.
+
+Clockwise is the direction `RING_SLOTS` is already written in, and the
+direction `fleet.ts`'s layout comments use ("listed clockwise from H15"): D15
+→ H15 → L15 → O14 → … → A14 → back to D15.
+
+Depends on: Step 6 (the arrangement being rendered at all), Step 7 (the gate
+that prompted it).
+
+Verification (automated): `planetPlacement.test.ts` passes **unmodified** —
+the spread invariants still hold, which is the rotation's own proof of
+correctness. Additionally confirm by inspection that each of the six bays in
+the table above now holds the planet the "Holds after" column names.
+
+Then re-run the Step 7 gate: the owner looks at the rotated board and confirms
+the free slots now show what they wanted. **[gate]**
 
 ## Step 9 — README check
 

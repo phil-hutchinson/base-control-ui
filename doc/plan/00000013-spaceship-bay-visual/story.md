@@ -219,8 +219,12 @@ of this story rather than a formality:
    planets, no corner that has gone all one colour. A test can only check the
    traits the data declares; whether the board _looks_ mixed is this gate's
    call, and the arrangement is the owner's to reorder here.
-5. **Screen reader.** Moving across a bay announces exactly what it announces
-   today, with no mention of a planet.
+
+There is deliberately **no screen-reader gate**. CLAUDE.md's pre-release
+stance is explicit that plan steps are not added for testing accessibility,
+and this story is not the place to start. The planets are `aria-hidden` and
+`squareLabel.ts` is untouched, which is asserted by the automated tests above;
+anything beyond that waits for the accessibility story.
 
 ## Open items to resolve at plan time
 
