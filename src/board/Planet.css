@@ -1,0 +1,9 @@
+/* Fills whatever square the planet is put in, exactly as ShipModel.css and
+   SiteMarker.css do. No fill/stroke here: the artwork's colours arrive
+   from the sprite it references. */
+
+.planet {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

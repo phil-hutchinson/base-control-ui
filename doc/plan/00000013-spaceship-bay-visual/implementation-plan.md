@@ -553,7 +553,7 @@ declares no id the catalogue does not name.
 
 ## Step 6 — `Planet.tsx`, and a planet in every bay
 
-Status: pending
+Status: committed
 
 Create `src/board/Planet.tsx`: a 100 x 100 `<svg aria-hidden>` holding a single
 `<use>` of the given planet's body id — the near-empty component `ShipModel` is
@@ -574,6 +574,36 @@ standing in it, identically to when it is empty; the planet element is
 `aria-hidden`; and the existing `squareLabel` tests plus every square accessible
 name in `Board.test.tsx` are unchanged, which the story requires be asserted
 rather than assumed.
+
+Notes: Created `src/board/Planet.tsx` (a 100 x 100 `<svg aria-hidden>` with a
+single `<use>` of `planet.ids.body`, mirroring `ShipModel.tsx`'s shape) and
+`Planet.css` (fills its square, matching `ShipModel.css`/`SiteMarker.css`).
+Added a `planet?: PlanetArt` prop to `BoardSquareProps` and rendered
+`{planet && <Planet planet={planet} />}` as the **first** child inside
+`BoardSquare`'s wrapping `<div>`, ahead of the site marker, so it stacks
+beneath everything else in the single-cell grid; there is no occupancy check
+anywhere in `Planet.tsx` or `BoardSquare.tsx` — a ship simply draws over it.
+Wired `Board.tsx` to compute `planetForSquare(square)` per cell (already
+returns `undefined` for a non-bay square) and pass it through as the new
+`planet` prop, alongside the existing `isBay`/`squareName` props it already
+built per square. `squareLabel.ts` and `BoardSquare`'s other props are
+untouched.
+
+Added tests rather than assuming: in `BoardSquare.test.tsx`, a planet renders
+only when given one, is `aria-hidden` and `<use>`s the given planet's `body`
+id, and (with a sample planet) stacks before the site marker and the ship
+regardless of occupancy. In `Board.test.tsx`, a new test renders the full
+starting board and asserts exactly `BAYS.length` (14) `.planet` elements
+exist, each bay's `gridcell` (looked up by its still-`squareLabel`-built
+accessible name) contains one, and the centre non-bay square does not — the
+lookup-by-accessible-name step doubles as the "accessible name unchanged"
+check the story asks for, since a changed name would fail to find the cell at
+all. Ran the pre-existing `squareLabel.test.ts` (21 tests) and the whole of
+`Board.test.tsx` (64 tests, including the literal-name and
+`toHaveAccessibleName` assertions) unmodified and green — no existing test
+needed touching. `npm run typecheck`, `npm run lint`, `npm test` (816 tests,
+all green), `npm run format:check` and `npm run build` all pass. No deviation
+from the plan.
 
 ## Step 7 — Manual gate: the board, and the spread
 

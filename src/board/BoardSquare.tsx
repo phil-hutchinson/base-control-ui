@@ -1,10 +1,15 @@
-// One square's stacked contents: the site marker beneath any ship standing
-// on it, then, during ship selection, one of three selection markings — a
-// legal destination, a legal attack target, or the selected ship's own
-// square — all sharing the square in a single-cell grid rather than
-// absolute positioning (see BoardSquare.css). A fight has one outcome, so
-// the target ring is a plain cue rather than a prediction; what attacking
-// here does is spoken in the square's accessible name, not drawn.
+// One square's stacked contents: a bay's planet beneath everything else,
+// then the site marker beneath any ship standing on it, then, during ship
+// selection, one of three selection markings — a legal destination, a legal
+// attack target, or the selected ship's own square — all sharing the square
+// in a single-cell grid rather than absolute positioning (see
+// BoardSquare.css). A fight has one outcome, so the target ring is a plain
+// cue rather than a prediction; what attacking here does is spoken in the
+// square's accessible name, not drawn.
+//
+// A bay's planet is drawn whether or not the square is occupied - there is
+// no occupancy condition anywhere below. A ship simply draws over it, as it
+// already does over a site marker.
 //
 // Having moved this ply and a ship's condition (no action available) are
 // separate, independently optional fields from each other and from the
@@ -19,12 +24,15 @@ import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
 import type { SiteState } from "../rules/sites";
 import { ShipModel } from "../ships/ShipModel";
+import { Planet } from "./Planet";
+import type { PlanetArt } from "./planetArt";
 import { SiteMarker } from "./SiteMarker";
 import "./BoardSquare.css";
 
 export interface BoardSquareProps {
   readonly isBay: boolean;
   readonly squareName: string;
+  readonly planet?: PlanetArt;
   readonly siteState?: SiteState;
   readonly cyclePosition?: number;
   readonly occupant?: SquareOccupant;
@@ -189,6 +197,7 @@ function NoActionMark() {
 export function BoardSquare({
   isBay,
   squareName,
+  planet,
   siteState,
   cyclePosition,
   occupant,
@@ -213,6 +222,7 @@ export function BoardSquare({
 
   return (
     <div className={classNames.join(" ")} style={style}>
+      {planet && <Planet planet={planet} />}
       {siteState && (
         <SiteMarker
           state={siteState}

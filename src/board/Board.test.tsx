@@ -187,6 +187,31 @@ describe("Board", () => {
     );
   });
 
+  it("draws a planet in every bay and no other square, whether or not it holds a ship", () => {
+    const { container } = render(
+      <Board session={startingSession} onIntent={noop} />,
+    );
+
+    expect(container.querySelectorAll(".planet")).toHaveLength(BAYS.length);
+    for (const square of BAYS) {
+      const name = squareName(square);
+      const label = squareLabel({
+        square,
+        isBay: true,
+        siteState: STATED_SITE_STATES[name]?.state,
+        occupant: startingShipAt(square),
+      });
+      const cell = screen.getByRole("gridcell", { name: label });
+      expect(cell.querySelector(".planet")).toBeInTheDocument();
+    }
+
+    // A planet is aria-hidden, so it never changes a bay's accessible name -
+    // occupied bays above already carried the ship's own name, and the
+    // starting board's centre square (never a bay) carries none at all.
+    const centre = screen.getByRole("gridcell", { name: "H8, charged site" });
+    expect(centre.querySelector(".planet")).toBeNull();
+  });
+
   it("draws every gauge slot lit for the starting fleet, since every ship starts at full power", () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,

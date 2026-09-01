@@ -22,6 +22,7 @@ import {
 } from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
 import { EnergyOverlay } from "./EnergyOverlay";
+import { planetForSquare } from "./planetPlacement";
 import { PlanetDefs } from "./PlanetDefs";
 import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import type { GridPosition } from "./grid/gridNavigation";
@@ -99,6 +100,7 @@ export function Board({ session, onIntent }: BoardProps) {
         });
         const name = squareName(square);
         const bay = isBay(square);
+        const planet = planetForSquare(square);
         const siteStatus = siteStatusAt(session.state, square);
         const siteState = siteStatus?.state;
         const cyclePosition = siteStatus
@@ -125,6 +127,7 @@ export function Board({ session, onIntent }: BoardProps) {
             <BoardSquare
               isBay={bay}
               squareName={name}
+              planet={planet}
               siteState={siteState}
               cyclePosition={cyclePosition}
               occupant={occupant}
