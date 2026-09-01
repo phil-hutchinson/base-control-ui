@@ -862,7 +862,7 @@ trusting the numbers, and by eye it reads clearly pinker and lighter.
 
 ## Step 10 — README check
 
-Status: pending
+Status: committed
 
 Run `/update-readme` and confirm `README.md` is still accurate. The story
 changes only how the board looks, so an update is likely unnecessary — but if
@@ -872,3 +872,19 @@ Depends on: Step 6.
 
 Verification (automated): `/update-readme` reports no change needed, or its
 change is reviewed and committed.
+
+Notes: Three sentences added to the status paragraph, beside the existing
+material on bays and fleet size. Nothing in the README had gone stale — it
+never described a bay's appearance, so the lost tile colour and border
+invalidated no sentence, and the step's own guess that it might have was
+wrong.
+
+The addition is not a description of the artwork for its own sake, which the
+README would not warrant. It is there because a player who opens the app and
+finds fourteen distinct planets may reasonably assume they mean something —
+this board teaches that visual change carries information, since a site's glow
+and size both do. Saying plainly that the planets are scenery, affect nothing,
+and never move is player-facing information in a way the artwork itself is
+not. It also states that a ship in a bay is parked in front of its planet,
+since both are visible at once and a reader might otherwise expect the ship to
+replace it.

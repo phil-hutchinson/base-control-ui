@@ -34,7 +34,10 @@ install, no account, no server.
 > Changing either choice starts nothing — the board only appears once PLAY is
 > pressed, dealt with the choices you made. A smaller fleet starts from fewer
 > of the board's fourteen bays, leaving the rest empty; an empty bay plays no
-> differently from any other. Green goes first, and each player takes one
+> differently from any other. Each bay has a planet sitting in it, and a ship
+> in a bay is parked in front of its planet. The planets are scenery and
+> nothing else: none of them affects play in any way, and each one always sits
+> in the same bay, game after game. Green goes first, and each player takes one
 > action a turn — a move or an attack — by mouse or by keyboard. Every game
 > deals a different opening board: five of the seventeen sites are lit, chosen
 > at random, and they do not all start fresh — some are already part-way
