@@ -47,14 +47,36 @@ export interface PlanetTraits {
   readonly colorFamily: PlanetColorFamily;
 }
 
+/** How a planet's body is drawn, beyond the traits above - never a rule, and never a colour. */
+export type PlanetSurface =
+  | "plain"
+  | "banded"
+  | "continents"
+  | "banded-cratered-companion"
+  | "lines"
+  | "banded-storm"
+  | "craters"
+  | "waves";
+
+/** How a ringed planet's ring is tilted relative to the board. */
+export type RingOrientation = "horizontal" | "vertical" | "tilted";
+
 export interface PlanetArt {
   /** The planet's own number in the source gallery, 1-14. */
   readonly number: number;
   /** A short description for a human reading this table - never shown to a player. */
   readonly name: string;
   readonly traits: PlanetTraits;
+  /**
+   * The surface treatment and, for a ringed planet, the ring's orientation -
+   * both genuinely visible, but deliberately outside `PlanetTraits`: they
+   * describe how a planet is drawn, not the traits its spread around the
+   * ring is judged on, so they must never be added to that adjacency check.
+   */
+  readonly surface: PlanetSurface;
+  readonly ringOrientation?: RingOrientation;
   /** Every id this planet's artwork declares, keyed by part name. Always includes `body`. */
-  readonly ids: Readonly<Record<string, string>>;
+  readonly ids: Readonly<Record<string, string>> & { readonly body: string };
 }
 
 function planetId(number: number, part: string): string {
@@ -64,12 +86,12 @@ function planetId(number: number, part: string): string {
 function idsFor(
   number: number,
   parts: readonly string[],
-): Record<string, string> {
+): Readonly<Record<string, string>> & { readonly body: string } {
   const ids: Record<string, string> = {};
   for (const part of parts) {
     ids[part] = planetId(number, part);
   }
-  return ids;
+  return { ...ids, body: planetId(number, "body") };
 }
 
 /** The fourteen planets, in the source gallery's own numbering. */
@@ -78,18 +100,21 @@ export const PLANETS: readonly PlanetArt[] = [
     number: 1,
     name: "Tan planet with a cratered moon",
     traits: { ring: false, moon: true, craters: true, colorFamily: "tan" },
+    surface: "plain",
     ids: idsFor(1, ["body", "surface", "moon-sheen", "blur", "moon-clip"]),
   },
   {
     number: 2,
     name: "Peru-and-purple planet with four small moons",
     traits: { ring: false, moon: true, craters: false, colorFamily: "purple" },
+    surface: "plain",
     ids: idsFor(2, ["body", "surface"]),
   },
   {
     number: 3,
     name: "Banded chocolate-brown planet",
     traits: { ring: false, moon: false, craters: false, colorFamily: "brown" },
+    surface: "banded",
     ids: idsFor(3, ["body", "surface", "sheen"]),
   },
   {
@@ -101,12 +126,15 @@ export const PLANETS: readonly PlanetArt[] = [
       craters: false,
       colorFamily: "blue-green",
     },
+    surface: "continents",
     ids: idsFor(4, ["body", "surface", "blur", "sheen", "clip"]),
   },
   {
     number: 5,
     name: "Gold planet with a wide ring",
     traits: { ring: true, moon: false, craters: false, colorFamily: "gold" },
+    surface: "plain",
+    ringOrientation: "horizontal",
     ids: idsFor(5, [
       "body",
       "surface",
@@ -122,6 +150,7 @@ export const PLANETS: readonly PlanetArt[] = [
     number: 6,
     name: "Double planet: banded brown with a cratered companion",
     traits: { ring: false, moon: true, craters: true, colorFamily: "brown" },
+    surface: "banded-cratered-companion",
     ids: idsFor(6, [
       "body",
       "surface",
@@ -135,6 +164,8 @@ export const PLANETS: readonly PlanetArt[] = [
     number: 7,
     name: "Brown-and-pink planet with a tilted grey ring",
     traits: { ring: true, moon: false, craters: false, colorFamily: "brown" },
+    surface: "banded",
+    ringOrientation: "tilted",
     ids: idsFor(7, [
       "body",
       "surface",
@@ -154,6 +185,8 @@ export const PLANETS: readonly PlanetArt[] = [
       craters: false,
       colorFamily: "turquoise",
     },
+    surface: "banded",
+    ringOrientation: "vertical",
     ids: idsFor(8, [
       "body",
       "surface",
@@ -168,6 +201,7 @@ export const PLANETS: readonly PlanetArt[] = [
     number: 9,
     name: "Banded brown planet with an earth-like moon",
     traits: { ring: false, moon: true, craters: false, colorFamily: "brown" },
+    surface: "banded",
     ids: idsFor(9, [
       "body",
       "surface",
@@ -186,6 +220,7 @@ export const PLANETS: readonly PlanetArt[] = [
       craters: false,
       colorFamily: "magenta",
     },
+    surface: "lines",
     ids: idsFor(10, ["body", "sheen", "blur", "clip"]),
   },
   {
@@ -197,12 +232,14 @@ export const PLANETS: readonly PlanetArt[] = [
       craters: false,
       colorFamily: "rose",
     },
+    surface: "banded-storm",
     ids: idsFor(11, ["body", "surface", "sheen", "blur", "clip", "storm"]),
   },
   {
     number: 12,
     name: "Cream-and-olive crater planet",
     traits: { ring: false, moon: false, craters: true, colorFamily: "cream" },
+    surface: "craters",
     ids: idsFor(12, ["body", "sheen", "blur", "clip"]),
   },
   {
@@ -214,6 +251,7 @@ export const PLANETS: readonly PlanetArt[] = [
       craters: false,
       colorFamily: "cyan-pink",
     },
+    surface: "waves",
     ids: idsFor(13, [
       "body",
       "band-1",
@@ -233,6 +271,8 @@ export const PLANETS: readonly PlanetArt[] = [
       craters: false,
       colorFamily: "blue-teal",
     },
+    surface: "plain",
+    ringOrientation: "tilted",
     ids: idsFor(14, [
       "body",
       "sheen",

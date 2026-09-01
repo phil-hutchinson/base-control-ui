@@ -36,7 +36,7 @@ describe("PLANETS", () => {
   it("makes every planet distinguishable from every other by more than colour", () => {
     const signatures = PLANETS.map(
       (planet) =>
-        `${planet.traits.ring}|${planet.traits.moon}|${planet.traits.craters}|${planet.traits.colorFamily}`,
+        `${planet.traits.ring}|${planet.traits.moon}|${planet.traits.craters}|${planet.surface}|${planet.ringOrientation ?? ""}`,
     );
     expect(new Set(signatures).size).toBe(signatures.length);
   });

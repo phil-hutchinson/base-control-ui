@@ -32,6 +32,7 @@ import "./BoardSquare.css";
 export interface BoardSquareProps {
   readonly isBay: boolean;
   readonly squareName: string;
+  /** Present if and only if `isBay` is true. */
   readonly planet?: PlanetArt;
   readonly siteState?: SiteState;
   readonly cyclePosition?: number;
@@ -207,6 +208,8 @@ export function BoardSquare({
 }: BoardSquareProps) {
   const classNames = ["board-square"];
   if (isBay) {
+    // No stylesheet rule reads this - it exists only as a query hook for
+    // tests to find a bay square.
     classNames.push("board-square--bay");
   }
   const isDampened = condition === "no-action";

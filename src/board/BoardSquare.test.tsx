@@ -73,7 +73,7 @@ describe("BoardSquare", () => {
     );
   });
 
-  it("draws the planet beneath the site marker and the ship, and keeps it whether or not the square is occupied", () => {
+  it("draws the planet beneath the ship, and keeps it whether or not the square is occupied", () => {
     const { container: empty } = render(
       <BoardSquare isBay={true} squareName="D15" planet={SAMPLE_PLANET} />,
     );

@@ -1,11 +1,9 @@
 // Which planet (see planetArt.ts) sits in which bay, and the order the
 // fourteen bays are judged in for spread. The arrangement is a fixed table,
-// approved by the owner at plan time (see this story's
-// implementation-plan.md, "The arrangement, and the ring the spread is
-// judged on"), with the explicit expectation that individual planets may be
-// swapped once the board is in front of them - swapping two bays' planets is
-// a one-line change to `RING_SLOTS` per bay, and `planetPlacement.test.ts`
-// re-checks the spread immediately.
+// with the explicit expectation that individual planets may be swapped once
+// the board is in front of them - swapping two bays' planets is a one-line
+// change to `RING_SLOTS` per bay, and `planetPlacement.test.ts` re-checks
+// the spread immediately.
 //
 // The ring order below is NOT `BAYS` order (src/rules/bays.ts). `BAYS`
 // lists the fourteen bays in rules.md §3.1 order, which walks the board's
@@ -37,25 +35,23 @@ interface RingSlot {
   readonly planetNumber: number;
 }
 
-// One row per bay, in ring order, transcribed from the table in
-// implementation-plan.md. Each row also carries the traits that placed it
-// there, so a reordering can be checked by eye against the same reasoning
-// before the test confirms it.
+// One row per bay, in ring order. Each row also carries the planet's name,
+// so a reordering can be checked by eye before the test confirms it.
 const RING_SLOTS: readonly RingSlot[] = [
-  { square: squareAt("D", 15), planetNumber: 9 }, // moon, brown
-  { square: squareAt("H", 15), planetNumber: 8 }, // ring, turquoise
-  { square: squareAt("L", 15), planetNumber: 11 }, // rose
-  { square: squareAt("O", 14), planetNumber: 6 }, // companion, craters, brown
-  { square: squareAt("O", 10), planetNumber: 13 }, // cyan-pink
-  { square: squareAt("O", 6), planetNumber: 5 }, // ring, gold
-  { square: squareAt("O", 2), planetNumber: 4 }, // blue-green
-  { square: squareAt("L", 1), planetNumber: 2 }, // moons, purple
-  { square: squareAt("H", 1), planetNumber: 7 }, // ring, brown
-  { square: squareAt("D", 1), planetNumber: 10 }, // magenta
-  { square: squareAt("A", 2), planetNumber: 1 }, // moon, craters, tan
-  { square: squareAt("A", 6), planetNumber: 3 }, // brown
-  { square: squareAt("A", 10), planetNumber: 14 }, // ring, blue-teal
-  { square: squareAt("A", 14), planetNumber: 12 }, // craters, cream
+  { square: squareAt("D", 15), planetNumber: 9 }, // Banded brown planet with an earth-like moon
+  { square: squareAt("H", 15), planetNumber: 8 }, // Turquoise planet with a vertical white ring
+  { square: squareAt("L", 15), planetNumber: 11 }, // Rose-and-cream banded planet with a storm
+  { square: squareAt("O", 14), planetNumber: 6 }, // Double planet: banded brown with a cratered companion
+  { square: squareAt("O", 10), planetNumber: 13 }, // Cyan-purple-pink wavy planet
+  { square: squareAt("O", 6), planetNumber: 5 }, // Gold planet with a wide ring
+  { square: squareAt("O", 2), planetNumber: 4 }, // Blue-green water world
+  { square: squareAt("L", 1), planetNumber: 2 }, // Peru-and-purple planet with four small moons
+  { square: squareAt("H", 1), planetNumber: 7 }, // Brown-and-pink planet with a tilted grey ring
+  { square: squareAt("D", 1), planetNumber: 10 }, // Magenta planet with pale surface lines
+  { square: squareAt("A", 2), planetNumber: 1 }, // Tan planet with a cratered moon
+  { square: squareAt("A", 6), planetNumber: 3 }, // Banded chocolate-brown planet
+  { square: squareAt("A", 10), planetNumber: 14 }, // Blue-teal ringed planet with a gold core
+  { square: squareAt("A", 14), planetNumber: 12 }, // Cream-and-olive crater planet
 ];
 
 /**
