@@ -241,10 +241,11 @@ describe("Board", () => {
       <Board session={startingSession} onIntent={noop} />,
     );
 
-    // `.board-frame` holds nothing but the grid and the energy overlay -
-    // neither label element is in the DOM at all any more.
+    // `.board-frame` holds nothing but the planet sprite, the grid and the
+    // energy overlay - neither label element is in the DOM at all any more.
     const frame = container.querySelector(".board-frame");
-    expect(frame?.children).toHaveLength(2);
+    expect(frame?.children).toHaveLength(3);
+    expect(frame?.querySelector(".planet-defs")).toBeInTheDocument();
     expect(frame?.querySelector(".board")).toBeInTheDocument();
     expect(frame?.querySelector(".energy-overlay")).toBeInTheDocument();
 
@@ -314,12 +315,24 @@ describe("Board", () => {
         <Board session={startingSession} onIntent={noop} />,
       );
 
+      // Counted within the site markers themselves, since the board now also
+      // mounts the planet sprite's own radial gradients as a sibling.
       const gradientIds = Array.from(
-        container.querySelectorAll("radialGradient"),
+        container.querySelectorAll(".site-marker radialGradient"),
       ).map((gradient) => gradient.getAttribute("id"));
 
       expect(gradientIds).toHaveLength(SITES.length);
       expect(new Set(gradientIds).size).toBe(SITES.length);
+
+      // Document-unique, not merely unique among site markers: every id the
+      // whole board renders is distinct, so a site gradient can never be
+      // shadowed by the planet sprite's ids (or any later artwork's). SVG
+      // resolves `url(#...)` document-wide, so a collision would silently
+      // paint one element with another's gradient.
+      const allIds = Array.from(container.querySelectorAll("[id]"), (el) =>
+        el.getAttribute("id"),
+      );
+      expect(new Set(allIds).size).toBe(allIds.length);
     });
 
     it("names exactly five sites charged and twelve active, none dormant", () => {

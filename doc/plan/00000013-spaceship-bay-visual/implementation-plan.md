@@ -466,7 +466,7 @@ lint`, `npm test` (810 tests, all green) and `npm run format:check` all pass.
 
 ## Step 5 — The ported artwork: `PlanetDefs.tsx`
 
-Status: pending
+Status: committed
 
 Create `src/board/PlanetDefs.tsx` and its stylesheet: one `<svg aria-hidden>`
 containing a `<defs>` with all fourteen planets — each one's gradients, filters
@@ -496,6 +496,60 @@ Verification (automated): A component test rendering `PlanetDefs` — every id i
 `aria-hidden`, and it contributes no accessible content. `npm test` stays green,
 and the board's appearance is unchanged from Step 2 (nothing uses the sprite
 yet).
+
+Notes: Created `src/board/PlanetDefs.tsx` (one hidden `<svg aria-hidden><defs>`
+holding all fourteen planets, each one's gradients/filters/clip paths as
+`<defs>` siblings plus its whole drawing grouped under its `body` id) and
+`src/board/PlanetDefs.css` (hides it by zero size, mirroring `ShipDefs.css`
+exactly), transcribed planet-by-planet from the committed gallery with only
+the changes _Decisions_ permits: ids renamed via a small `idsFor(number)`
+lookup into `planetArt.ts`'s `PLANETS` (looked up by gallery number rather
+than array index, so a future reorder of `PLANETS` cannot silently mismatch a
+planet's ids with its drawing); the duplicate `p1moon-sheen` collapsed to one
+definition; the commented-out/disabled material (the orphaned block between
+planets 1–2, the disabled crater group in planet 6, the disabled `<rect>` in
+planet 4, and the disabled ring-sheen/moon-sheen circles in planets 14 and 9)
+dropped, along with the now-unreferenced `p9moonsheen` and `p14ringsheen`
+gradients themselves (never given ids in `planetArt.ts`, per Step 3's notes);
+planet 7's ring gradient's final stop written as the explicit `#000` that
+`stop-color="777"` already rendered as; planet 9's stray `opacity="0.8 "`
+trailing spaces trimmed; and planets 1 and 2's backing fills unified to
+`#151c31`. Where the gallery wrapped a planet's whole drawing in an
+already-present `<g transform="…">` (planets 7, 8, 9's rear planet, 14), the
+`body` id was added directly to that existing element rather than nesting a
+new wrapper `<g>`, so the rendered geometry is unchanged. Mounted `<PlanetDefs
+/>` in `Board.tsx`, as a sibling of `AccessibleGrid` inside `.board-frame` —
+it draws nothing itself, so square content and accessible names are
+untouched. Added `PlanetDefs.test.tsx`, mirroring `ShipDefs.test.tsx`:
+asserts a single `aria-hidden` sprite with no title/description, every id
+`planetArt.ts` declares appears exactly once, and every internal `href`/`fill`/
+`stroke` reference resolves to a defined id. Deviation from the plan: mounting
+the sprite as a third child of `.board-frame` invalidated two pre-existing
+assertions that predated this story — `Board.test.tsx`'s "draws no row or
+column labels" test counted `.board-frame`'s children (now three, not two),
+and its "gives every site marker's gradient its own document-unique id" test
+queried `radialGradient` globally (now also matching the sprite's own
+gradients). Both were updated in place — the first to expect three children
+and assert `.planet-defs` is present, the second to scope its query to
+`.site-marker radialGradient` — rather than left broken, since the step's own
+verification requires `npm test` to stay green. `npm run typecheck`, `npm run
+lint`, `npm test` (813 tests, all green), `npm run format:check` and `npm run
+build` all pass.
+
+Orchestrator follow-up: both test edits were checked rather than taken on
+trust, since narrowing an existing assertion is how a real problem hides. The
+child-count change is mechanical. The gradient one preserved the test's
+working intent but left its name ("document-unique id") claiming more than it
+checked — scoping to `.site-marker` would no longer catch a planet id
+shadowing a site id, which is the very collision _Decisions_ gives as reason
+one for using a sprite. A document-wide "no id appears twice anywhere on the
+board" assertion was added alongside the scoped count, making the test at
+least as strong as before the step and honest to its name. It passes, which
+also confirms the sprite's seventy-five ids collide with nothing already on
+the board. Separately verified: the sprite declares exactly seventy-five ids
+and `planetArt.ts` names exactly seventy-five, so with every named id present
+exactly once and all sprite ids unique, the two sets are identical — the port
+declares no id the catalogue does not name.
 
 ## Step 6 — `Planet.tsx`, and a planet in every bay
 

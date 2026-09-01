@@ -22,6 +22,7 @@ import {
 } from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
 import { EnergyOverlay } from "./EnergyOverlay";
+import { PlanetDefs } from "./PlanetDefs";
 import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import type { GridPosition } from "./grid/gridNavigation";
 import "./Board.css";
@@ -149,6 +150,7 @@ export function Board({ session, onIntent }: BoardProps) {
 
   return (
     <div className="board-frame">
+      <PlanetDefs />
       <AccessibleGrid
         label={`${GAME_NAME} board`}
         rows={rows}
