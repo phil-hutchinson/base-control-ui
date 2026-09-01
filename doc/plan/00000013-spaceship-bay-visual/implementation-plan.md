@@ -607,7 +607,7 @@ from the plan.
 
 ## Step 7 — Manual gate: the board, and the spread
 
-Status: pending
+Status: committed
 
 The story's substantive gate. Run `npm run dev -- --port 5373` and, with
 `doc/plan/00000013-spaceship-bay-visual/eg_planets.html` open beside the board:
@@ -635,6 +635,15 @@ Expect this gate to send work back, and re-run it after any change it prompts.
 Depends on: Step 6.
 
 Verification (manual): The owner confirms all five, or lists what to change.
+
+Notes: Passed first time. The owner looked at the running board and confirmed
+all five checks — "That is all looking as it should" — with nothing sent back.
+So the port is faithful to the gallery on all fourteen planets, planet 1's
+background change from `black` to `#151c31` is accepted as seen rather than
+only as approved in advance, planets and ships coexist legibly, bays still
+read as bays with no tile colour or border, and the arrangement stands as
+planned — no planets were swapped. The plan expected this gate to send work
+back; it did not.
 
 ## Step 8 — Manual gate: the screen reader hears nothing new
 
