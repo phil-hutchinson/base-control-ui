@@ -44,7 +44,7 @@ interface RingSlot {
 const RING_SLOTS: readonly RingSlot[] = [
   { square: squareAt("D", 15), planetNumber: 9 }, // moon, brown
   { square: squareAt("H", 15), planetNumber: 8 }, // ring, turquoise
-  { square: squareAt("L", 15), planetNumber: 11 }, // yellow-green
+  { square: squareAt("L", 15), planetNumber: 11 }, // rose
   { square: squareAt("O", 14), planetNumber: 6 }, // companion, craters, brown
   { square: squareAt("O", 10), planetNumber: 13 }, // cyan-pink
   { square: squareAt("O", 6), planetNumber: 5 }, // ring, gold

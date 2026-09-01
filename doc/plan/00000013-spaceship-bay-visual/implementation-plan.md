@@ -727,7 +727,7 @@ from the plan.
 
 ## Step 9 — Redraw planet 11: rose bands and a storm
 
-Status: pending
+Status: implemented
 
 Recolour planet 11 from its yellow/orange/green banding to a **salmon / rose /
 cream** palette, and give it a **storm spot** — a large oval set off-centre,
@@ -798,6 +798,52 @@ Verification (manual): The owner views the board at
 charged node, that the storm gives it its own identity, and that its rose does
 not read as the red side colour. Compare it directly against a charged site and
 against a red ship. **[gate]**
+
+Notes: Recoloured planet 11's fourteen-stop banding gradient in
+`PlanetDefs.tsx` from the gallery's yellow/orange/green
+(`#DDB32C`/`#C9CE3B`/`#EA9D1F`/`#989425`/`#B3BE4B`/`#F2BD2C`/`#E0D429`/
+`#E3B126`/`#DB8821`/`#C29029`/`#B2D435`/`#E5AB24`) to a six-colour rose/salmon/
+cream palette (`#D98C86`, `#F7CFC1`, `#E8A9A0`, `#C97B82`, `#EFC2B3`,
+`#F2E4DC`), keeping the same fourteen offsets so the banding rhythm is
+unchanged. Added a storm: a new `planet-11-storm` radial gradient (deep mauve
+`#A8636D` core, `#F5D9D3` lighter rim highlight at 75%, both drawn from the
+same rose family) filling an off-centre `<ellipse>` (rx17/ry9 at 34,60, tilted
+12°), placed inside the existing `rotate(-7)`/blur/clip group between the
+banded surface circle and the sheen overlay, so it is softened, clipped and
+rotated exactly as the bands are and sits under the sheen like everything
+else. Radius, rotation, blur and clip on the disc itself are untouched; only
+the surface gradient's colours and the new storm element changed. Checked
+every new colour by eye against the two constraints: none is within a wide
+margin of `#DAA520` (all are pink/rose hues with no yellow component), and all
+are lighter and less saturated than `--color-red` `#c8503f` — including the
+storm's core `#A8636D`, the darkest colour added, whose R/G/B channels sit
+much closer together than the red's, reading as dusty mauve rather than
+brick red.
+
+Updated `planetArt.ts`: planet 11's `name` is now "Rose-and-cream banded
+planet with a storm", its `colorFamily` is `rose` (replacing `yellow-green`,
+removed from the `PlanetColorFamily` union since planet 11 was its only
+member), and its `ids` gained `storm` alongside the existing `body`,
+`surface`, `sheen`, `blur` and `clip`, all under the existing `planet-11-`
+scheme. No ring, moon or crater trait was added — `traits` is otherwise
+unchanged, so `planetPlacement.test.ts`'s adjacency check (planet 11 sits
+between planet 8's ring/turquoise and planet 6's companion/craters/brown)
+still passes on an unrelated colour family with no shared trait.
+
+Gave `PlanetDefs.tsx`'s header comment a new paragraph naming planet 11 as
+the one stated exception to "otherwise verbatim," so a future reader diffing
+it against the gallery does not mistake the redraw for a port bug. Also
+updated the trailing trait comment on planet 11's row in `planetPlacement.ts`
+from `// yellow-green` to `// rose`, for consistency with the new colour
+family — not required by this step's file list, but left stale it would
+misdescribe the very colour this step changed; the row's logic is untouched.
+
+`planetArt.test.ts`, `planetPlacement.test.ts`, `PlanetDefs.test.tsx` and
+`Board.test.tsx` all pass unmodified (816 tests total, all green). `npm run
+typecheck`, `npm run lint`, `npm run format:check` and `npm run build` all
+pass. No deviation from the plan. The manual gate (viewing the board and
+comparing planet 11 against a charged site and a red ship) is the owner's to
+perform and is left open here rather than claimed.
 
 ## Step 10 — README check
 

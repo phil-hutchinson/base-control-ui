@@ -34,8 +34,8 @@ export type PlanetColorFamily =
   | "gold"
   | "turquoise"
   | "magenta"
-  | "yellow-green"
   | "cream"
+  | "rose"
   | "cyan-pink"
   | "blue-teal";
 
@@ -190,14 +190,14 @@ export const PLANETS: readonly PlanetArt[] = [
   },
   {
     number: 11,
-    name: "Yellow-orange-green banded planet",
+    name: "Rose-and-cream banded planet with a storm",
     traits: {
       ring: false,
       moon: false,
       craters: false,
-      colorFamily: "yellow-green",
+      colorFamily: "rose",
     },
-    ids: idsFor(11, ["body", "surface", "sheen", "blur", "clip"]),
+    ids: idsFor(11, ["body", "surface", "sheen", "blur", "clip", "storm"]),
   },
   {
     number: 12,

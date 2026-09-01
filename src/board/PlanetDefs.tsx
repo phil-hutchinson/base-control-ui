@@ -14,6 +14,12 @@
 // `#151c31`, the --color-space-raised literal. Nothing else about the
 // geometry, colours or structure differs from the gallery.
 //
+// Planet 11 is the one deliberate exception to all of that: its
+// yellow-orange-green banding read as the charged-node accent (`#DAA520`),
+// so it is recoloured to salmon/rose/cream and given a storm spot, both
+// unique to this codebase and absent from the gallery. Everywhere else in
+// this file, a difference from the gallery is a bug; here it is the point.
+//
 // Mounted once, on the board, since planets appear only there. It draws
 // nothing itself - everything lives inside `<defs>`, which is never rendered
 // directly but is always referenceable - and is hidden from layout and from
@@ -568,22 +574,27 @@ export function PlanetDefs() {
           <circle cx="50" cy="50" r="33" fill={`url(#${p10.sheen})`} />
         </g>
 
-        {/* Planet 11: yellow-orange-green banded planet */}
+        {/* Planet 11: rose-and-cream banded planet with a storm. Redrawn,
+            not ported - see the header comment - because the gallery's
+            yellow-orange-green banding was indistinguishable from the
+            charged-node accent. Same banded-disc structure, same radius,
+            rotation, blur, clip and sheen; only the palette and the storm
+            are new. */}
         <linearGradient id={p11.surface} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#DDB32C" stopOpacity="1" />
-          <stop offset="0.19" stopColor="#DDB32C" stopOpacity="1" />
-          <stop offset="0.19" stopColor="#C9CE3B" stopOpacity="1" />
-          <stop offset="0.28" stopColor="#EA9D1F" stopOpacity="1" />
-          <stop offset="0.31" stopColor="#989425" stopOpacity="1" />
-          <stop offset="0.35" stopColor="#B3BE4B" stopOpacity="1" />
-          <stop offset="0.38" stopColor="#B3BE4B" stopOpacity="1" />
-          <stop offset="0.44" stopColor="#F2BD2C" stopOpacity="1" />
-          <stop offset="0.57" stopColor="#E0D429" stopOpacity="1" />
-          <stop offset="0.69" stopColor="#E3B126" stopOpacity="1" />
-          <stop offset="0.76" stopColor="#DB8821" stopOpacity="1" />
-          <stop offset="0.79" stopColor="#C29029" stopOpacity="1" />
-          <stop offset="0.86" stopColor="#B2D435" stopOpacity="1" />
-          <stop offset="1" stopColor="#E5AB24" stopOpacity="1" />
+          <stop offset="0" stopColor="#D98C86" stopOpacity="1" />
+          <stop offset="0.19" stopColor="#D98C86" stopOpacity="1" />
+          <stop offset="0.19" stopColor="#F7CFC1" stopOpacity="1" />
+          <stop offset="0.28" stopColor="#E8A9A0" stopOpacity="1" />
+          <stop offset="0.31" stopColor="#C97B82" stopOpacity="1" />
+          <stop offset="0.35" stopColor="#EFC2B3" stopOpacity="1" />
+          <stop offset="0.38" stopColor="#EFC2B3" stopOpacity="1" />
+          <stop offset="0.44" stopColor="#F2E4DC" stopOpacity="1" />
+          <stop offset="0.57" stopColor="#F7CFC1" stopOpacity="1" />
+          <stop offset="0.69" stopColor="#E8A9A0" stopOpacity="1" />
+          <stop offset="0.76" stopColor="#D98C86" stopOpacity="1" />
+          <stop offset="0.79" stopColor="#C97B82" stopOpacity="1" />
+          <stop offset="0.86" stopColor="#EFC2B3" stopOpacity="1" />
+          <stop offset="1" stopColor="#E8A9A0" stopOpacity="1" />
         </linearGradient>
         <radialGradient id={p11.sheen} cx="40%" cy="40%" r="70%">
           <stop offset="0%" stopColor="white" stopOpacity="0.55" />
@@ -595,6 +606,12 @@ export function PlanetDefs() {
         <clipPath id={p11.clip}>
           <circle cx="50" cy="50" r="34" />
         </clipPath>
+        <radialGradient id={p11.storm} cx="42%" cy="38%" r="65%">
+          <stop offset="0%" stopColor="#D98C86" />
+          <stop offset="45%" stopColor="#A8636D" />
+          <stop offset="75%" stopColor="#F5D9D3" />
+          <stop offset="100%" stopColor="#C97B82" />
+        </radialGradient>
         <g id={p11.body}>
           <g
             transform="rotate(-7,50,50)"
@@ -602,6 +619,14 @@ export function PlanetDefs() {
             clipPath={`url(#${p11.clip})`}
           >
             <circle cx="50" cy="50" r="34" fill={`url(#${p11.surface})`} />
+            <ellipse
+              cx="34"
+              cy="60"
+              rx="17"
+              ry="9"
+              fill={`url(#${p11.storm})`}
+              transform="rotate(12 34 60)"
+            />
             <circle
               cx="50"
               cy="50"
