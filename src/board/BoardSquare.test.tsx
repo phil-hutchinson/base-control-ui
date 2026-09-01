@@ -5,6 +5,9 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ShipCondition } from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
+import { PLANETS } from "./planetArt";
+
+const SAMPLE_PLANET = PLANETS[0];
 
 afterEach(cleanup);
 
@@ -51,6 +54,51 @@ describe("BoardSquare", () => {
     expect(markerIndex).toBeGreaterThanOrEqual(0);
     expect(shipIndex).toBeGreaterThanOrEqual(0);
     expect(markerIndex).toBeLessThan(shipIndex);
+  });
+
+  it("renders no planet when none is given, and renders one, aria-hidden, when it is", () => {
+    const { container: bare } = render(
+      <BoardSquare isBay={false} squareName="H8" />,
+    );
+    const { container: withPlanet } = render(
+      <BoardSquare isBay={true} squareName="D15" planet={SAMPLE_PLANET} />,
+    );
+
+    expect(bare.querySelector(".planet")).toBeNull();
+    const planet = withPlanet.querySelector(".planet");
+    expect(planet).toBeInTheDocument();
+    expect(planet).toHaveAttribute("aria-hidden", "true");
+    expect(planet?.querySelector("use")?.getAttribute("href")).toBe(
+      `#${SAMPLE_PLANET.ids.body}`,
+    );
+  });
+
+  it("draws the planet beneath the ship, and keeps it whether or not the square is occupied", () => {
+    const { container: empty } = render(
+      <BoardSquare isBay={true} squareName="D15" planet={SAMPLE_PLANET} />,
+    );
+    const { container: occupied } = render(
+      <BoardSquare
+        isBay={true}
+        squareName="D15"
+        planet={SAMPLE_PLANET}
+        occupant={{ side: "green", power: 2 }}
+      />,
+    );
+
+    expect(empty.querySelector(".planet")).toBeInTheDocument();
+    expect(occupied.querySelector(".planet")).toBeInTheDocument();
+
+    const square = occupied.querySelector(".board-square");
+    const children = Array.from(square?.children ?? []);
+    const planetIndex = children.findIndex((child) =>
+      child.classList.contains("planet"),
+    );
+    const shipIndex = children.findIndex((child) =>
+      child.classList.contains("ship-model"),
+    );
+    expect(planetIndex).toBe(0);
+    expect(planetIndex).toBeLessThan(shipIndex);
   });
 
   it("renders the destination mark when marked as a legal destination, and not otherwise", () => {
