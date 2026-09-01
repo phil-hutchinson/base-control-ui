@@ -647,7 +647,7 @@ back; it did not.
 
 ## Step 8 — Rotate every planet one bay clockwise
 
-Status: pending
+Status: implemented
 
 Move every planet one position clockwise around the ring: the planet at ring
 position _i_ moves to position _i + 1_, and the planet at the last position
@@ -702,6 +702,19 @@ the table above now holds the planet the "Holds after" column names.
 
 Then re-run the Step 7 gate: the owner looks at the rotated board and confirms
 the free slots now show what they wanted. **[gate]**
+
+Notes: Rotated `RING_SLOTS`' `planetNumber` column in `planetPlacement.ts` one
+position clockwise — `new[i+1] = old[i]` for all fourteen rows, with A14's old
+value (9) wrapping to D15 — and rewrote each row's trailing traits comment to
+match the planet now on that row (e.g. D15's comment changed from "ring,
+turquoise" to "moon, brown" now that planet 9 sits there). No other file
+touched. `planetPlacement.test.ts` passed unmodified, confirming the rotation
+preserved every ring adjacency. Verified by inspection: H15 -> 8, H1 -> 7,
+O14 -> 6, O2 -> 4, A2 -> 1, A14 -> 12 — all six match the step's table.
+`npm run typecheck`, `npm run lint`, `npm test` (816 tests, all green) and
+`npm run format:check` all pass. The manual re-run of the Step 7 gate is the
+owner's to perform, so it is left open here rather than claimed. No deviation
+from the plan.
 
 ## Step 9 — README check
 

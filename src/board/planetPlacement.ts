@@ -42,20 +42,20 @@ interface RingSlot {
 // there, so a reordering can be checked by eye against the same reasoning
 // before the test confirms it.
 const RING_SLOTS: readonly RingSlot[] = [
-  { square: squareAt("D", 15), planetNumber: 8 }, // ring, turquoise
-  { square: squareAt("H", 15), planetNumber: 11 }, // yellow-green
-  { square: squareAt("L", 15), planetNumber: 6 }, // companion, craters, brown
-  { square: squareAt("O", 14), planetNumber: 13 }, // cyan-pink
-  { square: squareAt("O", 10), planetNumber: 5 }, // ring, gold
-  { square: squareAt("O", 6), planetNumber: 4 }, // blue-green
-  { square: squareAt("O", 2), planetNumber: 2 }, // moons, purple
-  { square: squareAt("L", 1), planetNumber: 7 }, // ring, brown
-  { square: squareAt("H", 1), planetNumber: 10 }, // magenta
-  { square: squareAt("D", 1), planetNumber: 1 }, // moon, craters, tan
-  { square: squareAt("A", 2), planetNumber: 3 }, // brown
-  { square: squareAt("A", 6), planetNumber: 14 }, // ring, blue-teal
-  { square: squareAt("A", 10), planetNumber: 12 }, // craters, cream
-  { square: squareAt("A", 14), planetNumber: 9 }, // moon, brown
+  { square: squareAt("D", 15), planetNumber: 9 }, // moon, brown
+  { square: squareAt("H", 15), planetNumber: 8 }, // ring, turquoise
+  { square: squareAt("L", 15), planetNumber: 11 }, // yellow-green
+  { square: squareAt("O", 14), planetNumber: 6 }, // companion, craters, brown
+  { square: squareAt("O", 10), planetNumber: 13 }, // cyan-pink
+  { square: squareAt("O", 6), planetNumber: 5 }, // ring, gold
+  { square: squareAt("O", 2), planetNumber: 4 }, // blue-green
+  { square: squareAt("L", 1), planetNumber: 2 }, // moons, purple
+  { square: squareAt("H", 1), planetNumber: 7 }, // ring, brown
+  { square: squareAt("D", 1), planetNumber: 10 }, // magenta
+  { square: squareAt("A", 2), planetNumber: 1 }, // moon, craters, tan
+  { square: squareAt("A", 6), planetNumber: 3 }, // brown
+  { square: squareAt("A", 10), planetNumber: 14 }, // ring, blue-teal
+  { square: squareAt("A", 14), planetNumber: 12 }, // craters, cream
 ];
 
 /**
