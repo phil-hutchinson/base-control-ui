@@ -421,7 +421,7 @@ green) and `npm run format:check` all pass.
 
 ## Step 4 — The arrangement: `planetPlacement.ts`
 
-Status: pending
+Status: committed
 
 Create `src/board/planetPlacement.ts`: the ring order (the fourteen bays as a
 closed walk around the board's perimeter) and the bay → planet arrangement,
@@ -444,6 +444,25 @@ every bay maps to a planet and every planet is used exactly once; a non-bay
 square maps to nothing; and, for each of the fourteen adjacent pairs around the
 ring (including the pair that closes it, A14 → D15), the two planets share no
 trait: not a ring, not a moon or companion, not craters, not a colour family.
+
+Notes: Created `src/board/planetPlacement.ts` with a single `RING_SLOTS` table
+— one row per bay in ring order, each carrying its square, the gallery number
+of the planet placed there, and a comment noting the traits that put it
+there — transcribed row-for-row from the _Decisions_ table. The ring is stated
+explicitly (not derived from `BAYS`), with a header comment spelling out both
+that it is a clockwise perimeter walk and the concrete divergence from `BAYS`
+at the bottom edge (`BAYS` gives D1, H1, L1; the ring gives L1, H1, D1).
+Exported `RING_ORDER` (the fourteen squares, in ring order) and
+`planetForSquare` (the lookup `BoardSquare`/`Planet` will use in Step 6,
+returning `undefined` for a non-bay square). Swapping two bays' planets is a
+one-line edit to the `planetNumber` field on each of the two affected rows in
+`RING_SLOTS`, which `planetPlacement.test.ts`'s spread test re-checks
+immediately. Added `planetPlacement.test.ts` covering exactly the invariants
+the step lists: `RING_ORDER` matches `BAYS` as a set, every bay maps to a
+planet, every planet is used exactly once, a non-bay square (`H8`) maps to
+nothing, and no two ring-adjacent planets (including the wrap from A14 to
+D15) share a trait. No deviation from the plan. `npm run typecheck`, `npm run
+lint`, `npm test` (810 tests, all green) and `npm run format:check` all pass.
 
 ## Step 5 — The ported artwork: `PlanetDefs.tsx`
 
