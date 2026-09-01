@@ -160,7 +160,7 @@ The port fixes exactly these, and nothing else:
   planet 4, the disabled ring-sheen `<circle>` in planet 14, and the disabled
   moon-sheen `<circle>` in planet 9. All deleted. None of it renders today, so
   deleting it cannot change how anything looks — **verify that claim by eye at
-  Step 8 rather than assuming it**.
+  Step 7 rather than assuming it**.
 - **`stop-color="777"`** in planet 7's ring gradient — a missing `#`, so the
   stop is an invalid colour today and falls back to black. Write it as an
   explicit `#000`. **This is settled, not a question for the gate**: the owner
@@ -290,7 +290,7 @@ identical.
 
 ## Step 1 — Get the artwork into the repository
 
-Status: pending
+Status: implemented
 
 Copy `.local/eg_planets.html` into this story's folder as
 `doc/plan/00000013-spaceship-bay-visual/eg_planets.html`, unmodified, and
@@ -300,7 +300,7 @@ This comes first and alone because right now fourteen hand-drawn planets exist
 only in a gitignored working directory. Every later step reads from this file;
 none of them should be the first thing standing between the artwork and being
 lost. Keeping the gallery permanently — not just the ported result — also gives
-Step 8 something to hold the board up against, for as long as the planets
+Step 7 something to hold the board up against, for as long as the planets
 exist.
 
 Change nothing in the file. It is a record of what was drawn, not a working
@@ -311,6 +311,17 @@ Depends on: nothing.
 Verification (manual): Open the committed copy in a browser and confirm it
 shows fourteen planets on a dark background. Run `git show --stat HEAD` and
 confirm the file is tracked.
+
+Notes: Copied verbatim — `diff --strip-trailing-cr` against the source reports
+no difference, and the file holds fourteen `<svg>` elements. The source was
+CRLF and git normalised it to LF on commit, so the committed copy matches
+line-for-line but not byte-for-byte; nothing about the markup changed.
+Deviation from the plan: the file also had to be added to `.prettierignore`. `format:check` runs `prettier --check .` over
+the whole repository, and `.local/` was the only thing keeping the gallery out
+of its way — moving the file into `doc/` brought it into scope, and Prettier
+reformats HTML. Letting it do so would have broken the byte-identity that makes
+the file usable as a fidelity reference at Step 7, which is the entire reason
+for keeping it. The ignore entry carries that reasoning as a comment.
 
 ## Step 2 — The bay tile loses its fill and its border
 

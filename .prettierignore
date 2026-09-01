@@ -6,3 +6,7 @@ dist/
 
 # Generated lockfile
 package-lock.json
+
+# Source artwork, kept byte-identical to what was drawn so the ported SVGs can
+# be checked against it. Reformatting it would defeat that.
+doc/plan/00000013-spaceship-bay-visual/eg_planets.html

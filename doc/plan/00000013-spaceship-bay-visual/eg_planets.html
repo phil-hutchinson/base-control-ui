@@ -1,0 +1,703 @@
+<!doctype html>
+<html>
+
+<body>
+  <h1>SVG Samples</h1>
+
+  <h2>Planets</h2>
+
+  <div style="background-color:#151c31">
+
+
+    <!-- planet 1 simple planet with basic moon -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <!-- planet -->
+        <radialGradient id="p1" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="tan" stop-opacity="1" />
+          <stop offset="100%" stop-color="cornflowerblue" stop-opacity="0.4" />
+        </radialGradient>
+
+        <!-- moon -->
+        <radialGradient id="p1moon-sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.55" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+        <filter id="p1moon-blur">
+          <feGaussianBlur stdDeviation="0.8" />
+        </filter>
+        <clipPath id="p1moon-clip">
+          <circle cx="20" cy="53" r="13"></circle>
+        </clipPath>
+        <radialGradient id="p1moon-sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.55" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+      </defs>
+
+      <!-- moon -->
+      <g filter="url(#p1moon-blur)" clip-path="url(#p1moon-clip)">
+        <circle cx="20" cy="53" r="15" fill="#E6E8BA" />
+        <g transform="translate(19 62)">
+          <circle cx="0" cy="0" r="4" fill="#B6A87A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(13 49)">
+          <circle cx="0" cy="0" r="3" fill="#B6A87A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(23 45)">
+          <circle cx="0" cy="0" r="3" fill="#B6A87A" stroke="#9A7909" />
+        </g>
+      </g>
+      <circle cx="20" cy="53" r="13" fill="url(#p1moon-sheen)" />
+
+      <!-- planet -->
+      <circle cx="50" cy="50" r="28" fill="black" />
+      <circle cx="50" cy="50" r="28" fill="url(#p1)" />
+    </svg>
+
+<!--
+    
+
+      <defs>
+      </defs>
+
+      <g filter="url(#p12blur)" clip-path="url(#p12clip)">
+        <circle cx="50" cy="50" r="36" fill="#E6E8BA" />
+        <g transform="translate(35 35) rotate(-45 0 0) scale(1.2 1)">
+          <circle cx="0" cy="0" r="6" fill="#C9D69A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(68 42) rotate(60 0 0) scale(1.1 1)">
+          <circle cx="0" cy="0" r="9" fill="#C6C88A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(41 43)">
+          <circle cx="0" cy="0" r="6" fill="#B6A87A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(51 25) scale(1.5 1)">
+          <circle cx="0" cy="0" r="3" fill="#DFDACF" stroke="#999" />
+        </g>
+        <g transform="translate(31 61) rotate(135 0 0) scale(1 1.5)">
+          <circle cx="0" cy="0" r="3" fill="#CECE9C" stroke="#AC9A0C" />
+        </g>
+        <g transform="translate(47 70) scale(1.3 1)">
+          <circle cx="0" cy="0" r="6" fill="#C9D69A" stroke="#9A7909" />
+        </g>
+      </g>  
+      <circle cx="50" cy="50" r="32" fill="url(#p12sheen)" />
+
+
+-->
+
+
+
+    <!-- planet 2 - simple with identical moons -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <radialGradient id="p2" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="peru" stop-opacity="1" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.3" />
+        </radialGradient>
+      </defs>
+
+      <circle cx="50" cy="50" r="25" fill="#151c31" />
+      <circle cx="50" cy="50" r="25" fill="url(#p2)" />
+      <circle cx="37" cy="51" r="8" fill="#151c31" />
+      <circle cx="37" cy="51" r="8" fill="url(#p2)" />
+      <circle cx="28" cy="84" r="6" fill="url(#p2)" />
+      <circle cx="87" cy="63" r="8" fill="url(#p2)" />
+      <circle cx="11" cy="57" r="7" fill="url(#p2)" />
+    </svg>
+
+    <!-- planet 3 Chocolate SaddleBrown BurlyWood Seashell -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <linearGradient id="p3" x1="0.2" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="BurlyWood" stop-opacity="1" />
+          <stop offset="0.15" stop-color="SaddleBrown" stop-opacity="1" />
+          <stop offset="0.25" stop-color="BurlyWood" stop-opacity="1" />
+          <stop offset="0.37" stop-color="SaddleBrown" stop-opacity="1" />
+          <stop offset="0.44" stop-color="Chocolate" stop-opacity="1" />
+          <stop offset="0.52" stop-color="SaddleBrown" stop-opacity="1" />
+          <stop offset="0.65" stop-color="BurlyWood" stop-opacity="1" />
+          <stop offset="0.72" stop-color="Chocolate" stop-opacity="1" />
+          <stop offset="0.84" stop-color="SaddleBrown" stop-opacity="1" />
+          <stop offset="0.95" stop-color="BurlyWood" stop-opacity="1" />
+          <stop offset="1" stop-color="SaddleBrown" stop-opacity="1" />
+        </linearGradient>
+        <radialGradient id="p3sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.75" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+      </defs>
+
+      <circle cx="50" cy="50" r="34" fill="url(#p3)" />
+      <circle cx="50" cy="50" r="34" fill="url(#p3sheen)" />
+    </svg>
+
+    <!-- planet 4 Water planet w/ ice caps -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <linearGradient id="p4" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFFFFF" stop-opacity="1" />
+          <stop offset="0.17" stop-color="#3E38E5" stop-opacity="1" />
+          <stop offset="0.5" stop-color="#372DF0" stop-opacity="1" />
+          <stop offset="0.83" stop-color="#3E38E5" stop-opacity="1" />
+          <stop offset="1" stop-color="#FFFFFF" stop-opacity="1" />
+        </linearGradient>
+        <filter id="p4blur">
+          <feGaussianBlur stdDeviation="1.55" />
+        </filter>
+        <radialGradient id="p4sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.75" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+        <clipPath id="p4clip">
+          <circle cx="50" cy="50" r="26"></circle>
+        </clipPath>
+      </defs>
+
+      <g filter="url(#p4blur)" clip-path="url(#p4clip)">
+        <circle cx="50" cy="50" r="28" fill="url(#p4)" />
+        <circle cx="51" cy="48" r="14" fill="#32954e" />
+        <circle cx="50" cy="62" r="5" fill="#31ae48" />
+        <circle cx="40" cy="46" r="7" fill="#4c9645" />
+        <polygon points="40,50 60,60 65,70 70,55 55,42" fill="#E4E4D3" opacity="0.88"></polygon>
+        <polyline points="36,36 48,32 57,34" fill="none" stroke="#BBB" stroke-width="3"></polyline>
+        <!--rect x="55" y="28" width="25" height="21" rx="3" ry="3" fill="#B1C2C3"></rect-->
+        <circle cx="41" cy="61" r="4" fill="#b7c9de" />
+        <circle cx="68" cy="38" r="5" fill="#d7d9de" />
+      </g>
+      <circle cx="50" cy="50" r="26" fill="url(#p4sheen)" />
+    </svg>
+
+    <!-- planet 5 Ringed Planet -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <!-- planet -->
+        <radialGradient id="p5" cx="40%" cy="40%" r="100%">
+          <stop offset="0%" stop-color="#755E00" />
+          <stop offset="100%" stop-color="#574600" />
+        </radialGradient>
+        <radialGradient id="p5sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.75" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+
+        <!-- ring -->
+        <radialGradient id="p5ring" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="45">
+          <stop offset="0.55" stop-color="#FAE18F" />
+          <stop offset="0.76" stop-color="#A38300" />
+          <stop offset="0.81" stop-color="#FCEDBB" />
+          <stop offset="0.9" stop-color="#F8D763" />
+          <stop offset="1" stop-color="#000" />
+        </radialGradient>
+
+        <!-- ring sheen centred on the 7 o'clock point -->
+        <radialGradient id="p5ringsheen" gradientUnits="userSpaceOnUse" gradientTransform="scale(1,5)" cx="-17.5"
+          cy="6.06" r="40">
+          <stop offset="0%" stop-color="white" stop-opacity="0.55" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+
+        <g id="p5ringWhole" transform="translate(50,50) scale(1,0.2)">
+          <circle r="35" fill="none" stroke="url(#p5ring)" stroke-width="20" />
+          <circle r="35" fill="none" stroke="url(#p5ringsheen)" stroke-width="20" />
+        </g>
+
+        <clipPath id="p5ringBack">
+          <rect x="0" y="0" width="100" height="50" />
+        </clipPath>
+        <clipPath id="p5ringFront">
+          <rect x="0" y="49.6" width="100" height="50.4" />
+        </clipPath>
+      </defs>
+
+      <use href="#p5ringWhole" clip-path="url(#p5ringBack)" />
+      <circle cx="50" cy="50" r="18" fill="url(#p5)" />
+      <circle cx="50" cy="50" r="18" fill="url(#p5sheen)" />
+      <use href="#p5ringWhole" clip-path="url(#p5ringFront)" />
+    </svg>
+
+
+    <!-- planet 6 Double Planet - Chocolate SaddleBrown BurlyWood Seashell + Crater Planet -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <!-- Rear Planet -->
+        <linearGradient id="p6" x1="0" y1="0" x2="16" y2="84" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="BurlyWood" stop-opacity="1"></stop>
+          <stop offset="15%" stop-color="SaddleBrown" stop-opacity="1"></stop>
+          <stop offset="25%" stop-color="BurlyWood" stop-opacity="1"></stop>
+          <stop offset="35%" stop-color="Chocolate" stop-opacity="1"></stop>
+          <stop offset="52%" stop-color="SaddleBrown" stop-opacity="1"></stop>
+          <stop offset="64%" stop-color="BurlyWood" stop-opacity="1"></stop>
+          <stop offset="72%" stop-color="Chocolate" stop-opacity="1"></stop>
+          <stop offset="85%" stop-color="BurlyWood" stop-opacity="1"></stop>
+          <stop offset="100%" stop-color="SaddleBrown" stop-opacity="1"></stop>
+        </linearGradient>
+        <radialGradient id="p6sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.75"></stop>
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1"></stop>
+        </radialGradient>
+        <!-- Front Planet -->
+        <radialGradient id="p6b-sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.55" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+        <filter id="p6b-blur">
+          <feGaussianBlur stdDeviation="2.1" />
+        </filter>
+        <clipPath id="p6b-clip">
+          <circle cx="62" cy="62" r="26"></circle>
+        </clipPath>
+      </defs>
+
+      <!-- Rear Planet -->
+      <g transform="scale(0.71)">
+        <circle cx="50" cy="50" r="34" fill="url(#p6)"></circle>
+        <circle cx="50" cy="50" r="34" fill="url(#p6sheen)"></circle>
+      </g>
+      <!-- Front Planet -->
+      <g filter="url(#p6b-blur)" clip-path="url(#p6b-clip)">
+        <circle cx="62" cy="62" r="28" fill="#E6D8BA" />
+        <g transform="translate(62 40) scale(1.5 1)">
+          <circle cx="0" cy="0" r="5" fill="#A39C99" stroke="#754617" />
+        </g>
+        <circle cx="54" cy="57" r="5" fill="#A39C99" stroke="#754617" />
+        <circle cx="55" cy="70" r="4" fill="#A39C99" stroke="#754617" />
+        <circle cx="51" cy="64" r="4" fill="#B0996F" stroke="#754617" />
+        <circle cx="68" cy="77" r="5" fill="#B0996F" stroke="#754617" />
+        <g transform="translate(81 53) rotate(40) scale(1.3 1)">
+          <circle cx="0" cy="0" r="7" fill="#A39C99" stroke="#754617" />
+        </g>
+        
+        <!--g transform="translate(35 35) rotate(-45 0 0) scale(1.2 1)">
+          <circle cx="0" cy="0" r="6" fill="#C9D69A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(68 42) rotate(60 0 0) scale(1.1 1)">
+          <circle cx="0" cy="0" r="9" fill="#C6C88A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(41 43)">
+          <circle cx="0" cy="0" r="6" fill="#B6A87A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(51 25) scale(1.5 1)">
+          <circle cx="0" cy="0" r="3" fill="#DFDACF" stroke="#999" />
+        </g>
+        <g transform="translate(31 61) rotate(135 0 0) scale(1 1.5)">
+          <circle cx="0" cy="0" r="3" fill="#CECE9C" stroke="#AC9A0C" />
+        </g>
+        <g transform="translate(47 70) scale(1.3 1)">
+          <circle cx="0" cy="0" r="6" fill="#C9D69A" stroke="#9A7909" />
+        </g-->
+      </g>  
+      <circle cx="62" cy="62" r="26" fill="url(#p6b-sheen)" />
+    </svg>
+
+
+
+
+    <!-- planet 7 Angled Ringed/Lined Planet  -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <!-- planet -->
+        <linearGradient id="p7" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#693F07" stop-opacity="1" />
+          <stop offset="0.25" stop-color="#C8A89F" stop-opacity="1" />
+          <stop offset="0.44" stop-color="#6F4001" stop-opacity="1" />
+          <stop offset="0.54" stop-color="#FEF6E7" stop-opacity="1" />
+          <stop offset="0.77" stop-color="#663914" stop-opacity="1" />
+          <stop offset="1" stop-color="#BBABBD" stop-opacity="1" />
+        </linearGradient>
+        <radialGradient id="p7sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.75" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+
+        <!-- ring -->
+        <radialGradient id="p7ring" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="47">
+          <stop offset="0.61" stop-color="#BBB" />
+          <stop offset="0.72" stop-color="#999" />
+          <stop offset="0.77" stop-color="#DDD" />
+          <stop offset="0.84" stop-color="#AAA" />
+          <stop offset="1" stop-color="777" />
+        </radialGradient>
+
+        <g id="p7ringWhole" transform="translate(50,50) scale(1,0.2)">
+          <circle r="39" fill="none" stroke="url(#p7ring)" stroke-width="16" />
+        </g>
+
+        <clipPath id="p7ringBack">
+          <rect x="0" y="0" width="100" height="50" />
+        </clipPath>
+        <clipPath id="p7ringFront">
+          <rect x="0" y="49.6" width="100" height="50.4" />
+        </clipPath>
+      </defs>
+
+      <g transform="rotate(-38 50 50)">
+        <use href="#p7ringWhole" clip-path="url(#p7ringBack)" />
+        <circle cx="50" cy="50" r="25" fill="url(#p7)" />
+        <circle cx="50" cy="50" r="25" fill="url(#p7sheen)" transform="rotate(38 50 50)" />
+        <use href="#p7ringWhole" clip-path="url(#p7ringFront)" />
+      </g>
+
+    </svg>
+
+    <!-- planet 8 Turquoise Vertical Ring  -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <!-- planet -->
+        <linearGradient id="p8" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#4BD8C7" stop-opacity="1" />
+          <stop offset="0.15" stop-color="#4BD8C2" stop-opacity="1" />
+          <stop offset="0.36" stop-color="#51DCC3" stop-opacity="1" />
+          <stop offset="0.51" stop-color="#40E0D0" stop-opacity="1" />
+          <stop offset="0.62" stop-color="#42E0D1" stop-opacity="1" />
+          <stop offset="0.80" stop-color="#46DDC9" stop-opacity="1" />
+          <stop offset="1" stop-color="#4CDCC1" stop-opacity="1" />
+        </linearGradient>
+        <radialGradient id="p8sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.75" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+
+        <!-- ring -->
+        <radialGradient id="p8ring" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="50">
+          <stop offset="0" stop-color="White" />
+          <stop offset="1" stop-color="White" />
+        </radialGradient>
+
+        <g id="p8ringWhole" transform="translate(50,50) scale(1,0.2)">
+          <circle r="42" fill="none" stroke="url(#p8ring)" stroke-width="8" />
+        </g>
+
+        <clipPath id="p8ringBack">
+          <rect x="0" y="0" width="100" height="50" />
+        </clipPath>
+        <clipPath id="p8ringFront">
+          <rect x="0" y="49.6" width="100" height="50.4" />
+        </clipPath>
+      </defs>
+
+      <g transform="rotate(-90 50 50)">
+        <use href="#p8ringWhole" clip-path="url(#p8ringBack)" opacity="0.95" />
+        <circle cx="50" cy="50" r="34" fill="url(#p8)" />
+        <circle cx="50" cy="50" r="34" fill="url(#p8sheen)" transform="rotate(90 50 50)" />
+        <use href="#p8ringWhole" clip-path="url(#p8ringFront)" opacity="0.95" />
+      </g>
+
+    </svg>
+
+
+    <!-- planet 9 SaddleBrown BurlyWood Seashell with earth-like moon -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <!-- planet -->
+        <linearGradient id="p9" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="BurlyWood" stop-opacity="1" />
+          <stop offset="0.08" stop-color="SeaShell" stop-opacity="1" />
+          <stop offset="0.22" stop-color="SaddleBrown" stop-opacity="1" />
+          <stop offset="0.34" stop-color="BurlyWood" stop-opacity="1" />
+          <stop offset="0.42" stop-color="SaddleBrown" stop-opacity="1" />
+          <stop offset="0.59" stop-color="BurlyWood" stop-opacity="1" />
+          <stop offset="0.69" stop-color="SeaShell" stop-opacity="1" />
+          <stop offset="0.74" stop-color="SaddleBrown" stop-opacity="1" />
+          <stop offset="0.80" stop-color="SeaShell" stop-opacity="1" />
+          <stop offset="0.90" stop-color="BurlyWood" stop-opacity="1" />
+          <stop offset="1" stop-color="SaddleBrown" stop-opacity="1" />
+        </linearGradient>
+        <radialGradient id="p9sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.75" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+
+        <!-- moon -->
+        <linearGradient id="p9moon" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1e10ef" stop-opacity="1" />
+          <stop offset="0.17" stop-color="#3E38E5" stop-opacity="1" />
+          <stop offset="0.5" stop-color="#372DF0" stop-opacity="1" />
+          <stop offset="0.8" stop-color="#4E48E8" stop-opacity="1" />
+          <stop offset="1" stop-color="#262ed9" stop-opacity="1" />
+        </linearGradient>
+        <filter id="p9moonblur">
+          <feGaussianBlur stdDeviation="1.6" />
+        </filter>
+        <radialGradient id="p9moonsheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.25" />
+          <stop offset="100%" stop-color="white" stop-opacity="0.1" />
+        </radialGradient>
+        <clipPath id="p9moonclip">
+          <circle cx="63" cy="55" r="18"></circle>
+        </clipPath>
+      </defs>
+
+      <!-- planet -->
+      <g transform="rotate(49 50 50)">
+        <circle cx="50" cy="50" r="41" fill="url(#p9)" />
+        <circle cx="50" cy="50" r="41" fill="url(#p9sheen)" transform="rotate(-49 50 50)" />
+      </g>
+      <!-- moon -->
+      <g
+        filter="url(#p9moonblur)"
+        clip-path="url(#p9moonclip)"
+        transform="rotate(-22,63,55)"
+      >
+        <circle cx="63" cy="55" r="19" fill="url(#p9moon)" />
+
+        <!-- Western Continent-->
+        <path d="
+          M 49 40
+          C 55 41, 54 48, 53 47
+          S 52 50 53 51
+          S 55 55 58 56
+          S 59 61 60 62
+          S 57 63 57 64
+          S 52 62 50 61
+          L 30 55
+          Z
+        " fill="#834B0C" />
+        <circle cx="46" cy="53" r="3" fill="#1D6627" />
+        <circle cx="54" cy="59" r="2" fill="#372DF0" />
+        <line x1="48" y1="54" x2="53" y2="53" stroke="#AAA" />
+        <line x1="47" y1="48" x2="55" y2="49" stroke="#444" />
+        <!-- NW clouds-->
+        <circle cx="54" cy="48" r="3" fill="#DDD" opacity="0.8 "/>
+        <circle cx="56" cy="47" r="2" fill="#DCC" opacity="0.8 "/>
+        <circle cx="58" cy="50" r="4" fill="#CBC" opacity="0.8 "/>
+        <circle cx="60" cy="47" r="2" fill="#DDD" opacity="0.8 "/>
+        <circle cx="62" cy="46" r="3" fill="#CDC" opacity="0.8 "/>
+
+        <!-- Eastern Continent-->
+        <path d="
+          M 85 45
+          C 69 47, 62 54, 66 59
+          S 65 66, 67 64
+          S 65 70, 68 71
+          S 68 74, 72 74
+          L 85 60
+          Z
+        " fill="#178314" />
+        <circle cx="72" cy="53" r="6" fill="#846616" />
+        <!-- Southern clouds-->
+        <circle cx="56" cy="64" r="3" fill="#DEC" opacity="0.8 "/>
+        <circle cx="59" cy="60" r="2" fill="#DCC" opacity="0.8 "/>
+        <circle cx="62" cy="65" r="5" fill="#CDC" opacity="0.8 "/>
+        <circle cx="69" cy="66" r="2" fill="#DDD" opacity="0.8 "/>
+        <circle cx="71" cy="63" r="2" fill="#CDD" opacity="0.8 "/>
+        <circle cx="72" cy="69" r="2" fill="#CDD" opacity="0.8 "/>
+      </g>
+      <!--circle cx="63" cy="55" r="19" fill="url(#p9moonsheen)" -->
+    </svg>
+
+
+    <!-- planet 10-->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <radialGradient id="p10sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.75"></stop>
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1"></stop>
+        </radialGradient>
+        <filter id="p10blur">
+          <feGaussianBlur stdDeviation="2.65" />
+        </filter>
+        <clipPath id="p10clip">
+          <circle cx="50" cy="50" r="33"></circle>
+        </clipPath>
+      </defs>
+
+      <g filter="url(#p10blur)" clip-path="url(#p10clip)">
+        <circle cx="50" cy="50" r="35" fill="#DB25DB" />
+        <line x1="20" y1="65" x2="55" y2="58" stroke="#f2d8f3" stroke-width="3" stroke-linecap="round" />
+        <line x1="25" y1="71" x2="55" y2="65" stroke="#f2d8f3" stroke-width="3" stroke-linecap="round" />
+        <circle cx="58" cy="63" r="6" stroke="#f2d8f3" stroke-width="2" fill-opacity="0" />
+        <line x1="64" y1="60" x2="84" y2="56" stroke="#f2d8f3" stroke-width="5" stroke-linecap="round" />
+      </g>
+      <circle cx="50" cy="50" r="33" fill="url(#p10sheen)" />
+    </svg>
+
+
+    <!-- planet 11 Yellow Orange Green -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <linearGradient id="p11" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#DDB32C" stop-opacity="1" />
+          <stop offset="0.19" stop-color="#DDB32C" stop-opacity="1" />
+          <stop offset="0.19" stop-color="#C9CE3B" stop-opacity="1" />
+          <stop offset="0.28" stop-color="#EA9D1F" stop-opacity="1" />
+          <stop offset="0.31" stop-color="#989425" stop-opacity="1" />
+          <stop offset="0.35" stop-color="#B3BE4B" stop-opacity="1" />
+          <stop offset="0.38" stop-color="#B3BE4B" stop-opacity="1" />
+          <stop offset="0.44" stop-color="#F2BD2C" stop-opacity="1" />
+          <stop offset="0.57" stop-color="#E0D429" stop-opacity="1" />
+          <stop offset="0.69" stop-color="#E3B126" stop-opacity="1" />
+          <stop offset="0.76" stop-color="#DB8821" stop-opacity="1" />
+          <stop offset="0.79" stop-color="#C29029" stop-opacity="1" />
+          <stop offset="0.86" stop-color="#B2D435" stop-opacity="1" />
+          <stop offset="1" stop-color="#E5AB24" stop-opacity="1" />
+        </linearGradient>
+        <radialGradient id="p11sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.55" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+        <filter id="p11blur">
+          <feGaussianBlur stdDeviation="1" />
+        </filter>
+        <clipPath id="p11clip">
+          <circle cx="50" cy="50" r="34"></circle>
+        </clipPath>
+      </defs>
+
+      <g transform="rotate(-7,50,50)" filter="url(#p11blur)" clip-path="url(#p11clip)">
+        <circle cx="50" cy="50" r="34" fill="url(#p11)" />
+        <circle cx="50" cy="50" r="34" fill="url(#p11sheen)" transform="rotate(7,50,50)" />
+      </g>  
+    </svg>
+
+
+    <!-- planet 12 Crater Planet -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <radialGradient id="p12sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.55" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+        <filter id="p12blur">
+          <feGaussianBlur stdDeviation="2.1" />
+        </filter>
+        <clipPath id="p12clip">
+          <circle cx="50" cy="50" r="32"></circle>
+        </clipPath>
+      </defs>
+
+      <g filter="url(#p12blur)" clip-path="url(#p12clip)">
+        <circle cx="50" cy="50" r="36" fill="#E6E8BA" />
+        <g transform="translate(35 35) rotate(-45 0 0) scale(1.2 1)">
+          <circle cx="0" cy="0" r="6" fill="#C9D69A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(68 42) rotate(60 0 0) scale(1.1 1)">
+          <circle cx="0" cy="0" r="9" fill="#C6C88A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(41 43)">
+          <circle cx="0" cy="0" r="6" fill="#B6A87A" stroke="#9A7909" />
+        </g>
+        <g transform="translate(51 25) scale(1.5 1)">
+          <circle cx="0" cy="0" r="3" fill="#DFDACF" stroke="#999" />
+        </g>
+        <g transform="translate(31 61) rotate(135 0 0) scale(1 1.5)">
+          <circle cx="0" cy="0" r="3" fill="#CECE9C" stroke="#AC9A0C" />
+        </g>
+        <g transform="translate(47 70) scale(1.3 1)">
+          <circle cx="0" cy="0" r="6" fill="#C9D69A" stroke="#9A7909" />
+        </g>
+      </g>  
+      <circle cx="50" cy="50" r="32" fill="url(#p12sheen)" />
+    </svg>
+
+
+    <!-- planet 13 Wavy Planet - 3 stacked wave bands, each sliding
+         pink -> magenta -> bluey-purple from trough to crest -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <!-- one band's gradient: pink at the bottom, bluey-purple at the top;
+             objectBoundingBox units so it re-fits each band -->
+        <linearGradient id="p13wave1" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#16d9e9" />
+          <stop offset="25%" stop-color="#2eaad1" />
+          <stop offset="50%" stop-color="#4f84b0" />
+          <stop offset="75%" stop-color="#874eb1" />
+          <stop offset="100%" stop-color="#5300df" />
+        </linearGradient>
+        <linearGradient id="p13wave2" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#e1e0f6" />
+          <stop offset="25%" stop-color="#bcc2e5" />
+          <stop offset="50%" stop-color="#8eafd0" />
+          <stop offset="75%" stop-color="#45a3ba" />
+          <stop offset="100%" stop-color="#2db0d2" />
+        </linearGradient>
+        <linearGradient id="p13wave3" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#ececeb" />
+          <stop offset="25%" stop-color="#cebbcb" />
+          <stop offset="50%" stop-color="#b79bb2" />
+          <stop offset="75%" stop-color="#c47ebb" />
+          <stop offset="100%" stop-color="#b763ad" />
+        </linearGradient>
+        <radialGradient id="p13sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.55" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+        <filter id="p13blur">
+          <feGaussianBlur stdDeviation="3.75" />
+        </filter>
+        <clipPath id="p13clip">
+          <circle cx="50" cy="50" r="43" />
+        </clipPath>
+      </defs>
+
+      <g filter="url(#p13blur)" clip-path="url(#p13clip)">
+        <!-- band 1 (bottom) - edge B: ~2 lazy crests/troughs, uneven spacing + depth -->
+        <path d="M-10,64 Q0,51 8,62 Q17,75 30,66 Q43,48 50,63 Q59,78 72,66 Q84,54 92,64 Q101,76 110,64
+                 L110,96 L-10,96 Z" fill="url(#p13wave1)" />
+        <!-- band 2 (middle) - top follows edge A (busy), bottom follows edge B (lazy) -->
+        <path d="M-10,36 Q-2,27 4,34 Q11,45 16,38 Q21,26 30,35 Q39,43 44,37 Q50,30 58,34 Q67,47 72,38 Q79,29 90,36 Q100,44 110,36
+                 L110,64 Q101,76 92,64 Q84,54 72,66 Q59,78 50,63 Q43,48 30,66 Q17,75 8,62 Q0,51 -10,64 Z"
+          fill="url(#p13wave2)" />
+        <!-- band 3 (top) - edge A: ~3 crests/troughs, jittered spacing + amplitude -->
+        <path d="M-10,6 L110,6 L110,36
+                 Q100,44 90,36 Q79,29 72,38 Q67,47 58,34 Q50,30 44,37 Q39,43 30,35 Q21,26 16,38 Q11,45 4,34 Q-2,27 -10,36 Z"
+          fill="url(#p13wave3)" />
+      </g>
+      <circle cx="50" cy="50" r="43" fill="url(#p13sheen)" />
+    </svg>
+
+    <!-- planet 14 Ringed Planet - Planet, blue rings -->
+    <svg width="60" height="60" viewBox="0 0 100 100">
+      <defs>
+        <!-- planet -->
+        <radialGradient id="p14sheen" cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stop-color="white" stop-opacity="0.75" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+
+        <!-- ring -->
+        <radialGradient id="p14ring" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="48">
+          <stop offset="0.45" stop-color="#5EB0E0" />
+          <stop offset="0.60" stop-color="#59E3CE" />
+          <stop offset="0.68" stop-color="#1A4996" />
+          <stop offset="0.79" stop-color="#4A7499" />
+          <stop offset="0.90" stop-color="#7DF0EA" />
+          <stop offset="1" stop-color="#79E9ED" />
+        </radialGradient>
+
+        <!-- ring sheen centred on the 7 o'clock point -->
+        <radialGradient id="p14ringsheen" gradientUnits="userSpaceOnUse" gradientTransform="scale(1,5)" cx="-17.5"
+          cy="6.06" r="40">
+          <stop offset="0%" stop-color="white" stop-opacity="0.55" />
+          <stop offset="100%" stop-color="rebeccapurple" stop-opacity="0.1" />
+        </radialGradient>
+
+        <g id="p14ringWhole" transform="translate(50,50) scale(1,0.2)">
+          <circle r="36" fill="none" stroke="url(#p14ring)" stroke-width="24" />
+          <!--circle r="36" fill="none" stroke="url(#p14ringsheen)" stroke-width="24" /-->
+        </g>
+
+        <clipPath id="p14ringBack">
+          <rect x="0" y="0" width="100" height="50" />
+        </clipPath>
+        <clipPath id="p14ringFront">
+          <rect x="0" y="49.6" width="100" height="50.4" />
+        </clipPath>
+      </defs>
+
+      <g transform="rotate(18, 50, 50)">
+        <use href="#p14ringWhole" clip-path="url(#p14ringBack)" />
+        <circle cx="50" cy="50" r="15" fill="#A1962F" />
+        <circle cx="50" cy="50" r="15" fill="url(#p14sheen)" />
+        <use href="#p14ringWhole" clip-path="url(#p14ringFront)" />
+      </g>
+    </svg>
+
+
+
+  </div>
+
+</body>
+
+</html>
