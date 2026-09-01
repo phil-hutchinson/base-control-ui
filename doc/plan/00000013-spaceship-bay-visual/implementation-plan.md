@@ -290,7 +290,7 @@ identical.
 
 ## Step 1 — Get the artwork into the repository
 
-Status: implemented
+Status: committed
 
 Copy `.local/eg_planets.html` into this story's folder as
 `doc/plan/00000013-spaceship-bay-visual/eg_planets.html`, unmodified, and
