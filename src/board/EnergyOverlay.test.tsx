@@ -215,6 +215,7 @@ describe("EnergyOverlay", () => {
           type: "ply-passed",
           side: "red",
           sideToMove: "green",
+          reason: "no-legal-action",
           endOfTurn: [passPenalty],
         },
       ],
@@ -260,6 +261,7 @@ describe("EnergyOverlay", () => {
           type: "ply-passed",
           side: "red",
           sideToMove: "green",
+          reason: "no-legal-action",
           endOfTurn: [passCollection],
         },
       ],
@@ -282,6 +284,7 @@ describe("EnergyOverlay", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [
         {
           type: "energy-collected",

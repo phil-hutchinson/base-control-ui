@@ -38,11 +38,15 @@ function otherSide(side: Side): Side {
   return side === "green" ? "red" : "green";
 }
 
-/** The side to move passed because it had no legal move at all (rules.md §5). */
+/** Why the side to move's ply passed instead of taking an action (rules.md §5). */
+export type PassReason = "no-legal-action" | "out-of-time";
+
+/** The side to move's ply passed instead of an action being taken (rules.md §5). */
 export interface PassEffect {
   readonly type: "ply-passed";
   readonly side: Side;
   readonly sideToMove: Side;
+  readonly reason: PassReason;
   readonly endOfTurn: readonly EndOfTurnEffect[];
 }
 
@@ -130,14 +134,45 @@ export interface RefusedAttack {
 export type ApplyAttackResult = AppliedAttack | RefusedAttack;
 
 /**
+ * Passes the side to move's ply for `reason`: the end-of-turn sequence runs
+ * for it (a passed ply is still a turn), the acted-this-ply marks clear, the
+ * action count resets to `ACTIONS_PER_PLY`, the ply number advances and the
+ * other side becomes the side to move (rules.md §5, §8.6). Shared by
+ * `applyPassGuard` and `applyOutOfTimePass`, which differ only in why the
+ * pass happens.
+ */
+function passPly(
+  state: GameState,
+  reason: PassReason,
+): { readonly state: GameState; readonly effect: PassEffect } {
+  const side = state.sideToMove;
+  const sideToMove = otherSide(side);
+  const endOfTurn = runEndOfTurn(state);
+  const passedState: GameState = {
+    ...endOfTurn.state,
+    plyNumber: endOfTurn.state.plyNumber + 1,
+    sideToMove,
+    actionsRemaining: ACTIONS_PER_PLY,
+    actedThisPly: [],
+  };
+
+  return {
+    state: passedState,
+    effect: {
+      type: "ply-passed",
+      side,
+      sideToMove,
+      reason,
+      endOfTurn: endOfTurn.effects,
+    },
+  };
+}
+
+/**
  * If the side to move has no legal action at all — no legal move with any
- * eligible ship and no legal attack target with any ship — its ply passes:
- * the end-of-turn sequence runs for it (a passed ply is still a turn), the
- * acted-this-ply marks clear, the action count resets to
- * `ACTIONS_PER_PLY`, the ply number advances and the other side becomes the
- * side to move (rules.md §5, §8.6). Only the side to move is checked — the
- * side passed to is not — so this makes exactly one pass, never a second one
- * back.
+ * eligible ship and no legal attack target with any ship — its ply passes
+ * (rules.md §5, §8.6). Only the side to move is checked — the side passed to
+ * is not — so this makes exactly one pass, never a second one back.
  *
  * Once the game is over, every action is refused (rules.md §9), which is
  * exactly the condition this guard fires on. Checked first, ahead of
@@ -158,26 +193,40 @@ export function applyPassGuard(state: GameState): {
     return { state, effect: undefined };
   }
 
-  const side = state.sideToMove;
-  const sideToMove = otherSide(side);
-  const endOfTurn = runEndOfTurn(state);
-  const passedState: GameState = {
-    ...endOfTurn.state,
-    plyNumber: endOfTurn.state.plyNumber + 1,
-    sideToMove,
-    actionsRemaining: ACTIONS_PER_PLY,
-    actedThisPly: [],
-  };
+  return passPly(state, "no-legal-action");
+}
 
-  return {
-    state: passedState,
-    effect: {
-      type: "ply-passed",
-      side,
-      sideToMove,
-      endOfTurn: endOfTurn.effects,
-    },
-  };
+/**
+ * The side to move passes because its clock has run out (rules.md §5, §10).
+ * Refused — returning `state` untouched with no effects — unless the game is
+ * not over **and** the side to move is genuinely out of time
+ * (`state.outOfTime`). That refusal is deliberate and load-bearing: without
+ * it, this would quietly become a pass button a player could use with time
+ * still on the clock, which is out of scope.
+ *
+ * Otherwise the ply passes with reason "out of time", and the result is run
+ * through `applyPassGuard` exactly as `applyMove` and `applyAttack` run their
+ * own tail, so the side passed to never sits with no legal action. The
+ * returned effects are therefore in order: the out-of-time pass, and — if the
+ * guard fired — the no-legal-action pass that followed it.
+ */
+export function applyOutOfTimePass(state: GameState): {
+  readonly state: GameState;
+  readonly effects: readonly PassEffect[];
+} {
+  if (isGameOver(state) || !state.outOfTime[state.sideToMove]) {
+    return { state, effects: [] };
+  }
+
+  const { state: passedState, effect } = passPly(state, "out-of-time");
+  const effects: PassEffect[] = [effect];
+
+  const { state: settled, effect: followingPass } = applyPassGuard(passedState);
+  if (followingPass !== undefined) {
+    effects.push(followingPass);
+  }
+
+  return { state: settled, effects };
 }
 
 /**

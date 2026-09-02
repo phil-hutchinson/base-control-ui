@@ -500,6 +500,7 @@ describe("createSession", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      reason: "no-legal-action",
       endOfTurn: [],
     });
   });

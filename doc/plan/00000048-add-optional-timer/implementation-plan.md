@@ -716,7 +716,27 @@ edited, stop: something has consumed a seed step that should not have.
 
 ## Step 6 — The out-of-time pass in `ply.ts`
 
-Status: pending
+Status: committed
+
+Notes: `PassEffect` gained `reason: PassReason` (`"no-legal-action" |
+"out-of-time"`); the shared pass body was extracted into a private `passPly`
+helper taking the reason, `applyPassGuard` now calls it with
+`"no-legal-action"`, and exported `applyOutOfTimePass` calls it with
+`"out-of-time"` after checking the game is not over and the side to move is
+out of time, then runs `applyPassGuard` on the result and returns both
+effects in order. Added the plan's five `ply.test.ts` cases (full end-of-turn
+sequence with a genuine legal action still available; refused with time
+left; refused once the game is over; both effects in order) plus an
+`outOfTime` option on the file's `buildState` helper to set it up. One
+deviation beyond the plan's explicit file list: making `reason` required
+broke every other hand-built `PassEffect` literal in the repo
+(`src/board/announcements.test.ts`, `src/board/EnergyOverlay.test.tsx`,
+`src/game/session.test.ts`), which construct pre-existing "no legal action"
+fixtures — added `reason: "no-legal-action"` to each, mechanically, with no
+change to any assertion's wording, since those files' own wording/behaviour
+work is assigned to Steps 7 and 8. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (50 files, 856 tests) all pass, with
+`fullGame.test.ts` and `seededReplay.test.ts` unmoved.
 
 Implement §5's second reason for a turn to pass, reusing the machinery that is
 already there (**D5**, **D6**).

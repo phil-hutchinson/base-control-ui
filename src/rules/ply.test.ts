@@ -13,6 +13,7 @@ import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
   applyAttack,
   applyMove,
+  applyOutOfTimePass,
   applyPassGuard,
   assertFightInvariants,
 } from "./ply";
@@ -55,6 +56,7 @@ function buildState(config: {
   plyNumber?: number;
   lengthInRounds?: number;
   energy?: { green: number; red: number };
+  outOfTime?: { green: boolean; red: boolean };
 }): GameState {
   return {
     ships: config.ships,
@@ -66,7 +68,7 @@ function buildState(config: {
     randomSeed: 1,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
-    outOfTime: { green: false, red: false },
+    outOfTime: config.outOfTime ?? { green: false, red: false },
   };
 }
 
@@ -1050,6 +1052,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      reason: "no-legal-action",
       endOfTurn: [],
     });
   });
@@ -1080,6 +1083,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      reason: "no-legal-action",
       endOfTurn: [
         {
           type: "power-gained",
@@ -1123,6 +1127,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      reason: "no-legal-action",
       endOfTurn: [
         {
           type: "power-lost",
@@ -1162,6 +1167,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      reason: "no-legal-action",
       endOfTurn: [],
     });
   });
@@ -1197,6 +1203,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      reason: "no-legal-action",
       endOfTurn: [
         {
           type: "power-lost",
@@ -1266,6 +1273,115 @@ describe("applyPassGuard", () => {
     const guarded = applyPassGuard(result.state);
     expect(guarded.state).toEqual(result.state);
     expect(guarded.effect).toBeUndefined();
+  });
+});
+
+describe("applyOutOfTimePass", () => {
+  it("passes the side to move's ply, running the end-of-turn sequence in full, when it is out of time (rules.md §5, §10)", () => {
+    // green-1 sits on K5, a charged site, with plenty of legal moves and no
+    // ship having acted this ply, which proves the pass fires purely
+    // because green is out of time, not because it had nothing else to do.
+    const state = buildState({
+      ships: [ship("green-1", "green", "K5", 1), ship("red-1", "red", "A1")],
+      siteStates: { K5: "charged" },
+      outOfTime: { green: true, red: false },
+    });
+
+    const result = applyOutOfTimePass(state);
+
+    expect(result.state.sideToMove).toBe("red");
+    expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
+    expect(result.state.actedThisPly).toEqual([]);
+    expect(result.state.plyNumber).toBe(2);
+    // The pass still runs the end-of-turn sequence in full: green-1's power
+    // drains sitting off its bay and its side collects the node's energy
+    // (§8.6 step 1, §8.2).
+    expect(result.effects).toEqual([
+      {
+        type: "ply-passed",
+        side: "green",
+        sideToMove: "red",
+        reason: "out-of-time",
+        endOfTurn: [
+          {
+            type: "power-lost",
+            shipId: "green-1",
+            side: "green",
+            square: squareFromName("K5"),
+            power: 0,
+          },
+          {
+            type: "energy-collected",
+            side: "green",
+            amount: 1,
+            newTotal: 1,
+            squares: [squareFromName("K5")],
+          },
+        ],
+      },
+    ]);
+    const passedShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(passedShip?.power).toBe(0);
+  });
+
+  it("is refused, returning the state and no effects, when the side to move still has time", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "A2", 1), ship("red-1", "red", "A1")],
+      outOfTime: { green: false, red: false },
+    });
+
+    const result = applyOutOfTimePass(state);
+
+    expect(result.state).toBe(state);
+    expect(result.effects).toEqual([]);
+  });
+
+  it("is refused when the game is already over, even though the side to move is out of time", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "A2", 1), ship("red-1", "red", "A1")],
+      plyNumber: 61,
+      outOfTime: { green: true, red: false },
+    });
+
+    const result = applyOutOfTimePass(state);
+
+    expect(result.state).toBe(state);
+    expect(result.effects).toEqual([]);
+  });
+
+  it("reports both effects, in order, when the pass leaves the other side with no legal action", () => {
+    // red-1 is boxed into its A2 bay by green-1 (A1), green-2 (A3) and
+    // green-3 (B2), exactly the "no legal action at all" shape used above,
+    // but with the sides swapped and green to move and out of time: green's
+    // out-of-time pass hands the ply to red, who then has nothing to do at
+    // all and passes immediately behind it.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "A1"),
+        ship("green-2", "green", "A3"),
+        ship("green-3", "green", "B2"),
+        ship("red-1", "red", "A2", 0),
+      ],
+      outOfTime: { green: true, red: false },
+    });
+
+    const result = applyOutOfTimePass(state);
+
+    expect(result.state.sideToMove).toBe("green");
+    expect(result.state.plyNumber).toBe(3);
+    expect(result.effects).toHaveLength(2);
+    expect(result.effects[0]).toMatchObject({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      reason: "out-of-time",
+    });
+    expect(result.effects[1]).toMatchObject({
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      reason: "no-legal-action",
+    });
   });
 });
 

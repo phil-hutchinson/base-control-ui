@@ -203,7 +203,13 @@ describe("announcementFor", () => {
       to: squareAt("H", 8),
       effects: [
         { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
-        { type: "ply-passed", side: "red", sideToMove: "green", endOfTurn: [] },
+        {
+          type: "ply-passed",
+          side: "red",
+          sideToMove: "green",
+          reason: "no-legal-action",
+          endOfTurn: [],
+        },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
@@ -217,6 +223,7 @@ describe("announcementFor", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [],
     };
     expect(announcementFor(event)).toBe(
@@ -752,7 +759,13 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [{ type: "node-ran-out", square: squareAt("K", 5) }],
         },
-        { type: "ply-passed", side: "red", sideToMove: "green", endOfTurn: [] },
+        {
+          type: "ply-passed",
+          side: "red",
+          sideToMove: "green",
+          reason: "no-legal-action",
+          endOfTurn: [],
+        },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
@@ -767,6 +780,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [
         {
           type: "power-lost",
@@ -911,6 +925,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [collected],
     };
     expect(announcementFor(event)).toBe(
@@ -1076,6 +1091,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [
         {
           type: "energy-penalty",
@@ -1211,6 +1227,7 @@ describe("announcementForSession", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [],
     };
     const session: Session = {
@@ -1502,7 +1519,13 @@ describe("announcementFor — combat (rules.md §7)", () => {
       effects: [
         fight,
         { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
-        { type: "ply-passed", side: "red", sideToMove: "green", endOfTurn: [] },
+        {
+          type: "ply-passed",
+          side: "red",
+          sideToMove: "green",
+          reason: "no-legal-action",
+          endOfTurn: [],
+        },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
