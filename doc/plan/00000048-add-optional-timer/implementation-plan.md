@@ -646,7 +646,27 @@ start screen's look is checked by hand in Step 12, not here.
 
 ## Step 5 — `outOfTime` on the game state, and the clock's ending
 
-Status: pending
+Status: committed
+
+Notes: Added `GameState.outOfTime` (a readonly `Record<Side, boolean>`),
+`startingGameState` setting both false with no change to the deal or the
+seed, and `markOutOfTime(state, side)` (idempotent, returns the same object
+when already set) in `src/rules/gameState.ts`. `isGameOver` in
+`src/rules/gameLength.ts` now also returns true once both sides carry the
+flag, with its comment updated to explain why this is the one place the
+clock's ending needs stating. Swept every hand-built `GameState` literal
+(21 files: 18 test files plus the two rules source files, matching the
+plan's "about fifteen") to add `outOfTime: { green: false, red: false }`;
+files that build states by spreading `startingGameState(...)` or another
+existing state needed no change. Added the required `gameLength.test.ts`
+cases (mid-game with neither/one/both side out of time; `gameResult` on a
+both-out-of-time state, including the draw) and, beyond the plan's explicit
+list, a few `gameState.test.ts` cases for `startingGameState`'s new default
+and for `markOutOfTime` itself (its own field deserved direct coverage
+alongside the sweep). `seededReplay.test.ts` needed no edit at all and its
+expectations did not move; `fullGame.test.ts` gained only the `outOfTime`
+insertions, no expectation changes. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (50 files, 852 tests) all pass.
 
 Implement §9's new ending and the fact §5 and §10 depend on (**D4**).
 

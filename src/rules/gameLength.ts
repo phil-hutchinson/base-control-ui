@@ -43,13 +43,22 @@ export function roundForPly(plyNumber: number): number {
 }
 
 /**
- * Whether the given state's game has ended: `plyNumber` has run past the
- * plies its own `lengthInRounds` allows. Judged against the state's own
+ * Whether the given state's game has ended (rules.md §9): `plyNumber` has
+ * run past the plies its own `lengthInRounds` allows, **or** both sides
+ * have run out of time (rules.md §10). Judged against the state's own
  * length, never against `DEFAULT_GAME_LENGTH_ROUNDS` — a state started at a
  * different length ends at a different ply.
+ *
+ * This is the one place the clock's ending needs stating: everything else
+ * built on `isGameOver` — the session reducer's refusal of an activation,
+ * `App`'s swap to the game-over panel, `applyPassGuard`'s first check, and
+ * `gameResult` — then follows for free.
  */
 export function isGameOver(state: GameState): boolean {
-  return state.plyNumber > pliesForGameLength(state.lengthInRounds);
+  return (
+    state.plyNumber > pliesForGameLength(state.lengthInRounds) ||
+    (state.outOfTime.green && state.outOfTime.red)
+  );
 }
 
 /**

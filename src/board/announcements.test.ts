@@ -1137,6 +1137,7 @@ describe("announcementForSession", () => {
       randomSeed: 1,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
+      outOfTime: { green: false, red: false },
     };
   }
 
@@ -1526,6 +1527,7 @@ describe("turnIndicatorText", () => {
         randomSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        outOfTime: { green: false, red: false },
       }),
     ).toBe("Green to play");
   });
@@ -1542,6 +1544,7 @@ describe("turnIndicatorText", () => {
         randomSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        outOfTime: { green: false, red: false },
       }),
     ).toBe("Red to play");
   });
@@ -1558,6 +1561,7 @@ describe("turnIndicatorText", () => {
         randomSeed: 1,
         energy: { green: 4, red: 4 },
         lengthInRounds: 3,
+        outOfTime: { green: false, red: false },
       }),
     ).toBe("Game over");
   });
@@ -1597,6 +1601,7 @@ describe("HUD wording", () => {
       randomSeed: 1,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
+      outOfTime: { green: false, red: false },
     };
   }
 

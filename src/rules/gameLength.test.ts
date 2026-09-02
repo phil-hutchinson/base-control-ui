@@ -97,6 +97,28 @@ describe("isGameOver", () => {
     const state = { ...startingGameState(SEED, 3), plyNumber: 7 };
     expect(isGameOver(state)).toBe(true);
   });
+
+  it("is not over, mid-game, when neither side is out of time", () => {
+    const state = startingGameState(SEED);
+    expect(isGameOver(state)).toBe(false);
+  });
+
+  it("is not over, mid-game, when only one side is out of time", () => {
+    const state = {
+      ...startingGameState(SEED),
+      outOfTime: { green: true, red: false },
+    };
+    expect(isGameOver(state)).toBe(false);
+  });
+
+  it("is over, at whatever ply, once both sides are out of time", () => {
+    const state = {
+      ...startingGameState(SEED),
+      plyNumber: 8,
+      outOfTime: { green: true, red: true },
+    };
+    expect(isGameOver(state)).toBe(true);
+  });
 });
 
 describe("currentRound", () => {
@@ -160,5 +182,32 @@ describe("gameResult", () => {
   it("throws when the game is not over", () => {
     const state = { ...startingGameState(SEED), plyNumber: 60 };
     expect(() => gameResult(state)).toThrow(RangeError);
+  });
+
+  it("decides on energy when the game ended because both sides ran out of time", () => {
+    const state = {
+      ...startingGameState(SEED),
+      plyNumber: 8,
+      outOfTime: { green: true, red: true },
+      energy: { green: 10, red: 4 },
+    };
+    expect(gameResult(state)).toEqual({
+      outcome: "green-won",
+      winner: "green",
+      energy: { green: 10, red: 4 },
+    });
+  });
+
+  it("is a draw when both sides ran out of time with equal energy", () => {
+    const state = {
+      ...startingGameState(SEED),
+      plyNumber: 8,
+      outOfTime: { green: true, red: true },
+      energy: { green: 7, red: 7 },
+    };
+    expect(gameResult(state)).toEqual({
+      outcome: "draw",
+      energy: { green: 7, red: 7 },
+    });
   });
 });
