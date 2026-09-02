@@ -199,6 +199,7 @@ function buildState(config: {
     randomSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
+    outOfTime: { green: false, red: false },
   };
 }
 

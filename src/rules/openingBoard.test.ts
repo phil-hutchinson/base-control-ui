@@ -113,6 +113,7 @@ describe("the first charge draw of a game favours the sites dealt the most press
         randomSeed: dealtSeed,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        outOfTime: { green: false, red: false },
       };
 
       const activeNames = SITES.map(squareName).filter(
@@ -159,6 +160,7 @@ function singleChargedNodeState(seed: number, level: number): GameState {
     randomSeed: seed,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    outOfTime: { green: false, red: false },
   };
 }
 

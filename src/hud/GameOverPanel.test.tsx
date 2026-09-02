@@ -28,6 +28,7 @@ function finishedState(overrides: Partial<GameState> = {}): GameState {
     randomSeed: 1,
     energy: { green: 4, red: 7 },
     lengthInRounds: 1,
+    outOfTime: { green: false, red: false },
     ...overrides,
   };
 }
@@ -184,6 +185,7 @@ describe("GameOverPanel", () => {
         randomSeed: 1,
         energy: { green: 4, red: 7 },
         lengthInRounds: 1,
+        outOfTime: { green: false, red: false },
       };
     }
 
@@ -214,6 +216,7 @@ describe("GameOverPanel", () => {
         randomSeed: 1,
         energy: { green: 4, red: 6 },
         lengthInRounds: 1,
+        outOfTime: { green: false, red: false },
       };
     }
 

@@ -1,4 +1,4 @@
-// The app's front door: which screen is showing, the two options chosen on
+// The app's front door: which screen is showing, the three options chosen on
 // the start screen, and the two actions that move between screens. Lives
 // outside App.tsx so PLAY's wiring and the return to start are a real unit,
 // exercised on their own rather than only through the whole app.
@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { freshSeed } from "./game/seed";
 import type { SessionIntent } from "./game/session";
+import { type ClockSetting, DEFAULT_CLOCK_SETTING } from "./rules/clock";
 import { DEFAULT_FLEET_SIZE, type FleetSize } from "./rules/fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./rules/gameLength";
 
@@ -17,19 +18,23 @@ export interface AppScreen {
   readonly screen: Screen;
   readonly fleetSize: FleetSize;
   readonly lengthInRounds: number;
+  readonly clockSetting: ClockSetting;
   readonly setFleetSize: (fleetSize: FleetSize) => void;
   readonly setLengthInRounds: (lengthInRounds: number) => void;
+  readonly setClockSetting: (clockSetting: ClockSetting) => void;
   readonly handlePlay: () => void;
   readonly handleReturnToStart: () => void;
 }
 
 /**
- * Holds which screen is showing and the two options chosen on the start
+ * Holds which screen is showing and the three options chosen on the start
  * screen, so a finished game returns to the start screen with the options
  * it was played with still set. `handlePlay` dispatches `new-game` with a
- * fresh seed and the two selected options through `dispatch`, then switches
+ * fresh seed and the fleet size and length through `dispatch`, then switches
  * to the game screen; `handleReturnToStart` switches back to the start
- * screen and changes nothing else.
+ * screen and changes nothing else. The clock setting is not part of
+ * `new-game` — the rules layer knows nothing about time — so it is held
+ * here purely for the game screen to read.
  */
 export function useAppScreen(
   dispatch: (intent: SessionIntent) => void,
@@ -38,6 +43,9 @@ export function useAppScreen(
   const [fleetSize, setFleetSize] = useState<FleetSize>(DEFAULT_FLEET_SIZE);
   const [lengthInRounds, setLengthInRounds] = useState(
     DEFAULT_GAME_LENGTH_ROUNDS,
+  );
+  const [clockSetting, setClockSetting] = useState<ClockSetting>(
+    DEFAULT_CLOCK_SETTING,
   );
 
   function handlePlay() {
@@ -58,8 +66,10 @@ export function useAppScreen(
     screen,
     fleetSize,
     lengthInRounds,
+    clockSetting,
     setFleetSize,
     setLengthInRounds,
+    setClockSetting,
     handlePlay,
     handleReturnToStart,
   };

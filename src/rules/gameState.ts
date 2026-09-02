@@ -77,6 +77,16 @@ export interface GameState {
    * derived from `plyNumber` and this field at the point of use.
    */
   readonly lengthInRounds: number;
+  /**
+   * Which sides have run out of time (rules.md §10), both starting false.
+   * This is a fact about the game, not about wall-clock time: the rules
+   * layer never reads a clock, and never will. It is set, once, by an
+   * intent the app dispatches when its own clock reaches zero — exactly as
+   * an activation is an intent dispatched when a square is clicked. See
+   * `markOutOfTime` below and `isGameOver` in `gameLength.ts`, which is
+   * true once both sides carry this flag.
+   */
+  readonly outOfTime: Readonly<Record<Side, boolean>>;
 }
 
 /**
@@ -84,7 +94,8 @@ export interface GameState {
  * dealt board (`dealOpeningBoard`, rules.md §8.1) — five of the seventeen
  * sites charged at a drawn drain, the rest active at a drawn pressure,
  * nothing dormant — green to move, `ACTIONS_PER_PLY` actions remaining,
- * nothing moved, ply 1, both sides at 0 energy, and the given game length.
+ * nothing moved, ply 1, both sides at 0 energy, neither side out of time,
+ * and the given game length.
  *
  * The seed argument is the seed the **deal** starts from, not the seed the
  * game's first turn draws from: dealing the board consumes 22 steps of the
@@ -137,7 +148,20 @@ export function startingGameState(
     randomSeed: nextSeed,
     energy: { green: 0, red: 0 },
     lengthInRounds,
+    outOfTime: { green: false, red: false },
   };
+}
+
+/**
+ * A state with the given side's clock marked as run out (rules.md §10).
+ * Idempotent: if the side is already marked, the same state object is
+ * returned, so a needless re-render is impossible.
+ */
+export function markOutOfTime(state: GameState, side: Side): GameState {
+  if (state.outOfTime[side]) {
+    return state;
+  }
+  return { ...state, outOfTime: { ...state.outOfTime, [side]: true } };
 }
 
 /** A square-name-keyed index of a state's ships, built at the point of use. */

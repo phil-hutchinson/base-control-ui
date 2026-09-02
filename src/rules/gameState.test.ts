@@ -3,6 +3,7 @@ import { squareFromName, squareName } from "./board";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
+  markOutOfTime,
   shipsBySquare,
   siteStateAt,
   siteStatusAt,
@@ -135,6 +136,12 @@ describe("startingGameState", () => {
     expect(state.energy).toEqual({ green: 0, red: 0 });
   });
 
+  it("starts neither side out of time", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.outOfTime).toEqual({ green: false, red: false });
+  });
+
   it("defaults to a hundred-round length when none is given", () => {
     const state = startingGameState(SEED);
 
@@ -199,7 +206,7 @@ describe("startingGameState", () => {
   });
 
   it("starts every ship at full power whatever the fleet size", () => {
-    for (const fleetSize of [5, 6, 7] as const) {
+    for (const fleetSize of [7, 6, 5] as const) {
       const state = startingGameState(
         SEED,
         DEFAULT_GAME_LENGTH_ROUNDS,
@@ -219,4 +226,31 @@ describe("startingGameState", () => {
       ).toThrow(RangeError);
     },
   );
+});
+
+describe("markOutOfTime", () => {
+  it("sets the given side's flag, leaving the other side and everything else untouched", () => {
+    const state = startingGameState(SEED);
+
+    const result = markOutOfTime(state, "green");
+
+    expect(result.outOfTime).toEqual({ green: true, red: false });
+    expect({ ...result, outOfTime: state.outOfTime }).toEqual(state);
+  });
+
+  it("sets both sides independently", () => {
+    const state = startingGameState(SEED);
+
+    const bothOut = markOutOfTime(markOutOfTime(state, "green"), "red");
+
+    expect(bothOut.outOfTime).toEqual({ green: true, red: true });
+  });
+
+  it("is a no-op, returning the same object, when the side is already out of time", () => {
+    const state = markOutOfTime(startingGameState(SEED), "green");
+
+    const result = markOutOfTime(state, "green");
+
+    expect(result).toBe(state);
+  });
 });

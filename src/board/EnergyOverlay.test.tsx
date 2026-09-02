@@ -27,6 +27,7 @@ function buildState(plyNumber: number): GameState {
     randomSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    outOfTime: { green: false, red: false },
   };
 }
 
@@ -214,6 +215,7 @@ describe("EnergyOverlay", () => {
           type: "ply-passed",
           side: "red",
           sideToMove: "green",
+          reason: "no-legal-action",
           endOfTurn: [passPenalty],
         },
       ],
@@ -259,6 +261,7 @@ describe("EnergyOverlay", () => {
           type: "ply-passed",
           side: "red",
           sideToMove: "green",
+          reason: "no-legal-action",
           endOfTurn: [passCollection],
         },
       ],
@@ -281,6 +284,7 @@ describe("EnergyOverlay", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [
         {
           type: "energy-collected",

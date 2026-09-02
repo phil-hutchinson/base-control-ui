@@ -92,7 +92,7 @@
 
 .app__cabinet {
   /* The one console box: the title, the HUD strip, the board and the
-     reserved region all inside a single raised frame, the way an arcade
+     clock region all inside a single raised frame, the way an arcade
      cabinet's whole front panel is one surround rather than a separate
      bezel per screen. The padding here is that frame's thickness, taken out
      of the room the in-game screen has to lay its regions out in.
@@ -122,8 +122,8 @@
   /* The in-game screen's layout container: a single `flex: 1` child of the
      cabinet, exactly like `.start-screen` and `.game-over-panel`, so the
      cabinet's own rules do not need to know about it. Holds the three
-     regions — info, play, reserved — in that order, each sized rigidly
-     (`.app__info` and `.app__reserved` to `--region-extent`, `.app__play` to
+     regions — info, play, clocks — in that order, each sized rigidly
+     (`.app__info` and `.app__clocks` to `--region-extent`, `.app__play` to
      `--play-size`) rather than by flex-grow, so no size flows down this
      box. `safe center` on both axes centres the group when there is room
      and falls back to start alignment when there is not, so any overrun
@@ -147,7 +147,7 @@
 .app__info {
   /* The title and the HUD, unchanged in content and order. Held to
      `--region-extent` rigidly — it must neither grow nor shrink, so the
-     reserved region below stays its exact mirror and the board stays
+     clock region below stays its exact mirror and the board stays
      centred. */
   flex: 0 0 var(--region-extent);
   width: 100%;
@@ -172,24 +172,16 @@
   align-items: flex-start;
 }
 
-.app__reserved {
-  /* A placeholder standing in for a later story's content: just enough
-     styling to read as present, nothing else. Mirrors `.app__info`'s extent
-     exactly, which is what keeps the board centred. Its type is sized as
-     the same fraction of `--region-extent` as the turn indicator's landscape
-     size (0.11 — see the landscape media block below), in both orientations,
-     so the placeholder grows along with the rest of the info column's type
-     rather than staying pinned at its old fixed 1rem. */
+.app__clocks {
+  /* Both players' clocks (`ClockRegion.tsx`). Mirrors `.app__info`'s extent
+     exactly, which is what keeps the board centred: this box must never
+     size itself from its contents, and the clock component owns everything
+     inside it and its own stylesheet, exactly as `.app__info` owns `Hud`. */
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 var(--region-extent);
   width: 100%;
-  color: var(--color-text-dim);
-  font-family: var(--font-arcade);
-  font-size: calc(var(--region-extent) * 0.11);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 /* Landscape: the three regions sit side by side instead of stacked, so the
@@ -201,7 +193,7 @@
    times wider than the column itself.
 
    `--region-extent` tracks the window's own width (`14vw`) between a floor
-   and a cap, rather than a flat length: the mirrored reserved region charges
+   and a cap, rather than a flat length: the mirrored clock region charges
    the window's long axis a second `P + g`, so an unbounded `P` would push
    the board under `--board-floor` on an ordinary window as it grew with the
    type it carries. The widest thing in the column is the five-pip row, which
@@ -224,7 +216,7 @@
   }
 
   .app__info,
-  .app__reserved {
+  .app__clocks {
     /* `P` is now a width; each region's height is left to its content and
        centred against the play area by `.app__screen`'s existing cross-axis
        centring. */

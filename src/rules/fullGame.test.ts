@@ -266,6 +266,7 @@ function findMoveLegalAMomentEarlier(
   const notEnded: GameState = {
     ...state,
     lengthInRounds: state.lengthInRounds + 1,
+    outOfTime: { green: false, red: false },
   };
   for (const ship of state.ships) {
     const [destination] = legalDestinations(notEnded, ship.id);
@@ -288,6 +289,7 @@ function findAttackLegalAMomentEarlier(
   const notEnded: GameState = {
     ...state,
     lengthInRounds: state.lengthInRounds + 1,
+    outOfTime: { green: false, red: false },
   };
   for (const ship of state.ships) {
     const [target] = legalTargets(notEnded, ship.id);
@@ -472,6 +474,7 @@ describe("a full game, end to end", () => {
       randomSeed: 1,
       energy: { green: 0, red: 0 },
       lengthInRounds: 1,
+      outOfTime: { green: false, red: false },
     };
 
     expect(isGameOver(state)).toBe(true);
@@ -593,6 +596,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       randomSeed: 1,
       energy: { green: 0, red: 0 },
       lengthInRounds: 30,
+      outOfTime: { green: false, red: false },
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -638,6 +642,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       randomSeed: 1,
       energy: { green: 0, red: 0 },
       lengthInRounds: 30,
+      outOfTime: { green: false, red: false },
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -684,6 +689,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       randomSeed: 1,
       energy: { green: 50, red: 0 },
       lengthInRounds: 30,
+      outOfTime: { green: false, red: false },
     };
 
     expect(() => runEndOfTurn(state)).not.toThrow();

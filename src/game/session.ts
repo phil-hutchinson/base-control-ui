@@ -10,6 +10,7 @@ import { type AttackRefusalReason, legalTargets } from "../rules/combat";
 import type { FleetSize, Side, ShipId } from "../rules/fleet";
 import {
   type GameState,
+  markOutOfTime,
   shipsBySquare,
   startingGameState,
 } from "../rules/gameState";
@@ -21,6 +22,7 @@ import {
   type PassEffect,
   applyAttack,
   applyMove,
+  applyOutOfTimePass,
   applyPassGuard,
 } from "../rules/ply";
 
@@ -78,7 +80,7 @@ export interface AttackedEvent {
  * with no ship selected, which has nothing to do with either action.
  */
 export type RejectionReason =
-  MoveRefusalReason | AttackRefusalReason | "nothing-to-select";
+  MoveRefusalReason | AttackRefusalReason | "nothing-to-select" | "out-of-time";
 
 /** An activation was rejected, naming why and which square was activated. */
 export interface RejectedEvent {
@@ -98,9 +100,13 @@ export type SessionEvent =
 
 /**
  * An intent a player's input turns into: activate a square, dismiss a
- * selection, or start a new game. `new-game` carries the seed, the length in
- * rounds and the fleet size the new game starts from — the reducer uses what
- * it is handed and never draws a seed or reaches for a default itself.
+ * selection, start a new game, report a clock running out, or pass a turn
+ * for time. `new-game` carries the seed, the length in rounds and the fleet
+ * size the new game starts from — the reducer uses what it is handed and
+ * never draws a seed or reaches for a default itself. `clock-expired` and
+ * `pass-out-of-time` are dispatched by the app's own clock (rules.md §10);
+ * the rules layer never reads a clock itself (`markOutOfTime`,
+ * `applyOutOfTimePass`).
  */
 export type SessionIntent =
   | { readonly type: "activate"; readonly square: Square }
@@ -110,7 +116,9 @@ export type SessionIntent =
       readonly randomSeed: number;
       readonly lengthInRounds: number;
       readonly fleetSize: FleetSize;
-    };
+    }
+  | { readonly type: "clock-expired"; readonly side: Side }
+  | { readonly type: "pass-out-of-time" };
 
 /** The game state, the selected ship if any, and the last thing that happened. */
 export interface Session {
@@ -289,8 +297,29 @@ export function sessionReducer(
     return session.selectedShipId === undefined ? session : cleared(session);
   }
 
+  if (intent.type === "clock-expired") {
+    const state = markOutOfTime(session.state, intent.side);
+    return state === session.state ? session : { ...session, state };
+  }
+
+  if (intent.type === "pass-out-of-time") {
+    const { state, effects } = applyOutOfTimePass(session.state);
+    if (effects.length === 0) {
+      return session;
+    }
+    return {
+      state,
+      selectedShipId: undefined,
+      lastEvent: effects[effects.length - 1],
+    };
+  }
+
   if (isGameOver(session.state)) {
     return rejected(session, "game-over", intent.square);
+  }
+
+  if (session.state.outOfTime[session.state.sideToMove]) {
+    return rejected(session, "out-of-time", intent.square);
   }
 
   return session.selectedShipId === undefined

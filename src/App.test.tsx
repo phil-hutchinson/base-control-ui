@@ -1,16 +1,25 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import { Board } from "./board/Board";
 import { GAME_NAME } from "./gameName";
 
 // Vitest's globals are off (see vite.config.ts), so Testing Library's
 // automatic afterEach cleanup never registers itself; without this, each
 // test's render stays mounted and pollutes the next.
 afterEach(cleanup);
+
+// Wraps the real Board in a spy, forwarding every call to the actual
+// implementation, so a single test, below, can count its renders without
+// changing what it renders for every other test in this file.
+vi.mock("./board/Board", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./board/Board")>();
+  return { ...actual, Board: vi.fn(actual.Board) };
+});
 
 /** The ships on the board, one gridcell per ship, by their accessible name. */
 function shipCells() {
@@ -23,7 +32,7 @@ async function pressPlay() {
 }
 
 describe("App", () => {
-  it("opens on the start screen: the name, both option groups at their defaults, and PLAY — no board, no HUD", () => {
+  it("opens on the start screen: the name, all three option groups at their defaults, and PLAY — no board, no HUD", () => {
     render(<App />);
 
     expect(
@@ -31,6 +40,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "7" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "30" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Unlimited" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
@@ -71,10 +81,10 @@ describe("App", () => {
     expect(container.querySelector(".app__screen")).not.toBeInTheDocument();
     expect(container.querySelector(".app__info")).not.toBeInTheDocument();
     expect(container.querySelector(".app__play")).not.toBeInTheDocument();
-    expect(container.querySelector(".app__reserved")).not.toBeInTheDocument();
+    expect(container.querySelector(".app__clocks")).not.toBeInTheDocument();
   });
 
-  it("lays the in-game screen out as three regions, info, play, reserved, in that DOM order", async () => {
+  it("lays the in-game screen out as three regions, info, play, clocks, in that DOM order", async () => {
     // jsdom has no layout engine and applies no CSS, so this reaches for
     // class names via querySelector rather than role or text — a region
     // wrapper has no accessible role or name of its own to find it by, the
@@ -87,12 +97,12 @@ describe("App", () => {
     expect(screenEl).toBeInTheDocument();
 
     const regions = screenEl!.querySelectorAll(
-      ":scope > .app__info, :scope > .app__play, :scope > .app__reserved",
+      ":scope > .app__info, :scope > .app__play, :scope > .app__clocks",
     );
     expect(Array.from(regions).map((el) => el.className)).toEqual([
       "app__info",
       "app__play",
-      "app__reserved",
+      "app__clocks",
     ]);
 
     const info = screenEl!.querySelector(".app__info")!;
@@ -102,10 +112,14 @@ describe("App", () => {
     const play = screenEl!.querySelector(".app__play")!;
     expect(play.querySelector('[role="grid"]')).toBeInTheDocument();
 
-    const reserved = screenEl!.querySelector(".app__reserved")!;
-    expect(reserved.textContent).toBe("RESERVED");
-    expect(info.textContent).not.toContain("RESERVED");
-    expect(play.textContent).not.toContain("RESERVED");
+    // With no clock chosen (the default), both readings say INF.
+    const clocks = screenEl!.querySelector(".app__clocks")!;
+    expect(clocks.textContent).toContain("Green");
+    expect(clocks.textContent).toContain("Red");
+    expect(clocks.querySelectorAll(".clock-display__reading")).toHaveLength(2);
+    for (const reading of clocks.querySelectorAll(".clock-display__reading")) {
+      expect(reading.textContent).toBe("INF");
+    }
   });
 
   it("pressing PLAY with the defaults deals a seven-a-side, thirty-round game", async () => {
@@ -142,14 +156,14 @@ describe("App", () => {
     expect(shipCells()).toHaveLength(10);
   });
 
-  it("pressing PLAY after choosing 50 rounds starts a game of that length", async () => {
+  it("pressing PLAY after choosing 45 rounds starts a game of that length", async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("radio", { name: "50" }));
+    await user.click(screen.getByRole("radio", { name: "45" }));
     await user.click(screen.getByRole("button", { name: "Play" }));
 
-    expect(screen.getByText("1/50")).toBeInTheDocument();
+    expect(screen.getByText("1/45")).toBeInTheDocument();
   });
 
   it("has no static accessibility violations once a game is in progress", async () => {
@@ -188,5 +202,32 @@ describe("App", () => {
     expect(shipCells()).toHaveLength(14);
 
     assertNoDuplicateIds(container);
+  });
+
+  it("does not repaint the board on a clock tick", async () => {
+    // `shouldAdvanceTime` lets user-event's own internal scheduling (pointer
+    // events, focus handling) keep resolving in the background while the
+    // fake clock is otherwise driven explicitly below — without it, the
+    // clicks below never settle.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ delay: null });
+      render(<App />);
+
+      await user.click(screen.getByRole("radio", { name: "6s" }));
+      await user.click(screen.getByRole("button", { name: "Play" }));
+
+      expect(screen.getAllByText("3:00").length).toBeGreaterThan(0);
+      const renderCountBefore = vi.mocked(Board).mock.calls.length;
+
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(screen.getAllByText("2:59").length).toBeGreaterThan(0);
+      expect(vi.mocked(Board).mock.calls.length).toBe(renderCountBefore);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

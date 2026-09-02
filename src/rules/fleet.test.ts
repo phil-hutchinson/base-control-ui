@@ -3,6 +3,7 @@ import { BAYS } from "./bays";
 import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
 import {
   FLEET_SIZES,
+  MAX_SHIPS_PER_SIDE,
   startingFleet,
   type FleetEntry,
   type FleetSize,
@@ -87,6 +88,16 @@ function entryBySquare(
 ): FleetEntry | undefined {
   return fleet.find((entry) => squareName(entry.square) === squareName(square));
 }
+
+describe("FLEET_SIZES", () => {
+  it("is largest first, so the leftmost start-screen choice is the default game", () => {
+    expect(FLEET_SIZES).toEqual([7, 6, 5]);
+  });
+
+  it("puts the largest fleet size in MAX_SHIPS_PER_SIDE regardless of list order", () => {
+    expect(MAX_SHIPS_PER_SIDE).toBe(7);
+  });
+});
 
 describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
   const fleet = startingFleet(fleetSize);

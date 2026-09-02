@@ -46,6 +46,7 @@ function buildState(config: {
   siteStates?: Readonly<Record<string, SiteState>>;
   plyNumber?: number;
   lengthInRounds?: number;
+  outOfTime?: Readonly<Record<Side, boolean>>;
 }): GameState {
   return {
     ships: config.ships,
@@ -57,6 +58,7 @@ function buildState(config: {
     randomSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
+    outOfTime: config.outOfTime ?? { green: false, red: false },
   };
 }
 
@@ -499,6 +501,7 @@ describe("createSession", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
+      reason: "no-legal-action",
       endOfTurn: [],
     });
   });
@@ -640,7 +643,7 @@ describe("sessionReducer — new-game", () => {
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
   });
 
-  it.each<FleetSize>([5, 6, 7])(
+  it.each<FleetSize>([7, 6, 5])(
     "honours the given fleet size, dealing %i ships a side on its own layout",
     (fleetSize) => {
       const session = sessionFor(buildState({ ships: [] }));
@@ -673,4 +676,173 @@ describe("sessionReducer — new-game", () => {
       expect(result.state.lengthInRounds).toBe(30);
     },
   );
+});
+
+describe("sessionReducer — a side is out of time", () => {
+  it("rejects selecting a ship for the out-of-time side to move", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+      outOfTime: { green: true, red: false },
+    });
+
+    const result = activate(sessionFor(state), "H8");
+
+    expect(result.state).toBe(state);
+    expect(result.selectedShipId).toBeUndefined();
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "out-of-time",
+      square: squareFromName("H8"),
+    });
+  });
+
+  it("rejects completing a move from an already-selected ship for the out-of-time side to move", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+      outOfTime: { green: true, red: false },
+    });
+    const withSelection: Session = {
+      ...sessionFor(state),
+      selectedShipId: "green-1",
+    };
+
+    const result = activate(withSelection, "H7");
+
+    expect(result.state).toBe(state);
+    expect(result.selectedShipId).toBe("green-1");
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "out-of-time",
+      square: squareFromName("H7"),
+    });
+  });
+
+  it("leaves the side to move with time left unaffected", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+      outOfTime: { green: false, red: true },
+    });
+
+    const result = activate(sessionFor(state), "H8");
+
+    expect(result.selectedShipId).toBe("green-1");
+    expect(result.lastEvent).toEqual({
+      type: "selected",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+      destinationCount: legalDestinations(state, "green-1").length,
+      targetCount: legalTargets(state, "green-1").length,
+    });
+  });
+});
+
+describe("sessionReducer — clock-expired", () => {
+  it("marks the named side out of time, leaving the other side and lastEvent untouched", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+    });
+    const session = sessionFor(state);
+
+    const result = sessionReducer(session, {
+      type: "clock-expired",
+      side: "green",
+    });
+
+    expect(result.state.outOfTime).toEqual({ green: true, red: false });
+    expect(result.selectedShipId).toBeUndefined();
+    expect(result.lastEvent).toBeUndefined();
+  });
+
+  it("is a no-op — returning the same session object — when the side is already out of time", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+      outOfTime: { green: true, red: false },
+    });
+    const session = sessionFor(state);
+
+    const result = sessionReducer(session, {
+      type: "clock-expired",
+      side: "green",
+    });
+
+    expect(result).toBe(session);
+  });
+
+  it("ends the game once both sides have expired, after which an activation is rejected as game-over", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+    });
+    const session = sessionFor(state);
+
+    const green = sessionReducer(session, {
+      type: "clock-expired",
+      side: "green",
+    });
+    const both = sessionReducer(green, {
+      type: "clock-expired",
+      side: "red",
+    });
+
+    expect(both.state.outOfTime).toEqual({ green: true, red: true });
+
+    const result = activate(both, "H8");
+
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "game-over",
+      square: squareFromName("H8"),
+    });
+  });
+});
+
+describe("sessionReducer — pass-out-of-time", () => {
+  it("passes the side to move's turn, advancing the ply and recording the out-of-time pass as lastEvent", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+      outOfTime: { green: true, red: false },
+    });
+    const session = sessionFor(state);
+
+    const result = sessionReducer(session, { type: "pass-out-of-time" });
+
+    expect(result.state.sideToMove).toBe("red");
+    expect(result.state.plyNumber).toBe(state.plyNumber + 1);
+    expect(result.lastEvent).toEqual({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      reason: "out-of-time",
+      endOfTurn: [],
+    });
+  });
+
+  it("is a no-op for a side that still has time", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+    });
+    const session = sessionFor(state);
+
+    const result = sessionReducer(session, { type: "pass-out-of-time" });
+
+    expect(result).toBe(session);
+  });
+
+  it("clears a selection", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+      outOfTime: { green: true, red: false },
+    });
+    const withSelection: Session = {
+      state,
+      selectedShipId: "green-1",
+      lastEvent: undefined,
+    };
+
+    const result = sessionReducer(withSelection, {
+      type: "pass-out-of-time",
+    });
+
+    expect(result.selectedShipId).toBeUndefined();
+  });
 });

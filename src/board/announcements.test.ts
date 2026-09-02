@@ -203,7 +203,13 @@ describe("announcementFor", () => {
       to: squareAt("H", 8),
       effects: [
         { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
-        { type: "ply-passed", side: "red", sideToMove: "green", endOfTurn: [] },
+        {
+          type: "ply-passed",
+          side: "red",
+          sideToMove: "green",
+          reason: "no-legal-action",
+          endOfTurn: [],
+        },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
@@ -217,10 +223,24 @@ describe("announcementFor", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [],
     };
     expect(announcementFor(event)).toBe(
       "Red has no legal action, so the turn passes. Green's turn, 1 action left.",
+    );
+  });
+
+  it("announces a passed ply that passed for want of time", () => {
+    const event: PassEffect = {
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      reason: "out-of-time",
+      endOfTurn: [],
+    };
+    expect(announcementFor(event)).toBe(
+      "Red is out of time, so the turn passes. Green's turn, 1 action left.",
     );
   });
 
@@ -752,7 +772,13 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [{ type: "node-ran-out", square: squareAt("K", 5) }],
         },
-        { type: "ply-passed", side: "red", sideToMove: "green", endOfTurn: [] },
+        {
+          type: "ply-passed",
+          side: "red",
+          sideToMove: "green",
+          reason: "no-legal-action",
+          endOfTurn: [],
+        },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
@@ -767,6 +793,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [
         {
           type: "power-lost",
@@ -911,6 +938,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [collected],
     };
     expect(announcementFor(event)).toBe(
@@ -1076,6 +1104,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [
         {
           type: "energy-penalty",
@@ -1126,6 +1155,7 @@ describe("announcementForSession", () => {
     sideToMove: "green" | "red";
     lengthInRounds: number;
     energy: { green: number; red: number };
+    outOfTime?: { green: boolean; red: boolean };
   }): GameState {
     return {
       ships: [],
@@ -1137,6 +1167,7 @@ describe("announcementForSession", () => {
       randomSeed: 1,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
+      outOfTime: config.outOfTime ?? { green: false, red: false },
     };
   }
 
@@ -1210,6 +1241,7 @@ describe("announcementForSession", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
+      reason: "no-legal-action",
       endOfTurn: [],
     };
     const session: Session = {
@@ -1219,6 +1251,31 @@ describe("announcementForSession", () => {
     };
     expect(announcementForSession(session)).toBe(
       "Red has no legal action, so the turn passes. The game is over after 3 rounds. The game is a draw, 4 energy each.",
+    );
+  });
+
+  it("words the game-over clause for both players running out of time, ahead of the last round", () => {
+    const state = stateAt({
+      plyNumber: 5,
+      sideToMove: "green",
+      lengthInRounds: 30,
+      energy: { green: 4, red: 4 },
+      outOfTime: { green: true, red: true },
+    });
+    const event: PassEffect = {
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      reason: "out-of-time",
+      endOfTurn: [],
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+    expect(announcementForSession(session)).toBe(
+      "Red is out of time, so the turn passes. The game is over: both players are out of time. The game is a draw, 4 energy each.",
     );
   });
 
@@ -1501,7 +1558,13 @@ describe("announcementFor — combat (rules.md §7)", () => {
       effects: [
         fight,
         { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
-        { type: "ply-passed", side: "red", sideToMove: "green", endOfTurn: [] },
+        {
+          type: "ply-passed",
+          side: "red",
+          sideToMove: "green",
+          reason: "no-legal-action",
+          endOfTurn: [],
+        },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
@@ -1526,6 +1589,7 @@ describe("turnIndicatorText", () => {
         randomSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        outOfTime: { green: false, red: false },
       }),
     ).toBe("Green to play");
   });
@@ -1542,6 +1606,7 @@ describe("turnIndicatorText", () => {
         randomSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        outOfTime: { green: false, red: false },
       }),
     ).toBe("Red to play");
   });
@@ -1558,6 +1623,7 @@ describe("turnIndicatorText", () => {
         randomSeed: 1,
         energy: { green: 4, red: 4 },
         lengthInRounds: 3,
+        outOfTime: { green: false, red: false },
       }),
     ).toBe("Game over");
   });
@@ -1597,6 +1663,7 @@ describe("HUD wording", () => {
       randomSeed: 1,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
+      outOfTime: { green: false, red: false },
     };
   }
 
