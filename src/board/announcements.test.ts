@@ -231,6 +231,19 @@ describe("announcementFor", () => {
     );
   });
 
+  it("announces a passed ply that passed for want of time", () => {
+    const event: PassEffect = {
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      reason: "out-of-time",
+      endOfTurn: [],
+    };
+    expect(announcementFor(event)).toBe(
+      "Red is out of time, so the turn passes. Green's turn, 1 action left.",
+    );
+  });
+
   const cases: ReadonlyArray<
     readonly [RejectionReason, ReturnType<typeof squareAt>, string]
   > = [
@@ -1142,6 +1155,7 @@ describe("announcementForSession", () => {
     sideToMove: "green" | "red";
     lengthInRounds: number;
     energy: { green: number; red: number };
+    outOfTime?: { green: boolean; red: boolean };
   }): GameState {
     return {
       ships: [],
@@ -1153,7 +1167,7 @@ describe("announcementForSession", () => {
       randomSeed: 1,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
-      outOfTime: { green: false, red: false },
+      outOfTime: config.outOfTime ?? { green: false, red: false },
     };
   }
 
@@ -1237,6 +1251,31 @@ describe("announcementForSession", () => {
     };
     expect(announcementForSession(session)).toBe(
       "Red has no legal action, so the turn passes. The game is over after 3 rounds. The game is a draw, 4 energy each.",
+    );
+  });
+
+  it("words the game-over clause for both players running out of time, ahead of the last round", () => {
+    const state = stateAt({
+      plyNumber: 5,
+      sideToMove: "green",
+      lengthInRounds: 30,
+      energy: { green: 4, red: 4 },
+      outOfTime: { green: true, red: true },
+    });
+    const event: PassEffect = {
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      reason: "out-of-time",
+      endOfTurn: [],
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+    expect(announcementForSession(session)).toBe(
+      "Red is out of time, so the turn passes. The game is over: both players are out of time. The game is a draw, 4 energy each.",
     );
   });
 

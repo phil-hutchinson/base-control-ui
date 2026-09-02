@@ -25,6 +25,7 @@ import {
   currentRound,
   gameResult,
   isGameOver,
+  pliesForGameLength,
   type GameResult,
 } from "../rules/gameLength";
 import type {
@@ -272,6 +273,16 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
 }
 
 /**
+ * A passed turn's opening clause (rules.md §5, §10): "no legal action" or
+ * "out of time", depending on why the turn passed.
+ */
+function passOpeningClause(effect: PassEffect): string {
+  return effect.reason === "out-of-time"
+    ? `${capitalize(effect.side)} is out of time, so the turn passes.`
+    : `${capitalize(effect.side)} has no legal action, so the turn passes.`;
+}
+
+/**
  * A passed turn's clauses (rules.md §5), ending with `tailClause` — the next
  * side's turn by default, or `announcementForSession`'s game-over clause when
  * the pass was the game's last ply.
@@ -281,7 +292,7 @@ function passSentenceClauses(
   tailClause?: string,
 ): string[] {
   return [
-    `${capitalize(effect.side)} has no legal action, so the turn passes.`,
+    passOpeningClause(effect),
     ...endOfTurnClauses(effect.endOfTurn),
     tailClause ?? `${turnPhrase(effect.sideToMove, ACTIONS_PER_PLY)}.`,
   ];
@@ -471,10 +482,18 @@ export function resultSentence(result: GameResult): string {
 
 /**
  * The clause substituted for "whose turn is next" once the game has ended
- * (rules.md §9): that the game is over, and its result.
+ * (rules.md §9, §10): that the game is over, and its result. Worded for
+ * whichever of the two endings actually happened — the rounds running out,
+ * or both players running out of time before they did — so the sentence is
+ * never false about a game that ended early on the clock.
  */
 function gameOverClause(state: GameState): string {
-  return `The game is over after ${roundsPhrase(state.lengthInRounds)}. ${resultSentence(gameResult(state))}`;
+  const endedOnTime =
+    state.plyNumber <= pliesForGameLength(state.lengthInRounds);
+  const endingClause = endedOnTime
+    ? "The game is over: both players are out of time."
+    : `The game is over after ${roundsPhrase(state.lengthInRounds)}.`;
+  return `${endingClause} ${resultSentence(gameResult(state))}`;
 }
 
 /**

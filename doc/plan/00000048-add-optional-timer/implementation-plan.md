@@ -784,7 +784,22 @@ existing pass case still green.
 
 ## Step 7 — The wording: an out-of-time pass, and a game that ends on time
 
-Status: pending
+Status: committed
+
+Notes: Added a `passOpeningClause` helper in `src/board/announcements.ts`
+that chooses "Green has no legal action, so the turn passes." or "Green is
+out of time, so the turn passes." from `PassEffect.reason`, used by
+`passSentenceClauses` in both places it already ran (the plain pass sentence
+and the chained pass after an action). `gameOverClause` now words its ending
+from whether the plies actually ran out (`state.plyNumber` vs.
+`pliesForGameLength(state.lengthInRounds)`, imported from `gameLength.ts`),
+substituting "The game is over: both players are out of time." when the game
+ended early on the clock, per the owner's plan-gate approval; the result
+sentence after it is unchanged. Added two `announcements.test.ts` cases: an
+out-of-time pass sentence, and the game-over clause worded for a
+both-out-of-time ending ahead of the last round (via a `stateAt` helper
+extended with an optional `outOfTime` field, default both false, so existing
+callers are unaffected). No deviation from the plan.
 
 In `src/board/announcements.ts`:
 
