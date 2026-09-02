@@ -585,7 +585,22 @@ Verification (automated): `npm test` passes with the new file's cases green;
 
 ## Step 4 — The Timer option on the start screen
 
-Status: pending
+Status: committed
+
+Notes: `OptionChoice` now takes an explicit `label` alongside `value`
+(`value` typed `string | number`); Ships and Rounds pass `String(value)` as
+their label, and the third fieldset ("Timer") maps `CLOCK_SETTINGS` through a
+local `CLOCK_SETTING_LABELS` record (`None`/`6s`/`4s`/`2s`) defined beside the
+fieldset, per D16. `useAppScreen` holds `clockSetting` (default
+`DEFAULT_CLOCK_SETTING`) and `setClockSetting`, not part of the `new-game`
+intent; `handleReturnToStart` is unchanged so the value survives a return to
+the start screen. `App.tsx` threads `clockSetting`/`setClockSetting` through
+to `StartScreen`. Updated `StartScreen.test.tsx` (new Timer-group render and
+click cases; existing click cases renamed/extended to assert the other two
+handlers, including the new one, are not called), `useAppScreen.test.tsx`
+(default is `"none"`; setter works; survives return-to-start), and
+`App.test.tsx`'s opening-screen assertion to also check the `None` radio is
+checked. No deviation from the plan.
 
 Put the third option on the start screen and carry it in the app's screen
 state. Nothing in the game consumes it yet; this step is about choosing it.

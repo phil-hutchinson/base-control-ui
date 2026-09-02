@@ -23,7 +23,7 @@ async function pressPlay() {
 }
 
 describe("App", () => {
-  it("opens on the start screen: the name, both option groups at their defaults, and PLAY — no board, no HUD", () => {
+  it("opens on the start screen: the name, all three option groups at their defaults, and PLAY — no board, no HUD", () => {
     render(<App />);
 
     expect(
@@ -31,6 +31,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "7" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "30" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "None" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();

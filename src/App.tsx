@@ -40,6 +40,8 @@ export function App() {
     setFleetSize,
     lengthInRounds,
     setLengthInRounds,
+    clockSetting,
+    setClockSetting,
     handlePlay,
     handleReturnToStart,
   } = useAppScreen(dispatch);
@@ -62,6 +64,8 @@ export function App() {
             onFleetSizeChange={setFleetSize}
             lengthInRounds={lengthInRounds}
             onLengthInRoundsChange={setLengthInRounds}
+            clockSetting={clockSetting}
+            onClockSettingChange={setClockSetting}
             onPlay={handlePlay}
           />
         ) : gameOver ? (

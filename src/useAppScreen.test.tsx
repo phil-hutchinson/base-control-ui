@@ -13,6 +13,7 @@ describe("useAppScreen", () => {
     expect(result.current.screen).toBe("start");
     expect(result.current.fleetSize).toBe(7);
     expect(result.current.lengthInRounds).toBe(30);
+    expect(result.current.clockSetting).toBe("none");
   });
 
   it("PLAY dispatches the selected options as a new game and moves to the game screen", () => {
@@ -24,6 +25,9 @@ describe("useAppScreen", () => {
     });
     act(() => {
       result.current.setLengthInRounds(45);
+    });
+    act(() => {
+      result.current.setClockSetting(6);
     });
     act(() => {
       result.current.handlePlay();
@@ -39,7 +43,7 @@ describe("useAppScreen", () => {
     expect(result.current.screen).toBe("game");
   });
 
-  it("returning to start moves to the start screen and changes neither option", () => {
+  it("returning to start moves to the start screen and changes none of the options", () => {
     const dispatch = vi.fn();
     const { result } = renderHook(() => useAppScreen(dispatch));
 
@@ -48,6 +52,9 @@ describe("useAppScreen", () => {
     });
     act(() => {
       result.current.setLengthInRounds(60);
+    });
+    act(() => {
+      result.current.setClockSetting(4);
     });
     act(() => {
       result.current.handlePlay();
@@ -61,6 +68,7 @@ describe("useAppScreen", () => {
     expect(result.current.screen).toBe("start");
     expect(result.current.fleetSize).toBe(6);
     expect(result.current.lengthInRounds).toBe(60);
+    expect(result.current.clockSetting).toBe(4);
     expect(dispatch).not.toHaveBeenCalled();
   });
 });
