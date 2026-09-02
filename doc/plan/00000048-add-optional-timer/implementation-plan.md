@@ -82,7 +82,7 @@ inconvenient should still implement it, and say so in its Notes.
 No step tests accessibility, and no step spends work repairing it. Existing
 automated tests are updated where the path is straightforward. Three costs are
 knowingly accepted and recorded in
-`doc/plan/00000021-accessibility-tech-debt/known-issues.md` in Step 14 — see
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md` in Step 15 — see
 **D18**.
 
 ---
@@ -1153,7 +1153,7 @@ region's appearance is checked by hand in Step 12.
 
 ## Step 12 — GATE: the owner looks at the options and the clocks
 
-Status: pending
+Status: committed
 
 No code. The owner runs the app and confirms what the clock looks like and
 reads. This is a pause point for the pipeline.
@@ -1196,7 +1196,41 @@ the gate opens.
 
 ---
 
-## Step 13 — GATE: the owner plays a game out of time
+## Step 13 — The clock option's wording
+
+Status: pending
+
+Owner feedback from the Step 12 gate, where the functionality was confirmed
+correct. Two strings on the start screen, and nothing else:
+
+- The third group's legend becomes **`Clock (time per move)`** instead of
+  `Timer`. Sentence case, matching `Ships` and `Rounds` above it.
+- The `"none"` setting's label becomes **`Unlimited`** instead of `None`.
+
+Both live in `src/start/StartScreen.tsx` — the legend inline, the label in
+`CLOCK_SETTING_LABELS` (**D16**: the labels are start-screen chrome and stay
+out of `src/rules/clock.ts`, which holds numbers, not player-facing strings).
+The setting's own value is still `"none"`; only what a player reads changes.
+
+`rules.md` is **not** touched. Section 10 says "no clock, or 6, 4 or 2 seconds
+a turn", which is true of the game however the start screen words the choice,
+and the ruleset does not describe the app's chrome. No version bump.
+
+Tests to update: `src/start/StartScreen.test.tsx` and `src/App.test.tsx` both
+query the third group and its first choice by their accessible names, which
+these two strings are. Update them to the new wording rather than loosening
+the queries — naming the string is the point of the assertion.
+
+Depends on: Step 4 (the option group) and Step 12 (the gate that asked for
+this).
+
+Verification (automated): `npm test`, `npm run typecheck`, `npm run lint`,
+`npm run format:check` pass. `grep -rn "\"Timer\"\|>Timer<" src/` returns
+nothing. The wording is confirmed by eye at the Step 14 gate.
+
+---
+
+## Step 14 — GATE: the owner plays a game out of time
 
 Status: pending
 
@@ -1226,7 +1260,7 @@ Confirm, in the running app:
    at full.
 8. **Nothing on screen contradicts `doc/ruleset/rules.md` at 0.19.**
 
-Depends on: Steps 1 to 12.
+Depends on: Steps 1 to 13.
 
 Verification (manual): the owner confirms each of the eight observations and
 reports anything that reads wrong, looks wrong, or contradicts the ruleset at
@@ -1234,7 +1268,7 @@ reports anything that reads wrong, looks wrong, or contradicts the ruleset at
 
 ---
 
-## Step 14 — `README.md`, the accessibility ledger, and a final sweep
+## Step 15 — `README.md`, the accessibility ledger, and a final sweep
 
 Status: pending
 
@@ -1273,7 +1307,7 @@ up nothing about game lengths. Do **not** edit `doc/plan/**` or
 `doc/ruleset/changelog.md`'s pre-0.19 entries: those describe the app as it
 was.
 
-Depends on: Steps 1 to 13.
+Depends on: Steps 1 to 14.
 
 Verification (automated): `npm test`, `npm run typecheck`, `npm run lint` and
 `npm run format:check` all pass. The two greps above return nothing. A
@@ -1290,7 +1324,7 @@ two choices.
   out-of-time pass — recorded, because they change the game state without an
   action and cannot be re-derived from the seed. Nothing is built for that
   here.
-- **The accessibility repairs** listed in Step 14 belong to the eventual
+- **The accessibility repairs** listed in Step 15 belong to the eventual
   accessibility story, not to this one.
 - **Retuning the numbers.** 6/4/2 seconds a turn and 30/45/60/90 rounds are
   first guesses (settled decision 8), as is the one-second pacing delay
