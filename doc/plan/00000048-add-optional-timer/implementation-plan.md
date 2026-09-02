@@ -928,7 +928,41 @@ Verification (automated): `npm test` passes with the new file's cases green;
 
 ## Step 10 — `useGameClock`: ticking, expiry and the paced pass
 
-Status: pending
+Status: committed
+
+Notes: Added `src/clock/useGameClock.ts` (`useGameClock`, `GameClockReading`)
+exactly to the plan's shape: budget from `startingBudgetMs(state.lengthInRounds,
+setting)` (D17); refs for spent-per-side, the running side and its start
+timestamp; a handover effect keyed on the derived `runningSide` that commits
+elapsed time only when the running side actually changes (guards itself
+against a redundant re-invocation with the same value, so nothing is ever
+committed from a cleanup — the double-charge StrictMode risk the step warns
+about); a 100 ms tick interval that repaints via a local `useState` counter
+and dispatches `clock-expired` once the real remaining time reaches zero and
+the state does not already record it; and a pass effect that arms a
+1000 ms timeout dispatching `pass-out-of-time` while the side to move is out
+of time and the game is not over, re-arming on every state change and
+clearing on cleanup. Remaining time itself is a pure function of the refs and
+`performance.now()`, computed fresh on every render via a small
+`remainingMsForSide` helper — never accumulated. With `setting === "none"`
+`runningSide` is always `undefined`, so neither effect ever starts a timer,
+matching the plan without a separate special case. Confirmed
+`vi.useFakeTimers()` also fakes `performance.now()` in this Vitest version (it
+is included in the default `toFake` list when present), so no injectable
+"now" source was needed — no deviation there. Added
+`src/clock/useGameClock.test.tsx` (jsdom, fake timers) covering all eight
+listed cases: initial mount/idle side untouched, ticking reduces only the
+running side, handover freezes/starts the two sides, expiry dispatched
+exactly once at the budget's real boundary, the paced pass firing after (not
+before) 1000 ms and not repeating, a game-over state running and dispatching
+nothing, a `"none"` setting reporting `INF`/nobody running/no dispatches, and
+a large single time jump landing on the correct remaining value rather than
+one derived from tick count. One test beyond the plan's list was added as a
+belt-and-braces check that `isGameOver`'s plies-exhausted branch (not just
+the both-out-of-time branch) also stops the clock. No deviation from the
+plan. `npm run typecheck`, `npm run lint`, `npm run format:check` and
+`npm test` (52 files, 888 tests) all pass, with `fullGame.test.ts` and
+`seededReplay.test.ts` unmoved.
 
 Add `src/clock/useGameClock.ts`: the hook that owns the running clock. It is
 called from the clock region in Step 11, never from `App` (**D8**).
