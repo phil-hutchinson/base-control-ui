@@ -832,7 +832,18 @@ Verification (automated): `npm test`, `npm run typecheck`, `npm run lint`,
 
 ## Step 8 — The two session intents
 
-Status: pending
+Status: committed
+
+Notes: Added `clock-expired` (`{ side }`) and `pass-out-of-time` (no payload)
+to `SessionIntent`, and two branches in `sessionReducer` ahead of the
+`isGameOver` activation guard: `clock-expired` calls `markOutOfTime` and
+returns the same session object when it is a no-op; `pass-out-of-time` calls
+`applyOutOfTimePass`, returns the session unchanged when it reports no
+effects, and otherwise clears the selection and records the **last** effect
+as `lastEvent` (D7). Added a `outOfTime` option to `session.test.ts`'s
+`buildState` helper and the five cases the plan lists (plus a sixth: the
+expiry-marking case itself, split from the idempotence case for clarity). No
+deviation from the plan.
 
 In `src/game/session.ts`, add exactly two intents to `SessionIntent` and
 nothing else (**D4**, **D5**):
