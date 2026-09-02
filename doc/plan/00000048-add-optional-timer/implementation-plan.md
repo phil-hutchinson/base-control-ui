@@ -398,7 +398,16 @@ clocks) and says so in the changelog entry as a clarification. Nothing else in
 
 ## Step 1 — Rules 0.19: the clock
 
-Status: pending
+Status: committed
+
+Notes: Bumped `rules.md` to 0.19, edited §2's Round entry, added the §5
+pass-reason sentence, reworded §8.6's "The clocks still tick" to "The site
+clocks still tick" (D19, noted as a clarification in the changelog), edited
+§9's lengths and added its clock-ending sentence, and added new §10 "The
+clock" before Appendix A. Set `RULES_VERSION` to `"0.19"` and added the
+`## 0.19` changelog entry. No deviation from the plan; `npm run format`
+reflowed the touched paragraphs' line wrapping, which is expected prettier
+behaviour on markdown.
 
 Edit `doc/ruleset/rules.md` and nothing else in `src/`, in this commit, ahead
 of every code step (**D1**). Bump the version line to **0.19**, set

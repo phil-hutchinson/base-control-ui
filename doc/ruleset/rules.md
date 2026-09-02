@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.18**
+**Rules version: 0.19**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -39,7 +39,7 @@ has seen this one before.
 turn is one action.
 
 **Round** — one turn for each player. The game lasts for the number of
-rounds chosen before play begins — 30, 50, 75 or 100 — and 30 is the
+rounds chosen before play begins — 30, 45, 60 or 90 — and 30 is the
 standard game (section 9).
 
 **Action** — what a player does on their turn: move a ship, or attack with a
@@ -240,6 +240,9 @@ uncommon — a player always has at least five ships — but an action is not
 always available: an attack reaches only as far as the attacker's power
 allows, and a ship holding a node has no attack available to it at all. The
 rule is here so the game can never deadlock.
+
+A turn also passes when the player to move is out of time (section 10). That
+is the second, and only other, reason a turn can pass.
 
 ---
 
@@ -537,8 +540,8 @@ Everything that happens at the end of a turn happens in this order:
 
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
-which an action was taken. The clocks still tick, and a ship of the passing
-player standing on a charged node still loses its point of power and one
+which an action was taken. The site clocks still tick, and a ship of the
+passing player standing on a charged node still loses its point of power and one
 standing on a dormant site or in a bay still gains one; the passing player
 still collects and still pays exactly as they would if they had acted.
 
@@ -569,8 +572,36 @@ an action.
 ## 9. Ending the game
 
 The game ends after the number of rounds chosen before play begins —
-**30, 50, 75 or 100 rounds**, that many turns each — with **30** the
-standard game. The player with the most energy wins. Equal energy is a draw.
+**30, 45, 60 or 90 rounds**, that many turns each — with **30** the
+standard game. It also ends immediately, before its rounds are up, the
+moment both players have run out of time (section 10). Either way, the
+player with the most energy wins, and equal energy is a draw.
+
+---
+
+## 10. The clock
+
+Alongside the fleet size and the number of rounds, a player chooses a
+**clock** before play begins: no clock, or 6, 4 or 2 seconds a turn, with no
+clock the standard game.
+
+Each player's clock starts with a budget: their seconds a turn multiplied by
+the number of turns the chosen length gives them. The whole game is
+budgeted, not each turn, so a player may spend their time however they like
+across their turns — there is no per-turn limit and no increment.
+
+Green's clock starts the moment play begins. Only the player whose turn it
+is is counting; the clock changes hands the instant the turn does.
+
+A player whose clock reaches zero passes every remaining turn. Those turns
+are still turns — section 8.6 runs in full for them — and their opponent
+goes on playing normally.
+
+When both players' clocks have reached zero, the game ends immediately
+(section 9).
+
+Running out of time is **not** a loss. Energy decides the game however it
+ends.
 
 ---
 

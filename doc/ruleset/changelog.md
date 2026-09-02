@@ -7,6 +7,38 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.19 — an optional clock
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **A clock is now offered alongside the fleet size and the number of
+  rounds**: no clock, or 6, 4 or 2 seconds a turn, with no clock the
+  standard game. Section 10 is new and states the whole thing. Each player's
+  budget is their seconds a turn multiplied by the number of turns the
+  chosen length gives them, spent however they like across their turns —
+  there is no per-turn limit and no increment. Only the player to move is
+  counting, and the clock changes hands the instant the turn does.
+- **A turn now has a second reason to pass.** Section 5 gains a sentence: a
+  turn also passes when the player to move is out of time. Those passed
+  turns are still turns — section 8.6 runs in full for them, exactly as it
+  already does for a turn that passes for want of a legal action.
+- **The game can now end before its rounds are up.** Section 9 gains a
+  second ending: the moment both players have run out of time, the game
+  ends immediately, and the result is decided by energy exactly as it is at
+  the end of the last round.
+- **The offered game lengths change** from 30, 50, 75 or 100 rounds to
+  **30, 45, 60 or 90**, with 30 still the standard game. The new ladder
+  climbs more evenly than the old one, and it pairs naturally with the
+  clock: a ninety-round game at 6 seconds a turn is a nine-minute clock.
+- **A wording clarification, not a rule change**: section 8.6's "The clocks
+  still tick" now reads "The site clocks still tick", so it cannot be
+  misread as the player's new clock now that the document has one. Nothing
+  about what the sentence describes has changed.
+- **All of these numbers — 6/4/2 seconds a turn and 30/45/60/90 rounds —
+  are first guesses**, to be play-tested and retuned like every other
+  number in this document.
+
 ## 0.18 — the opening board is dealt
 
 This is a gameplay change. Tagging stays on hold until the game plays (see
