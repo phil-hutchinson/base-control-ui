@@ -40,7 +40,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "7" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "30" })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "None" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Unlimited" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();

@@ -1198,7 +1198,18 @@ the gate opens.
 
 ## Step 13 — The clock option's wording
 
-Status: pending
+Status: committed
+
+Notes: Changed the third fieldset's legend from `Timer` to
+`Clock (time per move)` and the `"none"` setting's label in
+`CLOCK_SETTING_LABELS` from `None` to `Unlimited`, both inline in
+`src/start/StartScreen.tsx`, per D16 (the rules module is untouched).
+Updated `src/start/StartScreen.test.tsx` (its own mirrored
+`CLOCK_SETTING_LABELS`, the group-name query, and the two test
+descriptions naming "timer") and `src/App.test.tsx`'s opening-screen
+assertion to query by the new accessible names rather than loosening the
+queries. `rules.md` and `RULES_VERSION` were not touched, as the step
+specifies. No deviation from the plan.
 
 Owner feedback from the Step 12 gate, where the functionality was confirmed
 correct. Two strings on the start screen, and nothing else:

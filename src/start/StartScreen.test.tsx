@@ -22,9 +22,9 @@ import { StartScreen } from "./StartScreen";
 
 afterEach(cleanup);
 
-/** The Timer group's labels, mirroring `StartScreen`'s own map. */
+/** The Clock group's labels, mirroring `StartScreen`'s own map. */
 const CLOCK_SETTING_LABELS: Record<ClockSetting, string> = {
-  none: "None",
+  none: "Unlimited",
   6: "6s",
   4: "4s",
   2: "2s",
@@ -106,10 +106,12 @@ describe("StartScreen", () => {
     }
   });
 
-  it("renders the timer group with its labelled values and the selected one checked", () => {
+  it("renders the clock group with its labelled values and the selected one checked", () => {
     renderStartScreen({ clockSetting: 4 });
 
-    const group = screen.getByRole("group", { name: "Timer" });
+    const group = screen.getByRole("group", {
+      name: "Clock (time per move)",
+    });
     for (const value of CLOCK_SETTINGS) {
       const radio = within(group).getByRole("radio", {
         name: CLOCK_SETTING_LABELS[value],
@@ -156,7 +158,7 @@ describe("StartScreen", () => {
     expect(onPlay).not.toHaveBeenCalled();
   });
 
-  it("calls the timer change handler, and not the others, when a different value is chosen", async () => {
+  it("calls the clock change handler, and not the others, when a different value is chosen", async () => {
     const user = userEvent.setup();
     const {
       onFleetSizeChange,

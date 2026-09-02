@@ -10,9 +10,9 @@ import { type FleetSize, FLEET_SIZES } from "../rules/fleet";
 import { GAME_LENGTH_OPTIONS_ROUNDS } from "../rules/gameLength";
 import "./StartScreen.css";
 
-/** The Timer group's labels — start-screen chrome, not a rules concern. */
+/** The Clock group's labels — start-screen chrome, not a rules concern. */
 const CLOCK_SETTING_LABELS: Record<ClockSetting, string> = {
-  none: "None",
+  none: "Unlimited",
   6: "6s",
   4: "4s",
   2: "2s",
@@ -81,7 +81,7 @@ export function StartScreen({
         </div>
       </fieldset>
       <fieldset className="start-screen__options">
-        <legend className="start-screen__legend">Timer</legend>
+        <legend className="start-screen__legend">Clock (time per move)</legend>
         <div className="start-screen__choices">
           {CLOCK_SETTINGS.map((value) => (
             <OptionChoice
