@@ -25,7 +25,6 @@ import {
   currentRound,
   gameResult,
   isGameOver,
-  pliesForGameLength,
   type GameResult,
 } from "../rules/gameLength";
 import type {
@@ -433,6 +432,8 @@ function rejectionSentence(event: RejectedEvent): string {
       return `There is no ship on ${square} to attack.`;
     case "game-over":
       return "The game is over. Nothing further can be played.";
+    case "out-of-time":
+      return "Your clock has run out.";
   }
 }
 
@@ -488,9 +489,8 @@ export function resultSentence(result: GameResult): string {
  * never false about a game that ended early on the clock.
  */
 function gameOverClause(state: GameState): string {
-  const endedOnTime =
-    state.plyNumber <= pliesForGameLength(state.lengthInRounds);
-  const endingClause = endedOnTime
+  const endedOnTheClock = state.outOfTime.green && state.outOfTime.red;
+  const endingClause = endedOnTheClock
     ? "The game is over: both players are out of time."
     : `The game is over after ${roundsPhrase(state.lengthInRounds)}.`;
   return `${endingClause} ${resultSentence(gameResult(state))}`;

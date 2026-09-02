@@ -52,7 +52,7 @@ describe("useGameClock", () => {
     const state = buildState({ lengthInRounds: 30, sideToMove: "green" });
     const { result } = renderHook(() => useGameClock(state, 6, onIntent));
 
-    expect(result.current.runningSide).toBe("green");
+    expect(result.current.tickingSide).toBe("green");
     expect(result.current.remainingMs.green).toBe(180_000);
     expect(result.current.remainingMs.red).toBe(180_000);
   });
@@ -93,7 +93,7 @@ describe("useGameClock", () => {
       rerender({ state: redState });
     });
 
-    expect(result.current.runningSide).toBe("red");
+    expect(result.current.tickingSide).toBe("red");
     expect(result.current.remainingMs.green).toBe(greenRemainingAtHandover);
     expect(result.current.remainingMs.red).toBe(180_000);
 
@@ -116,6 +116,35 @@ describe("useGameClock", () => {
 
     const calls = clockExpiredCalls(onIntent);
     expect(calls).toEqual([[{ type: "clock-expired", side: "green" }]]);
+  });
+
+  it("does not dispatch clock-expired again once the state already records the side as out of time", () => {
+    const onIntent = vi.fn<(intent: SessionIntent) => void>();
+    const state = buildState({ lengthInRounds: 1, sideToMove: "green" });
+    const { rerender } = renderHook(
+      ({ state }) => useGameClock(state, 2, onIntent),
+      { initialProps: { state } },
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(2_000);
+    });
+    expect(clockExpiredCalls(onIntent)).toHaveLength(1);
+
+    act(() => {
+      rerender({
+        state: buildState({
+          lengthInRounds: 1,
+          sideToMove: "green",
+          outOfTime: { green: true, red: false },
+        }),
+      });
+    });
+    act(() => {
+      vi.advanceTimersByTime(2_000);
+    });
+
+    expect(clockExpiredCalls(onIntent)).toHaveLength(1);
   });
 
   it("dispatches the out-of-time pass after the pacing delay, not before, once per ply", () => {
@@ -152,7 +181,7 @@ describe("useGameClock", () => {
     });
     const { result } = renderHook(() => useGameClock(overState, 2, onIntent));
 
-    expect(result.current.runningSide).toBeUndefined();
+    expect(result.current.tickingSide).toBeUndefined();
 
     act(() => {
       vi.advanceTimersByTime(10_000);
@@ -166,7 +195,7 @@ describe("useGameClock", () => {
     const state = buildState({ lengthInRounds: 30, sideToMove: "green" });
     const { result } = renderHook(() => useGameClock(state, "none", onIntent));
 
-    expect(result.current.runningSide).toBeUndefined();
+    expect(result.current.tickingSide).toBeUndefined();
     expect(result.current.remainingMs.green).toBe(Number.POSITIVE_INFINITY);
     expect(result.current.remainingMs.red).toBe(Number.POSITIVE_INFINITY);
 
@@ -203,6 +232,6 @@ describe("useGameClock", () => {
     });
     const { result } = renderHook(() => useGameClock(state, 2, onIntent));
 
-    expect(result.current.runningSide).toBeUndefined();
+    expect(result.current.tickingSide).toBeUndefined();
   });
 });

@@ -154,6 +154,10 @@ decision D9.
 
 ### 1. The reserved placeholder is stray text with no context
 
+**Resolved by story 48.** Story 48 removed the `RESERVED` placeholder and
+gave the region's contents `aria-hidden`, which is exactly what this entry
+asked the later story to do.
+
 The reserved region's only content is the bare word `RESERVED`, added as
 placeholder text so a later story can see the region is there, is the right
 size, and is in the right place. It carries no role, no accessible name and

@@ -76,11 +76,6 @@ describe("ClockRegion", () => {
   });
 
   it("with no clock, both readings say INF and the side to move is still marked as running", () => {
-    // `useGameClock` reports `runningSide: undefined` for setting "none"
-    // (it starts no timers at all), but the story requires the side to
-    // move to get the running treatment regardless of whether its reading
-    // counts down or reads INF — so the marking here is derived from the
-    // state directly, not from the hook's `runningSide`.
     const onIntent = vi.fn<(intent: SessionIntent) => void>();
     const state = buildState({ sideToMove: "green" });
     const { container } = render(

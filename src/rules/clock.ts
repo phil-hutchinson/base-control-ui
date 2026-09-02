@@ -21,7 +21,12 @@ export const CLOCK_SETTINGS: readonly ClockSetting[] = ["none", 6, 4, 2];
 /** §10's standard game: no clock. */
 export const DEFAULT_CLOCK_SETTING: ClockSetting = "none";
 
-/** Whether a value is one of the offered clock settings. */
+/**
+ * Whether a value is one of the offered clock settings. Nothing in the app
+ * calls this yet; it exists for the boundary a future caller will need — a
+ * saved-options load, or a game record — where a clock setting arrives from
+ * outside the type system.
+ */
 export function isClockSetting(value: unknown): value is ClockSetting {
   return (CLOCK_SETTINGS as readonly unknown[]).includes(value);
 }

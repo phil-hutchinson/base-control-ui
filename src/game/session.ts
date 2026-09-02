@@ -80,7 +80,7 @@ export interface AttackedEvent {
  * with no ship selected, which has nothing to do with either action.
  */
 export type RejectionReason =
-  MoveRefusalReason | AttackRefusalReason | "nothing-to-select";
+  MoveRefusalReason | AttackRefusalReason | "nothing-to-select" | "out-of-time";
 
 /** An activation was rejected, naming why and which square was activated. */
 export interface RejectedEvent {
@@ -316,6 +316,10 @@ export function sessionReducer(
 
   if (isGameOver(session.state)) {
     return rejected(session, "game-over", intent.square);
+  }
+
+  if (session.state.outOfTime[session.state.sideToMove]) {
+    return rejected(session, "out-of-time", intent.square);
   }
 
   return session.selectedShipId === undefined

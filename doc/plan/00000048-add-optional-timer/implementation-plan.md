@@ -108,8 +108,8 @@ knowingly accepted and recorded in
 | `src/clock/useGameClock.ts` (new)                           | The ticking clock: remaining time, expiry, the paced pass                                                  | 10    |
 | `src/clock/ClockRegion.tsx` / `.css` (new)                  | Both clocks on screen                                                                                      | 11    |
 | `src/App.css`                                               | `.app__reserved` → `.app__clocks` (same box, same extent)                                                  | 11    |
-| `README.md`                                                 | The status paragraph picks up the third option and the new lengths                                         | 14    |
-| `doc/plan/00000021-accessibility-tech-debt/known-issues.md` | Three accepted costs                                                                                       | 14    |
+| `README.md`                                                 | The status paragraph picks up the third option and the new lengths                                         | 15    |
+| `doc/plan/00000021-accessibility-tech-debt/known-issues.md` | Three accepted costs                                                                                       | 15    |
 
 Tests touched, and by which step:
 
@@ -375,7 +375,7 @@ retune a running clock.
 ### D18 — Three accepted accessibility costs
 
 Recorded in `doc/plan/00000021-accessibility-tech-debt/known-issues.md` in Step
-14, per `CLAUDE.md`:
+15, per `CLAUDE.md`:
 
 1. **The clock readings are not announced.** A value that changes ten times a
    second cannot go through a live region.

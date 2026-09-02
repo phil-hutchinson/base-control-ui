@@ -1,6 +1,6 @@
 // Both players' clocks (rules.md §10), shown in the third region. Calls
 // `useGameClock` itself so a tick repaints this region alone, never the
-// board (D8) — `App` never touches the ticking value.
+// board — `App` never touches the ticking value.
 
 import type { SessionIntent } from "../game/session";
 import type { ClockSetting } from "../rules/clock";
@@ -54,13 +54,8 @@ interface ClockRegionProps {
 
 /**
  * Both clocks, green first (rules.md §10). The side marked as running is
- * the side to move while the game is in progress — deliberately not
- * `useGameClock`'s own `runningSide`, which stays `undefined` whenever the
- * clock setting is "none" even though a side to move exists, because no
- * clock is ticking at all in that case (D3). The story requires the side to
- * move to get the running treatment regardless — the same whether its
- * reading counts down or reads `INF` — so the marking is derived here from
- * the state directly, and the hook is used only for the numbers.
+ * the side to move while the game is in progress, whether its reading
+ * counts down or reads `INF`.
  */
 export function ClockRegion({
   state,

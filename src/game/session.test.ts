@@ -678,6 +678,65 @@ describe("sessionReducer — new-game", () => {
   );
 });
 
+describe("sessionReducer — a side is out of time", () => {
+  it("rejects selecting a ship for the out-of-time side to move", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+      outOfTime: { green: true, red: false },
+    });
+
+    const result = activate(sessionFor(state), "H8");
+
+    expect(result.state).toBe(state);
+    expect(result.selectedShipId).toBeUndefined();
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "out-of-time",
+      square: squareFromName("H8"),
+    });
+  });
+
+  it("rejects completing a move from an already-selected ship for the out-of-time side to move", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+      outOfTime: { green: true, red: false },
+    });
+    const withSelection: Session = {
+      ...sessionFor(state),
+      selectedShipId: "green-1",
+    };
+
+    const result = activate(withSelection, "H7");
+
+    expect(result.state).toBe(state);
+    expect(result.selectedShipId).toBe("green-1");
+    expect(result.lastEvent).toEqual({
+      type: "rejected",
+      reason: "out-of-time",
+      square: squareFromName("H7"),
+    });
+  });
+
+  it("leaves the side to move with time left unaffected", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+      outOfTime: { green: false, red: true },
+    });
+
+    const result = activate(sessionFor(state), "H8");
+
+    expect(result.selectedShipId).toBe("green-1");
+    expect(result.lastEvent).toEqual({
+      type: "selected",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+      destinationCount: legalDestinations(state, "green-1").length,
+      targetCount: legalTargets(state, "green-1").length,
+    });
+  });
+});
+
 describe("sessionReducer — clock-expired", () => {
   it("marks the named side out of time, leaving the other side and lastEvent untouched", () => {
     const state = buildState({

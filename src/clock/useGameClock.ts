@@ -1,10 +1,10 @@
 // §10's running clock: how much of each side's budget is left, and which
 // side (if any) is currently spending theirs. Remaining time is computed
 // fresh from a monotonic timestamp on every render and never accumulated by
-// a tick (D9), so a tick that is late, throttled or coalesced cannot gain or
+// a tick, so a tick that is late, throttled or coalesced cannot gain or
 // lose a player time. Called from `ClockRegion`, never from `App`: the local
 // re-render a tick causes must repaint the clock region alone, never the
-// board (D8).
+// board.
 
 import { useEffect, useRef, useState } from "react";
 import type { SessionIntent } from "../game/session";
@@ -26,7 +26,7 @@ const OUT_OF_TIME_PASS_DELAY_MS = 1000;
 /** Both sides' remaining time, and which side (if any) is currently running. */
 export interface GameClockReading {
   readonly remainingMs: Readonly<Record<Side, number>>;
-  readonly runningSide: Side | undefined;
+  readonly tickingSide: Side | undefined;
 }
 
 /** A side's remaining time: its budget, minus what it has spent, minus, while running, the time since it started. */
@@ -61,11 +61,11 @@ export function useGameClock(
   const budget = startingBudgetMs(state.lengthInRounds, setting);
 
   const spentRef = useRef<Record<Side, number>>({ green: 0, red: 0 });
-  const runningSideRef = useRef<Side | undefined>(undefined);
+  const tickingSideRef = useRef<Side | undefined>(undefined);
   const startedAtRef = useRef<number | undefined>(undefined);
   const [, setTick] = useState(0);
 
-  const runningSide: Side | undefined =
+  const tickingSide: Side | undefined =
     setting !== "none" && !isGameOver(state) ? state.sideToMove : undefined;
 
   // Hands the clock over: commits the elapsed time to whichever side was
@@ -76,8 +76,8 @@ export function useGameClock(
   // player on every mount in development.
   useEffect(() => {
     const now = performance.now();
-    const previousSide = runningSideRef.current;
-    if (previousSide === runningSide) {
+    const previousSide = tickingSideRef.current;
+    if (previousSide === tickingSide) {
       return;
     }
     if (previousSide !== undefined && startedAtRef.current !== undefined) {
@@ -87,16 +87,16 @@ export function useGameClock(
           spentRef.current[previousSide] + (now - startedAtRef.current),
       };
     }
-    runningSideRef.current = runningSide;
-    startedAtRef.current = runningSide === undefined ? undefined : now;
-  }, [runningSide]);
+    tickingSideRef.current = tickingSide;
+    startedAtRef.current = tickingSide === undefined ? undefined : now;
+  }, [tickingSide]);
 
   // Ticks the display while a side is running, and reports expiry the
   // moment the running side's real remaining time reaches zero. Restarts
   // whenever the game state changes, so a stale closure never keeps
   // re-dispatching expiry once the state already records it.
   useEffect(() => {
-    if (runningSide === undefined) {
+    if (tickingSide === undefined) {
       return;
     }
     const interval = setInterval(() => {
@@ -104,17 +104,17 @@ export function useGameClock(
       const now = performance.now();
       const remaining = remainingMsForSide(
         budget,
-        spentRef.current[runningSide],
+        spentRef.current[tickingSide],
         true,
         startedAtRef.current,
         now,
       );
-      if (remaining <= 0 && !state.outOfTime[runningSide]) {
-        onIntent({ type: "clock-expired", side: runningSide });
+      if (remaining <= 0 && !state.outOfTime[tickingSide]) {
+        onIntent({ type: "clock-expired", side: tickingSide });
       }
     }, TICK_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [runningSide, budget, state, onIntent]);
+  }, [tickingSide, budget, state, onIntent]);
 
   // Paces the out-of-time pass so each one reads as its own turn. Re-arms
   // whenever the state changes (so every ply gets its own beat) and clears
@@ -138,18 +138,18 @@ export function useGameClock(
     green: remainingMsForSide(
       budget,
       spentRef.current.green,
-      runningSideRef.current === "green",
+      tickingSideRef.current === "green",
       startedAtRef.current,
       now,
     ),
     red: remainingMsForSide(
       budget,
       spentRef.current.red,
-      runningSideRef.current === "red",
+      tickingSideRef.current === "red",
       startedAtRef.current,
       now,
     ),
   };
 
-  return { remainingMs, runningSide };
+  return { remainingMs, tickingSide };
 }

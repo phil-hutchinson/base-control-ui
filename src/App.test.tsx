@@ -14,8 +14,8 @@ import { GAME_NAME } from "./gameName";
 afterEach(cleanup);
 
 // Wraps the real Board in a spy, forwarding every call to the actual
-// implementation, so a single test (D8, below) can count its renders
-// without changing what it renders for every other test in this file.
+// implementation, so a single test, below, can count its renders without
+// changing what it renders for every other test in this file.
 vi.mock("./board/Board", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./board/Board")>();
   return { ...actual, Board: vi.fn(actual.Board) };
@@ -204,7 +204,7 @@ describe("App", () => {
     assertNoDuplicateIds(container);
   });
 
-  it("does not repaint the board on a clock tick (D8)", async () => {
+  it("does not repaint the board on a clock tick", async () => {
     // `shouldAdvanceTime` lets user-event's own internal scheduling (pointer
     // events, focus handling) keep resolving in the background while the
     // fake clock is otherwise driven explicitly below — without it, the
