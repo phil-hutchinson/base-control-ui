@@ -881,7 +881,17 @@ Verification (automated): `npm test`, `npm run typecheck`, `npm run lint`,
 
 ## Step 9 — The clock reading formatter
 
-Status: pending
+Status: committed
+
+Notes: Added `src/clock/clockReading.ts` exporting `formatClockReading` and
+the named threshold `CLOCK_READING_TENTHS_THRESHOLD_MS` (15 000 ms), and
+`src/clock/clockReading.test.ts` with the exact boundary cases from the plan
+(including the 179 000/178 999 and 15 000/14 999 handovers) plus the story's
+example budgets. Implemented with integer millisecond arithmetic throughout
+(`Math.ceil` on whole seconds or on tenths counted as integers, never on a
+divided float compared for equality) specifically to avoid floating-point
+rounding noise at the boundaries the story is exact about. No deviation from
+the plan.
 
 Add `src/clock/clockReading.ts`: one exported pure function turning a remaining
 duration in milliseconds into the text the region shows, plus the named
