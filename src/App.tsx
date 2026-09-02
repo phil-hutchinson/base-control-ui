@@ -1,5 +1,6 @@
 import { useReducer } from "react";
 import { Board } from "./board/Board";
+import { ClockRegion } from "./clock/ClockRegion";
 import { freshSeed } from "./game/seed";
 import { createSession, sessionReducer } from "./game/session";
 import { GAME_NAME } from "./gameName";
@@ -82,7 +83,13 @@ export function App() {
             <div className="app__play">
               <Board session={session} onIntent={dispatch} />
             </div>
-            <div className="app__reserved">RESERVED</div>
+            <div className="app__clocks">
+              <ClockRegion
+                state={session.state}
+                clockSetting={clockSetting}
+                onIntent={dispatch}
+              />
+            </div>
           </div>
         )}
       </div>

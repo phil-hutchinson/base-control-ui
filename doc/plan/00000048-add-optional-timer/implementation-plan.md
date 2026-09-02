@@ -1048,7 +1048,37 @@ Verification (automated): `npm test` passes with the new hook cases green;
 
 ## Step 11 — The clock region on screen
 
-Status: pending
+Status: committed
+
+Notes: Added `src/clock/ClockRegion.tsx` (+ `ClockRegion.css`) with a local
+`SideClock` component, and wired it into `App.tsx`/`App.css` in place of the
+`RESERVED` placeholder (`.app__reserved` → `.app__clocks`, box unchanged).
+One deliberate deviation from a literal reading of the plan, called out
+explicitly by the owner ahead of this step: the side marked as **running**
+is derived directly from `state.sideToMove` and `isGameOver(state)` inside
+`ClockRegion`, not from `useGameClock`'s own `runningSide`. The hook reports
+`runningSide: undefined` whenever `clockSetting` is `"none"` (D3 — it starts
+no timers at all in that case), but the story and D14 require the side to
+move to get "the same treatment whether the reading is counting down or
+says `INF`", so a no-clock game still needs a running mark. The hook is
+used only for the two `remainingMs` numbers; the marking is computed
+independently. Each clock also carries its side's name (`Green`/`Red`,
+`text-transform: uppercase` in CSS, matching `ScoreDisplay`'s own name
+treatment) above the reading, per D14. Added `src/clock/ClockRegion.test.tsx`
+(five cases: DOM order and labels, running/idle marking and its swap, the
+no-clock INF-with-running-mark case above, a zero reading's flashing class,
+and neither side marked once the game is over) and extended `App.test.tsx`
+(renamed the region assertions from `app__reserved`/`RESERVED` to
+`app__clocks`/two `INF` readings, and added a board-repaint-on-tick case
+per D8, mocking `Board` with `vi.fn(actual.Board)` to count renders). The
+board-repaint test needed `vi.useFakeTimers({ shouldAdvanceTime: true })`
+rather than plain `vi.useFakeTimers()`: without `shouldAdvanceTime`,
+`userEvent.click` never settles under fake timers in this environment (a
+plain radio click alone reproduces the hang, unrelated to the clock code),
+and `userEvent.setup({ advanceTimers: vi.advanceTimersByTime })` — the
+alternative the testing-library docs also suggest — did not fix it either;
+`shouldAdvanceTime: true` did. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (53 files, 894 tests) all pass.
 
 Put both clocks in the third region, replacing `RESERVED` (**D14**).
 
