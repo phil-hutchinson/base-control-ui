@@ -199,7 +199,7 @@ describe("startingGameState", () => {
   });
 
   it("starts every ship at full power whatever the fleet size", () => {
-    for (const fleetSize of [5, 6, 7] as const) {
+    for (const fleetSize of [7, 6, 5] as const) {
       const state = startingGameState(
         SEED,
         DEFAULT_GAME_LENGTH_ROUNDS,

@@ -23,7 +23,7 @@ describe("useAppScreen", () => {
       result.current.setFleetSize(5);
     });
     act(() => {
-      result.current.setLengthInRounds(50);
+      result.current.setLengthInRounds(45);
     });
     act(() => {
       result.current.handlePlay();
@@ -33,7 +33,7 @@ describe("useAppScreen", () => {
       expect.objectContaining({
         type: "new-game",
         fleetSize: 5,
-        lengthInRounds: 50,
+        lengthInRounds: 45,
       }),
     );
     expect(result.current.screen).toBe("game");
@@ -47,7 +47,7 @@ describe("useAppScreen", () => {
       result.current.setFleetSize(6);
     });
     act(() => {
-      result.current.setLengthInRounds(75);
+      result.current.setLengthInRounds(60);
     });
     act(() => {
       result.current.handlePlay();
@@ -60,7 +60,7 @@ describe("useAppScreen", () => {
 
     expect(result.current.screen).toBe("start");
     expect(result.current.fleetSize).toBe(6);
-    expect(result.current.lengthInRounds).toBe(75);
+    expect(result.current.lengthInRounds).toBe(60);
     expect(dispatch).not.toHaveBeenCalled();
   });
 });

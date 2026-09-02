@@ -68,14 +68,14 @@ describe("StartScreen", () => {
   });
 
   it("renders the rounds group with its values and the selected one checked", () => {
-    renderStartScreen({ lengthInRounds: 75 });
+    renderStartScreen({ lengthInRounds: 60 });
 
     const group = screen.getByRole("group", { name: "Rounds" });
     for (const value of GAME_LENGTH_OPTIONS_ROUNDS) {
       const radio = within(group).getByRole("radio", {
         name: String(value),
       });
-      if (value === 75) {
+      if (value === 60) {
         expect(radio).toBeChecked();
       } else {
         expect(radio).not.toBeChecked();
@@ -100,9 +100,9 @@ describe("StartScreen", () => {
     const { onFleetSizeChange, onLengthInRoundsChange, onPlay } =
       renderStartScreen({ lengthInRounds: 30 });
 
-    await user.click(screen.getByRole("radio", { name: "50" }));
+    await user.click(screen.getByRole("radio", { name: "45" }));
 
-    expect(onLengthInRoundsChange).toHaveBeenCalledExactlyOnceWith(50);
+    expect(onLengthInRoundsChange).toHaveBeenCalledExactlyOnceWith(45);
     expect(onFleetSizeChange).not.toHaveBeenCalled();
     expect(onPlay).not.toHaveBeenCalled();
   });

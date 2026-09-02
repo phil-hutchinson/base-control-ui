@@ -20,8 +20,8 @@ describe("DEFAULT_GAME_LENGTH_ROUNDS", () => {
 });
 
 describe("GAME_LENGTH_OPTIONS_ROUNDS", () => {
-  it("offers 30, 50, 75 and 100, shortest first, and includes the default", () => {
-    expect(GAME_LENGTH_OPTIONS_ROUNDS).toEqual([30, 50, 75, 100]);
+  it("offers 30, 45, 60 and 90, shortest first, and includes the default", () => {
+    expect(GAME_LENGTH_OPTIONS_ROUNDS).toEqual([30, 45, 60, 90]);
     expect(GAME_LENGTH_OPTIONS_ROUNDS).toContain(DEFAULT_GAME_LENGTH_ROUNDS);
   });
 

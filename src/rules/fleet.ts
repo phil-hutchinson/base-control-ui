@@ -21,8 +21,11 @@ export interface FleetEntry {
 /** How many ships one side has (rules.md §4): five, six or seven. */
 export type FleetSize = 5 | 6 | 7;
 
-/** The valid fleet sizes, smallest first — what the start screen renders. */
-export const FLEET_SIZES: readonly FleetSize[] = [5, 6, 7];
+/**
+ * The valid fleet sizes, in the order the start screen renders them: largest
+ * first, so the leftmost choice is the simplest, default game.
+ */
+export const FLEET_SIZES: readonly FleetSize[] = [7, 6, 5];
 
 /** §4's standard game: seven ships a side. */
 export const DEFAULT_FLEET_SIZE: FleetSize = 7;

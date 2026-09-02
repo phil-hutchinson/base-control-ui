@@ -15,7 +15,7 @@ export const DEFAULT_GAME_LENGTH_ROUNDS = 30;
  * the rules layer must go on accepting the short games the test suite
  * builds; this list constrains the UI only.
  */
-export const GAME_LENGTH_OPTIONS_ROUNDS: readonly number[] = [30, 50, 75, 100];
+export const GAME_LENGTH_OPTIONS_ROUNDS: readonly number[] = [30, 45, 60, 90];
 
 /** Whether a value is a valid game length in rounds: a positive whole number. */
 export function isGameLengthRounds(value: number): boolean {

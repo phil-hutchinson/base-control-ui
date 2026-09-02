@@ -142,14 +142,14 @@ describe("App", () => {
     expect(shipCells()).toHaveLength(10);
   });
 
-  it("pressing PLAY after choosing 50 rounds starts a game of that length", async () => {
+  it("pressing PLAY after choosing 45 rounds starts a game of that length", async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("radio", { name: "50" }));
+    await user.click(screen.getByRole("radio", { name: "45" }));
     await user.click(screen.getByRole("button", { name: "Play" }));
 
-    expect(screen.getByText("1/50")).toBeInTheDocument();
+    expect(screen.getByText("1/45")).toBeInTheDocument();
   });
 
   it("has no static accessibility violations once a game is in progress", async () => {

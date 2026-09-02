@@ -479,7 +479,22 @@ asserts both that `RULES_VERSION` matches it and that the changelog has a
 
 ## Step 2 — The offered options change: ships 7/6/5, rounds 30/45/60/90
 
-Status: pending
+Status: committed
+
+Notes: `FLEET_SIZES` reordered to `[7, 6, 5]` (comment updated to describe
+largest-first, start-screen order) and `GAME_LENGTH_OPTIONS_ROUNDS` changed to
+`[30, 45, 60, 90]`; `DEFAULT_FLEET_SIZE`, `DEFAULT_GAME_LENGTH_ROUNDS` and
+`isGameLengthRounds` untouched, per plan. Swept `fleet.test.ts` (added an
+explicit `FLEET_SIZES` order assertion and a `MAX_SHIPS_PER_SIDE === 7`
+assertion per D15), `gameLength.test.ts`, `StartScreen.test.tsx`,
+`useAppScreen.test.tsx` and `App.test.tsx` for the new values (50→45, 75→60).
+One deviation beyond the plan's explicit file list: two unrelated test files
+(`src/game/session.test.ts` and `src/rules/gameState.test.ts`) had literal
+`[5, 6, 7]` fleet-size enumerations used only to parameterise per-size tests
+(order-independent in behaviour); reordered them to `[7, 6, 5]` as well so the
+step's own verification grep (`\[5, 6, 7\]` returns nothing) is satisfied
+without weakening the check to exclude them. Typecheck, lint, format:check and
+the full test suite (49 files, 819 tests) all pass.
 
 Implement §2 and §9 as edited in Step 1, plus the ships re-ordering.
 
