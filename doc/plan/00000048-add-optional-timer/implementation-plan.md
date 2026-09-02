@@ -1243,7 +1243,7 @@ nothing. The wording is confirmed by eye at the Step 14 gate.
 
 ## Step 14 — GATE: the owner plays a game out of time
 
-Status: pending
+Status: committed
 
 No code. The owner exercises what happens when a clock runs out. A thirty-round
 game at **2s a turn** gives each player a one-minute budget, which is the quick
