@@ -535,7 +535,15 @@ returns nothing.
 
 ## Step 3 — `src/rules/clock.ts`: the clock's numbers
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/clock.ts` (`ClockSetting`, `CLOCK_SETTINGS`,
+`DEFAULT_CLOCK_SETTING`, `isClockSetting`, `startingBudgetMs`) and
+`src/rules/clock.test.ts` per the plan, with `isClockSetting` typed as an
+`unknown`-accepting type guard (matching how the start screen will need to
+validate a raw value) rather than `isFleetSize`'s `number`-only signature,
+since a clock setting includes the non-numeric `"none"`. No other deviation;
+nothing yet imports this module.
 
 Add `src/rules/clock.ts`, beside `gameLength.ts`, holding only the clock's
 numbers — no wall-clock reading of any kind (settled decision 10):
