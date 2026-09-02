@@ -1281,7 +1281,18 @@ reports anything that reads wrong, looks wrong, or contradicts the ruleset at
 
 ## Step 15 — `README.md`, the accessibility ledger, and a final sweep
 
-Status: pending
+Status: committed
+
+Notes: Updated the status paragraph in `README.md` to name all three
+start-screen options (ships 7/6/5, rounds 30/45/60/90, and the clock), using
+Step 13's final wording ("unlimited" rather than "none") since that is what
+the start screen now reads, and added the budget/pass/game-end summary the
+step asks for. Added a "From story 48" section to
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md` recording D18's
+three accepted costs (unannounced readings, no low-time warning, the chained
+pass losing its first sentence), noting the out-of-time pass is announced
+when it stands alone. Both greps in the step's verification return nothing.
+No other files touched; no deviation from the plan.
 
 `README.md` describes the game for players and now understates it: the status
 paragraph names two options and the old lengths.

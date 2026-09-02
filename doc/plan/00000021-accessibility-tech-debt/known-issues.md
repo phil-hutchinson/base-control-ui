@@ -165,3 +165,35 @@ that fills the region should replace this placeholder rather than build
 around it.
 
 Where: `src/App.tsx`, `src/App.css`.
+
+## From story 48 — an optional clock
+
+Source: `doc/plan/00000048-add-optional-timer/implementation-plan.md`
+decision D18.
+
+### 1. The clock readings are not announced
+
+Below fifteen seconds a clock's reading changes ten times a second; a value
+changing that fast cannot go through a live region without drowning out
+everything else the game announces. The readings are decorative text only,
+readable by sight but not spoken.
+
+Where: `src/clock/ClockRegion.tsx`.
+
+### 2. No warning reaches a screen-reader user that their time is running out
+
+A clock at zero flashes, but the flash is a visual cue only — nothing tells a
+screen-reader user their clock is low or has run out, short of the pass
+sentence once it actually happens (see below).
+
+Where: `src/clock/ClockRegion.tsx`, `src/clock/ClockRegion.css`.
+
+### 3. A chained pass loses its first sentence
+
+When an out-of-time pass is immediately followed by the opponent having no
+legal action, the session records only the last pass effect as `lastEvent`
+(D7), so only the second sentence is spoken. The out-of-time pass itself
+**is** announced whenever it stands alone, since it goes through the existing
+pass sentence.
+
+Where: `src/game/session.ts`.
