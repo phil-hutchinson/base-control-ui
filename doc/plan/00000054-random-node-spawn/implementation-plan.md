@@ -1348,7 +1348,37 @@ Verification (manual): Run `npm run dev` and open the app.
 
 ### Step 10 — README, the accessibility ledger, and the closing sweep
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `README.md`'s "Nodes do not last" paragraph and the Status
+block in the player's terms — fifteen nodes, five charged, a depleted node
+disappearing and a new inactive one being born elsewhere at a random square,
+the vacated square going back to being ordinary, and the map at the end of a
+long game not matching the one it opened on — reflowing both blocks by hand
+since prettier's default `proseWrap: preserve` does not rewrap markdown
+prose. Added one section to
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md`, "From story 54",
+recording the `node-replaced` clause's present/past tense mismatch as
+knowingly accepted per the owner's Step 9 decision, with the consistent
+alternative noted. Judged the story's other named candidate — a square's
+accessible name silently changing while nobody is on it — and found nothing
+to record: the transition is not silent, it is narrated by the same
+end-of-turn live-region mechanism that already narrates `node-charged` and
+`node-ran-out` (pre-existing, unaffected by this story), so this story adds
+no new class of loss beyond what the ledger already covers. One deviation
+beyond the three named tasks: the closing grep sweep turned up a genuine,
+unlisted "site" occurrence in `src/rules/nodePool.test.ts`'s module comment
+("the old seventeen fixed sites", "the seventeen-site board"), left behind by
+Step 8, plus a `CONTRIBUTING.md`-violating "Since story 54" reference in the
+same comment; both were rewritten in place (no rule or behaviour change,
+comment only) since D3 and the sweep's own grep requirement are
+unconditional and this was squarely within Step 10's remit to confirm and
+fix. `npm test` (938 tests), `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm run build` all pass; the grep sweep confirms
+no "site" or "dormant" and no word-boundary "active" (as a node state) in
+`rules.md` or `src/` outside the documented false positives, no "site" or
+"seventeen" in `README.md`, and `RULES_VERSION` "0.20" matching `rules.md`
+and the changelog.
 
 Three closing tasks.
 

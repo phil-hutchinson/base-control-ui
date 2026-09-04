@@ -201,3 +201,24 @@ legal action, the session records only the last pass effect as `lastEvent`
 pass sentence.
 
 Where: `src/game/session.ts`.
+
+## From story 54 — nodes that move around the board
+
+Source: `doc/plan/00000054-random-node-spawn/implementation-plan.md`, Step 9's
+notes, and the owner's decision at that manual gate.
+
+### 1. The replacement clause mixes present and past tense
+
+The end-of-turn announcement's new `node-replaced` clause reads "The node at
+D8 is gone, and a new node appeared at K11." Its sibling clauses are past
+tense — "The node at H8 ran out." and "A new node charged at H8." — so this
+one mixes present and past.
+
+The owner deliberately did not judge the wording at the Step 9 gate: the
+announcement reaches only the live region, which makes it assistive-technology
+surface, and `CLAUDE.md` defers that work pre-release. The wording is
+therefore knowingly accepted as written. The consistent alternative, for
+whoever picks this up: "The node at D8 ended, and a new node appeared at
+K11."
+
+Where: `src/board/announcements.ts`.

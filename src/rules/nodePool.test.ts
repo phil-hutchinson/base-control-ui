@@ -8,19 +8,17 @@
 // clumps, and the pressure weighting keeps every node's wait between
 // charges bounded.
 //
-// Since story 54, a node's life ends in retirement rather than recovery: it
-// leaves the board and one new inactive node appears elsewhere (§3.2,
-// §8.2). That makes two things true that were not true of the old
-// seventeen fixed sites: a square's identity does not persist across a
-// retirement, so waits and charge counts are tracked per node *life*, not
-// per square (see `nodeWaitStats` below); and every appearance — the
-// opening deal's fifteen and every later replacement — has somewhere new to
-// be legal about, which this file now checks directly against the board as
-// it stood at that moment, not just at the deal.
+// A node's life ends in retirement rather than recovery: it leaves the board
+// and one new inactive node appears elsewhere (§3.2, §8.2). That makes two
+// things true that were not true of a fixed board: a square's identity does
+// not persist across a retirement, so waits and charge counts are tracked
+// per node *life*, not per square (see `nodeWaitStats` below); and every
+// appearance — the opening deal's fifteen and every later replacement — has
+// somewhere new to be legal about, which this file now checks directly
+// against the board as it stood at that moment, not just at the deal.
 //
-// Every bound below was re-measured for fifteen mortal nodes rather than
-// carried over from the seventeen-site board, by running this file's own
-// `runEconomy` over `SEEDS` at `PLIES_TO_RUN` turns each (see each
+// Every bound below was measured for fifteen mortal nodes, by running this
+// file's own `runEconomy` over `SEEDS` at `PLIES_TO_RUN` turns each (see each
 // constant's comment for the figure that run produced) — five seeds chosen
 // over more turns, per this run's own cost: a retirement now costs a pool
 // scan per placement, and five seeds already gives every bound here
