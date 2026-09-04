@@ -266,7 +266,19 @@ Verification (automated):
 
 ## Step 2 — GATE: the owner runs a build from a subfolder, from the root, and side by side
 
-Status: pending
+Status: committed
+
+Notes: Passed. One `dist/` was copied to `/tmp/serve/{a/b,one,x/y/z,other}` and
+to `/tmp/serve` itself, served with `python3 -m http.server 8080 --directory
+/tmp/serve`. The owner ran all the location variants — the nested subfolder,
+the other depths, the server root, the two sibling builds loaded one after the
+other — plus the dev server and `npm run preview`, and confirmed the game loads
+and plays in each. The owner chose **not** to play a full game through to the
+game-over panel: the app runs entirely in the browser with no request after
+load, so once the first few moves played correctly there was nothing further
+the location could affect. The no-trailing-slash case (item 7) behaved as
+predicted: `python3 -m http.server` answers `/a/b` with a 301 to `/a/b/`.
+Nothing was observed that the plan did not predict.
 
 No code changes. This is the story's real proof, and it needs a browser and a
 person: the owner serves one built copy from several locations and confirms the
