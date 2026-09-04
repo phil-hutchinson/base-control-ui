@@ -4,8 +4,12 @@
 // running totals lives here.
 
 import { type Square, squareName } from "./board";
-import { type GameState, shipsBySquare, nodeStateAt } from "./gameState";
-import { FIXED_NODE_SQUARES } from "./nodes";
+import {
+  type GameState,
+  nodeSquares,
+  shipsBySquare,
+  nodeStateAt,
+} from "./gameState";
 import { MAX_SHIPS_PER_SIDE, type Side } from "./fleet";
 
 /**
@@ -45,19 +49,18 @@ export function energyForNodesHeld(nodesHeld: number): number {
 }
 
 /**
- * The charged nodes `side` is standing on right now, in `FIXED_NODE_SQUARES`
- * order. A node counts only if one of that side's ships occupies its square
- * **and** the square's node state is `charged` (rules.md §8.4) — an inactive
- * or depleted node pays nothing, and neither does a node a ship merely flew
- * over, which this cannot see because it reads the state at the moment
- * asked.
+ * The charged nodes `side` is standing on right now, in board order. A node
+ * counts only if one of that side's ships occupies its square **and** the
+ * square's node state is `charged` (rules.md §8.4) — an inactive or depleted
+ * node pays nothing, and neither does a node a ship merely flew over, which
+ * this cannot see because it reads the state at the moment asked.
  */
 export function chargedNodesHeldBy(
   state: GameState,
   side: Side,
 ): readonly Square[] {
   const ships = shipsBySquare(state);
-  return FIXED_NODE_SQUARES.filter((node) => {
+  return nodeSquares(state).filter((node) => {
     if (nodeStateAt(state, node) !== "charged") {
       return false;
     }
@@ -67,19 +70,19 @@ export function chargedNodesHeldBy(
 }
 
 /**
- * The depleted nodes `side` is standing on right now, in `FIXED_NODE_SQUARES`
- * order. A node counts only if one of that side's ships occupies its square
- * **and** the square's node state is `depleted` (rules.md §8.4) — an
- * inactive or charged node costs nothing, and neither does a depleted node a
- * ship merely flew over, which this cannot see because it reads the state at
- * the moment asked.
+ * The depleted nodes `side` is standing on right now, in board order. A node
+ * counts only if one of that side's ships occupies its square **and** the
+ * square's node state is `depleted` (rules.md §8.4) — an inactive or charged
+ * node costs nothing, and neither does a depleted node a ship merely flew
+ * over, which this cannot see because it reads the state at the moment
+ * asked.
  */
 export function depletedNodesOccupiedBy(
   state: GameState,
   side: Side,
 ): readonly Square[] {
   const ships = shipsBySquare(state);
-  return FIXED_NODE_SQUARES.filter((node) => {
+  return nodeSquares(state).filter((node) => {
     if (nodeStateAt(state, node) !== "depleted") {
       return false;
     }

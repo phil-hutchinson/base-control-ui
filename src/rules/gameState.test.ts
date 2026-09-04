@@ -3,8 +3,11 @@ import { squareFromName, squareName } from "./board";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
+  type GameState,
+  type NodeStatus,
   markOutOfTime,
   shipsBySquare,
+  nodeSquares,
   nodeStateAt,
   nodeStatusAt,
   startingGameState,
@@ -252,5 +255,49 @@ describe("markOutOfTime", () => {
     const result = markOutOfTime(state, "green");
 
     expect(result).toBe(state);
+  });
+});
+
+/** A state built from `startingGameState`, with its node record replaced. */
+function boardWith(nodes: Readonly<Record<string, NodeStatus>>): GameState {
+  return { ...startingGameState(SEED), nodes };
+}
+
+describe("nodeSquares", () => {
+  it("returns board order for a hand-built board, not insertion order", () => {
+    const state = boardWith({
+      L8: { state: "charged", level: 1 },
+      B4: { state: "inactive", level: 1 },
+      H8: { state: "depleted", level: 1 },
+    });
+
+    expect(nodeSquares(state).map(squareName)).toEqual(["B4", "H8", "L8"]);
+  });
+
+  it("returns only the squares present in state.nodes", () => {
+    const state = boardWith({ H8: { state: "charged", level: 1 } });
+
+    expect(nodeSquares(state).map(squareName)).toEqual(["H8"]);
+  });
+
+  it("returns an empty list for a board with no nodes", () => {
+    const state = boardWith({});
+
+    expect(nodeSquares(state)).toEqual([]);
+  });
+
+  it("is independent of the order state.nodes' keys were inserted in (D8)", () => {
+    const inOrder = boardWith({
+      B4: { state: "inactive", level: 1 },
+      H8: { state: "depleted", level: 1 },
+      L8: { state: "charged", level: 1 },
+    });
+    const scrambled = boardWith({
+      L8: { state: "charged", level: 1 },
+      B4: { state: "inactive", level: 1 },
+      H8: { state: "depleted", level: 1 },
+    });
+
+    expect(nodeSquares(scrambled)).toEqual(nodeSquares(inOrder));
   });
 });

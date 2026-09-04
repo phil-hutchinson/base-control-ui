@@ -12,7 +12,7 @@
 // clocks are symmetric about the turn a state is entered: a node charged
 // in step 4 of turn N first drains in step 3 of turn N+1, and a node that
 // goes depleted in step 3 of turn N first recovers in step 6 of turn N+1 —
-// which is why step 6 works from the depleted set captured at entry, before
+// which is why step 6 works from the depleted list captured at entry, before
 // step 3 runs.
 
 import type { Square } from "./board";
@@ -29,7 +29,7 @@ import type { Side, ShipId } from "./fleet";
 import {
   type GameState,
   type NodeStatus,
-  depletedNodeNames,
+  nodeSquares,
   shipsBySquare,
   nodeStateAt,
 } from "./gameState";
@@ -40,7 +40,6 @@ import {
   HELD_NODE_DRAIN_TABLE,
   NODE_CAPACITY,
   PRESSURE_CAP,
-  FIXED_NODE_SQUARES,
   STARTING_PRESSURE,
   drawTableAmount,
 } from "./nodes";
@@ -123,13 +122,16 @@ export interface EndOfTurnResult {
  *
  * Step 6 must recover exactly the nodes that were depleted before this ply
  * began, never one that only goes depleted during this very sequence, in step
- * 3 below. The set is captured here, at entry, before step 3 runs — it is
- * exact because no action changes a node's state (rules.md §8.6), so the set
- * of depleted nodes when this function is entered is exactly the set from the
- * start of the ply.
+ * 3 below. The ordered list is captured here, at entry, before step 3 runs —
+ * it is exact because no action changes a node's state (rules.md §8.6), so
+ * the set of depleted nodes when this function is entered is exactly the set
+ * from the start of the ply. It is a snapshot, not a live walk, so that a
+ * node written mid-sequence is never visited a second time.
  */
 export function runEndOfTurn(state: GameState): EndOfTurnResult {
-  const depletedBeforePly = depletedNodeNames(state);
+  const depletedBeforePly = nodeSquares(state).filter(
+    (square) => nodeStateAt(state, square) === "depleted",
+  );
   const side = state.sideToMove;
   const occupants = shipsBySquare(state);
   const effects: EndOfTurnEffect[] = [];
@@ -227,8 +229,10 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   // a ship of either side is standing on it right now, the empty table
   // otherwise — and any that reaches capacity goes depleted carrying its
   // drain unclamped (§8.3). A ship left standing on it simply stays there,
-  // collecting nothing (§8.5).
-  for (const square of FIXED_NODE_SQUARES) {
+  // collecting nothing (§8.5). The ordered snapshot is taken once, up front,
+  // rather than recomputed on every iteration.
+  const step3Squares = nodeSquares(workingState);
+  for (const square of step3Squares) {
     const name = squareName(square);
     const status = workingState.nodes[name];
     if (status === undefined || status.state !== "charged") {
@@ -268,8 +272,10 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   // of 50 (§8.2). This runs after the charge draw, so a node is drawn at
   // the pressure it held all turn — its first appearance in a draw is at
   // weight 1, not 2 — and it runs before step 6, so a node that goes inactive
-  // there starts at pressure 1 untouched by this step.
-  for (const square of FIXED_NODE_SQUARES) {
+  // there starts at pressure 1 untouched by this step. The ordered snapshot
+  // is taken once, up front, rather than recomputed on every iteration.
+  const step5Squares = nodeSquares(workingState);
+  for (const square of step5Squares) {
     const name = squareName(square);
     const status = workingState.nodes[name];
     if (status === undefined || status.state !== "inactive") {
@@ -288,19 +294,17 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   }
 
   // Step 6: every node that was depleted before this ply began (the
-  // `depletedBeforePly` set captured at entry, above) subtracts its
+  // `depletedBeforePly` list captured at entry, above) subtracts its
   // recovery; any that reaches zero or below goes inactive, at pressure 1
   // (§8.2). A node that only went depleted during this very sequence — in
   // step 3 above — was charged when the ply began, so it is excluded and
-  // first recovers at the end of the next ply.
-  for (const square of FIXED_NODE_SQUARES) {
+  // first recovers at the end of the next ply. The loop walks the entry
+  // snapshot, not a live walk of the current board, and re-reads each
+  // square's current status, skipping it if it is no longer depleted.
+  for (const square of depletedBeforePly) {
     const name = squareName(square);
     const status = workingState.nodes[name];
-    if (
-      status === undefined ||
-      status.state !== "depleted" ||
-      !depletedBeforePly.has(name)
-    ) {
+    if (status === undefined || status.state !== "depleted") {
       continue;
     }
     const [drawnAmount, nextSeed] = drawTableAmount(

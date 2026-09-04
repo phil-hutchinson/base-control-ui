@@ -587,7 +587,7 @@ no arithmetic, no draw order and no control flow differs.
 
 ### Step 3 — Iterate the board in board order, from the state
 
-Status: pending
+Status: committed
 
 Notes: A first attempt implemented `nodeSquares` and converted every call
 site as specified, and blocked at `npm test` with 7 pre-existing tests
@@ -597,6 +597,31 @@ square as an isolation trick, which this step deliberately removes. The
 agent correctly refused both available workarounds — editing tests the step
 forbade it to touch, and filtering `nodeSquares` against D8 — and escalated.
 The step now carries the fixture repair explicitly.
+
+Second attempt: verified the first attempt's `nodeSquares`, call-site and
+step-6-snapshot changes were already correct against the plan and D8/D16,
+made no changes to them, and repaired the seven fixtures per D19. In
+`ply.test.ts`: the two lone-depleted-node tests (E6) got a level of 40 (well
+above the recovery table's maximum of 8) and their assertions narrowed from
+whole-record equality to the node's square set plus its `state`; the
+lone-charged-node test (K8) had its assertion narrowed to `state` only,
+since drain now always moves its level; the two flown-over-inactive tests
+(I8) gained five charged filler nodes (C3, F3, C6, F6, C9 — mutually
+non-adjacent interior squares) so the charge draw has no shortfall, plus set
+I8 to `PRESSURE_CAP` so the pressure step also skips it, which let their
+existing deep-equality assertions survive unchanged; and the multi-move-plus-fight
+test raised I8's level from 0 to 50 (matching H8) and narrowed its assertion
+to `state`, with the header comment rewritten to explain the board the test
+now states instead of the retired immunity trick. In `session.test.ts`, the
+one failing case (`H9` landed on directly, inactive with the default level 0) was crashing `drawWeightedIndex` on a zero-weight singleton pool; fixed
+with the same five filler charged squares, which is sufficient there since
+the test only compares two independently-computed states for equality and
+asserts nothing about node values. No other test was edited, and the rest of
+the suite (895 tests, unchanged) was re-run to confirm the iteration-order
+change moved nothing else. Final count: 902 tests passing, `npm run
+typecheck`, `npm run lint` and `npm run format:check` all clean. No
+deviation from the plan or from D19 beyond the specific squares and levels
+chosen, which D19 left to the implementer.
 
 Add `nodeSquares(state)` to `src/rules/gameState.ts`, beside `nodeStatusAt`:
 every square that currently holds a node, in board order, built by walking

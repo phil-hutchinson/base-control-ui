@@ -12,9 +12,14 @@
 // board below its target until a future ply's draw can close the gap.
 
 import { type Square, squareName } from "./board";
-import { type GameState, nodeStateAt, nodeStatusAt } from "./gameState";
+import {
+  type GameState,
+  nodeSquares,
+  nodeStateAt,
+  nodeStatusAt,
+} from "./gameState";
 import { drawWeightedIndex } from "./random";
-import { FIXED_NODE_SQUARES, TARGET_CHARGED_NODES } from "./nodes";
+import { TARGET_CHARGED_NODES } from "./nodes";
 
 /** A node went from inactive to charged because the board's end-of-turn draw picked it (rules.md §8.2). */
 export interface NodeChargedEffect {
@@ -32,8 +37,8 @@ export interface ChargeDrawResult {
  * Draws nodes to charge from the inactive pool until the charged count
  * reaches `TARGET_CHARGED_NODES` or the pool runs out, whichever comes first
  * (rules.md §8.2, §8.6 step 4). The pool is every node currently `inactive`,
- * collected by walking `FIXED_NODE_SQUARES` in its declared order; occupied
- * inactive nodes are drawn like any other. Each node's weight is its own
+ * collected by walking the board in board order; occupied inactive nodes are
+ * drawn like any other. Each node's weight is its own
  * pressure (its `level`), so a node that has waited longer is likelier to be
  * picked. Each draw removes its node from the pool — so the next draw's
  * weights are the remaining nodes' pressures — and advances
@@ -42,12 +47,13 @@ export interface ChargeDrawResult {
  * does not move at all if nothing is drawn.
  */
 export function runChargeDraw(state: GameState): ChargeDrawResult {
-  const chargedCount = FIXED_NODE_SQUARES.filter(
+  const squares = nodeSquares(state);
+  const chargedCount = squares.filter(
     (square) => nodeStateAt(state, square) === "charged",
   ).length;
   let shortfall = TARGET_CHARGED_NODES - chargedCount;
 
-  let pool = FIXED_NODE_SQUARES.filter(
+  let pool = squares.filter(
     (square) => nodeStateAt(state, square) === "inactive",
   );
 

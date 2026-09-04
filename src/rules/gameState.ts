@@ -3,7 +3,7 @@
 // stored Map or Set. Occupancy is never stored — build a ship index with
 // `shipsBySquare` at the point of use instead.
 
-import { type Square, squareName } from "./board";
+import { ALL_SQUARES, type Square, squareName } from "./board";
 import {
   DEFAULT_FLEET_SIZE,
   isFleetSize,
@@ -186,15 +186,15 @@ export function nodeStatusAt(
 }
 
 /**
- * The square names of every node that is `depleted` in the given state. Built
- * fresh from whatever state is handed to it.
+ * Every square that currently holds a node, in board order. Built by
+ * walking `ALL_SQUARES` and keeping the ones present in `state.nodes` —
+ * never by reading `Object.keys(state.nodes)`, whose order records the
+ * history of which square was written when, not a property of the board.
+ * Callers that iterate the node set and consume the seeded random stream as
+ * they go rely on this order being independent of how the game got here.
  */
-export function depletedNodeNames(state: GameState): ReadonlySet<string> {
-  const names = new Set<string>();
-  for (const [name, status] of Object.entries(state.nodes)) {
-    if (status.state === "depleted") {
-      names.add(name);
-    }
-  }
-  return names;
+export function nodeSquares(state: GameState): readonly Square[] {
+  return ALL_SQUARES.filter(
+    (square) => state.nodes[squareName(square)] !== undefined,
+  );
 }
