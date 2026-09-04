@@ -2,6 +2,14 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  // Built pages are handed out from per-version subfolders, so several
+  // builds can be play-tested side by side. A relative base makes the built
+  // `dist/` run wherever it is put, at any depth, with the folder name
+  // nowhere in the output. The dev server is not affected: Vite resolves a
+  // relative base to `/` whenever it is not building, so `npm run dev` and
+  // `npm run preview` still serve at the root - do not "fix" this back.
+  // `--base=/some/path/` on the build command still overrides it.
+  base: "./",
   plugins: [react()],
   server: {
     // Listen beyond localhost so the dev server is reachable from the host

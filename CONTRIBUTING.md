@@ -126,6 +126,23 @@ The app is **front-end only**: a static single-page application with no backend
 API, deployable from any static file host. Every feature must run entirely in
 the browser.
 
+The build uses a relative base (`base: "./"` in `vite.config.ts`), so a built
+`dist/` runs wherever it is put — a site root or any depth of subfolder —
+with the folder name nowhere in the output. This is what lets several
+play-test builds sit side by side on one host. The built page must therefore
+be served at a URL ending in `/`, which is a one-time host setting (an S3
+website endpoint does this already; a CloudFront distribution over an S3 REST
+origin needs a rewrite appending `index.html`). Consequently, nothing in the
+app may reach for a root-absolute URL — no asset referenced as `/something`,
+no `fetch("/…")`, no root-absolute link. Assets are bundled by Vite or
+inline; anything else would break the moment the app is served from a
+subfolder. The dev server is unaffected: Vite resolves a relative base to `/`
+when it is not building, so `npm run dev` and `npm run preview` serve at the
+root as they always have. The one exception is `index.html`'s
+`<script type="module" src="/src/main.tsx">`: this is a dev-server URL, and
+Vite replaces it at build time with the base-prefixed, hashed asset tags, so
+it must be left root-absolute.
+
 The ruleset lives in this repository at
 [`doc/ruleset/rules.md`](doc/ruleset/rules.md) and is the single source of
 truth. Rule logic in `src/` implements it and never restates or extends it.
