@@ -1189,7 +1189,57 @@ and a sequence carrying none is unchanged.
 
 ### Step 8 — The long-run invariants
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `src/rules/nodePool.test.ts` (13 → 32 tests) around fifteen
+mortal nodes. `runEconomy` now also records each ply's node count and its
+ordered `node-replaced` effects (both squares), which feeds four new
+hard-invariant checks alongside the recalibrated statistical ones: the
+board holds exactly fifteen nodes at every ply; every appearance — the
+deal's fifteen (checked pairwise against each other and the fleet via
+`legalNodePool`) and every replacement (checked by rebuilding the board
+exactly as `endOfTurn.ts` does — retiring square removed, then the pool
+drawn — and confirming the written square was a member, and that it is
+never a bay); the charged count never exceeds five and is back at five by
+the run's end (a shortfall is tolerated, not asserted against, per the
+step); and a new "spreads across the whole legal interior" test over the
+set of squares ever occupied (deal plus every replacement across all
+seeds), mirroring `nodes.test.ts`'s deal-spread test but for the churning
+board. Every numeric bound was re-measured rather than carried over,
+using this file's own `runEconomy` at `PLIES_TO_RUN = 500` over `SEEDS`
+(five literal seeds, chosen — per the step's runtime guidance — over more
+plies rather than more seeds, since a replacement now costs a pool scan):
+measured minimum inactive count 5 (floor set to 3, down from 4), measured
+maximum multi-expiry share 2.4% (bound kept at 10%), measured maximum
+expiries in one ply 3 (bound kept at `TARGET_CHARGED_NODES - 1`), measured
+maximum wait-between-charges 162 turns for these seeds and up to 257 in an
+ad hoc forty-seed/800-ply sweep (bound kept at 400), measured minimum
+total charges 85 (floor kept at 40), measured distinct interior squares
+occupied 116 of 121 (floor set to 100), and the steady-state means
+(~1.88 depleted, ~8.12 inactive) rewritten with new bounds (0.5–4 and
+6–10) replacing the stale seventeen-site-era "two or three depleted, nine
+or ten inactive" wording and numbers. The economy matches Appendix B's
+prediction well: charged never fell below or above five in any run
+measured (three seeds up to 500 plies, five seeds up to 500 plies, ten and
+forty seeds up to 800 plies, tens of thousands of ply-samples total), so
+"reaches five and recovers after a shortfall" is written to tolerate a
+shortfall without the long run ever actually needing to exercise one — no
+economy defect was found; every invariant the story asks for held with
+comfortable margin in measurement. Extended `src/rules/seededReplay.test.ts`
+per D18: added a `replacedNodes` field to `PlayedGame` (both squares of
+every `node-replaced` effect, in order, via a new `replacedNodes` helper
+mirroring `chargedSquares`), included it in the same-seed equality check,
+the different-seed divergence check, and the non-vacuity floor (measured 10
+replacements for seed 20260819 over forty rounds; floor set to 5), and
+corrected the header comment to describe this new consumer of the seeded
+stream. Confirmed `fullGame.test.ts` and `openingBoard.test.ts` still pass
+unchanged (not part of this step's edits — both already updated in Steps 5
+and 6). `npm run typecheck`, `npm run lint`, `npm run format:check` and
+`npm test` (938 tests, up from 919: +19 in `nodePool.test.ts`, unchanged
+count in `seededReplay.test.ts`) all pass; full suite runtime ~59s, this
+step's two files together run in about 5s. No deviation from the plan
+beyond the specific bound values and seed/ply counts, which the step left
+to the implementer's measurement.
 
 Rewrite `src/rules/nodePool.test.ts` around fifteen mortal nodes. The
 existing file drives `runEndOfTurn` for 500 plies from a dealt board over
