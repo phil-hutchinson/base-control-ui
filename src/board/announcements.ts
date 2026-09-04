@@ -220,9 +220,11 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
  * clause ahead of the gain clause so it sits next to the energy-collection
  * sentence that follows it, both ahead of the rest. `node-charged` speaks —
  * a node becoming charged is the thing both players are racing towards.
- * `node-replaced` produces no clause yet here; a later step gives it one.
- * A zero collection or a zero penalty
- * produces no effect at all (rules.md §8.4), so there is nothing here to
+ * `node-replaced` speaks too, in one sentence naming both squares: unlike
+ * the old cycle-in-place, a node ending and a new one appearing elsewhere is
+ * a visible change to the map and to where the next race will be. A zero
+ * collection or a zero penalty produces no effect at all (rules.md §8.4),
+ * so there is nothing here to
  * skip for either case — a turn that only pays reads as one sentence, and a
  * turn that collects and then pays reads as two, in that order, because the
  * sequence pushes the collection effect before the penalty effect.
@@ -248,7 +250,6 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
     switch (effect.type) {
       case "power-gained":
       case "power-lost":
-      case "node-replaced":
         break;
       case "energy-collected":
         clauses.push(energyCollectedClause(effect));
@@ -261,6 +262,11 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
         break;
       case "node-charged":
         clauses.push(`A new node charged at ${squareName(effect.square)}.`);
+        break;
+      case "node-replaced":
+        clauses.push(
+          `The node at ${squareName(effect.retiredSquare)} is gone, and a new node appeared at ${squareName(effect.newSquare)}.`,
+        );
         break;
     }
   }

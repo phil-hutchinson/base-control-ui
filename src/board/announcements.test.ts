@@ -366,7 +366,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("says nothing at all for a node being replaced yet (§8.2, §8.6)", () => {
+  it("announces a node being replaced, naming both squares in one sentence (§8.2, §8.6)", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -390,7 +390,75 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The node at D8 is gone, and a new node appeared at K11. Red's turn, 1 action left.",
+    );
+  });
+
+  it("announces two nodes being replaced in one sequence, in the order the effects were produced", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "node-replaced",
+              retiredSquare: squareAt("D", 8),
+              newSquare: squareAt("K", 11),
+            },
+            {
+              type: "node-replaced",
+              retiredSquare: squareAt("H", 12),
+              newSquare: squareAt("F", 3),
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. " +
+        "The node at D8 is gone, and a new node appeared at K11. " +
+        "The node at H12 is gone, and a new node appeared at F3. " +
+        "Red's turn, 1 action left.",
+    );
+  });
+
+  it("announces a node replaced after a node charged, matching step 6 running after the charge draw", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            { type: "node-charged", square: squareAt("D", 8) },
+            {
+              type: "node-replaced",
+              retiredSquare: squareAt("H", 12),
+              newSquare: squareAt("F", 3),
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. " +
+        "A new node charged at D8. " +
+        "The node at H12 is gone, and a new node appeared at F3. " +
+        "Red's turn, 1 action left.",
     );
   });
 
@@ -764,6 +832,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       "Green ship moved from K4 to K5. " +
         "Green ship at K5 lost a point of power, reaching 0. " +
         "The node at K5 ran out. " +
+        "The node at N4 is gone, and a new node appeared at F3. " +
         "Red's turn, 1 action left.",
     );
   });

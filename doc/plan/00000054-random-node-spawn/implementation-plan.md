@@ -1136,7 +1136,26 @@ Verification (automated): Run `npm test`. New tests, driven through
 
 ### Step 7 — The end-of-turn announcement says a replacement
 
-Status: pending
+Status: committed
+
+Notes: Added a `case "node-replaced"` clause to `endOfTurnClauses` in
+`src/board/announcements.ts` producing
+`"The node at <retiredSquare> is gone, and a new node appeared at
+<newSquare>."`, and reworded the switch's doc comment (previously explaining
+why `node-replaced` produced no clause yet) to explain why it now speaks,
+alongside `node-charged`. Renamed and rewrote the "says nothing at all for a
+node being replaced yet" test to assert the new sentence, added a second
+test for two `node-replaced` effects in one sequence producing two clauses in
+effect order, added a third test asserting a `node-replaced` clause follows a
+`node-charged` clause when both are present, and extended the existing "full
+end-of-turn sequence" test's fixture and expectation with a `node-replaced`
+effect after `node-ran-out`. No deviation: the suggested wording was used
+verbatim, since it read fine next to the neighbouring clauses; clause
+position is driven entirely by the order effects appear in the `effects`
+array (as with every other clause), so the switch's own case ordering carries
+no behavioural weight and was placed after `node-charged` for readability
+only. `npm run typecheck`, `npm run lint`, `npm run format:check` all clean;
+`npm test` — 919 tests (up from 917), all passing.
 
 Give `node-replaced` a clause in `src/board/announcements.ts`'s
 `endOfTurnClauses`, naming both halves in one sentence — the node that ended
