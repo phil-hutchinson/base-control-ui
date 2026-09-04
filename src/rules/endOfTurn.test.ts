@@ -1,17 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { squareFromName, squareName } from "./board";
-import { runEndOfTurn } from "./endOfTurn";
+import { squareFromName, squareName, type Square } from "./board";
+import { runEndOfTurn, type NodeReplacedEffect } from "./endOfTurn";
 import type { ShipId } from "./fleet";
+import { legalNodePool } from "./nodePlacement";
 import {
   type GameState,
   type Ship,
   type NodeStatus,
+  nodeSquares,
   startingGameState,
 } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { PowerLevel } from "./power";
-import { NODE_CAPACITY, PRESSURE_CAP, type NodeState } from "./nodes";
+import {
+  NODE_CAPACITY,
+  PRESSURE_CAP,
+  STARTING_PRESSURE,
+  type NodeState,
+} from "./nodes";
 
 function ship(
   id: ShipId,
@@ -453,8 +460,8 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
   });
 });
 
-describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
-  it("recovers a depleted node to inactive, at pressure 1, once its level reaches zero or below", () => {
+describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", () => {
+  it("retires a depleted node once its level reaches zero or below, replacing it with one new inactive node at pressure 1", () => {
     // The recovery table's minimum draw is 4, so a level of 4 is guaranteed
     // to reach zero or below on a single draw, regardless of seed.
     const state = buildState({
@@ -463,13 +470,137 @@ describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.nodes.H8).toEqual({ state: "inactive", level: 1 });
-    expect(result.effects).toEqual([
-      { type: "node-went-inactive", square: squareFromName("H8") },
-    ]);
+    expect(result.effects).toHaveLength(1);
+    const [effect] = result.effects;
+    if (effect.type !== "node-replaced") {
+      throw new Error(`expected a node-replaced effect, got "${effect.type}"`);
+    }
+    expect(squareName(effect.retiredSquare)).toBe("H8");
+    const newName = squareName(effect.newSquare);
+    expect(newName).not.toBe("H8");
+
+    expect(result.state.nodes.H8).toBeUndefined();
+    expect(Object.keys(result.state.nodes)).toEqual([newName]);
+    expect(result.state.nodes[newName]).toEqual({
+      state: "inactive",
+      level: STARTING_PRESSURE,
+    });
   });
 
-  it("does not recover a node that only went depleted during this very sequence", () => {
+  it("draws the replacement from a square legal under §3.2 given the board at that moment, and never the retiring node's own square", () => {
+    const state = buildState({
+      nodes: {
+        H8: ["depleted", 4],
+        F2: ["charged", 1],
+        J2: ["charged", 1],
+        B4: ["charged", 1],
+        L8: ["charged", 1],
+        D8: ["charged", 1],
+      },
+      ships: [ship("green-1", "green", "A1"), ship("red-1", "red", "O15")],
+    });
+
+    const result = runEndOfTurn(state);
+
+    const replaced = result.effects.find(
+      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
+    );
+    if (replaced === undefined) {
+      throw new Error("expected a node-replaced effect");
+    }
+    expect(squareName(replaced.retiredSquare)).toBe("H8");
+    expect(squareName(replaced.newSquare)).not.toBe("H8");
+
+    // Legal given the board as it stood the instant before the draw: H8
+    // already removed, the surviving nodes and the ships' squares (ships
+    // never move during end-of-turn, so these are also where they started).
+    const survivingNodeSquares = nodeSquares(result.state).filter(
+      (square) => squareName(square) !== squareName(replaced.newSquare),
+    );
+    const pool = legalNodePool(
+      survivingNodeSquares,
+      result.state.ships.map((s) => s.square),
+      replaced.retiredSquare,
+    );
+    expect(pool.map(squareName)).toContain(squareName(replaced.newSquare));
+  });
+
+  it("keeps the node count at fifteen across a retirement", () => {
+    const chargedNames = ["C3", "E3", "G3", "I3", "K3"];
+    const depletedName = "M3";
+    const inactiveNames = [
+      "C5",
+      "E5",
+      "G5",
+      "I5",
+      "K5",
+      "M5",
+      "C7",
+      "E7",
+      "G7",
+    ];
+    const state = buildState({
+      nodes: {
+        ...Object.fromEntries(
+          chargedNames.map((name) => [name, ["charged", 1] as const]),
+        ),
+        // The recovery table's minimum draw is 4, guaranteeing retirement.
+        [depletedName]: ["depleted", 4],
+        ...Object.fromEntries(
+          inactiveNames.map((name) => [name, ["inactive", 10] as const]),
+        ),
+      },
+    });
+    expect(Object.keys(state.nodes)).toHaveLength(15);
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.nodes[depletedName]).toBeUndefined();
+    expect(Object.keys(result.state.nodes)).toHaveLength(15);
+  });
+
+  it("handles two retirements in the same sequence one after another, in board order, so the second replacement lands beside neither the first nor any surviving node", () => {
+    const state = buildState({
+      nodes: {
+        H8: ["depleted", 4],
+        K5: ["depleted", 4],
+        F2: ["charged", 1],
+        J2: ["charged", 1],
+        B4: ["charged", 1],
+      },
+    });
+
+    const result = runEndOfTurn(state);
+
+    const replacements = result.effects.filter(
+      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
+    );
+    expect(replacements).toHaveLength(2);
+    // Board order: K5 (row 5) is processed before H8 (row 8).
+    expect(
+      replacements.map((effect) => squareName(effect.retiredSquare)),
+    ).toEqual(["K5", "H8"]);
+
+    expect(result.state.nodes.H8).toBeUndefined();
+    expect(result.state.nodes.K5).toBeUndefined();
+    expect(Object.keys(result.state.nodes)).toHaveLength(5);
+
+    const finalSquares = nodeSquares(result.state);
+    const isAdjacent = (a: Square, b: Square): boolean =>
+      Math.abs(a.row - b.row) <= 1 &&
+      Math.abs(
+        "ABCDEFGHIJKLMNO".indexOf(a.column) -
+          "ABCDEFGHIJKLMNO".indexOf(b.column),
+      ) <= 1;
+    for (const square of finalSquares) {
+      const others = finalSquares.filter(
+        (other) => squareName(other) !== squareName(square),
+      );
+      expect(others.some((other) => isAdjacent(square, other))).toBe(false);
+    }
+  });
+
+  it("does not retire a node that only went depleted during this very sequence", () => {
     // H8's level guarantees it crosses capacity in step 3 (see the drain
     // tests above): it is genuinely `charged`, not `depleted`, at the start
     // of this state, so `runEndOfTurn` derives an empty depleted-before-ply
@@ -483,19 +614,20 @@ describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
 
     expect(result.state.nodes.H8.state).toBe("depleted");
     expect(
-      result.effects.some((effect) => effect.type === "node-went-inactive"),
+      result.effects.some((effect) => effect.type === "node-replaced"),
     ).toBe(false);
-    // It first recovers at the end of the next ply, once it truly was
-    // depleted when that one began — `result.state` genuinely has H8
-    // depleted, so this second call derives it into the set on its own.
+    // It first has a chance to retire at the end of the next ply, once it
+    // truly was depleted when that one began — `result.state` genuinely has
+    // H8 depleted, so this second call derives it into the set on its own.
     const nextResult = runEndOfTurn(result.state);
-    expect(nextResult.state.nodes.H8.level).toBeLessThan(
-      result.state.nodes.H8.level,
-    );
+    expect(
+      nextResult.state.nodes.H8 === undefined ||
+        nextResult.state.nodes.H8.level < result.state.nodes.H8.level,
+    ).toBe(true);
   });
 
-  it("recovers a node ended at half capacity in roughly half the plies a full one takes", () => {
-    function pliesToRecover(startLevel: number, seed: number): number {
+  it("retires a node ended at half capacity in roughly half the plies a full one takes", () => {
+    function pliesToRetire(startLevel: number, seed: number): number {
       let state = buildState({
         nodes: { H8: ["depleted", startLevel] },
         randomSeed: seed,
@@ -504,7 +636,7 @@ describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
       for (;;) {
         const result = runEndOfTurn(state);
         plies += 1;
-        if (result.state.nodes.H8.state === "inactive") {
+        if (result.state.nodes.H8 === undefined) {
           return plies;
         }
         state = result.state;
@@ -513,20 +645,68 @@ describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
 
     const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     const averageHalf =
-      SEEDS.reduce((sum, seed) => sum + pliesToRecover(30, seed), 0) /
+      SEEDS.reduce((sum, seed) => sum + pliesToRetire(30, seed), 0) /
       SEEDS.length;
     const averageFull =
-      SEEDS.reduce((sum, seed) => sum + pliesToRecover(60, seed), 0) /
+      SEEDS.reduce((sum, seed) => sum + pliesToRetire(60, seed), 0) /
       SEEDS.length;
 
     expect(averageHalf).toBeGreaterThan(averageFull * 0.3);
     expect(averageHalf).toBeLessThan(averageFull * 0.7);
   });
+
+  it("keeps the two clocks symmetric across a retirement: a replacement is inactive through the whole of the next turn, first charged in that turn's draw, and first drains the turn after that", () => {
+    // H8 is guaranteed to retire this ply (level 4); F2 is guaranteed to run
+    // out this ply (level NODE_CAPACITY - 1, empty). Both are genuine at the
+    // start of this state, so `runEndOfTurn` derives the right
+    // depleted-before-ply set on its own.
+    const turnN = buildState({
+      nodes: {
+        H8: ["depleted", 4],
+        F2: ["charged", NODE_CAPACITY - 1],
+      },
+    });
+
+    const afterTurnN = runEndOfTurn(turnN);
+
+    expect(afterTurnN.state.nodes.F2.state).toBe("depleted");
+    expect(
+      afterTurnN.effects.some((effect) => effect.type === "node-charged"),
+    ).toBe(false);
+    const replaced = afterTurnN.effects.find(
+      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
+    );
+    if (replaced === undefined) {
+      throw new Error("expected a node-replaced effect");
+    }
+    const replacementName = squareName(replaced.newSquare);
+    // Untouched by turn N's own step 5, which already ran before step 6
+    // wrote it.
+    expect(afterTurnN.state.nodes[replacementName]).toEqual({
+      state: "inactive",
+      level: STARTING_PRESSURE,
+    });
+
+    // Turn N+1: the replacement is the board's only inactive node, so the
+    // shortfall (F2 is depleted, nothing charged) charges it deterministically.
+    const afterTurnNPlus1 = runEndOfTurn(afterTurnN.state);
+    expect(afterTurnNPlus1.effects).toContainEqual({
+      type: "node-charged",
+      square: replaced.newSquare,
+    });
+    expect(afterTurnNPlus1.state.nodes[replacementName].state).toBe("charged");
+
+    // Turn N+2: now charged, it first drains.
+    const afterTurnNPlus2 = runEndOfTurn(afterTurnNPlus1.state);
+    expect(afterTurnNPlus2.state.nodes[replacementName].level).toBeGreaterThan(
+      afterTurnNPlus1.state.nodes[replacementName].level,
+    );
+  });
 });
 
-describe("runEndOfTurn — step 4, the charge draw never charges a node that went inactive in the same sequence (§8.6 step ordering)", () => {
-  it("leaves the board with nothing charged when the only inactive candidate finishes recovering this very ply", () => {
-    // H8 is guaranteed to recover this ply (level 4, see above); F2 is
+describe("runEndOfTurn — step 4, the charge draw never charges a node that only appears in step 6 of the same sequence (§8.6 step ordering)", () => {
+  it("leaves the board with nothing charged when the only inactive candidate is a node retiring this very ply", () => {
+    // H8 is guaranteed to retire this ply (level 4, see above); F2 is
     // guaranteed to run out this ply (level NODE_CAPACITY - 1, empty). H8 is
     // genuinely depleted, and F2 genuinely charged, before this ply begins,
     // so `runEndOfTurn` derives the right depleted-before-ply set on its own.
@@ -539,16 +719,15 @@ describe("runEndOfTurn — step 4, the charge draw never charges a node that wen
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.nodes.H8).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.H8).toBeUndefined();
     expect(result.state.nodes.F2.state).toBe("depleted");
     expect(result.effects).toContainEqual({
       type: "node-ran-out",
       square: squareFromName("F2"),
     });
-    expect(result.effects).toContainEqual({
-      type: "node-went-inactive",
-      square: squareFromName("H8"),
-    });
+    expect(
+      result.effects.some((effect) => effect.type === "node-replaced"),
+    ).toBe(true);
     expect(
       result.effects.some((effect) => effect.type === "node-charged"),
     ).toBe(false);
@@ -612,7 +791,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     const result = runEndOfTurn(state);
 
     expect(
-      result.effects.filter((effect) => effect.type !== "node-went-inactive"),
+      result.effects.filter((effect) => effect.type !== "node-replaced"),
     ).toEqual([]);
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
   });

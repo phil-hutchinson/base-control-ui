@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isBay } from "./bays";
 import { ALL_SQUARES, type Square, squareAt, squareName } from "./board";
-import { nodeSquares, startingGameState } from "./gameState";
-import {
-  drawNodeSquare,
-  drawNodeSquareForState,
-  legalNodePool,
-} from "./nodePlacement";
+import { drawNodeSquare, legalNodePool } from "./nodePlacement";
 import { mulberry32 } from "./random";
 
 /** The 121 squares C3-M13, in board order — the interior §3.2's two ring exclusions leave. */
@@ -142,29 +137,5 @@ describe("drawNodeSquare", () => {
       const [square] = drawNodeSquare([], [], seed, squareAt("H", 8));
       expect(squareName(square)).not.toBe("H8");
     }
-  });
-});
-
-describe("drawNodeSquareForState", () => {
-  it("draws from the state's own node squares, ship squares and seed", () => {
-    const state = startingGameState(7);
-
-    const [expectedSquare, expectedSeed] = drawNodeSquare(
-      nodeSquares(state),
-      state.ships.map((ship) => ship.square),
-      state.randomSeed,
-    );
-    const [square, nextSeed] = drawNodeSquareForState(state);
-
-    expect(squareName(square)).toBe(squareName(expectedSquare));
-    expect(nextSeed).toBe(expectedSeed);
-  });
-
-  it("honours the excluded square", () => {
-    const state = startingGameState(7);
-
-    const [square] = drawNodeSquareForState(state, squareAt("H", 8));
-
-    expect(squareName(square)).not.toBe("H8");
   });
 });

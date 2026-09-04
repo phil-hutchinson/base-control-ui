@@ -991,7 +991,65 @@ pass.
 
 ### Step 6 — Retirement and replacement
 
-Status: pending
+Status: committed
+
+Notes: `runEndOfTurn`'s step 6 now removes a retiring node's entry from
+`state.nodes` before building the replacement pool (D15), draws the
+replacement via `nodePlacement.drawNodeSquare` excluding the retiring
+square, and writes the new entry at `inactive`/`STARTING_PRESSURE`; two
+retirements in the same sequence are handled one after another against the
+board-order snapshot Step 3 introduced (D16), each complete before the next
+begins, confirmed by a dedicated test. `node-went-inactive` is replaced by
+`node-replaced` (`retiredSquare` + `newSquare`) throughout
+`src/rules/endOfTurn.ts` and `src/board/announcements.ts` (still producing
+no clause, per the step — Step 7's job). Per D20, deleted
+`drawNodeSquareForState` and the `gameState`/`GameState` import from
+`src/rules/nodePlacement.ts`; `endOfTurn.ts` now calls `drawNodeSquare`
+directly with `nodeSquares(workingState)` and the ships' squares.
+`nodePlacement.ts` imports only `board`, `bays` and `random`; `madge
+--circular` over `src/` shows only the pre-existing, unrelated
+`gameLength.ts` <-> `gameState.ts` cycle, confirming the
+`nodes.ts` -> `nodePlacement.ts` -> `gameState.ts` -> `nodes.ts` cycle is
+gone. Repaired the tests this step's own change invalidates:
+`src/rules/endOfTurn.test.ts` (the recovery-completion block rewritten
+around retirement/replacement, plus new tests for legality of the
+replacement square, node count staying at fifteen, two retirements in one
+sequence being neither adjacent to each other nor to a survivor in board
+order, and the two-clock timing across a retirement), `src/rules/camping.test.ts`
+(the depleted-node-outlasts-recovery scenario rewritten as
+retire-and-replace, with the new case the step asked for — a ship on a
+retiring node keeps its square and power and stops paying the depleted-node
+penalty once the square is ordinary), `src/rules/nodePlacement.test.ts`
+(deleted the `drawNodeSquareForState` describe block), and
+`src/rules/openingBoard.test.ts` ("recovers a depleted node to inactive"
+restated as "retires and replaces a depleted node"; its "every dealt node
+charged at least once" check was quietly wrong for the five nodes the deal
+opened already charged, since they retire and vanish without ever raising
+a `node-charged` effect of their own — fixed to credit them from the
+already-captured opening-charged set instead of only from observed
+effects, which is what "charged at least once" actually means once a
+square's identity does not survive a retirement).
+
+One further repair beyond the step's own list, needed once retirement
+actually reshuffles the board over a long run:
+`src/rules/nodePool.test.ts`'s "bounds how long any node can wait between
+charges" tracked wait times **per fixed square** across the whole run — a
+premise this step genuinely removes, not weakens, since a square's identity
+no longer persists across a retirement. Restated as what is now true: the
+wait is tracked per node **life** (from appearing inactive, whether dealt or
+replaced, to being charged), carrying the same numeric bound forward
+unchanged, plus a coarse total-charges floor in place of the old
+per-square-charged-twice check (Step 8 is where this file gets its proper
+long-run rewrite; this is a minimal, honest repair, not that rewrite).
+`src/rules/nodePool.test.ts` and `src/rules/openingBoard.test.ts` were not
+in the step's own "known" list but broke for the reasons above once the
+lifecycle change was real rather than theoretical.
+
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(917 tests, unchanged count from Step 5 net of the deletions and additions
+described above) all pass. No deviation from the plan's rule content;
+the deviations above are all test-repair judgement calls the step and D19's
+sibling reasoning left to the implementer.
 
 Change §8.6 step 6 in `src/rules/endOfTurn.ts` so that a depleted node whose
 recovery reaches zero or below **leaves the board** and is replaced by one

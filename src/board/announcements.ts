@@ -218,13 +218,10 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
  * produced them. All of a sequence's power losses are grouped into one
  * clause, and all of its power gains into another, the charged-node loss
  * clause ahead of the gain clause so it sits next to the energy-collection
- * sentence that follows it, both ahead of the rest. The two board-only node
- * transitions are judged separately: `node-charged` speaks — a node
- * becoming charged is the thing both players are racing towards — while
- * `node-went-inactive` produces no clause at all, because a node that has
- * merely finished waiting gives nothing, takes nothing and cannot be
- * stopped on, so a node quietly becoming eligible for the charge draw is a
- * board change, not a player event. A zero collection or a zero penalty
+ * sentence that follows it, both ahead of the rest. `node-charged` speaks —
+ * a node becoming charged is the thing both players are racing towards.
+ * `node-replaced` produces no clause yet here; a later step gives it one.
+ * A zero collection or a zero penalty
  * produces no effect at all (rules.md §8.4), so there is nothing here to
  * skip for either case — a turn that only pays reads as one sentence, and a
  * turn that collects and then pays reads as two, in that order, because the
@@ -251,7 +248,7 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
     switch (effect.type) {
       case "power-gained":
       case "power-lost":
-      case "node-went-inactive":
+      case "node-replaced":
         break;
       case "energy-collected":
         clauses.push(energyCollectedClause(effect));

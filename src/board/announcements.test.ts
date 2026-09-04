@@ -366,7 +366,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("says nothing at all for a depleted node going inactive (§8.2, §8.6)", () => {
+  it("says nothing at all for a node being replaced yet (§8.2, §8.6)", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -378,7 +378,13 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           type: "ply-ended",
           side: "green",
           sideToMove: "red",
-          endOfTurn: [{ type: "node-went-inactive", square: squareAt("D", 8) }],
+          endOfTurn: [
+            {
+              type: "node-replaced",
+              retiredSquare: squareAt("D", 8),
+              newSquare: squareAt("K", 11),
+            },
+          ],
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
@@ -744,7 +750,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               power: 0,
             },
             { type: "node-ran-out", square: squareAt("K", 5) },
-            { type: "node-went-inactive", square: squareAt("N", 4) },
+            {
+              type: "node-replaced",
+              retiredSquare: squareAt("N", 4),
+              newSquare: squareAt("F", 3),
+            },
           ],
         },
       ],

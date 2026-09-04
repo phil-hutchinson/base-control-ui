@@ -9,7 +9,7 @@
 // fresh.
 
 import { describe, expect, it } from "vitest";
-import { squareFromName, squareName } from "./board";
+import { squareName } from "./board";
 import { runChargeDraw } from "./chargeDraw";
 import { runEndOfTurn } from "./endOfTurn";
 import { startingFleet } from "./fleet";
@@ -30,13 +30,14 @@ const RUN_TO_COMPLETION_LENGTH_IN_ROUNDS = 1_000;
 
 describe("a game played from a dealt board runs to completion (rules.md §8.1, §8.6)", () => {
   it.each(RUN_TO_COMPLETION_SEEDS)(
-    "runs every dealt node out, recovers a depleted node to inactive, tops the board back up to five, and charges every one of the dealt nodes at least once (seed %d)",
+    "runs every dealt node out, retires and replaces a depleted node, tops the board back up to five, and charges every one of the dealt nodes at least once (seed %d)",
     (seed) => {
       let state = startingGameState(seed, RUN_TO_COMPLETION_LENGTH_IN_ROUNDS);
 
-      // Step 6's lifecycle change (retirement and replacement) has not
-      // landed yet, so the dealt squares are still the whole board's squares
-      // for the length of this run.
+      // A node cannot retire without first being charged, so the fifteen
+      // squares the deal placed are still the right set to check "charged
+      // at least once" against, even though the board's own squares
+      // reshuffle as replacements land elsewhere over the run.
       const dealtNodeNames = nodeSquares(state).map(squareName);
       const dealtChargedNames = dealtNodeNames.filter(
         (name) => state.nodes[name]?.state === "charged",
@@ -44,7 +45,7 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       expect(dealtChargedNames).toHaveLength(TARGET_CHARGED_NODES);
 
       const ranOut = new Set<string>();
-      const wentInactive = new Set<string>();
+      const retired = new Set<string>();
       const charged = new Set<string>();
 
       for (let ply = 0; ply < RUN_TO_COMPLETION_PLIES; ply++) {
@@ -52,8 +53,8 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
         for (const effect of result.effects) {
           if (effect.type === "node-ran-out") {
             ranOut.add(squareName(effect.square));
-          } else if (effect.type === "node-went-inactive") {
-            wentInactive.add(squareName(effect.square));
+          } else if (effect.type === "node-replaced") {
+            retired.add(squareName(effect.retiredSquare));
           } else if (effect.type === "node-charged") {
             charged.add(squareName(effect.square));
           }
@@ -66,14 +67,23 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       for (const name of dealtChargedNames) {
         expect(ranOut.has(name)).toBe(true);
       }
-      // At least one depleted node recovers to inactive over the run.
-      expect(wentInactive.size).toBeGreaterThan(0);
+      // At least one depleted node retires and is replaced over the run.
+      expect(retired.size).toBeGreaterThan(0);
       // Every one of the fifteen dealt nodes is charged at least once,
-      // whatever pressure the deal opened it at.
-      expect(charged.size).toBe(dealtNodeNames.length);
+      // whatever pressure the deal opened it at. The five dealt already
+      // charged were, at the deal itself, which raises no node-charged
+      // effect of its own to observe here; the other ten must earn one,
+      // since an inactive node can never retire without first being
+      // charged. (A square a much later replacement happens to reoccupy
+      // can also turn up in `charged`, under an entirely different node's
+      // life — harmless, and not what this checks.)
+      for (const name of dealtNodeNames) {
+        const chargedAtDeal = dealtChargedNames.includes(name);
+        expect(chargedAtDeal || charged.has(name)).toBe(true);
+      }
       // The board is back at its target count by the end of the run.
-      const finalCharged = dealtNodeNames.filter(
-        (name) => nodeStateAt(state, squareFromName(name)) === "charged",
+      const finalCharged = nodeSquares(state).filter(
+        (square) => nodeStateAt(state, square) === "charged",
       ).length;
       expect(finalCharged).toBe(TARGET_CHARGED_NODES);
     },

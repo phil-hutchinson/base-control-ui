@@ -1,8 +1,7 @@
 // Where a new node may appear (rules.md §3.2), and how one is drawn there.
-// Used by the opening deal, before a GameState exists — hence the pool
-// builder takes the nodes placed so far and the squares ships occupy rather
-// than a state — and by end-of-turn retirement, which does have a state and
-// gets a thin convenience wrapper.
+// A pure function of the nodes placed so far and the squares ships occupy —
+// used by the opening deal, before a GameState exists, and by end-of-turn
+// retirement, whose caller reads those two things off its state itself.
 
 import {
   ALL_SQUARES,
@@ -12,7 +11,6 @@ import {
   squareName,
 } from "./board";
 import { isBay } from "./bays";
-import { type GameState, nodeSquares } from "./gameState";
 import { drawIndex } from "./random";
 
 /**
@@ -128,23 +126,4 @@ export function drawNodeSquare(
   const pool = legalNodePool(occupiedNodeSquares, shipSquares, exclude);
   const [index, nextSeed] = drawIndex(seed, pool.length);
   return [pool[index], nextSeed];
-}
-
-/**
- * A thin convenience over `drawNodeSquare` for callers that already have a
- * `GameState` — the end-of-turn retirement draw — reading the occupied node
- * squares, the ships' squares and the seed to draw from straight off it.
- * The opening deal has no state to give this yet, so it calls
- * `drawNodeSquare` directly (see D13 in the implementation plan).
- */
-export function drawNodeSquareForState(
-  state: GameState,
-  exclude?: Square,
-): [square: Square, nextSeed: number] {
-  return drawNodeSquare(
-    nodeSquares(state),
-    state.ships.map((ship) => ship.square),
-    state.randomSeed,
-    exclude,
-  );
 }

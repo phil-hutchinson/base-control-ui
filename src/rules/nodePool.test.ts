@@ -64,19 +64,30 @@ const MAXIMUM_EXPIRIES_IN_ONE_PLY = TARGET_CHARGED_NODES - 1;
  * Every one of the seventeen nodes should be charged several times over the
  * run; anything below this over 500 turns means a node is being starved.
  */
-const MINIMUM_CHARGES_PER_NODE = 2;
-
 /**
- * The longest gap, in turns, any one node is allowed to wait between
- * successive charges. Under a uniform draw this tail is unbounded — a node
- * could in principle never be drawn again — but at these plies and seeds a
- * uniform draw passes this bound too, so it is a loose sanity check on the
- * economy rather than a guard against the pressure weighting being lost or
- * broken. `chargeDraw.test.ts`'s "weighted by pressure" describe block
- * (§8.2) is the check that actually guards the weighting, by asserting its
- * 2:1 ratio directly.
+ * The longest wait, in turns, any one node's own life is allowed between
+ * appearing inactive — from the deal, or from a replacement — and being
+ * charged. A node cannot retire without first being charged (§8.2), so
+ * nothing here waits for ever, but under a uniform draw this tail would in
+ * principle be unbounded; at these plies and seeds a uniform draw passes
+ * this bound too, so it is a loose sanity check on the economy rather than
+ * a guard against the pressure weighting being lost or broken.
+ * `chargeDraw.test.ts`'s "weighted by pressure" describe block (§8.2) is
+ * the check that actually guards the weighting, by asserting its 2:1 ratio
+ * directly. A fixed square could be tracked across its whole life before
+ * story 54; since a retirement moves a node to a new square, this is now
+ * measured per node life rather than per square (Step 8 re-measures this
+ * properly over the long run — this bound is carried over unchanged).
  */
 const MAXIMUM_TURNS_BETWEEN_CHARGES = 400;
+
+/**
+ * How many charges the run should produce in total, over 500 turns and no
+ * ship activity. Measured at 85 for each of this file's three seeds; the
+ * floor here leaves generous margin below that, so this fails only if the
+ * economy's overall pace of charging actually collapses.
+ */
+const MINIMUM_TOTAL_CHARGES = 40;
 
 function countInState(state: GameState, target: NodeState): number {
   return nodeSquares(state).filter(
@@ -90,16 +101,17 @@ interface EconomySample {
   readonly depleted: number;
   readonly nodesRanOutThisPly: number;
   readonly chargedSquareNames: readonly string[];
+  readonly replacedNewSquareNames: readonly string[];
 }
 
 interface EconomyRun {
   readonly samples: readonly EconomySample[];
   /**
-   * The squares the deal placed, captured once before the run starts.
-   * Retirement and replacement (story 54's own Step 6) has not landed yet,
-   * so a run's node squares never change once dealt.
+   * The squares the deal placed that opened inactive, captured once before
+   * the run starts — the starting point for tracking how long each of
+   * those first lives waits to be charged.
    */
-  readonly dealtNodeNames: readonly string[];
+  readonly initialInactiveNames: readonly string[];
 }
 
 /**
@@ -108,7 +120,9 @@ interface EconomyRun {
  */
 function runEconomy(seed: number, plies: number): EconomyRun {
   let state = startingGameState(seed, NOMINAL_LENGTH_IN_ROUNDS);
-  const dealtNodeNames = nodeSquares(state).map(squareName);
+  const initialInactiveNames = nodeSquares(state)
+    .filter((square) => nodeStateAt(state, square) === "inactive")
+    .map(squareName);
   const samples: EconomySample[] = [];
 
   for (let i = 0; i < plies; i++) {
@@ -123,46 +137,55 @@ function runEconomy(seed: number, plies: number): EconomyRun {
       chargedSquareNames: result.effects
         .filter((effect) => effect.type === "node-charged")
         .map((effect) => squareName(effect.square)),
+      replacedNewSquareNames: result.effects
+        .filter((effect) => effect.type === "node-replaced")
+        .map((effect) => squareName(effect.newSquare)),
     });
     state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
   }
 
-  return { samples, dealtNodeNames };
+  return { samples, initialInactiveNames };
 }
 
 /**
- * For every node, how many times it was charged over the run and the
- * longest gap, in turns, between two successive charges of it. A node
- * charged fewer than twice has no gap to measure and is reported as `0`.
+ * For every node's own life — inactive from the moment it appears, whether
+ * dealt that way at the opening or created by a replacement, until the
+ * moment it is charged — the longest wait seen, and how many charges
+ * happened in total. A node cannot retire without first being charged
+ * (§8.2), so a life still waiting when the run ends is not lost; its wait
+ * so far still counts towards the longest seen.
  */
-function chargeStats(
-  samples: readonly EconomySample[],
-  nodeNames: readonly string[],
-): {
-  readonly minChargeCount: number;
+function nodeWaitStats(run: EconomyRun): {
   readonly maxGap: number;
+  readonly totalCharges: number;
 } {
-  const chargeTurns = new Map<string, number[]>();
-  for (const name of nodeNames) {
-    chargeTurns.set(name, []);
+  const waitingSince = new Map<string, number>();
+  for (const name of run.initialInactiveNames) {
+    waitingSince.set(name, -1);
   }
 
-  samples.forEach((sample, plyIndex) => {
+  let maxGap = 0;
+  let totalCharges = 0;
+
+  run.samples.forEach((sample, plyIndex) => {
     for (const name of sample.chargedSquareNames) {
-      chargeTurns.get(name)?.push(plyIndex);
+      totalCharges += 1;
+      const startedWaiting = waitingSince.get(name);
+      if (startedWaiting !== undefined) {
+        maxGap = Math.max(maxGap, plyIndex - startedWaiting);
+        waitingSince.delete(name);
+      }
+    }
+    for (const name of sample.replacedNewSquareNames) {
+      waitingSince.set(name, plyIndex);
     }
   });
 
-  let minChargeCount = Infinity;
-  let maxGap = 0;
-  for (const turns of chargeTurns.values()) {
-    minChargeCount = Math.min(minChargeCount, turns.length);
-    for (let i = 1; i < turns.length; i++) {
-      maxGap = Math.max(maxGap, turns[i] - turns[i - 1]);
-    }
+  for (const startedWaiting of waitingSince.values()) {
+    maxGap = Math.max(maxGap, run.samples.length - startedWaiting);
   }
 
-  return { minChargeCount, maxGap };
+  return { maxGap, totalCharges };
 }
 
 describe("the long-run node economy (Appendix B)", () => {
@@ -209,13 +232,13 @@ describe("the long-run node economy (Appendix B)", () => {
   );
 
   it.each(SEEDS)(
-    "bounds how long any node can wait between charges, via the pressure weighting (seed %d)",
+    "bounds how long any node's own life can wait before it is charged, via the pressure weighting (seed %d)",
     (seed) => {
-      const { samples, dealtNodeNames } = runEconomy(seed, PLIES_TO_RUN);
-      const { minChargeCount, maxGap } = chargeStats(samples, dealtNodeNames);
+      const run = runEconomy(seed, PLIES_TO_RUN);
+      const { maxGap, totalCharges } = nodeWaitStats(run);
 
-      expect(minChargeCount).toBeGreaterThanOrEqual(MINIMUM_CHARGES_PER_NODE);
       expect(maxGap).toBeLessThan(MAXIMUM_TURNS_BETWEEN_CHARGES);
+      expect(totalCharges).toBeGreaterThanOrEqual(MINIMUM_TOTAL_CHARGES);
     },
   );
 
