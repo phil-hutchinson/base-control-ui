@@ -1300,7 +1300,19 @@ figure it leaves margin above or below.
 
 ### Step 9 — Play it
 
-Status: pending
+Status: committed
+
+Notes: Verified by the owner in the running app. Checks 1, 2, 3 and 5 all
+pass by eye: fifteen markers at the opening, five charged and ten inactive,
+none outside C3-M13, none touching another and none in a bay; a different
+board every game, spread across the interior; a node observed ending and a
+new one appearing elsewhere, with the vacated square reading as ordinary;
+and still fifteen after several retirements. Check 4, the wording of the
+replacement announcement, was deliberately not judged — the announcement
+reaches only the live region, which makes it assistive-technology surface,
+and `CLAUDE.md` defers that work pre-release. The clause's tense
+inconsistency with its sibling clauses is therefore knowingly accepted and
+goes to the accessibility ledger in Step 10, not fixed here.
 
 The owner runs the app and looks at the board. Nothing to implement; this is
 the gate where the change is judged by eye rather than by assertion.
