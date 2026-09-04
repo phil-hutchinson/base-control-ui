@@ -138,7 +138,10 @@ no `fetch("/…")`, no root-absolute link. Assets are bundled by Vite or
 inline; anything else would break the moment the app is served from a
 subfolder. The dev server is unaffected: Vite resolves a relative base to `/`
 when it is not building, so `npm run dev` and `npm run preview` serve at the
-root as they always have.
+root as they always have. The one exception is `index.html`'s
+`<script type="module" src="/src/main.tsx">`: this is a dev-server URL, and
+Vite replaces it at build time with the base-prefixed, hashed asset tags, so
+it must be left root-absolute.
 
 The ruleset lives in this repository at
 [`doc/ruleset/rules.md`](doc/ruleset/rules.md) and is the single source of
