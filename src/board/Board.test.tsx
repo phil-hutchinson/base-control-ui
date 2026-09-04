@@ -8,11 +8,15 @@ import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
 import { startingFleet, type FleetEntry } from "../rules/fleet";
-import { NODE_CAPACITY, PRESSURE_CAP, SITES } from "../rules/sites";
+import {
+  NODE_CAPACITY,
+  PRESSURE_CAP,
+  FIXED_NODE_SQUARES,
+} from "../rules/nodes";
 import {
   startingGameState,
   type GameState,
-  type SiteStatus,
+  type NodeStatus,
 } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalDestinations } from "../rules/movement";
@@ -47,39 +51,39 @@ const TEST_SEED = 1;
 
 /**
  * The board this file has always been rendered against: H8, E5, K5, E11 and
- * K11 charged at drain 0, the other twelve sites active at pressure 1 — an
+ * K11 charged at drain 0, the other twelve nodes inactive at pressure 1 — an
  * arbitrary fixed board, not the opening rules.md §8.1 deals since 0.18.
- * Transcribed by hand from the seventeen sites of rules.md §3.2, not built by
- * calling any of `sites.ts`'s production functions, so a change to how the
+ * Transcribed by hand from the seventeen nodes of rules.md §3.2, not built by
+ * calling any of `nodes.ts`'s production functions, so a change to how the
  * opening is dealt cannot quietly change what this file expects.
  */
-const STATED_SITE_STATES: Readonly<Record<string, SiteStatus>> = {
-  F2: { state: "active", level: 1 },
-  J2: { state: "active", level: 1 },
-  B4: { state: "active", level: 1 },
-  H4: { state: "active", level: 1 },
-  N4: { state: "active", level: 1 },
+const STATED_NODE_STATES: Readonly<Record<string, NodeStatus>> = {
+  F2: { state: "inactive", level: 1 },
+  J2: { state: "inactive", level: 1 },
+  B4: { state: "inactive", level: 1 },
+  H4: { state: "inactive", level: 1 },
+  N4: { state: "inactive", level: 1 },
   E5: { state: "charged", level: 0 },
   K5: { state: "charged", level: 0 },
-  D8: { state: "active", level: 1 },
+  D8: { state: "inactive", level: 1 },
   H8: { state: "charged", level: 0 },
-  L8: { state: "active", level: 1 },
+  L8: { state: "inactive", level: 1 },
   E11: { state: "charged", level: 0 },
   K11: { state: "charged", level: 0 },
-  B12: { state: "active", level: 1 },
-  H12: { state: "active", level: 1 },
-  N12: { state: "active", level: 1 },
-  F14: { state: "active", level: 1 },
-  J14: { state: "active", level: 1 },
+  B12: { state: "inactive", level: 1 },
+  H12: { state: "inactive", level: 1 },
+  N12: { state: "inactive", level: 1 },
+  F14: { state: "inactive", level: 1 },
+  J14: { state: "inactive", level: 1 },
 };
 
-/** `startingGameState(TEST_SEED)`, with its sites replaced by the board this
- * file states (`STATED_SITE_STATES`) rather than whatever it happens to
+/** `startingGameState(TEST_SEED)`, with its nodes replaced by the board this
+ * file states (`STATED_NODE_STATES`) rather than whatever it happens to
  * deal. Ships, seed, ply and length still come from `startingGameState`. */
 function statedOpeningState(): GameState {
   return {
     ...startingGameState(TEST_SEED),
-    siteStates: STATED_SITE_STATES,
+    nodes: STATED_NODE_STATES,
   };
 }
 
@@ -105,9 +109,9 @@ describe("Board", () => {
     render(<Board session={startingSession} onIntent={noop} />);
 
     // H8 is the centre square, and this file states it charged
-    // (STATED_SITE_STATES above).
+    // (STATED_NODE_STATES above).
     expect(
-      screen.getByRole("gridcell", { name: "H8, charged site" }),
+      screen.getByRole("gridcell", { name: "H8, charged node" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("gridcell", { name: "A1" })).toBeInTheDocument();
     expect(screen.getByRole("gridcell", { name: "O15" })).toBeInTheDocument();
@@ -142,7 +146,7 @@ describe("Board", () => {
       const label = squareLabel({
         square,
         isBay: true,
-        siteState: STATED_SITE_STATES[squareName(square)]?.state,
+        nodeState: STATED_NODE_STATES[squareName(square)]?.state,
         occupant: startingShipAt(square),
       });
       expect(screen.getByRole("gridcell", { name: label })).toBeInTheDocument();
@@ -156,7 +160,7 @@ describe("Board", () => {
         name: squareLabel({
           square: nonBaySquare,
           isBay: false,
-          siteState: STATED_SITE_STATES[squareName(nonBaySquare)]?.state,
+          nodeState: STATED_NODE_STATES[squareName(nonBaySquare)]?.state,
           occupant: startingShipAt(nonBaySquare),
         }),
       }),
@@ -198,7 +202,7 @@ describe("Board", () => {
       const label = squareLabel({
         square,
         isBay: true,
-        siteState: STATED_SITE_STATES[name]?.state,
+        nodeState: STATED_NODE_STATES[name]?.state,
         occupant: startingShipAt(square),
       });
       const cell = screen.getByRole("gridcell", { name: label });
@@ -208,7 +212,7 @@ describe("Board", () => {
     // A planet is aria-hidden, so it never changes a bay's accessible name -
     // occupied bays above already carried the ship's own name, and the
     // starting board's centre square (never a bay) carries none at all.
-    const centre = screen.getByRole("gridcell", { name: "H8, charged site" });
+    const centre = screen.getByRole("gridcell", { name: "H8, charged node" });
     expect(centre.querySelector(".planet")).toBeNull();
   });
 
@@ -233,7 +237,7 @@ describe("Board", () => {
         name: squareLabel({
           square: entry.square,
           isBay: isBay(entry.square),
-          siteState: STATED_SITE_STATES[squareName(entry.square)]?.state,
+          nodeState: STATED_NODE_STATES[squareName(entry.square)]?.state,
           occupant: entry,
         }),
       });
@@ -251,7 +255,7 @@ describe("Board", () => {
     const label = squareLabel({
       square,
       isBay: isBay(square),
-      siteState: STATED_SITE_STATES[squareName(square)]?.state,
+      nodeState: STATED_NODE_STATES[squareName(square)]?.state,
       occupant: startingShipAt(square),
     });
     const cell = screen.getByRole("gridcell", { name: label });
@@ -286,12 +290,12 @@ describe("Board", () => {
     expect(screen.getByRole("gridcell", { name: "O15" })).toBeInTheDocument();
   });
 
-  describe("sites on the starting board", () => {
-    // Literal, hand-transcribed from rules.md §3.2's seventeen sites, with
-    // the fixed charged five of STATED_SITE_STATES above (no longer the
+  describe("nodes on the starting board", () => {
+    // Literal, hand-transcribed from rules.md §3.2's seventeen nodes, with
+    // the fixed charged five of STATED_NODE_STATES above (no longer the
     // opening rules.md §8.1 deals since 0.18), not derived by calling the
     // same production lookups the component uses.
-    const SITE_SQUARES = [
+    const NODE_SQUARES = [
       "F2",
       "J2",
       "B4",
@@ -310,47 +314,47 @@ describe("Board", () => {
       "F14",
       "J14",
     ];
-    const CHARGED_SITE_SQUARES = ["H8", "E5", "K5", "E11", "K11"];
-    const ACTIVE_SITE_SQUARES = SITE_SQUARES.filter(
-      (square) => !CHARGED_SITE_SQUARES.includes(square),
+    const CHARGED_NODE_SQUARES = ["H8", "E5", "K5", "E11", "K11"];
+    const INACTIVE_NODE_SQUARES = NODE_SQUARES.filter(
+      (square) => !CHARGED_NODE_SQUARES.includes(square),
     );
 
-    it("draws a site marker on exactly the seventeen sites from rules.md §3.2", () => {
+    it("draws a node marker on exactly the seventeen nodes from rules.md §3.2", () => {
       const { container } = render(
         <Board session={startingSession} onIntent={noop} />,
       );
 
-      expect(container.querySelectorAll(".site-marker")).toHaveLength(17);
-      for (const square of CHARGED_SITE_SQUARES) {
+      expect(container.querySelectorAll(".node-marker")).toHaveLength(17);
+      for (const square of CHARGED_NODE_SQUARES) {
         const cell = screen.getByRole("gridcell", {
-          name: `${square}, charged site`,
+          name: `${square}, charged node`,
         });
-        expect(cell.querySelector(".site-marker")).toBeInTheDocument();
+        expect(cell.querySelector(".node-marker")).toBeInTheDocument();
       }
-      for (const square of ACTIVE_SITE_SQUARES) {
+      for (const square of INACTIVE_NODE_SQUARES) {
         const cell = screen.getByRole("gridcell", {
-          name: `${square}, active site`,
+          name: `${square}, inactive node`,
         });
-        expect(cell.querySelector(".site-marker")).toBeInTheDocument();
+        expect(cell.querySelector(".node-marker")).toBeInTheDocument();
       }
     });
 
-    it("gives every site marker's gradient its own document-unique id", () => {
+    it("gives every node marker's gradient its own document-unique id", () => {
       const { container } = render(
         <Board session={startingSession} onIntent={noop} />,
       );
 
-      // Counted within the site markers themselves, since the board now also
+      // Counted within the node markers themselves, since the board now also
       // mounts the planet sprite's own radial gradients as a sibling.
       const gradientIds = Array.from(
-        container.querySelectorAll(".site-marker radialGradient"),
+        container.querySelectorAll(".node-marker radialGradient"),
       ).map((gradient) => gradient.getAttribute("id"));
 
-      expect(gradientIds).toHaveLength(SITES.length);
-      expect(new Set(gradientIds).size).toBe(SITES.length);
+      expect(gradientIds).toHaveLength(FIXED_NODE_SQUARES.length);
+      expect(new Set(gradientIds).size).toBe(FIXED_NODE_SQUARES.length);
 
-      // Document-unique, not merely unique among site markers: every id the
-      // whole board renders is distinct, so a site gradient can never be
+      // Document-unique, not merely unique among node markers: every id the
+      // whole board renders is distinct, so a node gradient can never be
       // shadowed by the planet sprite's ids (or any later artwork's). SVG
       // resolves `url(#...)` document-wide, so a collision would silently
       // paint one element with another's gradient.
@@ -360,38 +364,38 @@ describe("Board", () => {
       expect(new Set(allIds).size).toBe(allIds.length);
     });
 
-    it("names exactly five sites charged and twelve active, none dormant", () => {
+    it("names exactly five nodes charged and twelve inactive, none depleted", () => {
       render(<Board session={startingSession} onIntent={noop} />);
 
       expect(
-        screen.getAllByRole("gridcell", { name: /, charged site$/ }),
+        screen.getAllByRole("gridcell", { name: /, charged node$/ }),
       ).toHaveLength(5);
       expect(
-        screen.getAllByRole("gridcell", { name: /, active site$/ }),
+        screen.getAllByRole("gridcell", { name: /, inactive node$/ }),
       ).toHaveLength(12);
       expect(
-        screen.queryByRole("gridcell", { name: /dormant site/ }),
+        screen.queryByRole("gridcell", { name: /depleted node/ }),
       ).not.toBeInTheDocument();
     });
 
-    it("spot-checks a few sites' literal accessible names", () => {
+    it("spot-checks a few nodes' literal accessible names", () => {
       render(<Board session={startingSession} onIntent={noop} />);
 
       expect(
-        screen.getByRole("gridcell", { name: "E5, charged site" }),
+        screen.getByRole("gridcell", { name: "E5, charged node" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", { name: "H8, charged site" }),
+        screen.getByRole("gridcell", { name: "H8, charged node" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", { name: "B4, active site" }),
+        screen.getByRole("gridcell", { name: "B4, inactive node" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", { name: "F2, active site" }),
+        screen.getByRole("gridcell", { name: "F2, inactive node" }),
       ).toBeInTheDocument();
     });
 
-    it("never draws a site marker on a bay, and never names a bay a site", () => {
+    it("never draws a node marker on a bay, and never names a bay a node", () => {
       const { container } = render(
         <Board session={startingSession} onIntent={noop} />,
       );
@@ -399,10 +403,10 @@ describe("Board", () => {
       const bayElements = container.querySelectorAll(".board-square--bay");
       expect(bayElements).toHaveLength(BAYS.length);
       for (const bayElement of bayElements) {
-        expect(bayElement.querySelector(".site-marker")).toBeNull();
+        expect(bayElement.querySelector(".node-marker")).toBeNull();
       }
       expect(
-        screen.queryByRole("gridcell", { name: /bay.*site|site.*bay/ }),
+        screen.queryByRole("gridcell", { name: /bay.*node|node.*bay/ }),
       ).not.toBeInTheDocument();
     });
   });
@@ -432,10 +436,10 @@ describe("Board", () => {
 
     const { container } = render(<Board session={session} onIntent={noop} />);
 
-    // H8 is a site as well as this ship's new square; both are named. This
+    // H8 is a node as well as this ship's new square; both are named. This
     // file states H8 charged.
     const cell = screen.getByRole("gridcell", {
-      name: "H8, charged site, green ship, power 4 of 4",
+      name: "H8, charged node, green ship, power 4 of 4",
     });
     expect(cell).toBeInTheDocument();
     expect(cell.querySelector(".ship-model--green")).toBeInTheDocument();
@@ -446,18 +450,18 @@ describe("Board", () => {
     expect(container.querySelectorAll(".ship-model--green")).toHaveLength(7);
   });
 
-  describe("the site cycle position reaching the marker", () => {
-    // A minimal hand-built state with a single site square, isolating the
-    // wiring from Board.tsx through the site's level to the marker's middle
+  describe("the node cycle position reaching the marker", () => {
+    // A minimal hand-built state with a single node square, isolating the
+    // wiring from Board.tsx through the node's level to the marker's middle
     // gradient stop.
-    function stateWithSite(
+    function stateWithNode(
       square: Square,
-      state: "charged" | "dormant",
+      state: "charged" | "depleted",
       level: number,
     ): GameState {
       return {
         ships: [],
-        siteStates: {
+        nodes: {
           [squareName(square)]: { state, level },
         },
         sideToMove: "green",
@@ -472,14 +476,14 @@ describe("Board", () => {
     }
 
     function middleStopOffset(container: HTMLElement, state: string) {
-      const marker = container.querySelector(`.site-marker--${state}`);
+      const marker = container.querySelector(`.node-marker--${state}`);
       const stops = marker?.querySelectorAll("stop");
       return stops?.[1]?.getAttribute("offset");
     }
 
-    it("shows a charged site at its start-of-cycle offset at drain 0", () => {
+    it("shows a charged node at its start-of-cycle offset at drain 0", () => {
       const session: Session = {
-        state: stateWithSite(squareAt("H", 8), "charged", 0),
+        state: stateWithNode(squareAt("H", 8), "charged", 0),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -488,9 +492,9 @@ describe("Board", () => {
       expect(middleStopOffset(container, "charged")).toBe("25%");
     });
 
-    it("shows a charged site at its end-of-cycle offset at capacity", () => {
+    it("shows a charged node at its end-of-cycle offset at capacity", () => {
       const session: Session = {
-        state: stateWithSite(squareAt("H", 8), "charged", NODE_CAPACITY),
+        state: stateWithNode(squareAt("H", 8), "charged", NODE_CAPACITY),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -499,37 +503,37 @@ describe("Board", () => {
       expect(middleStopOffset(container, "charged")).toBe("50%");
     });
 
-    it("shows a dormant site at its start-of-cycle offset at a level of capacity", () => {
-      // A dormant site's level is the drain it has left to recover: full
+    it("shows a depleted node at its start-of-cycle offset at a level of capacity", () => {
+      // A depleted node's level is the drain it has left to recover: full
       // capacity is the start of its cooling travel (rules.md §8.2).
       const session: Session = {
-        state: stateWithSite(squareAt("H", 8), "dormant", NODE_CAPACITY),
+        state: stateWithNode(squareAt("H", 8), "depleted", NODE_CAPACITY),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
 
-      expect(middleStopOffset(container, "dormant")).toBe("50%");
+      expect(middleStopOffset(container, "depleted")).toBe("50%");
     });
 
-    it("shows a dormant site at its end-of-cycle offset at level 0", () => {
+    it("shows a depleted node at its end-of-cycle offset at level 0", () => {
       const session: Session = {
-        state: stateWithSite(squareAt("H", 8), "dormant", 0),
+        state: stateWithNode(squareAt("H", 8), "depleted", 0),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
 
-      expect(middleStopOffset(container, "dormant")).toBe("25%");
+      expect(middleStopOffset(container, "depleted")).toBe("25%");
     });
 
-    it("shows two active sites at different pressures with visibly different markers", () => {
+    it("shows two inactive nodes at different pressures with visibly different markers", () => {
       const state: GameState = {
         ships: [],
-        siteStates: {
-          [squareName(squareAt("H", 8))]: { state: "active", level: 1 },
+        nodes: {
+          [squareName(squareAt("H", 8))]: { state: "inactive", level: 1 },
           [squareName(squareAt("E", 5))]: {
-            state: "active",
+            state: "inactive",
             level: PRESSURE_CAP,
           },
         },
@@ -550,7 +554,7 @@ describe("Board", () => {
       const { container } = render(<Board session={session} onIntent={noop} />);
 
       const radii = Array.from(
-        container.querySelectorAll(".site-marker--active circle"),
+        container.querySelectorAll(".node-marker--inactive circle"),
       ).map((circle) => circle.getAttribute("r"));
 
       expect(radii).toHaveLength(2);
@@ -671,7 +675,7 @@ describe("Board", () => {
             power: overrides?.defenderPower ?? 4,
           },
         ],
-        siteStates: {},
+        nodes: {},
         sideToMove: "green",
         actionsRemaining: overrides?.actedThisPly ? 1 : 2,
         actedThisPly: overrides?.actedThisPly ?? [],
@@ -829,7 +833,7 @@ describe("Board", () => {
       }
       return {
         ships,
-        siteStates: {},
+        nodes: {},
         sideToMove: "green",
         actionsRemaining: 1,
         actedThisPly: config.actedThisPly ?? [],
@@ -970,11 +974,11 @@ describe("Board", () => {
   });
 
   describe("ship conditions", () => {
-    // A minimal, hand-built state: green-1 stands on a dormant site,
+    // A minimal, hand-built state: green-1 stands on a depleted node,
     // green-2 and green-3 are ordinary green ships elsewhere with a normal
     // move available, and red-1 is the opponent, present to confirm it
     // never carries a condition.
-    function dormantSiteState(actionsRemaining: number): GameState {
+    function depletedNodeState(actionsRemaining: number): GameState {
       return {
         ships: [
           {
@@ -997,9 +1001,9 @@ describe("Board", () => {
           },
           { id: "red-1", side: "red", square: squareAt("O", 15), power: 4 },
         ],
-        siteStates: {
+        nodes: {
           [squareName(squareAt("H", 4))]: {
-            state: "dormant",
+            state: "depleted",
             level: 1,
           },
         },
@@ -1014,9 +1018,9 @@ describe("Board", () => {
       };
     }
 
-    it("names a ship standing on a dormant site plainly, with no condition, and leaves the rest of the fleet ordinary", () => {
+    it("names a ship standing on a depleted node plainly, with no condition, and leaves the rest of the fleet ordinary", () => {
       const session: Session = {
-        state: dormantSiteState(1),
+        state: depletedNodeState(1),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -1024,7 +1028,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, dormant site, green ship, power 4 of 4",
+          name: "H4, depleted node, green ship, power 4 of 4",
         }),
       ).toBeInTheDocument();
       // Nothing holds the rest of the fleet back: green-2 and green-3 both
@@ -1037,9 +1041,9 @@ describe("Board", () => {
       ).toBeInTheDocument();
     });
 
-    it("combines the selected mark with an otherwise plain name for a ship on a dormant site", () => {
+    it("combines the selected mark with an otherwise plain name for a ship on a depleted node", () => {
       const session: Session = {
-        state: dormantSiteState(1),
+        state: depletedNodeState(1),
         selectedShipId: "green-1",
         lastEvent: undefined,
       };
@@ -1047,14 +1051,14 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, dormant site, green ship, power 4 of 4, selected",
+          name: "H4, depleted node, green ship, power 4 of 4, selected",
         }),
       ).toBeInTheDocument();
     });
 
     it("reads a ship that has already acted as such, without holding the rest of the fleet back", () => {
       const state: GameState = {
-        ...dormantSiteState(1),
+        ...depletedNodeState(1),
         actedThisPly: ["green-2"],
       };
       const session: Session = {
@@ -1066,7 +1070,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, dormant site, green ship, power 4 of 4",
+          name: "H4, depleted node, green ship, power 4 of 4",
         }),
       ).toBeInTheDocument();
       // Green-2 has already acted this ply moving elsewhere, and has no
@@ -1086,7 +1090,7 @@ describe("Board", () => {
 
     it("never gives the opponent's ship a condition", () => {
       const session: Session = {
-        state: dormantSiteState(1),
+        state: depletedNodeState(1),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -1138,7 +1142,7 @@ describe("Board", () => {
             power: 4,
           },
         ],
-        siteStates: {},
+        nodes: {},
         sideToMove: "green",
         actionsRemaining: 1,
         actedThisPly: [],
@@ -1176,7 +1180,7 @@ describe("Board", () => {
           },
           { id: "red-1", side: "red", square: squareAt("H", 9), power: 4 },
         ],
-        siteStates: {},
+        nodes: {},
         sideToMove: "green",
         actionsRemaining: 1,
         actedThisPly: ["green-1"],
@@ -1212,7 +1216,7 @@ describe("Board", () => {
             power: 2,
           },
         ],
-        siteStates: {},
+        nodes: {},
         sideToMove: "green",
         actionsRemaining: 1,
         actedThisPly: ["green-1"],
@@ -1448,9 +1452,9 @@ describe("Board", () => {
         // This file states H8 charged, and a ship on a charged node can
         // neither attack nor be attacked (rules.md §7); the attacker needs
         // an ordinary square to stand on.
-        siteStates: {
-          ...STATED_SITE_STATES,
-          H8: { state: "active", level: 1 },
+        nodes: {
+          ...STATED_NODE_STATES,
+          H8: { state: "inactive", level: 1 },
         },
       };
       render(<Harness initial={state} />);

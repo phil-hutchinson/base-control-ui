@@ -133,12 +133,12 @@ describe("App", () => {
     expect(screen.getByText("Green to play")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Green: 0 energy, no nodes held, standing on no dormant sites.",
+        "Green: 0 energy, no nodes held, standing on no depleted nodes.",
       ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Red: 0 energy, no nodes held, standing on no dormant sites.",
+        "Red: 0 energy, no nodes held, standing on no depleted nodes.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("1/30")).toBeInTheDocument();

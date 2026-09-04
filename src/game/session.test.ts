@@ -12,14 +12,14 @@ import {
   startingGameState,
   type GameState,
   type Ship,
-  type SiteStatus,
+  type NodeStatus,
 } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalTargets } from "../rules/combat";
 import { legalDestinations } from "../rules/movement";
 import { applyAttack, applyMove } from "../rules/ply";
 import type { PowerLevel } from "../rules/power";
-import type { SiteState } from "../rules/sites";
+import type { NodeState } from "../rules/nodes";
 import { createSession, type Session, sessionReducer } from "./session";
 
 function ship(
@@ -31,9 +31,9 @@ function ship(
   return { id, side, square: squareFromName(square), power };
 }
 
-function siteStatuses(
-  states: Readonly<Record<string, SiteState>>,
-): Record<string, SiteStatus> {
+function nodeStatuses(
+  states: Readonly<Record<string, NodeState>>,
+): Record<string, NodeStatus> {
   return Object.fromEntries(
     Object.entries(states).map(([name, state]) => [name, { state, level: 0 }]),
   );
@@ -43,14 +43,14 @@ function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: Side;
   actedThisPly?: readonly ShipId[];
-  siteStates?: Readonly<Record<string, SiteState>>;
+  nodes?: Readonly<Record<string, NodeState>>;
   plyNumber?: number;
   lengthInRounds?: number;
   outOfTime?: Readonly<Record<Side, boolean>>;
 }): GameState {
   return {
     ships: config.ships,
-    siteStates: siteStatuses(config.siteStates ?? {}),
+    nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: ACTIONS_PER_PLY,
     actedThisPly: config.actedThisPly ?? [],
@@ -343,10 +343,10 @@ describe("sessionReducer — a ship is selected", () => {
       });
     });
 
-    it("applies a move ending on an active site", () => {
+    it("applies a move ending on an inactive node", () => {
       const state = buildState({
         ships: [ship("green-1", "green", "H8")],
-        siteStates: { H9: "active" },
+        nodes: { H9: "inactive" },
       });
       const selected = activate(sessionFor(state), "H8");
       const destination = squareFromName("H9");
@@ -371,10 +371,10 @@ describe("sessionReducer — a ship is selected", () => {
       });
     });
 
-    it("applies a move ending on a dormant site", () => {
+    it("applies a move ending on a depleted node", () => {
       const state = buildState({
         ships: [ship("green-1", "green", "H8")],
-        siteStates: { H9: "dormant" },
+        nodes: { H9: "depleted" },
       });
       const selected = activate(sessionFor(state), "H8");
       const destination = squareFromName("H9");

@@ -1,5 +1,5 @@
 // One side's score cell: an arcade digit readout and two rows of pips —
-// the nodes that side currently holds, and the dormant sites its ships are
+// the nodes that side currently holds, and the depleted nodes its ships are
 // standing on. All three are decorative (`aria-hidden`) — the true total
 // and both counts reach assistive technology through a visually hidden
 // sentence from `announcements.ts`.
@@ -7,14 +7,14 @@
 import { scoreSentence } from "../board/announcements";
 import {
   chargedNodesHeldBy,
-  dormantSitesOccupiedBy,
-  MAX_DORMANT_SITES_PRICED,
+  depletedNodesOccupiedBy,
+  MAX_DEPLETED_NODES_PRICED,
 } from "../rules/energy";
 import type { Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
 import "./ScoreDisplay.css";
 
-/** §8.1, §8.2: the board never charges more than five sites at once, so a
+/** §8.1, §8.2: the board never charges more than five nodes at once, so a
  * side can never hold more than five nodes at once — the pip row is a fixed
  * five. */
 const NODES_IN_PLAY = 5;
@@ -41,7 +41,7 @@ export function ScoreDisplay({
   displayedTotal,
 }: ScoreDisplayProps) {
   const nodesHeld = chargedNodesHeldBy(state, side).length;
-  const dormantOccupied = dormantSitesOccupiedBy(state, side).length;
+  const depletedOccupied = depletedNodesOccupiedBy(state, side).length;
 
   return (
     <div className={`score-display score-display--${side}`}>
@@ -65,19 +65,19 @@ export function ScoreDisplay({
       </span>
       <span
         className={
-          dormantOccupied > 0
-            ? "score-display__dormant-pips"
-            : "score-display__dormant-pips score-display__dormant-pips--empty"
+          depletedOccupied > 0
+            ? "score-display__depleted-pips"
+            : "score-display__depleted-pips score-display__depleted-pips--empty"
         }
         aria-hidden="true"
       >
-        {Array.from({ length: MAX_DORMANT_SITES_PRICED }, (_, index) => (
+        {Array.from({ length: MAX_DEPLETED_NODES_PRICED }, (_, index) => (
           <span
             key={index}
             className={
-              index < dormantOccupied
-                ? "score-display__dormant-pip score-display__dormant-pip--on"
-                : "score-display__dormant-pip"
+              index < depletedOccupied
+                ? "score-display__depleted-pip score-display__depleted-pip--on"
+                : "score-display__depleted-pip"
             }
           />
         ))}

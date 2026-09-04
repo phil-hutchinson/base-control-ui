@@ -3,20 +3,20 @@ import { BAYS } from "./bays";
 import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
 import { mulberry32 } from "./random";
 import {
-  DORMANT_RECOVERY_TABLE,
+  DEPLETED_RECOVERY_TABLE,
   EMPTY_NODE_DRAIN_TABLE,
   HELD_NODE_DRAIN_TABLE,
   NODE_CAPACITY,
   OPENING_DRAIN_TABLE,
   OPENING_PRESSURE_TABLE,
   PRESSURE_CAP,
-  SITES,
-  TARGET_CHARGED_SITES,
+  FIXED_NODE_SQUARES,
+  TARGET_CHARGED_NODES,
   type WeightedAmount,
   dealOpeningBoard,
   drawTableAmount,
-  siteCyclePosition,
-} from "./sites";
+  nodeCyclePosition,
+} from "./nodes";
 
 const COLUMN_INDEX = new Map(
   COLUMN_LETTERS.map((letter, index) => [letter, index]),
@@ -43,44 +43,44 @@ function mirrorAcrossRow8(square: Square): Square {
   return squareAt(square.column, 16 - square.row);
 }
 
-describe("sites", () => {
-  it("has exactly seventeen sites, no duplicates", () => {
-    expect(SITES).toHaveLength(17);
-    const names = new Set(SITES.map(squareName));
+describe("nodes", () => {
+  it("has exactly seventeen nodes, no duplicates", () => {
+    expect(FIXED_NODE_SQUARES).toHaveLength(17);
+    const names = new Set(FIXED_NODE_SQUARES.map(squareName));
     expect(names.size).toBe(17);
   });
 
   it("lies entirely in the interior of the board", () => {
-    for (const site of SITES) {
-      expect(site.column).not.toBe("A");
-      expect(site.column).not.toBe("O");
-      expect(site.row).not.toBe(1);
-      expect(site.row).not.toBe(15);
+    for (const node of FIXED_NODE_SQUARES) {
+      expect(node.column).not.toBe("A");
+      expect(node.column).not.toBe("O");
+      expect(node.row).not.toBe(1);
+      expect(node.row).not.toBe(15);
     }
   });
 
   it("is unchanged by a mirror across column H", () => {
-    const names = new Set(SITES.map(squareName));
+    const names = new Set(FIXED_NODE_SQUARES.map(squareName));
 
-    for (const site of SITES) {
-      const mirrored = mirrorAcrossColumnH(site);
+    for (const node of FIXED_NODE_SQUARES) {
+      const mirrored = mirrorAcrossColumnH(node);
       expect(names.has(squareName(mirrored))).toBe(true);
     }
   });
 
   it("is unchanged by a mirror across row 8", () => {
-    const names = new Set(SITES.map(squareName));
+    const names = new Set(FIXED_NODE_SQUARES.map(squareName));
 
-    for (const site of SITES) {
-      const mirrored = mirrorAcrossRow8(site);
+    for (const node of FIXED_NODE_SQUARES) {
+      const mirrored = mirrorAcrossRow8(node);
       expect(names.has(squareName(mirrored))).toBe(true);
     }
   });
 
   it("shares no square with a bay", () => {
     const bayNames = new Set(BAYS.map(squareName));
-    for (const site of SITES) {
-      expect(bayNames.has(squareName(site))).toBe(false);
+    for (const node of FIXED_NODE_SQUARES) {
+      expect(bayNames.has(squareName(node))).toBe(false);
     }
   });
 
@@ -105,13 +105,13 @@ describe("sites", () => {
       "J14",
     ];
 
-    expect(SITES.map(squareName)).toEqual(expected);
+    expect(FIXED_NODE_SQUARES.map(squareName)).toEqual(expected);
   });
 });
 
 describe("the board's charged target (rules.md §8.1, §8.2)", () => {
-  it("aims to keep five sites charged", () => {
-    expect(TARGET_CHARGED_SITES).toBe(5);
+  it("aims to keep five nodes charged", () => {
+    expect(TARGET_CHARGED_NODES).toBe(5);
   });
 });
 
@@ -162,8 +162,8 @@ describe.each([
     average: 4.6,
   },
   {
-    name: "the dormant recovery table",
-    table: DORMANT_RECOVERY_TABLE,
+    name: "the depleted recovery table",
+    table: DEPLETED_RECOVERY_TABLE,
     outcomes: [4, 5, 6, 7, 8],
     average: 6.0,
   },
@@ -211,7 +211,7 @@ describe("the opening drain table's cap (rules.md §8.1, §8.3)", () => {
 });
 
 describe("dealing the opening board (rules.md §8.1)", () => {
-  const siteNames = new Set(SITES.map(squareName));
+  const nodeNames = new Set(FIXED_NODE_SQUARES.map(squareName));
   const drainAmounts = new Set(
     OPENING_DRAIN_TABLE.map((entry) => entry.amount),
   );
@@ -219,30 +219,30 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     OPENING_PRESSURE_TABLE.map((entry) => entry.amount),
   );
 
-  it("deals exactly the seventeen sites, five charged and twelve active, none dormant", () => {
-    const [siteStates] = dealOpeningBoard(1);
+  it("deals exactly the seventeen nodes, five charged and twelve inactive, none depleted", () => {
+    const [nodes] = dealOpeningBoard(1);
 
-    expect(new Set(Object.keys(siteStates))).toEqual(siteNames);
+    expect(new Set(Object.keys(nodes))).toEqual(nodeNames);
 
-    const charged = Object.values(siteStates).filter(
+    const charged = Object.values(nodes).filter(
       (status) => status.state === "charged",
     );
-    const active = Object.values(siteStates).filter(
-      (status) => status.state === "active",
+    const inactive = Object.values(nodes).filter(
+      (status) => status.state === "inactive",
     );
-    const dormant = Object.values(siteStates).filter(
-      (status) => status.state === "dormant",
+    const depleted = Object.values(nodes).filter(
+      (status) => status.state === "depleted",
     );
 
     expect(charged).toHaveLength(5);
-    expect(active).toHaveLength(12);
-    expect(dormant).toHaveLength(0);
+    expect(inactive).toHaveLength(12);
+    expect(depleted).toHaveLength(0);
   });
 
-  it("draws every charged level from the opening drain table and every active level from the opening pressure table", () => {
-    const [siteStates] = dealOpeningBoard(1);
+  it("draws every charged level from the opening drain table and every inactive level from the opening pressure table", () => {
+    const [nodes] = dealOpeningBoard(1);
 
-    for (const status of Object.values(siteStates)) {
+    for (const status of Object.values(nodes)) {
       if (status.state === "charged") {
         expect(drainAmounts.has(status.level)).toBe(true);
       } else {
@@ -254,9 +254,9 @@ describe("dealing the opening board (rules.md §8.1)", () => {
   it("never deals a charged node above two-thirds of capacity, leaving at least 20 to reach", () => {
     let seed = 1;
     for (let i = 0; i < 200; i++) {
-      const [siteStates, nextSeed] = dealOpeningBoard(seed);
+      const [nodes, nextSeed] = dealOpeningBoard(seed);
       seed = nextSeed;
-      for (const status of Object.values(siteStates)) {
+      for (const status of Object.values(nodes)) {
         if (status.state === "charged") {
           expect(status.level).toBeLessThanOrEqual((2 / 3) * NODE_CAPACITY);
           expect(NODE_CAPACITY - status.level).toBeGreaterThanOrEqual(20);
@@ -293,9 +293,11 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     expect(nextSeed).toBe(expectedSeed);
   });
 
-  it("charges every site in a share close to 5/17 and draws levels at frequencies close to their tables' weights, over many deals", () => {
+  it("charges every node in a share close to 5/17 and draws levels at frequencies close to their tables' weights, over many deals", () => {
     const DEALS = 20_000;
-    const chargeCounts = new Map(SITES.map((site) => [squareName(site), 0]));
+    const chargeCounts = new Map(
+      FIXED_NODE_SQUARES.map((node) => [squareName(node), 0]),
+    );
     const drainCounts = new Map(
       OPENING_DRAIN_TABLE.map((entry) => [entry.amount, 0]),
     );
@@ -305,10 +307,10 @@ describe("dealing the opening board (rules.md §8.1)", () => {
 
     let seed = 42;
     for (let i = 0; i < DEALS; i++) {
-      const [siteStates, nextSeed] = dealOpeningBoard(seed);
+      const [nodes, nextSeed] = dealOpeningBoard(seed);
       seed = nextSeed;
 
-      for (const [name, status] of Object.entries(siteStates)) {
+      for (const [name, status] of Object.entries(nodes)) {
         if (status.state === "charged") {
           chargeCounts.set(name, (chargeCounts.get(name) ?? 0) + 1);
           drainCounts.set(
@@ -324,7 +326,8 @@ describe("dealing the opening board (rules.md §8.1)", () => {
       }
     }
 
-    const expectedChargeShare = TARGET_CHARGED_SITES / SITES.length;
+    const expectedChargeShare =
+      TARGET_CHARGED_NODES / FIXED_NODE_SQUARES.length;
     for (const count of chargeCounts.values()) {
       const share = count / DEALS;
       expect(share).toBeGreaterThan(expectedChargeShare - 0.02);
@@ -352,34 +355,34 @@ describe("dealing the opening board (rules.md §8.1)", () => {
   });
 });
 
-describe("the site cycle position (rules.md §8.3, §8.2)", () => {
+describe("the node cycle position (rules.md §8.3, §8.2)", () => {
   it("has charged report 0 at drain 0 and 1 at capacity", () => {
-    expect(siteCyclePosition("charged", 0)).toBe(0);
-    expect(siteCyclePosition("charged", NODE_CAPACITY)).toBe(1);
+    expect(nodeCyclePosition("charged", 0)).toBe(0);
+    expect(nodeCyclePosition("charged", NODE_CAPACITY)).toBe(1);
   });
 
   it("clamps charged outside [0, 1]", () => {
-    expect(siteCyclePosition("charged", -10)).toBe(0);
-    expect(siteCyclePosition("charged", NODE_CAPACITY + 10)).toBe(1);
+    expect(nodeCyclePosition("charged", -10)).toBe(0);
+    expect(nodeCyclePosition("charged", NODE_CAPACITY + 10)).toBe(1);
   });
 
-  it("has dormant report 0 at a level of capacity (just gone dormant) and 1 at level 0 (fully recovered)", () => {
-    expect(siteCyclePosition("dormant", NODE_CAPACITY)).toBe(0);
-    expect(siteCyclePosition("dormant", 0)).toBe(1);
+  it("has depleted report 0 at a level of capacity (just gone depleted) and 1 at level 0 (fully recovered)", () => {
+    expect(nodeCyclePosition("depleted", NODE_CAPACITY)).toBe(0);
+    expect(nodeCyclePosition("depleted", 0)).toBe(1);
   });
 
-  it("clamps dormant outside [0, 1], including a level carried above capacity", () => {
-    expect(siteCyclePosition("dormant", NODE_CAPACITY + 10)).toBe(0);
-    expect(siteCyclePosition("dormant", -10)).toBe(1);
+  it("clamps depleted outside [0, 1], including a level carried above capacity", () => {
+    expect(nodeCyclePosition("depleted", NODE_CAPACITY + 10)).toBe(0);
+    expect(nodeCyclePosition("depleted", -10)).toBe(1);
   });
 
-  it("has active report 0 at pressure 1 and 1 at the pressure cap", () => {
-    expect(siteCyclePosition("active", 1)).toBe(0);
-    expect(siteCyclePosition("active", PRESSURE_CAP)).toBe(1);
+  it("has inactive report 0 at pressure 1 and 1 at the pressure cap", () => {
+    expect(nodeCyclePosition("inactive", 1)).toBe(0);
+    expect(nodeCyclePosition("inactive", PRESSURE_CAP)).toBe(1);
   });
 
-  it("clamps active outside [0, 1]", () => {
-    expect(siteCyclePosition("active", 0)).toBe(0);
-    expect(siteCyclePosition("active", PRESSURE_CAP + 10)).toBe(1);
+  it("clamps inactive outside [0, 1]", () => {
+    expect(nodeCyclePosition("inactive", 0)).toBe(0);
+    expect(nodeCyclePosition("inactive", PRESSURE_CAP + 10)).toBe(1);
   });
 });

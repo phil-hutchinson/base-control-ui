@@ -5,13 +5,18 @@ import type { ShipId } from "./fleet";
 import {
   type GameState,
   type Ship,
-  type SiteStatus,
+  type NodeStatus,
   startingGameState,
 } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { PowerLevel } from "./power";
-import { NODE_CAPACITY, PRESSURE_CAP, SITES, type SiteState } from "./sites";
+import {
+  NODE_CAPACITY,
+  PRESSURE_CAP,
+  FIXED_NODE_SQUARES,
+  type NodeState,
+} from "./nodes";
 
 function ship(
   id: ShipId,
@@ -22,9 +27,9 @@ function ship(
   return { id, side, square: squareFromName(square), power };
 }
 
-function siteStatuses(
-  states: Readonly<Record<string, readonly [SiteState, number]>>,
-): Record<string, SiteStatus> {
+function nodeStatuses(
+  states: Readonly<Record<string, readonly [NodeState, number]>>,
+): Record<string, NodeStatus> {
   return Object.fromEntries(
     Object.entries(states).map(([name, [state, level]]) => [
       name,
@@ -35,14 +40,14 @@ function siteStatuses(
 
 function buildState(config: {
   ships?: readonly Ship[];
-  siteStates?: Readonly<Record<string, readonly [SiteState, number]>>;
+  nodes?: Readonly<Record<string, readonly [NodeState, number]>>;
   sideToMove?: "green" | "red";
   plyNumber?: number;
   randomSeed?: number;
 }): GameState {
   return {
     ships: config.ships ?? [],
-    siteStates: siteStatuses(config.siteStates ?? {}),
+    nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: 1,
     actedThisPly: [],
@@ -58,17 +63,17 @@ describe("runEndOfTurn — step 1, the power loss (§4.1)", () => {
   it("loses a point of power only for the moving side's ships standing on a charged node", () => {
     const state = buildState({
       sideToMove: "green",
-      siteStates: {
+      nodes: {
         H8: ["charged", 1],
-        K5: ["active", 1],
+        K5: ["inactive", 1],
         L8: ["charged", 1],
         E11: ["charged", 1],
         H12: ["charged", 1],
       },
       ships: [
         ship("green-1", "green", "H8", 3), // charged: loses, 3 -> 2
-        ship("green-2", "green", "K5", 3), // active: loses nothing
-        ship("green-3", "green", "D2", 3), // not a site: loses nothing
+        ship("green-2", "green", "K5", 3), // inactive: loses nothing
+        ship("green-3", "green", "D2", 3), // not a node: loses nothing
         ship("green-4", "green", "L8", 0), // already at the floor: loses nothing
         ship("green-5", "green", "H12", 4), // charged: loses, 4 -> 3
         ship("red-1", "red", "E11", 3), // charged, but not the mover
@@ -115,30 +120,30 @@ describe("runEndOfTurn — step 1, the power loss (§4.1)", () => {
       },
     ]);
     // Step 4: the board is one node short of five, and K5 is the only
-    // active site, so it is charged deterministically — the draw needs no
+    // inactive node, so it is charged deterministically — the draw needs no
     // choice among a pool of one. Every charged node's level is small (1),
     // so step 3's drain draw never reaches capacity and adds no effect of
     // its own.
     expect(result.effects).toContainEqual({
-      type: "site-charged",
+      type: "node-charged",
       square: squareFromName("K5"),
     });
   });
 });
 
 describe("runEndOfTurn — step 1, the power gain (§4.1)", () => {
-  it("gains a point of power only for the moving side's ships standing on a dormant site", () => {
+  it("gains a point of power only for the moving side's ships standing on a depleted node", () => {
     const state = buildState({
       sideToMove: "green",
-      siteStates: {
-        H8: ["dormant", 1],
-        K5: ["active", 1],
+      nodes: {
+        H8: ["depleted", 1],
+        K5: ["inactive", 1],
       },
       ships: [
-        ship("green-1", "green", "H8", 2), // dormant: gains, 2 -> 3
-        ship("green-2", "green", "K5", 2), // active: gains nothing
-        ship("green-3", "green", "D2", 2), // not a site: gains nothing
-        ship("red-1", "red", "H8", 2), // dormant, but not the mover
+        ship("green-1", "green", "H8", 2), // depleted: gains, 2 -> 3
+        ship("green-2", "green", "K5", 2), // inactive: gains nothing
+        ship("green-3", "green", "D2", 2), // not a node: gains nothing
+        ship("red-1", "red", "H8", 2), // depleted, but not the mover
       ],
     });
 
@@ -164,10 +169,10 @@ describe("runEndOfTurn — step 1, the power gain (§4.1)", () => {
     ).toHaveLength(1);
   });
 
-  it("leaves a ship already at 4 power on a dormant site at 4 and raises no effect for it", () => {
+  it("leaves a ship already at 4 power on a depleted node at 4 and raises no effect for it", () => {
     const state = buildState({
       sideToMove: "green",
-      siteStates: { H8: ["dormant", 1] },
+      nodes: { H8: ["depleted", 1] },
       ships: [ship("green-1", "green", "H8", 4)],
     });
 
@@ -179,12 +184,12 @@ describe("runEndOfTurn — step 1, the power gain (§4.1)", () => {
     ).toBe(false);
   });
 
-  it("reports both a gain and a loss when one ship holds a node while another sits on a dormant site", () => {
+  it("reports both a gain and a loss when one ship holds a node while another sits on a depleted node", () => {
     const state = buildState({
       sideToMove: "green",
-      siteStates: {
+      nodes: {
         H8: ["charged", 1],
-        K5: ["dormant", 1],
+        K5: ["depleted", 1],
       },
       ships: [
         ship("green-1", "green", "H8", 3),
@@ -278,7 +283,7 @@ describe("runEndOfTurn — step 1, the bay gain (§3.1, §4.1)", () => {
   it("reports both a gain and a loss when one ship recovers in a bay while another holds a node", () => {
     const state = buildState({
       sideToMove: "green",
-      siteStates: { H8: ["charged", 1] },
+      nodes: { H8: ["charged", 1] },
       ships: [
         ship("green-1", "green", "A2", 2),
         ship("green-2", "green", "H8", 3),
@@ -316,11 +321,11 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     const observed = new Set<number>();
     for (let seed = 1; seed <= 300; seed++) {
       const state = buildState({
-        siteStates: { H8: ["charged", 0] },
+        nodes: { H8: ["charged", 0] },
         randomSeed: seed,
       });
       const result = runEndOfTurn(state);
-      const level = result.state.siteStates.H8.level;
+      const level = result.state.nodes.H8.level;
       expect([1, 2, 3]).toContain(level);
       observed.add(level);
     }
@@ -332,12 +337,12 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
       const observed = new Set<number>();
       for (let seed = 1; seed <= 300; seed++) {
         const state = buildState({
-          siteStates: { H8: ["charged", 0] },
+          nodes: { H8: ["charged", 0] },
           ships: [ship("ship-1", side, "H8", 4)],
           randomSeed: seed,
         });
         const result = runEndOfTurn(state);
-        const level = result.state.siteStates.H8.level;
+        const level = result.state.nodes.H8.level;
         expect([3, 4, 5, 6]).toContain(level);
         observed.add(level);
       }
@@ -345,20 +350,18 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     }
   });
 
-  it("goes dormant, carrying its level unclamped, once drain reaches or passes capacity, leaving a ship on it untouched (§8.5)", () => {
+  it("goes depleted, carrying its level unclamped, once drain reaches or passes capacity, leaving a ship on it untouched (§8.5)", () => {
     // Any drawn amount (empty table's minimum is 1) crosses capacity from
     // NODE_CAPACITY - 1, so this is deterministic without pinning a seed.
     const state = buildState({
-      siteStates: { H8: ["charged", NODE_CAPACITY - 1] },
+      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
       ships: [ship("green-1", "green", "H8", 1)],
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.siteStates.H8.state).toBe("dormant");
-    expect(result.state.siteStates.H8.level).toBeGreaterThanOrEqual(
-      NODE_CAPACITY,
-    );
+    expect(result.state.nodes.H8.state).toBe("depleted");
+    expect(result.state.nodes.H8.level).toBeGreaterThanOrEqual(NODE_CAPACITY);
     expect(result.effects).toEqual([
       {
         type: "power-lost",
@@ -384,14 +387,14 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     expect(untouchedShip?.square).toEqual(squareFromName("H8"));
   });
 
-  it("goes dormant with nothing further to report when the node was empty", () => {
+  it("goes depleted with nothing further to report when the node was empty", () => {
     const state = buildState({
-      siteStates: { H8: ["charged", NODE_CAPACITY - 1] },
+      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.siteStates.H8.state).toBe("dormant");
+    expect(result.state.nodes.H8.state).toBe("depleted");
     expect(result.effects).toEqual([
       { type: "node-ran-out", square: squareFromName("H8") },
     ]);
@@ -399,12 +402,12 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
 
   it("stays charged, unaffected, when drain is nowhere near capacity", () => {
     const state = buildState({
-      siteStates: { H8: ["charged", 0] },
+      nodes: { H8: ["charged", 0] },
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.siteStates.H8.state).toBe("charged");
+    expect(result.state.nodes.H8.state).toBe("charged");
     expect(
       result.effects.some((effect) => effect.type === "node-ran-out"),
     ).toBe(false);
@@ -412,14 +415,14 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
 });
 
 describe("runEndOfTurn — lifetimes (§8.3)", () => {
-  /** Drives a single charged node from `startLevel` until it goes dormant, counting plies. */
-  function pliesUntilDormant(
+  /** Drives a single charged node from `startLevel` until it goes depleted, counting plies. */
+  function pliesUntilDepleted(
     startLevel: number,
     seed: number,
     held: boolean,
   ): number {
     let state = buildState({
-      siteStates: { H8: ["charged", startLevel] },
+      nodes: { H8: ["charged", startLevel] },
       ships: held ? [ship("green-1", "green", "H8", 4)] : [],
       randomSeed: seed,
     });
@@ -427,7 +430,7 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
     for (;;) {
       const result = runEndOfTurn(state);
       plies += 1;
-      if (result.state.siteStates.H8.state === "dormant") {
+      if (result.state.nodes.H8.state === "depleted") {
         return plies;
       }
       state = result.state;
@@ -437,7 +440,7 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
   it("holds a node from the ply it is charged for about 13 plies", () => {
     const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     const average =
-      SEEDS.reduce((sum, seed) => sum + pliesUntilDormant(0, seed, true), 0) /
+      SEEDS.reduce((sum, seed) => sum + pliesUntilDepleted(0, seed, true), 0) /
       SEEDS.length;
 
     expect(average).toBeGreaterThan(9);
@@ -447,7 +450,7 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
   it("leaves a node nobody visits running for about 28 plies", () => {
     const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     const average =
-      SEEDS.reduce((sum, seed) => sum + pliesUntilDormant(0, seed, false), 0) /
+      SEEDS.reduce((sum, seed) => sum + pliesUntilDepleted(0, seed, false), 0) /
       SEEDS.length;
 
     expect(average).toBeGreaterThan(21);
@@ -456,57 +459,57 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
 });
 
 describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
-  it("recovers a dormant site to active, at pressure 1, once its level reaches zero or below", () => {
+  it("recovers a depleted node to inactive, at pressure 1, once its level reaches zero or below", () => {
     // The recovery table's minimum draw is 4, so a level of 4 is guaranteed
     // to reach zero or below on a single draw, regardless of seed.
     const state = buildState({
-      siteStates: { H8: ["dormant", 4] },
+      nodes: { H8: ["depleted", 4] },
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.siteStates.H8).toEqual({ state: "active", level: 1 });
+    expect(result.state.nodes.H8).toEqual({ state: "inactive", level: 1 });
     expect(result.effects).toEqual([
-      { type: "site-went-active", square: squareFromName("H8") },
+      { type: "node-went-inactive", square: squareFromName("H8") },
     ]);
   });
 
-  it("does not recover a site that only went dormant during this very sequence", () => {
+  it("does not recover a node that only went depleted during this very sequence", () => {
     // H8's level guarantees it crosses capacity in step 3 (see the drain
-    // tests above): it is genuinely `charged`, not `dormant`, at the start
-    // of this state, so `runEndOfTurn` derives an empty dormant-before-ply
+    // tests above): it is genuinely `charged`, not `depleted`, at the start
+    // of this state, so `runEndOfTurn` derives an empty depleted-before-ply
     // set on its own and step 6 must not touch H8 even though it is
-    // dormant by the time step 6 runs.
+    // depleted by the time step 6 runs.
     const state = buildState({
-      siteStates: { H8: ["charged", NODE_CAPACITY - 1] },
+      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.siteStates.H8.state).toBe("dormant");
+    expect(result.state.nodes.H8.state).toBe("depleted");
     expect(
-      result.effects.some((effect) => effect.type === "site-went-active"),
+      result.effects.some((effect) => effect.type === "node-went-inactive"),
     ).toBe(false);
     // It first recovers at the end of the next ply, once it truly was
-    // dormant when that one began — `result.state` genuinely has H8
-    // dormant, so this second call derives it into the set on its own.
+    // depleted when that one began — `result.state` genuinely has H8
+    // depleted, so this second call derives it into the set on its own.
     const nextResult = runEndOfTurn(result.state);
-    expect(nextResult.state.siteStates.H8.level).toBeLessThan(
-      result.state.siteStates.H8.level,
+    expect(nextResult.state.nodes.H8.level).toBeLessThan(
+      result.state.nodes.H8.level,
     );
   });
 
-  it("recovers a site ended at half capacity in roughly half the plies a full one takes", () => {
+  it("recovers a node ended at half capacity in roughly half the plies a full one takes", () => {
     function pliesToRecover(startLevel: number, seed: number): number {
       let state = buildState({
-        siteStates: { H8: ["dormant", startLevel] },
+        nodes: { H8: ["depleted", startLevel] },
         randomSeed: seed,
       });
       let plies = 0;
       for (;;) {
         const result = runEndOfTurn(state);
         plies += 1;
-        if (result.state.siteStates.H8.state === "active") {
+        if (result.state.nodes.H8.state === "inactive") {
           return plies;
         }
         state = result.state;
@@ -526,44 +529,44 @@ describe("runEndOfTurn — step 6, recovery (§8.2)", () => {
   });
 });
 
-describe("runEndOfTurn — step 4, the charge draw never charges a site that went active in the same sequence (§8.6 step ordering)", () => {
-  it("leaves the board with nothing charged when the only active candidate finishes recovering this very ply", () => {
+describe("runEndOfTurn — step 4, the charge draw never charges a node that went inactive in the same sequence (§8.6 step ordering)", () => {
+  it("leaves the board with nothing charged when the only inactive candidate finishes recovering this very ply", () => {
     // H8 is guaranteed to recover this ply (level 4, see above); F2 is
     // guaranteed to run out this ply (level NODE_CAPACITY - 1, empty). H8 is
-    // genuinely dormant, and F2 genuinely charged, before this ply begins,
-    // so `runEndOfTurn` derives the right dormant-before-ply set on its own.
+    // genuinely depleted, and F2 genuinely charged, before this ply begins,
+    // so `runEndOfTurn` derives the right depleted-before-ply set on its own.
     const state = buildState({
-      siteStates: {
-        H8: ["dormant", 4],
+      nodes: {
+        H8: ["depleted", 4],
         F2: ["charged", NODE_CAPACITY - 1],
       },
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.siteStates.H8).toEqual({ state: "active", level: 1 });
-    expect(result.state.siteStates.F2.state).toBe("dormant");
+    expect(result.state.nodes.H8).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.F2.state).toBe("depleted");
     expect(result.effects).toContainEqual({
       type: "node-ran-out",
       square: squareFromName("F2"),
     });
     expect(result.effects).toContainEqual({
-      type: "site-went-active",
+      type: "node-went-inactive",
       square: squareFromName("H8"),
     });
     expect(
-      result.effects.some((effect) => effect.type === "site-charged"),
+      result.effects.some((effect) => effect.type === "node-charged"),
     ).toBe(false);
   });
 });
 
 describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
-  it("gains a point of pressure every ply it stays active", () => {
-    // Five other sites are already charged so the board is not short and
+  it("gains a point of pressure every ply it stays inactive", () => {
+    // Five other nodes are already charged so the board is not short and
     // H8 cannot itself be drawn by step 4 — this isolates step 5.
     const state = buildState({
-      siteStates: {
-        H8: ["active", 10],
+      nodes: {
+        H8: ["inactive", 10],
         F2: ["charged", 1],
         J2: ["charged", 1],
         B4: ["charged", 1],
@@ -574,16 +577,16 @@ describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.siteStates.H8).toEqual({
-      state: "active",
+    expect(result.state.nodes.H8).toEqual({
+      state: "inactive",
       level: 11,
     });
   });
 
   it("stops at the pressure cap and never exceeds it", () => {
     const state = buildState({
-      siteStates: {
-        H8: ["active", PRESSURE_CAP],
+      nodes: {
+        H8: ["inactive", PRESSURE_CAP],
         F2: ["charged", 1],
         J2: ["charged", 1],
         B4: ["charged", 1],
@@ -594,8 +597,8 @@ describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.siteStates.H8).toEqual({
-      state: "active",
+    expect(result.state.nodes.H8).toEqual({
+      state: "inactive",
       level: PRESSURE_CAP,
     });
   });
@@ -603,18 +606,18 @@ describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
 
 describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("emits no effect and leaves both totals unchanged when nothing is held", () => {
-    // Dormant rather than active, so step 4's charge draw has no pool to
+    // Depleted rather than inactive, so step 4's charge draw has no pool to
     // draw these two from and this stays a pure test of step 2 alone.
     const state = buildState({
       sideToMove: "green",
-      siteStates: { H8: ["dormant", 0], K5: ["dormant", 0] },
+      nodes: { H8: ["depleted", 0], K5: ["depleted", 0] },
       ships: [ship("green-1", "green", "D2")],
     });
 
     const result = runEndOfTurn(state);
 
     expect(
-      result.effects.filter((effect) => effect.type !== "site-went-active"),
+      result.effects.filter((effect) => effect.type !== "node-went-inactive"),
     ).toEqual([]);
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
   });
@@ -622,7 +625,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("pays the side that just played and leaves the other side's total untouched", () => {
     const state = buildState({
       sideToMove: "green",
-      siteStates: { H8: ["charged", 1] },
+      nodes: { H8: ["charged", 1] },
       ships: [ship("green-1", "green", "H8", 0)],
     });
 
@@ -641,7 +644,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("pays for three held nodes, carrying the count, the amount, the new total and the squares", () => {
     const state = buildState({
       sideToMove: "green",
-      siteStates: {
+      nodes: {
         H8: ["charged", 1],
         K5: ["charged", 1],
         L8: ["charged", 1],
@@ -672,7 +675,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("pays for a node whose drain reaches capacity at the end of this very turn (before step 3 ticks)", () => {
     const state = buildState({
       sideToMove: "green",
-      siteStates: { H8: ["charged", NODE_CAPACITY - 1] },
+      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
       ships: [ship("green-1", "green", "H8", 0)],
     });
 
@@ -686,13 +689,13 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       squares: [squareFromName("H8")],
     });
     expect(result.state.energy).toEqual({ green: 1, red: 0 });
-    expect(result.state.siteStates.H8.state).toBe("dormant");
+    expect(result.state.nodes.H8.state).toBe("depleted");
   });
 
   it("is unaffected by a ship losing its last point of power in step 1", () => {
     const state = buildState({
       sideToMove: "green",
-      siteStates: { H8: ["charged", 1] },
+      nodes: { H8: ["charged", 1] },
       ships: [ship("green-1", "green", "H8", 1)],
     });
 
@@ -721,7 +724,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("pays this side nothing for a node held by the opponent", () => {
     const state = buildState({
       sideToMove: "green",
-      siteStates: { H8: ["charged", 1] },
+      nodes: { H8: ["charged", 1] },
       ships: [ship("red-1", "red", "H8", 3)],
     });
 
@@ -735,7 +738,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
 });
 
 describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
-  it("prices one, two, three, four and five dormant sites off the collection table", () => {
+  it("prices one, two, three, four and five depleted nodes off the collection table", () => {
     const cases: readonly [number, number][] = [
       [1, 1],
       [2, 3],
@@ -743,13 +746,13 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
       [4, 10],
       [5, 15],
     ];
-    for (const [dormantCount, expectedAmount] of cases) {
-      const names = ["H8", "K5", "L8", "D8", "K11"].slice(0, dormantCount);
+    for (const [depletedCount, expectedAmount] of cases) {
+      const names = ["H8", "K5", "L8", "D8", "K11"].slice(0, depletedCount);
       const state = {
         ...buildState({
           sideToMove: "green",
-          siteStates: Object.fromEntries(
-            names.map((name) => [name, ["dormant", 0] as const]),
+          nodes: Object.fromEntries(
+            names.map((name) => [name, ["depleted", 0] as const]),
           ),
           ships: names.map((name, index) =>
             ship(`green-${index + 1}` as ShipId, "green", name, 0),
@@ -773,13 +776,13 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     }
   });
 
-  it("prices six and seven dormant sites the same as five, raising no error", () => {
+  it("prices six and seven depleted nodes the same as five, raising no error", () => {
     const sixNames = ["H8", "K5", "L8", "D8", "K11", "E5"];
     const state = {
       ...buildState({
         sideToMove: "green",
-        siteStates: Object.fromEntries(
-          sixNames.map((name) => [name, ["dormant", 0] as const]),
+        nodes: Object.fromEntries(
+          sixNames.map((name) => [name, ["depleted", 0] as const]),
         ),
         ships: sixNames.map((name, index) =>
           ship(`green-${index + 1}` as ShipId, "green", name, 0),
@@ -796,16 +799,16 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     expect(result.state.energy.green).toBe(85);
   });
 
-  it("collects for the charged nodes held and then pays for the dormant sites occupied, not netted", () => {
+  it("collects for the charged nodes held and then pays for the depleted nodes occupied, not netted", () => {
     const state = {
       ...buildState({
         sideToMove: "green",
-        siteStates: {
+        nodes: {
           H8: ["charged", 1],
           K5: ["charged", 1],
           L8: ["charged", 1],
-          D8: ["dormant", 0],
-          K11: ["dormant", 0],
+          D8: ["depleted", 0],
+          K11: ["depleted", 0],
         },
         ships: [
           ship("green-1", "green", "H8", 0),
@@ -854,10 +857,10 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     const state = {
       ...buildState({
         sideToMove: "green",
-        siteStates: {
-          H8: ["dormant", 0],
-          K5: ["dormant", 0],
-          L8: ["dormant", 0],
+        nodes: {
+          H8: ["depleted", 0],
+          K5: ["depleted", 0],
+          L8: ["depleted", 0],
         },
         ships: [
           ship("green-1", "green", "H8", 4),
@@ -884,11 +887,11 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     expect(result.state.energy.green).toBe(0);
   });
 
-  it("raises no penalty effect for a side with 0 energy standing on dormant sites", () => {
+  it("raises no penalty effect for a side with 0 energy standing on depleted nodes", () => {
     const state = {
       ...buildState({
         sideToMove: "green",
-        siteStates: { H8: ["dormant", 0] },
+        nodes: { H8: ["depleted", 0] },
         ships: [ship("green-1", "green", "H8", 4)],
       }),
       energy: { green: 0, red: 0 },
@@ -902,11 +905,11 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     expect(result.state.energy.green).toBe(0);
   });
 
-  it("raises no penalty effect for a side standing on no dormant site", () => {
+  it("raises no penalty effect for a side standing on no depleted node", () => {
     const state = {
       ...buildState({
         sideToMove: "green",
-        siteStates: { H8: ["active", 1] },
+        nodes: { H8: ["inactive", 1] },
         ships: [ship("green-1", "green", "H8", 0)],
       }),
       energy: { green: 5, red: 0 },
@@ -920,11 +923,11 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     expect(result.state.energy.green).toBe(5);
   });
 
-  it("costs this side nothing for a dormant site occupied by the opponent", () => {
+  it("costs this side nothing for a depleted node occupied by the opponent", () => {
     const state = {
       ...buildState({
         sideToMove: "green",
-        siteStates: { H8: ["dormant", 0] },
+        nodes: { H8: ["depleted", 0] },
         ships: [ship("red-1", "red", "H8", 0)],
       }),
       energy: { green: 5, red: 5 },
@@ -938,16 +941,16 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     expect(result.state.energy).toEqual({ green: 5, red: 5 });
   });
 
-  it("prices the dormant site occupied and ignores one with no ship standing on it", () => {
-    // green-1 ends on H8, dormant: it pays for that. K5, also dormant, is
-    // never occupied at all here, so it never counts — a site with no ship
+  it("prices the depleted node occupied and ignores one with no ship standing on it", () => {
+    // green-1 ends on H8, depleted: it pays for that. K5, also depleted, is
+    // never occupied at all here, so it never counts — a node with no ship
     // standing on it at the moment the count is taken costs nothing,
     // regardless of why. (`camping.test.ts` carries the genuine fly-over
     // case, driven through movement.)
     const state = {
       ...buildState({
         sideToMove: "green",
-        siteStates: { H8: ["dormant", 0], K5: ["dormant", 0] },
+        nodes: { H8: ["depleted", 0], K5: ["depleted", 0] },
         ships: [ship("green-1", "green", "H8", 0)],
       }),
       energy: { green: 5, red: 0 },
@@ -968,14 +971,14 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
 
 describe("runEndOfTurn — a passed ply still settles both directions in full (§8.6 runs in full for a pass)", () => {
   it("pays the side that passes while standing on a charged node, through applyPassGuard", () => {
-    // green-1 sits on K5, a charged site, having already acted this ply: it
+    // green-1 sits on K5, a charged node, having already acted this ply: it
     // has no move left (already acted) and no enemy stands anywhere near it
     // to attack, so it passes — but §8.6 still runs in full for that passed
     // turn, and green is still standing on the node.
     const state = {
       ...buildState({
         sideToMove: "green",
-        siteStates: { K5: ["charged", 1] },
+        nodes: { K5: ["charged", 1] },
         ships: [ship("green-1", "green", "K5", 1)],
       }),
       actedThisPly: ["green-1" as ShipId],
@@ -1004,11 +1007,11 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
     expect(result.state.energy).toEqual({ green: 1, red: 0 });
   });
 
-  it("pays the side that passes while standing on a dormant site, through applyPassGuard", () => {
+  it("pays the side that passes while standing on a depleted node, through applyPassGuard", () => {
     const state = {
       ...buildState({
         sideToMove: "green",
-        siteStates: { K5: ["dormant", 0] },
+        nodes: { K5: ["depleted", 0] },
         ships: [ship("green-1", "green", "K5", 1)],
       }),
       actedThisPly: ["green-1" as ShipId],
@@ -1038,8 +1041,8 @@ describe("runEndOfTurn — the opening board does not fall into lockstep (§8.1)
     for (const seed of SEEDS) {
       let state = startingGameState(seed, DEFAULT_GAME_LENGTH_ROUNDS);
       // Whichever nodes the game opened with, not a fixed list.
-      const openingSquares = SITES.map(squareName).filter(
-        (name) => state.siteStates[name]?.state === "charged",
+      const openingSquares = FIXED_NODE_SQUARES.map(squareName).filter(
+        (name) => state.nodes[name]?.state === "charged",
       );
       const runOutPly = new Map<string, number>();
 

@@ -134,16 +134,16 @@ attack. The same word everywhere.
 board games "move" is the ambiguous word, but here it is a precise one, so it
 must not be used loosely.
 
-**Hub** — a site that is charged: the thing a ship stands on to collect
-energy. Code, tests and plans say "hub"; player-facing text says
-**"node"**. The split exists to keep the code word clear of the search-tree
-"node" that arrives with any future engine work — a collision that would be
-genuinely confusing in a codebase holding both. The player-facing word is a
-placeholder until the game gets a proper branding pass.
-
-**Site** — a fixed position on the board where a hub can appear. Sites never
-move; which of them are in play changes during the game. The same word
-everywhere.
+**Node** — a position on the board that runs `inactive` → `charged` →
+`depleted` and then ends, at which point a new inactive node appears
+somewhere else. The same word everywhere: code, tests and player-facing text.
+This replaces an older split, where "hub" was the code word for a charged
+site and "site" named a fixed position a hub could appear at — a board with
+no fixed positions has no honest use for either word, so this is a knowing
+trade, not an oversight. The split existed to keep the code word clear of the
+search-tree "node" that arrives with any future engine work — a collision
+that would be genuinely confusing in a codebase holding both — and whatever
+disambiguates the two will have to be chosen then.
 
 ## Story Documentation
 

@@ -356,7 +356,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           type: "ply-ended",
           side: "green",
           sideToMove: "red",
-          endOfTurn: [{ type: "site-charged", square: squareAt("D", 8) }],
+          endOfTurn: [{ type: "node-charged", square: squareAt("D", 8) }],
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
@@ -366,7 +366,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("says nothing at all for a dormant site going active (§8.2, §8.6)", () => {
+  it("says nothing at all for a depleted node going inactive (§8.2, §8.6)", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -378,7 +378,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           type: "ply-ended",
           side: "green",
           sideToMove: "red",
-          endOfTurn: [{ type: "site-went-active", square: squareAt("D", 8) }],
+          endOfTurn: [{ type: "node-went-inactive", square: squareAt("D", 8) }],
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
@@ -552,7 +552,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("announces a point of power gained in a bay the same way as on a dormant site", () => {
+  it("announces a point of power gained in a bay the same way as on a depleted node", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -744,7 +744,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               power: 0,
             },
             { type: "node-ran-out", square: squareAt("K", 5) },
-            { type: "site-went-active", square: squareAt("N", 4) },
+            { type: "node-went-inactive", square: squareAt("N", 4) },
           ],
         },
       ],
@@ -948,7 +948,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
 });
 
 describe("announcementFor — energy penalty (rules.md §8.4)", () => {
-  it("announces one dormant site occupied", () => {
+  it("announces one depleted node occupied", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-2",
@@ -974,11 +974,11 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green lost 1 energy to the dormant site at H8, and now has 4. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green lost 1 energy to the depleted node at H8, and now has 4. Red's turn, 1 action left.",
     );
   });
 
-  it("announces several dormant sites occupied, naming the count and every square", () => {
+  it("announces several depleted nodes occupied, naming the count and every square", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-2",
@@ -1004,11 +1004,11 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green lost 3 energy to 3 dormant sites at D8, H8 and K11, and now has 0. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green lost 3 energy to 3 depleted nodes at D8, H8 and K11, and now has 0. Red's turn, 1 action left.",
     );
   });
 
-  it("names every dormant site occupied and says five are penalised once the cap is passed", () => {
+  it("names every depleted node occupied and says five are penalised once the cap is passed", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-2",
@@ -1041,7 +1041,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green lost 15 energy to 6 dormant sites at D8, H8, K11, E5, K5 and G6, five of which are penalised, and now has 0. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green lost 15 energy to 6 depleted nodes at D8, H8, K11, E5, K5 and G6, five of which are penalised, and now has 0. Red's turn, 1 action left.",
     );
   });
 
@@ -1095,7 +1095,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 6. Green lost 3 energy to 2 dormant sites at E5 and K5, and now has 3. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 6. Green lost 3 energy to 2 depleted nodes at E5 and K5, and now has 3. Red's turn, 1 action left.",
     );
   });
 
@@ -1116,7 +1116,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       ],
     };
     expect(announcementFor(event)).toBe(
-      "Red has no legal action, so the turn passes. Red lost 3 energy to 2 dormant sites at E5 and K5, and now has 0. Green's turn, 1 action left.",
+      "Red has no legal action, so the turn passes. Red lost 3 energy to 2 depleted nodes at E5 and K5, and now has 0. Green's turn, 1 action left.",
     );
   });
 });
@@ -1159,7 +1159,7 @@ describe("announcementForSession", () => {
   }): GameState {
     return {
       ships: [],
-      siteStates: {},
+      nodes: {},
       sideToMove: config.sideToMove,
       actionsRemaining: ACTIONS_PER_PLY,
       actedThisPly: [],
@@ -1581,7 +1581,7 @@ describe("turnIndicatorText", () => {
     expect(
       turnIndicatorText({
         ships: [],
-        siteStates: {},
+        nodes: {},
         sideToMove: "green",
         actionsRemaining: ACTIONS_PER_PLY,
         actedThisPly: [],
@@ -1598,7 +1598,7 @@ describe("turnIndicatorText", () => {
     expect(
       turnIndicatorText({
         ships: [],
-        siteStates: {},
+        nodes: {},
         sideToMove: "red",
         actionsRemaining: ACTIONS_PER_PLY,
         actedThisPly: [],
@@ -1615,7 +1615,7 @@ describe("turnIndicatorText", () => {
     expect(
       turnIndicatorText({
         ships: [],
-        siteStates: {},
+        nodes: {},
         sideToMove: "green",
         actionsRemaining: ACTIONS_PER_PLY,
         actedThisPly: [],
@@ -1641,21 +1641,21 @@ describe("HUD wording", () => {
       power: 0 | 1 | 2 | 3 | 4;
     }[];
     charged?: readonly string[];
-    dormant?: readonly string[];
+    depleted?: readonly string[];
   }): GameState {
-    const siteStates: Record<
+    const nodes: Record<
       string,
-      { state: "charged" | "dormant"; level: number }
+      { state: "charged" | "depleted"; level: number }
     > = {};
     for (const square of config.charged ?? []) {
-      siteStates[square] = { state: "charged", level: 1 };
+      nodes[square] = { state: "charged", level: 1 };
     }
-    for (const square of config.dormant ?? []) {
-      siteStates[square] = { state: "dormant", level: 1 };
+    for (const square of config.depleted ?? []) {
+      nodes[square] = { state: "depleted", level: 1 };
     }
     return {
       ships: config.ships ?? [],
-      siteStates,
+      nodes,
       sideToMove: "green",
       actionsRemaining: ACTIONS_PER_PLY,
       actedThisPly: [],
@@ -1675,7 +1675,7 @@ describe("HUD wording", () => {
         plyNumber: 1,
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held, standing on no dormant sites.",
+        "Green: 0 energy, no nodes held, standing on no depleted nodes.",
       );
     });
 
@@ -1695,7 +1695,7 @@ describe("HUD wording", () => {
         charged: ["H8"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 7 energy, 1 node held, standing on no dormant sites.",
+        "Green: 7 energy, 1 node held, standing on no depleted nodes.",
       );
     });
 
@@ -1721,7 +1721,7 @@ describe("HUD wording", () => {
         charged: ["H8", "E5"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 24 energy, 2 nodes held, standing on no dormant sites.",
+        "Green: 24 energy, 2 nodes held, standing on no depleted nodes.",
       );
     });
 
@@ -1742,11 +1742,11 @@ describe("HUD wording", () => {
         charged: ["K5", "H8"],
       });
       expect(scoreSentence(state, "red")).toBe(
-        "Red: 1 energy, 1 node held, standing on no dormant sites.",
+        "Red: 1 energy, 1 node held, standing on no depleted nodes.",
       );
     });
 
-    it("uses the singular at one dormant site occupied", () => {
+    it("uses the singular at one depleted node occupied", () => {
       const state = stateWith({
         energy: { green: 4, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
@@ -1759,14 +1759,14 @@ describe("HUD wording", () => {
             power: 4,
           },
         ],
-        dormant: ["H8"],
+        depleted: ["H8"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 4 energy, no nodes held, standing on 1 dormant site.",
+        "Green: 4 energy, no nodes held, standing on 1 depleted node.",
       );
     });
 
-    it("counts several dormant sites occupied, plural", () => {
+    it("counts several depleted nodes occupied, plural", () => {
       const state = stateWith({
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
@@ -1785,14 +1785,14 @@ describe("HUD wording", () => {
             power: 4,
           },
         ],
-        dormant: ["H8", "E5"],
+        depleted: ["H8", "E5"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held, standing on 2 dormant sites.",
+        "Green: 0 energy, no nodes held, standing on 2 depleted nodes.",
       );
     });
 
-    it("does not count the opponent's ships on dormant sites", () => {
+    it("does not count the opponent's ships on depleted nodes", () => {
       const state = stateWith({
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
@@ -1800,10 +1800,10 @@ describe("HUD wording", () => {
         ships: [
           { id: "red-1", side: "red", square: squareAt("H", 8), power: 4 },
         ],
-        dormant: ["H8"],
+        depleted: ["H8"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held, standing on no dormant sites.",
+        "Green: 0 energy, no nodes held, standing on no depleted nodes.",
       );
     });
   });

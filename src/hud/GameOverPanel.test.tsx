@@ -20,7 +20,7 @@ afterEach(cleanup);
 function finishedState(overrides: Partial<GameState> = {}): GameState {
   return {
     ships: [],
-    siteStates: {},
+    nodes: {},
     sideToMove: "green",
     actionsRemaining: 1,
     actedThisPly: [],
@@ -177,7 +177,7 @@ describe("GameOverPanel", () => {
         ships: [
           { id: "red-1", side: "red", square: squareAt("H", 8), power: 4 },
         ],
-        siteStates: {},
+        nodes: {},
         sideToMove: "red",
         actionsRemaining: 1,
         actedThisPly: [],
@@ -203,7 +203,7 @@ describe("GameOverPanel", () => {
           { id: "red-1", side: "red", square: squareAt("H", 8), power: 4 },
           { id: "red-2", side: "red", square: squareAt("G", 1), power: 4 },
         ],
-        siteStates: {
+        nodes: {
           [squareName(squareAt("H", 8))]: {
             state: "charged",
             level: 1,
@@ -270,7 +270,7 @@ describe("GameOverPanel", () => {
       expect(screen.queryByRole("grid")).not.toBeInTheDocument();
       expect(
         screen.queryByText(
-          "Red: 7 energy, 1 node held, standing on no dormant sites.",
+          "Red: 7 energy, 1 node held, standing on no depleted nodes.",
         ),
       ).not.toBeInTheDocument();
     });

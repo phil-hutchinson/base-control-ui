@@ -34,13 +34,13 @@
 }
 
 .score-display__pips,
-.score-display__dormant-pips {
+.score-display__depleted-pips {
   display: flex;
   gap: 0.35em;
 }
 
 .score-display__pip,
-.score-display__dormant-pip {
+.score-display__depleted-pip {
   width: 0.6em;
   height: 0.6em;
   border-radius: 50%;
@@ -49,16 +49,16 @@
 }
 
 /* Every pip's border is the side's own colour; a pip that is "on" fills
-   with the colour of the kind of site it counts — gold for a charged node,
-   grey for a dormant site — so the border says whose it is and the fill
+   with the colour of the kind of node it counts — gold for a charged node,
+   grey for a depleted node — so the border says whose it is and the fill
    says what it is. */
 .score-display--green .score-display__pip,
-.score-display--green .score-display__dormant-pip {
+.score-display--green .score-display__depleted-pip {
   border-color: var(--color-green);
 }
 
 .score-display--red .score-display__pip,
-.score-display--red .score-display__dormant-pip {
+.score-display--red .score-display__depleted-pip {
   border-color: var(--color-red);
 }
 
@@ -67,14 +67,14 @@
   box-shadow: 0 0 0.4em var(--color-node-charged);
 }
 
-.score-display__dormant-pip--on {
-  background-color: var(--color-node-dormant);
-  box-shadow: 0 0 0.4em var(--color-node-dormant);
+.score-display__depleted-pip--on {
+  background-color: var(--color-node-depleted);
+  box-shadow: 0 0 0.4em var(--color-node-depleted);
 }
 
-/* A side standing on nothing dormant should not have a row that draws the
+/* A side standing on nothing depleted should not have a row that draws the
    eye: quieten the border rather than giving the empty pips a fill. */
-.score-display__dormant-pips--empty .score-display__dormant-pip {
+.score-display__depleted-pips--empty .score-display__depleted-pip {
   border-color: var(--color-text-dim);
   opacity: 0.5;
 }
@@ -99,7 +99,7 @@
      with it, which keeps the cell proportionate and makes the five-pip row
      the widest thing in the column (see `App.css`). */
   .score-display__pips,
-  .score-display__dormant-pips {
+  .score-display__depleted-pips {
     font-size: calc(var(--region-extent) * 0.175);
   }
 }

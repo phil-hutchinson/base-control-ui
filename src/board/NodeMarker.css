@@ -1,0 +1,10 @@
+/* The node-state artwork - its gradient, geometry, colours and opacities -
+   lives in NodeMarker.tsx, since the middle gradient stop is computed per
+   render. This file sets only the element's box, so it fills the square
+   the same way ShipModel.css does. */
+
+.node-marker {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

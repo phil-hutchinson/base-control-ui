@@ -5,7 +5,7 @@
 //
 // Drawn whether or not the bay is occupied: there is no occupancy condition
 // here or in whatever mounts this component. A ship standing on the bay
-// simply draws over it, exactly as it already does over a site marker.
+// simply draws over it, exactly as it already does over a node marker.
 
 import type { PlanetArt } from "./planetArt";
 import "./Planet.css";

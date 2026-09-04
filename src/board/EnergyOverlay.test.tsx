@@ -19,7 +19,7 @@ afterEach(cleanup);
 function buildState(plyNumber: number): GameState {
   return {
     ships: [],
-    siteStates: {},
+    nodes: {},
     sideToMove: "green",
     actionsRemaining: 1,
     actedThisPly: [],
@@ -85,7 +85,7 @@ function movedEventWithEndOfTurn(
   };
 }
 
-const TWO_SITE_PENALTY: EnergyPenaltyEffect = {
+const TWO_NODE_PENALTY: EnergyPenaltyEffect = {
   type: "energy-penalty",
   side: "green",
   amount: 3,
@@ -146,7 +146,7 @@ describe("EnergyOverlay", () => {
   it("draws one -N and one pulse per paying square, in the paying side's colour", () => {
     const { container } = render(
       <EnergyOverlay
-        session={sessionWithEvent(movedEventWithEndOfTurn([TWO_SITE_PENALTY]))}
+        session={sessionWithEvent(movedEventWithEndOfTurn([TWO_NODE_PENALTY]))}
       />,
     );
 
@@ -168,7 +168,7 @@ describe("EnergyOverlay", () => {
     const { container } = render(
       <EnergyOverlay
         session={sessionWithEvent(
-          movedEventWithEndOfTurn([THREE_NODE_COLLECTION, TWO_SITE_PENALTY]),
+          movedEventWithEndOfTurn([THREE_NODE_COLLECTION, TWO_NODE_PENALTY]),
         )}
       />,
     );

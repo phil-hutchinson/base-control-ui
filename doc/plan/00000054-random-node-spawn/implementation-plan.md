@@ -403,7 +403,55 @@ fallback, the fifteen-node opening and the five random elements.
 
 ### Step 2 — The vocabulary pass: site → node, active/dormant → inactive/depleted
 
-Status: pending
+Status: committed
+
+Notes: Renamed `sites.ts`/`sites.test.ts`/`sitePool.test.ts` to
+`nodes.ts`/`nodes.test.ts`/`nodePool.test.ts` and `SiteMarker.tsx`/`.css`/
+`.test.tsx` to `NodeMarker.tsx`/`.css`/`.test.tsx` with `git mv`, then applied
+the identifier, state-literal, class-name and wording renames listed in the
+step across all 49 affected files (`SITES` → `FIXED_NODE_SQUARES` per D10,
+`site-went-active` → `node-went-inactive` per D11), plus every other
+site/dormant/active identifier the plan's "at minimum" list did not spell
+out but the mechanical pass reached (e.g. `ACTIVE_SITE_SQUARES` →
+`INACTIVE_NODE_SQUARES` in `Board.test.tsx`, `MINIMUM_ACTIVE_SITES` →
+`MINIMUM_INACTIVE_NODES` and `MINIMUM_CHARGES_PER_SITE` →
+`MINIMUM_CHARGES_PER_NODE` in `nodePool.test.ts`, `dormantOccupied`/
+`dormantSquares`/`dormantCount`/`meanDormant`/`meanActive`/
+`distanceToNearestChargedOrActive`/`wentActive`/`activeNames` and similar
+local names). Edited `CLAUDE.md`: deleted the **Site** and **Hub** entries,
+added a **Node** entry per the step's wording, keeping the search-tree-node
+disambiguation sentence. Two deviations beyond a literal find-and-replace,
+both required to keep the result true rather than merely grep-clean:
+(1) `src/board/NodeMarker.tsx`'s comment about
+`doc/plan/00000023-update-node-visual/node-artwork.md` quotes that
+(unrewritten, per D12) document's own pre-0.11 section headings "Dormant"
+and "Active" — a blind rename would have quoted headings the document does
+not contain, so those three quoted occurrences were left as `"Dormant"`/
+`"Active"` and the surrounding prose rewritten to explain the new
+mismatch (the doc's "Charged"/"Depleted" headings now coincidentally match
+the code's state names; "Dormant"/"Active" still name neither); (2) two
+comments that relied on the old site/node distinction to make sense —
+`announcements.ts`'s `endOfTurnClauses` doc comment ("an active site is not
+a node") and `fullGame.test.ts`'s `distanceToNearestChargedOrInactive` doc
+comment ("a node or a site that might become one") — were reworded rather
+than mechanically substituted, since a literal substitution produced
+self-contradictory sentences once "site" and "node" became the same word.
+Also reflowed a handful of comments (the `NodeStatus` state table in
+`gameState.ts`, one paragraph each in `energy.ts` and `chargeDraw.ts`) whose
+wrapping the longer identifiers broke, and fixed one derived word form
+("dormancy" in `nodes.ts`, not caught by the word-boundary rename) to
+"depleted spell". `npm run typecheck`, `npm run lint`, `npm run format:check`
+and `npm test` (898 tests, unchanged count and unchanged assertions —
+only identifiers, class names and wording moved) all pass. Grep confirms no
+case-insensitive `site` or `dormant` remains in `src/` outside the
+false positives the step names (`opposite`, `composite`,
+`AccessibleGrid.tsx`'s `activeElement`/`interactive-supports-focus`) plus
+the three deliberate historical-heading quotes in `NodeMarker.tsx` noted
+above (a false positive the step's list did not anticipate, since it predates
+the mechanical pass finding it); no word-boundary `"active"` string literal
+or `--active` class remains. `git diff` reviewed file by file: every hunk is
+a name, a string or a comment — no condition, arithmetic, draw order or
+control flow differs.
 
 A single mechanical rename across `src/`, with **no behavioural change at
 all**, plus the `CLAUDE.md` vocabulary edit that goes with it. See D9 for why

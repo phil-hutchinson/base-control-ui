@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { squareFromName } from "./board";
 import {
   chargedNodesHeldBy,
-  dormantSitesOccupiedBy,
-  energyForDormantSites,
+  depletedNodesOccupiedBy,
+  energyForDepletedNodes,
   energyForNodesHeld,
 } from "./energy";
 import type { ShipId } from "./fleet";
-import type { GameState, Ship, SiteStatus } from "./gameState";
+import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { PowerLevel } from "./power";
-import { SITES, type SiteState } from "./sites";
+import { FIXED_NODE_SQUARES, type NodeState } from "./nodes";
 
 function ship(
   id: ShipId,
@@ -21,9 +21,9 @@ function ship(
   return { id, side, square: squareFromName(square), power };
 }
 
-function siteStatuses(
-  states: Readonly<Record<string, SiteState>>,
-): Record<string, SiteStatus> {
+function nodeStatuses(
+  states: Readonly<Record<string, NodeState>>,
+): Record<string, NodeStatus> {
   return Object.fromEntries(
     Object.entries(states).map(([name, state]) => [name, { state, level: 0 }]),
   );
@@ -31,11 +31,11 @@ function siteStatuses(
 
 function buildState(config: {
   ships?: readonly Ship[];
-  siteStates?: Readonly<Record<string, SiteState>>;
+  nodes?: Readonly<Record<string, NodeState>>;
 }): GameState {
   return {
     ships: config.ships ?? [],
-    siteStates: siteStatuses(config.siteStates ?? {}),
+    nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: "green",
     actionsRemaining: 1,
     actedThisPly: [],
@@ -75,25 +75,25 @@ describe("energyForNodesHeld", () => {
 describe("chargedNodesHeldBy", () => {
   it("counts a ship standing on a charged node", () => {
     const state = buildState({
-      siteStates: { H8: "charged" },
+      nodes: { H8: "charged" },
       ships: [ship("green-1", "green", "H8")],
     });
 
     expect(chargedNodesHeldBy(state, "green")).toEqual([squareFromName("H8")]);
   });
 
-  it("does not count a ship on an active site", () => {
+  it("does not count a ship on an inactive node", () => {
     const state = buildState({
-      siteStates: { H8: "active" },
+      nodes: { H8: "inactive" },
       ships: [ship("green-1", "green", "H8")],
     });
 
     expect(chargedNodesHeldBy(state, "green")).toEqual([]);
   });
 
-  it("does not count a ship on a dormant site", () => {
+  it("does not count a ship on a depleted node", () => {
     const state = buildState({
-      siteStates: { H8: "dormant" },
+      nodes: { H8: "depleted" },
       ships: [ship("green-1", "green", "H8")],
     });
 
@@ -102,23 +102,23 @@ describe("chargedNodesHeldBy", () => {
 
   it("does not count an enemy ship on a charged node for this side", () => {
     const state = buildState({
-      siteStates: { H8: "charged" },
+      nodes: { H8: "charged" },
       ships: [ship("red-1", "red", "H8")],
     });
 
     expect(chargedNodesHeldBy(state, "green")).toEqual([]);
   });
 
-  it("counts two ships of the same side on two charged nodes, in SITES order", () => {
+  it("counts two ships of the same side on two charged nodes, in FIXED_NODE_SQUARES order", () => {
     const state = buildState({
-      siteStates: { L8: "charged", D8: "charged" },
+      nodes: { L8: "charged", D8: "charged" },
       ships: [ship("green-1", "green", "L8"), ship("green-2", "green", "D8")],
     });
 
-    const d8Index = SITES.findIndex(
+    const d8Index = FIXED_NODE_SQUARES.findIndex(
       (square) => square.column === "D" && square.row === 8,
     );
-    const l8Index = SITES.findIndex(
+    const l8Index = FIXED_NODE_SQUARES.findIndex(
       (square) => square.column === "L" && square.row === 8,
     );
     expect(d8Index).toBeLessThan(l8Index);
@@ -131,7 +131,7 @@ describe("chargedNodesHeldBy", () => {
 
   it("returns an empty list for a side with no ships on any node", () => {
     const state = buildState({
-      siteStates: { H8: "charged" },
+      nodes: { H8: "charged" },
       ships: [ship("green-1", "green", "D2")],
     });
 
@@ -139,7 +139,7 @@ describe("chargedNodesHeldBy", () => {
   });
 });
 
-describe("energyForDormantSites", () => {
+describe("energyForDepletedNodes", () => {
   it.each([
     [0, 0],
     [1, 1],
@@ -147,101 +147,101 @@ describe("energyForDormantSites", () => {
     [3, 6],
     [4, 10],
     [5, 15],
-  ])("costs %i for standing on %i dormant sites", (dormantSites, energy) => {
-    expect(energyForDormantSites(dormantSites)).toBe(energy);
+  ])("costs %i for standing on %i depleted nodes", (depletedNodes, energy) => {
+    expect(energyForDepletedNodes(depletedNodes)).toBe(energy);
   });
 
   it.each([6, 7])(
-    "clamps %i dormant sites to the same price as five, without throwing",
-    (dormantSites) => {
-      expect(energyForDormantSites(dormantSites)).toBe(15);
+    "clamps %i depleted nodes to the same price as five, without throwing",
+    (depletedNodes) => {
+      expect(energyForDepletedNodes(depletedNodes)).toBe(15);
     },
   );
 
   it("throws for a negative count", () => {
-    expect(() => energyForDormantSites(-1)).toThrow(RangeError);
+    expect(() => energyForDepletedNodes(-1)).toThrow(RangeError);
   });
 
   it("throws for a fractional count", () => {
-    expect(() => energyForDormantSites(2.5)).toThrow(RangeError);
+    expect(() => energyForDepletedNodes(2.5)).toThrow(RangeError);
   });
 
   it("throws for a count above the most ships a side can ever have", () => {
-    expect(() => energyForDormantSites(8)).toThrow(RangeError);
+    expect(() => energyForDepletedNodes(8)).toThrow(RangeError);
   });
 
-  it("prices seven dormant sites the same as five, without throwing — the bound is the maximum fleet, not the current game's", () => {
-    expect(energyForDormantSites(7)).toBe(15);
-    expect(energyForDormantSites(7)).toBe(energyForDormantSites(5));
-    expect(() => energyForDormantSites(8)).toThrow(RangeError);
+  it("prices seven depleted nodes the same as five, without throwing — the bound is the maximum fleet, not the current game's", () => {
+    expect(energyForDepletedNodes(7)).toBe(15);
+    expect(energyForDepletedNodes(7)).toBe(energyForDepletedNodes(5));
+    expect(() => energyForDepletedNodes(8)).toThrow(RangeError);
   });
 });
 
-describe("dormantSitesOccupiedBy", () => {
-  it("counts a ship standing on a dormant site", () => {
+describe("depletedNodesOccupiedBy", () => {
+  it("counts a ship standing on a depleted node", () => {
     const state = buildState({
-      siteStates: { H8: "dormant" },
+      nodes: { H8: "depleted" },
       ships: [ship("green-1", "green", "H8")],
     });
 
-    expect(dormantSitesOccupiedBy(state, "green")).toEqual([
+    expect(depletedNodesOccupiedBy(state, "green")).toEqual([
       squareFromName("H8"),
     ]);
   });
 
-  it("does not count a ship on an active site", () => {
+  it("does not count a ship on an inactive node", () => {
     const state = buildState({
-      siteStates: { H8: "active" },
+      nodes: { H8: "inactive" },
       ships: [ship("green-1", "green", "H8")],
     });
 
-    expect(dormantSitesOccupiedBy(state, "green")).toEqual([]);
+    expect(depletedNodesOccupiedBy(state, "green")).toEqual([]);
   });
 
   it("does not count a ship on a charged node", () => {
     const state = buildState({
-      siteStates: { H8: "charged" },
+      nodes: { H8: "charged" },
       ships: [ship("green-1", "green", "H8")],
     });
 
-    expect(dormantSitesOccupiedBy(state, "green")).toEqual([]);
+    expect(depletedNodesOccupiedBy(state, "green")).toEqual([]);
   });
 
-  it("does not count an enemy ship on a dormant site for this side", () => {
+  it("does not count an enemy ship on a depleted node for this side", () => {
     const state = buildState({
-      siteStates: { H8: "dormant" },
+      nodes: { H8: "depleted" },
       ships: [ship("red-1", "red", "H8")],
     });
 
-    expect(dormantSitesOccupiedBy(state, "green")).toEqual([]);
+    expect(depletedNodesOccupiedBy(state, "green")).toEqual([]);
   });
 
-  it("counts two ships of the same side on two dormant sites, in SITES order", () => {
+  it("counts two ships of the same side on two depleted nodes, in FIXED_NODE_SQUARES order", () => {
     const state = buildState({
-      siteStates: { L8: "dormant", D8: "dormant" },
+      nodes: { L8: "depleted", D8: "depleted" },
       ships: [ship("green-1", "green", "L8"), ship("green-2", "green", "D8")],
     });
 
-    const d8Index = SITES.findIndex(
+    const d8Index = FIXED_NODE_SQUARES.findIndex(
       (square) => square.column === "D" && square.row === 8,
     );
-    const l8Index = SITES.findIndex(
+    const l8Index = FIXED_NODE_SQUARES.findIndex(
       (square) => square.column === "L" && square.row === 8,
     );
     expect(d8Index).toBeLessThan(l8Index);
 
-    expect(dormantSitesOccupiedBy(state, "green")).toEqual([
+    expect(depletedNodesOccupiedBy(state, "green")).toEqual([
       squareFromName("D8"),
       squareFromName("L8"),
     ]);
   });
 
-  it("returns an empty list for a side standing on no dormant site", () => {
+  it("returns an empty list for a side standing on no depleted node", () => {
     const state = buildState({
-      siteStates: { H8: "dormant" },
+      nodes: { H8: "depleted" },
       ships: [ship("green-1", "green", "D2")],
     });
 
-    expect(dormantSitesOccupiedBy(state, "green")).toEqual([]);
+    expect(depletedNodesOccupiedBy(state, "green")).toEqual([]);
   });
 });

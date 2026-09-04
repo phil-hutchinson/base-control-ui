@@ -11,7 +11,7 @@ afterEach(cleanup);
 function finishedState(): GameState {
   return {
     ships: [],
-    siteStates: {},
+    nodes: {},
     sideToMove: "green",
     actionsRemaining: 1,
     actedThisPly: [],

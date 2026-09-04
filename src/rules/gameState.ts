@@ -13,7 +13,7 @@ import {
 } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS, isGameLengthRounds } from "./gameLength";
 import type { PowerLevel } from "./power";
-import { dealOpeningBoard, type SiteState } from "./sites";
+import { dealOpeningBoard, type NodeState } from "./nodes";
 
 /** How many actions a side takes each ply (rules.md §5). */
 export const ACTIONS_PER_PLY = 1;
@@ -27,23 +27,23 @@ export interface Ship {
 }
 
 /**
- * A site's current state, plus its `level` — a single number whose meaning
+ * A node's current state, plus its `level` — a single number whose meaning
  * depends on the state it is attached to (rules.md §8.1–§8.3):
  *
- * | State   | `level` is           | Starts at             | Moves at end of turn | Changes state at |
- * | ------- | --------------------- | ---------------------- | --------------------- | ----------------- |
- * | Active  | pressure               | 1                       | +1, capped at 50      | drawn (§8.2)       |
- * | Charged | drain                  | 0                       | + the drain draw      | ≥ capacity         |
- * | Dormant | the drain to recover   | the drain it carried    | − the recovery draw   | ≤ 0                |
+ * | State    | `level` is           | Starts at            | Moves at end of turn | Changes state at |
+ * | -------- | --------------------- | --------------------- | --------------------- | ----------------- |
+ * | Inactive | pressure              | 1                     | +1, capped at 50      | drawn (§8.2)       |
+ * | Charged  | drain                 | 0                     | + the drain draw      | ≥ capacity         |
+ * | Depleted | the drain to recover  | the drain it carried  | − the recovery draw   | ≤ 0                |
  *
- * A dormant site's `level` carries over from whatever drain the node had
- * when it went dormant — always at or a little past capacity, since a node
+ * A depleted node's `level` carries over from whatever drain the node had
+ * when it went depleted — always at or a little past capacity, since a node
  * now ends only that way — so recovery always starts from about the same
  * level. That carry is a real property of the design, not an implementation
  * convenience, and is why there is one field rather than three.
  */
-export interface SiteStatus {
-  readonly state: SiteState;
+export interface NodeStatus {
+  readonly state: NodeState;
   readonly level: number;
 }
 
@@ -54,8 +54,8 @@ export type EnergyTotals = Readonly<Record<Side, number>>;
 export interface GameState {
   /** Every ship, in the starting fleet's clockwise order (`startingFleet`, rules.md §4). */
   readonly ships: readonly Ship[];
-  /** Every site's current status, keyed by square name. */
-  readonly siteStates: Readonly<Record<string, SiteStatus>>;
+  /** Every node's current status, keyed by square name. */
+  readonly nodes: Readonly<Record<string, NodeStatus>>;
   /** The side whose ply it is. */
   readonly sideToMove: Side;
   /** How many of the ply's actions remain. */
@@ -92,8 +92,8 @@ export interface GameState {
 /**
  * The state the game starts from: `startingFleet(fleetSize)`'s ships, a
  * dealt board (`dealOpeningBoard`, rules.md §8.1) — five of the seventeen
- * sites charged at a drawn drain, the rest active at a drawn pressure,
- * nothing dormant — green to move, `ACTIONS_PER_PLY` actions remaining,
+ * nodes charged at a drawn drain, the rest inactive at a drawn pressure,
+ * nothing depleted — green to move, `ACTIONS_PER_PLY` actions remaining,
  * nothing moved, ply 1, both sides at 0 energy, neither side out of time,
  * and the given game length.
  *
@@ -131,7 +131,7 @@ export function startingGameState(
     );
   }
 
-  const [siteStates, nextSeed] = dealOpeningBoard(randomSeed);
+  const [nodes, nextSeed] = dealOpeningBoard(randomSeed);
 
   return {
     ships: startingFleet(fleetSize).map((entry) => ({
@@ -140,7 +140,7 @@ export function startingGameState(
       square: entry.square,
       power: entry.power,
     })),
-    siteStates,
+    nodes,
     sideToMove: "green",
     actionsRemaining: ACTIONS_PER_PLY,
     actedThisPly: [],
@@ -169,30 +169,30 @@ export function shipsBySquare(state: GameState): ReadonlyMap<string, Ship> {
   return new Map(state.ships.map((ship) => [squareName(ship.square), ship]));
 }
 
-/** A square's site state in the given game state, or `undefined` if it is not a site. */
-export function siteStateAt(
+/** A square's node state in the given game state, or `undefined` if it is not a node. */
+export function nodeStateAt(
   state: GameState,
   square: Square,
-): SiteState | undefined {
-  return state.siteStates[squareName(square)]?.state;
+): NodeState | undefined {
+  return state.nodes[squareName(square)]?.state;
 }
 
-/** A square's full site status (state and level), or `undefined` if it is not a site. */
-export function siteStatusAt(
+/** A square's full node status (state and level), or `undefined` if it is not a node. */
+export function nodeStatusAt(
   state: GameState,
   square: Square,
-): SiteStatus | undefined {
-  return state.siteStates[squareName(square)];
+): NodeStatus | undefined {
+  return state.nodes[squareName(square)];
 }
 
 /**
- * The square names of every site that is `dormant` in the given state. Built
+ * The square names of every node that is `depleted` in the given state. Built
  * fresh from whatever state is handed to it.
  */
-export function dormantSiteNames(state: GameState): ReadonlySet<string> {
+export function depletedNodeNames(state: GameState): ReadonlySet<string> {
   const names = new Set<string>();
-  for (const [name, status] of Object.entries(state.siteStates)) {
-    if (status.state === "dormant") {
+  for (const [name, status] of Object.entries(state.nodes)) {
+    if (status.state === "depleted") {
       names.add(name);
     }
   }

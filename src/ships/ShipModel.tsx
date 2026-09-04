@@ -7,7 +7,7 @@
 // outline with no bar. Icons light left to right (powerGauge.ts).
 //
 // The gauge sits across the top of the viewBox and the hull low within it:
-// the clear band between them is what keeps a site marker, drawn beneath
+// the clear band between them is what keeps a node marker, drawn beneath
 // the ship in the same square, readable through the middle of the square.
 // The power level is optional: a gauge is drawn only when one is given, so
 // a ship with no power to show can be drawn without one, keeping "a gauge

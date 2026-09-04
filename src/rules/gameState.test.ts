@@ -5,15 +5,15 @@ import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
   markOutOfTime,
   shipsBySquare,
-  siteStateAt,
-  siteStatusAt,
+  nodeStateAt,
+  nodeStatusAt,
   startingGameState,
 } from "./gameState";
 import {
   OPENING_DRAIN_TABLE,
   OPENING_PRESSURE_TABLE,
   dealOpeningBoard,
-} from "./sites";
+} from "./nodes";
 
 const SEED = 12345;
 const STARTING_FLEET = startingFleet(7);
@@ -44,26 +44,26 @@ describe("startingGameState", () => {
     expect(state.randomSeed).not.toBe(SEED);
   });
 
-  it("deals the board dealOpeningBoard deals for the same seed: five charged, twelve active, none dormant", () => {
+  it("deals the board dealOpeningBoard deals for the same seed: five charged, twelve inactive, none depleted", () => {
     const state = startingGameState(SEED);
     const [dealt] = dealOpeningBoard(SEED);
 
-    expect(state.siteStates).toEqual(dealt);
+    expect(state.nodes).toEqual(dealt);
 
-    const allStatuses = Object.values(state.siteStates);
+    const allStatuses = Object.values(state.nodes);
     expect(allStatuses).toHaveLength(17);
     expect(
       allStatuses.filter((status) => status.state === "charged"),
     ).toHaveLength(5);
     expect(
-      allStatuses.filter((status) => status.state === "active"),
+      allStatuses.filter((status) => status.state === "inactive"),
     ).toHaveLength(12);
     expect(
-      allStatuses.filter((status) => status.state === "dormant"),
+      allStatuses.filter((status) => status.state === "depleted"),
     ).toHaveLength(0);
   });
 
-  it("draws every charged level from the opening drain table and every active level from the opening pressure table", () => {
+  it("draws every charged level from the opening drain table and every inactive level from the opening pressure table", () => {
     const state = startingGameState(SEED);
     const drainAmounts = new Set(
       OPENING_DRAIN_TABLE.map((entry) => entry.amount),
@@ -72,7 +72,7 @@ describe("startingGameState", () => {
       OPENING_PRESSURE_TABLE.map((entry) => entry.amount),
     );
 
-    for (const status of Object.values(state.siteStates)) {
+    for (const status of Object.values(state.nodes)) {
       if (status.state === "charged") {
         expect(drainAmounts.has(status.level)).toBe(true);
       } else {
@@ -86,24 +86,24 @@ describe("startingGameState", () => {
     const second = startingGameState(SEED);
     const other = startingGameState(SEED + 1);
 
-    expect(second.siteStates).toEqual(first.siteStates);
-    expect(other.siteStates).not.toEqual(first.siteStates);
+    expect(second.nodes).toEqual(first.nodes);
+    expect(other.nodes).not.toEqual(first.nodes);
   });
 
-  it("gives a non-site square no state or status", () => {
+  it("gives a non-node square no state or status", () => {
     const state = startingGameState(SEED);
 
-    expect(siteStateAt(state, squareFromName("A1"))).toBeUndefined();
-    expect(siteStatusAt(state, squareFromName("A1"))).toBeUndefined();
+    expect(nodeStateAt(state, squareFromName("A1"))).toBeUndefined();
+    expect(nodeStatusAt(state, squareFromName("A1"))).toBeUndefined();
   });
 
-  it("agrees with siteStatusAt: the state matches, and the status carries the clock", () => {
+  it("agrees with nodeStatusAt: the state matches, and the status carries the clock", () => {
     const state = startingGameState(SEED);
 
     for (const name of ["H8", "F2", "K5"]) {
       const square = squareFromName(name);
-      const status = siteStatusAt(state, square);
-      expect(status?.state).toBe(siteStateAt(state, square));
+      const status = nodeStatusAt(state, square);
+      expect(status?.state).toBe(nodeStateAt(state, square));
       expect(status).toBeDefined();
     }
   });
@@ -126,7 +126,7 @@ describe("startingGameState", () => {
 
     expect(first).toEqual(second);
     expect(first.ships).not.toBe(second.ships);
-    expect(first.siteStates).not.toBe(second.siteStates);
+    expect(first.nodes).not.toBe(second.nodes);
     expect(first.actedThisPly).not.toBe(second.actedThisPly);
   });
 
@@ -202,7 +202,7 @@ describe("startingGameState", () => {
     const fiveASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 5);
     const sevenASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 7);
 
-    expect(fiveASide.siteStates).toEqual(sevenASide.siteStates);
+    expect(fiveASide.nodes).toEqual(sevenASide.nodes);
   });
 
   it("starts every ship at full power whatever the fleet size", () => {

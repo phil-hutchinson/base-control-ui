@@ -9,8 +9,8 @@ import { isBay } from "../rules/bays";
 import { squareName } from "../rules/board";
 import {
   chargedNodesHeldBy,
-  dormantSitesOccupiedBy,
-  MAX_DORMANT_SITES_PRICED,
+  depletedNodesOccupiedBy,
+  MAX_DEPLETED_NODES_PRICED,
 } from "../rules/energy";
 import type {
   EndOfTurnEffect,
@@ -71,15 +71,15 @@ function nodesHeldPhrase(count: number): string {
   return `${count} ${count === 1 ? "node" : "nodes"} held`;
 }
 
-/** "standing on 2 dormant sites", "standing on 1 dormant site", "standing on
- * no dormant sites" — for the HUD's hidden score sentence. Named even when
+/** "standing on 2 depleted nodes", "standing on 1 depleted node", "standing on
+ * no depleted nodes" — for the HUD's hidden score sentence. Named even when
  * zero (§8.4), so the sentence keeps one shape whether a side is paying or
  * not. */
-function dormantSitesOccupiedPhrase(count: number): string {
+function depletedNodesOccupiedPhrase(count: number): string {
   if (count === 0) {
-    return "standing on no dormant sites";
+    return "standing on no depleted nodes";
   }
-  return `standing on ${count} dormant ${count === 1 ? "site" : "sites"}`;
+  return `standing on ${count} depleted ${count === 1 ? "node" : "nodes"}`;
 }
 
 /**
@@ -122,7 +122,7 @@ function joinWithAnd(items: readonly string[]): string {
 /**
  * All of a sequence's power gains as one clause, naming the squares once
  * rather than repeating a sentence per ship. A ship reaching the maximum of
- * 4 is named as such. True of a ship on a dormant site or in a bay alike —
+ * 4 is named as such. True of a ship on a depleted node or in a bay alike —
  * the clause never names which.
  */
 function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
@@ -190,14 +190,14 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
 }
 
 /**
- * A single turn's penalty (rules.md §8.4): one dormant site names itself,
+ * A single turn's penalty (rules.md §8.4): one depleted node names itself,
  * several name their count and squares — the mirror of
  * `energyCollectedClause`. There is at most one of these per sequence, for
  * the same reason there is at most one collection.
  *
- * The count priced is capped at `MAX_DORMANT_SITES_PRICED` (§8.4), but every
- * occupied dormant site is still named — nothing is ranked or selected, the
- * cap just stops counting. So a side over the cap hears which sites it is
+ * The count priced is capped at `MAX_DEPLETED_NODES_PRICED` (§8.4), but every
+ * occupied depleted node is still named — nothing is ranked or selected, the
+ * cap just stops counting. So a side over the cap hears which nodes it is
  * standing on and that five of them are penalised, not that some subset was
  * chosen.
  */
@@ -206,10 +206,10 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
   const squares = effect.squares.map((square) => squareName(square));
   const source =
     squares.length === 1
-      ? `the dormant site at ${squares[0]}`
-      : squares.length > MAX_DORMANT_SITES_PRICED
-        ? `${squares.length} dormant sites at ${joinWithAnd(squares)}, five of which are penalised`
-        : `${squares.length} dormant sites at ${joinWithAnd(squares)}`;
+      ? `the depleted node at ${squares[0]}`
+      : squares.length > MAX_DEPLETED_NODES_PRICED
+        ? `${squares.length} depleted nodes at ${joinWithAnd(squares)}, five of which are penalised`
+        : `${squares.length} depleted nodes at ${joinWithAnd(squares)}`;
   return `${side} lost ${effect.amount} energy to ${source}, and now has ${effect.newTotal}.`;
 }
 
@@ -218,13 +218,13 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
  * produced them. All of a sequence's power losses are grouped into one
  * clause, and all of its power gains into another, the charged-node loss
  * clause ahead of the gain clause so it sits next to the energy-collection
- * sentence that follows it, both ahead of the rest. The two board-only site
- * transitions are judged separately: `site-charged` speaks — a node
- * appearing is the only way one ever appears now, and it is the thing both
- * players are racing towards — while `site-went-active` produces no clause
- * at all, because an active site is not a node, produces nothing and cannot
- * be stopped on, so a site quietly becoming eligible for the charge draw is
- * a board change, not a player event. A zero collection or a zero penalty
+ * sentence that follows it, both ahead of the rest. The two board-only node
+ * transitions are judged separately: `node-charged` speaks — a node
+ * becoming charged is the thing both players are racing towards — while
+ * `node-went-inactive` produces no clause at all, because a node that has
+ * merely finished waiting gives nothing, takes nothing and cannot be
+ * stopped on, so a node quietly becoming eligible for the charge draw is a
+ * board change, not a player event. A zero collection or a zero penalty
  * produces no effect at all (rules.md §8.4), so there is nothing here to
  * skip for either case — a turn that only pays reads as one sentence, and a
  * turn that collects and then pays reads as two, in that order, because the
@@ -251,7 +251,7 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
     switch (effect.type) {
       case "power-gained":
       case "power-lost":
-      case "site-went-active":
+      case "node-went-inactive":
         break;
       case "energy-collected":
         clauses.push(energyCollectedClause(effect));
@@ -262,7 +262,7 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
       case "node-ran-out":
         clauses.push(`The node at ${squareName(effect.square)} ran out.`);
         break;
-      case "site-charged":
+      case "node-charged":
         clauses.push(`A new node charged at ${squareName(effect.square)}.`);
         break;
     }
@@ -535,12 +535,12 @@ export function announcementForSession(session: Session): string {
   }
 }
 
-/** "Green: 24 energy, 3 nodes held, standing on 2 dormant sites." — the HUD
+/** "Green: 24 energy, 3 nodes held, standing on 2 depleted nodes." — the HUD
  * score cell's hidden text. */
 export function scoreSentence(state: GameState, side: Side): string {
   const nodesHeld = chargedNodesHeldBy(state, side).length;
-  const dormantOccupied = dormantSitesOccupiedBy(state, side).length;
-  return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}, ${dormantSitesOccupiedPhrase(dormantOccupied)}.`;
+  const depletedOccupied = depletedNodesOccupiedBy(state, side).length;
+  return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}, ${depletedNodesOccupiedPhrase(depletedOccupied)}.`;
 }
 
 /** "35/100" — the HUD round counter's visible text, clamped at game over. */

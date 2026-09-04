@@ -69,7 +69,7 @@ export interface ReachEntry {
 /**
  * Every square a ship at `origin` carrying `power` could move to on an
  * otherwise empty board (rules.md §6). Moves that would leave the board are
- * omitted entirely. Says nothing about occupancy, sites or whose ply it is.
+ * omitted entirely. Says nothing about occupancy, nodes or whose ply it is.
  */
 export function reachFrom(
   origin: Square,

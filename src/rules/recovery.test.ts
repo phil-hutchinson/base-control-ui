@@ -1,11 +1,11 @@
 // Integration cover for the rule that the only ways a ship recovers power
-// are time in a bay and time on a dormant site (rules.md §4.1). This file
+// are time in a bay and time on a depleted node (rules.md §4.1). This file
 // pins the bay half end to end — a fight leaving both ships' power
 // alone (§7), a bay restoring it a point at a time rather than at once
 // (§3.1), and a ship leaving early keeping only what it recovered — driven
 // entirely through the public rules API (`applyMove`, `applyAttack`) rather
 // than by calling `runEndOfTurn` directly, so this proves the same thing a
-// player's turn would. Dormant-site recovery and the charged-node drain it
+// player's turn would. Depleted-node recovery and the charged-node drain it
 // mirrors are already covered end to end by `camping.test.ts`; this file
 // does not repeat them.
 
@@ -41,7 +41,7 @@ function buildState(config: {
 }): GameState {
   return {
     ships: config.ships,
-    siteStates: {},
+    nodes: {},
     sideToMove: "green",
     actionsRemaining: ACTIONS_PER_PLY,
     actedThisPly: [],

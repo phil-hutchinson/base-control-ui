@@ -20,12 +20,12 @@ describe("Hud", () => {
 
     expect(
       screen.getByText(
-        "Green: 24 energy, no nodes held, standing on no dormant sites.",
+        "Green: 24 energy, no nodes held, standing on no depleted nodes.",
       ),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Red: 9 energy, no nodes held, standing on no dormant sites.",
+        "Red: 9 energy, no nodes held, standing on no depleted nodes.",
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("35/100")).toBeInTheDocument();

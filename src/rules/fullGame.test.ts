@@ -19,8 +19,8 @@ import { gameResult, isGameOver, pliesForGameLength } from "./gameLength";
 import {
   type GameState,
   type Ship,
-  type SiteStatus,
-  siteStateAt,
+  type NodeStatus,
+  nodeStateAt,
   startingGameState,
 } from "./gameState";
 import {
@@ -37,7 +37,7 @@ import {
   applyMove,
   applyPassGuard,
 } from "./ply";
-import { SITES } from "./sites";
+import { FIXED_NODE_SQUARES } from "./nodes";
 
 type Action =
   | {
@@ -61,22 +61,22 @@ function chebyshevDistance(a: Square, b: Square): number {
 }
 
 /**
- * The distance from `square` to the nearest charged or active site right
- * now. Active means eligible to be charged (rules.md §8.1), so this heads
- * for either a node or a site that might become one — heading for a
- * dormant site would be pointless, since it cannot be charged next.
+ * The distance from `square` to the nearest charged or inactive node right
+ * now. Inactive means eligible to be charged (rules.md §8.1), so this heads
+ * for either a charged node or one that might become one — heading for a
+ * depleted node would be pointless, since it cannot be charged next.
  */
-function distanceToNearestChargedOrActive(
+function distanceToNearestChargedOrInactive(
   state: GameState,
   square: Square,
 ): number {
   let nearest = Infinity;
-  for (const site of SITES) {
-    const siteState = siteStateAt(state, site);
-    if (siteState !== "charged" && siteState !== "active") {
+  for (const node of FIXED_NODE_SQUARES) {
+    const nodeState = nodeStateAt(state, node);
+    if (nodeState !== "charged" && nodeState !== "inactive") {
       continue;
     }
-    const distance = chebyshevDistance(square, site);
+    const distance = chebyshevDistance(square, node);
     if (distance < nearest) {
       nearest = distance;
     }
@@ -86,7 +86,7 @@ function distanceToNearestChargedOrActive(
 
 /**
  * A deterministic greedy policy: head for a charged node first, otherwise
- * close the distance to the nearest charged-or-eligible-to-be-charged site,
+ * close the distance to the nearest charged-or-eligible-to-be-charged node,
  * otherwise attack, otherwise pass. Evaluated fresh for every action.
  */
 function chooseAction(state: GameState): Action | undefined {
@@ -96,14 +96,14 @@ function chooseAction(state: GameState): Action | undefined {
   // itself a charged node.
   for (const ship of ships) {
     for (const destination of legalDestinations(state, ship.id)) {
-      if (siteStateAt(state, destination) === "charged") {
+      if (nodeStateAt(state, destination) === "charged") {
         return { kind: "move", shipId: ship.id, destination };
       }
     }
   }
 
   // 2. Otherwise, the move that most reduces the distance to the nearest
-  // charged or active site, ties broken by the same enumeration order.
+  // charged or inactive node, ties broken by the same enumeration order.
   let best:
     { shipId: ShipId; destination: Square; improvement: number } | undefined;
   for (const ship of ships) {
@@ -111,9 +111,9 @@ function chooseAction(state: GameState): Action | undefined {
     if (destinations.length === 0) {
       continue;
     }
-    const fromDistance = distanceToNearestChargedOrActive(state, ship.square);
+    const fromDistance = distanceToNearestChargedOrInactive(state, ship.square);
     for (const destination of destinations) {
-      const toDistance = distanceToNearestChargedOrActive(state, destination);
+      const toDistance = distanceToNearestChargedOrInactive(state, destination);
       const improvement = fromDistance - toDistance;
       if (best === undefined || improvement > best.improvement) {
         best = { shipId: ship.id, destination, improvement };
@@ -376,7 +376,7 @@ describe("a full game, end to end", () => {
 
     // The ledger holds exactly (§8.4, §8.6 step 2): a side's final total is
     // what it collected for the charged nodes it held minus what it paid
-    // for the dormant sites it occupied, penny for penny — the penalty
+    // for the depleted nodes it occupied, penny for penny — the penalty
     // effect always reports the energy actually deducted, never the table
     // price, so a floored turn still balances this identity.
     expect(finalState.energy.green).toBe(
@@ -466,7 +466,7 @@ describe("a full game, end to end", () => {
           power: 4,
         },
       ],
-      siteStates: {},
+      nodes: {},
       sideToMove: "green",
       actionsRemaining: 1,
       actedThisPly: [],
@@ -588,7 +588,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
         ship("green-1", "green", "H8"),
         ship("red-1", "red", "H9"),
       ],
-      siteStates: {},
+      nodes: {},
       sideToMove: "green",
       actionsRemaining: 1,
       actedThisPly: [],
@@ -634,7 +634,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
         ship("green-1", "green", "H8"),
         ship("red-1", "red", "H9"),
       ],
-      siteStates: {},
+      nodes: {},
       sideToMove: "green",
       actionsRemaining: 1,
       actedThisPly: [],
@@ -667,21 +667,21 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     expect(new Set(returnedBayNames)).toEqual(new Set(emptyBayNames));
   });
 
-  it("settles a five-ship game with no throw when a side occupies five dormant sites (regression for energy.ts's ships-per-side bound)", () => {
-    const dormantSites = SITES.slice(0, 5);
-    const ships: readonly Ship[] = dormantSites.map((site, index) => ({
+  it("settles a five-ship game with no throw when a side occupies five depleted nodes (regression for energy.ts's ships-per-side bound)", () => {
+    const depletedNodes = FIXED_NODE_SQUARES.slice(0, 5);
+    const ships: readonly Ship[] = depletedNodes.map((node, index) => ({
       id: `green-${index + 1}` as ShipId,
       side: "green",
-      square: site,
+      square: node,
       power: 4,
     }));
-    const siteStates: Record<string, SiteStatus> = {};
-    for (const site of dormantSites) {
-      siteStates[squareName(site)] = { state: "dormant", level: 1 };
+    const nodes: Record<string, NodeStatus> = {};
+    for (const node of depletedNodes) {
+      nodes[squareName(node)] = { state: "depleted", level: 1 };
     }
     const state: GameState = {
       ships,
-      siteStates,
+      nodes,
       sideToMove: "green",
       actionsRemaining: 1,
       actedThisPly: [],

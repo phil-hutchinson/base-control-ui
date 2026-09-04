@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ALL_SQUARES, isOnBoard, squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
-import type { GameState, Ship, SiteStatus } from "./gameState";
+import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
   legalDestinations,
@@ -11,7 +11,7 @@ import {
   sideToMoveHasLegalMove,
 } from "./movement";
 import type { PowerLevel } from "./power";
-import type { SiteState } from "./sites";
+import type { NodeState } from "./nodes";
 
 function destinationNames(origin: string, power: PowerLevel): string[] {
   return reachFrom(squareFromName(origin), power)
@@ -172,9 +172,9 @@ function ship(
   return { id, side, square: squareFromName(square), power };
 }
 
-function siteStatuses(
-  states: Readonly<Record<string, SiteState>>,
-): Record<string, SiteStatus> {
+function nodeStatuses(
+  states: Readonly<Record<string, NodeState>>,
+): Record<string, NodeStatus> {
   return Object.fromEntries(
     Object.entries(states).map(([name, state]) => [name, { state, level: 0 }]),
   );
@@ -184,14 +184,14 @@ function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
   actedThisPly?: readonly ShipId[];
-  siteStates?: Readonly<Record<string, SiteState>>;
+  nodes?: Readonly<Record<string, NodeState>>;
   actionsRemaining?: number;
   plyNumber?: number;
   lengthInRounds?: number;
 }): GameState {
   return {
     ships: config.ships,
-    siteStates: siteStatuses(config.siteStates ?? {}),
+    nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? 2,
     actedThisPly: config.actedThisPly ?? [],
@@ -242,12 +242,12 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(destinations).toContain("H11");
   });
 
-  it("allows a move to end on an active, a dormant or a charged destination alike", () => {
+  it("allows a move to end on an inactive, a depleted or a charged destination alike", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7")],
-      siteStates: {
-        G7: "active",
-        C7: "dormant",
+      nodes: {
+        G7: "inactive",
+        C7: "depleted",
         G9: "charged",
       },
     });
@@ -316,9 +316,9 @@ describe("legalDestinations and moveRefusalReason", () => {
       {
         state: buildState({
           ships: [ship("green-1", "green", "E7")],
-          siteStates: {
-            G7: "active",
-            C7: "dormant",
+          nodes: {
+            G7: "inactive",
+            C7: "depleted",
             G9: "charged",
           },
         }),
@@ -330,7 +330,7 @@ describe("legalDestinations and moveRefusalReason", () => {
             ship("green-1", "green", "E7"),
             ship("green-2", "green", "A1"),
           ],
-          siteStates: { E7: "active" },
+          nodes: { E7: "inactive" },
           actionsRemaining: 1,
         }),
         shipId: "green-2",
@@ -409,11 +409,11 @@ describe("sideToMoveHasLegalMove", () => {
   });
 });
 
-describe("legalDestinations on a site that is not charged (§8.5)", () => {
-  it("leaves a ship standing on a dormant site free to move a different ship, with no refusal anywhere", () => {
+describe("legalDestinations on a node that is not charged (§8.5)", () => {
+  it("leaves a ship standing on a depleted node free to move a different ship, with no refusal anywhere", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
-      siteStates: { E7: "dormant" },
+      nodes: { E7: "depleted" },
       actionsRemaining: 1,
     });
 
@@ -431,7 +431,7 @@ describe("legalDestinations on a site that is not charged (§8.5)", () => {
         ship("green-2", "green", "A1"),
         ship("green-3", "green", "D1"),
       ],
-      siteStates: { E7: "active" },
+      nodes: { E7: "inactive" },
       actionsRemaining: 1,
     });
 

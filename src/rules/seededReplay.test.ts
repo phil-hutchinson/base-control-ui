@@ -9,9 +9,9 @@
 //
 // The board's own end-of-turn charge draw (§8.2) is a consumer of the seeded
 // stream too, alongside bay returns, so the same property is proven for it:
-// the sequence of sites the draw charges over a game replays identically
+// the sequence of nodes the draw charges over a game replays identically
 // from the same seed. Since 0.12 the stream's bulk is neither of those —
-// every charged node's drain and every dormant site's recovery are drawn
+// every charged node's drain and every depleted node's recovery are drawn
 // every turn (§8.3, §8.2), so a ply now consumes several times as many seed
 // steps as it did under 0.11. Those per-node draws are not tracked
 // separately here; they are exercised indirectly, and their effect on the
@@ -19,7 +19,7 @@
 //
 // Since 0.18 the stream starts even earlier than green's first turn: the
 // opening board itself is dealt from the same seed (`dealOpeningBoard`,
-// §8.1), consuming 22 steps — five site draws and seventeen level draws —
+// §8.1), consuming 22 steps — five node draws and seventeen level draws —
 // before a single ply is played. `startingGameState` is what a recorded
 // game would call to reproduce that deal, so the property under test now
 // covers it too: the same seed deals the same opening board, and a
@@ -76,7 +76,7 @@ function chooseAction(state: GameState): Action | undefined {
   return undefined;
 }
 
-/** The square name of every `site-charged` effect nested inside an end-of-action effect, if any. */
+/** The square name of every `node-charged` effect nested inside an end-of-action effect, if any. */
 function chargedSquares(
   effects: readonly (MoveEffect | AttackEffect | EndOfActionEffect)[],
 ): readonly string[] {
@@ -84,7 +84,7 @@ function chargedSquares(
   for (const effect of effects) {
     if (effect.type === "ply-ended" || effect.type === "ply-passed") {
       for (const sub of effect.endOfTurn) {
-        if (sub.type === "site-charged") {
+        if (sub.type === "node-charged") {
           squares.push(squareName(sub.square));
         }
       }
@@ -98,11 +98,9 @@ const MAX_ACTIONS = 10_000;
 
 interface PlayedGame {
   readonly finalState: GameState;
-  readonly openingBoard: Readonly<
-    Record<string, GameState["siteStates"][string]>
-  >;
+  readonly openingBoard: Readonly<Record<string, GameState["nodes"][string]>>;
   readonly bayReturns: readonly string[];
-  readonly chargedSites: readonly string[];
+  readonly chargedNodes: readonly string[];
   readonly fightCount: number;
 }
 
@@ -111,14 +109,14 @@ interface PlayedGame {
  * policy above, and records the opening board the seed dealt (§8.1) before
  * play began, the square name of every bay a `fight-resolved` effect
  * returned a ship to, in the order the fights happened, how many fights
- * happened, and the square name of every site the end-of-turn charge draw
+ * happened, and the square name of every node the end-of-turn charge draw
  * (§8.2) charged, in the order it charged them.
  */
 function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
   let state = startingGameState(seed, lengthInRounds);
-  const openingBoard = state.siteStates;
+  const openingBoard = state.nodes;
   const bayReturns: string[] = [];
-  const chargedSites: string[] = [];
+  const chargedNodes: string[] = [];
   let fightCount = 0;
 
   let actionsApplied = 0;
@@ -136,7 +134,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
       const { state: nextState, effect } = applyPassGuard(state);
       state = nextState;
       if (effect !== undefined) {
-        chargedSites.push(...chargedSquares([effect]));
+        chargedNodes.push(...chargedSquares([effect]));
       }
       continue;
     }
@@ -157,7 +155,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
           }
         }
       }
-      chargedSites.push(...chargedSquares(result.effects));
+      chargedNodes.push(...chargedSquares(result.effects));
     } else {
       const result = applyMove(state, action.shipId, action.destination);
       if (result.outcome !== "applied") {
@@ -166,7 +164,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
         );
       }
       state = result.state;
-      chargedSites.push(...chargedSquares(result.effects));
+      chargedNodes.push(...chargedSquares(result.effects));
     }
   }
 
@@ -174,15 +172,15 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     finalState: state,
     openingBoard,
     bayReturns,
-    chargedSites,
+    chargedNodes,
     fightCount,
   };
 }
 
-/** Every site's `level` at the end of a game, keyed by square name — the part of the state the drain and recovery draws write to. */
-function siteLevels(state: GameState): Readonly<Record<string, number>> {
+/** Every node's `level` at the end of a game, keyed by square name — the part of the state the drain and recovery draws write to. */
+function nodeLevels(state: GameState): Readonly<Record<string, number>> {
   const levels: Record<string, number> = {};
-  for (const [name, status] of Object.entries(state.siteStates)) {
+  for (const [name, status] of Object.entries(state.nodes)) {
     levels[name] = status.level;
   }
   return levels;
@@ -190,32 +188,32 @@ function siteLevels(state: GameState): Readonly<Record<string, number>> {
 
 describe("a seeded game replays its opening board, its fights, its bays and its charge draws exactly", () => {
   it("produces plenty of fights and charge draws over a forty-round game — the run is not vacuous", () => {
-    const { bayReturns, chargedSites, fightCount } = playSeededGame(
+    const { bayReturns, chargedNodes, fightCount } = playSeededGame(
       20260819,
       40,
     );
 
     expect(fightCount).toBeGreaterThanOrEqual(10);
     expect(bayReturns.length).toBeGreaterThanOrEqual(10);
-    expect(chargedSites.length).toBeGreaterThanOrEqual(10);
+    expect(chargedNodes.length).toBeGreaterThanOrEqual(10);
   });
 
-  it("replays the same opening board, the same bay sequence, the same charged-site sequence and the same final state from the same seed", () => {
+  it("replays the same opening board, the same bay sequence, the same charged-node sequence and the same final state from the same seed", () => {
     const first = playSeededGame(20260819, 40);
     const second = playSeededGame(20260819, 40);
 
     expect(second.openingBoard).toEqual(first.openingBoard);
     expect(second.bayReturns).toEqual(first.bayReturns);
-    expect(second.chargedSites).toEqual(first.chargedSites);
+    expect(second.chargedNodes).toEqual(first.chargedNodes);
     expect(second.finalState).toEqual(first.finalState);
     // The final state's equality above already covers this, but it is
     // worth naming directly: the drain and recovery draws that now
-    // dominate the seeded stream (§8.2, §8.3) write to every site's
-    // `level`, not only to which sites get charged.
-    expect(siteLevels(second.finalState)).toEqual(siteLevels(first.finalState));
+    // dominate the seeded stream (§8.2, §8.3) write to every node's
+    // `level`, not only to which nodes get charged.
+    expect(nodeLevels(second.finalState)).toEqual(nodeLevels(first.finalState));
   });
 
-  it("deals a different opening board, and produces a different bay sequence and a different charged-site sequence, from a different seed", () => {
+  it("deals a different opening board, and produces a different bay sequence and a different charged-node sequence, from a different seed", () => {
     // Any pair of distinct seeds is expected to diverge; these two are
     // confirmed to by running this test. If a future change to the game
     // happens to make this pair coincide, pick another pair.
@@ -224,6 +222,6 @@ describe("a seeded game replays its opening board, its fights, its bays and its 
 
     expect(second.openingBoard).not.toEqual(first.openingBoard);
     expect(second.bayReturns).not.toEqual(first.bayReturns);
-    expect(second.chargedSites).not.toEqual(first.chargedSites);
+    expect(second.chargedNodes).not.toEqual(first.chargedNodes);
   });
 });

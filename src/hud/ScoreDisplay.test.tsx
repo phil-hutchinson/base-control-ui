@@ -10,10 +10,10 @@ import type {
   EnergyTotals,
   GameState,
   Ship,
-  SiteStatus,
+  NodeStatus,
 } from "../rules/gameState";
 import type { PowerLevel } from "../rules/power";
-import type { SiteState } from "../rules/sites";
+import type { NodeState } from "../rules/nodes";
 import { ScoreDisplay } from "./ScoreDisplay";
 
 afterEach(cleanup);
@@ -27,9 +27,9 @@ function ship(
   return { id, side, square: squareFromName(square), power };
 }
 
-function siteStatuses(
-  states: Readonly<Record<string, SiteState>>,
-): Record<string, SiteStatus> {
+function nodeStatuses(
+  states: Readonly<Record<string, NodeState>>,
+): Record<string, NodeStatus> {
   return Object.fromEntries(
     Object.entries(states).map(([name, state]) => [name, { state, level: 0 }]),
   );
@@ -38,11 +38,11 @@ function siteStatuses(
 function buildState(config: {
   energy?: EnergyTotals;
   ships?: readonly Ship[];
-  siteStates?: Readonly<Record<string, SiteState>>;
+  nodes?: Readonly<Record<string, NodeState>>;
 }): GameState {
   return {
     ships: config.ships ?? [],
-    siteStates: siteStatuses(config.siteStates ?? {}),
+    nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: "green",
     actionsRemaining: 1,
     actedThisPly: [],
@@ -68,7 +68,7 @@ describe("ScoreDisplay", () => {
 
     expect(
       screen.getByText(
-        "Green: 24 energy, no nodes held, standing on no dormant sites.",
+        "Green: 24 energy, no nodes held, standing on no depleted nodes.",
       ),
     ).toBeInTheDocument();
   });
@@ -95,7 +95,7 @@ describe("ScoreDisplay", () => {
     expect(container).toHaveTextContent("0009");
     expect(
       screen.getByText(
-        "Red: 9 energy, no nodes held, standing on no dormant sites.",
+        "Red: 9 energy, no nodes held, standing on no depleted nodes.",
       ),
     ).toBeInTheDocument();
   });
@@ -115,7 +115,7 @@ describe("ScoreDisplay", () => {
 
   it("lights a pip per charged node the side is standing on", () => {
     const state = buildState({
-      siteStates: { H8: "charged", E5: "charged", K5: "active" },
+      nodes: { H8: "charged", E5: "charged", K5: "inactive" },
       ships: [
         ship("green-1", "green", "H8"),
         ship("green-2", "green", "E5"),
@@ -132,14 +132,14 @@ describe("ScoreDisplay", () => {
     );
     expect(
       screen.getByText(
-        "Green: 0 energy, 2 nodes held, standing on no dormant sites.",
+        "Green: 0 energy, 2 nodes held, standing on no depleted nodes.",
       ),
     ).toBeInTheDocument();
   });
 
   it("does not light a pip for a node the opposing side holds", () => {
     const state = buildState({
-      siteStates: { K5: "charged" },
+      nodes: { K5: "charged" },
       ships: [ship("red-1", "red", "K5")],
     });
 
@@ -152,7 +152,7 @@ describe("ScoreDisplay", () => {
     );
   });
 
-  it("renders five dormant pips, none on when the side stands on nothing dormant", () => {
+  it("renders five depleted pips, none on when the side stands on nothing depleted", () => {
     const state = buildState({});
 
     const { container } = render(
@@ -160,16 +160,16 @@ describe("ScoreDisplay", () => {
     );
 
     expect(
-      container.querySelectorAll(".score-display__dormant-pip"),
+      container.querySelectorAll(".score-display__depleted-pip"),
     ).toHaveLength(5);
     expect(
-      container.querySelectorAll(".score-display__dormant-pip--on"),
+      container.querySelectorAll(".score-display__depleted-pip--on"),
     ).toHaveLength(0);
   });
 
-  it("lights one dormant pip per dormant site the side is standing on", () => {
+  it("lights one depleted pip per depleted node the side is standing on", () => {
     const state = buildState({
-      siteStates: { H8: "dormant", E5: "dormant", K5: "active" },
+      nodes: { H8: "depleted", E5: "depleted", K5: "inactive" },
       ships: [
         ship("green-1", "green", "H8"),
         ship("green-2", "green", "E5"),
@@ -182,24 +182,24 @@ describe("ScoreDisplay", () => {
     );
 
     expect(
-      container.querySelectorAll(".score-display__dormant-pip--on"),
+      container.querySelectorAll(".score-display__depleted-pip--on"),
     ).toHaveLength(2);
     expect(
       screen.getByText(
-        "Green: 0 energy, no nodes held, standing on 2 dormant sites.",
+        "Green: 0 energy, no nodes held, standing on 2 depleted nodes.",
       ),
     ).toBeInTheDocument();
   });
 
-  it("lights all five dormant pips when the side stands on six dormant sites", () => {
+  it("lights all five depleted pips when the side stands on six depleted nodes", () => {
     const state = buildState({
-      siteStates: {
-        H8: "dormant",
-        E5: "dormant",
-        K5: "dormant",
-        F2: "dormant",
-        J2: "dormant",
-        B4: "dormant",
+      nodes: {
+        H8: "depleted",
+        E5: "depleted",
+        K5: "depleted",
+        F2: "depleted",
+        J2: "depleted",
+        B4: "depleted",
       },
       ships: [
         ship("green-1", "green", "H8"),
@@ -216,13 +216,13 @@ describe("ScoreDisplay", () => {
     );
 
     expect(
-      container.querySelectorAll(".score-display__dormant-pip--on"),
+      container.querySelectorAll(".score-display__depleted-pip--on"),
     ).toHaveLength(5);
   });
 
-  it("does not light a dormant pip for a dormant site the opposing side stands on", () => {
+  it("does not light a depleted pip for a depleted node the opposing side stands on", () => {
     const state = buildState({
-      siteStates: { K5: "dormant" },
+      nodes: { K5: "depleted" },
       ships: [ship("red-1", "red", "K5")],
     });
 
@@ -231,7 +231,7 @@ describe("ScoreDisplay", () => {
     );
 
     expect(
-      container.querySelectorAll(".score-display__dormant-pip--on"),
+      container.querySelectorAll(".score-display__depleted-pip--on"),
     ).toHaveLength(0);
   });
 
@@ -266,7 +266,7 @@ describe("ScoreDisplay", () => {
 
     expect(
       screen.getByText(
-        "Green: 6 energy, no nodes held, standing on no dormant sites.",
+        "Green: 6 energy, no nodes held, standing on no depleted nodes.",
       ),
     ).toBeInTheDocument();
   });

@@ -53,28 +53,28 @@ describe("squareLabel", () => {
     ).toBe("H8, green ship, power 4 of 4");
   });
 
-  it("names each site state", () => {
+  it("names each node state", () => {
     expect(
       squareLabel({
         square: squareAt("E", 5),
         isBay: false,
-        siteState: "active",
+        nodeState: "inactive",
       }),
-    ).toBe("E5, active site");
+    ).toBe("E5, inactive node");
     expect(
       squareLabel({
         square: squareAt("H", 8),
         isBay: false,
-        siteState: "charged",
+        nodeState: "charged",
       }),
-    ).toBe("H8, charged site");
+    ).toBe("H8, charged node");
     expect(
       squareLabel({
         square: squareAt("H", 4),
         isBay: false,
-        siteState: "dormant",
+        nodeState: "depleted",
       }),
-    ).toBe("H4, dormant site");
+    ).toBe("H4, depleted node");
   });
 
   it("names an unmarked square exactly as before, when no mark is given", () => {
@@ -174,15 +174,15 @@ describe("squareLabel", () => {
     );
   });
 
-  it("adds 'can move here' last, on an empty site square", () => {
+  it("adds 'can move here' last, on an empty node square", () => {
     expect(
       squareLabel({
         square: squareAt("H", 8),
         isBay: false,
-        siteState: "charged",
+        nodeState: "charged",
         mark: "destination",
       }),
-    ).toBe("H8, charged site, can move here");
+    ).toBe("H8, charged node, can move here");
   });
 
   it("adds 'can move here' last, on a plain empty square", () => {
@@ -231,22 +231,22 @@ describe("squareLabel", () => {
     );
   });
 
-  it("names an occupied site for each side, with its power level", () => {
+  it("names an occupied node for each side, with its power level", () => {
     expect(
       squareLabel({
         square: squareAt("H", 8),
         isBay: false,
-        siteState: "charged",
+        nodeState: "charged",
         occupant: { side: "green", power: 2 },
       }),
-    ).toBe("H8, charged site, green ship, power 2 of 4");
+    ).toBe("H8, charged node, green ship, power 2 of 4");
     expect(
       squareLabel({
         square: squareAt("H", 4),
         isBay: false,
-        siteState: "dormant",
+        nodeState: "depleted",
         occupant: { side: "red", power: 0 },
       }),
-    ).toBe("H4, dormant site, red ship, power 0 of 4");
+    ).toBe("H4, depleted node, red ship, power 0 of 4");
   });
 });
