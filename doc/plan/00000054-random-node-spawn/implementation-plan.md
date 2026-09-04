@@ -88,6 +88,55 @@ Rejected: implementing it anyway with a test that cannot fail (a green test
 that proves nothing, and a predicate a later reader would rightly call dead
 code); implementing it without a test (worse).
 
+### D19 — Fixtures may not use an off-list square as an isolation trick
+
+Found while implementing Step 3, which blocked on it.
+
+Seven pre-existing tests in `src/rules/ply.test.ts` and
+`src/game/session.test.ts` hand-build a state with a single node on a square
+**outside** the seventeen — `E6`, `I8`, `K8` — with comments citing §3.2 to
+explain that the square is therefore "immune" to drain, recovery and the
+charge draw. That immunity was never a rule. It was an artefact of the
+engine walking a fixed seventeen-square list, and it dies the moment
+iteration comes from the state — which is the whole point of Step 3, and of
+this story.
+
+So the fixtures are wrong, not the change, and they are repaired here rather
+than worked around. **`nodeSquares` is not given a filter to preserve the
+trick**; that would contradict D8 and reintroduce the fixed list under
+another name.
+
+What those tests actually claim is §8.2's rule that **nothing a ship does
+changes a node's state** — a claim about the action, not about the board's
+own per-turn clock, which runs regardless. The repair states the board each
+test wants:
+
+- **Give the fixture five charged nodes.** With the board already at
+  `TARGET_CHARGED_NODES`, the charge draw finds no shortfall, consumes no
+  seed, and cannot charge the node under test. Without this, a lone inactive
+  node is charged at the end of the very ply the test is exercising.
+- **An inactive node under test sits at `PRESSURE_CAP`.** Step 5 skips a
+  node already at the cap, so with no charge draw firing the node is
+  genuinely untouched by the whole sequence, and the test's existing
+  deep-equality assertion survives unchanged.
+- **A depleted node under test cannot be made inert** — recovery always
+  subtracts. Assert its `state` rather than its whole status, and give it a
+  level far enough above the recovery table's maximum of 8 that it cannot
+  retire mid-test.
+- **A whole-record equality assertion is no longer expressible** and must
+  not be faked. The five charged nodes drain every ply. Narrow it to the
+  node under test, or to the set of node squares and each node's `state`,
+  which is what "the move touched nothing" actually means.
+
+Prefer fixture squares that are legal under §3.2 — inside C3–M13, no two
+adjacent — so the fixture does not model a board the game could never deal.
+Nothing enforces this on a hand-built state, and it is hygiene rather than a
+requirement.
+
+This is a genuine change to what seven pre-existing tests assert, made
+deliberately and recorded here because the peer review will otherwise read
+it as a weakened test.
+
 ### D8 — Board order comes from `ALL_SQUARES`, never from `Object.keys`
 
 `GameState.nodes` is a square-name-keyed record. Once the node set changes
@@ -540,6 +589,15 @@ no arithmetic, no draw order and no control flow differs.
 
 Status: pending
 
+Notes: A first attempt implemented `nodeSquares` and converted every call
+site as specified, and blocked at `npm test` with 7 pre-existing tests
+failing in `src/rules/ply.test.ts` and `src/game/session.test.ts`. The
+diagnosis was right and is now **D19**: those fixtures used an off-list
+square as an isolation trick, which this step deliberately removes. The
+agent correctly refused both available workarounds — editing tests the step
+forbade it to touch, and filtering `nodeSquares` against D8 — and escalated.
+The step now carries the fixture repair explicitly.
+
 Add `nodeSquares(state)` to `src/rules/gameState.ts`, beside `nodeStatusAt`:
 every square that currently holds a node, in board order, built by walking
 `ALL_SQUARES` (from `src/rules/board.ts`, already row-major) and keeping the
@@ -580,8 +638,8 @@ seed and every game replays identically.
 
 Depends on: Step 2 (the names it uses).
 
-Verification (automated): Run `npm test`. The entire existing suite must
-pass **unchanged**, with no test edited — in particular
+Verification (automated): Run `npm test`. Every test must pass. Apart from
+the seven fixtures D19 names, no test may be edited — in particular
 `src/rules/seededReplay.test.ts`, `src/rules/nodePool.test.ts`,
 `src/rules/openingBoard.test.ts` and `src/rules/fullGame.test.ts`, all of
 which would break on any change to draw order. Add unit tests for
@@ -590,6 +648,19 @@ hand-built board; it returns only squares present in `state.nodes`; it
 returns an empty list for an empty board; and — the property D8 exists for —
 building the same board with its record keys inserted in scrambled order
 produces the same result.
+
+**Repair the fixtures this step invalidates (D19).** Seven tests in
+`src/rules/ply.test.ts` and `src/game/session.test.ts` place a node on a
+square outside the seventeen to make it immune to the end-of-turn sequence.
+That immunity is an artefact this step deliberately removes. Repair them as
+D19 sets out — five charged nodes to suppress the charge draw, an inactive
+node under test at `PRESSURE_CAP`, `state`-level assertions where a level
+must move — and do not add a filter to `nodeSquares` to keep them passing.
+
+These seven are the **only** tests this step may touch, and only in the ways
+D19 describes. Any other test that starts failing means the iteration order
+moved, which is a real regression: stop and report it rather than editing
+the test.
 
 ---
 
