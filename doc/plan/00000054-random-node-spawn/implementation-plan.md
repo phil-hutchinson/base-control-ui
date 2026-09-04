@@ -1421,7 +1421,18 @@ entry. The owner reads the `README.md` diff at final sign-off.
 
 ### Step 11 — Record the historical-documents policy in `CONTRIBUTING.md`
 
-Status: pending
+Status: committed
+
+Notes: Added a new `## Historical planning documents are not rewritten`
+section to `CONTRIBUTING.md`, placed between `## Comments` and
+`## Dependencies` — the existing "Comments" section already points design
+history at `doc/plan/`, making it the right neighbourhood. States the rule,
+the narrow factual-error/should-never-have-been-committed exception, that a
+new document is the normal way to correct the record, the owner-approval
+requirement for an actual rewrite, and that `rules.md`, `README.md` and
+`CLAUDE.md` are living documents not covered by it. No code touched. `npm run
+typecheck`, `npm run lint`, `npm run format:check` and `npm test` (938 tests)
+all pass. No deviation from the plan.
 
 Add a short subsection to `CONTRIBUTING.md` stating that **historical
 planning documents are not rewritten**: once a story's `story.md`,

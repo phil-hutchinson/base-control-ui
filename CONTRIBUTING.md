@@ -111,6 +111,24 @@ plan steps or decisions, no record of approaches that were considered and
 rejected. That material belongs in `doc/plan/`, which is where a reader will
 look for it. Code that accumulates its own changelog becomes unreadable.
 
+## Historical planning documents are not rewritten
+
+Once a story's `story.md`, `implementation-plan.md` and `peer-review.md` are
+committed, and once a `doc/ruleset/changelog.md` entry is written, they are a
+dated record of what was decided and why at that time. Later stories do not
+edit them to match new vocabulary, new architecture or new rules — doing so
+falsifies the record and produces a large diff no reader benefits from.
+
+The exception is narrow: a factual error, or something that should never have
+been committed in the first place — not vocabulary drift, not a rule or an
+architecture moving on. Even then, the way to correct the record is normally a
+new document, not an edit to an old one. A story that believes it genuinely
+needs to rewrite a historical document must get the owner's **explicit
+approval** first; it is an exceptional act, not routine tidying.
+
+This does not cover `rules.md`, `README.md` or `CLAUDE.md`: those are living
+documents every story is expected to keep current, not a historical record.
+
 ## Dependencies
 
 - **Node/TypeScript**, current LTS Node and modern language standards.
