@@ -27,7 +27,7 @@ What changes:
   from the first turn to the last.
 - **Where a node may appear is constrained**, so the board never becomes
   unplayable or absurd: not under a ship, not on the outer edge or one
-  square in from it, not beside a planet, and not beside another node.
+  square in from it, and not beside another node.
 - **A shortfall of charged nodes stays legal.** If the charge draw finds no
   inactive node to charge, the board simply runs below five until one
   appears. This is already the rule; it is restated because the inactive
@@ -99,22 +99,26 @@ place for a new node when **all** of these hold:
    or O.
 4. It is not one square in from the outer edge — not row 2 or 14, not
    column B or N.
-5. It is not orthogonally or diagonally adjacent to a planet.
-6. It is not orthogonally or diagonally adjacent to another node.
+5. It is not orthogonally or diagonally adjacent to another node.
 
 Constraints 3 and 4 leave the 11 × 11 interior **C3–M13**: 121 squares.
-Constraint 5 currently removes nothing further — every planet sits on a bay
-(`PlanetDefs.tsx` draws the fourteen bays' planets), every bay is on the
-outer edge, and so every square touching one is already inside the two
-excluded rings. It is stated and implemented anyway, because it is a real
-rule about how the board should look and it stops being free the moment the
-rings or the bays move.
 
-Constraint 6 is the one that does the work, and 121 squares hold it
+Constraint 5 is the one that does the work, and 121 squares hold it
 comfortably: the most nodes that can be packed into an 11 × 11 area with
 none touching another is 36, and the board only ever wants 15.
 
-**The fallback.** If no square satisfies all six, the new node is placed
+**A sixth constraint was considered and deliberately left out.** The story
+was first written with "not orthogonally or diagonally adjacent to a
+planet" in the list. It excludes nothing: every planet sits on a bay
+(`PlanetDefs.tsx` draws the fourteen bays' planets), every bay is on the
+outer edge, and so every square touching one is already inside the two
+excluded rings. The owner's decision at the plan-approval gate is that a
+rule which cannot bite is not written pre-emptively — it belongs to the
+future story that moves the bays, the planets or the ring depth and thereby
+makes it real. So `rules.md` does not state it and the code does not check
+it, and neither carries a test for it.
+
+**The fallback.** If no square satisfies all five, the new node is placed
 uniformly among the squares that hold no node and are not a bay. That is
 the whole of the relaxation — the constraints are not dropped one at a time
 — and it exists so that placement can never fail rather than because it is
@@ -156,7 +160,7 @@ loses its reference to a site. The three states are named here as
 
 **§3.2 — the seventeen sites go.** The table, the symmetry paragraph and
 the spacing paragraph are deleted outright. The section is retitled and
-restated as *where a node can appear*: the six constraints above, the
+restated as _where a node can appear_: the six constraints above, the
 fallback, and the fact that a node's position is drawn rather than fixed and
 lasts only as long as that node. The board diagram in §3 keeps the bays and
 loses the sites — an example board is not the board any more, and the
@@ -341,8 +345,8 @@ The plan should treat this as a bulk of the work, not as fallout.
   square legal under §3.2, the same seed dealing the same board, different
   seeds dealing different ones.
 - **A new `nodePlacement.test.ts`** covers the constraints one at a time —
-  a square under a ship, on the edge, one in from the edge, beside a planet
-  and beside a node are each excluded — plus base cover for the fallback,
+  a square under a ship, on the edge, one in from the edge and beside a
+  node are each excluded — plus base cover for the fallback,
   and the rule that a replacement never lands on the square it left.
 - **`nodePool.test.ts`** (was `sitePool.test.ts`) keeps its long-run
   guard and gains the invariants this story introduces: the board holds
@@ -394,14 +398,9 @@ The plan should treat this as a bulk of the work, not as fallout.
   none depleted.
 - Every node's square, at the deal and at every appearance thereafter, is
   legal under §3.2 — off the two outer rings, not under a ship, not beside
-  a planet, not beside another node.
+  another node.
 - Each constraint is shown to bite on its own, with a state built to make
-  it the only thing excluding a square. The planet rule is the exception
-  and cannot be shown that way under the current geometry — every square it
-  excludes is already excluded by the ring rules — so it is tested against
-  the pool builder directly rather than through a placement, and kept
-  regardless: it is latent, not dead, and starts binding the moment bays,
-  planets or the ring exclusions move.
+  it the only thing excluding a square.
 - With no legal square available, the fallback places the node anyway, and
   never in a bay (base cover only).
 - A replacement never appears on the square the retiring node just left.
