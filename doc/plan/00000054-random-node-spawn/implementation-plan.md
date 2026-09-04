@@ -691,7 +691,30 @@ the test.
 
 ### Step 4 — `nodePlacement.ts`: where a node may appear, and drawing one
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/nodePlacement.ts` exporting `legalNodePool`
+(occupied node squares, ship squares and an optional excluded square in,
+the legal pool in board order out, falling back to every non-bay
+unoccupied square when the ordinary pool is empty, and throwing a
+`RangeError` if even that is empty), `drawNodeSquare` (the same inputs plus
+a seed, drawing uniformly via `drawIndex`), and `drawNodeSquareForState`
+(the thin `GameState` convenience wrapper per D13, reading `nodeSquares`,
+`state.ships` and `state.randomSeed`). The ring exclusion is expressed as
+`EXCLUDED_EDGE_RINGS = 2` and a `distanceFromEdge` helper rather than four
+literal comparisons; adjacency is Chebyshev distance 1 via a column-index
+lookup. No planet/bay-adjacency constraint was added (D7). Added
+`src/rules/nodePlacement.test.ts` covering the empty-board pool (exactly
+C3–M13), board ordering, each of the five constraints biting alone
+(node-occupied, ship-occupied, outer edge, one in from edge, orthogonal and
+diagonal adjacency), the excluded square being absent from both the
+ordinary and fallback pools, the fallback firing with base cover only (one
+test, per the owner), the `RangeError` when even the fallback is empty, and
+the draw's uniformity/determinism/seed-advancement/exclusion, plus the
+`GameState` wrapper matching the equivalent direct call. Nothing outside
+the two new files was touched; the full suite (919 tests, 902 pre-existing
+plus 17 new) passes unchanged, alongside `npm run typecheck`,
+`npm run lint` and `npm run format:check`. No deviation from the plan.
 
 Add `src/rules/nodePlacement.ts` — a new module beside `nodes.ts`, not
 inside it, because it is about the board's geometry rather than about a
