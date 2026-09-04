@@ -209,7 +209,17 @@ root-absolute URL.
 
 ## Step 1 — `vite.config.ts` sets a relative base
 
-Status: pending
+Status: committed
+
+Notes: Added `base: "./"` before `plugins`, with a comment covering the three
+required points (per-version subfolders / play-testing, dev server unaffected,
+`--base` override still available). No other file touched. All five
+verification checks passed: typecheck, lint, format:check and the full test
+suite (898 tests) succeeded unchanged; `rm -rf dist && npm run build`
+succeeded; `dist/index.html`'s script `src` and stylesheet `href` both read
+`./assets/…`; the `"/assets` grep across `dist/index.html` and
+`dist/assets/*.{js,css}` returned nothing; `git status --porcelain` shows only
+`vite.config.ts` modified. No deviations from the plan.
 
 Add a single `base: "./"` entry to the config object exported from
 `vite.config.ts`, alongside the existing `plugins`, `server` and `test` keys.
