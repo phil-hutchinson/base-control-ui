@@ -274,7 +274,22 @@ the seeded stream), and correct the file's header comment.
 
 ### Step 1 — Rules 0.19 → 0.20
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `doc/ruleset/rules.md` per the step's instructions (§1, §2, §3
+diagram, §3.2, §8.1, §8.2, §8.6 step 6, and Appendix B; §8.3–8.5, §9 and §10
+vocabulary-only), bumped `RULES_VERSION` to `"0.20"` in
+`src/rules/rulesVersion.ts`, and added the `## 0.20` changelog entry ahead of
+`## 0.19` in `doc/ruleset/changelog.md`, marked as a gameplay change with
+tagging on hold. One small addition beyond the step's checklist, within its
+spirit: §8.5 gained one sentence stating that a ship standing on a node that
+retires keeps its square and power but the square becomes ordinary from that
+instant — the step's own §8.2 and §8.6 rewrites imply this but the story's
+Step 6 preview (camping.test.ts note) relies on it being an explicit rule, so
+it was stated now rather than left for the code step to infer. `npm test`
+(898 tests, including `rulesVersion.test.ts`), `npm run typecheck`,
+`npm run lint` and `npm run format:check` all pass; grep confirms no "site"
+or "dormant" and no word-boundary "active" remain in `rules.md`.
 
 Rewrite `doc/ruleset/rules.md` for mortal, mobile nodes and the new
 vocabulary; bump its version line to **0.20**; bump `RULES_VERSION` in
