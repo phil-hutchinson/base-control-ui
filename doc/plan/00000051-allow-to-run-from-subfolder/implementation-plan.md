@@ -339,7 +339,17 @@ that the plan did not predict.
 
 ## Step 3 — `CONTRIBUTING.md`
 
-Status: pending
+Status: committed
+
+Notes: Added one paragraph to "Architecture constraints" immediately after the
+opening "front-end only … deployable from any static file host" paragraph,
+covering the relative base and what it buys, the trailing-slash hosting
+condition (with the S3 website endpoint / CloudFront-over-S3-REST-origin
+example), the resulting no-root-absolute-URL rule, and that the dev server and
+`npm run preview` are unaffected. `README.md` untouched. Typecheck, lint,
+format:check and the full test suite (898 tests) all passed; `git diff
+--name-only` lists only `CONTRIBUTING.md`; the `base` grep shows the new
+paragraph. No deviations from the plan.
 
 Write the documentation note. **`README.md` is not touched** (**D8**), and
 neither is anything else in the repository.
