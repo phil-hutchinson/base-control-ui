@@ -70,14 +70,14 @@ unaffected, so nobody later "fixes" it back.
 
 ### 2. Documentation
 
-- **`README.md`** — the Development section already says the app "can be
-  served from any static file host". It picks up that a built copy runs from
-  a subfolder as well as from a site root, so several versions can sit side
-  by side. Player-facing wording, one sentence; run `/update-readme` for the
-  rest of the diff.
-- **`CONTRIBUTING.md`** — the "Architecture constraints" section gains the
-  technical half: the build uses a relative base, what that buys, and that
-  it is why nothing in the app may reach for a root-absolute URL.
+**`CONTRIBUTING.md`** — the "Architecture constraints" section gains the
+note: the build uses a relative base, what that buys, that the built page must
+be served at a URL ending in `/`, and that this is why nothing in the app may
+reach for a root-absolute URL.
+
+The **`README.md`** is not touched. Where a built copy sits on a host is not
+something a player needs to know, and the Development section's existing "can
+be served from any static file host" stays true.
 
 ## Out of scope
 
