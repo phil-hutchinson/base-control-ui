@@ -95,7 +95,7 @@ export function depletedNodesOccupiedBy(
  * The energy taken for standing on `depletedNodes` depleted nodes (rules.md
  * §8.4), read off the same table `energyForNodesHeld` uses. Unlike a
  * charged count, a depleted count has no board-imposed ceiling — up to
- * twelve of the seventeen nodes can be depleted at once, and a side has
+ * ten of the fifteen nodes can be depleted at once, and a side has
  * seven ships — so this is an ordinary state of the game, not a bug: the
  * count is **clamped** to `MAX_DEPLETED_NODES_PRICED` before it is priced,
  * so six or seven depleted nodes cost the same as five.

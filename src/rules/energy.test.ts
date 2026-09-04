@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { squareFromName } from "./board";
+import { ALL_SQUARES, squareFromName } from "./board";
 import {
   chargedNodesHeldBy,
   depletedNodesOccupiedBy,
@@ -10,7 +10,7 @@ import type { ShipId } from "./fleet";
 import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { PowerLevel } from "./power";
-import { FIXED_NODE_SQUARES, type NodeState } from "./nodes";
+import type { NodeState } from "./nodes";
 
 function ship(
   id: ShipId,
@@ -109,16 +109,16 @@ describe("chargedNodesHeldBy", () => {
     expect(chargedNodesHeldBy(state, "green")).toEqual([]);
   });
 
-  it("counts two ships of the same side on two charged nodes, in FIXED_NODE_SQUARES order", () => {
+  it("counts two ships of the same side on two charged nodes, in ALL_SQUARES order", () => {
     const state = buildState({
       nodes: { L8: "charged", D8: "charged" },
       ships: [ship("green-1", "green", "L8"), ship("green-2", "green", "D8")],
     });
 
-    const d8Index = FIXED_NODE_SQUARES.findIndex(
+    const d8Index = ALL_SQUARES.findIndex(
       (square) => square.column === "D" && square.row === 8,
     );
-    const l8Index = FIXED_NODE_SQUARES.findIndex(
+    const l8Index = ALL_SQUARES.findIndex(
       (square) => square.column === "L" && square.row === 8,
     );
     expect(d8Index).toBeLessThan(l8Index);
@@ -216,16 +216,16 @@ describe("depletedNodesOccupiedBy", () => {
     expect(depletedNodesOccupiedBy(state, "green")).toEqual([]);
   });
 
-  it("counts two ships of the same side on two depleted nodes, in FIXED_NODE_SQUARES order", () => {
+  it("counts two ships of the same side on two depleted nodes, in ALL_SQUARES order", () => {
     const state = buildState({
       nodes: { L8: "depleted", D8: "depleted" },
       ships: [ship("green-1", "green", "L8"), ship("green-2", "green", "D8")],
     });
 
-    const d8Index = FIXED_NODE_SQUARES.findIndex(
+    const d8Index = ALL_SQUARES.findIndex(
       (square) => square.column === "D" && square.row === 8,
     );
-    const l8Index = FIXED_NODE_SQUARES.findIndex(
+    const l8Index = ALL_SQUARES.findIndex(
       (square) => square.column === "L" && square.row === 8,
     );
     expect(d8Index).toBeLessThan(l8Index);

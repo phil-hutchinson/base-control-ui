@@ -9,17 +9,20 @@
 // fresh.
 
 import { describe, expect, it } from "vitest";
-import { squareName } from "./board";
+import { squareFromName, squareName } from "./board";
 import { runChargeDraw } from "./chargeDraw";
 import { runEndOfTurn } from "./endOfTurn";
+import { startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
-import { type GameState, nodeStateAt, startingGameState } from "./gameState";
 import {
-  NODE_CAPACITY,
-  FIXED_NODE_SQUARES,
-  TARGET_CHARGED_NODES,
-  dealOpeningBoard,
-} from "./nodes";
+  type GameState,
+  nodeSquares,
+  nodeStateAt,
+  startingGameState,
+} from "./gameState";
+import { NODE_CAPACITY, TARGET_CHARGED_NODES, dealOpeningBoard } from "./nodes";
+
+const FLEET_SQUARES = startingFleet(7).map((entry) => entry.square);
 
 const RUN_TO_COMPLETION_SEEDS = [70210001, 70210002, 70210003];
 const RUN_TO_COMPLETION_PLIES = 500;
@@ -27,11 +30,15 @@ const RUN_TO_COMPLETION_LENGTH_IN_ROUNDS = 1_000;
 
 describe("a game played from a dealt board runs to completion (rules.md §8.1, §8.6)", () => {
   it.each(RUN_TO_COMPLETION_SEEDS)(
-    "runs every dealt node out, recovers a depleted node to inactive, tops the board back up to five, and charges every one of the seventeen nodes at least once (seed %d)",
+    "runs every dealt node out, recovers a depleted node to inactive, tops the board back up to five, and charges every one of the dealt nodes at least once (seed %d)",
     (seed) => {
       let state = startingGameState(seed, RUN_TO_COMPLETION_LENGTH_IN_ROUNDS);
 
-      const dealtChargedNames = FIXED_NODE_SQUARES.map(squareName).filter(
+      // Step 6's lifecycle change (retirement and replacement) has not
+      // landed yet, so the dealt squares are still the whole board's squares
+      // for the length of this run.
+      const dealtNodeNames = nodeSquares(state).map(squareName);
+      const dealtChargedNames = dealtNodeNames.filter(
         (name) => state.nodes[name]?.state === "charged",
       );
       expect(dealtChargedNames).toHaveLength(TARGET_CHARGED_NODES);
@@ -61,12 +68,12 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       }
       // At least one depleted node recovers to inactive over the run.
       expect(wentInactive.size).toBeGreaterThan(0);
-      // Every one of the seventeen nodes is charged at least once, whatever
-      // pressure the deal opened it at.
-      expect(charged.size).toBe(FIXED_NODE_SQUARES.length);
+      // Every one of the fifteen dealt nodes is charged at least once,
+      // whatever pressure the deal opened it at.
+      expect(charged.size).toBe(dealtNodeNames.length);
       // The board is back at its target count by the end of the run.
-      const finalCharged = FIXED_NODE_SQUARES.filter(
-        (square) => nodeStateAt(state, square) === "charged",
+      const finalCharged = dealtNodeNames.filter(
+        (name) => nodeStateAt(state, squareFromName(name)) === "charged",
       ).length;
       expect(finalCharged).toBe(TARGET_CHARGED_NODES);
     },
@@ -88,12 +95,12 @@ describe("the first charge draw of a game favours the nodes dealt the most press
     let sawPressureOneDraw = false;
 
     for (let trial = 0; trial < PRESSURE_FAVOURS_TRIALS; trial++) {
-      const [dealt, dealtSeed] = dealOpeningBoard(seed);
+      const [dealt, dealtSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
 
       // Make room for one draw: the first dealt charged node goes depleted
-      // instead, leaving four charged and the usual twelve inactive nodes to
+      // instead, leaving four charged and the usual ten inactive nodes to
       // draw from — `runChargeDraw` then draws exactly once.
-      const chargedName = FIXED_NODE_SQUARES.map(squareName).find(
+      const chargedName = Object.keys(dealt).find(
         (name) => dealt[name].state === "charged",
       );
       if (chargedName === undefined) {
@@ -116,7 +123,7 @@ describe("the first charge draw of a game favours the nodes dealt the most press
         outOfTime: { green: false, red: false },
       };
 
-      const inactiveNames = FIXED_NODE_SQUARES.map(squareName).filter(
+      const inactiveNames = Object.keys(state.nodes).filter(
         (name) => state.nodes[name].state === "inactive",
       );
       const sortedByPressure = [...inactiveNames].sort(

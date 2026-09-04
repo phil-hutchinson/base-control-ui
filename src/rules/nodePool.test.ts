@@ -25,12 +25,13 @@
 import { describe, expect, it } from "vitest";
 import { squareName } from "./board";
 import { runEndOfTurn } from "./endOfTurn";
-import { type GameState, nodeStateAt, startingGameState } from "./gameState";
 import {
-  FIXED_NODE_SQUARES,
-  type NodeState,
-  TARGET_CHARGED_NODES,
-} from "./nodes";
+  type GameState,
+  nodeSquares,
+  nodeStateAt,
+  startingGameState,
+} from "./gameState";
+import { type NodeState, TARGET_CHARGED_NODES } from "./nodes";
 
 /** A generous game length: this test drives `runEndOfTurn` directly and never consults `isGameOver`. */
 const NOMINAL_LENGTH_IN_ROUNDS = 1_000;
@@ -78,7 +79,7 @@ const MINIMUM_CHARGES_PER_NODE = 2;
 const MAXIMUM_TURNS_BETWEEN_CHARGES = 400;
 
 function countInState(state: GameState, target: NodeState): number {
-  return FIXED_NODE_SQUARES.filter(
+  return nodeSquares(state).filter(
     (square) => nodeStateAt(state, square) === target,
   ).length;
 }
@@ -91,12 +92,23 @@ interface EconomySample {
   readonly chargedSquareNames: readonly string[];
 }
 
+interface EconomyRun {
+  readonly samples: readonly EconomySample[];
+  /**
+   * The squares the deal placed, captured once before the run starts.
+   * Retirement and replacement (story 54's own Step 6) has not landed yet,
+   * so a run's node squares never change once dealt.
+   */
+  readonly dealtNodeNames: readonly string[];
+}
+
 /**
  * Drives the end-of-turn sequence for `plies` turns from the opening
  * position, with no ship ever moving, and samples the board after each turn.
  */
-function runEconomy(seed: number, plies: number): readonly EconomySample[] {
+function runEconomy(seed: number, plies: number): EconomyRun {
   let state = startingGameState(seed, NOMINAL_LENGTH_IN_ROUNDS);
+  const dealtNodeNames = nodeSquares(state).map(squareName);
   const samples: EconomySample[] = [];
 
   for (let i = 0; i < plies; i++) {
@@ -115,7 +127,7 @@ function runEconomy(seed: number, plies: number): readonly EconomySample[] {
     state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
   }
 
-  return samples;
+  return { samples, dealtNodeNames };
 }
 
 /**
@@ -123,13 +135,16 @@ function runEconomy(seed: number, plies: number): readonly EconomySample[] {
  * longest gap, in turns, between two successive charges of it. A node
  * charged fewer than twice has no gap to measure and is reported as `0`.
  */
-function chargeStats(samples: readonly EconomySample[]): {
+function chargeStats(
+  samples: readonly EconomySample[],
+  nodeNames: readonly string[],
+): {
   readonly minChargeCount: number;
   readonly maxGap: number;
 } {
   const chargeTurns = new Map<string, number[]>();
-  for (const node of FIXED_NODE_SQUARES) {
-    chargeTurns.set(squareName(node), []);
+  for (const name of nodeNames) {
+    chargeTurns.set(name, []);
   }
 
   samples.forEach((sample, plyIndex) => {
@@ -154,7 +169,7 @@ describe("the long-run node economy (Appendix B)", () => {
   it.each(SEEDS)(
     "holds at exactly five charged with no ship activity to help it (seed %d)",
     (seed) => {
-      const samples = runEconomy(seed, PLIES_TO_RUN);
+      const { samples } = runEconomy(seed, PLIES_TO_RUN);
 
       for (const sample of samples) {
         expect(sample.charged).toBe(TARGET_CHARGED_NODES);
@@ -165,7 +180,7 @@ describe("the long-run node economy (Appendix B)", () => {
   it.each(SEEDS)(
     "keeps the inactive pool comfortably populated (seed %d)",
     (seed) => {
-      const samples = runEconomy(seed, PLIES_TO_RUN);
+      const { samples } = runEconomy(seed, PLIES_TO_RUN);
 
       for (const sample of samples) {
         expect(sample.inactive).toBeGreaterThanOrEqual(MINIMUM_INACTIVE_NODES);
@@ -176,7 +191,7 @@ describe("the long-run node economy (Appendix B)", () => {
   it.each(SEEDS)(
     "keeps expiries spread rather than arriving together (seed %d)",
     (seed) => {
-      const samples = runEconomy(seed, PLIES_TO_RUN);
+      const { samples } = runEconomy(seed, PLIES_TO_RUN);
 
       const multiExpiryPlies = samples.filter(
         (sample) => sample.nodesRanOutThisPly >= 2,
@@ -196,8 +211,8 @@ describe("the long-run node economy (Appendix B)", () => {
   it.each(SEEDS)(
     "bounds how long any node can wait between charges, via the pressure weighting (seed %d)",
     (seed) => {
-      const samples = runEconomy(seed, PLIES_TO_RUN);
-      const { minChargeCount, maxGap } = chargeStats(samples);
+      const { samples, dealtNodeNames } = runEconomy(seed, PLIES_TO_RUN);
+      const { minChargeCount, maxGap } = chargeStats(samples, dealtNodeNames);
 
       expect(minChargeCount).toBeGreaterThanOrEqual(MINIMUM_CHARGES_PER_NODE);
       expect(maxGap).toBeLessThan(MAXIMUM_TURNS_BETWEEN_CHARGES);
@@ -205,7 +220,7 @@ describe("the long-run node economy (Appendix B)", () => {
   );
 
   it("keeps roughly two or three nodes depleted and nine or ten inactive in the steady state", () => {
-    const samples = runEconomy(20260819, PLIES_TO_RUN);
+    const { samples } = runEconomy(20260819, PLIES_TO_RUN);
     // Skip the opening settling in; Appendix B's arithmetic is about the
     // steady state, not the first few turns.
     const steady = samples.slice(50);

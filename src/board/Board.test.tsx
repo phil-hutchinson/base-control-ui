@@ -8,11 +8,7 @@ import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
 import { BAYS, isBay } from "../rules/bays";
 import { startingFleet, type FleetEntry } from "../rules/fleet";
-import {
-  NODE_CAPACITY,
-  PRESSURE_CAP,
-  FIXED_NODE_SQUARES,
-} from "../rules/nodes";
+import { NODE_CAPACITY, PRESSURE_CAP } from "../rules/nodes";
 import {
   startingGameState,
   type GameState,
@@ -52,10 +48,12 @@ const TEST_SEED = 1;
 /**
  * The board this file has always been rendered against: H8, E5, K5, E11 and
  * K11 charged at drain 0, the other twelve nodes inactive at pressure 1 — an
- * arbitrary fixed board, not the opening rules.md §8.1 deals since 0.18.
- * Transcribed by hand from the seventeen nodes of rules.md §3.2, not built by
- * calling any of `nodes.ts`'s production functions, so a change to how the
- * opening is dealt cannot quietly change what this file expects.
+ * arbitrary fixed board, not the opening rules.md §8.1 deals since 0.18. Node
+ * positions are drawn rather than fixed since 0.20, so this board is no
+ * longer any table in `rules.md` either — it is simply a board this file
+ * states for itself, not built by calling any of `nodes.ts`'s production
+ * functions, so a change to how the opening is dealt cannot quietly change
+ * what this file expects.
  */
 const STATED_NODE_STATES: Readonly<Record<string, NodeStatus>> = {
   F2: { state: "inactive", level: 1 },
@@ -291,40 +289,26 @@ describe("Board", () => {
   });
 
   describe("nodes on the starting board", () => {
-    // Literal, hand-transcribed from rules.md §3.2's seventeen nodes, with
-    // the fixed charged five of STATED_NODE_STATES above (no longer the
-    // opening rules.md §8.1 deals since 0.18), not derived by calling the
-    // same production lookups the component uses.
-    const NODE_SQUARES = [
-      "F2",
-      "J2",
-      "B4",
-      "H4",
-      "N4",
-      "E5",
-      "K5",
-      "D8",
-      "H8",
-      "L8",
-      "E11",
-      "K11",
-      "B12",
-      "H12",
-      "N12",
-      "F14",
-      "J14",
-    ];
-    const CHARGED_NODE_SQUARES = ["H8", "E5", "K5", "E11", "K11"];
+    // The board this file states for itself (`STATED_NODE_STATES` above),
+    // not derived by calling the same production lookups the component
+    // uses. Node positions are drawn rather than fixed since 0.20, so there
+    // is no longer a rules.md table this could be transcribed from.
+    const NODE_SQUARES = Object.keys(STATED_NODE_STATES);
+    const CHARGED_NODE_SQUARES = NODE_SQUARES.filter(
+      (square) => STATED_NODE_STATES[square].state === "charged",
+    );
     const INACTIVE_NODE_SQUARES = NODE_SQUARES.filter(
-      (square) => !CHARGED_NODE_SQUARES.includes(square),
+      (square) => STATED_NODE_STATES[square].state === "inactive",
     );
 
-    it("draws a node marker on exactly the seventeen nodes from rules.md §3.2", () => {
+    it("draws a node marker on exactly the nodes this board states", () => {
       const { container } = render(
         <Board session={startingSession} onIntent={noop} />,
       );
 
-      expect(container.querySelectorAll(".node-marker")).toHaveLength(17);
+      expect(container.querySelectorAll(".node-marker")).toHaveLength(
+        NODE_SQUARES.length,
+      );
       for (const square of CHARGED_NODE_SQUARES) {
         const cell = screen.getByRole("gridcell", {
           name: `${square}, charged node`,
@@ -350,8 +334,8 @@ describe("Board", () => {
         container.querySelectorAll(".node-marker radialGradient"),
       ).map((gradient) => gradient.getAttribute("id"));
 
-      expect(gradientIds).toHaveLength(FIXED_NODE_SQUARES.length);
-      expect(new Set(gradientIds).size).toBe(FIXED_NODE_SQUARES.length);
+      expect(gradientIds).toHaveLength(NODE_SQUARES.length);
+      expect(new Set(gradientIds).size).toBe(NODE_SQUARES.length);
 
       // Document-unique, not merely unique among node markers: every id the
       // whole board renders is distinct, so a node gradient can never be

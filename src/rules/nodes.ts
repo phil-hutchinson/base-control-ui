@@ -1,44 +1,15 @@
-// The seventeen node squares (rules.md §3.2), the three states a node can be
-// in (rules.md §8.1), and how a node's single `level` number moves within
-// each state: a charged node's capacity and its two drawn drain
-// distributions (§8.3), a depleted node's drawn recovery distribution (§8.2),
-// and the pressure cap an inactive node's level is capped at (§8.2). Also the
-// opening deal (§8.1), which draws the whole starting board at once from its
-// own opening drain and opening pressure tables.
+// The three states a node can be in (rules.md §8.1), and how a node's
+// single `level` number moves within each state: a charged node's capacity
+// and its two drawn drain distributions (§8.3), a depleted node's drawn
+// recovery distribution (§8.2), and the pressure cap an inactive node's
+// level is capped at (§8.2). Also the opening deal (§8.1), which draws the
+// whole starting board at once — fifteen squares, from `nodePlacement.ts` —
+// and then the level of every one of them from its own opening drain and
+// opening pressure tables.
 
-import { type Square, squareAt, squareName } from "./board";
+import { ALL_SQUARES, type Square, squareName } from "./board";
+import { legalNodePool } from "./nodePlacement";
 import { drawIndex, drawWeightedIndex } from "./random";
-
-/**
- * The seventeen node squares, in the row order rules.md §3.2 lists them
- * (bottom to top, left to right within a row).
- */
-export const FIXED_NODE_SQUARES: readonly Square[] = [
-  // Row 2
-  squareAt("F", 2),
-  squareAt("J", 2),
-  // Row 4
-  squareAt("B", 4),
-  squareAt("H", 4),
-  squareAt("N", 4),
-  // Row 5
-  squareAt("E", 5),
-  squareAt("K", 5),
-  // Row 8
-  squareAt("D", 8),
-  squareAt("H", 8),
-  squareAt("L", 8),
-  // Row 11
-  squareAt("E", 11),
-  squareAt("K", 11),
-  // Row 12
-  squareAt("B", 12),
-  squareAt("H", 12),
-  squareAt("N", 12),
-  // Row 14
-  squareAt("F", 14),
-  squareAt("J", 14),
-];
 
 /** The three states a node can be in (rules.md §8.1). */
 export type NodeState = "inactive" | "charged" | "depleted";
@@ -72,6 +43,13 @@ export const STARTING_PRESSURE = 1;
  */
 export const TARGET_CHARGED_NODES = 5;
 
+/**
+ * How many nodes the board carries at all times (rules.md §8.1, §8.2): the
+ * opening deal places this many, and one retiring node is always replaced by
+ * one new one, so the count never moves.
+ */
+export const NODE_COUNT = 15;
+
 /** One outcome of a weighted draw: an amount, and its share of the total weight. */
 export interface WeightedAmount {
   readonly amount: number;
@@ -98,8 +76,8 @@ export const OPENING_DRAIN_TABLE: readonly WeightedAmount[] = [
 ];
 
 /**
- * The pressure a dealt node opens at, drawn once for each of the twelve
- * nodes the opening deal leaves inactive (rules.md §8.1). Weights are the
+ * The pressure a dealt node opens at, drawn once for each of the ten nodes
+ * the opening deal leaves inactive (rules.md §8.1). Weights are the
  * whole-number percentages the rules table shows. Average 12.79.
  */
 export const OPENING_PRESSURE_TABLE: readonly WeightedAmount[] = [
@@ -168,28 +146,34 @@ export function drawTableAmount(
 }
 
 /**
- * Deals a whole opening board (rules.md §8.1): a seed in, the seventeen
- * node statuses keyed by `squareName`, and the next seed out.
+ * Deals a whole opening board (rules.md §8.1): the squares the fleet stands
+ * on and a seed in, `NODE_COUNT` (15) node statuses keyed by `squareName`,
+ * and the next seed out. `startingGameState` builds the fleet before
+ * dealing so it can pass its squares here (see D13 in the implementation
+ * plan) — building it consumes no randomness, so the seeded stream is
+ * unaffected.
  *
  * The draw order is fixed and must not change, because a recorded game
  * replays by replaying the seed:
  *
- * 1. Draw `TARGET_CHARGED_NODES` (5) nodes, one at a time and uniformly,
- *    from a pool that starts as all of `FIXED_NODE_SQUARES` in declared
- *    order. Each draw is `drawIndex(seed, pool.length)` — uniform, since at
- *    the deal no node has any pressure to weight by — removes the drawn
- *    node from the pool, and advances the seed. This is the shrinking-pool
- *    shape `runChargeDraw` uses for its (weighted) draw.
- * 2. Walk `FIXED_NODE_SQUARES` in declared order. For each node, one
- *    `drawTableAmount` call: the opening drain table if the node was drawn
- *    charged in step 1, the opening pressure table otherwise. The result
- *    becomes the node's `level`; its state is `charged` or `inactive` to
- *    match.
+ * 1. Draw `TARGET_CHARGED_NODES` (5) squares, one at a time, each from
+ *    `legalNodePool` recomputed against the squares placed so far — so each
+ *    placement respects the ones before it — and drawn uniformly via
+ *    `drawIndex`, since at the deal no node has any pressure to weight by.
+ * 2. Draw `NODE_COUNT - TARGET_CHARGED_NODES` (10) more squares the same
+ *    way, from the pool the five charged squares have already narrowed.
+ *    These are the nodes that open inactive.
+ * 3. Walk all fifteen dealt squares in board order (not charged-then-
+ *    inactive). For each, one `drawTableAmount` call: the opening drain
+ *    table if it was drawn charged in step 1, the opening pressure table
+ *    otherwise. The result becomes the node's `level`; its state is
+ *    `charged` or `inactive` to match.
  *
- * That is 5 + 17 = 22 seed steps before green's first turn. Nothing is
+ * That is 5 + 10 + 15 = 30 seed steps before green's first turn. Nothing is
  * dealt `depleted`.
  */
 export function dealOpeningBoard(
+  shipSquares: readonly Square[],
   seed: number,
 ): [
   nodes: Readonly<
@@ -197,21 +181,36 @@ export function dealOpeningBoard(
   >,
   nextSeed: number,
 ] {
-  let pool = [...FIXED_NODE_SQUARES];
-  let workingSeed = seed;
+  const dealtSquares: Square[] = [];
   const chargedNames = new Set<string>();
+  let workingSeed = seed;
 
   for (let count = 0; count < TARGET_CHARGED_NODES; count++) {
+    const pool = legalNodePool(dealtSquares, shipSquares);
     const [index, nextSeed] = drawIndex(workingSeed, pool.length);
-    chargedNames.add(squareName(pool[index]));
-    pool = pool.filter((_, poolIndex) => poolIndex !== index);
+    const square = pool[index];
+    dealtSquares.push(square);
+    chargedNames.add(squareName(square));
     workingSeed = nextSeed;
   }
 
+  const inactiveCount = NODE_COUNT - TARGET_CHARGED_NODES;
+  for (let count = 0; count < inactiveCount; count++) {
+    const pool = legalNodePool(dealtSquares, shipSquares);
+    const [index, nextSeed] = drawIndex(workingSeed, pool.length);
+    dealtSquares.push(pool[index]);
+    workingSeed = nextSeed;
+  }
+
+  const dealtNames = new Set(dealtSquares.map(squareName));
+  const orderedSquares = ALL_SQUARES.filter((square) =>
+    dealtNames.has(squareName(square)),
+  );
+
   const nodes: Record<string, { state: NodeState; level: number }> = {};
 
-  for (const node of FIXED_NODE_SQUARES) {
-    const name = squareName(node);
+  for (const square of orderedSquares) {
+    const name = squareName(square);
     const charged = chargedNames.has(name);
     const [level, nextSeed] = drawTableAmount(
       workingSeed,

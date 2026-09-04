@@ -88,6 +88,31 @@ Rejected: implementing it anyway with a test that cannot fail (a green test
 that proves nothing, and a predicate a later reader would rightly call dead
 code); implementing it without a test (worse).
 
+### D20 — `nodePlacement.ts` stays a pure geometry module
+
+Found after Step 5, which introduced a three-module import cycle:
+`nodes.ts` → `nodePlacement.ts` → `gameState.ts` → `nodes.ts`. It compiles
+and runs, because every cross-reference is used inside a function body
+rather than at module-init time, but it is a defect and it is cheap to
+remove.
+
+The cycle has exactly one cause: `drawNodeSquareForState`, the convenience
+wrapper that takes a `GameState`, which is the only reason
+`nodePlacement.ts` imports `gameState.ts` at all. As of Step 5 it has **no
+consumer**.
+
+So Step 6 deletes the wrapper and its `gameState` import, and the
+end-of-turn caller builds the two arguments itself — it holds the state, and
+`nodeSquares(state)` and `state.ships.map(...)` are one line each. That
+leaves `nodePlacement.ts` depending only on `board`, `bays` and `random`: a
+pure geometry module that knows what a legal square is and nothing about a
+game in progress, which is what **D13** was reaching for when it kept a
+`GameState` out of the pool builder's signature.
+
+Rejected: leaving the cycle (it entrenches the moment Step 6 wires the
+wrapper in); moving the wrapper to `gameState.ts` (it is end-of-turn's
+concern, not the state shape's).
+
 ### D19 — Fixtures may not use an off-list square as an isolation trick
 
 Found while implementing Step 3, which blocked on it.
@@ -785,7 +810,96 @@ nothing else may change.
 
 ### Step 5 — Deal fifteen nodes at drawn squares
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `dealOpeningBoard` to `(shipSquares, seed) => [nodes, nextSeed]`
+per D13, deleted `FIXED_NODE_SQUARES`, and added `NODE_COUNT = 15`. The deal
+draws 5 charged squares one at a time via `legalNodePool`/`drawIndex`
+(recomputing the pool against the squares placed so far each time), then 10
+inactive squares the same way, then walks the fifteen dealt squares in board
+order (via `ALL_SQUARES`) for one `drawTableAmount` call each — 5 + 10 + 15 =
+30 seed steps, as specified. `nodes.ts` now imports `legalNodePool` from
+`nodePlacement.ts`, which itself imports `nodeSquares`/`GameState` from
+`gameState.ts`, which imports `dealOpeningBoard` from `nodes.ts` — a
+three-module import cycle — but every cross-reference is used only inside a
+function body, never at module-init time, so it compiles and runs correctly
+(confirmed by `npm run typecheck` and the full suite); this was not
+mentioned by the plan and is recorded here as a fact worth knowing rather
+than a deviation, since nothing about the module's shape changed to cause
+it. `startingGameState` now builds the fleet before dealing and passes
+`ships.map(ship => ship.square)` into `dealOpeningBoard`, unchanged in its
+own signature. Updated the doc comments the step named: `nodes.ts`'s module
+comment and `dealOpeningBoard`'s own doc, `OPENING_PRESSURE_TABLE`'s "twelve
+sites" to "ten nodes", `startingGameState`'s "five of the seventeen … 22
+steps" to "five of the fifteen … 30 steps", `energy.ts`'s "twelve of the
+seventeen" bound comment to "ten of the fifteen", and
+`seededReplay.test.ts`'s header ("22 steps — five node draws and seventeen
+level draws" to "30 steps — fifteen square draws and fifteen level draws").
+`chargeDraw.ts`'s module comment already said "in board order" from Step 3
+and needed no change, unlike what the step's checklist implied.
+
+Repaired every test the signature and count change broke. In
+`nodes.test.ts`: deleted the "nodes" describe block (fixed seventeen-square
+count, mirror symmetries, bay-disjointness, the §3.2 table match) — this
+coverage is genuinely gone, not weakened, since there is no fixed list left
+to assert any of that about. Rewrote "dealing the opening board" around
+fifteen/five/ten, added a new "every dealt square is legal under §3.2 …
+over many seeds" test (interior membership, off-ship, no two adjacent),
+dropped the old per-square "close to 5/17" charge-share assertion (no
+longer meaningful once squares are drawn) in favour of keeping the
+level-frequency assertion, and added a new "spreads across the whole legal
+interior" test with bounds measured over 3,000 deals (45,000 placements: all
+121 interior squares seen at least once; each quadrant's share ~0.206-0.210,
+the unclaimed centre row/column ~0.167) — asserted with generous margin
+(quadrant share between 0.15 and 0.3, at least 110/121 squares seen).
+Reduced the level-frequency test from 20,000 to 3,000 deals, noted in a new
+comment, because each deal now costs a `legalNodePool` scan per placement
+rather than a constant-array lookup and 20,000 deals timed out the default
+5s test budget; 3,000 deals still gives tens of thousands of level draws,
+plenty for the existing 3% margin. In `gameState.test.ts`,
+`openingBoard.test.ts`, `fullGame.test.ts`, `energy.test.ts`,
+`endOfTurn.test.ts` and `nodePool.test.ts`: updated every `dealOpeningBoard`
+call site to the new two-argument form (passing `startingFleet(7)`'s
+squares, or an empty/explicit ship list where the test builds its own
+state), replaced every `FIXED_NODE_SQUARES` read with `nodeSquares(state)` (where a
+real dealt/live state is at hand — `fullGame.test.ts`'s greedy policy,
+`nodePool.test.ts`'s counters, `openingBoard.test.ts`'s run-to-completion
+test), `Object.keys(state.nodes)` (`endOfTurn.test.ts`'s lockstep guard,
+`openingBoard.test.ts`'s charge-draw-favours-pressure test), or `ALL_SQUARES`
+(where the test only wanted "board order" as a fact about the board, not
+about a particular deal — `energy.test.ts`'s two ordering assertions), updated
+17-node/12-inactive counts to 15/10, and replaced
+`fullGame.test.ts`'s `FIXED_NODE_SQUARES.slice(0, 5)` regression fixture with
+five explicit interior squares (`C3`, `F3`, `C6`, `F6`, `C9`) per the step's
+instruction. `gameState.test.ts`'s "agrees with nodeStatusAt" test, which
+hardcoded H8/F2/K5, now iterates `nodeSquares(state)` instead, since those
+three squares are no longer guaranteed to hold anything. `nodePool.test.ts`
+was repaired minimally as instructed (not polished ahead of Step 8):
+`countInState` now reads `nodeSquares(state)` instead of the fixed list, and
+`runEconomy`/`chargeStats` were restructured to capture the dealt board's own
+node names once at the top of a run (since retirement/replacement has not
+landed yet, a run's node squares are still fixed for its whole length) rather
+than assume a module-level constant list; its stale "seventeen"-based doc
+comments were deliberately left for Step 8, per the step's own instruction
+not to invest in polishing this file now. `Board.test.tsx`'s
+`STATED_NODE_STATES` fixture (an arbitrary hand-built board, already
+independent of `FIXED_NODE_SQUARES`) needed only its comment corrected to
+stop citing a §3.2 table that no longer exists; its one direct
+`FIXED_NODE_SQUARES` read (the gradient-id-count test) and the "nodes on the
+starting board" block's separately hardcoded seventeen-square list were both
+replaced with `Object.keys(STATED_NODE_STATES)`, so the tests now state the
+board's shape from the fixture itself rather than from a second, drifting
+copy of it.
+
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+(915 tests, down from 919 before this step: the "nodes" describe block's six
+tests describing the fixed seventeen-square list were deleted outright as
+coverage that no longer applies, and two tests were added to "dealing the
+opening board" — "every dealt square is legal under §3.2 … over many seeds"
+and "spreads across the whole legal interior" — for a net of four fewer)
+all pass. No deviation from the plan beyond the specifics above, all of
+which were left to the implementer's judgement by the step's own wording
+("Repair, in this step, whatever this step breaks").
 
 Rewrite `dealOpeningBoard` in `src/rules/nodes.ts` to deal **fifteen nodes**
 at drawn squares instead of seventeen statuses at fixed ones, and delete
@@ -923,6 +1037,15 @@ keeps the state change and the wording as two separately verifiable steps.
 - `src/rules/openingBoard.test.ts` — "recovers a depleted node to inactive"
   becomes "retires and replaces a depleted node".
 - `src/rules/nodePool.test.ts` — minimal repair only; Step 8 rewrites it.
+
+**Break the import cycle (D20).** Delete `drawNodeSquareForState` and the
+`gameState` import from `src/rules/nodePlacement.ts`, and have the
+end-of-turn caller pass `nodeSquares(state)` and the ships' squares to
+`drawNodeSquare` directly. This removes the
+`nodes.ts` → `nodePlacement.ts` → `gameState.ts` → `nodes.ts` cycle Step 5
+introduced, and leaves `nodePlacement.ts` importing only `board`, `bays`
+and `random`. Confirm no module under `src/rules/` imports `gameState.ts`
+from `nodePlacement.ts` afterwards.
 
 Depends on: Step 5 (nodes already live at drawn squares), Step 4 (the draw),
 Step 3 (the ordered snapshot).

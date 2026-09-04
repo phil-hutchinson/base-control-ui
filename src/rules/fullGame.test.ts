@@ -20,6 +20,7 @@ import {
   type GameState,
   type Ship,
   type NodeStatus,
+  nodeSquares,
   nodeStateAt,
   startingGameState,
 } from "./gameState";
@@ -37,7 +38,6 @@ import {
   applyMove,
   applyPassGuard,
 } from "./ply";
-import { FIXED_NODE_SQUARES } from "./nodes";
 
 type Action =
   | {
@@ -71,7 +71,7 @@ function distanceToNearestChargedOrInactive(
   square: Square,
 ): number {
   let nearest = Infinity;
-  for (const node of FIXED_NODE_SQUARES) {
+  for (const node of nodeSquares(state)) {
     const nodeState = nodeStateAt(state, node);
     if (nodeState !== "charged" && nodeState !== "inactive") {
       continue;
@@ -668,7 +668,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
   });
 
   it("settles a five-ship game with no throw when a side occupies five depleted nodes (regression for energy.ts's ships-per-side bound)", () => {
-    const depletedNodes = FIXED_NODE_SQUARES.slice(0, 5);
+    const depletedNodes = ["C3", "F3", "C6", "F6", "C9"].map(squareFromName);
     const ships: readonly Ship[] = depletedNodes.map((node, index) => ({
       id: `green-${index + 1}` as ShipId,
       side: "green",

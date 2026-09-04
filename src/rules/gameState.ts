@@ -91,14 +91,19 @@ export interface GameState {
 
 /**
  * The state the game starts from: `startingFleet(fleetSize)`'s ships, a
- * dealt board (`dealOpeningBoard`, rules.md §8.1) — five of the seventeen
+ * dealt board (`dealOpeningBoard`, rules.md §8.1) — five of the fifteen
  * nodes charged at a drawn drain, the rest inactive at a drawn pressure,
  * nothing depleted — green to move, `ACTIONS_PER_PLY` actions remaining,
  * nothing moved, ply 1, both sides at 0 energy, neither side out of time,
  * and the given game length.
  *
+ * The fleet is built before the deal so its ships' squares can be passed to
+ * `dealOpeningBoard`, which excludes them from where a node may appear;
+ * building the fleet draws no randomness, so the seeded stream is
+ * unaffected.
+ *
  * The seed argument is the seed the **deal** starts from, not the seed the
- * game's first turn draws from: dealing the board consumes 22 steps of the
+ * game's first turn draws from: dealing the board consumes 30 steps of the
  * stream before play begins, and the resulting state's `randomSeed` is the
  * seed the deal left behind. See `src/game/seed.ts` for where the app's
  * opening seed comes from. Every test passes one explicitly, so a game's
@@ -131,15 +136,20 @@ export function startingGameState(
     );
   }
 
-  const [nodes, nextSeed] = dealOpeningBoard(randomSeed);
+  const ships = startingFleet(fleetSize).map((entry) => ({
+    id: entry.id,
+    side: entry.side,
+    square: entry.square,
+    power: entry.power,
+  }));
+
+  const [nodes, nextSeed] = dealOpeningBoard(
+    ships.map((ship) => ship.square),
+    randomSeed,
+  );
 
   return {
-    ships: startingFleet(fleetSize).map((entry) => ({
-      id: entry.id,
-      side: entry.side,
-      square: entry.square,
-      power: entry.power,
-    })),
+    ships,
     nodes,
     sideToMove: "green",
     actionsRemaining: ACTIONS_PER_PLY,

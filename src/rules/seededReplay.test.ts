@@ -19,10 +19,11 @@
 //
 // Since 0.18 the stream starts even earlier than green's first turn: the
 // opening board itself is dealt from the same seed (`dealOpeningBoard`,
-// §8.1), consuming 22 steps — five node draws and seventeen level draws —
-// before a single ply is played. `startingGameState` is what a recorded
-// game would call to reproduce that deal, so the property under test now
-// covers it too: the same seed deals the same opening board, and a
+// §8.1). Since 0.20 that deal draws each node's square rather than filling a
+// fixed list, consuming 30 steps — fifteen square draws and fifteen level
+// draws — before a single ply is played. `startingGameState` is what a
+// recorded game would call to reproduce that deal, so the property under
+// test now covers it too: the same seed deals the same opening board, and a
 // different seed deals a different one.
 
 import { describe, expect, it } from "vitest";

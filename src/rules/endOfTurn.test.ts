@@ -11,12 +11,7 @@ import {
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { PowerLevel } from "./power";
-import {
-  NODE_CAPACITY,
-  PRESSURE_CAP,
-  FIXED_NODE_SQUARES,
-  type NodeState,
-} from "./nodes";
+import { NODE_CAPACITY, PRESSURE_CAP, type NodeState } from "./nodes";
 
 function ship(
   id: ShipId,
@@ -1041,7 +1036,7 @@ describe("runEndOfTurn — the opening board does not fall into lockstep (§8.1)
     for (const seed of SEEDS) {
       let state = startingGameState(seed, DEFAULT_GAME_LENGTH_ROUNDS);
       // Whichever nodes the game opened with, not a fixed list.
-      const openingSquares = FIXED_NODE_SQUARES.map(squareName).filter(
+      const openingSquares = Object.keys(state.nodes).filter(
         (name) => state.nodes[name]?.state === "charged",
       );
       const runOutPly = new Map<string, number>();

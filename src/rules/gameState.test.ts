@@ -20,6 +20,7 @@ import {
 
 const SEED = 12345;
 const STARTING_FLEET = startingFleet(7);
+const STARTING_FLEET_SQUARES = STARTING_FLEET.map((entry) => entry.square);
 
 describe("startingGameState", () => {
   it("has fourteen ships matching STARTING_FLEET entry for entry", () => {
@@ -37,7 +38,7 @@ describe("startingGameState", () => {
 
   it("has green to move, one action remaining, nothing moved, ply 1 and the deal's advanced seed", () => {
     const state = startingGameState(SEED);
-    const [, dealtSeed] = dealOpeningBoard(SEED);
+    const [, dealtSeed] = dealOpeningBoard(STARTING_FLEET_SQUARES, SEED);
 
     expect(state.sideToMove).toBe("green");
     expect(state.actionsRemaining).toBe(1);
@@ -47,20 +48,20 @@ describe("startingGameState", () => {
     expect(state.randomSeed).not.toBe(SEED);
   });
 
-  it("deals the board dealOpeningBoard deals for the same seed: five charged, twelve inactive, none depleted", () => {
+  it("deals the board dealOpeningBoard deals for the same seed: five charged, ten inactive, none depleted", () => {
     const state = startingGameState(SEED);
-    const [dealt] = dealOpeningBoard(SEED);
+    const [dealt] = dealOpeningBoard(STARTING_FLEET_SQUARES, SEED);
 
     expect(state.nodes).toEqual(dealt);
 
     const allStatuses = Object.values(state.nodes);
-    expect(allStatuses).toHaveLength(17);
+    expect(allStatuses).toHaveLength(15);
     expect(
       allStatuses.filter((status) => status.state === "charged"),
     ).toHaveLength(5);
     expect(
       allStatuses.filter((status) => status.state === "inactive"),
-    ).toHaveLength(12);
+    ).toHaveLength(10);
     expect(
       allStatuses.filter((status) => status.state === "depleted"),
     ).toHaveLength(0);
@@ -103,8 +104,7 @@ describe("startingGameState", () => {
   it("agrees with nodeStatusAt: the state matches, and the status carries the clock", () => {
     const state = startingGameState(SEED);
 
-    for (const name of ["H8", "F2", "K5"]) {
-      const square = squareFromName(name);
+    for (const square of nodeSquares(state)) {
       const status = nodeStatusAt(state, square);
       expect(status?.state).toBe(nodeStateAt(state, square));
       expect(status).toBeDefined();
