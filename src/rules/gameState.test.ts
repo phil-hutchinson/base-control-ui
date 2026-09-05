@@ -55,20 +55,20 @@ describe("startingGameState", () => {
     expect(state.openingSeed).not.toBe(state.randomSeed);
   });
 
-  it("deals the board dealOpeningBoard deals for the same seed: four charged, eleven inactive, none depleted", () => {
+  it("deals the board dealOpeningBoard deals for the same seed: four charged, eight inactive, none depleted", () => {
     const state = startingGameState(SEED);
     const [dealt] = dealOpeningBoard(STARTING_FLEET_SQUARES, SEED);
 
     expect(state.nodes).toEqual(dealt);
 
     const allStatuses = Object.values(state.nodes);
-    expect(allStatuses).toHaveLength(15);
+    expect(allStatuses).toHaveLength(12);
     expect(
       allStatuses.filter((status) => status.state === "charged"),
     ).toHaveLength(4);
     expect(
       allStatuses.filter((status) => status.state === "inactive"),
-    ).toHaveLength(11);
+    ).toHaveLength(8);
     expect(
       allStatuses.filter((status) => status.state === "depleted"),
     ).toHaveLength(0);

@@ -3,7 +3,7 @@
 // drawn rather than fixed, so the guard this file offers is statistical
 // rather than exact: it drives the end-of-turn sequence for several hundred
 // turns from the opening position and checks the shape Appendix B predicts
-// holds up — the board stays at fifteen nodes, four of them charged, the
+// holds up — the board stays at twelve nodes, four of them charged, the
 // inactive pool stays comfortably populated, nodes do not run out in
 // clumps, and the pressure weighting keeps every node's wait between
 // charges bounded.
@@ -13,11 +13,11 @@
 // things true that were not true of a fixed board: a square's identity does
 // not persist across a retirement, so waits and charge counts are tracked
 // per node *life*, not per square (see `nodeWaitStats` below); and every
-// appearance — the opening deal's fifteen and every later replacement — has
+// appearance — the opening deal's twelve and every later replacement — has
 // somewhere new to be legal about, which this file now checks directly
 // against the board as it stood at that moment, not just at the deal.
 //
-// Every bound below was measured for fifteen mortal nodes, by running this
+// Every bound below was measured for twelve mortal nodes, by running this
 // file's own `runEconomy` over `SEEDS` at `PLIES_TO_RUN` turns each (see each
 // constant's comment for the figure that run produced) — five seeds chosen
 // over more turns, per this run's own cost: a retirement now costs a pool
@@ -45,9 +45,9 @@ const PLIES_TO_RUN = 500;
 const SEEDS = [20260819, 20260820, 20260821, 20260822, 20260823];
 
 /**
- * Appendix B now predicts about 9 of the fifteen inactive at any moment;
+ * Appendix B now predicts about 6 of the twelve inactive at any moment;
  * measured over `SEEDS` at `PLIES_TO_RUN` turns, the lowest instantaneous
- * count seen was 7. The floor here leaves margin well below that, so this
+ * count seen was 4. The floor here leaves margin well below that, so this
  * fails only if the economy actually collapses rather than merely drifting.
  */
 const MINIMUM_INACTIVE_NODES = 3;
@@ -60,9 +60,10 @@ const MINIMUM_INACTIVE_NODES = 3;
 const MAXIMUM_MULTI_EXPIRY_SHARE = 0.1;
 
 /**
- * No turn should run out anything close to all four charged nodes at once.
- * Measured over `SEEDS` the observed maximum is 2; this leaves margin above
- * that while still catching a board that has lost its spread.
+ * No turn should run out all four charged nodes at once. Measured over
+ * `SEEDS` the observed maximum is 3, one below the theoretical ceiling of
+ * `TARGET_CHARGED_NODES`; this still catches the extreme case — every
+ * charged node expiring together — the guard exists for.
  */
 const MAXIMUM_EXPIRIES_IN_ONE_PLY = TARGET_CHARGED_NODES - 1;
 
@@ -72,7 +73,7 @@ const MAXIMUM_EXPIRIES_IN_ONE_PLY = TARGET_CHARGED_NODES - 1;
  * and being charged. A node cannot retire without first being charged
  * (§8.2), so nothing here waits for ever, but under a uniform draw this
  * tail would in principle be unbounded. Measured over `SEEDS` the observed
- * maximum is 238 turns; no broader sweep was re-run at this target. The
+ * maximum is 173 turns; no broader sweep was re-run at this target. The
  * bound below leaves generous margin above that, so it is a loose sanity
  * check on the economy rather than a guard on the pressure weighting
  * itself — `chargeDraw.test.ts`'s "weighted by pressure" describe block
@@ -83,7 +84,7 @@ const MAXIMUM_TURNS_BETWEEN_CHARGES = 400;
 
 /**
  * How many charges the run should produce in total, over 500 turns and no
- * ship activity. Measured at 68-69 across `SEEDS`; the floor here leaves
+ * ship activity. Measured at 68-70 across `SEEDS`; the floor here leaves
  * generous margin below that, so this fails only if the economy's overall
  * pace of charging actually collapses.
  */
@@ -92,7 +93,7 @@ const MINIMUM_TOTAL_CHARGES = 40;
 /**
  * How many of the 121 interior squares (C3-M13) a long run, across `SEEDS`,
  * should place a node on at least once — either at the deal or as a
- * replacement. Measured at 114; the floor leaves margin below that.
+ * replacement. Measured at 116; the floor leaves margin below that.
  */
 const MINIMUM_DISTINCT_SQUARES_SEEN = 100;
 
@@ -120,7 +121,7 @@ interface EconomySample {
 
 interface EconomyRun {
   readonly samples: readonly EconomySample[];
-  /** The board's fifteen squares before the first ply of the run — the deal's own placements. */
+  /** The board's twelve squares before the first ply of the run — the deal's own placements. */
   readonly initialSquares: readonly Square[];
   /**
    * The squares the deal placed that opened inactive, captured once before
@@ -214,7 +215,7 @@ function nodeWaitStats(run: EconomyRun): {
 }
 
 /**
- * Every square that ever held a node during the run — the deal's fifteen
+ * Every square that ever held a node during the run — the deal's twelve
  * plus every replacement's new square — as a set, so a square that is
  * reused (a replacement landing where an earlier one once stood) counts
  * once.
@@ -248,7 +249,7 @@ function quadrantOf(
 
 describe("the long-run node economy (Appendix B)", () => {
   it.each(SEEDS)(
-    "holds exactly fifteen nodes at every turn, none of them on a planet (seed %d)",
+    "holds exactly twelve nodes at every turn, none of them on a planet (seed %d)",
     (seed) => {
       const { samples } = runEconomy(seed, PLIES_TO_RUN);
 
@@ -260,14 +261,14 @@ describe("the long-run node economy (Appendix B)", () => {
   );
 
   it.each(SEEDS)(
-    "places every node — the deal's fifteen and every replacement — on a square legal under §3.2 at the moment it appears (seed %d)",
+    "places every node — the deal's twelve and every replacement — on a square legal under §3.2 at the moment it appears (seed %d)",
     (seed) => {
       const { initialSquares, shipSquares, samples } = runEconomy(
         seed,
         PLIES_TO_RUN,
       );
 
-      // The deal's own fifteen: each is checked against the other fourteen,
+      // The deal's own twelve: each is checked against the other eleven,
       // which is exactly the constraint §3.2 states — no node adjacent to
       // another, none on a ship, none off the interior.
       for (const square of initialSquares) {
@@ -363,7 +364,7 @@ describe("the long-run node economy (Appendix B)", () => {
     },
   );
 
-  it("keeps roughly four charged, one or two depleted and nine or ten inactive in the steady state", () => {
+  it("keeps roughly four charged, one or two depleted and six or seven inactive in the steady state", () => {
     const { samples } = runEconomy(20260819, PLIES_TO_RUN);
     // Skip the opening settling in; Appendix B's arithmetic is about the
     // steady state, not the first few turns.
@@ -376,27 +377,27 @@ describe("the long-run node economy (Appendix B)", () => {
       steady.reduce((total, sample) => total + sample.inactive, 0) /
       steady.length;
 
-    // Measured (this seed, this run): meanDepleted ~1.45, meanInactive
-    // ~9.55, against Appendix B's prediction of about 2 and 9. The gap is
+    // Measured (this seed, this run): meanDepleted ~1.49, meanInactive
+    // ~6.51, against Appendix B's prediction of about 2 and 6. The gap is
     // expected and confirms the model rather than contradicting it: no ship
     // ever moves here, so every charged node drains at the empty rate of 2.1
     // a turn and lives about 60 / 2.1 = 29 turns, where Appendix B's twenty
     // is a mix of empty and held turns. Redo its arithmetic with 29: the
-    // charged share is fixed at 4 of 15, so a whole life runs about
-    // 15/4 x 29 ≈ 109 turns, of which ~10 are depleted and ~70 inactive —
-    // about 1.4 depleted and 9.6 inactive of the fifteen, close to what came
+    // charged share is fixed at 4 of 12, so a whole life runs about
+    // 12/4 x 29 ≈ 87 turns, of which ~10 are depleted and ~48 inactive —
+    // about 1.4 depleted and 6.6 inactive of the twelve, close to what came
     // out. A played game holds nodes and so sits nearer Appendix B's
     // figures; do not "correct" the document to match this file. The bounds
     // below leave generous margin either side of what was measured: the
-    // inactive bound at 11 leaves margin above the measured ~9.55.
+    // inactive bound at 8 leaves margin above the measured ~6.51.
     expect(meanDepleted).toBeGreaterThan(0.5);
     expect(meanDepleted).toBeLessThan(4);
-    expect(meanInactive).toBeGreaterThan(6);
-    expect(meanInactive).toBeLessThan(11);
+    expect(meanInactive).toBeGreaterThan(4);
+    expect(meanInactive).toBeLessThan(8);
   });
 
   /**
-   * Measured over `SEEDS` at `PLIES_TO_RUN` turns: 114 of the 121 interior
+   * Measured over `SEEDS` at `PLIES_TO_RUN` turns: 116 of the 121 interior
    * squares held a node at least once, and each quadrant's share of the
    * squares seen was between about 0.24 and 0.26; no broader sweep was
    * re-run at this target. The bounds below leave generous margin under

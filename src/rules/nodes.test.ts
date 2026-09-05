@@ -158,7 +158,7 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     OPENING_PRESSURE_TABLE.map((entry) => entry.amount),
   );
 
-  it("deals exactly fifteen nodes, four charged and eleven inactive, none depleted", () => {
+  it("deals exactly twelve nodes, four charged and eight inactive, none depleted", () => {
     const [nodes] = dealOpeningBoard(FLEET_SQUARES, 1);
 
     expect(Object.keys(nodes)).toHaveLength(NODE_COUNT);
@@ -245,12 +245,12 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     expect(secondStates).not.toEqual(firstStates);
   });
 
-  it("advances the seed by exactly 30 steps", () => {
+  it("advances the seed by exactly 24 steps", () => {
     const seed = 987654321;
     const [, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
 
     let expectedSeed = seed;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 24; i++) {
       const [, advanced] = mulberry32(expectedSeed);
       expectedSeed = advanced;
     }

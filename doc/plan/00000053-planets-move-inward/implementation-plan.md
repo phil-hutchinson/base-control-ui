@@ -576,7 +576,34 @@ randomness was consumed.
 
 ### Step 6 — The board carries twelve nodes
 
-Status: pending
+Status: committed
+
+Notes: `NODE_COUNT` 15 → 12 in `src/rules/nodes.ts`, with the module header,
+`OPENING_PRESSURE_TABLE`'s comment, and `dealOpeningBoard`'s doc comment
+retuned to twelve nodes / four charged / eight inactive / 24 seed steps;
+`gameState.ts`'s `startingGameState` doc comment likewise. Re-measured and
+updated `nodes.test.ts`, `nodePool.test.ts` and `openingBoard.test.ts` per
+the step's instructions — test titles, the 24-step assertion, and every
+comment recording a figure measured against fifteen nodes (inactive floor,
+expiry ceiling, wait-between-charges ceiling, total-charges floor, distinct-
+squares-seen floor, and the steady-state depleted/inactive test, whose title
+and bounds now read "six or seven inactive" against a re-measured ~6.51
+mean, matching Appendix B's ~6). No threshold needed narrowing beyond what
+re-measurement justified; margins stayed generous throughout. Two
+deviations, both required to keep the four standard checks green rather than
+scope creep: (1) `endOfTurn.test.ts`'s "keeps the node count at fifteen"
+test and `gameState.test.ts`'s "four charged, eleven inactive" test were not
+named in this step's list but hard-coded the old count and failed outright
+once `NODE_COUNT` moved — trimmed the former's hand-built fixture from
+fifteen to twelve node entries and retitled both tests; (2) two stray prose
+references to the old count were also fixed for consistency with the
+already-twelve-node reality: `energy.ts`'s doc comment ("eleven of the
+fifteen" → "eight of the twelve", matching rules.md §8.4 as rewritten in
+Step 1) and `seededReplay.test.ts`'s header comment (30 steps/fifteen draws
+→ 24 steps/twelve draws). Node placement itself is untouched — the pool is
+still the whole 121-square interior, as the step specifies; `NODE_CAPACITY`,
+`PRESSURE_CAP` and the drain/recovery/opening tables are untouched. All four
+standard checks and the step's own verification command pass.
 
 In `src/rules/nodes.ts`, `NODE_COUNT` goes from 15 to **12**;
 `TARGET_CHARGED_NODES` stays 4. Update the module header and

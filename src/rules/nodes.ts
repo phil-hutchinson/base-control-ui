@@ -3,7 +3,7 @@
 // and its two drawn drain distributions (§8.3), a depleted node's drawn
 // recovery distribution (§8.2), and the pressure cap an inactive node's
 // level is capped at (§8.2). Also the opening deal (§8.1), which draws the
-// whole starting board at once — fifteen squares, from `nodePlacement.ts` —
+// whole starting board at once — twelve squares, from `nodePlacement.ts` —
 // and then the level of every one of them from its own opening drain and
 // opening pressure tables.
 
@@ -48,7 +48,7 @@ export const TARGET_CHARGED_NODES = 4;
  * opening deal places this many, and one retiring node is always replaced by
  * one new one, so the count never moves.
  */
-export const NODE_COUNT = 15;
+export const NODE_COUNT = 12;
 
 /** One outcome of a weighted draw: an amount, and its share of the total weight. */
 export interface WeightedAmount {
@@ -76,7 +76,7 @@ export const OPENING_DRAIN_TABLE: readonly WeightedAmount[] = [
 ];
 
 /**
- * The pressure a dealt node opens at, drawn once for each of the eleven
+ * The pressure a dealt node opens at, drawn once for each of the eight
  * nodes the opening deal leaves inactive (rules.md §8.1). Weights are the
  * whole-number percentages the rules table shows. Average 12.79.
  */
@@ -147,7 +147,7 @@ export function drawTableAmount(
 
 /**
  * Deals a whole opening board (rules.md §8.1): the squares the fleet stands
- * on and a seed in, `NODE_COUNT` (15) node statuses keyed by `squareName`,
+ * on and a seed in, `NODE_COUNT` (12) node statuses keyed by `squareName`,
  * and the next seed out. `startingGameState` builds the fleet first so it
  * can pass the ships' squares here, which are excluded from where a node
  * may appear — building it consumes no randomness, so the seeded stream is
@@ -160,18 +160,18 @@ export function drawTableAmount(
  *    `legalNodePool` recomputed against the squares placed so far — so each
  *    placement respects the ones before it — and drawn uniformly via
  *    `drawIndex`, since at the deal no node has any pressure to weight by.
- * 2. Draw `NODE_COUNT - TARGET_CHARGED_NODES` (11) more squares the same
+ * 2. Draw `NODE_COUNT - TARGET_CHARGED_NODES` (8) more squares the same
  *    way, from the pool the four charged squares have already narrowed.
  *    These are the nodes that open inactive.
- * 3. Walk all fifteen dealt squares in board order (not charged-then-
+ * 3. Walk all twelve dealt squares in board order (not charged-then-
  *    inactive). For each, one `drawTableAmount` call: the opening drain
  *    table if it was drawn charged in step 1, the opening pressure table
  *    otherwise. The result becomes the node's `level`; its state is
  *    `charged` or `inactive` to match.
  *
- * That is 4 + 11 + 15 = 30 seed steps before green's first turn. Nothing is
+ * That is 4 + 8 + 12 = 24 seed steps before green's first turn. Nothing is
  * dealt `depleted`. The shape of the deal has not changed — same three
- * phases, same order, still 30 steps — but a given seed now deals a
+ * phases, same order, still 24 steps — but a given seed now deals a
  * different board, because the fifth square drawn takes its level from the
  * opening pressure table instead of the opening drain table.
  */

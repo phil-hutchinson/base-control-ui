@@ -515,20 +515,10 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
     expect(pool.map(squareName)).toContain(squareName(replaced.newSquare));
   });
 
-  it("keeps the node count at fifteen across a retirement", () => {
+  it("keeps the node count at twelve across a retirement", () => {
     const chargedNames = ["C3", "E3", "G3", "I3", "K3"];
     const depletedName = "M3";
-    const inactiveNames = [
-      "C5",
-      "E5",
-      "G5",
-      "I5",
-      "K5",
-      "M5",
-      "C7",
-      "E7",
-      "G7",
-    ];
+    const inactiveNames = ["C5", "E5", "G5", "I5", "K5", "M5"];
     const state = buildState({
       nodes: {
         ...Object.fromEntries(

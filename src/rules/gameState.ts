@@ -99,7 +99,7 @@ export interface GameState {
 
 /**
  * The state the game starts from: `startingFleet(fleetSize)`'s ships, a
- * dealt board (`dealOpeningBoard`, rules.md §8.1) — four of the fifteen
+ * dealt board (`dealOpeningBoard`, rules.md §8.1) — four of the twelve
  * nodes charged at a drawn drain, the rest inactive at a drawn pressure,
  * nothing depleted — green to move, `ACTIONS_PER_PLY` actions remaining,
  * nothing moved, ply 1, both sides at 0 energy, neither side out of time,
@@ -111,7 +111,7 @@ export interface GameState {
  * unaffected.
  *
  * The seed argument is the seed the **deal** starts from, not the seed the
- * game's first turn draws from: dealing the board consumes 30 steps of the
+ * game's first turn draws from: dealing the board consumes 24 steps of the
  * stream before play begins, and the resulting state's `randomSeed` is the
  * seed the deal left behind. That argument is also recorded verbatim as
  * `openingSeed`, so the state remembers where its deal started even once
