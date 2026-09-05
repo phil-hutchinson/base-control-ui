@@ -931,13 +931,12 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
 });
 
 describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
-  it("prices one, two, three, four and five depleted nodes off the collection table", () => {
+  it("prices one, two, three and four depleted nodes off the collection table", () => {
     const cases: readonly [number, number][] = [
       [1, 1],
       [2, 3],
       [3, 6],
       [4, 10],
-      [5, 15],
     ];
     for (const [depletedCount, expectedAmount] of cases) {
       const names = ["H8", "K5", "L8", "D8", "K11"].slice(0, depletedCount);
@@ -969,27 +968,30 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     }
   });
 
-  it("prices six and seven depleted nodes the same as five, raising no error", () => {
-    const sixNames = ["H8", "K5", "L8", "D8", "K11", "E5"];
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: Object.fromEntries(
-          sixNames.map((name) => [name, ["depleted", 0] as const]),
-        ),
-        ships: sixNames.map((name, index) =>
-          ship(`green-${index + 1}` as ShipId, "green", name, 0),
-        ),
-      }),
-      energy: { green: 100, red: 0 },
-    };
+  it("prices five, six and seven depleted nodes the same as four, raising no error", () => {
+    const sevenNames = ["H8", "K5", "L8", "D8", "K11", "E5", "E11"];
+    for (const depletedCount of [5, 6, 7]) {
+      const names = sevenNames.slice(0, depletedCount);
+      const state = {
+        ...buildState({
+          sideToMove: "green",
+          nodes: Object.fromEntries(
+            names.map((name) => [name, ["depleted", 0] as const]),
+          ),
+          ships: names.map((name, index) =>
+            ship(`green-${index + 1}` as ShipId, "green", name, 0),
+          ),
+        }),
+        energy: { green: 100, red: 0 },
+      };
 
-    const result = runEndOfTurn(state);
+      const result = runEndOfTurn(state);
 
-    expect(result.effects).toContainEqual(
-      expect.objectContaining({ type: "energy-penalty", amount: 15 }),
-    );
-    expect(result.state.energy.green).toBe(85);
+      expect(result.effects).toContainEqual(
+        expect.objectContaining({ type: "energy-penalty", amount: 10 }),
+      );
+      expect(result.state.energy.green).toBe(90);
+    }
   });
 
   it("collects for the charged nodes held and then pays for the depleted nodes occupied, not netted", () => {

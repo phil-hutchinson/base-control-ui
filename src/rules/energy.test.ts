@@ -54,7 +54,6 @@ describe("energyForNodesHeld", () => {
     [2, 3],
     [3, 6],
     [4, 10],
-    [5, 15],
   ])("pays %i for holding %i nodes", (nodesHeld, energy) => {
     expect(energyForNodesHeld(nodesHeld)).toBe(energy);
   });
@@ -63,8 +62,8 @@ describe("energyForNodesHeld", () => {
     expect(() => energyForNodesHeld(-1)).toThrow(RangeError);
   });
 
-  it("throws for a count above five", () => {
-    expect(() => energyForNodesHeld(6)).toThrow(RangeError);
+  it("throws for a count above four", () => {
+    expect(() => energyForNodesHeld(5)).toThrow(RangeError);
   });
 
   it("throws for a fractional count", () => {
@@ -146,15 +145,14 @@ describe("energyForDepletedNodes", () => {
     [2, 3],
     [3, 6],
     [4, 10],
-    [5, 15],
   ])("costs %i for standing on %i depleted nodes", (depletedNodes, energy) => {
     expect(energyForDepletedNodes(depletedNodes)).toBe(energy);
   });
 
-  it.each([6, 7])(
-    "clamps %i depleted nodes to the same price as five, without throwing",
+  it.each([5, 6, 7])(
+    "clamps %i depleted nodes to the same price as four, without throwing",
     (depletedNodes) => {
-      expect(energyForDepletedNodes(depletedNodes)).toBe(15);
+      expect(energyForDepletedNodes(depletedNodes)).toBe(10);
     },
   );
 
@@ -170,9 +168,9 @@ describe("energyForDepletedNodes", () => {
     expect(() => energyForDepletedNodes(8)).toThrow(RangeError);
   });
 
-  it("prices seven depleted nodes the same as five, without throwing — the bound is the maximum fleet, not the current game's", () => {
-    expect(energyForDepletedNodes(7)).toBe(15);
-    expect(energyForDepletedNodes(7)).toBe(energyForDepletedNodes(5));
+  it("prices seven depleted nodes the same as four, without throwing — the bound is the maximum fleet, not the current game's", () => {
+    expect(energyForDepletedNodes(7)).toBe(10);
+    expect(energyForDepletedNodes(7)).toBe(energyForDepletedNodes(4));
     expect(() => energyForDepletedNodes(8)).toThrow(RangeError);
   });
 });

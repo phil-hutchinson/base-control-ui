@@ -208,7 +208,7 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
 
   // Step 2 (continued): the moving side then pays for the depleted nodes it
   // occupies right now (§8.4), taken from the total the collection above
-  // has already raised. The table price is clamped to a count of five
+  // has already raised. The table price is clamped to a count of four
   // depleted nodes; the amount actually taken is floored so the side's total
   // never goes below 0, and it is that floored amount — not the table
   // price — that is reported, so `newTotal` is always exactly

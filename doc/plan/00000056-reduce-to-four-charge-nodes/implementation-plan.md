@@ -556,7 +556,62 @@ line so a later reader can see what the bounds were set against.
 
 ### Step 4 — The energy table stops at four
 
-Status: pending
+Status: committed
+
+Notes: Deleted `ENERGY_BY_NODES_HELD`'s last entry (`15`) in
+`src/rules/energy.ts`, leaving `[0, 1, 3, 6, 10]`; left
+`MAX_DEPLETED_NODES_PRICED`, `energyForNodesHeld`'s bound and
+`energyForDepletedNodes`'s `MAX_SHIPS_PER_SIDE` guard as pure derivations
+with no logic change, per D1, and rewrote the three doc comments plus
+`MAX_DEPLETED_NODES_PRICED`'s own comment for the new numbers (10 as the
+cap each way, 0–4 for `energyForNodesHeld`, up to eleven depleted nodes
+possible with five/six/seven all pricing at 10 for
+`energyForDepletedNodes`). Updated `endOfTurn.ts`'s step 2 comment ("the
+table price is clamped to a count of five" → four). Updated
+`energy.test.ts` per the step's exact spec: dropped both `[5, 15]` rows,
+moved the "throws for a count above five" case to throw at 5 (was 6),
+changed the clamp `it.each` from `[6, 7]` to `[5, 6, 7]` all pricing at 10,
+and updated the two prose-only tests referencing "five"/15 to "four"/10.
+Updated `endOfTurn.test.ts`'s two named tests: the collection-table case
+list drops its `[5, 15]` row and its title's "five" ("prices one, two,
+three and four…"), and the clamp test is restated as "prices five, six and
+seven depleted nodes the same as four" — expanded from a single six-node
+fixture to an `it.each`-style loop over 5/6/7 depleted nodes (new fixture
+squares `E11` added to the five prior ones) so all three clamped counts are
+exercised, each asserting a penalty of 10 and a resulting total of 90; this
+is slightly more than the plan's parenthetical literally names ("becomes
+five, six and seven at 10") but is what asserting all three values
+requires. `npm run typecheck`, `npm run lint` and `npm run format:check`
+all pass.
+
+**Deviation to flag, not fixed here:** `npm test` on the full suite shows 2
+failing tests, both in `src/hud/ScoreDisplay.test.tsx` ("renders five
+depleted pips, none on when the side stands on nothing depleted" and
+"lights all five depleted pips when the side stands on six depleted
+nodes"), not in the two files this step's own text names. The cause is
+that `ScoreDisplay.tsx`'s depleted pip row already reads
+`MAX_DEPLETED_NODES_PRICED` (confirmed by inspection: no source change was
+needed there), so this step's constant change alone moves that row's
+length from 5 to 4, independent of the charged row and of
+`NODES_IN_PLAY`. The plan's own Step 6 already lists exactly these two
+tests for renaming/re-counting to four ("the tests that name 'five pips' /
+'five depleted pips' … renamed to four"), and Step 6 depends on Step 4 for
+this reason. Since "do not start later steps, even if they seem trivial"
+governs, `ScoreDisplay.test.tsx` was left untouched here rather than
+absorbing part of Step 6's scope; `energy.test.ts` and `endOfTurn.test.ts`
+are green, matching what this step's text names, but the plan's claim that
+those are "the only failures this change produces" should be read as "the
+only failures in the files this step names" — it does not hold for the
+whole suite until Step 6 lands.
+
+**Resolved by the orchestrator before committing:** rather than commit a red
+suite, the two depleted-pip tests named above were renamed to four and their
+expected counts moved from 5 to 4 here, since it is this step's constant
+change that moves them. Nothing else in `ScoreDisplay.test.tsx` and nothing
+in `ScoreDisplay.tsx` was touched; the charged pip row, `NODES_IN_PLAY`,
+`SCORE_DIGITS` and the two CSS sizing comments remain Step 6's work. The
+whole suite is green at this commit (938 tests), with `npm run typecheck`,
+`npm run lint` and `npm run format:check` also passing.
 
 In `src/rules/energy.ts`, delete `ENERGY_BY_NODES_HELD`'s last entry, leaving
 `[0, 1, 3, 6, 10]`. Change nothing else about how the module computes: in
@@ -658,9 +713,10 @@ comments describing the old five-pip geometry are corrected **in prose only**:
   and taking `P` down to match is a visual retune belonging to a visual story.
   Do not change `--region-extent`'s value or any other length.
 
-Update `src/hud/ScoreDisplay.test.tsx`: four pips in each row, and the tests
-that name "five pips" / "five depleted pips" / "lights all five depleted pips
-when the side stands on six depleted nodes" renamed to four. The lit-and-on
+Update `src/hud/ScoreDisplay.test.tsx`: four pips in each row, and the test
+that names "five pips" renamed to four. The two depleted-pip tests this
+bullet also named were already renamed and re-counted in Step 4, whose
+constant change broke them; leave them as they are. The lit-and-on
 behaviour is unchanged: a pip lights per charged node held, a depleted pip
 comes on per depleted node occupied, and the row saturates at its length.
 

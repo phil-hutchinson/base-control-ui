@@ -152,7 +152,7 @@ describe("ScoreDisplay", () => {
     );
   });
 
-  it("renders five depleted pips, none on when the side stands on nothing depleted", () => {
+  it("renders four depleted pips, none on when the side stands on nothing depleted", () => {
     const state = buildState({});
 
     const { container } = render(
@@ -161,7 +161,7 @@ describe("ScoreDisplay", () => {
 
     expect(
       container.querySelectorAll(".score-display__depleted-pip"),
-    ).toHaveLength(5);
+    ).toHaveLength(4);
     expect(
       container.querySelectorAll(".score-display__depleted-pip--on"),
     ).toHaveLength(0);
@@ -191,7 +191,7 @@ describe("ScoreDisplay", () => {
     ).toBeInTheDocument();
   });
 
-  it("lights all five depleted pips when the side stands on six depleted nodes", () => {
+  it("lights all four depleted pips when the side stands on six depleted nodes", () => {
     const state = buildState({
       nodes: {
         H8: "depleted",
@@ -217,7 +217,7 @@ describe("ScoreDisplay", () => {
 
     expect(
       container.querySelectorAll(".score-display__depleted-pip--on"),
-    ).toHaveLength(5);
+    ).toHaveLength(4);
   });
 
   it("does not light a depleted pip for a depleted node the opposing side stands on", () => {
