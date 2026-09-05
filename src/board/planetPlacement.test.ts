@@ -6,7 +6,7 @@ import {
   type Square,
 } from "../rules/board";
 import { BAYS } from "../rules/bays";
-import { PLANETS, type PlanetTraits } from "./planetArt";
+import { PLANET_ART, type PlanetTraits } from "./planetArt";
 import { planetForSquare, RING_ORDER } from "./planetPlacement";
 
 function namesOf(squares: readonly Square[]): readonly string[] {
@@ -82,7 +82,7 @@ describe("planetForSquare", () => {
     const numbers = BAYS.map((bay) => planetForSquare(bay)?.number);
     expect(new Set(numbers).size).toBe(14);
     expect([...numbers].sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual(
-      PLANETS.map((planet) => planet.number).sort((a, b) => a - b),
+      PLANET_ART.map((planet) => planet.number).sort((a, b) => a - b),
     );
   });
 

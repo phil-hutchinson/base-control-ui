@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { PlanetDefs } from "./PlanetDefs";
-import { PLANETS } from "./planetArt";
+import { PLANET_ART } from "./planetArt";
 
 // jsdom has no SVG rendering: it will not resolve a `<use>` or apply a
 // gradient, so every check here is structural - which ids exist, and
@@ -13,7 +13,7 @@ afterEach(cleanup);
 
 /** Every id planetArt.ts names, across all fourteen planets. */
 function namedIds(): readonly string[] {
-  return PLANETS.flatMap((planet) => Object.values(planet.ids));
+  return PLANET_ART.flatMap((planet) => Object.values(planet.ids));
 }
 
 /** The id an internal reference attribute points at, or undefined if the attribute is not a reference at all. */

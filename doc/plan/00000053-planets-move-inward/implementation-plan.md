@@ -339,7 +339,14 @@ counts. Then the four standard checks.
 
 ### Step 2 — The artwork catalogue becomes `PLANET_ART`
 
-Status: pending
+Status: committed
+
+Notes: Renamed `planetArt.ts`'s `PLANETS` export to `PLANET_ART` and updated
+every importer (`PlanetDefs.tsx`, `planetPlacement.ts`, `planetArt.test.ts`,
+`PlanetDefs.test.tsx`, `BoardSquare.test.tsx`), plus `planetPlacement.test.ts`,
+which also imports the catalogue but was not named in the plan's importer
+list — included since the rename would not otherwise compile. No behaviour
+change; `grep -rn "\bPLANETS\b" src/` returns nothing.
 
 Rename the exported catalogue in `src/board/planetArt.ts` from `PLANETS` to
 `PLANET_ART`, and update every importer: `src/board/PlanetDefs.tsx`,

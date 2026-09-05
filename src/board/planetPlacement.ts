@@ -20,10 +20,10 @@
 // A2, A6, A10, A14 (left, bottom to top).
 
 import { squareAt, squareName, type Square } from "../rules/board";
-import { PLANETS, type PlanetArt } from "./planetArt";
+import { PLANET_ART, type PlanetArt } from "./planetArt";
 
 function planetByNumber(number: number): PlanetArt {
-  const planet = PLANETS.find((candidate) => candidate.number === number);
+  const planet = PLANET_ART.find((candidate) => candidate.number === number);
   if (!planet) {
     throw new Error(`no planet numbered ${number} in the catalogue`);
   }

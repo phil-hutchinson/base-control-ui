@@ -5,9 +5,9 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ShipCondition } from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
-import { PLANETS } from "./planetArt";
+import { PLANET_ART } from "./planetArt";
 
-const SAMPLE_PLANET = PLANETS[0];
+const SAMPLE_PLANET = PLANET_ART[0];
 
 afterEach(cleanup);
 

@@ -26,11 +26,11 @@
 // the accessibility tree: hidden by zero size, not by `display`, in
 // PlanetDefs.css, so a `<use>` reference into it still resolves.
 
-import { PLANETS, type PlanetArt } from "./planetArt";
+import { PLANET_ART, type PlanetArt } from "./planetArt";
 import "./PlanetDefs.css";
 
 const PLANETS_BY_NUMBER = new Map<number, PlanetArt>(
-  PLANETS.map((planet) => [planet.number, planet]),
+  PLANET_ART.map((planet) => [planet.number, planet]),
 );
 
 /** The ids the planet with this gallery number declares, keyed by part name. */

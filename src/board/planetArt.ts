@@ -95,7 +95,7 @@ function idsFor(
 }
 
 /** The fourteen planets, in the source gallery's own numbering. */
-export const PLANETS: readonly PlanetArt[] = [
+export const PLANET_ART: readonly PlanetArt[] = [
   {
     number: 1,
     name: "Tan planet with a cratered moon",
