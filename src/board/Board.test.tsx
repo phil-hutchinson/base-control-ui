@@ -552,7 +552,7 @@ describe("Board", () => {
 
   describe("selection markings", () => {
     // A hand-built session with green-1 selected on H8, and green-2 (still
-    // on its starting planet) already marked as moved this ply. Built
+    // on its starting square) already marked as having acted this ply. Built
     // directly rather than through the fixture.
     const state: GameState = {
       ...startingGameState(TEST_SEED),
@@ -594,14 +594,13 @@ describe("Board", () => {
       ).toHaveLength(destinations.length);
     });
 
-    it("marks a ship that has already acted this ply — here, still on a planet, so also carrying no-action", () => {
+    it("marks a ship that has already acted this ply as also carrying no-action", () => {
       render(<Board session={session} onIntent={noop} />);
 
       const movedShip = state.ships.find((ship) => ship.id === "green-2");
       expect(movedShip).toBeDefined();
-      // Still on its planet, so §3.1 forbids it any attack, and it has
-      // already used its one move: "already acted" and "no-action" both
-      // apply, in that order.
+      // It is in actedThisPly and has already used its one move, so
+      // "already acted" and "no-action" both apply, in that order.
       expect(
         screen.getByRole("gridcell", {
           name: new RegExp(
@@ -1246,9 +1245,9 @@ describe("Board", () => {
       return <Board session={session} onIntent={dispatch} />;
     }
 
-    // green-1 moved off its starting planet onto the empty interior square
+    // green-1 moved off its starting square onto the empty interior square
     // H8, with 2 power, so it has an obstruction-free reach to check
-    // destinations against. Every other ship stays on its starting planet.
+    // destinations against. Every other ship stays on its starting square.
     function baseState(): GameState {
       return {
         ...statedOpeningState(),

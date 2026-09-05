@@ -79,8 +79,8 @@ bottom-left corner.
 
 ### 3.1 Planets
 
-Twelve squares in the board's interior are **planets** — six base squares
-plus their 180-degree rotation about the board's centre:
+Twelve squares away from the board's outer edge are **planets** — six base
+squares plus their 180-degree rotation about the board's centre:
 
 | Base     | B3  | D6  | G4  | J2  | K6  | N4  |
 | -------- | --- | --- | --- | --- | --- | --- |
@@ -672,4 +672,3 @@ being charged.
 The opening deal (section 8.1) starts the board closer to this steady state
 than an unweighted opening did, so the first twenty turns are no longer an
 unrepresentative settling-in period.
-</content>

@@ -38,8 +38,7 @@ describe("PLANET_ART", () => {
     // enough (two banded, ringless planets both read as "banded"), so the
     // signature also folds in which visual parts a planet's ids declare -
     // whether it has a moon, a ring, craters and so on - which is where
-    // that structural difference actually lives now that `PlanetTraits` is
-    // gone.
+    // that structural difference actually lives.
     const signatures = PLANET_ART.map((planet) => {
       const parts = Object.keys(planet.ids)
         .filter((part) => part !== "body")

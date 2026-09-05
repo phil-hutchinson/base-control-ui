@@ -223,16 +223,16 @@ function nodeLevels(state: GameState): Readonly<Record<string, number>> {
 }
 
 describe("a seeded game replays its opening board, its fights, its planets, its charge draws and its node replacements exactly", () => {
-  it("produces at least one fight, and plenty of charge draws and node replacements, over a forty-round game — the run is not vacuous", () => {
+  it("produces plenty of fights, charge draws and node replacements, over a forty-round game — the run is not vacuous", () => {
     const { planetReturns, chargedNodes, replacedNodes, fightCount } =
       playSeededGame(20260819, 40);
 
     // Ships start on ordinary edge squares and are attackable from the
     // first turn — a ship only becomes unattackable by flying onto a
-    // planet, in the board's interior — so this attack-first policy keeps
-    // finding fights across the run rather than stalling early. Measured at
-    // 8 fights (16 planet returns) for this seed over forty rounds; the
-    // floors below leave margin below that.
+    // planet, away from the board's outer edge — so this attack-first
+    // policy keeps finding fights across the run rather than stalling
+    // early. Measured at 7 fights (14 planet returns) for this seed over
+    // forty rounds; the floors below leave margin below that.
     expect(fightCount).toBeGreaterThanOrEqual(4);
     expect(planetReturns.length).toBeGreaterThanOrEqual(8);
     // Measured at 10 for this seed over forty rounds; the floor here

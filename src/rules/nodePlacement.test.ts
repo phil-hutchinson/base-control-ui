@@ -27,8 +27,8 @@ function interiorSquares(): Square[] {
  * The squares that satisfy all six of §3.2's constraints on an empty board
  * with no ships: the interior, minus the twelve planets and every square
  * orthogonally or diagonally adjacent to one. Derived from `PLANETS` rather
- * than typed out, because the planet geometry is still being moved around —
- * this restates §3.2's rule, not `legalNodePool`'s implementation of it.
+ * than typed out, so the set follows the geometry — this restates §3.2's
+ * rule, not `legalNodePool`'s implementation of it.
  */
 const LEGAL_SQUARES_ON_EMPTY_BOARD: readonly Square[] =
   interiorSquares().filter(
@@ -53,6 +53,7 @@ describe("legalNodePool", () => {
   it("is exactly the 51 legal squares on an empty board", () => {
     const pool = legalNodePool([], []);
 
+    expect(pool).toHaveLength(51);
     expect(pool.map(squareName).sort()).toEqual(
       LEGAL_SQUARES_ON_EMPTY_BOARD.map(squareName).sort(),
     );
@@ -171,11 +172,11 @@ describe("legalNodePool", () => {
     }
     expect(pool.map(squareName)).toContain(squareName(shipSquare));
     // The draw's uniformity over the pool is covered by the spread tests
-    // elsewhere (nodes.test.ts, nodePool.test.ts); this test is base cover
-    // only, per the owner.
+    // elsewhere (nodes.test.ts, nodePool.test.ts); this test covers only
+    // which squares the fallback pool contains.
   });
 
-  it("lets the fallback include a square adjacent to a planet, which the ordinary pool never would (D8)", () => {
+  it("lets the fallback include a square adjacent to a planet, which the ordinary pool never would", () => {
     // Occupying exactly the 51 ordinarily-legal squares leaves no square
     // that can pass every one of the six ordinary constraints, so the
     // fallback fires. E5 is not itself one of the 51 — it borders the

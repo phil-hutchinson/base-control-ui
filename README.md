@@ -81,25 +81,26 @@ install, no account, no server.
 > finds itself standing on ordinary ground, keeping whatever power it had and
 > paying nothing more. The board always carries twelve nodes this way, but
 > never the same twelve squares for long — the map you finish a long game on is
-> not the map you started it on, and a node is never drawn on a planet or right
-> next to one. A fight has no winner: both ships involved — the attacker and
-> the ship it attacked — are sent to planets chosen at random from whichever
-> planets are standing empty, each keeping whatever power it carried, so
-> neither of you can know in advance where either will end up. A planet is
-> where a ship recovers: it gains a point of power at the end of each of its
-> owner's turns, up to a full four. A ship attacks exactly as far as it moves,
-> and a ship holding a node can neither attack nor be attacked while it stands
-> there. A node also pays energy at the end of each turn to the player sitting
-> on it, and holding several at once pays far more than holding them one at a
-> time would — and sitting on several depleted nodes at once costs far more in
-> the same way. The two are counted separately rather than against each other,
-> so a turn can pay you and charge you at once. The app keeps score and shows
-> it, along with how many nodes each player holds, how many depleted nodes
-> they are sitting on, and which round the game is in. Once the game reaches
-> the number of rounds you chose, it ends: the player with the most energy
-> wins, an equal score is a draw, and the "New Game" button returns you to the
-> start screen with the same choices still set, ready to play again. There is
-> still no way to save or record a game and no computer opponent to play
+> not the map you started it on, and a node is never drawn on a planet, and
+> all but never right next to one. A fight has no winner: both ships involved
+> — the attacker and the ship it attacked — are sent to planets chosen at
+> random from whichever planets are standing empty, each keeping whatever
+> power it carried, so neither of you can know in advance where either will
+> end up. A planet is where a ship recovers: it gains a point of power at the
+> end of each of its owner's turns, up to a full four. A ship attacks exactly
+> as far as it moves, and a ship holding a node can neither attack nor be
+> attacked while it stands there. A node also pays energy at the end of each
+> turn to the player sitting on it, and holding several at once pays far more
+> than holding them one at a time would — and sitting on several depleted
+> nodes at once costs far more in the same way. The two are counted separately
+> rather than against each other, so a turn can pay you and charge you at
+> once. The app keeps score and shows it, along with how many nodes each
+> player holds, how many depleted nodes they are sitting on, and which round
+> the game is in. Once the game reaches the number of rounds you chose, it
+> ends: the player with the most energy wins, an equal score is a draw, and
+> the "New Game" button returns you to the start screen with the same choices
+> still set, ready to play again. There is still no way to save or record a
+> game and no computer opponent to play
 > against. The project is being built up story by story.
 
 ## The rules

@@ -56,8 +56,8 @@ const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
  * The names of the squares that satisfy all six of §3.2's constraints on an
  * empty board with no ships: the interior, minus the twelve planets and every
  * square orthogonally or diagonally adjacent to one. Derived from `PLANETS`
- * rather than typed out, because the planet geometry is still being moved
- * around — this restates §3.2's rule, not `legalNodePool`'s implementation.
+ * rather than typed out, so the set follows the geometry — this restates
+ * §3.2's rule, not `legalNodePool`'s implementation.
  */
 const LEGAL_SQUARE_NAMES: readonly string[] = ALL_SQUARES.filter((square) => {
   const columnIndex = COLUMN_LETTERS.indexOf(square.column);
@@ -338,11 +338,9 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     }
   });
 
-  // The pool is now a fixed 51 squares whose balance is settled by the
-  // planet geometry itself (planets.test.ts checks that geometry directly),
-  // so this asserts the stronger, exact fact rather than a statistical
-  // window on draws from an already-tested pool: over many deals, every one
-  // of the 51 legal squares is dealt at least once.
+  // The pool is a fixed 51 squares whose balance is settled by the planet
+  // geometry itself (planets.test.ts checks that geometry directly): over
+  // many deals, every legal square is dealt at least once.
   it("deals every one of the 51 legal squares at least once, over many deals", () => {
     const DEALS = 3_000;
     const seenSquares = new Set<string>();

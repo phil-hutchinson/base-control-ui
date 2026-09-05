@@ -41,7 +41,7 @@ What changes:
 
 The ruleset is owned by this repository:
 [`doc/ruleset/rules.md`](../../ruleset/rules.md), currently **version
-0.21**. This story takes it to **0.22** — a gameplay change, so it earns a
+0.21**. This story takes it to **0.23** — a gameplay change, so it earns a
 changelog entry and a version bump (tagging remains on hold, per
 `CLAUDE.md`).
 
@@ -184,7 +184,7 @@ by an honest one.
 
 ### 1. The rules edit, first and on its own
 
-Version 0.21 → 0.22, with a changelog entry, in its own commit ahead of the
+Version 0.21 → 0.23, with a changelog entry, in its own commit ahead of the
 code.
 
 **§1, §2 — the overview and the vocabulary.** The fleet is "five or six

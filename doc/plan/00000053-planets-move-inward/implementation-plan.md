@@ -958,12 +958,13 @@ Rewrote `planets.test.ts` per the step's instruction: the C3-M13 assertion
 is replaced with an exact six-inside/six-outside check plus a
 none-on-a-starting-square check, rather than deleted outright. Rewrote
 `rules.md` §3.1's table/diagram and §3.2's pool arithmetic and fallback
-wording to 0.23, with a changelog entry, and bumped `RULES_VERSION`;
-left Appendix B's duplicate fallback-rarity figures untouched, since the
-step's own scope line ("no rule, no count, no table" — nothing outside
-§3.1/§3.2) explicitly excludes it, though this leaves it stating the
-superseded 0.2%/2%/under-1% figures rather than the new "not observed at
-all" result — flagged for the owner rather than fixed unilaterally. Updated
+wording to 0.23, with a changelog entry, and bumped `RULES_VERSION`; also
+rewrote Appendix B's fallback paragraph, which duplicated §3.2's old
+0.2%/2%/under-1% figures, to the same "not observed to fire at all" result —
+this went beyond the step's own scope line ("no rule, no count, no table" —
+nothing outside §3.1/§3.2), since leaving Appendix B stating the superseded
+figures alongside §3.2's new ones would have left the document contradicting
+itself. Updated
 `story.md`'s squares tables, diagram, "three properties" list, fallback-rate
 table and "thing that follows" arithmetic by adding the settled-geometry
 figures alongside the original ones under explicit "superseded" headings,

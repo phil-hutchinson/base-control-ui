@@ -53,8 +53,9 @@ const SEEDS = [20260819, 20260820, 20260821, 20260822, 20260823];
 /**
  * Appendix B now predicts about 6 of the twelve inactive at any moment;
  * measured over `SEEDS` at `PLIES_TO_RUN` turns, the lowest instantaneous
- * count seen was 4. The floor here leaves margin well below that, so this
- * fails only if the economy actually collapses rather than merely drifting.
+ * count seen was 4. The floor here leaves one node of margin below that, so
+ * this fails only if the economy actually collapses rather than merely
+ * drifting.
  */
 const MINIMUM_INACTIVE_NODES = 3;
 
@@ -66,10 +67,11 @@ const MINIMUM_INACTIVE_NODES = 3;
 const MAXIMUM_MULTI_EXPIRY_SHARE = 0.1;
 
 /**
- * No turn should run out all four charged nodes at once. Measured over
- * `SEEDS` the observed maximum is 3, one below the theoretical ceiling of
- * `TARGET_CHARGED_NODES`; this still catches the extreme case — every
- * charged node expiring together — the guard exists for.
+ * No turn should run out all four charged nodes at once. Derived from
+ * `TARGET_CHARGED_NODES` so it follows that number if it ever changes.
+ * Measured over `SEEDS` the observed maximum is 3, which is exactly this
+ * value — there is no margin left, so a future retune of the node economy
+ * that pushes expiries any higher will need this bound raised too.
  */
 const MAXIMUM_EXPIRIES_IN_ONE_PLY = TARGET_CHARGED_NODES - 1;
 
@@ -100,8 +102,8 @@ const MINIMUM_TOTAL_CHARGES = 40;
  * The names of the squares that satisfy all six of §3.2's constraints on an
  * empty board with no ships: the interior, minus the twelve planets and every
  * square orthogonally or diagonally adjacent to one. Derived from `PLANETS`
- * rather than typed out, because the planet geometry is still being moved
- * around — this restates §3.2's rule, not `legalNodePool`'s implementation.
+ * rather than typed out, so the set follows the geometry — this restates
+ * §3.2's rule, not `legalNodePool`'s implementation.
  */
 const LEGAL_SQUARE_NAMES: readonly string[] = ALL_SQUARES.filter((square) => {
   const columnIndex = COLUMN_LETTERS.indexOf(square.column);
@@ -402,14 +404,12 @@ describe("the long-run node economy (Appendix B)", () => {
     expect(meanInactive).toBeLessThan(8);
   });
 
-  // The pool is now a fixed 51 squares whose balance is settled by the
-  // planet geometry itself (planets.test.ts checks that geometry directly),
-  // so this asserts the stronger, exact fact rather than a statistical
-  // window on draws from an already-tested pool: over a long run, every one
-  // of the 51 legal squares is used at least once, either at the deal or as
-  // a replacement. The fallback (§3.2) can occasionally hand back a square
-  // outside those 51 — one adjacent to a planet, say — so this checks that
-  // every one of the 51 was reached, not that nothing else ever was.
+  // The pool is a fixed 51 squares whose balance is settled by the planet
+  // geometry itself (planets.test.ts checks that geometry directly): over a
+  // long run, every legal square is used at least once, either at the deal
+  // or as a replacement. The fallback (§3.2) can occasionally hand back a
+  // square outside those 51 — one adjacent to a planet, say — so this checks
+  // that every one of the 51 was reached, not that nothing else ever was.
   //
   // The 51-square pool is more scattered than the old 29 were, so
   // `PLIES_TO_RUN`'s 500 turns leaves one or two squares unseen across

@@ -34,8 +34,6 @@ export type PlanetSurface =
   | "continents"
   | "banded-cratered-companion"
   | "lines"
-  | "banded-storm"
-  | "craters"
   | "waves";
 
 /** How a ringed planet's ring is tilted relative to the board. */
