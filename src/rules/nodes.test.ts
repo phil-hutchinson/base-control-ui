@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  ALL_SQUARES,
+  BOARD_SIZE,
   COLUMN_LETTERS,
   squareAt,
   squareFromName,
   squareName,
   type Square,
 } from "./board";
+import { PLANETS } from "./planets";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { mulberry32 } from "./random";
 import {
@@ -50,42 +53,28 @@ const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
 );
 
 /**
- * The 29 squares that satisfy all six of §3.2's constraints on an empty
- * board with no ships — the interior minus the twelve planets and every
- * square orthogonally or diagonally adjacent to one (see the plan's "Facts
- * established while planning").
+ * The names of the squares that satisfy all six of §3.2's constraints on an
+ * empty board with no ships: the interior, minus the twelve planets and every
+ * square orthogonally or diagonally adjacent to one. Derived from `PLANETS`
+ * rather than typed out, because the planet geometry is still being moved
+ * around — this restates §3.2's rule, not `legalNodePool`'s implementation.
  */
-const LEGAL_SQUARE_NAMES: readonly string[] = [
-  "C3",
-  "C4",
-  "C5",
-  "C9",
-  "C13",
-  "D5",
-  "D9",
-  "D13",
-  "E13",
-  "F10",
-  "G3",
-  "G10",
-  "H6",
-  "H7",
-  "H8",
-  "H9",
-  "H10",
-  "I6",
-  "I13",
-  "J6",
-  "K3",
-  "L3",
-  "L7",
-  "L11",
-  "M3",
-  "M7",
-  "M11",
-  "M12",
-  "M13",
-];
+const LEGAL_SQUARE_NAMES: readonly string[] = ALL_SQUARES.filter((square) => {
+  const columnIndex = COLUMN_LETTERS.indexOf(square.column);
+  const inInterior =
+    columnIndex >= 2 &&
+    columnIndex <= COLUMN_LETTERS.length - 3 &&
+    square.row >= 3 &&
+    square.row <= BOARD_SIZE - 2;
+  return (
+    inInterior &&
+    !PLANETS.some(
+      (planet) =>
+        Math.abs(COLUMN_LETTERS.indexOf(planet.column) - columnIndex) <= 1 &&
+        Math.abs(planet.row - square.row) <= 1,
+    )
+  );
+}).map(squareName);
 
 describe("the board's charged target (rules.md §8.1, §8.2)", () => {
   it("aims to keep four nodes charged", () => {

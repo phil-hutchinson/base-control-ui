@@ -817,7 +817,44 @@ long run without ever failing to find one.
 
 ### Step 8 — Twelve drawings, dealt across the twelve planets
 
-Status: pending
+Status: committed
+
+Notes: Deleted planets 11 and 12 from `planetArt.ts` (entries and the
+`PlanetSurface`-typed comment) and their `<defs>`/const bindings from
+`PlanetDefs.tsx`, keeping the gallery's number gaps (1-10, 13, 14) and
+correcting both files' header comments. Deleted `PlanetTraits`,
+`PlanetColorFamily` and the `traits` field per D6; `planetArt.test.ts`'s
+"distinguishable from every other" test is rebuilt on a signature of each
+planet's declared id-part names plus `surface`/`ringOrientation`, since with
+`colorFamily`/`ring`/`moon`/`craters` gone, `surface`+`ringOrientation` alone
+no longer distinguish every pair (two ringless "banded" planets and two
+ringless "plain" planets would otherwise collide) — verified distinct for
+all twelve by direct computation before writing the test. Replaced
+`planetPlacement.ts` per D4/D5: `planetArrangement(openingSeed)` runs a
+Fisher-Yates shuffle of `PLANET_ART` driven by `mulberry32`, keyed onto
+`src/rules/planets.ts`'s twelve squares by name, and throws if the
+catalogue's and the squares' counts ever disagree; `planetForSquare` now
+takes that arrangement rather than reading a fixed table. `Board.tsx` builds
+the arrangement once via `useMemo` keyed on `session.state.openingSeed` and
+threads it through. Rewrote `planetPlacement.test.ts` (permutation, seed
+stability, seed sensitivity) and `planetArt.test.ts` (twelve entries,
+1-10/13/14) per the plan. Reinstated `Board.test.tsx`'s "draws a planet's
+drawing on each of the twelve planet squares, and nowhere else" case in its
+final form, keyed to the seeded arrangement rather than a fixed table.
+
+One deviation, required to keep `npm test` green rather than scope creep:
+`Board.test.tsx`'s pre-existing "hides the ship artwork from the
+accessibility tree" test used H15, an old edge bay square that happened to
+still carry a planet's decorative `<svg>` under Step 7's interim state (the
+fixed `RING_SLOTS` table this step deletes still pinned a drawing to every
+old edge square, regardless of the new `isPlanet`). That was never the
+point of the test — it exists to check a ship's artwork is hidden — and
+once this step's arrangement is keyed to the real twelve interior squares,
+H15 carries nothing at all and the test fails on a null `<svg>`. Changed the
+fixture to a guaranteed-occupied starting-fleet square
+(`STARTING_FLEET[0].square`) instead, which is what the test was always
+checking against ship artwork, not planet artwork. No rule, geometry or
+production behaviour changed to make this pass.
 
 The artwork catches up with the rules.
 

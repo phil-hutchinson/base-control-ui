@@ -1,117 +1,55 @@
 import { describe, expect, it } from "vitest";
-import {
-  COLUMN_LETTERS,
-  squareAt,
-  squareName,
-  type Square,
-} from "../rules/board";
-import { PLANET_ART, type PlanetTraits } from "./planetArt";
-import { planetForSquare, RING_ORDER } from "./planetPlacement";
+import { PLANETS } from "../rules/planets";
+import { squareAt, squareName } from "../rules/board";
+import { PLANET_ART } from "./planetArt";
+import { planetArrangement, planetForSquare } from "./planetPlacement";
 
-function namesOf(squares: readonly Square[]): readonly string[] {
-  return [...squares.map(squareName)].sort();
-}
+const PLANET_SQUARE_NAMES = PLANETS.map(squareName);
 
-function columnIndex(square: Square): number {
-  return COLUMN_LETTERS.indexOf(square.column);
-}
+describe("planetArrangement", () => {
+  it("gives every planet square exactly one drawing, and uses every drawing exactly once", () => {
+    const arrangement = planetArrangement(1234);
 
-/** Whether a run of numbers strictly increases. */
-function isAscendingRun(numbers: readonly number[]): boolean {
-  return numbers.every(
-    (value, index) => index === 0 || value > numbers[index - 1],
-  );
-}
+    expect(arrangement.size).toBe(PLANETS.length);
+    for (const name of PLANET_SQUARE_NAMES) {
+      expect(arrangement.has(name)).toBe(true);
+    }
 
-/** Whether a run of numbers strictly decreases. */
-function isDescendingRun(numbers: readonly number[]): boolean {
-  return numbers.every(
-    (value, index) => index === 0 || value < numbers[index - 1],
-  );
-}
-
-/** Whether two planets share any of the traits the spread is judged on. */
-function sharesATrait(a: PlanetTraits, b: PlanetTraits): boolean {
-  return (
-    (a.ring && b.ring) ||
-    (a.moon && b.moon) ||
-    (a.craters && b.craters) ||
-    a.colorFamily === b.colorFamily
-  );
-}
-
-describe("RING_ORDER", () => {
-  it("holds exactly fourteen squares, none repeated", () => {
-    // As of rules.md §3.1's move into the interior, the rules-level PLANETS
-    // (src/rules/planets.ts) are twelve different squares from these — the
-    // drawings this module arranges still sit on the old fourteen edge
-    // squares until this module is replaced (implementation plan, Step 8).
-    // So this checks RING_ORDER's own internal consistency rather than
-    // comparing it against PLANETS.
-    expect(RING_ORDER).toHaveLength(14);
-    expect(new Set(namesOf(RING_ORDER)).size).toBe(14);
+    const numbers = [...arrangement.values()].map((planet) => planet.number);
+    expect(new Set(numbers).size).toBe(PLANET_ART.length);
+    expect([...numbers].sort((a, b) => a - b)).toEqual(
+      [...PLANET_ART.map((planet) => planet.number)].sort((a, b) => a - b),
+    );
   });
 
-  it("walks the board's perimeter clockwise as four edge runs", () => {
-    // The perimeter's four corners (L15->O14, O2->L1, D1->A2, A14->D15) each
-    // cross from one edge to the next, so the walk cannot be checked as a
-    // single run of consecutive same-edge pairs. Instead it is checked as
-    // four runs, one per edge, that between them account for every square.
-    const top = RING_ORDER.slice(0, 3);
-    const right = RING_ORDER.slice(3, 7);
-    const bottom = RING_ORDER.slice(7, 10);
-    const left = RING_ORDER.slice(10, 14);
+  it("gives the same seed the same arrangement, every time", () => {
+    const first = planetArrangement(20260905);
+    const second = planetArrangement(20260905);
 
-    expect(top.every((square) => square.row === 15)).toBe(true);
-    expect(isAscendingRun(top.map(columnIndex))).toBe(true);
+    for (const name of PLANET_SQUARE_NAMES) {
+      expect(first.get(name)?.number).toBe(second.get(name)?.number);
+    }
+  });
 
-    expect(right.every((square) => square.column === "O")).toBe(true);
-    expect(isDescendingRun(right.map((square) => square.row))).toBe(true);
+  it("gives different seeds different arrangements", () => {
+    const first = planetArrangement(1);
+    const second = planetArrangement(2);
 
-    expect(bottom.every((square) => square.row === 1)).toBe(true);
-    expect(isDescendingRun(bottom.map(columnIndex))).toBe(true);
-
-    expect(left.every((square) => square.column === "A")).toBe(true);
-    expect(isAscendingRun(left.map((square) => square.row))).toBe(true);
+    const differs = PLANET_SQUARE_NAMES.some(
+      (name) => first.get(name)?.number !== second.get(name)?.number,
+    );
+    expect(differs).toBe(true);
   });
 });
 
 describe("planetForSquare", () => {
-  it("maps every square in RING_ORDER to a planet", () => {
-    for (const square of RING_ORDER) {
-      expect(planetForSquare(square)).toBeDefined();
-    }
-  });
+  it("returns the arrangement's drawing for a planet square, and undefined for a non-planet square", () => {
+    const arrangement = planetArrangement(42);
+    const someSquare = PLANETS[0];
 
-  it("uses every planet exactly once", () => {
-    const numbers = RING_ORDER.map((square) => planetForSquare(square)?.number);
-    expect(new Set(numbers).size).toBe(14);
-    expect([...numbers].sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual(
-      PLANET_ART.map((planet) => planet.number).sort((a, b) => a - b),
+    expect(planetForSquare(arrangement, someSquare)).toBe(
+      arrangement.get(squareName(someSquare)),
     );
-  });
-
-  it("maps a non-planet square to nothing", () => {
-    expect(planetForSquare(squareAt("H", 8))).toBeUndefined();
-  });
-});
-
-describe("the spread around the ring", () => {
-  it("never seats two planets sharing a trait next to each other, including where the ring closes", () => {
-    for (let i = 0; i < RING_ORDER.length; i++) {
-      const here = planetForSquare(RING_ORDER[i]);
-      const next = planetForSquare(RING_ORDER[(i + 1) % RING_ORDER.length]);
-      expect(here).toBeDefined();
-      expect(next).toBeDefined();
-      if (!here || !next) {
-        continue;
-      }
-      expect(
-        sharesATrait(here.traits, next.traits),
-        `${squareName(RING_ORDER[i])} (planet ${here.number}) and ` +
-          `${squareName(RING_ORDER[(i + 1) % RING_ORDER.length])} ` +
-          `(planet ${next.number}) share a trait`,
-      ).toBe(false);
-    }
+    expect(planetForSquare(arrangement, squareAt("H", 8))).toBeUndefined();
   });
 });

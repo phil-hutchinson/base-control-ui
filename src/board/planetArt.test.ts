@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { PLANET_ART } from "./planetArt";
 
 describe("PLANET_ART", () => {
-  it("has exactly fourteen entries", () => {
-    expect(PLANET_ART).toHaveLength(14);
+  it("has exactly twelve entries", () => {
+    expect(PLANET_ART).toHaveLength(12);
   });
 
-  it("carries the gallery's own numbers, 1-14, with no gaps or repeats", () => {
+  it("carries exactly the gallery's numbers 1-10, 13 and 14, with no repeats", () => {
     const numbers = [...PLANET_ART.map((planet) => planet.number)].sort(
       (a, b) => a - b,
     );
-    expect(numbers).toEqual(Array.from({ length: 14 }, (_, i) => i + 1));
+    expect(numbers).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14]);
   });
 
   it("declares a body id for every planet", () => {
@@ -34,10 +34,19 @@ describe("PLANET_ART", () => {
   });
 
   it("makes every planet distinguishable from every other by more than colour", () => {
-    const signatures = PLANET_ART.map(
-      (planet) =>
-        `${planet.traits.ring}|${planet.traits.moon}|${planet.traits.craters}|${planet.surface}|${planet.ringOrientation ?? ""}`,
-    );
+    // The surface treatment and ring orientation alone are not always
+    // enough (two banded, ringless planets both read as "banded"), so the
+    // signature also folds in which visual parts a planet's ids declare -
+    // whether it has a moon, a ring, craters and so on - which is where
+    // that structural difference actually lives now that `PlanetTraits` is
+    // gone.
+    const signatures = PLANET_ART.map((planet) => {
+      const parts = Object.keys(planet.ids)
+        .filter((part) => part !== "body")
+        .sort()
+        .join(",");
+      return `${parts}|${planet.surface}|${planet.ringOrientation ?? ""}`;
+    });
     expect(new Set(signatures).size).toBe(signatures.length);
   });
 });

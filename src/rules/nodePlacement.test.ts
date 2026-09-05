@@ -5,7 +5,6 @@ import {
   COLUMN_LETTERS,
   type Square,
   squareAt,
-  squareFromName,
   squareName,
 } from "./board";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
@@ -25,42 +24,23 @@ function interiorSquares(): Square[] {
 }
 
 /**
- * The 29 squares that satisfy all six of §3.2's constraints on an empty
- * board with no ships — the interior minus the twelve planets and every
- * square orthogonally or diagonally adjacent to one (see the plan's "Facts
- * established while planning").
+ * The squares that satisfy all six of §3.2's constraints on an empty board
+ * with no ships: the interior, minus the twelve planets and every square
+ * orthogonally or diagonally adjacent to one. Derived from `PLANETS` rather
+ * than typed out, because the planet geometry is still being moved around —
+ * this restates §3.2's rule, not `legalNodePool`'s implementation of it.
  */
-const LEGAL_SQUARES_ON_EMPTY_BOARD: readonly Square[] = [
-  "C3",
-  "C4",
-  "C5",
-  "C9",
-  "C13",
-  "D5",
-  "D9",
-  "D13",
-  "E13",
-  "F10",
-  "G3",
-  "G10",
-  "H6",
-  "H7",
-  "H8",
-  "H9",
-  "H10",
-  "I6",
-  "I13",
-  "J6",
-  "K3",
-  "L3",
-  "L7",
-  "L11",
-  "M3",
-  "M7",
-  "M11",
-  "M12",
-  "M13",
-].map(squareFromName);
+const LEGAL_SQUARES_ON_EMPTY_BOARD: readonly Square[] =
+  interiorSquares().filter(
+    (square) =>
+      !PLANETS.some(
+        (planet) =>
+          Math.abs(
+            COLUMN_LETTERS.indexOf(planet.column) -
+              COLUMN_LETTERS.indexOf(square.column),
+          ) <= 1 && Math.abs(planet.row - square.row) <= 1,
+      ),
+  );
 
 /** Whether two squares are orthogonally or diagonally adjacent. */
 function isAdjacent(a: Square, b: Square): boolean {

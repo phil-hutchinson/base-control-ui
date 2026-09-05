@@ -1,77 +1,59 @@
-// Which planet (see planetArt.ts) sits on which planet square, and the order
-// the fourteen planet squares are judged in for spread. The arrangement is a
-// fixed table, with the explicit expectation that individual planets may be
-// swapped once the board is in front of them - swapping two squares' planets
-// is a one-line change to `RING_SLOTS` per square, and
-// `planetPlacement.test.ts` re-checks the spread immediately.
+// A random one-to-one arrangement of the twelve planet drawings (see
+// planetArt.ts) over the twelve planet squares (src/rules/planets.ts),
+// dealt from the game's own opening seed so every game looks different and
+// a recorded game redraws identically.
 //
-// The ring order below is NOT `PLANETS` order (src/rules/planets.ts).
-// `PLANETS` lists the fourteen planet squares in rules.md §3.1 order, which
-// walks the board's bottom edge left to right: D1, H1, L1. The ring here is
-// a closed walk clockwise around the board's perimeter, so it reaches the
-// bottom edge travelling the other way, right to left: L1, H1, D1. Deriving
-// adjacency from `PLANETS` would treat D1 and A2 as neighbours, when the
-// planet square actually next to A2 around the perimeter is L1.
-//
-// The ring, stated explicitly, starting at D15 and going clockwise:
-// D15, H15, L15 (top, left to right),
-// O14, O10, O6, O2 (right, top to bottom),
-// L1, H1, D1 (bottom, right to left),
-// A2, A6, A10, A14 (left, bottom to top).
+// The shuffle runs its own copy of the seed, starting from the same value
+// the opening deal started from (`GameState.openingSeed`) but never touching
+// the deal's own seed stream: which drawing sits where is purely visual and
+// carries no rule, so it lives here in the board layer rather than in
+// `src/rules/`.
 
-import { squareAt, squareName, type Square } from "../rules/board";
+import { mulberry32 } from "../rules/random";
+import { PLANETS } from "../rules/planets";
+import { squareName, type Square } from "../rules/board";
 import { PLANET_ART, type PlanetArt } from "./planetArt";
 
-function planetByNumber(number: number): PlanetArt {
-  const planet = PLANET_ART.find((candidate) => candidate.number === number);
-  if (!planet) {
-    throw new Error(`no planet numbered ${number} in the catalogue`);
+/**
+ * A Fisher-Yates shuffle of `items`, driven by repeated draws from
+ * `mulberry32` starting at `seed`. Pure: the same seed always produces the
+ * same order.
+ */
+function shuffled<T>(items: readonly T[], seed: number): T[] {
+  const result = [...items];
+  let currentSeed = seed;
+  for (let i = result.length - 1; i > 0; i--) {
+    const [value, nextSeed] = mulberry32(currentSeed);
+    currentSeed = nextSeed;
+    const j = Math.floor(value * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
   }
-  return planet;
+  return result;
 }
-
-interface RingSlot {
-  readonly square: Square;
-  readonly planetNumber: number;
-}
-
-// One row per planet square, in ring order. Each row also carries the
-// planet's name, so a reordering can be checked by eye before the test
-// confirms it.
-const RING_SLOTS: readonly RingSlot[] = [
-  { square: squareAt("D", 15), planetNumber: 9 }, // Banded brown planet with an earth-like moon
-  { square: squareAt("H", 15), planetNumber: 8 }, // Turquoise planet with a vertical white ring
-  { square: squareAt("L", 15), planetNumber: 11 }, // Rose-and-cream banded planet with a storm
-  { square: squareAt("O", 14), planetNumber: 6 }, // Double planet: banded brown with a cratered companion
-  { square: squareAt("O", 10), planetNumber: 13 }, // Cyan-purple-pink wavy planet
-  { square: squareAt("O", 6), planetNumber: 5 }, // Gold planet with a wide ring
-  { square: squareAt("O", 2), planetNumber: 4 }, // Blue-green water world
-  { square: squareAt("L", 1), planetNumber: 2 }, // Peru-and-purple planet with four small moons
-  { square: squareAt("H", 1), planetNumber: 7 }, // Brown-and-pink planet with a tilted grey ring
-  { square: squareAt("D", 1), planetNumber: 10 }, // Magenta planet with pale surface lines
-  { square: squareAt("A", 2), planetNumber: 1 }, // Tan planet with a cratered moon
-  { square: squareAt("A", 6), planetNumber: 3 }, // Banded chocolate-brown planet
-  { square: squareAt("A", 10), planetNumber: 14 }, // Blue-teal ringed planet with a gold core
-  { square: squareAt("A", 14), planetNumber: 12 }, // Cream-and-olive crater planet
-];
 
 /**
- * The fourteen planet squares as a closed walk around the board's
- * perimeter, in the order the spread of planets is judged - NOT `PLANETS`
- * order (see module comment above).
+ * The drawing dealt to every planet square, for one game, keyed by square
+ * name. Throws if the catalogue and the planet squares ever disagree in
+ * count, so a future catalogue edit cannot silently leave a square bare.
  */
-export const RING_ORDER: readonly Square[] = RING_SLOTS.map(
-  (slot) => slot.square,
-);
+export function planetArrangement(
+  openingSeed: number,
+): ReadonlyMap<string, PlanetArt> {
+  if (PLANET_ART.length !== PLANETS.length) {
+    throw new Error(
+      `planetArrangement: ${PLANET_ART.length} drawings for ${PLANETS.length} planet squares`,
+    );
+  }
+  const drawings = shuffled(PLANET_ART, openingSeed);
+  return new Map(
+    PLANETS.map((square, index) => [squareName(square), drawings[index]]),
+  );
+}
 
-const PLANET_BY_SQUARE_NAME: ReadonlyMap<string, PlanetArt> = new Map(
-  RING_SLOTS.map((slot) => [
-    squareName(slot.square),
-    planetByNumber(slot.planetNumber),
-  ]),
-);
-
-/** The planet a planet square holds, or `undefined` if the square is not a planet. */
-export function planetForSquare(square: Square): PlanetArt | undefined {
-  return PLANET_BY_SQUARE_NAME.get(squareName(square));
+/** The drawing a square carries in an arrangement, or `undefined` if it is not a planet square. */
+export function planetForSquare(
+  arrangement: ReadonlyMap<string, PlanetArt>,
+  square: Square,
+): PlanetArt | undefined {
+  return arrangement.get(squareName(square));
 }

@@ -22,7 +22,7 @@ import {
 } from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
 import { EnergyOverlay } from "./EnergyOverlay";
-import { planetForSquare } from "./planetPlacement";
+import { planetArrangement, planetForSquare } from "./planetPlacement";
 import { PlanetDefs } from "./PlanetDefs";
 import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import type { GridPosition } from "./grid/gridNavigation";
@@ -56,6 +56,11 @@ export function Board({ session, onIntent }: BoardProps) {
   const handleDismiss = useCallback(() => {
     onIntent({ type: "dismiss" });
   }, [onIntent]);
+
+  const arrangement = useMemo(
+    () => planetArrangement(session.state.openingSeed),
+    [session.state.openingSeed],
+  );
 
   const rows: GridCellDescriptor[][] = useMemo(() => {
     const ships = shipsBySquare(session.state);
@@ -100,7 +105,7 @@ export function Board({ session, onIntent }: BoardProps) {
         });
         const name = squareName(square);
         const planetSquare = isPlanet(square);
-        const planet = planetForSquare(square);
+        const planet = planetForSquare(arrangement, square);
         const nodeStatus = nodeStatusAt(session.state, square);
         const nodeState = nodeStatus?.state;
         const cyclePosition = nodeStatus
@@ -149,7 +154,7 @@ export function Board({ session, onIntent }: BoardProps) {
         };
       }),
     );
-  }, [session]);
+  }, [session, arrangement]);
 
   return (
     <div className="board-frame">

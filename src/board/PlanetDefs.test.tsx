@@ -11,7 +11,7 @@ import { PLANET_ART } from "./planetArt";
 
 afterEach(cleanup);
 
-/** Every id planetArt.ts names, across all fourteen planets. */
+/** Every id planetArt.ts names, across every planet in the catalogue. */
 function namedIds(): readonly string[] {
   return PLANET_ART.flatMap((planet) => Object.values(planet.ids));
 }

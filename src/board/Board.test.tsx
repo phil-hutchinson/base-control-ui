@@ -30,6 +30,7 @@ import {
 } from "../game/session";
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
+import { planetArrangement } from "./planetPlacement";
 
 afterEach(cleanup);
 
@@ -189,12 +190,26 @@ describe("Board", () => {
     );
   });
 
-  // The case asserting a planet drawing appears on every planet square is
-  // removed here, deliberately: rules.md §3.1's twelve planets moved to the
-  // interior in this step, but the drawings themselves (`planetPlacement.ts`)
-  // still sit on the old fourteen edge squares until the next step replaces
-  // that module, so there is nothing honest for this case to assert until
-  // then (implementation plan, Step 8 reinstates it in its final form).
+  it("draws a planet's drawing on each of the twelve planet squares, and nowhere else", () => {
+    const { container } = render(
+      <Board session={startingSession} onIntent={noop} />,
+    );
+
+    // No ship starts on a planet, so each planet square's name here is bare
+    // (STATED_NODE_STATES and STARTING_FLEET never touch the twelve).
+    const arrangement = planetArrangement(startingSession.state.openingSeed);
+    for (const square of PLANETS) {
+      const name = squareName(square);
+      const cell = screen.getByRole("gridcell", { name: `${name}, planet` });
+      const use = cell.querySelector(".planet > use");
+      expect(use).toHaveAttribute(
+        "href",
+        `#${arrangement.get(name)?.ids.body}`,
+      );
+    }
+
+    expect(container.querySelectorAll(".planet")).toHaveLength(PLANETS.length);
+  });
 
   it("draws every gauge slot lit for the starting fleet, since every ship starts at full power", () => {
     const { container } = render(
@@ -231,7 +246,9 @@ describe("Board", () => {
   it("hides the ship artwork from the accessibility tree", () => {
     render(<Board session={startingSession} onIntent={noop} />);
 
-    const square = squareAt("H", 15);
+    // A starting ship's square, guaranteed occupied at the default fleet
+    // size, so the square carries an <svg> to check the hiding of.
+    const square = STARTING_FLEET[0].square;
     const label = squareLabel({
       square,
       isPlanet: isPlanet(square),
