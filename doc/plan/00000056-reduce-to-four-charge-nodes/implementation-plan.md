@@ -357,7 +357,71 @@ constraints). Run `npm run format:check`.
 
 ### Step 2 — `TARGET_CHARGED_NODES` becomes 4, and the fixtures that assumed five
 
-Status: pending
+Status: committed
+
+Notes: Changed `TARGET_CHARGED_NODES` to 4 in `src/rules/nodes.ts`, and
+updated the comments naming five/ten there (`OPENING_DRAIN_TABLE`,
+`OPENING_PRESSURE_TABLE`, `dealOpeningBoard`'s doc comment, adding the
+sentence that the deal's shape is unchanged but a given seed now deals a
+different board since the fifth square drawn takes its level from the
+pressure table). Updated the "five of the fifteen" comment in
+`gameState.ts` and the "back to five charged" comment in `endOfTurn.ts`'s
+step 4 (its step 2 comment, which also says five, is left for Step 4 as the
+plan specifies). `chargeDraw.ts` needed no change, confirmed by inspection.
+Fixed exactly the nine fixtures/titles D4 identified, in each case by
+dropping one charged node to preserve a deterministic one-short-of-target
+draw, per D4: `nodes.test.ts` (constant assertion and the deal test's
+title), `gameState.test.ts` (title and counts), `camping.test.ts` (dropped
+L8), `chargeDraw.test.ts` (five tests: two "the shortfall" fixtures, one
+"running short" fixture — reduced from three newly-inactive nodes to two so
+the shortfall of 2 is still consumed exactly — and two "weighted by
+pressure" fixtures), and `endOfTurn.test.ts` (dropped H12 from the fixture
+entirely rather than merely renaming, since with only 3 remaining charged
+squares needed the ship at H12 no longer sits on a node; adjusted its
+expected power, the sliced effects list down to one power-loss instead of
+two, and the energy-collected amount/squares to match holding two nodes
+instead of three — a fixture change beyond a title/count edit, but still
+within "drop one charged node" and required to keep the test internally
+consistent). `npm run typecheck`, `npm run lint`, `npm test` (939 tests, all
+passing) and `npm run format:check` all pass. No deviation from the plan's
+intent; the endOfTurn.test.ts fixture needed slightly more rework than a
+one-line count change because the dropped node had ship-power and
+energy-collection assertions riding on it.
+
+Follow-up sweep: the first pass left several fixtures built with five
+charged nodes that passed at a target of four only because five sits
+_above_ the new target rather than _at_ it, which no longer matches what
+their titles and comments claimed ("already at five" / "at its target of
+five" / "no shortfall"). Fixed by dropping one charged node from each so
+the fixture again sits exactly at or one short of the new target of four,
+and corrected the accompanying prose to say four:
+`chargeDraw.test.ts` ("charges nothing … when four are already charged",
+formerly five, at line ~98; and the "nothing to do" describe block's
+"already at four" test, formerly five, at line ~295); `camping.test.ts`
+(both "already at its target of five charged nodes" comments, now four,
+dropping `D8` from each of the two fixtures they describe);
+`ply.test.ts` (two fixtures and their "five charged nodes elsewhere hold
+the board at its target" / "as above" comments, now four, dropping `C9`
+from each); and `endOfTurn.test.ts`'s step-5 pressure tests ("gains a point
+of pressure…" and "stops at the pressure cap…"), which isolated step 5 with
+five charged nodes and one comment claiming so — dropped `D8` from both and
+retitled the comment to four. Also retitled
+`endOfTurn.test.ts`'s "does not run all five opening nodes out on the same
+ply" to four — its body already reads the opening squares from state
+rather than a fixed list, so no logic changed. Hardened
+`chargeDraw.test.ts`'s "running short" test against future drift by
+importing `TARGET_CHARGED_NODES` and asserting the charged counts against
+it instead of the literal `4`/`5` it held before. Swept the rest of
+`src/rules/*.test.ts` for "five" and for un-labelled blocks of four-or-more
+`"charged"` node entries; the remaining hits are fleet-size ("five-a-side"),
+the five random-element/spawn-constraint mentions, `energy.test.ts` and the
+two `endOfTurn.test.ts` energy-table cases (Step 4's), and
+`openingBoard.test.ts`/`nodePool.test.ts` (Step 3's), all correctly left
+alone. `npm run typecheck`, `npm run lint`, `npm test` (939 tests) and
+`npm run format:check` all pass after this sweep. No deviation beyond what
+this note records; the sweep was requested after the initial pass missed
+these because they were not among D4's nine measured failures (they still
+passed, just for the wrong reason).
 
 Change `TARGET_CHARGED_NODES` in `src/rules/nodes.ts` from 5 to 4, and bring
 the prose and the fixtures that assumed five into line.

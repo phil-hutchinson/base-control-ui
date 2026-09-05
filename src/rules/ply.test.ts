@@ -184,7 +184,7 @@ describe("applyMove", () => {
   });
 
   it("flying over an inactive node without stopping leaves it inactive (rules.md §8.2)", () => {
-    // Five charged nodes elsewhere hold the board at its target, so the
+    // Four charged nodes elsewhere hold the board at its target, so the
     // charge draw has no shortfall to fill and never considers I8; I8
     // itself sits at the pressure cap, so the pressure step also leaves it
     // untouched — between the two, nothing about the end-of-turn sequence
@@ -197,7 +197,6 @@ describe("applyMove", () => {
         F3: ["charged", 0],
         C6: ["charged", 0],
         F6: ["charged", 0],
-        C9: ["charged", 0],
       },
       plyNumber: 3,
     });
@@ -214,7 +213,7 @@ describe("applyMove", () => {
   });
 
   it("leaves an inactive node flown over unaffected", () => {
-    // As above: five charged nodes elsewhere leave the charge draw with no
+    // As above: four charged nodes elsewhere leave the charge draw with no
     // shortfall, and I8 sits at the pressure cap so the pressure step
     // leaves it untouched too.
     const state = buildState({
@@ -225,7 +224,6 @@ describe("applyMove", () => {
         F3: ["charged", 0],
         C6: ["charged", 0],
         F6: ["charged", 0],
-        C9: ["charged", 0],
       },
       plyNumber: 4,
     });

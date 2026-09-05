@@ -270,7 +270,7 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   }
 
   // Step 4: as many inactive nodes as it takes to bring the board back to
-  // five charged are charged, at random (§8.2, §8.6 step 4). Running short
+  // four charged are charged, at random (§8.2, §8.6 step 4). Running short
   // is legal: with no inactive node left to draw from, this simply stops.
   const chargeDraw = runChargeDraw(workingState);
   workingState = chargeDraw.state;

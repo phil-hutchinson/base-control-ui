@@ -48,8 +48,8 @@ function isAdjacent(a: Square, b: Square): boolean {
 const FLEET_SQUARES = startingFleet(7).map((entry) => entry.square);
 
 describe("the board's charged target (rules.md §8.1, §8.2)", () => {
-  it("aims to keep five nodes charged", () => {
-    expect(TARGET_CHARGED_NODES).toBe(5);
+  it("aims to keep four nodes charged", () => {
+    expect(TARGET_CHARGED_NODES).toBe(4);
   });
 });
 
@@ -156,7 +156,7 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     OPENING_PRESSURE_TABLE.map((entry) => entry.amount),
   );
 
-  it("deals exactly fifteen nodes, five charged and ten inactive, none depleted", () => {
+  it("deals exactly fifteen nodes, four charged and eleven inactive, none depleted", () => {
     const [nodes] = dealOpeningBoard(FLEET_SQUARES, 1);
 
     expect(Object.keys(nodes)).toHaveLength(NODE_COUNT);
