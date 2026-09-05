@@ -209,7 +209,16 @@ so no implementer treats one as a defect:
 
 ### Step 1 — Rules 0.22: planets in the interior
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `rules.md` §1, §3.1 (retitled "Planets"), §3.2 (sixth
+constraint, rewritten fallback rarity), §4 (both layouts written out
+standalone), §4.1, §7, §7.1 (retitled "Returning to a planet"), §7.2, §8.1,
+§8.2, §8.4, §8.6 step 1, and Appendix B, bumped the version to 0.22, added a
+changelog entry, and set `RULES_VERSION` to `"0.22"`. No deviation from the
+plan; the code still plays 0.21 as documented under "Step-by-step interim
+states". Ran `npx prettier --write` on `rules.md` after editing to fix table
+column widths — a purely mechanical formatting pass, no wording changed.
 
 Rewrite `doc/ruleset/rules.md` from version **0.21** to **0.22**, add a
 `doc/ruleset/changelog.md` entry, and set `RULES_VERSION` in

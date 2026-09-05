@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.21**
+**Rules version: 0.22**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -11,20 +11,20 @@ is right and the app has a bug.
 ## 1. Overview
 
 Base Control is a two-player game played on a square board. Each player
-commands a fleet of five, six or seven ships and competes to occupy the
-board's contested nodes, collecting **energy** for every turn they hold one.
-The player with the most energy when the game ends is the winner.
+commands a fleet of five or six ships and competes to occupy the board's
+contested nodes, collecting **energy** for every turn they hold one. The
+player with the most energy when the game ends is the winner.
 
 Ships are never destroyed. A fight has no winner — both ships involved are
-pushed back to a bay on the edge of the board, carrying exactly what they
-carried before the fight, and rejoin the game from there.
+pushed back to a planet, carrying exactly what they carried before the
+fight, and rejoin the game from there.
 
 A ship carries **power**, which is what lets it move. Holding a node drains
 it, so the longer a ship holds one, the harder it becomes to move and to
 leave. A ship holding a node cannot be attacked while it holds it. A node
 that has burned out still costs its owner energy every turn — but it now
-gives power back, so it is where a ship pays energy for the recovery a bay
-gives free of charge.
+gives power back, so it is where a ship pays energy for the recovery a
+planet gives free of charge.
 
 The board is not a fixed map with lights moving across it: nodes are born,
 burn out and are replaced somewhere else, so the map itself redraws as the
@@ -32,7 +32,7 @@ game runs, and the squares worth racing for change over the course of a
 game, not just which of them are lit.
 
 The game has five random elements: the opening board itself, which node is
-charged next, where a new node appears when one ends, which bays the two
+charged next, where a new node appears when one ends, which planet the two
 ships in a fight are pushed back to, and how fast a node burns. No two games
 start on the same board, and neither player has seen this one before.
 
@@ -77,53 +77,56 @@ right; rows are numbered **1** to **15** from bottom to top. A square is named
 by its column and row, so **H8** is the centre of the board and **A1** is the
 bottom-left corner.
 
-### 3.1 Bays
+### 3.1 Planets
 
-Fourteen squares on the outer edge of the board are **bays**. They sit every
-fourth square around the edge, and none of them is a corner:
+Twelve squares in the board's interior are **planets** — six base squares
+plus their 180-degree rotation about the board's centre:
 
-| Edge   | Bays             |
-| ------ | ---------------- |
-| Top    | D15, H15, L15    |
-| Right  | O14, O10, O6, O2 |
-| Bottom | D1, H1, L1       |
-| Left   | A2, A6, A10, A14 |
+| Base     | E3  | D7  | F5  | I4  | J8  | L5  |
+| -------- | --- | --- | --- | --- | --- | --- |
+| Rotation | K13 | L9  | J11 | G12 | F8  | D11 |
 
-A bay is an ordinary square in every way except two:
+Each player's half of the board carries exactly the rotation of the other's
+planets, so neither side begins nearer better ground.
 
-- A ship standing in a bay cannot attack and cannot be attacked.
-- A ship standing in a bay **at the end of its owner's turn** gains one power,
-  to the maximum of 4 (section 4.1). Flying over an empty bay does nothing —
-  only standing in one at the end of the turn counts — and arriving in one
-  does nothing by itself either; the first point comes at the end of that
-  turn like any other. A bay is where a ship goes to recover, at a point per
-  turn.
+A planet is an ordinary square in every way except two:
 
-Bays are not owned. Either player's ships may use any bay.
+- A ship standing on a planet cannot attack and cannot be attacked.
+- A ship standing on a planet **at the end of its owner's turn** gains one
+  power, to the maximum of 4 (section 4.1). Flying over an empty planet does
+  nothing — only standing on one at the end of the turn counts — and
+  arriving on one does nothing by itself either; the first point comes at
+  the end of that turn like any other. A planet is where a ship goes to
+  recover, at a point per turn.
 
-Together with the bay table above, this diagram shows the board's fixed
-squares. It does not show any node, because a node's square is not fixed —
-where nodes stand changes as the game runs (section 3.2):
+Planets are not owned. Either player's ships may use any planet.
+
+This diagram shows the board's fixed squares: the twelve planets, and the
+fourteen starting squares (section 4) where ships begin — fleet size decides
+which of the fourteen are used. A starting square is otherwise an ordinary
+square: it gives nothing and protects nothing. The diagram does not show any
+node, because a node's square is not fixed — where nodes stand changes as
+the game runs (section 3.2):
 
 ```
      A B C D E F G H I J K L M N O
- 15  . . . # . . . # . . . # . . .
- 14  # . . . . . . . . . . . . . #
- 13  . . . . . . . . . . . . . . .
- 12  . . . . . . . . . . . . . . .
- 11  . . . . . . . . . . . . . . .
- 10  # . . . . . . . . . . . . . #
-  9  . . . . . . . . . . . . . . .
-  8  . . . . . . . . . . . . . . .
-  7  . . . . . . . . . . . . . . .
-  6  # . . . . . . . . . . . . . #
-  5  . . . . . . . . . . . . . . .
-  4  . . . . . . . . . . . . . . .
-  3  . . . . . . . . . . . . . . .
-  2  # . . . . . . . . . . . . . #
-  1  . . . # . . . # . . . # . . .
+ 15  . . . S . . . S . . . S . . .
+ 14  S . . . . . . . . . . . . . S
+ 13  . . . . . . . . . . P . . . .
+ 12  . . . . . . P . . . . . . . .
+ 11  . . . P . . . . . P . . . . .
+ 10  S . . . . . . . . . . . . . S
+  9  . . . . . . . . . . . P . . .
+  8  . . . . . P . . . P . . . . .
+  7  . . . P . . . . . . . . . . .
+  6  S . . . . . . . . . . . . . S
+  5  . . . . . P . . . . . P . . .
+  4  . . . . . . . . P . . . . . .
+  3  . . . . P . . . . . . . . . .
+  2  S . . . . . . . . . . . . . S
+  1  . . . S . . . S . . . S . . .
 
-#  bay
+P  planet          S  a starting square (fleet size decides which are used)
 ```
 
 ### 3.2 Where a node can appear
@@ -141,17 +144,23 @@ A square is a legal place for a new node when **all** of these hold:
    or O;
 4. it is not one square in from the outer edge — not row 2 or 14, not
    column B or N;
-5. it is not orthogonally or diagonally adjacent to another node.
+5. it is not orthogonally or diagonally adjacent to another node;
+6. it is not a planet, and is not orthogonally or diagonally adjacent to a
+   planet (section 3.1).
 
-Constraints 3 and 4 leave the 11 × 11 interior **C3–M13** — 121 squares —
-which holds fifteen mutually non-adjacent nodes very comfortably.
+Constraints 3 and 4 leave the 11 × 11 interior **C3–M13** — 121 squares.
+Constraint 6 removes the twelve planets and their neighbours from that
+interior, leaving **29** legal squares, of which twelve mutually
+non-adjacent nodes fit with room to spare.
 
-**The fallback.** If no square satisfies all five constraints, the new node
-is placed uniformly among the squares that hold no node and are not a bay.
-This is the whole of the relaxation, applied all at once rather than one
-constraint dropped at a time, and it exists so that placement can never
-fail — it is not expected to be needed given how much room the interior
-leaves.
+**The fallback.** If no square satisfies all six constraints, the new node
+is placed uniformly among the squares that hold no node and are not a
+planet. This is the whole of the relaxation, applied all at once rather than
+one constraint dropped at a time, and it exists so that placement can never
+fail. It is rare, not impossible: the opening deal falls back on about 0.2%
+of games with the board otherwise empty, and about 2% in the worst case
+where all twelve ships are scattered through the interior blocking squares
+of their own; a mid-game replacement falls back on well under 1% of draws.
 
 **A replacement never appears on the square the node it replaces just
 left.** The retiring node's own square is excluded from the draw, so a node
@@ -162,57 +171,39 @@ starts.
 
 ## 4. Ships
 
-Each player has **five, six or seven** ships — the same number for both
-players, chosen before play begins; **seven is the standard game**. One
-player is **green**, the other **red**. Green takes the first turn.
+Each player has **five or six** ships — the same number for both players,
+chosen before play begins; **six is the standard game**. One player is
+**green**, the other **red**. Green takes the first turn.
 
-The bays never change (section 3.1): there are always fourteen, in the same
-places. What changes with fleet size is which of them hold a ship at the
-start, and — at five a side — the colours on the left and right edges.
+A ship starts on a **starting square** (section 3.1) — an ordinary square in
+every way, occupied or not. Which starting squares are used, and which
+colour stands on each, depends on the fleet size:
 
-**Seven a side (14 ships).** Every bay holds one ship, and the two fleets
-alternate around the edge. Starting clockwise from H15:
+**Six a side (12 ships).**
 
-> H15 green, L15 red, O14 green, O10 red, O6 green, O2 red, L1 green,
-> H1 red, D1 green, A2 red, A6 green, A10 red, A14 green, D15 red.
-
-**Six a side (12 ships).** The middle bay of the top edge and of the bottom
-edge — **H15 and H1** — start empty. Every other bay holds exactly the ship
-and the colour it holds in the seven-ship game; nothing is recoloured.
-
-| Edge   | Bays, left to right / top to bottom  |
+| Edge   | Left to right / top to bottom        |
 | ------ | ------------------------------------ |
-| Top    | D15 red, **H15 empty**, L15 red      |
+| Top    | D15 red, L15 red                     |
 | Right  | O14 green, O10 red, O6 green, O2 red |
-| Bottom | D1 green, **H1 empty**, L1 green     |
+| Bottom | D1 green, L1 green                   |
 | Left   | A14 green, A10 red, A6 green, A2 red |
 
 Green: O14, O6, D1, L1, A14, A6. Red: D15, L15, O10, O2, A10, A2.
 
-**Five a side (10 ships).** The top and bottom bay of each four-bay edge —
-**O14, O2, A14 and A2** — start empty, and the colours on those two edges are
-**reversed** from the seven-ship game. The three-bay edges are untouched, so
-the top still reads red-green-red and the bottom still reads green-red-green.
+**Five a side (10 ships).**
 
-| Edge   | Bays, left to right / top to bottom                    |
-| ------ | ------------------------------------------------------ |
-| Top    | D15 red, H15 green, L15 red                            |
-| Right  | **O14 empty**, O10 **green**, O6 **red**, **O2 empty** |
-| Bottom | D1 green, H1 red, L1 green                             |
-| Left   | **A14 empty**, A10 **green**, A6 **red**, **A2 empty** |
+| Edge   | Left to right / top to bottom |
+| ------ | ----------------------------- |
+| Top    | D15 red, H15 green, L15 red   |
+| Right  | O10 green, O6 red             |
+| Bottom | D1 green, H1 red, L1 green    |
+| Left   | A10 green, A6 red             |
 
 Green: H15, O10, A10, D1, L1. Red: D15, L15, O6, A6, H1.
 
-**A bay left empty at the start is an ordinary empty bay in every way.** It
-is not removed from the board and it is not reserved: either player may move
-into it, and section 7.1's random return may send a beaten ship to it, exactly
-as it would to any other empty bay.
-
-The bays are spaced evenly, and each layout leaves its empty bays in
-half-turn-opposite pairs — none at seven a side, H15 and H1 at six, O14/O2
-and A14/A2 at five, with the colours flipping to match. So in all three
-layouts each player's starting fleet is exactly the half-turn rotation of
-the other's, and neither side begins with better ground.
+Both layouts are exact half-turn rotations of one another — each player's
+starting fleet is the rotation of the other's — so neither side begins with
+better ground.
 
 Every ship starts at full power (4).
 
@@ -225,10 +216,10 @@ for its attack range (section 7). It does nothing in a fight.
 A ship **loses one power** at the end of its owner's turn standing on a
 **charged node** — the node is drawing on the ship as it pays out — down to
 the minimum of 0. It **gains one power** at the end of its owner's turn
-standing on a **depleted** node or **in a bay**, up to the maximum of 4. An
-**inactive** node does neither. A fight never changes a ship's power (section
-7). A ship at 0 power is not destroyed and is not stuck: it still has one
-square orthogonally, and a bay will refill it.
+standing on a **depleted** node or **on a planet**, up to the maximum of 4.
+An **inactive** node does neither. A fight never changes a ship's power
+(section 7). A ship at 0 power is not destroyed and is not stuck: it still
+has one square orthogonally, and a planet will refill it.
 
 ---
 
@@ -290,17 +281,17 @@ diagonal at all, while a ship at full power reaches three squares
 orthogonally. Attacking is always the attacking player's choice; ships never
 fight automatically.
 
-Neither ship may be in a bay: a ship in a bay cannot attack, and cannot be
-attacked. And neither ship may be standing on a **charged node**: a ship
-holding a node cannot attack, and cannot be attacked. This is not only
+Neither ship may be on a planet: a ship on a planet cannot attack, and
+cannot be attacked. And neither ship may be standing on a **charged node**: a
+ship holding a node cannot attack, and cannot be attacked. This is not only
 protection — a ship holding a node has given up striking out while it stands
 there. It applies to charged nodes alone: a ship standing on an **inactive**
 or a **depleted** node is an ordinary target, and fights and is fought
 exactly like a ship on any other square (section 8.5).
 
 **There is no winner.** Both ships — the attacker and the ship it attacked —
-are returned to bays (section 7.1), and both squares are left empty, but each
-ship arrives carrying the power it had.
+are returned to planets (section 7.1), and both squares are left empty, but
+each ship arrives carrying the power it had.
 
 An attack is a **trade**: a player spends their own ship's position — not its
 power — to take away their opponent's. It is worth making when the enemy ship
@@ -312,31 +303,32 @@ driven off it, so nodes are contested by arriving rather than by force. And a
 holder who chooses to leave gives the node up **still lit** (section 8.3), so
 the square it vacates is worth racing for.
 
-### 7.1 Returning to a bay
+### 7.1 Returning to a planet
 
-A returning ship goes to a bay chosen **at random** from the bays that are
-**empty at that moment**, every empty bay equally likely.
+A returning ship goes to a planet chosen **at random** from the planets
+**empty at that moment**, every empty planet equally likely.
 
 The choice is genuinely random, and neither player can see it coming — the
 same assurance section 8.2 gives for the charge draw.
 
 A returning ship is placed **immediately**, as part of resolving the fight,
 before anything else happens. Every fight returns two ships: the attacker is
-placed first, and the defender's bay is then drawn from the bays still empty.
-Which ship is placed first makes no difference to the odds, but fixing the
-order is what lets a recorded game replay exactly.
+placed first, and the defender's planet is then drawn from the planets still
+empty. Which ship is placed first makes no difference to the odds, but
+fixing the order is what lets a recorded game replay exactly.
 
-There is always somewhere to go: both ships in a fight were by definition on
-the board and not in a bay, so at least two bays are empty, and the
-attacker's placement can never leave the defender without one.
+There is always somewhere to go: with twelve ships and twelve planets, the
+two ships in a fight were by definition not on planets, so at most ten
+planets are occupied and at least two are free — enough for the attacker's
+placement, and the defender's after it, to each find an empty one.
 
 ### 7.2 Returning by choice
 
-A ship may also go back to a bay deliberately. This is not a special action —
-it is an ordinary move that ends on an empty bay, and like any move it must
-be within the ship's range and have a clear path. What it gets there is
-recovery at a point per turn (section 3.1, section 4.1), not an instant
-refill.
+A ship may also go back to a planet deliberately. This is not a special
+action — it is an ordinary move that ends on an empty planet, and like any
+move it must be within the ship's range and have a clear path. What it gets
+there is recovery at a point per turn (section 3.1, section 4.1), not an
+instant refill.
 
 ---
 
@@ -364,17 +356,17 @@ every turn it charges as many inactive nodes as it takes to bring the
 charged count back to four (section 8.2). If there are not enough inactive
 nodes, it charges what it can and simply runs short until the next turn.
 
-**The opening board is dealt.** The game opens with **fifteen** nodes, at
-fifteen squares drawn under section 3.2:
+**The opening board is dealt.** The game opens with **twelve** nodes, at
+twelve squares drawn under section 3.2:
 
-- **Four of the fifteen are charged**, at squares drawn at random with every
+- **Four of the twelve are charged**, at squares drawn at random with every
   legal square equally likely and no two the same. No square is privileged;
   the centre is not guaranteed.
 - **Each of the four starts part-drained**, at a drain drawn from the opening
   drain table below — never more than 40, two-thirds of the capacity of 60
   (section 8.3), so every dealt node has enough life left to be worth racing
   for.
-- **Every other node starts inactive**, at a pressure drawn from the opening
+- **The other eight start inactive**, at a pressure drawn from the opening
   pressure table below, rather than at 1 (section 8.2).
 - **Nothing is depleted at the start.**
 
@@ -404,7 +396,7 @@ few.
 At the end of every turn, as many **inactive** nodes as it takes to bring the
 charged count back to four are chosen at random, one at a time. If fewer
 than that are inactive, fewer are charged and the board runs below four
-until the next turn — with fifteen nodes on the board and a target of four,
+until the next turn — with twelve nodes on the board and a target of four,
 this is now the uncommon case rather than the likely one. Charged nodes
 still run out on schedule whether or not the board is at its four.
 
@@ -481,10 +473,10 @@ a depleted node and moving on neither collects nor costs anything.
 
 The charged nodes a player holds are priced off this table exactly as
 before. Unlike charged nodes there is no limit on how many nodes are
-depleted at once — up to eleven of the fifteen can be, since at most four are
+depleted at once — up to eight of the twelve can be, since at most four are
 ever charged — so the depleted count is **capped at four** before it is
-priced: five, six or seven depleted nodes cost the same 10 that four do. The
-most a turn can pay is 10, so the most a turn can cost is now exactly 10 too —
+priced: five or six depleted nodes cost the same 10 that four do. The most a
+turn can pay is 10, so the most a turn can cost is now exactly 10 too —
 neither half of this section can outrun the other.
 
 The two halves are applied in that order — collect, then pay — and
@@ -536,7 +528,7 @@ owner prefers, and leaving now costs the node nothing.
 Everything that happens at the end of a turn happens in this order:
 
 1. Each of the moving player's ships standing on a charged node loses a
-   point of power, and each standing on a depleted node or in a bay gains
+   point of power, and each standing on a depleted node or on a planet gains
    one (section 4.1).
 2. The moving player collects energy for the charged nodes they hold and
    then pays for the depleted nodes they occupy (section 8.4).
@@ -557,7 +549,7 @@ A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
 which an action was taken. The node clocks still tick, and a ship of the
 passing player standing on a charged node still loses its point of power and
-one standing on a depleted node or in a bay still gains one; the passing
+one standing on a depleted node or on a planet still gains one; the passing
 player still collects and still pays exactly as they would if they had
 acted.
 
@@ -635,38 +627,39 @@ any.
 
 ## Appendix B — Sizing the node pool
 
-The board carries **fifteen** nodes at all times: one out, one in, whenever a
+The board carries **twelve** nodes at all times: one out, one in, whenever a
 node retires. A node's life is a mix of empty and held turns rather than a
 fixed count, but the mix works out to roughly **twenty** turns charged, and
 recovery runs about **ten** more turns depleted before retirement — thirty
-turns from birth to death. For four of the fifteen to be charged at any
-moment, a whole life runs about 20 × 15 / 4 ≈ **seventy-five** turns, of
-which about **forty-five** are spent waiting inactive: roughly 4 charged, 2
-depleted and 9 inactive at any moment, so a node now charges about every
-**five** turns, rather than every four — the pool is looser than it was
-against a target of five, with more of the fifteen sitting inactive at any
-moment.
+turns from birth to death. For four of the twelve to be charged at any
+moment, a whole life runs about 20 × 12 / 4 ≈ **sixty** turns, of which
+about **thirty** are spent waiting inactive: roughly 4 charged, 2 depleted
+and 6 inactive at any moment, so a node charges about every **five** turns.
 
 Running short of four charged remains a **legal outcome**, not a failure the
 pool must be sized to prevent — section 8.2 charges as many inactive nodes
-as it can and simply falls short when it has to. But with roughly nine of
-the fifteen nodes inactive at any moment, against a target of only four,
-this is now the **uncommon** case rather than the likely one: the pool is
+as it can and simply falls short when it has to. With roughly six of the
+twelve nodes inactive at any moment, against a target of only four, this
+stays the **uncommon** case rather than the likely one: the pool is
 comfortable enough that the charge draw usually finds all the inactive
 nodes it needs.
 
-What is worth checking first when these numbers are next retuned is the
-**pressure cap against the average wait**. A node now waits something like
-forty-five turns between cycles, against a cap of 50 — the cap sits only a
-little above the average wait, so a larger share of the inactive pool sits
-at or near the cap at any moment, which flattens the weighting back towards
-uniform at the top end rather than sharpening it. That, and the size of the
-inactive pool against the target of four charged, are what to check first
-whenever these numbers are retuned.
+The pressure cap of 50 sits comfortably above the average inactive wait of
+about thirty turns — the relationship it was originally set against — so
+weighting by pressure still sharpens meaningfully rather than flattening
+back towards uniform at the top end. What is worth checking first when
+these numbers are next retuned is that relationship, and the size of the
+inactive pool against the target of four charged.
 
-These counts — fifteen nodes, four charged, eleven inactive at the deal —
-are first guesses to be play-tested and retuned like every other number in
-this document.
+These counts — twelve nodes, four charged, eight inactive at the deal — are
+first guesses to be play-tested and retuned like every other number in this
+document.
+
+Section 3.2's fallback, which places a node without regard to spacing, is
+rare rather than impossible: it is reached on about 0.2% of opening deals
+with the board otherwise empty, about 2% in the worst case where all twelve
+ships are scattered through the interior, and well under 1% of mid-game
+replacements.
 
 The app guards this with a test that the inactive pool stays comfortably
 populated over a long run, that expiries stay spread rather than arriving
