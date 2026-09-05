@@ -9,9 +9,9 @@ import { BOARD_SIZE, squareName } from "../rules/board";
 import { isBay } from "../rules/bays";
 import { shipHasLegalAction } from "../rules/actions";
 import { legalTargets } from "../rules/combat";
-import { shipsBySquare, siteStatusAt, type Ship } from "../rules/gameState";
+import { shipsBySquare, nodeStatusAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
-import { siteCyclePosition } from "../rules/sites";
+import { nodeCyclePosition } from "../rules/nodes";
 import type { Session, SessionIntent } from "../game/session";
 import { announcementForSession } from "./announcements";
 import { squareForGridPosition } from "./boardView";
@@ -101,10 +101,10 @@ export function Board({ session, onIntent }: BoardProps) {
         const name = squareName(square);
         const bay = isBay(square);
         const planet = planetForSquare(square);
-        const siteStatus = siteStatusAt(session.state, square);
-        const siteState = siteStatus?.state;
-        const cyclePosition = siteStatus
-          ? siteCyclePosition(siteStatus.state, siteStatus.level)
+        const nodeStatus = nodeStatusAt(session.state, square);
+        const nodeState = nodeStatus?.state;
+        const cyclePosition = nodeStatus
+          ? nodeCyclePosition(nodeStatus.state, nodeStatus.level)
           : undefined;
         const ship = ships.get(name);
         const occupant = ship && { side: ship.side, power: ship.power };
@@ -128,7 +128,7 @@ export function Board({ session, onIntent }: BoardProps) {
               isBay={bay}
               squareName={name}
               planet={planet}
-              siteState={siteState}
+              nodeState={nodeState}
               cyclePosition={cyclePosition}
               occupant={occupant}
               hasActed={hasActed}
@@ -139,7 +139,7 @@ export function Board({ session, onIntent }: BoardProps) {
           label: squareLabel({
             square,
             isBay: bay,
-            siteState,
+            nodeState,
             occupant,
             hasActed,
             condition,

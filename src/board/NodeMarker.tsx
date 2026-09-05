@@ -1,23 +1,23 @@
-// Decorative site-state artwork: one radial-gradient circle at the square's
+// Decorative node-state artwork: one radial-gradient circle at the square's
 // centre, drawn behind any ship on the same square, with one appearance per
-// rules.md §8.1 state. Active is a disc that grows and warms as the site's
-// pressure builds; charged and dormant are the same larger shape, wider than
+// rules.md §8.1 state. Inactive is a disc that grows and warms as the node's
+// pressure builds; charged and depleted are the same larger shape, wider than
 // the square and cropped to it by the outer <svg>, one gold and one grey.
-// Purely decorative - a screen reader gets the site and its state from the
+// Purely decorative - a screen reader gets the node and its state from the
 // occupying square's accessible name (see squareLabel.ts), so the SVG
 // carries no title or description and is hidden from the accessibility
 // tree.
 
-import type { SiteState } from "../rules/sites";
-import "./SiteMarker.css";
+import type { NodeState } from "../rules/nodes";
+import "./NodeMarker.css";
 
-interface SiteMarkerProps {
-  readonly state: SiteState;
+interface NodeMarkerProps {
+  readonly state: NodeState;
   readonly squareName: string;
   /**
-   * How far the site has travelled through its state's own cycle (0 to 1,
-   * see `siteCyclePosition` in `../rules/sites`): drain for charged,
-   * remaining drain for dormant, pressure for active. Falls back to the
+   * How far the node has travelled through its state's own cycle (0 to 1,
+   * see `nodeCyclePosition` in `../rules/nodes`): drain for charged,
+   * remaining drain for depleted, pressure for inactive. Falls back to the
    * state's start-of-cycle appearance when absent.
    */
   readonly cyclePosition?: number;
@@ -29,20 +29,20 @@ interface GradientStop {
   readonly opacity: number;
 }
 
-interface SiteStateArtwork {
+interface NodeStateArtwork {
   readonly radius: number;
   readonly stops: readonly GradientStop[];
 }
 
 // The middle stop's offset at the start and end of each clocked state's
 // cycle. Charged travels outward from its start value to its end value as
-// the site nears the end of its life; dormant travels the same road in
-// the opposite direction as the site cools. Each state's start value is its
+// the node nears the end of its life; depleted travels the same road in
+// the opposite direction as the node cools. Each state's start value is its
 // start-of-cycle appearance.
 const CHARGED_START_OFFSET_PERCENT = 25;
 const CHARGED_END_OFFSET_PERCENT = 50;
-const DORMANT_START_OFFSET_PERCENT = 50;
-const DORMANT_END_OFFSET_PERCENT = 25;
+const DEPLETED_START_OFFSET_PERCENT = 50;
+const DEPLETED_END_OFFSET_PERCENT = 25;
 
 /** The middle stop's offset for a clocked state's start-to-end travel, at the given cycle position (or its start if none is given). */
 function middleStopOffsetPercent(
@@ -58,18 +58,18 @@ function middleStopOffsetPercent(
   );
 }
 
-// Active's start-to-end travel, at a freshly-cycled site's pressure of 1 and
+// Inactive's start-to-end travel, at a freshly-cycled node's pressure of 1 and
 // at the pressure cap: the small pale disc from node-artwork.md's "Dormant"
 // section growing and warming into the larger disc from that same document's
-// "Active" section (see siteArtwork's comment for why those pre-0.11
+// "Active" section (see nodeArtwork's comment for why those pre-0.11
 // headings do not mean what they mean in the code).
-const ACTIVE_START_RADIUS = 12;
-const ACTIVE_END_RADIUS = 24;
-const ACTIVE_START_INNER_COLOR = "#F1DBA5";
-const ACTIVE_END_INNER_COLOR = "#DAA520";
-const ACTIVE_OUTER_COLOR = "#DAA520";
-const ACTIVE_START_OUTER_OPACITY = 0.75;
-const ACTIVE_END_OUTER_OPACITY = 0.5;
+const INACTIVE_START_RADIUS = 12;
+const INACTIVE_END_RADIUS = 24;
+const INACTIVE_START_INNER_COLOR = "#F1DBA5";
+const INACTIVE_END_INNER_COLOR = "#DAA520";
+const INACTIVE_OUTER_COLOR = "#DAA520";
+const INACTIVE_START_OUTER_OPACITY = 0.75;
+const INACTIVE_END_OUTER_OPACITY = 0.5;
 
 /** Linear interpolation between two numbers, at a position clamped to [0, 1] (or the start if none is given). */
 function lerpNumber(
@@ -117,42 +117,43 @@ function hexLerp(
 
 // Radii, gradient stops, colours and opacities, taken from
 // doc/plan/00000023-update-node-visual/node-artwork.md exactly as specified
-// there (that document's own, pre-0.11 headings, which do not mean what the
-// same words mean in the code: "Charged" for charged and "Depleted" for
-// dormant below. Active now travels between two of that document's
-// sections: its "Dormant" section — the small pale disc — at a freshly
-// cycled site's pressure of 1, and its "Active" section — the larger gold
-// disc, what the code has always drawn for this state — at the pressure
-// cap). One artwork per site state; the exhaustive switch has no default,
-// so a new state is a compile error rather than a silent gap.
-function siteArtwork(
-  state: SiteState,
+// there (that document's own, pre-0.11 headings: "Charged" and "Depleted"
+// happen to match the code's own state names below, but "Dormant" and
+// "Active" name neither — they are the two ends of what the code now calls
+// the inactive state's travel. Inactive travels between two of that
+// document's sections: its "Dormant" section — the small pale disc — at a
+// freshly cycled node's pressure of 1, and its "Active" section — the
+// larger gold disc, what the code has always drawn for this state — at the
+// pressure cap). One artwork per node state; the exhaustive switch has no
+// default, so a new state is a compile error rather than a silent gap.
+function nodeArtwork(
+  state: NodeState,
   cyclePosition: number | undefined,
-): SiteStateArtwork {
+): NodeStateArtwork {
   switch (state) {
-    case "active":
+    case "inactive":
       return {
         radius: lerpNumber(
-          ACTIVE_START_RADIUS,
-          ACTIVE_END_RADIUS,
+          INACTIVE_START_RADIUS,
+          INACTIVE_END_RADIUS,
           cyclePosition,
         ),
         stops: [
           {
             offsetPercent: 0,
             color: hexLerp(
-              ACTIVE_START_INNER_COLOR,
-              ACTIVE_END_INNER_COLOR,
+              INACTIVE_START_INNER_COLOR,
+              INACTIVE_END_INNER_COLOR,
               cyclePosition,
             ),
             opacity: 1,
           },
           {
             offsetPercent: 100,
-            color: ACTIVE_OUTER_COLOR,
+            color: INACTIVE_OUTER_COLOR,
             opacity: lerpNumber(
-              ACTIVE_START_OUTER_OPACITY,
-              ACTIVE_END_OUTER_OPACITY,
+              INACTIVE_START_OUTER_OPACITY,
+              INACTIVE_END_OUTER_OPACITY,
               cyclePosition,
             ),
           },
@@ -175,15 +176,15 @@ function siteArtwork(
           { offsetPercent: 100, color: "#F5DEB3", opacity: 1 },
         ],
       };
-    case "dormant":
+    case "depleted":
       return {
         radius: 70,
         stops: [
           { offsetPercent: 0, color: "#808080", opacity: 1 },
           {
             offsetPercent: middleStopOffsetPercent(
-              DORMANT_START_OFFSET_PERCENT,
-              DORMANT_END_OFFSET_PERCENT,
+              DEPLETED_START_OFFSET_PERCENT,
+              DEPLETED_END_OFFSET_PERCENT,
               cyclePosition,
             ),
             color: "#808080",
@@ -195,19 +196,19 @@ function siteArtwork(
   }
 }
 
-export function SiteMarker({
+export function NodeMarker({
   state,
   squareName,
   cyclePosition,
-}: SiteMarkerProps) {
-  const { radius, stops } = siteArtwork(state, cyclePosition);
-  // SVG ids are document-global, and seventeen sites are drawn into one
+}: NodeMarkerProps) {
+  const { radius, stops } = nodeArtwork(state, cyclePosition);
+  // SVG ids are document-global, and seventeen nodes are drawn into one
   // document at once, so the gradient id carries the square's own name.
-  const gradientId = `site-${squareName}-fill`;
+  const gradientId = `node-${squareName}-fill`;
 
   return (
     <svg
-      className={`site-marker site-marker--${state}`}
+      className={`node-marker node-marker--${state}`}
       viewBox="0 0 100 100"
       aria-hidden="true"
     >

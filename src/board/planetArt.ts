@@ -22,8 +22,8 @@
 // that nothing outside it ever references.
 //
 // `planet-` prefixes every id for the same reason `ship-` does on
-// `shipArt.ts`'s ids: it cannot collide with `SiteMarker`'s
-// `site-<square>-fill` ids or with anything a later story adds.
+// `shipArt.ts`'s ids: it cannot collide with `NodeMarker`'s
+// `node-<square>-fill` ids or with anything a later story adds.
 
 /** The colour family a planet belongs to, for judging the spread around the ring of bays. */
 export type PlanetColorFamily =

@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.19**
+**Rules version: 0.20**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -21,15 +21,20 @@ carried before the fight, and rejoin the game from there.
 
 A ship carries **power**, which is what lets it move. Holding a node drains
 it, so the longer a ship holds one, the harder it becomes to move and to
-leave. A ship holding a node cannot be attacked while it holds it. A site
+leave. A ship holding a node cannot be attacked while it holds it. A node
 that has burned out still costs its owner energy every turn — but it now
 gives power back, so it is where a ship pays energy for the recovery a bay
 gives free of charge.
 
-The game has four random elements: the opening board itself, which site is
-charged next, which bays the two ships in a fight are pushed back to, and how
-fast a node burns. No two games start on the same board, and neither player
-has seen this one before.
+The board is not a fixed map with lights moving across it: nodes are born,
+burn out and are replaced somewhere else, so the map itself redraws as the
+game runs, and the squares worth racing for change over the course of a
+game, not just which of them are lit.
+
+The game has five random elements: the opening board itself, which node is
+charged next, where a new node appears when one ends, which bays the two
+ships in a fight are pushed back to, and how fast a node burns. No two games
+start on the same board, and neither player has seen this one before.
 
 ---
 
@@ -48,12 +53,11 @@ ship.
 **Power** — what a ship carries and what lets it move: how far it can go, and
 what a node takes from it while it stands there.
 
-**Site** — one of the fixed positions on the board where a node can appear.
-Sites never move; which of them is in play changes during the game.
-
-**Node** — a site that is charged: the one a ship stands on to collect
-energy. The board aims to keep five sites charged at any moment, though it
-may fall short.
+**Node** — a position on the board that comes into being, runs through three
+states — **inactive**, **charged** and **depleted** — and then ends. The
+instant a node ends, a new inactive node appears somewhere else on the board
+(section 3.2). The board aims to keep five nodes charged at any moment,
+though it may fall short.
 
 **Capacity** — how much a node has to give before it is spent. Every node
 starts with the same 60.
@@ -61,7 +65,7 @@ starts with the same 60.
 **Drain** — how much of a node's capacity has been spent. It rises every
 turn, faster while a ship is standing on the node.
 
-**Pressure** — how long a site has been waiting to be charged. The longer it
+**Pressure** — how long a node has been waiting to be charged. The longer it
 waits, the likelier the board is to pick it.
 
 ---
@@ -97,60 +101,62 @@ A bay is an ordinary square in every way except two:
 
 Bays are not owned. Either player's ships may use any bay.
 
-### 3.2 Sites
-
-There are **seventeen** sites. Every one is in the interior of the board —
-never on the outer edge — and their positions are fixed for the whole game and
-the same in every game:
-
-| Row | Sites         |
-| --- | ------------- |
-| 2   | F2, J2        |
-| 4   | B4, H4, N4    |
-| 5   | E5, K5        |
-| 8   | D8, H8, L8    |
-| 11  | E11, K11      |
-| 12  | B12, H12, N12 |
-| 14  | F14, J14      |
-
-Together with the bay table in section 3.1, this diagram is the whole board:
+Together with the bay table above, this diagram shows the board's fixed
+squares. It does not show any node, because a node's square is not fixed —
+where nodes stand changes as the game runs (section 3.2):
 
 ```
      A B C D E F G H I J K L M N O
  15  . . . # . . . # . . . # . . .
- 14  # . . . . O . . . O . . . . #
+ 14  # . . . . . . . . . . . . . #
  13  . . . . . . . . . . . . . . .
- 12  . O . . . . . O . . . . . O .
- 11  . . . . O . . . . . O . . . .
+ 12  . . . . . . . . . . . . . . .
+ 11  . . . . . . . . . . . . . . .
  10  # . . . . . . . . . . . . . #
   9  . . . . . . . . . . . . . . .
-  8  . . . O . . . O . . . O . . .
+  8  . . . . . . . . . . . . . . .
   7  . . . . . . . . . . . . . . .
   6  # . . . . . . . . . . . . . #
-  5  . . . . O . . . . . O . . . .
-  4  . O . . . . . O . . . . . O .
+  5  . . . . . . . . . . . . . . .
+  4  . . . . . . . . . . . . . . .
   3  . . . . . . . . . . . . . . .
-  2  # . . . . O . . . O . . . . #
+  2  # . . . . . . . . . . . . . #
   1  . . . # . . . # . . . # . . .
 
-#  bay      O  site
+#  bay
 ```
 
-**Symmetry.** The layout is a mirror image across column H and across row 8,
-so a 180° rotation also maps it onto itself. It is deliberately **not**
-symmetric across the diagonals: the fourteen bays cannot be diagonally
-symmetric either — spacing fourteen bays every fourth square around a
-56-square perimeter puts three on each horizontal edge and four on each
-vertical — and the sites are placed partly by reference to the bays, so
-requiring diagonal symmetry would fight the thing they are keyed to.
+### 3.2 Where a node can appear
 
-**Spacing.** No single legal move touches two or more sites — a property that
-existed so that one move could never charge two nodes at once. As of version
-0.11, nothing a ship does charges a site (section 8.2), so the property no
-longer binds anything. The seventeen positions above still happen to satisfy
-it, but that is now incidental rather than required: a future story that
-revisits the layout is free to place sites closer together without breaking
-any rule.
+There are no fixed positions on the board any more. A node's square is drawn
+when the node appears, and it stays there for exactly as long as that node
+lasts — when the node ends, a new one is drawn a square of its own,
+somewhere else.
+
+A square is a legal place for a new node when **all** of these hold:
+
+1. it holds no node already;
+2. no ship is standing on it;
+3. it is not on the outer edge of the board — not row 1 or 15, not column A
+   or O;
+4. it is not one square in from the outer edge — not row 2 or 14, not
+   column B or N;
+5. it is not orthogonally or diagonally adjacent to another node.
+
+Constraints 3 and 4 leave the 11 × 11 interior **C3–M13** — 121 squares —
+which holds fifteen mutually non-adjacent nodes very comfortably.
+
+**The fallback.** If no square satisfies all five constraints, the new node
+is placed uniformly among the squares that hold no node and are not a bay.
+This is the whole of the relaxation, applied all at once rather than one
+constraint dropped at a time, and it exists so that placement can never
+fail — it is not expected to be needed given how much room the interior
+leaves.
+
+**A replacement never appears on the square the node it replaces just
+left.** The retiring node's own square is excluded from the draw, so a node
+that ends always ends somewhere visibly different from where the next one
+starts.
 
 ---
 
@@ -219,8 +225,8 @@ for its attack range (section 7). It does nothing in a fight.
 A ship **loses one power** at the end of its owner's turn standing on a
 **charged node** — the node is drawing on the ship as it pays out — down to
 the minimum of 0. It **gains one power** at the end of its owner's turn
-standing on a **dormant** site or **in a bay**, up to the maximum of 4. An
-**active** site does neither. A fight never changes a ship's power (section
+standing on a **depleted** node or **in a bay**, up to the maximum of 4. An
+**inactive** node does neither. A fight never changes a ship's power (section
 7). A ship at 0 power is not destroyed and is not stuck: it still has one
 square orthogonally, and a bay will refill it.
 
@@ -288,9 +294,9 @@ Neither ship may be in a bay: a ship in a bay cannot attack, and cannot be
 attacked. And neither ship may be standing on a **charged node**: a ship
 holding a node cannot attack, and cannot be attacked. This is not only
 protection — a ship holding a node has given up striking out while it stands
-there. It applies to charged sites alone: a ship standing on an **active** or
-a **dormant** site is an ordinary target, and fights and is fought exactly
-like a ship on any other square (section 8.5).
+there. It applies to charged nodes alone: a ship standing on an **inactive**
+or a **depleted** node is an ordinary target, and fights and is fought
+exactly like a ship on any other square (section 8.5).
 
 **There is no winner.** Both ships — the attacker and the ship it attacked —
 are returned to bays (section 7.1), and both squares are left empty, but each
@@ -336,39 +342,43 @@ refill.
 
 ## 8. Nodes
 
-### 8.1 The three states of a site
+### 8.1 The three states of a node
 
-Every site is always in exactly one of three states:
+Every node is always in exactly one of three states:
 
-- **Active** — eligible to be charged, producing nothing, and costing
+- **Inactive** — eligible to be charged, producing nothing, and costing
   nothing.
 - **Charged** — producing energy: a ship standing on it collects (section
   8.4) and the node takes power from it (section 4.1) as it pays out, and can
   neither attack nor be attacked (section 7).
-- **Dormant** — recovering after running out. Not eligible to be charged,
+- **Depleted** — recovering after running out. Not eligible to be charged,
   producing nothing, and costing the player whose ship stands on it: energy
   (section 8.4), while giving power back (section 4.1), at the end of each of
   that player's turns.
 
-A site cycles active → charged → dormant → active.
+A node cycles inactive → charged → depleted → **ends**. The instant a node
+ends, a new inactive node appears somewhere else on the board (section 3.2).
 
-The board **aims** to keep five sites charged at all times: at the end of
-every turn it charges as many active sites as it takes to bring the charged
-count back to five (section 8.2). If there are not enough active sites, it
-charges what it can and simply runs short until the next turn.
+The board **aims** to keep five nodes charged at all times: at the end of
+every turn it charges as many inactive nodes as it takes to bring the
+charged count back to five (section 8.2). If there are not enough inactive
+nodes, it charges what it can and simply runs short until the next turn —
+and with only fifteen nodes on the board at once, this is the likelier case
+rather than an edge case.
 
-**The opening board is dealt**, not fixed. At the start of the game:
+**The opening board is dealt.** The game opens with **fifteen** nodes, at
+fifteen squares drawn under section 3.2:
 
-- **Five of the seventeen sites are charged**, chosen at random with every
-  site equally likely and no two the same. No site is privileged; the centre
-  is not guaranteed.
+- **Five of the fifteen are charged**, at squares drawn at random with every
+  legal square equally likely and no two the same. No square is privileged;
+  the centre is not guaranteed.
 - **Each of the five starts part-drained**, at a drain drawn from the opening
   drain table below — never more than 40, two-thirds of the capacity of 60
   (section 8.3), so every dealt node has enough life left to be worth racing
   for.
-- **Every other site starts active**, at a pressure drawn from the opening
+- **Every other node starts inactive**, at a pressure drawn from the opening
   pressure table below, rather than at 1 (section 8.2).
-- **Nothing is dormant at the start.**
+- **Nothing is depleted at the start.**
 
 | Drain | 0   | 5   | 10  | 15  | 20  | 25  | 30  | 35  | 40  | Average |
 | ----- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ------- |
@@ -382,8 +392,8 @@ first turn. The most-used opening node has 20 left.
 | -------- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ------- |
 | Share    | 24% | 20% | 16% | 12% | 9%  | 7%  | 5%  | 4%  | 3%  | 12.79   |
 
-Most sites have waited only a little, but the tail means a game can open
-with one or two sites already close to the cap of 50, which are the sites
+Most nodes have waited only a little, but the tail means a game can open
+with one or two nodes already close to the cap of 50, which are the nodes
 the first charge draw will favour.
 
 Nothing needs to spread their expiries out by hand. The five now open at
@@ -391,41 +401,45 @@ different ages as well as draining at independently drawn rates, so they are
 spread apart from the first turn rather than spreading within the first
 few.
 
-### 8.2 Charging a site
+### 8.2 Charging a node
 
-At the end of every turn, as many **active** sites as it takes to bring the
-charged count back to five are chosen at random, one at a time. If fewer than
-that are active, fewer are charged and the board runs below five until the
-next turn. Charged nodes still run out on schedule whether or not the board
-is at its five.
+At the end of every turn, as many **inactive** nodes as it takes to bring the
+charged count back to five are chosen at random, one at a time. If fewer
+than that are inactive, fewer are charged and the board runs below five
+until the next turn — with only fifteen nodes on the board, this is the
+likelier case rather than the exception. Charged nodes still run out on
+schedule whether or not the board is at its five.
 
-The draw does not look at occupancy: a site with a ship standing on it can be
+The draw does not look at occupancy: a node with a ship standing on it can be
 charged like any other. That ship is holding a node from that moment — it
 collects (section 8.4) and starts losing power (section 4.1) at the end of
 its owner's next turn, exactly as if it had moved onto a node.
 
 The choice is genuinely random, and neither player can see it coming — but it
-is no longer an equal chance for every active site. An active site carries
-**pressure**: it goes active at **1** and gains **1** at the end of every turn
-it stays active, up to a maximum of **50** — except at the start of the game,
-where the opening deal gives each active site a pressure of its own (section
-8.1). Each active site's chance of being drawn is its pressure as a share of
-the total pressure of all active sites, so a site that has been waiting a long
-time is more likely to be picked than one that has just cycled. Because
-pressure is never less than 1, no active site can ever be excluded outright.
+is no longer an equal chance for every inactive node. An inactive node
+carries **pressure**: it goes inactive at **1** and gains **1** at the end of
+every turn it stays inactive, up to a maximum of **50** — except at the start
+of the game, where the opening deal gives each inactive node a pressure of
+its own (section 8.1). Each inactive node's chance of being drawn is its
+pressure as a share of the total pressure of all inactive nodes, so a node
+that has been waiting a long time is more likely to be picked than one that
+has just cycled. Because pressure is never less than 1, no inactive node can
+ever be excluded outright.
 
-A dormant site **recovers** instead of simply cooling down. A node goes
-dormant at its capacity, or a little past it — the drain draw that tips it
+A depleted node **recovers** instead of simply cooling down. A node goes
+depleted at its capacity, or a little past it — the drain draw that tips it
 over may overshoot — and at the end of every turn subtracts an amount drawn
 at random:
 
 | Recovery | 4   | 5   | 6   | 7   | 8   | Average |
 | -------- | --- | --- | --- | --- | --- | ------- |
-| Dormant  | 10% | 25% | 30% | 25% | 10% | 6       |
+| Depleted | 10% | 25% | 30% | 25% | 10% | 6       |
 
-When it reaches zero or below, it goes active, at 1 pressure, where it
-becomes eligible to be charged. Recovery always starts from about the same
-level, so it always takes about ten turns.
+When it reaches zero or below, the node **retires**: it leaves the board, and
+at that same instant a new inactive node appears somewhere else, at 1
+pressure, drawn under section 3.2 and never on the square the retiring node
+just left. Recovery always starts from about the same level, so retirement
+always comes about ten turns after a node goes depleted.
 
 ### 8.3 How long a node lives
 
@@ -445,7 +459,7 @@ A node runs its drain up whether or not any ship is standing on it — it just
 runs up more than twice as fast when one is.
 
 A node ends **one** way: when its drain reaches or passes capacity, it is
-spent, and it goes dormant at the end of that turn and simply stops paying. A
+spent, and it goes depleted at the end of that turn and simply stops paying. A
 ship left standing on it stays where it is (section 8.5). A ship that leaves
 a node does not end it — the node simply reverts to the slower empty rate
 and burns on. An empty node lasts about 28 turns; a held one
@@ -454,12 +468,12 @@ lasts about 13, and those two figures now bracket every node's life.
 ### 8.4 Energy
 
 At the end of each player's turn, that player collects energy for the
-charged nodes they are **standing on**, and then pays for the dormant sites
-they are **standing on**. A site counts for either half only if one of that
-player's ships is on it at that moment — flying across a node or a
-dormant site and moving on neither collects nor costs anything.
+charged nodes they are **standing on**, and then pays for the depleted
+nodes they are **standing on**. A node counts for either half only if one of
+that player's ships is on it at that moment — flying across a charged node or
+a depleted node and moving on neither collects nor costs anything.
 
-| Sites counted | Energy |
+| Nodes counted | Energy |
 | ------------- | ------ |
 | 0             | 0      |
 | 1             | 1      |
@@ -469,17 +483,17 @@ dormant site and moving on neither collects nor costs anything.
 | 5             | 15     |
 
 The charged nodes a player holds are priced off this table exactly as
-before. Unlike charged nodes there is no limit on how many sites are dormant
-at once — up to twelve of the seventeen can be, since at most five are
-ever charged — so the dormant count is **capped at five** before it is
-priced: six or seven dormant sites cost the same 15 that five do. The most a
+before. Unlike charged nodes there is no limit on how many nodes are
+depleted at once — up to ten of the fifteen can be, since at most five are
+ever charged — so the depleted count is **capped at five** before it is
+priced: six or seven depleted nodes cost the same 15 that five do. The most a
 turn can pay is 15, so the most a turn can cost is now exactly 15 too —
 neither half of this section can outrun the other.
 
 The two halves are applied in that order — collect, then pay — and
-they are **not netted**. Holding nodes and sitting on dormant ones are
+they are **not netted**. Holding nodes and sitting on depleted ones are
 separately priced, and both are priced steeply: a player holding three
-charged nodes while standing on two dormant sites collects 6 and then pays
+charged nodes while standing on two depleted nodes collects 6 and then pays
 3, for a net of **+3**, not the +1 that a net count of one node held would
 have paid.
 
@@ -487,28 +501,31 @@ have paid.
 is larger than the energy the player has, their total lands on 0 rather
 than going negative.
 
-### 8.5 Standing on a site that is not charged
+### 8.5 Standing on a node that is not charged
 
-Standing on an active or a dormant site is allowed and ordinary. A ship may
-end a move on either, and may stay there for the rest of the game if its
+Standing on an inactive or a depleted node is allowed and ordinary. A ship
+may end a move on either, and may stay there for the rest of the game if its
 owner likes — nothing about it obliges the owner to move it, or anything
 else, on a later turn.
 
-The two are no longer the same. An **active** site pays nothing and costs
+The two are not the same. An **inactive** node pays nothing and costs
 nothing, so waiting on one for the charge draw is free, and it neither takes
-nor gives power. A **dormant** site pays nothing and **costs**: an energy
+nor gives power. A **depleted** node pays nothing and **costs**: an energy
 penalty (section 8.4) at the end of each of the owner's turns — but it gives
 power back (section 4.1). A **charged** node, by contrast, takes power from
 the ship holding it as it pays out (section 8.1).
 
-Neither an active nor a dormant site offers what a charged node offers: a
+Neither an inactive nor a depleted node offers what a charged node offers: a
 ship standing on one can be attacked like any other ship, and may attack
 like any other ship (section 7).
 
-The site's own cycle carries on underneath the ship. A dormant site recovers
-and goes active on schedule regardless of what is standing on it, and an
-active site is eligible for the charge draw whether or not a ship is
-standing on it (section 8.2).
+A node's own cycle carries on underneath the ship. A depleted node recovers
+towards retirement on schedule regardless of what is standing on it, and an
+inactive node is eligible for the charge draw whether or not a ship is
+standing on it (section 8.2). If the node underneath a ship retires, the
+ship is untouched — it keeps its square and its power — but the square it
+stands on is no longer a node at all, so from that instant it is an
+ordinary square: it costs nothing further, and gives no power back.
 
 When a node runs out under the ship holding it (section 8.3), the ship
 loses its protection at that same instant — it stops being a node, and so
@@ -522,50 +539,56 @@ owner prefers, and leaving now costs the node nothing.
 Everything that happens at the end of a turn happens in this order:
 
 1. Each of the moving player's ships standing on a charged node loses a
-   point of power, and each standing on a dormant site or in a bay gains one
-   (section 4.1).
+   point of power, and each standing on a depleted node or in a bay gains
+   one (section 4.1).
 2. The moving player collects energy for the charged nodes they hold and
-   then pays for the dormant sites they occupy (section 8.4).
+   then pays for the depleted nodes they occupy (section 8.4).
 3. Every charged node adds its drain (section 8.3); any that reaches capacity
-   goes dormant, and any ship standing on it keeps standing there, collecting
+   goes depleted, and any ship standing on it keeps standing there, collecting
    nothing and, from the end of its owner's next turn, paying for it
    (section 8.4).
-4. As many active sites as it takes to bring the board back to five charged
-   are charged, drawn by pressure (section 8.2).
-5. Every site still active gains a point of pressure, to the cap of 50
+4. As many inactive nodes as it takes to bring the board back to five
+   charged are charged, drawn by pressure (section 8.2).
+5. Every node still inactive gains a point of pressure, to the cap of 50
    (section 8.2).
-6. Every site that was dormant **before this turn began** subtracts its
-   recovery (section 8.2); any that reaches zero or below goes active, at 1
-   pressure.
+6. Every node that was depleted **before this turn began** subtracts its
+   recovery (section 8.2); any that reaches zero or below **retires and is
+   replaced**: it leaves the board, and a new inactive node appears
+   somewhere else, at 1 pressure, drawn under section 3.2.
 
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
-which an action was taken. The site clocks still tick, and a ship of the
-passing player standing on a charged node still loses its point of power and one
-standing on a dormant site or in a bay still gains one; the passing player
-still collects and still pays exactly as they would if they had acted.
+which an action was taken. The node clocks still tick, and a ship of the
+passing player standing on a charged node still loses its point of power and
+one standing on a depleted node or in a bay still gains one; the passing
+player still collects and still pays exactly as they would if they had
+acted.
 
 Step 6 is last **deliberately**, for the same reason as before: it is what
-makes a site spend at least one whole turn active before it can be charged. A
-site that finishes recovering at the end of turn N goes active only after
-that turn's charge draw has already run (step 4), so it is active for the
-whole of turn N+1 and is first eligible in turn N+1's draw, at 1 pressure.
-Running the steps in any other order would let a site go dormant → active →
-charged inside a single end-of-turn sequence, and it would never be visibly
-active at all.
+makes a node spend at least one whole turn inactive before it can be
+charged. A node that appears — whether from the opening deal or as a
+replacement in step 6 — is inactive for the whole of the next turn and is
+first eligible in that next turn's draw, at 1 pressure. A node that finishes
+recovering and is replaced at the end of turn N produces a new node that is
+inactive for the whole of turn N+1, first eligible in turn N+1's charge
+draw. Running the steps in any other order would let a node retire, be
+replaced and be charged inside a single end-of-turn sequence, and the
+replacement would never be visibly inactive at all.
 
-Step 5 sits **after** the charge draw for the matching reason: a site is
+Step 5 sits **after** the charge draw for the matching reason: a node is
 drawn at the pressure it has held all turn, so its first appearance in a
 draw is at weight 1, not 2.
 
 The two clocks are symmetric about the turn a state is entered. A node
 charged in step 4 of turn N first drains in step 3 of turn N+1, and a node
-that goes dormant in step 3 of turn N first recovers in step 6 of turn N+1,
-which is what step 6's "dormant before this turn began" is for: a node must
-not drain or recover on the very turn it entered its new state.
+that goes depleted in step 3 of turn N first counts towards recovery in
+step 6 of turn N+1, which is what step 6's "depleted before this turn began"
+is for: a node must not drain or recover on the very turn it entered its new
+state.
 
-A site's state changes only in this sequence, and never as part of resolving
-an action.
+A node's state changes only in this sequence, and never as part of resolving
+an action. A node's ending and its replacement's appearance are likewise
+both part of this sequence, at step 6, never part of resolving an action.
 
 ---
 
@@ -613,31 +636,44 @@ any.
 
 ---
 
-## Appendix B — Sizing the site pool
+## Appendix B — Sizing the node pool
 
-A node's life is now a mix of empty and held turns rather than a fixed
-count, but the mix works out to roughly **twenty** turns, so the board
-charges a site about every four turns. Recovery runs about ten turns, so
-roughly two or three of the seventeen sites sit dormant at any moment, and
-about nine or ten are active — the pool is comfortable.
+The board carries **fifteen** nodes at all times: one out, one in, whenever a
+node retires. A node's life is a mix of empty and held turns rather than a
+fixed count, but the mix works out to roughly **twenty** turns charged, and
+recovery runs about **ten** more turns depleted before retirement — thirty
+turns from birth to death. For five of the fifteen to be charged at any
+moment, the average time a node spends waiting inactive works out to about
+**thirty** turns: roughly 5 charged, 2½ depleted and 7½ inactive at any
+moment, so a node still charges about every four turns, exactly as before —
+the pool is comfortable, if a little thinner than the nine or ten inactive
+nodes the old seventeen-square board carried.
 
 Running short of five charged remains a **legal outcome**, not a failure the
-pool must be sized to prevent — section 8.2 charges as many active sites as
-it can and simply falls short when it has to. What the pool size still buys
-is **randomness**: if only one or two sites are active when the charge draw
+pool must be sized to prevent — section 8.2 charges as many inactive nodes as
+it can and simply falls short when it has to, and with fifteen nodes rather
+than seventeen this now comes up more often. What the pool size still buys
+is **randomness**: if only one or two nodes are inactive when the charge draw
 runs, the choice is nearly forced and players can predict it.
 
 What is now worth checking is different from before: the **pressure cap
-against the average wait**. A site waits something like forty turns between
-cycles, against a cap of 50, so most of the pool sits below the cap and
-pressure discriminates across the whole of it. A cap far below the average
-wait would flatten the weighting back towards uniform — that is what to
-check first whenever these numbers are retuned.
+against the average wait**. A node now waits something like thirty turns
+between cycles, against a cap of 50 — the cap sits _above_ the average wait
+now, rather than below it, which sharpens the weighting across the pool
+rather than flattening it towards uniform. That, and the size of the
+inactive pool against the target of five charged, are what to check first
+whenever these numbers are retuned.
 
-The app guards this with a test that the active pool stays comfortably
+These counts — fifteen nodes, five charged, ten inactive at the deal — are
+first guesses to be play-tested and retuned like every other number in this
+document.
+
+The app guards this with a test that the inactive pool stays comfortably
 populated over a long run, that expiries stay spread rather than arriving
-together, and that no site waits unboundedly long between cycles.
+together, and that no node waits unboundedly long between appearing and
+being charged.
 
 The opening deal (section 8.1) starts the board closer to this steady state
-than a fixed opening did, so the first twenty turns are no longer an
+than an unweighted opening did, so the first twenty turns are no longer an
 unrepresentative settling-in period.
+</content>

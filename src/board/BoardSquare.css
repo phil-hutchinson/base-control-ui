@@ -1,5 +1,5 @@
 .board-square {
-  /* A single-cell grid so a site marker and a ship can share the square
+  /* A single-cell grid so a node marker and a ship can share the square
      without absolute positioning: both children are placed in the same
      grid area and stack in DOM order, marker beneath ship. */
   display: grid;
@@ -16,7 +16,7 @@
 
 /* The interaction markings (destination, selected, having moved, and the
    ship condition) share one accent, kept distinct from the side colors,
-   the site marker's gold and grey/white artwork and the focus-ring amber,
+   the node marker's gold and grey/white artwork and the focus-ring amber,
    so they read as one "you are choosing a move" layer rather than
    game-state artwork. They differ from each other in shape, not color, so
    the layer still reads in greyscale. */

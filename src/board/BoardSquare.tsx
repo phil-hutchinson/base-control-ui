@@ -1,5 +1,5 @@
 // One square's stacked contents: a bay's planet beneath everything else,
-// then the site marker beneath any ship standing on it, then, during ship
+// then the node marker beneath any ship standing on it, then, during ship
 // selection, one of three selection markings — a legal destination, a legal
 // attack target, or the selected ship's own square — all sharing the square
 // in a single-cell grid rather than absolute positioning (see
@@ -9,7 +9,7 @@
 //
 // A bay's planet is drawn whether or not the square is occupied - there is
 // no occupancy condition anywhere below. A ship simply draws over it, as it
-// already does over a site marker.
+// already does over a node marker.
 //
 // Having moved this ply and a ship's condition (no action available) are
 // separate, independently optional fields from each other and from the
@@ -22,11 +22,11 @@
 
 import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
-import type { SiteState } from "../rules/sites";
+import type { NodeState } from "../rules/nodes";
 import { ShipModel } from "../ships/ShipModel";
 import { Planet } from "./Planet";
 import type { PlanetArt } from "./planetArt";
-import { SiteMarker } from "./SiteMarker";
+import { NodeMarker } from "./NodeMarker";
 import "./BoardSquare.css";
 
 export interface BoardSquareProps {
@@ -34,7 +34,7 @@ export interface BoardSquareProps {
   readonly squareName: string;
   /** Present if and only if `isBay` is true. */
   readonly planet?: PlanetArt;
-  readonly siteState?: SiteState;
+  readonly nodeState?: NodeState;
   readonly cyclePosition?: number;
   readonly occupant?: SquareOccupant;
   readonly hasActed?: boolean;
@@ -43,7 +43,7 @@ export interface BoardSquareProps {
 }
 
 // Geometry for the markings, in the same 0-100 viewBox ShipModel and
-// SiteMarker use, so they scale with the square exactly as those do.
+// NodeMarker use, so they scale with the square exactly as those do.
 const DESTINATION_DISC_RADIUS = 9;
 const TARGET_RING_RADIUS = 32;
 const TARGET_RING_STROKE_WIDTH = 6;
@@ -194,12 +194,12 @@ function NoActionMark() {
   );
 }
 
-/** One square's visible contents: a site marker, a ship, and a selection marking, each if present. */
+/** One square's visible contents: a node marker, a ship, and a selection marking, each if present. */
 export function BoardSquare({
   isBay,
   squareName,
   planet,
-  siteState,
+  nodeState,
   cyclePosition,
   occupant,
   hasActed,
@@ -226,9 +226,9 @@ export function BoardSquare({
   return (
     <div className={classNames.join(" ")} style={style}>
       {planet && <Planet planet={planet} />}
-      {siteState && (
-        <SiteMarker
-          state={siteState}
+      {nodeState && (
+        <NodeMarker
+          state={nodeState}
           squareName={squareName}
           cyclePosition={cyclePosition}
         />

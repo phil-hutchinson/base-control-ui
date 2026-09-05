@@ -9,7 +9,7 @@ import { ClockRegion } from "./ClockRegion";
 function buildState(overrides: Partial<GameState> = {}): GameState {
   return {
     ships: [],
-    siteStates: {},
+    nodes: {},
     sideToMove: "green",
     actionsRemaining: 1,
     actedThisPly: [],

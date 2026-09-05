@@ -6,7 +6,7 @@ import {
   ACTIONS_PER_PLY,
   type GameState,
   type Ship,
-  type SiteStatus,
+  type NodeStatus,
   startingGameState,
 } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
@@ -22,8 +22,9 @@ import { drawIndex } from "./random";
 import {
   drawTableAmount,
   EMPTY_NODE_DRAIN_TABLE,
-  type SiteState,
-} from "./sites";
+  PRESSURE_CAP,
+  type NodeState,
+} from "./nodes";
 
 function ship(
   id: ShipId,
@@ -34,9 +35,9 @@ function ship(
   return { id, side, square: squareFromName(square), power };
 }
 
-function siteStatuses(
-  states: Readonly<Record<string, SiteState | readonly [SiteState, number]>>,
-): Record<string, SiteStatus> {
+function nodeStatuses(
+  states: Readonly<Record<string, NodeState | readonly [NodeState, number]>>,
+): Record<string, NodeStatus> {
   return Object.fromEntries(
     Object.entries(states).map(([name, entry]) => {
       const [state, level] = Array.isArray(entry) ? entry : [entry, 0];
@@ -50,9 +51,7 @@ function buildState(config: {
   sideToMove?: "green" | "red";
   actionsRemaining?: number;
   actedThisPly?: readonly ShipId[];
-  siteStates?: Readonly<
-    Record<string, SiteState | readonly [SiteState, number]>
-  >;
+  nodes?: Readonly<Record<string, NodeState | readonly [NodeState, number]>>;
   plyNumber?: number;
   lengthInRounds?: number;
   energy?: { green: number; red: number };
@@ -60,7 +59,7 @@ function buildState(config: {
 }): GameState {
   return {
     ships: config.ships,
-    siteStates: siteStatuses(config.siteStates ?? {}),
+    nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? ACTIONS_PER_PLY,
     actedThisPly: config.actedThisPly ?? [],
@@ -74,13 +73,15 @@ function buildState(config: {
 
 describe("applyMove", () => {
   it("moves the ship and touches nothing else", () => {
-    // E6 is not one of the seventeen sites (rules.md §3.2), so it is
-    // immune to the end-of-turn drain and recovery this move's own ply-end
-    // triggers — this test is about the move itself, not about the board's
-    // own per-turn dynamics.
+    // E6 is an ordinary depleted node, given enough recovery left
+    // (comfortably above the recovery table's maximum of 8) that the one
+    // end-of-turn sequence this move triggers cannot retire it — this test
+    // is about the move itself, not about the board's own per-turn clock,
+    // which the end-of-turn drain and recovery run regardless of what a
+    // ship does.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
-      siteStates: { E6: "dormant" },
+      nodes: { E6: ["depleted", 40] },
     });
     const before = structuredClone(state);
 
@@ -96,7 +97,10 @@ describe("applyMove", () => {
     const other = result.state.ships.find((s) => s.id === "red-1");
     expect(other).toEqual(ship("red-1", "red", "A1"));
 
-    expect(result.state.siteStates).toEqual(state.siteStates);
+    // Its own per-turn clock still runs — its recovery still falls — so
+    // only its state, and the set of node squares, are asserted here.
+    expect(Object.keys(result.state.nodes)).toEqual(["E6"]);
+    expect(result.state.nodes.E6.state).toBe("depleted");
 
     // The input state itself is never mutated.
     expect(state).toEqual(before);
@@ -156,12 +160,12 @@ describe("applyMove", () => {
     ]);
   });
 
-  it("landing on a charged site leaves it charged: nothing a ship does changes a site's state (rules.md §8.2)", () => {
-    // A ship may only ever end a move on a charged site (rules.md §6) — an
-    // active or dormant destination is refused before it can be reached.
+  it("landing on a charged node leaves it charged: nothing a ship does changes a node's state (rules.md §8.2)", () => {
+    // A ship may only ever end a move on a charged node (rules.md §6) — an
+    // inactive or depleted destination is refused before it can be reached.
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      siteStates: { K8: ["charged", 1] },
+      nodes: { K8: ["charged", 1] },
       plyNumber: 5,
     });
 
@@ -171,15 +175,30 @@ describe("applyMove", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(result.state.siteStates.K8).toEqual(state.siteStates.K8);
+    // A charged node's drain still rises at the end of every turn regardless
+    // of what a ship does (§8.3), so only its state is asserted here, not
+    // its exact level.
+    expect(result.state.nodes.K8.state).toBe("charged");
     const movedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(movedShip?.square).toEqual(squareFromName("K8"));
   });
 
-  it("flying over an active site without stopping leaves it active (rules.md §8.2)", () => {
+  it("flying over an inactive node without stopping leaves it inactive (rules.md §8.2)", () => {
+    // Five charged nodes elsewhere hold the board at its target, so the
+    // charge draw has no shortfall to fill and never considers I8; I8
+    // itself sits at the pressure cap, so the pressure step also leaves it
+    // untouched — between the two, nothing about the end-of-turn sequence
+    // this move triggers can touch it.
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      siteStates: { I8: "active" },
+      nodes: {
+        I8: ["inactive", PRESSURE_CAP],
+        C3: ["charged", 0],
+        F3: ["charged", 0],
+        C6: ["charged", 0],
+        F6: ["charged", 0],
+        C9: ["charged", 0],
+      },
       plyNumber: 3,
     });
 
@@ -189,15 +208,25 @@ describe("applyMove", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(result.state.siteStates.I8).toEqual(state.siteStates.I8);
+    expect(result.state.nodes.I8).toEqual(state.nodes.I8);
     const movedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(movedShip?.square).toEqual(squareFromName("K8"));
   });
 
-  it("leaves an active site flown over unaffected", () => {
+  it("leaves an inactive node flown over unaffected", () => {
+    // As above: five charged nodes elsewhere leave the charge draw with no
+    // shortfall, and I8 sits at the pressure cap so the pressure step
+    // leaves it untouched too.
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      siteStates: { I8: ["active", 1] },
+      nodes: {
+        I8: ["inactive", PRESSURE_CAP],
+        C3: ["charged", 0],
+        F3: ["charged", 0],
+        C6: ["charged", 0],
+        F6: ["charged", 0],
+        C9: ["charged", 0],
+      },
       plyNumber: 4,
     });
 
@@ -207,18 +236,19 @@ describe("applyMove", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(result.state.siteStates.I8).toEqual(state.siteStates.I8);
+    expect(result.state.nodes.I8).toEqual(state.nodes.I8);
   });
 
-  it("leaves siteStates deeply unchanged when a move touches no site", () => {
-    // E6 is not one of the seventeen sites (rules.md §3.2), so it is
-    // immune to the drain and recovery every end-of-turn sequence now runs
-    // (rules.md §8.2, §8.3) — the "unchanged" under test here is about the
-    // move itself, not about the board's own per-turn dynamics, which run
-    // regardless of what a ship does (see endOfTurn.test.ts).
+  it("leaves the node set and every node's state unchanged when a move touches no node", () => {
+    // E6 is an ordinary depleted node, given enough recovery left
+    // (comfortably above the recovery table's maximum of 8) that the one
+    // end-of-turn sequence this move triggers cannot retire it — the
+    // "unchanged" under test here is about the move itself, not about the
+    // board's own per-turn clock, which the end-of-turn drain and recovery
+    // run regardless of what a ship does (see endOfTurn.test.ts).
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      siteStates: { E6: "dormant" },
+      nodes: { E6: ["depleted", 40] },
     });
 
     const result = applyMove(state, "green-1", squareFromName("H9"));
@@ -227,7 +257,10 @@ describe("applyMove", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(result.state.siteStates).toEqual(state.siteStates);
+    // Its own per-turn clock still runs, so only its state, and the set of
+    // node squares, are asserted here rather than the whole record.
+    expect(Object.keys(result.state.nodes)).toEqual(["E6"]);
+    expect(result.state.nodes.E6.state).toBe("depleted");
   });
 
   it("refuses an illegal destination, leaving the state exactly as it went in", () => {
@@ -740,10 +773,10 @@ describe("applyAttack", () => {
     });
   });
 
-  it("sends both ships to bays when the target stands on a dormant site, with nothing constraining either side's next turn (§8.5)", () => {
+  it("sends both ships to bays when the target stands on a depleted node, with nothing constraining either side's next turn (§8.5)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E5", 4), ship("red-1", "red", "F5", 2)],
-      siteStates: { E5: "dormant" },
+      nodes: { E5: "depleted" },
       sideToMove: "red",
       actionsRemaining: 1,
     });
@@ -833,18 +866,19 @@ describe("applyAttack", () => {
   });
 });
 
-describe("nothing a ship does changes any site's state (rules.md §8.2)", () => {
-  it("leaves every site's state as it was across a sequence of moves and a fight", () => {
-    // I8 is not one of the seventeen sites (rules.md §3.2), so it is
-    // immune to every piece of end-of-turn site mechanics and is checked
-    // for exact equality throughout. K5 is a real charged site: a real
-    // site's drain rises every end-of-turn sequence regardless of what a
-    // ship does (§8.3), so what this test can hold onto across the
-    // sequence is that its *state* never changes — not that its drain is
-    // literally unchanged. H8 is a real dormant site — the fight's target
-    // cannot itself be charged (rules.md §7: a ship holding a charged node
-    // cannot be attacked) — started with enough recovery left (§8.2) that
-    // three end-of-turn sequences cannot bring it back to active.
+describe("nothing a ship does changes any node's state (rules.md §8.2)", () => {
+  it("leaves every node's state as it was across a sequence of moves and a fight", () => {
+    // K5 is a charged node: its drain rises every end-of-turn sequence
+    // regardless of what a ship does (§8.3), so what this test can hold
+    // onto across the sequence is that its *state* never changes — not
+    // that its drain is literally unchanged. H8 and I8 are both depleted —
+    // H8 is the fight's target (rules.md §7: a ship holding a charged node
+    // cannot be attacked, so the target must be depleted or inactive) —
+    // both started with enough recovery left (§8.2) that three
+    // end-of-turn sequences cannot bring either back to inactive, so only
+    // their *state* is asserted too, not their exact level. No node here is
+    // ever inactive, so the charge draw never has a pool to draw from
+    // across any of the three sequences.
     const state = buildState({
       ships: [
         ship("green-1", "green", "G8", 0),
@@ -852,26 +886,26 @@ describe("nothing a ship does changes any site's state (rules.md §8.2)", () => 
         ship("red-1", "red", "H8", 4),
         ship("red-2", "red", "O5", 4),
       ],
-      siteStates: {
-        H8: ["dormant", 50],
-        I8: ["dormant", 0],
+      nodes: {
+        H8: ["depleted", 50],
+        I8: ["depleted", 50],
         K5: ["charged", 0],
       },
     });
 
-    function expectSitesUnaffected(afterState: GameState): void {
-      expect(afterState.siteStates.I8).toEqual({ state: "dormant", level: 0 });
-      expect(afterState.siteStates.H8.state).toBe("dormant");
-      expect(afterState.siteStates.K5.state).toBe("charged");
+    function expectNodesUnaffected(afterState: GameState): void {
+      expect(afterState.nodes.I8.state).toBe("depleted");
+      expect(afterState.nodes.H8.state).toBe("depleted");
+      expect(afterState.nodes.K5.state).toBe("charged");
     }
 
-    // Green's whole ply: an ordinary move touching no site.
+    // Green's whole ply: an ordinary move touching no node.
     const afterGreenMove = applyMove(state, "green-2", squareFromName("B5"));
     expect(afterGreenMove.outcome).toBe("applied");
     if (afterGreenMove.outcome !== "applied") {
       throw new Error("expected green's move to be applied");
     }
-    expectSitesUnaffected(afterGreenMove.state);
+    expectNodesUnaffected(afterGreenMove.state);
 
     // Red's whole ply: another ordinary move, so play returns to green.
     const afterRedMove = applyMove(
@@ -883,9 +917,9 @@ describe("nothing a ship does changes any site's state (rules.md §8.2)", () => 
     if (afterRedMove.outcome !== "applied") {
       throw new Error("expected red's move to be applied");
     }
-    expectSitesUnaffected(afterRedMove.state);
+    expectNodesUnaffected(afterRedMove.state);
 
-    // Green's next ply: a fight at the dormant site, sending both ships home.
+    // Green's next ply: a fight at the depleted node, sending both ships home.
     const afterAttack = applyAttack(
       afterRedMove.state,
       "green-1",
@@ -897,7 +931,7 @@ describe("nothing a ship does changes any site's state (rules.md §8.2)", () => 
     }
     const attacker = afterAttack.state.ships.find((s) => s.id === "green-1");
     expect(isBay(attacker!.square)).toBe(true);
-    expectSitesUnaffected(afterAttack.state);
+    expectNodesUnaffected(afterAttack.state);
   });
 });
 
@@ -994,14 +1028,14 @@ describe("assertFightInvariants (rules.md §7)", () => {
     ).toThrow(RangeError);
   });
 
-  it("still throws when a site's state changes at all — no action changes a site's state (rules.md §8.6)", () => {
+  it("still throws when a node's state changes at all — no action changes a node's state (rules.md §8.6)", () => {
     const before = buildState({
       ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
-      siteStates: { H8: ["charged", 10] },
+      nodes: { H8: ["charged", 10] },
     });
     const after: GameState = {
       ...before,
-      siteStates: { ...before.siteStates, H8: { state: "dormant", level: 10 } },
+      nodes: { ...before.nodes, H8: { state: "depleted", level: 10 } },
     };
 
     expect(() =>
@@ -1115,7 +1149,7 @@ describe("applyPassGuard", () => {
         ship("red-7", "red", "H9"),
         ship("red-8", "red", "I9"),
       ],
-      siteStates: { H8: "charged" },
+      nodes: { H8: "charged" },
     });
 
     const result = applyPassGuard(state);
@@ -1186,13 +1220,13 @@ describe("applyPassGuard", () => {
   });
 
   it("runs the end-of-turn sequence for the passing side, so a ship that has moved and has no attack left still loses a point of power", () => {
-    // green-1 sits on K5, a charged site, having already spent this ply's
+    // green-1 sits on K5, a charged node, having already spent this ply's
     // first action on a move: it has no move left (already acted) and no
     // enemy stands anywhere near it to attack, so it passes with its second
     // action still nominally available.
     const state = buildState({
       ships: [ship("green-1", "green", "K5", 1)],
-      siteStates: { K5: "charged" },
+      nodes: { K5: "charged" },
       actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
@@ -1278,12 +1312,12 @@ describe("applyPassGuard", () => {
 
 describe("applyOutOfTimePass", () => {
   it("passes the side to move's ply, running the end-of-turn sequence in full, when it is out of time (rules.md §5, §10)", () => {
-    // green-1 sits on K5, a charged site, with plenty of legal moves and no
+    // green-1 sits on K5, a charged node, with plenty of legal moves and no
     // ship having acted this ply, which proves the pass fires purely
     // because green is out of time, not because it had nothing else to do.
     const state = buildState({
       ships: [ship("green-1", "green", "K5", 1), ship("red-1", "red", "A1")],
-      siteStates: { K5: "charged" },
+      nodes: { K5: "charged" },
       outOfTime: { green: true, red: false },
     });
 
@@ -1392,7 +1426,7 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
     // exactly the state green's own move produces, nothing beyond it.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
-      siteStates: { H8: ["charged", 23] },
+      nodes: { H8: ["charged", 23] },
     });
 
     const result = applyMove(state, "green-1", squareFromName("H9"));
@@ -1412,7 +1446,7 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
       state.randomSeed,
       EMPTY_NODE_DRAIN_TABLE,
     );
-    expect(result.state.siteStates.H8).toEqual({
+    expect(result.state.nodes.H8).toEqual({
       state: "charged",
       level: 23 + emptyDrawAmount,
     });
@@ -1424,7 +1458,7 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
   it("leaves a node charged when a ship simply arrives on it — arriving is not a departure", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H7")],
-      siteStates: { H8: ["charged", 5] },
+      nodes: { H8: ["charged", 5] },
     });
 
     const result = applyMove(state, "green-1", squareFromName("H8"));
@@ -1433,7 +1467,7 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(result.state.siteStates.H8.state).toBe("charged");
+    expect(result.state.nodes.H8.state).toBe("charged");
     expect(result.effects).not.toContainEqual(
       expect.objectContaining({ type: "node-vacated" }),
     );
@@ -1442,7 +1476,7 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
   it("collects no energy and loses no power for a node the moving player stepped off this turn", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 3)],
-      siteStates: { H8: ["charged", 5] },
+      nodes: { H8: ["charged", 5] },
     });
 
     const result = applyMove(state, "green-1", squareFromName("H9"));

@@ -5,8 +5,8 @@
 // single place an id or a colour is written down, so a rename cannot
 // half-happen between the sprite and the ships that use it.
 //
-// Every id carries a `ship-` prefix so it cannot collide with SiteMarker's
-// `site-<square>-fill` ids or with anything a later story adds.
+// Every id carries a `ship-` prefix so it cannot collide with NodeMarker's
+// `node-<square>-fill` ids or with anything a later story adds.
 
 import type { Side } from "../rules/fleet";
 

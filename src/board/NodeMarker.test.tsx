@@ -3,12 +3,12 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
-import type { SiteState } from "../rules/sites";
-import { SiteMarker } from "./SiteMarker";
+import type { NodeState } from "../rules/nodes";
+import { NodeMarker } from "./NodeMarker";
 
 afterEach(cleanup);
 
-const STATES: readonly SiteState[] = ["active", "charged", "dormant"];
+const STATES: readonly NodeState[] = ["inactive", "charged", "depleted"];
 
 const SQUARE_NAME = "H8";
 
@@ -26,8 +26,8 @@ interface ExpectedArtwork {
 // Radii, stop offsets, colours and opacities as specified in
 // doc/plan/00000023-update-node-visual/node-artwork.md, transcribed here as
 // the expectation an assertion checks against, independently of
-// SiteMarker.tsx's own table. Active's own start and end sit at pressure 1
-// and the pressure cap respectively (see SiteMarker.tsx's ACTIVE_*
+// NodeMarker.tsx's own table. Inactive's own start and end sit at pressure 1
+// and the pressure cap respectively (see NodeMarker.tsx's ACTIVE_*
 // constants).
 const ACTIVE_START: ExpectedArtwork = {
   radius: "12",
@@ -45,8 +45,8 @@ const ACTIVE_END: ExpectedArtwork = {
   ],
 };
 
-const EXPECTED_ARTWORK: Record<SiteState, ExpectedArtwork> = {
-  active: ACTIVE_START,
+const EXPECTED_ARTWORK: Record<NodeState, ExpectedArtwork> = {
+  inactive: ACTIVE_START,
   charged: {
     radius: "70",
     stops: [
@@ -55,7 +55,7 @@ const EXPECTED_ARTWORK: Record<SiteState, ExpectedArtwork> = {
       { offset: "100%", color: "#F5DEB3", opacity: "1" },
     ],
   },
-  dormant: {
+  depleted: {
     radius: "70",
     stops: [
       { offset: "0%", color: "#808080", opacity: "1" },
@@ -65,19 +65,19 @@ const EXPECTED_ARTWORK: Record<SiteState, ExpectedArtwork> = {
   },
 };
 
-describe("SiteMarker", () => {
+describe("NodeMarker", () => {
   it.each(STATES)("gives %s its own state modifier class", (state) => {
     const { container } = render(
-      <SiteMarker state={state} squareName={SQUARE_NAME} />,
+      <NodeMarker state={state} squareName={SQUARE_NAME} />,
     );
 
     const svg = container.querySelector("svg");
-    expect(svg).toHaveClass("site-marker", `site-marker--${state}`);
+    expect(svg).toHaveClass("node-marker", `node-marker--${state}`);
   });
 
   it("is decorative: aria-hidden, no title or desc, and no accessible text", () => {
     const { container } = render(
-      <SiteMarker state="active" squareName={SQUARE_NAME} />,
+      <NodeMarker state="inactive" squareName={SQUARE_NAME} />,
     );
 
     const svg = container.querySelector("svg");
@@ -91,7 +91,7 @@ describe("SiteMarker", () => {
     "renders exactly one centred circle in the shared viewBox for %s",
     (state) => {
       const { container } = render(
-        <SiteMarker state={state} squareName={SQUARE_NAME} />,
+        <NodeMarker state={state} squareName={SQUARE_NAME} />,
       );
 
       const svg = container.querySelector("svg");
@@ -108,7 +108,7 @@ describe("SiteMarker", () => {
     "draws %s's radius, gradient stops, colours and opacities as specified",
     (state) => {
       const { container } = render(
-        <SiteMarker state={state} squareName={SQUARE_NAME} />,
+        <NodeMarker state={state} squareName={SQUARE_NAME} />,
       );
 
       const expected = EXPECTED_ARTWORK[state];
@@ -132,13 +132,13 @@ describe("SiteMarker", () => {
     "fills %s's circle with a gradient id built from its square name",
     (state) => {
       const { container } = render(
-        <SiteMarker state={state} squareName={SQUARE_NAME} />,
+        <NodeMarker state={state} squareName={SQUARE_NAME} />,
       );
 
       const circle = container.querySelector("circle");
       const gradient = container.querySelector("radialGradient");
-      expect(gradient).toHaveAttribute("id", `site-${SQUARE_NAME}-fill`);
-      expect(circle).toHaveAttribute("fill", `url(#site-${SQUARE_NAME}-fill)`);
+      expect(gradient).toHaveAttribute("id", `node-${SQUARE_NAME}-fill`);
+      expect(circle).toHaveAttribute("fill", `url(#node-${SQUARE_NAME}-fill)`);
     },
   );
 
@@ -150,7 +150,7 @@ describe("SiteMarker", () => {
     "moves charged's middle stop to $expectedOffset at cycle position $cyclePosition",
     ({ cyclePosition, expectedOffset }) => {
       const { container } = render(
-        <SiteMarker
+        <NodeMarker
           state="charged"
           squareName={SQUARE_NAME}
           cyclePosition={cyclePosition}
@@ -167,11 +167,11 @@ describe("SiteMarker", () => {
     { cyclePosition: 0.5, expectedOffset: "37.5%" },
     { cyclePosition: 1, expectedOffset: "25%" },
   ])(
-    "moves dormant's middle stop to $expectedOffset at cycle position $cyclePosition",
+    "moves depleted's middle stop to $expectedOffset at cycle position $cyclePosition",
     ({ cyclePosition, expectedOffset }) => {
       const { container } = render(
-        <SiteMarker
-          state="dormant"
+        <NodeMarker
+          state="depleted"
           squareName={SQUARE_NAME}
           cyclePosition={cyclePosition}
         />,
@@ -182,9 +182,13 @@ describe("SiteMarker", () => {
     },
   );
 
-  it("renders active's pressure-1 appearance at cycle position 0", () => {
+  it("renders inactive's pressure-1 appearance at cycle position 0", () => {
     const { container } = render(
-      <SiteMarker state="active" squareName={SQUARE_NAME} cyclePosition={0} />,
+      <NodeMarker
+        state="inactive"
+        squareName={SQUARE_NAME}
+        cyclePosition={0}
+      />,
     );
 
     const circle = container.querySelector("circle");
@@ -198,9 +202,13 @@ describe("SiteMarker", () => {
     );
   });
 
-  it("renders today's disc at active's pressure cap, cycle position 1", () => {
+  it("renders today's disc at inactive's pressure cap, cycle position 1", () => {
     const { container } = render(
-      <SiteMarker state="active" squareName={SQUARE_NAME} cyclePosition={1} />,
+      <NodeMarker
+        state="inactive"
+        squareName={SQUARE_NAME}
+        cyclePosition={1}
+      />,
     );
 
     const circle = container.querySelector("circle");
@@ -214,10 +222,10 @@ describe("SiteMarker", () => {
     );
   });
 
-  it("sits halfway between active's two ends at cycle position 0.5", () => {
+  it("sits halfway between inactive's two ends at cycle position 0.5", () => {
     const { container } = render(
-      <SiteMarker
-        state="active"
+      <NodeMarker
+        state="inactive"
         squareName={SQUARE_NAME}
         cyclePosition={0.5}
       />,
@@ -232,9 +240,9 @@ describe("SiteMarker", () => {
     expect(stops[1]).toHaveAttribute("stop-opacity", "0.625");
   });
 
-  it("falls back to active's pressure-1 appearance when no cycle position is given", () => {
+  it("falls back to inactive's pressure-1 appearance when no cycle position is given", () => {
     const { container } = render(
-      <SiteMarker state="active" squareName={SQUARE_NAME} />,
+      <NodeMarker state="inactive" squareName={SQUARE_NAME} />,
     );
 
     const circle = container.querySelector("circle");
@@ -248,11 +256,11 @@ describe("SiteMarker", () => {
     { cyclePosition: -0.5, expected: ACTIVE_START },
     { cyclePosition: 1.5, expected: ACTIVE_END },
   ])(
-    "clamps active's cycle position $cyclePosition to its nearer end",
+    "clamps inactive's cycle position $cyclePosition to its nearer end",
     ({ cyclePosition, expected }) => {
       const { container } = render(
-        <SiteMarker
-          state="active"
+        <NodeMarker
+          state="inactive"
           squareName={SQUARE_NAME}
           cyclePosition={cyclePosition}
         />,
@@ -263,11 +271,11 @@ describe("SiteMarker", () => {
     },
   );
 
-  it.each(["charged", "dormant"] as const)(
+  it.each(["charged", "depleted"] as const)(
     "falls back to %s's start-of-cycle offset when no cycle position is given",
     (state) => {
       const { container } = render(
-        <SiteMarker state={state} squareName={SQUARE_NAME} />,
+        <NodeMarker state={state} squareName={SQUARE_NAME} />,
       );
 
       const stops = container.querySelectorAll("stop");
@@ -281,7 +289,7 @@ describe("SiteMarker", () => {
   it("reports no axe violations for any state", async () => {
     for (const state of STATES) {
       const { container } = render(
-        <SiteMarker state={state} squareName={SQUARE_NAME} />,
+        <NodeMarker state={state} squareName={SQUARE_NAME} />,
       );
 
       const results = await axe.run(container, {

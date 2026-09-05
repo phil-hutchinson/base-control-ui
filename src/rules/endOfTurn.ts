@@ -3,49 +3,49 @@
 // moved and `state.plyNumber` as the ply just played, so `ply.ts` must call
 // this before either changes. Two ordering choices matter and both are
 // deliberate (§8.6). Pressure (step 5) is gained after the charge draw
-// (step 4), not before, so a site is drawn at the pressure it held all
+// (step 4), not before, so a node is drawn at the pressure it held all
 // turn — its first appearance in a draw is at weight 1, never 2.
-// Recovering a dormant site to active (step 6) runs last, after both of
-// those, deliberately: it is what makes a site spend at least one whole
-// turn visibly active before the draw can pick it, rather than going
-// dormant -> active -> charged inside a single sequence. And the two
-// clocks are symmetric about the turn a state is entered: a node charged
-// in step 4 of turn N first drains in step 3 of turn N+1, and a node that
-// goes dormant in step 3 of turn N first recovers in step 6 of turn N+1 —
-// which is why step 6 works from the dormant set captured at entry, before
+// Retiring a depleted node and replacing it (step 6) runs last, after both
+// of those, deliberately: it is what makes a replacement spend at least one
+// whole turn visibly inactive before the draw can pick it, rather than
+// appearing -> charged inside a single sequence. And the two clocks are
+// symmetric about the turn a state is entered: a node charged in step 4 of
+// turn N first drains in step 3 of turn N+1, and a node that goes depleted
+// in step 3 of turn N first retires (if it does) in step 6 of turn N+1 —
+// which is why step 6 works from the depleted list captured at entry, before
 // step 3 runs.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
 import { isBay } from "./bays";
-import { type SiteChargedEffect, runChargeDraw } from "./chargeDraw";
+import { type NodeChargedEffect, runChargeDraw } from "./chargeDraw";
 import {
   chargedNodesHeldBy,
-  dormantSitesOccupiedBy,
-  energyForDormantSites,
+  depletedNodesOccupiedBy,
+  energyForDepletedNodes,
   energyForNodesHeld,
 } from "./energy";
 import type { Side, ShipId } from "./fleet";
 import {
   type GameState,
-  type SiteStatus,
-  dormantSiteNames,
+  type NodeStatus,
+  nodeSquares,
   shipsBySquare,
-  siteStateAt,
+  nodeStateAt,
 } from "./gameState";
+import { drawNodeSquare } from "./nodePlacement";
 import { MAX_POWER, MIN_POWER, type PowerLevel } from "./power";
 import {
-  DORMANT_RECOVERY_TABLE,
+  DEPLETED_RECOVERY_TABLE,
   EMPTY_NODE_DRAIN_TABLE,
   HELD_NODE_DRAIN_TABLE,
   NODE_CAPACITY,
   PRESSURE_CAP,
-  SITES,
   STARTING_PRESSURE,
   drawTableAmount,
-} from "./sites";
+} from "./nodes";
 
-/** A ship on a dormant site, or in a bay, gained a point of power at the end of its side's turn (§8.6 step 1, §4.1, §3.1). */
+/** A ship on a depleted node, or in a bay, gained a point of power at the end of its side's turn (§8.6 step 1, §4.1, §3.1). */
 export interface PowerGainedEffect {
   readonly type: "power-gained";
   readonly shipId: ShipId;
@@ -73,7 +73,7 @@ export interface EnergyCollectedEffect {
 }
 
 /**
- * The side that just played paid energy for the dormant sites it occupies
+ * The side that just played paid energy for the depleted nodes it occupies
  * (§8.6 step 2, §8.4). `amount` is the energy actually deducted, never more
  * than the side had — where §8.4's floor of 0 bites, `amount` is smaller
  * than the table price, so `newTotal` is always `previousTotal - amount`
@@ -87,16 +87,21 @@ export interface EnergyPenaltyEffect {
   readonly squares: readonly Square[];
 }
 
-/** A charged node's drain reached its capacity and it went dormant (§8.6 step 3, §8.3). */
+/** A charged node's drain reached its capacity and it went depleted (§8.6 step 3, §8.3). */
 export interface NodeRanOutEffect {
   readonly type: "node-ran-out";
   readonly square: Square;
 }
 
-/** A dormant site finished recovering and went active, at pressure 1 (§8.6 step 6, §8.2). */
-export interface SiteWentActiveEffect {
-  readonly type: "site-went-active";
-  readonly square: Square;
+/**
+ * A depleted node's recovery reached zero and it retired, replaced at the
+ * same instant by one new inactive node elsewhere, at pressure 1 (§8.6 step
+ * 6, §8.2).
+ */
+export interface NodeReplacedEffect {
+  readonly type: "node-replaced";
+  readonly retiredSquare: Square;
+  readonly newSquare: Square;
 }
 
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
@@ -106,8 +111,8 @@ export type EndOfTurnEffect =
   | EnergyCollectedEffect
   | EnergyPenaltyEffect
   | NodeRanOutEffect
-  | SiteChargedEffect
-  | SiteWentActiveEffect;
+  | NodeChargedEffect
+  | NodeReplacedEffect;
 
 /** The state resulting from the end-of-turn sequence, and the effects it produced. */
 export interface EndOfTurnResult {
@@ -121,22 +126,27 @@ export interface EndOfTurnResult {
  * `plyNumber` as the ply itself — the caller runs this **before** swapping
  * sides or advancing the ply counter.
  *
- * Step 6 must recover exactly the sites that were dormant before this ply
- * began, never one that only goes dormant during this very sequence, in step
- * 3 below. The set is captured here, at entry, before step 3 runs — it is
- * exact because no action changes a site's state (rules.md §8.6), so the set
- * of dormant sites when this function is entered is exactly the set from the
- * start of the ply.
+ * Step 6 must retire exactly the nodes that were depleted before this ply
+ * began, never one that only goes depleted during this very sequence, in step
+ * 3 below. The ordered list is captured here, at entry, before step 3 runs —
+ * it is exact because no action changes a node's state (rules.md §8.6), so
+ * the set of depleted nodes when this function is entered is exactly the set
+ * from the start of the ply. It is a snapshot, not a live walk, so that a
+ * node written mid-sequence is never visited a second time, and so that a
+ * replacement written by an earlier retirement in this same sequence is
+ * visible to a later one's placement draw (§3.2, §8.2).
  */
 export function runEndOfTurn(state: GameState): EndOfTurnResult {
-  const dormantBeforePly = dormantSiteNames(state);
+  const depletedBeforePly = nodeSquares(state).filter(
+    (square) => nodeStateAt(state, square) === "depleted",
+  );
   const side = state.sideToMove;
   const occupants = shipsBySquare(state);
   const effects: EndOfTurnEffect[] = [];
 
   // Step 1: the moving player's ships on charged nodes lose a point of
-  // power, floored at 0, and those on dormant sites or in a bay gain one,
-  // capped at 4 (§4.1, §3.1). An active site does neither. A bay and a site
+  // power, floored at 0, and those on depleted nodes or in a bay gain one,
+  // capped at 4 (§4.1, §3.1). An inactive node does neither. A bay and a node
   // can never be the same square (§3.2), so the two gain conditions never
   // both apply. One pass over the fleet, so the effects come out in fleet
   // order with losses and gains interleaved exactly as the ships are
@@ -145,8 +155,8 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     if (ship.side !== side) {
       return ship;
     }
-    const siteState = siteStateAt(state, ship.square);
-    if (siteState === "charged" && ship.power > MIN_POWER) {
+    const nodeState = nodeStateAt(state, ship.square);
+    if (nodeState === "charged" && ship.power > MIN_POWER) {
       const power = (ship.power - 1) as PowerLevel;
       effects.push({
         type: "power-lost",
@@ -158,7 +168,7 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
       return { ...ship, power };
     }
     if (
-      (siteState === "dormant" || isBay(ship.square)) &&
+      (nodeState === "depleted" || isBay(ship.square)) &&
       ship.power < MAX_POWER
     ) {
       const power = (ship.power + 1) as PowerLevel;
@@ -196,17 +206,17 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     });
   }
 
-  // Step 2 (continued): the moving side then pays for the dormant sites it
+  // Step 2 (continued): the moving side then pays for the depleted nodes it
   // occupies right now (§8.4), taken from the total the collection above
   // has already raised. The table price is clamped to a count of five
-  // dormant sites; the amount actually taken is floored so the side's total
+  // depleted nodes; the amount actually taken is floored so the side's total
   // never goes below 0, and it is that floored amount — not the table
   // price — that is reported, so `newTotal` is always exactly
   // `previousTotal - amount`. A zero deduction is not an event, whether
-  // because nothing dormant is occupied or because there is nothing left to
+  // because nothing depleted is occupied or because there is nothing left to
   // take: no effect, no other state change.
-  const dormantSquares = dormantSitesOccupiedBy(workingState, side);
-  const price = energyForDormantSites(dormantSquares.length);
+  const depletedSquares = depletedNodesOccupiedBy(workingState, side);
+  const price = energyForDepletedNodes(depletedSquares.length);
   const penalty = Math.min(price, workingState.energy[side]);
   if (penalty > 0) {
     const newTotal = workingState.energy[side] - penalty;
@@ -219,18 +229,20 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
       side,
       amount: penalty,
       newTotal,
-      squares: dormantSquares,
+      squares: depletedSquares,
     });
   }
 
   // Step 3: every charged node adds its drain — drawn from the held table if
   // a ship of either side is standing on it right now, the empty table
-  // otherwise — and any that reaches capacity goes dormant carrying its
+  // otherwise — and any that reaches capacity goes depleted carrying its
   // drain unclamped (§8.3). A ship left standing on it simply stays there,
-  // collecting nothing (§8.5).
-  for (const square of SITES) {
+  // collecting nothing (§8.5). The ordered snapshot is taken once, up front,
+  // rather than recomputed on every iteration.
+  const step3Squares = nodeSquares(workingState);
+  for (const square of step3Squares) {
     const name = squareName(square);
-    const status = workingState.siteStates[name];
+    const status = workingState.nodes[name];
     if (status === undefined || status.state !== "charged") {
       continue;
     }
@@ -242,37 +254,39 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
       table,
     );
     const level = status.level + drawnAmount;
-    const nextStatus: SiteStatus =
+    const nextStatus: NodeStatus =
       level < NODE_CAPACITY
         ? { state: "charged", level }
-        : { state: "dormant", level };
+        : { state: "depleted", level };
     workingState = {
       ...workingState,
-      siteStates: { ...workingState.siteStates, [name]: nextStatus },
+      nodes: { ...workingState.nodes, [name]: nextStatus },
       randomSeed: nextSeed,
     };
 
-    if (nextStatus.state === "dormant") {
+    if (nextStatus.state === "depleted") {
       effects.push({ type: "node-ran-out", square });
     }
   }
 
-  // Step 4: as many active sites as it takes to bring the board back to
+  // Step 4: as many inactive nodes as it takes to bring the board back to
   // five charged are charged, at random (§8.2, §8.6 step 4). Running short
-  // is legal: with no active site left to draw from, this simply stops.
+  // is legal: with no inactive node left to draw from, this simply stops.
   const chargeDraw = runChargeDraw(workingState);
   workingState = chargeDraw.state;
   effects.push(...chargeDraw.effects);
 
-  // Step 5: every site still active gains a point of pressure, to the cap
-  // of 50 (§8.2). This runs after the charge draw, so a site is drawn at
+  // Step 5: every node still inactive gains a point of pressure, to the cap
+  // of 50 (§8.2). This runs after the charge draw, so a node is drawn at
   // the pressure it held all turn — its first appearance in a draw is at
-  // weight 1, not 2 — and it runs before step 6, so a site that goes active
-  // there starts at pressure 1 untouched by this step.
-  for (const square of SITES) {
+  // weight 1, not 2 — and it runs before step 6, so a node that goes inactive
+  // there starts at pressure 1 untouched by this step. The ordered snapshot
+  // is taken once, up front, rather than recomputed on every iteration.
+  const step5Squares = nodeSquares(workingState);
+  for (const square of step5Squares) {
     const name = squareName(square);
-    const status = workingState.siteStates[name];
-    if (status === undefined || status.state !== "active") {
+    const status = workingState.nodes[name];
+    if (status === undefined || status.state !== "inactive") {
       continue;
     }
     if (status.level >= PRESSURE_CAP) {
@@ -280,47 +294,82 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     }
     workingState = {
       ...workingState,
-      siteStates: {
-        ...workingState.siteStates,
-        [name]: { state: "active", level: status.level + 1 },
+      nodes: {
+        ...workingState.nodes,
+        [name]: { state: "inactive", level: status.level + 1 },
       },
     };
   }
 
-  // Step 6: every site that was dormant before this ply began (the
-  // `dormantBeforePly` set captured at entry, above) subtracts its
-  // recovery; any that reaches zero or below goes active, at pressure 1
-  // (§8.2). A site that only went dormant during this very sequence — in
-  // step 3 above — was charged when the ply began, so it is excluded and
-  // first recovers at the end of the next ply.
-  for (const square of SITES) {
+  // Step 6: every node that was depleted before this ply began (the
+  // `depletedBeforePly` list captured at entry, above) subtracts its
+  // recovery; any that reaches zero or below retires and is replaced by one
+  // new inactive node elsewhere, at pressure 1 (§8.2). A node that only went
+  // depleted during this very sequence — in step 3 above — was charged when
+  // the ply began, so it is excluded and first has a chance to retire at the
+  // end of the next ply. The loop walks the entry snapshot, not a live walk
+  // of the current board, and re-reads each square's current status,
+  // skipping it if it is no longer depleted. Two retirements in the same
+  // sequence are handled one after the other, each complete before the next
+  // begins, so the second placement sees the first replacement and cannot
+  // land adjacent to it.
+  for (const square of depletedBeforePly) {
     const name = squareName(square);
-    const status = workingState.siteStates[name];
-    if (
-      status === undefined ||
-      status.state !== "dormant" ||
-      !dormantBeforePly.has(name)
-    ) {
+    const status = workingState.nodes[name];
+    if (status === undefined || status.state !== "depleted") {
       continue;
     }
     const [drawnAmount, nextSeed] = drawTableAmount(
       workingState.randomSeed,
-      DORMANT_RECOVERY_TABLE,
+      DEPLETED_RECOVERY_TABLE,
     );
     const level = status.level - drawnAmount;
-    const nextStatus: SiteStatus =
-      level > 0
-        ? { state: "dormant", level }
-        : { state: "active", level: STARTING_PRESSURE };
+    workingState = { ...workingState, randomSeed: nextSeed };
+
+    if (level > 0) {
+      workingState = {
+        ...workingState,
+        nodes: {
+          ...workingState.nodes,
+          [name]: { state: "depleted", level },
+        },
+      };
+      continue;
+    }
+
+    // The retiring node's entry is removed before the replacement pool is
+    // built, so the adjacency constraint (§3.2) does not see it: the
+    // replacement may legitimately land next to the square just vacated,
+    // and only that square itself is barred, via `drawNodeSquare`'s
+    // excluded-square argument. Only the current retiring square is barred
+    // this way — a square freed by an earlier retirement in this same
+    // sequence is not, since its entry is already gone from `workingState`
+    // and nothing excludes it a second time, so a later replacement in the
+    // sequence may land squarely on it.
+    const nodesWithoutRetired = { ...workingState.nodes };
+    delete nodesWithoutRetired[name];
+    workingState = { ...workingState, nodes: nodesWithoutRetired };
+
+    const [newSquare, seedAfterDraw] = drawNodeSquare(
+      nodeSquares(workingState),
+      workingState.ships.map((ship) => ship.square),
+      workingState.randomSeed,
+      square,
+    );
+    const newName = squareName(newSquare);
     workingState = {
       ...workingState,
-      siteStates: { ...workingState.siteStates, [name]: nextStatus },
-      randomSeed: nextSeed,
+      nodes: {
+        ...workingState.nodes,
+        [newName]: { state: "inactive", level: STARTING_PRESSURE },
+      },
+      randomSeed: seedAfterDraw,
     };
-
-    if (nextStatus.state === "active") {
-      effects.push({ type: "site-went-active", square });
-    }
+    effects.push({
+      type: "node-replaced",
+      retiredSquare: square,
+      newSquare,
+    });
   }
 
   return { state: workingState, effects };

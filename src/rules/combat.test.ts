@@ -8,10 +8,10 @@ import {
   legalTargets,
 } from "./combat";
 import type { ShipId } from "./fleet";
-import type { GameState, Ship, SiteStatus } from "./gameState";
+import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { PowerLevel } from "./power";
-import type { SiteState } from "./sites";
+import type { NodeState } from "./nodes";
 
 function ship(
   id: ShipId,
@@ -22,9 +22,9 @@ function ship(
   return { id, side, square: squareFromName(square), power };
 }
 
-function siteStatuses(
-  states: Readonly<Record<string, SiteState>>,
-): Record<string, SiteStatus> {
+function nodeStatuses(
+  states: Readonly<Record<string, NodeState>>,
+): Record<string, NodeStatus> {
   return Object.fromEntries(
     Object.entries(states).map(([name, state]) => [name, { state, level: 0 }]),
   );
@@ -34,14 +34,14 @@ function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
   actedThisPly?: readonly ShipId[];
-  siteStates?: Readonly<Record<string, SiteState>>;
+  nodes?: Readonly<Record<string, NodeState>>;
   actionsRemaining?: number;
   plyNumber?: number;
   lengthInRounds?: number;
 }): GameState {
   return {
     ships: config.ships,
-    siteStates: siteStatuses(config.siteStates ?? {}),
+    nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: config.actionsRemaining ?? 2,
     actedThisPly: config.actedThisPly ?? [],
@@ -277,11 +277,11 @@ describe("attackRefusalReason / legalTargets", () => {
   });
 });
 
-describe("attackRefusalReason / legalTargets on a site that is not charged (§8.5)", () => {
+describe("attackRefusalReason / legalTargets on a node that is not charged (§8.5)", () => {
   it("neither blocks an attack nor blocks the attacker's ship from being attacked", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7", 0), ship("red-1", "red", "E8", 4)],
-      siteStates: { E7: "active", E8: "dormant" },
+      nodes: { E7: "inactive", E8: "depleted" },
     });
 
     expect(
@@ -290,10 +290,10 @@ describe("attackRefusalReason / legalTargets on a site that is not charged (§8.
     expect(legalTargets(state, "green-1")).toContainEqual(squareFromName("E8"));
   });
 
-  it("lets a ship on a dormant site attack a ship on an active site, the roles swapped", () => {
+  it("lets a ship on a depleted node attack a ship on an inactive node, the roles swapped", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7", 0), ship("red-1", "red", "E8", 4)],
-      siteStates: { E7: "dormant", E8: "active" },
+      nodes: { E7: "depleted", E8: "inactive" },
     });
 
     expect(
@@ -307,7 +307,7 @@ describe("attackRefusalReason / legalTargets on a charged node (§7)", () => {
   it("refuses an attacker standing on a charged node, leaving it with no targets", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
-      siteStates: { H8: "charged" },
+      nodes: { H8: "charged" },
     });
 
     expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
@@ -319,7 +319,7 @@ describe("attackRefusalReason / legalTargets on a charged node (§7)", () => {
   it("refuses a target standing on a charged node, and it is absent from legalTargets", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
-      siteStates: { H9: "charged" },
+      nodes: { H9: "charged" },
     });
 
     expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
@@ -333,7 +333,7 @@ describe("attackRefusalReason / legalTargets on a charged node (§7)", () => {
   it("refuses a protected target within reach as protected, not as out of range", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 4)],
-      siteStates: { H9: "charged" },
+      nodes: { H9: "charged" },
     });
 
     expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
@@ -344,7 +344,7 @@ describe("attackRefusalReason / legalTargets on a charged node (§7)", () => {
   it("reports the attacker's own reason ahead of the target's when both stand on charged nodes", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
-      siteStates: { H8: "charged", H9: "charged" },
+      nodes: { H8: "charged", H9: "charged" },
     });
 
     expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(

@@ -7,6 +7,51 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.20 — nodes that move around the board
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **There are no fixed sites any more.** Section 3.2's table of seventeen
+  fixed squares, and the site concept behind it, are gone. A node's square is
+  now drawn when the node appears and lasts for exactly as long as that node
+  does.
+- **A node is now mortal and mobile.** It cycles **inactive → charged →
+  depleted**, and when its depleted spell ends it **retires** rather than
+  going inactive in place: it leaves the board, and at that same instant one
+  new inactive node appears somewhere else, at pressure 1. One out, one in —
+  the board carries the same count of nodes from the first turn to the last.
+- **The board opens with fifteen nodes**, not seventeen: five charged and ten
+  inactive, at fifteen squares drawn under section 3.2, instead of at
+  seventeen fixed ones. The two opening tables (drain and pressure) are
+  unchanged.
+- **Where a node may appear is constrained**, so the board never becomes
+  unplayable or absurd: the square must hold no node already, no ship may be
+  standing on it, it must not be on the outer edge or one square in from it,
+  and it must not be orthogonally or diagonally adjacent to another node. A
+  fallback — placed uniformly among squares that hold no node and are not a
+  bay — exists only so that placement can never fail. A replacement never
+  appears on the square the node it replaces just left.
+- **A shortfall of charged nodes stays legal**, as it already was — the board
+  simply runs below five until an inactive node becomes available — restated
+  because the smaller inactive pool makes this the likelier case rather than
+  the exception.
+- **The game's random elements go from four to five**, gaining where a new
+  node appears.
+- **These counts — fifteen nodes, five charged, ten inactive at the deal —
+  are first guesses**, to be play-tested and retuned like every other number
+  in this document, exactly as the outgoing seventeen-site counts were.
+
+Two vocabulary changes ride along with this, both a consequence of the
+change rather than a separate tidy-up:
+
+- **"Site" is retired.** With no fixed positions left, the word describes
+  nothing. This document, and the code and tests that implement it, all say
+  **node** now.
+- **The three states are renamed** to the words that describe them:
+  **inactive → charged → depleted**, replacing active → charged → dormant.
+  "Active" for a node that is doing nothing was the confusing one.
+
 ## 0.19 — an optional clock
 
 This is a gameplay change. Tagging stays on hold until the game plays (see

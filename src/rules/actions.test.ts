@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { squareFromName } from "./board";
 import { shipHasLegalAction, sideToMoveHasLegalAction } from "./actions";
 import type { ShipId } from "./fleet";
-import type { GameState, Ship, SiteStatus } from "./gameState";
+import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS, pliesForGameLength } from "./gameLength";
 import type { PowerLevel } from "./power";
-import type { SiteState } from "./sites";
+import type { NodeState } from "./nodes";
 
 function ship(
   id: ShipId,
@@ -16,9 +16,9 @@ function ship(
   return { id, side, square: squareFromName(square), power };
 }
 
-function siteStatuses(
-  states: Readonly<Record<string, SiteState>>,
-): Record<string, SiteStatus> {
+function nodeStatuses(
+  states: Readonly<Record<string, NodeState>>,
+): Record<string, NodeStatus> {
   return Object.fromEntries(
     Object.entries(states).map(([name, state]) => [name, { state, level: 0 }]),
   );
@@ -28,12 +28,12 @@ function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
   actedThisPly?: readonly ShipId[];
-  siteStates?: Readonly<Record<string, SiteState>>;
+  nodes?: Readonly<Record<string, NodeState>>;
   plyNumber?: number;
 }): GameState {
   return {
     ships: config.ships,
-    siteStates: siteStatuses(config.siteStates ?? {}),
+    nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     actionsRemaining: 1,
     actedThisPly: config.actedThisPly ?? [],
@@ -99,7 +99,7 @@ describe("sideToMoveHasLegalAction", () => {
         ship("red-3", "red", "H7"),
         ship("red-4", "red", "H9"),
       ],
-      siteStates: { H8: "charged" },
+      nodes: { H8: "charged" },
     });
 
     expect(sideToMoveHasLegalAction(state)).toBe(false);
@@ -140,7 +140,7 @@ describe("shipHasLegalAction", () => {
   it("is false for a ship holding a charged node with no legal move, even with an enemy in range (rules.md §7)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9")],
-      siteStates: { H8: "charged" },
+      nodes: { H8: "charged" },
     });
 
     expect(shipHasLegalAction(state, "green-1")).toBe(true);
@@ -155,20 +155,20 @@ describe("shipHasLegalAction", () => {
         ship("green-4", "green", "H7"),
         ship("red-1", "red", "H9"),
       ],
-      siteStates: { H8: "charged" },
+      nodes: { H8: "charged" },
     });
 
     expect(shipHasLegalAction(boxedIn, "green-1")).toBe(false);
   });
 
-  it("is true for a ship standing on a dormant site, and for a sibling elsewhere, with neither held back (§8.5)", () => {
+  it("is true for a ship standing on a depleted node, and for a sibling elsewhere, with neither held back (§8.5)", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "E5", 4),
         ship("green-2", "green", "H9", 1),
         ship("red-1", "red", "H10"),
       ],
-      siteStates: { E5: "dormant" },
+      nodes: { E5: "depleted" },
     });
 
     expect(shipHasLegalAction(state, "green-1")).toBe(true);

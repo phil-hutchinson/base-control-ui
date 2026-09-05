@@ -12,10 +12,10 @@ const SAMPLE_PLANET = PLANETS[0];
 afterEach(cleanup);
 
 describe("BoardSquare", () => {
-  it("renders neither a site marker nor a ship on a plain empty square", () => {
+  it("renders neither a node marker nor a ship on a plain empty square", () => {
     const { container } = render(<BoardSquare isBay={false} squareName="H8" />);
 
-    expect(container.querySelector(".site-marker")).toBeNull();
+    expect(container.querySelector(".node-marker")).toBeNull();
     expect(container.querySelector(".ship-model")).toBeNull();
   });
 
@@ -31,12 +31,12 @@ describe("BoardSquare", () => {
     expect(plain.querySelector(".board-square--bay")).toBeNull();
   });
 
-  it("draws the site marker beneath the ship when a square holds both", () => {
+  it("draws the node marker beneath the ship when a square holds both", () => {
     const { container } = render(
       <BoardSquare
         isBay={false}
         squareName="H8"
-        siteState="charged"
+        nodeState="charged"
         occupant={{ side: "green", power: 2 }}
       />,
     );
@@ -45,7 +45,7 @@ describe("BoardSquare", () => {
     expect(square).not.toBeNull();
     const children = Array.from(square?.children ?? []);
     const markerIndex = children.findIndex((child) =>
-      child.classList.contains("site-marker"),
+      child.classList.contains("node-marker"),
     );
     const shipIndex = children.findIndex((child) =>
       child.classList.contains("ship-model"),
@@ -289,7 +289,7 @@ describe("BoardSquare", () => {
       <BoardSquare
         isBay={false}
         squareName="H8"
-        siteState="active"
+        nodeState="inactive"
         occupant={{ side: "red", power: 3 }}
         mark="destination"
       />,

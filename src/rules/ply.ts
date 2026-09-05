@@ -7,7 +7,7 @@
 // resolved: both ships are placed in bays drawn at random from the bays
 // standing empty, attacker first, carrying the power each had before the
 // fight, and both squares they left are left empty. There is no winner and no
-// advance. Nothing a ship does changes a site's state: a site's state changes
+// advance. Nothing a ship does changes a node's state: a node's state changes
 // only in the end-of-turn sequence (rules.md §8.6). Every action — a move or
 // an attack — marks the acting ship as having acted this ply, so a further
 // attempt by the same ship this ply is refused. When the ply's actions are all
@@ -338,9 +338,9 @@ function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
  * fight, which can only ever change who holds a square, never how many
  * ships either side has.
  *
- * The site-state check is a plain identity comparison: no site's state or
+ * The node-state check is a plain identity comparison: no node's state or
  * `level` may differ between `before` and `after` at all. No action changes
- * a site's state, full stop — a site's state changes only in the end-of-turn
+ * a node's state, full stop — a node's state changes only in the end-of-turn
  * sequence (rules.md §8.6), never while an action is being resolved.
  *
  * The returned-ship checks pin what §7.1's random draw guarantees: each of
@@ -418,13 +418,13 @@ export function assertFightInvariants(
     }
   }
 
-  const siteNames = new Set([
-    ...Object.keys(before.siteStates),
-    ...Object.keys(after.siteStates),
+  const nodeNames = new Set([
+    ...Object.keys(before.nodes),
+    ...Object.keys(after.nodes),
   ]);
-  for (const name of siteNames) {
-    const beforeStatus = before.siteStates[name];
-    const afterStatus = after.siteStates[name];
+  for (const name of nodeNames) {
+    const beforeStatus = before.nodes[name];
+    const afterStatus = after.nodes[name];
     const unchanged =
       beforeStatus !== undefined &&
       afterStatus !== undefined &&
@@ -432,7 +432,7 @@ export function assertFightInvariants(
       beforeStatus.level === afterStatus.level;
     if (!unchanged) {
       throw new RangeError(
-        `site "${name}" changed from "${beforeStatus?.state}" to "${afterStatus?.state}": no action changes a site's state, rules.md §8.6 says a site's state changes only in the end-of-turn sequence`,
+        `node "${name}" changed from "${beforeStatus?.state}" to "${afterStatus?.state}": no action changes a node's state, rules.md §8.6 says a node's state changes only in the end-of-turn sequence`,
       );
     }
   }
@@ -446,7 +446,7 @@ export function assertFightInvariants(
  * first and the defender's from the bays still empty afterwards, advancing
  * `randomSeed` once per ship.
  * Both squares the ships fought from are left empty; there is no winner and
- * no advance. Neither square's site changes state: leaving a node does not
+ * no advance. Neither square's node changes state: leaving a node does not
  * end it (rules.md §8.3). The attacking ship is added to `actedThisPly` even
  * though it ends the action in a bay itself: it spent its one action
  * regardless (rules.md §5). One action is spent; when the ply's last action

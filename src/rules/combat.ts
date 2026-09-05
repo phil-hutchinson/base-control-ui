@@ -10,7 +10,7 @@ import { type Square, squareName } from "./board";
 import { BAYS, isBay } from "./bays";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
-import { type GameState, shipsBySquare, siteStateAt } from "./gameState";
+import { type GameState, shipsBySquare, nodeStateAt } from "./gameState";
 import { type ReachEntry, findShip, reachFrom } from "./movement";
 import { drawIndex } from "./random";
 
@@ -91,7 +91,7 @@ export function attackRefusalReason(
   if (isBay(attacker.square)) {
     return "attacker-in-bay";
   }
-  if (siteStateAt(state, attacker.square) === "charged") {
+  if (nodeStateAt(state, attacker.square) === "charged") {
     return "attacker-on-charged-node";
   }
 
@@ -105,7 +105,7 @@ export function attackRefusalReason(
   if (isBay(target)) {
     return "target-in-bay";
   }
-  if (siteStateAt(state, target) === "charged") {
+  if (nodeStateAt(state, target) === "charged") {
     return "target-on-charged-node";
   }
 
@@ -140,7 +140,7 @@ export function legalTargets(
     attacker.side !== state.sideToMove ||
     state.actedThisPly.includes(shipId) ||
     isBay(attacker.square) ||
-    siteStateAt(state, attacker.square) === "charged"
+    nodeStateAt(state, attacker.square) === "charged"
   ) {
     return [];
   }
