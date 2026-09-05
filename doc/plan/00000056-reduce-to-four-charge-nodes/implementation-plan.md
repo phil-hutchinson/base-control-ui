@@ -287,7 +287,20 @@ finds an accessible behaviour being lost, it is **recorded** in
 
 ### Step 1 — Rules 0.20 → 0.21: four charged, and a table that stops at four
 
-Status: pending
+Status: committed
+
+Notes: Edited §2, §8.1, §8.2, §8.4, §8.6 step 4 and Appendix B in
+`doc/ruleset/rules.md` to four charged nodes, per D7's arithmetic for
+Appendix B; bumped the version to 0.21; bumped `RULES_VERSION` in
+`src/rules/rulesVersion.ts` to match; added a "0.21 — four charged nodes, not
+five" entry at the top of `doc/ruleset/changelog.md`, marked as a gameplay
+change, tagging left on hold. `npm run typecheck`, `npm run lint`, `npm test`
+(939 tests, all still passing since no constant moved yet) and
+`npm run format:check` all pass. `grep -n "five" doc/ruleset/rules.md` shows
+only fleet-size, random-element-count, spawn-constraint and Appendix B's own
+new prose comparing the old and new waits — no surviving claim that the
+board aims for five charged, and §8.4's table ends at 4. No deviation from
+the plan.
 
 Edit `doc/ruleset/rules.md` so that no section still says the board aims for
 five charged nodes, and §8.4's table ends at four. Bump the document's version

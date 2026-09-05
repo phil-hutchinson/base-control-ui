@@ -7,6 +7,26 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.21 — four charged nodes, not five
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **The board now aims to keep four nodes charged**, not five, at the opening
+  deal and at every end-of-turn charge draw.
+- **The opening board is four charged and eleven inactive**, not five and
+  ten, still at fifteen nodes and nothing depleted. The two opening tables
+  (drain and pressure) are unchanged.
+- **The energy table stops at four.** The `5 → 15` row is gone, so the most a
+  turn can pay is now **10**, for holding all four charged nodes.
+- **The depleted penalty is capped at four**, not five, so five, six or seven
+  depleted nodes all cost the same 10 — the most a turn can cost still equals
+  the most it can pay.
+- **A shortfall of charged nodes stays legal**, as it already was, but is
+  restated as the **uncommon** case rather than the likely one: against a
+  target of four, roughly nine of the fifteen nodes sit inactive at any
+  moment, so the charge draw usually finds all it needs.
+
 ## 0.20 — nodes that move around the board
 
 This is a gameplay change. Tagging stays on hold until the game plays (see
