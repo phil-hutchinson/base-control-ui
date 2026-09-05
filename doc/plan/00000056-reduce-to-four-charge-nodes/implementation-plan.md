@@ -468,7 +468,49 @@ planning, they do.
 
 ### Step 3 — Re-measure the long-run guards and restate what they claim
 
-Status: pending
+Status: committed
+
+Notes: Re-measured every figure myself with a temporary local test file
+(deleted before finishing, per S3) rather than editing the real test files
+with throwaway `console.log`s, since that let the harness be reused across
+both files without repeated edit/revert cycles; the method (add a log,
+`npx vitest run`, record, delete) is the one the step describes. Measured
+values matched D5/D6's planning table almost exactly: `nodePool.test.ts`
+over `SEEDS`/`PLIES_TO_RUN` — lowest instantaneous inactive 7 (comment now
+says so, was "5"; Appendix B's own predicted figure in that comment moved
+from "7½" to "9" per D7), multi-expiry share ≤1.4% (per-seed maximum,
+matching the `it.each` the assertion actually runs under; was "2.4%"),
+worst same-ply expiries 2 (was "3"), longest wait 238 turns (was "162",
+with the old comment's separate "forty seeds, 800 turns" figure of 257
+dropped and replaced with an explicit statement that no broader sweep was
+re-run at this target, per D6's "do not carry forward a measurement that
+was not made"), total charges 68-69 across the five seeds (was "85"),
+distinct interior squares seen 114 (was "116"). Retitled and rewrote the
+steady-state test around four charged/one-or-two depleted/nine-or-ten
+inactive (measured meanDepleted ~1.45, meanInactive ~9.55 for seed
+20260819), redid its arithmetic comment for a life of 15/4 × 29 ≈ 109 turns
+(≈1.4 depleted, ≈9.6 inactive), and widened its inactive upper bound from
+10 to 11 so the measured 9.55 is not sitting against it, per D6/D7 — its
+point (this file's no-ship economy differs from Appendix B for a stated
+reason) is unchanged. Retitled the "never exceeds five/back at five"
+test to four; no logic change, it already derives from the constant.
+`seededReplay.test.ts`: re-measured seed 20260819 over 40 rounds —
+fightCount 12, bayReturns 24, chargedNodes 11, replacedNodes 8, all
+matching D5's table. Lowered `chargedNodes.length`'s floor from 10 to 8
+(measured 11, so the old floor cleared it by only one) with the
+measurement written into a new comment beside it, and refreshed the
+`replacedNodes` comment from its old-target figure of 10 to the
+new-target figure of 8; its floor of 5 is unchanged, per the plan.
+`openingBoard.test.ts`: retitled "tops the board back up to five" to
+four, and corrected the inline comment "the five dealt already charged are
+excluded" to four — and, since it sits in the same sentence and was
+already stale, also corrected that comment's "ten dealt-inactive nodes" to
+eleven (`NODE_COUNT - TARGET_CHARGED_NODES` is now 11), which the plan's
+bullet for this file did not call out individually but which is the same
+kind of prose fix on the same line. `npm run typecheck`, `npm run lint`,
+`npm test` (939 tests, all passing, including `nodePool.test.ts`,
+`seededReplay.test.ts`, `openingBoard.test.ts` and `fullGame.test.ts`) and
+`npm run format:check` all pass. No other deviation from the plan.
 
 The economy tests all pass at a target of four, but several of them describe a
 board that keeps five charged and quote figures measured under that target.

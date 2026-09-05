@@ -30,7 +30,7 @@ const RUN_TO_COMPLETION_LENGTH_IN_ROUNDS = 1_000;
 
 describe("a game played from a dealt board runs to completion (rules.md §8.1, §8.6)", () => {
   it.each(RUN_TO_COMPLETION_SEEDS)(
-    "runs every dealt node out, retires and replaces a depleted node, tops the board back up to five, and charges every one of the dealt nodes at least once (seed %d)",
+    "runs every dealt node out, retires and replaces a depleted node, tops the board back up to four, and charges every one of the dealt nodes at least once (seed %d)",
     (seed) => {
       let state = startingGameState(seed, RUN_TO_COMPLETION_LENGTH_IN_ROUNDS);
 
@@ -72,12 +72,12 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       }
       // At least one depleted node retires and is replaced over the run.
       expect(retired.size).toBeGreaterThan(0);
-      // Every one of the ten dealt-inactive nodes earns a real node-charged
-      // effect: an inactive node can never retire without first being
-      // charged. (The five dealt already charged are excluded — they were
-      // charged at the deal itself, which raises no effect of its own to
-      // observe here. A square a much later replacement happens to
-      // reoccupy can also turn up in `charged`, under an entirely
+      // Every one of the eleven dealt-inactive nodes earns a real
+      // node-charged effect: an inactive node can never retire without
+      // first being charged. (The four dealt already charged are excluded
+      // — they were charged at the deal itself, which raises no effect of
+      // its own to observe here. A square a much later replacement happens
+      // to reoccupy can also turn up in `charged`, under an entirely
       // different node's life — harmless, and not what this checks.)
       for (const name of dealtInactiveNames) {
         expect(charged.has(name)).toBe(true);
