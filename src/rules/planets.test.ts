@@ -1,86 +1,71 @@
 import { describe, expect, it } from "vitest";
 import { PLANETS, isPlanet } from "./planets";
-import {
-  COLUMN_LETTERS,
-  type Square,
-  isOnBoard,
-  squareAt,
-  squareName,
-} from "./board";
+import { COLUMN_LETTERS, type Square, squareAt, squareName } from "./board";
 
-/**
- * The 56 squares on the board's outer edge, in clockwise order starting at
- * the top-left corner (A15): along the top left to right, down the right
- * side, along the bottom right to left, and up the left side.
- */
-function perimeterRing(): Square[] {
-  const ring: Square[] = [];
-  const columns = COLUMN_LETTERS;
-  const last = columns.length - 1;
+/** The named twelve, in the order rules.md §3.1 gives the six base squares and their rotations. */
+const EXPECTED_PLANET_NAMES = [
+  "E3",
+  "D7",
+  "F5",
+  "I4",
+  "J8",
+  "L5",
+  "K13",
+  "L9",
+  "J11",
+  "G12",
+  "F8",
+  "D11",
+];
 
-  for (const column of columns) {
-    ring.push(squareAt(column, 15));
-  }
-  for (let row = 14; row >= 1; row--) {
-    ring.push(squareAt(columns[last], row));
-  }
-  for (let index = last - 1; index >= 0; index--) {
-    ring.push(squareAt(columns[index], 1));
-  }
-  for (let row = 2; row <= 14; row++) {
-    ring.push(squareAt(columns[0], row));
-  }
+/** The square a half-turn rotation of the board sends `square` to, computed independently of `planets.ts`'s own rotation. */
+function rotateHalfTurn(square: Square): Square {
+  const columnIndex = COLUMN_LETTERS.indexOf(square.column);
+  const rotatedColumn = COLUMN_LETTERS[COLUMN_LETTERS.length - 1 - columnIndex];
+  return squareAt(rotatedColumn, 16 - square.row);
+}
 
-  return ring;
+/** Whether two squares are orthogonally or diagonally adjacent. */
+function isAdjacent(a: Square, b: Square): boolean {
+  const columnDelta =
+    COLUMN_LETTERS.indexOf(a.column) - COLUMN_LETTERS.indexOf(b.column);
+  return Math.abs(columnDelta) <= 1 && Math.abs(a.row - b.row) <= 1;
 }
 
 describe("planets", () => {
-  it("has exactly fourteen planets", () => {
-    expect(PLANETS).toHaveLength(14);
+  it("has exactly twelve planets", () => {
+    expect(PLANETS).toHaveLength(12);
   });
 
-  it("lies entirely on the outer edge", () => {
+  it("is exactly the named twelve squares", () => {
+    expect(PLANETS.map(squareName).sort()).toEqual(
+      [...EXPECTED_PLANET_NAMES].sort(),
+    );
+  });
+
+  it("is unchanged by a half-turn rotation", () => {
+    const names = new Set(PLANETS.map(squareName));
     for (const planet of PLANETS) {
-      const onEdge =
-        planet.column === "A" ||
-        planet.column === "O" ||
-        planet.row === 1 ||
-        planet.row === 15;
-      expect(onEdge).toBe(true);
+      expect(names.has(squareName(rotateHalfTurn(planet)))).toBe(true);
     }
   });
 
-  it("contains no corner", () => {
-    const corners = new Set(["A1", "A15", "O1", "O15"]);
+  it("has no two planets adjacent, orthogonally or diagonally", () => {
+    for (let a = 0; a < PLANETS.length; a++) {
+      for (let b = a + 1; b < PLANETS.length; b++) {
+        expect(isAdjacent(PLANETS[a], PLANETS[b])).toBe(false);
+      }
+    }
+  });
+
+  it("lies entirely inside C3-M13, the interior the node draw uses", () => {
     for (const planet of PLANETS) {
-      expect(corners.has(squareName(planet))).toBe(false);
+      const columnIndex = COLUMN_LETTERS.indexOf(planet.column);
+      expect(columnIndex).toBeGreaterThanOrEqual(COLUMN_LETTERS.indexOf("C"));
+      expect(columnIndex).toBeLessThanOrEqual(COLUMN_LETTERS.indexOf("M"));
+      expect(planet.row).toBeGreaterThanOrEqual(3);
+      expect(planet.row).toBeLessThanOrEqual(13);
     }
-  });
-
-  it("has every planet on the board", () => {
-    for (const planet of PLANETS) {
-      expect(isOnBoard(planet.column, planet.row)).toBe(true);
-    }
-  });
-
-  it("sits every fourth square around the 56-square perimeter", () => {
-    const ring = perimeterRing();
-    expect(ring).toHaveLength(56);
-
-    const ringNames = ring.map(squareName);
-    const planetIndices = PLANETS.map((planet) => {
-      const index = ringNames.indexOf(squareName(planet));
-      expect(index).toBeGreaterThanOrEqual(0);
-      return index;
-    }).sort((a, b) => a - b);
-
-    for (let i = 1; i < planetIndices.length; i++) {
-      expect(planetIndices[i] - planetIndices[i - 1]).toBe(4);
-    }
-    // The gap wrapping from the last planet back to the first is also four.
-    expect(
-      56 - planetIndices[planetIndices.length - 1] + planetIndices[0],
-    ).toBe(4);
   });
 
   it("matches isPlanet for every planet and rejects a sample of non-planet squares", () => {
@@ -89,6 +74,7 @@ describe("planets", () => {
     }
     expect(isPlanet(squareAt("A", 1))).toBe(false);
     expect(isPlanet(squareAt("H", 8))).toBe(false);
-    expect(isPlanet(squareAt("O", 15))).toBe(false);
+    // A starting square, which is now an ordinary square.
+    expect(isPlanet(squareAt("A", 2))).toBe(false);
   });
 });

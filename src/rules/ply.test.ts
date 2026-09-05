@@ -116,9 +116,9 @@ describe("applyMove", () => {
     // ever carries the ship's power unchanged onto the planet for the
     // end-of-turn step to then act on.
     const endsOnPlanet = buildState({
-      ships: [ship("green-1", "green", "A11", 2), ship("red-1", "red", "O15")],
+      ships: [ship("green-1", "green", "D3", 2), ship("red-1", "red", "O15")],
     });
-    const endResult = applyMove(endsOnPlanet, "green-1", squareFromName("A10"));
+    const endResult = applyMove(endsOnPlanet, "green-1", squareFromName("E3"));
     expect(endResult.outcome).toBe("applied");
     if (endResult.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -135,7 +135,7 @@ describe("applyMove", () => {
             type: "power-gained",
             shipId: "green-1",
             side: "green",
-            square: squareFromName("A10"),
+            square: squareFromName("E3"),
             power: 3,
           },
         ],
@@ -143,12 +143,12 @@ describe("applyMove", () => {
     ]);
 
     const passesOverPlanet = buildState({
-      ships: [ship("green-1", "green", "A11", 2), ship("red-1", "red", "O15")],
+      ships: [ship("green-1", "green", "D3", 2), ship("red-1", "red", "O15")],
     });
     const passResult = applyMove(
       passesOverPlanet,
       "green-1",
-      squareFromName("A9"),
+      squareFromName("F3"),
     );
     expect(passResult.outcome).toBe("applied");
     if (passResult.outcome !== "applied") {
@@ -504,30 +504,30 @@ describe("applyAttack", () => {
   });
 
   it("recomputes the return planet live: a planet an earlier ply's move vacated is one of the two a fight's ships land on", () => {
-    // green-2 sits on H15, one of the two planets left empty once green-2
-    // moves off it (L15 is the other); green-1 and red-1 are positioned
+    // green-2 sits on E3, one of the two planets left empty once green-2
+    // moves off it (D7 is the other); green-1 and red-1 are positioned
     // for the fight the next ply brings.
     const state = buildState({
       ships: [
-        ship("green-2", "green", "H15", 0),
+        ship("green-2", "green", "E3", 0),
         ship("green-1", "green", "H9", 4),
         ship("red-1", "red", "H8", 1),
         ...PLANETS.filter(
-          (square) => !["H15", "L15"].includes(squareName(square)),
+          (square) => !["E3", "D7"].includes(squareName(square)),
         ).map((square, index) =>
           ship(`planet-filler-${index}`, "red", squareName(square)),
         ),
       ],
     });
 
-    const vacated = applyMove(state, "green-2", squareFromName("H14"));
+    const vacated = applyMove(state, "green-2", squareFromName("D3"));
     expect(vacated.outcome).toBe("applied");
     if (vacated.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
     expect(vacated.state.sideToMove).toBe("red");
 
-    // H15 and L15 are now the only empty planets, so the fight's two
+    // E3 and D7 are now the only empty planets, so the fight's two
     // returning ships must land there between them, whichever seed drew
     // them.
     const result = applyAttack(vacated.state, "red-1", squareFromName("H9"));
@@ -540,7 +540,7 @@ describe("applyAttack", () => {
         squareName(result.state.ships.find((s) => s.id === id)!.square),
       ),
     );
-    expect(returnedSquareNames).toEqual(new Set(["H15", "L15"]));
+    expect(returnedSquareNames).toEqual(new Set(["E3", "D7"]));
   });
 
   it("advances randomSeed exactly twice for every fight", () => {
@@ -569,7 +569,7 @@ describe("applyAttack", () => {
   });
 
   it("places both ships on different planets, whatever the seed, when exactly two planets are empty", () => {
-    const emptyPlanetNames = ["H15", "L15"];
+    const emptyPlanetNames = ["E3", "D7"];
     const planetOccupants = PLANETS.filter(
       (square) => !emptyPlanetNames.includes(squareName(square)),
     ).map((square, index) =>
@@ -604,7 +604,7 @@ describe("applyAttack", () => {
   });
 
   it("never lands a fight's two ships on the same planet, swept over many chained seeds with several planets empty", () => {
-    const emptyPlanetNames = ["H15", "L15", "O14", "O10", "A2"];
+    const emptyPlanetNames = ["E3", "D7", "F5", "I4", "J8"];
     const planetOccupants = PLANETS.filter(
       (square) => !emptyPlanetNames.includes(squareName(square)),
     ).map((square, index) =>
@@ -778,13 +778,13 @@ describe("applyAttack", () => {
 
   it("sends both ships to planets when the target stands on a depleted node, with nothing constraining either side's next turn (§8.5)", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "E5", 4), ship("red-1", "red", "F5", 2)],
-      nodes: { E5: "depleted" },
+      ships: [ship("green-1", "green", "K8", 4), ship("red-1", "red", "K9", 2)],
+      nodes: { K8: "depleted" },
       sideToMove: "red",
       actionsRemaining: 1,
     });
 
-    const result = applyAttack(state, "red-1", squareFromName("E5"));
+    const result = applyAttack(state, "red-1", squareFromName("K8"));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -1095,15 +1095,17 @@ describe("applyPassGuard", () => {
   });
 
   it("passes the ply when the side to move has no legal action at all", () => {
-    // green-1 is on the A2 planet, so §3.1 forbids it to attack regardless
+    // green-1 is on the E3 planet, so §3.1 forbids it to attack regardless
     // of what stands next to it, and every square it could otherwise reach —
-    // A1, A3 and B2, its only on-board orthogonal neighbours — is occupied.
+    // D3, F3, E2 and E4, its four orthogonal neighbours, its only reach at
+    // 0 power — is occupied.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A2", 0),
-        ship("red-1", "red", "A1"),
-        ship("red-2", "red", "A3"),
-        ship("red-3", "red", "B2"),
+        ship("green-1", "green", "E3", 0),
+        ship("red-1", "red", "D3"),
+        ship("red-2", "red", "F3"),
+        ship("red-3", "red", "E2"),
+        ship("red-4", "red", "E4"),
       ],
     });
 
@@ -1126,7 +1128,7 @@ describe("applyPassGuard", () => {
           type: "power-gained",
           shipId: "green-1",
           side: "green",
-          square: squareFromName("A2"),
+          square: squareFromName("E3"),
           power: 1,
         },
       ],
@@ -1387,17 +1389,18 @@ describe("applyOutOfTimePass", () => {
   });
 
   it("reports both effects, in order, when the pass leaves the other side with no legal action", () => {
-    // red-1 is boxed onto its A2 planet by green-1 (A1), green-2 (A3) and
-    // green-3 (B2), exactly the "no legal action at all" shape used above,
-    // but with the sides swapped and green to move and out of time: green's
-    // out-of-time pass hands the ply to red, who then has nothing to do at
-    // all and passes immediately behind it.
+    // red-1 is boxed onto its E3 planet by green-1 (D3), green-2 (F3),
+    // green-3 (E2) and green-4 (E4), exactly the "no legal action at all"
+    // shape used above, but with the sides swapped and green to move and out
+    // of time: green's out-of-time pass hands the ply to red, who then has
+    // nothing to do at all and passes immediately behind it.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A1"),
-        ship("green-2", "green", "A3"),
-        ship("green-3", "green", "B2"),
-        ship("red-1", "red", "A2", 0),
+        ship("green-1", "green", "D3"),
+        ship("green-2", "green", "F3"),
+        ship("green-3", "green", "E2"),
+        ship("green-4", "green", "E4"),
+        ship("red-1", "red", "E3", 0),
       ],
       outOfTime: { green: true, red: false },
     });

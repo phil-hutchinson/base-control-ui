@@ -212,13 +212,10 @@ describe("attackRefusalReason / legalTargets", () => {
 
   it("refuses an attacker standing on a planet", () => {
     const state = buildState({
-      ships: [
-        ship("green-1", "green", "H15", 2),
-        ship("red-1", "red", "H14", 4),
-      ],
+      ships: [ship("green-1", "green", "E3", 2), ship("red-1", "red", "E4", 4)],
     });
 
-    expect(attackRefusalReason(state, "green-1", squareFromName("H14"))).toBe(
+    expect(attackRefusalReason(state, "green-1", squareFromName("E4"))).toBe(
       "attacker-on-planet",
     );
     expect(legalTargets(state, "green-1")).toEqual([]);
@@ -226,13 +223,10 @@ describe("attackRefusalReason / legalTargets", () => {
 
   it("refuses a target standing on a planet, distinguishably from the attacker's own", () => {
     const state = buildState({
-      ships: [
-        ship("green-1", "green", "H14", 2),
-        ship("red-1", "red", "H15", 4),
-      ],
+      ships: [ship("green-1", "green", "E4", 2), ship("red-1", "red", "E3", 4)],
     });
 
-    expect(attackRefusalReason(state, "green-1", squareFromName("H15"))).toBe(
+    expect(attackRefusalReason(state, "green-1", squareFromName("E3"))).toBe(
       "target-on-planet",
     );
   });
@@ -423,12 +417,12 @@ describe("drawReturnPlanet", () => {
   it("always draws a planet that was empty in the state drawn against", () => {
     const state = buildState({
       ships: [
-        ship("red-1", "red", "H15", 4),
-        ship("red-2", "red", "L15", 4),
-        ship("red-3", "red", "O14", 4),
+        ship("red-1", "red", "E3", 4),
+        ship("red-2", "red", "D7", 4),
+        ship("red-3", "red", "F5", 4),
       ],
     });
-    const occupied = new Set(["H15", "L15", "O14"]);
+    const occupied = new Set(["E3", "D7", "F5"]);
 
     for (let seed = 0; seed < 200; seed++) {
       const [planet] = drawReturnPlanet({ ...state, randomSeed: seed });
@@ -439,7 +433,7 @@ describe("drawReturnPlanet", () => {
 
   it("gives the one empty planet for every seed when every other planet is occupied", () => {
     const occupiedPlanets = PLANETS.filter(
-      (square) => squareName(square) !== "H15",
+      (square) => squareName(square) !== "E3",
     );
     const state = buildState({
       ships: occupiedPlanets.map((square, index) =>
@@ -449,13 +443,13 @@ describe("drawReturnPlanet", () => {
 
     for (let seed = 0; seed < 50; seed++) {
       const [planet] = drawReturnPlanet({ ...state, randomSeed: seed });
-      expect(squareName(planet)).toBe("H15");
+      expect(squareName(planet)).toBe("E3");
     }
   });
 
   it("gives the same planet for the same seed", () => {
     const state = buildState({
-      ships: [ship("red-1", "red", "H15", 4)],
+      ships: [ship("red-1", "red", "E3", 4)],
     });
 
     const [firstPlanet, firstNextSeed] = drawReturnPlanet(state);
@@ -476,28 +470,25 @@ describe("drawReturnPlanet", () => {
 
   it("is live: moving a ship off a planet changes the answer", () => {
     const occupiedState = buildState({
-      ships: [ship("red-1", "red", "H15", 4)],
+      ships: [ship("red-1", "red", "E3", 4)],
     });
     const [occupiedPlanet] = drawReturnPlanet(occupiedState);
-    expect(squareName(occupiedPlanet)).not.toBe("H15");
+    expect(squareName(occupiedPlanet)).not.toBe("E3");
 
-    const vacatedState = buildState({
-      ships: [ship("red-1", "red", "E7", 4)],
-    });
     const otherOccupiedPlanets = PLANETS.filter(
-      (square) => squareName(square) !== "H15",
+      (square) => squareName(square) !== "E3",
     );
     const fullyVacatedExceptOne: GameState = {
-      ...vacatedState,
+      ...occupiedState,
       ships: [
-        ship("red-1", "red", "E7", 4),
+        ship("red-1", "red", "H8", 4),
         ...otherOccupiedPlanets.map((square, index) =>
           ship(`red-${index + 2}`, "red", squareName(square), 4),
         ),
       ],
     };
     const [vacatedPlanet] = drawReturnPlanet(fullyVacatedExceptOne);
-    expect(squareName(vacatedPlanet)).toBe("H15");
+    expect(squareName(vacatedPlanet)).toBe("E3");
   });
 
   it("throws naming §7.1 when every planet is occupied", () => {
@@ -511,7 +502,7 @@ describe("drawReturnPlanet", () => {
   });
 
   it("spreads draws over chained seeds across every empty planet, never an occupied one", () => {
-    const occupiedPlanets = new Set(["H15", "O14", "O6", "D1", "A6"]);
+    const occupiedPlanets = new Set(["E3", "D7", "F5", "I4", "J8"]);
     const state = buildState({
       ships: [...occupiedPlanets].map((name, index) =>
         ship(`red-${index}`, "red", name, 4),

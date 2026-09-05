@@ -5,7 +5,6 @@ import {
   squareName,
   type Square,
 } from "../rules/board";
-import { PLANETS } from "../rules/planets";
 import { PLANET_ART, type PlanetTraits } from "./planetArt";
 import { planetForSquare, RING_ORDER } from "./planetPlacement";
 
@@ -42,9 +41,15 @@ function sharesATrait(a: PlanetTraits, b: PlanetTraits): boolean {
 }
 
 describe("RING_ORDER", () => {
-  it("holds exactly the fourteen squares of PLANETS, none missing or repeated", () => {
+  it("holds exactly fourteen squares, none repeated", () => {
+    // As of rules.md §3.1's move into the interior, the rules-level PLANETS
+    // (src/rules/planets.ts) are twelve different squares from these — the
+    // drawings this module arranges still sit on the old fourteen edge
+    // squares until this module is replaced (implementation plan, Step 8).
+    // So this checks RING_ORDER's own internal consistency rather than
+    // comparing it against PLANETS.
     expect(RING_ORDER).toHaveLength(14);
-    expect(namesOf(RING_ORDER)).toEqual(namesOf(PLANETS));
+    expect(new Set(namesOf(RING_ORDER)).size).toBe(14);
   });
 
   it("walks the board's perimeter clockwise as four edge runs", () => {
@@ -72,14 +77,14 @@ describe("RING_ORDER", () => {
 });
 
 describe("planetForSquare", () => {
-  it("maps every planet square to a planet", () => {
-    for (const planet of PLANETS) {
-      expect(planetForSquare(planet)).toBeDefined();
+  it("maps every square in RING_ORDER to a planet", () => {
+    for (const square of RING_ORDER) {
+      expect(planetForSquare(square)).toBeDefined();
     }
   });
 
   it("uses every planet exactly once", () => {
-    const numbers = PLANETS.map((planet) => planetForSquare(planet)?.number);
+    const numbers = RING_ORDER.map((square) => planetForSquare(square)?.number);
     expect(new Set(numbers).size).toBe(14);
     expect([...numbers].sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual(
       PLANET_ART.map((planet) => planet.number).sort((a, b) => a - b),

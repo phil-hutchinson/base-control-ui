@@ -85,9 +85,11 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
         expect(charged.has(name)).toBe(true);
       }
       // The draw charges a healthy number of distinct squares over the run,
-      // not just the eight dealt-inactive ones above — measured minimum 51
-      // across the three seeds (51, 55, 55), floor set well below that.
-      expect(charged.size).toBeGreaterThan(30);
+      // not just the eight dealt-inactive ones above — re-measured against
+      // the 29-square pool the planet-adjacency constraint leaves (rules.md
+      // §3.2's sixth constraint): minimum 23 across the three seeds (26, 23,
+      // 25), floor set well below that.
+      expect(charged.size).toBeGreaterThan(15);
       // The board is back at its target count by the end of the run.
       const finalCharged = nodeSquares(state).filter(
         (square) => nodeStateAt(state, square) === "charged",

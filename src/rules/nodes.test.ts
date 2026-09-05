@@ -49,6 +49,44 @@ const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
   (entry) => entry.square,
 );
 
+/**
+ * The 29 squares that satisfy all six of §3.2's constraints on an empty
+ * board with no ships — the interior minus the twelve planets and every
+ * square orthogonally or diagonally adjacent to one (see the plan's "Facts
+ * established while planning").
+ */
+const LEGAL_SQUARE_NAMES: readonly string[] = [
+  "C3",
+  "C4",
+  "C5",
+  "C9",
+  "C13",
+  "D5",
+  "D9",
+  "D13",
+  "E13",
+  "F10",
+  "G3",
+  "G10",
+  "H6",
+  "H7",
+  "H8",
+  "H9",
+  "H10",
+  "I6",
+  "I13",
+  "J6",
+  "K3",
+  "L3",
+  "L7",
+  "L11",
+  "M3",
+  "M7",
+  "M11",
+  "M12",
+  "M13",
+];
+
 describe("the board's charged target (rules.md §8.1, §8.2)", () => {
   it("aims to keep four nodes charged", () => {
     expect(TARGET_CHARGED_NODES).toBe(4);
@@ -311,25 +349,14 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     }
   });
 
-  /**
-   * Measured over 3,000 deals (45,000 placements): all 121 interior squares
-   * were used at least once, and each quadrant's share of the placements
-   * that fall in a quadrant (excluding the centre row and column, which
-   * belong to none) was about 0.248-0.252. The bounds below leave generous
-   * margin under and around that figure — this is not a claim of uniformity
-   * (§3.2's adjacency rule favours squares nearer the interior's edge over
-   * its middle), only that placement is not clustering in one region.
-   */
-  it("spreads across the whole legal interior rather than favouring a region, over many deals", () => {
+  // The pool is now a fixed 29 squares whose balance is settled by the
+  // planet geometry itself (planets.test.ts checks that geometry directly),
+  // so this asserts the stronger, exact fact rather than a statistical
+  // window on draws from an already-tested pool: over many deals, every one
+  // of the 29 legal squares is dealt at least once.
+  it("deals every one of the 29 legal squares at least once, over many deals", () => {
     const DEALS = 3_000;
     const seenSquares = new Set<string>();
-    const quadrantCounts = {
-      topLeft: 0,
-      topRight: 0,
-      bottomLeft: 0,
-      bottomRight: 0,
-    };
-    let totalQuadrantPlacements = 0;
 
     let seed = 1;
     for (let i = 0; i < DEALS; i++) {
@@ -338,35 +365,11 @@ describe("dealing the opening board (rules.md §8.1)", () => {
 
       for (const name of Object.keys(nodes)) {
         seenSquares.add(name);
-        const square = squareFromName(name);
-        const columnIndex = COLUMN_LETTERS.indexOf(square.column);
-        const left = columnIndex < 7;
-        const right = columnIndex > 7;
-        const top = square.row < 8;
-        const bottom = square.row > 8;
-
-        if (left && top) {
-          quadrantCounts.topLeft++;
-          totalQuadrantPlacements++;
-        } else if (right && top) {
-          quadrantCounts.topRight++;
-          totalQuadrantPlacements++;
-        } else if (left && bottom) {
-          quadrantCounts.bottomLeft++;
-          totalQuadrantPlacements++;
-        } else if (right && bottom) {
-          quadrantCounts.bottomRight++;
-          totalQuadrantPlacements++;
-        }
       }
     }
 
-    expect(seenSquares.size).toBeGreaterThan(110);
-
-    for (const count of Object.values(quadrantCounts)) {
-      const share = count / totalQuadrantPlacements;
-      expect(share).toBeGreaterThan(0.15);
-      expect(share).toBeLessThan(0.3);
+    for (const name of LEGAL_SQUARE_NAMES) {
+      expect(seenSquares.has(name), name).toBe(true);
     }
   });
 });

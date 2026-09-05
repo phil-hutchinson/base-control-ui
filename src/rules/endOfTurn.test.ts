@@ -212,7 +212,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
   it("gains a point of power for a ship standing on a planet at the end of its owner's turn", () => {
     const state = buildState({
       sideToMove: "green",
-      ships: [ship("green-1", "green", "A2", 2)],
+      ships: [ship("green-1", "green", "E3", 2)],
     });
 
     const result = runEndOfTurn(state);
@@ -222,7 +222,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       type: "power-gained",
       shipId: "green-1",
       side: "green",
-      square: squareFromName("A2"),
+      square: squareFromName("E3"),
       power: 3,
     });
   });
@@ -230,7 +230,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
   it("leaves a ship already at 4 power on a planet at 4 and raises no effect for it", () => {
     const state = buildState({
       sideToMove: "green",
-      ships: [ship("green-1", "green", "A2", 4)],
+      ships: [ship("green-1", "green", "E3", 4)],
     });
 
     const result = runEndOfTurn(state);
@@ -244,7 +244,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
   it("collects and pays no energy for a ship recovering on a planet", () => {
     const state = buildState({
       sideToMove: "green",
-      ships: [ship("green-1", "green", "A2", 2)],
+      ships: [ship("green-1", "green", "E3", 2)],
     });
 
     const result = runEndOfTurn(state);
@@ -261,7 +261,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
   it("gains nothing for a ship of the other side sitting on a planet this turn", () => {
     const state = buildState({
       sideToMove: "green",
-      ships: [ship("red-1", "red", "A2", 2)],
+      ships: [ship("red-1", "red", "E3", 2)],
     });
 
     const result = runEndOfTurn(state);
@@ -277,7 +277,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       sideToMove: "green",
       nodes: { H8: ["charged", 1] },
       ships: [
-        ship("green-1", "green", "A2", 2),
+        ship("green-1", "green", "E3", 2),
         ship("green-2", "green", "H8", 3),
       ],
     });
@@ -288,7 +288,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       type: "power-gained",
       shipId: "green-1",
       side: "green",
-      square: squareFromName("A2"),
+      square: squareFromName("E3"),
       power: 3,
     });
     expect(result.effects).toContainEqual({
@@ -581,21 +581,21 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
   });
 
   it("lets a later replacement in the same sequence land on the square an earlier retirement just vacated", () => {
-    // Seed 83, found by search: K5 (board order's first of the two) retires
-    // and is replaced at M10, then H8 retires and is replaced at K5 itself —
-    // the square K5's own retirement just freed. Only the square a node's
-    // own retirement vacates is excluded from that node's own draw; a
+    // Seed 18420, found by search: M3 (board order's first of the two)
+    // retires and is replaced at J6, then H8 retires and is replaced at M3
+    // itself — the square M3's own retirement just freed. Only the square a
+    // node's own retirement vacates is excluded from that node's own draw; a
     // square freed earlier in the same sequence is not excluded from a
     // later one.
     const state = buildState({
       nodes: {
-        K5: ["depleted", 4],
+        M3: ["depleted", 4],
         H8: ["depleted", 4],
         F2: ["charged", 1],
         J2: ["charged", 1],
         B4: ["charged", 1],
       },
-      randomSeed: 83,
+      randomSeed: 18420,
     });
 
     const result = runEndOfTurn(state);
@@ -605,10 +605,10 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
     );
     expect(
       replacements.map((effect) => squareName(effect.retiredSquare)),
-    ).toEqual(["K5", "H8"]);
-    expect(squareName(replacements[0].newSquare)).toBe("M10");
-    expect(squareName(replacements[1].newSquare)).toBe("K5");
-    expect(result.state.nodes.K5.state).toBe("inactive");
+    ).toEqual(["M3", "H8"]);
+    expect(squareName(replacements[0].newSquare)).toBe("J6");
+    expect(squareName(replacements[1].newSquare)).toBe("M3");
+    expect(result.state.nodes.M3.state).toBe("inactive");
     expect(result.state.nodes.H8).toBeUndefined();
   });
 

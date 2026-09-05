@@ -152,13 +152,13 @@ describe("announcementFor", () => {
       type: "moved",
       shipId: "red-2",
       side: "red",
-      from: squareAt("A", 11),
-      to: squareAt("A", 10),
+      from: squareAt("D", 3),
+      to: squareAt("E", 3),
       effects: [],
       actionsRemaining: 1,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 onto the A10 planet. Red has 1 action left.",
+      "Red ship moved from D3 onto the E3 planet. Red has 1 action left.",
     );
   });
 
@@ -167,13 +167,13 @@ describe("announcementFor", () => {
       type: "moved",
       shipId: "red-2",
       side: "red",
-      from: squareAt("A", 11),
-      to: squareAt("A", 10),
+      from: squareAt("D", 3),
+      to: squareAt("E", 3),
       effects: [],
       actionsRemaining: 1,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 onto the A10 planet. Red has 1 action left.",
+      "Red ship moved from D3 onto the E3 planet. Red has 1 action left.",
     );
   });
 
@@ -182,15 +182,15 @@ describe("announcementFor", () => {
       type: "moved",
       shipId: "red-2",
       side: "red",
-      from: squareAt("A", 11),
-      to: squareAt("A", 10),
+      from: squareAt("D", 3),
+      to: squareAt("E", 3),
       effects: [
         { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 onto the A10 planet. Green's turn, 1 action left.",
+      "Red ship moved from D3 onto the E3 planet. Green's turn, 1 action left.",
     );
   });
 

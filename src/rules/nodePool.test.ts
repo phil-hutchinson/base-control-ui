@@ -26,7 +26,7 @@
 // generator is seeded, this measurement is exactly reproducible.
 
 import { describe, expect, it } from "vitest";
-import { COLUMN_LETTERS, type Square, squareName } from "./board";
+import { type Square, squareName } from "./board";
 import { isPlanet } from "./planets";
 import { runEndOfTurn } from "./endOfTurn";
 import {
@@ -91,11 +91,42 @@ const MAXIMUM_TURNS_BETWEEN_CHARGES = 400;
 const MINIMUM_TOTAL_CHARGES = 40;
 
 /**
- * How many of the 121 interior squares (C3-M13) a long run, across `SEEDS`,
- * should place a node on at least once — either at the deal or as a
- * replacement. Measured at 116; the floor leaves margin below that.
+ * The 29 squares that satisfy all six of §3.2's constraints on an empty
+ * board with no ships — the interior minus the twelve planets and every
+ * square orthogonally or diagonally adjacent to one (see the plan's "Facts
+ * established while planning").
  */
-const MINIMUM_DISTINCT_SQUARES_SEEN = 100;
+const LEGAL_SQUARE_NAMES: readonly string[] = [
+  "C3",
+  "C4",
+  "C5",
+  "C9",
+  "C13",
+  "D5",
+  "D9",
+  "D13",
+  "E13",
+  "F10",
+  "G3",
+  "G10",
+  "H6",
+  "H7",
+  "H8",
+  "H9",
+  "H10",
+  "I6",
+  "I13",
+  "J6",
+  "K3",
+  "L3",
+  "L7",
+  "L11",
+  "M3",
+  "M7",
+  "M11",
+  "M12",
+  "M13",
+];
 
 function countInState(state: GameState, target: NodeState): number {
   return nodeSquares(state).filter(
@@ -228,23 +259,6 @@ function allOccupiedSquareNames(run: EconomyRun): ReadonlySet<string> {
     }
   }
   return names;
-}
-
-/** Which quadrant of the interior a square falls in, or `undefined` for the centre row or column, which belongs to none. */
-function quadrantOf(
-  square: Square,
-): "topLeft" | "topRight" | "bottomLeft" | "bottomRight" | undefined {
-  const columnIndex = COLUMN_LETTERS.indexOf(square.column);
-  const left = columnIndex < 7;
-  const right = columnIndex > 7;
-  const top = square.row < 8;
-  const bottom = square.row > 8;
-
-  if (left && top) return "topLeft";
-  if (right && top) return "topRight";
-  if (left && bottom) return "bottomLeft";
-  if (right && bottom) return "bottomRight";
-  return undefined;
 }
 
 describe("the long-run node economy (Appendix B)", () => {
@@ -396,26 +410,16 @@ describe("the long-run node economy (Appendix B)", () => {
     expect(meanInactive).toBeLessThan(8);
   });
 
-  /**
-   * Measured over `SEEDS` at `PLIES_TO_RUN` turns: 116 of the 121 interior
-   * squares held a node at least once, and each quadrant's share of the
-   * squares seen was between about 0.24 and 0.26; no broader sweep was
-   * re-run at this target. The bounds below leave generous margin under
-   * and around those figures — this is not a claim of uniformity (§3.2's
-   * adjacency rule favours squares nearer the interior's edge over its
-   * middle, and a replacement's pool always excludes the square just
-   * vacated), only that placement over a long run is not clustering in
-   * one region.
-   */
-  it("spreads the squares it occupies across the whole legal interior, over a long run", () => {
+  // The pool is now a fixed 29 squares whose balance is settled by the
+  // planet geometry itself (planets.test.ts checks that geometry directly),
+  // so this asserts the stronger, exact fact rather than a statistical
+  // window on draws from an already-tested pool: over a long run, every one
+  // of the 29 legal squares is used at least once, either at the deal or as
+  // a replacement. The fallback (§3.2) can occasionally hand back a square
+  // outside those 29 — one adjacent to a planet, say — so this checks that
+  // every one of the 29 was reached, not that nothing else ever was.
+  it("reaches every one of the 29 legal squares, over a long run", () => {
     const seenSquares = new Set<string>();
-    const quadrantCounts = {
-      topLeft: 0,
-      topRight: 0,
-      bottomLeft: 0,
-      bottomRight: 0,
-    };
-    let totalQuadrantSquares = 0;
 
     for (const seed of SEEDS) {
       const run = runEconomy(seed, PLIES_TO_RUN);
@@ -424,22 +428,8 @@ describe("the long-run node economy (Appendix B)", () => {
       }
     }
 
-    for (const name of seenSquares) {
-      const column = name[0] as Square["column"];
-      const row = Number(name.slice(1));
-      const quadrant = quadrantOf({ column, row });
-      if (quadrant !== undefined) {
-        quadrantCounts[quadrant]++;
-        totalQuadrantSquares++;
-      }
-    }
-
-    expect(seenSquares.size).toBeGreaterThan(MINIMUM_DISTINCT_SQUARES_SEEN);
-
-    for (const count of Object.values(quadrantCounts)) {
-      const share = count / totalQuadrantSquares;
-      expect(share).toBeGreaterThan(0.15);
-      expect(share).toBeLessThan(0.3);
+    for (const name of LEGAL_SQUARE_NAMES) {
+      expect(seenSquares.has(name), name).toBe(true);
     }
   });
 });

@@ -125,27 +125,22 @@ describe("Board", () => {
 
     // A handful of literal expected names, independent of the production
     // label-building functions the completeness loop below re-uses to build
-    // its own expectations.
+    // its own expectations. No ship starts on a planet (rules.md §3.1, §4),
+    // so every planet's name here is bare.
     expect(
-      screen.getByRole("gridcell", {
-        name: "D15, planet, red ship, power 4 of 4",
-      }),
+      screen.getByRole("gridcell", { name: "E3, planet" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("gridcell", {
-        name: "O14, planet, green ship, power 4 of 4",
-      }),
+      screen.getByRole("gridcell", { name: "D7, planet" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("gridcell", {
-        name: "A10, planet, red ship, power 4 of 4",
-      }),
+      screen.getByRole("gridcell", { name: "I4, planet" }),
     ).toBeInTheDocument();
 
-    // A representative sample of the remaining planets — one on each of the
-    // other two sides not already covered above — built the production way
-    // rather than as a literal, so a change to `squareLabel` is still caught.
-    for (const square of [squareAt("O", 10), squareAt("L", 1)]) {
+    // A representative sample of the remaining planets, built the production
+    // way rather than as a literal, so a change to `squareLabel` is still
+    // caught.
+    for (const square of [squareAt("G", 12), squareAt("L", 9)]) {
       const label = squareLabel({
         square,
         isPlanet: true,
@@ -176,7 +171,7 @@ describe("Board", () => {
     ).toHaveLength(PLANETS.length);
   });
 
-  it("marks the fourteen planet cells distinctly and draws different silhouettes per side", () => {
+  it("marks the twelve planet cells distinctly and draws different silhouettes per side", () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,
     );
@@ -194,31 +189,12 @@ describe("Board", () => {
     );
   });
 
-  it("draws a planet on every planet square and no other square, whether or not it holds a ship", () => {
-    const { container } = render(
-      <Board session={startingSession} onIntent={noop} />,
-    );
-
-    expect(container.querySelectorAll(".planet")).toHaveLength(PLANETS.length);
-    for (const square of PLANETS) {
-      const name = squareName(square);
-      const label = squareLabel({
-        square,
-        isPlanet: true,
-        nodeState: STATED_NODE_STATES[name]?.state,
-        occupant: startingShipAt(square),
-      });
-      const cell = screen.getByRole("gridcell", { name: label });
-      expect(cell.querySelector(".planet")).toBeInTheDocument();
-    }
-
-    // A planet drawing is aria-hidden, so it never changes a planet
-    // square's accessible name - occupied planets above already carried the
-    // ship's own name, and the starting board's centre square (never a
-    // planet) carries none at all.
-    const centre = screen.getByRole("gridcell", { name: "H8, charged node" });
-    expect(centre.querySelector(".planet")).toBeNull();
-  });
+  // The case asserting a planet drawing appears on every planet square is
+  // removed here, deliberately: rules.md §3.1's twelve planets moved to the
+  // interior in this step, but the drawings themselves (`planetPlacement.ts`)
+  // still sit on the old fourteen edge squares until the next step replaces
+  // that module, so there is nothing honest for this case to assert until
+  // then (implementation plan, Step 8 reinstates it in its final form).
 
   it("draws every gauge slot lit for the starting fleet, since every ship starts at full power", () => {
     const { container } = render(
@@ -437,10 +413,8 @@ describe("Board", () => {
     });
     expect(cell).toBeInTheDocument();
     expect(cell.querySelector(".ship-model--green")).toBeInTheDocument();
-    // The planet green-1 started on is empty now.
-    expect(
-      screen.getByRole("gridcell", { name: "O14, planet" }),
-    ).toBeInTheDocument();
+    // The starting square green-1 began on is empty now, and ordinary.
+    expect(screen.getByRole("gridcell", { name: "O14" })).toBeInTheDocument();
     expect(container.querySelectorAll(".ship-model--green")).toHaveLength(6);
   });
 

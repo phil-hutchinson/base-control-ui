@@ -652,7 +652,68 @@ pass, which is what proves the shorter deal replays.
 
 ### Step 7 — The planets move into the interior, and nodes keep away from them
 
-Status: pending
+Status: committed
+
+Notes: `src/rules/planets.ts` now computes the twelve squares from the six
+base squares plus a half-turn rotation helper, and `nodePlacement.ts` gained
+the sixth constraint (planet and planet-adjacency) in the ordinary pool,
+keeping the fallback's existing planet-only exclusion. `planets.test.ts` and
+`nodePlacement.test.ts` were rewritten per the plan, including the two owner
+decisions: `nodePool.test.ts` and `nodes.test.ts`'s quadrant-share
+assertions are deleted outright, and their distinct-square thresholds are
+replaced by an assertion that a long run reaches every one of the 29 legal
+squares — implemented as "every listed square was seen" rather than set
+equality, since the fallback can legitimately hand back a square outside the
+29 (confirmed directly: a 500-turn run touched J3, which is diagonally
+adjacent to planet I4) and the story's own D8 case in
+`nodePlacement.test.ts` pins that this is expected, not a bug. Every
+gameplay fixture built around a planet being an edge square was rebuilt
+around an interior one, not coordinate-swapped, across `combat.test.ts`,
+`recovery.test.ts`, `endOfTurn.test.ts`, `fullGame.test.ts`, `ply.test.ts`,
+`actions.test.ts`, `src/game/session.test.ts`, `Board.test.tsx` and
+`announcements.test.ts`; `camping.test.ts` and `squareLabel.test.ts` needed
+no change. `seededReplay.test.ts`'s "not vacuous" fight floor was
+re-measured as instructed: at the new geometry seed 20260819 now produces 8
+fights and 16 planet returns over forty rounds (up from the 1/2 Step 4
+recorded), so the floors are raised to 4/8 and the comment no longer blames
+fleet size.
+
+Several deviations, all required to keep the four standard checks green
+rather than scope creep, and none touching this step's own subject matter:
+(1) `planetPlacement.test.ts` (not on this step's list) compared its
+drawing-arrangement squares against the rules-level `PLANETS`, which are no
+longer the same set now that planets moved to the interior while the
+drawings themselves stay on the old edge squares until the next step —
+rewritten to check its own internal consistency and use its own `RING_ORDER`
+instead of `PLANETS`, with a comment explaining why. (2)
+`fullGame.test.ts`'s four "H15 occupied" / "draws both fighting ships'
+returns" tests conflated starting squares with planets, since the two used
+to be the same fourteen squares; rebuilt as, respectively, plain
+starting-square facts (dropping the planet framing entirely) and the real
+per-fleet-size tightness of §7.1's return draw (four empty planets at five a
+side, two at six a side, matching the arithmetic rules.md §7.1 now states).
+(3) `endOfTurn.test.ts`'s "lands a later replacement on an earlier
+retirement's square" fixture used K5, which turned out to be adjacent to
+planet L5 under the new geometry and so can never be legally redrawn;
+replaced with M3, and re-searched for a seed producing the same shape (found
+at 18420, replacing the old 83). (4) `ply.test.ts`,
+`actions.test.ts` and `session.test.ts` each had a "ship on a bay in a board
+corner, boxed in by its few on-board neighbours" fixture; a planet in the
+interior always has the full complement of neighbours, so these were
+rebuilt around an interior planet with all its orthogonal (0-power case) or
+all eight (full-power case) neighbours occupied, per the plan's own
+suggestion for `session.test.ts`, extended the same way to the other two
+files. (5) `openingBoard.test.ts`'s "charges a healthy number of distinct
+squares" floor (30) was not named in this step's list but is exactly the
+kind of distinct-square threshold the tighter node pool broke (re-measured
+minimum 23 across its three seeds, was 51+); retuned to 15 with the measured
+figures recorded, rather than replaced with the exact-29 assertion, since
+this test counts distinct _charged_ squares over one 500-turn run per seed,
+not "ever occupied" over the long multi-seed runs the owner's decision was
+about. `Board.test.tsx`'s case asserting a planet drawing appears on every
+planet square is removed here, as instructed, since the drawings still sit
+on the old edge squares until the next step; it is reinstated in its final
+form there.
 
 This is the story's central step and the largest. Two things change together,
 because neither is sound without the other: the twelve planets become interior

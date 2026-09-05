@@ -227,16 +227,14 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     const { planetReturns, chargedNodes, replacedNodes, fightCount } =
       playSeededGame(20260819, 40);
 
-    // This fleet-size default's fights floor was 10 before six became the
-    // standard game (story 53): with fewer ships on the board, this policy
-    // — attack whenever any ship can, otherwise move the first ship that
-    // has a legal move — settles into a stable position with no further
-    // legal attacks well inside forty rounds far more often than it did at
-    // seven a side. Measured at 1 fight (2 planet returns) for this seed
-    // over forty rounds; the floors below leave no margin because there is
-    // none to leave, but still prove the run reaches combat at all.
-    expect(fightCount).toBeGreaterThanOrEqual(1);
-    expect(planetReturns.length).toBeGreaterThanOrEqual(1);
+    // Ships start on ordinary edge squares and are attackable from the
+    // first turn — a ship only becomes unattackable by flying onto a
+    // planet, in the board's interior — so this attack-first policy keeps
+    // finding fights across the run rather than stalling early. Measured at
+    // 8 fights (16 planet returns) for this seed over forty rounds; the
+    // floors below leave margin below that.
+    expect(fightCount).toBeGreaterThanOrEqual(4);
+    expect(planetReturns.length).toBeGreaterThanOrEqual(8);
     // Measured at 10 for this seed over forty rounds; the floor here
     // leaves margin below that.
     expect(chargedNodes.length).toBeGreaterThanOrEqual(8);

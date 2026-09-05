@@ -529,24 +529,21 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     );
   });
 
-  it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, and lets a ship move into one of them", () => {
+  it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
     const state = startingGameState(20260819, 30, 5);
-    const occupiedPlanetNames = new Set(
-      state.ships
-        .map((s) => squareName(s.square))
-        .filter((name) =>
-          PLANETS.some((planet) => squareName(planet) === name),
-        ),
+    const shipSquareNames = new Set(
+      state.ships.map((s) => squareName(s.square)),
     );
 
-    expect(occupiedPlanetNames.has("H15")).toBe(true);
-    for (const emptyPlanet of ["O14", "O2", "A14", "A2"]) {
-      expect(occupiedPlanetNames.has(emptyPlanet)).toBe(false);
+    expect(shipSquareNames.has("H15")).toBe(true);
+    for (const emptySquare of ["O14", "O2", "A14", "A2"]) {
+      expect(shipSquareNames.has(emptySquare)).toBe(false);
     }
 
     // green-1 (H15 at the start of a five-ship game) relocated within reach
-    // of O14, one of the planets that started empty: it is an ordinary
-    // destination like any other.
+    // of O14, one of the starting squares that began empty: it is an
+    // ordinary destination like any other, since a starting square carries
+    // none of a planet's properties (rules.md §4).
     const nearO14: GameState = {
       ...state,
       ships: state.ships.map((s) =>
@@ -558,23 +555,19 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     );
   });
 
-  it("starts a six-ship game with L15 occupied and H15, H1 empty, and lets a ship move into one of them", () => {
+  it("starts a six-ship game with L15 occupied and H15, H1 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
     const state = startingGameState(20260819, 30, 6);
-    const occupiedPlanetNames = new Set(
-      state.ships
-        .map((s) => squareName(s.square))
-        .filter((name) =>
-          PLANETS.some((planet) => squareName(planet) === name),
-        ),
+    const shipSquareNames = new Set(
+      state.ships.map((s) => squareName(s.square)),
     );
 
-    expect(occupiedPlanetNames.has("L15")).toBe(true);
-    for (const emptyPlanet of ["H15", "H1"]) {
-      expect(occupiedPlanetNames.has(emptyPlanet)).toBe(false);
+    expect(shipSquareNames.has("L15")).toBe(true);
+    for (const emptySquare of ["H15", "H1"]) {
+      expect(shipSquareNames.has(emptySquare)).toBe(false);
     }
 
     // green-1 (O14 at the start of a six-ship game) relocated within reach
-    // of H15, one of the two planets that started empty.
+    // of H15, one of the two starting squares that began empty.
     const nearH15: GameState = {
       ...state,
       ships: state.ships.map((s) =>
@@ -586,8 +579,12 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     );
   });
 
-  it("draws both fighting ships' returns only from the planets empty at the start, in a five-ship game", () => {
-    const emptyPlanetNames = ["O14", "O2", "A14", "A2"];
+  it("draws both fighting ships' returns only from the planets left empty, tight to a five-ship game's own arithmetic", () => {
+    // A five-ship game has ten ships in all; with the fight's own two
+    // excluded, at most eight other ships can occupy a planet, so at least
+    // four of the twelve are free — the tightest a five-ship game's own
+    // §7.1 arithmetic ever gets.
+    const emptyPlanetNames = ["G12", "F8", "D11", "L5"];
     const state: GameState = {
       ships: [
         ...shipsFillingPlanetsExcept(emptyPlanetNames),
@@ -620,9 +617,9 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     ) {
       throw new Error("expected a fight-resolved effect");
     }
-    // Both ships were on the board and not on a planet, so exactly two
-    // planets are free — §7.1's "there is always somewhere to go", in its
-    // two-ship form.
+    // Both ships were on the board and not on a planet, and only four
+    // planets were left free of the twelve — §7.1's "there is always
+    // somewhere to go", in its two-ship form.
     expect(fightResolved.returns).toHaveLength(2);
     const returnedPlanetNames = fightResolved.returns.map((entry) =>
       squareName(entry.to),
@@ -633,8 +630,12 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     expect(new Set(returnedPlanetNames).size).toBe(2);
   });
 
-  it("draws both fighting ships' returns only from the planets empty at the start, in a six-ship game", () => {
-    const emptyPlanetNames = ["H15", "H1"];
+  it("draws both fighting ships' returns only from the planets left empty, tight to a six-ship game's own arithmetic", () => {
+    // A six-ship game has twelve ships in all; with the fight's own two
+    // excluded, at most ten other ships can occupy a planet, so exactly two
+    // of the twelve are free — the tightest §7.1's arithmetic ever gets,
+    // and the reason seven-a-side (fourteen ships) is gone.
+    const emptyPlanetNames = ["G12", "F8"];
     const state: GameState = {
       ships: [
         ...shipsFillingPlanetsExcept(emptyPlanetNames),
