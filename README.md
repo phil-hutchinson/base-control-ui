@@ -45,10 +45,10 @@ install, no account, no server.
 > starting square is an ordinary square, whether or not a ship stands there —
 > it gives a ship nothing and protects it from nothing, so ships are
 > attackable from the very first turn. Twelve planets sit inside the board
-> instead, at fixed squares away from the edge, each showing one of twelve
-> different drawings. Which drawing sits on which planet is dealt out afresh
-> at the start of every game, so no two games look alike, but the twelve
-> squares the planets occupy never change. A planet is not just scenery: a
+> instead, at fixed squares, none of them on the outer edge, each showing one
+> of twelve different drawings. Which drawing sits on which planet is dealt
+> out afresh at the start of every game, so no two games look alike, but the
+> twelve squares the planets occupy never change. A planet is not just scenery: a
 > ship standing on one cannot attack and cannot be attacked, and gains back a
 > point of power at the end of each of its owner's turns, up to a full four.
 > Green goes first, and each player takes one action a turn — a move or an
