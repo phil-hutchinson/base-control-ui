@@ -47,12 +47,12 @@ install, no account, no server.
 > same bay, game after game. Green goes first, and each player takes one action
 > a turn — a move or an attack — by mouse or by keyboard. Every game deals a
 > different opening board: it carries fifteen nodes, at fifteen squares drawn at
-> random, and five of them are already lit — chosen at random too, and they do
+> random, and four of them are already lit — chosen at random too, and they do
 > not all start fresh: some are already part-way through their life and will run
-> out sooner than the rest. The ten that are not yet lit have not all been
+> out sooner than the rest. The eleven that are not yet lit have not all been
 > waiting the same length of time either, which is why some of them already look
 > bigger and warmer than others on your very first turn. After that the board
-> keeps itself topped up to five lit nodes, lighting new ones at random as older
+> keeps itself topped up to four lit nodes, lighting new ones at random as older
 > ones run out — and a node that has been waiting longer is more likely to be
 > picked next, which shows in how it looks: a node waiting to be lit grows and
 > brightens the longer it waits. A ship may stop anywhere it can reach,

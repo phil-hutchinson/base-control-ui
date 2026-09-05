@@ -806,7 +806,32 @@ or bounds — S1 and S2 put those changes outside this story.
 
 ### Step 8 — README, the accessibility ledger, and the closing sweep
 
-Status: pending
+Status: committed
+
+Notes: Edited `README.md`'s "how it plays" passage: "five of them are
+already lit" → "four", "The ten that are not yet lit" → "The eleven that are
+not yet lit", and "keeps itself topped up to five lit nodes" → "four".
+Reviewed the full branch diff for `/update-readme`'s purpose (internal rule
+number and constant changes only — no new player-visible capability, no
+changed setup step, no status change) and made no further edits; the energy
+table's numbers are not quoted in the README and none were added, per the
+step's instruction. Checked
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md` against D10: no
+accessible behaviour was knowingly cost by this story (the score sentence is
+generated from the same live counts, the penalty announcement still names
+every occupied depleted node, and no keyboard/focus behaviour was touched),
+so nothing was added to the ledger. Swept with `grep -rn "five" src/
+README.md` and `grep -rn "15" src/hud src/board/announcements.ts`; every
+surviving hit is about something else — fleet size ("five-a-side", "fleet of
+five/six/seven"), the five random elements/spawn constraints, a
+pre-existing, deliberately hand-stated fixed board in `Board.test.tsx` that
+predates this story and is built without calling any of `nodes.ts`'s
+production functions (so its "five charged" fixture is not the game's
+charged-node target and was correctly out of this story's scope throughout),
+`ScoreDisplay.test.tsx`'s unrelated `displayedTotal={15}` digit-formatting
+fixture, and CSS `letter-spacing: 0.15em` values. `npm run typecheck`,
+`npm run lint`, `npm test` (938 tests), `npm run format:check` and
+`npm run build` all pass clean. No deviation from the plan.
 
 Bring the player-facing README into line and close the story out.
 
