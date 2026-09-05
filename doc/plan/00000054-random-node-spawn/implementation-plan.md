@@ -278,7 +278,7 @@ first time an opening position puts a ship somewhere else.
 
 ### D14 — The fallback keeps the excluded square excluded
 
-story.md's fallback relaxes the six constraints down to "holds no node, and
+story.md's fallback relaxes the five constraints down to "holds no node, and
 is not a bay". It does **not** relax the excluded-square argument: a
 replacement never appears on the square the retiring node just left, in the
 fallback as everywhere else, because story.md's Verification states that
@@ -305,7 +305,7 @@ build the pool (with its square excluded), then draw, then write the new
 node. Because the retiring node is gone before the pool is built, the
 adjacency constraint does not see it, so a replacement **may** land next to
 the square just vacated. That is correct: the node has ended, and constraint
-6 is about nodes that exist. Only the vacated square itself is barred, which
+5 is about nodes that exist. Only the vacated square itself is barred, which
 is what makes a replacement always visibly somewhere else.
 
 ### D16 — Two retirements in one sequence are handled one after the other
@@ -457,7 +457,7 @@ After the edit, `rules.md` must contain no "site" and no "dormant", and no
 a word-boundary grep.
 
 The changelog entry lists the gameplay changes (mortal nodes, drawn
-positions, fifteen not seventeen, the six constraints and the fallback, the
+positions, fifteen not seventeen, the five constraints and the fallback, the
 retirement-and-replacement rule, the fifth random element) and, separately,
 the vocabulary changes, and repeats that these counts are first guesses to
 be play-tested (D5).
@@ -470,7 +470,7 @@ the changelog has a `## 0.20 ` entry; the rest of the suite must still pass
 untouched. Then run `npm run format:check` (prettier formats markdown too).
 Then confirm by grep that `doc/ruleset/rules.md` contains no case-insensitive
 match for `site` or `dormant`, and no word-boundary match for `active` that
-is not part of `inactive`; and that it does contain the six constraints, the
+is not part of `inactive`; and that it does contain the five constraints, the
 fallback, the fifteen-node opening and the five random elements.
 
 ---
@@ -746,7 +746,7 @@ inside it, because it is about the board's geometry rather than about a
 node's clock. It exports two things and is wired into nothing yet.
 
 **The legal pool.** The squares a new node may occupy. Built by walking
-`ALL_SQUARES` in board order and applying §3.2's six constraints, so the
+`ALL_SQUARES` in board order and applying §3.2's five constraints, so the
 pool's order never depends on how the game got here:
 
 1. the square holds no node already;

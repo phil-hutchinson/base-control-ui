@@ -39,7 +39,7 @@ import {
   startingGameState,
 } from "./gameState";
 import { legalNodePool } from "./nodePlacement";
-import { type NodeState, TARGET_CHARGED_NODES } from "./nodes";
+import { NODE_COUNT, type NodeState, TARGET_CHARGED_NODES } from "./nodes";
 
 /** A generous game length: this test drives `runEndOfTurn` directly and never consults `isGameOver`. */
 const NOMINAL_LENGTH_IN_ROUNDS = 1_000;
@@ -112,6 +112,7 @@ interface Replacement {
 
 interface EconomySample {
   readonly nodeCount: number;
+  readonly nodesOnBays: number;
   readonly charged: number;
   readonly inactive: number;
   readonly depleted: number;
@@ -151,6 +152,7 @@ function runEconomy(seed: number, plies: number): EconomyRun {
     const result = runEndOfTurn(state);
     samples.push({
       nodeCount: nodeSquares(result.state).length,
+      nodesOnBays: nodeSquares(result.state).filter(isBay).length,
       charged: countInState(result.state, "charged"),
       inactive: countInState(result.state, "inactive"),
       depleted: countInState(result.state, "depleted"),
@@ -254,7 +256,8 @@ describe("the long-run node economy (Appendix B)", () => {
       const { samples } = runEconomy(seed, PLIES_TO_RUN);
 
       samples.forEach((sample, i) => {
-        expect(sample.nodeCount, `ply ${i}`).toBe(15);
+        expect(sample.nodeCount, `ply ${i}`).toBe(NODE_COUNT);
+        expect(sample.nodesOnBays, `ply ${i}`).toBe(0);
       });
     },
   );

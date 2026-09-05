@@ -43,6 +43,9 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
         (name) => state.nodes[name]?.state === "charged",
       );
       expect(dealtChargedNames).toHaveLength(TARGET_CHARGED_NODES);
+      const dealtInactiveNames = dealtNodeNames.filter(
+        (name) => !dealtChargedNames.includes(name),
+      );
 
       const ranOut = new Set<string>();
       const retired = new Set<string>();
@@ -69,18 +72,20 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       }
       // At least one depleted node retires and is replaced over the run.
       expect(retired.size).toBeGreaterThan(0);
-      // Every one of the fifteen dealt nodes is charged at least once,
-      // whatever pressure the deal opened it at. The five dealt already
-      // charged were, at the deal itself, which raises no node-charged
-      // effect of its own to observe here; the other ten must earn one,
-      // since an inactive node can never retire without first being
-      // charged. (A square a much later replacement happens to reoccupy
-      // can also turn up in `charged`, under an entirely different node's
-      // life — harmless, and not what this checks.)
-      for (const name of dealtNodeNames) {
-        const chargedAtDeal = dealtChargedNames.includes(name);
-        expect(chargedAtDeal || charged.has(name)).toBe(true);
+      // Every one of the ten dealt-inactive nodes earns a real node-charged
+      // effect: an inactive node can never retire without first being
+      // charged. (The five dealt already charged are excluded — they were
+      // charged at the deal itself, which raises no effect of its own to
+      // observe here. A square a much later replacement happens to
+      // reoccupy can also turn up in `charged`, under an entirely
+      // different node's life — harmless, and not what this checks.)
+      for (const name of dealtInactiveNames) {
+        expect(charged.has(name)).toBe(true);
       }
+      // The draw charges a healthy number of distinct squares over the run,
+      // not just the ten dealt-inactive ones above — measured minimum 60
+      // across the three seeds (68, 60, 64), floor set well below that.
+      expect(charged.size).toBeGreaterThan(30);
       // The board is back at its target count by the end of the run.
       const finalCharged = nodeSquares(state).filter(
         (square) => nodeStateAt(state, square) === "charged",

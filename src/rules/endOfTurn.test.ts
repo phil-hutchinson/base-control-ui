@@ -15,6 +15,7 @@ import { applyPassGuard } from "./ply";
 import type { PowerLevel } from "./power";
 import {
   NODE_CAPACITY,
+  NODE_COUNT,
   PRESSURE_CAP,
   STARTING_PRESSURE,
   type NodeState,
@@ -551,12 +552,12 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
         ),
       },
     });
-    expect(Object.keys(state.nodes)).toHaveLength(15);
+    expect(Object.keys(state.nodes)).toHaveLength(NODE_COUNT);
 
     const result = runEndOfTurn(state);
 
     expect(result.state.nodes[depletedName]).toBeUndefined();
-    expect(Object.keys(result.state.nodes)).toHaveLength(15);
+    expect(Object.keys(result.state.nodes)).toHaveLength(NODE_COUNT);
   });
 
   it("handles two retirements in the same sequence one after another, in board order, so the second replacement lands beside neither the first nor any surviving node", () => {
@@ -598,6 +599,38 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
       );
       expect(others.some((other) => isAdjacent(square, other))).toBe(false);
     }
+  });
+
+  it("lets a later replacement in the same sequence land on the square an earlier retirement just vacated", () => {
+    // Seed 83, found by search: K5 (board order's first of the two) retires
+    // and is replaced at M10, then H8 retires and is replaced at K5 itself —
+    // the square K5's own retirement just freed. Only the square a node's
+    // own retirement vacates is excluded from that node's own draw; a
+    // square freed earlier in the same sequence is not excluded from a
+    // later one.
+    const state = buildState({
+      nodes: {
+        K5: ["depleted", 4],
+        H8: ["depleted", 4],
+        F2: ["charged", 1],
+        J2: ["charged", 1],
+        B4: ["charged", 1],
+      },
+      randomSeed: 83,
+    });
+
+    const result = runEndOfTurn(state);
+
+    const replacements = result.effects.filter(
+      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
+    );
+    expect(
+      replacements.map((effect) => squareName(effect.retiredSquare)),
+    ).toEqual(["K5", "H8"]);
+    expect(squareName(replacements[0].newSquare)).toBe("M10");
+    expect(squareName(replacements[1].newSquare)).toBe("K5");
+    expect(result.state.nodes.K5.state).toBe("inactive");
+    expect(result.state.nodes.H8).toBeUndefined();
   });
 
   it("does not retire a node that only went depleted during this very sequence", () => {

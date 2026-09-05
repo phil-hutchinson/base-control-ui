@@ -341,7 +341,11 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     // built, so the adjacency constraint (§3.2) does not see it: the
     // replacement may legitimately land next to the square just vacated,
     // and only that square itself is barred, via `drawNodeSquare`'s
-    // excluded-square argument.
+    // excluded-square argument. Only the current retiring square is barred
+    // this way — a square freed by an earlier retirement in this same
+    // sequence is not, since its entry is already gone from `workingState`
+    // and nothing excludes it a second time, so a later replacement in the
+    // sequence may land squarely on it.
     const nodesWithoutRetired = { ...workingState.nodes };
     delete nodesWithoutRetired[name];
     workingState = { ...workingState, nodes: nodesWithoutRetired };

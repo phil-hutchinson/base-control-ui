@@ -239,7 +239,7 @@ describe("applyMove", () => {
     expect(result.state.nodes.I8).toEqual(state.nodes.I8);
   });
 
-  it("leaves nodes deeply unchanged when a move touches no node", () => {
+  it("leaves the node set and every node's state unchanged when a move touches no node", () => {
     // E6 is an ordinary depleted node, given enough recovery left
     // (comfortably above the recovery table's maximum of 8) that the one
     // end-of-turn sequence this move triggers cannot retire it — the

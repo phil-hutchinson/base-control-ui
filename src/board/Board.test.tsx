@@ -288,7 +288,7 @@ describe("Board", () => {
     expect(screen.getByRole("gridcell", { name: "O15" })).toBeInTheDocument();
   });
 
-  describe("nodes on the starting board", () => {
+  describe("nodes the board is told to draw", () => {
     // The board this file states for itself (`STATED_NODE_STATES` above),
     // not derived by calling the same production lookups the component
     // uses. Node positions are drawn rather than fixed since 0.20, so there
@@ -348,7 +348,7 @@ describe("Board", () => {
       expect(new Set(allIds).size).toBe(allIds.length);
     });
 
-    it("names exactly five nodes charged and twelve inactive, none depleted", () => {
+    it("names exactly the five charged and twelve inactive nodes this board states, none depleted", () => {
       render(<Board session={startingSession} onIntent={noop} />);
 
       expect(

@@ -311,12 +311,12 @@ describe("dealing the opening board (rules.md §8.1)", () => {
 
   /**
    * Measured over 3,000 deals (45,000 placements): all 121 interior squares
-   * were used at least once, and each quadrant's share was about 0.206-0.210
-   * (the fifth "share", ~0.167, is the centre row and column that belong to
-   * no quadrant). The bounds below leave generous margin under and around
-   * those figures — this is not a claim of uniformity (§3.2's adjacency rule
-   * favours squares nearer the interior's edge over its middle), only that
-   * placement is not clustering in one region.
+   * were used at least once, and each quadrant's share of the placements
+   * that fall in a quadrant (excluding the centre row and column, which
+   * belong to none) was about 0.248-0.252. The bounds below leave generous
+   * margin under and around that figure — this is not a claim of uniformity
+   * (§3.2's adjacency rule favours squares nearer the interior's edge over
+   * its middle), only that placement is not clustering in one region.
    */
   it("spreads across the whole legal interior rather than favouring a region, over many deals", () => {
     const DEALS = 3_000;

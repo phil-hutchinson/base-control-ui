@@ -286,7 +286,7 @@ describe("nodeSquares", () => {
     expect(nodeSquares(state)).toEqual([]);
   });
 
-  it("is independent of the order state.nodes' keys were inserted in (D8)", () => {
+  it("is independent of the order state.nodes' keys were inserted in", () => {
     const inOrder = boardWith({
       B4: { state: "inactive", level: 1 },
       H8: { state: "depleted", level: 1 },

@@ -148,9 +148,9 @@ export function drawTableAmount(
 /**
  * Deals a whole opening board (rules.md §8.1): the squares the fleet stands
  * on and a seed in, `NODE_COUNT` (15) node statuses keyed by `squareName`,
- * and the next seed out. `startingGameState` builds the fleet before
- * dealing so it can pass its squares here (see D13 in the implementation
- * plan) — building it consumes no randomness, so the seeded stream is
+ * and the next seed out. `startingGameState` builds the fleet first so it
+ * can pass the ships' squares here, which are excluded from where a node
+ * may appear — building it consumes no randomness, so the seeded stream is
  * unaffected.
  *
  * The draw order is fixed and must not change, because a recorded game

@@ -160,7 +160,7 @@ loses its reference to a site. The three states are named here as
 
 **§3.2 — the seventeen sites go.** The table, the symmetry paragraph and
 the spacing paragraph are deleted outright. The section is retitled and
-restated as _where a node can appear_: the six constraints above, the
+restated as _where a node can appear_: the five constraints above, the
 fallback, and the fact that a node's position is drawn rather than fixed and
 lasts only as long as that node. The board diagram in §3 keeps the bays and
 loses the sites — an example board is not the board any more, and the
@@ -244,7 +244,7 @@ A new module — `src/rules/nodePlacement.ts` is the natural home, beside
 
 - **The legal pool**: the squares a new node may occupy, given the current
   state and an optional square to exclude (the retiring node's own). Built
-  by walking `ALL_SQUARES` in board order and applying the six constraints,
+  by walking `ALL_SQUARES` in board order and applying the five constraints,
   so the pool's order never depends on how the game got here. Empty pool →
   the fallback pool, built the same way.
 - **The draw**: a seed and a state in, a square and the next seed out, using
@@ -354,8 +354,9 @@ The plan should treat this as a bulk of the work, not as fallout.
   node's square is legal under §3.2 the moment it appears, no node waits
   unboundedly long to be charged, and the set of occupied squares over a
   long run is genuinely spread rather than clustering.
-- **`recovery.test.ts`** changes meaning: recovery now ends in retirement
-  and replacement, not in going inactive in place.
+- **`recovery.test.ts`** covers a **ship's** power recovery in a bay, not a
+  node's — the story named the wrong file here. Node recovery and
+  retirement live in `camping.test.ts` and `endOfTurn.test.ts`.
 - **`seededReplay.test.ts`**'s recorded expectations are **regenerated**,
   not worked around. The property being guarded — the same seed produces
   the same game — is exactly as true afterwards; only the numbers move.
@@ -373,7 +374,7 @@ The plan should treat this as a bulk of the work, not as fallout.
   play-tested. The pool arithmetic in Appendix B is written to be checked
   later, not to be defended now.
 - **Balance between the two sides.** Placement is unconstrained beyond
-  §3.2's six rules: nodes can cluster in one half of the board, at the deal
+  §3.2's five rules: nodes can cluster in one half of the board, at the deal
   or after it. Accepted, for the same reason story 44 accepted it — the
   fleets are symmetric around the whole edge, and the map redraws itself
   over the game. A mirrored or balanced placement is a possible later story.
