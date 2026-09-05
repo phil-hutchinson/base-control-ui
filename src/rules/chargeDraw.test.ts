@@ -6,7 +6,7 @@ import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { GameState, Ship, NodeStatus } from "./gameState";
 import type { PowerLevel } from "./power";
 import { drawWeightedIndex } from "./random";
-import type { NodeState } from "./nodes";
+import { TARGET_CHARGED_NODES, type NodeState } from "./nodes";
 
 function ship(
   id: ShipId,
@@ -49,13 +49,12 @@ function buildState(config: {
 }
 
 describe("runChargeDraw — the shortfall (§8.2, §8.6 step 4)", () => {
-  it("charges one when four are charged and one is inactive", () => {
+  it("charges one when three are charged and one is inactive", () => {
     const state = buildState({
       nodes: {
         F2: ["charged", 1],
         J2: ["charged", 1],
         B4: ["charged", 1],
-        H4: ["charged", 1],
         N4: ["inactive", 1],
       },
     });
@@ -71,11 +70,10 @@ describe("runChargeDraw — the shortfall (§8.2, §8.6 step 4)", () => {
     });
   });
 
-  it("charges three when two are charged and exactly three are inactive", () => {
+  it("charges three when one is charged and exactly three are inactive", () => {
     const state = buildState({
       nodes: {
         F2: ["charged", 1],
-        J2: ["charged", 1],
         B4: ["inactive", 1],
         H4: ["inactive", 1],
         N4: ["inactive", 1],
@@ -97,14 +95,13 @@ describe("runChargeDraw — the shortfall (§8.2, §8.6 step 4)", () => {
     }
   });
 
-  it("charges nothing and leaves the seed untouched when five are already charged", () => {
+  it("charges nothing and leaves the seed untouched when four are already charged", () => {
     const state = buildState({
       nodes: {
         F2: ["charged", 1],
         J2: ["charged", 1],
         B4: ["charged", 1],
         H4: ["charged", 1],
-        N4: ["charged", 1],
         K5: ["inactive", 1],
       },
     });
@@ -253,10 +250,10 @@ describe("runChargeDraw — running short", () => {
     const chargedCount = Object.values(result.state.nodes).filter(
       (status) => status.state === "charged",
     ).length;
-    expect(chargedCount).toBeLessThan(5);
+    expect(chargedCount).toBeLessThan(TARGET_CHARGED_NODES);
   });
 
-  it("climbs back to five, charging more than one node in a ply, once more inactive nodes become available", () => {
+  it("climbs back to four, charging more than one node in a ply, once more inactive nodes become available", () => {
     const shortState = buildState({
       nodes: {
         F2: ["charged", 1],
@@ -268,10 +265,10 @@ describe("runChargeDraw — running short", () => {
     const shortChargedCount = Object.values(shortResult.state.nodes).filter(
       (status) => status.state === "charged",
     ).length;
-    expect(shortChargedCount).toBeLessThan(5);
+    expect(shortChargedCount).toBeLessThan(TARGET_CHARGED_NODES);
 
-    // The following turn: three more nodes have gone inactive, enough to
-    // close the gap the board was left short by above.
+    // The following turn: two more nodes have gone inactive, enough to close
+    // the gap the board was left short by above.
     const recoveredState: GameState = {
       ...shortResult.state,
       nodes: {
@@ -279,30 +276,28 @@ describe("runChargeDraw — running short", () => {
         ...nodeStatuses({
           H4: ["inactive", 1],
           N4: ["inactive", 1],
-          D8: ["inactive", 1],
         }),
       },
     };
 
     const recoveredResult = runChargeDraw(recoveredState);
 
-    expect(recoveredResult.effects).toHaveLength(3);
+    expect(recoveredResult.effects).toHaveLength(2);
     const recoveredChargedCount = Object.values(
       recoveredResult.state.nodes,
     ).filter((status) => status.state === "charged").length;
-    expect(recoveredChargedCount).toBe(5);
+    expect(recoveredChargedCount).toBe(TARGET_CHARGED_NODES);
   });
 });
 
 describe("runChargeDraw — nothing to do", () => {
-  it("charges nothing when the board is already at five", () => {
+  it("charges nothing when the board is already at four", () => {
     const state = buildState({
       nodes: {
         F2: ["charged", 1],
         J2: ["charged", 1],
         B4: ["charged", 1],
         H4: ["charged", 1],
-        N4: ["charged", 1],
       },
     });
 
@@ -323,7 +318,6 @@ describe("runChargeDraw — weighted by pressure (§8.2)", () => {
           F2: ["charged", 1],
           J2: ["charged", 1],
           B4: ["charged", 1],
-          H4: ["charged", 1],
           N4: ["inactive", 20],
           D8: ["inactive", 10],
           H8: ["inactive", 1],
@@ -388,7 +382,6 @@ describe("runChargeDraw — weighted by pressure (§8.2)", () => {
         F2: ["charged", 1],
         J2: ["charged", 1],
         B4: ["charged", 1],
-        H4: ["charged", 1],
         N4: ["inactive", 37],
       },
     });

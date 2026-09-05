@@ -106,7 +106,6 @@ describe("camping — a node charges under a parked ship (§8.1, §8.2, §8.5)",
         F2: ["charged", 0],
         J2: ["charged", 0],
         B4: ["charged", 0],
-        L8: ["charged", 0],
       },
     });
 
@@ -280,7 +279,6 @@ describe("camping — a node that grants or takes nothing has nothing left to gi
         J2: ["charged", 0],
         B4: ["charged", 0],
         L8: ["charged", 0],
-        D8: ["charged", 0],
       },
     });
 
@@ -298,7 +296,7 @@ describe("camping — a node that grants or takes nothing has nothing left to gi
       expect(state.energy.green).toBe(0);
     }
 
-    // The board is already at its target of five charged nodes, so H4
+    // The board is already at its target of four charged nodes, so H4
     // never gets drawn during this test — it is a clean, indefinite control.
     const afterGreenTurn = appliedOrThrow(
       applyMove(initial, "green-mover", squareFromName("A4")),
@@ -566,7 +564,6 @@ describe("camping — an inactive node still pays nothing, for as many turns as 
           J2: ["charged", 0],
           B4: ["charged", 0],
           L8: ["charged", 0],
-          D8: ["charged", 0],
         },
       }),
       energy: { green: 10, red: 0 },
@@ -594,7 +591,7 @@ describe("camping — an inactive node still pays nothing, for as many turns as 
       ).toBe(false);
     }
 
-    // The board is already at its target of five charged nodes, so H4
+    // The board is already at its target of four charged nodes, so H4
     // never gets drawn during this test — it is a clean, indefinite control,
     // proven across two full rounds rather than one.
     const afterGreenTurn = appliedOrThrow(

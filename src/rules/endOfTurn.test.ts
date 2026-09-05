@@ -71,14 +71,13 @@ describe("runEndOfTurn — step 1, the power loss (§4.1)", () => {
         K5: ["inactive", 1],
         L8: ["charged", 1],
         E11: ["charged", 1],
-        H12: ["charged", 1],
       },
       ships: [
         ship("green-1", "green", "H8", 3), // charged: loses, 3 -> 2
         ship("green-2", "green", "K5", 3), // inactive: loses nothing
         ship("green-3", "green", "D2", 3), // not a node: loses nothing
         ship("green-4", "green", "L8", 0), // already at the floor: loses nothing
-        ship("green-5", "green", "H12", 4), // charged: loses, 4 -> 3
+        ship("green-5", "green", "H12", 4), // not a node: loses nothing
         ship("red-1", "red", "E11", 3), // charged, but not the mover
       ],
     });
@@ -92,10 +91,10 @@ describe("runEndOfTurn — step 1, the power loss (§4.1)", () => {
     expect(shipPower("green-2")).toBe(3);
     expect(shipPower("green-3")).toBe(3);
     expect(shipPower("green-4")).toBe(0);
-    expect(shipPower("green-5")).toBe(3);
+    expect(shipPower("green-5")).toBe(4);
     expect(shipPower("red-1")).toBe(3);
 
-    expect(result.effects.slice(0, 3)).toEqual([
+    expect(result.effects.slice(0, 2)).toEqual([
       {
         type: "power-lost",
         shipId: "green-1",
@@ -104,25 +103,14 @@ describe("runEndOfTurn — step 1, the power loss (§4.1)", () => {
         power: 2,
       },
       {
-        type: "power-lost",
-        shipId: "green-5",
-        side: "green",
-        square: squareFromName("H12"),
-        power: 3,
-      },
-      {
         type: "energy-collected",
         side: "green",
-        amount: 6,
-        newTotal: 6,
-        squares: [
-          squareFromName("H8"),
-          squareFromName("L8"),
-          squareFromName("H12"),
-        ],
+        amount: 3,
+        newTotal: 3,
+        squares: [squareFromName("H8"), squareFromName("L8")],
       },
     ]);
-    // Step 4: the board is one node short of five, and K5 is the only
+    // Step 4: the board is one node short of four, and K5 is the only
     // inactive node, so it is charged deterministically — the draw needs no
     // choice among a pool of one. Every charged node's level is small (1),
     // so step 3's drain draw never reaches capacity and adds no effect of
@@ -769,7 +757,7 @@ describe("runEndOfTurn — step 4, the charge draw never charges a node that onl
 
 describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
   it("gains a point of pressure every ply it stays inactive", () => {
-    // Five other nodes are already charged so the board is not short and
+    // Four other nodes are already charged so the board is not short and
     // H8 cannot itself be drawn by step 4 — this isolates step 5.
     const state = buildState({
       nodes: {
@@ -778,7 +766,6 @@ describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
         J2: ["charged", 1],
         B4: ["charged", 1],
         L8: ["charged", 1],
-        D8: ["charged", 1],
       },
     });
 
@@ -798,7 +785,6 @@ describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
         J2: ["charged", 1],
         B4: ["charged", 1],
         L8: ["charged", 1],
-        D8: ["charged", 1],
       },
     });
 
@@ -945,13 +931,12 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
 });
 
 describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
-  it("prices one, two, three, four and five depleted nodes off the collection table", () => {
+  it("prices one, two, three and four depleted nodes off the collection table", () => {
     const cases: readonly [number, number][] = [
       [1, 1],
       [2, 3],
       [3, 6],
       [4, 10],
-      [5, 15],
     ];
     for (const [depletedCount, expectedAmount] of cases) {
       const names = ["H8", "K5", "L8", "D8", "K11"].slice(0, depletedCount);
@@ -983,27 +968,30 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     }
   });
 
-  it("prices six and seven depleted nodes the same as five, raising no error", () => {
-    const sixNames = ["H8", "K5", "L8", "D8", "K11", "E5"];
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: Object.fromEntries(
-          sixNames.map((name) => [name, ["depleted", 0] as const]),
-        ),
-        ships: sixNames.map((name, index) =>
-          ship(`green-${index + 1}` as ShipId, "green", name, 0),
-        ),
-      }),
-      energy: { green: 100, red: 0 },
-    };
+  it("prices five, six and seven depleted nodes the same as four, raising no error", () => {
+    const sevenNames = ["H8", "K5", "L8", "D8", "K11", "E5", "E11"];
+    for (const depletedCount of [5, 6, 7]) {
+      const names = sevenNames.slice(0, depletedCount);
+      const state = {
+        ...buildState({
+          sideToMove: "green",
+          nodes: Object.fromEntries(
+            names.map((name) => [name, ["depleted", 0] as const]),
+          ),
+          ships: names.map((name, index) =>
+            ship(`green-${index + 1}` as ShipId, "green", name, 0),
+          ),
+        }),
+        energy: { green: 100, red: 0 },
+      };
 
-    const result = runEndOfTurn(state);
+      const result = runEndOfTurn(state);
 
-    expect(result.effects).toContainEqual(
-      expect.objectContaining({ type: "energy-penalty", amount: 15 }),
-    );
-    expect(result.state.energy.green).toBe(85);
+      expect(result.effects).toContainEqual(
+        expect.objectContaining({ type: "energy-penalty", amount: 10 }),
+      );
+      expect(result.state.energy.green).toBe(90);
+    }
   });
 
   it("collects for the charged nodes held and then pays for the depleted nodes occupied, not netted", () => {
@@ -1241,7 +1229,7 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
 });
 
 describe("runEndOfTurn — the opening board does not fall into lockstep (§8.1)", () => {
-  it("does not run all five opening nodes out on the same ply", () => {
+  it("does not run all four opening nodes out on the same ply", () => {
     const SEEDS = [20260828, 20260829, 20260830, 20260831, 20260832];
     const PLIES_TO_RUN = 60;
 

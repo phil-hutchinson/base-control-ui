@@ -17,20 +17,20 @@ import { MAX_SHIPS_PER_SIDE, type Side } from "./fleet";
  * energy taken for a count of depleted nodes occupied, indexed by that
  * count. The same table prices both directions.
  */
-const ENERGY_BY_NODES_HELD: readonly number[] = [0, 1, 3, 6, 10, 15];
+const ENERGY_BY_NODES_HELD: readonly number[] = [0, 1, 3, 6, 10];
 
 /**
  * The most depleted nodes the table's penalty ever prices, regardless of how
- * many a side actually occupies (§8.4). The most a turn can pay is 15 (five
- * charged nodes), so the most a turn can cost is capped here at 15 too, and
+ * many a side actually occupies (§8.4). The most a turn can pay is 10 (four
+ * charged nodes), so the most a turn can cost is capped here at 10 too, and
  * neither half of §8.4 can outrun the other.
  */
 export const MAX_DEPLETED_NODES_PRICED = ENERGY_BY_NODES_HELD.length - 1;
 
 /**
  * The energy paid for holding `nodesHeld` charged nodes (rules.md §8.4).
- * Throws a `RangeError` outside 0–5: the board never charges more than five
- * nodes at once (§8.1, §8.2), so a sixth held node is a bug in the caller,
+ * Throws a `RangeError` outside 0–4: the board never charges more than four
+ * nodes at once (§8.1, §8.2), so a fifth held node is a bug in the caller,
  * not a case to absorb.
  */
 export function energyForNodesHeld(nodesHeld: number): number {
@@ -95,10 +95,10 @@ export function depletedNodesOccupiedBy(
  * The energy taken for standing on `depletedNodes` depleted nodes (rules.md
  * §8.4), read off the same table `energyForNodesHeld` uses. Unlike a
  * charged count, a depleted count has no board-imposed ceiling — up to
- * ten of the fifteen nodes can be depleted at once, and a side has
+ * eleven of the fifteen nodes can be depleted at once, and a side has
  * seven ships — so this is an ordinary state of the game, not a bug: the
  * count is **clamped** to `MAX_DEPLETED_NODES_PRICED` before it is priced,
- * so six or seven depleted nodes cost the same as five.
+ * so five, six or seven depleted nodes cost the same as four.
  *
  * Still throws a `RangeError`, but only for a count that is genuinely
  * impossible: negative, fractional, or larger than the number of ships a

@@ -348,6 +348,8 @@ describe("Board", () => {
       expect(new Set(allIds).size).toBe(allIds.length);
     });
 
+    // This board is hand-stated for rendering, not dealt by the game rules,
+    // so its five charged nodes are not a legal game position.
     it("names exactly the five charged and twelve inactive nodes this board states, none depleted", () => {
       render(<Board session={startingSession} onIntent={noop} />);
 

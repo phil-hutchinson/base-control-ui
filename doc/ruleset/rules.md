@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.20**
+**Rules version: 0.21**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -56,7 +56,7 @@ what a node takes from it while it stands there.
 **Node** — a position on the board that comes into being, runs through three
 states — **inactive**, **charged** and **depleted** — and then ends. The
 instant a node ends, a new inactive node appears somewhere else on the board
-(section 3.2). The board aims to keep five nodes charged at any moment,
+(section 3.2). The board aims to keep four nodes charged at any moment,
 though it may fall short.
 
 **Capacity** — how much a node has to give before it is spent. Every node
@@ -359,20 +359,18 @@ Every node is always in exactly one of three states:
 A node cycles inactive → charged → depleted → **ends**. The instant a node
 ends, a new inactive node appears somewhere else on the board (section 3.2).
 
-The board **aims** to keep five nodes charged at all times: at the end of
+The board **aims** to keep four nodes charged at all times: at the end of
 every turn it charges as many inactive nodes as it takes to bring the
-charged count back to five (section 8.2). If there are not enough inactive
-nodes, it charges what it can and simply runs short until the next turn —
-and with only fifteen nodes on the board at once, this is the likelier case
-rather than an edge case.
+charged count back to four (section 8.2). If there are not enough inactive
+nodes, it charges what it can and simply runs short until the next turn.
 
 **The opening board is dealt.** The game opens with **fifteen** nodes, at
 fifteen squares drawn under section 3.2:
 
-- **Five of the fifteen are charged**, at squares drawn at random with every
+- **Four of the fifteen are charged**, at squares drawn at random with every
   legal square equally likely and no two the same. No square is privileged;
   the centre is not guaranteed.
-- **Each of the five starts part-drained**, at a drain drawn from the opening
+- **Each of the four starts part-drained**, at a drain drawn from the opening
   drain table below — never more than 40, two-thirds of the capacity of 60
   (section 8.3), so every dealt node has enough life left to be worth racing
   for.
@@ -396,7 +394,7 @@ Most nodes have waited only a little, but the tail means a game can open
 with one or two nodes already close to the cap of 50, which are the nodes
 the first charge draw will favour.
 
-Nothing needs to spread their expiries out by hand. The five now open at
+Nothing needs to spread their expiries out by hand. The four now open at
 different ages as well as draining at independently drawn rates, so they are
 spread apart from the first turn rather than spreading within the first
 few.
@@ -404,11 +402,11 @@ few.
 ### 8.2 Charging a node
 
 At the end of every turn, as many **inactive** nodes as it takes to bring the
-charged count back to five are chosen at random, one at a time. If fewer
-than that are inactive, fewer are charged and the board runs below five
-until the next turn — with only fifteen nodes on the board, this is the
-likelier case rather than the exception. Charged nodes still run out on
-schedule whether or not the board is at its five.
+charged count back to four are chosen at random, one at a time. If fewer
+than that are inactive, fewer are charged and the board runs below four
+until the next turn — with fifteen nodes on the board and a target of four,
+this is now the uncommon case rather than the likely one. Charged nodes
+still run out on schedule whether or not the board is at its four.
 
 The draw does not look at occupancy: a node with a ship standing on it can be
 charged like any other. That ship is holding a node from that moment — it
@@ -480,14 +478,13 @@ a depleted node and moving on neither collects nor costs anything.
 | 2             | 3      |
 | 3             | 6      |
 | 4             | 10     |
-| 5             | 15     |
 
 The charged nodes a player holds are priced off this table exactly as
 before. Unlike charged nodes there is no limit on how many nodes are
-depleted at once — up to ten of the fifteen can be, since at most five are
-ever charged — so the depleted count is **capped at five** before it is
-priced: six or seven depleted nodes cost the same 15 that five do. The most a
-turn can pay is 15, so the most a turn can cost is now exactly 15 too —
+depleted at once — up to eleven of the fifteen can be, since at most four are
+ever charged — so the depleted count is **capped at four** before it is
+priced: five, six or seven depleted nodes cost the same 10 that four do. The
+most a turn can pay is 10, so the most a turn can cost is now exactly 10 too —
 neither half of this section can outrun the other.
 
 The two halves are applied in that order — collect, then pay — and
@@ -547,7 +544,7 @@ Everything that happens at the end of a turn happens in this order:
    goes depleted, and any ship standing on it keeps standing there, collecting
    nothing and, from the end of its owner's next turn, paying for it
    (section 8.4).
-4. As many inactive nodes as it takes to bring the board back to five
+4. As many inactive nodes as it takes to bring the board back to four
    charged are charged, drawn by pressure (section 8.2).
 5. Every node still inactive gains a point of pressure, to the cap of 50
    (section 8.2).
@@ -642,31 +639,34 @@ The board carries **fifteen** nodes at all times: one out, one in, whenever a
 node retires. A node's life is a mix of empty and held turns rather than a
 fixed count, but the mix works out to roughly **twenty** turns charged, and
 recovery runs about **ten** more turns depleted before retirement — thirty
-turns from birth to death. For five of the fifteen to be charged at any
-moment, the average time a node spends waiting inactive works out to about
-**thirty** turns: roughly 5 charged, 2½ depleted and 7½ inactive at any
-moment, so a node still charges about every four turns, exactly as before —
-the pool is comfortable, if a little thinner than the nine or ten inactive
-nodes the old seventeen-square board carried.
+turns from birth to death. For four of the fifteen to be charged at any
+moment, a whole life runs about 20 × 15 / 4 ≈ **seventy-five** turns, of
+which about **forty-five** are spent waiting inactive: roughly 4 charged, 2
+depleted and 9 inactive at any moment, so a node now charges about every
+**five** turns, rather than every four — the pool is looser than it was
+against a target of five, with more of the fifteen sitting inactive at any
+moment.
 
-Running short of five charged remains a **legal outcome**, not a failure the
-pool must be sized to prevent — section 8.2 charges as many inactive nodes as
-it can and simply falls short when it has to, and with fifteen nodes rather
-than seventeen this now comes up more often. What the pool size still buys
-is **randomness**: if only one or two nodes are inactive when the charge draw
-runs, the choice is nearly forced and players can predict it.
+Running short of four charged remains a **legal outcome**, not a failure the
+pool must be sized to prevent — section 8.2 charges as many inactive nodes
+as it can and simply falls short when it has to. But with roughly nine of
+the fifteen nodes inactive at any moment, against a target of only four,
+this is now the **uncommon** case rather than the likely one: the pool is
+comfortable enough that the charge draw usually finds all the inactive
+nodes it needs.
 
-What is now worth checking is different from before: the **pressure cap
-against the average wait**. A node now waits something like thirty turns
-between cycles, against a cap of 50 — the cap sits _above_ the average wait
-now, rather than below it, which sharpens the weighting across the pool
-rather than flattening it towards uniform. That, and the size of the
-inactive pool against the target of five charged, are what to check first
+What is worth checking first when these numbers are next retuned is the
+**pressure cap against the average wait**. A node now waits something like
+forty-five turns between cycles, against a cap of 50 — the cap sits only a
+little above the average wait, so a larger share of the inactive pool sits
+at or near the cap at any moment, which flattens the weighting back towards
+uniform at the top end rather than sharpening it. That, and the size of the
+inactive pool against the target of four charged, are what to check first
 whenever these numbers are retuned.
 
-These counts — fifteen nodes, five charged, ten inactive at the deal — are
-first guesses to be play-tested and retuned like every other number in this
-document.
+These counts — fifteen nodes, four charged, eleven inactive at the deal —
+are first guesses to be play-tested and retuned like every other number in
+this document.
 
 The app guards this with a test that the inactive pool stays comfortably
 populated over a long run, that expiries stay spread rather than arriving
