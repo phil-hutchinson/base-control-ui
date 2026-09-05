@@ -765,7 +765,14 @@ sentence unchanged in form.
 
 ### Step 7 — Play it
 
-Status: pending
+Status: committed
+
+Notes: Owner ran the app and confirmed the change works as intended — the
+opening board deals four charged nodes, the score cells draw four pips a
+row at the same size as before with the info column still right, the board
+tops back up to four and never shows a fifth, and the new table's ceiling
+of 10 each way reads correctly in play and in the over-cap announcement.
+No code change; nothing to fix.
 
 No code change. The owner runs the app and confirms the change is what four
 charged nodes should look and feel like.
