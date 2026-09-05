@@ -399,7 +399,16 @@ if either turns out to be a real loss it is **recorded** as a note in
 
 ### Step 1 — Rules 0.23 → 0.24: power is a reserve, moves are priced
 
-Status: pending
+Status: committed
+
+Notes: Edited §1, §2, §3.1, §4, §4.1, §6, §7, §8.1, §8.5 and §8.6 step 1 (plus
+the "turn passes" paragraph beneath §8.6's step list, and §7.2's recovery
+sentence) as the step directs, bumped the version line to 0.24, bumped
+`RULES_VERSION`, and added one changelog entry covering the whole story. The
+`grep -ni "drain"` sweep's one hit that mentions "ship's power" (§4.1's "a
+charged node does not drain it") is expected: it is the step's own prescribed
+sentence stating the negation of the old rule, not a leftover of it. No other
+deviation from the plan.
 
 Edit `doc/ruleset/rules.md` so that no sentence in it says a node changes a
 ship's power, that power unlocks a move rather than buying it, that a friendly
