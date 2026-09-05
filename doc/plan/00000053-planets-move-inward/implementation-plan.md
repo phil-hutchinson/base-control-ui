@@ -915,6 +915,87 @@ Then the four standard checks.
 
 ---
 
+### Step 9a — Re-site the planets, and reconcile the documents
+
+Status: pending
+
+Added after Step 8, at the owner's direction. Having seen the twelve planets
+on the running board, the owner moved them twice and settled on a different
+set. The squares are the only thing that changed — every rule, constant and
+mechanism from Steps 1-8 stands.
+
+**The settled geometry.** The six base squares are **B3, D6, G4, J2, K6, N4**,
+and the twelve are those plus their half-turn rotations **N13, L10, I12, F14,
+E10, B12**. `src/rules/planets.ts` already carries them; the orchestrator made
+that edit so the owner could look at the board. Everything below is what the
+rest of the repository owes that change.
+
+**Measured at the settled geometry** (do not re-derive; these replace the
+figures in "Facts established while planning"):
+
+- No two planets are adjacent, orthogonally or diagonally. None sits on a
+  starting square. The set is closed under a half-turn, and is **not**
+  mirror-symmetric.
+- **Six of the twelve lie outside C3-M13** — B3, J2, N4, N13, F14 and B12 sit
+  in the two excluded edge rings, where a node can never appear anyway. The
+  six inside are D6, G4, K6, L10, I12, E10. The old claim that all twelve lie
+  inside the node interior is now **false** and must not survive anywhere.
+- The legal node pool on an empty board is **51 squares**, not 29. The largest
+  mutually non-adjacent set in it is **18**, not 17.
+- Fallback rates by node count, 3,000 dealt games each, with no ships in the
+  interior: 12 -> 0.00%, 13 -> 0.13%, 14 -> 3.20%, 15 -> 21.47%. With all
+  twelve ships scattered through the interior: 12 -> 0.00%, 13 -> 1.13%,
+  14 -> 8.03%, 15 -> 32.27%. Replacements mid-game at twelve nodes: 0.00-0.01%.
+- **`NODE_COUNT` stays 12.** The owner's decision is unchanged and still
+  justified: the pool grew, but it is scattered rather than open, so fifteen
+  nodes would still fall back on a fifth to a third of deals. Do not reopen it.
+
+**What this step does.**
+
+1. **Rebuild the gameplay fixtures.** Roughly 28 tests across ten files pin
+   squares from the old geometry — fixtures standing a ship on a planet at a
+   named square, the §7.1 return-draw tests that fill every planet by name,
+   the boxed-in cases, the vacated-square case, and `Board.test.tsx`'s
+   planet-naming and node-marker cases. Rebuild them around the settled
+   squares. Where a fixture can honestly derive its squares from `PLANETS`
+   rather than naming them, **do that** — the geometry has moved three times
+   and may move again. Where a test genuinely needs a named square (a
+   specific adjacency, a specific seed), name it and say why.
+2. **`planets.test.ts`.** The exact named set becomes the settled twelve. The
+   assertion that all twelve lie inside C3-M13 is **replaced**, not deleted:
+   assert what is now true and load-bearing — no two adjacent, closed under a
+   half-turn, none on a starting square — and add that the six inside the
+   interior are the ones §3.2's constraint actually bites on.
+3. **rules.md, version 0.23, with a changelog entry.** §3.1's table and
+   diagram carry the settled squares. §3.1's symmetry paragraph stands. §3.2's
+   paragraph about what the constraints leave is rewritten around 51 squares,
+   and its statement of the fallback's rarity is re-stated honestly against
+   the new figures: at twelve nodes the fallback was not observed in
+   simulation at all, so it must be described as a guarantee that placement
+   can never fail rather than as something expected to happen — while staying
+   in the rules, because it is what makes placement total. Nothing else in the
+   ruleset changes: no rule, no count, no table.
+4. **story.md.** The two squares tables, the board diagram, the "three
+   properties" list (the C3-M13 property is the one that changes), the
+   fallback-rate table, and the "thing that follows" section's 29-square
+   arithmetic. The story's reasoning for `NODE_COUNT` 12 survives but its
+   supporting numbers move.
+5. **This plan.** "Facts established while planning" carries the settled
+   figures, with the superseded ones marked as such rather than silently
+   overwritten — Steps 6 and 7 were implemented against them and their commit
+   messages quote them.
+6. **Test prose.** Comments and test names saying "29 legal squares" say 51.
+
+Depends on: Steps 1-8.
+
+Verification (automated): the four standard checks, with the full suite green.
+`RULES_VERSION` agrees with rules.md at 0.23 and the changelog has an entry.
+No file under `src/`, and neither `rules.md` nor `story.md`, still names a
+square from a superseded geometry or claims all twelve planets lie inside
+C3-M13. `grep -rn "29 legal" src/` returns nothing.
+
+---
+
 ### Step 9 — README, and the last of the word "bay"
 
 Status: pending
