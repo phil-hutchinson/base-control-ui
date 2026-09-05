@@ -38,7 +38,7 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: GAME_NAME }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "7" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "6" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "30" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Unlimited" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
@@ -122,7 +122,7 @@ describe("App", () => {
     }
   });
 
-  it("pressing PLAY with the defaults deals a seven-a-side, thirty-round game", async () => {
+  it("pressing PLAY with the defaults deals a six-a-side, thirty-round game", async () => {
     render(<App />);
 
     await pressPlay();
@@ -143,7 +143,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("1/30")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(shipCells()).toHaveLength(14);
+    expect(shipCells()).toHaveLength(12);
   });
 
   it("pressing PLAY after choosing 5 ships deals a five-a-side game", async () => {
@@ -194,12 +194,12 @@ describe("App", () => {
     assertNoDuplicateIds(container);
   });
 
-  it("never repeats an id in the rendered document, with a full fourteen-ship board on screen", async () => {
+  it("never repeats an id in the rendered document, with a full twelve-ship board on screen", async () => {
     const { container } = render(<App />);
 
     await pressPlay();
 
-    expect(shipCells()).toHaveLength(14);
+    expect(shipCells()).toHaveLength(12);
 
     assertNoDuplicateIds(container);
   });

@@ -1,20 +1,22 @@
-// The names, numbers and ids behind each bay's planet, ported from
+// The names, numbers and ids behind each planet's drawing, ported from
 // `.local/eg_planets.html` (committed at
-// doc/plan/00000013-spaceship-bay-visual/eg_planets.html). This module is
-// the single place a planet's id is written down, so a rename cannot
-// half-happen between `PlanetDefs` (which declares the ids) and `Planet`
-// (which references one).
+// doc/plan/00000013-spaceship-bay-visual/eg_planets.html). That folder is
+// named for the story that introduced these drawings, and its name still
+// carries the old word for a planet; the path is history and stays exactly
+// as it is. This module is the single place a planet's id is written down,
+// so a rename cannot half-happen between `PlanetDefs` (which declares the
+// ids) and `Planet` (which references one).
 //
 // Every id is `planet-<nn>-<part>`, where `<nn>` is the planet's own number
-// from the gallery (zero-padded, 01-14) and `<part>` is a kebab-case name
-// for what it is. Most parts are drawn from a shared vocabulary - `body`,
-// `surface`, `sheen`, `blur`, `clip`, `moon-sheen`, `moon-clip`, `ring`,
-// `ring-sheen`, `ring-whole`, `ring-back`, `ring-front` - reused across
-// whichever planets need them. Two planets need something outside that
-// vocabulary and name it plainly instead of forcing a fit: planet 9's moon
-// has its own base-colour gradient distinct from its sheen, so it gets
-// `moon-surface`; planet 13 is built from three stacked wave bands, so it
-// gets `band-1`, `band-2` and `band-3`.
+// from the gallery (zero-padded, one of 01-10, 13, 14) and `<part>` is a
+// kebab-case name for what it is. Most parts are drawn from a shared
+// vocabulary - `body`, `surface`, `sheen`, `blur`, `clip`, `moon-sheen`,
+// `moon-clip`, `ring`, `ring-sheen`, `ring-whole`, `ring-back`, `ring-front`
+// - reused across whichever planets need them. Two planets need something
+// outside that vocabulary and name it plainly instead of forcing a fit:
+// planet 9's moon has its own base-colour gradient distinct from its sheen,
+// so it gets `moon-surface`; planet 13 is built from three stacked wave
+// bands, so it gets `band-1`, `band-2` and `band-3`.
 //
 // `body` is the id every planet declares for its whole drawing - grouped
 // under one id, ready for `Planet.tsx` to `<use>` - and every other id is
@@ -25,53 +27,26 @@
 // `shipArt.ts`'s ids: it cannot collide with `NodeMarker`'s
 // `node-<square>-fill` ids or with anything a later story adds.
 
-/** The colour family a planet belongs to, for judging the spread around the ring of bays. */
-export type PlanetColorFamily =
-  | "tan"
-  | "purple"
-  | "brown"
-  | "blue-green"
-  | "gold"
-  | "turquoise"
-  | "magenta"
-  | "cream"
-  | "rose"
-  | "cyan-pink"
-  | "blue-teal";
-
-/** The traits the board's spread of planets is judged on - decoration, not a rule. */
-export interface PlanetTraits {
-  readonly ring: boolean;
-  readonly moon: boolean;
-  readonly craters: boolean;
-  readonly colorFamily: PlanetColorFamily;
-}
-
-/** How a planet's body is drawn, beyond the traits above - never a rule, and never a colour. */
+/** How a planet's body is drawn - never a rule, and never a colour. */
 export type PlanetSurface =
   | "plain"
   | "banded"
   | "continents"
   | "banded-cratered-companion"
   | "lines"
-  | "banded-storm"
-  | "craters"
   | "waves";
 
 /** How a ringed planet's ring is tilted relative to the board. */
 export type RingOrientation = "horizontal" | "vertical" | "tilted";
 
 export interface PlanetArt {
-  /** The planet's own number in the source gallery, 1-14. */
+  /** The planet's own number in the source gallery: one of 1-10, 13, 14. */
   readonly number: number;
   /** A short description for a human reading this table - never shown to a player. */
   readonly name: string;
-  readonly traits: PlanetTraits;
   /**
    * The surface treatment and, for a ringed planet, the ring's orientation -
-   * both genuinely visible, but deliberately outside `PlanetTraits`: they
-   * describe how a planet is drawn, not the traits its spread around the
-   * ring is judged on, so they must never be added to that adjacency check.
+   * both genuinely visible, describing how a planet is drawn.
    */
   readonly surface: PlanetSurface;
   readonly ringOrientation?: RingOrientation;
@@ -94,45 +69,39 @@ function idsFor(
   return { ...ids, body: planetId(number, "body") };
 }
 
-/** The fourteen planets, in the source gallery's own numbering. */
-export const PLANETS: readonly PlanetArt[] = [
+/**
+ * The twelve planets, in the source gallery's own numbering. Planets 11 and
+ * 12 were dropped from the gallery's fourteen, so the numbers present are
+ * 1-10, 13 and 14 - the gaps are intentional, not an omission.
+ */
+export const PLANET_ART: readonly PlanetArt[] = [
   {
     number: 1,
     name: "Tan planet with a cratered moon",
-    traits: { ring: false, moon: true, craters: true, colorFamily: "tan" },
     surface: "plain",
     ids: idsFor(1, ["body", "surface", "moon-sheen", "blur", "moon-clip"]),
   },
   {
     number: 2,
     name: "Peru-and-purple planet with four small moons",
-    traits: { ring: false, moon: true, craters: false, colorFamily: "purple" },
     surface: "plain",
     ids: idsFor(2, ["body", "surface"]),
   },
   {
     number: 3,
     name: "Banded chocolate-brown planet",
-    traits: { ring: false, moon: false, craters: false, colorFamily: "brown" },
     surface: "banded",
     ids: idsFor(3, ["body", "surface", "sheen"]),
   },
   {
     number: 4,
     name: "Blue-green water world",
-    traits: {
-      ring: false,
-      moon: false,
-      craters: false,
-      colorFamily: "blue-green",
-    },
     surface: "continents",
     ids: idsFor(4, ["body", "surface", "blur", "sheen", "clip"]),
   },
   {
     number: 5,
     name: "Gold planet with a wide ring",
-    traits: { ring: true, moon: false, craters: false, colorFamily: "gold" },
     surface: "plain",
     ringOrientation: "horizontal",
     ids: idsFor(5, [
@@ -149,7 +118,6 @@ export const PLANETS: readonly PlanetArt[] = [
   {
     number: 6,
     name: "Double planet: banded brown with a cratered companion",
-    traits: { ring: false, moon: true, craters: true, colorFamily: "brown" },
     surface: "banded-cratered-companion",
     ids: idsFor(6, [
       "body",
@@ -163,7 +131,6 @@ export const PLANETS: readonly PlanetArt[] = [
   {
     number: 7,
     name: "Brown-and-pink planet with a tilted grey ring",
-    traits: { ring: true, moon: false, craters: false, colorFamily: "brown" },
     surface: "banded",
     ringOrientation: "tilted",
     ids: idsFor(7, [
@@ -179,12 +146,6 @@ export const PLANETS: readonly PlanetArt[] = [
   {
     number: 8,
     name: "Turquoise planet with a vertical white ring",
-    traits: {
-      ring: true,
-      moon: false,
-      craters: false,
-      colorFamily: "turquoise",
-    },
     surface: "banded",
     ringOrientation: "vertical",
     ids: idsFor(8, [
@@ -200,7 +161,6 @@ export const PLANETS: readonly PlanetArt[] = [
   {
     number: 9,
     name: "Banded brown planet with an earth-like moon",
-    traits: { ring: false, moon: true, craters: false, colorFamily: "brown" },
     surface: "banded",
     ids: idsFor(9, [
       "body",
@@ -214,43 +174,12 @@ export const PLANETS: readonly PlanetArt[] = [
   {
     number: 10,
     name: "Magenta planet with pale surface lines",
-    traits: {
-      ring: false,
-      moon: false,
-      craters: false,
-      colorFamily: "magenta",
-    },
     surface: "lines",
     ids: idsFor(10, ["body", "sheen", "blur", "clip"]),
   },
   {
-    number: 11,
-    name: "Rose-and-cream banded planet with a storm",
-    traits: {
-      ring: false,
-      moon: false,
-      craters: false,
-      colorFamily: "rose",
-    },
-    surface: "banded-storm",
-    ids: idsFor(11, ["body", "surface", "sheen", "blur", "clip", "storm"]),
-  },
-  {
-    number: 12,
-    name: "Cream-and-olive crater planet",
-    traits: { ring: false, moon: false, craters: true, colorFamily: "cream" },
-    surface: "craters",
-    ids: idsFor(12, ["body", "sheen", "blur", "clip"]),
-  },
-  {
     number: 13,
     name: "Cyan-purple-pink wavy planet",
-    traits: {
-      ring: false,
-      moon: false,
-      craters: false,
-      colorFamily: "cyan-pink",
-    },
     surface: "waves",
     ids: idsFor(13, [
       "body",
@@ -265,12 +194,6 @@ export const PLANETS: readonly PlanetArt[] = [
   {
     number: 14,
     name: "Blue-teal ringed planet with a gold core",
-    traits: {
-      ring: true,
-      moon: false,
-      craters: false,
-      colorFamily: "blue-teal",
-    },
     surface: "plain",
     ringOrientation: "tilted",
     ids: idsFor(14, [

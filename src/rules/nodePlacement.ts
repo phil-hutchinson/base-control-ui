@@ -10,7 +10,7 @@ import {
   type Square,
   squareName,
 } from "./board";
-import { isBay } from "./bays";
+import { PLANETS, isPlanet } from "./planets";
 import { drawIndex } from "./random";
 
 /**
@@ -51,6 +51,16 @@ function isAdjacentToAnyNode(
   );
 }
 
+/** Whether a square is orthogonally or diagonally adjacent to any planet. */
+function isAdjacentToAnyPlanet(square: Square): boolean {
+  const colIndex = columnIndex(square);
+  return PLANETS.some(
+    (planet) =>
+      Math.abs(columnIndex(planet) - colIndex) <= 1 &&
+      Math.abs(planet.row - square.row) <= 1,
+  );
+}
+
 /**
  * The squares a new node may legally occupy (rules.md §3.2), given the
  * squares that already hold a node and the squares ships occupy, in board
@@ -58,20 +68,26 @@ function isAdjacentToAnyNode(
  * left — is removed from the result too, in the ordinary pool and in the
  * fallback alike.
  *
- * A square qualifies when all five of §3.2's constraints hold:
+ * A square qualifies when all six of §3.2's constraints hold:
  *
  * 1. it holds no node already;
  * 2. no ship stands on it;
  * 3. it is not on the outer edge;
  * 4. it is not one square in from the edge;
  * 5. it is not orthogonally or diagonally adjacent to a square that holds a
- *    node.
+ *    node;
+ * 6. it is not a planet, and is not orthogonally or diagonally adjacent to
+ *    one.
  *
  * If nothing qualifies, the pool falls back to every square that holds no
- * node and is not a bay — the whole relaxation at once, not one constraint
- * dropped at a time — still honouring the excluded square. If even that is
- * empty, throws a `RangeError` naming the situation, rather than returning
- * an empty pool for `drawNodeSquare` to fail on with a generic message.
+ * node and is not a planet — the whole relaxation at once, not one
+ * constraint dropped at a time — still honouring the excluded square. The
+ * fallback keeps a node off a planet, but, unlike the ordinary pool, does
+ * **not** keep it off a planet's neighbours or the board's edge: it may
+ * legitimately hand back a square adjacent to a planet. If even the
+ * fallback is empty, throws a `RangeError` naming the situation, rather than
+ * returning an empty pool for `drawNodeSquare` to fail on with a generic
+ * message.
  */
 export function legalNodePool(
   occupiedNodeSquares: readonly Square[],
@@ -89,7 +105,9 @@ export function legalNodePool(
       !nodeNames.has(name) &&
       !shipNames.has(name) &&
       distanceFromEdge(square) >= EXCLUDED_EDGE_RINGS &&
-      !isAdjacentToAnyNode(square, occupiedNodeSquares)
+      !isAdjacentToAnyNode(square, occupiedNodeSquares) &&
+      !isPlanet(square) &&
+      !isAdjacentToAnyPlanet(square)
     );
   });
 
@@ -99,12 +117,12 @@ export function legalNodePool(
 
   const fallback = ALL_SQUARES.filter((square) => {
     const name = squareName(square);
-    return name !== excludedName && !nodeNames.has(name) && !isBay(square);
+    return name !== excludedName && !nodeNames.has(name) && !isPlanet(square);
   });
 
   if (fallback.length === 0) {
     throw new RangeError(
-      "legalNodePool: no square is available for a new node — every square that is not a bay already holds one",
+      "legalNodePool: no square is available for a new node — every square that is not a planet already holds one",
     );
   }
 

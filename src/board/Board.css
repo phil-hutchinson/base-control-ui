@@ -3,7 +3,7 @@
    that box's size is `App.css`'s to decide, not this file's — so the board
    fills whatever room it is actually given: it grows with no ceiling, and
    shrinks no further than a floor kept for legibility.
-   Ordinary squares get a thin border to read as a grid; a bay square is
+   Ordinary squares get a thin border to read as a grid; a planet square is
    styled the same as any other, and is marked instead by the planet drawn
    in it.
 

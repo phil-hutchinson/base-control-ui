@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BAYS, isBay } from "./bays";
+import { PLANETS, isPlanet } from "./planets";
 import { squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
 import {
@@ -65,6 +65,7 @@ function buildState(config: {
     actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
+    openingSeed: 1,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     outOfTime: config.outOfTime ?? { green: false, red: false },
@@ -106,18 +107,18 @@ describe("applyMove", () => {
     expect(state).toEqual(before);
   });
 
-  it("keeps the power a ship had when a move ends in a bay, exactly as when it only passes over one (rules.md §3.1)", () => {
+  it("keeps the power a ship had when a move ends on a planet, exactly as when it only passes over one (rules.md §3.1)", () => {
     // A move never touches a ship's power itself (§3.1) — recovery is the
     // end-of-turn step's doing (§8.6 step 1), which this move triggers as
-    // the ply's last action. Proving the bay case through that step's own
+    // the ply's last action. Proving the planet case through that step's own
     // power-gained effect rules out an instant refill: a refill would leave
     // the ship at 4 and raise no gain effect at all, where the move only
-    // ever carries the ship's power unchanged into the bay for the
+    // ever carries the ship's power unchanged onto the planet for the
     // end-of-turn step to then act on.
-    const endsInBay = buildState({
-      ships: [ship("green-1", "green", "A11", 2), ship("red-1", "red", "O15")],
+    const endsOnPlanet = buildState({
+      ships: [ship("green-1", "green", "C6", 2), ship("red-1", "red", "O15")],
     });
-    const endResult = applyMove(endsInBay, "green-1", squareFromName("A10"));
+    const endResult = applyMove(endsOnPlanet, "green-1", squareFromName("D6"));
     expect(endResult.outcome).toBe("applied");
     if (endResult.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -134,20 +135,20 @@ describe("applyMove", () => {
             type: "power-gained",
             shipId: "green-1",
             side: "green",
-            square: squareFromName("A10"),
+            square: squareFromName("D6"),
             power: 3,
           },
         ],
       },
     ]);
 
-    const passesOverBay = buildState({
-      ships: [ship("green-1", "green", "A11", 2), ship("red-1", "red", "O15")],
+    const passesOverPlanet = buildState({
+      ships: [ship("green-1", "green", "C6", 2), ship("red-1", "red", "O15")],
     });
     const passResult = applyMove(
-      passesOverBay,
+      passesOverPlanet,
       "green-1",
-      squareFromName("A9"),
+      squareFromName("E6"),
     );
     expect(passResult.outcome).toBe("applied");
     if (passResult.outcome !== "applied") {
@@ -350,7 +351,7 @@ describe("applyAttack", () => {
       defenderPower: 0 as PowerLevel,
     },
   ])(
-    "the fight changes neither ship's power, and the attacker then gains its bay point as the same turn ends, leaving both squares empty ($label)",
+    "the fight changes neither ship's power, and the attacker then gains its planet point as the same turn ends, leaving both squares empty ($label)",
     ({ attackerPower, defenderPower }) => {
       const state = buildState({
         ships: [
@@ -371,13 +372,13 @@ describe("applyAttack", () => {
       // The fight itself leaves both ships' power exactly as it found them
       // (asserted below, from the fight-resolved snapshot). The attack is
       // this ply's only action, though, so it also ends the ply — and the
-      // attacker (the moving side) then gains a point in its bay under
+      // attacker (the moving side) then gains a point on its planet under
       // §8.6 step 1 if it has anything left to gain; the defender, not the
       // moving side this ply, does not.
       expect(attacker?.power).toBe(Math.min(attackerPower + 1, 4));
       expect(defender?.power).toBe(defenderPower);
-      expect(isBay(attacker!.square)).toBe(true);
-      expect(isBay(defender!.square)).toBe(true);
+      expect(isPlanet(attacker!.square)).toBe(true);
+      expect(isPlanet(defender!.square)).toBe(true);
       expect(squareName(attacker!.square)).not.toBe(
         squareName(defender!.square),
       );
@@ -423,27 +424,27 @@ describe("applyAttack", () => {
     },
   );
 
-  it("draws the attacker's bay first, pinned to a stated seed", () => {
+  it("draws the attacker's planet first, pinned to a stated seed", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
     });
 
-    // Both bays are empty before the fight, so the attacker's draw picks
+    // Both planets are empty before the fight, so the attacker's draw picks
     // from all fourteen; the defender's draw is then made against the pool
-    // with the attacker's bay removed.
+    // with the attacker's planet removed.
     const [attackerIndex, seedAfterAttackerDraw] = drawIndex(
       state.randomSeed,
-      BAYS.length,
+      PLANETS.length,
     );
-    const attackerBayName = squareName(BAYS[attackerIndex]);
-    const defenderPool = BAYS.filter(
-      (square) => squareName(square) !== attackerBayName,
+    const attackerPlanetName = squareName(PLANETS[attackerIndex]);
+    const defenderPool = PLANETS.filter(
+      (square) => squareName(square) !== attackerPlanetName,
     );
     const [defenderIndex] = drawIndex(
       seedAfterAttackerDraw,
       defenderPool.length,
     );
-    const defenderBayName = squareName(defenderPool[defenderIndex]);
+    const defenderPlanetName = squareName(defenderPool[defenderIndex]);
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
 
@@ -453,10 +454,10 @@ describe("applyAttack", () => {
     }
     expect(
       squareName(result.state.ships.find((s) => s.id === "green-1")!.square),
-    ).toBe(attackerBayName);
+    ).toBe(attackerPlanetName);
     expect(
       squareName(result.state.ships.find((s) => s.id === "red-1")!.square),
-    ).toBe(defenderBayName);
+    ).toBe(defenderPlanetName);
   });
 
   it("keeps the fleet the same size on each side, across a sequence of fights", () => {
@@ -502,32 +503,35 @@ describe("applyAttack", () => {
     expect(second.state.ships.length).toBe(14);
   });
 
-  it("recomputes the return bay live: a bay an earlier ply's move vacated is one of the two a fight's ships land in", () => {
-    // green-2 sits in H15, one of the two bays left empty once green-2
-    // moves out of it (L15 is the other); green-1 and red-1 are positioned
-    // for the fight the next ply brings.
+  it("recomputes the return planet live: a planet an earlier ply's move vacated is one of the two a fight's ships land on", () => {
+    // green-2 sits on the first planet, one of the two planets left empty
+    // once green-2 moves off it (the second planet is the other); green-1
+    // and red-1 are positioned for the fight the next ply brings.
+    const [firstPlanetName, secondPlanetName] = PLANETS.map(squareName);
     const state = buildState({
       ships: [
-        ship("green-2", "green", "H15", 0),
+        ship("green-2", "green", firstPlanetName, 0),
         ship("green-1", "green", "H9", 4),
         ship("red-1", "red", "H8", 1),
-        ...BAYS.filter(
-          (square) => !["H15", "L15"].includes(squareName(square)),
+        ...PLANETS.filter(
+          (square) =>
+            ![firstPlanetName, secondPlanetName].includes(squareName(square)),
         ).map((square, index) =>
-          ship(`bay-filler-${index}`, "red", squareName(square)),
+          ship(`planet-filler-${index}`, "red", squareName(square)),
         ),
       ],
     });
 
-    const vacated = applyMove(state, "green-2", squareFromName("H14"));
+    const vacated = applyMove(state, "green-2", squareFromName("B2"));
     expect(vacated.outcome).toBe("applied");
     if (vacated.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
     expect(vacated.state.sideToMove).toBe("red");
 
-    // H15 and L15 are now the only empty bays, so the fight's two returning
-    // ships must land there between them, whichever seed drew them.
+    // The first and second planets are now the only empty planets, so the
+    // fight's two returning ships must land there between them, whichever
+    // seed drew them.
     const result = applyAttack(vacated.state, "red-1", squareFromName("H9"));
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -538,7 +542,9 @@ describe("applyAttack", () => {
         squareName(result.state.ships.find((s) => s.id === id)!.square),
       ),
     );
-    expect(returnedSquareNames).toEqual(new Set(["H15", "L15"]));
+    expect(returnedSquareNames).toEqual(
+      new Set([firstPlanetName, secondPlanetName]),
+    );
   });
 
   it("advances randomSeed exactly twice for every fight", () => {
@@ -552,23 +558,26 @@ describe("applyAttack", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
-    // Both bays start empty, so the attacker's draw picks from all fourteen
-    // and the defender's draw — against the state that already holds the
-    // attacker — picks from the remaining thirteen.
-    const [, seedAfterAttackerDraw] = drawIndex(state.randomSeed, BAYS.length);
+    // Both planets start empty, so the attacker's draw picks from all
+    // fourteen and the defender's draw — against the state that already
+    // holds the attacker — picks from the remaining thirteen.
+    const [, seedAfterAttackerDraw] = drawIndex(
+      state.randomSeed,
+      PLANETS.length,
+    );
     const [, seedAfterDefenderDraw] = drawIndex(
       seedAfterAttackerDraw,
-      BAYS.length - 1,
+      PLANETS.length - 1,
     );
     expect(result.state.randomSeed).toBe(seedAfterDefenderDraw);
   });
 
-  it("places both ships in different bays, whatever the seed, when exactly two bays are empty", () => {
-    const emptyBayNames = ["H15", "L15"];
-    const bayOccupants = BAYS.filter(
-      (square) => !emptyBayNames.includes(squareName(square)),
+  it("places both ships on different planets, whatever the seed, when exactly two planets are empty", () => {
+    const emptyPlanetNames = PLANETS.slice(0, 2).map(squareName);
+    const planetOccupants = PLANETS.filter(
+      (square) => !emptyPlanetNames.includes(squareName(square)),
     ).map((square, index) =>
-      ship(`bay-filler-${index}`, "red", squareName(square)),
+      ship(`planet-filler-${index}`, "red", squareName(square)),
     );
 
     for (const seed of [1, 2, 3, 42, 999]) {
@@ -577,7 +586,7 @@ describe("applyAttack", () => {
           ships: [
             ship("green-1", "green", "H8", 2),
             ship("red-1", "red", "H9", 2),
-            ...bayOccupants,
+            ...planetOccupants,
           ],
         }),
         randomSeed: seed,
@@ -593,17 +602,17 @@ describe("applyAttack", () => {
         result.state.ships.find((s) => s.id === "red-1")!.square,
       );
       expect(new Set([attackerSquareName, defenderSquareName])).toEqual(
-        new Set(emptyBayNames),
+        new Set(emptyPlanetNames),
       );
     }
   });
 
-  it("never lands a fight's two ships on the same bay, swept over many chained seeds with several bays empty", () => {
-    const emptyBayNames = ["H15", "L15", "O14", "O10", "A2"];
-    const bayOccupants = BAYS.filter(
-      (square) => !emptyBayNames.includes(squareName(square)),
+  it("never lands a fight's two ships on the same planet, swept over many chained seeds with several planets empty", () => {
+    const emptyPlanetNames = PLANETS.slice(0, 5).map(squareName);
+    const planetOccupants = PLANETS.filter(
+      (square) => !emptyPlanetNames.includes(squareName(square)),
     ).map((square, index) =>
-      ship(`bay-filler-${index}`, "red", squareName(square)),
+      ship(`planet-filler-${index}`, "red", squareName(square)),
     );
 
     let seed = 7;
@@ -613,7 +622,7 @@ describe("applyAttack", () => {
           ships: [
             ship("green-1", "green", "H8", 2),
             ship("red-1", "red", "H9", 2),
-            ...bayOccupants,
+            ...planetOccupants,
           ],
         }),
         randomSeed: seed,
@@ -771,15 +780,15 @@ describe("applyAttack", () => {
     });
   });
 
-  it("sends both ships to bays when the target stands on a depleted node, with nothing constraining either side's next turn (§8.5)", () => {
+  it("sends both ships to planets when the target stands on a depleted node, with nothing constraining either side's next turn (§8.5)", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "E5", 4), ship("red-1", "red", "F5", 2)],
-      nodes: { E5: "depleted" },
+      ships: [ship("green-1", "green", "K8", 4), ship("red-1", "red", "K9", 2)],
+      nodes: { K8: "depleted" },
       sideToMove: "red",
       actionsRemaining: 1,
     });
 
-    const result = applyAttack(state, "red-1", squareFromName("E5"));
+    const result = applyAttack(state, "red-1", squareFromName("K8"));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -788,32 +797,32 @@ describe("applyAttack", () => {
     expect(result.state.sideToMove).toBe("green");
     const attacker = result.state.ships.find((s) => s.id === "red-1");
     const target = result.state.ships.find((s) => s.id === "green-1");
-    expect(attacker && isBay(attacker.square)).toBe(true);
+    expect(attacker && isPlanet(attacker.square)).toBe(true);
     // The attack is this ply's only action, so it also ends the ply — the
-    // attacker (red, the moving side) then gains a point in its bay under
-    // §8.6 step 1; the target (green, not the moving side this ply) does
-    // not.
+    // attacker (red, the moving side) then gains a point on its planet
+    // under §8.6 step 1; the target (green, not the moving side this ply)
+    // does not.
     expect(attacker?.power).toBe(3);
-    expect(target && isBay(target.square)).toBe(true);
+    expect(target && isPlanet(target.square)).toBe(true);
     expect(target?.power).toBe(4);
   });
 
-  it("marks the attacker as having acted, even though it ends the action in a bay itself", () => {
+  it("marks the attacker as having acted, even though it ends the action on a planet itself", () => {
     const state = buildState({
-      ships: [ship("green-1", "green", "K5", 2), ship("red-1", "red", "K6", 2)],
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
     });
 
-    const result = applyAttack(state, "green-1", squareFromName("K6"));
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
     const returnedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(isBay(returnedShip!.square)).toBe(true);
-    // Its one action is spent even though it ends inside a bay itself, so
+    expect(isPlanet(returnedShip!.square)).toBe(true);
+    // Its one action is spent even though it ends on a planet itself, so
     // the ply ends here rather than waiting for a further action — and
     // that end-of-turn step also gives the returned ship a point of power
-    // in its bay (§8.6 step 1, §3.1), since it is the moving side.
+    // on its planet (§8.6 step 1, §3.1), since it is the moving side.
     expect(result.effects).toContainEqual({
       type: "ply-ended",
       side: "green",
@@ -928,7 +937,7 @@ describe("nothing a ship does changes any node's state (rules.md §8.2)", () => 
       throw new Error("expected the attack to be applied");
     }
     const attacker = afterAttack.state.ships.find((s) => s.id === "green-1");
-    expect(isBay(attacker!.square)).toBe(true);
+    expect(isPlanet(attacker!.square)).toBe(true);
     expectNodesUnaffected(afterAttack.state);
   });
 });
@@ -954,7 +963,7 @@ describe("assertFightInvariants (rules.md §7)", () => {
     ).toThrow(RangeError);
   });
 
-  it("throws when a returned ship did not end on a bay square", () => {
+  it("throws when a returned ship did not end on a planet square", () => {
     const before = buildState({
       ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
     });
@@ -970,7 +979,7 @@ describe("assertFightInvariants (rules.md §7)", () => {
     ).toThrow(RangeError);
   });
 
-  it("throws when two returned ships end in the same bay", () => {
+  it("throws when two returned ships end on the same planet", () => {
     const before = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
     });
@@ -988,7 +997,7 @@ describe("assertFightInvariants (rules.md §7)", () => {
     ).toThrow(RangeError);
   });
 
-  it("throws when a returned ship lands in a bay that held a ship before the fight", () => {
+  it("throws when a returned ship lands on a planet that held a ship before the fight", () => {
     const before = buildState({
       ships: [
         ship("green-1", "green", "H8", 1),
@@ -1044,7 +1053,7 @@ describe("assertFightInvariants (rules.md §7)", () => {
 
 describe("applyPassGuard", () => {
   it("does not pass the ply when the side to move has no legal move but has a legal attack", () => {
-    // green-1 on A1 (0 power, not a bay) is boxed in for movement — its
+    // green-1 on A1 (0 power, not a planet) is boxed in for movement — its
     // only two on-board orthogonal squares, A2 and B1, are both occupied —
     // but B1 is a legal attack target, so the side still has an action.
     const state = buildState({
@@ -1090,15 +1099,17 @@ describe("applyPassGuard", () => {
   });
 
   it("passes the ply when the side to move has no legal action at all", () => {
-    // green-1 is in the A2 bay, so §3.1 forbids it to attack regardless of
-    // what stands next to it, and every square it could otherwise reach —
-    // A1, A3 and B2, its only on-board orthogonal neighbours — is occupied.
+    // green-1 is on the D6 planet, so §3.1 forbids it to attack regardless
+    // of what stands next to it, and every square it could otherwise reach —
+    // C6, E6, D5 and D7, its four orthogonal neighbours, its only reach at
+    // 0 power — is occupied.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A2", 0),
-        ship("red-1", "red", "A1"),
-        ship("red-2", "red", "A3"),
-        ship("red-3", "red", "B2"),
+        ship("green-1", "green", "D6", 0),
+        ship("red-1", "red", "C6"),
+        ship("red-2", "red", "E6"),
+        ship("red-3", "red", "D5"),
+        ship("red-4", "red", "D7"),
       ],
     });
 
@@ -1109,8 +1120,8 @@ describe("applyPassGuard", () => {
     expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
     // The pass still runs the end-of-turn sequence in full, and green-1 is
-    // sitting in its bay, so it gains a point of power there (§8.6 step 1,
-    // §3.1).
+    // sitting on its planet, so it gains a point of power there (§8.6 step
+    // 1, §3.1).
     expect(result.effect).toEqual({
       type: "ply-passed",
       side: "green",
@@ -1121,7 +1132,7 @@ describe("applyPassGuard", () => {
           type: "power-gained",
           shipId: "green-1",
           side: "green",
-          square: squareFromName("A2"),
+          square: squareFromName("D6"),
           power: 1,
         },
       ],
@@ -1326,7 +1337,7 @@ describe("applyOutOfTimePass", () => {
     expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
     // The pass still runs the end-of-turn sequence in full: green-1's power
-    // drains sitting off its bay and its side collects the node's energy
+    // drains sitting off its planet and its side collects the node's energy
     // (§8.6 step 1, §8.2).
     expect(result.effects).toEqual([
       {
@@ -1382,17 +1393,18 @@ describe("applyOutOfTimePass", () => {
   });
 
   it("reports both effects, in order, when the pass leaves the other side with no legal action", () => {
-    // red-1 is boxed into its A2 bay by green-1 (A1), green-2 (A3) and
-    // green-3 (B2), exactly the "no legal action at all" shape used above,
-    // but with the sides swapped and green to move and out of time: green's
-    // out-of-time pass hands the ply to red, who then has nothing to do at
-    // all and passes immediately behind it.
+    // red-1 is boxed onto its D6 planet by green-1 (C6), green-2 (E6),
+    // green-3 (D5) and green-4 (D7), exactly the "no legal action at all"
+    // shape used above, but with the sides swapped and green to move and out
+    // of time: green's out-of-time pass hands the ply to red, who then has
+    // nothing to do at all and passes immediately behind it.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A1"),
-        ship("green-2", "green", "A3"),
-        ship("green-3", "green", "B2"),
-        ship("red-1", "red", "A2", 0),
+        ship("green-1", "green", "C6"),
+        ship("green-2", "green", "E6"),
+        ship("green-3", "green", "D5"),
+        ship("green-4", "green", "D7"),
+        ship("red-1", "red", "D6", 0),
       ],
       outOfTime: { green: true, red: false },
     });

@@ -1,10 +1,10 @@
 // Applying an action, and the ply it belongs to (rules.md §5, §3.1, §7). An
 // action is a move or an attack. A move is either refused, with the reason
 // from movement.ts, or applied: the ship arrives with the power it had and
-// spends one action. A ship that ends a move in a bay recovers there at a
+// spends one action. A ship that ends a move on a planet recovers there at a
 // point per turn (§3.1, §4.1), through the end-of-turn sequence — not on
 // arrival. An attack is either refused, with the reason from combat.ts, or
-// resolved: both ships are placed in bays drawn at random from the bays
+// resolved: both ships are placed on planets drawn at random from the planets
 // standing empty, attacker first, carrying the power each had before the
 // fight, and both squares they left are left empty. There is no winner and no
 // advance. Nothing a ship does changes a node's state: a node's state changes
@@ -15,13 +15,13 @@
 // out for when the side to move has no legal action at all.
 
 import { sideToMoveHasLegalAction } from "./actions";
-import { isBay } from "./bays";
 import { type Square, squareName } from "./board";
 import {
   type AttackRefusalReason,
   attackRefusalReason,
-  drawReturnBay,
+  drawReturnPlanet,
 } from "./combat";
+import { isPlanet } from "./planets";
 import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
 import type { Side, ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
@@ -90,7 +90,7 @@ export interface FightShip {
   readonly power: PowerLevel;
 }
 
-/** One ship's journey back to a bay, from where it stood to where it landed. */
+/** One ship's journey back to a planet, from where it stood to where it landed. */
 export interface FightReturn {
   readonly shipId: ShipId;
   readonly side: Side;
@@ -102,7 +102,7 @@ export interface FightReturn {
  * A fight, resolved in full (rules.md §7): one effect for the whole fight
  * rather than several, since a fight is one fact. `attacker` and `defender`
  * describe both ships as they stood **before** the fight, including the
- * power each was carrying. `returns` lists both ships placed in a bay,
+ * power each was carrying. `returns` lists both ships placed on a planet,
  * attacker first — every fight returns exactly two ships.
  */
 export interface FightResolvedEffect {
@@ -287,9 +287,9 @@ function applyEndOfActionTail(
  * legal move never mutates `state`: it returns a new state in which the ship
  * stands on `destination` carrying the power it already had, the square it
  * left is empty, the ship is marked as having acted this ply, and one action
- * is spent. A ship that ends the move in a bay does not gain anything on
+ * is spent. A ship that ends the move on a planet does not gain anything on
  * arrival — it recovers a point at a time, through the end-of-turn sequence
- * (rules.md §3.1, §4.1), like any other bay stay. If the square the ship left
+ * (rules.md §3.1, §4.1), like any other planet stay. If the square the ship left
  * was a charged node, it stays charged — leaving a node does not end it
  * (rules.md §8.3). When the ply's last action is spent, play passes to the
  * other side and the acted-this-ply marks clear. The result then passes
@@ -318,12 +318,16 @@ export function applyMove(
   return { outcome: "applied", state: settled, effects };
 }
 
-/** Places `shipId` in `bay`, leaving its power exactly as it was (rules.md §7). */
-function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
+/** Places `shipId` on `planet`, leaving its power exactly as it was (rules.md §7). */
+function placeOnPlanet(
+  state: GameState,
+  shipId: ShipId,
+  planet: Square,
+): GameState {
   return {
     ...state,
     ships: state.ships.map((ship) =>
-      ship.id === shipId ? { ...ship, square: bay } : ship,
+      ship.id === shipId ? { ...ship, square: planet } : ship,
     ),
   };
 }
@@ -331,8 +335,8 @@ function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
 /**
  * Checks the invariants rules.md §7 guarantees about a fight's result, and
  * throws if any is violated — bug detectors on a cheap operation, not cases a
- * caller need handle. `returnedShipIds` names the two ships placed in a bay.
- * Every other ship must be exactly where it was.
+ * caller need handle. `returnedShipIds` names the two ships placed on a
+ * planet. Every other ship must be exactly where it was.
  *
  * The fleet-size check asserts each side's ship count is unchanged by the
  * fight, which can only ever change who holds a square, never how many
@@ -344,9 +348,9 @@ function placeInBay(state: GameState, shipId: ShipId, bay: Square): GameState {
  * sequence (rules.md §8.6), never while an action is being resolved.
  *
  * The returned-ship checks pin what §7.1's random draw guarantees: each of
- * the two returned ships ends on a bay square, they do not share a bay, and
- * each lands in a bay that held no ship in `before` — together, exactly what
- * "there is always somewhere to go" promises. Each returned ship's power
+ * the two returned ships ends on a planet, they do not share a planet, and
+ * each lands on a planet that held no ship in `before` — together, exactly
+ * what "there is always somewhere to go" promises. Each returned ship's power
  * must also be exactly what it was in `before`: a fight never changes what a
  * ship carries (rules.md §7).
  *
@@ -361,7 +365,7 @@ export function assertFightInvariants(
   const beforeOccupiedSquareNames = new Set(
     before.ships.map((ship) => squareName(ship.square)),
   );
-  const returnedBaySquareNames = new Set<string>();
+  const returnedPlanetSquareNames = new Set<string>();
 
   for (const ship of before.ships) {
     const updated = after.ships.find((candidate) => candidate.id === ship.id);
@@ -382,20 +386,20 @@ export function assertFightInvariants(
 
     if (returnedShipIds.has(ship.id)) {
       const updatedName = squareName(updated.square);
-      if (!isBay(updated.square)) {
+      if (!isPlanet(updated.square)) {
         throw new RangeError(
-          `returned ship "${ship.id}" ended on "${updatedName}", which is not a bay: rules.md §7.1 sends a returning ship to a bay`,
+          `returned ship "${ship.id}" ended on "${updatedName}", which is not a planet: rules.md §7.1 sends a returning ship to a planet`,
         );
       }
-      if (returnedBaySquareNames.has(updatedName)) {
+      if (returnedPlanetSquareNames.has(updatedName)) {
         throw new RangeError(
-          `two returned ships both ended in bay "${updatedName}": rules.md §7.1 draws each returning ship its own empty bay`,
+          `two returned ships both ended on planet "${updatedName}": rules.md §7.1 draws each returning ship its own empty planet`,
         );
       }
-      returnedBaySquareNames.add(updatedName);
+      returnedPlanetSquareNames.add(updatedName);
       if (beforeOccupiedSquareNames.has(updatedName)) {
         throw new RangeError(
-          `returned ship "${ship.id}" ended in bay "${updatedName}", which held a ship before the fight: rules.md §7.1 draws only from bays empty at the moment`,
+          `returned ship "${ship.id}" ended on planet "${updatedName}", which held a ship before the fight: rules.md §7.1 draws only from planets empty at the moment`,
         );
       }
       if (updated.power !== ship.power) {
@@ -441,14 +445,14 @@ export function assertFightInvariants(
 /**
  * Applies an attack by `shipId` on `target` in `state`, or refuses it
  * (rules.md §7). A legal attack never mutates `state`: both ships are placed,
- * carrying the power each had before the fight, in a bay drawn at random
- * from the bays standing empty (`drawReturnBay`), the attacker's bay drawn
- * first and the defender's from the bays still empty afterwards, advancing
- * `randomSeed` once per ship.
+ * carrying the power each had before the fight, on a planet drawn at random
+ * from the planets standing empty (`drawReturnPlanet`), the attacker's planet
+ * drawn first and the defender's from the planets still empty afterwards,
+ * advancing `randomSeed` once per ship.
  * Both squares the ships fought from are left empty; there is no winner and
  * no advance. Neither square's node changes state: leaving a node does not
  * end it (rules.md §8.3). The attacking ship is added to `actedThisPly` even
- * though it ends the action in a bay itself: it spent its one action
+ * though it ends the action on a planet itself: it spent its one action
  * regardless (rules.md §5). One action is spent; when the ply's last action
  * is spent, play passes to the other side exactly as it does after a move,
  * and the result then passes through `applyPassGuard`.
@@ -477,14 +481,16 @@ export function applyAttack(
   const attackerBefore = toFightShip(attackerShip);
   const defenderBefore = toFightShip(defenderShip);
 
-  const [attackerTo, seedAfterAttacker] = drawReturnBay(state);
+  const [attackerTo, seedAfterAttacker] = drawReturnPlanet(state);
   const afterAttackerReturned: GameState = {
-    ...placeInBay(state, attackerShip.id, attackerTo),
+    ...placeOnPlanet(state, attackerShip.id, attackerTo),
     randomSeed: seedAfterAttacker,
   };
-  const [defenderTo, seedAfterDefender] = drawReturnBay(afterAttackerReturned);
+  const [defenderTo, seedAfterDefender] = drawReturnPlanet(
+    afterAttackerReturned,
+  );
   const nextState: GameState = {
-    ...placeInBay(afterAttackerReturned, defenderShip.id, defenderTo),
+    ...placeOnPlanet(afterAttackerReturned, defenderShip.id, defenderTo),
     randomSeed: seedAfterDefender,
   };
   const returns: FightReturn[] = [

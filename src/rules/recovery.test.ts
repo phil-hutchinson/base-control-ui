@@ -1,7 +1,7 @@
 // Integration cover for the rule that the only ways a ship recovers power
-// are time in a bay and time on a depleted node (rules.md §4.1). This file
-// pins the bay half end to end — a fight leaving both ships' power
-// alone (§7), a bay restoring it a point at a time rather than at once
+// are time on a planet and time on a depleted node (rules.md §4.1). This
+// file pins the planet half end to end — a fight leaving both ships' power
+// alone (§7), a planet restoring it a point at a time rather than at once
 // (§3.1), and a ship leaving early keeping only what it recovered — driven
 // entirely through the public rules API (`applyMove`, `applyAttack`) rather
 // than by calling `runEndOfTurn` directly, so this proves the same thing a
@@ -10,7 +10,7 @@
 // does not repeat them.
 
 import { describe, expect, it } from "vitest";
-import { isBay } from "./bays";
+import { isPlanet } from "./planets";
 import { squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
 import { ACTIONS_PER_PLY, type GameState, type Ship } from "./gameState";
@@ -47,6 +47,7 @@ function buildState(config: {
     actedThisPly: [],
     plyNumber: 1,
     randomSeed: 1,
+    openingSeed: 1,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     outOfTime: { green: false, red: false },
@@ -94,7 +95,7 @@ function shipOf(state: GameState, id: ShipId): Ship {
   return found;
 }
 
-describe("recovery — a beaten ship recovers in its bay, a point at a time, only on its own turns, at no energy cost", () => {
+describe("recovery — a beaten ship recovers on its planet, a point at a time, only on its own turns, at no energy cost", () => {
   it("gains one point at the end of each of its owner's turns, never the other side's, and stops at 4", () => {
     // green-1 attacks at 0 power (still one square orthogonally, rules.md
     // §4.1) and red-1 defends at full power, so the fight itself (§7)
@@ -125,14 +126,15 @@ describe("recovery — a beaten ship recovers in its bay, a point at a time, onl
     expect(fightResolved.defender.power).toBe(4);
 
     // Green initiated the fight, so this is the same call that closes out
-    // green's own turn: green-1 arrives in a bay at the 0 power it fought
-    // with and, because the fight was its side's own last action, gains its
-    // first point of recovery in this very call (rules.md §3.1, §4.1).
+    // green's own turn: green-1 arrives on a planet at the 0 power it
+    // fought with and, because the fight was its side's own last action,
+    // gains its first point of recovery in this very call (rules.md §3.1,
+    // §4.1).
     const fightEndEffects = endOfTurnEffects(fight.effects);
     let green1 = shipOf(fight.state, "green-1");
     const red1 = shipOf(fight.state, "red-1");
-    expect(isBay(green1.square)).toBe(true);
-    expect(isBay(red1.square)).toBe(true);
+    expect(isPlanet(green1.square)).toBe(true);
+    expect(isPlanet(red1.square)).toBe(true);
     expect(squareName(green1.square)).not.toBe(squareName(red1.square));
     expect(green1.power).toBe(1);
     expect(red1.power).toBe(4);
@@ -159,11 +161,11 @@ describe("recovery — a beaten ship recovers in its bay, a point at a time, onl
     ).toBe(false);
     expect(fight.state.energy).toEqual({ green: 10, red: 7 });
 
-    const greenBaySquare = green1.square;
+    const greenPlanetSquare = green1.square;
     let state = fight.state;
 
-    // Red's turn: green-1 sits in its bay the whole time, but recovery is an
-    // end-of-turn gain for the moving side only — never the other side's.
+    // Red's turn: green-1 sits on its planet the whole time, but recovery is
+    // an end-of-turn gain for the moving side only — never the other side's.
     const afterRedTurn1 = moveAppliedOrThrow(
       applyMove(state, "red-2", squareFromName("K6")),
     );
@@ -176,7 +178,7 @@ describe("recovery — a beaten ship recovers in its bay, a point at a time, onl
     ).toBe(false);
     green1 = shipOf(afterRedTurn1.state, "green-1");
     expect(green1.power).toBe(1);
-    expect(green1.square).toEqual(greenBaySquare);
+    expect(green1.square).toEqual(greenPlanetSquare);
     expect(afterRedTurn1.state.energy).toEqual({ green: 10, red: 7 });
     state = afterRedTurn1.state;
 
@@ -189,7 +191,7 @@ describe("recovery — a beaten ship recovers in its bay, a point at a time, onl
       type: "power-gained",
       shipId: "green-1",
       side: "green",
-      square: greenBaySquare,
+      square: greenPlanetSquare,
       power: 2,
     });
     green1 = shipOf(afterGreenTurn2.state, "green-1");
@@ -211,7 +213,7 @@ describe("recovery — a beaten ship recovers in its bay, a point at a time, onl
       type: "power-gained",
       shipId: "green-1",
       side: "green",
-      square: greenBaySquare,
+      square: greenPlanetSquare,
       power: 3,
     });
     green1 = shipOf(afterGreenTurn3.state, "green-1");
@@ -233,7 +235,7 @@ describe("recovery — a beaten ship recovers in its bay, a point at a time, onl
       type: "power-gained",
       shipId: "green-1",
       side: "green",
-      square: greenBaySquare,
+      square: greenPlanetSquare,
       power: 4,
     });
     green1 = shipOf(afterGreenTurn4.state, "green-1");
@@ -260,31 +262,31 @@ describe("recovery — a beaten ship recovers in its bay, a point at a time, onl
     ).toBe(false);
     green1 = shipOf(afterGreenTurn5.state, "green-1");
     expect(green1.power).toBe(4);
-    expect(green1.square).toEqual(greenBaySquare);
+    expect(green1.square).toEqual(greenPlanetSquare);
 
     // Across the whole recovery, no energy was ever collected or paid for
-    // the ship sitting in the bay.
+    // the ship sitting on the planet.
     expect(afterGreenTurn5.state.energy).toEqual({ green: 10, red: 7 });
   });
 });
 
-describe("recovery — leaving a bay before it is full keeps what was recovered", () => {
+describe("recovery — leaving a planet before it is full keeps what was recovered", () => {
   it("leaves at 2 power after two of its owner's turns, with the reach of a 2-power ship", () => {
-    // green-1 starts one square from a bay at 0 power — its only reach — and
-    // moves into it as its own first action, rather than being placed there
-    // directly, so this also proves applyMove itself grants no instant
+    // green-1 starts one square from a planet at 0 power — its only reach —
+    // and moves onto it as its own first action, rather than being placed
+    // there directly, so this also proves applyMove itself grants no instant
     // refill on arrival (rules.md §3.1): the first point comes from the
     // end-of-turn sequence the same move closes out, not from the move.
     const initial = buildState({
       ships: [
-        ship("green-1", "green", "A1", 0),
-        ship("green-2", "green", "E5", 4),
-        ship("red-1", "red", "K5", 4),
+        ship("green-1", "green", "C6", 0),
+        ship("green-2", "green", "H8", 4),
+        ship("red-1", "red", "K8", 4),
       ],
     });
 
     const afterArrival = moveAppliedOrThrow(
-      applyMove(initial, "green-1", squareFromName("A2")),
+      applyMove(initial, "green-1", squareFromName("D6")),
     );
     expect(
       endOfTurnEffects(afterArrival.effects).some(
@@ -296,26 +298,26 @@ describe("recovery — leaving a bay before it is full keeps what was recovered"
 
     // Red's turn: no change.
     const afterRedTurn1 = moveAppliedOrThrow(
-      applyMove(afterArrival.state, "red-1", squareFromName("K6")),
+      applyMove(afterArrival.state, "red-1", squareFromName("K9")),
     );
 
     // Green's turn: green-2 moves, green-1 gains its second point.
     const afterGreenTurn2 = moveAppliedOrThrow(
-      applyMove(afterRedTurn1.state, "green-2", squareFromName("E6")),
+      applyMove(afterRedTurn1.state, "green-2", squareFromName("H9")),
     );
     const green1BeforeLeaving = shipOf(afterGreenTurn2.state, "green-1");
     expect(green1BeforeLeaving.power).toBe(2);
 
     // Red's turn: no change.
     const afterRedTurn2 = moveAppliedOrThrow(
-      applyMove(afterGreenTurn2.state, "red-1", squareFromName("K5")),
+      applyMove(afterGreenTurn2.state, "red-1", squareFromName("K8")),
     );
 
-    // Green's turn: green-1 itself moves out of the bay instead of staying.
-    // It is no longer standing in a bay when this same turn ends, so it does
-    // not gain a further point in this call — it leaves with exactly the 2
-    // power it had recovered.
-    const destination = squareFromName("A4");
+    // Green's turn: green-1 itself moves off the planet instead of staying.
+    // It is no longer standing on a planet when this same turn ends, so it
+    // does not gain a further point in this call — it leaves with exactly
+    // the 2 power it had recovered.
+    const destination = squareFromName("F6");
     const afterLeaving = moveAppliedOrThrow(
       applyMove(afterRedTurn2.state, "green-1", destination),
     );
@@ -377,14 +379,15 @@ describe("recovery — a fight between ships at different powers changes neither
     expect(fightResolved.defender.power).toBe(0);
 
     // The attacker is already at the maximum, so even though it is the
-    // moving side's own ship ending this same turn in a bay, it has nothing
-    // left to gain — its final power is exactly what the fight left it with.
+    // moving side's own ship ending this same turn on a planet, it has
+    // nothing left to gain — its final power is exactly what the fight left
+    // it with.
     const green1 = shipOf(result.state, "green-1");
     const red1 = shipOf(result.state, "red-1");
     expect(green1.power).toBe(4);
     expect(red1.power).toBe(0);
-    expect(isBay(green1.square)).toBe(true);
-    expect(isBay(red1.square)).toBe(true);
+    expect(isPlanet(green1.square)).toBe(true);
+    expect(isPlanet(red1.square)).toBe(true);
 
     const occupiedSquareNames = result.state.ships.map((candidate) =>
       squareName(candidate.square),

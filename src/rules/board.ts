@@ -1,7 +1,7 @@
 // The 15 x 15 board and its square names (rules.md §3). Columns are lettered
 // A-O left to right; rows are numbered 1-15 bottom to top; a square's name is
 // its column letter followed by its row number (H8, A1). Says nothing about
-// bays, ships or screen orientation - those belong to other modules.
+// planets, ships or screen orientation - those belong to other modules.
 
 /** The board is BOARD_SIZE x BOARD_SIZE squares. */
 export const BOARD_SIZE = 15;

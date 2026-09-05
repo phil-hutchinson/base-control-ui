@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 import { squareName } from "./board";
 import { runChargeDraw } from "./chargeDraw";
 import { runEndOfTurn } from "./endOfTurn";
-import { startingFleet } from "./fleet";
+import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
   type GameState,
@@ -22,7 +22,9 @@ import {
 } from "./gameState";
 import { NODE_CAPACITY, TARGET_CHARGED_NODES, dealOpeningBoard } from "./nodes";
 
-const FLEET_SQUARES = startingFleet(7).map((entry) => entry.square);
+const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
+  (entry) => entry.square,
+);
 
 const RUN_TO_COMPLETION_SEEDS = [70210001, 70210002, 70210003];
 const RUN_TO_COMPLETION_PLIES = 500;
@@ -34,7 +36,7 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
     (seed) => {
       let state = startingGameState(seed, RUN_TO_COMPLETION_LENGTH_IN_ROUNDS);
 
-      // A node cannot retire without first being charged, so the fifteen
+      // A node cannot retire without first being charged, so the twelve
       // squares the deal placed are still the right set to check "charged
       // at least once" against, even though the board's own squares
       // reshuffle as replacements land elsewhere over the run.
@@ -72,7 +74,7 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       }
       // At least one depleted node retires and is replaced over the run.
       expect(retired.size).toBeGreaterThan(0);
-      // Every one of the eleven dealt-inactive nodes earns a real
+      // Every one of the eight dealt-inactive nodes earns a real
       // node-charged effect: an inactive node can never retire without
       // first being charged. (The four dealt already charged are excluded
       // — they were charged at the deal itself, which raises no effect of
@@ -83,9 +85,11 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
         expect(charged.has(name)).toBe(true);
       }
       // The draw charges a healthy number of distinct squares over the run,
-      // not just the ten dealt-inactive ones above — measured minimum 60
-      // across the three seeds (68, 60, 64), floor set well below that.
-      expect(charged.size).toBeGreaterThan(30);
+      // not just the eight dealt-inactive ones above — re-measured against
+      // the 51-square pool the planet-adjacency constraint leaves (rules.md
+      // §3.2's sixth constraint): minimum 34 across the three seeds (34, 39,
+      // 39), floor set well below that.
+      expect(charged.size).toBeGreaterThan(15);
       // The board is back at its target count by the end of the run.
       const finalCharged = nodeSquares(state).filter(
         (square) => nodeStateAt(state, square) === "charged",
@@ -133,6 +137,7 @@ describe("the first charge draw of a game favours the nodes dealt the most press
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: dealtSeed,
+        openingSeed: seed,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         outOfTime: { green: false, red: false },
@@ -180,6 +185,7 @@ function singleChargedNodeState(seed: number, level: number): GameState {
     actedThisPly: [],
     plyNumber: 1,
     randomSeed: seed,
+    openingSeed: seed,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     outOfTime: { green: false, red: false },

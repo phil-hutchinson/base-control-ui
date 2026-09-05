@@ -17,7 +17,7 @@
 
 import type { Square } from "./board";
 import { squareName } from "./board";
-import { isBay } from "./bays";
+import { isPlanet } from "./planets";
 import { type NodeChargedEffect, runChargeDraw } from "./chargeDraw";
 import {
   chargedNodesHeldBy,
@@ -45,7 +45,7 @@ import {
   drawTableAmount,
 } from "./nodes";
 
-/** A ship on a depleted node, or in a bay, gained a point of power at the end of its side's turn (§8.6 step 1, §4.1, §3.1). */
+/** A ship on a depleted node, or on a planet, gained a point of power at the end of its side's turn (§8.6 step 1, §4.1, §3.1). */
 export interface PowerGainedEffect {
   readonly type: "power-gained";
   readonly shipId: ShipId;
@@ -145,12 +145,12 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   const effects: EndOfTurnEffect[] = [];
 
   // Step 1: the moving player's ships on charged nodes lose a point of
-  // power, floored at 0, and those on depleted nodes or in a bay gain one,
-  // capped at 4 (§4.1, §3.1). An inactive node does neither. A bay and a node
-  // can never be the same square (§3.2), so the two gain conditions never
-  // both apply. One pass over the fleet, so the effects come out in fleet
-  // order with losses and gains interleaved exactly as the ships are
-  // ordered.
+  // power, floored at 0, and those on depleted nodes or on a planet gain
+  // one, capped at 4 (§4.1, §3.1). An inactive node does neither. A planet
+  // and a node can never be the same square (§3.2), so the two gain
+  // conditions never both apply. One pass over the fleet, so the effects
+  // come out in fleet order with losses and gains interleaved exactly as
+  // the ships are ordered.
   const ships = state.ships.map((ship) => {
     if (ship.side !== side) {
       return ship;
@@ -168,7 +168,7 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
       return { ...ship, power };
     }
     if (
-      (nodeState === "depleted" || isBay(ship.square)) &&
+      (nodeState === "depleted" || isPlanet(ship.square)) &&
       ship.power < MAX_POWER
     ) {
       const power = (ship.power + 1) as PowerLevel;

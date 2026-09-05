@@ -147,50 +147,50 @@ describe("announcementFor", () => {
     );
   });
 
-  it("announces a move that ends in a bay", () => {
+  it("announces a move that ends on a planet", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "red-2",
       side: "red",
-      from: squareAt("A", 11),
-      to: squareAt("A", 10),
+      from: squareAt("C", 6),
+      to: squareAt("D", 6),
       effects: [],
       actionsRemaining: 1,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 into the A10 bay. Red has 1 action left.",
+      "Red ship moved from C6 onto the D6 planet. Red has 1 action left.",
     );
   });
 
-  it("announces a move into a bay the same way whatever power the ship arrives with", () => {
+  it("announces a move onto a planet the same way whatever power the ship arrives with", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "red-2",
       side: "red",
-      from: squareAt("A", 11),
-      to: squareAt("A", 10),
+      from: squareAt("C", 6),
+      to: squareAt("D", 6),
       effects: [],
       actionsRemaining: 1,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 into the A10 bay. Red has 1 action left.",
+      "Red ship moved from C6 onto the D6 planet. Red has 1 action left.",
     );
   });
 
-  it("announces a move that both ends in a bay and ends the ply", () => {
+  it("announces a move that both ends on a planet and ends the ply", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "red-2",
       side: "red",
-      from: squareAt("A", 11),
-      to: squareAt("A", 10),
+      from: squareAt("C", 6),
+      to: squareAt("D", 6),
       effects: [
         { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from A11 into the A10 bay. Green's turn, 1 action left.",
+      "Red ship moved from C6 onto the D6 planet. Green's turn, 1 action left.",
     );
   });
 
@@ -270,16 +270,20 @@ describe("announcementFor", () => {
     ["path-blocked", squareAt("C", 8), "Another ship is in the way of C8."],
     ["destination-occupied", squareAt("C", 7), "C7 is occupied."],
     [
-      "attacker-in-bay",
+      "attacker-on-planet",
       squareAt("H", 15),
-      "A ship in a bay cannot attack. Move it out first.",
+      "A ship on a planet cannot attack. Move it off first.",
     ],
     [
       "attacker-on-charged-node",
       squareAt("H", 8),
       "A ship holding a charged node cannot attack while it stands there. Move it off first.",
     ],
-    ["target-in-bay", squareAt("A", 6), "A ship in a bay cannot be attacked."],
+    [
+      "target-on-planet",
+      squareAt("A", 6),
+      "A ship on a planet cannot be attacked.",
+    ],
     [
       "target-on-charged-node",
       squareAt("H", 8),
@@ -626,7 +630,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("announces a point of power gained in a bay the same way as on a depleted node", () => {
+  it("announces a point of power gained on a planet the same way as on a depleted node", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -1244,6 +1248,7 @@ describe("announcementForSession", () => {
       actedThisPly: [],
       plyNumber: config.plyNumber,
       randomSeed: 1,
+      openingSeed: 1,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
       outOfTime: config.outOfTime ?? { green: false, red: false },
@@ -1412,7 +1417,7 @@ describe("announcementForSession", () => {
       lastEvent: event,
     };
     expect(announcementForSession(session)).toBe(
-      "Green ship at H8 attacked the red ship at H9 and both were beaten. The attacker returned to the A1 bay and the defender to the A8 bay, both keeping the power they were carrying. The game is over after 3 rounds. Green wins, 9 energy to 2.",
+      "Green ship at H8 attacked the red ship at H9 and both were beaten. The attacker returned to the A1 planet and the defender to the A8 planet, both keeping the power they were carrying. The game is over after 3 rounds. Green wins, 9 energy to 2.",
     );
   });
 
@@ -1455,7 +1460,7 @@ describe("announcementForSession", () => {
 });
 
 describe("announcementFor — combat (rules.md §7)", () => {
-  it("announces a fight, naming both ships and both bays", () => {
+  it("announces a fight, naming both ships and both planets", () => {
     const fight: FightResolvedEffect = {
       type: "fight-resolved",
       attacker: {
@@ -1496,7 +1501,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at C6 attacked the red ship at C7 and both were beaten. " +
-        "The attacker returned to the D1 bay and the defender to the A2 bay, both keeping the power they were carrying. " +
+        "The attacker returned to the D1 planet and the defender to the A2 planet, both keeping the power they were carrying. " +
         "Green has 1 action left.",
     );
   });
@@ -1543,7 +1548,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     const sentence = announcementFor(event);
     expect(sentence).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 bay and the defender to the D1 bay, both keeping the power they were carrying. " +
+        "The attacker returned to the A6 planet and the defender to the D1 planet, both keeping the power they were carrying. " +
         "Green has 1 action left.",
     );
     expect(sentence).not.toMatch(/won|lost|advance|held its ground/);
@@ -1593,7 +1598,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 bay and the defender to the D1 bay, both keeping the power they were carrying. " +
+        "The attacker returned to the A6 planet and the defender to the D1 planet, both keeping the power they were carrying. " +
         "Red's turn, 1 action left.",
     );
   });
@@ -1649,7 +1654,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 bay and the defender to the D1 bay, both keeping the power they were carrying. " +
+        "The attacker returned to the A6 planet and the defender to the D1 planet, both keeping the power they were carrying. " +
         "Red has no legal action, so the turn passes. Green's turn, 1 action left.",
     );
   });
@@ -1666,6 +1671,7 @@ describe("turnIndicatorText", () => {
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
+        openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         outOfTime: { green: false, red: false },
@@ -1683,6 +1689,7 @@ describe("turnIndicatorText", () => {
         actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
+        openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         outOfTime: { green: false, red: false },
@@ -1700,6 +1707,7 @@ describe("turnIndicatorText", () => {
         actedThisPly: [],
         plyNumber: 7,
         randomSeed: 1,
+        openingSeed: 1,
         energy: { green: 4, red: 4 },
         lengthInRounds: 3,
         outOfTime: { green: false, red: false },
@@ -1740,6 +1748,7 @@ describe("HUD wording", () => {
       actedThisPly: [],
       plyNumber: config.plyNumber,
       randomSeed: 1,
+      openingSeed: 1,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
       outOfTime: { green: false, red: false },

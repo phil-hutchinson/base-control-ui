@@ -11,7 +11,7 @@ describe("useAppScreen", () => {
     const { result } = renderHook(() => useAppScreen(vi.fn()));
 
     expect(result.current.screen).toBe("start");
-    expect(result.current.fleetSize).toBe(7);
+    expect(result.current.fleetSize).toBe(6);
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
   });

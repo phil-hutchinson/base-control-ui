@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { BAYS, isBay } from "./bays";
-import { type Square, squareFromName, squareName } from "./board";
+import { PLANETS, isPlanet } from "./planets";
+import { type Square, squareAt, squareFromName, squareName } from "./board";
 import {
   attackReach,
   attackRefusalReason,
-  drawReturnBay,
+  drawReturnPlanet,
   legalTargets,
 } from "./combat";
 import type { ShipId } from "./fleet";
@@ -47,6 +47,7 @@ function buildState(config: {
     actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
+    openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     outOfTime: { green: false, red: false },
@@ -55,6 +56,25 @@ function buildState(config: {
 
 function squareNames(squares: readonly Square[]) {
   return squares.map((square) => squareName(square)).sort();
+}
+
+/**
+ * An orthogonal neighbour of `square` that is not itself a planet — derived
+ * rather than named, so the test using it survives the planet geometry
+ * moving again.
+ */
+function orthogonalNonPlanetNeighbourOf(square: Square): Square {
+  const candidates = [
+    squareAt(square.column, square.row + 1),
+    squareAt(square.column, square.row - 1),
+  ];
+  const neighbour = candidates.find((candidate) => !isPlanet(candidate));
+  if (!neighbour) {
+    throw new Error(
+      `no non-planet orthogonal neighbour found for ${squareName(square)}`,
+    );
+  }
+  return neighbour;
 }
 
 describe("attackReach", () => {
@@ -209,30 +229,34 @@ describe("attackRefusalReason / legalTargets", () => {
     );
   });
 
-  it("refuses an attacker standing in a bay", () => {
+  it("refuses an attacker standing on a planet", () => {
+    const planet = PLANETS[0];
+    const neighbour = orthogonalNonPlanetNeighbourOf(planet);
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H15", 2),
-        ship("red-1", "red", "H14", 4),
+        ship("green-1", "green", squareName(planet), 2),
+        ship("red-1", "red", squareName(neighbour), 4),
       ],
     });
 
-    expect(attackRefusalReason(state, "green-1", squareFromName("H14"))).toBe(
-      "attacker-in-bay",
+    expect(attackRefusalReason(state, "green-1", neighbour)).toBe(
+      "attacker-on-planet",
     );
     expect(legalTargets(state, "green-1")).toEqual([]);
   });
 
-  it("refuses a target standing in a bay, distinguishably from the attacker's own", () => {
+  it("refuses a target standing on a planet, distinguishably from the attacker's own", () => {
+    const planet = PLANETS[0];
+    const neighbour = orthogonalNonPlanetNeighbourOf(planet);
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H14", 2),
-        ship("red-1", "red", "H15", 4),
+        ship("green-1", "green", squareName(neighbour), 2),
+        ship("red-1", "red", squareName(planet), 4),
       ],
     });
 
-    expect(attackRefusalReason(state, "green-1", squareFromName("H15"))).toBe(
-      "target-in-bay",
+    expect(attackRefusalReason(state, "green-1", planet)).toBe(
+      "target-on-planet",
     );
   });
 
@@ -418,47 +442,56 @@ describe("attackRefusalReason and legalTargets once the game is over", () => {
   });
 });
 
-describe("drawReturnBay", () => {
-  it("always draws a bay that was empty in the state drawn against", () => {
+describe("drawReturnPlanet", () => {
+  const [FIRST_PLANET_NAME, SECOND_PLANET_NAME, THIRD_PLANET_NAME] =
+    PLANETS.map(squareName);
+
+  it("always draws a planet that was empty in the state drawn against", () => {
     const state = buildState({
       ships: [
-        ship("red-1", "red", "H15", 4),
-        ship("red-2", "red", "L15", 4),
-        ship("red-3", "red", "O14", 4),
+        ship("red-1", "red", FIRST_PLANET_NAME, 4),
+        ship("red-2", "red", SECOND_PLANET_NAME, 4),
+        ship("red-3", "red", THIRD_PLANET_NAME, 4),
       ],
     });
-    const occupied = new Set(["H15", "L15", "O14"]);
+    const occupied = new Set([
+      FIRST_PLANET_NAME,
+      SECOND_PLANET_NAME,
+      THIRD_PLANET_NAME,
+    ]);
 
     for (let seed = 0; seed < 200; seed++) {
-      const [bay] = drawReturnBay({ ...state, randomSeed: seed });
-      expect(isBay(bay)).toBe(true);
-      expect(occupied.has(squareName(bay))).toBe(false);
+      const [planet] = drawReturnPlanet({ ...state, randomSeed: seed });
+      expect(isPlanet(planet)).toBe(true);
+      expect(occupied.has(squareName(planet))).toBe(false);
     }
   });
 
-  it("gives the one empty bay for every seed when every other bay is occupied", () => {
-    const occupiedBays = BAYS.filter((square) => squareName(square) !== "H15");
+  it("gives the one empty planet for every seed when every other planet is occupied", () => {
+    const occupiedPlanets = PLANETS.filter(
+      (square) => squareName(square) !== FIRST_PLANET_NAME,
+    );
     const state = buildState({
-      ships: occupiedBays.map((square, index) =>
+      ships: occupiedPlanets.map((square, index) =>
         ship(`red-${index}`, "red", squareName(square), 4),
       ),
     });
 
     for (let seed = 0; seed < 50; seed++) {
-      const [bay] = drawReturnBay({ ...state, randomSeed: seed });
-      expect(squareName(bay)).toBe("H15");
+      const [planet] = drawReturnPlanet({ ...state, randomSeed: seed });
+      expect(squareName(planet)).toBe(FIRST_PLANET_NAME);
     }
   });
 
-  it("gives the same bay for the same seed", () => {
+  it("gives the same planet for the same seed", () => {
     const state = buildState({
-      ships: [ship("red-1", "red", "H15", 4)],
+      ships: [ship("red-1", "red", FIRST_PLANET_NAME, 4)],
     });
 
-    const [firstBay, firstNextSeed] = drawReturnBay(state);
-    const [secondBay, secondNextSeed] = drawReturnBay(state);
+    const [firstPlanet, firstNextSeed] = drawReturnPlanet(state);
+    const [secondPlanet, secondNextSeed] = drawReturnPlanet(state);
 
-    expect(squareName(secondBay)).toBe(squareName(firstBay));
+    expect(squareName(secondPlanet)).toBe(squareName(firstPlanet));
     expect(secondNextSeed).toBe(firstNextSeed);
   });
 
@@ -466,68 +499,68 @@ describe("drawReturnBay", () => {
     const state = buildState({ ships: [] });
 
     for (let seed = 0; seed < 50; seed++) {
-      const [, nextSeed] = drawReturnBay({ ...state, randomSeed: seed });
+      const [, nextSeed] = drawReturnPlanet({ ...state, randomSeed: seed });
       expect(nextSeed).not.toBe(seed);
     }
   });
 
-  it("is live: moving a ship out of a bay changes the answer", () => {
+  it("is live: moving a ship off a planet changes the answer", () => {
     const occupiedState = buildState({
-      ships: [ship("red-1", "red", "H15", 4)],
+      ships: [ship("red-1", "red", FIRST_PLANET_NAME, 4)],
     });
-    const [occupiedBay] = drawReturnBay(occupiedState);
-    expect(squareName(occupiedBay)).not.toBe("H15");
+    const [occupiedPlanet] = drawReturnPlanet(occupiedState);
+    expect(squareName(occupiedPlanet)).not.toBe(FIRST_PLANET_NAME);
 
-    const vacatedState = buildState({
-      ships: [ship("red-1", "red", "E7", 4)],
-    });
-    const otherOccupiedBays = BAYS.filter(
-      (square) => squareName(square) !== "H15",
+    const otherOccupiedPlanets = PLANETS.filter(
+      (square) => squareName(square) !== FIRST_PLANET_NAME,
     );
     const fullyVacatedExceptOne: GameState = {
-      ...vacatedState,
+      ...occupiedState,
       ships: [
-        ship("red-1", "red", "E7", 4),
-        ...otherOccupiedBays.map((square, index) =>
+        ship("red-1", "red", "H8", 4),
+        ...otherOccupiedPlanets.map((square, index) =>
           ship(`red-${index + 2}`, "red", squareName(square), 4),
         ),
       ],
     };
-    const [vacatedBay] = drawReturnBay(fullyVacatedExceptOne);
-    expect(squareName(vacatedBay)).toBe("H15");
+    const [vacatedPlanet] = drawReturnPlanet(fullyVacatedExceptOne);
+    expect(squareName(vacatedPlanet)).toBe(FIRST_PLANET_NAME);
   });
 
-  it("throws naming §7.1 when every bay is occupied", () => {
+  it("throws naming §7.1 when every planet is occupied", () => {
     const state = buildState({
-      ships: BAYS.map((square, index) =>
+      ships: PLANETS.map((square, index) =>
         ship(`red-${index}`, "red", squareName(square), 4),
       ),
     });
 
-    expect(() => drawReturnBay(state)).toThrow(/§7\.1/);
+    expect(() => drawReturnPlanet(state)).toThrow(/§7\.1/);
   });
 
-  it("spreads draws over chained seeds across every empty bay, never an occupied one", () => {
-    const occupiedBays = new Set(["H15", "O14", "O6", "D1", "A6"]);
+  it("spreads draws over chained seeds across every empty planet, never an occupied one", () => {
+    const occupiedPlanets = new Set(PLANETS.slice(0, 5).map(squareName));
     const state = buildState({
-      ships: [...occupiedBays].map((name, index) =>
+      ships: [...occupiedPlanets].map((name, index) =>
         ship(`red-${index}`, "red", name, 4),
       ),
     });
-    const emptyBayNames = new Set(
-      BAYS.map(squareName).filter((name) => !occupiedBays.has(name)),
+    const emptyPlanetNames = new Set(
+      PLANETS.map(squareName).filter((name) => !occupiedPlanets.has(name)),
     );
 
-    const seenBayNames = new Set<string>();
+    const seenPlanetNames = new Set<string>();
     let seed = 12345;
     for (let draw = 0; draw < 500; draw++) {
-      const [bay, nextSeed] = drawReturnBay({ ...state, randomSeed: seed });
-      const name = squareName(bay);
-      expect(occupiedBays.has(name)).toBe(false);
-      seenBayNames.add(name);
+      const [planet, nextSeed] = drawReturnPlanet({
+        ...state,
+        randomSeed: seed,
+      });
+      const name = squareName(planet);
+      expect(occupiedPlanets.has(name)).toBe(false);
+      seenPlanetNames.add(name);
       seed = nextSeed;
     }
 
-    expect(seenBayNames).toEqual(emptyBayNames);
+    expect(seenPlanetNames).toEqual(emptyPlanetNames);
   });
 });

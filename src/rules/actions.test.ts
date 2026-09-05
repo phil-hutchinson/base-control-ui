@@ -39,6 +39,7 @@ function buildState(config: {
     actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
+    openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     outOfTime: { green: false, red: false },
@@ -74,12 +75,17 @@ describe("sideToMoveHasLegalAction", () => {
   });
 
   it("is false with neither a legal move nor a legal target", () => {
+    // green-1 is on the D6 planet, so §3.1 forbids it to attack regardless
+    // of what stands next to it, and every square it could otherwise reach —
+    // C6, E6, D5 and D7, its four orthogonal neighbours, its only reach at
+    // 0 power — is occupied.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A2", 0),
-        ship("red-1", "red", "A1"),
-        ship("red-2", "red", "A3"),
-        ship("red-3", "red", "B2"),
+        ship("green-1", "green", "D6", 0),
+        ship("red-1", "red", "C6"),
+        ship("red-2", "red", "E6"),
+        ship("red-3", "red", "D5"),
+        ship("red-4", "red", "D7"),
       ],
     });
 

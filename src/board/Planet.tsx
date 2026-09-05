@@ -1,11 +1,13 @@
-// One bay's planet: a `<use>` of the given planet's whole body, drawn from
-// the shared sprite (PlanetDefs). Purely decorative - a bay's accessible
-// name (squareLabel.ts) never mentions a planet - so the SVG carries no
-// title or description and is hidden from the accessibility tree.
+// One planet's drawing: a `<use>` of the given planet's whole body, drawn
+// from the shared sprite (PlanetDefs). Purely decorative - a planet
+// square's accessible name (squareLabel.ts) says only "planet", never which
+// one - so the SVG carries no title or description and is hidden from the
+// accessibility tree.
 //
-// Drawn whether or not the bay is occupied: there is no occupancy condition
-// here or in whatever mounts this component. A ship standing on the bay
-// simply draws over it, exactly as it already does over a node marker.
+// Drawn whether or not the square is occupied: there is no occupancy
+// condition here or in whatever mounts this component. A ship standing on
+// the planet simply draws over it, exactly as it already does over a node
+// marker.
 
 import type { PlanetArt } from "./planetArt";
 import "./Planet.css";

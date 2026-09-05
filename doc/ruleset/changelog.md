@@ -7,6 +7,56 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.23 — the planets re-sited
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **The twelve planets move to a new set of squares**, settled after looking
+  at the running board: B3, D6, G4, J2, K6, N4, and their 180-degree rotation
+  N13, L10, I12, F14, E10, B12. The half-turn symmetry, and every other rule
+  about a planet, are unchanged.
+- **Six of the twelve now sit outside the node interior C3–M13** — B3, J2,
+  N4, N13, F14 and B12 — where a node can never appear regardless of section
+  3.2's planet constraint. The other six (D6, G4, K6, L10, I12, E10) are the
+  ones that constraint actually bites on.
+- **Section 3.2's legal pool grows to 51 squares**, up to eighteen of them
+  mutually non-adjacent, from the previous geometry's 29 and seventeen. The
+  node count stays at twelve; the pool is larger but more scattered, so
+  fifteen nodes would still fall back often.
+- **The fallback's rarity is restated as a guarantee.** At twelve nodes it
+  was not observed to fire at all in simulation, at the opening deal or at a
+  mid-game replacement, so the rules now describe it as what keeps placement
+  from ever failing rather than as an occasional event.
+
+## 0.22 — planets move into the interior
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **Bays are gone. Planets replace them, and move into the board's
+  interior.** A planet has the same two properties a bay had — a ship
+  standing on it cannot attack and cannot be attacked, and gains one power at
+  the end of its owner's turn — but it is no longer on the edge.
+- **Twelve planets, at fixed squares, half-turn symmetric**: E3, D7, F5, I4,
+  J8, L5, and their 180-degree rotation K13, L9, J11, G12, F8, D11.
+- **Starting squares are now ordinary squares.** The fourteen edge squares
+  where ships begin give nothing and protect nothing; they are no longer
+  bays.
+- **Fleets are five or six a side, and six is now the standard game.** Seven
+  a side is removed — it would break the guarantee that a beaten ship always
+  finds an empty planet to return to.
+- **Section 3.2 gains a sixth constraint**: a new node's square must not be a
+  planet, and must not be orthogonally or diagonally adjacent to one.
+- **The opening board is twelve nodes**, not fifteen: four charged and eight
+  inactive, none depleted — the node pool this small a planet-free interior
+  can comfortably support.
+- **Section 8.4's depleted cap reads "five or six" cost the same as four**,
+  not "five, six or seven", following the fleet-size change.
+- **Section 7.1's guarantee of somewhere to return to is restated** around
+  twelve ships and twelve planets: at most ten planets are ever occupied at
+  once, so at least two are always free.
+
 ## 0.21 — four charged nodes, not five
 
 This is a gameplay change. Tagging stays on hold until the game plays (see

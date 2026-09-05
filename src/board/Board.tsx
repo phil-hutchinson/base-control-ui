@@ -6,7 +6,7 @@
 import { useCallback, useMemo } from "react";
 import { GAME_NAME } from "../gameName";
 import { BOARD_SIZE, squareName } from "../rules/board";
-import { isBay } from "../rules/bays";
+import { isPlanet } from "../rules/planets";
 import { shipHasLegalAction } from "../rules/actions";
 import { legalTargets } from "../rules/combat";
 import { shipsBySquare, nodeStatusAt, type Ship } from "../rules/gameState";
@@ -22,7 +22,7 @@ import {
 } from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
 import { EnergyOverlay } from "./EnergyOverlay";
-import { planetForSquare } from "./planetPlacement";
+import { planetArrangement, planetForSquare } from "./planetPlacement";
 import { PlanetDefs } from "./PlanetDefs";
 import { AccessibleGrid, type GridCellDescriptor } from "./grid/AccessibleGrid";
 import type { GridPosition } from "./grid/gridNavigation";
@@ -56,6 +56,11 @@ export function Board({ session, onIntent }: BoardProps) {
   const handleDismiss = useCallback(() => {
     onIntent({ type: "dismiss" });
   }, [onIntent]);
+
+  const arrangement = useMemo(
+    () => planetArrangement(session.state.openingSeed),
+    [session.state.openingSeed],
+  );
 
   const rows: GridCellDescriptor[][] = useMemo(() => {
     const ships = shipsBySquare(session.state);
@@ -99,8 +104,8 @@ export function Board({ session, onIntent }: BoardProps) {
           column: columnIndex,
         });
         const name = squareName(square);
-        const bay = isBay(square);
-        const planet = planetForSquare(square);
+        const planetSquare = isPlanet(square);
+        const planet = planetForSquare(arrangement, square);
         const nodeStatus = nodeStatusAt(session.state, square);
         const nodeState = nodeStatus?.state;
         const cyclePosition = nodeStatus
@@ -125,7 +130,7 @@ export function Board({ session, onIntent }: BoardProps) {
         return {
           content: (
             <BoardSquare
-              isBay={bay}
+              isPlanet={planetSquare}
               squareName={name}
               planet={planet}
               nodeState={nodeState}
@@ -138,7 +143,7 @@ export function Board({ session, onIntent }: BoardProps) {
           ),
           label: squareLabel({
             square,
-            isBay: bay,
+            isPlanet: planetSquare,
             nodeState,
             occupant,
             hasActed,
@@ -149,7 +154,7 @@ export function Board({ session, onIntent }: BoardProps) {
         };
       }),
     );
-  }, [session]);
+  }, [session, arrangement]);
 
   return (
     <div className="board-frame">

@@ -66,6 +66,14 @@ export interface GameState {
   readonly plyNumber: number;
   /** The 32-bit seed the next random draw will use (rules.md §8.2, §7.1). */
   readonly randomSeed: number;
+  /**
+   * The 32-bit seed the opening deal started from — distinct from
+   * `randomSeed`, which is the seed the deal left behind and the next draw
+   * will use. Fixed for the game's lifetime once set by `startingGameState`;
+   * nothing in the rules layer reads it, but a game record wants it, and the
+   * board layer derives the planet arrangement from it.
+   */
+  readonly openingSeed: number;
   /** Each side's running energy total (rules.md §8.4), both starting at 0. */
   readonly energy: EnergyTotals;
   /**
@@ -91,7 +99,7 @@ export interface GameState {
 
 /**
  * The state the game starts from: `startingFleet(fleetSize)`'s ships, a
- * dealt board (`dealOpeningBoard`, rules.md §8.1) — four of the fifteen
+ * dealt board (`dealOpeningBoard`, rules.md §8.1) — four of the twelve
  * nodes charged at a drawn drain, the rest inactive at a drawn pressure,
  * nothing depleted — green to move, `ACTIONS_PER_PLY` actions remaining,
  * nothing moved, ply 1, both sides at 0 energy, neither side out of time,
@@ -103,9 +111,11 @@ export interface GameState {
  * unaffected.
  *
  * The seed argument is the seed the **deal** starts from, not the seed the
- * game's first turn draws from: dealing the board consumes 30 steps of the
+ * game's first turn draws from: dealing the board consumes 24 steps of the
  * stream before play begins, and the resulting state's `randomSeed` is the
- * seed the deal left behind. See `src/game/seed.ts` for where the app's
+ * seed the deal left behind. That argument is also recorded verbatim as
+ * `openingSeed`, so the state remembers where its deal started even once
+ * `randomSeed` has moved on. See `src/game/seed.ts` for where the app's
  * opening seed comes from. Every test passes one explicitly, so a game's
  * opening position is always reproducible.
  *
@@ -132,7 +142,7 @@ export function startingGameState(
   }
   if (!isFleetSize(fleetSize)) {
     throw new RangeError(
-      `startingGameState: fleetSize must be 5, 6 or 7, got ${fleetSize}`,
+      `startingGameState: fleetSize must be 5 or 6, got ${fleetSize}`,
     );
   }
 
@@ -156,6 +166,7 @@ export function startingGameState(
     actedThisPly: [],
     plyNumber: 1,
     randomSeed: nextSeed,
+    openingSeed: randomSeed,
     energy: { green: 0, red: 0 },
     lengthInRounds,
     outOfTime: { green: false, red: false },

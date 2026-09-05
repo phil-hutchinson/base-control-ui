@@ -1,4 +1,4 @@
-// One square's stacked contents: a bay's planet beneath everything else,
+// One square's stacked contents: a planet's drawing beneath everything else,
 // then the node marker beneath any ship standing on it, then, during ship
 // selection, one of three selection markings — a legal destination, a legal
 // attack target, or the selected ship's own square — all sharing the square
@@ -7,9 +7,9 @@
 // cue rather than a prediction; what attacking here does is spoken in the
 // square's accessible name, not drawn.
 //
-// A bay's planet is drawn whether or not the square is occupied - there is
-// no occupancy condition anywhere below. A ship simply draws over it, as it
-// already does over a node marker.
+// A planet's drawing is drawn whether or not the square is occupied - there
+// is no occupancy condition anywhere below. A ship simply draws over it, as
+// it already does over a node marker.
 //
 // Having moved this ply and a ship's condition (no action available) are
 // separate, independently optional fields from each other and from the
@@ -30,9 +30,9 @@ import { NodeMarker } from "./NodeMarker";
 import "./BoardSquare.css";
 
 export interface BoardSquareProps {
-  readonly isBay: boolean;
+  readonly isPlanet: boolean;
   readonly squareName: string;
-  /** Present if and only if `isBay` is true. */
+  /** Present if and only if `isPlanet` is true. */
   readonly planet?: PlanetArt;
   readonly nodeState?: NodeState;
   readonly cyclePosition?: number;
@@ -196,7 +196,7 @@ function NoActionMark() {
 
 /** One square's visible contents: a node marker, a ship, and a selection marking, each if present. */
 export function BoardSquare({
-  isBay,
+  isPlanet,
   squareName,
   planet,
   nodeState,
@@ -207,10 +207,10 @@ export function BoardSquare({
   mark,
 }: BoardSquareProps) {
   const classNames = ["board-square"];
-  if (isBay) {
+  if (isPlanet) {
     // No stylesheet rule reads this - it exists only as a query hook for
-    // tests to find a bay square.
-    classNames.push("board-square--bay");
+    // tests to find a planet square.
+    classNames.push("board-square--planet");
   }
   const isDampened = condition === "no-action";
   if (isDampened) {

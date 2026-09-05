@@ -25,6 +25,7 @@ function buildState(plyNumber: number): GameState {
     actedThisPly: [],
     plyNumber,
     randomSeed: 1,
+    openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     outOfTime: { green: false, red: false },

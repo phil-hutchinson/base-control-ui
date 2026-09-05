@@ -1,5 +1,6 @@
-// The fourteen bays' planets, one hidden sprite holding all of them, ported
-// from `doc/plan/00000013-spaceship-bay-visual/eg_planets.html` verbatim: the
+// The twelve planets' drawings, one hidden sprite holding all of them,
+// ported from an early prototype file (`eg_planets.html`, committed at
+// doc/plan/00000013-spaceship-bay-visual/eg_planets.html) verbatim: the
 // only changes from that gallery are the id renames `planetArt.ts` requires,
 // the SVG-attribute-to-JSX-prop conversion React requires, and five specific
 // fixes applied nowhere else - `p1moon-sheen`, defined twice in the gallery
@@ -12,13 +13,10 @@
 // planet 9's stray `opacity="0.8 "` trailing spaces are trimmed; and planets
 // 1 and 2's hardcoded backing fills (`black`, `#151c31`) are unified to
 // `#151c31`, the --color-space-raised literal. Nothing else about the
-// geometry, colours or structure differs from the gallery.
-//
-// Planet 11 is the one deliberate exception to all of that: its
-// yellow-orange-green banding read as the charged-node accent (`#DAA520`),
-// so it is recoloured to salmon/rose/cream and given a storm spot, both
-// unique to this codebase and absent from the gallery. Everywhere else in
-// this file, a difference from the gallery is a bug; here it is the point.
+// geometry, colours or structure differs from the gallery. Planets 11 and 12
+// - the gallery's rose-and-cream storm planet and its cream-and-olive crater
+// planet - are dropped from the catalogue and are not declared here; the
+// remaining numbers keep their gaps rather than being renumbered.
 //
 // Mounted once, on the board, since planets appear only there. It draws
 // nothing itself - everything lives inside `<defs>`, which is never rendered
@@ -26,11 +24,11 @@
 // the accessibility tree: hidden by zero size, not by `display`, in
 // PlanetDefs.css, so a `<use>` reference into it still resolves.
 
-import { PLANETS, type PlanetArt } from "./planetArt";
+import { PLANET_ART, type PlanetArt } from "./planetArt";
 import "./PlanetDefs.css";
 
 const PLANETS_BY_NUMBER = new Map<number, PlanetArt>(
-  PLANETS.map((planet) => [planet.number, planet]),
+  PLANET_ART.map((planet) => [planet.number, planet]),
 );
 
 /** The ids the planet with this gallery number declares, keyed by part name. */
@@ -53,8 +51,6 @@ export function PlanetDefs() {
   const p8 = idsFor(8);
   const p9 = idsFor(9);
   const p10 = idsFor(10);
-  const p11 = idsFor(11);
-  const p12 = idsFor(12);
   const p13 = idsFor(13);
   const p14 = idsFor(14);
 
@@ -572,105 +568,6 @@ export function PlanetDefs() {
             />
           </g>
           <circle cx="50" cy="50" r="33" fill={`url(#${p10.sheen})`} />
-        </g>
-
-        {/* Planet 11: rose-and-cream banded planet with a storm. Redrawn,
-            not ported - see the header comment - because the gallery's
-            yellow-orange-green banding was indistinguishable from the
-            charged-node accent. Same banded-disc structure, same radius,
-            rotation, blur, clip and sheen; only the palette and the storm
-            are new. */}
-        <linearGradient id={p11.surface} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#D98C86" stopOpacity="1" />
-          <stop offset="0.19" stopColor="#D98C86" stopOpacity="1" />
-          <stop offset="0.19" stopColor="#F7CFC1" stopOpacity="1" />
-          <stop offset="0.28" stopColor="#E8A9A0" stopOpacity="1" />
-          <stop offset="0.31" stopColor="#C97B82" stopOpacity="1" />
-          <stop offset="0.35" stopColor="#EFC2B3" stopOpacity="1" />
-          <stop offset="0.38" stopColor="#EFC2B3" stopOpacity="1" />
-          <stop offset="0.44" stopColor="#F2E4DC" stopOpacity="1" />
-          <stop offset="0.57" stopColor="#F7CFC1" stopOpacity="1" />
-          <stop offset="0.69" stopColor="#E8A9A0" stopOpacity="1" />
-          <stop offset="0.76" stopColor="#D98C86" stopOpacity="1" />
-          <stop offset="0.79" stopColor="#C97B82" stopOpacity="1" />
-          <stop offset="0.86" stopColor="#EFC2B3" stopOpacity="1" />
-          <stop offset="1" stopColor="#E8A9A0" stopOpacity="1" />
-        </linearGradient>
-        <radialGradient id={p11.sheen} cx="40%" cy="40%" r="70%">
-          <stop offset="0%" stopColor="white" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="rebeccapurple" stopOpacity="0.1" />
-        </radialGradient>
-        <filter id={p11.blur}>
-          <feGaussianBlur stdDeviation="1" />
-        </filter>
-        <clipPath id={p11.clip}>
-          <circle cx="50" cy="50" r="34" />
-        </clipPath>
-        <radialGradient id={p11.storm} cx="42%" cy="38%" r="65%">
-          <stop offset="0%" stopColor="#D98C86" />
-          <stop offset="45%" stopColor="#A8636D" />
-          <stop offset="75%" stopColor="#F5D9D3" />
-          <stop offset="100%" stopColor="#C97B82" />
-        </radialGradient>
-        <g id={p11.body}>
-          <g
-            transform="rotate(-7,50,50)"
-            filter={`url(#${p11.blur})`}
-            clipPath={`url(#${p11.clip})`}
-          >
-            <circle cx="50" cy="50" r="34" fill={`url(#${p11.surface})`} />
-            <ellipse
-              cx="34"
-              cy="60"
-              rx="17"
-              ry="9"
-              fill={`url(#${p11.storm})`}
-              transform="rotate(12 34 60)"
-            />
-            <circle
-              cx="50"
-              cy="50"
-              r="34"
-              fill={`url(#${p11.sheen})`}
-              transform="rotate(7,50,50)"
-            />
-          </g>
-        </g>
-
-        {/* Planet 12: cream-and-olive crater planet */}
-        <radialGradient id={p12.sheen} cx="40%" cy="40%" r="70%">
-          <stop offset="0%" stopColor="white" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="rebeccapurple" stopOpacity="0.1" />
-        </radialGradient>
-        <filter id={p12.blur}>
-          <feGaussianBlur stdDeviation="2.1" />
-        </filter>
-        <clipPath id={p12.clip}>
-          <circle cx="50" cy="50" r="32" />
-        </clipPath>
-        <g id={p12.body}>
-          <g filter={`url(#${p12.blur})`} clipPath={`url(#${p12.clip})`}>
-            <circle cx="50" cy="50" r="36" fill="#E6E8BA" />
-            <g transform="translate(35 35) rotate(-45 0 0) scale(1.2 1)">
-              <circle cx="0" cy="0" r="6" fill="#C9D69A" stroke="#9A7909" />
-            </g>
-            <g transform="translate(68 42) rotate(60 0 0) scale(1.1 1)">
-              <circle cx="0" cy="0" r="9" fill="#C6C88A" stroke="#9A7909" />
-            </g>
-            <g transform="translate(41 43)">
-              <circle cx="0" cy="0" r="6" fill="#B6A87A" stroke="#9A7909" />
-            </g>
-            <g transform="translate(51 25) scale(1.5 1)">
-              <circle cx="0" cy="0" r="3" fill="#DFDACF" stroke="#999" />
-            </g>
-            <g transform="translate(31 61) rotate(135 0 0) scale(1 1.5)">
-              <circle cx="0" cy="0" r="3" fill="#CECE9C" stroke="#AC9A0C" />
-            </g>
-            <g transform="translate(47 70) scale(1.3 1)">
-              <circle cx="0" cy="0" r="6" fill="#C9D69A" stroke="#9A7909" />
-            </g>
-          </g>
-          <circle cx="50" cy="50" r="32" fill={`url(#${p12.sheen})`} />
         </g>
 
         {/* Planet 13: cyan-purple-pink wavy planet - three stacked wave

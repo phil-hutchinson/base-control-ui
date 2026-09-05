@@ -5,7 +5,7 @@
 // unit-tested on its own. The players' vocabulary throughout: "turn" and
 // "node", never "ply" or "hub".
 
-import { isBay } from "../rules/bays";
+import { isPlanet } from "../rules/planets";
 import { squareName } from "../rules/board";
 import {
   chargedNodesHeldBy,
@@ -122,8 +122,8 @@ function joinWithAnd(items: readonly string[]): string {
 /**
  * All of a sequence's power gains as one clause, naming the squares once
  * rather than repeating a sentence per ship. A ship reaching the maximum of
- * 4 is named as such. True of a ship on a depleted node or in a bay alike —
- * the clause never names which.
+ * 4 is named as such. True of a ship on a depleted node or on a planet
+ * alike — the clause never names which.
  */
 function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
   const side = capitalize(effects[0].side);
@@ -305,16 +305,16 @@ function passSentence(effect: PassEffect): string {
 }
 
 /**
- * "What the move was": the ship's journey, and whether it ended in a bay.
- * Either side's ship reads the same way; the side is already named at the
- * start of the sentence.
+ * "What the move was": the ship's journey, and whether it ended on a
+ * planet. Either side's ship reads the same way; the side is already named
+ * at the start of the sentence.
  */
 function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);
   const to = squareName(event.to);
 
-  if (isBay(event.to)) {
-    return `${capitalize(event.side)} ship moved from ${from} into the ${to} bay.`;
+  if (isPlanet(event.to)) {
+    return `${capitalize(event.side)} ship moved from ${from} onto the ${to} planet.`;
   }
 
   return `${capitalize(event.side)} ship moved from ${from} to ${to}.`;
@@ -373,7 +373,7 @@ function actionEndingClause(
 /**
  * The fight's own sentence (rules.md §7), from the single `fight-resolved`
  * effect an attack always carries: who attacked whom, that both were beaten,
- * and the two bays they landed in, both keeping the power they were
+ * and the two planets they landed on, both keeping the power they were
  * carrying. There is no winner and no advance to report — every fight has
  * the same outcome.
  */
@@ -396,7 +396,7 @@ function fightSentence(event: AttackedEvent): string {
     throw new RangeError("a fight-resolved effect always carries two returns");
   }
   const [attackerReturn, defenderReturn] = fight.returns;
-  return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} bay and the defender to the ${squareName(defenderReturn.to)} bay, both keeping the power they were carrying.`;
+  return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} planet and the defender to the ${squareName(defenderReturn.to)} planet, both keeping the power they were carrying.`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {
@@ -414,12 +414,12 @@ function rejectionSentence(event: RejectedEvent): string {
       return `Another ship is in the way of ${square}.`;
     case "destination-occupied":
       return `${square} is occupied.`;
-    case "attacker-in-bay":
-      return "A ship in a bay cannot attack. Move it out first.";
+    case "attacker-on-planet":
+      return "A ship on a planet cannot attack. Move it off first.";
     case "attacker-on-charged-node":
       return "A ship holding a charged node cannot attack while it stands there. Move it off first.";
-    case "target-in-bay":
-      return "A ship in a bay cannot be attacked.";
+    case "target-on-planet":
+      return "A ship on a planet cannot be attacked.";
     case "target-on-charged-node":
       return "A ship holding a charged node cannot be attacked.";
     case "target-out-of-range":

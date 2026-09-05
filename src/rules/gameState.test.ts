@@ -19,14 +19,14 @@ import {
 } from "./nodes";
 
 const SEED = 12345;
-const STARTING_FLEET = startingFleet(7);
+const STARTING_FLEET = startingFleet(DEFAULT_FLEET_SIZE);
 const STARTING_FLEET_SQUARES = STARTING_FLEET.map((entry) => entry.square);
 
 describe("startingGameState", () => {
-  it("has fourteen ships matching STARTING_FLEET entry for entry", () => {
+  it("has twelve ships matching STARTING_FLEET entry for entry", () => {
     const state = startingGameState(SEED);
 
-    expect(state.ships).toHaveLength(14);
+    expect(state.ships).toHaveLength(12);
     state.ships.forEach((ship, index) => {
       const entry = STARTING_FLEET[index];
       expect(ship.id).toBe(entry.id);
@@ -48,20 +48,27 @@ describe("startingGameState", () => {
     expect(state.randomSeed).not.toBe(SEED);
   });
 
-  it("deals the board dealOpeningBoard deals for the same seed: four charged, eleven inactive, none depleted", () => {
+  it("remembers the seed the deal started from, distinct from the seed it left behind", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.openingSeed).toBe(SEED);
+    expect(state.openingSeed).not.toBe(state.randomSeed);
+  });
+
+  it("deals the board dealOpeningBoard deals for the same seed: four charged, eight inactive, none depleted", () => {
     const state = startingGameState(SEED);
     const [dealt] = dealOpeningBoard(STARTING_FLEET_SQUARES, SEED);
 
     expect(state.nodes).toEqual(dealt);
 
     const allStatuses = Object.values(state.nodes);
-    expect(allStatuses).toHaveLength(15);
+    expect(allStatuses).toHaveLength(12);
     expect(
       allStatuses.filter((status) => status.state === "charged"),
     ).toHaveLength(4);
     expect(
       allStatuses.filter((status) => status.state === "inactive"),
-    ).toHaveLength(11);
+    ).toHaveLength(8);
     expect(
       allStatuses.filter((status) => status.state === "depleted"),
     ).toHaveLength(0);
@@ -111,7 +118,7 @@ describe("startingGameState", () => {
     }
   });
 
-  it("finds a ship on each of the fourteen bay squares and none on an ordinary square", () => {
+  it("finds a ship on each of the twelve starting-fleet squares and none on an ordinary square", () => {
     const state = startingGameState(SEED);
     const index = shipsBySquare(state);
 
@@ -166,11 +173,11 @@ describe("startingGameState", () => {
     expect(() => startingGameState(SEED, length)).toThrow(RangeError);
   });
 
-  it("defaults to a seven-a-side fleet when none is given", () => {
+  it("defaults to a six-a-side fleet when none is given", () => {
     const state = startingGameState(SEED);
     const expected = startingFleet(DEFAULT_FLEET_SIZE);
 
-    expect(state.ships).toHaveLength(14);
+    expect(state.ships).toHaveLength(12);
     state.ships.forEach((ship, index) => {
       expect(ship.id).toBe(expected[index].id);
       expect(ship.side).toBe(expected[index].side);
@@ -203,13 +210,13 @@ describe("startingGameState", () => {
 
   it("deals the same board for the same seed whatever the fleet size", () => {
     const fiveASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 5);
-    const sevenASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 7);
+    const sixASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 6);
 
-    expect(fiveASide.nodes).toEqual(sevenASide.nodes);
+    expect(fiveASide.nodes).toEqual(sixASide.nodes);
   });
 
   it("starts every ship at full power whatever the fleet size", () => {
-    for (const fleetSize of [7, 6, 5] as const) {
+    for (const fleetSize of [6, 5] as const) {
       const state = startingGameState(
         SEED,
         DEFAULT_GAME_LENGTH_ROUNDS,
@@ -221,7 +228,7 @@ describe("startingGameState", () => {
     }
   });
 
-  it.each([4, 8, 6.5])(
+  it.each([4, 7, 8, 6.5])(
     "throws a RangeError for a fleet size of %s",
     (fleetSize) => {
       expect(() =>

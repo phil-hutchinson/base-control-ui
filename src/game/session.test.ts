@@ -56,6 +56,7 @@ function buildState(config: {
     actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
+    openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     outOfTime: config.outOfTime ?? { green: false, red: false },
@@ -487,18 +488,22 @@ describe("createSession", () => {
   });
 
   it("runs the pass guard once, so a stuck starting position passes immediately", () => {
-    // green-1 is in the A2 bay, at full power: every one of its reachable
-    // squares is either occupied by a red ship one square away or blocked
-    // along the way to a farther one, and §3.1 forbids it to attack from a
-    // bay regardless.
+    // green-1 is on the D6 planet, at full power: all eight of its
+    // immediate neighbours are occupied, which blocks every move — the
+    // shorter ones by leaving no empty destination, the longer ones by
+    // blocking the path a step out — and §3.1 forbids it to attack from a
+    // planet regardless.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "A2"),
-        ship("red-1", "red", "A1"),
-        ship("red-2", "red", "A3"),
-        ship("red-3", "red", "B2"),
-        ship("red-4", "red", "B1"),
-        ship("red-5", "red", "B3"),
+        ship("green-1", "green", "D6"),
+        ship("red-1", "red", "C5"),
+        ship("red-2", "red", "C6"),
+        ship("red-3", "red", "C7"),
+        ship("red-4", "red", "D5"),
+        ship("red-5", "red", "D7"),
+        ship("red-6", "red", "E5"),
+        ship("red-7", "red", "E6"),
+        ship("red-8", "red", "E7"),
       ],
     });
 
@@ -653,7 +658,7 @@ describe("sessionReducer — new-game", () => {
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
   });
 
-  it.each<FleetSize>([7, 6, 5])(
+  it.each<FleetSize>([6, 5])(
     "honours the given fleet size, dealing %i ships a side on its own layout",
     (fleetSize) => {
       const session = sessionFor(buildState({ ships: [] }));

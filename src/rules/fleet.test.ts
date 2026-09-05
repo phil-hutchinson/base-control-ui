@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { BAYS } from "./bays";
 import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
 import {
   FLEET_SIZES,
@@ -10,28 +9,10 @@ import {
 } from "./fleet";
 import { isPowerLevel, MAX_POWER } from "./power";
 
-/** §4's seven-a-side layout, clockwise from H15. */
-const SEVEN_A_SIDE: readonly [string, "green" | "red"][] = [
-  ["H15", "green"],
-  ["L15", "red"],
-  ["O14", "green"],
-  ["O10", "red"],
-  ["O6", "green"],
-  ["O2", "red"],
-  ["L1", "green"],
-  ["H1", "red"],
-  ["D1", "green"],
-  ["A2", "red"],
-  ["A6", "green"],
-  ["A10", "red"],
-  ["A14", "green"],
-  ["D15", "red"],
-];
-
 /**
  * §4's six-a-side layout, clockwise from H15: H15 and H1 start empty, so the
- * list starts at L15, the first occupied bay after H15, and skips straight
- * from L1 to D1 where H1 would otherwise sit.
+ * list starts at L15, the first occupied starting square after H15, and
+ * skips straight from L1 to D1 where H1 would otherwise sit.
  */
 const SIX_A_SIDE: readonly [string, "green" | "red"][] = [
   ["L15", "red"],
@@ -50,8 +31,8 @@ const SIX_A_SIDE: readonly [string, "green" | "red"][] = [
 
 /**
  * §4's five-a-side layout, clockwise from H15: O14, O2, A14 and A2 start
- * empty, and the colours on the two four-bay edges are reversed from the
- * seven-ship game.
+ * empty, and the colours on the two four-square edges are reversed from the
+ * six-ship game.
  */
 const FIVE_A_SIDE: readonly [string, "green" | "red"][] = [
   ["H15", "green"],
@@ -71,16 +52,33 @@ const LAYOUTS_BY_FLEET_SIZE: Readonly<
 > = {
   5: FIVE_A_SIDE,
   6: SIX_A_SIDE,
-  7: SEVEN_A_SIDE,
 };
 
-/** §4's empty starting bays, per fleet size. */
-const EMPTY_BAYS_BY_FLEET_SIZE: Readonly<Record<FleetSize, readonly string[]>> =
-  {
-    5: ["O14", "O2", "A14", "A2"],
-    6: ["H15", "H1"],
-    7: [],
-  };
+/** §4's fourteen starting squares. */
+const ALL_STARTING_SQUARES = [
+  "H15",
+  "L15",
+  "O14",
+  "O10",
+  "O6",
+  "O2",
+  "L1",
+  "H1",
+  "D1",
+  "A2",
+  "A6",
+  "A10",
+  "A14",
+  "D15",
+];
+
+/** §4's empty starting squares, per fleet size. */
+const EMPTY_STARTING_SQUARES_BY_FLEET_SIZE: Readonly<
+  Record<FleetSize, readonly string[]>
+> = {
+  5: ["O14", "O2", "A14", "A2"],
+  6: ["H15", "H1"],
+};
 
 function entryBySquare(
   fleet: readonly FleetEntry[],
@@ -91,11 +89,11 @@ function entryBySquare(
 
 describe("FLEET_SIZES", () => {
   it("is largest first, so the leftmost start-screen choice is the default game", () => {
-    expect(FLEET_SIZES).toEqual([7, 6, 5]);
+    expect(FLEET_SIZES).toEqual([6, 5]);
   });
 
   it("puts the largest fleet size in MAX_SHIPS_PER_SIDE regardless of list order", () => {
-    expect(MAX_SHIPS_PER_SIDE).toBe(7);
+    expect(MAX_SHIPS_PER_SIDE).toBe(6);
   });
 });
 
@@ -117,20 +115,20 @@ describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
     expect(red).toHaveLength(fleetSize);
   });
 
-  it("stands every ship on a bay, one ship per bay, and leaves §4's empty bays empty", () => {
-    const bayNames = new Set(BAYS.map(squareName));
+  it("stands every ship on a starting square, one ship per square, and leaves §4's empty ones empty", () => {
     const fleetSquareNames = fleet.map((entry) => squareName(entry.square));
 
     for (const name of fleetSquareNames) {
-      expect(bayNames.has(name)).toBe(true);
+      expect(ALL_STARTING_SQUARES).toContain(name);
     }
     expect(new Set(fleetSquareNames).size).toBe(fleetSquareNames.length);
 
-    for (const emptyBay of EMPTY_BAYS_BY_FLEET_SIZE[fleetSize]) {
-      expect(fleetSquareNames).not.toContain(emptyBay);
+    for (const emptySquare of EMPTY_STARTING_SQUARES_BY_FLEET_SIZE[fleetSize]) {
+      expect(fleetSquareNames).not.toContain(emptySquare);
     }
     expect(fleetSquareNames).toHaveLength(
-      bayNames.size - EMPTY_BAYS_BY_FLEET_SIZE[fleetSize].length,
+      ALL_STARTING_SQUARES.length -
+        EMPTY_STARTING_SQUARES_BY_FLEET_SIZE[fleetSize].length,
     );
   });
 
@@ -206,27 +204,24 @@ describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
 });
 
 describe("alternation around the clockwise ring", () => {
-  // Holds for the seven- and five-ship layouts, which alternate all the way
-  // round, including the wraparound. It does not hold for the six-ship
-  // layout by design (rules.md §4): dropping H15 leaves D15 red next to L15
-  // red, and dropping H1 leaves L1 green next to D1 green.
-  it.each([7, 5] as const)(
-    "alternates sides around the clockwise ring, including the wraparound, at %i a side",
-    (fleetSize) => {
-      const fleet = startingFleet(fleetSize);
-      for (let index = 0; index < fleet.length; index++) {
-        const current = fleet[index];
-        const next = fleet[(index + 1) % fleet.length];
-        expect(next.side).not.toBe(current.side);
-      }
-    },
-  );
+  // Holds for the five-ship layout, which alternates all the way round,
+  // including the wraparound. It does not hold for the six-ship layout by
+  // design (rules.md §4): dropping H15 leaves D15 red next to L15 red, and
+  // dropping H1 leaves L1 green next to D1 green.
+  it("alternates sides around the clockwise ring, including the wraparound, at 5 a side", () => {
+    const fleet = startingFleet(5);
+    for (let index = 0; index < fleet.length; index++) {
+      const current = fleet[index];
+      const next = fleet[(index + 1) % fleet.length];
+      expect(next.side).not.toBe(current.side);
+    }
+  });
 });
 
-describe("startingFleet(7)", () => {
-  it("assigns green-1 to H15 and red-1 to L15", () => {
-    const fleet = startingFleet(7);
-    const green1 = entryBySquare(fleet, squareAt("H", 15));
+describe("startingFleet(6)", () => {
+  it("assigns green-1 to L15's neighbour O14, and red-1 to L15", () => {
+    const fleet = startingFleet(6);
+    const green1 = entryBySquare(fleet, squareAt("O", 14));
     const red1 = entryBySquare(fleet, squareAt("L", 15));
 
     expect(green1?.id).toBe("green-1");
