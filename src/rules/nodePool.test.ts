@@ -23,10 +23,7 @@
 // over more turns, per this run's own cost: a retirement now costs a pool
 // scan per placement, and five seeds already gives every bound here
 // generous margin without the suite noticeably slowing down. Since the
-// generator is seeded, this measurement is exactly reproducible; a broader
-// sweep (ten seeds, and forty seeds at 800 turns) was also run by hand while
-// choosing these bounds, and is noted where it changed the margin worth
-// leaving.
+// generator is seeded, this measurement is exactly reproducible.
 
 import { describe, expect, it } from "vitest";
 import { COLUMN_LETTERS, type Square, squareName } from "./board";
@@ -389,9 +386,8 @@ describe("the long-run node economy (Appendix B)", () => {
     // about 1.4 depleted and 9.6 inactive of the fifteen, close to what came
     // out. A played game holds nodes and so sits nearer Appendix B's
     // figures; do not "correct" the document to match this file. The bounds
-    // below leave generous margin either side of what was measured, and the
-    // inactive bound is widened from the old target's 10 so the new mean
-    // does not sit against it.
+    // below leave generous margin either side of what was measured: the
+    // inactive bound at 11 leaves margin above the measured ~9.55.
     expect(meanDepleted).toBeGreaterThan(0.5);
     expect(meanDepleted).toBeLessThan(4);
     expect(meanInactive).toBeGreaterThan(6);
@@ -399,15 +395,15 @@ describe("the long-run node economy (Appendix B)", () => {
   });
 
   /**
-   * Measured over `SEEDS` at `PLIES_TO_RUN` turns: 116 of the 121 interior
+   * Measured over `SEEDS` at `PLIES_TO_RUN` turns: 114 of the 121 interior
    * squares held a node at least once, and each quadrant's share of the
-   * squares seen was between about 0.24 and 0.28 (a by-hand sweep of ten
-   * seeds reached full coverage of all 121, split evenly across the four
-   * quadrants). The bounds below leave generous margin under and around
-   * those figures — this is not a claim of uniformity (§3.2's adjacency
-   * rule favours squares nearer the interior's edge over its middle, and a
-   * replacement's pool always excludes the square just vacated), only that
-   * placement over a long run is not clustering in one region.
+   * squares seen was between about 0.24 and 0.26; no broader sweep was
+   * re-run at this target. The bounds below leave generous margin under
+   * and around those figures — this is not a claim of uniformity (§3.2's
+   * adjacency rule favours squares nearer the interior's edge over its
+   * middle, and a replacement's pool always excludes the square just
+   * vacated), only that placement over a long run is not clustering in
+   * one region.
    */
   it("spreads the squares it occupies across the whole legal interior, over a long run", () => {
     const seenSquares = new Set<string>();
