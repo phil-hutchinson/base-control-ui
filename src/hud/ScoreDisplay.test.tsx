@@ -48,6 +48,7 @@ function buildState(config: {
     actedThisPly: [],
     plyNumber: 1,
     randomSeed: 1,
+    openingSeed: 1,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     outOfTime: { green: false, red: false },

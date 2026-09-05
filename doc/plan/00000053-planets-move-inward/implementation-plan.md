@@ -524,7 +524,21 @@ five and at six a side.
 
 ### Step 5 — `GameState` remembers the seed it was dealt from
 
-Status: pending
+Status: committed
+
+Notes: Added `readonly openingSeed: number` to `GameState`, set by
+`startingGameState` to the seed argument it received (before `dealOpeningBoard`
+advances it into `randomSeed`), with a doc comment on both the field and the
+function explaining the distinction. Added a `gameState.test.ts` case asserting
+`openingSeed === SEED` and that it differs from `randomSeed`. Added the field to
+every hand-built `GameState` literal across the test suite (21 files); every
+site that builds a state by spreading an existing one needed no change, since
+the field carries through automatically. For the two literals in
+`openingBoard.test.ts` built mid-deal, `openingSeed` is set to the pre-deal
+`seed` variable rather than to the already-advanced value assigned to
+`randomSeed`, matching the field's real meaning. No deviation from the plan:
+`seededReplay.test.ts` and all other tests pass unchanged, confirming no extra
+randomness is consumed.
 
 Add a required `readonly openingSeed: number` to `GameState` in
 `src/rules/gameState.ts`, recorded by `startingGameState` as the seed

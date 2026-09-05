@@ -16,6 +16,7 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     actedThisPly: [],
     plyNumber: 1,
     randomSeed: 1,
+    openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: 30,
     outOfTime: { green: false, red: false },

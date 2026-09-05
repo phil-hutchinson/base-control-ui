@@ -17,6 +17,7 @@ function finishedState(): GameState {
     actedThisPly: [],
     plyNumber: 3,
     randomSeed: 1,
+    openingSeed: 1,
     energy: { green: 4, red: 7 },
     lengthInRounds: 1,
     outOfTime: { green: false, red: false },

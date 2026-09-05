@@ -48,6 +48,13 @@ describe("startingGameState", () => {
     expect(state.randomSeed).not.toBe(SEED);
   });
 
+  it("remembers the seed the deal started from, distinct from the seed it left behind", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.openingSeed).toBe(SEED);
+    expect(state.openingSeed).not.toBe(state.randomSeed);
+  });
+
   it("deals the board dealOpeningBoard deals for the same seed: four charged, eleven inactive, none depleted", () => {
     const state = startingGameState(SEED);
     const [dealt] = dealOpeningBoard(STARTING_FLEET_SQUARES, SEED);
