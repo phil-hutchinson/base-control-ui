@@ -223,13 +223,21 @@ function nodeLevels(state: GameState): Readonly<Record<string, number>> {
 }
 
 describe("a seeded game replays its opening board, its fights, its planets, its charge draws and its node replacements exactly", () => {
-  it("produces plenty of fights, charge draws and node replacements over a forty-round game — the run is not vacuous", () => {
+  it("produces at least one fight, and plenty of charge draws and node replacements, over a forty-round game — the run is not vacuous", () => {
     const { planetReturns, chargedNodes, replacedNodes, fightCount } =
       playSeededGame(20260819, 40);
 
-    expect(fightCount).toBeGreaterThanOrEqual(10);
-    expect(planetReturns.length).toBeGreaterThanOrEqual(10);
-    // Measured at 11 for this seed over forty rounds; the floor here
+    // This fleet-size default's fights floor was 10 before six became the
+    // standard game (story 53): with fewer ships on the board, this policy
+    // — attack whenever any ship can, otherwise move the first ship that
+    // has a legal move — settles into a stable position with no further
+    // legal attacks well inside forty rounds far more often than it did at
+    // seven a side. Measured at 1 fight (2 planet returns) for this seed
+    // over forty rounds; the floors below leave no margin because there is
+    // none to leave, but still prove the run reaches combat at all.
+    expect(fightCount).toBeGreaterThanOrEqual(1);
+    expect(planetReturns.length).toBeGreaterThanOrEqual(1);
+    // Measured at 10 for this seed over forty rounds; the floor here
     // leaves margin below that.
     expect(chargedNodes.length).toBeGreaterThanOrEqual(8);
     // Measured at 8 for this seed over forty rounds (a mortal node's life

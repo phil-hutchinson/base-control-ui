@@ -6,7 +6,7 @@ import {
   energyForDepletedNodes,
   energyForNodesHeld,
 } from "./energy";
-import type { ShipId } from "./fleet";
+import { MAX_SHIPS_PER_SIDE, type ShipId } from "./fleet";
 import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { PowerLevel } from "./power";
@@ -149,7 +149,7 @@ describe("energyForDepletedNodes", () => {
     expect(energyForDepletedNodes(depletedNodes)).toBe(energy);
   });
 
-  it.each([5, 6, 7])(
+  it.each([5, 6])(
     "clamps %i depleted nodes to the same price as four, without throwing",
     (depletedNodes) => {
       expect(energyForDepletedNodes(depletedNodes)).toBe(10);
@@ -165,13 +165,19 @@ describe("energyForDepletedNodes", () => {
   });
 
   it("throws for a count above the most ships a side can ever have", () => {
-    expect(() => energyForDepletedNodes(8)).toThrow(RangeError);
+    expect(() => energyForDepletedNodes(MAX_SHIPS_PER_SIDE + 1)).toThrow(
+      RangeError,
+    );
   });
 
-  it("prices seven depleted nodes the same as four, without throwing — the bound is the maximum fleet, not the current game's", () => {
-    expect(energyForDepletedNodes(7)).toBe(10);
-    expect(energyForDepletedNodes(7)).toBe(energyForDepletedNodes(4));
-    expect(() => energyForDepletedNodes(8)).toThrow(RangeError);
+  it("prices the maximum fleet's worth of depleted nodes the same as four, without throwing — the bound is the maximum fleet, not the current game's", () => {
+    expect(energyForDepletedNodes(MAX_SHIPS_PER_SIDE)).toBe(10);
+    expect(energyForDepletedNodes(MAX_SHIPS_PER_SIDE)).toBe(
+      energyForDepletedNodes(4),
+    );
+    expect(() => energyForDepletedNodes(MAX_SHIPS_PER_SIDE + 1)).toThrow(
+      RangeError,
+    );
   });
 });
 

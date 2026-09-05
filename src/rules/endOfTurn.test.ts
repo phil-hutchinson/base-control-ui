@@ -968,10 +968,10 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
     }
   });
 
-  it("prices five, six and seven depleted nodes the same as four, raising no error", () => {
-    const sevenNames = ["H8", "K5", "L8", "D8", "K11", "E5", "E11"];
-    for (const depletedCount of [5, 6, 7]) {
-      const names = sevenNames.slice(0, depletedCount);
+  it("prices five and six depleted nodes the same as four, raising no error", () => {
+    const sixNames = ["H8", "K5", "L8", "D8", "K11", "E5"];
+    for (const depletedCount of [5, 6]) {
+      const names = sixNames.slice(0, depletedCount);
       const state = {
         ...buildState({
           sideToMove: "green",

@@ -454,7 +454,35 @@ names a real folder and must stay resolvable.
 
 ### Step 4 — Fleets of five or six
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned — `FleetSize` is `5 | 6`, `FLEET_SIZES` is
+`[6, 5]`, `DEFAULT_FLEET_SIZE` is 6, `MAX_SHIPS_PER_SIDE` derives to 6,
+`SEVEN_A_SIDE_LAYOUT` is gone and the two remaining layouts' doc comments
+stand alone (rewritten to say "starting square" rather than "planet", matching
+rules.md §4's own distinction between the two, introduced in Step 1). Fixed
+every hard-coded `7`/"seven" left over from the old default across
+`gameState.ts`/`.test.ts`, `energy.ts`/`.test.ts`, `endOfTurn.test.ts`,
+`fleet.test.ts`, `fullGame.test.ts`, `Board.test.tsx`, `App.test.tsx`,
+`session.test.ts`, `StartScreen.test.tsx` and `useAppScreen.test.tsx` — none of
+these files were named in this step's own list, but each held a fleet-size-7
+fixture, literal ship count, or `FleetSize` value that no longer typechecked
+or no longer matched the new default, so leaving them would have broken the
+four standard checks. One further, larger deviation:
+`seededReplay.test.ts`'s "not vacuous" test (not listed for this step either)
+pins seed 20260819 through the attack-first policy described in that file's
+header comment; at the new default of six ships a side that policy settles
+into a position with no further legal attacks after one fight, verified by
+direct measurement (spot-checked at fleet sizes 5, 6 and 7, and over 1,000
+seeds at fleet size 6, 40 and 200 rounds) rather than assumed — it is not a
+regression in this step's own code, but a real consequence of the smaller
+default fleet meeting that bot's specific greedy ordering. The floor for
+`fightCount`/`planetReturns` is lowered from 10 to 1 (the measured value for
+the pinned seed, with the reasoning recorded inline) since there is no margin
+left to leave; `chargedNodes`/`replacedNodes`' floors are untouched, since
+those come from the passive node cycle and were unaffected. Per the story's
+"Out of scope" (balancing what the change does to play is not this story's
+problem), the bot itself and the game's balance are left alone.
 
 In `src/rules/fleet.ts`: `FleetSize` becomes `5 | 6`; `FLEET_SIZES` becomes
 `[6, 5]` (largest first, as now, so the leftmost start-screen choice is the
@@ -650,6 +678,16 @@ built around edge geometry must be **rebuilt**, not coordinate-swapped:
   more than 110 distinct squares is **replaced by the same exact assertion**:
   every one of the 29 legal squares is seen. Owner decision; do not simply
   lower the threshold.
+- `src/rules/seededReplay.test.ts` — **re-measure the "not vacuous" test's
+  fight floor** (orchestrator instruction, added after Step 4). Step 4 lowered
+  `fightCount`/`planetReturns` from 10 to 1 because at six a side every ship
+  starts **on** a planet, where rules.md §7 makes it neither able to attack
+  nor attackable, so the file's attack-first policy stalls. This step removes
+  that cause: ships start on ordinary edge squares and are attackable from the
+  first turn. Measure the real figure at the new geometry and raise the floor
+  back to a value with margin below it. If it genuinely stays at 1, say so in
+  the comment with the measurement, and replace Step 4's now-wrong explanation
+  — the current comment blames fleet size, which will no longer be the reason.
 - `src/rules/nodePlacement.test.ts` — new coverage: no square in the ordinary
   pool is a planet or adjacent to one; the pool is non-empty for a realistic
   board; the fallback excludes planets and may legitimately include a

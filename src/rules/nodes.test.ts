@@ -6,7 +6,7 @@ import {
   squareName,
   type Square,
 } from "./board";
-import { startingFleet } from "./fleet";
+import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { mulberry32 } from "./random";
 import {
   DEPLETED_RECOVERY_TABLE,
@@ -45,7 +45,9 @@ function isAdjacent(a: Square, b: Square): boolean {
   return Math.abs(columnDelta) <= 1 && Math.abs(a.row - b.row) <= 1;
 }
 
-const FLEET_SQUARES = startingFleet(7).map((entry) => entry.square);
+const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
+  (entry) => entry.square,
+);
 
 describe("the board's charged target (rules.md §8.1, §8.2)", () => {
   it("aims to keep four nodes charged", () => {

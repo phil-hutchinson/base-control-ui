@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 import { squareName } from "./board";
 import { runChargeDraw } from "./chargeDraw";
 import { runEndOfTurn } from "./endOfTurn";
-import { startingFleet } from "./fleet";
+import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
   type GameState,
@@ -22,7 +22,9 @@ import {
 } from "./gameState";
 import { NODE_CAPACITY, TARGET_CHARGED_NODES, dealOpeningBoard } from "./nodes";
 
-const FLEET_SQUARES = startingFleet(7).map((entry) => entry.square);
+const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
+  (entry) => entry.square,
+);
 
 const RUN_TO_COMPLETION_SEEDS = [70210001, 70210002, 70210003];
 const RUN_TO_COMPLETION_PLIES = 500;

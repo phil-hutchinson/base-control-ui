@@ -7,7 +7,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
 import { PLANETS, isPlanet } from "../rules/planets";
-import { startingFleet, type FleetEntry } from "../rules/fleet";
+import {
+  DEFAULT_FLEET_SIZE,
+  startingFleet,
+  type FleetEntry,
+} from "../rules/fleet";
 import { NODE_CAPACITY, PRESSURE_CAP } from "../rules/nodes";
 import {
   startingGameState,
@@ -31,11 +35,12 @@ afterEach(cleanup);
 
 const noop = () => {};
 
-const STARTING_FLEET = startingFleet(7);
+const STARTING_FLEET = startingFleet(DEFAULT_FLEET_SIZE);
 
-/** A square-name-keyed lookup of the seven-a-side starting fleet, for building expected
- * accessible names — nothing in production looks up a starting ship by
- * square any more, so these tests build their own local index. */
+/** A square-name-keyed lookup of the default-size starting fleet, for
+ * building expected accessible names — nothing in production looks up a
+ * starting ship by square any more, so these tests build their own local
+ * index. */
 const STARTING_ENTRY_BY_SQUARE: ReadonlyMap<string, FleetEntry> = new Map(
   STARTING_FLEET.map((entry) => [squareName(entry.square), entry]),
 );
@@ -128,7 +133,7 @@ describe("Board", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("gridcell", {
-        name: "H15, planet, green ship, power 4 of 4",
+        name: "O14, planet, green ship, power 4 of 4",
       }),
     ).toBeInTheDocument();
     expect(
@@ -140,7 +145,7 @@ describe("Board", () => {
     // A representative sample of the remaining planets — one on each of the
     // other two sides not already covered above — built the production way
     // rather than as a literal, so a change to `squareLabel` is still caught.
-    for (const square of [squareAt("O", 10), squareAt("H", 1)]) {
+    for (const square of [squareAt("O", 10), squareAt("L", 1)]) {
       const label = squareLabel({
         square,
         isPlanet: true,
@@ -434,9 +439,9 @@ describe("Board", () => {
     expect(cell.querySelector(".ship-model--green")).toBeInTheDocument();
     // The planet green-1 started on is empty now.
     expect(
-      screen.getByRole("gridcell", { name: "H15, planet" }),
+      screen.getByRole("gridcell", { name: "O14, planet" }),
     ).toBeInTheDocument();
-    expect(container.querySelectorAll(".ship-model--green")).toHaveLength(7);
+    expect(container.querySelectorAll(".ship-model--green")).toHaveLength(6);
   });
 
   describe("the node cycle position reaching the marker", () => {

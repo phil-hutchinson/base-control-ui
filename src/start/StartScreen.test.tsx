@@ -131,7 +131,7 @@ describe("StartScreen", () => {
       onLengthInRoundsChange,
       onClockSettingChange,
       onPlay,
-    } = renderStartScreen({ fleetSize: 7 });
+    } = renderStartScreen({ fleetSize: 6 });
 
     await user.click(screen.getByRole("radio", { name: "5" }));
 

@@ -184,7 +184,7 @@ interface PlayedGame {
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
- * above, dealt with `fleetSize` ships a side (rules.md §4, default seven).
+ * above, dealt with `fleetSize` ships a side (rules.md §4, default six).
  */
 function playFullGame(
   seed: number,

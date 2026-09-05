@@ -653,7 +653,7 @@ describe("sessionReducer — new-game", () => {
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
   });
 
-  it.each<FleetSize>([7, 6, 5])(
+  it.each<FleetSize>([6, 5])(
     "honours the given fleet size, dealing %i ships a side on its own layout",
     (fleetSize) => {
       const session = sessionFor(buildState({ ships: [] }));

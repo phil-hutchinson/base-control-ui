@@ -132,7 +132,7 @@ export function startingGameState(
   }
   if (!isFleetSize(fleetSize)) {
     throw new RangeError(
-      `startingGameState: fleetSize must be 5, 6 or 7, got ${fleetSize}`,
+      `startingGameState: fleetSize must be 5 or 6, got ${fleetSize}`,
     );
   }
 

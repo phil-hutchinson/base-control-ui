@@ -1,5 +1,5 @@
-// The two sides and the starting fleet (rules.md §4): five, six or seven
-// ships a side, chosen before play begins, one per occupied planet.
+// The two sides and the starting fleet (rules.md §4): five or six ships a
+// side, chosen before play begins, one per occupied starting square.
 
 import { type Square, squareAt } from "./board";
 import { MAX_POWER, type PowerLevel } from "./power";
@@ -18,17 +18,17 @@ export interface FleetEntry {
   readonly power: PowerLevel;
 }
 
-/** How many ships one side has (rules.md §4): five, six or seven. */
-export type FleetSize = 5 | 6 | 7;
+/** How many ships one side has (rules.md §4): five or six. */
+export type FleetSize = 5 | 6;
 
 /**
  * The valid fleet sizes, in the order the start screen renders them: largest
  * first, so the leftmost choice is the simplest, default game.
  */
-export const FLEET_SIZES: readonly FleetSize[] = [7, 6, 5];
+export const FLEET_SIZES: readonly FleetSize[] = [6, 5];
 
-/** §4's standard game: seven ships a side. */
-export const DEFAULT_FLEET_SIZE: FleetSize = 7;
+/** §4's standard game: six ships a side. */
+export const DEFAULT_FLEET_SIZE: FleetSize = 6;
 
 /** Whether a value is one of the valid fleet sizes. */
 export function isFleetSize(value: number): value is FleetSize {
@@ -42,37 +42,19 @@ export function isFleetSize(value: number): value is FleetSize {
  */
 export const MAX_SHIPS_PER_SIDE = Math.max(...FLEET_SIZES);
 
-/** One occupied planet in a starting layout, in the layout's clockwise order. */
+/**
+ * One occupied starting square in a starting layout, in the layout's
+ * clockwise order.
+ */
 interface LayoutEntry {
   readonly square: Square;
   readonly side: Side;
 }
 
 /**
- * The seven-a-side layout (rules.md §4): every planet holds one ship,
- * alternating clockwise from H15.
- */
-const SEVEN_A_SIDE_LAYOUT: readonly LayoutEntry[] = [
-  { square: squareAt("H", 15), side: "green" },
-  { square: squareAt("L", 15), side: "red" },
-  { square: squareAt("O", 14), side: "green" },
-  { square: squareAt("O", 10), side: "red" },
-  { square: squareAt("O", 6), side: "green" },
-  { square: squareAt("O", 2), side: "red" },
-  { square: squareAt("L", 1), side: "green" },
-  { square: squareAt("H", 1), side: "red" },
-  { square: squareAt("D", 1), side: "green" },
-  { square: squareAt("A", 2), side: "red" },
-  { square: squareAt("A", 6), side: "green" },
-  { square: squareAt("A", 10), side: "red" },
-  { square: squareAt("A", 14), side: "green" },
-  { square: squareAt("D", 15), side: "red" },
-];
-
-/**
- * The six-a-side layout (rules.md §4): H15 and H1 start empty; every other
- * planet holds exactly the ship and colour it holds in the seven-ship game.
- * Listed clockwise starting from the first occupied planet after H15 — L15.
+ * The six-a-side layout (rules.md §4): twelve of the fourteen starting
+ * squares are occupied, H15 and H1 left empty. Listed clockwise starting
+ * from L15.
  */
 const SIX_A_SIDE_LAYOUT: readonly LayoutEntry[] = [
   { square: squareAt("L", 15), side: "red" },
@@ -90,9 +72,9 @@ const SIX_A_SIDE_LAYOUT: readonly LayoutEntry[] = [
 ];
 
 /**
- * The five-a-side layout (rules.md §4): O14, O2, A14 and A2 start empty, and
- * the colours on those two edges are reversed from the seven-ship game.
- * Listed clockwise from H15.
+ * The five-a-side layout (rules.md §4): ten of the fourteen starting
+ * squares are occupied, O14, O2, A14 and A2 left empty. Listed clockwise
+ * from H15.
  */
 const FIVE_A_SIDE_LAYOUT: readonly LayoutEntry[] = [
   { square: squareAt("H", 15), side: "green" },
@@ -112,7 +94,6 @@ const LAYOUTS_BY_FLEET_SIZE: Readonly<
 > = {
   5: FIVE_A_SIDE_LAYOUT,
   6: SIX_A_SIDE_LAYOUT,
-  7: SEVEN_A_SIDE_LAYOUT,
 };
 
 /**
