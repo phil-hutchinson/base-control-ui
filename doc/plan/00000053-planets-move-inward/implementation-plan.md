@@ -1055,7 +1055,26 @@ C3-M13. `grep -rn "29 legal" src/` returns nothing.
 
 ### Step 9 — README, and the last of the word "bay"
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `README.md`'s intro and Status paragraphs by hand (no
+`/update-readme` command was available in this session, so the diff was
+produced by reading the branch's changes directly rather than through that
+tool): fleet choice is "six or five, six to start"; a fight sends both ships
+"to a planet" rather than "to a bay on the edge of the board"; the depleted-
+node paragraph says a planet, not a bay, gives power back; the Status
+paragraph replaces the fourteen-bays/one-planet-per-bay description with
+fourteen ordinary starting squares (giving nothing, protecting nothing) and
+twelve interior planets carrying a fresh random arrangement of drawings each
+game with real effects (no attack/no being attacked, one power a turn to a
+maximum of four); node counts moved from fifteen/eleven to twelve/eight
+throughout, and a line was added noting a node is never drawn on a planet or
+next to one. Final sweep:
+`grep -rniI "bay" src/ README.md doc/ruleset/ | grep -v 00000013-spaceship-bay-visual`
+returns only lines in `doc/ruleset/changelog.md` (both the 0.22 entry
+describing the rename and older historical entries), none in `src/` or
+`README.md`. All four standard checks pass (933 tests, typecheck, lint,
+format clean). No other deviation.
 
 Bring `README.md` up to date and sweep the repository's living documents. The
 README currently describes fourteen bays around the edge with a planet sitting
