@@ -338,12 +338,12 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     }
   });
 
-  // The pool is now a fixed 29 squares whose balance is settled by the
+  // The pool is now a fixed 51 squares whose balance is settled by the
   // planet geometry itself (planets.test.ts checks that geometry directly),
   // so this asserts the stronger, exact fact rather than a statistical
   // window on draws from an already-tested pool: over many deals, every one
-  // of the 29 legal squares is dealt at least once.
-  it("deals every one of the 29 legal squares at least once, over many deals", () => {
+  // of the 51 legal squares is dealt at least once.
+  it("deals every one of the 51 legal squares at least once, over many deals", () => {
     const DEALS = 3_000;
     const seenSquares = new Set<string>();
 

@@ -1,21 +1,36 @@
 import { describe, expect, it } from "vitest";
 import { PLANETS, isPlanet } from "./planets";
 import { COLUMN_LETTERS, type Square, squareAt, squareName } from "./board";
+import { startingFleet } from "./fleet";
 
 /** The named twelve, in the order rules.md §3.1 gives the six base squares and their rotations. */
 const EXPECTED_PLANET_NAMES = [
-  "E3",
-  "D7",
-  "F5",
-  "I4",
-  "J8",
-  "L5",
-  "K13",
-  "L9",
-  "J11",
-  "G12",
-  "F8",
-  "D11",
+  "B3",
+  "D6",
+  "G4",
+  "J2",
+  "K6",
+  "N4",
+  "N13",
+  "L10",
+  "I12",
+  "F14",
+  "E10",
+  "B12",
+];
+
+/**
+ * The six of the twelve that sit inside C3-M13, the interior the node draw
+ * uses. The other six sit in the two excluded edge rings, where a node can
+ * never appear regardless of §3.2's planet constraint.
+ */
+const PLANET_NAMES_INSIDE_NODE_INTERIOR = [
+  "D6",
+  "G4",
+  "K6",
+  "L10",
+  "I12",
+  "E10",
 ];
 
 /** The square a half-turn rotation of the board sends `square` to, computed independently of `planets.ts`'s own rotation. */
@@ -58,13 +73,31 @@ describe("planets", () => {
     }
   });
 
-  it("lies entirely inside C3-M13, the interior the node draw uses", () => {
+  it("has exactly six planets inside C3-M13, the interior the node draw uses, and six outside it", () => {
+    const isInsideNodeInterior = (square: Square): boolean => {
+      const columnIndex = COLUMN_LETTERS.indexOf(square.column);
+      return (
+        columnIndex >= COLUMN_LETTERS.indexOf("C") &&
+        columnIndex <= COLUMN_LETTERS.indexOf("M") &&
+        square.row >= 3 &&
+        square.row <= 13
+      );
+    };
+
+    const insideNames = PLANETS.filter(isInsideNodeInterior)
+      .map(squareName)
+      .sort();
+    expect(insideNames).toEqual([...PLANET_NAMES_INSIDE_NODE_INTERIOR].sort());
+  });
+
+  it("has none on a starting square", () => {
+    const startingSquareNames = new Set(
+      [...startingFleet(5), ...startingFleet(6)].map((entry) =>
+        squareName(entry.square),
+      ),
+    );
     for (const planet of PLANETS) {
-      const columnIndex = COLUMN_LETTERS.indexOf(planet.column);
-      expect(columnIndex).toBeGreaterThanOrEqual(COLUMN_LETTERS.indexOf("C"));
-      expect(columnIndex).toBeLessThanOrEqual(COLUMN_LETTERS.indexOf("M"));
-      expect(planet.row).toBeGreaterThanOrEqual(3);
-      expect(planet.row).toBeLessThanOrEqual(13);
+      expect(startingSquareNames.has(squareName(planet))).toBe(false);
     }
   });
 

@@ -279,14 +279,14 @@ describe("recovery — leaving a planet before it is full keeps what was recover
     // end-of-turn sequence the same move closes out, not from the move.
     const initial = buildState({
       ships: [
-        ship("green-1", "green", "F3", 0),
+        ship("green-1", "green", "C6", 0),
         ship("green-2", "green", "H8", 4),
         ship("red-1", "red", "K8", 4),
       ],
     });
 
     const afterArrival = moveAppliedOrThrow(
-      applyMove(initial, "green-1", squareFromName("E3")),
+      applyMove(initial, "green-1", squareFromName("D6")),
     );
     expect(
       endOfTurnEffects(afterArrival.effects).some(
@@ -317,7 +317,7 @@ describe("recovery — leaving a planet before it is full keeps what was recover
     // It is no longer standing on a planet when this same turn ends, so it
     // does not gain a further point in this call — it leaves with exactly
     // the 2 power it had recovered.
-    const destination = squareFromName("G3");
+    const destination = squareFromName("F6");
     const afterLeaving = moveAppliedOrThrow(
       applyMove(afterRedTurn2.state, "green-1", destination),
     );

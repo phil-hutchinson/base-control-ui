@@ -50,7 +50,7 @@ function isAdjacent(a: Square, b: Square): boolean {
 }
 
 describe("legalNodePool", () => {
-  it("is exactly the 29 legal squares on an empty board", () => {
+  it("is exactly the 51 legal squares on an empty board", () => {
     const pool = legalNodePool([], []);
 
     expect(pool.map(squareName).sort()).toEqual(
@@ -176,13 +176,13 @@ describe("legalNodePool", () => {
   });
 
   it("lets the fallback include a square adjacent to a planet, which the ordinary pool never would (D8)", () => {
-    // Occupying exactly the 29 ordinarily-legal squares leaves no square
+    // Occupying exactly the 51 ordinarily-legal squares leaves no square
     // that can pass every one of the six ordinary constraints, so the
-    // fallback fires. D8 is not itself one of the 29 — it borders the
-    // planet D7 — and is not a node here, so it shows up in the fallback,
+    // fallback fires. E5 is not itself one of the 51 — it borders the
+    // planet D6 — and is not a node here, so it shows up in the fallback,
     // pinning that the fallback's relaxation really does admit a
     // planet-adjacent square rather than merely planets themselves.
-    const target = squareAt("D", 8);
+    const target = squareAt("E", 5);
     expect(isPlanet(target)).toBe(false);
     expect(
       LEGAL_SQUARES_ON_EMPTY_BOARD.some(

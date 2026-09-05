@@ -28,8 +28,10 @@ What changes:
 - **The twelve drawings are dealt at random across the twelve squares** at
   the start of every game, from the game's own seed, so no two games look
   alike and a recorded game still redraws identically.
-- **A node never appears on a planet, or next to one.** Planets sit inside
-  the square the node draw uses, so §3.2 gains a sixth constraint.
+- **A node never appears on a planet, or next to one.** Some planets sit
+  inside the square the node draw uses and some do not (Step 9a moved the
+  geometry after this was first written), but either way §3.2 gains a sixth
+  constraint to guarantee it.
 - **The board carries twelve nodes, not fifteen.** This falls directly out
   of the constraint above and is explained under "The thing that follows"
   below. It is not a free choice.
@@ -53,52 +55,66 @@ not find-and-replaced.
 
 Six squares, plus the 180° rotation of those six:
 
-| Base     | E3  | D7  | F5  | I4  | J8  | L5  |
+| Base     | B3  | D6  | G4  | J2  | K6  | N4  |
 | -------- | --- | --- | --- | --- | --- | --- |
-| Rotation | K13 | L9  | J11 | G12 | F8  | D11 |
+| Rotation | N13 | L10 | I12 | F14 | E10 | B12 |
 
 ```
      A B C D E F G H I J K L M N O
  15  . . . S . . . S . . . S . . .
- 14  S . . . . . . . . . . . . . S
- 13  . . . . . . . . . . P . . . .
- 12  . . . . . . P . . . . . . . .
- 11  . . . P . . . . . P . . . . .
- 10  S . . . . . . . . . . . . . S
-  9  . . . . . . . . . . . P . . .
-  8  . . . . . P . . . P . . . . .
-  7  . . . P . . . . . . . . . . .
-  6  S . . . . . . . . . . . . . S
-  5  . . . . . P . . . . . P . . .
-  4  . . . . . . . . P . . . . . .
-  3  . . . . P . . . . . . . . . .
-  2  S . . . . . . . . . . . . . S
+ 14  S . . . . P . . . . . . . . S
+ 13  . . . . . . . . . . . . . P .
+ 12  . P . . . . . . . . . . . . .
+ 11  . . . . . . . . . . . . . . .
+ 10  S . . . P . . . . . . P . . S
+  9  . . . . . . . . . . . . . . .
+  8  . . . . . . . . . . . . . . .
+  7  . . . . . . . . . . . . . . .
+  6  S . . P . . . . . . P . . . S
+  5  . . . . . . . . . . . . . . .
+  4  . . . . . . P . . . . . . P .
+  3  . P . . . . . . . . . . . . .
+  2  S . . . . . . . . P . . . . S
   1  . . . S . . . S . . . S . . .
 
 P  planet          S  a starting square (fleet size decides which are used)
 ```
 
-Three properties of this arrangement, all verified:
+Two properties of this arrangement, both verified:
 
 - **It is symmetric under a half-turn, and not under a mirror.** Each
   player's half of the board is exactly the rotation of the other's, which
   is the same fairness the starting layouts already have (§4) — so neither
   side begins nearer better ground.
-- **No two planets are adjacent**, orthogonally or diagonally.
-- **All twelve sit inside C3–M13**, the interior the node draw uses. That
-  is the whole reason §3.2 has to change.
+- **No two planets are adjacent**, orthogonally or diagonally, and none sits
+  on a starting square.
+
+A third property held for the geometry this story was first written against
+and does **not** hold here: **six of the twelve sit outside C3–M13** (B3, J2,
+N4, N13, F14 and B12), in the two excluded edge rings where a node can never
+appear regardless. Only the other six — D6, G4, K6, L10, I12, E10 — are ones
+§3.2's planet constraint actually bites on. That is why the arithmetic in the
+next section was re-measured rather than carried over.
+
+**Where these came from.** Steps 1–8 were written and implemented against a
+tighter ring — base squares E3, D7, F5, I4, J8, L5 with rotations K13, L9,
+J11, G12, F8, D11. Having seen it on the running board the owner moved the
+planets twice and settled here, and Step 9a re-sited them. The original set
+is recorded because the node-count arithmetic below was decided against it,
+and because Steps 6 and 7's commit messages quote its figures.
 
 ### The thing that follows, and is not bookkeeping
 
 **Twelve planets with a one-square buffer cost the node pool three nodes.**
-The interior C3–M13 is 121 squares. Removing the twelve planets and their
-eight neighbours each leaves **29** legal squares, of which at most
-seventeen are mutually non-adjacent. Fifteen non-adjacent nodes technically
-fit, but the deal draws them one at a time from a shrinking pool and, in
-simulation, exhausts it and drops into §3.2's fallback on **about 36% of
-games**. The fallback places nodes on the board's edge and beside one
-another; making it the common case would be a worse outcome than any rule
-this story adds.
+_(Figures below are as originally measured, against the original geometry
+above — superseded by Step 9a's re-measurement, which follows.)_ The interior
+C3–M13 is 121 squares. Removing the twelve planets and their eight
+neighbours each leaves **29** legal squares, of which at most seventeen are
+mutually non-adjacent. Fifteen non-adjacent nodes technically fit, but the
+deal draws them one at a time from a shrinking pool and, in simulation,
+exhausts it and drops into §3.2's fallback on **about 36% of games**. The
+fallback places nodes on the board's edge and beside one another; making it
+the common case would be a worse outcome than any rule this story adds.
 
 Fallback rate against node count, 4,000 dealt games each:
 
@@ -109,6 +125,18 @@ Fallback rate against node count, 4,000 dealt games each:
 **So `NODE_COUNT` goes from fifteen to twelve.** The owner's decision, taken
 knowing the alternatives (a graded relaxation of §3.2, or dropping the
 buffer and excluding only the planet square itself).
+
+**Re-measured against the settled geometry (Step 9a).** Six of the twelve
+planets now sit outside the node interior, so the buffer costs less: the
+legal pool grows to **51** squares, of which up to **eighteen** are mutually
+non-adjacent — up from 29 and seventeen. The pool is larger but more
+scattered, so the owner's decision stands unchanged: fifteen nodes would
+still fall back often, and `NODE_COUNT` stays at twelve. Fallback rate by
+node count, 3,000 dealt games each, board otherwise empty: 12 → 0.00%,
+13 → 0.13%, 14 → 3.20%, 15 → 21.47%; with all twelve ships scattered through
+the interior: 12 → 0.00%, 13 → 1.13%, 14 → 8.03%, 15 → 32.27%. At twelve
+nodes the fallback was not observed at all — a stronger guarantee than the
+original geometry's "rare".
 
 The pool arithmetic that follows, against the unchanged target of four
 charged nodes: a node lives about 20 turns charged and about 10 depleted, so
@@ -354,7 +382,9 @@ rather than paid.
 ### 8. The tests
 
 - **`bays.test.ts` → `planets.test.ts`** — twelve squares, the half-turn
-  symmetry, no two adjacent, all inside C3–M13, and `isPlanet`.
+  symmetry, no two adjacent, none on a starting square, and `isPlanet`. (Step
+  9a's settled geometry has six of the twelve inside C3–M13 and six outside
+  it, so "all inside C3–M13" no longer holds and is not asserted.)
 - **`nodePlacement.test.ts`** — no legal square is a planet or adjacent to
   one; the pool is non-empty for a realistic board; the fallback still
   excludes planets; a long run of deals and replacements completes without
@@ -412,12 +442,15 @@ rather than paid.
 
 ## Verification
 
-- `RULES_VERSION` agrees with `rules.md` at 0.22, and the changelog has an
-  entry. No section of `rules.md` uses the word "bay", and none describes a
-  seven-ship fleet.
-- The twelve planets are exactly E3, D7, F5, I4, J8, L5, K13, L9, J11, G12,
-  F8, D11; the set is unchanged by a half-turn rotation; no two are
-  adjacent; all twelve are inside C3–M13.
+- `RULES_VERSION` agrees with `rules.md` at 0.23 (0.22 for the rename and the
+  move into the interior, 0.23 for Step 9a's re-siting), and the changelog
+  has an entry for each. No section of `rules.md` uses the word "bay", and
+  none describes a seven-ship fleet.
+- The twelve planets are exactly B3, D6, G4, J2, K6, N4, N13, L10, I12, F14,
+  E10, B12 (Step 9a's settled geometry, superseding the E3/D7/F5/I4/J8/L5 set
+  above); the set is unchanged by a half-turn rotation; no two are adjacent;
+  six of the twelve (D6, G4, K6, L10, I12, E10) are inside C3–M13, and six
+  are not.
 - A ship on a planet cannot attack and cannot be attacked, and gains one
   power at the end of its owner's turn to the maximum of 4 — as a bay did.
 - A ship on a starting square has none of those properties.

@@ -9,12 +9,12 @@ import { COLUMN_LETTERS, type Square, squareAt, squareName } from "./board";
  * each of these rotated a half-turn around the board's centre.
  */
 const BASE_PLANET_SQUARES: readonly Square[] = [
-  squareAt("E", 3),
-  squareAt("D", 7),
-  squareAt("F", 5),
-  squareAt("I", 4),
-  squareAt("J", 8),
-  squareAt("L", 5),
+  squareAt("B", 3),
+  squareAt("D", 6),
+  squareAt("G", 4),
+  squareAt("J", 2),
+  squareAt("K", 6),
+  squareAt("N", 4),
 ];
 
 /**

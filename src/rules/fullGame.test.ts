@@ -584,7 +584,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     // excluded, at most eight other ships can occupy a planet, so at least
     // four of the twelve are free — the tightest a five-ship game's own
     // §7.1 arithmetic ever gets.
-    const emptyPlanetNames = ["G12", "F8", "D11", "L5"];
+    const emptyPlanetNames = PLANETS.slice(0, 4).map(squareName);
     const state: GameState = {
       ships: [
         ...shipsFillingPlanetsExcept(emptyPlanetNames),
@@ -635,7 +635,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     // excluded, at most ten other ships can occupy a planet, so exactly two
     // of the twelve are free — the tightest §7.1's arithmetic ever gets,
     // and the reason seven-a-side (fourteen ships) is gone.
-    const emptyPlanetNames = ["G12", "F8"];
+    const emptyPlanetNames = PLANETS.slice(0, 2).map(squareName);
     const state: GameState = {
       ships: [
         ...shipsFillingPlanetsExcept(emptyPlanetNames),

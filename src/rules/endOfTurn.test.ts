@@ -3,6 +3,7 @@ import { squareFromName, squareName, type Square } from "./board";
 import { runEndOfTurn, type NodeReplacedEffect } from "./endOfTurn";
 import type { ShipId } from "./fleet";
 import { legalNodePool } from "./nodePlacement";
+import { PLANETS } from "./planets";
 import {
   type GameState,
   type Ship,
@@ -209,10 +210,12 @@ describe("runEndOfTurn — step 1, the power gain (§4.1)", () => {
 });
 
 describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
+  const PLANET_SQUARE_NAME = squareName(PLANETS[0]);
+
   it("gains a point of power for a ship standing on a planet at the end of its owner's turn", () => {
     const state = buildState({
       sideToMove: "green",
-      ships: [ship("green-1", "green", "E3", 2)],
+      ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 2)],
     });
 
     const result = runEndOfTurn(state);
@@ -222,7 +225,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       type: "power-gained",
       shipId: "green-1",
       side: "green",
-      square: squareFromName("E3"),
+      square: squareFromName(PLANET_SQUARE_NAME),
       power: 3,
     });
   });
@@ -230,7 +233,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
   it("leaves a ship already at 4 power on a planet at 4 and raises no effect for it", () => {
     const state = buildState({
       sideToMove: "green",
-      ships: [ship("green-1", "green", "E3", 4)],
+      ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 4)],
     });
 
     const result = runEndOfTurn(state);
@@ -244,7 +247,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
   it("collects and pays no energy for a ship recovering on a planet", () => {
     const state = buildState({
       sideToMove: "green",
-      ships: [ship("green-1", "green", "E3", 2)],
+      ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 2)],
     });
 
     const result = runEndOfTurn(state);
@@ -261,7 +264,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
   it("gains nothing for a ship of the other side sitting on a planet this turn", () => {
     const state = buildState({
       sideToMove: "green",
-      ships: [ship("red-1", "red", "E3", 2)],
+      ships: [ship("red-1", "red", PLANET_SQUARE_NAME, 2)],
     });
 
     const result = runEndOfTurn(state);
@@ -277,7 +280,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       sideToMove: "green",
       nodes: { H8: ["charged", 1] },
       ships: [
-        ship("green-1", "green", "E3", 2),
+        ship("green-1", "green", PLANET_SQUARE_NAME, 2),
         ship("green-2", "green", "H8", 3),
       ],
     });
@@ -288,7 +291,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       type: "power-gained",
       shipId: "green-1",
       side: "green",
-      square: squareFromName("E3"),
+      square: squareFromName(PLANET_SQUARE_NAME),
       power: 3,
     });
     expect(result.effects).toContainEqual({
@@ -581,21 +584,21 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
   });
 
   it("lets a later replacement in the same sequence land on the square an earlier retirement just vacated", () => {
-    // Seed 18420, found by search: M3 (board order's first of the two)
-    // retires and is replaced at J6, then H8 retires and is replaced at M3
-    // itself — the square M3's own retirement just freed. Only the square a
-    // node's own retirement vacates is excluded from that node's own draw; a
+    // Seed 6, found by search: D3 (board order's first of the two) retires
+    // and is replaced at J8, then H8 retires and is replaced at D3 itself —
+    // the square D3's own retirement just freed. Only the square a node's
+    // own retirement vacates is excluded from that node's own draw; a
     // square freed earlier in the same sequence is not excluded from a
     // later one.
     const state = buildState({
       nodes: {
-        M3: ["depleted", 4],
+        D3: ["depleted", 4],
         H8: ["depleted", 4],
-        F2: ["charged", 1],
-        J2: ["charged", 1],
-        B4: ["charged", 1],
+        K12: ["charged", 1],
+        K13: ["charged", 1],
+        M6: ["charged", 1],
       },
-      randomSeed: 18420,
+      randomSeed: 6,
     });
 
     const result = runEndOfTurn(state);
@@ -605,10 +608,10 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
     );
     expect(
       replacements.map((effect) => squareName(effect.retiredSquare)),
-    ).toEqual(["M3", "H8"]);
-    expect(squareName(replacements[0].newSquare)).toBe("J6");
-    expect(squareName(replacements[1].newSquare)).toBe("M3");
-    expect(result.state.nodes.M3.state).toBe("inactive");
+    ).toEqual(["D3", "H8"]);
+    expect(squareName(replacements[0].newSquare)).toBe("J8");
+    expect(squareName(replacements[1].newSquare)).toBe("D3");
+    expect(result.state.nodes.D3.state).toBe("inactive");
     expect(result.state.nodes.H8).toBeUndefined();
   });
 

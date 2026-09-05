@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.22**
+**Rules version: 0.23**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -82,9 +82,9 @@ bottom-left corner.
 Twelve squares in the board's interior are **planets** — six base squares
 plus their 180-degree rotation about the board's centre:
 
-| Base     | E3  | D7  | F5  | I4  | J8  | L5  |
+| Base     | B3  | D6  | G4  | J2  | K6  | N4  |
 | -------- | --- | --- | --- | --- | --- | --- |
-| Rotation | K13 | L9  | J11 | G12 | F8  | D11 |
+| Rotation | N13 | L10 | I12 | F14 | E10 | B12 |
 
 Each player's half of the board carries exactly the rotation of the other's
 planets, so neither side begins nearer better ground.
@@ -111,19 +111,19 @@ the game runs (section 3.2):
 ```
      A B C D E F G H I J K L M N O
  15  . . . S . . . S . . . S . . .
- 14  S . . . . . . . . . . . . . S
- 13  . . . . . . . . . . P . . . .
- 12  . . . . . . P . . . . . . . .
- 11  . . . P . . . . . P . . . . .
- 10  S . . . . . . . . . . . . . S
-  9  . . . . . . . . . . . P . . .
-  8  . . . . . P . . . P . . . . .
-  7  . . . P . . . . . . . . . . .
-  6  S . . . . . . . . . . . . . S
-  5  . . . . . P . . . . . P . . .
-  4  . . . . . . . . P . . . . . .
-  3  . . . . P . . . . . . . . . .
-  2  S . . . . . . . . . . . . . S
+ 14  S . . . . P . . . . . . . . S
+ 13  . . . . . . . . . . . . . P .
+ 12  . P . . . . . . . . . . . . .
+ 11  . . . . . . . . . . . . . . .
+ 10  S . . . P . . . . . . P . . S
+  9  . . . . . . . . . . . . . . .
+  8  . . . . . . . . . . . . . . .
+  7  . . . . . . . . . . . . . . .
+  6  S . . P . . . . . . P . . . S
+  5  . . . . . . . . . . . . . . .
+  4  . . . . . . P . . . . . . P .
+  3  . P . . . . . . . . . . . . .
+  2  S . . . . . . . . P . . . . S
   1  . . . S . . . S . . . S . . .
 
 P  planet          S  a starting square (fleet size decides which are used)
@@ -148,19 +148,20 @@ A square is a legal place for a new node when **all** of these hold:
 6. it is not a planet, and is not orthogonally or diagonally adjacent to a
    planet (section 3.1).
 
-Constraints 3 and 4 leave the 11 × 11 interior **C3–M13** — 121 squares.
-Constraint 6 removes the twelve planets and their neighbours from that
-interior, leaving **29** legal squares, of which twelve mutually
-non-adjacent nodes fit with room to spare.
+Constraints 3 and 4 leave the 11 × 11 interior **C3–M13** — 121 squares. Six
+of the twelve planets fall inside that interior; constraint 6 removes those
+six and their neighbours, leaving **51** legal squares, of which up to
+eighteen mutually non-adjacent nodes fit with room to spare.
 
 **The fallback.** If no square satisfies all six constraints, the new node
 is placed uniformly among the squares that hold no node and are not a
 planet. This is the whole of the relaxation, applied all at once rather than
 one constraint dropped at a time, and it exists so that placement can never
-fail. It is rare, not impossible: the opening deal falls back on about 0.2%
-of games with the board otherwise empty, and about 2% in the worst case
-where all twelve ships are scattered through the interior blocking squares
-of their own; a mid-game replacement falls back on well under 1% of draws.
+fail. At twelve nodes it was not observed to fire even once in simulation —
+neither at the opening deal, with the board otherwise empty or with all
+twelve ships scattered through the interior blocking squares of their own,
+nor at a mid-game replacement — so it is better read as the guarantee that
+placement always succeeds than as something a player should expect to see.
 
 **A replacement never appears on the square the node it replaces just
 left.** The retiring node's own square is excluded from the draw, so a node
@@ -655,11 +656,13 @@ These counts — twelve nodes, four charged, eight inactive at the deal — are
 first guesses to be play-tested and retuned like every other number in this
 document.
 
-Section 3.2's fallback, which places a node without regard to spacing, is
-rare rather than impossible: it is reached on about 0.2% of opening deals
-with the board otherwise empty, about 2% in the worst case where all twelve
-ships are scattered through the interior, and well under 1% of mid-game
-replacements.
+Section 3.2's fallback, which places a node without regard to spacing, was
+not observed to fire at all at twelve nodes — not at the opening deal, and
+not at a mid-game replacement. It stays in the rules because it is what
+makes placement total, not because it is expected. It is the first thing
+that would start firing if the node count rose against this pool: fifteen
+nodes would reach it on roughly a fifth of deals, and a third of them with
+every ship scattered through the interior.
 
 The app guards this with a test that the inactive pool stays comfortably
 populated over a long run, that expiries stay spread rather than arriving

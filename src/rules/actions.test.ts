@@ -75,17 +75,17 @@ describe("sideToMoveHasLegalAction", () => {
   });
 
   it("is false with neither a legal move nor a legal target", () => {
-    // green-1 is on the E3 planet, so §3.1 forbids it to attack regardless
+    // green-1 is on the D6 planet, so §3.1 forbids it to attack regardless
     // of what stands next to it, and every square it could otherwise reach —
-    // D3, F3, E2 and E4, its four orthogonal neighbours, its only reach at
+    // C6, E6, D5 and D7, its four orthogonal neighbours, its only reach at
     // 0 power — is occupied.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "E3", 0),
-        ship("red-1", "red", "D3"),
-        ship("red-2", "red", "F3"),
-        ship("red-3", "red", "E2"),
-        ship("red-4", "red", "E4"),
+        ship("green-1", "green", "D6", 0),
+        ship("red-1", "red", "C6"),
+        ship("red-2", "red", "E6"),
+        ship("red-3", "red", "D5"),
+        ship("red-4", "red", "D7"),
       ],
     });
 

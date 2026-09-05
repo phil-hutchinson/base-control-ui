@@ -63,10 +63,10 @@ const TEST_SEED = 1;
  */
 const STATED_NODE_STATES: Readonly<Record<string, NodeStatus>> = {
   F2: { state: "inactive", level: 1 },
-  J2: { state: "inactive", level: 1 },
+  J3: { state: "inactive", level: 1 },
   B4: { state: "inactive", level: 1 },
   H4: { state: "inactive", level: 1 },
-  N4: { state: "inactive", level: 1 },
+  N5: { state: "inactive", level: 1 },
   E5: { state: "charged", level: 0 },
   K5: { state: "charged", level: 0 },
   D8: { state: "inactive", level: 1 },
@@ -74,10 +74,10 @@ const STATED_NODE_STATES: Readonly<Record<string, NodeStatus>> = {
   L8: { state: "inactive", level: 1 },
   E11: { state: "charged", level: 0 },
   K11: { state: "charged", level: 0 },
-  B12: { state: "inactive", level: 1 },
+  B11: { state: "inactive", level: 1 },
   H12: { state: "inactive", level: 1 },
   N12: { state: "inactive", level: 1 },
-  F14: { state: "inactive", level: 1 },
+  F13: { state: "inactive", level: 1 },
   J14: { state: "inactive", level: 1 },
 };
 
@@ -129,19 +129,19 @@ describe("Board", () => {
     // its own expectations. No ship starts on a planet (rules.md §3.1, §4),
     // so every planet's name here is bare.
     expect(
-      screen.getByRole("gridcell", { name: "E3, planet" }),
+      screen.getByRole("gridcell", { name: "B3, planet" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("gridcell", { name: "D7, planet" }),
+      screen.getByRole("gridcell", { name: "D6, planet" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("gridcell", { name: "I4, planet" }),
+      screen.getByRole("gridcell", { name: "G4, planet" }),
     ).toBeInTheDocument();
 
     // A representative sample of the remaining planets, built the production
     // way rather than as a literal, so a change to `squareLabel` is still
     // caught.
-    for (const square of [squareAt("G", 12), squareAt("L", 9)]) {
+    for (const square of [squareAt("J", 2), squareAt("K", 6)]) {
       const label = squareLabel({
         square,
         isPlanet: true,

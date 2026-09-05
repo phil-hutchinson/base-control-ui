@@ -48,6 +48,17 @@ only `story.md`, this plan and their own step.
 These were computed and verified during planning. They are stated here so no
 step has to rediscover them.
 
+**Superseded by Step 9a.** Everything in this section, up to and including
+the "owner decision" paragraph about the quadrant-share assertion, was
+measured against the planet geometry Steps 1–8 were implemented and committed
+against (E3, D7, F5, I4, J8, L5 and their rotations). Step 9a records the
+owner's later decision to move the planets again, to the geometry now in
+`src/rules/planets.ts` (B3, D6, G4, J2, K6, N4 and their rotations), with its
+own re-measured figures in Step 9a's own section below. The figures below are
+kept, unedited, because Steps 6 and 7's commit messages quote them — they no
+longer describe the shipped geometry and must not be re-derived from or
+mistaken for it.
+
 **The twelve planet squares** are six base squares plus their 180-degree
 rotations (a rotation maps column _c_ to the column the same distance from the
 other end, and row _r_ to `16 - r`):
@@ -92,7 +103,8 @@ deleted, not widened.** The pool is now a fixed 29 squares whose balance is
 settled by the planet geometry itself, and Step 7 tests that geometry
 directly (half-turn symmetry, mutual non-adjacency). A statistical window on
 draws from a fixed, already-tested pool adds nothing and would only be a
-tripwire on a re-measured constant.
+tripwire on a re-measured constant. This deletion stands: Step 9a's larger,
+more scattered pool has no quadrant-share assertion to revive either.
 
 ---
 
@@ -917,7 +929,52 @@ Then the four standard checks.
 
 ### Step 9a — Re-site the planets, and reconcile the documents
 
-Status: pending
+Status: committed
+
+Notes: The step's premise ("`src/rules/planets.ts` already carries them") did
+not hold when this step began — the file still had the Step 7 geometry
+(E3, D7, F5, I4, J8, L5 and rotations), and `git log` showed the prior commit
+touched only this plan file. Made that edit myself as the first act of this
+step, since without it there was nothing to reconcile the rest of the
+repository against; the resulting red suite (30 tests across 12 files, close
+to the ~28/ten estimate) confirmed the geometry change was the sole cause.
+Rebuilt 13 of those fixtures (`combat.test.ts`, `endOfTurn.test.ts`,
+`fullGame.test.ts`, `ply.test.ts`, `recovery.test.ts`, `actions.test.ts`,
+`session.test.ts`, `announcements.test.ts`, `Board.test.tsx`,
+`nodePlacement.test.ts`, `nodePool.test.ts`, `nodes.test.ts`,
+`openingBoard.test.ts`), deriving squares from `PLANETS` wherever a fixture
+did not need a specific named square (`combat.ts`'s `drawReturnPlanet` suite,
+`fullGame.test.ts`'s tight-return tests, several `ply.test.ts` cases), and
+naming specific squares with a comment explaining the adjacency they needed
+where derivation wasn't enough (the four "boxed onto a planet" fixtures in
+`ply.test.ts`/`actions.test.ts`/`session.test.ts`, and a hand-searched seed
+for `endOfTurn.test.ts`'s "replacement lands on the square an earlier
+retirement vacated" case, since D3/H8/J8 replaced the no-longer-legal
+M3/H8/J6 the old seed produced). `nodePool.test.ts`'s "every legal square
+seen" test needed a longer per-seed run (1,000 plies instead of 500, paid
+only in that one test) because the new 51-square pool is more scattered than
+the old 29 and one square (I9) went unseen at the shared `PLIES_TO_RUN`.
+Rewrote `planets.test.ts` per the step's instruction: the C3-M13 assertion
+is replaced with an exact six-inside/six-outside check plus a
+none-on-a-starting-square check, rather than deleted outright. Rewrote
+`rules.md` §3.1's table/diagram and §3.2's pool arithmetic and fallback
+wording to 0.23, with a changelog entry, and bumped `RULES_VERSION`;
+left Appendix B's duplicate fallback-rarity figures untouched, since the
+step's own scope line ("no rule, no count, no table" — nothing outside
+§3.1/§3.2) explicitly excludes it, though this leaves it stating the
+superseded 0.2%/2%/under-1% figures rather than the new "not observed at
+all" result — flagged for the owner rather than fixed unilaterally. Updated
+`story.md`'s squares tables, diagram, "three properties" list, fallback-rate
+table and "thing that follows" arithmetic by adding the settled-geometry
+figures alongside the original ones under explicit "superseded" headings,
+per the instruction to mark rather than silently overwrite, and corrected
+two overlooked claims elsewhere in `story.md` that all twelve planets lie
+inside C3-M13 (once in the Summary's node-constraint bullet, once in the
+Step 8-test bullet), since the top-level instruction said this false claim
+must not survive anywhere. Marked this plan's own "Facts established while
+planning" section as superseded with a pointer to this step, rather than
+editing its figures in place, since Steps 6 and 7's own Notes quote them.
+All four standard checks pass (933 tests, typecheck, lint, format clean).
 
 Added after Step 8, at the owner's direction. Having seen the twelve planets
 on the running board, the owner moved them twice and settled on a different

@@ -488,22 +488,22 @@ describe("createSession", () => {
   });
 
   it("runs the pass guard once, so a stuck starting position passes immediately", () => {
-    // green-1 is on the E3 planet, at full power: all eight of its
+    // green-1 is on the D6 planet, at full power: all eight of its
     // immediate neighbours are occupied, which blocks every move — the
     // shorter ones by leaving no empty destination, the longer ones by
     // blocking the path a step out — and §3.1 forbids it to attack from a
     // planet regardless.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "E3"),
-        ship("red-1", "red", "D2"),
-        ship("red-2", "red", "D3"),
-        ship("red-3", "red", "D4"),
-        ship("red-4", "red", "E2"),
-        ship("red-5", "red", "E4"),
-        ship("red-6", "red", "F2"),
-        ship("red-7", "red", "F3"),
-        ship("red-8", "red", "F4"),
+        ship("green-1", "green", "D6"),
+        ship("red-1", "red", "C5"),
+        ship("red-2", "red", "C6"),
+        ship("red-3", "red", "C7"),
+        ship("red-4", "red", "D5"),
+        ship("red-5", "red", "D7"),
+        ship("red-6", "red", "E5"),
+        ship("red-7", "red", "E6"),
+        ship("red-8", "red", "E7"),
       ],
     });
 

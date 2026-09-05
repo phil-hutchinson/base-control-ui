@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PLANETS, isPlanet } from "./planets";
-import { type Square, squareFromName, squareName } from "./board";
+import { type Square, squareAt, squareFromName, squareName } from "./board";
 import {
   attackReach,
   attackRefusalReason,
@@ -56,6 +56,25 @@ function buildState(config: {
 
 function squareNames(squares: readonly Square[]) {
   return squares.map((square) => squareName(square)).sort();
+}
+
+/**
+ * An orthogonal neighbour of `square` that is not itself a planet — derived
+ * rather than named, so the test using it survives the planet geometry
+ * moving again.
+ */
+function orthogonalNonPlanetNeighbourOf(square: Square): Square {
+  const candidates = [
+    squareAt(square.column, square.row + 1),
+    squareAt(square.column, square.row - 1),
+  ];
+  const neighbour = candidates.find((candidate) => !isPlanet(candidate));
+  if (!neighbour) {
+    throw new Error(
+      `no non-planet orthogonal neighbour found for ${squareName(square)}`,
+    );
+  }
+  return neighbour;
 }
 
 describe("attackReach", () => {
@@ -211,22 +230,32 @@ describe("attackRefusalReason / legalTargets", () => {
   });
 
   it("refuses an attacker standing on a planet", () => {
+    const planet = PLANETS[0];
+    const neighbour = orthogonalNonPlanetNeighbourOf(planet);
     const state = buildState({
-      ships: [ship("green-1", "green", "E3", 2), ship("red-1", "red", "E4", 4)],
+      ships: [
+        ship("green-1", "green", squareName(planet), 2),
+        ship("red-1", "red", squareName(neighbour), 4),
+      ],
     });
 
-    expect(attackRefusalReason(state, "green-1", squareFromName("E4"))).toBe(
+    expect(attackRefusalReason(state, "green-1", neighbour)).toBe(
       "attacker-on-planet",
     );
     expect(legalTargets(state, "green-1")).toEqual([]);
   });
 
   it("refuses a target standing on a planet, distinguishably from the attacker's own", () => {
+    const planet = PLANETS[0];
+    const neighbour = orthogonalNonPlanetNeighbourOf(planet);
     const state = buildState({
-      ships: [ship("green-1", "green", "E4", 2), ship("red-1", "red", "E3", 4)],
+      ships: [
+        ship("green-1", "green", squareName(neighbour), 2),
+        ship("red-1", "red", squareName(planet), 4),
+      ],
     });
 
-    expect(attackRefusalReason(state, "green-1", squareFromName("E3"))).toBe(
+    expect(attackRefusalReason(state, "green-1", planet)).toBe(
       "target-on-planet",
     );
   });
@@ -414,15 +443,22 @@ describe("attackRefusalReason and legalTargets once the game is over", () => {
 });
 
 describe("drawReturnPlanet", () => {
+  const [FIRST_PLANET_NAME, SECOND_PLANET_NAME, THIRD_PLANET_NAME] =
+    PLANETS.map(squareName);
+
   it("always draws a planet that was empty in the state drawn against", () => {
     const state = buildState({
       ships: [
-        ship("red-1", "red", "E3", 4),
-        ship("red-2", "red", "D7", 4),
-        ship("red-3", "red", "F5", 4),
+        ship("red-1", "red", FIRST_PLANET_NAME, 4),
+        ship("red-2", "red", SECOND_PLANET_NAME, 4),
+        ship("red-3", "red", THIRD_PLANET_NAME, 4),
       ],
     });
-    const occupied = new Set(["E3", "D7", "F5"]);
+    const occupied = new Set([
+      FIRST_PLANET_NAME,
+      SECOND_PLANET_NAME,
+      THIRD_PLANET_NAME,
+    ]);
 
     for (let seed = 0; seed < 200; seed++) {
       const [planet] = drawReturnPlanet({ ...state, randomSeed: seed });
@@ -433,7 +469,7 @@ describe("drawReturnPlanet", () => {
 
   it("gives the one empty planet for every seed when every other planet is occupied", () => {
     const occupiedPlanets = PLANETS.filter(
-      (square) => squareName(square) !== "E3",
+      (square) => squareName(square) !== FIRST_PLANET_NAME,
     );
     const state = buildState({
       ships: occupiedPlanets.map((square, index) =>
@@ -443,13 +479,13 @@ describe("drawReturnPlanet", () => {
 
     for (let seed = 0; seed < 50; seed++) {
       const [planet] = drawReturnPlanet({ ...state, randomSeed: seed });
-      expect(squareName(planet)).toBe("E3");
+      expect(squareName(planet)).toBe(FIRST_PLANET_NAME);
     }
   });
 
   it("gives the same planet for the same seed", () => {
     const state = buildState({
-      ships: [ship("red-1", "red", "E3", 4)],
+      ships: [ship("red-1", "red", FIRST_PLANET_NAME, 4)],
     });
 
     const [firstPlanet, firstNextSeed] = drawReturnPlanet(state);
@@ -470,13 +506,13 @@ describe("drawReturnPlanet", () => {
 
   it("is live: moving a ship off a planet changes the answer", () => {
     const occupiedState = buildState({
-      ships: [ship("red-1", "red", "E3", 4)],
+      ships: [ship("red-1", "red", FIRST_PLANET_NAME, 4)],
     });
     const [occupiedPlanet] = drawReturnPlanet(occupiedState);
-    expect(squareName(occupiedPlanet)).not.toBe("E3");
+    expect(squareName(occupiedPlanet)).not.toBe(FIRST_PLANET_NAME);
 
     const otherOccupiedPlanets = PLANETS.filter(
-      (square) => squareName(square) !== "E3",
+      (square) => squareName(square) !== FIRST_PLANET_NAME,
     );
     const fullyVacatedExceptOne: GameState = {
       ...occupiedState,
@@ -488,7 +524,7 @@ describe("drawReturnPlanet", () => {
       ],
     };
     const [vacatedPlanet] = drawReturnPlanet(fullyVacatedExceptOne);
-    expect(squareName(vacatedPlanet)).toBe("E3");
+    expect(squareName(vacatedPlanet)).toBe(FIRST_PLANET_NAME);
   });
 
   it("throws naming §7.1 when every planet is occupied", () => {
@@ -502,7 +538,7 @@ describe("drawReturnPlanet", () => {
   });
 
   it("spreads draws over chained seeds across every empty planet, never an occupied one", () => {
-    const occupiedPlanets = new Set(["E3", "D7", "F5", "I4", "J8"]);
+    const occupiedPlanets = new Set(PLANETS.slice(0, 5).map(squareName));
     const state = buildState({
       ships: [...occupiedPlanets].map((name, index) =>
         ship(`red-${index}`, "red", name, 4),

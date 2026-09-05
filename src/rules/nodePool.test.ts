@@ -402,19 +402,26 @@ describe("the long-run node economy (Appendix B)", () => {
     expect(meanInactive).toBeLessThan(8);
   });
 
-  // The pool is now a fixed 29 squares whose balance is settled by the
+  // The pool is now a fixed 51 squares whose balance is settled by the
   // planet geometry itself (planets.test.ts checks that geometry directly),
   // so this asserts the stronger, exact fact rather than a statistical
   // window on draws from an already-tested pool: over a long run, every one
-  // of the 29 legal squares is used at least once, either at the deal or as
+  // of the 51 legal squares is used at least once, either at the deal or as
   // a replacement. The fallback (§3.2) can occasionally hand back a square
-  // outside those 29 — one adjacent to a planet, say — so this checks that
-  // every one of the 29 was reached, not that nothing else ever was.
-  it("reaches every one of the 29 legal squares, over a long run", () => {
+  // outside those 51 — one adjacent to a planet, say — so this checks that
+  // every one of the 51 was reached, not that nothing else ever was.
+  //
+  // The 51-square pool is more scattered than the old 29 were, so
+  // `PLIES_TO_RUN`'s 500 turns leaves one or two squares unseen across
+  // `SEEDS` (measured: I9 missing at 500 turns); a longer run of 1,000 turns
+  // per seed reaches all 51. That extra length is paid only here, not by
+  // raising `PLIES_TO_RUN` for every test in this file.
+  it("reaches every one of the 51 legal squares, over a long run", () => {
+    const PLIES_FOR_FULL_COVERAGE = 1000;
     const seenSquares = new Set<string>();
 
     for (const seed of SEEDS) {
-      const run = runEconomy(seed, PLIES_TO_RUN);
+      const run = runEconomy(seed, PLIES_FOR_FULL_COVERAGE);
       for (const name of allOccupiedSquareNames(run)) {
         seenSquares.add(name);
       }
