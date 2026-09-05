@@ -53,9 +53,9 @@ not find-and-replaced.
 
 Six squares, plus the 180° rotation of those six:
 
-| Base | E3 | D7 | F5 | I4 | J8 | L5 |
-| ---- | -- | -- | -- | -- | -- | -- |
-| Rotation | K13 | L9 | J11 | G12 | F8 | D11 |
+| Base     | E3  | D7  | F5  | I4  | J8  | L5  |
+| -------- | --- | --- | --- | --- | --- | --- |
+| Rotation | K13 | L9  | J11 | G12 | F8  | D11 |
 
 ```
      A B C D E F G H I J K L M N O
@@ -102,9 +102,9 @@ this story adds.
 
 Fallback rate against node count, 4,000 dealt games each:
 
-| Nodes | 11 | 12 | 13 | 14 | 15 |
-| ----- | -- | -- | -- | -- | -- |
-| Deals falling back | 0% | 0.3% | 1.7% | 11% | 36% |
+| Nodes              | 11  | 12   | 13   | 14  | 15  |
+| ------------------ | --- | ---- | ---- | --- | --- |
+| Deals falling back | 0%  | 0.3% | 1.7% | 11% | 36% |
 
 **So `NODE_COUNT` goes from fifteen to twelve.** The owner's decision, taken
 knowing the alternatives (a graded relaxation of §3.2, or dropping the
@@ -197,10 +197,10 @@ reversed; with seven gone, both definitions dangle and both tables are
 written out in full instead. The squares and colours themselves do not
 change:
 
-| Fleet | Green | Red |
-| ----- | ----- | --- |
-| Six a side | O14, O6, D1, L1, A14, A6 | D15, L15, O10, O2, A10, A2 |
-| Five a side | H15, O10, A10, D1, L1 | D15, L15, O6, A6, H1 |
+| Fleet       | Green                    | Red                        |
+| ----------- | ------------------------ | -------------------------- |
+| Six a side  | O14, O6, D1, L1, A14, A6 | D15, L15, O10, O2, A10, A2 |
+| Five a side | H15, O10, A10, D1, L1    | D15, L15, O6, A6, H1       |
 
 Both layouts remain exact half-turn rotations of one another; that paragraph
 survives, restated without reference to a seven-ship game. The paragraph
