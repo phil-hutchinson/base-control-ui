@@ -196,10 +196,13 @@
    and a cap, rather than a flat length: the mirrored clock region charges
    the window's long axis a second `P + g`, so an unbounded `P` would push
    the board under `--board-floor` on an ordinary window as it grew with the
-   type it carries. The widest thing in the column is the five-pip row, which
-   draws about `0.77P` across (`ScoreDisplay.css`), narrowly ahead of the
-   title and the turn indicator's longest wording at roughly `0.72P` each.
-   Those are widths; the fractions each rule sets below are font sizes. */
+   type it carries. A four-pip row draws about `0.61P` across
+   (`ScoreDisplay.css`), so the widest things in the column are now the
+   title and the turn indicator's longest wording, at roughly `0.72P` each.
+   `--region-extent` itself is not re-derived for this: the column got
+   narrower content, not wider, so no layout breaks, and taking `P` down to
+   match is a visual retune for a visual story, not this one. Those are
+   widths; the fractions each rule sets below are font sizes. */
 @media (orientation: landscape) {
   :root {
     --window-short: 100vh;

@@ -699,7 +699,28 @@ had to change.
 
 ### Step 6 — Four pips a row, from the constants, and the sizing comments corrected
 
-Status: pending
+Status: committed
+
+Notes: Deleted the local `NODES_IN_PLAY = 5` in `src/hud/ScoreDisplay.tsx`
+and sized the charged pip row from `TARGET_CHARGED_NODES` (imported from
+`src/rules/nodes.ts`); the depleted row is unchanged, still reading
+`MAX_DEPLETED_NODES_PRICED`, per D2. Kept `SCORE_DIGITS` at 4 and rewrote
+its comment per D9: the ceiling is 10 a turn, the longest game (90 rounds)
+tops out around 900, and four digits stays for the arcade readout's fixed
+width. Corrected the two sizing comments in prose only, per S2:
+`ScoreDisplay.css`'s note that the digits' font-size "makes the five-pip
+row the widest thing in the column" now points to `App.css` for what is
+widest instead of naming a row that no longer exists; `App.css`'s
+landscape sizing note now says a four-pip row draws about `0.61P`, that the
+title and turn indicator's longest wording (`~0.72P` each) are now the
+widest things in the column, and explicitly that `--region-extent` is not
+re-derived because the column got narrower content, not wider — no other
+length in the file was touched. Updated `ScoreDisplay.test.tsx`'s one
+remaining "five pips" test (title and `toHaveLength`) to four; the two
+depleted-pip tests the plan's bullet also named were already renamed and
+re-counted in Step 4, and were left untouched here as the plan instructs.
+`npm run typecheck`, `npm run lint`, `npm test` (938 tests, all passing)
+and `npm run format:check` all pass. No deviation from the plan.
 
 In `src/hud/ScoreDisplay.tsx`:
 

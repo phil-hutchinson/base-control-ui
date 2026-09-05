@@ -100,14 +100,14 @@ describe("ScoreDisplay", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders five pips, none lit when the side holds no charged node", () => {
+  it("renders four pips, none lit when the side holds no charged node", () => {
     const state = buildState({});
 
     const { container } = render(
       <ScoreDisplay state={state} side="green" displayedTotal={0} />,
     );
 
-    expect(container.querySelectorAll(".score-display__pip")).toHaveLength(5);
+    expect(container.querySelectorAll(".score-display__pip")).toHaveLength(4);
     expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
       0,
     );

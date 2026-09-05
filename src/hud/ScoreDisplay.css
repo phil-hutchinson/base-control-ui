@@ -96,8 +96,8 @@
   /* The pip rows are otherwise unscaled, sized off the inherited root font
      rather than the digits above them. Giving them the digits' own
      font-size lets their existing `0.6em` diameter and `0.35em` gap scale
-     with it, which keeps the cell proportionate and makes the five-pip row
-     the widest thing in the column (see `App.css`). */
+     with it, which keeps the cell proportionate (see `App.css` for what is
+     now the widest thing in the column). */
   .score-display__pips,
   .score-display__depleted-pips {
     font-size: calc(var(--region-extent) * 0.175);
