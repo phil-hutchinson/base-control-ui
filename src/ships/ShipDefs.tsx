@@ -292,7 +292,7 @@ export function ShipDefs() {
             opacity="0.85"
           />
 
-          {/* engine-bay panel lines + green conduits, splaying with the flare */}
+          {/* engine panel lines + green conduits, splaying with the flare */}
           <g stroke="#7c858b" strokeWidth="0.5" opacity="0.6">
             <line x1="43" y1="79" x2="41.5" y2="97" />
             <line x1="57" y1="79" x2="58.5" y2="97" />

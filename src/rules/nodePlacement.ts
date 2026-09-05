@@ -10,7 +10,7 @@ import {
   type Square,
   squareName,
 } from "./board";
-import { isBay } from "./bays";
+import { isPlanet } from "./planets";
 import { drawIndex } from "./random";
 
 /**
@@ -68,10 +68,11 @@ function isAdjacentToAnyNode(
  *    node.
  *
  * If nothing qualifies, the pool falls back to every square that holds no
- * node and is not a bay — the whole relaxation at once, not one constraint
- * dropped at a time — still honouring the excluded square. If even that is
- * empty, throws a `RangeError` naming the situation, rather than returning
- * an empty pool for `drawNodeSquare` to fail on with a generic message.
+ * node and is not a planet — the whole relaxation at once, not one
+ * constraint dropped at a time — still honouring the excluded square. If
+ * even that is empty, throws a `RangeError` naming the situation, rather
+ * than returning an empty pool for `drawNodeSquare` to fail on with a
+ * generic message.
  */
 export function legalNodePool(
   occupiedNodeSquares: readonly Square[],
@@ -99,12 +100,12 @@ export function legalNodePool(
 
   const fallback = ALL_SQUARES.filter((square) => {
     const name = squareName(square);
-    return name !== excludedName && !nodeNames.has(name) && !isBay(square);
+    return name !== excludedName && !nodeNames.has(name) && !isPlanet(square);
   });
 
   if (fallback.length === 0) {
     throw new RangeError(
-      "legalNodePool: no square is available for a new node — every square that is not a bay already holds one",
+      "legalNodePool: no square is available for a new node — every square that is not a planet already holds one",
     );
   }
 

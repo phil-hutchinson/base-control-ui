@@ -4,50 +4,52 @@ import { squareLabel } from "./squareLabel";
 
 describe("squareLabel", () => {
   it("names an ordinary empty square by its square name alone", () => {
-    expect(squareLabel({ square: squareAt("H", 8), isBay: false })).toBe("H8");
-  });
-
-  it("adds 'bay' for an empty bay", () => {
-    expect(squareLabel({ square: squareAt("D", 15), isBay: true })).toBe(
-      "D15, bay",
+    expect(squareLabel({ square: squareAt("H", 8), isPlanet: false })).toBe(
+      "H8",
     );
   });
 
-  it("names an occupied bay for the green side, stating zero power", () => {
+  it("adds 'planet' for an empty planet", () => {
+    expect(squareLabel({ square: squareAt("D", 15), isPlanet: true })).toBe(
+      "D15, planet",
+    );
+  });
+
+  it("names an occupied planet for the green side, stating zero power", () => {
     expect(
       squareLabel({
         square: squareAt("H", 15),
-        isBay: true,
+        isPlanet: true,
         occupant: { side: "green", power: 0 },
       }),
-    ).toBe("H15, bay, green ship, power 0 of 4");
+    ).toBe("H15, planet, green ship, power 0 of 4");
   });
 
   it("reads the same shape at any power level", () => {
     expect(
       squareLabel({
         square: squareAt("L", 15),
-        isBay: true,
+        isPlanet: true,
         occupant: { side: "red", power: 1 },
       }),
-    ).toBe("L15, bay, red ship, power 1 of 4");
+    ).toBe("L15, planet, red ship, power 1 of 4");
   });
 
   it("reads the same shape at a middle level", () => {
     expect(
       squareLabel({
         square: squareAt("D", 15),
-        isBay: true,
+        isPlanet: true,
         occupant: { side: "red", power: 3 },
       }),
-    ).toBe("D15, bay, red ship, power 3 of 4");
+    ).toBe("D15, planet, red ship, power 3 of 4");
   });
 
   it("names an occupied ordinary square, for completeness of the contract", () => {
     expect(
       squareLabel({
         square: squareAt("H", 8),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "green", power: 4 },
       }),
     ).toBe("H8, green ship, power 4 of 4");
@@ -57,21 +59,21 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("E", 5),
-        isBay: false,
+        isPlanet: false,
         nodeState: "inactive",
       }),
     ).toBe("E5, inactive node");
     expect(
       squareLabel({
         square: squareAt("H", 8),
-        isBay: false,
+        isPlanet: false,
         nodeState: "charged",
       }),
     ).toBe("H8, charged node");
     expect(
       squareLabel({
         square: squareAt("H", 4),
-        isBay: false,
+        isPlanet: false,
         nodeState: "depleted",
       }),
     ).toBe("H4, depleted node");
@@ -81,7 +83,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("H", 8),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "green", power: 0 },
       }),
     ).toBe("H8, green ship, power 0 of 4");
@@ -91,7 +93,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("G", 7),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "green", power: 0 },
         mark: "selected",
       }),
@@ -102,7 +104,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "green", power: 4 },
         hasActed: true,
       }),
@@ -113,7 +115,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "green", power: 4 },
         hasActed: false,
       }),
@@ -124,7 +126,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "green", power: 4 },
         hasActed: true,
         condition: "no-action",
@@ -138,7 +140,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "green", power: 4 },
         condition: "no-action",
       }),
@@ -149,7 +151,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "green", power: 4 },
         condition: "no-action",
         mark: "selected",
@@ -163,7 +165,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "green", power: 2 },
         hasActed: true,
         condition: "no-action",
@@ -178,7 +180,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("H", 8),
-        isBay: false,
+        isPlanet: false,
         nodeState: "charged",
         mark: "destination",
       }),
@@ -189,32 +191,32 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("G", 7),
-        isBay: false,
+        isPlanet: false,
         mark: "destination",
       }),
     ).toBe("G7, can move here");
   });
 
-  it("adds 'can move here' last, on an empty bay", () => {
+  it("adds 'can move here' last, on an empty planet", () => {
     expect(
       squareLabel({
         square: squareAt("D", 15),
-        isBay: true,
+        isPlanet: true,
         mark: "destination",
       }),
-    ).toBe("D15, bay, can move here");
+    ).toBe("D15, planet, can move here");
   });
 
   it("names the one target outcome, last, after the power level", () => {
     expect(
       squareLabel({
         square: squareAt("H", 9),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "red", power: 1 },
         mark: "target",
       }),
     ).toBe(
-      "H9, red ship, power 1 of 4, can attack here, both ships would return to bays",
+      "H9, red ship, power 1 of 4, can attack here, both ships would return to planets",
     );
   });
 
@@ -222,12 +224,12 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("H", 9),
-        isBay: false,
+        isPlanet: false,
         occupant: { side: "red", power: 4 },
         mark: "target",
       }),
     ).toBe(
-      "H9, red ship, power 4 of 4, can attack here, both ships would return to bays",
+      "H9, red ship, power 4 of 4, can attack here, both ships would return to planets",
     );
   });
 
@@ -235,7 +237,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("H", 8),
-        isBay: false,
+        isPlanet: false,
         nodeState: "charged",
         occupant: { side: "green", power: 2 },
       }),
@@ -243,7 +245,7 @@ describe("squareLabel", () => {
     expect(
       squareLabel({
         square: squareAt("H", 4),
-        isBay: false,
+        isPlanet: false,
         nodeState: "depleted",
         occupant: { side: "red", power: 0 },
       }),

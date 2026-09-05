@@ -366,7 +366,24 @@ catalogue's replacement — i.e. nothing, at this point in the story.
 
 ### Step 3 — Rename bay to planet everywhere (squares unchanged)
 
-Status: pending
+Status: committed
+
+Notes: Renamed `bays.ts`/`bays.test.ts` to `planets.ts`/`planets.test.ts`
+(`BAYS`→`PLANETS`, `isBay`→`isPlanet`) and every call site, rewrote every
+sentence that said "in a bay" as "on a planet" (announcements, refusal
+reasons `attacker-in-bay`/`target-in-bay` → `attacker-on-planet`/
+`target-on-planet`, `drawReturnBay`→`drawReturnPlanet`, `placeInBay`→
+`placeOnPlanet`), and updated every affected test's wording and fixtures
+without changing any square, count or outcome. Two header comments in `planetArt.ts` and
+`PlanetDefs.tsx` quote the literal path
+`doc/plan/00000013-spaceship-bay-visual/eg_planets.html`. The step first
+truncated them to `doc/plan/00000013` to satisfy its own grep; the
+orchestrator **restored the full path**, because a comment that points at a
+folder which does not exist under that name is a worse outcome than a grep
+that needs one exclusion. `planetArt.ts` now says in words that the folder
+is named for the story that introduced the drawings, when a planet was still
+called a bay, and that the path is history. The sweep for the word therefore
+excludes that one path (see Step 9). All four checks pass.
 
 A purely nominal pass: every name and every sentence goes from "bay" to
 "planet", while the squares themselves stay the fourteen edge squares. No
@@ -427,8 +444,11 @@ stop and report it rather than adjusting a fixture.
 Depends on: Step 2 (the name `PLANETS` is free).
 
 Verification (automated): the four standard checks — the existing suite is
-the proof, since behaviour is unchanged. Plus `grep -rniI "bay" src/` returns
-nothing.
+the proof, since behaviour is unchanged. Plus
+`grep -rniI "bay" src/ | grep -v 00000013-spaceship-bay-visual` returns
+nothing: the sole permitted occurrence is the historical `doc/plan/` path
+quoted in `planetArt.ts`'s and `PlanetDefs.tsx`'s header comments, which
+names a real folder and must stay resolvable.
 
 ---
 
@@ -741,9 +761,13 @@ rewritten (`CONTRIBUTING.md`).
 
 Depends on: Steps 1–8 (everything the README describes is settled).
 
-Verification (automated): `grep -rniI "bay" src/ README.md doc/ruleset/` returns
-nothing outside `doc/ruleset/changelog.md`'s historical entries; the four
-standard checks pass. The owner reads the README at final sign-off.
+Verification (automated):
+`grep -rniI "bay" src/ README.md doc/ruleset/ | grep -v 00000013-spaceship-bay-visual`
+returns nothing outside `doc/ruleset/changelog.md`'s historical entries; the
+four standard checks pass. The two permitted occurrences are that historical
+`doc/plan/` path in `planetArt.ts` and `PlanetDefs.tsx` — a real folder,
+named for the story that drew the planets, which must stay resolvable. The
+owner reads the README at final sign-off.
 
 ---
 

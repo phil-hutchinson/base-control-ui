@@ -12,7 +12,7 @@ import {
   squareFromName,
   squareName,
 } from "./board";
-import { BAYS } from "./bays";
+import { PLANETS } from "./planets";
 import { legalTargets } from "./combat";
 import { DEFAULT_FLEET_SIZE, type FleetSize, type ShipId } from "./fleet";
 import { gameResult, isGameOver, pliesForGameLength } from "./gameLength";
@@ -347,14 +347,15 @@ function ship(id: ShipId, side: "green" | "red", square: string): Ship {
 }
 
 /**
- * A ship parked on every bay except those named in `emptyBayNames`, so a
- * return draw's pool (`drawReturnBay`, rules.md §7.1) is exactly those bays.
+ * A ship parked on every planet except those named in `emptyPlanetNames`, so
+ * a return draw's pool (`drawReturnPlanet`, rules.md §7.1) is exactly those
+ * planets.
  */
-function shipsFillingBaysExcept(
-  emptyBayNames: readonly string[],
+function shipsFillingPlanetsExcept(
+  emptyPlanetNames: readonly string[],
 ): readonly Ship[] {
-  return BAYS.filter(
-    (square) => !emptyBayNames.includes(squareName(square)),
+  return PLANETS.filter(
+    (square) => !emptyPlanetNames.includes(squareName(square)),
   ).map((square, index) =>
     ship(`filler-${index}` as ShipId, "red", squareName(square)),
   );
@@ -529,19 +530,21 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
 
   it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, and lets a ship move into one of them", () => {
     const state = startingGameState(20260819, 30, 5);
-    const occupiedBayNames = new Set(
+    const occupiedPlanetNames = new Set(
       state.ships
         .map((s) => squareName(s.square))
-        .filter((name) => BAYS.some((bay) => squareName(bay) === name)),
+        .filter((name) =>
+          PLANETS.some((planet) => squareName(planet) === name),
+        ),
     );
 
-    expect(occupiedBayNames.has("H15")).toBe(true);
-    for (const emptyBay of ["O14", "O2", "A14", "A2"]) {
-      expect(occupiedBayNames.has(emptyBay)).toBe(false);
+    expect(occupiedPlanetNames.has("H15")).toBe(true);
+    for (const emptyPlanet of ["O14", "O2", "A14", "A2"]) {
+      expect(occupiedPlanetNames.has(emptyPlanet)).toBe(false);
     }
 
     // green-1 (H15 at the start of a five-ship game) relocated within reach
-    // of O14, one of the bays that started empty: it is an ordinary
+    // of O14, one of the planets that started empty: it is an ordinary
     // destination like any other.
     const nearO14: GameState = {
       ...state,
@@ -556,19 +559,21 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
 
   it("starts a six-ship game with L15 occupied and H15, H1 empty, and lets a ship move into one of them", () => {
     const state = startingGameState(20260819, 30, 6);
-    const occupiedBayNames = new Set(
+    const occupiedPlanetNames = new Set(
       state.ships
         .map((s) => squareName(s.square))
-        .filter((name) => BAYS.some((bay) => squareName(bay) === name)),
+        .filter((name) =>
+          PLANETS.some((planet) => squareName(planet) === name),
+        ),
     );
 
-    expect(occupiedBayNames.has("L15")).toBe(true);
-    for (const emptyBay of ["H15", "H1"]) {
-      expect(occupiedBayNames.has(emptyBay)).toBe(false);
+    expect(occupiedPlanetNames.has("L15")).toBe(true);
+    for (const emptyPlanet of ["H15", "H1"]) {
+      expect(occupiedPlanetNames.has(emptyPlanet)).toBe(false);
     }
 
     // green-1 (O14 at the start of a six-ship game) relocated within reach
-    // of H15, one of the two bays that started empty.
+    // of H15, one of the two planets that started empty.
     const nearH15: GameState = {
       ...state,
       ships: state.ships.map((s) =>
@@ -580,11 +585,11 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     );
   });
 
-  it("draws both fighting ships' returns only from the bays empty at the start, in a five-ship game", () => {
-    const emptyBayNames = ["O14", "O2", "A14", "A2"];
+  it("draws both fighting ships' returns only from the planets empty at the start, in a five-ship game", () => {
+    const emptyPlanetNames = ["O14", "O2", "A14", "A2"];
     const state: GameState = {
       ships: [
-        ...shipsFillingBaysExcept(emptyBayNames),
+        ...shipsFillingPlanetsExcept(emptyPlanetNames),
         ship("green-1", "green", "H8"),
         ship("red-1", "red", "H9"),
       ],
@@ -613,24 +618,24 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     ) {
       throw new Error("expected a fight-resolved effect");
     }
-    // Both ships were on the board and not in a bay, so exactly two bays
-    // are free — §7.1's "there is always somewhere to go", in its two-ship
-    // form.
+    // Both ships were on the board and not on a planet, so exactly two
+    // planets are free — §7.1's "there is always somewhere to go", in its
+    // two-ship form.
     expect(fightResolved.returns).toHaveLength(2);
-    const returnedBayNames = fightResolved.returns.map((entry) =>
+    const returnedPlanetNames = fightResolved.returns.map((entry) =>
       squareName(entry.to),
     );
-    for (const bayName of returnedBayNames) {
-      expect(emptyBayNames).toContain(bayName);
+    for (const planetName of returnedPlanetNames) {
+      expect(emptyPlanetNames).toContain(planetName);
     }
-    expect(new Set(returnedBayNames).size).toBe(2);
+    expect(new Set(returnedPlanetNames).size).toBe(2);
   });
 
-  it("draws both fighting ships' returns only from the bays empty at the start, in a six-ship game", () => {
-    const emptyBayNames = ["H15", "H1"];
+  it("draws both fighting ships' returns only from the planets empty at the start, in a six-ship game", () => {
+    const emptyPlanetNames = ["H15", "H1"];
     const state: GameState = {
       ships: [
-        ...shipsFillingBaysExcept(emptyBayNames),
+        ...shipsFillingPlanetsExcept(emptyPlanetNames),
         ship("green-1", "green", "H8"),
         ship("red-1", "red", "H9"),
       ],
@@ -659,12 +664,13 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     ) {
       throw new Error("expected a fight-resolved effect");
     }
-    // Exactly two bays are free, and this fight's two ships must fill both.
+    // Exactly two planets are free, and this fight's two ships must fill
+    // both.
     expect(fightResolved.returns).toHaveLength(2);
-    const returnedBayNames = fightResolved.returns.map((entry) =>
+    const returnedPlanetNames = fightResolved.returns.map((entry) =>
       squareName(entry.to),
     );
-    expect(new Set(returnedBayNames)).toEqual(new Set(emptyBayNames));
+    expect(new Set(returnedPlanetNames)).toEqual(new Set(emptyPlanetNames));
   });
 
   it("settles a five-ship game with no throw when a side occupies five depleted nodes (regression for energy.ts's ships-per-side bound)", () => {

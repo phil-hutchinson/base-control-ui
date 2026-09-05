@@ -6,7 +6,7 @@
 import { useCallback, useMemo } from "react";
 import { GAME_NAME } from "../gameName";
 import { BOARD_SIZE, squareName } from "../rules/board";
-import { isBay } from "../rules/bays";
+import { isPlanet } from "../rules/planets";
 import { shipHasLegalAction } from "../rules/actions";
 import { legalTargets } from "../rules/combat";
 import { shipsBySquare, nodeStatusAt, type Ship } from "../rules/gameState";
@@ -99,7 +99,7 @@ export function Board({ session, onIntent }: BoardProps) {
           column: columnIndex,
         });
         const name = squareName(square);
-        const bay = isBay(square);
+        const planetSquare = isPlanet(square);
         const planet = planetForSquare(square);
         const nodeStatus = nodeStatusAt(session.state, square);
         const nodeState = nodeStatus?.state;
@@ -125,7 +125,7 @@ export function Board({ session, onIntent }: BoardProps) {
         return {
           content: (
             <BoardSquare
-              isBay={bay}
+              isPlanet={planetSquare}
               squareName={name}
               planet={planet}
               nodeState={nodeState}
@@ -138,7 +138,7 @@ export function Board({ session, onIntent }: BoardProps) {
           ),
           label: squareLabel({
             square,
-            isBay: bay,
+            isPlanet: planetSquare,
             nodeState,
             occupant,
             hasActed,

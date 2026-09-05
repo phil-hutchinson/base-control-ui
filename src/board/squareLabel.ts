@@ -1,11 +1,12 @@
 // The wording of a square's accessible name: comma-separated segments, the
-// square name first, then "bay" or "<state> node" if the square is one of
+// square name first, then "planet" or "<state> node" if the square is one of
 // those, then which side's ship (if any) stands there, then that ship's
 // power level, then whether it has already acted this ply, then its
 // condition (no action available), then last of all a mark saying that the
 // square is selected, a legal destination, or a legal attack target. A
-// square is never both a bay and a node, so the two share one slot. Having
-// acted, the condition and the mark are three separately optional fields,
+// square is never both a planet and a node — the node draw excludes planets
+// (rules.md §3.2) — so the two share one slot. Having acted, the condition
+// and the mark are three separately optional fields,
 // each computed on its own: a ship that has not yet acted can still carry
 // the no-action condition (a pinned ship, selectable but fruitless), and
 // the mark reflects the current selection or highlight independently of
@@ -43,7 +44,7 @@ export type SquareMark = "selected" | "destination" | "target";
 const MARK_WORDING: Record<SquareMark, string> = {
   selected: "selected",
   destination: "can move here",
-  target: "can attack here, both ships would return to bays",
+  target: "can attack here, both ships would return to planets",
 };
 
 /** How having acted this ply reads in a square's accessible name. */
@@ -64,7 +65,7 @@ const CONDITION_WORDING: Record<ShipCondition, string> = {
 /** The information a square's accessible name is built from. */
 export interface SquareLabelDescriptor {
   readonly square: Square;
-  readonly isBay: boolean;
+  readonly isPlanet: boolean;
   readonly nodeState?: NodeState;
   readonly occupant?: SquareOccupant;
   readonly hasActed?: boolean;
@@ -72,10 +73,10 @@ export interface SquareLabelDescriptor {
   readonly mark?: SquareMark;
 }
 
-/** Builds a square's accessible name from its name, bay/node status, occupant, having acted, condition and mark. */
+/** Builds a square's accessible name from its name, planet/node status, occupant, having acted, condition and mark. */
 export function squareLabel({
   square,
-  isBay,
+  isPlanet,
   nodeState,
   occupant,
   hasActed,
@@ -83,8 +84,8 @@ export function squareLabel({
   mark,
 }: SquareLabelDescriptor): string {
   const segments = [squareName(square)];
-  if (isBay) {
-    segments.push("bay");
+  if (isPlanet) {
+    segments.push("planet");
   } else if (nodeState) {
     segments.push(`${nodeState} node`);
   }

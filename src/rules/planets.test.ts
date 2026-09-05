@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BAYS, isBay } from "./bays";
+import { PLANETS, isPlanet } from "./planets";
 import {
   COLUMN_LETTERS,
   type Square,
@@ -34,32 +34,32 @@ function perimeterRing(): Square[] {
   return ring;
 }
 
-describe("bays", () => {
-  it("has exactly fourteen bays", () => {
-    expect(BAYS).toHaveLength(14);
+describe("planets", () => {
+  it("has exactly fourteen planets", () => {
+    expect(PLANETS).toHaveLength(14);
   });
 
   it("lies entirely on the outer edge", () => {
-    for (const bay of BAYS) {
+    for (const planet of PLANETS) {
       const onEdge =
-        bay.column === "A" ||
-        bay.column === "O" ||
-        bay.row === 1 ||
-        bay.row === 15;
+        planet.column === "A" ||
+        planet.column === "O" ||
+        planet.row === 1 ||
+        planet.row === 15;
       expect(onEdge).toBe(true);
     }
   });
 
   it("contains no corner", () => {
     const corners = new Set(["A1", "A15", "O1", "O15"]);
-    for (const bay of BAYS) {
-      expect(corners.has(squareName(bay))).toBe(false);
+    for (const planet of PLANETS) {
+      expect(corners.has(squareName(planet))).toBe(false);
     }
   });
 
-  it("has every bay on the board", () => {
-    for (const bay of BAYS) {
-      expect(isOnBoard(bay.column, bay.row)).toBe(true);
+  it("has every planet on the board", () => {
+    for (const planet of PLANETS) {
+      expect(isOnBoard(planet.column, planet.row)).toBe(true);
     }
   });
 
@@ -68,25 +68,27 @@ describe("bays", () => {
     expect(ring).toHaveLength(56);
 
     const ringNames = ring.map(squareName);
-    const bayIndices = BAYS.map((bay) => {
-      const index = ringNames.indexOf(squareName(bay));
+    const planetIndices = PLANETS.map((planet) => {
+      const index = ringNames.indexOf(squareName(planet));
       expect(index).toBeGreaterThanOrEqual(0);
       return index;
     }).sort((a, b) => a - b);
 
-    for (let i = 1; i < bayIndices.length; i++) {
-      expect(bayIndices[i] - bayIndices[i - 1]).toBe(4);
+    for (let i = 1; i < planetIndices.length; i++) {
+      expect(planetIndices[i] - planetIndices[i - 1]).toBe(4);
     }
-    // The gap wrapping from the last bay back to the first is also four.
-    expect(56 - bayIndices[bayIndices.length - 1] + bayIndices[0]).toBe(4);
+    // The gap wrapping from the last planet back to the first is also four.
+    expect(
+      56 - planetIndices[planetIndices.length - 1] + planetIndices[0],
+    ).toBe(4);
   });
 
-  it("matches isBay for every bay and rejects a sample of non-bay squares", () => {
-    for (const bay of BAYS) {
-      expect(isBay(bay)).toBe(true);
+  it("matches isPlanet for every planet and rejects a sample of non-planet squares", () => {
+    for (const planet of PLANETS) {
+      expect(isPlanet(planet)).toBe(true);
     }
-    expect(isBay(squareAt("A", 1))).toBe(false);
-    expect(isBay(squareAt("H", 8))).toBe(false);
-    expect(isBay(squareAt("O", 15))).toBe(false);
+    expect(isPlanet(squareAt("A", 1))).toBe(false);
+    expect(isPlanet(squareAt("H", 8))).toBe(false);
+    expect(isPlanet(squareAt("O", 15))).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isBay } from "./bays";
+import { isPlanet } from "./planets";
 import { ALL_SQUARES, type Square, squareAt, squareName } from "./board";
 import { drawNodeSquare, legalNodePool } from "./nodePlacement";
 import { mulberry32 } from "./random";
@@ -94,14 +94,14 @@ describe("legalNodePool", () => {
     expect(pool.map(squareName)).not.toContain(squareName(excluded));
   });
 
-  it("falls back to every non-bay, unoccupied square when the ordinary pool is empty, dropping the ship and ring constraints", () => {
+  it("falls back to every non-planet, unoccupied square when the ordinary pool is empty, dropping the ship and ring constraints", () => {
     // A node on every one of the 121 interior squares leaves no square
     // satisfying all five constraints, so the fallback must fire.
     const nodes = interiorSquares();
     const nodeNames = new Set(nodes.map(squareName));
-    // A ship standing on a non-bay square outside the interior — under the
-    // ordinary constraints this square would be doubly excluded (a ship on
-    // it, and it is one square in from the edge), so its presence in the
+    // A ship standing on a non-planet square outside the interior — under
+    // the ordinary constraints this square would be doubly excluded (a ship
+    // on it, and it is one square in from the edge), so its presence in the
     // fallback pool shows the fallback really drops those constraints
     // rather than just having room left over from the node exclusion.
     const shipSquare = squareAt("B", 8);
@@ -110,7 +110,7 @@ describe("legalNodePool", () => {
     expect(pool.length).toBeGreaterThan(0);
     for (const square of pool) {
       expect(nodeNames.has(squareName(square))).toBe(false);
-      expect(isBay(square)).toBe(false);
+      expect(isPlanet(square)).toBe(false);
     }
     expect(pool.map(squareName)).toContain(squareName(shipSquare));
     // The draw's uniformity over the pool is covered by the spread tests
@@ -119,9 +119,9 @@ describe("legalNodePool", () => {
   });
 
   it("throws a RangeError when even the fallback pool is empty", () => {
-    const nonBaySquares = ALL_SQUARES.filter((square) => !isBay(square));
+    const nonPlanetSquares = ALL_SQUARES.filter((square) => !isPlanet(square));
 
-    expect(() => legalNodePool(nonBaySquares, [])).toThrow(RangeError);
+    expect(() => legalNodePool(nonPlanetSquares, [])).toThrow(RangeError);
   });
 });
 

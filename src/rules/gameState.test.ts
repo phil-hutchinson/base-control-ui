@@ -111,7 +111,7 @@ describe("startingGameState", () => {
     }
   });
 
-  it("finds a ship on each of the fourteen bay squares and none on an ordinary square", () => {
+  it("finds a ship on each of the fourteen planet squares and none on an ordinary square", () => {
     const state = startingGameState(SEED);
     const index = shipsBySquare(state);
 

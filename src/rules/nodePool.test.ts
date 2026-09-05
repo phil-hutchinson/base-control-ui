@@ -27,7 +27,7 @@
 
 import { describe, expect, it } from "vitest";
 import { COLUMN_LETTERS, type Square, squareName } from "./board";
-import { isBay } from "./bays";
+import { isPlanet } from "./planets";
 import { runEndOfTurn } from "./endOfTurn";
 import {
   type GameState,
@@ -109,7 +109,7 @@ interface Replacement {
 
 interface EconomySample {
   readonly nodeCount: number;
-  readonly nodesOnBays: number;
+  readonly nodesOnPlanets: number;
   readonly charged: number;
   readonly inactive: number;
   readonly depleted: number;
@@ -149,7 +149,7 @@ function runEconomy(seed: number, plies: number): EconomyRun {
     const result = runEndOfTurn(state);
     samples.push({
       nodeCount: nodeSquares(result.state).length,
-      nodesOnBays: nodeSquares(result.state).filter(isBay).length,
+      nodesOnPlanets: nodeSquares(result.state).filter(isPlanet).length,
       charged: countInState(result.state, "charged"),
       inactive: countInState(result.state, "inactive"),
       depleted: countInState(result.state, "depleted"),
@@ -248,13 +248,13 @@ function quadrantOf(
 
 describe("the long-run node economy (Appendix B)", () => {
   it.each(SEEDS)(
-    "holds exactly fifteen nodes at every turn, none of them on a bay (seed %d)",
+    "holds exactly fifteen nodes at every turn, none of them on a planet (seed %d)",
     (seed) => {
       const { samples } = runEconomy(seed, PLIES_TO_RUN);
 
       samples.forEach((sample, i) => {
         expect(sample.nodeCount, `ply ${i}`).toBe(NODE_COUNT);
-        expect(sample.nodesOnBays, `ply ${i}`).toBe(0);
+        expect(sample.nodesOnPlanets, `ply ${i}`).toBe(0);
       });
     },
   );
@@ -299,9 +299,10 @@ describe("the long-run node economy (Appendix B)", () => {
             ),
             `ply ${i}: replacement for ${squareName(retiredSquare)} at ${squareName(newSquare)}`,
           ).toBe(true);
-          expect(isBay(newSquare), `ply ${i}: ${squareName(newSquare)}`).toBe(
-            false,
-          );
+          expect(
+            isPlanet(newSquare),
+            `ply ${i}: ${squareName(newSquare)}`,
+          ).toBe(false);
           boardSquares = [...boardSquares, newSquare];
         }
       });

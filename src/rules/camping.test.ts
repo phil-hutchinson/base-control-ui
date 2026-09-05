@@ -10,7 +10,7 @@
 // directly, so this proves the same thing a player's turn would.
 
 import { describe, expect, it } from "vitest";
-import { isBay } from "./bays";
+import { isPlanet } from "./planets";
 import { squareFromName, squareName } from "./board";
 import { attackRefusalReason, legalTargets } from "./combat";
 import type { NodeReplacedEffect } from "./endOfTurn";
@@ -779,8 +779,8 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
     );
     expect(camperAfterFight?.power).toBe(4);
     expect(enemyAfterFight?.power).toBe(4);
-    expect(isBay(camperAfterFight!.square)).toBe(true);
-    expect(isBay(enemyAfterFight!.square)).toBe(true);
+    expect(isPlanet(camperAfterFight!.square)).toBe(true);
+    expect(isPlanet(enemyAfterFight!.square)).toBe(true);
     const occupiedSquareNames = attackResult.state.ships.map((candidate) =>
       squareName(candidate.square),
     );

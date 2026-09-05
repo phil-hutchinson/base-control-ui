@@ -13,28 +13,30 @@ afterEach(cleanup);
 
 describe("BoardSquare", () => {
   it("renders neither a node marker nor a ship on a plain empty square", () => {
-    const { container } = render(<BoardSquare isBay={false} squareName="H8" />);
+    const { container } = render(
+      <BoardSquare isPlanet={false} squareName="H8" />,
+    );
 
     expect(container.querySelector(".node-marker")).toBeNull();
     expect(container.querySelector(".ship-model")).toBeNull();
   });
 
-  it("draws the bay modifier class only when the square is a bay", () => {
-    const { container: bay } = render(
-      <BoardSquare isBay={true} squareName="C7" />,
+  it("draws the planet modifier class only when the square is a planet", () => {
+    const { container: planet } = render(
+      <BoardSquare isPlanet={true} squareName="C7" />,
     );
     const { container: plain } = render(
-      <BoardSquare isBay={false} squareName="H8" />,
+      <BoardSquare isPlanet={false} squareName="H8" />,
     );
 
-    expect(bay.querySelector(".board-square--bay")).toBeInTheDocument();
-    expect(plain.querySelector(".board-square--bay")).toBeNull();
+    expect(planet.querySelector(".board-square--planet")).toBeInTheDocument();
+    expect(plain.querySelector(".board-square--planet")).toBeNull();
   });
 
   it("draws the node marker beneath the ship when a square holds both", () => {
     const { container } = render(
       <BoardSquare
-        isBay={false}
+        isPlanet={false}
         squareName="H8"
         nodeState="charged"
         occupant={{ side: "green", power: 2 }}
@@ -58,10 +60,10 @@ describe("BoardSquare", () => {
 
   it("renders no planet when none is given, and renders one, aria-hidden, when it is", () => {
     const { container: bare } = render(
-      <BoardSquare isBay={false} squareName="H8" />,
+      <BoardSquare isPlanet={false} squareName="H8" />,
     );
     const { container: withPlanet } = render(
-      <BoardSquare isBay={true} squareName="D15" planet={SAMPLE_PLANET} />,
+      <BoardSquare isPlanet={true} squareName="D15" planet={SAMPLE_PLANET} />,
     );
 
     expect(bare.querySelector(".planet")).toBeNull();
@@ -75,11 +77,11 @@ describe("BoardSquare", () => {
 
   it("draws the planet beneath the ship, and keeps it whether or not the square is occupied", () => {
     const { container: empty } = render(
-      <BoardSquare isBay={true} squareName="D15" planet={SAMPLE_PLANET} />,
+      <BoardSquare isPlanet={true} squareName="D15" planet={SAMPLE_PLANET} />,
     );
     const { container: occupied } = render(
       <BoardSquare
-        isBay={true}
+        isPlanet={true}
         squareName="D15"
         planet={SAMPLE_PLANET}
         occupant={{ side: "green", power: 2 }}
@@ -103,10 +105,10 @@ describe("BoardSquare", () => {
 
   it("renders the destination mark when marked as a legal destination, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isBay={false} squareName="H8" mark="destination" />,
+      <BoardSquare isPlanet={false} squareName="H8" mark="destination" />,
     );
     const { container: unmarked } = render(
-      <BoardSquare isBay={false} squareName="H8" />,
+      <BoardSquare isPlanet={false} squareName="H8" />,
     );
 
     expect(
@@ -119,10 +121,10 @@ describe("BoardSquare", () => {
 
   it("renders the selected mark when marked as selected, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isBay={false} squareName="H8" mark="selected" />,
+      <BoardSquare isPlanet={false} squareName="H8" mark="selected" />,
     );
     const { container: unmarked } = render(
-      <BoardSquare isBay={false} squareName="H8" />,
+      <BoardSquare isPlanet={false} squareName="H8" />,
     );
 
     expect(
@@ -133,10 +135,10 @@ describe("BoardSquare", () => {
 
   it("renders the target ring when marked as a legal attack target, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isBay={false} squareName="H8" mark="target" />,
+      <BoardSquare isPlanet={false} squareName="H8" mark="target" />,
     );
     const { container: unmarked } = render(
-      <BoardSquare isBay={false} squareName="H8" />,
+      <BoardSquare isPlanet={false} squareName="H8" />,
     );
 
     expect(
@@ -147,10 +149,10 @@ describe("BoardSquare", () => {
 
   it("draws the target ring hollow and distinct from the destination's solid disc", () => {
     const { container: target } = render(
-      <BoardSquare isBay={false} squareName="H8" mark="target" />,
+      <BoardSquare isPlanet={false} squareName="H8" mark="target" />,
     );
     const { container: destination } = render(
-      <BoardSquare isBay={false} squareName="H8" mark="destination" />,
+      <BoardSquare isPlanet={false} squareName="H8" mark="destination" />,
     );
 
     const ring = target.querySelector(".board-square__mark--target circle");
@@ -166,7 +168,7 @@ describe("BoardSquare", () => {
 
   it("renders exactly one mark for the target square, never alongside destination or selected", () => {
     const { container } = render(
-      <BoardSquare isBay={false} squareName="H8" mark="target" />,
+      <BoardSquare isPlanet={false} squareName="H8" mark="target" />,
     );
 
     expect(container.querySelectorAll(".board-square__mark")).toHaveLength(1);
@@ -179,7 +181,7 @@ describe("BoardSquare", () => {
   it("renders the already-acted bar from hasActed alone, without dampening the square", () => {
     const { container: marked } = render(
       <BoardSquare
-        isBay={false}
+        isPlanet={false}
         squareName="H8"
         occupant={{ side: "green", power: 0 }}
         hasActed={true}
@@ -187,7 +189,7 @@ describe("BoardSquare", () => {
     );
     const { container: unmarked } = render(
       <BoardSquare
-        isBay={false}
+        isPlanet={false}
         squareName="H8"
         occupant={{ side: "green", power: 0 }}
       />,
@@ -207,7 +209,7 @@ describe("BoardSquare", () => {
   it("renders the hollow bar and the dampened class for no-action, distinct from the solid already-acted bar", () => {
     const { container } = render(
       <BoardSquare
-        isBay={false}
+        isPlanet={false}
         squareName="H8"
         occupant={{ side: "green", power: 0 }}
         condition="no-action"
@@ -231,7 +233,7 @@ describe("BoardSquare", () => {
   it("renders both the already-acted bar and the no-action bar together, and dampens the square", () => {
     const { container } = render(
       <BoardSquare
-        isBay={false}
+        isPlanet={false}
         squareName="H8"
         occupant={{ side: "green", power: 0 }}
         hasActed={true}
@@ -253,7 +255,7 @@ describe("BoardSquare", () => {
   it("distinguishes the already-acted bar from the no-action bar by fill, not only by class name", () => {
     const { container } = render(
       <BoardSquare
-        isBay={false}
+        isPlanet={false}
         squareName="H8"
         occupant={{ side: "green", power: 0 }}
         hasActed={true}
@@ -268,7 +270,7 @@ describe("BoardSquare", () => {
   it("renders a condition mark and a selection mark together", () => {
     const { container } = render(
       <BoardSquare
-        isBay={false}
+        isPlanet={false}
         squareName="H8"
         occupant={{ side: "green", power: 0 }}
         condition="no-action"
@@ -287,7 +289,7 @@ describe("BoardSquare", () => {
   it("renders exactly what it rendered before condition existed, when no condition is given", () => {
     const { container } = render(
       <BoardSquare
-        isBay={false}
+        isPlanet={false}
         squareName="H8"
         nodeState="inactive"
         occupant={{ side: "red", power: 3 }}
@@ -312,7 +314,7 @@ describe("BoardSquare", () => {
       for (const hasActed of hasActedValues) {
         const { container } = render(
           <BoardSquare
-            isBay={false}
+            isPlanet={false}
             squareName="H8"
             occupant={{ side: "green", power: 1 }}
             hasActed={hasActed}

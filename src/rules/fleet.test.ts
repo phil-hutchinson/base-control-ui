@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BAYS } from "./bays";
+import { PLANETS } from "./planets";
 import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
 import {
   FLEET_SIZES,
@@ -30,7 +30,7 @@ const SEVEN_A_SIDE: readonly [string, "green" | "red"][] = [
 
 /**
  * §4's six-a-side layout, clockwise from H15: H15 and H1 start empty, so the
- * list starts at L15, the first occupied bay after H15, and skips straight
+ * list starts at L15, the first occupied planet after H15, and skips straight
  * from L1 to D1 where H1 would otherwise sit.
  */
 const SIX_A_SIDE: readonly [string, "green" | "red"][] = [
@@ -50,7 +50,7 @@ const SIX_A_SIDE: readonly [string, "green" | "red"][] = [
 
 /**
  * §4's five-a-side layout, clockwise from H15: O14, O2, A14 and A2 start
- * empty, and the colours on the two four-bay edges are reversed from the
+ * empty, and the colours on the two four-planet edges are reversed from the
  * seven-ship game.
  */
 const FIVE_A_SIDE: readonly [string, "green" | "red"][] = [
@@ -74,13 +74,14 @@ const LAYOUTS_BY_FLEET_SIZE: Readonly<
   7: SEVEN_A_SIDE,
 };
 
-/** §4's empty starting bays, per fleet size. */
-const EMPTY_BAYS_BY_FLEET_SIZE: Readonly<Record<FleetSize, readonly string[]>> =
-  {
-    5: ["O14", "O2", "A14", "A2"],
-    6: ["H15", "H1"],
-    7: [],
-  };
+/** §4's empty starting planets, per fleet size. */
+const EMPTY_PLANETS_BY_FLEET_SIZE: Readonly<
+  Record<FleetSize, readonly string[]>
+> = {
+  5: ["O14", "O2", "A14", "A2"],
+  6: ["H15", "H1"],
+  7: [],
+};
 
 function entryBySquare(
   fleet: readonly FleetEntry[],
@@ -117,20 +118,20 @@ describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
     expect(red).toHaveLength(fleetSize);
   });
 
-  it("stands every ship on a bay, one ship per bay, and leaves §4's empty bays empty", () => {
-    const bayNames = new Set(BAYS.map(squareName));
+  it("stands every ship on a planet, one ship per planet, and leaves §4's empty planets empty", () => {
+    const planetNames = new Set(PLANETS.map(squareName));
     const fleetSquareNames = fleet.map((entry) => squareName(entry.square));
 
     for (const name of fleetSquareNames) {
-      expect(bayNames.has(name)).toBe(true);
+      expect(planetNames.has(name)).toBe(true);
     }
     expect(new Set(fleetSquareNames).size).toBe(fleetSquareNames.length);
 
-    for (const emptyBay of EMPTY_BAYS_BY_FLEET_SIZE[fleetSize]) {
-      expect(fleetSquareNames).not.toContain(emptyBay);
+    for (const emptyPlanet of EMPTY_PLANETS_BY_FLEET_SIZE[fleetSize]) {
+      expect(fleetSquareNames).not.toContain(emptyPlanet);
     }
     expect(fleetSquareNames).toHaveLength(
-      bayNames.size - EMPTY_BAYS_BY_FLEET_SIZE[fleetSize].length,
+      planetNames.size - EMPTY_PLANETS_BY_FLEET_SIZE[fleetSize].length,
     );
   });
 

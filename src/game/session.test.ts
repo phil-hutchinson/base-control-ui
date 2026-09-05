@@ -487,10 +487,10 @@ describe("createSession", () => {
   });
 
   it("runs the pass guard once, so a stuck starting position passes immediately", () => {
-    // green-1 is in the A2 bay, at full power: every one of its reachable
-    // squares is either occupied by a red ship one square away or blocked
-    // along the way to a farther one, and §3.1 forbids it to attack from a
-    // bay regardless.
+    // green-1 is on the A2 planet, at full power: every one of its
+    // reachable squares is either occupied by a red ship one square away or
+    // blocked along the way to a farther one, and §3.1 forbids it to attack
+    // from a planet regardless.
     const state = buildState({
       ships: [
         ship("green-1", "green", "A2"),

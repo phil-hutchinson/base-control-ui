@@ -78,7 +78,7 @@ describe("ShipModel", () => {
         (power) => {
           const label = squareLabel({
             square: squareAt("H", 8),
-            isBay: false,
+            isPlanet: false,
             occupant: { side, power },
           });
           const { container } = render(<ShipModel side={side} power={power} />);

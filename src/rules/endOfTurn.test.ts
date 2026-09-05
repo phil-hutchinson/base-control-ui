@@ -207,8 +207,8 @@ describe("runEndOfTurn — step 1, the power gain (§4.1)", () => {
   });
 });
 
-describe("runEndOfTurn — step 1, the bay gain (§3.1, §4.1)", () => {
-  it("gains a point of power for a ship standing in a bay at the end of its owner's turn", () => {
+describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
+  it("gains a point of power for a ship standing on a planet at the end of its owner's turn", () => {
     const state = buildState({
       sideToMove: "green",
       ships: [ship("green-1", "green", "A2", 2)],
@@ -226,7 +226,7 @@ describe("runEndOfTurn — step 1, the bay gain (§3.1, §4.1)", () => {
     });
   });
 
-  it("leaves a ship already at 4 power in a bay at 4 and raises no effect for it", () => {
+  it("leaves a ship already at 4 power on a planet at 4 and raises no effect for it", () => {
     const state = buildState({
       sideToMove: "green",
       ships: [ship("green-1", "green", "A2", 4)],
@@ -240,7 +240,7 @@ describe("runEndOfTurn — step 1, the bay gain (§3.1, §4.1)", () => {
     ).toBe(false);
   });
 
-  it("collects and pays no energy for a ship recovering in a bay", () => {
+  it("collects and pays no energy for a ship recovering on a planet", () => {
     const state = buildState({
       sideToMove: "green",
       ships: [ship("green-1", "green", "A2", 2)],
@@ -257,7 +257,7 @@ describe("runEndOfTurn — step 1, the bay gain (§3.1, §4.1)", () => {
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
   });
 
-  it("gains nothing for a ship of the other side sitting in a bay this turn", () => {
+  it("gains nothing for a ship of the other side sitting on a planet this turn", () => {
     const state = buildState({
       sideToMove: "green",
       ships: [ship("red-1", "red", "A2", 2)],
@@ -271,7 +271,7 @@ describe("runEndOfTurn — step 1, the bay gain (§3.1, §4.1)", () => {
     ).toBe(false);
   });
 
-  it("reports both a gain and a loss when one ship recovers in a bay while another holds a node", () => {
+  it("reports both a gain and a loss when one ship recovers on a planet while another holds a node", () => {
     const state = buildState({
       sideToMove: "green",
       nodes: { H8: ["charged", 1] },

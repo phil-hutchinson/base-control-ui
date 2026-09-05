@@ -5,7 +5,7 @@ import {
   squareName,
   type Square,
 } from "../rules/board";
-import { BAYS } from "../rules/bays";
+import { PLANETS } from "../rules/planets";
 import { PLANET_ART, type PlanetTraits } from "./planetArt";
 import { planetForSquare, RING_ORDER } from "./planetPlacement";
 
@@ -42,9 +42,9 @@ function sharesATrait(a: PlanetTraits, b: PlanetTraits): boolean {
 }
 
 describe("RING_ORDER", () => {
-  it("holds exactly the fourteen squares of BAYS, none missing or repeated", () => {
+  it("holds exactly the fourteen squares of PLANETS, none missing or repeated", () => {
     expect(RING_ORDER).toHaveLength(14);
-    expect(namesOf(RING_ORDER)).toEqual(namesOf(BAYS));
+    expect(namesOf(RING_ORDER)).toEqual(namesOf(PLANETS));
   });
 
   it("walks the board's perimeter clockwise as four edge runs", () => {
@@ -72,21 +72,21 @@ describe("RING_ORDER", () => {
 });
 
 describe("planetForSquare", () => {
-  it("maps every bay to a planet", () => {
-    for (const bay of BAYS) {
-      expect(planetForSquare(bay)).toBeDefined();
+  it("maps every planet square to a planet", () => {
+    for (const planet of PLANETS) {
+      expect(planetForSquare(planet)).toBeDefined();
     }
   });
 
   it("uses every planet exactly once", () => {
-    const numbers = BAYS.map((bay) => planetForSquare(bay)?.number);
+    const numbers = PLANETS.map((planet) => planetForSquare(planet)?.number);
     expect(new Set(numbers).size).toBe(14);
     expect([...numbers].sort((a, b) => (a ?? 0) - (b ?? 0))).toEqual(
       PLANET_ART.map((planet) => planet.number).sort((a, b) => a - b),
     );
   });
 
-  it("maps a non-bay square to nothing", () => {
+  it("maps a non-planet square to nothing", () => {
     expect(planetForSquare(squareAt("H", 8))).toBeUndefined();
   });
 });

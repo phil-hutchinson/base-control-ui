@@ -1,17 +1,17 @@
-// Which planet (see planetArt.ts) sits in which bay, and the order the
-// fourteen bays are judged in for spread. The arrangement is a fixed table,
-// with the explicit expectation that individual planets may be swapped once
-// the board is in front of them - swapping two bays' planets is a one-line
-// change to `RING_SLOTS` per bay, and `planetPlacement.test.ts` re-checks
-// the spread immediately.
+// Which planet (see planetArt.ts) sits on which planet square, and the order
+// the fourteen planet squares are judged in for spread. The arrangement is a
+// fixed table, with the explicit expectation that individual planets may be
+// swapped once the board is in front of them - swapping two squares' planets
+// is a one-line change to `RING_SLOTS` per square, and
+// `planetPlacement.test.ts` re-checks the spread immediately.
 //
-// The ring order below is NOT `BAYS` order (src/rules/bays.ts). `BAYS`
-// lists the fourteen bays in rules.md §3.1 order, which walks the board's
-// bottom edge left to right: D1, H1, L1. The ring here is a closed walk
-// clockwise around the board's perimeter, so it reaches the bottom edge
-// travelling the other way, right to left: L1, H1, D1. Deriving adjacency
-// from `BAYS` would treat D1 and A2 as neighbours, when the bay actually
-// next to A2 around the perimeter is L1.
+// The ring order below is NOT `PLANETS` order (src/rules/planets.ts).
+// `PLANETS` lists the fourteen planet squares in rules.md §3.1 order, which
+// walks the board's bottom edge left to right: D1, H1, L1. The ring here is
+// a closed walk clockwise around the board's perimeter, so it reaches the
+// bottom edge travelling the other way, right to left: L1, H1, D1. Deriving
+// adjacency from `PLANETS` would treat D1 and A2 as neighbours, when the
+// planet square actually next to A2 around the perimeter is L1.
 //
 // The ring, stated explicitly, starting at D15 and going clockwise:
 // D15, H15, L15 (top, left to right),
@@ -35,8 +35,9 @@ interface RingSlot {
   readonly planetNumber: number;
 }
 
-// One row per bay, in ring order. Each row also carries the planet's name,
-// so a reordering can be checked by eye before the test confirms it.
+// One row per planet square, in ring order. Each row also carries the
+// planet's name, so a reordering can be checked by eye before the test
+// confirms it.
 const RING_SLOTS: readonly RingSlot[] = [
   { square: squareAt("D", 15), planetNumber: 9 }, // Banded brown planet with an earth-like moon
   { square: squareAt("H", 15), planetNumber: 8 }, // Turquoise planet with a vertical white ring
@@ -55,9 +56,9 @@ const RING_SLOTS: readonly RingSlot[] = [
 ];
 
 /**
- * The fourteen bays as a closed walk around the board's perimeter, in the
- * order the spread of planets is judged - NOT `BAYS` order (see module
- * comment above).
+ * The fourteen planet squares as a closed walk around the board's
+ * perimeter, in the order the spread of planets is judged - NOT `PLANETS`
+ * order (see module comment above).
  */
 export const RING_ORDER: readonly Square[] = RING_SLOTS.map(
   (slot) => slot.square,
@@ -70,7 +71,7 @@ const PLANET_BY_SQUARE_NAME: ReadonlyMap<string, PlanetArt> = new Map(
   ]),
 );
 
-/** The planet a bay holds, or `undefined` if the square is not a bay. */
+/** The planet a planet square holds, or `undefined` if the square is not a planet. */
 export function planetForSquare(square: Square): PlanetArt | undefined {
   return PLANET_BY_SQUARE_NAME.get(squareName(square));
 }

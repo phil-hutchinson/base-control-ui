@@ -6,7 +6,7 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
-import { BAYS, isBay } from "../rules/bays";
+import { PLANETS, isPlanet } from "../rules/planets";
 import { startingFleet, type FleetEntry } from "../rules/fleet";
 import { NODE_CAPACITY, PRESSURE_CAP } from "../rules/nodes";
 import {
@@ -115,7 +115,7 @@ describe("Board", () => {
     expect(screen.getByRole("gridcell", { name: "O15" })).toBeInTheDocument();
   });
 
-  it("names every bay with 'bay' and no other square", () => {
+  it("names every planet with 'planet' and no other square", () => {
     render(<Board session={startingSession} onIntent={noop} />);
 
     // A handful of literal expected names, independent of the production
@@ -123,61 +123,61 @@ describe("Board", () => {
     // its own expectations.
     expect(
       screen.getByRole("gridcell", {
-        name: "D15, bay, red ship, power 4 of 4",
+        name: "D15, planet, red ship, power 4 of 4",
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("gridcell", {
-        name: "H15, bay, green ship, power 4 of 4",
+        name: "H15, planet, green ship, power 4 of 4",
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("gridcell", {
-        name: "A10, bay, red ship, power 4 of 4",
+        name: "A10, planet, red ship, power 4 of 4",
       }),
     ).toBeInTheDocument();
 
-    // A representative sample of the remaining bays — one on each of the
+    // A representative sample of the remaining planets — one on each of the
     // other two sides not already covered above — built the production way
     // rather than as a literal, so a change to `squareLabel` is still caught.
     for (const square of [squareAt("O", 10), squareAt("H", 1)]) {
       const label = squareLabel({
         square,
-        isBay: true,
+        isPlanet: true,
         nodeState: STATED_NODE_STATES[squareName(square)]?.state,
         occupant: startingShipAt(square),
       });
       expect(screen.getByRole("gridcell", { name: label })).toBeInTheDocument();
     }
 
-    // A non-bay square must never be named "bay".
-    const nonBaySquare = squareAt("H", 8);
-    expect(isBay(nonBaySquare)).toBe(false);
+    // A non-planet square must never be named "planet".
+    const nonPlanetSquare = squareAt("H", 8);
+    expect(isPlanet(nonPlanetSquare)).toBe(false);
     expect(
       screen.getByRole("gridcell", {
         name: squareLabel({
-          square: nonBaySquare,
-          isBay: false,
-          nodeState: STATED_NODE_STATES[squareName(nonBaySquare)]?.state,
-          occupant: startingShipAt(nonBaySquare),
+          square: nonPlanetSquare,
+          isPlanet: false,
+          nodeState: STATED_NODE_STATES[squareName(nonPlanetSquare)]?.state,
+          occupant: startingShipAt(nonPlanetSquare),
         }),
       }),
     ).toBeInTheDocument();
 
     expect(
       screen.getAllByRole("gridcell", {
-        name: /, bay(, .+ ship, power \d of 4)?$/,
+        name: /, planet(, .+ ship, power \d of 4)?$/,
       }),
-    ).toHaveLength(BAYS.length);
+    ).toHaveLength(PLANETS.length);
   });
 
-  it("marks the fourteen bay cells distinctly and draws different silhouettes per side", () => {
+  it("marks the fourteen planet cells distinctly and draws different silhouettes per side", () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,
     );
 
-    expect(container.querySelectorAll(".board-square--bay")).toHaveLength(
-      BAYS.length,
+    expect(container.querySelectorAll(".board-square--planet")).toHaveLength(
+      PLANETS.length,
     );
 
     const greenUse = container.querySelector(".ship-model--green > use");
@@ -189,17 +189,17 @@ describe("Board", () => {
     );
   });
 
-  it("draws a planet in every bay and no other square, whether or not it holds a ship", () => {
+  it("draws a planet on every planet square and no other square, whether or not it holds a ship", () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,
     );
 
-    expect(container.querySelectorAll(".planet")).toHaveLength(BAYS.length);
-    for (const square of BAYS) {
+    expect(container.querySelectorAll(".planet")).toHaveLength(PLANETS.length);
+    for (const square of PLANETS) {
       const name = squareName(square);
       const label = squareLabel({
         square,
-        isBay: true,
+        isPlanet: true,
         nodeState: STATED_NODE_STATES[name]?.state,
         occupant: startingShipAt(square),
       });
@@ -207,9 +207,10 @@ describe("Board", () => {
       expect(cell.querySelector(".planet")).toBeInTheDocument();
     }
 
-    // A planet is aria-hidden, so it never changes a bay's accessible name -
-    // occupied bays above already carried the ship's own name, and the
-    // starting board's centre square (never a bay) carries none at all.
+    // A planet drawing is aria-hidden, so it never changes a planet
+    // square's accessible name - occupied planets above already carried the
+    // ship's own name, and the starting board's centre square (never a
+    // planet) carries none at all.
     const centre = screen.getByRole("gridcell", { name: "H8, charged node" });
     expect(centre.querySelector(".planet")).toBeNull();
   });
@@ -234,7 +235,7 @@ describe("Board", () => {
       const cell = screen.getByRole("gridcell", {
         name: squareLabel({
           square: entry.square,
-          isBay: isBay(entry.square),
+          isPlanet: isPlanet(entry.square),
           nodeState: STATED_NODE_STATES[squareName(entry.square)]?.state,
           occupant: entry,
         }),
@@ -252,7 +253,7 @@ describe("Board", () => {
     const square = squareAt("H", 15);
     const label = squareLabel({
       square,
-      isBay: isBay(square),
+      isPlanet: isPlanet(square),
       nodeState: STATED_NODE_STATES[squareName(square)]?.state,
       occupant: startingShipAt(square),
     });
@@ -381,18 +382,20 @@ describe("Board", () => {
       ).toBeInTheDocument();
     });
 
-    it("never draws a node marker on a bay, and never names a bay a node", () => {
+    it("never draws a node marker on a planet, and never names a planet a node", () => {
       const { container } = render(
         <Board session={startingSession} onIntent={noop} />,
       );
 
-      const bayElements = container.querySelectorAll(".board-square--bay");
-      expect(bayElements).toHaveLength(BAYS.length);
-      for (const bayElement of bayElements) {
-        expect(bayElement.querySelector(".node-marker")).toBeNull();
+      const planetElements = container.querySelectorAll(
+        ".board-square--planet",
+      );
+      expect(planetElements).toHaveLength(PLANETS.length);
+      for (const planetElement of planetElements) {
+        expect(planetElement.querySelector(".node-marker")).toBeNull();
       }
       expect(
-        screen.queryByRole("gridcell", { name: /bay.*node|node.*bay/ }),
+        screen.queryByRole("gridcell", { name: /planet.*node|node.*planet/ }),
       ).not.toBeInTheDocument();
     });
   });
@@ -429,9 +432,9 @@ describe("Board", () => {
     });
     expect(cell).toBeInTheDocument();
     expect(cell.querySelector(".ship-model--green")).toBeInTheDocument();
-    // The bay green-1 started in is empty now.
+    // The planet green-1 started on is empty now.
     expect(
-      screen.getByRole("gridcell", { name: "H15, bay" }),
+      screen.getByRole("gridcell", { name: "H15, planet" }),
     ).toBeInTheDocument();
     expect(container.querySelectorAll(".ship-model--green")).toHaveLength(7);
   });
@@ -551,8 +554,8 @@ describe("Board", () => {
 
   describe("selection markings", () => {
     // A hand-built session with green-1 selected on H8, and green-2 (still
-    // in its starting bay) already marked as moved this ply. Built directly
-    // rather than through the fixture.
+    // on its starting planet) already marked as moved this ply. Built
+    // directly rather than through the fixture.
     const state: GameState = {
       ...startingGameState(TEST_SEED),
       ships: startingGameState(TEST_SEED).ships.map((ship) =>
@@ -593,14 +596,14 @@ describe("Board", () => {
       ).toHaveLength(destinations.length);
     });
 
-    it("marks a ship that has already acted this ply — here, still in a bay, so also carrying no-action", () => {
+    it("marks a ship that has already acted this ply — here, still on a planet, so also carrying no-action", () => {
       render(<Board session={session} onIntent={noop} />);
 
       const movedShip = state.ships.find((ship) => ship.id === "green-2");
       expect(movedShip).toBeDefined();
-      // Still in its bay, so §3.1 forbids it any attack, and it has already
-      // used its one move: "already acted" and "no-action" both apply, in
-      // that order.
+      // Still on its planet, so §3.1 forbids it any attack, and it has
+      // already used its one move: "already acted" and "no-action" both
+      // apply, in that order.
       expect(
         screen.getByRole("gridcell", {
           name: new RegExp(
@@ -684,7 +687,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H9, red ship, power 4 of 4, can attack here, both ships would return to bays",
+          name: "H9, red ship, power 4 of 4, can attack here, both ships would return to planets",
         }),
       ).toBeInTheDocument();
 
@@ -750,7 +753,7 @@ describe("Board", () => {
 
           expect(
             screen.getByRole("gridcell", {
-              name: `H9, red ship, power ${defenderPower} of 4, can attack here, both ships would return to bays`,
+              name: `H9, red ship, power ${defenderPower} of 4, can attack here, both ships would return to planets`,
             }),
           ).toBeInTheDocument();
 
@@ -849,7 +852,7 @@ describe("Board", () => {
       // within a 3-power ship's true reach (rules.md §6, §7).
       expect(
         screen.getByRole("gridcell", {
-          name: "H10, red ship, power 4 of 4, can attack here, both ships would return to bays",
+          name: "H10, red ship, power 4 of 4, can attack here, both ships would return to planets",
         }),
       ).toBeInTheDocument();
     });
@@ -943,7 +946,7 @@ describe("Board", () => {
     });
   });
 
-  it("marks no bay with a return cue and names no square after a return position or a receptacle", () => {
+  it("marks no planet with a return cue and names no square after a return position or a receptacle", () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,
     );
@@ -1239,9 +1242,9 @@ describe("Board", () => {
       return <Board session={session} onIntent={dispatch} />;
     }
 
-    // green-1 moved off its starting bay onto the empty interior square H8,
-    // with 2 power, so it has an obstruction-free reach to check
-    // destinations against. Every other ship stays in its starting bay.
+    // green-1 moved off its starting planet onto the empty interior square
+    // H8, with 2 power, so it has an obstruction-free reach to check
+    // destinations against. Every other ship stays on its starting planet.
     function baseState(): GameState {
       return {
         ...statedOpeningState(),
@@ -1422,7 +1425,7 @@ describe("Board", () => {
       });
     });
 
-    it("keeps focus on the attacked square, which is now empty: both ships return to bays", async () => {
+    it("keeps focus on the attacked square, which is now empty: both ships return to planets", async () => {
       const user = userEvent.setup();
       const state: GameState = {
         ...statedOpeningState(),

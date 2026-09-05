@@ -1,7 +1,10 @@
-// The names, numbers and ids behind each bay's planet, ported from
+// The names, numbers and ids behind each planet's drawing, ported from
 // `.local/eg_planets.html` (committed at
-// doc/plan/00000013-spaceship-bay-visual/eg_planets.html). This module is
-// the single place a planet's id is written down, so a rename cannot
+// doc/plan/00000013-spaceship-bay-visual/eg_planets.html). That folder is
+// named for the story that introduced these drawings, and its name still
+// carries the old word for a planet; the path is history and stays exactly
+// as it is. This module is the single place a planet's id is written down,
+// so a rename cannot
 // half-happen between `PlanetDefs` (which declares the ids) and `Planet`
 // (which references one).
 //
@@ -25,7 +28,7 @@
 // `shipArt.ts`'s ids: it cannot collide with `NodeMarker`'s
 // `node-<square>-fill` ids or with anything a later story adds.
 
-/** The colour family a planet belongs to, for judging the spread around the ring of bays. */
+/** The colour family a planet belongs to, for judging the spread around the ring of planets. */
 export type PlanetColorFamily =
   | "tan"
   | "purple"

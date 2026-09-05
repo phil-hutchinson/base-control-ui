@@ -12,7 +12,7 @@
 // that wrapper never itself becomes a layout box - the grid element stays
 // whatever grid item a consumer's own CSS made it.
 //
-// This component knows nothing about pieces, sides, bays, or board
+// This component knows nothing about pieces, sides, planets, or board
 // orientation - only about a 2-D array of `GridCellDescriptor`s (rendered
 // content, accessible label, and a focusable flag), and generic
 // "activate"/"dismiss" callbacks and an announcement string any composite

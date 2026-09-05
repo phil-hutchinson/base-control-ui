@@ -1,5 +1,6 @@
-// The fourteen bays' planets, one hidden sprite holding all of them, ported
-// from `doc/plan/00000013-spaceship-bay-visual/eg_planets.html` verbatim: the
+// The fourteen planets' drawings, one hidden sprite holding all of them,
+// ported from an early prototype file (`eg_planets.html`, committed at
+// doc/plan/00000013-spaceship-bay-visual/eg_planets.html) verbatim: the
 // only changes from that gallery are the id renames `planetArt.ts` requires,
 // the SVG-attribute-to-JSX-prop conversion React requires, and five specific
 // fixes applied nowhere else - `p1moon-sheen`, defined twice in the gallery
