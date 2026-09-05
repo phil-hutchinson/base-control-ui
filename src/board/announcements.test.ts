@@ -1087,7 +1087,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
     );
   });
 
-  it("names every depleted node occupied and says five are penalised once the cap is passed", () => {
+  it("names every depleted node occupied and says four are penalised once the cap is passed", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-2",
@@ -1103,7 +1103,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
             {
               type: "energy-penalty",
               side: "green",
-              amount: 15,
+              amount: 10,
               newTotal: 0,
               squares: [
                 squareAt("D", 8),
@@ -1120,7 +1120,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green lost 15 energy to 6 depleted nodes at D8, H8, K11, E5, K5 and G6, five of which are penalised, and now has 0. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green lost 10 energy to 6 depleted nodes at D8, H8, K11, E5, K5 and G6, 4 of which are penalised, and now has 0. Red's turn, 1 action left.",
     );
   });
 

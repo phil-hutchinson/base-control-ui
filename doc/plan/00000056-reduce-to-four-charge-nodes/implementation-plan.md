@@ -658,7 +658,19 @@ both 10.
 
 ### Step 5 — The over-cap announcement says its cap from the constant
 
-Status: pending
+Status: committed
+
+Notes: Replaced the spelled "five of which are penalised" in
+`energyPenaltyClause` (`src/board/announcements.ts`) with an interpolation of
+`MAX_DEPLETED_NODES_PRICED`, per D3, using the constant already imported for
+the comparison above; updated the function's doc comment, which also spelled
+out "five", to reference the constant instead while keeping its point that
+every occupied node is still named and only the counting is capped. Updated
+`announcements.test.ts`'s over-cap case: retitled to "four", changed the
+fixture's `amount` from 15 to 10 so the example is a reachable board state,
+and updated the expected sentence to "lost 10 energy … 4 of which are
+penalised". `npm run typecheck`, `npm run lint`, `npm test` (938 tests, all
+passing) and `npm run format:check` all pass. No deviation from the plan.
 
 In `src/board/announcements.ts`, `energyPenaltyClause` spells the cap into the
 sentence: "…, five of which are penalised". Replace the spelled word with the

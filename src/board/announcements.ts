@@ -198,8 +198,8 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
  * The count priced is capped at `MAX_DEPLETED_NODES_PRICED` (§8.4), but every
  * occupied depleted node is still named — nothing is ranked or selected, the
  * cap just stops counting. So a side over the cap hears which nodes it is
- * standing on and that five of them are penalised, not that some subset was
- * chosen.
+ * standing on and that `MAX_DEPLETED_NODES_PRICED` of them are penalised, not
+ * that some subset was chosen.
  */
 function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
   const side = capitalize(effect.side);
@@ -208,7 +208,7 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
     squares.length === 1
       ? `the depleted node at ${squares[0]}`
       : squares.length > MAX_DEPLETED_NODES_PRICED
-        ? `${squares.length} depleted nodes at ${joinWithAnd(squares)}, five of which are penalised`
+        ? `${squares.length} depleted nodes at ${joinWithAnd(squares)}, ${MAX_DEPLETED_NODES_PRICED} of which are penalised`
         : `${squares.length} depleted nodes at ${joinWithAnd(squares)}`;
   return `${side} lost ${effect.amount} energy to ${source}, and now has ${effect.newTotal}.`;
 }
