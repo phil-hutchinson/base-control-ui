@@ -162,16 +162,16 @@ describe("runEndOfTurn — step 1, the power gain (§4.1)", () => {
     ).toHaveLength(1);
   });
 
-  it("leaves a ship already at 4 power on a depleted node at 4 and raises no effect for it", () => {
+  it("leaves a ship already at 6 power on a depleted node at 6 and raises no effect for it", () => {
     const state = buildState({
       sideToMove: "green",
       nodes: { H8: ["depleted", 1] },
-      ships: [ship("green-1", "green", "H8", 4)],
+      ships: [ship("green-1", "green", "H8", 6)],
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(4);
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(6);
     expect(
       result.effects.some((effect) => effect.type === "power-gained"),
     ).toBe(false);
@@ -230,15 +230,15 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
     });
   });
 
-  it("leaves a ship already at 4 power on a planet at 4 and raises no effect for it", () => {
+  it("leaves a ship already at 6 power on a planet at 6 and raises no effect for it", () => {
     const state = buildState({
       sideToMove: "green",
-      ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 4)],
+      ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 6)],
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(4);
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(6);
     expect(
       result.effects.some((effect) => effect.type === "power-gained"),
     ).toBe(false);

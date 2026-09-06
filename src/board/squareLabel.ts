@@ -22,7 +22,7 @@
 
 import { squareName, type Square } from "../rules/board";
 import type { Side } from "../rules/fleet";
-import type { PowerLevel } from "../rules/power";
+import { MAX_POWER, type PowerLevel } from "../rules/power";
 import type { NodeState } from "../rules/nodes";
 
 /** A square's occupant, as far as its accessible name is concerned. */
@@ -91,7 +91,7 @@ export function squareLabel({
   }
   if (occupant) {
     segments.push(`${occupant.side} ship`);
-    segments.push(`power ${occupant.power} of 4`);
+    segments.push(`power ${occupant.power} of ${MAX_POWER}`);
   }
   if (hasActed) {
     segments.push(ALREADY_ACTED_WORDING);

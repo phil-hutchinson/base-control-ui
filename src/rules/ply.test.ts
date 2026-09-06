@@ -17,7 +17,7 @@ import {
   applyPassGuard,
   assertFightInvariants,
 } from "./ply";
-import type { PowerLevel } from "./power";
+import { MAX_POWER, type PowerLevel } from "./power";
 import { drawIndex } from "./random";
 import {
   drawTableAmount,
@@ -375,7 +375,7 @@ describe("applyAttack", () => {
       // attacker (the moving side) then gains a point on its planet under
       // §8.6 step 1 if it has anything left to gain; the defender, not the
       // moving side this ply, does not.
-      expect(attacker?.power).toBe(Math.min(attackerPower + 1, 4));
+      expect(attacker?.power).toBe(Math.min(attackerPower + 1, MAX_POWER));
       expect(defender?.power).toBe(defenderPower);
       expect(isPlanet(attacker!.square)).toBe(true);
       expect(isPlanet(defender!.square)).toBe(true);

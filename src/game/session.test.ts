@@ -18,7 +18,7 @@ import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalTargets } from "../rules/combat";
 import { legalDestinations } from "../rules/movement";
 import { applyAttack, applyMove } from "../rules/ply";
-import type { PowerLevel } from "../rules/power";
+import { MAX_POWER, type PowerLevel } from "../rules/power";
 import type { NodeState } from "../rules/nodes";
 import { createSession, type Session, sessionReducer } from "./session";
 
@@ -495,7 +495,7 @@ describe("createSession", () => {
     // planet regardless.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "D6"),
+        ship("green-1", "green", "D6", MAX_POWER),
         ship("red-1", "red", "C5"),
         ship("red-2", "red", "C6"),
         ship("red-3", "red", "C7"),

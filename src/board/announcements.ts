@@ -122,8 +122,8 @@ function joinWithAnd(items: readonly string[]): string {
 /**
  * All of a sequence's power gains as one clause, naming the squares once
  * rather than repeating a sentence per ship. A ship reaching the maximum of
- * 4 is named as such. True of a ship on a depleted node or on a planet
- * alike — the clause never names which.
+ * `MAX_POWER` is named as such. True of a ship on a depleted node or on a
+ * planet alike — the clause never names which.
  */
 function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
   const side = capitalize(effects[0].side);
@@ -135,7 +135,7 @@ function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
     const [effect] = effects;
     const square = squareName(effect.square);
     return effect.power === MAX_POWER
-      ? `${side} ship at ${square} gained a point of power, reaching the maximum of 4.`
+      ? `${side} ship at ${square} gained a point of power, reaching the maximum of ${MAX_POWER}.`
       : `${side} ship at ${square} gained a point of power, now on ${effect.power}.`;
   }
 
@@ -144,7 +144,7 @@ function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
   if (atMax.length === 0) {
     return base;
   }
-  return `${base} ${joinWithAnd(atMax)} reached the maximum of 4.`;
+  return `${base} ${joinWithAnd(atMax)} reached the maximum of ${MAX_POWER}.`;
 }
 
 /**

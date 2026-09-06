@@ -22,7 +22,7 @@ describe("squareLabel", () => {
         isPlanet: true,
         occupant: { side: "green", power: 0 },
       }),
-    ).toBe("H15, planet, green ship, power 0 of 4");
+    ).toBe("H15, planet, green ship, power 0 of 6");
   });
 
   it("reads the same shape at any power level", () => {
@@ -32,7 +32,7 @@ describe("squareLabel", () => {
         isPlanet: true,
         occupant: { side: "red", power: 1 },
       }),
-    ).toBe("L15, planet, red ship, power 1 of 4");
+    ).toBe("L15, planet, red ship, power 1 of 6");
   });
 
   it("reads the same shape at a middle level", () => {
@@ -42,7 +42,7 @@ describe("squareLabel", () => {
         isPlanet: true,
         occupant: { side: "red", power: 3 },
       }),
-    ).toBe("D15, planet, red ship, power 3 of 4");
+    ).toBe("D15, planet, red ship, power 3 of 6");
   });
 
   it("names an occupied ordinary square, for completeness of the contract", () => {
@@ -52,7 +52,7 @@ describe("squareLabel", () => {
         isPlanet: false,
         occupant: { side: "green", power: 4 },
       }),
-    ).toBe("H8, green ship, power 4 of 4");
+    ).toBe("H8, green ship, power 4 of 6");
   });
 
   it("names each node state", () => {
@@ -86,7 +86,7 @@ describe("squareLabel", () => {
         isPlanet: false,
         occupant: { side: "green", power: 0 },
       }),
-    ).toBe("H8, green ship, power 0 of 4");
+    ).toBe("H8, green ship, power 0 of 6");
   });
 
   it("adds 'selected' last, after the power level", () => {
@@ -97,7 +97,7 @@ describe("squareLabel", () => {
         occupant: { side: "green", power: 0 },
         mark: "selected",
       }),
-    ).toBe("G7, green ship, power 0 of 4, selected");
+    ).toBe("G7, green ship, power 0 of 6, selected");
   });
 
   it("adds 'already acted this turn' when hasActed is true, after the power level", () => {
@@ -108,7 +108,7 @@ describe("squareLabel", () => {
         occupant: { side: "green", power: 4 },
         hasActed: true,
       }),
-    ).toBe("M10, green ship, power 4 of 4, already acted this turn");
+    ).toBe("M10, green ship, power 4 of 6, already acted this turn");
   });
 
   it("says nothing about having acted when hasActed is false or absent", () => {
@@ -119,7 +119,7 @@ describe("squareLabel", () => {
         occupant: { side: "green", power: 4 },
         hasActed: false,
       }),
-    ).toBe("M10, green ship, power 4 of 4");
+    ).toBe("M10, green ship, power 4 of 6");
   });
 
   it("combines having acted with the no-action condition, acted first", () => {
@@ -132,7 +132,7 @@ describe("squareLabel", () => {
         condition: "no-action",
       }),
     ).toBe(
-      "M10, green ship, power 4 of 4, already acted this turn, no action available this turn",
+      "M10, green ship, power 4 of 6, already acted this turn, no action available this turn",
     );
   });
 
@@ -144,7 +144,7 @@ describe("squareLabel", () => {
         occupant: { side: "green", power: 4 },
         condition: "no-action",
       }),
-    ).toBe("M10, green ship, power 4 of 4, no action available this turn");
+    ).toBe("M10, green ship, power 4 of 6, no action available this turn");
   });
 
   it("puts the condition before the mark, when a square carries both", () => {
@@ -157,7 +157,7 @@ describe("squareLabel", () => {
         mark: "selected",
       }),
     ).toBe(
-      "M10, green ship, power 4 of 4, no action available this turn, selected",
+      "M10, green ship, power 4 of 6, no action available this turn, selected",
     );
   });
 
@@ -172,7 +172,7 @@ describe("squareLabel", () => {
         mark: "selected",
       }),
     ).toBe(
-      "M10, green ship, power 2 of 4, already acted this turn, no action available this turn, selected",
+      "M10, green ship, power 2 of 6, already acted this turn, no action available this turn, selected",
     );
   });
 
@@ -216,7 +216,7 @@ describe("squareLabel", () => {
         mark: "target",
       }),
     ).toBe(
-      "H9, red ship, power 1 of 4, can attack here, both ships would return to planets",
+      "H9, red ship, power 1 of 6, can attack here, both ships would return to planets",
     );
   });
 
@@ -229,7 +229,7 @@ describe("squareLabel", () => {
         mark: "target",
       }),
     ).toBe(
-      "H9, red ship, power 4 of 4, can attack here, both ships would return to planets",
+      "H9, red ship, power 4 of 6, can attack here, both ships would return to planets",
     );
   });
 
@@ -241,7 +241,7 @@ describe("squareLabel", () => {
         nodeState: "charged",
         occupant: { side: "green", power: 2 },
       }),
-    ).toBe("H8, charged node, green ship, power 2 of 4");
+    ).toBe("H8, charged node, green ship, power 2 of 6");
     expect(
       squareLabel({
         square: squareAt("H", 4),
@@ -249,6 +249,6 @@ describe("squareLabel", () => {
         nodeState: "depleted",
         occupant: { side: "red", power: 0 },
       }),
-    ).toBe("H4, depleted node, red ship, power 0 of 4");
+    ).toBe("H4, depleted node, red ship, power 0 of 6");
   });
 });

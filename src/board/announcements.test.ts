@@ -697,7 +697,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("says which ship reached the maximum of 4, within a grouped clause", () => {
+  it("says which ship reached the maximum of 6, within a grouped clause", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -722,7 +722,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               shipId: "green-2",
               side: "green",
               square: squareAt("K", 5),
-              power: 4,
+              power: 6,
             },
           ],
         },
@@ -730,11 +730,11 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a point of power. K5 reached the maximum of 4. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a point of power. K5 reached the maximum of 6. Red's turn, 1 action left.",
     );
   });
 
-  it("says a single ship reached the maximum of 4", () => {
+  it("says a single ship reached the maximum of 6", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -752,7 +752,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               shipId: "green-1",
               side: "green",
               square: squareAt("K", 5),
-              power: 4,
+              power: 6,
             },
           ],
         },
@@ -760,7 +760,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       actionsRemaining: ACTIONS_PER_PLY,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at K5 gained a point of power, reaching the maximum of 4. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at K5 gained a point of power, reaching the maximum of 6. Red's turn, 1 action left.",
     );
   });
 

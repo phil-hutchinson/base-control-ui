@@ -8,6 +8,8 @@ describe("isPowerLevel", () => {
     expect(isPowerLevel(2)).toBe(true);
     expect(isPowerLevel(3)).toBe(true);
     expect(isPowerLevel(4)).toBe(true);
+    expect(isPowerLevel(5)).toBe(true);
+    expect(isPowerLevel(6)).toBe(true);
   });
 
   it("rejects a level below the minimum", () => {
@@ -15,7 +17,7 @@ describe("isPowerLevel", () => {
   });
 
   it("rejects a level above the maximum", () => {
-    expect(isPowerLevel(5)).toBe(false);
+    expect(isPowerLevel(7)).toBe(false);
   });
 
   it("rejects a non-integer level", () => {

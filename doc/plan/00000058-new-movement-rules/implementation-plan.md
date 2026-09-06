@@ -498,7 +498,29 @@ Run `npm run format:check`.
 
 ### Step 2 — The tank widens to 0–6
 
-Status: pending
+Status: committed
+
+Notes: Widened `PowerLevel` and `MAX_POWER` in `power.ts` as directed, and
+interpolated `MAX_POWER` into `squareLabel.ts`'s occupant segment and
+`announcements.ts`'s `powerGainedClause` (`powerLostClause` never carried a
+"maximum of 4"/"of 4" literal — it only ever said "reached 0" — so there was
+nothing to interpolate there; not a deviation, just the plan's search target
+not existing on that function). Updated every failing test's fixtures and
+expectations: `power.test.ts` (0–6 range), `fleet.test.ts` and
+`gameState.test.ts` (start at `MAX_POWER`), `squareLabel.test.ts`,
+`Board.test.tsx`, `App.test.tsx` and `ShipModel.test.tsx` (`of 4` → `of 6`),
+`announcements.test.ts` (the "maximum of 4/6" fixtures and wording). Several
+integration tests needed more than a literal swap because the still-active
+pre-Step-7 rules (a depleted node still refills power, a charged node still
+drains it) now cap at 6 instead of 4: `camping.test.ts` (three fixtures that
+relied on a ship already being "full" at 4 needed explicit `MAX_POWER` so a
+depleted-node or planet gain still has nothing to add), `session.test.ts`
+(the stuck-position fixture's planet-sitting ship needed the same fix), and
+`recovery.test.ts` (the turn-by-turn recovery test now runs six rounds to
+reach the real maximum instead of stopping at the old one, and its
+full-power fixtures became explicit `MAX_POWER`). The movement table and
+`REACH_OPTIONS` were left untouched as directed; ships above power 4 gain
+nothing more until Step 3.
 
 In `src/rules/power.ts`, widen `PowerLevel` to `0 | 1 | 2 | 3 | 4 | 5 | 6` and
 set `MAX_POWER` to 6. `MIN_POWER` and `isPowerLevel` keep their shape, and the

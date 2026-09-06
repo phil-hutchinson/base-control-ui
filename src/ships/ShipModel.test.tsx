@@ -88,7 +88,7 @@ describe("ShipModel", () => {
           );
           expect(litSlots).toHaveLength(power);
 
-          expect(label).toBe(`H8, ${side} ship, power ${power} of 4`);
+          expect(label).toBe(`H8, ${side} ship, power ${power} of 6`);
         },
       );
     }

@@ -17,6 +17,7 @@ import {
   OPENING_PRESSURE_TABLE,
   dealOpeningBoard,
 } from "./nodes";
+import { MAX_POWER } from "./power";
 
 const SEED = 12345;
 const STARTING_FLEET = startingFleet(DEFAULT_FLEET_SIZE);
@@ -223,7 +224,7 @@ describe("startingGameState", () => {
         fleetSize,
       );
       for (const ship of state.ships) {
-        expect(ship.power).toBe(4);
+        expect(ship.power).toBe(MAX_POWER);
       }
     }
   });

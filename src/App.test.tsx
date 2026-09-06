@@ -23,7 +23,7 @@ vi.mock("./board/Board", async (importOriginal) => {
 
 /** The ships on the board, one gridcell per ship, by their accessible name. */
 function shipCells() {
-  return screen.getAllByRole("gridcell", { name: /ship, power \d of 4$/ });
+  return screen.getAllByRole("gridcell", { name: /ship, power \d of 6$/ });
 }
 
 async function pressPlay() {

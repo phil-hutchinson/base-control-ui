@@ -29,7 +29,7 @@ import {
   applyAttack,
   applyMove,
 } from "./ply";
-import type { PowerLevel } from "./power";
+import { MAX_POWER, type PowerLevel } from "./power";
 import { NODE_CAPACITY, type NodeState } from "./nodes";
 
 function ship(
@@ -186,7 +186,9 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
     const initial = {
       ...buildState({
         ships: [
-          ship("green-camper", "green", "H8"),
+          // At full power, so a depleted node's own gain has nothing left
+          // to give it — this test is about retirement, not recovery.
+          ship("green-camper", "green", "H8", MAX_POWER),
           ship("green-mover", "green", "A1"),
           ship("red-mover", "red", "O4"),
         ],
@@ -231,7 +233,7 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
       (candidate) => candidate.id === "green-camper",
     );
     expect(camperAfterRetirement?.square).toEqual(squareFromName("H8"));
-    expect(camperAfterRetirement?.power).toBe(4);
+    expect(camperAfterRetirement?.power).toBe(MAX_POWER);
 
     // Red's turn, then green's own next turn: H8 is now an ordinary square
     // — it holds no node — so green pays nothing further for standing on
@@ -251,15 +253,15 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
       (candidate) => candidate.id === "green-camper",
     );
     expect(camperStillThere?.square).toEqual(squareFromName("H8"));
-    expect(camperStillThere?.power).toBe(4);
+    expect(camperStillThere?.power).toBe(MAX_POWER);
   });
 });
 
 describe("camping — a node that grants or takes nothing has nothing left to give or take (§8.5)", () => {
-  it("grants no power and collects no energy for a ship on an inactive node, and a ship already at 4 power on a depleted node gains nothing further", () => {
-    // green-depleted-camper starts at 4 power (full) and green starts this
+  it("grants no power and collects no energy for a ship on an inactive node, and a ship already at full power on a depleted node gains nothing further", () => {
+    // green-depleted-camper starts at full power and green starts this
     // test at 0 energy (buildState's default), so this is not a claim that
-    // depleted nodes are free under 0.14 — it is the ceiling corner case: a
+    // depleted nodes are free in general — it is the ceiling corner case: a
     // ship with no power left to gain and a side with no energy left to
     // take raise neither a power-gained nor an energy-penalty effect. See
     // the dedicated "a depleted node costs" tests below for the general
@@ -267,7 +269,7 @@ describe("camping — a node that grants or takes nothing has nothing left to gi
     const initial = buildState({
       ships: [
         ship("green-inactive-camper", "green", "H4"),
-        ship("green-depleted-camper", "green", "N4"),
+        ship("green-depleted-camper", "green", "N4", MAX_POWER),
         ship("green-mover", "green", "A1"),
         ship("red-mover", "red", "O4"),
       ],
@@ -293,7 +295,7 @@ describe("camping — a node that grants or takes nothing has nothing left to gi
       expect(inactive?.square).toEqual(squareFromName("H4"));
       expect(inactive?.power).toBe(4);
       expect(depleted?.square).toEqual(squareFromName("N4"));
-      expect(depleted?.power).toBe(4);
+      expect(depleted?.power).toBe(MAX_POWER);
       expect(state.energy.green).toBe(0);
     }
 
@@ -700,8 +702,12 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
 
     const initial = buildState({
       ships: [
-        ship("red-camper", "red", "H8", 4),
-        ship("green-enemy", "green", "H11", 4),
+        // Both at full power: the camper so the depleted node it eventually
+        // sits under (once it runs out) has nothing left to give it, and the
+        // attacker so its own planet return afterwards has nothing to give
+        // it either.
+        ship("red-camper", "red", "H8", MAX_POWER),
+        ship("green-enemy", "green", "H11", MAX_POWER),
         ship("green-mover", "green", "A1"),
         ship("red-mover", "red", "O1"),
       ],
@@ -778,8 +784,8 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
     const enemyAfterFight = attackResult.state.ships.find(
       (candidate) => candidate.id === "green-enemy",
     );
-    expect(camperAfterFight?.power).toBe(4);
-    expect(enemyAfterFight?.power).toBe(4);
+    expect(camperAfterFight?.power).toBe(MAX_POWER);
+    expect(enemyAfterFight?.power).toBe(MAX_POWER);
     expect(isPlanet(camperAfterFight!.square)).toBe(true);
     expect(isPlanet(enemyAfterFight!.square)).toBe(true);
     const occupiedSquareNames = attackResult.state.ships.map((candidate) =>

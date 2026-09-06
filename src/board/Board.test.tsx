@@ -167,7 +167,7 @@ describe("Board", () => {
 
     expect(
       screen.getAllByRole("gridcell", {
-        name: /, planet(, .+ ship, power \d of 4)?$/,
+        name: /, planet(, .+ ship, power \d of 6)?$/,
       }),
     ).toHaveLength(PLANETS.length);
   });
@@ -239,7 +239,7 @@ describe("Board", () => {
       expect(cell).toBeInTheDocument();
     }
     expect(
-      screen.getAllByRole("gridcell", { name: /ship, power \d of 4$/ }),
+      screen.getAllByRole("gridcell", { name: /ship, power \d of 6$/ }),
     ).toHaveLength(STARTING_FLEET.length);
   });
 
@@ -426,7 +426,7 @@ describe("Board", () => {
     // H8 is a node as well as this ship's new square; both are named. This
     // file states H8 charged.
     const cell = screen.getByRole("gridcell", {
-      name: "H8, charged node, green ship, power 4 of 4",
+      name: "H8, charged node, green ship, power 6 of 6",
     });
     expect(cell).toBeInTheDocument();
     expect(cell.querySelector(".ship-model--green")).toBeInTheDocument();
@@ -685,7 +685,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H9, red ship, power 4 of 4, can attack here, both ships would return to planets",
+          name: "H9, red ship, power 4 of 6, can attack here, both ships would return to planets",
         }),
       ).toBeInTheDocument();
 
@@ -751,7 +751,7 @@ describe("Board", () => {
 
           expect(
             screen.getByRole("gridcell", {
-              name: `H9, red ship, power ${defenderPower} of 4, can attack here, both ships would return to planets`,
+              name: `H9, red ship, power ${defenderPower} of 6, can attack here, both ships would return to planets`,
             }),
           ).toBeInTheDocument();
 
@@ -851,7 +851,7 @@ describe("Board", () => {
       // within a 3-power ship's true reach (rules.md §6, §7).
       expect(
         screen.getByRole("gridcell", {
-          name: "H10, red ship, power 4 of 4, can attack here, both ships would return to planets",
+          name: "H10, red ship, power 4 of 6, can attack here, both ships would return to planets",
         }),
       ).toBeInTheDocument();
     });
@@ -874,7 +874,7 @@ describe("Board", () => {
         screen.queryByRole("gridcell", { name: /^I9,.*can attack here/ }),
       ).not.toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", { name: "I9, red ship, power 4 of 4" }),
+        screen.getByRole("gridcell", { name: "I9, red ship, power 4 of 6" }),
       ).toBeInTheDocument();
     });
 
@@ -1017,16 +1017,16 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted node, green ship, power 4 of 4",
+          name: "H4, depleted node, green ship, power 4 of 6",
         }),
       ).toBeInTheDocument();
       // Nothing holds the rest of the fleet back: green-2 and green-3 both
       // have an ordinary move available and carry no condition.
       expect(
-        screen.getByRole("gridcell", { name: "A1, green ship, power 4 of 4" }),
+        screen.getByRole("gridcell", { name: "A1, green ship, power 4 of 6" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("gridcell", { name: "B2, green ship, power 4 of 4" }),
+        screen.getByRole("gridcell", { name: "B2, green ship, power 4 of 6" }),
       ).toBeInTheDocument();
     });
 
@@ -1040,7 +1040,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted node, green ship, power 4 of 4, selected",
+          name: "H4, depleted node, green ship, power 4 of 6, selected",
         }),
       ).toBeInTheDocument();
     });
@@ -1059,7 +1059,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted node, green ship, power 4 of 4",
+          name: "H4, depleted node, green ship, power 4 of 6",
         }),
       ).toBeInTheDocument();
       // Green-2 has already acted this ply moving elsewhere, and has no
@@ -1067,13 +1067,13 @@ describe("Board", () => {
       // "no action available", dampened.
       expect(
         screen.getByRole("gridcell", {
-          name: "A1, green ship, power 4 of 4, already acted this turn, no action available this turn",
+          name: "A1, green ship, power 4 of 6, already acted this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
       // Green-3 has not acted and has a normal move available under §6, so
       // it carries no condition at all.
       expect(
-        screen.getByRole("gridcell", { name: "B2, green ship, power 4 of 4" }),
+        screen.getByRole("gridcell", { name: "B2, green ship, power 4 of 6" }),
       ).toBeInTheDocument();
     });
 
@@ -1086,7 +1086,7 @@ describe("Board", () => {
       render(<Board session={session} onIntent={noop} />);
 
       expect(
-        screen.getByRole("gridcell", { name: "O15, red ship, power 4 of 4" }),
+        screen.getByRole("gridcell", { name: "O15, red ship, power 4 of 6" }),
       ).toBeInTheDocument();
     });
 
@@ -1151,7 +1151,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H8, green ship, power 0 of 4, no action available this turn",
+          name: "H8, green ship, power 0 of 6, no action available this turn",
         }),
       ).toBeInTheDocument();
     });
@@ -1190,7 +1190,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H8, green ship, power 2 of 4, already acted this turn, no action available this turn",
+          name: "H8, green ship, power 2 of 6, already acted this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
     });
@@ -1227,7 +1227,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H8, green ship, power 2 of 4, already acted this turn, no action available this turn",
+          name: "H8, green ship, power 2 of 6, already acted this turn, no action available this turn",
         }),
       ).toBeInTheDocument();
     });

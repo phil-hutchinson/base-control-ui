@@ -24,7 +24,7 @@ import {
   applyAttack,
   applyMove,
 } from "./ply";
-import type { PowerLevel } from "./power";
+import { MAX_POWER, type PowerLevel } from "./power";
 
 function ship(
   id: ShipId,
@@ -96,7 +96,7 @@ function shipOf(state: GameState, id: ShipId): Ship {
 }
 
 describe("recovery — a beaten ship recovers on its planet, a point at a time, only on its own turns, at no energy cost", () => {
-  it("gains one point at the end of each of its owner's turns, never the other side's, and stops at 4", () => {
+  it("gains one point at the end of each of its owner's turns, never the other side's, and stops at the maximum", () => {
     // green-1 attacks at 0 power (still one square orthogonally, rules.md
     // §4.1) and red-1 defends at full power, so the fight itself (§7)
     // leaves them exactly as they were — pinned below via the
@@ -105,9 +105,9 @@ describe("recovery — a beaten ship recovers on its planet, a point at a time, 
     const initial = buildState({
       ships: [
         ship("green-1", "green", "H8", 0),
-        ship("red-1", "red", "H9", 4),
-        ship("green-2", "green", "E5", 4),
-        ship("red-2", "red", "K5", 4),
+        ship("red-1", "red", "H9", MAX_POWER),
+        ship("green-2", "green", "E5", MAX_POWER),
+        ship("red-2", "red", "K5", MAX_POWER),
       ],
       energy: { green: 10, red: 7 },
     });
@@ -123,7 +123,7 @@ describe("recovery — a beaten ship recovers on its planet, a point at a time, 
       throw new Error("expected a fight-resolved effect");
     }
     expect(fightResolved.attacker.power).toBe(0);
-    expect(fightResolved.defender.power).toBe(4);
+    expect(fightResolved.defender.power).toBe(MAX_POWER);
 
     // Green initiated the fight, so this is the same call that closes out
     // green's own turn: green-1 arrives on a planet at the 0 power it
@@ -137,7 +137,7 @@ describe("recovery — a beaten ship recovers on its planet, a point at a time, 
     expect(isPlanet(red1.square)).toBe(true);
     expect(squareName(green1.square)).not.toBe(squareName(red1.square));
     expect(green1.power).toBe(1);
-    expect(red1.power).toBe(4);
+    expect(red1.power).toBe(MAX_POWER);
     expect(fightEndEffects).toContainEqual({
       type: "power-gained",
       shipId: "green-1",
@@ -227,7 +227,7 @@ describe("recovery — a beaten ship recovers on its planet, a point at a time, 
     expect(shipOf(afterRedTurn3.state, "green-1").power).toBe(3);
     state = afterRedTurn3.state;
 
-    // Green's turn: fourth point reaches the maximum.
+    // Green's turn: fourth point.
     const afterGreenTurn4 = moveAppliedOrThrow(
       applyMove(state, "green-2", squareFromName("E6")),
     );
@@ -248,25 +248,68 @@ describe("recovery — a beaten ship recovers on its planet, a point at a time, 
     );
     state = afterRedTurn4.state;
 
-    // Green's turn once more: green-1 is already at the maximum, so it gains
-    // nothing further and no effect is raised for it — it never goes past 4.
+    // Green's turn: fifth point.
     const afterGreenTurn5 = moveAppliedOrThrow(
       applyMove(state, "green-2", squareFromName("E5")),
     );
+    expect(endOfTurnEffects(afterGreenTurn5.effects)).toContainEqual({
+      type: "power-gained",
+      shipId: "green-1",
+      side: "green",
+      square: greenPlanetSquare,
+      power: 5,
+    });
+    green1 = shipOf(afterGreenTurn5.state, "green-1");
+    expect(green1.power).toBe(5);
+    state = afterGreenTurn5.state;
+
+    // Red's turn again: no change.
+    const afterRedTurn5 = moveAppliedOrThrow(
+      applyMove(state, "red-2", squareFromName("K6")),
+    );
+    state = afterRedTurn5.state;
+
+    // Green's turn: sixth point reaches the maximum.
+    const afterGreenTurn6 = moveAppliedOrThrow(
+      applyMove(state, "green-2", squareFromName("E6")),
+    );
+    expect(endOfTurnEffects(afterGreenTurn6.effects)).toContainEqual({
+      type: "power-gained",
+      shipId: "green-1",
+      side: "green",
+      square: greenPlanetSquare,
+      power: MAX_POWER,
+    });
+    green1 = shipOf(afterGreenTurn6.state, "green-1");
+    expect(green1.power).toBe(MAX_POWER);
+    state = afterGreenTurn6.state;
+
+    // Red's turn again: no change.
+    const afterRedTurn6 = moveAppliedOrThrow(
+      applyMove(state, "red-2", squareFromName("K5")),
+    );
+    state = afterRedTurn6.state;
+
+    // Green's turn once more: green-1 is already at the maximum, so it gains
+    // nothing further and no effect is raised for it — it never goes past
+    // the maximum.
+    const afterGreenTurn7 = moveAppliedOrThrow(
+      applyMove(state, "green-2", squareFromName("E5")),
+    );
     expect(
-      endOfTurnEffects(afterGreenTurn5.effects).some(
+      endOfTurnEffects(afterGreenTurn7.effects).some(
         (effect) =>
           (effect.type === "power-gained" || effect.type === "power-lost") &&
           effect.shipId === "green-1",
       ),
     ).toBe(false);
-    green1 = shipOf(afterGreenTurn5.state, "green-1");
-    expect(green1.power).toBe(4);
+    green1 = shipOf(afterGreenTurn7.state, "green-1");
+    expect(green1.power).toBe(MAX_POWER);
     expect(green1.square).toEqual(greenPlanetSquare);
 
     // Across the whole recovery, no energy was ever collected or paid for
     // the ship sitting on the planet.
-    expect(afterGreenTurn5.state.energy).toEqual({ green: 10, red: 7 });
+    expect(afterGreenTurn7.state.energy).toEqual({ green: 10, red: 7 });
   });
 });
 
@@ -361,7 +404,10 @@ describe("recovery — leaving a planet before it is full keeps what was recover
 describe("recovery — a fight between ships at different powers changes neither (rules.md §7)", () => {
   it("returns a full-power attacker and a drained defender each carrying what they had, with both origin squares emptied", () => {
     const initial = buildState({
-      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 0)],
+      ships: [
+        ship("green-1", "green", "H8", MAX_POWER),
+        ship("red-1", "red", "H9", 0),
+      ],
     });
 
     const result = attackAppliedOrThrow(
@@ -375,7 +421,7 @@ describe("recovery — a fight between ships at different powers changes neither
     if (fightResolved === undefined) {
       throw new Error("expected a fight-resolved effect");
     }
-    expect(fightResolved.attacker.power).toBe(4);
+    expect(fightResolved.attacker.power).toBe(MAX_POWER);
     expect(fightResolved.defender.power).toBe(0);
 
     // The attacker is already at the maximum, so even though it is the
@@ -384,7 +430,7 @@ describe("recovery — a fight between ships at different powers changes neither
     // it with.
     const green1 = shipOf(result.state, "green-1");
     const red1 = shipOf(result.state, "red-1");
-    expect(green1.power).toBe(4);
+    expect(green1.power).toBe(MAX_POWER);
     expect(red1.power).toBe(0);
     expect(isPlanet(green1.square)).toBe(true);
     expect(isPlanet(red1.square)).toBe(true);
