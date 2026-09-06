@@ -1,7 +1,8 @@
-// §8.4: the table and what a side is standing on. A player collects energy
-// for the charged nodes they hold and nothing subtracts it — depleted nodes
-// are the trap's concern (`trap.ts`), not an energy one. Nothing about the
-// end-of-turn sequence, effects or running totals lives here.
+// §8.4: the table and the charged nodes a side is standing on. A player
+// collects energy for the charged nodes they hold and nothing subtracts it —
+// depleted nodes are the trap's concern (`trap.ts`), not an energy one.
+// Nothing about the end-of-turn sequence, effects or running totals lives
+// here.
 
 import { type Square, squareName } from "./board";
 import {
@@ -61,28 +62,6 @@ export function chargedNodesHeldBy(
   const ships = shipsBySquare(state);
   return nodeSquares(state).filter((node) => {
     if (nodeStateAt(state, node) !== "charged") {
-      return false;
-    }
-    const ship = ships.get(squareName(node));
-    return ship !== undefined && ship.side === side;
-  });
-}
-
-/**
- * The depleted nodes `side` is standing on right now, in board order. A node
- * counts only if one of that side's ships occupies its square **and** the
- * square's node state is `depleted` (rules.md §8.4) — an inactive or charged
- * node costs nothing, and neither does a depleted node a ship merely flew
- * over, which this cannot see because it reads the state at the moment
- * asked.
- */
-export function depletedNodesOccupiedBy(
-  state: GameState,
-  side: Side,
-): readonly Square[] {
-  const ships = shipsBySquare(state);
-  return nodeSquares(state).filter((node) => {
-    if (nodeStateAt(state, node) !== "depleted") {
       return false;
     }
     const ship = ships.get(squareName(node));

@@ -5,14 +5,11 @@
 // sentence from `announcements.ts`.
 
 import { scoreSentence } from "../board/announcements";
-import {
-  chargedNodesHeldBy,
-  depletedNodesOccupiedBy,
-  MAX_DEPLETED_NODES_PRICED,
-} from "../rules/energy";
+import { chargedNodesHeldBy, MAX_DEPLETED_NODES_PRICED } from "../rules/energy";
 import type { Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
 import { TARGET_CHARGED_NODES } from "../rules/nodes";
+import { trappingNodesFor } from "../rules/trap";
 import "./ScoreDisplay.css";
 
 /** The most a turn can pay or cost is 10 (§8.4), so the longest game (90
@@ -38,7 +35,7 @@ export function ScoreDisplay({
   displayedTotal,
 }: ScoreDisplayProps) {
   const nodesHeld = chargedNodesHeldBy(state, side).length;
-  const depletedOccupied = depletedNodesOccupiedBy(state, side).length;
+  const depletedOccupied = trappingNodesFor(state, side).length;
 
   return (
     <div className={`score-display score-display--${side}`}>

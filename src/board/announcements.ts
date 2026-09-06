@@ -7,7 +7,8 @@
 
 import { isPlanet } from "../rules/planets";
 import { squareName } from "../rules/board";
-import { chargedNodesHeldBy, depletedNodesOccupiedBy } from "../rules/energy";
+import { chargedNodesHeldBy } from "../rules/energy";
+import { trappingNodesFor } from "../rules/trap";
 import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
@@ -501,7 +502,7 @@ export function announcementForSession(session: Session): string {
  * score cell's hidden text. */
 export function scoreSentence(state: GameState, side: Side): string {
   const nodesHeld = chargedNodesHeldBy(state, side).length;
-  const depletedOccupied = depletedNodesOccupiedBy(state, side).length;
+  const depletedOccupied = trappingNodesFor(state, side).length;
   return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}, ${depletedNodesOccupiedPhrase(depletedOccupied)}.`;
 }
 

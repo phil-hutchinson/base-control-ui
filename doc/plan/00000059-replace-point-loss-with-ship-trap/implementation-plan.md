@@ -635,7 +635,27 @@ finds nothing.
 
 ### Step 3 — `src/rules/trap.ts`: who is trapped
 
-Status: pending
+Status: committed
+
+Notes: Created `src/rules/trap.ts` as a leaf module (imports only `board.ts`,
+`fleet.ts` and `gameState.ts`) exporting `isShipTrapped(state, shipId)`,
+`trappingNodesFor(state, side)` (moved from `energy.ts`, formerly
+`depletedNodesOccupiedBy`, per D2), `trappedShips(state, side)` and
+`isSideAllTrapped(state, side)` (D3). Deleted `depletedNodesOccupiedBy` from
+`energy.ts` and repointed its two remaining callers — `scoreSentence` in
+`src/board/announcements.ts` and `src/hud/ScoreDisplay.tsx` — at
+`trappingNodesFor`. Moved its tests from `energy.test.ts` into new
+`src/rules/trap.test.ts`, alongside new coverage for `isShipTrapped`,
+`trappedShips` and `isSideAllTrapped` (including a hand-built planet case, as
+documentation that a ship there is never trapped, per D3). One small
+deviation: the doc comment on `trappingNodesFor` initially named the old
+`depletedNodesOccupiedBy` identifier to explain the rename, which satisfied
+CONTRIBUTING's "no record of rejected approaches" poorly and tripped the
+step's own `grep -rn "depletedNodesOccupiedBy" src/` verification, so it was
+reworded to describe the function's current purpose only, with no reference
+to its former name. `npm run typecheck`, `npm run lint`, `npm run
+format:check` and `npm test` (955 tests, including the new
+`trap.test.ts`) all pass.
 
 Create `src/rules/trap.ts` — the trap's predicates and nothing else (D1, D3).
 It must import only `board.ts`, `fleet.ts` and `gameState.ts`; it must **not**

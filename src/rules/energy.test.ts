@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ALL_SQUARES, squareFromName } from "./board";
-import {
-  chargedNodesHeldBy,
-  depletedNodesOccupiedBy,
-  energyForNodesHeld,
-} from "./energy";
+import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
@@ -135,74 +131,5 @@ describe("chargedNodesHeldBy", () => {
     });
 
     expect(chargedNodesHeldBy(state, "green")).toEqual([]);
-  });
-});
-
-describe("depletedNodesOccupiedBy", () => {
-  it("counts a ship standing on a depleted node", () => {
-    const state = buildState({
-      nodes: { H8: "depleted" },
-      ships: [ship("green-1", "green", "H8")],
-    });
-
-    expect(depletedNodesOccupiedBy(state, "green")).toEqual([
-      squareFromName("H8"),
-    ]);
-  });
-
-  it("does not count a ship on an inactive node", () => {
-    const state = buildState({
-      nodes: { H8: "inactive" },
-      ships: [ship("green-1", "green", "H8")],
-    });
-
-    expect(depletedNodesOccupiedBy(state, "green")).toEqual([]);
-  });
-
-  it("does not count a ship on a charged node", () => {
-    const state = buildState({
-      nodes: { H8: "charged" },
-      ships: [ship("green-1", "green", "H8")],
-    });
-
-    expect(depletedNodesOccupiedBy(state, "green")).toEqual([]);
-  });
-
-  it("does not count an enemy ship on a depleted node for this side", () => {
-    const state = buildState({
-      nodes: { H8: "depleted" },
-      ships: [ship("red-1", "red", "H8")],
-    });
-
-    expect(depletedNodesOccupiedBy(state, "green")).toEqual([]);
-  });
-
-  it("counts two ships of the same side on two depleted nodes, in ALL_SQUARES order", () => {
-    const state = buildState({
-      nodes: { L8: "depleted", D8: "depleted" },
-      ships: [ship("green-1", "green", "L8"), ship("green-2", "green", "D8")],
-    });
-
-    const d8Index = ALL_SQUARES.findIndex(
-      (square) => square.column === "D" && square.row === 8,
-    );
-    const l8Index = ALL_SQUARES.findIndex(
-      (square) => square.column === "L" && square.row === 8,
-    );
-    expect(d8Index).toBeLessThan(l8Index);
-
-    expect(depletedNodesOccupiedBy(state, "green")).toEqual([
-      squareFromName("D8"),
-      squareFromName("L8"),
-    ]);
-  });
-
-  it("returns an empty list for a side standing on no depleted node", () => {
-    const state = buildState({
-      nodes: { H8: "depleted" },
-      ships: [ship("green-1", "green", "D2")],
-    });
-
-    expect(depletedNodesOccupiedBy(state, "green")).toEqual([]);
   });
 });
