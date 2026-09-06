@@ -1330,3 +1330,72 @@ Depends on: Step 11 (everything is in and the build is clean).
 Verification (manual): the owner confirms points 1–3, or names what to change.
 A change requested here is a small follow-up edit to Step 4's files,
 re-verified by `npm test` and by the owner's second look.
+
+### Step 13 — The relief's tie is broken at random, not by board order
+
+Status: pending
+
+Added after peer review, on the owner's decision against finding #1 of
+`peer-review.md`. As written, §8.6 step 7 broke a tie on remaining life by
+taking "the earlier one in board order" — a term `rules.md` used in that one
+place and never defined, and which the code resolved silently as `ALL_SQUARES`
+order. The owner's ruling is that the tie should be settled **at random**
+instead. This removes the undefined term rather than defining it, and it fits
+the game's own character: `CLAUDE.md` describes a game that is deliberately not
+pure strategy — which node charges next is random, and which bay a beaten ship
+returns to is random — so which of two equally spent nodes ends early is a
+natural thing to leave to the same seeded stream.
+
+**The ruleset first**, per the guide: this is a gameplay change, and the
+document is what the code implements.
+
+- `doc/ruleset/rules.md` §8.6 step 7: replace the sentence "If two qualifying
+  nodes are tied on remaining life, the earlier one in board order ends" with a
+  random choice among the tied qualifying nodes. Say it in the document's own
+  register, and make sure no other sentence in §8.6 still leans on "board
+  order" — the term should not survive this step anywhere in the document.
+- `doc/ruleset/changelog.md`: this branch has already bumped 0.24 → 0.25, and a
+  branch carries **one** bump. Fold this change into the existing 0.25 entry
+  rather than writing a second one, and leave `RULES_VERSION` at 0.25.
+
+**Then the code.**
+
+- `src/rules/relief.ts`: `reliefSquare` currently promises in its doc comment
+  that it draws no randomness and returns a square alone. It must now be able
+  to consume the seeded stream, so it returns the next seed alongside its
+  answer, and its header and doc comments are corrected — including the
+  sentence explaining the strict less-than comparison, which exists only to
+  produce the board-order tie-break being removed.
+- Draw with `drawIndex` from `src/rules/random.ts`, the existing uniform draw.
+- **Draw only when there is an actual tie** — that is, only when two or more
+  qualifying candidates share the lowest level. A relief with a single lowest
+  candidate consumes no seed, and a relief that cannot fire at all still
+  consumes none. This keeps seed consumption a predictable function of the
+  board, keeps the existing "consumes no seed" assertions honest, and means a
+  recorded game only spends a draw where the outcome genuinely needed one.
+- `src/rules/endOfTurn.ts`: step 7's loop threads the returned seed back into
+  the working state before it retires and replaces, so the replacement draw
+  follows the tie-break draw in the one stream. The fixed side order (the side
+  that just played, then the other) still matters for exactly the reason its
+  comment already gives, and now matters more, so leave that reasoning in
+  place and extend it to cover the tie-break draw.
+
+Tests — `relief.test.ts`: two qualifying candidates tied on the lowest level
+are both reachable, and which one is chosen follows the seed, not the board —
+assert that two different seeds over the same tied state select different
+squares, and that a given seed selects the same square every time; the
+returned seed advances when a tie is broken and is unchanged when there is a
+single lowest candidate or no candidate at all; a candidate with a strictly
+lower level still wins outright with no draw made. `endOfTurn.test.ts`: the
+existing step 7 cases still hold, and a tied state's replacement draw follows
+the tie-break draw in the same stream, so the sequence as a whole stays
+replayable. `seededReplay.test.ts` must still pass unchanged — the same seed
+and the same actions still produce the same game.
+
+Depends on: Steps 7, 9 and 10 (the choice, step 7 itself, and the integration
+cover that must keep passing over it).
+
+Verification (automated): `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` all pass, with the new `relief.test.ts`
+cases green and `seededReplay.test.ts` unchanged. Then confirm the term is
+gone: `grep -rn "board order" doc/ruleset/rules.md src/` finds nothing.
