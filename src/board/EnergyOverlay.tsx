@@ -62,7 +62,7 @@ function endOfActionSettlements(
 }
 
 /**
- * Every settlement (collection or penalty) the session's last event
+ * Every settlement (energy collected) the session's last event
  * reported. An action that ends a ply can be immediately followed by the
  * pass guard firing for the other side, so a `moved` or `attacked` event can
  * carry settlements from both - one from its `ply-ended` effect and one from

@@ -1230,7 +1230,31 @@ equality assertions still hold.
 
 ### Step 11 — `README.md`, the accessibility ledger, and the sweep
 
-Status: pending
+Status: committed
+
+Notes: Rewrote README.md's overview paragraph and both quoted-block passages
+around the trap (a ship caught on a node when it burns out is trapped until
+the node retires, about ten turns later; a ship may fly over a depleted node
+but not land on one; a player whose every ship is trapped has one node ended
+early). Removed the "how many depleted nodes they are sitting on" HUD mention
+and the "a turn can pay you and charge you at once" sentence, since energy
+never falls now. Edited by hand (not via `/update-readme`) and rewrapped with
+`fmt` to match the file's existing ~80-column style. Added a story 59 section
+to `doc/plan/00000021-accessibility-tech-debt/known-issues.md`: no mark or
+accessible-name segment was added for the trap (D12), so an opponent's
+trapped ship carries no square-level confirmation that it is immune to
+attack — a genuinely new gap, since a depleted node's occupant had no
+legal-action consequence before this story. The sweep found two stray
+"penalty" mentions the earlier steps missed — a stale doc comment in
+`src/board/EnergyOverlay.tsx` ("collection or penalty") and a stale test
+title in `src/rules/endOfTurn.test.ts` ("while still paying the energy
+penalty") — both corrected as part of this step's own cleanup, since the
+plan's sweep explicitly checks for this wording. No other deviation.
+`npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test` (983
+tests) and `npm run build` all pass; the sweep greps for `penalt`,
+`depleted-pip`/`energy-penalty`, `falls below zero` and
+`MAX_DEPLETED_NODES_PRICED` all find nothing outside expected matches, and
+`grep -rn "depleted" README.md` finds only trap/node-life sentences.
 
 - **`README.md`** is player-facing (`CLAUDE.md`, Intended audience). Its
   overview paragraph and both quoted passages say a depleted node costs its

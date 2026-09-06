@@ -298,7 +298,7 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
     });
   });
 
-  it("leaves a ship on a depleted node with the power it had, while still paying the energy penalty", () => {
+  it("leaves a ship on a depleted node with the power it had", () => {
     const state = buildState({
       sideToMove: "green",
       nodes: {
