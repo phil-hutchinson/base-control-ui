@@ -1149,7 +1149,47 @@ pass, with the new `endOfTurn.test.ts` cases green.
 
 ### Step 10 — Integration cover: camping, passing, and a whole game
 
-Status: pending
+Status: committed
+
+Notes: `src/rules/camping.test.ts` was already largely rewritten around the
+reversal by Steps 5, 6 and 8's minimal patches ahead of this step (per their
+own recorded deviations, in keeping with Step 2's precedent), so the
+remaining gaps were the specific ones this step's own text calls out: the
+file header still described the old "a move may end anywhere" contract and
+was rewritten around the trap; the "a node running out under a ship traps
+it" test gained `legalDestinations`/`legalTargets` assertions (imported
+`legalDestinations` from `./movement`) proving the camper has neither a
+destination nor a target the instant it is trapped, not only a named move
+refusal; and the "outlasts it, until the node retires" test gained proof
+that the freed ship's square is an ordinary square it can leave from —
+checked with `legalDestinations`/`moveRefusalReason` on red's turn right
+after retirement, then carried through two further turns to an actual
+successful `applyMove` of the camper itself off H8. `src/rules/ply.test.ts`
+gained three additions: the existing trapped-target attack-refusal test now
+also asserts `legalTargets` is empty for the attacker (imported
+`legalTargets` from `./combat`), proving the trapped ship is never offered
+as a target rather than only refused when named directly; a new test proves
+a trapped ship still blocks an enemy's path (`path-blocked`) through its
+square exactly as an untrapped one would; and a new `applyPassGuard` test
+reuses the boxed-in-corner fixture from `endOfTurn.test.ts`'s relief
+coverage (green-1 on A1 at 0 power, red ships on B1 and A2, A1 itself
+depleted) to prove a side whose only ship is trapped and cannot be relieved
+by §8.6 step 7 (boxed in by ships and the board's own corner, not by the
+trap) genuinely passes under §5 rather than looping. `src/rules/
+fullGame.test.ts` and `src/rules/seededReplay.test.ts` needed no changes:
+both were already rewritten for the reversal in Step 2 (their policies
+already read `legalDestinations`/`legalTargets`, so neither could choose an
+illegal move under the new rules) and both already passed against the
+current code, so this step only re-ran them to confirm — no deviation, the
+plan itself anticipated this ("re-run and re-record as needed"). One
+deviation: the plan describes this step as a "rewrite" of `camping.test.ts`,
+but because Steps 5, 6 and 8 had already carried out the substance of that
+rewrite as documented deviations of their own, this step's actual work was
+the smaller set of additions above rather than a wholesale rewrite: the
+file's coverage matches the plan's list in full, but arrived at
+incrementally across four steps instead of landing in this one. `npm run
+typecheck`, `npm run lint`, `npm run format:check` and `npm test` (983
+tests) all pass.
 
 Rewrite and extend the integration-level tests so the story's behaviour is
 proven through the public rules API — `applyMove`, `applyAttack`,

@@ -1,13 +1,20 @@
-// Integration cover for camping: a ship that stays on a node that is not
-// charged owes nothing (rules.md §8.5), and the consequences that follow
-// once a move may end anywhere (§6) and the charge draw does not look at
-// occupancy (§8.2). It also covers the two consequences of a ship staying on
-// a **charged** node — the refuge it grants while held (§7) and the fact
-// that leaving one no longer ends it (§8.3). Driven entirely through the
-// public rules API — `applyMove`, `applyAttack`, `moveRefusalReason`,
-// `attackRefusalReason`, `legalTargets` and the `EndOfTurnEffect`s an action
-// carries — rather than by calling `runEndOfTurn` or `runChargeDraw`
-// directly, so this proves the same thing a player's turn would.
+// Integration cover for camping: staying put has stopped being free once a
+// node runs out from under you (rules.md §8.5). A ship on an inactive node
+// still owes and is owed nothing, and the charge draw does not look at
+// occupancy (§8.2). A ship holding a **charged** node is protected while it
+// holds it (§7) and pays nothing for holding it, and leaving one no longer
+// ends it (§8.3) — but staying on it to the very end costs the ship its
+// freedom: the instant the node runs out it is **trapped** there (§8.1,
+// §8.5), with no legal destination and no legal target of its own, and
+// nothing an enemy does can dislodge or attack it either. That lasts until
+// the node retires, at which point its square is an ordinary square again
+// and the ship can leave it like any other. A move may not land on a
+// depleted node at all (§6), whether or not a ship is trapped there. Driven
+// entirely through the public rules API — `applyMove`, `applyAttack`,
+// `moveRefusalReason`, `attackRefusalReason`, `legalDestinations`,
+// `legalTargets` and the `EndOfTurnEffect`s an action carries — rather than
+// by calling `runEndOfTurn` or `runChargeDraw` directly, so this proves the
+// same thing a player's turn would.
 
 import { describe, expect, it } from "vitest";
 import { squareFromName } from "./board";
@@ -21,7 +28,7 @@ import {
   type NodeStatus,
 } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
-import { moveRefusalReason } from "./movement";
+import { legalDestinations, moveRefusalReason } from "./movement";
 import {
   type MoveEffect,
   type PlyEndedEffect,
@@ -218,12 +225,28 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
     expect(camperAfterRetirement?.square).toEqual(squareFromName("H8"));
     expect(camperAfterRetirement?.power).toBe(MAX_POWER);
 
-    // Red's turn, then green's own next turn: H8 is now an ordinary square
-    // — it holds no node — so nothing about standing on it changes, even
-    // though the camper still has not moved an inch.
+    // Red's turn: H8 is now an ordinary square — it holds no node — so
+    // nothing about standing on it changes, even though the camper still
+    // has not moved an inch. It is also no longer trapped: it has a legal
+    // move of its own again, and is free to leave whenever it likes, exactly
+    // like any other ship (rules.md §8.5).
     const afterRedTurn = appliedOrThrow(
       applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
     );
+    expect(
+      legalDestinations(afterRedTurn.state, "green-camper").length,
+    ).toBeGreaterThan(0);
+    expect(
+      moveRefusalReason(
+        afterRedTurn.state,
+        "green-camper",
+        squareFromName("H9"),
+      ),
+    ).toBeUndefined();
+
+    // Green's own next turn: it chooses to leave the camper exactly where it
+    // is and act with a different ship instead — freedom means it may stay,
+    // not that it must go.
     const afterGreenNextTurn = appliedOrThrow(
       applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
     );
@@ -234,6 +257,19 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
     );
     expect(camperStillThere?.square).toEqual(squareFromName("H8"));
     expect(camperStillThere?.power).toBe(MAX_POWER);
+
+    // A further round proves the freedom is real: the camper itself now
+    // moves off H8 and the move succeeds.
+    const afterRedNextTurn = appliedOrThrow(
+      applyMove(afterGreenNextTurn.state, "red-mover", squareFromName("O4")),
+    );
+    const afterCamperLeaves = appliedOrThrow(
+      applyMove(afterRedNextTurn.state, "green-camper", squareFromName("H9")),
+    );
+    const camperAfterLeaving = afterCamperLeaves.state.ships.find(
+      (candidate) => candidate.id === "green-camper",
+    );
+    expect(camperAfterLeaving?.square).toEqual(squareFromName("H9"));
   });
 });
 
@@ -354,12 +390,10 @@ describe("camping — a node running out under a ship traps it (§8.3, §8.5)", 
     );
 
     // Moving a different ship is accepted without refusal, but green-camper
-    // itself is now trapped on the depleted node (rules.md §8.5) and has no
-    // move of its own — this is the reversal story 59 makes; a fuller
-    // rewrite of this file's camping premise is a later step's work.
-    const afterGreenNextTurn = appliedOrThrow(
-      applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
-    );
+    // itself is now trapped on the depleted node (rules.md §8.5): it has no
+    // move of its own at all, named as the trap rather than range or
+    // blocking, and no attack of its own either — this is the reversal
+    // story 59 makes.
     expect(
       moveRefusalReason(
         afterRedTurn.state,
@@ -367,6 +401,12 @@ describe("camping — a node running out under a ship traps it (§8.3, §8.5)", 
         squareFromName("H9"),
       ),
     ).toBe("ship-trapped");
+    expect(legalDestinations(afterRedTurn.state, "green-camper")).toEqual([]);
+    expect(legalTargets(afterRedTurn.state, "green-camper")).toEqual([]);
+
+    const afterGreenNextTurn = appliedOrThrow(
+      applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
+    );
     const greenNextTurnEffects = endOfTurnEffects(afterGreenNextTurn.effects);
     // H8 is depleted now, so it costs and gives green nothing from here — a
     // depleted node no longer gives power back (§4.1) or takes energy away.

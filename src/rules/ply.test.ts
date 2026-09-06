@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PLANETS, isPlanet } from "./planets";
 import { squareFromName, squareName } from "./board";
+import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import {
   ACTIONS_PER_PLY,
@@ -942,11 +943,34 @@ describe("applyAttack", () => {
       actionsRemaining: 1,
     });
 
+    // red-1 reaches K8 and can afford the shot, but the trapped ship is
+    // never offered as a target in the first place (rules.md §7), not only
+    // refused when named directly.
+    expect(legalTargets(state, "red-1")).toEqual([]);
+
     const result = applyAttack(state, "red-1", squareFromName("K8"));
 
     expect(result).toEqual({
       outcome: "refused",
       reason: "target-on-depleted-node",
+    });
+  });
+
+  it("still blocks an enemy's path even though it is trapped and has no action of its own (rules.md §7)", () => {
+    // green-1's own reach never matters here — it is red-1, sitting trapped
+    // on the depleted node at D4, that has to still be an obstacle: a
+    // trapped ship holds its square exactly as a charged-node holder does,
+    // and blocks a path through it just the same.
+    const state = buildState({
+      ships: [ship("green-1", "green", "D3", 4), ship("red-1", "red", "D4")],
+      nodes: { D4: "depleted" },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("D5"));
+
+    expect(result).toEqual({
+      outcome: "refused",
+      reason: "path-blocked",
     });
   });
 
@@ -1366,6 +1390,42 @@ describe("applyPassGuard", () => {
         },
       ],
     });
+  });
+
+  it("passes the ply when every one of the side's ships is trapped and §8.6 step 7 cannot relieve any of them (rules.md §5, §8.6)", () => {
+    // green-1 is trapped on the depleted node at A1 and, even if freed,
+    // would have nowhere to go: its only two on-board orthogonal
+    // neighbours, A2 and B1, are occupied, and it cannot afford the one
+    // diagonal square left (B2) at 0 power. Boxed in by ships and the
+    // board's own corner, not by the trap — so §8.6 step 7's relief
+    // (src/rules/relief.ts) finds no qualifying candidate, and the side
+    // genuinely has no action at all, rather than looping the guard
+    // forever waiting for one.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "A1", 0),
+        ship("red-1", "red", "B1"),
+        ship("red-2", "red", "A2"),
+      ],
+      // Comfortably above the recovery table's largest single draw (8), so
+      // A1 stays depleted through this very sequence rather than retiring
+      // in it — this test is about the pass guard, not step 6.
+      nodes: { A1: ["depleted", 30] },
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state.sideToMove).toBe("red");
+    expect(result.effect).toEqual({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      reason: "no-legal-action",
+      endOfTurn: [],
+    });
+    expect(result.state.nodes.A1.state).toBe("depleted");
+    const trapped = result.state.ships.find((s) => s.id === "green-1");
+    expect(trapped?.square).toEqual(squareFromName("A1"));
   });
 
   it("leaves a state with a legal move untouched", () => {
