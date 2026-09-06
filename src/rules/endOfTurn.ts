@@ -16,7 +16,16 @@
 // step 3 runs. A ship standing on a node that runs out in step 3 is trapped
 // there (§7, §8.1, §8.5), and a ship trapped on a node that retires in step
 // 6 is freed — both are reported as their own effect, immediately after the
-// node event that caused them.
+// node event that caused them. Step 7, the relief, runs last of all,
+// because it must see the depleted set exactly as it stands after both
+// step 3's new arrivals and step 6's retirements — a node step 3 just
+// depleted is a legitimate relief candidate, and a node step 6 already
+// retired must not be reconsidered. It runs once for `state.sideToMove` —
+// the side that just played — and then once for the other side, always in
+// that fixed order, because it is the only step past this point that still
+// draws from the seeded stream when it fires (rules.md §8.6 step 7); a
+// data-dependent order would make a recorded game's replay depend on which
+// side happened to need relief first.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
@@ -43,6 +52,11 @@ import {
   STARTING_PRESSURE,
   drawTableAmount,
 } from "./nodes";
+import { reliefSquare } from "./relief";
+
+function otherSide(side: Side): Side {
+  return side === "green" ? "red" : "green";
+}
 
 /**
  * A ship standing on a planet gained power at the end of its side's turn
@@ -112,6 +126,21 @@ export interface ShipFreedEffect {
   readonly square: Square;
 }
 
+/**
+ * A side whose every ship was trapped had one of its depleted nodes ended
+ * early, so it was not left to pass for the ten turns its recovery clock
+ * would otherwise take (§8.6 step 7, §5). `side` is the side being
+ * relieved, not necessarily the side that just played — step 7 asks the
+ * question of both sides. Always immediately **before** the `node-replaced`
+ * effect for the same node, so a listener hears the cause first, then the
+ * map change, then the ship it freed.
+ */
+export interface NodeReliefEffect {
+  readonly type: "node-relief";
+  readonly side: Side;
+  readonly square: Square;
+}
+
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
 export type EndOfTurnEffect =
   | PowerGainedEffect
@@ -120,7 +149,8 @@ export type EndOfTurnEffect =
   | ShipTrappedEffect
   | NodeChargedEffect
   | NodeReplacedEffect
-  | ShipFreedEffect;
+  | ShipFreedEffect
+  | NodeReliefEffect;
 
 /** The state resulting from the end-of-turn sequence, and the effects it produced. */
 export interface EndOfTurnResult {
@@ -336,6 +366,29 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     const retirement = retireAndReplaceNode(workingState, square, occupants);
     workingState = retirement.state;
     effects.push(...retirement.effects);
+  }
+
+  // Step 7: the all-trapped relief (§8.6 step 7, §5). A side whose every
+  // ship is trapped has no action at all, so rather than leaving it to pass
+  // for the ten turns its recovery clock would otherwise take, the depleted
+  // node with the least remaining life among those whose ship would
+  // actually have a legal move once freed ends at once (`relief.ts`'s
+  // choice). Runs for `side` — the one that just played — first, then for
+  // the other side, always in that fixed order: it is the only step left
+  // that draws from the seeded stream when it fires, and a
+  // data-dependent order would make a recorded game's replay depend on
+  // which side happened to need relief first. At most one node ends per
+  // side per ply — freeing one ship is enough that the side is no longer
+  // all-trapped — so the question is asked once per side, never in a loop.
+  for (const reliefSide of [side, otherSide(side)]) {
+    const square = reliefSquare(workingState, reliefSide);
+    if (square === undefined) {
+      continue;
+    }
+    effects.push({ type: "node-relief", side: reliefSide, square });
+    const relief = retireAndReplaceNode(workingState, square, occupants);
+    workingState = relief.state;
+    effects.push(...relief.effects);
   }
 
   return { state: workingState, effects };

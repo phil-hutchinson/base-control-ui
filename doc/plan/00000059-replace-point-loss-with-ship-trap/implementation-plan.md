@@ -1066,7 +1066,49 @@ pass, with the new `endOfTurn.test.ts` cases green.
 
 ### Step 9 — §8.6 step 7: the all-trapped relief
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as planned. `endOfTurn.ts` gained the
+`NodeReliefEffect` (side relieved, square ending early) added to the
+`EndOfTurnEffect` union; a new step 7 runs after step 6, looping
+`[side, otherSide(side)]` (a small module-private `otherSide` helper,
+mirroring the one already private to `ply.ts` rather than exporting either —
+importing across would create the cycle D1 exists to avoid), asking
+`relief.ts`'s `reliefSquare` for each side in turn, pushing `node-relief`
+then calling Step 8's `retireAndReplaceNode` helper for the chosen square.
+The module header and step 7's own comment record D10's fixed-order and
+seed-consumption reasoning and D9's factoring. `announcements.ts` gained the
+`node-relief` clause immediately ahead of the `node-replaced` clause it
+explains, per D14's wording, with its doc comment updated. Added the seven
+planned `endOfTurn.test.ts` cases under a new "step 7, the all-trapped
+relief" describe block (exact node/effect-order pin for the lowest-level
+qualifying node; no relief with one ship still free; no relief and no extra
+seed draw when boxed in; the not-just-moved side relieved too; both sides
+relieved with the just-moved side first; and the boxed-in case's seed left
+exactly where a state with no ships at all leaves it) and one
+`announcements.test.ts` case (the relief clause read ahead of the
+replacement it caused). One deviation, forced rather than chosen, in the
+same shape Steps 5 and 6 recorded: adding step 7 made four pre-existing
+`endOfTurn.test.ts` fixtures — each a single-ship side whose only ship ends
+up on the node the sequence just depleted — become all-trapped with a
+freely reachable board around them, so the relief fired inside the very
+sequence those tests exercise and retired the node they went on to inspect,
+crashing on the now-`undefined` `result.state.nodes.H8`. All four
+(`"goes depleted, carrying its level unclamped, once drain reaches or
+passes capacity, trapping the ship on it (§8.5)"`, the `pliesUntilDepleted`
+helper's `held` branch behind `"holds a node from the ply it is charged for
+about 13 plies"`, `"does not free the ship a node traps in step 3 of the
+same sequence — step 6 only touches nodes depleted before the ply began"`,
+and `"pays for a node whose drain reaches capacity at the end of this very
+turn (before step 3 ticks)"`) were given a second, still-free ship of the
+same side on a plain square (F8, not a node and not a planet), each with a
+short comment saying the second ship exists only so the side is not
+all-trapped and the relief does not fire — a real fleet is seven ships, so a
+one-ship side was a fixture artefact of the pre-relief code, not the rule
+biting, and each test's original assertions (including the one exact
+`effects` array) needed no other change. `npx prettier --write` was run on
+the test file afterwards to satisfy `format:check`. `npm run typecheck`,
+`npm run lint`, `npm run format:check` and `npm test` (981 tests) all pass.
 
 In `src/rules/endOfTurn.ts`, add **step 7** after step 6, per S3, D8 and D10.
 

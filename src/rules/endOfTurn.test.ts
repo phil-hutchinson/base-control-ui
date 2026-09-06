@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { squareFromName, squareName, type Square } from "./board";
-import { runEndOfTurn, type NodeReplacedEffect } from "./endOfTurn";
+import {
+  runEndOfTurn,
+  type NodeReliefEffect,
+  type NodeReplacedEffect,
+  type ShipFreedEffect,
+} from "./endOfTurn";
 import type { ShipId } from "./fleet";
+import { legalDestinations } from "./movement";
 import { legalNodePool } from "./nodePlacement";
 import { PLANETS } from "./planets";
 import {
@@ -15,10 +21,12 @@ import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { PowerLevel } from "./power";
 import {
+  DEPLETED_RECOVERY_TABLE,
   NODE_CAPACITY,
   NODE_COUNT,
   PRESSURE_CAP,
   STARTING_PRESSURE,
+  drawTableAmount,
   type NodeState,
 } from "./nodes";
 
@@ -384,7 +392,14 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     // NODE_CAPACITY - 1, so this is deterministic without pinning a seed.
     const state = buildState({
       nodes: { H8: ["charged", NODE_CAPACITY - 1] },
-      ships: [ship("green-1", "green", "H8", 1)],
+      // A second green ship on a plain square, free of any node, so green
+      // is not all-trapped and step 7's relief does not fire — a real
+      // fleet has seven ships, and this one contributes no effect of its
+      // own.
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("green-2", "green", "F8"),
+      ],
     });
 
     const result = runEndOfTurn(state);
@@ -452,7 +467,13 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
   ): number {
     let state = buildState({
       nodes: { H8: ["charged", startLevel] },
-      ships: held ? [ship("green-1", "green", "H8", 4)] : [],
+      // When held, a second green ship sits on a plain square, free of any
+      // node, so green is never all-trapped once H8 depletes — without it
+      // step 7's relief would end H8 the instant it goes depleted, and this
+      // test is about the depleted clock, not the relief.
+      ships: held
+        ? [ship("green-1", "green", "H8", 4), ship("green-2", "green", "F8")]
+        : [],
       randomSeed: seed,
     });
     let plies = 0;
@@ -796,7 +817,14 @@ describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §
     // never having been depleted before this ply began.
     const state = buildState({
       nodes: { H8: ["charged", NODE_CAPACITY - 1] },
-      ships: [ship("green-1", "green", "H8", 1)],
+      // A second green ship on a plain square, free of any node, so green
+      // is not all-trapped and step 7's relief does not also end H8 this
+      // very ply — that would be a true fact about the relief, not about
+      // step 6, and would defeat what this test is checking.
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("green-2", "green", "F8"),
+      ],
     });
 
     const result = runEndOfTurn(state);
@@ -811,6 +839,159 @@ describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §
     expect(
       result.effects.some((effect) => effect.type === "node-replaced"),
     ).toBe(false);
+  });
+});
+
+describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", () => {
+  it("ends exactly the lowest-level qualifying node, replaces it, and frees its ship, emitting node-relief, node-replaced and ship-freed in that order", () => {
+    // Both H8 and D8 have plenty of life left (well above the recovery
+    // table's maximum draw of 8), so neither retires in step 6 — both are
+    // still depleted, and both movable once freed, when step 7 runs. H8's
+    // level (30) is lower than D8's (40), so H8 has the least remaining
+    // life and is the one the relief ends; D8 stays trapping green-2.
+    const state = buildState({
+      nodes: { H8: ["depleted", 30], D8: ["depleted", 40] },
+      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "D8")],
+      sideToMove: "green",
+    });
+
+    const result = runEndOfTurn(state);
+
+    const reliefs = result.effects.filter(
+      (effect): effect is NodeReliefEffect => effect.type === "node-relief",
+    );
+    expect(reliefs).toEqual([
+      { type: "node-relief", side: "green", square: squareFromName("H8") },
+    ]);
+
+    const reliefIndex = result.effects.indexOf(reliefs[0]);
+    const replacedIndex = result.effects.findIndex(
+      (effect) => effect.type === "node-replaced",
+    );
+    const freed = result.effects.filter(
+      (effect): effect is ShipFreedEffect => effect.type === "ship-freed",
+    );
+    expect(freed).toHaveLength(1);
+    const freedIndex = result.effects.indexOf(freed[0]);
+    expect(reliefIndex).toBeLessThan(replacedIndex);
+    expect(replacedIndex).toBeLessThan(freedIndex);
+    expect(freed[0].shipId).toBe("green-1");
+
+    expect(result.state.nodes.H8).toBeUndefined();
+    expect(result.state.nodes.D8.state).toBe("depleted");
+    const freedShip = result.state.ships.find((s) => s.id === "green-1")!;
+    expect(freedShip.square).toEqual(squareFromName("H8"));
+    expect(legalDestinations(result.state, "green-1").length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it("ends nothing when one ship of the side is still free", () => {
+    const state = buildState({
+      nodes: { H8: ["depleted", 30] },
+      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "F8")],
+      sideToMove: "green",
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects.some((effect) => effect.type === "node-relief")).toBe(
+      false,
+    );
+    expect(result.effects.some((effect) => effect.type === "ship-freed")).toBe(
+      false,
+    );
+    expect(result.state.nodes.H8.state).toBe("depleted");
+  });
+
+  it("ends nothing when every ship is trapped but none would have a legal move once freed, and draws no seed doing so", () => {
+    // A1 is a corner: at power 0 the only affordable moves are the two
+    // orthogonal steps to B1 and A2, and both are occupied by an enemy ship
+    // — boxed in by ships and the edge of the board, not by the trap.
+    const state = buildState({
+      nodes: { A1: ["depleted", 30] },
+      ships: [
+        ship("green-1", "green", "A1", 0),
+        ship("red-1", "red", "B1"),
+        ship("red-2", "red", "A2"),
+      ],
+      sideToMove: "green",
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(
+      result.effects.some(
+        (effect) =>
+          effect.type === "node-relief" || effect.type === "ship-freed",
+      ),
+    ).toBe(false);
+    expect(result.state.nodes.A1.state).toBe("depleted");
+    // The only seed draw the whole sequence makes here is step 6's recovery
+    // draw for A1 — step 7 finds no qualifying candidate and draws nothing.
+    const [, expectedSeed] = drawTableAmount(
+      state.randomSeed,
+      DEPLETED_RECOVERY_TABLE,
+    );
+    expect(result.state.randomSeed).toBe(expectedSeed);
+  });
+
+  it("relieves the side that did not just move, as well as the side that did", () => {
+    const state = buildState({
+      nodes: { H8: ["depleted", 30] },
+      ships: [ship("red-1", "red", "H8")],
+      sideToMove: "green",
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "node-relief",
+      side: "red",
+      square: squareFromName("H8"),
+    });
+    expect(result.state.nodes.H8).toBeUndefined();
+  });
+
+  it("relieves both sides when both are all-trapped, the side that just moved first", () => {
+    const state = buildState({
+      nodes: { H8: ["depleted", 30], D8: ["depleted", 40] },
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "D8")],
+      sideToMove: "green",
+    });
+
+    const result = runEndOfTurn(state);
+
+    const reliefs = result.effects.filter(
+      (effect): effect is NodeReliefEffect => effect.type === "node-relief",
+    );
+    expect(reliefs.map((effect) => effect.side)).toEqual(["green", "red"]);
+    expect(result.state.nodes.H8).toBeUndefined();
+    expect(result.state.nodes.D8).toBeUndefined();
+  });
+
+  it("consumes no more seed when the relief cannot fire than the same state without any trapped side at all", () => {
+    const withBoxedTrap = buildState({
+      nodes: { A1: ["depleted", 30] },
+      ships: [
+        ship("green-1", "green", "A1", 0),
+        ship("red-1", "red", "B1"),
+        ship("red-2", "red", "A2"),
+      ],
+      sideToMove: "green",
+    });
+    const withoutAnyShips = buildState({
+      nodes: { A1: ["depleted", 30] },
+      ships: [],
+      sideToMove: "green",
+    });
+
+    const resultWithBoxedTrap = runEndOfTurn(withBoxedTrap);
+    const resultWithoutAnyShips = runEndOfTurn(withoutAnyShips);
+
+    expect(resultWithBoxedTrap.state.randomSeed).toBe(
+      resultWithoutAnyShips.state.randomSeed,
+    );
   });
 });
 
@@ -958,7 +1139,13 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     const state = buildState({
       sideToMove: "green",
       nodes: { H8: ["charged", NODE_CAPACITY - 1] },
-      ships: [ship("green-1", "green", "H8", 0)],
+      // A second green ship on a plain square, free of any node, so green
+      // is not all-trapped once H8 depletes and step 7's relief does not
+      // fire — this test is about step 2's collection, not the relief.
+      ships: [
+        ship("green-1", "green", "H8", 0),
+        ship("green-2", "green", "F8"),
+      ],
     });
 
     const result = runEndOfTurn(state);

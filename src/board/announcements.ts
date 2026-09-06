@@ -165,10 +165,13 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
  * appearing elsewhere is a visible change to the map and to where the next
  * race will be. `ship-trapped` and `ship-freed` each speak too, right after
  * the node event that caused them, since a player needs to know a ship was
- * caught or released, not just that a node changed. A zero collection
- * produces no effect at all (rules.md §8.4), so there is nothing here to
- * skip for it — a turn that collects nothing simply has no collection
- * clause, and nothing in this sequence ever takes energy away.
+ * caught or released, not just that a node changed. `node-relief` speaks
+ * ahead of the `node-replaced` effect it caused, naming the side it
+ * relieved, so a player hears why that node ended early, not just that it
+ * did. A zero collection produces no effect at all (rules.md §8.4), so
+ * there is nothing here to skip for it — a turn that collects nothing
+ * simply has no collection clause, and nothing in this sequence ever
+ * takes energy away.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -206,6 +209,11 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
       case "ship-freed":
         clauses.push(
           `The ${effect.side} ship at ${squareName(effect.square)} is free again.`,
+        );
+        break;
+      case "node-relief":
+        clauses.push(
+          `Every ${effect.side} ship was trapped, so the node at ${squareName(effect.square)} ended early.`,
         );
         break;
     }
