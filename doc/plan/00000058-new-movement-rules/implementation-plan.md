@@ -1090,7 +1090,7 @@ returns nothing.
 
 ### Step 10 — The owner looks at the gauge
 
-Status: pending
+Status: committed
 
 Notes: At this gate the owner rejected D11's "unlit slot still draws a thin
 line" rule outright — his testers found that a thin line and a thick line on
