@@ -939,7 +939,28 @@ at 6 reporting an amount of 1, and no power movement from either node state.
 
 ### Step 8 — The move and the attack say what they cost
 
-Status: pending
+Status: committed
+
+Notes: `moveSentence` gained a `moveCostClause` reading `MovedEvent.cost` and
+`.powerAfter` from Step 6, worded per the plan's suggestion ("The move cost 2
+power, leaving 4." / "The move was free; it still has 6 power."), appended
+after the existing journey sentence. `fightSentence` gained an inline
+attacker-cost clause computed as `attacker.power - cost` (exactly what D6 and
+this step authorise, as opposed to the recomputation-from-squares D6
+rejects), worded the same way, followed by a new "The defender kept the power
+it was carrying." clause, and the old shared "both keeping the power they
+were carrying" clause was dropped from the closing "returned to their
+planets" sentence since it is no longer true of the attacker.
+`src/game/session.ts` already carried `cost`/`powerAfter` on `MovedEvent` from
+Step 6, so no change was needed there. Updated all 31 `MovedEvent` fixtures'
+expected sentences in `announcements.test.ts` and all 5 `FightResolvedEffect`
+fixtures' expected sentences; one of the latter (attacker at 0 power paying
+cost 1) was not a state the new rules can produce, so its `cost` was corrected
+to 0 to keep the fixture legal — a one-line deviation the test's own point
+(wording holds at either power extreme) did not depend on. `Board.test.tsx`
+and `session.test.ts` needed no change: both assert the live region's text
+with prefix regexes that stop before the new clauses. No other deviation from
+the plan.
 
 In `src/board/announcements.ts`:
 

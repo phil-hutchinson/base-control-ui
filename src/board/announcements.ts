@@ -33,7 +33,7 @@ import type {
   PassEffect,
   PlyEndedEffect,
 } from "../rules/ply";
-import { MAX_POWER } from "../rules/power";
+import { MAX_POWER, type PowerLevel } from "../rules/power";
 import type {
   AttackedEvent,
   MovedEvent,
@@ -277,19 +277,29 @@ function passSentence(effect: PassEffect): string {
 }
 
 /**
- * "What the move was": the ship's journey, and whether it ended on a
- * planet. Either side's ship reads the same way; the side is already named
- * at the start of the sentence.
+ * What a move cost the moving ship, and what it has left (rules.md §6): an
+ * orthogonal step is free and says so, rather than claiming a cost of
+ * nothing.
+ */
+function moveCostClause(cost: PowerLevel, powerAfter: PowerLevel): string {
+  return cost === 0
+    ? `The move was free; it still has ${powerAfter} power.`
+    : `The move cost ${cost} power, leaving ${powerAfter}.`;
+}
+
+/**
+ * "What the move was": the ship's journey, whether it ended on a planet, and
+ * what the move cost (rules.md §6). Either side's ship reads the same way;
+ * the side is already named at the start of the sentence.
  */
 function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);
   const to = squareName(event.to);
+  const journey = isPlanet(event.to)
+    ? `${capitalize(event.side)} ship moved from ${from} onto the ${to} planet.`
+    : `${capitalize(event.side)} ship moved from ${from} to ${to}.`;
 
-  if (isPlanet(event.to)) {
-    return `${capitalize(event.side)} ship moved from ${from} onto the ${to} planet.`;
-  }
-
-  return `${capitalize(event.side)} ship moved from ${from} to ${to}.`;
+  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}`;
 }
 
 /**
@@ -345,9 +355,9 @@ function actionEndingClause(
 /**
  * The fight's own sentence (rules.md §7), from the single `fight-resolved`
  * effect an attack always carries: who attacked whom, that both were beaten,
- * and the two planets they landed on, both keeping the power they were
- * carrying. There is no winner and no advance to report — every fight has
- * the same outcome.
+ * what the attack cost the attacker and what it has left, that the defender
+ * kept the power it was carrying, and the two planets they landed on. There
+ * is no winner and no advance to report — every fight has the same outcome.
  */
 function fightSentence(event: AttackedEvent): string {
   const fight = event.effects.find(
@@ -364,11 +374,17 @@ function fightSentence(event: AttackedEvent): string {
   const attackerSide = capitalize(fight.attacker.side);
   const opening = `${attackerSide} ship at ${attackerSquare} attacked the ${fight.defender.side} ship at ${defenderSquare}`;
 
+  const attackerPowerAfter = (fight.attacker.power - fight.cost) as PowerLevel;
+  const attackCostClause =
+    fight.cost === 0
+      ? `The attack was free; the attacker still has ${attackerPowerAfter} power.`
+      : `The attack cost the attacker ${fight.cost} power, leaving ${attackerPowerAfter}.`;
+
   if (fight.returns.length !== 2) {
     throw new RangeError("a fight-resolved effect always carries two returns");
   }
   const [attackerReturn, defenderReturn] = fight.returns;
-  return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} planet and the defender to the ${squareName(defenderReturn.to)} planet, both keeping the power they were carrying.`;
+  return `${opening} and both were beaten. ${attackCostClause} The defender kept the power it was carrying. The attacker returned to the ${squareName(attackerReturn.to)} planet and the defender to the ${squareName(defenderReturn.to)} planet.`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {

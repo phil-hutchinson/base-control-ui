@@ -128,7 +128,7 @@ describe("announcementFor", () => {
       powerAfter: 5,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from G7 to H8. Green has 1 action left.",
+      "Green ship moved from G7 to H8. The move cost 1 power, leaving 5. Green has 1 action left.",
     );
   });
 
@@ -147,7 +147,7 @@ describe("announcementFor", () => {
       powerAfter: 5,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from G7 to H8. Red's turn, 1 action left.",
+      "Green ship moved from G7 to H8. The move cost 1 power, leaving 5. Red's turn, 1 action left.",
     );
   });
 
@@ -164,7 +164,7 @@ describe("announcementFor", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from C6 onto the D6 planet. Red has 1 action left.",
+      "Red ship moved from C6 onto the D6 planet. The move was free; it still has 6 power. Red has 1 action left.",
     );
   });
 
@@ -181,7 +181,7 @@ describe("announcementFor", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from C6 onto the D6 planet. Red has 1 action left.",
+      "Red ship moved from C6 onto the D6 planet. The move was free; it still has 6 power. Red has 1 action left.",
     );
   });
 
@@ -200,7 +200,7 @@ describe("announcementFor", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Red ship moved from C6 onto the D6 planet. Green's turn, 1 action left.",
+      "Red ship moved from C6 onto the D6 planet. The move was free; it still has 6 power. Green's turn, 1 action left.",
     );
   });
 
@@ -226,7 +226,7 @@ describe("announcementFor", () => {
       powerAfter: 5,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from G7 to H8. Red has no legal action, so the turn passes. Green's turn, 1 action left.",
+      "Green ship moved from G7 to H8. The move cost 1 power, leaving 5. Red has no legal action, so the turn passes. Green's turn, 1 action left.",
     );
   });
 
@@ -368,7 +368,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The node at K5 ran out. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. The node at K5 ran out. Red's turn, 1 action left.",
     );
   });
 
@@ -392,7 +392,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. A new node charged at D8. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. A new node charged at D8. Red's turn, 1 action left.",
     );
   });
 
@@ -422,7 +422,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The node at D8 is gone, and a new node appeared at K11. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. The node at D8 is gone, and a new node appeared at K11. Red's turn, 1 action left.",
     );
   });
 
@@ -457,7 +457,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. " +
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
         "The node at D8 is gone, and a new node appeared at K11. " +
         "The node at H12 is gone, and a new node appeared at F3. " +
         "Red's turn, 1 action left.",
@@ -491,7 +491,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. " +
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
         "A new node charged at D8. " +
         "The node at H12 is gone, and a new node appeared at F3. " +
         "Red's turn, 1 action left.",
@@ -527,7 +527,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at H8 gained a point of power, now on 3. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green ship at H8 gained a point of power, now on 3. Red's turn, 1 action left.",
     );
   });
 
@@ -560,7 +560,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at A2 gained 2 points of power, now on 4. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green ship at A2 gained 2 points of power, now on 4. Red's turn, 1 action left.",
     );
   });
 
@@ -601,7 +601,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a point of power. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green ships at H8 and K5 each gained a point of power. Red's turn, 1 action left.",
     );
   });
 
@@ -642,7 +642,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a point of power. K5 reached the maximum of 6. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green ships at H8 and K5 each gained a point of power. K5 reached the maximum of 6. Red's turn, 1 action left.",
     );
   });
 
@@ -675,7 +675,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at K5 gained 2 points of power, reaching the maximum of 6. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green ship at K5 gained 2 points of power, reaching the maximum of 6. Red's turn, 1 action left.",
     );
   });
 
@@ -711,7 +711,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at K5 gained a point of power, reaching the maximum of 6. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green ship at K5 gained a point of power, reaching the maximum of 6. Red's turn, 1 action left.",
     );
   });
 
@@ -745,7 +745,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at K5 gained a point of power, now on 3. The node at H8 ran out. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green ship at K5 gained a point of power, now on 3. The node at H8 ran out. Red's turn, 1 action left.",
     );
   });
 
@@ -784,7 +784,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from K4 to K5. " +
+      "Green ship moved from K4 to K5. The move was free; it still has 6 power. " +
         "Green ship at K5 gained 2 points of power, reaching the maximum of 6. " +
         "The node at K5 ran out. " +
         "The node at N4 is gone, and a new node appeared at F3. " +
@@ -819,7 +819,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 5,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from G7 to H8. The node at K5 ran out. " +
+      "Green ship moved from G7 to H8. The move cost 1 power, leaving 5. The node at K5 ran out. " +
         "Red has no legal action, so the turn passes. Green's turn, 1 action left.",
     );
   });
@@ -876,7 +876,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green collected 1 energy from the node at H8, and now has 7. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green collected 1 energy from the node at H8, and now has 7. Red's turn, 1 action left.",
     );
   });
 
@@ -908,7 +908,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 24. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 24. Red's turn, 1 action left.",
     );
   });
 
@@ -927,7 +927,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Red's turn, 1 action left.",
     );
   });
 
@@ -968,7 +968,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at H8 gained a point of power, now on 2. Green collected 1 energy from the node at H8, and now has 5. The node at K5 ran out. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green ship at H8 gained a point of power, now on 2. Green collected 1 energy from the node at H8, and now has 5. The node at K5 ran out. Red's turn, 1 action left.",
     );
   });
 
@@ -1022,7 +1022,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green lost 1 energy to the depleted node at H8, and now has 4. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green lost 1 energy to the depleted node at H8, and now has 4. Red's turn, 1 action left.",
     );
   });
 
@@ -1054,7 +1054,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green lost 3 energy to 3 depleted nodes at D8, H8 and K11, and now has 0. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green lost 3 energy to 3 depleted nodes at D8, H8 and K11, and now has 0. Red's turn, 1 action left.",
     );
   });
 
@@ -1093,7 +1093,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green lost 10 energy to 6 depleted nodes at D8, H8, K11, E5, K5 and G6, 4 of which are penalised, and now has 0. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green lost 10 energy to 6 depleted nodes at D8, H8, K11, E5, K5 and G6, 4 of which are penalised, and now has 0. Red's turn, 1 action left.",
     );
   });
 
@@ -1112,7 +1112,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Red's turn, 1 action left.",
     );
   });
 
@@ -1151,7 +1151,7 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 6. Green lost 3 energy to 2 depleted nodes at E5 and K5, and now has 3. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 6. Green lost 3 energy to 2 depleted nodes at E5 and K5, and now has 3. Red's turn, 1 action left.",
     );
   });
 
@@ -1287,7 +1287,7 @@ describe("announcementForSession", () => {
       lastEvent: event,
     };
     expect(announcementForSession(session)).toBe(
-      "Red ship moved from G7 to H8. The game is over after 3 rounds. Red wins, 7 energy to 4.",
+      "Red ship moved from G7 to H8. The move cost 1 power, leaving 5. The game is over after 3 rounds. Red wins, 7 energy to 4.",
     );
   });
 
@@ -1395,7 +1395,7 @@ describe("announcementForSession", () => {
       lastEvent: event,
     };
     expect(announcementForSession(session)).toBe(
-      "Green ship at H8 attacked the red ship at H9 and both were beaten. The attacker returned to the A1 planet and the defender to the A8 planet, both keeping the power they were carrying. The game is over after 3 rounds. Green wins, 9 energy to 2.",
+      "Green ship at H8 attacked the red ship at H9 and both were beaten. The attack was free; the attacker still has 2 power. The defender kept the power it was carrying. The attacker returned to the A1 planet and the defender to the A8 planet. The game is over after 3 rounds. Green wins, 9 energy to 2.",
     );
   });
 
@@ -1480,7 +1480,8 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at C6 attacked the red ship at C7 and both were beaten. " +
-        "The attacker returned to the D1 planet and the defender to the A2 planet, both keeping the power they were carrying. " +
+        "The attack was free; the attacker still has 2 power. The defender kept the power it was carrying. " +
+        "The attacker returned to the D1 planet and the defender to the A2 planet. " +
         "Green has 1 action left.",
     );
   });
@@ -1500,7 +1501,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
         square: squareAt("K", 5),
         power: 4,
       },
-      cost: 1,
+      cost: 0,
       returns: [
         {
           shipId: "green-1",
@@ -1528,7 +1529,8 @@ describe("announcementFor — combat (rules.md §7)", () => {
     const sentence = announcementFor(event);
     expect(sentence).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 planet and the defender to the D1 planet, both keeping the power they were carrying. " +
+        "The attack was free; the attacker still has 0 power. The defender kept the power it was carrying. " +
+        "The attacker returned to the A6 planet and the defender to the D1 planet. " +
         "Green has 1 action left.",
     );
     expect(sentence).not.toMatch(/won|lost|advance|held its ground/);
@@ -1579,7 +1581,8 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 planet and the defender to the D1 planet, both keeping the power they were carrying. " +
+        "The attack cost the attacker 1 power, leaving 2. The defender kept the power it was carrying. " +
+        "The attacker returned to the A6 planet and the defender to the D1 planet. " +
         "Red's turn, 1 action left.",
     );
   });
@@ -1636,7 +1639,8 @@ describe("announcementFor — combat (rules.md §7)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
-        "The attacker returned to the A6 planet and the defender to the D1 planet, both keeping the power they were carrying. " +
+        "The attack cost the attacker 1 power, leaving 2. The defender kept the power it was carrying. " +
+        "The attacker returned to the A6 planet and the defender to the D1 planet. " +
         "Red has no legal action, so the turn passes. Green's turn, 1 action left.",
     );
   });
