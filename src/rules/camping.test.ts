@@ -392,8 +392,7 @@ describe("camping — a node running out under a ship traps it (§8.3, §8.5)", 
     // Moving a different ship is accepted without refusal, but green-camper
     // itself is now trapped on the depleted node (rules.md §8.5): it has no
     // move of its own at all, named as the trap rather than range or
-    // blocking, and no attack of its own either — this is the reversal
-    // story 59 makes.
+    // blocking, and no attack of its own either.
     expect(
       moveRefusalReason(
         afterRedTurn.state,

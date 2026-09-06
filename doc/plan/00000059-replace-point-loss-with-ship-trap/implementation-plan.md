@@ -777,7 +777,7 @@ last two callers).
 Verification (automated): `npm test` passes, including `ScoreDisplay.test.tsx`,
 `Hud.test.tsx` and `announcements.test.ts`. `grep -rn "depleted-pip\|depletedOccupied\|depletedNodesOccupiedPhrase" src/`
 finds nothing. The HUD's visual proportions are checked by the owner in Step
-13, not here.
+12, not here.
 
 ### Step 5 — A trapped ship cannot move, and no move ends on a depleted node
 

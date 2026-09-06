@@ -18,14 +18,13 @@ import { type Square, squareName } from "./board";
 import type { Side } from "./fleet";
 import { type GameState, type Ship, nodeStatusAt } from "./gameState";
 import { legalDestinations } from "./movement";
-import { isSideAllTrapped, trappedShips, trappingNodesFor } from "./trap";
+import { isSideAllTrapped, trappedShips } from "./trap";
 
 /**
  * Whether `ship` — trapped on the depleted node at `square` — would have a
  * legal move if that node ended right now. Built as a genuinely hypothetical
- * `GameState`, per this story's plan, rather than a second copy of §6's
- * reach-and-block logic: the candidate node's own entry is removed, so the
- * ship's square becomes an ordinary square, while every other node (in
+ * `GameState`: the candidate node's own entry is removed, so the ship's
+ * square becomes an ordinary square, while every other node (in
  * particular every other depleted node, still barring landing) and every
  * ship (friendly and enemy alike, still blocking as they will) are left
  * exactly as they are. `sideToMove` is set to the ship's own side and
@@ -73,7 +72,7 @@ function wouldHaveLegalMoveIfFreed(
  * (`wouldHaveLegalMoveIfFreed`) are candidates; the candidate with the
  * **lowest** `level` wins, since a depleted node's level counts down towards
  * zero and so the lowest level is the least remaining life. Candidates are
- * walked in board order (`trappingNodesFor`'s order) with a strict
+ * walked in board order (`trappedShips`'s order) with a strict
  * less-than comparison, so a tie on level keeps the earlier square in board
  * order rather than the later one — the tie-break is itself part of §8.6
  * step 7, not an incidental of doing this by a sort.
@@ -86,13 +85,10 @@ export function reliefSquare(state: GameState, side: Side): Square | undefined {
     return undefined;
   }
 
-  const candidateSquares = trappingNodesFor(state, side);
-  const candidateShips = trappedShips(state, side);
-
   let chosen: { readonly square: Square; readonly level: number } | undefined;
 
-  candidateSquares.forEach((square, index) => {
-    const ship = candidateShips[index];
+  trappedShips(state, side).forEach((ship) => {
+    const square = ship.square;
     if (!wouldHaveLegalMoveIfFreed(state, ship, square)) {
       return;
     }

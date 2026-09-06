@@ -263,11 +263,13 @@ checks the depleted destination with the other destination reasons.
 depleted squares out for every other ship. `sideToMoveHasLegalMove` follows
 for free.
 
-**`combat.ts`.** A new `AttackRefusalReason` for an attacker on a depleted
-node, sitting immediately after `attacker-on-charged-node` in the same
-check order and for the same kind of reason. **No** target-side reason is
-added: a ship on a depleted node stays a legal target. `legalTargets` answers
-with nothing for a trapped ship.
+**`combat.ts`.** Two new `AttackRefusalReason` values for a depleted node,
+one on each side of the attack: an attacker-side reason sitting immediately
+after `attacker-on-charged-node`, and a target-side reason sitting alongside
+`target-on-charged-node`, for the same reason in each direction — a trapped
+ship is out of combat entirely, and cannot be attacked either.
+`legalTargets` answers with nothing for a trapped ship, and a trapped enemy
+ship is no longer a legal target for anyone else's attack.
 
 **`actions.ts`.** `sideToMoveHasLegalAction` and `shipHasLegalAction` need no
 change of their own — both are built on `legalDestinations` and
@@ -372,7 +374,9 @@ Tests follow the change:
   if step 7 could not free one, and the pass guard still cannot loop.
 - `ScoreDisplay.test.tsx`, `announcements.test.ts`, `squareLabel.test.ts`,
   `Board.test.tsx`, `BoardSquare.test.tsx`, `Hud.test.tsx` — the row that is
-  gone, the mark that is new, and the wording.
+  gone, the wording, and the board gaining no new mark: a trapped ship reads
+  through the existing dampening and no-action condition already drawn for a
+  ship with nothing to do.
 - `fullGame.test.ts`, `seededReplay.test.ts` — re-recorded, with the
   same-seed, same-actions, same-game premise intact.
 - `rulesVersion.test.ts` — `RULES_VERSION` is `0.25` and the changelog has an

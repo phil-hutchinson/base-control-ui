@@ -14,10 +14,9 @@
      `NodeMarker.tsx`. Kept as separate tokens rather than read from there,
      since that gradient's stops are computed per render in TypeScript.
      `--color-node-charged` is also the HUD's charged-pip fill
-     (`ScoreDisplay.css`), so the two agree; `--color-node-depleted` has no
-     HUD counterpart, since the HUD's row of pips for depleted nodes was
-     removed, but is kept as the one place the board's depleted colour is
-     named. */
+     (`ScoreDisplay.css`), so the two agree; `--color-node-depleted` is the
+     one place the board's depleted-node colour is named, used by
+     `NodeMarker.tsx`. */
   --color-node-charged: #daa520;
   --color-node-depleted: #808080;
 
