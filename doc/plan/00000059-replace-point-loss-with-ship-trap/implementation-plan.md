@@ -781,7 +781,34 @@ finds nothing. The HUD's visual proportions are checked by the owner in Step
 
 ### Step 5 — A trapped ship cannot move, and no move ends on a depleted node
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as planned — `MoveRefusalReason` gained
+`ship-trapped` and `destination-depleted-node`; `moveRefusalReason` checks the
+trap (via `trap.ts`'s `isShipTrapped`) right after `ship-already-acted` and
+the depleted destination right after `destination-occupied`;
+`legalDestinations` gained a trapped-ship early return with a comment
+explaining that the depleted-destination case needs no filter of its own; the
+module header and both doc comments were updated; the two announcement
+sentences were added to the exhaustive switch. Wrote the planned
+`movement.test.ts` cases (trapped-ship refusal, depleted-destination refusal,
+occupied-over-depleted precedence, flying over a depleted node both
+orthogonally and on either L corner) and the `announcements.test.ts` sentence
+pair. One deviation, forced rather than chosen: implementing the trap check
+made `legalDestinations`/`shipHasLegalAction` immediately return nothing for
+a ship trapped on a depleted node, which broke eight pre-existing tests whose
+premise this story reverses — `src/board/Board.test.tsx` (3, the board's
+no-action condition now legitimately appears for a trapped ship, per D12),
+`src/game/session.test.ts` (1, a move onto a depleted node is now refused,
+not applied), `src/rules/actions.test.ts` (1, `shipHasLegalAction` is now
+false for a ship trapped alone on a depleted node), and `src/rules/camping.test.ts`
+(3). All eight were fixed with the minimal, truthful assertion/title changes
+needed to keep them green and honest, without attempting Step 6's or Step
+10's fuller rewrites (`actions.test.ts`'s comprehensive trap coverage and
+`camping.test.ts`'s full reversal-era rewrite remain those steps' work, per
+the plan's own precedent in Step 2 of patching `camping.test.ts` minimally
+ahead of its designated rewrite). `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (953 tests) all pass.
 
 In `src/rules/movement.ts`, implement §6's new landing rule and §8.5's trap on
 the movement side, per D4.

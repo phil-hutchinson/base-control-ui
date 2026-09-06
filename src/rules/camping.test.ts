@@ -307,8 +307,8 @@ describe("camping — an inactive node grants and takes nothing, and a depleted 
   });
 });
 
-describe("camping — a node running out under a ship is quiet (§8.3, §8.5)", () => {
-  it("raises only node-ran-out, leaves the ship exactly where it is, and refuses nothing next turn", () => {
+describe("camping — a node running out under a ship traps it (§8.3, §8.5)", () => {
+  it("raises node-ran-out, leaves the ship exactly where it is, and traps it from its owner's next turn", () => {
     const initial = buildState({
       ships: [
         ship("green-camper", "green", "H8"),
@@ -354,9 +354,10 @@ describe("camping — a node running out under a ship is quiet (§8.3, §8.5)", 
       applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
     );
 
-    // Nothing about green-camper binds its owner's next turn: moving a
-    // different ship is accepted without refusal, and the camper itself
-    // would be free to move too, though this does not take it.
+    // Moving a different ship is accepted without refusal, but green-camper
+    // itself is now trapped on the depleted node (rules.md §8.5) and has no
+    // move of its own — this is the reversal story 59 makes; a fuller
+    // rewrite of this file's camping premise is a later step's work.
     const afterGreenNextTurn = appliedOrThrow(
       applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
     );
@@ -366,7 +367,7 @@ describe("camping — a node running out under a ship is quiet (§8.3, §8.5)", 
         "green-camper",
         squareFromName("H9"),
       ),
-    ).toBeUndefined();
+    ).toBe("ship-trapped");
     const greenNextTurnEffects = endOfTurnEffects(afterGreenNextTurn.effects);
     // H8 is depleted now, so it costs and gives green nothing from here — a
     // depleted node no longer gives power back (§4.1) or takes energy away.
@@ -385,41 +386,25 @@ describe("camping — a node running out under a ship is quiet (§8.3, §8.5)", 
   });
 });
 
-describe("camping — leaving a node for a depleted node (§8.5)", () => {
-  it("leaves the node it left charged and stands on the depleted node it arrives at", () => {
+describe("camping — a depleted node cannot be entered (§6)", () => {
+  it("refuses a move landing on a depleted node, leaving the mover exactly where it started", () => {
     const state = buildState({
-      // red-1 gives red a legal move, so applyPassGuard does not
-      // immediately run a second end-of-turn sequence for a passed red
-      // ply — this checks exactly the state green's own move produces.
       ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "O1")],
       nodes: {
         F2: ["charged", 15],
-        // Comfortably above the recovery table's largest single draw (8),
-        // so it stays depleted through this one ply's own recovery tick.
         G3: ["depleted", 60],
       },
     });
 
-    const result = appliedOrThrow(
-      applyMove(state, "green-1", squareFromName("G3")),
-    );
+    const result = applyMove(state, "green-1", squareFromName("G3"));
 
-    // F2 stays charged — leaving it no longer ends it (rules.md §8.3). Its
-    // drain only rises by this turn's ordinary empty-rate draw.
-    expect(result.state.nodes.F2.state).toBe("charged");
-    expect(result.state.nodes.F2.level).toBeGreaterThan(15);
-    expect(result.effects).not.toContainEqual(
-      expect.objectContaining({ type: "node-vacated" }),
-    );
-    // G3 was already depleted when this ply began, so it also ticks a
-    // little further towards recovery in the very same sequence — that is
-    // the node's own cycle, not something arriving on it changes.
-    expect(result.state.nodes.G3.state).toBe("depleted");
-    expect(result.state.nodes.G3.level).toBeLessThan(60);
-    const movedShip = result.state.ships.find(
-      (candidate) => candidate.id === "green-1",
-    );
-    expect(movedShip?.square).toEqual(squareFromName("G3"));
+    // A ship can only ever come to be trapped on a depleted node by a node
+    // burning out underneath it, never by walking into one (rules.md §6).
+    expect(result.outcome).toBe("refused");
+    if (result.outcome !== "refused") {
+      throw new Error("expected the move to be refused");
+    }
+    expect(result.reason).toBe("destination-depleted-node");
   });
 });
 
@@ -563,8 +548,8 @@ describe("camping — an inactive node still pays nothing, for as many turns as 
   });
 });
 
-describe("camping — a depleted node never granted power to begin with (§4.1, §8.5)", () => {
-  it("costs nothing at the end of the turn a ship moves off a depleted node it was standing on", () => {
+describe("camping — a ship trapped on a depleted node has no move to make (§8.5)", () => {
+  it("refuses the trapped ship's own move, though the depleted node it stands on never granted it power to begin with (§4.1)", () => {
     const initial: GameState = {
       ...buildState({
         ships: [
@@ -578,19 +563,13 @@ describe("camping — a depleted node never granted power to begin with (§4.1, 
       energy: { green: 10, red: 0 },
     };
 
-    const result = appliedOrThrow(
-      applyMove(initial, "green-camper", squareFromName("H9")),
-    );
-    const effects = endOfTurnEffects(result.effects);
-    expect(effects.some((effect) => effect.type === "power-gained")).toBe(
-      false,
-    );
-    expect(result.state.energy.green).toBe(10);
-    const camper = result.state.ships.find(
-      (candidate) => candidate.id === "green-camper",
-    );
-    expect(camper?.square).toEqual(squareFromName("H9"));
-    expect(camper?.power).toBe(2);
+    const result = applyMove(initial, "green-camper", squareFromName("H9"));
+
+    expect(result.outcome).toBe("refused");
+    if (result.outcome !== "refused") {
+      throw new Error("expected the move to be refused");
+    }
+    expect(result.reason).toBe("ship-trapped");
   });
 });
 

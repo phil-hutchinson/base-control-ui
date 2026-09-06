@@ -352,6 +352,8 @@ function rejectionSentence(event: RejectedEvent): string {
       return "That ship has already acted this turn. Choose another.";
     case "nothing-to-select":
       return `No ship on ${square}. Choose one of your own ships.`;
+    case "ship-trapped":
+      return "That ship is trapped on a depleted node and cannot move until the node goes.";
     case "out-of-range":
       return `${square} is out of range for the selected ship.`;
     case "cannot-afford":
@@ -360,6 +362,8 @@ function rejectionSentence(event: RejectedEvent): string {
       return `An enemy ship is in the way of ${square}.`;
     case "destination-occupied":
       return `${square} is occupied.`;
+    case "destination-depleted-node":
+      return `${square} is a depleted node — a ship may fly over one, but cannot land on it.`;
     case "attacker-on-planet":
       return "A ship on a planet cannot attack. Move it off first.";
     case "attacker-on-charged-node":

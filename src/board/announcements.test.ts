@@ -275,6 +275,11 @@ describe("announcementFor", () => {
       "No ship on G4. Choose one of your own ships.",
     ],
     [
+      "ship-trapped",
+      squareAt("G", 7),
+      "That ship is trapped on a depleted node and cannot move until the node goes.",
+    ],
+    [
       "out-of-range",
       squareAt("J", 7),
       "J7 is out of range for the selected ship.",
@@ -286,6 +291,11 @@ describe("announcementFor", () => {
     ],
     ["path-blocked", squareAt("C", 8), "An enemy ship is in the way of C8."],
     ["destination-occupied", squareAt("C", 7), "C7 is occupied."],
+    [
+      "destination-depleted-node",
+      squareAt("H", 8),
+      "H8 is a depleted node — a ship may fly over one, but cannot land on it.",
+    ],
     [
       "attacker-on-planet",
       squareAt("H", 15),

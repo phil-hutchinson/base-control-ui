@@ -1032,7 +1032,7 @@ describe("Board", () => {
       };
     }
 
-    it("names a ship standing on a depleted node plainly, with no condition, and leaves the rest of the fleet ordinary", () => {
+    it("names a ship trapped on a depleted node with the existing no-action condition, and leaves the rest of the fleet ordinary", () => {
       const session: Session = {
         state: depletedNodeState(1),
         selectedShipId: undefined,
@@ -1040,9 +1040,12 @@ describe("Board", () => {
       };
       render(<Board session={session} onIntent={noop} />);
 
+      // A trapped ship can neither move nor attack (rules.md §8.5), so
+      // shipHasLegalAction is false for it and it carries the existing
+      // no-action condition — no new mark is added for the trap itself.
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted node, green ship, power 4 of 6",
+          name: "H4, depleted node, green ship, power 4 of 6, no action available this turn",
         }),
       ).toBeInTheDocument();
       // Nothing holds the rest of the fleet back: green-2 and green-3 both
@@ -1055,7 +1058,7 @@ describe("Board", () => {
       ).toBeInTheDocument();
     });
 
-    it("combines the selected mark with an otherwise plain name for a ship on a depleted node", () => {
+    it("combines the selected mark with the no-action condition for a ship trapped on a depleted node", () => {
       const session: Session = {
         state: depletedNodeState(1),
         selectedShipId: "green-1",
@@ -1065,7 +1068,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted node, green ship, power 4 of 6, selected",
+          name: "H4, depleted node, green ship, power 4 of 6, no action available this turn, selected",
         }),
       ).toBeInTheDocument();
     });
@@ -1082,9 +1085,11 @@ describe("Board", () => {
       };
       render(<Board session={session} onIntent={noop} />);
 
+      // green-1 is trapped on the depleted node itself, independently of
+      // actedThisPly.
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted node, green ship, power 4 of 6",
+          name: "H4, depleted node, green ship, power 4 of 6, no action available this turn",
         }),
       ).toBeInTheDocument();
       // Green-2 has already acted this ply moving elsewhere, and has no
