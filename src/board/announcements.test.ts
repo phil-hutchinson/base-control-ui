@@ -498,148 +498,6 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("announces one point of power lost, naming the square and the new count", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-3",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "power-lost",
-              shipId: "green-2",
-              side: "green",
-              square: squareAt("H", 8),
-              power: 2,
-            },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at H8 lost a point of power, now on 2. Red's turn, 1 action left.",
-    );
-  });
-
-  it("groups several points of power lost in one sequence into one clause", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-3",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "power-lost",
-              shipId: "green-1",
-              side: "green",
-              square: squareAt("H", 8),
-              power: 2,
-            },
-            {
-              type: "power-lost",
-              shipId: "green-2",
-              side: "green",
-              square: squareAt("K", 5),
-              power: 1,
-            },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a point of power. Red's turn, 1 action left.",
-    );
-  });
-
-  it("says which ship reached 0, within a grouped clause", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-3",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "power-lost",
-              shipId: "green-1",
-              side: "green",
-              square: squareAt("H", 8),
-              power: 2,
-            },
-            {
-              type: "power-lost",
-              shipId: "green-2",
-              side: "green",
-              square: squareAt("K", 5),
-              power: 0,
-            },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a point of power. K5 reached 0. Red's turn, 1 action left.",
-    );
-  });
-
-  it("says a single ship reached 0", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-3",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "power-lost",
-              shipId: "green-1",
-              side: "green",
-              square: squareAt("K", 5),
-              power: 0,
-            },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at K5 lost a point of power, reaching 0. Red's turn, 1 action left.",
-    );
-  });
-
   it("announces one point of power gained, naming the square and the new count", () => {
     const event: MovedEvent = {
       type: "moved",
@@ -659,6 +517,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               side: "green",
               square: squareAt("H", 8),
               power: 3,
+              amount: 1,
             },
           ],
         },
@@ -672,7 +531,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("announces a point of power gained on a planet the same way as on a depleted node", () => {
+  it("announces 2 points of power gained for a ship charging alone", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -690,7 +549,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               shipId: "green-2",
               side: "green",
               square: squareAt("A", 2),
-              power: 3,
+              power: 4,
+              amount: 2,
             },
           ],
         },
@@ -700,7 +560,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at A2 gained a point of power, now on 3. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at A2 gained 2 points of power, now on 4. Red's turn, 1 action left.",
     );
   });
 
@@ -723,6 +583,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               side: "green",
               square: squareAt("H", 8),
               power: 2,
+              amount: 1,
             },
             {
               type: "power-gained",
@@ -730,6 +591,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               side: "green",
               square: squareAt("K", 5),
               power: 3,
+              amount: 1,
             },
           ],
         },
@@ -762,6 +624,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               side: "green",
               square: squareAt("H", 8),
               power: 3,
+              amount: 1,
             },
             {
               type: "power-gained",
@@ -769,6 +632,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               side: "green",
               square: squareAt("K", 5),
               power: 6,
+              amount: 1,
             },
           ],
         },
@@ -782,7 +646,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("says a single ship reached the maximum of 6", () => {
+  it("says a single ship reached the maximum of 6 at the double rate", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -801,6 +665,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               side: "green",
               square: squareAt("K", 5),
               power: 6,
+              amount: 2,
             },
           ],
         },
@@ -810,11 +675,14 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at K5 gained a point of power, reaching the maximum of 6. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at K5 gained 2 points of power, reaching the maximum of 6. Red's turn, 1 action left.",
     );
   });
 
-  it("reads losses before gains when a sequence has both", () => {
+  it("says a single ship reached the maximum of 6 with the double rate capped to what was left (rules.md §3.1)", () => {
+    // A ship at 5 taking the double rate reaches 6 having gained only 1
+    // (D9): the announcement must never claim 2 points were gained when only
+    // 1 was.
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -828,18 +696,12 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "power-lost",
+              type: "power-gained",
               shipId: "green-1",
               side: "green",
-              square: squareAt("H", 8),
-              power: 2,
-            },
-            {
-              type: "power-gained",
-              shipId: "green-2",
-              side: "green",
               square: squareAt("K", 5),
-              power: 3,
+              power: 6,
+              amount: 1,
             },
           ],
         },
@@ -849,7 +711,41 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at H8 lost a point of power, now on 2. Green ship at K5 gained a point of power, now on 3. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at K5 gained a point of power, reaching the maximum of 6. Red's turn, 1 action left.",
+    );
+  });
+
+  it("puts the power-gained clause ahead of the rest of the sequence, whatever order the effects arrive in", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            { type: "node-ran-out", square: squareAt("H", 8) },
+            {
+              type: "power-gained",
+              shipId: "green-2",
+              side: "green",
+              square: squareAt("K", 5),
+              power: 3,
+              amount: 1,
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. Green ship at K5 gained a point of power, now on 3. The node at H8 ran out. Red's turn, 1 action left.",
     );
   });
 
@@ -867,11 +763,12 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "power-lost",
+              type: "power-gained",
               shipId: "green-1",
               side: "green",
               square: squareAt("K", 5),
-              power: 0,
+              power: 6,
+              amount: 2,
             },
             { type: "node-ran-out", square: squareAt("K", 5) },
             {
@@ -888,7 +785,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from K4 to K5. " +
-        "Green ship at K5 lost a point of power, reaching 0. " +
+        "Green ship at K5 gained 2 points of power, reaching the maximum of 6. " +
         "The node at K5 ran out. " +
         "The node at N4 is gone, and a new node appeared at F3. " +
         "Red's turn, 1 action left.",
@@ -935,16 +832,17 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       reason: "no-legal-action",
       endOfTurn: [
         {
-          type: "power-lost",
+          type: "power-gained",
           shipId: "red-1",
           side: "red",
           square: squareAt("K", 11),
           power: 2,
+          amount: 1,
         },
       ],
     };
     expect(announcementFor(event)).toBe(
-      "Red has no legal action, so the turn passes. Red ship at K11 lost a point of power, now on 2. Green's turn, 1 action left.",
+      "Red has no legal action, so the turn passes. Red ship at K11 gained a point of power, now on 2. Green's turn, 1 action left.",
     );
   });
 });
@@ -1047,11 +945,12 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "power-lost",
+              type: "power-gained",
               shipId: "green-2",
               side: "green",
               square: squareAt("H", 8),
               power: 2,
+              amount: 1,
             },
             {
               type: "energy-collected",
@@ -1069,7 +968,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. Green ship at H8 lost a point of power, now on 2. Green collected 1 energy from the node at H8, and now has 5. The node at K5 ran out. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. Green ship at H8 gained a point of power, now on 2. Green collected 1 energy from the node at H8, and now has 5. The node at K5 ran out. Red's turn, 1 action left.",
     );
   });
 

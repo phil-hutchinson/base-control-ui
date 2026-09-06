@@ -34,7 +34,7 @@ import {
   nodeStateAt,
 } from "./gameState";
 import { drawNodeSquare } from "./nodePlacement";
-import { MAX_POWER, MIN_POWER, type PowerLevel } from "./power";
+import { gainPower, MAX_POWER, type PowerLevel } from "./power";
 import {
   DEPLETED_RECOVERY_TABLE,
   EMPTY_NODE_DRAIN_TABLE,
@@ -45,22 +45,19 @@ import {
   drawTableAmount,
 } from "./nodes";
 
-/** A ship on a depleted node, or on a planet, gained a point of power at the end of its side's turn (§8.6 step 1, §4.1, §3.1). */
+/**
+ * A ship standing on a planet gained power at the end of its side's turn
+ * (§8.6 step 1, §3.1, §4.1). `amount` is what actually landed after the
+ * `MAX_POWER` cap, which may be less than the rate a lone charging ship
+ * would otherwise draw.
+ */
 export interface PowerGainedEffect {
   readonly type: "power-gained";
   readonly shipId: ShipId;
   readonly side: Side;
   readonly square: Square;
   readonly power: PowerLevel;
-}
-
-/** A ship on a charged node lost a point of power at the end of its side's turn (§8.6 step 1, §4.1). */
-export interface PowerLostEffect {
-  readonly type: "power-lost";
-  readonly shipId: ShipId;
-  readonly side: Side;
-  readonly square: Square;
-  readonly power: PowerLevel;
+  readonly amount: number;
 }
 
 /** The side that just played collected energy for the charged nodes it holds (§8.6 step 2, §8.4). */
@@ -107,7 +104,6 @@ export interface NodeReplacedEffect {
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
 export type EndOfTurnEffect =
   | PowerGainedEffect
-  | PowerLostEffect
   | EnergyCollectedEffect
   | EnergyPenaltyEffect
   | NodeRanOutEffect
@@ -144,44 +140,43 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   const occupants = shipsBySquare(state);
   const effects: EndOfTurnEffect[] = [];
 
-  // Step 1: the moving player's ships on charged nodes lose a point of
-  // power, floored at 0, and those on depleted nodes or on a planet gain
-  // one, capped at 4 (§4.1, §3.1). An inactive node does neither. A planet
-  // and a node can never be the same square (§3.2), so the two gain
-  // conditions never both apply. One pass over the fleet, so the effects
-  // come out in fleet order with losses and gains interleaved exactly as
-  // the ships are ordered.
+  // Step 1: a ship standing on a planet at the end of its owner's turn
+  // gains power (§3.1, §4.1) — the only thing that still changes a ship's
+  // power here. A charged node no longer drains the ship holding it and a
+  // depleted node no longer refills one; an inactive node still does
+  // neither. The rate depends on how many of the moving side's ships are
+  // charging — standing on a planet with room left to gain, i.e. below
+  // `MAX_POWER` — and that count is taken once, from the fleet as it stood
+  // when this step began, never recomputed mid-pass: a ship reaching the
+  // maximum partway through must not change the rate for the ships still to
+  // come. Exactly one charging ship gains 2, capped at `MAX_POWER`; two or
+  // more each gain 1. One pass over the fleet, so the effects come out in
+  // fleet order.
+  const chargingCount = state.ships.filter(
+    (candidate) =>
+      candidate.side === side &&
+      isPlanet(candidate.square) &&
+      candidate.power < MAX_POWER,
+  ).length;
+  const chargeRate: 1 | 2 = chargingCount === 1 ? 2 : 1;
   const ships = state.ships.map((ship) => {
-    if (ship.side !== side) {
+    if (
+      ship.side !== side ||
+      !isPlanet(ship.square) ||
+      ship.power >= MAX_POWER
+    ) {
       return ship;
     }
-    const nodeState = nodeStateAt(state, ship.square);
-    if (nodeState === "charged" && ship.power > MIN_POWER) {
-      const power = (ship.power - 1) as PowerLevel;
-      effects.push({
-        type: "power-lost",
-        shipId: ship.id,
-        side: ship.side,
-        square: ship.square,
-        power,
-      });
-      return { ...ship, power };
-    }
-    if (
-      (nodeState === "depleted" || isPlanet(ship.square)) &&
-      ship.power < MAX_POWER
-    ) {
-      const power = (ship.power + 1) as PowerLevel;
-      effects.push({
-        type: "power-gained",
-        shipId: ship.id,
-        side: ship.side,
-        square: ship.square,
-        power,
-      });
-      return { ...ship, power };
-    }
-    return ship;
+    const { power, amount } = gainPower(ship.power, chargeRate);
+    effects.push({
+      type: "power-gained",
+      shipId: ship.id,
+      side: ship.side,
+      square: ship.square,
+      power,
+      amount,
+    });
+    return { ...ship, power };
   });
   let workingState: GameState = { ...state, ships };
 

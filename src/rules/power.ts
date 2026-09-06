@@ -33,3 +33,23 @@ export function spendPower(power: PowerLevel, cost: PowerLevel): PowerLevel {
   }
   return result;
 }
+
+/**
+ * `power` plus `rate`, capped at `MAX_POWER` — what a ship carries after
+ * charging on a planet (rules.md §3.1, §4.1). Returns both the capped result
+ * and the amount actually gained, which falls short of `rate` exactly when
+ * the cap bites. Validated with `isPowerLevel` rather than cast, in the same
+ * style as `spendPower`.
+ */
+export function gainPower(
+  power: PowerLevel,
+  rate: 1 | 2,
+): { readonly power: PowerLevel; readonly amount: number } {
+  const result = Math.min(power + rate, MAX_POWER);
+  if (!isPowerLevel(result)) {
+    throw new RangeError(
+      `gainPower: gaining ${rate} power from ${power} produced ${result}, outside the ${MIN_POWER}-${MAX_POWER} range`,
+    );
+  }
+  return { power: result, amount: result - power };
+}
