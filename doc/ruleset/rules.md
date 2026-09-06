@@ -28,10 +28,13 @@ burn out and are replaced somewhere else, so the map itself redraws as the
 game runs, and the squares worth racing for change over the course of a
 game, not just which of them are lit.
 
-The game has five random elements: the opening board itself, which node is
-charged next, where a new node appears when one ends, which planet the two
-ships in a fight are pushed back to, and how fast a node burns. No two games
-start on the same board, and neither player has seen this one before.
+The game has five random elements that shape every game — the opening
+board itself, which node is charged next, where a new node appears when one
+ends, which planet the two ships in a fight are pushed back to, and how fast
+a node burns — plus a sixth, rarer one: when a trapped player's relief finds
+two nodes tied for the least remaining life, which of them ends first
+(section 8.6). No two games start on the same board, and neither player has
+seen this one before.
 
 ---
 
@@ -572,10 +575,11 @@ Everything that happens at the end of a turn happens in this order:
    depleted nodes carrying those ships, only those whose ship **would have a
    legal move if freed** are considered, and the one among those with the
    **least remaining life** ends at once — retiring and being replaced
-   exactly as step 6 retires and replaces — and its ship is freed. If two
-   qualifying nodes are tied on remaining life, the earlier one in board
-   order ends. If no depleted node under that player's ships qualifies,
-   nothing happens, and that player's turn passes under section 5.
+   exactly as step 6 retires and replaces — and its ship is freed. If two or
+   more qualifying nodes are tied on remaining life, one of them is chosen at
+   random, with every tied node equally likely. If no depleted node under
+   that player's ships qualifies, nothing happens, and that player's turn
+   passes under section 5.
 
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in

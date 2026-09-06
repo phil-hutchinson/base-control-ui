@@ -1333,7 +1333,79 @@ re-verified by `npm test` and by the owner's second look.
 
 ### Step 13 — The relief's tie is broken at random, not by board order
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as planned. `rules.md` §8.6 step 7's tie sentence
+now reads "If two or more qualifying nodes are tied on remaining life, one of
+them is chosen at random, with every tied node equally likely," and the
+change was folded into the existing 0.25 changelog entry (`RULES_VERSION`
+stays "0.25"). `relief.ts`'s `reliefSquare` now returns
+`[square: Square | undefined, nextSeed: number]`: it collects every
+qualifying candidate, finds the lowest level, and draws with `drawIndex`
+from `random.ts` only when two or more candidates share that lowest level —
+a single lowest candidate or no candidate at all returns `state.randomSeed`
+unchanged, per the plan's "draw only on an actual tie" requirement. Its
+module header and both doc comments were rewritten to describe the random
+tie-break and the seed it now threads, replacing the old "walked in board
+order with a strict less-than comparison" language entirely.
+`endOfTurn.ts`'s step 7 loop now destructures `[square, seedAfterRelief]`
+and writes `seedAfterRelief` into `workingState` before checking whether a
+square was chosen, so the tie-break draw and the replacement draw that
+follows it share one thread of the seeded stream; both the loop's own
+comment and the module header were extended to say so. `relief.test.ts` was
+rewritten to the new tuple return (destructuring `[square]` throughout) and
+gained four new cases: a two-way tie decided by the seed rather than which
+square comes first (seeds 1 and 7, found by search, pick opposite squares of
+a D8/L8 tie), the same seed picking the same square every time, the seed
+advancing only when a tie is genuinely broken (unchanged for a single
+lowest candidate and for no candidate at all), and the pre-existing
+no-tie/single-candidate cases were extended to assert the seed is left
+untouched. `endOfTurn.test.ts` gained one new case proving the two draws are
+threaded correctly end to end: it builds a state whose two depleted nodes'
+starting levels are computed (via the real `drawTableAmount` and
+`DEPLETED_RECOVERY_TABLE`) to land on an identical remaining life after
+step 6's two independent recovery draws, calls `relief.ts`'s `reliefSquare`
+directly on the state step 6 would produce to predict which square the tie
+picks and what seed follows, then calls the real `drawNodeSquare` with that
+seed to predict the replacement square and the final seed, and asserts
+`runEndOfTurn`'s actual effects and `randomSeed` match — a test that would
+fail if `endOfTurn.ts` forgot to carry the tie-break's returned seed into
+the replacement draw. `seededReplay.test.ts` was run unchanged and still
+passes. One small deviation from the plan's own wording, not its substance:
+two of my new test names/comments used the phrase "board order" in passing
+(to describe iteration order, not the removed tie-break rule) and were
+reworded to avoid it, since the step's own verification greps for that
+phrase; §1's "five random elements" sentence was **not** touched, since the
+plan's text for this step scopes the rules edit to §8.6 step 7 alone and
+does not mention §1 — left as a possible future inconsistency rather than
+assumed. `npm run typecheck`, `npm run lint`, `npm run format:check` and
+`npm test` (986 tests) all pass. `grep -rn "board order"
+doc/ruleset/rules.md src/` still finds hits, but only pre-existing ones
+elsewhere in `src/` describing the ordinary board-walk order (`chargeDraw.ts`,
+`energy.ts`, `gameState.ts`, `gameState.test.ts`, `nodes.ts`,
+`nodePlacement.test.ts`, `trap.ts`, `trap.test.ts`, and two pre-existing
+`endOfTurn.test.ts` titles/comments unrelated to the relief) — none of them
+describe the tie-break this step removes, and `rules.md` and `relief.ts`
+themselves have none. Flagged here rather than silently declared clean,
+since the literal grep does not come back empty.
+
+Follow-up requested by the orchestrator after this step's first pass, both
+addressed in the same step rather than a new one: `trap.ts`'s
+`trappingNodesFor` doc comment claimed the board order it returns "is load-
+bearing: `relief.ts`'s tie-break … is defined on it" — false once the tie-break
+became a random draw. Reworded to say the order is not load-bearing for any
+rule but must stay deterministic, because `relief.ts` builds its candidate list
+by walking it before drawing among any that tie; `trappedShips`'s one-liner
+just below it, which had the same implicit claim, now points at that
+explanation instead of repeating it. Separately, `rules.md` §1's "the game has
+five random elements" sentence undercounted once this step added the relief's
+tie-break — corrected by keeping "five" for the elements that shape every game
+and naming the tie-break as a sixth, rarer one in its own clause, rather than
+folding a corner case into the same list at the same weight; no changelog
+addition, since the 0.25 entry already records the tie-break mechanic itself
+and this is only the overview sentence catching up to it. `RULES_VERSION` stays
+"0.25". `npm run typecheck`, `npm run lint`, `npm run format:check` and `npm
+test` (986 tests) all pass again after both corrections.
 
 Added after peer review, on the owner's decision against finding #1 of
 `peer-review.md`. As written, §8.6 step 7 broke a tie on remaining life by

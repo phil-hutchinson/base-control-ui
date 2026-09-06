@@ -2,11 +2,13 @@
 // every one of a side's ships is trapped, the depleted node with the least
 // remaining life among those whose ship would actually have a legal move
 // once freed ends at once, so that side is not left to pass for the ten
-// turns its recovery clock would otherwise take. This module answers only
-// the *choice* — which square, if any, should end early for a given side —
-// and touches no state. `endOfTurn.ts` is the one caller, and it is the one
-// that retires the chosen node, replaces it and frees the ship, reusing the
-// same machinery an ordinary retirement (§8.6 step 6) already uses.
+// turns its recovery clock would otherwise take. A tie on remaining life is
+// broken at random, drawing from the seeded stream (§8.6 step 7). This
+// module answers only the *choice* — which square, if any, should end early
+// for a given side, and the seed to carry forward — and mutates no state.
+// `endOfTurn.ts` is the one caller, and it is the one that retires the
+// chosen node, replaces it and frees the ship, reusing the same machinery an
+// ordinary retirement (§8.6 step 6) already uses.
 //
 // It depends on `trap.ts` (who is trapped) and `movement.ts`
 // (`legalDestinations`, to test the hypothetical), which is why it cannot
@@ -18,6 +20,7 @@ import { type Square, squareName } from "./board";
 import type { Side } from "./fleet";
 import { type GameState, type Ship, nodeStatusAt } from "./gameState";
 import { legalDestinations } from "./movement";
+import { drawIndex } from "./random";
 import { isSideAllTrapped, trappedShips } from "./trap";
 
 /**
@@ -66,26 +69,33 @@ function wouldHaveLegalMoveIfFreed(
 
 /**
  * The square of the depleted node that should end at once to relieve `side`
- * (rules.md §8.6 step 7), or `undefined` if nothing should. Answers nothing
+ * (rules.md §8.6 step 7), alongside the seed to carry forward, or
+ * `undefined` and the seed unchanged if nothing should. Answers nothing
  * unless every one of `side`'s ships is trapped; among the depleted nodes
  * trapping them, only those whose ship would have a legal move once freed
  * (`wouldHaveLegalMoveIfFreed`) are candidates; the candidate with the
  * **lowest** `level` wins, since a depleted node's level counts down towards
- * zero and so the lowest level is the least remaining life. Candidates are
- * walked in board order (`trappedShips`'s order) with a strict
- * less-than comparison, so a tie on level keeps the earlier square in board
- * order rather than the later one — the tie-break is itself part of §8.6
- * step 7, not an incidental of doing this by a sort.
+ * zero and so the lowest level is the least remaining life.
  *
- * Draws no randomness, and returns a square only — it neither writes back to
- * `state` nor mutates anything reachable from it.
+ * If two or more candidates tie on the lowest level, one of them is chosen
+ * at random, with every tied candidate equally likely (§8.6 step 7). The
+ * seed is drawn from **only in that case**: a single lowest candidate, or no
+ * candidate at all, leaves `state.randomSeed` untouched, so seed consumption
+ * stays a predictable function of the board and a relief that could not
+ * possibly need a random choice never spends one.
+ *
+ * Mutates nothing reachable from `state`; the caller is responsible for
+ * carrying the returned seed forward into the state it goes on to use.
  */
-export function reliefSquare(state: GameState, side: Side): Square | undefined {
+export function reliefSquare(
+  state: GameState,
+  side: Side,
+): [square: Square | undefined, nextSeed: number] {
   if (!isSideAllTrapped(state, side)) {
-    return undefined;
+    return [undefined, state.randomSeed];
   }
 
-  let chosen: { readonly square: Square; readonly level: number } | undefined;
+  const candidates: { readonly square: Square; readonly level: number }[] = [];
 
   trappedShips(state, side).forEach((ship) => {
     const square = ship.square;
@@ -93,11 +103,24 @@ export function reliefSquare(state: GameState, side: Side): Square | undefined {
       return;
     }
 
-    const level = nodeStatusAt(state, square)!.level;
-    if (chosen === undefined || level < chosen.level) {
-      chosen = { square, level };
-    }
+    candidates.push({ square, level: nodeStatusAt(state, square)!.level });
   });
 
-  return chosen?.square;
+  if (candidates.length === 0) {
+    return [undefined, state.randomSeed];
+  }
+
+  const lowestLevel = Math.min(
+    ...candidates.map((candidate) => candidate.level),
+  );
+  const tied = candidates.filter(
+    (candidate) => candidate.level === lowestLevel,
+  );
+
+  if (tied.length === 1) {
+    return [tied[0].square, state.randomSeed];
+  }
+
+  const [index, nextSeed] = drawIndex(state.randomSeed, tied.length);
+  return [tied[index].square, nextSeed];
 }

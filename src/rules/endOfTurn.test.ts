@@ -8,8 +8,9 @@ import {
 } from "./endOfTurn";
 import type { ShipId } from "./fleet";
 import { legalDestinations } from "./movement";
-import { legalNodePool } from "./nodePlacement";
+import { drawNodeSquare, legalNodePool } from "./nodePlacement";
 import { PLANETS } from "./planets";
+import { reliefSquare } from "./relief";
 import {
   type GameState,
   type Ship,
@@ -992,6 +993,80 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
     expect(resultWithBoxedTrap.state.randomSeed).toBe(
       resultWithoutAnyShips.state.randomSeed,
     );
+  });
+
+  it("threads the tie-break draw into the replacement draw that follows it, so a tied relief stays replayable", () => {
+    // D8 and L8 are set up so that after step 6's two independent recovery
+    // draws (D8 first, then L8, the order `nodeSquares` walks them in) both
+    // land on the same remaining life — a genuine tie for step 7 to break.
+    // Their starting
+    // levels are computed from the actual recovery draws a state entering
+    // with this seed will make, so this only works because step 6 makes no
+    // other seed draw before reaching them (no charged node, no inactive
+    // node to draw for).
+    const seed = 1;
+    const [amountD8, seedAfterD8] = drawTableAmount(
+      seed,
+      DEPLETED_RECOVERY_TABLE,
+    );
+    const [amountL8, seedAfterRecovery] = drawTableAmount(
+      seedAfterD8,
+      DEPLETED_RECOVERY_TABLE,
+    );
+    const tiedLevel = 30;
+
+    const state = buildState({
+      nodes: {
+        D8: ["depleted", tiedLevel + amountD8],
+        L8: ["depleted", tiedLevel + amountL8],
+      },
+      ships: [ship("green-1", "green", "D8"), ship("green-2", "green", "L8")],
+      sideToMove: "green",
+      randomSeed: seed,
+    });
+
+    // The state step 6 leaves behind, built independently of `runEndOfTurn`
+    // so the tie-break can be predicted rather than merely observed.
+    const afterStep6: GameState = {
+      ...state,
+      nodes: {
+        D8: { state: "depleted", level: tiedLevel },
+        L8: { state: "depleted", level: tiedLevel },
+      },
+      randomSeed: seedAfterRecovery,
+    };
+    const [tieSquare, seedAfterTie] = reliefSquare(afterStep6, "green");
+    if (tieSquare === undefined) {
+      throw new Error("expected a genuine tie between D8 and L8");
+    }
+    const otherName = squareName(tieSquare) === "D8" ? "L8" : ("D8" as const);
+    const [expectedNewSquare, expectedFinalSeed] = drawNodeSquare(
+      [squareFromName(otherName)],
+      [squareFromName("D8"), squareFromName("L8")],
+      seedAfterTie,
+      tieSquare,
+    );
+
+    const result = runEndOfTurn(state);
+
+    const relief = result.effects.find(
+      (effect): effect is NodeReliefEffect => effect.type === "node-relief",
+    );
+    expect(relief).toEqual({
+      type: "node-relief",
+      side: "green",
+      square: tieSquare,
+    });
+    const replaced = result.effects.find(
+      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
+    );
+    expect(replaced?.retiredSquare).toEqual(tieSquare);
+    expect(replaced?.newSquare).toEqual(expectedNewSquare);
+    expect(result.state.randomSeed).toBe(expectedFinalSeed);
+    expect(result.state.nodes[otherName]).toEqual({
+      state: "depleted",
+      level: tiedLevel,
+    });
   });
 });
 

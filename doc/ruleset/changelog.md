@@ -31,7 +31,12 @@ the project's contribution notes).
   trapped, section 8.6 gains a new step 7: the depleted node under that
   player's ships with the least remaining life, among those whose ship would
   have a legal move if freed, ends at once and is replaced, freeing its ship,
-  rather than leaving that player to pass for ten turns.
+  rather than leaving that player to pass for ten turns. If two or more
+  qualifying nodes are tied on remaining life, one of them is chosen at
+  random.
+- **Section 1's random elements go from five to six**, gaining that
+  tie-break — a rarer one than the five that shape every game, since it is
+  drawn only when a relief finds two nodes tied for the least remaining life.
 
 ## 0.24 — power is a reserve a ship spends, not a property of where it stands
 

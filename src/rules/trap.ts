@@ -38,9 +38,13 @@ export function isShipTrapped(state: GameState, shipId: ShipId): boolean {
 /**
  * The depleted nodes `side`'s ships are standing on right now, in board
  * order — which nodes are trapping a ship of this side, not an energy
- * question, since a depleted node no longer costs anything. The board order
- * this returns in is load-bearing: `relief.ts`'s tie-break (rules.md §8.6
- * step 7) is defined on it.
+ * question, since a depleted node no longer costs anything. The order is not
+ * load-bearing for any rule: `relief.ts`'s tie-break (rules.md §8.6 step 7)
+ * is a random draw, not decided by which candidate comes first. It still
+ * must be deterministic, because `relief.ts` builds its candidate list by
+ * walking this order before drawing among any that tie — the same board
+ * must list its candidates the same way every time, or a recorded game
+ * could not replay its own draw.
  */
 export function trappingNodesFor(
   state: GameState,
@@ -56,7 +60,11 @@ export function trappingNodesFor(
   });
 }
 
-/** `side`'s trapped ships, in the same board order as `trappingNodesFor`. */
+/**
+ * `side`'s trapped ships, in the same order as `trappingNodesFor` — see
+ * that function's comment for why the order is deterministic but not
+ * load-bearing for any rule.
+ */
 export function trappedShips(state: GameState, side: Side): readonly Ship[] {
   const ships = shipsBySquare(state);
   return trappingNodesFor(state, side).map((node) =>

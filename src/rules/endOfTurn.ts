@@ -23,9 +23,10 @@
 // retired must not be reconsidered. It runs once for `state.sideToMove` —
 // the side that just played — and then once for the other side, always in
 // that fixed order, because it is the only step past this point that still
-// draws from the seeded stream when it fires (rules.md §8.6 step 7); a
-// data-dependent order would make a recorded game's replay depend on which
-// side happened to need relief first.
+// draws from the seeded stream when it fires (rules.md §8.6 step 7) — a tie
+// on remaining life is broken at random, drawing before the replacement
+// draw that follows it — and a data-dependent order would make a recorded
+// game's replay depend on which side happened to need relief first.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
@@ -373,15 +374,18 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   // for the ten turns its recovery clock would otherwise take, the depleted
   // node with the least remaining life among those whose ship would
   // actually have a legal move once freed ends at once (`relief.ts`'s
-  // choice). Runs for `side` — the one that just played — first, then for
-  // the other side, always in that fixed order: it is the only step left
-  // that draws from the seeded stream when it fires, and a
-  // data-dependent order would make a recorded game's replay depend on
-  // which side happened to need relief first. At most one node ends per
-  // side per ply — freeing one ship is enough that the side is no longer
-  // all-trapped — so the question is asked once per side, never in a loop.
+  // choice); a tie on remaining life is broken at random. Runs for `side` —
+  // the one that just played — first, then for the other side, always in
+  // that fixed order: it is the only step left that draws from the seeded
+  // stream when it fires — both for its own tie-break and for the
+  // replacement draw that follows it — and a data-dependent order would make
+  // a recorded game's replay depend on which side happened to need relief
+  // first. At most one node ends per side per ply — freeing one ship is
+  // enough that the side is no longer all-trapped — so the question is asked
+  // once per side, never in a loop.
   for (const reliefSide of [side, otherSide(side)]) {
-    const square = reliefSquare(workingState, reliefSide);
+    const [square, seedAfterRelief] = reliefSquare(workingState, reliefSide);
+    workingState = { ...workingState, randomSeed: seedAfterRelief };
     if (square === undefined) {
       continue;
     }
