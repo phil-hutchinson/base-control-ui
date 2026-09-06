@@ -297,10 +297,11 @@ export function moveRefusalReason(
 }
 
 /**
- * Every square `shipId` may legally move to in the given state: its §6
- * reach, filtered by path and destination occupancy. Empty once the game is
- * over, or when the ship does not belong to the side to move or has already
- * acted this ply.
+ * Every square `shipId` may legally move to in the given state: the
+ * affordable subset of its §6 reach, filtered by path and destination
+ * occupancy - only an enemy ship on a passed-over square blocks. Empty once
+ * the game is over, or when the ship does not belong to the side to move or
+ * has already acted this ply.
  */
 export function legalDestinations(
   state: GameState,

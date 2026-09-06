@@ -137,8 +137,9 @@ export function attackRefusalReason(
 
 /**
  * Every square `shipId` may legally attack in the given state: every square
- * within its §6 movement reach holding an enemy ship, with §9's game-over
- * check applied first — empty once the game is over.
+ * within the affordable subset of its §6 movement reach holding an enemy
+ * ship — only an enemy ship on a passed-over square blocks the shot — with
+ * §9's game-over check applied first — empty once the game is over.
  */
 export function legalTargets(
   state: GameState,

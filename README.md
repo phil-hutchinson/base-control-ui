@@ -7,19 +7,20 @@ light up across it. Hold a node and it pays you energy every turn. The player
 with the most energy at the end wins.
 
 Each ship carries power, a reserve it spends on every move and every attack. A
-short step in any direction is free; the longest moves — two squares in a line,
-or a new L-shaped move that turns a corner — cost more, and a ship is always
-free to take a cheaper move if that is all its reserve can pay for. Only an
-enemy ship blocks the path; a ship flies straight over its own side. The only
-way to refill is to sit on a planet: at the end of its owner's turn a ship
-parked on one gains a point of power, or two if it is the only one of that
-player's ships still topping up power on a planet at that moment — a ship
-already full doesn't count — up to a maximum of six. An attack costs its
+single step up, down, left or right is free; a diagonal step costs 1; two
+squares in a line, or a new L-shaped move that turns a corner, cost 2 — and a
+ship is always free to take a cheaper move if that is all its reserve can pay
+for. Only an enemy ship blocks the path; a ship flies straight over its own
+side. The only way to refill is to sit on a planet: at the end of its owner's
+turn a ship parked on one gains a point of power, or two if it is the only one
+of that player's ships still topping up power on a planet at that moment — a
+ship already full doesn't count — up to a maximum of six. An attack costs its
 attacker the same price as the move it used to strike, while the ship being
 attacked keeps whatever power it had. A ship holding a node cannot be attacked
 while it holds it. A fight has no winner: both ships involved are pushed back
-to a planet, chosen at random from wherever the board has one standing empty,
-carrying whatever power they had, and fly again from there. Ships are never
+to a planet, chosen at random from wherever the board has one standing empty
+— the ship that was attacked carrying whatever power it had, and the attacker
+already having paid for its shot — and fly again from there. Ships are never
 destroyed.
 
 Nodes do not last. Standing on one burns it down faster than leaving it alone,
@@ -89,19 +90,20 @@ install, no account, no server.
 > more. The board always carries twelve nodes this way, but never the same
 > twelve squares for long — the map you finish a long game on is not the map
 > you started it on, and a node is never drawn on a planet, and all but never
-> right next to one. A fight has no winner: both ships involved — the attacker
-> and the ship it attacked — are sent to planets chosen at random from
-> whichever planets are standing empty, each keeping whatever power it carried,
-> so neither of you can know in advance where either will end up. A planet is
-> where a ship recovers: it gains a point of power at the end of each of its
-> owner's turns, or two if it is the only one of that player's ships still
-> topping up power on a planet, up to a full six — a ship already full doesn't
-> count towards that. A ship attacks exactly as far as it moves, and a ship
-> holding a node can neither attack nor be attacked while it stands there. A
-> node also pays energy at the end of each turn to the player sitting on it,
-> and holding several at once pays far more than holding them one at a time
-> would — and sitting on several depleted nodes at once costs far more in the
-> same way. The two are counted separately rather than against each other, so a
+> right next to one. A fight has no winner: both ships involved — the attacker and
+> the ship it attacked — are sent to planets chosen at random from whichever
+> planets are standing empty; the ship that was attacked keeps whatever power it
+> carried, and the attacker arrives having already paid for its shot, so neither
+> of you can know in advance where either will end up. A planet is where a ship
+> recovers: it gains a point of power at the end of each of its owner's turns, or
+> two if it is the only one of that player's ships still topping up power on a
+> planet, up to a full six — a ship already full doesn't count towards that. A
+> ship attacks exactly as far as it moves, and a ship holding a node can neither
+> attack nor be attacked while it stands there. A node also pays energy at the end
+> of each turn to the player sitting on it, and holding several at once pays far
+> more than holding them one at a time would — and sitting on several depleted
+> nodes at once costs far more in the same way. The two are counted separately
+> rather than against each other, so a
 > turn can pay you and charge you at once. The app keeps score and shows it,
 > along with how many nodes each player holds, how many depleted nodes they are
 > sitting on, and which round the game is in. Once the game reaches the number

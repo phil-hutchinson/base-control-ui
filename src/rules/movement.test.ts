@@ -221,7 +221,7 @@ describe("the L (rules.md §6)", () => {
     }
   });
 
-  it("derives each L's corners from the sign rule (D2), independent of the literal table above", () => {
+  it("derives each L's corners from the sign rule, independent of the literal table above", () => {
     const columnIndex = (square: Square) =>
       COLUMN_LETTERS.indexOf(square.column);
     const sign = Math.sign;

@@ -594,8 +594,16 @@ as a full one) across `session.test.ts`, `camping.test.ts`, `combat.test.ts`,
 `fullGame.test.ts`, `ply.test.ts`, `recovery.test.ts` and
 `seededReplay.test.ts`'s floors (re-measured for this seed: 3 fights, 6
 planet returns, 9 charged nodes, 9 node replacements over forty rounds,
-floors lowered accordingly per D13) — all as the plan anticipated. No other
-deviation from the plan.
+floors lowered accordingly per D13) — all as the plan anticipated.
+
+`allShapesFrom`'s `RangeError` for an L corner leaving the board while its
+destination does not is a deliberate deviation from D2's "no special case is
+required, and none should be added": it is kept as a bug-detector on a
+cheap operation, in the same style `assertFightInvariants` and `power.ts`'s
+checked arithmetic already use elsewhere in this story, on the reviewer's
+and owner's agreement that an argument proven on paper still deserves a
+guard where the cost of one is a single `throw`. No other deviation from
+the plan.
 
 Re-transcribe `REACH_OPTIONS` in `src/rules/movement.ts` from the new §6 table
 (D1):

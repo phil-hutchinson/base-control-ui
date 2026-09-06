@@ -2,16 +2,12 @@
 // side's hull, plus, only when a power level is given, a power gauge — up
 // to six slots in two rows of three across the top of the square, one per
 // point the ship could carry (power runs 0-6, rules.md §4.1,
-// src/rules/power.ts). Only a lit slot draws anything - a black underlay
-// line with the side's colour on top of it, at the full bar stroke - and an
-// unlit slot draws nothing at all, not a dimmer mark: at the gauge's real
-// size a thin line and a thick one both read as "something is here" rather
-// than as distinct states, so the rule is presence or absence, never one
-// weight of line against another (owner's call at the Step 10 visual gate;
-// see D11 in the implementation plan). A ship at 0 power therefore draws no
-// gauge marks at all - indistinguishable from a ship drawn with no power
-// level given, which is the intended reading. Slots light in reading order
-// - the top row left to right, then the bottom row (powerGauge.ts).
+// src/rules/power.ts). A lit slot draws its black underlay line plus the
+// side's colour on top of it, at the full bar stroke; an unlit slot draws
+// nothing at all. A ship at 0 power therefore draws no gauge marks at all -
+// indistinguishable from a ship drawn with no power level given, which is
+// the intended reading. Slots light in reading order - the top row left to
+// right, then the bottom row (powerGauge.ts).
 //
 // The gauge sits across the top of the viewBox and the hull low within it:
 // the clear band between them is what keeps a node marker, drawn beneath

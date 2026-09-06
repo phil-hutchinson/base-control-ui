@@ -78,10 +78,7 @@ export const GAUGE_BAR_STROKE_WIDTH = 6;
 
 /**
  * A side's gauge colour: the lit bar's colour. There is deliberately no
- * unlit colour - an unlit slot renders nothing at all, not a dimmer mark,
- * because at the gauge's real size a thin line and a thick one both read
- * as "something is here" rather than as distinct states (owner's call at
- * the Step 10 visual gate; see D11).
+ * unlit colour - an unlit slot renders nothing at all.
  */
 export interface GaugePalette {
   readonly barColor: string;

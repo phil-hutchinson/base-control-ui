@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isPowerLevel, MAX_POWER, MIN_POWER, spendPower } from "./power";
+import {
+  gainPower,
+  isPowerLevel,
+  MAX_POWER,
+  MIN_POWER,
+  spendPower,
+} from "./power";
 
 describe("isPowerLevel", () => {
   it("accepts every valid power level", () => {
@@ -42,5 +48,13 @@ describe("spendPower", () => {
   it("throws rather than return a power level below the minimum", () => {
     expect(() => spendPower(1, 2)).toThrow(RangeError);
     expect(() => spendPower(0, 1)).toThrow(RangeError);
+  });
+});
+
+describe("gainPower", () => {
+  it("adds the rate to the power carried, capped at the maximum", () => {
+    expect(gainPower(4, 2)).toEqual({ power: 6, amount: 2 });
+    expect(gainPower(5, 2)).toEqual({ power: 6, amount: 1 });
+    expect(gainPower(6, 1)).toEqual({ power: 6, amount: 0 });
   });
 });

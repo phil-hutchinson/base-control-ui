@@ -419,8 +419,8 @@ still run out on schedule whether or not the board is at its four.
 
 The draw does not look at occupancy: a node with a ship standing on it can be
 charged like any other. That ship is holding a node from that moment — it
-collects (section 8.4) and starts losing power (section 4.1) at the end of
-its owner's next turn, exactly as if it had moved onto a node.
+collects (section 8.4) at the end of its owner's next turn, exactly
+as if it had moved onto a node.
 
 The choice is genuinely random, and neither player can see it coming — but it
 is no longer an equal chance for every inactive node. An inactive node

@@ -33,7 +33,7 @@ import type {
   PassEffect,
   PlyEndedEffect,
 } from "../rules/ply";
-import { MAX_POWER, type PowerLevel } from "../rules/power";
+import { MAX_POWER, spendPower, type PowerLevel } from "../rules/power";
 import type {
   AttackedEvent,
   MovedEvent,
@@ -118,7 +118,7 @@ function joinWithAnd(items: readonly string[]): string {
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
-/** "a point of power" for 1, "2 points of power" for 2 — the only two amounts §3.1's rate ever produces (D9). */
+/** "a point of power" for 1, "2 points of power" for 2 — the only two amounts §3.1's rate ever produces. */
 function powerAmountPhrase(amount: number): string {
   return amount === 1 ? "a point of power" : `${amount} points of power`;
 }
@@ -128,8 +128,8 @@ function powerAmountPhrase(amount: number): string {
  * rather than repeating a sentence per ship. A ship reaching the maximum of
  * `MAX_POWER` is named as such. Only a ship on a planet ever gains power
  * (§3.1); a charged node no longer drains and a depleted node no longer
- * refills. Within one sequence the amount gained is always uniform (D9), so
- * the grouped clause reads it off the first effect.
+ * refills. Within one sequence the amount gained is always uniform, so the
+ * grouped clause reads it off the first effect.
  */
 function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
   const side = capitalize(effects[0].side);
@@ -374,7 +374,7 @@ function fightSentence(event: AttackedEvent): string {
   const attackerSide = capitalize(fight.attacker.side);
   const opening = `${attackerSide} ship at ${attackerSquare} attacked the ${fight.defender.side} ship at ${defenderSquare}`;
 
-  const attackerPowerAfter = (fight.attacker.power - fight.cost) as PowerLevel;
+  const attackerPowerAfter = spendPower(fight.attacker.power, fight.cost);
   const attackCostClause =
     fight.cost === 0
       ? `The attack was free; the attacker still has ${attackerPowerAfter} power.`

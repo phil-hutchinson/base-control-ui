@@ -680,9 +680,9 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
   });
 
   it("says a single ship reached the maximum of 6 with the double rate capped to what was left (rules.md §3.1)", () => {
-    // A ship at 5 taking the double rate reaches 6 having gained only 1
-    // (D9): the announcement must never claim 2 points were gained when only
-    // 1 was.
+    // A ship at 5 taking the double rate reaches 6 having gained only 1:
+    // the announcement must never claim 2 points were gained when only 1
+    // was.
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",

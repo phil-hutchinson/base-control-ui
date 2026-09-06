@@ -338,7 +338,7 @@ describe("recovery — leaving a planet before it is full keeps what was recover
   });
 });
 
-describe("recovery — a fight between ships at different powers changes neither (rules.md §7)", () => {
+describe("recovery — a free orthogonal attack leaves both ships' power where it was, and empties both origin squares", () => {
   it("returns a full-power attacker and a drained defender each carrying what they had, with both origin squares emptied", () => {
     const initial = buildState({
       ships: [
