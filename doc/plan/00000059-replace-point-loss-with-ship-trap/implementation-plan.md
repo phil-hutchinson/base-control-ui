@@ -1000,7 +1000,30 @@ stays green.
 
 ### Step 8 — A node that runs out traps; a node that retires frees
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as planned. `endOfTurn.ts` gained `ShipTrappedEffect`
+and `ShipFreedEffect` (D8), added to the `EndOfTurnEffect` union in document
+order; step 3 pushes `ship-trapped` immediately after `node-ran-out` when the
+entry-time `occupants` index has a ship at the square that just went depleted;
+step 6's retire-and-replace body was factored into a module-private
+`retireAndReplaceNode(state, square, occupants)` (D9) that emits
+`node-replaced` then, if `occupants` has a ship at the retiring square,
+`ship-freed` — step 6's loop now just calls it and merges its state and
+effects, with its existing adjacency comments carried across verbatim. The
+same `occupants` snapshot captured at the function's entry (already used by
+step 3's drain-table choice) is reused for both lookups, with a comment
+recording that it is safe for identity and square but not for power. Module
+header and step 3's comment updated per the plan. `announcements.ts` gained
+the two clauses (D14 wording), each placed immediately after the case for the
+effect it follows, plus an update to `endOfTurnClauses`'s doc comment. Added
+the planned `endOfTurn.test.ts` cases (a node running out under a ship now
+also expects `ship-trapped` in its exact-effects assertion; a new describe
+block covers a retiring node freeing its ship with square and power intact, a
+retiring empty node reporting no `ship-freed`, and a node trapped in step 3
+not being freed in the same sequence) and the two `announcements.test.ts`
+cases. No deviation from the plan. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (974 tests) all pass.
 
 In `src/rules/endOfTurn.ts`, per D8 and D9:
 

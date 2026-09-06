@@ -379,7 +379,7 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     }
   });
 
-  it("goes depleted, carrying its level unclamped, once drain reaches or passes capacity, leaving a ship on it untouched (§8.5)", () => {
+  it("goes depleted, carrying its level unclamped, once drain reaches or passes capacity, trapping the ship on it (§8.5)", () => {
     // Any drawn amount (empty table's minimum is 1) crosses capacity from
     // NODE_CAPACITY - 1, so this is deterministic without pinning a seed.
     const state = buildState({
@@ -400,11 +400,17 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
         squares: [squareFromName("H8")],
       },
       { type: "node-ran-out", square: squareFromName("H8") },
+      {
+        type: "ship-trapped",
+        shipId: "green-1",
+        side: "green",
+        square: squareFromName("H8"),
+      },
     ]);
     // Holding a charged node no longer costs power (§4.1), so green's own
     // ship is untouched by step 1 even as step 3 spends the node out from
-    // under it in the same sequence — it simply stays there, at the power it
-    // started with.
+    // under it in the same sequence — it simply stays there, trapped, at
+    // the power it started with.
     const untouchedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(untouchedShip?.power).toBe(1);
     expect(untouchedShip?.square).toEqual(squareFromName("H8"));
@@ -744,6 +750,67 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
     expect(afterTurnNPlus2.state.nodes[replacementName].level).toBeGreaterThan(
       afterTurnNPlus1.state.nodes[replacementName].level,
     );
+  });
+});
+
+describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §8.5)", () => {
+  it("reports node-replaced then ship-freed, keeping the freed ship's square and power, when a retiring node had a ship on it", () => {
+    // The recovery table's minimum draw is 4, so a level of 4 is guaranteed
+    // to retire on a single draw, regardless of seed.
+    const state = buildState({
+      nodes: { H8: ["depleted", 4] },
+      ships: [ship("green-1", "green", "H8", 3)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(
+      result.effects.findIndex((effect) => effect.type === "node-replaced"),
+    ).toBe(0);
+    expect(result.effects[1]).toEqual({
+      type: "ship-freed",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+    });
+    const freedShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(freedShip?.square).toEqual(squareFromName("H8"));
+    expect(freedShip?.power).toBe(3);
+  });
+
+  it("reports no ship-freed when a retiring node had no ship on it", () => {
+    const state = buildState({
+      nodes: { H8: ["depleted", 4] },
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects.some((effect) => effect.type === "ship-freed")).toBe(
+      false,
+    );
+  });
+
+  it("does not free the ship a node traps in step 3 of the same sequence — step 6 only touches nodes depleted before the ply began", () => {
+    // Any drawn amount (empty table's minimum is 1) crosses capacity from
+    // NODE_CAPACITY - 1, so H8 is guaranteed to go depleted in step 3 here,
+    // never having been depleted before this ply began.
+    const state = buildState({
+      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
+      ships: [ship("green-1", "green", "H8", 1)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.nodes.H8.state).toBe("depleted");
+    expect(
+      result.effects.some((effect) => effect.type === "ship-trapped"),
+    ).toBe(true);
+    expect(result.effects.some((effect) => effect.type === "ship-freed")).toBe(
+      false,
+    );
+    expect(
+      result.effects.some((effect) => effect.type === "node-replaced"),
+    ).toBe(false);
   });
 });
 

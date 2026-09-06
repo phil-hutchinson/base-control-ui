@@ -392,6 +392,78 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
+  it("announces a node running out and trapping the ship on it, right after the node's own clause (§7, §8.1, §8.5)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            { type: "node-ran-out", square: squareAt("K", 5) },
+            {
+              type: "ship-trapped",
+              shipId: "red-2",
+              side: "red",
+              square: squareAt("K", 5),
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
+        "The node at K5 ran out. The red ship at K5 is trapped there until the node retires. " +
+        "Red's turn, 1 action left.",
+    );
+  });
+
+  it("announces a node retiring and freeing the ship on it, right after the replacement clause (§8.5, §8.6 step 6)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "node-replaced",
+              retiredSquare: squareAt("D", 8),
+              newSquare: squareAt("K", 11),
+            },
+            {
+              type: "ship-freed",
+              shipId: "green-3",
+              side: "green",
+              square: squareAt("D", 8),
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
+        "The node at D8 is gone, and a new node appeared at K11. The green ship at D8 is free again. " +
+        "Red's turn, 1 action left.",
+    );
+  });
+
   it("announces a new node charging at the end of a turn (§8.2)", () => {
     const event: MovedEvent = {
       type: "moved",

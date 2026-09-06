@@ -163,10 +163,12 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
  * are racing towards. `node-replaced` speaks too, in one sentence naming
  * both squares: unlike the old cycle-in-place, a node ending and a new one
  * appearing elsewhere is a visible change to the map and to where the next
- * race will be. A zero collection produces no effect at all (rules.md §8.4),
- * so there is nothing here to skip for it — a turn that collects nothing
- * simply has no collection clause, and nothing in this sequence ever takes
- * energy away.
+ * race will be. `ship-trapped` and `ship-freed` each speak too, right after
+ * the node event that caused them, since a player needs to know a ship was
+ * caught or released, not just that a node changed. A zero collection
+ * produces no effect at all (rules.md §8.4), so there is nothing here to
+ * skip for it — a turn that collects nothing simply has no collection
+ * clause, and nothing in this sequence ever takes energy away.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -188,12 +190,22 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
       case "node-ran-out":
         clauses.push(`The node at ${squareName(effect.square)} ran out.`);
         break;
+      case "ship-trapped":
+        clauses.push(
+          `The ${effect.side} ship at ${squareName(effect.square)} is trapped there until the node retires.`,
+        );
+        break;
       case "node-charged":
         clauses.push(`A new node charged at ${squareName(effect.square)}.`);
         break;
       case "node-replaced":
         clauses.push(
           `The node at ${squareName(effect.retiredSquare)} is gone, and a new node appeared at ${squareName(effect.newSquare)}.`,
+        );
+        break;
+      case "ship-freed":
+        clauses.push(
+          `The ${effect.side} ship at ${squareName(effect.square)} is free again.`,
         );
         break;
     }
