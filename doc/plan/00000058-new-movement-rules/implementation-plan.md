@@ -293,7 +293,7 @@ The tests that pin these sentences keep their literal expected strings —
 a test asserting `"power 3 of 6"` is the check that the interpolation
 resolves to what the rules say.
 
-### D11 — The gauge: a per-slot position table, lines only, unlit slots still visible
+### D11 — The gauge: a per-slot position table, lines only, an unlit slot drawing nothing
 
 `src/ships/shipArt.ts` today has `GAUGE_SLOT_COUNT = 4`, a list of four x
 offsets and a single shared y. It becomes a **six-entry table of (x, y)
@@ -307,12 +307,21 @@ two `<g id=…gauge-icon>` groups in `ShipDefs.tsx` that nothing else
 references. A slot becomes a black underlay line with the side's line drawn on
 top of it.
 
-An **unlit** slot still draws both lines — the same black underlay, with a
-thin line in the side's colour (`unlitOutline`) on top — so a player can count
-six positions and see that three of them are lit. Today an unlit slot draws no
-line at all; that only worked because the hollow icon still marked the
-position, and the icon is going. `GAUGE_PALETTE.unlitFill` most likely loses
-its last user and should then be deleted rather than left as a dead field.
+**Superseded at the Step 10 visual gate.** This step originally had an
+**unlit** slot draw both lines — the same black underlay, with a thin line in
+the side's colour (`unlitOutline`) on top — reasoning that a player needs to
+count six positions to read three lit ones as three of six. The owner's
+testers found that reasoning wrong at real viewing size: a thin line and a
+thick line on an element this small both just read as "something is drawn
+here", so a fainter mark is not a legible third state — it is a worse-drawn
+version of "lit". The rule the owner wants, and the one now implemented, is
+**presence or absence, never one weight of line against another**: a lit slot
+draws its black-underlay-plus-bar-colour pair exactly as before, and an unlit
+slot draws **nothing at all** — no underlay, no line, no element. `unlitOutline`
+and the unlit stroke-width constant have no remaining use and are deleted.
+The accepted consequence is that a ship at 0 power now draws no gauge marks
+at all, indistinguishable from a ship drawn with no power level given — which
+is the intended reading, not a bug to fix.
 
 Starting geometry, from `story.md` (numbers the owner expects to adjust by eye
 at Step 10, not a specification): line length **18** units in the 0–100
@@ -328,8 +337,8 @@ name describes a separator under an icon that no longer exists — rename it
 (suggested `GAUGE_UNDERLAY_COLOR`) in the same step, and delete
 `GAUGE_SEPARATOR_STROKE_WIDTH`, which only ever styled the icon.
 
-The `data-gauge-slot` and `data-gauge-lit` attributes stay: they are what
-`ShipModel.test.tsx` counts.
+The `data-gauge-slot` and `data-gauge-lit` attributes stay on whatever slots
+still render: they are what `ShipModel.test.tsx` counts.
 
 ### D12 — Order: the document, then the range, then the table, then legality, then spending, then what the player sees
 
@@ -1082,6 +1091,19 @@ returns nothing.
 ### Step 10 — The owner looks at the gauge
 
 Status: pending
+
+Notes: At this gate the owner rejected D11's "unlit slot still draws a thin
+line" rule outright — his testers found that a thin line and a thick line on
+an element this small both just read as "something is drawn here", so the
+thin line is not a legible third state, only a worse-drawn "lit". His
+decision: an unlit slot draws **nothing at all** — no underlay, no line —
+never a fainter version of the lit mark; presence or absence is the only
+distinction the gauge is allowed to make. Implemented back in Step 9's files
+(`shipArt.ts`, `ShipModel.tsx`) and their tests, with `GAUGE_UNLIT_STROKE_WIDTH`
+and `GaugePalette.unlitOutline` deleted as dead once nothing draws an unlit
+line. D11 is updated to record the reversal. Accepted consequence: a ship at
+0 power now draws no gauge marks at all, reading the same as a ship drawn
+with no power level given — the owner's intended reading, not a defect.
 
 No code is written before this step's check. The numbers in Step 9 are a
 starting point, not a specification the owner has approved by eye

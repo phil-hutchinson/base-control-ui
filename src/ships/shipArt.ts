@@ -68,7 +68,7 @@ export const GAUGE_SLOT_POSITIONS = [
   { x: 74, y: 26 },
 ] as const;
 
-/** The black underlay drawn beneath every slot's line, lit or not, so a slot reads against the board whatever colour is drawn over it. */
+/** The black underlay drawn beneath a lit slot's line. An unlit slot draws neither this nor a line - see GaugePalette. */
 export const GAUGE_UNDERLAY_COLOR = "#151c31";
 
 /** The lit bar's geometry - drawn twice, coincident, a black underlay then the side's colour on top. */
@@ -76,22 +76,22 @@ export const GAUGE_BAR_LENGTH = 18;
 export const GAUGE_BAR_UNDERLAY_STROKE_WIDTH = 11;
 export const GAUGE_BAR_STROKE_WIDTH = 6;
 
-/** An unlit slot's line: thinner than the lit bar, in the side's colour, so the position still reads as a slot. */
-export const GAUGE_UNLIT_STROKE_WIDTH = 1.5;
-
-/** A side's gauge colours: the lit bar's colour, and the thin outline an unlit slot draws instead. */
+/**
+ * A side's gauge colour: the lit bar's colour. There is deliberately no
+ * unlit colour - an unlit slot renders nothing at all, not a dimmer mark,
+ * because at the gauge's real size a thin line and a thick one both read
+ * as "something is here" rather than as distinct states (owner's call at
+ * the Step 10 visual gate; see D11).
+ */
 export interface GaugePalette {
   readonly barColor: string;
-  readonly unlitOutline: string;
 }
 
 export const GAUGE_PALETTE: Record<Side, GaugePalette> = {
   green: {
     barColor: "#4fbf72",
-    unlitOutline: "#4fbf72",
   },
   red: {
     barColor: "#e00000",
-    unlitOutline: "#e00000",
   },
 };
