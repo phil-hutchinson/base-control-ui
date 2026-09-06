@@ -23,12 +23,11 @@ meantime.
 - The trap ends when the node retires — about ten turns later, on the
   ordinary recovery clock (§8.2). The ship is then standing on an ordinary
   square and is free again.
-- A trapped ship is otherwise an ordinary ship. It still blocks enemy
-  movement, and it is still an **ordinary target** — a ship on a depleted
-  node has never been protected and is not protected now. What follows is
-  that nobody will attack one: an attack returns both ships to planets, so
-  attacking a trapped ship spends your own ship's position to **free** the
-  enemy's. The disincentive is enough; no new protection rule is needed.
+- A trapped ship **cannot be attacked**, any more than it can attack. Being
+  on a node takes a ship out of combat in both directions, exactly as a
+  charged node already does. It still blocks enemy movement, so it holds its
+  square — but nothing an opponent can do will dislodge it, and nothing frees
+  it early except the node retiring or the relief below.
 
 **A move may not end on a depleted node.**
 
@@ -188,10 +187,13 @@ the distinction cannot be missed. A trapped ship has no move at all.
 **§7 is corrected.** Its current sentence — that a ship on an inactive or a
 depleted node is an ordinary target and fights and is fought like any other —
 splits. A ship on an **inactive** node is unchanged. A ship on a **depleted**
-node **cannot attack**, and **can** be attacked like any other unprotected
-ship. §7 says plainly why the second half is not a loophole: an attack sends
-both ships to planets, so attacking a trapped ship frees it, and a player has
-no reason to.
+node can **neither attack nor be attacked**. §7's existing protection
+sentence therefore stops being about charged nodes alone and becomes about
+nodes: a ship standing on a node that is charged or depleted is out of combat
+in both directions, and only a ship on an inactive node — or on no node at
+all — fights and is fought. The two protections are not the same bargain,
+and §7 says so: a charged-node holder has chosen its position and may leave
+whenever it likes, while a trapped ship has neither choice.
 
 **§8.3's "a ship left standing on it stays where it is"** becomes "a ship left
 standing on it is trapped there", pointing at §8.5.
@@ -314,28 +316,25 @@ unreachable, since no total ever falls. The plan decides whether to delete it
 or keep it as a guard, and says why; whichever it picks, the comment must not
 go on describing a case the game can no longer produce.
 
-**The board.** `ShipCondition` gains `trapped` alongside `no-action`, with a
-mark of its own, and — unlike `no-action` — it is drawn for **both** sides,
-not only the side to move. This is the story's call, not the owner's: a trap
-lasts about ten turns rather than the rest of one, both players can read it
-off the board anyway (a ship sitting on a grey node), and a player choosing
-an attack needs to see that their target is already out of the game for a
-while. `trapped` takes precedence over `no-action` where both apply, since it
-is the reason for the other. Per `CLAUDE.md` the mark is presence, not degree:
-a trapped ship carries it, a free one carries nothing, and nothing indicates
-how much longer the trap has to run — the node's own glow already shows that.
+**The board gains nothing.** No new mark, no new `ShipCondition`, no change
+to how a ship or a node is drawn — this is the owner's decision. A trapped
+ship already reads: it sits on a grey depleted node, and on its owner's turn
+the existing `no-action` condition dampens it and draws its bar, because a
+trapped ship genuinely has no legal action. That machinery costs this story
+nothing and is left exactly as it is.
 
 **Announcements.** The penalty sentence, `depletedNodesOccupiedPhrase`, the
 `energy-penalty` case and `scoreSentence`'s depleted clause all go. New
 clauses say that a node ran out and caught a ship, that a node retired and
 freed one, and that a node ended early to free a player whose ships were all
-trapped. The two new move refusals and the new attack refusal get wording of
-their own, distinct from being out of range or blocked — "that ship is
-trapped" and "a ship cannot land on a burned-out node" are different
-sentences.
+trapped. The two new move refusals and the two new attack refusals — one for
+a trapped attacker, one for a trapped target — each get wording of their own,
+distinct from being out of range or blocked, and distinct from each other: a
+player must be able to tell which of the two ships a refusal is about.
 
-**The square label** says a ship is trapped where it says a ship has no
-action today.
+**The square label** is unchanged: it already names the depleted node under
+the ship, and the existing no-action condition segment already appears for a
+trapped ship of the side to move.
 
 Per `CLAUDE.md`, accessibility repair is not this story's work; anything this
 change knowingly costs goes as a note in
@@ -359,8 +358,8 @@ Tests follow the change:
   the trap reason; a depleted node is refused as a destination with its own
   reason; a depleted node may still be **flown over**.
 - `combat.test.ts` — a trapped ship cannot attack and is refused with the new
-  reason; a trapped ship is still a legal target; attacking one sends both
-  ships to planets and frees it.
+  reason; a trapped ship is refused as a **target** with its own reason, and
+  never appears in `legalTargets`.
 - `endOfTurn.test.ts` — no penalty is ever taken; a node running out under a
   ship reports it trapped; a node retiring under a ship reports it freed; step
   7 fires when a side's every ship is trapped, ends the lowest-level qualifying
@@ -388,13 +387,15 @@ Tests follow the change:
   clock gives, and whether that is the right sentence is a balance story.
 - **The energy table is not rebalanced** to compensate for the penalty's
   removal. Scores will run higher; that is expected and accepted.
-- **No protection for a trapped ship.** It can be attacked, and the story
-  relies on the disincentive rather than a rule.
+- **No way for an opponent to break a trap.** A trapped ship cannot be
+  attacked, so an enemy cannot free it, dislodge it or take its square. The
+  trap runs its clock out, or the relief ends it.
 - **No new node state.** A trapped ship is a fact about a ship standing on a
   `depleted` node, not a fourth state, and nothing is stored on the node.
-- **The node artwork is unchanged.** A depleted node already reads as grey and
-  already shows its remaining life through its gradient; this story adds a
-  mark to the **ship**, not to the node.
+- **Nothing new is drawn, on the node or the ship.** A depleted node already
+  reads as grey and already shows its remaining life through its gradient, and
+  a trapped ship already reads as having no action on its owner's turn. No new
+  mark, condition or artwork is added anywhere.
 - **Fleet sizes, planets, rounds, the clock and combat's returns** are
   untouched.
 - **No warning before a node burns out.** A player reads the node's glow, as
@@ -426,9 +427,9 @@ The trap:
   ordinary square.
 - A ship may fly over a depleted node but may not land on one, and the refusal
   says so.
-- A trapped ship still blocks an enemy's path, and is still a legal target; an
-  attack on it returns both ships to planets and the trapped ship arrives free
-  and carrying the power it had.
+- A trapped ship still blocks an enemy's path, and cannot be attacked: it is
+  refused as a target with its own reason, and an enemy holding it in range
+  is offered no attack on it.
 - A ship on an **inactive** node is unaffected in every way.
 
 The relief:
@@ -447,11 +448,12 @@ What the player sees:
 
 - The score cell has one pip row, for charged nodes held, and the HUD is
   correspondingly shorter with nothing misaligned at any window size.
-- A trapped ship carries its mark, on both sides of the board, and loses it
-  when the node retires.
-- **Manual check by the owner**: the trapped mark reads clearly against a
-  grey depleted node at the sizes the board is actually played at, and the
-  HUD's new proportions look right in portrait and landscape.
+- Nothing new is drawn on the board. A trapped ship of the side to move
+  reads as having no action through the existing condition; selecting it
+  offers no destination and no target.
+- **Manual check by the owner**: the HUD's new proportions look right in
+  portrait and landscape, and the announcements read correctly as a node runs
+  out under a ship and again when it retires.
 
 Whole build:
 
