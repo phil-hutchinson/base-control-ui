@@ -706,7 +706,35 @@ of range.
 
 ### Step 5 — Attacks reach as far as they can afford, and are blocked only by enemies
 
-Status: pending
+Status: committed
+
+Notes: `attackReach` now returns `shapeReaching(attacker.square, target)` — purely
+geometric, as its comment already claimed. `attackRefusalReason` gains
+`"cannot-afford-target"` (checked right after `"target-out-of-range"` and
+before the path check) and its `passedOver` block check now ignores an
+occupant on the attacker's own side, mirroring Step 4's move refusal (D3).
+`legalTargets` needed no change, as planned — it already reads
+`reachFrom(attacker.square, attacker.power)`. Added the new sentence to
+`rejectionSentence` and reworded `"attack-path-blocked"`'s sentence to "An
+enemy ship stands in the way …" now that only an enemy ever produces it.
+`"target-out-of-range"`'s sentence was also rewritten, on the orchestrator's
+correction after review: it originally explained the refusal in terms of a
+drained ship's power ("a ship at 0 power can only strike one square …"), which
+was this implementer's first-pass judgement that no change was needed since
+the sentence names no obsolete figure — but that missed that the reason no
+longer has anything to do with power at all once `"cannot-afford-target"`
+exists to cover that case (D5), so the sentence pointed a full-power player at
+the wrong fix. It now says only that the square is not one of the shapes a
+ship can attack from here, whatever power it carries. Updated `combat.test.ts`
+(friendly-vs-enemy blocking on the two-square lane, either L corner blocking
+independently, the new cannot-afford-target refusal, and a reach-parity check
+across every power level 0–6) and `announcements.test.ts` for both sentences.
+`Board.test.tsx`'s "does not highlight a target beyond a blocking ship, of
+either side" test relied on a friendly blocker; split it into an enemy-blocks
+case and a new friendly-does-not-block case (`rangeState` gained an optional
+`blockerSide`, defaulting to the enemy side to keep every other call site
+unchanged) — this fallout wasn't named in the plan's file list but follows
+directly from D3. No other deviation from the plan.
 
 In `src/rules/combat.ts`:
 

@@ -10,6 +10,7 @@ import {
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
+import { reachFrom } from "./movement";
 import type { PowerLevel } from "./power";
 import type { NodeState } from "./nodes";
 
@@ -149,7 +150,7 @@ describe("attackRefusalReason / legalTargets", () => {
       squareNames(orthogonalNeighbours.map(squareFromName)),
     );
     expect(attackRefusalReason(state, "green-1", squareFromName("G7"))).toBe(
-      "target-out-of-range",
+      "cannot-afford-target",
     );
   });
 
@@ -186,8 +187,8 @@ describe("attackRefusalReason / legalTargets", () => {
     ).toBeUndefined();
   });
 
-  it("refuses attack-path-blocked when a ship of either side stands between attacker and target, and the same attack is legal once that square is empty", () => {
-    const withBlocker = buildState({
+  it("a friendly ship between attacker and target does not block the shot, but an enemy one does", () => {
+    const withFriendlyBlocker = buildState({
       ships: [
         ship("green-1", "green", "H8", 2),
         ship("green-2", "green", "H9", 4),
@@ -209,14 +210,78 @@ describe("attackRefusalReason / legalTargets", () => {
     });
 
     expect(
-      attackRefusalReason(withBlocker, "green-1", squareFromName("H10")),
-    ).toBe("attack-path-blocked");
+      attackRefusalReason(
+        withFriendlyBlocker,
+        "green-1",
+        squareFromName("H10"),
+      ),
+    ).toBeUndefined();
     expect(
       attackRefusalReason(withEnemyBlocker, "green-1", squareFromName("H10")),
     ).toBe("attack-path-blocked");
     expect(
       attackRefusalReason(cleared, "green-1", squareFromName("H10")),
     ).toBeUndefined();
+  });
+
+  it("blocks an L attack from either corner independently, and lets it through once both are clear", () => {
+    const blockedByOrthogonalCorner = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 2),
+        ship("red-corner", "red", "I8", 4),
+        ship("red-target", "red", "J9", 4),
+      ],
+    });
+    const blockedByDiagonalCorner = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 2),
+        ship("red-corner", "red", "I9", 4),
+        ship("red-target", "red", "J9", 4),
+      ],
+    });
+    const friendlyOnBothCorners = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 2),
+        ship("green-2", "green", "I8", 4),
+        ship("green-3", "green", "I9", 4),
+        ship("red-target", "red", "J9", 4),
+      ],
+    });
+
+    expect(
+      attackRefusalReason(
+        blockedByOrthogonalCorner,
+        "green-1",
+        squareFromName("J9"),
+      ),
+    ).toBe("attack-path-blocked");
+    expect(
+      attackRefusalReason(
+        blockedByDiagonalCorner,
+        "green-1",
+        squareFromName("J9"),
+      ),
+    ).toBe("attack-path-blocked");
+    expect(
+      attackRefusalReason(
+        friendlyOnBothCorners,
+        "green-1",
+        squareFromName("J9"),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("refuses cannot-afford-target for a real shape the attacker cannot pay for", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "J9", 4)],
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("J9"))).toBe(
+      "cannot-afford-target",
+    );
+    expect(legalTargets(state, "green-1")).not.toContainEqual(
+      squareFromName("J9"),
+    );
   });
 
   it("refuses target-out-of-range for a target beyond the reach", () => {
@@ -288,6 +353,31 @@ describe("attackRefusalReason / legalTargets", () => {
     expect(attackRefusalReason(state, "red-1", squareFromName("H8"))).toBe(
       "not-your-ship",
     );
+  });
+
+  it("matches movement reach exactly at every power level: a lone enemy at any reach destination is a legal target", () => {
+    const origin = "H8";
+    for (const power of [0, 1, 2, 3, 4, 5, 6] as const) {
+      const destinations = reachFrom(squareFromName(origin), power).map(
+        (entry) => entry.destination,
+      );
+
+      for (const destination of destinations) {
+        const state = buildState({
+          ships: [
+            ship("green-1", "green", origin, power),
+            ship("red-1", "red", squareName(destination), 4),
+          ],
+        });
+        expect(
+          attackRefusalReason(state, "green-1", destination),
+        ).toBeUndefined();
+      }
+
+      expect(squareNames(destinations)).toHaveLength(
+        power === 0 ? 4 : power === 1 ? 8 : 20,
+      );
+    }
   });
 
   it("refuses a ship that has already acted this ply, leaving it with no targets", () => {

@@ -425,9 +425,11 @@ function rejectionSentence(event: RejectedEvent): string {
     case "target-on-charged-node":
       return "A ship holding a charged node cannot be attacked.";
     case "target-out-of-range":
-      return `${square} is out of attack range. A ship attacks as far as it moves, so a drained ship barely strikes at all — a ship at 0 power can only strike one square up, down, left or right.`;
+      return `${square} is not one of the shapes a ship can attack from here — an orthogonal or diagonal step, two squares orthogonally, or an L — whatever power it carries.`;
+    case "cannot-afford-target":
+      return `The selected ship does not have the power to strike ${square}. An orthogonal step is free, a diagonal costs 1, and two squares or an L cost 2.`;
     case "attack-path-blocked":
-      return `Another ship stands in the way, so the attack cannot reach ${square}.`;
+      return `An enemy ship stands in the way, so the attack cannot reach ${square}.`;
     // Unreachable through the board's own gesture — activating a friendly
     // ship re-selects it and activating an empty square is a move attempt —
     // but `attackRefusalReason` answers for every square, so both are worded.

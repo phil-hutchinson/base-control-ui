@@ -297,12 +297,17 @@ describe("announcementFor", () => {
     [
       "target-out-of-range",
       squareAt("J", 7),
-      "J7 is out of attack range. A ship attacks as far as it moves, so a drained ship barely strikes at all — a ship at 0 power can only strike one square up, down, left or right.",
+      "J7 is not one of the shapes a ship can attack from here — an orthogonal or diagonal step, two squares orthogonally, or an L — whatever power it carries.",
+    ],
+    [
+      "cannot-afford-target",
+      squareAt("J", 9),
+      "The selected ship does not have the power to strike J9. An orthogonal step is free, a diagonal costs 1, and two squares or an L cost 2.",
     ],
     [
       "attack-path-blocked",
       squareAt("J", 7),
-      "Another ship stands in the way, so the attack cannot reach J7.",
+      "An enemy ship stands in the way, so the attack cannot reach J7.",
     ],
     [
       "target-is-friendly",

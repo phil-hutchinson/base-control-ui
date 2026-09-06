@@ -794,6 +794,7 @@ describe("Board", () => {
       defenderSquare: Square;
       defenderPower: PowerLevel;
       blockerSquare?: Square;
+      blockerSide?: "green" | "red";
       actedThisPly?: string[];
     }): GameState {
       const ships = [
@@ -812,8 +813,8 @@ describe("Board", () => {
       ];
       if (config.blockerSquare) {
         ships.push({
-          id: "green-2",
-          side: "green" as const,
+          id: "blocker",
+          side: config.blockerSide ?? "red",
           square: config.blockerSquare,
           power: 4,
         });
@@ -878,13 +879,14 @@ describe("Board", () => {
       ).toBeInTheDocument();
     });
 
-    it("does not highlight a target beyond a blocking ship, of either side, as attackable", () => {
+    it("does not highlight a target beyond an enemy ship blocking the lane", () => {
       const state = rangeState({
         attackerSquare: squareAt("H", 8),
         attackerPower: 3,
         defenderSquare: squareAt("H", 10),
         defenderPower: 4,
         blockerSquare: squareAt("H", 9),
+        blockerSide: "red",
       });
       const session: Session = {
         state,
@@ -896,6 +898,29 @@ describe("Board", () => {
       expect(
         screen.queryByRole("gridcell", { name: /^H10,.*can attack here/ }),
       ).not.toBeInTheDocument();
+    });
+
+    it("still highlights a target beyond a friendly ship in the lane, which does not block a shot", () => {
+      const state = rangeState({
+        attackerSquare: squareAt("H", 8),
+        attackerPower: 3,
+        defenderSquare: squareAt("H", 10),
+        defenderPower: 4,
+        blockerSquare: squareAt("H", 9),
+        blockerSide: "green",
+      });
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H10, red ship, power 4 of 6, can attack here, both ships would return to planets",
+        }),
+      ).toBeInTheDocument();
     });
 
     it("offers no highlight for a target beyond the eight neighbours when the attacking ship has already acted", () => {
