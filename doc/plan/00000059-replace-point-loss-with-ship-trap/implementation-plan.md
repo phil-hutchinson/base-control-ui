@@ -1295,7 +1295,12 @@ node's life; `grep -rn "depleted-pip\|energy-penalty" src/` finds nothing;
 
 ### Step 12 — The owner looks at the HUD and hears the announcements
 
-Status: pending
+Status: committed
+
+Notes: The owner ran the app and confirmed all three observations behave as
+expected — the HUD's proportions with one pip row, the trapped/freed/relief
+announcements, and a trapped ship reading as trapped without a mark. No
+finding raised.
 
 The one manual gate. Everything is implemented; this is the owner's eye on the
 two things a test cannot judge. Nothing new is drawn on the board (S9), so
