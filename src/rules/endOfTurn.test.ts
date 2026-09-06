@@ -208,7 +208,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
     ).toBe(false);
   });
 
-  it("collects and pays no energy for a ship recovering on a planet", () => {
+  it("collects no energy for a ship recovering on a planet", () => {
     const state = buildState({
       sideToMove: "green",
       ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 2)],
@@ -218,9 +218,6 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
 
     expect(
       result.effects.some((effect) => effect.type === "energy-collected"),
-    ).toBe(false);
-    expect(
-      result.effects.some((effect) => effect.type === "energy-penalty"),
     ).toBe(false);
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
   });
@@ -944,127 +941,8 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     ).toBe(false);
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
   });
-});
 
-describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
-  it("prices one, two, three and four depleted nodes off the collection table", () => {
-    const cases: readonly [number, number][] = [
-      [1, 1],
-      [2, 3],
-      [3, 6],
-      [4, 10],
-    ];
-    for (const [depletedCount, expectedAmount] of cases) {
-      const names = ["H8", "K5", "L8", "D8", "K11"].slice(0, depletedCount);
-      const state = {
-        ...buildState({
-          sideToMove: "green",
-          nodes: Object.fromEntries(
-            names.map((name) => [name, ["depleted", 0] as const]),
-          ),
-          ships: names.map((name, index) =>
-            ship(`green-${index + 1}` as ShipId, "green", name, 0),
-          ),
-        }),
-        energy: { green: 100, red: 0 },
-      };
-
-      const result = runEndOfTurn(state);
-
-      const penalty = result.effects.find(
-        (effect) => effect.type === "energy-penalty",
-      );
-      expect(penalty).toMatchObject({
-        type: "energy-penalty",
-        side: "green",
-        amount: expectedAmount,
-        newTotal: 100 - expectedAmount,
-      });
-      expect(result.state.energy.green).toBe(100 - expectedAmount);
-    }
-  });
-
-  it("prices five and six depleted nodes the same as four, raising no error", () => {
-    const sixNames = ["H8", "K5", "L8", "D8", "K11", "E5"];
-    for (const depletedCount of [5, 6]) {
-      const names = sixNames.slice(0, depletedCount);
-      const state = {
-        ...buildState({
-          sideToMove: "green",
-          nodes: Object.fromEntries(
-            names.map((name) => [name, ["depleted", 0] as const]),
-          ),
-          ships: names.map((name, index) =>
-            ship(`green-${index + 1}` as ShipId, "green", name, 0),
-          ),
-        }),
-        energy: { green: 100, red: 0 },
-      };
-
-      const result = runEndOfTurn(state);
-
-      expect(result.effects).toContainEqual(
-        expect.objectContaining({ type: "energy-penalty", amount: 10 }),
-      );
-      expect(result.state.energy.green).toBe(90);
-    }
-  });
-
-  it("collects for the charged nodes held and then pays for the depleted nodes occupied, not netted", () => {
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: {
-          H8: ["charged", 1],
-          K5: ["charged", 1],
-          L8: ["charged", 1],
-          D8: ["depleted", 0],
-          K11: ["depleted", 0],
-        },
-        ships: [
-          ship("green-1", "green", "H8", 0),
-          ship("green-2", "green", "K5", 0),
-          ship("green-3", "green", "L8", 0),
-          ship("green-4", "green", "D8", 4),
-          ship("green-5", "green", "K11", 4),
-        ],
-      }),
-      energy: { green: 0, red: 0 },
-    };
-
-    const result = runEndOfTurn(state);
-
-    const collectedIndex = result.effects.findIndex(
-      (effect) => effect.type === "energy-collected",
-    );
-    const penaltyIndex = result.effects.findIndex(
-      (effect) => effect.type === "energy-penalty",
-    );
-    expect(collectedIndex).toBeGreaterThanOrEqual(0);
-    expect(penaltyIndex).toBeGreaterThan(collectedIndex);
-
-    expect(result.effects).toContainEqual({
-      type: "energy-collected",
-      side: "green",
-      amount: 6,
-      newTotal: 6,
-      squares: [
-        squareFromName("K5"),
-        squareFromName("H8"),
-        squareFromName("L8"),
-      ],
-    });
-    expect(result.effects).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 3,
-      newTotal: 3,
-      squares: [squareFromName("D8"), squareFromName("K11")],
-    });
-    expect(result.state.energy.green).toBe(3);
-  });
-
-  it("floors a penalty larger than the side's energy at 0, reporting only what was actually deducted", () => {
+  it("never lowers a total: standing on several depleted nodes costs nothing", () => {
     const state = {
       ...buildState({
         sideToMove: "green",
@@ -1072,111 +950,27 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
           H8: ["depleted", 0],
           K5: ["depleted", 0],
           L8: ["depleted", 0],
+          D8: ["depleted", 0],
         },
         ships: [
-          ship("green-1", "green", "H8", 4),
-          ship("green-2", "green", "K5", 4),
-          ship("green-3", "green", "L8", 4),
+          ship("green-1", "green", "H8", 0),
+          ship("green-2", "green", "K5", 0),
+          ship("green-3", "green", "L8", 0),
+          ship("green-4", "green", "D8", 0),
         ],
       }),
-      energy: { green: 2, red: 0 },
+      energy: { green: 3, red: 7 },
     };
 
     const result = runEndOfTurn(state);
 
-    expect(result.effects).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 2,
-      newTotal: 0,
-      squares: [
-        squareFromName("K5"),
-        squareFromName("H8"),
-        squareFromName("L8"),
-      ],
-    });
-    expect(result.state.energy.green).toBe(0);
-  });
-
-  it("raises no penalty effect for a side with 0 energy standing on depleted nodes", () => {
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: { H8: ["depleted", 0] },
-        ships: [ship("green-1", "green", "H8", 4)],
-      }),
-      energy: { green: 0, red: 0 },
-    };
-
-    const result = runEndOfTurn(state);
-
-    expect(
-      result.effects.some((effect) => effect.type === "energy-penalty"),
-    ).toBe(false);
-    expect(result.state.energy.green).toBe(0);
-  });
-
-  it("raises no penalty effect for a side standing on no depleted node", () => {
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: { H8: ["inactive", 1] },
-        ships: [ship("green-1", "green", "H8", 0)],
-      }),
-      energy: { green: 5, red: 0 },
-    };
-
-    const result = runEndOfTurn(state);
-
-    expect(
-      result.effects.some((effect) => effect.type === "energy-penalty"),
-    ).toBe(false);
-    expect(result.state.energy.green).toBe(5);
-  });
-
-  it("costs this side nothing for a depleted node occupied by the opponent", () => {
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: { H8: ["depleted", 0] },
-        ships: [ship("red-1", "red", "H8", 0)],
-      }),
-      energy: { green: 5, red: 5 },
-    };
-
-    const result = runEndOfTurn(state);
-
-    expect(
-      result.effects.some((effect) => effect.type === "energy-penalty"),
-    ).toBe(false);
-    expect(result.state.energy).toEqual({ green: 5, red: 5 });
-  });
-
-  it("prices the depleted node occupied and ignores one with no ship standing on it", () => {
-    // green-1 ends on H8, depleted: it pays for that. K5, also depleted, is
-    // never occupied at all here, so it never counts — a node with no ship
-    // standing on it at the moment the count is taken costs nothing,
-    // regardless of why. (`camping.test.ts` carries the genuine fly-over
-    // case, driven through movement.)
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: { H8: ["depleted", 0], K5: ["depleted", 0] },
-        ships: [ship("green-1", "green", "H8", 0)],
-      }),
-      energy: { green: 5, red: 0 },
-    };
-
-    const result = runEndOfTurn(state);
-
-    expect(result.effects).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 1,
-      newTotal: 4,
-      squares: [squareFromName("H8")],
-    });
-    expect(result.state.energy.green).toBe(4);
+    expect(result.state.energy.green).toBeGreaterThanOrEqual(3);
+    expect(result.state.energy.red).toBeGreaterThanOrEqual(7);
+    for (const effect of result.effects) {
+      if (effect.type === "energy-collected") {
+        expect(effect.newTotal).toBeGreaterThanOrEqual(0);
+      }
+    }
   });
 });
 
@@ -1215,7 +1009,7 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
     expect(passedShip?.power).toBe(1);
   });
 
-  it("pays the side that passes while standing on a depleted node, through applyPassGuard", () => {
+  it("costs the side that passes nothing while standing on a depleted node, through applyPassGuard", () => {
     const state = {
       ...buildState({
         sideToMove: "green",
@@ -1230,14 +1024,13 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
     const result = applyPassGuard(state);
 
     expect(result.effect?.type).toBe("ply-passed");
-    expect(result.effect?.endOfTurn).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 1,
-      newTotal: 4,
-      squares: [squareFromName("K5")],
-    });
-    expect(result.state.energy).toEqual({ green: 4, red: 0 });
+    expect(
+      result.effect?.endOfTurn.some(
+        (effect) =>
+          effect.type === "energy-collected" || effect.type === "power-gained",
+      ),
+    ).toBe(false);
+    expect(result.state.energy).toEqual({ green: 5, red: 0 });
   });
 });
 

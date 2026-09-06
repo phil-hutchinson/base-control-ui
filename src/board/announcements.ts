@@ -7,15 +7,10 @@
 
 import { isPlanet } from "../rules/planets";
 import { squareName } from "../rules/board";
-import {
-  chargedNodesHeldBy,
-  depletedNodesOccupiedBy,
-  MAX_DEPLETED_NODES_PRICED,
-} from "../rules/energy";
+import { chargedNodesHeldBy, depletedNodesOccupiedBy } from "../rules/energy";
 import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
-  EnergyPenaltyEffect,
   PowerGainedEffect,
 } from "../rules/endOfTurn";
 import type { Side } from "../rules/fleet";
@@ -171,30 +166,6 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
 }
 
 /**
- * A single turn's penalty (rules.md §8.4): one depleted node names itself,
- * several name their count and squares — the mirror of
- * `energyCollectedClause`. There is at most one of these per sequence, for
- * the same reason there is at most one collection.
- *
- * The count priced is capped at `MAX_DEPLETED_NODES_PRICED` (§8.4), but every
- * occupied depleted node is still named — nothing is ranked or selected, the
- * cap just stops counting. So a side over the cap hears which nodes it is
- * standing on, and that only `MAX_DEPLETED_NODES_PRICED` of them are
- * counted, not that some subset was chosen.
- */
-function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
-  const side = capitalize(effect.side);
-  const squares = effect.squares.map((square) => squareName(square));
-  const source =
-    squares.length === 1
-      ? `the depleted node at ${squares[0]}`
-      : squares.length > MAX_DEPLETED_NODES_PRICED
-        ? `${squares.length} depleted nodes at ${joinWithAnd(squares)}, ${MAX_DEPLETED_NODES_PRICED} of which are penalised`
-        : `${squares.length} depleted nodes at ${joinWithAnd(squares)}`;
-  return `${side} lost ${effect.amount} energy to ${source}, and now has ${effect.newTotal}.`;
-}
-
-/**
  * The clauses an end-of-turn sequence produced, in the order the sequence
  * produced them. All of a sequence's power gains are grouped into one
  * clause, ahead of the rest — there is no longer a power-loss clause to sit
@@ -203,11 +174,10 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
  * are racing towards. `node-replaced` speaks too, in one sentence naming
  * both squares: unlike the old cycle-in-place, a node ending and a new one
  * appearing elsewhere is a visible change to the map and to where the next
- * race will be. A zero collection or a zero penalty produces no effect at
- * all (rules.md §8.4), so there is nothing here to skip for either case — a
- * turn that only pays reads as one sentence, and a turn that collects and
- * then pays reads as two, in that order, because the sequence pushes the
- * collection effect before the penalty effect.
+ * race will be. A zero collection produces no effect at all (rules.md §8.4),
+ * so there is nothing here to skip for it — a turn that collects nothing
+ * simply has no collection clause, and nothing in this sequence ever takes
+ * energy away.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -225,9 +195,6 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
         break;
       case "energy-collected":
         clauses.push(energyCollectedClause(effect));
-        break;
-      case "energy-penalty":
-        clauses.push(energyPenaltyClause(effect));
         break;
       case "node-ran-out":
         clauses.push(`The node at ${squareName(effect.square)} ran out.`);

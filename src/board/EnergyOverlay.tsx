@@ -1,10 +1,9 @@
-// The decorative overlay drawing a settlement (rules.md §8.4): a "+N" and a
-// pulse ring on each paying square for a collection, a "-N" and a pulse ring
-// on each paying square for a penalty. Purely a function of the session's
-// last event and its own state - no timers, no state of its own. A screen
-// reader learns about the settlement from the live region's sentence
-// (announcements.ts) and the HUD carries the totals as text, so nothing here
-// is the only channel for anything.
+// The decorative overlay drawing a settlement (rules.md §8.4): a "+N" and an
+// expanding pulse ring on each paying square for a collection. Purely a
+// function of the session's last event and its own state - no timers, no
+// state of its own. A screen reader learns about the settlement from the
+// live region's sentence (announcements.ts) and the HUD carries the totals
+// as text, so nothing here is the only channel for anything.
 
 import { squareName } from "../rules/board";
 import type {
@@ -21,7 +20,6 @@ import { centroidPercentPosition } from "./boardView";
 import "./EnergyOverlay.css";
 
 interface Settlement {
-  readonly kind: "positive" | "negative";
   readonly side: EnergyCollectedEffect["side"];
   readonly amount: number;
   readonly squares: EnergyCollectedEffect["squares"];
@@ -32,14 +30,6 @@ function settlementsIn(effects: readonly EndOfTurnEffect[]): Settlement[] {
   for (const effect of effects) {
     if (effect.type === "energy-collected") {
       settlements.push({
-        kind: "positive",
-        side: effect.side,
-        amount: effect.amount,
-        squares: effect.squares,
-      });
-    } else if (effect.type === "energy-penalty") {
-      settlements.push({
-        kind: "negative",
         side: effect.side,
         amount: effect.amount,
         squares: effect.squares,
@@ -113,16 +103,15 @@ export function EnergyOverlay({ session }: EnergyOverlayProps) {
   return (
     <div className="energy-overlay" aria-hidden="true">
       {settlements.flatMap((settlement, index) => {
-        const key = `${settlement.side}-${settlement.kind}-${session.state.plyNumber}-${index}`;
+        const key = `${settlement.side}-${session.state.plyNumber}-${index}`;
         const position = centroidPercentPosition(settlement.squares);
-        const sign = settlement.kind === "positive" ? "+" : "-";
         return [
           ...settlement.squares.map((square) => {
             const pulsePosition = centroidPercentPosition([square]);
             return (
               <span
                 key={`${key}-pulse-${squareName(square)}`}
-                className={`energy-overlay__pulse energy-overlay__pulse--${settlement.kind} energy-overlay__pulse--${settlement.side}`}
+                className={`energy-overlay__pulse energy-overlay__pulse--${settlement.side}`}
                 style={{
                   top: `${pulsePosition.top}%`,
                   left: `${pulsePosition.left}%`,
@@ -132,14 +121,13 @@ export function EnergyOverlay({ session }: EnergyOverlayProps) {
           }),
           <span
             key={`${key}-amount`}
-            className={`energy-overlay__amount energy-overlay__amount--${settlement.kind} energy-overlay__amount--${settlement.side}`}
+            className={`energy-overlay__amount energy-overlay__amount--${settlement.side}`}
             style={{
               top: `${position.top}%`,
               left: `${position.left}%`,
             }}
           >
-            {sign}
-            {settlement.amount}
+            +{settlement.amount}
           </span>,
         ];
       })}

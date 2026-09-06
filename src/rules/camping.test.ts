@@ -173,7 +173,7 @@ describe("camping — a node charges under a parked ship (§8.1, §8.2, §8.5)",
 });
 
 describe("camping — a ship on a depleted node outlasts it, until the node retires and is replaced elsewhere (§8.2, §8.5, §8.6)", () => {
-  it("keeps its square and power through retirement, and stops paying the depleted-node penalty once the square is ordinary", () => {
+  it("keeps its square and power through retirement, costing it nothing before or after", () => {
     const initial = {
       ...buildState({
         ships: [
@@ -196,24 +196,17 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
       energy: { green: 10, red: 0 },
     };
 
-    // Green's turn: green-camper still occupies H8, genuinely depleted, at
-    // the moment step 2 prices it (§8.4) — that runs before step 6 retires
-    // the node later in this very sequence — so it pays the penalty one
-    // last time. Step 6 then removes H8 from `state.nodes` and writes one
-    // new inactive node elsewhere; the camper is untouched by any of it,
-    // because retirement (§8.6 step 6) does not look at occupancy any more
-    // than the charge draw does.
+    // Green's turn: green-camper still occupies H8, genuinely depleted, when
+    // step 6 retires it later in this very sequence — nothing is taken for
+    // standing there, before or after. Step 6 removes H8 from `state.nodes`
+    // and writes one new inactive node elsewhere; the camper is untouched by
+    // any of it, because retirement (§8.6 step 6) does not look at occupancy
+    // any more than the charge draw does.
     const afterGreenTurn = appliedOrThrow(
       applyMove(initial, "green-mover", squareFromName("A3")),
     );
     const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
-    expect(greenTurnEffects).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 1,
-      newTotal: 9,
-      squares: [squareFromName("H8")],
-    });
+    expect(afterGreenTurn.state.energy.green).toBe(10);
     const replaced = greenTurnEffects.find(
       (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
     );
@@ -227,18 +220,15 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
     expect(camperAfterRetirement?.power).toBe(MAX_POWER);
 
     // Red's turn, then green's own next turn: H8 is now an ordinary square
-    // — it holds no node — so green pays nothing further for standing on
-    // it, even though the camper still has not moved an inch.
+    // — it holds no node — so nothing about standing on it changes, even
+    // though the camper still has not moved an inch.
     const afterRedTurn = appliedOrThrow(
       applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
     );
     const afterGreenNextTurn = appliedOrThrow(
       applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
     );
-    const greenNextTurnEffects = endOfTurnEffects(afterGreenNextTurn.effects);
-    expect(
-      greenNextTurnEffects.some((effect) => effect.type === "energy-penalty"),
-    ).toBe(false);
+    expect(afterGreenNextTurn.state.energy.green).toBe(10);
     expect(afterGreenNextTurn.state.nodes.H8).toBeUndefined();
     const camperStillThere = afterGreenNextTurn.state.ships.find(
       (candidate) => candidate.id === "green-camper",
@@ -253,10 +243,9 @@ describe("camping — an inactive node grants and takes nothing, and a depleted 
     // green-depleted-camper starts with room to gain (2), unlike the old
     // rule's ceiling corner case — the point here is that a depleted node
     // grants nothing at all now (§4.1), not that this particular ship
-    // happened to have nowhere left to put a gain. green starts this test
-    // at 0 energy (buildState's default), so the depleted node's energy
-    // penalty floors at 0 too; the dedicated "a depleted node costs" tests
-    // below cover the general, non-zero case.
+    // happened to have nowhere left to put a gain. A depleted node no
+    // longer costs anything either, so green's energy stays at the default
+    // of 0 throughout.
     const initial = buildState({
       ships: [
         ship("green-inactive-camper", "green", "H4"),
@@ -299,9 +288,7 @@ describe("camping — an inactive node grants and takes nothing, and a depleted 
     expect(
       greenTurnEffects.some(
         (effect) =>
-          effect.type === "power-gained" ||
-          effect.type === "energy-collected" ||
-          effect.type === "energy-penalty",
+          effect.type === "power-gained" || effect.type === "energy-collected",
       ),
     ).toBe(false);
     assertUntouched(afterGreenTurn.state);
@@ -313,9 +300,7 @@ describe("camping — an inactive node grants and takes nothing, and a depleted 
     expect(
       redTurnEffects.some(
         (effect) =>
-          effect.type === "power-gained" ||
-          effect.type === "energy-collected" ||
-          effect.type === "energy-penalty",
+          effect.type === "power-gained" || effect.type === "energy-collected",
       ),
     ).toBe(false);
     assertUntouched(afterRedTurn.state);
@@ -383,19 +368,15 @@ describe("camping — a node running out under a ship is quiet (§8.3, §8.5)", 
       ),
     ).toBeUndefined();
     const greenNextTurnEffects = endOfTurnEffects(afterGreenNextTurn.effects);
-    // H8 is depleted now, so it only ever costs green energy from here —
-    // a depleted node no longer gives power back (§4.1) — and it does so
-    // again this turn, exactly as it did the turn it ran out.
-    expect(greenNextTurnEffects).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 1,
-      newTotal: 0,
-      squares: [squareFromName("H8")],
-    });
+    // H8 is depleted now, so it costs and gives green nothing from here — a
+    // depleted node no longer gives power back (§4.1) or takes energy away.
     expect(
-      greenNextTurnEffects.some((effect) => effect.type === "power-gained"),
+      greenNextTurnEffects.some(
+        (effect) =>
+          effect.type === "power-gained" || effect.type === "energy-collected",
+      ),
     ).toBe(false);
+    expect(afterGreenNextTurn.state.energy.green).toBe(1);
     const camperAfterNextTurn = afterGreenNextTurn.state.ships.find(
       (candidate) => candidate.id === "green-camper",
     );
@@ -442,8 +423,8 @@ describe("camping — leaving a node for a depleted node (§8.5)", () => {
   });
 });
 
-describe("camping — a depleted node costs energy and grants no power, every one of its owner's turns (§4.1, §8.4)", () => {
-  it("pays energy at the end of each of the camper's owner's own turns without ever refilling it, and does so again the next", () => {
+describe("camping — a depleted node costs and grants nothing, every one of its owner's turns (§4.1, §8.4)", () => {
+  it("takes no energy and gives no power at the end of any of the camper's owner's turns", () => {
     const initial: GameState = {
       ...buildState({
         ships: [
@@ -461,32 +442,29 @@ describe("camping — a depleted node costs energy and grants no power, every on
     };
 
     // Green's turn: green-camper never acts — its owner spends the turn
-    // moving a different ship — but the camper still pays for standing on
-    // H8, exactly as it would if it had moved. A depleted node no longer
-    // gives anything back for it (§4.1), so its power is untouched.
+    // moving a different ship — but nothing is taken for standing on H8,
+    // exactly as nothing would be if it had moved. A depleted node no
+    // longer gives anything back for it either (§4.1), so its power is
+    // untouched.
     const afterGreenTurn = appliedOrThrow(
       applyMove(initial, "green-mover", squareFromName("A3")),
     );
     const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
     expect(
-      greenTurnEffects.some((effect) => effect.type === "power-gained"),
+      greenTurnEffects.some(
+        (effect) =>
+          effect.type === "power-gained" || effect.type === "energy-collected",
+      ),
     ).toBe(false);
-    expect(greenTurnEffects).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 1,
-      newTotal: 9,
-      squares: [squareFromName("H8")],
-    });
     const camperAfterGreenTurn = afterGreenTurn.state.ships.find(
       (candidate) => candidate.id === "green-camper",
     );
     expect(camperAfterGreenTurn?.square).toEqual(squareFromName("H8"));
     expect(camperAfterGreenTurn?.power).toBe(2);
-    expect(afterGreenTurn.state.energy.green).toBe(9);
+    expect(afterGreenTurn.state.energy.green).toBe(10);
 
-    // Red's turn: each side pays on its own turn only, so green's camper on
-    // a depleted node costs green nothing at the end of red's turn.
+    // Red's turn: nothing changes for green's camper on a depleted node at
+    // the end of red's turn either.
     const afterRedTurn = appliedOrThrow(
       applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
     );
@@ -494,32 +472,27 @@ describe("camping — a depleted node costs energy and grants no power, every on
     expect(
       redTurnEffects.some(
         (effect) =>
-          effect.type === "power-gained" || effect.type === "energy-penalty",
+          effect.type === "power-gained" || effect.type === "energy-collected",
       ),
     ).toBe(false);
-    expect(afterRedTurn.state.energy.green).toBe(9);
+    expect(afterRedTurn.state.energy.green).toBe(10);
 
-    // Green's next turn: the cost recurs rather than firing once, still with
-    // nothing given back.
+    // Green's next turn: still nothing, across as many turns as it stays.
     const afterGreenNextTurn = appliedOrThrow(
       applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
     );
     const greenNextTurnEffects = endOfTurnEffects(afterGreenNextTurn.effects);
     expect(
-      greenNextTurnEffects.some((effect) => effect.type === "power-gained"),
+      greenNextTurnEffects.some(
+        (effect) =>
+          effect.type === "power-gained" || effect.type === "energy-collected",
+      ),
     ).toBe(false);
-    expect(greenNextTurnEffects).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 1,
-      newTotal: 8,
-      squares: [squareFromName("H8")],
-    });
     const camperAfterGreenNextTurn = afterGreenNextTurn.state.ships.find(
       (candidate) => candidate.id === "green-camper",
     );
     expect(camperAfterGreenNextTurn?.power).toBe(2);
-    expect(afterGreenNextTurn.state.energy.green).toBe(8);
+    expect(afterGreenNextTurn.state.energy.green).toBe(10);
   });
 });
 
@@ -558,8 +531,7 @@ describe("camping — an inactive node still pays nothing, for as many turns as 
         plyEffects.some(
           (effect) =>
             effect.type === "power-gained" ||
-            effect.type === "energy-collected" ||
-            effect.type === "energy-penalty",
+            effect.type === "energy-collected",
         ),
       ).toBe(false);
     }
@@ -591,8 +563,8 @@ describe("camping — an inactive node still pays nothing, for as many turns as 
   });
 });
 
-describe("camping — leaving a depleted node stops its energy penalty immediately, and it never granted power to begin with (§4.1, §8.4, §8.5)", () => {
-  it("pays nothing at the end of the turn a ship moves off a depleted node it was standing on", () => {
+describe("camping — a depleted node never granted power to begin with (§4.1, §8.5)", () => {
+  it("costs nothing at the end of the turn a ship moves off a depleted node it was standing on", () => {
     const initial: GameState = {
       ...buildState({
         ships: [
@@ -606,20 +578,13 @@ describe("camping — leaving a depleted node stops its energy penalty immediate
       energy: { green: 10, red: 0 },
     };
 
-    // green-camper is not standing on H8 when the end-of-turn count is
-    // taken, because it moved off it during this very ply — the "standing
-    // on at that moment" rule (§8.4) governs the penalty exactly as it
-    // governs the collection.
     const result = appliedOrThrow(
       applyMove(initial, "green-camper", squareFromName("H9")),
     );
     const effects = endOfTurnEffects(result.effects);
-    expect(
-      effects.some(
-        (effect) =>
-          effect.type === "power-gained" || effect.type === "energy-penalty",
-      ),
-    ).toBe(false);
+    expect(effects.some((effect) => effect.type === "power-gained")).toBe(
+      false,
+    );
     expect(result.state.energy.green).toBe(10);
     const camper = result.state.ships.find(
       (candidate) => candidate.id === "green-camper",
@@ -630,7 +595,7 @@ describe("camping — leaving a depleted node stops its energy penalty immediate
 });
 
 describe("camping — flying across a depleted node costs nothing (§8.4)", () => {
-  it("raises no power gain or energy penalty for a move that passes over, but does not stop on, a depleted node", () => {
+  it("raises no power gain for a move that passes over, but does not stop on, a depleted node", () => {
     const initial: GameState = {
       ...buildState({
         ships: [
@@ -652,12 +617,9 @@ describe("camping — flying across a depleted node costs nothing (§8.4)", () =
       applyMove(initial, "green-flyer", squareFromName("I8")),
     );
     const effects = endOfTurnEffects(result.effects);
-    expect(
-      effects.some(
-        (effect) =>
-          effect.type === "power-gained" || effect.type === "energy-penalty",
-      ),
-    ).toBe(false);
+    expect(effects.some((effect) => effect.type === "power-gained")).toBe(
+      false,
+    );
     expect(result.state.energy.green).toBe(10);
     const flyer = result.state.ships.find(
       (candidate) => candidate.id === "green-flyer",

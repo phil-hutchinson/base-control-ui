@@ -3,10 +3,9 @@ import { ALL_SQUARES, squareFromName } from "./board";
 import {
   chargedNodesHeldBy,
   depletedNodesOccupiedBy,
-  energyForDepletedNodes,
   energyForNodesHeld,
 } from "./energy";
-import { MAX_SHIPS_PER_SIDE, type ShipId } from "./fleet";
+import type { ShipId } from "./fleet";
 import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { PowerLevel } from "./power";
@@ -136,49 +135,6 @@ describe("chargedNodesHeldBy", () => {
     });
 
     expect(chargedNodesHeldBy(state, "green")).toEqual([]);
-  });
-});
-
-describe("energyForDepletedNodes", () => {
-  it.each([
-    [0, 0],
-    [1, 1],
-    [2, 3],
-    [3, 6],
-    [4, 10],
-  ])("costs %i for standing on %i depleted nodes", (depletedNodes, energy) => {
-    expect(energyForDepletedNodes(depletedNodes)).toBe(energy);
-  });
-
-  it.each([5, 6])(
-    "clamps %i depleted nodes to the same price as four, without throwing",
-    (depletedNodes) => {
-      expect(energyForDepletedNodes(depletedNodes)).toBe(10);
-    },
-  );
-
-  it("throws for a negative count", () => {
-    expect(() => energyForDepletedNodes(-1)).toThrow(RangeError);
-  });
-
-  it("throws for a fractional count", () => {
-    expect(() => energyForDepletedNodes(2.5)).toThrow(RangeError);
-  });
-
-  it("throws for a count above the most ships a side can ever have", () => {
-    expect(() => energyForDepletedNodes(MAX_SHIPS_PER_SIDE + 1)).toThrow(
-      RangeError,
-    );
-  });
-
-  it("prices the maximum fleet's worth of depleted nodes the same as four, without throwing — the bound is the maximum fleet, not the current game's", () => {
-    expect(energyForDepletedNodes(MAX_SHIPS_PER_SIDE)).toBe(10);
-    expect(energyForDepletedNodes(MAX_SHIPS_PER_SIDE)).toBe(
-      energyForDepletedNodes(4),
-    );
-    expect(() => energyForDepletedNodes(MAX_SHIPS_PER_SIDE + 1)).toThrow(
-      RangeError,
-    );
   });
 });
 

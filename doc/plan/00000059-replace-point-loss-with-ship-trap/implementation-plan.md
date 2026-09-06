@@ -566,7 +566,26 @@ doc/ruleset/rules.md` finds hits in §1, §2, §5, §6, §7, §8.1, §8.3, §8.5
 
 ### Step 2 — The energy penalty goes, end to end
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned, with one deviation. `MAX_DEPLETED_NODES_PRICED`
+is **not** deleted from `src/rules/energy.ts` in this step, contrary to the
+plan's file list: `src/hud/ScoreDisplay.tsx` still imports it to size the
+depleted-pip row, and that row is not removed until Step 4, so deleting the
+constant here would break the build for one step. It is kept, with its doc
+comment rewritten to describe it as sizing the HUD row rather than pricing a
+penalty, and a note that it survives only for the row's own sizing; Step 4's
+own removal of the row is the point at which it actually goes. Everything
+else — the `endOfTurn.ts` step 2 penalty block, `EnergyPenaltyEffect`,
+`energyForDepletedNodes`, `energyPenaltyClause`, and `EnergyOverlay`'s
+negative-settlement path — is deleted exactly as planned. Also fixed one test
+in `endOfTurn.test.ts` ("costs the side that passes nothing while standing on
+a depleted node") whose original replacement assertion (`endOfTurn` equals
+`[]`) did not account for the node's own level-0 retirement firing in the
+same sequence — changed to assert no `energy-collected`/`power-gained`
+effect and an unchanged total, which is what the test is actually about.
+`npm run format` was run at the end to satisfy Prettier on the touched test
+files.
 
 Delete everything that takes energy away from a player. Nothing in the game
 subtracts energy after this step.
