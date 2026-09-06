@@ -229,6 +229,7 @@ export type MoveRefusalReason =
   | "not-your-ship"
   | "ship-already-acted"
   | "out-of-range"
+  | "cannot-afford"
   | "path-blocked"
   | "destination-occupied"
   | "game-over";
@@ -248,7 +249,11 @@ export function findShip(state: GameState, shipId: ShipId): Ship {
  * checked in order from the most fundamental (whether the game is even still
  * being played) to the most specific (the destination square itself):
  * whether the game is over, whose ship it is, whether it has already acted,
- * and finally §6's reach, path and destination-occupancy checks.
+ * and finally §6's reach, affordability, path and destination-occupancy
+ * checks. "Out of range" now means only that no shape reaches the square at
+ * all — a real shape the ship cannot currently pay for is "cannot afford"
+ * instead, since the two are refused for different reasons and read
+ * differently to a player.
  */
 export function moveRefusalReason(
   state: GameState,
@@ -268,19 +273,23 @@ export function moveRefusalReason(
     return "ship-already-acted";
   }
 
-  const destinationName = squareName(destination);
-  const entry = reachFrom(ship.square, ship.power).find(
-    (candidate) => squareName(candidate.destination) === destinationName,
-  );
+  const entry = shapeReaching(ship.square, destination);
   if (entry === undefined) {
     return "out-of-range";
   }
+  if (entry.cost > ship.power) {
+    return "cannot-afford";
+  }
 
   const occupied = shipsBySquare(state);
-  if (entry.passedOver.some((square) => occupied.has(squareName(square)))) {
+  const blocked = entry.passedOver.some((square) => {
+    const occupant = occupied.get(squareName(square));
+    return occupant !== undefined && occupant.side !== ship.side;
+  });
+  if (blocked) {
     return "path-blocked";
   }
-  if (occupied.has(destinationName)) {
+  if (occupied.has(squareName(destination))) {
     return "destination-occupied";
   }
 

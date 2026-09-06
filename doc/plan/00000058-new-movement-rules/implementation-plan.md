@@ -645,7 +645,18 @@ corners each, and one price per destination.
 
 ### Step 4 — Only enemies block, and "you cannot afford that" is its own answer
 
-Status: pending
+Status: committed
+
+Notes: `moveRefusalReason` now looks the shape up with `shapeReaching` (out-of-range
+when none exists), refuses `"cannot-afford"` when the ship's power is below the
+shape's cost, and the `passedOver` block check ignores an occupant on the
+mover's own side (D3). Added `"cannot-afford"` to `MoveRefusalReason` and its
+sentence in `rejectionSentence`, and reworded `"path-blocked"`'s sentence to
+"An enemy ship is in the way of …" now that only an enemy ever produces it.
+Rewrote `movement.test.ts`'s blocking coverage (friendly-vs-enemy on the
+two-square move's midpoint and on each L corner independently, the
+cannot-afford/out-of-range split) and `announcements.test.ts`'s rejection
+table for both changed/added sentences. No deviation from the plan.
 
 In `src/rules/movement.ts`:
 

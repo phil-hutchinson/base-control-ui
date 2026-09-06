@@ -291,7 +291,7 @@ function buildState(config: {
 }
 
 describe("legalDestinations and moveRefusalReason", () => {
-  it("blocks a landing square and a longer L over it, identically for a friendly or an enemy ship", () => {
+  it("lands on an occupied square only for an enemy: the destination is barred to either side", () => {
     const friendlyState = buildState({
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "H9")],
     });
@@ -300,29 +300,101 @@ describe("legalDestinations and moveRefusalReason", () => {
     });
 
     for (const state of [friendlyState, enemyState]) {
-      const destinations = legalDestinations(state, "green-1").map(squareName);
-      expect(destinations).toContain("H7");
-      expect(destinations).not.toContain("H9");
-      expect(destinations).not.toContain("G10");
-      expect(destinations).not.toContain("I10");
-
       expect(moveRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
         "destination-occupied",
       );
-      expect(moveRefusalReason(state, "green-1", squareFromName("G10"))).toBe(
-        "path-blocked",
-      );
-      expect(moveRefusalReason(state, "green-1", squareFromName("I10"))).toBe(
-        "path-blocked",
-      );
-      expect(
-        moveRefusalReason(state, "green-1", squareFromName("H7")),
-      ).toBeUndefined();
     }
+  });
+
+  it("does not block a two-square orthogonal move with a friendly ship in the middle, but blocks it with an enemy there", () => {
+    const friendlyState = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "H9")],
+    });
+    const enemyState = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "H9")],
+    });
 
     expect(
-      legalDestinations(friendlyState, "green-1").map(squareName).sort(),
-    ).toEqual(legalDestinations(enemyState, "green-1").map(squareName).sort());
+      moveRefusalReason(friendlyState, "green-1", squareFromName("H10")),
+    ).toBeUndefined();
+    expect(
+      legalDestinations(friendlyState, "green-1").map(squareName),
+    ).toContain("H10");
+
+    expect(
+      moveRefusalReason(enemyState, "green-1", squareFromName("H10")),
+    ).toBe("path-blocked");
+    expect(
+      legalDestinations(enemyState, "green-1").map(squareName),
+    ).not.toContain("H10");
+  });
+
+  it("blocks the L from either corner independently, only for an enemy ship there", () => {
+    // The L from H8 to J9 turns through I8 (its orthogonal corner) and I9
+    // (its diagonal corner) — either occupied by an enemy blocks it.
+    const clear = buildState({ ships: [ship("green-1", "green", "H8")] });
+    expect(
+      moveRefusalReason(clear, "green-1", squareFromName("J9")),
+    ).toBeUndefined();
+
+    const friendlyOnOrthogonalCorner = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "I8")],
+    });
+    expect(
+      moveRefusalReason(
+        friendlyOnOrthogonalCorner,
+        "green-1",
+        squareFromName("J9"),
+      ),
+    ).toBeUndefined();
+
+    const enemyOnOrthogonalCorner = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "I8")],
+    });
+    expect(
+      moveRefusalReason(
+        enemyOnOrthogonalCorner,
+        "green-1",
+        squareFromName("J9"),
+      ),
+    ).toBe("path-blocked");
+
+    const friendlyOnDiagonalCorner = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "I9")],
+    });
+    expect(
+      moveRefusalReason(
+        friendlyOnDiagonalCorner,
+        "green-1",
+        squareFromName("J9"),
+      ),
+    ).toBeUndefined();
+
+    const enemyOnDiagonalCorner = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "I9")],
+    });
+    expect(
+      moveRefusalReason(enemyOnDiagonalCorner, "green-1", squareFromName("J9")),
+    ).toBe("path-blocked");
+  });
+
+  it("refuses an unaffordable shape with cannot-afford, distinct from a square out of range altogether", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 1)],
+    });
+
+    expect(moveRefusalReason(state, "green-1", squareFromName("J9"))).toBe(
+      "cannot-afford",
+    );
+    expect(moveRefusalReason(state, "green-1", squareFromName("H10"))).toBe(
+      "cannot-afford",
+    );
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("G7")),
+    ).toBeUndefined();
+    expect(moveRefusalReason(state, "green-1", squareFromName("O15"))).toBe(
+      "out-of-range",
+    );
   });
 
   it("allows a clear two-square orthogonal move and a clear L", () => {
@@ -443,7 +515,7 @@ describe("legalDestinations and moveRefusalReason", () => {
 
   it("produces each specific reason from at least one case", () => {
     const blocking = buildState({
-      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "H9")],
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "H9")],
     });
     const notYourTurn = buildState({
       ships: [ship("green-1", "green", "H8")],
@@ -453,6 +525,9 @@ describe("legalDestinations and moveRefusalReason", () => {
       ships: [ship("green-1", "green", "H8")],
       actedThisPly: ["green-1"],
     });
+    const underpowered = buildState({
+      ships: [ship("green-1", "green", "H8", 1)],
+    });
 
     const expectations: ReadonlyArray<
       readonly [GameState, ShipId, string, MoveRefusalReason]
@@ -460,6 +535,7 @@ describe("legalDestinations and moveRefusalReason", () => {
       [notYourTurn, "green-1", "H9", "not-your-ship"],
       [alreadyMoved, "green-1", "H9", "ship-already-acted"],
       [blocking, "green-1", "O15", "out-of-range"],
+      [underpowered, "green-1", "J9", "cannot-afford"],
       [blocking, "green-1", "G10", "path-blocked"],
       [blocking, "green-1", "H9", "destination-occupied"],
     ];

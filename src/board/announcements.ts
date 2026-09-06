@@ -410,8 +410,10 @@ function rejectionSentence(event: RejectedEvent): string {
       return `No ship on ${square}. Choose one of your own ships.`;
     case "out-of-range":
       return `${square} is out of range for the selected ship.`;
+    case "cannot-afford":
+      return `${square} costs more power than the selected ship has. A step up, down, left or right is free; a diagonal step costs 1; two squares or an L cost 2.`;
     case "path-blocked":
-      return `Another ship is in the way of ${square}.`;
+      return `An enemy ship is in the way of ${square}.`;
     case "destination-occupied":
       return `${square} is occupied.`;
     case "attacker-on-planet":

@@ -267,7 +267,12 @@ describe("announcementFor", () => {
       squareAt("J", 7),
       "J7 is out of range for the selected ship.",
     ],
-    ["path-blocked", squareAt("C", 8), "Another ship is in the way of C8."],
+    [
+      "cannot-afford",
+      squareAt("J", 9),
+      "J9 costs more power than the selected ship has. A step up, down, left or right is free; a diagonal step costs 1; two squares or an L cost 2.",
+    ],
+    ["path-blocked", squareAt("C", 8), "An enemy ship is in the way of C8."],
     ["destination-occupied", squareAt("C", 7), "C7 is occupied."],
     [
       "attacker-on-planet",
