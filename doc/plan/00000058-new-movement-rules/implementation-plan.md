@@ -1134,7 +1134,44 @@ Adjust `shipArt.ts` until the owner is satisfied, re-running `npm test` and
 
 ### Step 11 — `README.md`, and the sweep for anything left saying the old rules
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `README.md`'s power paragraph (power is a reserve spent on
+moves and attacks, priced by shape including the new L, only an enemy ship
+blocks, an attack costs the attacker the shape's price and leaves the
+defender's power untouched, refilled only on a planet at 1 a turn or 2 for a
+lone charging ship, up to six) and the depleted-node sentence in the
+paragraph beneath it, plus the three matching sentences in the `Status`
+blockquote (the planet-gain sentence appearing twice, and the depleted-node
+sentence), all of which still said "up to a full four" or that a charged
+node drains and a depleted node refills. Did not invoke `/update-readme` as a
+slash command — read its brief and applied the same scope and register
+myself, then ran the sweep to check the result rather than trusting an
+unreviewed pass. Ran the full sweep: `grep -rn "unlock" src README.md`, `grep
+-rni "drain" src README.md`, `grep -rn "of 4"` / `"maximum of 4"` / `"full
+power (4)"` across `src README.md doc/ruleset/rules.md` — all clean (the one
+surviving "of 4" hit is `endOfTurn.test.ts`'s node-recovery-table comment,
+unrelated to a ship's power maximum). Checked every export of `movement.ts`,
+`power.ts` and `shipArt.ts` for a non-test caller — all are used, either
+externally or by another exported function in the same module. No
+accessibility cost was recorded by any step's Notes, so
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md` is left
+untouched, per D14's "if, and only if" condition. `npm run typecheck`,
+`npm run lint`, `npm test` (966 tests), `npm run format:check` and
+`npm run build` all pass; `fullGame.test.ts` and `seededReplay.test.ts` are
+both green among them.
+
+Correction after the orchestrator's review: my first pass worded the double
+rate as "two if it is the only one of that player's ships resting on a
+planet", which is wrong in the case rules.md §3.1 actually calls out — a ship
+already at maximum is not charging and does not count, so a second ship still
+gaining still gets the double rate. Reworded all three occurrences (the
+overview paragraph and both `Status` blockquote sentences) to "the only one
+of that player's ships still topping up power on a planet ... a ship already
+full doesn't count", which conveys the exclusion without naming `MAX_POWER`
+or a cap, then reflowed the affected paragraphs to prettier's line width.
+Re-ran `npm run typecheck`, `npm run lint`, `npm test` (966 tests) and
+`npm run format:check`; all pass.
 
 `README.md` is player-facing (`CLAUDE.md`, Intended audience). Its overview
 paragraph on power and both quoted passages currently say a node drains a ship
