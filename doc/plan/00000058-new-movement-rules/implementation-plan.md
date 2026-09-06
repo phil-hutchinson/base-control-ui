@@ -865,7 +865,38 @@ not pair, plus the invariant assertions throwing on a hand-built bad pair.
 
 ### Step 7 — Planets become the only source of power
 
-Status: pending
+Status: in progress — partially implemented, **uncommitted in the working tree**
+
+Notes: The implementing agent was terminated mid-step by a session rate
+limit, not by anything wrong with the work. Its changes are in the working
+tree, uncommitted, and the suite is **not** green: 17 failures across 4 test
+files, all of them fallout in tests rather than in the rule logic.
+
+Done and present in the tree:
+
+- `src/rules/endOfTurn.ts` — step 1 rewritten: the charged-node loss and the
+  depleted-node gain are gone, and the planet gain carries the rate.
+- `src/rules/power.ts`, `src/board/announcements.ts` — follow it.
+- `src/rules/endOfTurn.test.ts` — rewritten, including a case for a ship at
+  the maximum neither gaining nor denying a lone shipmate the double rate.
+- `src/rules/camping.test.ts` — rewrite begun, not finished.
+
+Remaining, to finish the step:
+
+- `src/rules/recovery.test.ts` — untouched. Still compares against the
+  deleted `"power-lost"` effect (typecheck errors at lines 151, 175, 302,
+  371) and still asserts a lone beaten ship on a planet recovers at one a
+  turn, where it now recovers at two.
+- `src/rules/ply.test.ts` — planet-gain expectations need the double rate;
+  several `applyAttack` and `applyPassGuard` cases assert the old one-a-turn
+  gain or a charged-node power loss that no longer happens.
+- `src/rules/camping.test.ts` — finish the rewrite; one stale `"power-lost"`
+  comparison remains at line 566.
+
+Resume by re-dispatching `implement-step` for Step 7 against the tree as it
+stands, told to finish the test fallout rather than restart the
+implementation. Do not commit until typecheck, lint and the full suite are
+green.
 
 Add the checked capped-"gain" helper to `src/rules/power.ts` (D7): it caps at
 `MAX_POWER` and reports the amount **actually** gained.
