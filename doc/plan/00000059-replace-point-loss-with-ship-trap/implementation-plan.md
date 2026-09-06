@@ -936,7 +936,26 @@ pass, with the new `combat.test.ts` and `actions.test.ts` cases green.
 
 ### Step 7 — `src/rules/relief.ts`: choosing the node the relief ends
 
-Status: pending
+Status: committed
+
+Notes: Created `src/rules/relief.ts` exporting `reliefSquare(state, side)`
+exactly as planned: returns `undefined` unless `isSideAllTrapped`, filters
+`trappingNodesFor`'s candidates by a private `wouldHaveLegalMoveIfFreed`
+helper that builds the D6 hypothetical state (candidate node's entry removed,
+`sideToMove` set to the ship's side, `actedThisPly` emptied, everything else
+untouched) and calls `legalDestinations` on it, then picks the lowest `level`
+with a strict less-than comparison walking board order so a tie keeps the
+earlier square (D7). The module imports only `board.ts`, `fleet.ts`,
+`gameState.ts`, `movement.ts` and `trap.ts`, keeping the one-way layering
+`trap` ← `movement` ← `relief` (D1). Wrote `src/rules/relief.test.ts` with the
+seven cases the plan lists: a free ship blocks the relief; every ship trapped
+but boxed in by ships and the board edge; every ship trapped but its only
+reachable squares are other still-depleted nodes; the lowest-level qualifying
+node chosen among several; a lower-level candidate skipped for a higher-level
+one that would actually have a move; a tie on level broken by board order;
+and the input state left unmodified. No deviation from the plan. `npm run
+typecheck`, `npm run lint`, `npm run format:check` and `npm test` (969 tests)
+all pass.
 
 Create `src/rules/relief.ts` implementing §8.6 step 7's **choice** and nothing
 else (D1). It exports one function: given a state and a side, the square of the
