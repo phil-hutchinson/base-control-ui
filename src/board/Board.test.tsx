@@ -217,10 +217,10 @@ describe("Board", () => {
     );
 
     expect(container.querySelectorAll("[data-gauge-slot]")).toHaveLength(
-      STARTING_FLEET.length * 4,
+      STARTING_FLEET.length * 6,
     );
     expect(container.querySelectorAll('[data-gauge-lit="true"]')).toHaveLength(
-      STARTING_FLEET.length * 4,
+      STARTING_FLEET.length * 6,
     );
   });
 

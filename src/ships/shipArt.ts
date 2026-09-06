@@ -10,20 +10,17 @@
 
 import type { Side } from "../rules/fleet";
 
-/** The ids `ShipModel` `<use>`s directly: a side's whole hull, and its bare gauge-icon geometry. */
+/** The id `ShipModel` `<use>`s directly: a side's whole hull. */
 export interface ShipSideArt {
   readonly hullId: string;
-  readonly gaugeIconId: string;
 }
 
 export const SHIP_ART: Record<Side, ShipSideArt> = {
   green: {
     hullId: "ship-green-hull",
-    gaugeIconId: "ship-green-gauge-icon",
   },
   red: {
     hullId: "ship-red-hull",
-    gaugeIconId: "ship-red-gauge-icon",
   },
 };
 
@@ -54,51 +51,47 @@ export const SHIP_DEFS_IDS = {
   },
 } as const;
 
-/** How many slots the power gauge draws - power runs 0-4 (rules.md §4.1, src/rules/power.ts). */
-export const GAUGE_SLOT_COUNT = 4;
+/** How many slots the power gauge draws - power runs 0-6 (rules.md §4.1, src/rules/power.ts). */
+export const GAUGE_SLOT_COUNT = 6;
 
-/** Each slot's x offset in the 0-100 viewBox, left to right, a 23-unit pitch. */
-export const GAUGE_SLOT_X = [10, 33, 56, 79] as const;
+/**
+ * Every slot's (x, y) position in the 0-100 viewBox, in reading order - the
+ * top row left to right, then the bottom row - so index N is always "the
+ * Nth slot to light" (powerGauge.ts).
+ */
+export const GAUGE_SLOT_POSITIONS = [
+  { x: 8, y: 10 },
+  { x: 41, y: 10 },
+  { x: 74, y: 10 },
+  { x: 8, y: 26 },
+  { x: 41, y: 26 },
+  { x: 74, y: 26 },
+] as const;
 
-/** Every slot's y offset. */
-export const GAUGE_SLOT_Y = 3;
+/** The black underlay drawn beneath every slot's line, lit or not, so a slot reads against the board whatever colour is drawn over it. */
+export const GAUGE_UNDERLAY_COLOR = "#151c31";
 
-/** The separator underlay drawn beneath every icon, lit or not, so neighbouring icons stay visually apart. */
-export const GAUGE_SEPARATOR_COLOR = "#151c31";
-export const GAUGE_SEPARATOR_STROKE_WIDTH = 3.4;
-
-/** The icon's own stroke width, drawn over the separator. */
-export const GAUGE_ICON_STROKE_WIDTH = 1.5;
-
-/** The lit bar's geometry - drawn twice, coincident, an underlay then the side's colour on top. */
-export const GAUGE_BAR_Y = 25;
-export const GAUGE_BAR_X1 = 2.5;
-export const GAUGE_BAR_X2 = 13.5;
-export const GAUGE_BAR_UNDERLAY_STROKE_WIDTH = 8;
+/** The lit bar's geometry - drawn twice, coincident, a black underlay then the side's colour on top. */
+export const GAUGE_BAR_LENGTH = 18;
+export const GAUGE_BAR_UNDERLAY_STROKE_WIDTH = 11;
 export const GAUGE_BAR_STROKE_WIDTH = 6;
 
-/** A side's gauge colours: lit and unlit fill/outline, and the lit bar colour. */
+/** An unlit slot's line: thinner than the lit bar, in the side's colour, so the position still reads as a slot. */
+export const GAUGE_UNLIT_STROKE_WIDTH = 1.5;
+
+/** A side's gauge colours: the lit bar's colour, and the thin outline an unlit slot draws instead. */
 export interface GaugePalette {
-  readonly litFill: string;
-  readonly litOutline: string;
   readonly barColor: string;
-  readonly unlitFill: string;
   readonly unlitOutline: string;
 }
 
 export const GAUGE_PALETTE: Record<Side, GaugePalette> = {
   green: {
-    litFill: "#4fbf72",
-    litOutline: "#7dffab",
     barColor: "#4fbf72",
-    unlitFill: "#151c31",
     unlitOutline: "#4fbf72",
   },
   red: {
-    litFill: "#e00000",
-    litOutline: "#ff8f8f",
     barColor: "#e00000",
-    unlitFill: "#151c31",
     unlitOutline: "#e00000",
   },
 };

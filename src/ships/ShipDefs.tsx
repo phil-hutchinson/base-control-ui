@@ -1,9 +1,8 @@
 // The shared artwork every ship model `<use>`s: both sides' gradients, the
-// green ship's turbojet group, and each side's whole hull and gauge-icon
-// geometry, declared once here so every ship's `<use>` shares the same
-// definitions - up to fourteen ships are on the board at once, and each one
-// only needs a reference into this sprite rather than its own copy of every
-// id and every node in it.
+// green ship's turbojet group, and each side's whole hull, declared once
+// here so every ship's `<use>` shares the same definitions - up to fourteen
+// ships are on the board at once, and each one only needs a reference into
+// this sprite rather than its own copy of every id and every node in it.
 //
 // Mounted once, at the app root, above both the start screen and the game,
 // so it exists whichever screen is showing. It draws nothing itself -
@@ -69,18 +68,6 @@ export function ShipDefs() {
           <stop offset="35%" stopColor="#49d97e" stopOpacity="0.9" />
           <stop offset="100%" stopColor="#49d97e" stopOpacity="0" />
         </radialGradient>
-
-        {/* Green ship: gauge-icon geometry (hull + wings, then crew pod). No
-            fill/stroke here - each gauge slot's <use> sets its own. */}
-        <g id={SHIP_ART.green.gaugeIconId}>
-          <path
-            d="M8,0.5 Q10.6,1.5 10.8,8 Q11,13 11.7,16.6 Q9.9,17.8 8,17.8
-                   Q6.1,17.8 4.3,16.6 Q5,13 5.2,8 Q5.4,1.5 8,0.5 Z
-                   M5.3,6.5 Q2.6,9.5 0.6,14.5 Q0.4,15.4 1.4,15.4 L4.6,15.4 Z
-                   M10.7,6.5 Q13.4,9.5 15.4,14.5 Q15.6,15.4 14.6,15.4 L11.4,15.4 Z"
-          />
-          <path d="M6.1,6 Q5.8,2.8 8,2.3 Q10.2,2.8 9.9,6 Q8,7.1 6.1,6 Z" />
-        </g>
 
         {/* Green ship: one contained turbojet, drawn centred on the origin, `<use>`d three times by the hull */}
         <g id={green.jet}>
@@ -354,13 +341,6 @@ export function ShipDefs() {
           <stop offset="45%" stopColor="#d2d9de" />
           <stop offset="100%" stopColor="#828b93" />
         </radialGradient>
-
-        {/* Red ship: gauge-icon geometry (disk circle + engine rod). No
-            fill/stroke here - each gauge slot's <use> sets its own. */}
-        <g id={SHIP_ART.red.gaugeIconId}>
-          <circle cx="8" cy="9" r="7" />
-          <rect x="6.15" y="1.4" width="3.7" height="15.2" rx="1.85" />
-        </g>
 
         {/* Red ship: the whole hull */}
         <g id={SHIP_ART.red.hullId}>

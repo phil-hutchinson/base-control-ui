@@ -995,7 +995,32 @@ kept what it had.
 
 ### Step 9 — The gauge becomes six lines in two rows of three
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as D11 specifies, with the starting numbers as
+given: `GAUGE_SLOT_COUNT` = 6, a `GAUGE_SLOT_POSITIONS` table of six (x, y)
+pairs in reading order (columns 8/41/74, rows 10/26), `GAUGE_BAR_LENGTH` = 18,
+underlay stroke 11, bar stroke unchanged at 6, and a new
+`GAUGE_UNLIT_STROKE_WIDTH` = 1.5 for the unlit line drawn in
+`unlitOutline`. Deleted `ShipSideArt.gaugeIconId`, `GAUGE_ICON_STROKE_WIDTH`,
+`GAUGE_SEPARATOR_STROKE_WIDTH` (renaming `GAUGE_SEPARATOR_COLOR` to
+`GAUGE_UNDERLAY_COLOR`), both `<g id=…gauge-icon>` groups in `ShipDefs.tsx`,
+and `GaugePalette.litFill`/`litOutline`/`unlitFill` (the icon's fill/outline
+colours, dead once the icon is gone; `unlitFill` was already flagged by the
+plan, but `litFill`/`litOutline` are equally unused once every slot is a line
+rather than a filled/outlined icon shape, so they went too — not named
+individually in D11 but the same reasoning it gives for `unlitFill`).
+`ShipModel.tsx` now draws every slot as two coincident `<line>`s, an underlay
+then the side's line, and `ShipDefs.tsx`'s and `powerGauge.ts`'s module
+comments were updated to describe six slots in reading order rather than
+four icons left to right. Updated `powerGauge.test.ts` (6 slots, levels 0-6),
+`ShipModel.test.tsx` (6 slots in reading order, levels 0-6, two lines per
+slot with the stroke-width distinguishing lit from unlit), and
+`ShipDefs.test.tsx` (dropped the retired `gaugeIconId` entries from the id
+list). `Board.test.tsx`'s "draws every gauge slot lit for the starting
+fleet" test had a `STARTING_FLEET.length * 4` literal that the plan's file
+list did not name but which the same rename requires; changed to `* 6`. No
+other deviation from the plan.
 
 Implement D11.
 

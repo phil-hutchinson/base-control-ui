@@ -6,12 +6,17 @@ import { squareAt } from "../rules/board";
 import type { Side } from "../rules/fleet";
 import type { PowerLevel } from "../rules/power";
 import { squareLabel } from "../board/squareLabel";
-import { GAUGE_SLOT_COUNT, SHIP_ART } from "./shipArt";
+import {
+  GAUGE_BAR_STROKE_WIDTH,
+  GAUGE_SLOT_COUNT,
+  GAUGE_UNLIT_STROKE_WIDTH,
+  SHIP_ART,
+} from "./shipArt";
 import { ShipModel } from "./ShipModel";
 
 afterEach(cleanup);
 
-const POWER_LEVELS: readonly PowerLevel[] = [0, 1, 2, 3, 4];
+const POWER_LEVELS: readonly PowerLevel[] = [0, 1, 2, 3, 4, 5, 6];
 const SIDES: readonly Side[] = ["green", "red"];
 
 describe("ShipModel", () => {
@@ -35,7 +40,7 @@ describe("ShipModel", () => {
   });
 
   it.each(POWER_LEVELS)(
-    "draws four gauge slots in order, %i lit left to right",
+    "draws six gauge slots in reading order, %i lit",
     (power) => {
       const { container } = render(<ShipModel side="green" power={power} />);
 
@@ -43,25 +48,44 @@ describe("ShipModel", () => {
       expect(slots).toHaveLength(GAUGE_SLOT_COUNT);
       expect(
         Array.from(slots).map((slot) => slot.getAttribute("data-gauge-slot")),
-      ).toEqual(["0", "1", "2", "3"]);
+      ).toEqual(["0", "1", "2", "3", "4", "5"]);
 
       const litFlags = Array.from(slots).map(
         (slot) => slot.getAttribute("data-gauge-lit") === "true",
       );
       expect(litFlags.filter(Boolean)).toHaveLength(power);
-      expect(litFlags).toEqual([0, 1, 2, 3].map((index) => index < power));
+      expect(litFlags).toEqual(
+        [0, 1, 2, 3, 4, 5].map((index) => index < power),
+      );
     },
   );
 
-  it.each(POWER_LEVELS)("draws bars only on lit slots, %i lit", (power) => {
+  it.each(POWER_LEVELS)("draws two lines on every slot, %i lit", (power) => {
     const { container } = render(<ShipModel side="red" power={power} />);
 
     const slots = container.querySelectorAll("[data-gauge-slot]");
     slots.forEach((slot) => {
-      const lit = slot.getAttribute("data-gauge-lit") === "true";
-      expect(slot.querySelectorAll("line")).toHaveLength(lit ? 2 : 0);
+      expect(slot.querySelectorAll("line")).toHaveLength(2);
     });
   });
+
+  it.each(POWER_LEVELS)(
+    "draws a lit slot's top line at the bar stroke, and an unlit slot's at the thinner outline stroke, %i lit",
+    (power) => {
+      const { container } = render(<ShipModel side="red" power={power} />);
+
+      const slots = container.querySelectorAll("[data-gauge-slot]");
+      slots.forEach((slot) => {
+        const lit = slot.getAttribute("data-gauge-lit") === "true";
+        const lines = slot.querySelectorAll("line");
+        const topLine = lines[1];
+        expect(topLine).toHaveAttribute(
+          "stroke-width",
+          String(lit ? GAUGE_BAR_STROKE_WIDTH : GAUGE_UNLIT_STROKE_WIDTH),
+        );
+      });
+    },
+  );
 
   it("stays hidden from the accessibility tree, gauge or not", () => {
     const { container } = render(<ShipModel side="red" power={4} />);
