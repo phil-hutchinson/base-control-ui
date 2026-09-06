@@ -166,11 +166,11 @@ describe("applyMove", () => {
     // inactive or depleted destination is refused before it can be reached.
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      nodes: { K8: ["charged", 1] },
+      nodes: { J8: ["charged", 1] },
       plyNumber: 5,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("K8"));
+    const result = applyMove(state, "green-1", squareFromName("J8"));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -179,9 +179,9 @@ describe("applyMove", () => {
     // A charged node's drain still rises at the end of every turn regardless
     // of what a ship does (§8.3), so only its state is asserted here, not
     // its exact level.
-    expect(result.state.nodes.K8.state).toBe("charged");
+    expect(result.state.nodes.J8.state).toBe("charged");
     const movedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(movedShip?.square).toEqual(squareFromName("K8"));
+    expect(movedShip?.square).toEqual(squareFromName("J8"));
   });
 
   it("flying over an inactive node without stopping leaves it inactive (rules.md §8.2)", () => {
@@ -189,7 +189,8 @@ describe("applyMove", () => {
     // charge draw has no shortfall to fill and never considers I8; I8
     // itself sits at the pressure cap, so the pressure step also leaves it
     // untouched — between the two, nothing about the end-of-turn sequence
-    // this move triggers can touch it.
+    // this move triggers can touch it. The L from H8 to J9 turns through I8
+    // (its orthogonal corner) without stopping there (rules.md §6).
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
       nodes: {
@@ -202,7 +203,7 @@ describe("applyMove", () => {
       plyNumber: 3,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("K8"));
+    const result = applyMove(state, "green-1", squareFromName("J9"));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -210,7 +211,7 @@ describe("applyMove", () => {
     }
     expect(result.state.nodes.I8).toEqual(state.nodes.I8);
     const movedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(movedShip?.square).toEqual(squareFromName("K8"));
+    expect(movedShip?.square).toEqual(squareFromName("J9"));
   });
 
   it("leaves an inactive node flown over unaffected", () => {
@@ -229,7 +230,7 @@ describe("applyMove", () => {
       plyNumber: 4,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("K8"));
+    const result = applyMove(state, "green-1", squareFromName("J9"));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {

@@ -231,18 +231,19 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     // first turn — a ship only becomes unattackable by flying onto a
     // planet, away from the board's outer edge — so this attack-first
     // policy keeps finding fights across the run rather than stalling
-    // early. Measured at 7 fights (14 planet returns) for this seed over
-    // forty rounds; the floors below leave margin below that.
-    expect(fightCount).toBeGreaterThanOrEqual(4);
-    expect(planetReturns.length).toBeGreaterThanOrEqual(8);
-    // Measured at 10 for this seed over forty rounds; the floor here
-    // leaves margin below that.
-    expect(chargedNodes.length).toBeGreaterThanOrEqual(8);
-    // Measured at 8 for this seed over forty rounds (a mortal node's life
-    // is much shorter against a game this long than the board's steady
-    // state is against the several-hundred-turn runs `nodePool.test.ts`
-    // drives); the floor here leaves margin below that.
-    expect(replacedNodes.length).toBeGreaterThanOrEqual(5);
+    // early. Re-measured at 3 fights (6 planet returns) for this seed over
+    // forty rounds since §6's move table shrank to two shapes' worth of
+    // reach (0.24); the floors below leave margin below that.
+    expect(fightCount).toBeGreaterThanOrEqual(2);
+    expect(planetReturns.length).toBeGreaterThanOrEqual(4);
+    // Re-measured at 9 for this seed over forty rounds (0.24); the floor
+    // here leaves margin below that.
+    expect(chargedNodes.length).toBeGreaterThanOrEqual(7);
+    // Re-measured at 9 for this seed over forty rounds (0.24; a mortal
+    // node's life is much shorter against a game this long than the
+    // board's steady state is against the several-hundred-turn runs
+    // `nodePool.test.ts` drives); the floor here leaves margin below that.
+    expect(replacedNodes.length).toBeGreaterThanOrEqual(6);
   });
 
   it("replays the same opening board, the same planet sequence, the same charged-node sequence, the same node-replacement sequence and the same final state from the same seed", () => {

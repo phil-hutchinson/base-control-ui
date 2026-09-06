@@ -114,7 +114,7 @@ describe("camping — a node charges under a parked ship (§8.1, §8.2, §8.5)",
     // so the board's one-node shortfall charges it deterministically —
     // under a ship that has not moved at all.
     const afterGreenTurn = appliedOrThrow(
-      applyMove(initial, "green-mover", squareFromName("A4")),
+      applyMove(initial, "green-mover", squareFromName("A3")),
     );
     const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
     expect(greenTurnEffects).toContainEqual({
@@ -137,7 +137,7 @@ describe("camping — a node charges under a parked ship (§8.1, §8.2, §8.5)",
     // stands on it, but steps 1 and 2 pay only the side that just played —
     // red — so the camper still gains nothing.
     const afterRedTurn = appliedOrThrow(
-      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O7")),
+      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
     );
     const redTurnEffects = endOfTurnEffects(afterRedTurn.effects);
     expect(
@@ -213,7 +213,7 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
     // because retirement (§8.6 step 6) does not look at occupancy any more
     // than the charge draw does.
     const afterGreenTurn = appliedOrThrow(
-      applyMove(initial, "green-mover", squareFromName("A4")),
+      applyMove(initial, "green-mover", squareFromName("A3")),
     );
     const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
     expect(greenTurnEffects).toContainEqual({
@@ -239,7 +239,7 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
     // — it holds no node — so green pays nothing further for standing on
     // it, even though the camper still has not moved an inch.
     const afterRedTurn = appliedOrThrow(
-      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O7")),
+      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
     );
     const afterGreenNextTurn = appliedOrThrow(
       applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
@@ -302,7 +302,7 @@ describe("camping — a node that grants or takes nothing has nothing left to gi
     // The board is already at its target of four charged nodes, so H4
     // never gets drawn during this test — it is a clean, indefinite control.
     const afterGreenTurn = appliedOrThrow(
-      applyMove(initial, "green-mover", squareFromName("A4")),
+      applyMove(initial, "green-mover", squareFromName("A3")),
     );
     const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
     expect(
@@ -317,7 +317,7 @@ describe("camping — a node that grants or takes nothing has nothing left to gi
     assertUntouched(afterGreenTurn.state);
 
     const afterRedTurn = appliedOrThrow(
-      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O7")),
+      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
     );
     const redTurnEffects = endOfTurnEffects(afterRedTurn.effects);
     expect(
@@ -351,7 +351,7 @@ describe("camping — a node running out under a ship is quiet (§8.3, §8.5)", 
     });
 
     const afterGreenTurn = appliedOrThrow(
-      applyMove(initial, "green-mover", squareFromName("A4")),
+      applyMove(initial, "green-mover", squareFromName("A3")),
     );
     const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
     // Step 1 still takes the point of power due while H8 was charged, and
@@ -384,7 +384,7 @@ describe("camping — a node running out under a ship is quiet (§8.3, §8.5)", 
     expect(camperAfterRunout?.power).toBe(3);
 
     const afterRedTurn = appliedOrThrow(
-      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O7")),
+      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
     );
 
     // Nothing about green-camper binds its owner's next turn: moving a
@@ -438,12 +438,12 @@ describe("camping — leaving a node for a depleted node (§8.5)", () => {
         F2: ["charged", 15],
         // Comfortably above the recovery table's largest single draw (8),
         // so it stays depleted through this one ply's own recovery tick.
-        H4: ["depleted", 60],
+        G3: ["depleted", 60],
       },
     });
 
     const result = appliedOrThrow(
-      applyMove(state, "green-1", squareFromName("H4")),
+      applyMove(state, "green-1", squareFromName("G3")),
     );
 
     // F2 stays charged — leaving it no longer ends it (rules.md §8.3). Its
@@ -453,15 +453,15 @@ describe("camping — leaving a node for a depleted node (§8.5)", () => {
     expect(result.effects).not.toContainEqual(
       expect.objectContaining({ type: "node-vacated" }),
     );
-    // H4 was already depleted when this ply began, so it also ticks a
+    // G3 was already depleted when this ply began, so it also ticks a
     // little further towards recovery in the very same sequence — that is
     // the node's own cycle, not something arriving on it changes.
-    expect(result.state.nodes.H4.state).toBe("depleted");
-    expect(result.state.nodes.H4.level).toBeLessThan(60);
+    expect(result.state.nodes.G3.state).toBe("depleted");
+    expect(result.state.nodes.G3.level).toBeLessThan(60);
     const movedShip = result.state.ships.find(
       (candidate) => candidate.id === "green-1",
     );
-    expect(movedShip?.square).toEqual(squareFromName("H4"));
+    expect(movedShip?.square).toEqual(squareFromName("G3"));
   });
 });
 
@@ -487,7 +487,7 @@ describe("camping — a depleted node grants power and costs energy, every one o
     // moving a different ship — but the camper still pays for standing on
     // H8, exactly as it would if it had moved.
     const afterGreenTurn = appliedOrThrow(
-      applyMove(initial, "green-mover", squareFromName("A4")),
+      applyMove(initial, "green-mover", squareFromName("A3")),
     );
     const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
     expect(greenTurnEffects).toContainEqual({
@@ -514,7 +514,7 @@ describe("camping — a depleted node grants power and costs energy, every one o
     // Red's turn: each side pays on its own turn only, so green's camper on
     // a depleted node costs green nothing at the end of red's turn.
     const afterRedTurn = appliedOrThrow(
-      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O7")),
+      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
     );
     const redTurnEffects = endOfTurnEffects(afterRedTurn.effects);
     expect(
@@ -598,13 +598,13 @@ describe("camping — an inactive node still pays nothing, for as many turns as 
     // never gets drawn during this test — it is a clean, indefinite control,
     // proven across two full rounds rather than one.
     const afterGreenTurn = appliedOrThrow(
-      applyMove(initial, "green-mover", squareFromName("A4")),
+      applyMove(initial, "green-mover", squareFromName("A3")),
     );
     assertNoSettlement(afterGreenTurn.effects);
     assertUntouched(afterGreenTurn.state);
 
     const afterRedTurn = appliedOrThrow(
-      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O7")),
+      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
     );
     assertUntouched(afterRedTurn.state);
 
@@ -664,7 +664,7 @@ describe("camping — flying across a depleted node costs nothing (§8.4)", () =
     const initial: GameState = {
       ...buildState({
         ships: [
-          ship("green-flyer", "green", "H6", 4),
+          ship("green-flyer", "green", "G7", 4),
           ship("red-mover", "red", "O4"),
         ],
         nodes: {
@@ -674,10 +674,10 @@ describe("camping — flying across a depleted node costs nothing (§8.4)", () =
       energy: { green: 10, red: 0 },
     };
 
-    // At full power green-flyer's reach includes an orthogonal move of 3,
-    // so H6 -> H9 passes over H7 and H8 without stopping on either.
+    // The L from G7 to I8 turns through H7 (orthogonal corner) and H8
+    // (diagonal corner) without stopping on either (rules.md §6).
     const result = appliedOrThrow(
-      applyMove(initial, "green-flyer", squareFromName("H9")),
+      applyMove(initial, "green-flyer", squareFromName("I8")),
     );
     const effects = endOfTurnEffects(result.effects);
     expect(
@@ -690,7 +690,7 @@ describe("camping — flying across a depleted node costs nothing (§8.4)", () =
     const flyer = result.state.ships.find(
       (candidate) => candidate.id === "green-flyer",
     );
-    expect(flyer?.square).toEqual(squareFromName("H9"));
+    expect(flyer?.square).toEqual(squareFromName("I8"));
     expect(flyer?.power).toBe(4);
   });
 });
@@ -698,7 +698,7 @@ describe("camping — flying across a depleted node costs nothing (§8.4)", () =
 describe("camping — the node refuge: a ship holding a charged node cannot be attacked, until it runs out under it (rules.md §7)", () => {
   it("refuses the attack and denies the camper an attack of its own, then both become ordinary the moment the node runs out", () => {
     const targetSquare = squareFromName("H8");
-    const enemySquare = squareFromName("H11");
+    const enemySquare = squareFromName("H10");
 
     const initial = buildState({
       ships: [
@@ -707,9 +707,9 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
         // attacker so its own planet return afterwards has nothing to give
         // it either.
         ship("red-camper", "red", "H8", MAX_POWER),
-        ship("green-enemy", "green", "H11", MAX_POWER),
+        ship("green-enemy", "green", "H10", MAX_POWER),
         ship("green-mover", "green", "A1"),
-        ship("red-mover", "red", "O1"),
+        ship("red-mover", "red", "O2"),
       ],
       nodes: {
         // The held table's smallest draw is 3, so one turn spent occupied
@@ -738,7 +738,7 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
     // drain is drawn from the held table (rules.md §8.3) and, at the level
     // chosen above, is certain to reach capacity in this one turn.
     const afterGreenTurn = appliedOrThrow(
-      applyMove(initial, "green-mover", squareFromName("A4")),
+      applyMove(initial, "green-mover", squareFromName("A3")),
     );
     const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
     expect(greenTurnEffects).toContainEqual({
@@ -792,7 +792,7 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
       squareName(candidate.square),
     );
     expect(occupiedSquareNames).not.toContain("H8");
-    expect(occupiedSquareNames).not.toContain("H11");
+    expect(occupiedSquareNames).not.toContain("H10");
   });
 });
 
@@ -804,7 +804,7 @@ describe("camping — a node left lit still burns down, and either side may reta
     });
 
     const afterDeparture = appliedOrThrow(
-      applyMove(initial, "green-1", squareFromName("F5")),
+      applyMove(initial, "green-1", squareFromName("F4")),
     );
     // F2 stays charged the moment it is left — leaving it no longer ends it.
     expect(afterDeparture.state.nodes.F2.state).toBe("charged");
@@ -812,11 +812,11 @@ describe("camping — a node left lit still burns down, and either side may reta
       expect.objectContaining({ type: "node-vacated" }),
     );
 
-    const greenSquares = ["F8", "F5"] as const;
-    const redSquares = ["A4", "A1"] as const;
+    const greenSquares = ["F6", "F4"] as const;
+    const redSquares = ["A3", "A1"] as const;
     const moves: Array<[ShipId, string]> = [];
     for (let round = 0; round < 40; round++) {
-      // Green's own move (F2 -> F5, above) already spent green's turn, so
+      // Green's own move (F2 -> F4, above) already spent green's turn, so
       // red moves first in every round from here on.
       moves.push(["red-1", redSquares[round % 2]]);
       moves.push(["green-1", greenSquares[round % 2]]);
@@ -852,12 +852,12 @@ describe("camping — a node left lit still burns down, and either side may reta
 
   it("lets the opponent's ship move onto the still-charged node and start collecting there", () => {
     const initial = buildState({
-      ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "C2")],
+      ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "D2")],
       nodes: { F2: ["charged", 5] },
     });
 
     const afterDeparture = appliedOrThrow(
-      applyMove(initial, "green-1", squareFromName("F5")),
+      applyMove(initial, "green-1", squareFromName("F4")),
     );
     expect(afterDeparture.state.nodes.F2.state).toBe("charged");
 

@@ -450,7 +450,7 @@ describe("a full game, end to end", () => {
   it("refuses an attack, not only a move and a pass, once the game is over", () => {
     // Built rather than played out, so the attack refusal does not depend
     // on two ships happening to end a played game within range of each
-    // other: green-1 and red-1 sit three squares apart with a clear lane
+    // other: green-1 and red-1 sit two squares apart with a clear lane
     // between them, well within a full-power ship's reach (rules.md §6).
     const state: GameState = {
       ships: [
@@ -463,7 +463,7 @@ describe("a full game, end to end", () => {
         {
           id: "red-1" as ShipId,
           side: "red",
-          square: squareFromName("G11"),
+          square: squareFromName("G10"),
           power: 4,
         },
       ],
@@ -547,7 +547,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     const nearO14: GameState = {
       ...state,
       ships: state.ships.map((s) =>
-        s.id === "green-1" ? { ...s, square: squareFromName("O11") } : s,
+        s.id === "green-1" ? { ...s, square: squareFromName("O12") } : s,
       ),
     };
     expect(legalDestinations(nearO14, "green-1")).toContainEqual(
@@ -571,7 +571,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     const nearH15: GameState = {
       ...state,
       ships: state.ships.map((s) =>
-        s.id === "green-1" ? { ...s, square: squareFromName("H12") } : s,
+        s.id === "green-1" ? { ...s, square: squareFromName("H13") } : s,
       ),
     };
     expect(legalDestinations(nearH15, "green-1")).toContainEqual(

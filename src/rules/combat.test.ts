@@ -94,20 +94,23 @@ describe("attackReach", () => {
     expect(squareNames(entry?.passedOver ?? [])).toEqual(["H9"]);
   });
 
-  it("returns the entry with the right passedOver for a two-square diagonal attack", () => {
+  it("returns the entry with both corners in passedOver for an L attack", () => {
     const entry = attackReach(
       buildState({
         ships: [
-          ship("green-1", "green", "H8", 3),
-          ship("red-1", "red", "J10", 4),
+          ship("green-1", "green", "H8", 2),
+          ship("red-1", "red", "J9", 4),
         ],
       }),
       "green-1",
-      squareFromName("J10"),
+      squareFromName("J9"),
     );
 
     expect(entry).toBeDefined();
-    expect(squareNames(entry?.passedOver ?? [])).toEqual(["I9"]);
+    expect(entry?.passedOver.map((square) => squareName(square))).toEqual([
+      "I8",
+      "I9",
+    ]);
   });
 
   it("returns undefined for a target beyond the attacker's reach", () => {
@@ -166,20 +169,20 @@ describe("attackRefusalReason / legalTargets", () => {
     );
   });
 
-  it("a full-power ship can attack three squares orthogonally and two diagonally", () => {
+  it("a ship with enough power can attack two squares orthogonally and in an L", () => {
     const state = buildState({
       ships: [
-        ship("green-1", "green", "H8", 4),
-        ship("red-orthogonal", "red", "H11", 4),
-        ship("red-diagonal", "red", "J10", 4),
+        ship("green-1", "green", "H8", 2),
+        ship("red-orthogonal", "red", "H10", 4),
+        ship("red-l", "red", "J9", 4),
       ],
     });
 
     expect(
-      attackRefusalReason(state, "green-1", squareFromName("H11")),
+      attackRefusalReason(state, "green-1", squareFromName("H10")),
     ).toBeUndefined();
     expect(
-      attackRefusalReason(state, "green-1", squareFromName("J10")),
+      attackRefusalReason(state, "green-1", squareFromName("J9")),
     ).toBeUndefined();
   });
 

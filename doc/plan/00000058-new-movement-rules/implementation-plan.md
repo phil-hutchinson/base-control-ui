@@ -566,7 +566,27 @@ nothing (the three hits today are `squareLabel.ts` and two in
 
 ### Step 3 — The cost table, and the L
 
-Status: pending
+Status: committed
+
+Notes: Re-transcribed `REACH_OPTIONS` as a `StraightReachOption | LReachOption`
+union carrying `cost` instead of `unlockedAtPower`, with the L's eight
+offsets and their two corners written as literal data in `L_OFFSETS` (D2),
+and added `allShapesFrom` and `shapeReaching` alongside `reachFrom` per D4;
+`reachFrom` is now `allShapesFrom(origin).filter(cost <= power)`. Blocking and
+refusal reasons are untouched, as directed — `moveRefusalReason` still treats
+any occupant as blocking and still returns `"out-of-range"` for an
+unaffordable shape, both due in Step 4. Rewrote `movement.test.ts`'s reach
+coverage for the new table and added a dedicated "the L" suite, including a
+test that derives each L's corners from the sign rule independently of the
+literal table, per D2's instruction to pin the rule with a test. Fixed
+fallout from the retired two-square-diagonal and three-square-orthogonal
+shapes (and the fact that a 2-power ship now reaches the same twenty squares
+as a full one) across `session.test.ts`, `camping.test.ts`, `combat.test.ts`,
+`fullGame.test.ts`, `ply.test.ts`, `recovery.test.ts` and
+`seededReplay.test.ts`'s floors (re-measured for this seed: 3 fights, 6
+planet returns, 9 charged nodes, 9 node replacements over forty rounds,
+floors lowered accordingly per D13) — all as the plan anticipated. No other
+deviation from the plan.
 
 Re-transcribe `REACH_OPTIONS` in `src/rules/movement.ts` from the new §6 table
 (D1):

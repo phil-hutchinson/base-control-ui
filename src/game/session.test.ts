@@ -333,14 +333,14 @@ describe("sessionReducer — a ship is selected", () => {
       });
       const selected = activate(sessionFor(state), "H8");
 
-      const result = activate(selected, "H11");
+      const result = activate(selected, "G10");
 
       expect(result.selectedShipId).toBe("green-1");
       expect(result.state).toBe(state);
       expect(result.lastEvent).toEqual({
         type: "rejected",
         reason: "path-blocked",
-        square: squareFromName("H11"),
+        square: squareFromName("G10"),
       });
     });
 
