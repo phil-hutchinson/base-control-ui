@@ -934,7 +934,7 @@ describe("applyAttack", () => {
     });
   });
 
-  it("sends both ships to planets when the target stands on a depleted node, with nothing constraining either side's next turn (§8.5)", () => {
+  it("refuses an attack on a ship trapped on a depleted node, which stays exactly where it stands (§7)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "K8", 4), ship("red-1", "red", "K9", 2)],
       nodes: { K8: "depleted" },
@@ -944,21 +944,10 @@ describe("applyAttack", () => {
 
     const result = applyAttack(state, "red-1", squareFromName("K8"));
 
-    expect(result.outcome).toBe("applied");
-    if (result.outcome !== "applied") {
-      throw new Error("expected the attack to be applied");
-    }
-    expect(result.state.sideToMove).toBe("green");
-    const attacker = result.state.ships.find((s) => s.id === "red-1");
-    const target = result.state.ships.find((s) => s.id === "green-1");
-    expect(attacker && isPlanet(attacker.square)).toBe(true);
-    // The attack is this ply's only action, so it also ends the ply — the
-    // attacker (red, the moving side) then gains on its planet under §8.6
-    // step 1, at the lone-charger rate of 2 since it is the only red ship;
-    // the target (green, not the moving side this ply) does not.
-    expect(attacker?.power).toBe(4);
-    expect(target && isPlanet(target.square)).toBe(true);
-    expect(target?.power).toBe(4);
+    expect(result).toEqual({
+      outcome: "refused",
+      reason: "target-on-depleted-node",
+    });
   });
 
   it("marks the attacker as having acted, even though it ends the action on a planet itself", () => {
@@ -1034,19 +1023,20 @@ describe("nothing a ship does changes any node's state (rules.md §8.2)", () => 
     // K5 is a charged node: its drain rises every end-of-turn sequence
     // regardless of what a ship does (§8.3), so what this test can hold
     // onto across the sequence is that its *state* never changes — not
-    // that its drain is literally unchanged. H8 and I8 are both depleted —
-    // H8 is the fight's target (rules.md §7: a ship holding a charged node
-    // cannot be attacked, so the target must be depleted or inactive) —
-    // both started with enough recovery left (§8.2) that three
-    // end-of-turn sequences cannot bring either back to inactive, so only
-    // their *state* is asserted too, not their exact level. No node here is
-    // ever inactive, so the charge draw never has a pool to draw from
-    // across any of the three sequences.
+    // that its drain is literally unchanged. H8 and I8 are both depleted,
+    // and untouched by anything below — a ship on either would be trapped
+    // and could neither attack nor be attacked (rules.md §7), so the fight
+    // targets red-1 on the ordinary square F8 instead. Both depleted nodes
+    // started with enough recovery left (§8.2) that three end-of-turn
+    // sequences cannot bring either back to inactive, so only their *state*
+    // is asserted too, not their exact level. No node here is ever
+    // inactive, so the charge draw never has a pool to draw from across any
+    // of the three sequences.
     const state = buildState({
       ships: [
         ship("green-1", "green", "G8", 0),
         ship("green-2", "green", "A5", 4),
-        ship("red-1", "red", "H8", 4),
+        ship("red-1", "red", "F8", 4),
         ship("red-2", "red", "O5", 4),
       ],
       nodes: {
@@ -1082,11 +1072,12 @@ describe("nothing a ship does changes any node's state (rules.md §8.2)", () => 
     }
     expectNodesUnaffected(afterRedMove.state);
 
-    // Green's next ply: a fight at the depleted node, sending both ships home.
+    // Green's next ply: a fight off the nodes entirely, sending both ships
+    // home, touching neither depleted node nor the charged one.
     const afterAttack = applyAttack(
       afterRedMove.state,
       "green-1",
-      squareFromName("H8"),
+      squareFromName("F8"),
     );
     expect(afterAttack.outcome).toBe("applied");
     if (afterAttack.outcome !== "applied") {

@@ -307,6 +307,11 @@ describe("announcementFor", () => {
       "A ship holding a charged node cannot attack while it stands there. Move it off first.",
     ],
     [
+      "attacker-on-depleted-node",
+      squareAt("H", 8),
+      "A ship trapped on a depleted node cannot attack.",
+    ],
+    [
       "target-on-planet",
       squareAt("A", 6),
       "A ship on a planet cannot be attacked.",
@@ -315,6 +320,11 @@ describe("announcementFor", () => {
       "target-on-charged-node",
       squareAt("H", 8),
       "A ship holding a charged node cannot be attacked.",
+    ],
+    [
+      "target-on-depleted-node",
+      squareAt("H", 8),
+      "A ship trapped on a depleted node cannot be attacked.",
     ],
     [
       "target-out-of-range",

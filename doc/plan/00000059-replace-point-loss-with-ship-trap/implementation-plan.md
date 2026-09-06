@@ -849,7 +849,55 @@ pass, with the new `movement.test.ts` cases green.
 
 ### Step 6 — A trapped ship cannot attack, and cannot be attacked
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as planned. `AttackRefusalReason` gained
+`attacker-on-depleted-node` (checked immediately after
+`attacker-on-charged-node`, via `trap.ts`'s `isShipTrapped`) and
+`target-on-depleted-node` (checked immediately after
+`target-on-charged-node`, via the same predicate applied to the target ship);
+`legalTargets`'s early return gained the attacker-side trap check beside its
+charged-node counterpart, and the target-side exclusion falls out for free
+from its existing delegation to `attackRefusalReason`. Both doc comments were
+updated to describe the new check order. Added the two announcement
+sentences to `rejectionSentence`'s exhaustive switch and their table rows in
+`announcements.test.ts`, each beside its charged-node counterpart. Added the
+planned `combat.test.ts` cases (attacker trapped, target trapped, precedence
+between the two, protected-over-out-of-range, an inactive node unaffected in
+both directions, and a trapped enemy excluded from `legalTargets` even when
+in range and affordable) and the planned `actions.test.ts` cases proving
+`sideToMoveHasLegalAction`/`shipHasLegalAction` are already false for a
+trapped ship with no new trap check in `actions.ts`. One deviation, forced
+rather than chosen, in the same shape Step 5 recorded: this step's
+`attacker-on-depleted-node`/`target-on-depleted-node` protection made three
+pre-existing tests in `combat.test.ts`, `camping.test.ts` and `ply.test.ts`
+fail, because each assumed the old §8.5 behaviour (a ship on a depleted node
+is an ordinary target) that this story reverses. `combat.test.ts`'s
+"attackRefusalReason / legalTargets on a node that is not charged" describe
+block was split into a genuine inactive-node block (unaffected in both
+directions) and a new depleted-node block mirroring the charged-node one, and
+its two original scenarios (which stood ships on a mix of inactive and
+depleted squares to show neither direction was blocked) were retired since
+that mix no longer holds — a depleted-node scenario now demonstrates the
+opposite. `camping.test.ts`'s "the node refuge" test and its enclosing
+`describe` title were corrected in the smallest way that keeps the test
+truthful: past the node running out, the target is still refused, now for
+`target-on-depleted-node` rather than `undefined`, and the fight-resolution
+assertions past that point were replaced with a refusal assertion and an
+unchanged-square check; two now-unused imports (`isPlanet`, `squareName`)
+were dropped. `ply.test.ts` had one test rewritten in full — attacking a ship
+trapped on a depleted node is now refused outright, so its "sends both ships
+to planets" assertions became a single refusal assertion — and one test's
+fight target was moved from a depleted node (H8) to an ordinary square (F8)
+so the sequence's fight remains legal while the same two depleted background
+nodes and the charged background node are still exercised and asserted
+unaffected, with the comment corrected accordingly. None of these three
+files' broader, story-driven rewrites (`camping.test.ts`'s full reversal
+treatment, `ply.test.ts`'s pass-guard and blocking-without-attacking
+coverage) were attempted here; those remain Step 10's work, per the plan's
+own precedent of patching ahead of a designated rewrite minimally and
+truthfully rather than pre-empting it. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` (962 tests) all pass.
 
 In `src/rules/combat.ts`, per D5:
 

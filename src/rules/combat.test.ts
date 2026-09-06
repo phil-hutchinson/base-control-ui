@@ -394,11 +394,11 @@ describe("attackRefusalReason / legalTargets", () => {
   });
 });
 
-describe("attackRefusalReason / legalTargets on a node that is not charged (§8.5)", () => {
+describe("attackRefusalReason / legalTargets on an inactive node (§7)", () => {
   it("neither blocks an attack nor blocks the attacker's ship from being attacked", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7", 0), ship("red-1", "red", "E8", 4)],
-      nodes: { E7: "inactive", E8: "depleted" },
+      nodes: { E7: "inactive", E8: "inactive" },
     });
 
     expect(
@@ -407,16 +407,78 @@ describe("attackRefusalReason / legalTargets on a node that is not charged (§8.
     expect(legalTargets(state, "green-1")).toContainEqual(squareFromName("E8"));
   });
 
-  it("lets a ship on a depleted node attack a ship on an inactive node, the roles swapped", () => {
+  it("lets a ship on an inactive node attack another, the roles swapped", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7", 0), ship("red-1", "red", "E8", 4)],
-      nodes: { E7: "depleted", E8: "inactive" },
+      sideToMove: "red",
+      nodes: { E7: "inactive", E8: "inactive" },
     });
 
     expect(
-      attackRefusalReason(state, "green-1", squareFromName("E8")),
+      attackRefusalReason(state, "red-1", squareFromName("E7")),
     ).toBeUndefined();
-    expect(legalTargets(state, "green-1")).toContainEqual(squareFromName("E8"));
+    expect(legalTargets(state, "red-1")).toContainEqual(squareFromName("E7"));
+  });
+});
+
+describe("attackRefusalReason / legalTargets on a depleted node (§7)", () => {
+  it("refuses an attacker trapped on a depleted node, leaving it with no targets", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
+      nodes: { H8: "depleted" },
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "attacker-on-depleted-node",
+    );
+    expect(legalTargets(state, "green-1")).toEqual([]);
+  });
+
+  it("refuses a target trapped on a depleted node, and it is absent from legalTargets", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
+      nodes: { H9: "depleted" },
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "target-on-depleted-node",
+    );
+    expect(legalTargets(state, "green-1")).not.toContainEqual(
+      squareFromName("H9"),
+    );
+  });
+
+  it("refuses a trapped target within reach as protected, not as out of range", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9", 4)],
+      nodes: { H9: "depleted" },
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "target-on-depleted-node",
+    );
+  });
+
+  it("reports the attacker's own reason ahead of the target's when both are trapped", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
+      nodes: { H8: "depleted", H9: "depleted" },
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "attacker-on-depleted-node",
+    );
+  });
+
+  it("refuses a trapped enemy ship as a target even from a square that reaches it and can afford the shot", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 4)],
+      nodes: { H9: "depleted" },
+    });
+
+    expect(legalTargets(state, "green-1")).not.toContainEqual(
+      squareFromName("H9"),
+    );
   });
 });
 

@@ -10,8 +10,7 @@
 // directly, so this proves the same thing a player's turn would.
 
 import { describe, expect, it } from "vitest";
-import { isPlanet } from "./planets";
-import { squareFromName, squareName } from "./board";
+import { squareFromName } from "./board";
 import { attackRefusalReason, legalTargets } from "./combat";
 import type { NodeReplacedEffect } from "./endOfTurn";
 import type { ShipId } from "./fleet";
@@ -608,8 +607,8 @@ describe("camping — flying across a depleted node costs nothing (§8.4)", () =
   });
 });
 
-describe("camping — the node refuge: a ship holding a charged node cannot be attacked, until it runs out under it (rules.md §7)", () => {
-  it("refuses the attack and denies the camper an attack of its own, then both become ordinary the moment the node runs out", () => {
+describe("camping — the node refuge: a ship holding a charged node cannot be attacked, and stays protected once trapped by it running out (rules.md §7)", () => {
+  it("refuses the attack and denies the camper an attack of its own, before and after the node runs out and traps it", () => {
     const targetSquare = squareFromName("H8");
     const enemySquare = squareFromName("H10");
 
@@ -671,46 +670,29 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
     );
     expect(afterRedTurn.state.nodes.H8.state).toBe("depleted");
 
-    // The node's protection is gone at the same moment it starts paying —
-    // without red-camper moving at all, it is now an ordinary target, and
-    // the attack that was refused a moment ago actually resolves.
+    // The node stops paying, but the ship it caught is trapped, so it stays
+    // exactly as protected as it was while the node was charged (rules.md
+    // §7) — refused as a target for the depleted-node reason now, rather
+    // than the charged-node one, and never offered as one.
     expect(
       attackRefusalReason(afterRedTurn.state, "green-enemy", targetSquare),
-    ).toBeUndefined();
-    expect(legalTargets(afterRedTurn.state, "green-enemy")).toContainEqual(
-      targetSquare,
-    );
+    ).toBe("target-on-depleted-node");
+    expect(legalTargets(afterRedTurn.state, "green-enemy")).toEqual([]);
 
     const attackResult = applyAttack(
       afterRedTurn.state,
       "green-enemy",
       targetSquare,
     );
-    if (attackResult.outcome !== "applied") {
-      throw new Error(
-        `expected the attack to be applied, was refused as "${attackResult.reason}"`,
-      );
+    expect(attackResult.outcome).toBe("refused");
+    if (attackResult.outcome !== "refused") {
+      throw new Error("expected the attack to be refused");
     }
-    const camperAfterFight = attackResult.state.ships.find(
+    expect(attackResult.reason).toBe("target-on-depleted-node");
+    const camperUnchanged = afterRedTurn.state.ships.find(
       (candidate) => candidate.id === "red-camper",
     );
-    const enemyAfterFight = attackResult.state.ships.find(
-      (candidate) => candidate.id === "green-enemy",
-    );
-    // H10 to H8 is a two-square orthogonal move, which costs the attacker 2
-    // (rules.md §6); the defender's power is untouched, as always. The
-    // attack is the attacker's whole ply, so it then gains back on its
-    // planet under §8.6 step 1 — it is the only green ship, so it charges
-    // alone at 2 — landing it exactly back at full.
-    expect(camperAfterFight?.power).toBe(MAX_POWER);
-    expect(enemyAfterFight?.power).toBe(MAX_POWER);
-    expect(isPlanet(camperAfterFight!.square)).toBe(true);
-    expect(isPlanet(enemyAfterFight!.square)).toBe(true);
-    const occupiedSquareNames = attackResult.state.ships.map((candidate) =>
-      squareName(candidate.square),
-    );
-    expect(occupiedSquareNames).not.toContain("H8");
-    expect(occupiedSquareNames).not.toContain("H10");
+    expect(camperUnchanged?.square).toEqual(targetSquare);
   });
 });
 

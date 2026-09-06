@@ -368,10 +368,14 @@ function rejectionSentence(event: RejectedEvent): string {
       return "A ship on a planet cannot attack. Move it off first.";
     case "attacker-on-charged-node":
       return "A ship holding a charged node cannot attack while it stands there. Move it off first.";
+    case "attacker-on-depleted-node":
+      return "A ship trapped on a depleted node cannot attack.";
     case "target-on-planet":
       return "A ship on a planet cannot be attacked.";
     case "target-on-charged-node":
       return "A ship holding a charged node cannot be attacked.";
+    case "target-on-depleted-node":
+      return "A ship trapped on a depleted node cannot be attacked.";
     case "target-out-of-range":
       return `${square} is not one of the shapes a ship can attack from here — an orthogonal or diagonal step, two squares orthogonally, or an L — whatever power it carries.`;
     case "cannot-afford-target":
