@@ -675,7 +675,9 @@ describe("camping — flying across a depleted node costs nothing (§8.4)", () =
     };
 
     // The L from G7 to I8 turns through H7 (orthogonal corner) and H8
-    // (diagonal corner) without stopping on either (rules.md §6).
+    // (diagonal corner) without stopping on either (rules.md §6). The L
+    // itself costs 2 (rules.md §6) — passing over the depleted node adds
+    // nothing on top of that.
     const result = appliedOrThrow(
       applyMove(initial, "green-flyer", squareFromName("I8")),
     );
@@ -691,7 +693,7 @@ describe("camping — flying across a depleted node costs nothing (§8.4)", () =
       (candidate) => candidate.id === "green-flyer",
     );
     expect(flyer?.square).toEqual(squareFromName("I8"));
-    expect(flyer?.power).toBe(4);
+    expect(flyer?.power).toBe(2);
   });
 });
 
@@ -784,8 +786,12 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
     const enemyAfterFight = attackResult.state.ships.find(
       (candidate) => candidate.id === "green-enemy",
     );
+    // H10 to H8 is a two-square orthogonal move, which costs the attacker 2
+    // (rules.md §6); the defender's power is untouched, as always. The
+    // attack is the attacker's whole ply, so it then gains a point back on
+    // its planet under §8.6 step 1, leaving it one short of full.
     expect(camperAfterFight?.power).toBe(MAX_POWER);
-    expect(enemyAfterFight?.power).toBe(MAX_POWER);
+    expect(enemyAfterFight?.power).toBe(MAX_POWER - 1);
     expect(isPlanet(camperAfterFight!.square)).toBe(true);
     expect(isPlanet(enemyAfterFight!.square)).toBe(true);
     const occupiedSquareNames = attackResult.state.ships.map((candidate) =>
@@ -812,8 +818,11 @@ describe("camping — a node left lit still burns down, and either side may reta
       expect.objectContaining({ type: "node-vacated" }),
     );
 
-    const greenSquares = ["F6", "F4"] as const;
-    const redSquares = ["A3", "A1"] as const;
+    // Both sides shuffle back and forth with a free one-square orthogonal
+    // step (rules.md §6), so forty rounds of it never runs either ship out
+    // of power to pay with.
+    const greenSquares = ["F5", "F4"] as const;
+    const redSquares = ["A2", "A1"] as const;
     const moves: Array<[ShipId, string]> = [];
     for (let round = 0; round < 40; round++) {
       // Green's own move (F2 -> F4, above) already spent green's turn, so
@@ -872,13 +881,16 @@ describe("camping — a node left lit still burns down, and either side may reta
     expect(redAfterArrival?.square).toEqual(squareFromName("F2"));
     expect(afterOpponentArrives.state.nodes.F2.state).toBe("charged");
 
+    // D2 to F2 is a two-square orthogonal move, which costs 2 (rules.md
+    // §6), leaving red-1 at 2 on arrival; the charged node then still takes
+    // its own point on top, exactly as it always has (§8.3).
     const opponentTurnEffects = endOfTurnEffects(afterOpponentArrives.effects);
     expect(opponentTurnEffects).toContainEqual({
       type: "power-lost",
       shipId: "red-1",
       side: "red",
       square: squareFromName("F2"),
-      power: 3,
+      power: 1,
     });
     expect(
       opponentTurnEffects.some(

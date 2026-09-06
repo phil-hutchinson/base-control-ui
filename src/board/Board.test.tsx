@@ -1560,6 +1560,8 @@ describe("energy overlay composition", () => {
         },
       ],
       actionsRemaining: 1,
+      cost: 0,
+      powerAfter: 6,
     };
     const session: Session = {
       state,

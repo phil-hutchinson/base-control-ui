@@ -124,6 +124,8 @@ describe("announcementFor", () => {
       to: squareAt("H", 8),
       effects: [],
       actionsRemaining: 1,
+      cost: 1,
+      powerAfter: 5,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from G7 to H8. Green has 1 action left.",
@@ -141,6 +143,8 @@ describe("announcementFor", () => {
         { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 1,
+      powerAfter: 5,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from G7 to H8. Red's turn, 1 action left.",
@@ -156,6 +160,8 @@ describe("announcementFor", () => {
       to: squareAt("D", 6),
       effects: [],
       actionsRemaining: 1,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Red ship moved from C6 onto the D6 planet. Red has 1 action left.",
@@ -171,6 +177,8 @@ describe("announcementFor", () => {
       to: squareAt("D", 6),
       effects: [],
       actionsRemaining: 1,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Red ship moved from C6 onto the D6 planet. Red has 1 action left.",
@@ -188,6 +196,8 @@ describe("announcementFor", () => {
         { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Red ship moved from C6 onto the D6 planet. Green's turn, 1 action left.",
@@ -212,6 +222,8 @@ describe("announcementFor", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 1,
+      powerAfter: 5,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from G7 to H8. Red has no legal action, so the turn passes. Green's turn, 1 action left.",
@@ -352,6 +364,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. The node at K5 ran out. Red's turn, 1 action left.",
@@ -374,6 +388,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. A new node charged at D8. Red's turn, 1 action left.",
@@ -402,6 +418,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. The node at D8 is gone, and a new node appeared at K11. Red's turn, 1 action left.",
@@ -435,6 +453,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. " +
@@ -467,6 +487,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. " +
@@ -500,6 +522,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ship at H8 lost a point of power, now on 2. Red's turn, 1 action left.",
@@ -537,6 +561,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a point of power. Red's turn, 1 action left.",
@@ -574,6 +600,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ships at H8 and K5 each lost a point of power. K5 reached 0. Red's turn, 1 action left.",
@@ -604,6 +632,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ship at K5 lost a point of power, reaching 0. Red's turn, 1 action left.",
@@ -634,6 +664,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ship at H8 gained a point of power, now on 3. Red's turn, 1 action left.",
@@ -664,6 +696,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ship at A2 gained a point of power, now on 3. Red's turn, 1 action left.",
@@ -701,6 +735,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a point of power. Red's turn, 1 action left.",
@@ -738,6 +774,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ships at H8 and K5 each gained a point of power. K5 reached the maximum of 6. Red's turn, 1 action left.",
@@ -768,6 +806,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ship at K5 gained a point of power, reaching the maximum of 6. Red's turn, 1 action left.",
@@ -805,6 +845,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ship at H8 lost a point of power, now on 2. Green ship at K5 gained a point of power, now on 3. Red's turn, 1 action left.",
@@ -841,6 +883,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from K4 to K5. " +
@@ -874,6 +918,8 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 1,
+      powerAfter: 5,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from G7 to H8. The node at K5 ran out. " +
@@ -928,6 +974,8 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green collected 1 energy from the node at H8, and now has 7. Red's turn, 1 action left.",
@@ -958,6 +1006,8 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 24. Red's turn, 1 action left.",
@@ -975,6 +1025,8 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
         { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Red's turn, 1 action left.",
@@ -1013,6 +1065,8 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green ship at H8 lost a point of power, now on 2. Green collected 1 energy from the node at H8, and now has 5. The node at K5 ran out. Red's turn, 1 action left.",
@@ -1065,6 +1119,8 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green lost 1 energy to the depleted node at H8, and now has 4. Red's turn, 1 action left.",
@@ -1095,6 +1151,8 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green lost 3 energy to 3 depleted nodes at D8, H8 and K11, and now has 0. Red's turn, 1 action left.",
@@ -1132,6 +1190,8 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green lost 10 energy to 6 depleted nodes at D8, H8, K11, E5, K5 and G6, 4 of which are penalised, and now has 0. Red's turn, 1 action left.",
@@ -1149,6 +1209,8 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
         { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Red's turn, 1 action left.",
@@ -1186,6 +1248,8 @@ describe("announcementFor — energy penalty (rules.md §8.4)", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 6. Green lost 3 energy to 2 depleted nodes at E5 and K5, and now has 3. Red's turn, 1 action left.",
@@ -1282,6 +1346,8 @@ describe("announcementForSession", () => {
         { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 1,
+      powerAfter: 5,
     };
     const session: Session = {
       state,
@@ -1313,6 +1379,8 @@ describe("announcementForSession", () => {
         },
       ],
       actionsRemaining: ACTIONS_PER_PLY,
+      cost: 1,
+      powerAfter: 5,
     };
     const session: Session = {
       state,
@@ -1394,6 +1462,7 @@ describe("announcementForSession", () => {
         square: squareAt("H", 9),
         power: 3,
       },
+      cost: 0,
       returns: [
         {
           shipId: "green-1",
@@ -1485,6 +1554,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
         square: squareAt("C", 7),
         power: 2,
       },
+      cost: 0,
       returns: [
         {
           shipId: "green-1",
@@ -1531,6 +1601,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
         square: squareAt("K", 5),
         power: 4,
       },
+      cost: 1,
       returns: [
         {
           shipId: "green-1",
@@ -1579,6 +1650,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
         square: squareAt("K", 5),
         power: 4,
       },
+      cost: 1,
       returns: [
         {
           shipId: "green-1",
@@ -1628,6 +1700,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
         square: squareAt("K", 5),
         power: 4,
       },
+      cost: 1,
       returns: [
         {
           shipId: "green-1",

@@ -356,11 +356,12 @@ describe("recovery — leaving a planet before it is full keeps what was recover
       applyMove(afterGreenTurn2.state, "red-1", squareFromName("K8")),
     );
 
-    // Green's turn: green-1 itself moves off the planet instead of staying.
-    // It is no longer standing on a planet when this same turn ends, so it
-    // does not gain a further point in this call — it leaves with exactly
-    // the 2 power it had recovered.
-    const destination = squareFromName("F6");
+    // Green's turn: green-1 itself moves off the planet instead of staying,
+    // with a free one-square orthogonal step (rules.md §6) so the move
+    // itself spends nothing. It is no longer standing on a planet when this
+    // same turn ends, so it does not gain a further point in this call
+    // either — it leaves with exactly the 2 power it had recovered.
+    const destination = squareFromName("E6");
     const afterLeaving = moveAppliedOrThrow(
       applyMove(afterRedTurn2.state, "green-1", destination),
     );

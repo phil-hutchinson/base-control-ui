@@ -217,6 +217,8 @@ describe("sessionReducer — a ship is selected", () => {
       to: destination,
       effects: direct.effects,
       actionsRemaining: direct.state.actionsRemaining,
+      cost: direct.cost,
+      powerAfter: direct.powerAfter,
     });
   });
 
@@ -379,6 +381,8 @@ describe("sessionReducer — a ship is selected", () => {
         to: destination,
         effects: direct.effects,
         actionsRemaining: direct.state.actionsRemaining,
+        cost: direct.cost,
+        powerAfter: direct.powerAfter,
       });
     });
 
@@ -407,6 +411,8 @@ describe("sessionReducer — a ship is selected", () => {
         to: destination,
         effects: direct.effects,
         actionsRemaining: direct.state.actionsRemaining,
+        cost: direct.cost,
+        powerAfter: direct.powerAfter,
       });
     });
   });

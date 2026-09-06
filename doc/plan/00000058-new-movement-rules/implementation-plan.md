@@ -786,7 +786,34 @@ ships not blocking a shot, and the unaffordable-target refusal.
 
 ### Step 6 — Moves and attacks spend the reserve
 
-Status: pending
+Status: committed
+
+Notes: Added `spendPower` to `power.ts` per D7, and wired `applyMove` /
+`applyAttack` in `ply.ts` to look up the shape (`shapeReaching` /
+`attackReach`) and deduct its cost, with `AppliedMove` gaining `cost` and
+`powerAfter` and `FightResolvedEffect` gaining `cost` (D6). `placeOnPlanet`
+now takes an explicit `power` argument so the attacker's call can pass its
+post-cost power while the defender's passes its own untouched.
+`assertFightInvariants` took the wider signature the owner approved
+(`attackerShipId`, `cost` added ahead of `returnedShipIds`) and now asserts
+the defender's power is exactly what it was and the attacker's is exactly
+its before-fight power less `cost`, rather than "unchanged" for both.
+`MovedEvent` in `session.ts` carries `cost` and `powerAfter` through from
+`AppliedMove`, per D6, even though nothing reads them until Step 8. Updated
+`power.test.ts` (new `spendPower` coverage), `ply.test.ts` (a new "applyMove
+deducts the shape's cost" describe block covering all four costs and the
+three-L-then-refused-fourth budget, a new diagonal-attack cost test, the
+`assertFightInvariants` tests threaded through the new parameters plus a new
+case for an attacker whose power didn't fall by the cost, and the existing
+"ends on a planet vs. flies over one" test reworked since a two-square
+orthogonal move now costs 2 where it used to be free), and fixed fallout in
+`announcements.test.ts`, `Board.test.tsx`, `EnergyOverlay.test.tsx` and
+`session.test.ts` (new required fields on hand-built `MovedEvent` /
+`FightResolvedEffect` fixtures) and in `camping.test.ts` and
+`recovery.test.ts` (fixtures that used a now-priced two-square move to
+shuttle or arrive, updated to either account for the new cost or swapped for
+a free one-square step where the test's point was unrelated to cost) — all
+anticipated by the plan. No deviation from the plan.
 
 Add the checked "spend" helper to `src/rules/power.ts` (D7): power in, cost
 out, validated with `isPowerLevel` and throwing a `RangeError` if the result

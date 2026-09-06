@@ -1,14 +1,18 @@
-// Applying an action, and the ply it belongs to (rules.md §5, §3.1, §7). An
-// action is a move or an attack. A move is either refused, with the reason
-// from movement.ts, or applied: the ship arrives with the power it had and
-// spends one action. A ship that ends a move on a planet recovers there at a
-// point per turn (§3.1, §4.1), through the end-of-turn sequence — not on
-// arrival. An attack is either refused, with the reason from combat.ts, or
-// resolved: both ships are placed on planets drawn at random from the planets
-// standing empty, attacker first, carrying the power each had before the
-// fight, and both squares they left are left empty. There is no winner and no
-// advance. Nothing a ship does changes a node's state: a node's state changes
-// only in the end-of-turn sequence (rules.md §8.6). Every action — a move or
+// Applying an action, and the ply it belongs to (rules.md §5, §3.1, §6, §7).
+// An action is a move or an attack, and each spends the acting ship's power
+// (§6): a move deducts its own cost, and an attack deducts the cost of the
+// shape it struck down. A move is either refused, with the reason from
+// movement.ts, or applied: the ship arrives with the power it had left after
+// paying, and spends one action. A ship that ends a move on a planet recovers
+// there at a point per turn (§3.1, §4.1), through the end-of-turn sequence —
+// not on arrival. An attack is either refused, with the reason from
+// combat.ts, or resolved: both ships are placed on planets drawn at random
+// from the planets standing empty, attacker first; the attacker arrives
+// having already paid the shot's cost, the defender carries what it had
+// before the fight untouched, and both squares they left are left empty.
+// There is no winner and no advance. Nothing a ship does changes a node's
+// state: a node's state changes only in the end-of-turn sequence
+// (rules.md §8.6). Every action — a move or
 // an attack — marks the acting ship as having acted this ply, so a further
 // attempt by the same ship this ply is refused. When the ply's actions are all
 // spent, play passes to the other side. The pass guard covers the case §5 sets
@@ -18,6 +22,7 @@ import { sideToMoveHasLegalAction } from "./actions";
 import { type Square, squareName } from "./board";
 import {
   type AttackRefusalReason,
+  attackReach,
   attackRefusalReason,
   drawReturnPlanet,
 } from "./combat";
@@ -31,8 +36,13 @@ import {
   type Ship,
   shipsBySquare,
 } from "./gameState";
-import { type MoveRefusalReason, moveRefusalReason } from "./movement";
-import type { PowerLevel } from "./power";
+import {
+  type MoveRefusalReason,
+  findShip,
+  moveRefusalReason,
+  shapeReaching,
+} from "./movement";
+import { type PowerLevel, spendPower } from "./power";
 
 function otherSide(side: Side): Side {
   return side === "green" ? "red" : "green";
@@ -67,11 +77,18 @@ export type EndOfActionEffect = PlyEndedEffect | PassEffect;
 /** Something that happened as a result of applying a move, beyond the move itself. */
 export type MoveEffect = EndOfActionEffect;
 
-/** A move applied successfully, with the resulting state and what happened. */
+/**
+ * A move applied successfully, with the resulting state and what happened.
+ * `cost` is the power the shape spent (rules.md §6) and `powerAfter` is the
+ * moving ship's power once that cost is paid — an orthogonal step costs
+ * nothing, so `powerAfter` then equals the power the ship carried before.
+ */
 export interface AppliedMove {
   readonly outcome: "applied";
   readonly state: GameState;
   readonly effects: readonly MoveEffect[];
+  readonly cost: PowerLevel;
+  readonly powerAfter: PowerLevel;
 }
 
 /** A move that was not legal, carrying the reason (never a sentence). */
@@ -102,13 +119,17 @@ export interface FightReturn {
  * A fight, resolved in full (rules.md §7): one effect for the whole fight
  * rather than several, since a fight is one fact. `attacker` and `defender`
  * describe both ships as they stood **before** the fight, including the
- * power each was carrying. `returns` lists both ships placed on a planet,
- * attacker first — every fight returns exactly two ships.
+ * power each was carrying. `cost` is the power the attacking shape spent
+ * (rules.md §6, §7): the attacker's power afterwards is `attacker.power`
+ * less `cost`, and the defender's is `defender.power` untouched. `returns`
+ * lists both ships placed on a planet, attacker first — every fight returns
+ * exactly two ships.
  */
 export interface FightResolvedEffect {
   readonly type: "fight-resolved";
   readonly attacker: FightShip;
   readonly defender: FightShip;
+  readonly cost: PowerLevel;
   readonly returns: readonly FightReturn[];
 }
 
@@ -285,16 +306,18 @@ function applyEndOfActionTail(
 /**
  * Applies a move of `shipId` to `destination` in `state`, or refuses it. A
  * legal move never mutates `state`: it returns a new state in which the ship
- * stands on `destination` carrying the power it already had, the square it
- * left is empty, the ship is marked as having acted this ply, and one action
- * is spent. A ship that ends the move on a planet does not gain anything on
- * arrival — it recovers a point at a time, through the end-of-turn sequence
- * (rules.md §3.1, §4.1), like any other planet stay. If the square the ship left
- * was a charged node, it stays charged — leaving a node does not end it
- * (rules.md §8.3). When the ply's last action is spent, play passes to the
- * other side and the acted-this-ply marks clear. The result then passes
- * through `applyPassGuard`, so a move that leaves the side now to move with
- * no legal move at all is followed immediately by a pass.
+ * stands on `destination` having paid the shape's cost (rules.md §6) out of
+ * its own power, the square it left is empty, the ship is marked as having
+ * acted this ply, and one action is spent. An orthogonal step costs nothing,
+ * so the ship's power is untouched by it. A ship that ends the move on a
+ * planet does not gain anything on arrival — it recovers a point at a time,
+ * through the end-of-turn sequence (rules.md §3.1, §4.1), like any other
+ * planet stay. If the square the ship left was a charged node, it stays
+ * charged — leaving a node does not end it (rules.md §8.3). When the ply's
+ * last action is spent, play passes to the other side and the acted-this-ply
+ * marks clear. The result then passes through `applyPassGuard`, so a move
+ * that leaves the side now to move with no legal move at all is followed
+ * immediately by a pass.
  */
 export function applyMove(
   state: GameState,
@@ -306,28 +329,50 @@ export function applyMove(
     return { outcome: "refused", reason };
   }
 
+  const ship = findShip(state, shipId);
+  const shape = shapeReaching(ship.square, destination);
+  if (shape === undefined) {
+    throw new RangeError(
+      `no shape reaches ${squareName(destination)} from ${squareName(ship.square)}, despite the move having been found legal`,
+    );
+  }
+  const powerAfter = spendPower(ship.power, shape.cost);
+
   const effects: MoveEffect[] = [];
 
-  const ships = state.ships.map((ship) =>
-    ship.id === shipId ? { ...ship, square: destination } : ship,
+  const ships = state.ships.map((candidate) =>
+    candidate.id === shipId
+      ? { ...candidate, square: destination, power: powerAfter }
+      : candidate,
   );
 
   const afterMove: GameState = { ...state, ships };
   const settled = applyEndOfActionTail(afterMove, effects, shipId);
 
-  return { outcome: "applied", state: settled, effects };
+  return {
+    outcome: "applied",
+    state: settled,
+    effects,
+    cost: shape.cost,
+    powerAfter,
+  };
 }
 
-/** Places `shipId` on `planet`, leaving its power exactly as it was (rules.md §7). */
+/**
+ * Places `shipId` on `planet`, carrying `power` (rules.md §7). The defender's
+ * call passes its power unchanged; the attacker's call passes what is left
+ * once the shot's cost is paid.
+ */
 function placeOnPlanet(
   state: GameState,
   shipId: ShipId,
   planet: Square,
+  power: PowerLevel,
 ): GameState {
   return {
     ...state,
     ships: state.ships.map((ship) =>
-      ship.id === shipId ? { ...ship, square: planet } : ship,
+      ship.id === shipId ? { ...ship, square: planet, power } : ship,
     ),
   };
 }
@@ -336,7 +381,9 @@ function placeOnPlanet(
  * Checks the invariants rules.md §7 guarantees about a fight's result, and
  * throws if any is violated — bug detectors on a cheap operation, not cases a
  * caller need handle. `returnedShipIds` names the two ships placed on a
- * planet. Every other ship must be exactly where it was.
+ * planet; `attackerShipId` names which of the two struck the blow, and
+ * `cost` is what that shape spent (rules.md §6). Every other ship must be
+ * exactly where it was.
  *
  * The fleet-size check asserts each side's ship count is unchanged by the
  * fight, which can only ever change who holds a square, never how many
@@ -350,9 +397,11 @@ function placeOnPlanet(
  * The returned-ship checks pin what §7.1's random draw guarantees: each of
  * the two returned ships ends on a planet, they do not share a planet, and
  * each lands on a planet that held no ship in `before` — together, exactly
- * what "there is always somewhere to go" promises. Each returned ship's power
- * must also be exactly what it was in `before`: a fight never changes what a
- * ship carries (rules.md §7).
+ * what "there is always somewhere to go" promises. Power is checked
+ * asymmetrically, since a fight no longer leaves both ships untouched: the
+ * defender's power must be exactly what it was in `before`, and the
+ * attacker's must be exactly `before`'s power less `cost` — the shape it
+ * struck down (rules.md §6, §7).
  *
  * Exported so a test can hand-construct an otherwise-impossible before/after
  * pair, since it has no other seam.
@@ -360,6 +409,8 @@ function placeOnPlanet(
 export function assertFightInvariants(
   before: GameState,
   after: GameState,
+  attackerShipId: ShipId,
+  cost: PowerLevel,
   returnedShipIds: ReadonlySet<ShipId>,
 ): void {
   const beforeOccupiedSquareNames = new Set(
@@ -402,9 +453,13 @@ export function assertFightInvariants(
           `returned ship "${ship.id}" ended on planet "${updatedName}", which held a ship before the fight: rules.md §7.1 draws only from planets empty at the moment`,
         );
       }
-      if (updated.power !== ship.power) {
+      const isAttacker = ship.id === attackerShipId;
+      const expectedPower = isAttacker ? ship.power - cost : ship.power;
+      if (updated.power !== expectedPower) {
         throw new RangeError(
-          `returned ship "${ship.id}" had ${ship.power} power before the fight and ${updated.power} after: rules.md §7 never changes what a ship carries`,
+          isAttacker
+            ? `attacking ship "${ship.id}" had ${ship.power} power before the fight and paid ${cost} for the shot, so should have ended with ${expectedPower}, but ended with ${updated.power} instead: rules.md §6, §7 spend exactly the cost of the shape struck down`
+            : `defending ship "${ship.id}" had ${ship.power} power before the fight and ${updated.power} after: rules.md §7 leaves the defender's power untouched`,
         );
       }
     }
@@ -444,14 +499,16 @@ export function assertFightInvariants(
 
 /**
  * Applies an attack by `shipId` on `target` in `state`, or refuses it
- * (rules.md §7). A legal attack never mutates `state`: both ships are placed,
- * carrying the power each had before the fight, on a planet drawn at random
- * from the planets standing empty (`drawReturnPlanet`), the attacker's planet
- * drawn first and the defender's from the planets still empty afterwards,
- * advancing `randomSeed` once per ship.
- * Both squares the ships fought from are left empty; there is no winner and
- * no advance. Neither square's node changes state: leaving a node does not
- * end it (rules.md §8.3). The attacking ship is added to `actedThisPly` even
+ * (rules.md §6, §7). A legal attack never mutates `state`: it deducts the
+ * cost of the shape it struck down from the attacker's power as the fight
+ * resolves, then places both ships on a planet drawn at random from the
+ * planets standing empty (`drawReturnPlanet`) — the attacker arriving with
+ * that power already spent, the defender carrying exactly what it had
+ * before — the attacker's planet drawn first and the defender's from the
+ * planets still empty afterwards, advancing `randomSeed` once per ship. Both
+ * squares the ships fought from are left empty; there is no winner and no
+ * advance. Neither square's node changes state: leaving a node does not end
+ * it (rules.md §8.3). The attacking ship is added to `actedThisPly` even
  * though it ends the action on a planet itself: it spent its one action
  * regardless (rules.md §5). One action is spent; when the ply's last action
  * is spent, play passes to the other side exactly as it does after a move,
@@ -481,16 +538,30 @@ export function applyAttack(
   const attackerBefore = toFightShip(attackerShip);
   const defenderBefore = toFightShip(defenderShip);
 
+  const shape = attackReach(state, shipId, target);
+  if (shape === undefined) {
+    throw new RangeError(
+      `no shape reaches ${squareName(target)} from ${squareName(attackerShip.square)}, despite the attack having been found legal`,
+    );
+  }
+  const cost = shape.cost;
+  const attackerPowerAfter = spendPower(attackerShip.power, cost);
+
   const [attackerTo, seedAfterAttacker] = drawReturnPlanet(state);
   const afterAttackerReturned: GameState = {
-    ...placeOnPlanet(state, attackerShip.id, attackerTo),
+    ...placeOnPlanet(state, attackerShip.id, attackerTo, attackerPowerAfter),
     randomSeed: seedAfterAttacker,
   };
   const [defenderTo, seedAfterDefender] = drawReturnPlanet(
     afterAttackerReturned,
   );
   const nextState: GameState = {
-    ...placeOnPlanet(afterAttackerReturned, defenderShip.id, defenderTo),
+    ...placeOnPlanet(
+      afterAttackerReturned,
+      defenderShip.id,
+      defenderTo,
+      defenderShip.power,
+    ),
     randomSeed: seedAfterDefender,
   };
   const returns: FightReturn[] = [
@@ -511,6 +582,8 @@ export function applyAttack(
   assertFightInvariants(
     state,
     nextState,
+    attackerShip.id,
+    cost,
     new Set(returns.map((entry) => entry.shipId)),
   );
 
@@ -519,6 +592,7 @@ export function applyAttack(
       type: "fight-resolved",
       attacker: attackerBefore,
       defender: defenderBefore,
+      cost,
       returns,
     },
   ];

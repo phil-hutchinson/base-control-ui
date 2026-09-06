@@ -8,6 +8,7 @@
 import { type Square, squareName } from "../rules/board";
 import { type AttackRefusalReason, legalTargets } from "../rules/combat";
 import type { FleetSize, Side, ShipId } from "../rules/fleet";
+import type { PowerLevel } from "../rules/power";
 import {
   type GameState,
   markOutOfTime,
@@ -54,6 +55,10 @@ export interface MovedEvent {
   readonly effects: readonly MoveEffect[];
   /** The mover's remaining actions after this move, from the resulting state. */
   readonly actionsRemaining: number;
+  /** The power the move cost (rules.md §6), from `AppliedMove`. */
+  readonly cost: PowerLevel;
+  /** The mover's power once that cost is paid, from `AppliedMove`. */
+  readonly powerAfter: PowerLevel;
 }
 
 /**
@@ -271,6 +276,8 @@ function activateWithSelection(
       to: square,
       effects: result.effects,
       actionsRemaining: result.state.actionsRemaining,
+      cost: result.cost,
+      powerAfter: result.powerAfter,
     },
   };
 }

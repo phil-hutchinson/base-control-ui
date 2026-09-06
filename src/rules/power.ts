@@ -15,3 +15,21 @@ export const MAX_POWER = 6;
 export function isPowerLevel(value: number): value is PowerLevel {
   return Number.isInteger(value) && value >= MIN_POWER && value <= MAX_POWER;
 }
+
+/**
+ * `power` less `cost` — what a ship carries after paying for a move or an
+ * attack (rules.md §6, §7). Validated with `isPowerLevel` rather than cast:
+ * a move or an attack is only ever applied once its cost is known to be
+ * affordable, so a result outside the 0–6 range means that check was wrong,
+ * and this throws rather than silently producing a power level that
+ * typechecks but cannot exist.
+ */
+export function spendPower(power: PowerLevel, cost: PowerLevel): PowerLevel {
+  const result = power - cost;
+  if (!isPowerLevel(result)) {
+    throw new RangeError(
+      `spendPower: spending ${cost} power from ${power} would leave ${result}, outside the ${MIN_POWER}-${MAX_POWER} range`,
+    );
+  }
+  return result;
+}
