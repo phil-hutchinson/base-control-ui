@@ -452,7 +452,17 @@ non-technical reader (`CLAUDE.md`).
 
 ### Step 1 — Rules 0.24 → 0.25: the penalty goes, the trap arrives
 
-Status: pending
+Status: committed
+
+Notes: Edited `doc/ruleset/rules.md` per the plan — §1's overview, §2's word
+list, §5's pass rule, §6's landing sentence, §7's protection sentence and its
+new "not the same bargain" paragraph, §8.1's depleted bullet, §8.3's "stays
+where it is" sentence, §8.4 (collection half only), §8.5 (fully rewritten
+around the trap rather than a choice) and §8.6 (seven steps, plus the new
+"step 7 runs last of all" paragraph and the closing invariant extended to
+step 7). Bumped `RULES_VERSION` in `src/rules/rulesVersion.ts` to `"0.25"` and
+added one changelog entry at the top of `doc/ruleset/changelog.md`, marked as
+a gameplay change with tagging on hold. No deviation from the plan.
 
 Edit `doc/ruleset/rules.md` so that no sentence in it says a depleted node
 costs energy, that a player's energy can fall, or that a ship may end a move on

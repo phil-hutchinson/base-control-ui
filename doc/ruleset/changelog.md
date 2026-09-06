@@ -7,6 +7,32 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.25 — a depleted node traps the ship on it, instead of costing energy
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **The energy penalty is gone, entirely.** A player collects energy for the
+  charged nodes they hold and pays nothing, ever. Nothing in the game
+  subtracts energy any more; a player's total only ever rises.
+- **A depleted node traps the ship standing on it instead.** A ship caught on
+  a node when it burns out is **trapped**: it cannot move and cannot attack
+  for as long as the node stays depleted. It is released the moment the node
+  retires, about ten turns later on the ordinary recovery clock, and its
+  square is then an ordinary square.
+- **A trapped ship cannot be attacked either.** Standing on a node takes a
+  ship out of combat in both directions, exactly as a charged node already
+  does — but a trapped ship did not choose its position and cannot leave it,
+  where a charged node's holder could leave whenever it liked.
+- **A move may not end on a depleted node.** Flying over one is still free;
+  only landing is barred. A ship can now become trapped only by a node
+  burning out underneath it, never by walking into one.
+- **An all-trapped player gets relief.** If every one of a player's ships is
+  trapped, section 8.6 gains a new step 7: the depleted node under that
+  player's ships with the least remaining life, among those whose ship would
+  have a legal move if freed, ends at once and is replaced, freeing its ship,
+  rather than leaving that player to pass for ten turns.
+
 ## 0.24 — power is a reserve a ship spends, not a property of where it stands
 
 This is a gameplay change. Tagging stays on hold until the game plays (see
