@@ -15,9 +15,7 @@ afterEach(cleanup);
 function namedIds(): readonly string[] {
   return [
     SHIP_ART.green.hullId,
-    SHIP_ART.green.gaugeIconId,
     SHIP_ART.red.hullId,
-    SHIP_ART.red.gaugeIconId,
     ...Object.values(SHIP_DEFS_IDS.green),
     ...Object.values(SHIP_DEFS_IDS.red),
   ];

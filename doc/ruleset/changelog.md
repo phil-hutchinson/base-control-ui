@@ -7,6 +7,37 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.24 — power is a reserve a ship spends, not a property of where it stands
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **The tank widens to 0–6, up from 0–4, and every ship still starts full.**
+  A ship at 5 or 6 power is otherwise no different from one at 4 was.
+- **Every move now has a price, paid out of that reserve.** One square
+  orthogonally costs 0, one square diagonally costs 1, two squares
+  orthogonally costs 2, and the new **L** — one orthogonal step and one
+  diagonal step, in either order — costs 2. A ship may take any move it can
+  afford, and is free to take a cheaper one and spend less. Two squares
+  diagonally and three squares orthogonally are gone; the longest move is now
+  two squares.
+- **Only enemy ships block.** A ship flies over its own side freely, by a
+  move and by an attack alike; only an enemy ship in the way blocks either.
+  Landing on any occupied square, friendly or enemy, is still impossible. The
+  L is blocked from either of its two corners independently — an enemy on
+  the orthogonal corner or on the diagonal corner is enough.
+- **Attacks are priced the same way.** Attack range is still exactly
+  movement range, so it is now what the attacker can afford, the L included.
+  An attack spends the cost of the shape it strikes down out of the
+  attacker's reserve as it resolves; the defender's power is untouched.
+- **Planets are the only source of power.** A charged node no longer drains
+  the ship holding it, and a depleted node no longer gives power back —
+  neither state touches a ship's reserve. A ship standing on a planet at the
+  end of its owner's turn gains one power, or two if it is the only one of
+  that player's ships **charging** — standing on a planet with room to gain —
+  up to the maximum of 6. A ship already at 6 is not charging: it gains
+  nothing and does not deny a lone shipmate elsewhere the double rate.
+
 ## 0.23 — the planets re-sited
 
 This is a gameplay change. Tagging stays on hold until the game plays (see

@@ -132,7 +132,7 @@ describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
     );
   });
 
-  it("gives every ship a power level within the 0-4 range, and starts every ship at full power", () => {
+  it("gives every ship a power level within the 0-6 range, and starts every ship at full power", () => {
     for (const entry of fleet) {
       expect(isPowerLevel(entry.power)).toBe(true);
       expect(entry.power).toBe(MAX_POWER);

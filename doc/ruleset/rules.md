@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.23**
+**Rules version: 0.24**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -19,12 +19,10 @@ Ships are never destroyed. A fight has no winner — both ships involved are
 pushed back to a planet, carrying exactly what they carried before the
 fight, and rejoin the game from there.
 
-A ship carries **power**, which is what lets it move. Holding a node drains
-it, so the longer a ship holds one, the harder it becomes to move and to
-leave. A ship holding a node cannot be attacked while it holds it. A node
-that has burned out still costs its owner energy every turn — but it now
-gives power back, so it is where a ship pays energy for the recovery a
-planet gives free of charge.
+A ship carries **power**, a reserve it spends to move and refills only on
+planets. A ship holding a node cannot be attacked while it holds it. A node
+that has burned out still costs its owner energy every turn and gives
+nothing back.
 
 The board is not a fixed map with lights moving across it: nodes are born,
 burn out and are replaced somewhere else, so the map itself redraws as the
@@ -50,8 +48,8 @@ standard game (section 9).
 **Action** — what a player does on their turn: move a ship, or attack with a
 ship.
 
-**Power** — what a ship carries and what lets it move: how far it can go, and
-what a node takes from it while it stands there.
+**Power** — what a ship carries and spends to move: how far it can go. It is
+refilled only on planets.
 
 **Node** — a position on the board that comes into being, runs through three
 states — **inactive**, **charged** and **depleted** — and then ends. The
@@ -93,11 +91,13 @@ A planet is an ordinary square in every way except two:
 
 - A ship standing on a planet cannot attack and cannot be attacked.
 - A ship standing on a planet **at the end of its owner's turn** gains one
-  power, to the maximum of 4 (section 4.1). Flying over an empty planet does
-  nothing — only standing on one at the end of the turn counts — and
-  arriving on one does nothing by itself either; the first point comes at
-  the end of that turn like any other. A planet is where a ship goes to
-  recover, at a point per turn.
+  power, or **two** if it is the only one of that player's ships charging, up
+  to the maximum of 6 (section 4.1). A ship already at 6 is not charging: it
+  gains nothing and does not stop another ship taking the double rate. Flying
+  over an empty planet does nothing — only standing on one at the end of the
+  turn counts — and arriving on one does nothing by itself either; the first
+  point comes at the end of that turn like any other. A planet is where a
+  ship goes to recover.
 
 Planets are not owned. Either player's ships may use any planet.
 
@@ -206,21 +206,22 @@ Both layouts are exact half-turn rotations of one another — each player's
 starting fleet is the rotation of the other's — so neither side begins with
 better ground.
 
-Every ship starts at full power (4).
+Every ship starts at full power (6).
 
 ### 4.1 Power
 
-A ship carries between 0 and 4 power. Power is what lets it move: each point
-unlocks a further option in section 6's table, and with it a further option
-for its attack range (section 7). It does nothing in a fight.
+A ship carries between 0 and 6 power. Power is what it spends to move: every
+move has a price in section 6's table, and a ship may take any move it can
+afford.
 
-A ship **loses one power** at the end of its owner's turn standing on a
-**charged node** — the node is drawing on the ship as it pays out — down to
-the minimum of 0. It **gains one power** at the end of its owner's turn
-standing on a **depleted** node or **on a planet**, up to the maximum of 4.
-An **inactive** node does neither. A fight never changes a ship's power
-(section 7). A ship at 0 power is not destroyed and is not stuck: it still
-has one square orthogonally, and a planet will refill it.
+A ship **gains power** at the end of its owner's turn standing on a
+**planet** — one, or two if it is the only one of that player's ships
+charging (section 3.1) — up to the maximum of 6. Nothing else changes a
+ship's power: a **charged** node does not drain it, a **depleted** node does
+not refill it, an **inactive** node does neither, and a fight leaves the
+defender's power alone (section 7). A ship at 0 power is not destroyed and is
+not stuck: the one-square orthogonal move is free, and a planet will refill
+it.
 
 ---
 
@@ -246,25 +247,34 @@ is the second, and only other, reason a turn can pass.
 
 ## 6. Movement
 
-A ship moves in a **straight line**, orthogonally or diagonally. How far it may
-go depends on how much power it is carrying: each point unlocks a further
-option, and the options accumulate as power rises.
+A ship moves one or two squares: orthogonally, diagonally, or in an **L** —
+one orthogonal step and one diagonal step, in either order. What it may do
+depends on what it can pay: every move has a price, out of the power it
+carries, and a ship may take any move it can afford, and is free to take a
+cheaper one and spend less.
 
-| Power | Movement                                   |
-| ----- | ------------------------------------------ |
-| 0     | one square orthogonally                    |
-| 1     | the above, plus one square diagonally      |
-| 2     | the above, plus two squares orthogonally   |
-| 3     | the above, plus two squares diagonally     |
-| 4     | the above, plus three squares orthogonally |
+| Move                                                            | Cost |
+| --------------------------------------------------------------- | ---- |
+| one square orthogonally                                         | 0    |
+| one square diagonally                                           | 1    |
+| two squares orthogonally                                        | 2    |
+| the L — one orthogonal step and one diagonal step, either order | 2    |
 
-So a ship at full power has twenty squares it can reach, and a ship at 0
-power has four.
+A ship with 2 power or more can reach all twenty of the squares the four
+shapes give; a ship with 1 power reaches the eight orthogonal and diagonal
+single steps; a ship with 0 power reaches the four orthogonal single steps —
+and since that move is free, a ship can always make it, however empty its
+tank.
 
-**The path must be clear.** Every square the ship passes over, and the square it
-lands on, must be empty. Ships never fly over one another, and a ship can never
-land on a square another ship occupies — neither a friendly ship nor an enemy
-one.
+**The path must be clear of enemy ships.** Every square a move passes over
+must be free of an **enemy** ship — a ship flies over its own side freely —
+and the square it lands on must be empty of any ship, of either side: a ship
+can never land on a square another ship occupies, friendly or enemy. The L
+passes over two squares, its two corners: the one it turns through
+orthogonally and the one it turns through diagonally — for example, the L
+from H8 to J9 turns through I8 (the orthogonal corner) and I9 (the diagonal
+corner). An enemy ship on **either** corner blocks the L; only one of the two
+need be occupied.
 
 Moving and attacking are entirely separate: a ship never attacks by moving
 onto its target.
@@ -274,13 +284,16 @@ onto its target.
 ## 7. Combat
 
 A ship may attack an enemy ship within its **movement range** (section 6) —
-the same distances, the same straight lines, and on the same terms: every
-square the attack passes over must be empty, of either side's ships. The
-target square is of course occupied, by the enemy ship. At the two extremes:
-a ship at 0 power reaches only one square orthogonally and cannot strike a
-diagonal at all, while a ship at full power reaches three squares
-orthogonally. Attacking is always the attacking player's choice; ships never
-fight automatically.
+the same shapes, priced the same way, so an attack reaches whatever the
+attacker can currently **afford**, the L included. The attack **costs** that
+price: the attacker pays it out of its own reserve as the attack resolves,
+and arrives on its planet already having paid (section 7.1). The defender
+pays nothing. Every square the attack passes over must be free of an
+**enemy** ship, exactly as a move requires (section 6); the target square is
+of course occupied, by the enemy ship it strikes. At the two extremes: a
+ship at 0 power strikes only one square orthogonally and nothing else, while
+a ship with 2 power or more strikes anywhere in the twenty. Attacking is
+always the attacking player's choice; ships never fight automatically.
 
 Neither ship may be on a planet: a ship on a planet cannot attack, and
 cannot be attacked. And neither ship may be standing on a **charged node**: a
@@ -291,13 +304,15 @@ or a **depleted** node is an ordinary target, and fights and is fought
 exactly like a ship on any other square (section 8.5).
 
 **There is no winner.** Both ships — the attacker and the ship it attacked —
-are returned to planets (section 7.1), and both squares are left empty, but
-each ship arrives carrying the power it had.
+are returned to planets (section 7.1), and both squares are left empty. The
+defender arrives carrying the power it had; the attacker arrives having
+already paid the cost of the shot.
 
-An attack is a **trade**: a player spends their own ship's position — not its
-power — to take away their opponent's. It is worth making when the enemy ship
-stands better than the attacker's own — beside a node, in the way, deep in
-the attacker's own half — and not worth making otherwise.
+An attack is a **trade**: a player spends their own ship's position **and**
+the power the shot cost, to take away their opponent's position. It is worth
+making when the enemy ship stands better than the attacker's own — beside a
+node, in the way, deep in the attacker's own half — and not worth making
+otherwise.
 
 Two things follow about nodes. A ship that reaches a node first cannot be
 driven off it, so nodes are contested by arriving rather than by force. And a
@@ -327,9 +342,10 @@ placement, and the defender's after it, to each find an empty one.
 
 A ship may also go back to a planet deliberately. This is not a special
 action — it is an ordinary move that ends on an empty planet, and like any
-move it must be within the ship's range and have a clear path. What it gets
-there is recovery at a point per turn (section 3.1, section 4.1), not an
-instant refill.
+move it must be within the ship's range, and it must be a shape the ship can
+afford, and have a clear path. What it gets there is recovery at the section
+3.1 rate — one power a turn, or two if it is the only one of its owner's
+ships charging — not an instant refill.
 
 ---
 
@@ -342,12 +358,12 @@ Every node is always in exactly one of three states:
 - **Inactive** — eligible to be charged, producing nothing, and costing
   nothing.
 - **Charged** — producing energy: a ship standing on it collects (section
-  8.4) and the node takes power from it (section 4.1) as it pays out, and can
-  neither attack nor be attacked (section 7).
+  8.4) and can neither attack nor be attacked (section 7). It takes nothing
+  from the ship holding it.
 - **Depleted** — recovering after running out. Not eligible to be charged,
   producing nothing, and costing the player whose ship stands on it: energy
-  (section 8.4), while giving power back (section 4.1), at the end of each of
-  that player's turns.
+  (section 8.4), at the end of each of that player's turns, for nothing in
+  return.
 
 A node cycles inactive → charged → depleted → **ends**. The instant a node
 ends, a new inactive node appears somewhere else on the board (section 3.2).
@@ -403,8 +419,8 @@ still run out on schedule whether or not the board is at its four.
 
 The draw does not look at occupancy: a node with a ship standing on it can be
 charged like any other. That ship is holding a node from that moment — it
-collects (section 8.4) and starts losing power (section 4.1) at the end of
-its owner's next turn, exactly as if it had moved onto a node.
+collects (section 8.4) at the end of its owner's next turn, exactly
+as if it had moved onto a node.
 
 The choice is genuinely random, and neither player can see it coming — but it
 is no longer an equal chance for every inactive node. An inactive node
@@ -499,11 +515,12 @@ owner likes — nothing about it obliges the owner to move it, or anything
 else, on a later turn.
 
 The two are not the same. An **inactive** node pays nothing and costs
-nothing, so waiting on one for the charge draw is free, and it neither takes
-nor gives power. A **depleted** node pays nothing and **costs**: an energy
-penalty (section 8.4) at the end of each of the owner's turns — but it gives
-power back (section 4.1). A **charged** node, by contrast, takes power from
-the ship holding it as it pays out (section 8.1).
+nothing, so waiting on one for the charge draw is free. A **depleted** node
+pays nothing and **costs**: an energy penalty (section 8.4) at the end of
+each of the owner's turns, for nothing in return. A **charged** node, by
+contrast, pays energy to the ship holding it and takes nothing from it
+(section 8.1). Neither state touches a ship's power (section 4.1) at all —
+only a planet does.
 
 Neither an inactive nor a depleted node offers what a charged node offers: a
 ship standing on one can be attacked like any other ship, and may attack
@@ -515,7 +532,7 @@ inactive node is eligible for the charge draw whether or not a ship is
 standing on it (section 8.2). If the node underneath a ship retires, the
 ship is untouched — it keeps its square and its power — but the square it
 stands on is no longer a node at all, so from that instant it is an
-ordinary square: it costs nothing further, and gives no power back.
+ordinary square: it costs nothing further.
 
 When a node runs out under the ship holding it (section 8.3), the ship
 loses its protection at that same instant — it stops being a node, and so
@@ -528,9 +545,9 @@ owner prefers, and leaving now costs the node nothing.
 
 Everything that happens at the end of a turn happens in this order:
 
-1. Each of the moving player's ships standing on a charged node loses a
-   point of power, and each standing on a depleted node or on a planet gains
-   one (section 4.1).
+1. Each of the moving player's ships standing on a planet gains power — one,
+   or two if it is the only one of that player's ships charging (section
+   3.1) — up to the maximum of 6 (section 4.1).
 2. The moving player collects energy for the charged nodes they hold and
    then pays for the depleted nodes they occupy (section 8.4).
 3. Every charged node adds its drain (section 8.3); any that reaches capacity
@@ -549,10 +566,9 @@ Everything that happens at the end of a turn happens in this order:
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
 which an action was taken. The node clocks still tick, and a ship of the
-passing player standing on a charged node still loses its point of power and
-one standing on a depleted node or on a planet still gains one; the passing
-player still collects and still pays exactly as they would if they had
-acted.
+passing player standing on a planet still gains power at the section 3.1
+rate; the passing player still collects and still pays exactly as they would
+if they had acted.
 
 Step 6 is last **deliberately**, for the same reason as before: it is what
 makes a node spend at least one whole turn inactive before it can be

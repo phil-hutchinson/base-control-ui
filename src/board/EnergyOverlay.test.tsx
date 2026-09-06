@@ -62,6 +62,8 @@ function movedEventWithCollection(
       },
     ],
     actionsRemaining: 1,
+    cost: 0,
+    powerAfter: 6,
   };
 }
 
@@ -83,6 +85,8 @@ function movedEventWithEndOfTurn(
       },
     ],
     actionsRemaining: 1,
+    cost: 0,
+    powerAfter: 6,
   };
 }
 
@@ -221,6 +225,8 @@ describe("EnergyOverlay", () => {
         },
       ],
       actionsRemaining: 1,
+      cost: 0,
+      powerAfter: 6,
     };
 
     const { container } = render(
@@ -267,6 +273,8 @@ describe("EnergyOverlay", () => {
         },
       ],
       actionsRemaining: 1,
+      cost: 0,
+      powerAfter: 6,
     };
 
     const { container } = render(

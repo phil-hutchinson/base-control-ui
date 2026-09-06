@@ -17,7 +17,6 @@ import type {
   EnergyCollectedEffect,
   EnergyPenaltyEffect,
   PowerGainedEffect,
-  PowerLostEffect,
 } from "../rules/endOfTurn";
 import type { Side } from "../rules/fleet";
 import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
@@ -34,7 +33,7 @@ import type {
   PassEffect,
   PlyEndedEffect,
 } from "../rules/ply";
-import { MAX_POWER, MIN_POWER } from "../rules/power";
+import { MAX_POWER, spendPower, type PowerLevel } from "../rules/power";
 import type {
   AttackedEvent,
   MovedEvent,
@@ -119,11 +118,18 @@ function joinWithAnd(items: readonly string[]): string {
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
+/** "a point of power" for 1, "2 points of power" for 2 — the only two amounts §3.1's rate ever produces. */
+function powerAmountPhrase(amount: number): string {
+  return amount === 1 ? "a point of power" : `${amount} points of power`;
+}
+
 /**
  * All of a sequence's power gains as one clause, naming the squares once
  * rather than repeating a sentence per ship. A ship reaching the maximum of
- * 4 is named as such. True of a ship on a depleted node or on a planet
- * alike — the clause never names which.
+ * `MAX_POWER` is named as such. Only a ship on a planet ever gains power
+ * (§3.1); a charged node no longer drains and a depleted node no longer
+ * refills. Within one sequence the amount gained is always uniform, so the
+ * grouped clause reads it off the first effect.
  */
 function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
   const side = capitalize(effects[0].side);
@@ -134,44 +140,19 @@ function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
   if (effects.length === 1) {
     const [effect] = effects;
     const square = squareName(effect.square);
+    const gained = powerAmountPhrase(effect.amount);
     return effect.power === MAX_POWER
-      ? `${side} ship at ${square} gained a point of power, reaching the maximum of 4.`
-      : `${side} ship at ${square} gained a point of power, now on ${effect.power}.`;
+      ? `${side} ship at ${square} gained ${gained}, reaching the maximum of ${MAX_POWER}.`
+      : `${side} ship at ${square} gained ${gained}, now on ${effect.power}.`;
   }
 
   const squares = effects.map((effect) => squareName(effect.square));
-  const base = `${side} ships at ${joinWithAnd(squares)} each gained a point of power.`;
+  const gained = powerAmountPhrase(effects[0].amount);
+  const base = `${side} ships at ${joinWithAnd(squares)} each gained ${gained}.`;
   if (atMax.length === 0) {
     return base;
   }
-  return `${base} ${joinWithAnd(atMax)} reached the maximum of 4.`;
-}
-
-/**
- * All of a sequence's power losses as one clause, the mirror of
- * `powerGainedClause`: the squares named once rather than repeating a
- * sentence per ship. A ship reaching 0 is named as such.
- */
-function powerLostClause(effects: readonly PowerLostEffect[]): string {
-  const side = capitalize(effects[0].side);
-  const atFloor = effects
-    .filter((effect) => effect.power === MIN_POWER)
-    .map((effect) => squareName(effect.square));
-
-  if (effects.length === 1) {
-    const [effect] = effects;
-    const square = squareName(effect.square);
-    return effect.power === MIN_POWER
-      ? `${side} ship at ${square} lost a point of power, reaching 0.`
-      : `${side} ship at ${square} lost a point of power, now on ${effect.power}.`;
-  }
-
-  const squares = effects.map((effect) => squareName(effect.square));
-  const base = `${side} ships at ${joinWithAnd(squares)} each lost a point of power.`;
-  if (atFloor.length === 0) {
-    return base;
-  }
-  return `${base} ${joinWithAnd(atFloor)} reached 0.`;
+  return `${base} ${joinWithAnd(atMax)} reached the maximum of ${MAX_POWER}.`;
 }
 
 /**
@@ -215,29 +196,21 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
 
 /**
  * The clauses an end-of-turn sequence produced, in the order the sequence
- * produced them. All of a sequence's power losses are grouped into one
- * clause, and all of its power gains into another, the charged-node loss
- * clause ahead of the gain clause so it sits next to the energy-collection
- * sentence that follows it, both ahead of the rest. `node-charged` speaks —
- * a node becoming charged is the thing both players are racing towards.
- * `node-replaced` speaks too, in one sentence naming both squares: unlike
- * the old cycle-in-place, a node ending and a new one appearing elsewhere is
- * a visible change to the map and to where the next race will be. A zero
- * collection or a zero penalty produces no effect at all (rules.md §8.4),
- * so there is nothing here to
- * skip for either case — a turn that only pays reads as one sentence, and a
- * turn that collects and then pays reads as two, in that order, because the
- * sequence pushes the collection effect before the penalty effect.
+ * produced them. All of a sequence's power gains are grouped into one
+ * clause, ahead of the rest — there is no longer a power-loss clause to sit
+ * it next to, since no end-of-turn step takes power away any more (§4.1).
+ * `node-charged` speaks — a node becoming charged is the thing both players
+ * are racing towards. `node-replaced` speaks too, in one sentence naming
+ * both squares: unlike the old cycle-in-place, a node ending and a new one
+ * appearing elsewhere is a visible change to the map and to where the next
+ * race will be. A zero collection or a zero penalty produces no effect at
+ * all (rules.md §8.4), so there is nothing here to skip for either case — a
+ * turn that only pays reads as one sentence, and a turn that collects and
+ * then pays reads as two, in that order, because the sequence pushes the
+ * collection effect before the penalty effect.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
-
-  const powerLosses = effects.filter(
-    (effect): effect is PowerLostEffect => effect.type === "power-lost",
-  );
-  if (powerLosses.length > 0) {
-    clauses.push(powerLostClause(powerLosses));
-  }
 
   const powerGains = effects.filter(
     (effect): effect is PowerGainedEffect => effect.type === "power-gained",
@@ -249,7 +222,6 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   for (const effect of effects) {
     switch (effect.type) {
       case "power-gained":
-      case "power-lost":
         break;
       case "energy-collected":
         clauses.push(energyCollectedClause(effect));
@@ -305,19 +277,29 @@ function passSentence(effect: PassEffect): string {
 }
 
 /**
- * "What the move was": the ship's journey, and whether it ended on a
- * planet. Either side's ship reads the same way; the side is already named
- * at the start of the sentence.
+ * What a move cost the moving ship, and what it has left (rules.md §6): an
+ * orthogonal step is free and says so, rather than claiming a cost of
+ * nothing.
+ */
+function moveCostClause(cost: PowerLevel, powerAfter: PowerLevel): string {
+  return cost === 0
+    ? `The move was free; it still has ${powerAfter} power.`
+    : `The move cost ${cost} power, leaving ${powerAfter}.`;
+}
+
+/**
+ * "What the move was": the ship's journey, whether it ended on a planet, and
+ * what the move cost (rules.md §6). Either side's ship reads the same way;
+ * the side is already named at the start of the sentence.
  */
 function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);
   const to = squareName(event.to);
+  const journey = isPlanet(event.to)
+    ? `${capitalize(event.side)} ship moved from ${from} onto the ${to} planet.`
+    : `${capitalize(event.side)} ship moved from ${from} to ${to}.`;
 
-  if (isPlanet(event.to)) {
-    return `${capitalize(event.side)} ship moved from ${from} onto the ${to} planet.`;
-  }
-
-  return `${capitalize(event.side)} ship moved from ${from} to ${to}.`;
+  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}`;
 }
 
 /**
@@ -373,9 +355,9 @@ function actionEndingClause(
 /**
  * The fight's own sentence (rules.md §7), from the single `fight-resolved`
  * effect an attack always carries: who attacked whom, that both were beaten,
- * and the two planets they landed on, both keeping the power they were
- * carrying. There is no winner and no advance to report — every fight has
- * the same outcome.
+ * what the attack cost the attacker and what it has left, that the defender
+ * kept the power it was carrying, and the two planets they landed on. There
+ * is no winner and no advance to report — every fight has the same outcome.
  */
 function fightSentence(event: AttackedEvent): string {
   const fight = event.effects.find(
@@ -392,11 +374,17 @@ function fightSentence(event: AttackedEvent): string {
   const attackerSide = capitalize(fight.attacker.side);
   const opening = `${attackerSide} ship at ${attackerSquare} attacked the ${fight.defender.side} ship at ${defenderSquare}`;
 
+  const attackerPowerAfter = spendPower(fight.attacker.power, fight.cost);
+  const attackCostClause =
+    fight.cost === 0
+      ? `The attack was free; the attacker still has ${attackerPowerAfter} power.`
+      : `The attack cost the attacker ${fight.cost} power, leaving ${attackerPowerAfter}.`;
+
   if (fight.returns.length !== 2) {
     throw new RangeError("a fight-resolved effect always carries two returns");
   }
   const [attackerReturn, defenderReturn] = fight.returns;
-  return `${opening} and both were beaten. The attacker returned to the ${squareName(attackerReturn.to)} planet and the defender to the ${squareName(defenderReturn.to)} planet, both keeping the power they were carrying.`;
+  return `${opening} and both were beaten. ${attackCostClause} The defender kept the power it was carrying. The attacker returned to the ${squareName(attackerReturn.to)} planet and the defender to the ${squareName(defenderReturn.to)} planet.`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {
@@ -410,8 +398,10 @@ function rejectionSentence(event: RejectedEvent): string {
       return `No ship on ${square}. Choose one of your own ships.`;
     case "out-of-range":
       return `${square} is out of range for the selected ship.`;
+    case "cannot-afford":
+      return `${square} costs more power than the selected ship has. A step up, down, left or right is free; a diagonal step costs 1; two squares or an L cost 2.`;
     case "path-blocked":
-      return `Another ship is in the way of ${square}.`;
+      return `An enemy ship is in the way of ${square}.`;
     case "destination-occupied":
       return `${square} is occupied.`;
     case "attacker-on-planet":
@@ -423,9 +413,11 @@ function rejectionSentence(event: RejectedEvent): string {
     case "target-on-charged-node":
       return "A ship holding a charged node cannot be attacked.";
     case "target-out-of-range":
-      return `${square} is out of attack range. A ship attacks as far as it moves, so a drained ship barely strikes at all — a ship at 0 power can only strike one square up, down, left or right.`;
+      return `${square} is not one of the shapes a ship can attack from here — an orthogonal or diagonal step, two squares orthogonally, or an L — whatever power it carries.`;
+    case "cannot-afford-target":
+      return `The selected ship does not have the power to strike ${square}. An orthogonal step is free, a diagonal costs 1, and two squares or an L cost 2.`;
     case "attack-path-blocked":
-      return `Another ship stands in the way, so the attack cannot reach ${square}.`;
+      return `An enemy ship stands in the way, so the attack cannot reach ${square}.`;
     // Unreachable through the board's own gesture — activating a friendly
     // ship re-selects it and activating an empty square is a move attempt —
     // but `attackRefusalReason` answers for every square, so both are worded.

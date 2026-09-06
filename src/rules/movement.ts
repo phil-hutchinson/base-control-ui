@@ -1,10 +1,10 @@
-// Movement (rules.md §6): a ship moves in a straight line, orthogonally or
-// diagonally, as far as its power allows, ending on any square it can
-// reach that no ship occupies — reach, a clear path and an empty destination
-// are the whole of the restriction. This is the only implementation of §6 in
-// the app; every caller that needs a legal move or the reason one is refused
-// calls the functions here. §9's game-over check is layered in front of §6's
-// own checks in each public function below.
+// Movement (rules.md §6): a ship moves one or two squares, orthogonally,
+// diagonally or in an L, priced by §6's table, and a ship may take any shape
+// it can afford — reach, a clear path and an empty destination are the whole
+// of the restriction. This is the only implementation of §6 in the app;
+// every caller that needs a legal move or the reason one is refused calls the
+// functions here. §9's game-over check is layered in front of §6's own
+// checks in each public function below.
 
 import {
   COLUMN_LETTERS,
@@ -18,7 +18,7 @@ import { isGameOver } from "./gameLength";
 import { type GameState, type Ship, shipsBySquare } from "./gameState";
 import type { PowerLevel } from "./power";
 
-type DirectionKind = "orthogonal" | "diagonal";
+type StraightKind = "orthogonal" | "diagonal";
 
 const ORTHOGONAL_DIRECTIONS: ReadonlyArray<readonly [number, number]> = [
   [1, 0],
@@ -35,51 +35,132 @@ const DIAGONAL_DIRECTIONS: ReadonlyArray<readonly [number, number]> = [
 ];
 
 function directionsFor(
-  kind: DirectionKind,
+  kind: StraightKind,
 ): ReadonlyArray<readonly [number, number]> {
   return kind === "orthogonal" ? ORTHOGONAL_DIRECTIONS : DIAGONAL_DIRECTIONS;
 }
 
-interface ReachOption {
-  /** The power level at which this option unlocks. A ship keeps every option whose figure is at or below its own power. */
-  readonly unlockedAtPower: PowerLevel;
-  readonly kind: DirectionKind;
-  readonly distance: number;
+interface StraightReachOption {
+  readonly kind: StraightKind;
+  readonly distance: 1 | 2;
+  /** The power this shape costs (rules.md §6's table). */
+  readonly cost: PowerLevel;
 }
 
-/** §6's range table, transcribed row for row. */
+/**
+ * One of the L's eight destinations, as an offset from the origin in
+ * (column, row) terms, together with the two squares it turns through: the
+ * one it turns through orthogonally, and the one it turns through
+ * diagonally. Both corners are given as offsets from the origin too.
+ */
+interface LOffset {
+  readonly delta: readonly [number, number];
+  readonly orthogonalCorner: readonly [number, number];
+  readonly diagonalCorner: readonly [number, number];
+}
+
+interface LReachOption {
+  readonly kind: "L";
+  /** The power this shape costs (rules.md §6's table). */
+  readonly cost: PowerLevel;
+  readonly offsets: readonly LOffset[];
+}
+
+type ReachOption = StraightReachOption | LReachOption;
+
+/**
+ * The L's eight destinations (rules.md §6): one orthogonal step and one
+ * diagonal step, in either order. Written down as data rather than derived,
+ * so it can be read against the rules at a glance; `movement.test.ts` pins
+ * the sign rule that generates it. For an offset (dc, dr), the orthogonal
+ * corner is one step along the longer axis and the diagonal corner is one
+ * diagonal step towards the destination — e.g. the L from H8 to J9 is
+ * (dc: 2, dr: 1), whose orthogonal corner is I8 and whose diagonal corner is
+ * I9, exactly as rules.md §6 describes it.
+ */
+const L_OFFSETS: readonly LOffset[] = [
+  { delta: [2, 1], orthogonalCorner: [1, 0], diagonalCorner: [1, 1] },
+  { delta: [2, -1], orthogonalCorner: [1, 0], diagonalCorner: [1, -1] },
+  { delta: [-2, 1], orthogonalCorner: [-1, 0], diagonalCorner: [-1, 1] },
+  { delta: [-2, -1], orthogonalCorner: [-1, 0], diagonalCorner: [-1, -1] },
+  { delta: [1, 2], orthogonalCorner: [0, 1], diagonalCorner: [1, 1] },
+  { delta: [1, -2], orthogonalCorner: [0, -1], diagonalCorner: [1, -1] },
+  { delta: [-1, 2], orthogonalCorner: [0, 1], diagonalCorner: [-1, 1] },
+  { delta: [-1, -2], orthogonalCorner: [0, -1], diagonalCorner: [-1, -1] },
+];
+
+/** §6's cost table, transcribed row for row. */
 const REACH_OPTIONS: readonly ReachOption[] = [
-  { unlockedAtPower: 0, kind: "orthogonal", distance: 1 },
-  { unlockedAtPower: 1, kind: "diagonal", distance: 1 },
-  { unlockedAtPower: 2, kind: "orthogonal", distance: 2 },
-  { unlockedAtPower: 3, kind: "diagonal", distance: 2 },
-  { unlockedAtPower: 4, kind: "orthogonal", distance: 3 },
+  { kind: "orthogonal", distance: 1, cost: 0 },
+  { kind: "diagonal", distance: 1, cost: 1 },
+  { kind: "orthogonal", distance: 2, cost: 2 },
+  { kind: "L", cost: 2, offsets: L_OFFSETS },
 ];
 
 /**
- * One square a ship could move to: the destination, and the squares passed
- * over on the way there, in order, excluding both the origin and the
- * destination.
+ * One square a ship could move to: the destination, the squares passed over
+ * on the way there (in order, excluding both the origin and the
+ * destination), and the power the move costs (rules.md §6). The L's
+ * `passedOver` carries both of its corners, orthogonal corner first.
  */
 export interface ReachEntry {
   readonly destination: Square;
   readonly passedOver: readonly Square[];
+  readonly cost: PowerLevel;
+}
+
+/** The square offset from `origin` by (`deltaColumn`, `deltaRow`), or `undefined` when that square would leave the board. */
+function squareAtOffset(
+  origin: Square,
+  deltaColumn: number,
+  deltaRow: number,
+): Square | undefined {
+  const originColumnIndex = COLUMN_LETTERS.indexOf(origin.column);
+  const column = COLUMN_LETTERS[originColumnIndex + deltaColumn];
+  const row = origin.row + deltaRow;
+
+  if (column === undefined || !isOnBoard(column, row)) {
+    return undefined;
+  }
+  return squareAt(column, row);
 }
 
 /**
- * Every square a ship at `origin` carrying `power` could move to on an
- * otherwise empty board (rules.md §6). Moves that would leave the board are
- * omitted entirely. Says nothing about occupancy, nodes or whose ply it is.
+ * Every one of §6's twenty shapes from `origin` on an otherwise empty board,
+ * regardless of power, each carrying its own cost. Moves that would leave the
+ * board are omitted entirely. Says nothing about occupancy, nodes, whose ply
+ * it is, or what any particular ship can afford — `reachFrom` below narrows
+ * this to the affordable subset, and every other caller in this module reads
+ * one or the other rather than generating the geometry again.
  */
-export function reachFrom(
-  origin: Square,
-  power: PowerLevel,
-): readonly ReachEntry[] {
-  const originColumnIndex = COLUMN_LETTERS.indexOf(origin.column);
+export function allShapesFrom(origin: Square): readonly ReachEntry[] {
   const entries: ReachEntry[] = [];
 
   for (const option of REACH_OPTIONS) {
-    if (option.unlockedAtPower > power) {
+    if (option.kind === "L") {
+      for (const offset of option.offsets) {
+        const destination = squareAtOffset(origin, ...offset.delta);
+        if (destination === undefined) {
+          continue;
+        }
+
+        const orthogonalCorner = squareAtOffset(
+          origin,
+          ...offset.orthogonalCorner,
+        );
+        const diagonalCorner = squareAtOffset(origin, ...offset.diagonalCorner);
+        if (orthogonalCorner === undefined || diagonalCorner === undefined) {
+          throw new RangeError(
+            `an L's corner left the board from ${squareName(origin)} while its destination did not`,
+          );
+        }
+
+        entries.push({
+          destination,
+          passedOver: [orthogonalCorner, diagonalCorner],
+          cost: option.cost,
+        });
+      }
       continue;
     }
 
@@ -88,27 +169,56 @@ export function reachFrom(
       let offBoard = false;
 
       for (let step = 1; step <= option.distance; step++) {
-        const columnIndex = originColumnIndex + deltaColumn * step;
-        const row = origin.row + deltaRow * step;
-        const column = COLUMN_LETTERS[columnIndex];
-
-        if (column === undefined || !isOnBoard(column, row)) {
+        const square = squareAtOffset(
+          origin,
+          deltaColumn * step,
+          deltaRow * step,
+        );
+        if (square === undefined) {
           offBoard = true;
           break;
         }
-        path.push(squareAt(column, row));
+        path.push(square);
       }
 
       if (!offBoard) {
         entries.push({
           destination: path[path.length - 1],
           passedOver: path.slice(0, -1),
+          cost: option.cost,
         });
       }
     }
   }
 
   return entries;
+}
+
+/**
+ * Every square a ship at `origin` carrying `power` could move to on an
+ * otherwise empty board (rules.md §6): the affordable subset of
+ * `allShapesFrom`.
+ */
+export function reachFrom(
+  origin: Square,
+  power: PowerLevel,
+): readonly ReachEntry[] {
+  return allShapesFrom(origin).filter((entry) => entry.cost <= power);
+}
+
+/**
+ * The shape (if any) that reaches `destination` from `origin`, regardless of
+ * power — used to tell "not one of the twenty shapes at all" apart from "a
+ * shape the ship cannot currently afford".
+ */
+export function shapeReaching(
+  origin: Square,
+  destination: Square,
+): ReachEntry | undefined {
+  const destinationName = squareName(destination);
+  return allShapesFrom(origin).find(
+    (entry) => squareName(entry.destination) === destinationName,
+  );
 }
 
 /**
@@ -119,6 +229,7 @@ export type MoveRefusalReason =
   | "not-your-ship"
   | "ship-already-acted"
   | "out-of-range"
+  | "cannot-afford"
   | "path-blocked"
   | "destination-occupied"
   | "game-over";
@@ -138,7 +249,11 @@ export function findShip(state: GameState, shipId: ShipId): Ship {
  * checked in order from the most fundamental (whether the game is even still
  * being played) to the most specific (the destination square itself):
  * whether the game is over, whose ship it is, whether it has already acted,
- * and finally §6's reach, path and destination-occupancy checks.
+ * and finally §6's reach, affordability, path and destination-occupancy
+ * checks. "Out of range" now means only that no shape reaches the square at
+ * all — a real shape the ship cannot currently pay for is "cannot afford"
+ * instead, since the two are refused for different reasons and read
+ * differently to a player.
  */
 export function moveRefusalReason(
   state: GameState,
@@ -158,19 +273,23 @@ export function moveRefusalReason(
     return "ship-already-acted";
   }
 
-  const destinationName = squareName(destination);
-  const entry = reachFrom(ship.square, ship.power).find(
-    (candidate) => squareName(candidate.destination) === destinationName,
-  );
+  const entry = shapeReaching(ship.square, destination);
   if (entry === undefined) {
     return "out-of-range";
   }
+  if (entry.cost > ship.power) {
+    return "cannot-afford";
+  }
 
   const occupied = shipsBySquare(state);
-  if (entry.passedOver.some((square) => occupied.has(squareName(square)))) {
+  const blocked = entry.passedOver.some((square) => {
+    const occupant = occupied.get(squareName(square));
+    return occupant !== undefined && occupant.side !== ship.side;
+  });
+  if (blocked) {
     return "path-blocked";
   }
-  if (occupied.has(destinationName)) {
+  if (occupied.has(squareName(destination))) {
     return "destination-occupied";
   }
 
@@ -178,10 +297,11 @@ export function moveRefusalReason(
 }
 
 /**
- * Every square `shipId` may legally move to in the given state: its §6
- * reach, filtered by path and destination occupancy. Empty once the game is
- * over, or when the ship does not belong to the side to move or has already
- * acted this ply.
+ * Every square `shipId` may legally move to in the given state: the
+ * affordable subset of its §6 reach, filtered by path and destination
+ * occupancy - only an enemy ship on a passed-over square blocks. Empty once
+ * the game is over, or when the ship does not belong to the side to move or
+ * has already acted this ply.
  */
 export function legalDestinations(
   state: GameState,

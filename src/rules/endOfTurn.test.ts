@@ -64,155 +64,11 @@ function buildState(config: {
   };
 }
 
-describe("runEndOfTurn — step 1, the power loss (§4.1)", () => {
-  it("loses a point of power only for the moving side's ships standing on a charged node", () => {
-    const state = buildState({
-      sideToMove: "green",
-      nodes: {
-        H8: ["charged", 1],
-        K5: ["inactive", 1],
-        L8: ["charged", 1],
-        E11: ["charged", 1],
-      },
-      ships: [
-        ship("green-1", "green", "H8", 3), // charged: loses, 3 -> 2
-        ship("green-2", "green", "K5", 3), // inactive: loses nothing
-        ship("green-3", "green", "D2", 3), // not a node: loses nothing
-        ship("green-4", "green", "L8", 0), // already at the floor: loses nothing
-        ship("green-5", "green", "H12", 4), // not a node: loses nothing
-        ship("red-1", "red", "E11", 3), // charged, but not the mover
-      ],
-    });
-
-    const result = runEndOfTurn(state);
-
-    const shipPower = (id: ShipId): PowerLevel | undefined =>
-      result.state.ships.find((s) => s.id === id)?.power;
-
-    expect(shipPower("green-1")).toBe(2);
-    expect(shipPower("green-2")).toBe(3);
-    expect(shipPower("green-3")).toBe(3);
-    expect(shipPower("green-4")).toBe(0);
-    expect(shipPower("green-5")).toBe(4);
-    expect(shipPower("red-1")).toBe(3);
-
-    expect(result.effects.slice(0, 2)).toEqual([
-      {
-        type: "power-lost",
-        shipId: "green-1",
-        side: "green",
-        square: squareFromName("H8"),
-        power: 2,
-      },
-      {
-        type: "energy-collected",
-        side: "green",
-        amount: 3,
-        newTotal: 3,
-        squares: [squareFromName("H8"), squareFromName("L8")],
-      },
-    ]);
-    // Step 4: the board is one node short of four, and K5 is the only
-    // inactive node, so it is charged deterministically — the draw needs no
-    // choice among a pool of one. Every charged node's level is small (1),
-    // so step 3's drain draw never reaches capacity and adds no effect of
-    // its own.
-    expect(result.effects).toContainEqual({
-      type: "node-charged",
-      square: squareFromName("K5"),
-    });
-  });
-});
-
-describe("runEndOfTurn — step 1, the power gain (§4.1)", () => {
-  it("gains a point of power only for the moving side's ships standing on a depleted node", () => {
-    const state = buildState({
-      sideToMove: "green",
-      nodes: {
-        H8: ["depleted", 1],
-        K5: ["inactive", 1],
-      },
-      ships: [
-        ship("green-1", "green", "H8", 2), // depleted: gains, 2 -> 3
-        ship("green-2", "green", "K5", 2), // inactive: gains nothing
-        ship("green-3", "green", "D2", 2), // not a node: gains nothing
-        ship("red-1", "red", "H8", 2), // depleted, but not the mover
-      ],
-    });
-
-    const result = runEndOfTurn(state);
-
-    const shipPower = (id: ShipId): PowerLevel | undefined =>
-      result.state.ships.find((s) => s.id === id)?.power;
-
-    expect(shipPower("green-1")).toBe(3);
-    expect(shipPower("green-2")).toBe(2);
-    expect(shipPower("green-3")).toBe(2);
-    expect(shipPower("red-1")).toBe(2);
-
-    expect(result.effects).toContainEqual({
-      type: "power-gained",
-      shipId: "green-1",
-      side: "green",
-      square: squareFromName("H8"),
-      power: 3,
-    });
-    expect(
-      result.effects.filter((e) => e.type === "power-gained"),
-    ).toHaveLength(1);
-  });
-
-  it("leaves a ship already at 4 power on a depleted node at 4 and raises no effect for it", () => {
-    const state = buildState({
-      sideToMove: "green",
-      nodes: { H8: ["depleted", 1] },
-      ships: [ship("green-1", "green", "H8", 4)],
-    });
-
-    const result = runEndOfTurn(state);
-
-    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(4);
-    expect(
-      result.effects.some((effect) => effect.type === "power-gained"),
-    ).toBe(false);
-  });
-
-  it("reports both a gain and a loss when one ship holds a node while another sits on a depleted node", () => {
-    const state = buildState({
-      sideToMove: "green",
-      nodes: {
-        H8: ["charged", 1],
-        K5: ["depleted", 1],
-      },
-      ships: [
-        ship("green-1", "green", "H8", 3),
-        ship("green-2", "green", "K5", 2),
-      ],
-    });
-
-    const result = runEndOfTurn(state);
-
-    expect(result.effects).toContainEqual({
-      type: "power-lost",
-      shipId: "green-1",
-      side: "green",
-      square: squareFromName("H8"),
-      power: 2,
-    });
-    expect(result.effects).toContainEqual({
-      type: "power-gained",
-      shipId: "green-2",
-      side: "green",
-      square: squareFromName("K5"),
-      power: 3,
-    });
-  });
-});
-
 describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
   const PLANET_SQUARE_NAME = squareName(PLANETS[0]);
+  const OTHER_PLANET_SQUARE_NAME = squareName(PLANETS[1]);
 
-  it("gains a point of power for a ship standing on a planet at the end of its owner's turn", () => {
+  it("gains 2 for a ship charging alone on a planet", () => {
     const state = buildState({
       sideToMove: "green",
       ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 2)],
@@ -220,25 +76,133 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
 
     const result = runEndOfTurn(state);
 
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(4);
+    expect(result.effects).toContainEqual({
+      type: "power-gained",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName(PLANET_SQUARE_NAME),
+      power: 4,
+      amount: 2,
+    });
+  });
+
+  it("gains 1 each for two ships charging at once", () => {
+    const state = buildState({
+      sideToMove: "green",
+      ships: [
+        ship("green-1", "green", PLANET_SQUARE_NAME, 2),
+        ship("green-2", "green", OTHER_PLANET_SQUARE_NAME, 3),
+      ],
+    });
+
+    const result = runEndOfTurn(state);
+
     expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(3);
+    expect(result.state.ships.find((s) => s.id === "green-2")?.power).toBe(4);
     expect(result.effects).toContainEqual({
       type: "power-gained",
       shipId: "green-1",
       side: "green",
       square: squareFromName(PLANET_SQUARE_NAME),
       power: 3,
+      amount: 1,
+    });
+    expect(result.effects).toContainEqual({
+      type: "power-gained",
+      shipId: "green-2",
+      side: "green",
+      square: squareFromName(OTHER_PLANET_SQUARE_NAME),
+      power: 4,
+      amount: 1,
     });
   });
 
-  it("leaves a ship already at 4 power on a planet at 4 and raises no effect for it", () => {
+  it("excludes a ship already at the maximum from the count, so it neither gains nor denies a lone shipmate the double rate", () => {
     const state = buildState({
       sideToMove: "green",
-      ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 4)],
+      ships: [
+        ship("green-1", "green", PLANET_SQUARE_NAME, 4),
+        ship("green-2", "green", OTHER_PLANET_SQUARE_NAME, 6),
+      ],
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(4);
+    // green-2 is already full, so it does not count towards the charging
+    // total: green-1 is the only ship actually charging, and takes the lone
+    // rate of 2, with no cap to bite.
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(6);
+    expect(result.state.ships.find((s) => s.id === "green-2")?.power).toBe(6);
+    expect(result.effects).toContainEqual({
+      type: "power-gained",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName(PLANET_SQUARE_NAME),
+      power: 6,
+      amount: 2,
+    });
+    expect(
+      result.effects.filter((effect) => effect.type === "power-gained"),
+    ).toHaveLength(1);
+  });
+
+  it("caps the double rate at the maximum, reporting only the amount that actually landed", () => {
+    const state = buildState({
+      sideToMove: "green",
+      ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 5)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(6);
+    expect(result.effects).toContainEqual({
+      type: "power-gained",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName(PLANET_SQUARE_NAME),
+      power: 6,
+      amount: 1,
+    });
+  });
+
+  it("takes the charging count once, at the start of the pass, so a ship reaching the maximum mid-pass does not raise the rate for the ship after it", () => {
+    // Two ships charging at the pass's start means the rate is 1 for both,
+    // fleet order first. green-1 reaches the maximum on its own point, which
+    // would leave green-2 as the only ship still below it if the count were
+    // taken again — the fixed-at-entry count means green-2 still only gains
+    // 1, not 2.
+    const state = buildState({
+      sideToMove: "green",
+      ships: [
+        ship("green-1", "green", PLANET_SQUARE_NAME, 5),
+        ship("green-2", "green", OTHER_PLANET_SQUARE_NAME, 4),
+      ],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(6);
+    expect(result.state.ships.find((s) => s.id === "green-2")?.power).toBe(5);
+    expect(result.effects).toContainEqual({
+      type: "power-gained",
+      shipId: "green-2",
+      side: "green",
+      square: squareFromName(OTHER_PLANET_SQUARE_NAME),
+      power: 5,
+      amount: 1,
+    });
+  });
+
+  it("leaves a ship already at 6 power on a planet at 6 and raises no effect for it", () => {
+    const state = buildState({
+      sideToMove: "green",
+      ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 6)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(6);
     expect(
       result.effects.some((effect) => effect.type === "power-gained"),
     ).toBe(false);
@@ -274,13 +238,98 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       result.effects.some((effect) => effect.type === "power-gained"),
     ).toBe(false);
   });
+});
 
-  it("reports both a gain and a loss when one ship recovers on a planet while another holds a node", () => {
+describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
+  it("leaves a ship holding a charged node with the power it had, however long it holds it, while still collecting energy", () => {
+    const state = buildState({
+      sideToMove: "green",
+      nodes: {
+        H8: ["charged", 1],
+        K5: ["inactive", 1],
+        L8: ["charged", 1],
+        E11: ["charged", 1],
+      },
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("green-2", "green", "K5", 3),
+        ship("green-3", "green", "D2", 3),
+        ship("green-4", "green", "L8", 0),
+        ship("green-5", "green", "H12", 4),
+        ship("red-1", "red", "E11", 3),
+      ],
+    });
+
+    const result = runEndOfTurn(state);
+
+    const shipPower = (id: ShipId): PowerLevel | undefined =>
+      result.state.ships.find((s) => s.id === id)?.power;
+
+    expect(shipPower("green-1")).toBe(3);
+    expect(shipPower("green-2")).toBe(3);
+    expect(shipPower("green-3")).toBe(3);
+    expect(shipPower("green-4")).toBe(0);
+    expect(shipPower("green-5")).toBe(4);
+    expect(shipPower("red-1")).toBe(3);
+
+    expect(
+      result.effects.some((effect) => effect.type === "power-gained"),
+    ).toBe(false);
+    expect(result.effects[0]).toEqual({
+      type: "energy-collected",
+      side: "green",
+      amount: 3,
+      newTotal: 3,
+      squares: [squareFromName("H8"), squareFromName("L8")],
+    });
+    // Step 4: the board is one node short of four, and K5 is the only
+    // inactive node, so it is charged deterministically — the draw needs no
+    // choice among a pool of one. Every charged node's level is small (1),
+    // so step 3's drain draw never reaches capacity and adds no effect of
+    // its own.
+    expect(result.effects).toContainEqual({
+      type: "node-charged",
+      square: squareFromName("K5"),
+    });
+  });
+
+  it("leaves a ship on a depleted node with the power it had, while still paying the energy penalty", () => {
+    const state = buildState({
+      sideToMove: "green",
+      nodes: {
+        H8: ["depleted", 1],
+        K5: ["inactive", 1],
+      },
+      ships: [
+        ship("green-1", "green", "H8", 2),
+        ship("green-2", "green", "K5", 2),
+        ship("green-3", "green", "D2", 2),
+        ship("red-1", "red", "H8", 2),
+      ],
+    });
+
+    const result = runEndOfTurn(state);
+
+    const shipPower = (id: ShipId): PowerLevel | undefined =>
+      result.state.ships.find((s) => s.id === id)?.power;
+
+    expect(shipPower("green-1")).toBe(2);
+    expect(shipPower("green-2")).toBe(2);
+    expect(shipPower("green-3")).toBe(2);
+    expect(shipPower("red-1")).toBe(2);
+
+    expect(
+      result.effects.some((effect) => effect.type === "power-gained"),
+    ).toBe(false);
+  });
+
+  it("reports only the planet gain when one ship recovers on a planet while another holds a charged node", () => {
+    const planetSquareName = squareName(PLANETS[0]);
     const state = buildState({
       sideToMove: "green",
       nodes: { H8: ["charged", 1] },
       ships: [
-        ship("green-1", "green", PLANET_SQUARE_NAME, 2),
+        ship("green-1", "green", planetSquareName, 2),
         ship("green-2", "green", "H8", 3),
       ],
     });
@@ -291,23 +340,11 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       type: "power-gained",
       shipId: "green-1",
       side: "green",
-      square: squareFromName(PLANET_SQUARE_NAME),
-      power: 3,
+      square: squareFromName(planetSquareName),
+      power: 4,
+      amount: 2,
     });
-    expect(result.effects).toContainEqual({
-      type: "power-lost",
-      shipId: "green-2",
-      side: "green",
-      square: squareFromName("H8"),
-      power: 2,
-    });
-    const gainIndex = result.effects.findIndex(
-      (effect) => effect.type === "power-gained",
-    );
-    const lossIndex = result.effects.findIndex(
-      (effect) => effect.type === "power-lost",
-    );
-    expect(gainIndex).toBeLessThan(lossIndex);
+    expect(result.state.ships.find((s) => s.id === "green-2")?.power).toBe(3);
   });
 });
 
@@ -359,13 +396,6 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     expect(result.state.nodes.H8.level).toBeGreaterThanOrEqual(NODE_CAPACITY);
     expect(result.effects).toEqual([
       {
-        type: "power-lost",
-        shipId: "green-1",
-        side: "green",
-        square: squareFromName("H8"),
-        power: 0,
-      },
-      {
         type: "energy-collected",
         side: "green",
         amount: 1,
@@ -374,11 +404,12 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
       },
       { type: "node-ran-out", square: squareFromName("H8") },
     ]);
-    // Step 1 takes a point of power from green's own ship for standing on a
-    // charged node before step 3 spends the node — 1 falls to 0 first, then
-    // the node runs out from under it, and the ship simply stays there.
+    // Holding a charged node no longer costs power (§4.1), so green's own
+    // ship is untouched by step 1 even as step 3 spends the node out from
+    // under it in the same sequence — it simply stays there, at the power it
+    // started with.
     const untouchedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(untouchedShip?.power).toBe(0);
+    expect(untouchedShip?.power).toBe(1);
     expect(untouchedShip?.square).toEqual(squareFromName("H8"));
   });
 
@@ -879,23 +910,14 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.state.nodes.H8.state).toBe("depleted");
   });
 
-  it("is unaffected by a ship losing its last point of power in step 1", () => {
+  it("collects energy for a node held regardless of the holding ship's own power (§4.1: holding a node no longer touches it)", () => {
     const state = buildState({
       sideToMove: "green",
       nodes: { H8: ["charged", 1] },
-      ships: [ship("green-1", "green", "H8", 1)],
+      ships: [ship("green-1", "green", "H8", 0)],
     });
 
     const result = runEndOfTurn(state);
-
-    const powerEffectIndex = result.effects.findIndex(
-      (effect) => effect.type === "power-lost",
-    );
-    const energyEffectIndex = result.effects.findIndex(
-      (effect) => effect.type === "energy-collected",
-    );
-    expect(powerEffectIndex).toBeGreaterThanOrEqual(0);
-    expect(powerEffectIndex).toBeLessThan(energyEffectIndex);
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -1177,14 +1199,9 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
     const result = applyPassGuard(state);
 
     expect(result.effect?.type).toBe("ply-passed");
-    expect(result.effect?.endOfTurn.slice(0, 2)).toEqual([
-      {
-        type: "power-lost",
-        shipId: "green-1",
-        side: "green",
-        square: squareFromName("K5"),
-        power: 0,
-      },
+    // Holding a charged node no longer costs power (§4.1), so green-1's
+    // power is untouched by the pass; only the energy collection fires.
+    expect(result.effect?.endOfTurn).toEqual([
       {
         type: "energy-collected",
         side: "green",
@@ -1194,6 +1211,8 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
       },
     ]);
     expect(result.state.energy).toEqual({ green: 1, red: 0 });
+    const passedShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(passedShip?.power).toBe(1);
   });
 
   it("pays the side that passes while standing on a depleted node, through applyPassGuard", () => {

@@ -1,10 +1,13 @@
 // One ship, drawn from the shared sprite (ShipDefs): a `<use>` of the
-// side's hull, plus, only when a power level is given, a power gauge — a
-// row of four small overhead ship icons across the top of the square, one
-// per point the ship could carry (power runs 0-4, rules.md §4.1,
-// src/rules/power.ts). A lit icon is filled in the side's colour and
-// carries a thick bar just below it; an unlit one is left as a hollow
-// outline with no bar. Icons light left to right (powerGauge.ts).
+// side's hull, plus, only when a power level is given, a power gauge — up
+// to six slots in two rows of three across the top of the square, one per
+// point the ship could carry (power runs 0-6, rules.md §4.1,
+// src/rules/power.ts). A lit slot draws its black underlay line plus the
+// side's colour on top of it, at the full bar stroke; an unlit slot draws
+// nothing at all. A ship at 0 power therefore draws no gauge marks at all -
+// indistinguishable from a ship drawn with no power level given, which is
+// the intended reading. Slots light in reading order - the top row left to
+// right, then the bottom row (powerGauge.ts).
 //
 // The gauge sits across the top of the viewBox and the hull low within it:
 // the clear band between them is what keeps a node marker, drawn beneath
@@ -22,17 +25,12 @@ import type { Side } from "../rules/fleet";
 import type { PowerLevel } from "../rules/power";
 import { gaugeSlots } from "./powerGauge";
 import {
+  GAUGE_BAR_LENGTH,
   GAUGE_BAR_STROKE_WIDTH,
   GAUGE_BAR_UNDERLAY_STROKE_WIDTH,
-  GAUGE_BAR_X1,
-  GAUGE_BAR_X2,
-  GAUGE_BAR_Y,
-  GAUGE_ICON_STROKE_WIDTH,
   GAUGE_PALETTE,
-  GAUGE_SEPARATOR_COLOR,
-  GAUGE_SEPARATOR_STROKE_WIDTH,
-  GAUGE_SLOT_X,
-  GAUGE_SLOT_Y,
+  GAUGE_SLOT_POSITIONS,
+  GAUGE_UNDERLAY_COLOR,
   SHIP_ART,
 } from "./shipArt";
 import "./ShipModel.css";
@@ -54,54 +52,38 @@ export function ShipModel({ side, power }: ShipModelProps) {
     >
       <use href={`#${art.hullId}`} />
       {power !== undefined && (
-        <g strokeLinejoin="round">
-          {gaugeSlots(power).map((slot) => {
-            const fill = slot.lit ? palette.litFill : palette.unlitFill;
-            const stroke = slot.lit ? palette.litOutline : palette.unlitOutline;
-            return (
-              <g
-                key={slot.index}
-                data-gauge-slot={slot.index}
-                data-gauge-lit={slot.lit}
-                transform={`translate(${GAUGE_SLOT_X[slot.index]}, ${GAUGE_SLOT_Y})`}
-              >
-                <use
-                  href={`#${art.gaugeIconId}`}
-                  fill={GAUGE_SEPARATOR_COLOR}
-                  stroke={GAUGE_SEPARATOR_COLOR}
-                  strokeWidth={GAUGE_SEPARATOR_STROKE_WIDTH}
-                />
-                <use
-                  href={`#${art.gaugeIconId}`}
-                  fill={fill}
-                  stroke={stroke}
-                  strokeWidth={GAUGE_ICON_STROKE_WIDTH}
-                />
-                {slot.lit && (
-                  <>
-                    <line
-                      x1={GAUGE_BAR_X1}
-                      y1={GAUGE_BAR_Y}
-                      x2={GAUGE_BAR_X2}
-                      y2={GAUGE_BAR_Y}
-                      stroke={GAUGE_SEPARATOR_COLOR}
-                      strokeWidth={GAUGE_BAR_UNDERLAY_STROKE_WIDTH}
-                      strokeLinecap="round"
-                    />
-                    <line
-                      x1={GAUGE_BAR_X1}
-                      y1={GAUGE_BAR_Y}
-                      x2={GAUGE_BAR_X2}
-                      y2={GAUGE_BAR_Y}
-                      stroke={palette.barColor}
-                      strokeWidth={GAUGE_BAR_STROKE_WIDTH}
-                      strokeLinecap="round"
-                    />
-                  </>
-                )}
-              </g>
-            );
-          })}
+        <g strokeLinecap="round">
+          {gaugeSlots(power)
+            .filter((slot) => slot.lit)
+            .map((slot) => {
+              const position = GAUGE_SLOT_POSITIONS[slot.index];
+              const x1 = position.x;
+              const x2 = position.x + GAUGE_BAR_LENGTH;
+              return (
+                <g
+                  key={slot.index}
+                  data-gauge-slot={slot.index}
+                  data-gauge-lit={slot.lit}
+                >
+                  <line
+                    x1={x1}
+                    y1={position.y}
+                    x2={x2}
+                    y2={position.y}
+                    stroke={GAUGE_UNDERLAY_COLOR}
+                    strokeWidth={GAUGE_BAR_UNDERLAY_STROKE_WIDTH}
+                  />
+                  <line
+                    x1={x1}
+                    y1={position.y}
+                    x2={x2}
+                    y2={position.y}
+                    stroke={palette.barColor}
+                    strokeWidth={GAUGE_BAR_STROKE_WIDTH}
+                  />
+                </g>
+              );
+            })}
         </g>
       )}
     </svg>

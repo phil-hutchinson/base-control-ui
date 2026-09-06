@@ -1,26 +1,32 @@
 // Combat (rules.md §7, §3.1): who may attack whom, and where a returning
 // ship lands. This is the only implementation of §7 in the app, the way
 // `movement.ts` is the only implementation of §6. Attack range **is** §6's
-// movement range: a ship attacks exactly as far as it moves, path and all, so
-// `attackReach` reads `reachFrom` (rules.md §6) rather than carrying a second
-// copy of the table. There is one implementation of the table, and both
-// sections read it.
+// movement range: a ship attacks exactly as far as it can currently afford to
+// move, path and all, so `attackReach` and `legalTargets` read `movement.ts`'s
+// shape lookups rather than carrying a second copy of the table. Only an
+// enemy ship blocks the path (§6); the target square's own occupant is never
+// treated as blocking the shot at it.
 
 import { type Square, squareName } from "./board";
 import { PLANETS, isPlanet } from "./planets";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type GameState, shipsBySquare, nodeStateAt } from "./gameState";
-import { type ReachEntry, findShip, reachFrom } from "./movement";
+import {
+  type ReachEntry,
+  findShip,
+  reachFrom,
+  shapeReaching,
+} from "./movement";
 import { drawIndex } from "./random";
 
 /**
- * The lane `shipId` would attack down to reach `target`: the `ReachEntry`
- * from `reachFrom(attacker.square, attacker.power)` whose `destination` is
- * `target`, or `undefined` when `target` is outside the attacker's reach
- * altogether. Purely geometric — no ownership, no planets, no occupancy, no
- * awareness of whose ply it is. Exported so the lane geometry can be
- * unit-tested directly, alongside the legality check below that reads it.
+ * The lane `shipId` would attack down to reach `target`: the shape (rules.md
+ * §6) that reaches `target` from the attacker's square, or `undefined` when
+ * no shape reaches it at all. Purely geometric — no ownership, no planets, no
+ * occupancy, no awareness of whose ply it is or what the attacker can afford.
+ * Exported so the lane geometry can be unit-tested directly, alongside the
+ * legality check below that reads it.
  */
 export function attackReach(
   state: GameState,
@@ -28,11 +34,7 @@ export function attackReach(
   target: Square,
 ): ReachEntry | undefined {
   const attacker = findShip(state, shipId);
-  const targetName = squareName(target);
-
-  return reachFrom(attacker.square, attacker.power).find(
-    (entry) => squareName(entry.destination) === targetName,
-  );
+  return shapeReaching(attacker.square, target);
 }
 
 /**
@@ -54,6 +56,7 @@ export type AttackRefusalReason =
   | "no-target-there"
   | "target-is-friendly"
   | "target-out-of-range"
+  | "cannot-afford-target"
   | "attack-path-blocked"
   | "game-over";
 
@@ -66,11 +69,13 @@ export type AttackRefusalReason =
  * whether the attacker is on a planet, then whether the attacker holds a
  * charged node (rules.md §7 — a ship holding a node cannot attack), then
  * everything about the target — no ship there, a friendly ship, a ship on a
- * planet, a ship holding a charged node — and only then range and path,
- * which come last so a protected or planet target within reach is still
- * refused as such rather than as an out-of-range square. Once the game has
- * ended, no attack is legal for anyone, including one that would have been
- * refused anyway.
+ * planet, a ship holding a charged node — and only then range, affordability
+ * and path, which come last so a protected or planet target within reach is
+ * still refused as such rather than as an out-of-range square. A square no
+ * shape reaches is out of range; a shape the attacker cannot pay for is
+ * unaffordable; only once both are settled does the path matter. Once the
+ * game has ended, no attack is legal for anyone, including one that would
+ * have been refused anyway.
  */
 export function attackRefusalReason(
   state: GameState,
@@ -114,9 +119,16 @@ export function attackRefusalReason(
   if (reach === undefined) {
     return "target-out-of-range";
   }
+  if (reach.cost > attacker.power) {
+    return "cannot-afford-target";
+  }
 
   const occupied = shipsBySquare(state);
-  if (reach.passedOver.some((square) => occupied.has(squareName(square)))) {
+  const blocked = reach.passedOver.some((square) => {
+    const occupant = occupied.get(squareName(square));
+    return occupant !== undefined && occupant.side !== attacker.side;
+  });
+  if (blocked) {
     return "attack-path-blocked";
   }
 
@@ -125,8 +137,9 @@ export function attackRefusalReason(
 
 /**
  * Every square `shipId` may legally attack in the given state: every square
- * within its §6 movement reach holding an enemy ship, with §9's game-over
- * check applied first — empty once the game is over.
+ * within the affordable subset of its §6 movement reach holding an enemy
+ * ship — only an enemy ship on a passed-over square blocks the shot — with
+ * §9's game-over check applied first — empty once the game is over.
  */
 export function legalTargets(
   state: GameState,

@@ -17,7 +17,7 @@ import {
   applyPassGuard,
   assertFightInvariants,
 } from "./ply";
-import type { PowerLevel } from "./power";
+import { MAX_POWER, type PowerLevel } from "./power";
 import { drawIndex } from "./random";
 import {
   drawTableAmount,
@@ -107,14 +107,15 @@ describe("applyMove", () => {
     expect(state).toEqual(before);
   });
 
-  it("keeps the power a ship had when a move ends on a planet, exactly as when it only passes over one (rules.md §3.1)", () => {
-    // A move never touches a ship's power itself (§3.1) — recovery is the
-    // end-of-turn step's doing (§8.6 step 1), which this move triggers as
-    // the ply's last action. Proving the planet case through that step's own
-    // power-gained effect rules out an instant refill: a refill would leave
-    // the ship at 4 and raise no gain effect at all, where the move only
-    // ever carries the ship's power unchanged onto the planet for the
-    // end-of-turn step to then act on.
+  it("a move's only effect on power is its own cost — landing on or flying over a planet adds nothing on top (rules.md §3.1, §6)", () => {
+    // Recovery is the end-of-turn step's doing (§8.6 step 1), which this
+    // move triggers as the ply's last action, not the move itself. Proving
+    // the planet case through that step's own power-gained effect rules out
+    // an instant refill: a refill would leave the ship at 6 (it is the only
+    // green ship, so it charges alone, at 2 a turn) and raise no gain
+    // effect at all, where the move only ever carries the ship's power —
+    // its cost already paid — onto the planet for the end-of-turn step to
+    // then act on. This move is a free orthogonal step, so its cost is 0.
     const endsOnPlanet = buildState({
       ships: [ship("green-1", "green", "C6", 2), ship("red-1", "red", "O15")],
     });
@@ -123,8 +124,9 @@ describe("applyMove", () => {
     if (endResult.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
+    expect(endResult.cost).toBe(0);
     const landedShip = endResult.state.ships.find((s) => s.id === "green-1");
-    expect(landedShip?.power).toBe(3);
+    expect(landedShip?.power).toBe(4);
     expect(endResult.effects).toEqual([
       {
         type: "ply-ended",
@@ -136,14 +138,19 @@ describe("applyMove", () => {
             shipId: "green-1",
             side: "green",
             square: squareFromName("D6"),
-            power: 3,
+            power: 4,
+            amount: 2,
           },
         ],
       },
     ]);
 
+    // Flying over the same planet, D6, on the way to E6 is a two-square
+    // orthogonal move, which costs 2 (rules.md §6) — the planet itself adds
+    // nothing beyond that: the ship lands on E6, not a planet, carrying
+    // exactly what it started with less that cost, with no gain effect.
     const passesOverPlanet = buildState({
-      ships: [ship("green-1", "green", "C6", 2), ship("red-1", "red", "O15")],
+      ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
     });
     const passResult = applyMove(
       passesOverPlanet,
@@ -154,6 +161,7 @@ describe("applyMove", () => {
     if (passResult.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
+    expect(passResult.cost).toBe(2);
     const flownShip = passResult.state.ships.find((s) => s.id === "green-1");
     expect(flownShip?.power).toBe(2);
     expect(passResult.effects).toEqual([
@@ -166,11 +174,11 @@ describe("applyMove", () => {
     // inactive or depleted destination is refused before it can be reached.
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      nodes: { K8: ["charged", 1] },
+      nodes: { J8: ["charged", 1] },
       plyNumber: 5,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("K8"));
+    const result = applyMove(state, "green-1", squareFromName("J8"));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -179,9 +187,9 @@ describe("applyMove", () => {
     // A charged node's drain still rises at the end of every turn regardless
     // of what a ship does (§8.3), so only its state is asserted here, not
     // its exact level.
-    expect(result.state.nodes.K8.state).toBe("charged");
+    expect(result.state.nodes.J8.state).toBe("charged");
     const movedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(movedShip?.square).toEqual(squareFromName("K8"));
+    expect(movedShip?.square).toEqual(squareFromName("J8"));
   });
 
   it("flying over an inactive node without stopping leaves it inactive (rules.md §8.2)", () => {
@@ -189,7 +197,8 @@ describe("applyMove", () => {
     // charge draw has no shortfall to fill and never considers I8; I8
     // itself sits at the pressure cap, so the pressure step also leaves it
     // untouched — between the two, nothing about the end-of-turn sequence
-    // this move triggers can touch it.
+    // this move triggers can touch it. The L from H8 to J9 turns through I8
+    // (its orthogonal corner) without stopping there (rules.md §6).
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
       nodes: {
@@ -202,7 +211,7 @@ describe("applyMove", () => {
       plyNumber: 3,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("K8"));
+    const result = applyMove(state, "green-1", squareFromName("J9"));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -210,7 +219,7 @@ describe("applyMove", () => {
     }
     expect(result.state.nodes.I8).toEqual(state.nodes.I8);
     const movedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(movedShip?.square).toEqual(squareFromName("K8"));
+    expect(movedShip?.square).toEqual(squareFromName("J9"));
   });
 
   it("leaves an inactive node flown over unaffected", () => {
@@ -229,7 +238,7 @@ describe("applyMove", () => {
       plyNumber: 4,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("K8"));
+    const result = applyMove(state, "green-1", squareFromName("J9"));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -333,6 +342,109 @@ describe("applyMove", () => {
   });
 });
 
+describe("applyMove deducts the shape's cost (rules.md §6)", () => {
+  it("deducts nothing for a one-square orthogonal step", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2)],
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.cost).toBe(0);
+    expect(result.powerAfter).toBe(2);
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(2);
+  });
+
+  it("deducts 1 for a one-square diagonal step", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2)],
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("I9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.cost).toBe(1);
+    expect(result.powerAfter).toBe(1);
+    expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(1);
+  });
+
+  it("deducts 2 for a two-square orthogonal move", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2)],
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H10"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.cost).toBe(2);
+    expect(result.powerAfter).toBe(0);
+  });
+
+  it("deducts 2 for an L", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2)],
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("J9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.cost).toBe(2);
+    expect(result.powerAfter).toBe(0);
+  });
+
+  it("lets a full ship make three L moves and then refuses a fourth, while it can still step orthogonally forever", () => {
+    let state = buildState({
+      ships: [ship("green-1", "green", "H8", MAX_POWER)],
+    });
+
+    const lDestinations: readonly [string, string][] = [
+      ["H8", "J9"],
+      ["J9", "H10"],
+      ["H10", "F9"],
+    ];
+    for (const [, to] of lDestinations) {
+      const result = applyMove(state, "green-1", squareFromName(to));
+      expect(result.outcome).toBe("applied");
+      if (result.outcome !== "applied") {
+        throw new Error("expected the L move to be applied");
+      }
+      expect(result.cost).toBe(2);
+      state = {
+        ...result.state,
+        sideToMove: "green",
+        actedThisPly: [],
+        actionsRemaining: ACTIONS_PER_PLY,
+      };
+    }
+
+    const ship1 = state.ships.find((s) => s.id === "green-1");
+    expect(ship1?.power).toBe(0);
+
+    const refusedL = applyMove(state, "green-1", squareFromName("D8"));
+    expect(refusedL).toEqual({ outcome: "refused", reason: "cannot-afford" });
+
+    const stillFreeStep = applyMove(state, "green-1", squareFromName("F10"));
+    expect(stillFreeStep.outcome).toBe("applied");
+    if (stillFreeStep.outcome !== "applied") {
+      throw new Error("expected the free orthogonal step to be applied");
+    }
+    expect(stillFreeStep.cost).toBe(0);
+  });
+});
+
 describe("applyAttack", () => {
   it.each([
     {
@@ -351,7 +463,7 @@ describe("applyAttack", () => {
       defenderPower: 0 as PowerLevel,
     },
   ])(
-    "the fight changes neither ship's power, and the attacker then gains its planet point as the same turn ends, leaving both squares empty ($label)",
+    "an orthogonal jab costs the attacker nothing, and the attacker then gains its planet points as the same turn ends, leaving both squares empty ($label)",
     ({ attackerPower, defenderPower }) => {
       const state = buildState({
         ships: [
@@ -369,13 +481,16 @@ describe("applyAttack", () => {
       }
       const attacker = result.state.ships.find((s) => s.id === "green-1");
       const defender = result.state.ships.find((s) => s.id === "red-1");
-      // The fight itself leaves both ships' power exactly as it found them
-      // (asserted below, from the fight-resolved snapshot). The attack is
-      // this ply's only action, though, so it also ends the ply — and the
-      // attacker (the moving side) then gains a point on its planet under
-      // §8.6 step 1 if it has anything left to gain; the defender, not the
-      // moving side this ply, does not.
-      expect(attacker?.power).toBe(Math.min(attackerPower + 1, 4));
+      // H8 to H9 is an orthogonal jab, which costs nothing (rules.md §6),
+      // so the fight itself leaves the attacker's power exactly as it found
+      // it (asserted below, from the fight-resolved snapshot's cost of 0)
+      // and the defender's untouched, as always. The attack is this ply's
+      // only action, though, so it also ends the ply — and the attacker
+      // (the moving side) then gains on its planet under §8.6 step 1 if it
+      // has anything left to gain, at the lone-charger rate of 2 since it
+      // is the only green ship; the defender, not the moving side this ply,
+      // does not.
+      expect(attacker?.power).toBe(Math.min(attackerPower + 2, MAX_POWER));
       expect(defender?.power).toBe(defenderPower);
       expect(isPlanet(attacker!.square)).toBe(true);
       expect(isPlanet(defender!.square)).toBe(true);
@@ -403,6 +518,7 @@ describe("applyAttack", () => {
           square: squareFromName("H9"),
           power: defenderPower,
         },
+        cost: 0,
         returns: [
           {
             shipId: "green-1",
@@ -423,6 +539,44 @@ describe("applyAttack", () => {
       expect(state).toEqual(before);
     },
   );
+
+  it("deducts the attacker's cost for a diagonal strike, leaving the defender's power exactly as it was", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "I9", 3)],
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("I9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const attacker = result.state.ships.find((s) => s.id === "green-1");
+    const defender = result.state.ships.find((s) => s.id === "red-1");
+    // A diagonal jab costs 1 (rules.md §6). The attacker (the moving side)
+    // then gains on its planet under §8.6 step 1 — it is the only green
+    // ship, so it charges alone at 2 — leaving its power at 4 - 1 + 2 = 5;
+    // the defender, never the moving side this ply, keeps exactly the 3 it
+    // started with.
+    expect(attacker?.power).toBe(5);
+    expect(defender?.power).toBe(3);
+    expect(result.effects[0]).toMatchObject({
+      type: "fight-resolved",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareFromName("H8"),
+        power: 4,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareFromName("I9"),
+        power: 3,
+      },
+      cost: 1,
+    });
+  });
 
   it("draws the attacker's planet first, pinned to a stated seed", () => {
     const state = buildState({
@@ -799,10 +953,10 @@ describe("applyAttack", () => {
     const target = result.state.ships.find((s) => s.id === "green-1");
     expect(attacker && isPlanet(attacker.square)).toBe(true);
     // The attack is this ply's only action, so it also ends the ply — the
-    // attacker (red, the moving side) then gains a point on its planet
-    // under §8.6 step 1; the target (green, not the moving side this ply)
-    // does not.
-    expect(attacker?.power).toBe(3);
+    // attacker (red, the moving side) then gains on its planet under §8.6
+    // step 1, at the lone-charger rate of 2 since it is the only red ship;
+    // the target (green, not the moving side this ply) does not.
+    expect(attacker?.power).toBe(4);
     expect(target && isPlanet(target.square)).toBe(true);
     expect(target?.power).toBe(4);
   });
@@ -821,8 +975,9 @@ describe("applyAttack", () => {
     expect(isPlanet(returnedShip!.square)).toBe(true);
     // Its one action is spent even though it ends on a planet itself, so
     // the ply ends here rather than waiting for a further action — and
-    // that end-of-turn step also gives the returned ship a point of power
-    // on its planet (§8.6 step 1, §3.1), since it is the moving side.
+    // that end-of-turn step also gives the returned ship power on its
+    // planet (§8.6 step 1, §3.1), at the lone-charger rate of 2 since it is
+    // the only green ship and it is the moving side.
     expect(result.effects).toContainEqual({
       type: "ply-ended",
       side: "green",
@@ -833,7 +988,8 @@ describe("applyAttack", () => {
           shipId: "green-1",
           side: "green",
           square: returnedShip!.square,
-          power: 3,
+          power: 4,
+          amount: 2,
         },
       ],
     });
@@ -959,7 +1115,7 @@ describe("assertFightInvariants (rules.md §7)", () => {
     };
 
     expect(() =>
-      assertFightInvariants(before, after, new Set(["red-1"])),
+      assertFightInvariants(before, after, "green-1", 0, new Set(["red-1"])),
     ).toThrow(RangeError);
   });
 
@@ -975,7 +1131,7 @@ describe("assertFightInvariants (rules.md §7)", () => {
     };
 
     expect(() =>
-      assertFightInvariants(before, after, new Set(["red-1"])),
+      assertFightInvariants(before, after, "green-1", 0, new Set(["red-1"])),
     ).toThrow(RangeError);
   });
 
@@ -993,7 +1149,13 @@ describe("assertFightInvariants (rules.md §7)", () => {
     };
 
     expect(() =>
-      assertFightInvariants(before, after, new Set(["green-1", "red-1"])),
+      assertFightInvariants(
+        before,
+        after,
+        "green-1",
+        0,
+        new Set(["green-1", "red-1"]),
+      ),
     ).toThrow(RangeError);
   });
 
@@ -1013,11 +1175,11 @@ describe("assertFightInvariants (rules.md §7)", () => {
     };
 
     expect(() =>
-      assertFightInvariants(before, after, new Set(["red-1"])),
+      assertFightInvariants(before, after, "green-1", 0, new Set(["red-1"])),
     ).toThrow(RangeError);
   });
 
-  it("throws when a returned ship's power changed", () => {
+  it("throws when the defender's power moved at all", () => {
     const before = buildState({
       ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
     });
@@ -1031,7 +1193,38 @@ describe("assertFightInvariants (rules.md §7)", () => {
     };
 
     expect(() =>
-      assertFightInvariants(before, after, new Set(["red-1"])),
+      assertFightInvariants(before, after, "green-1", 0, new Set(["red-1"])),
+    ).toThrow(RangeError);
+  });
+
+  it("throws when the attacker's power did not fall by exactly the cost of the shape it struck down", () => {
+    const before = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "I9", 3)],
+    });
+    // A diagonal strike costs 1 (rules.md §6), so the attacker should land
+    // on its planet at 3, not unchanged at 4. D6 and K6 are both planets
+    // (rules.md §3.1), held by neither ship before the fight.
+    const after: GameState = {
+      ...before,
+      ships: before.ships.map((s) => {
+        if (s.id === "green-1") {
+          return { ...s, square: squareFromName("D6") };
+        }
+        if (s.id === "red-1") {
+          return { ...s, square: squareFromName("K6") };
+        }
+        return s;
+      }),
+    };
+
+    expect(() =>
+      assertFightInvariants(
+        before,
+        after,
+        "green-1",
+        1,
+        new Set(["green-1", "red-1"]),
+      ),
     ).toThrow(RangeError);
   });
 
@@ -1046,7 +1239,7 @@ describe("assertFightInvariants (rules.md §7)", () => {
     };
 
     expect(() =>
-      assertFightInvariants(before, after, new Set(["red-1"])),
+      assertFightInvariants(before, after, "green-1", 0, new Set(["red-1"])),
     ).toThrow(RangeError);
   });
 });
@@ -1120,8 +1313,8 @@ describe("applyPassGuard", () => {
     expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
     // The pass still runs the end-of-turn sequence in full, and green-1 is
-    // sitting on its planet, so it gains a point of power there (§8.6 step
-    // 1, §3.1).
+    // sitting on its planet — it is the only green ship, so it charges
+    // alone there, at the lone-charger rate of 2 (§8.6 step 1, §3.1).
     expect(result.effect).toEqual({
       type: "ply-passed",
       side: "green",
@@ -1133,7 +1326,8 @@ describe("applyPassGuard", () => {
           shipId: "green-1",
           side: "green",
           square: squareFromName("D6"),
-          power: 1,
+          power: 2,
+          amount: 2,
         },
       ],
     });
@@ -1143,9 +1337,9 @@ describe("applyPassGuard", () => {
     // Without the charged-node protection every one of green-1's eight
     // neighbours would be a legal attack (as in the plain "eight
     // neighbours" case in combat.test.ts); with it, the side has no legal
-    // action, and standing on the node still costs it a point of power,
-    // while its side still collects energy, at the end of the turn the
-    // pass still runs.
+    // action, so it passes. Holding the node costs it no power any more
+    // (§4.1) — only the energy still comes due — at the end of the turn
+    // the pass still runs.
     const state = buildState({
       ships: [
         ship("green-1", "green", "H8", 1),
@@ -1165,20 +1359,13 @@ describe("applyPassGuard", () => {
 
     expect(result.state.sideToMove).toBe("red");
     const winner = result.state.ships.find((s) => s.id === "green-1");
-    expect(winner?.power).toBe(0);
+    expect(winner?.power).toBe(1);
     expect(result.effect).toEqual({
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
       reason: "no-legal-action",
       endOfTurn: [
-        {
-          type: "power-lost",
-          shipId: "green-1",
-          side: "green",
-          square: squareFromName("H8"),
-          power: 0,
-        },
         {
           type: "energy-collected",
           side: "green",
@@ -1228,11 +1415,12 @@ describe("applyPassGuard", () => {
     }
   });
 
-  it("runs the end-of-turn sequence for the passing side, so a ship that has moved and has no attack left still loses a point of power", () => {
+  it("runs the end-of-turn sequence for the passing side, so a ship that has moved and has no attack left still pays the node's energy, untouched in its own power", () => {
     // green-1 sits on K5, a charged node, having already spent this ply's
     // first action on a move: it has no move left (already acted) and no
     // enemy stands anywhere near it to attack, so it passes with its second
-    // action still nominally available.
+    // action still nominally available. Holding the node costs it no power
+    // any more (§4.1) — only the energy still comes due.
     const state = buildState({
       ships: [ship("green-1", "green", "K5", 1)],
       nodes: { K5: "charged" },
@@ -1249,13 +1437,6 @@ describe("applyPassGuard", () => {
       reason: "no-legal-action",
       endOfTurn: [
         {
-          type: "power-lost",
-          shipId: "green-1",
-          side: "green",
-          square: squareFromName("K5"),
-          power: 0,
-        },
-        {
           type: "energy-collected",
           side: "green",
           amount: 1,
@@ -1265,7 +1446,7 @@ describe("applyPassGuard", () => {
       ],
     });
     const passedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(passedShip?.power).toBe(0);
+    expect(passedShip?.power).toBe(1);
   });
 
   it("the trap: returns the state untouched once the game is over, rather than passing an unbounded number of times", () => {
@@ -1336,9 +1517,9 @@ describe("applyOutOfTimePass", () => {
     expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
     expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
-    // The pass still runs the end-of-turn sequence in full: green-1's power
-    // drains sitting off its planet and its side collects the node's energy
-    // (§8.6 step 1, §8.2).
+    // The pass still runs the end-of-turn sequence in full: holding the
+    // node costs green-1 no power any more (§4.1), but its side still
+    // collects the node's energy (§8.6 step 1, §8.2).
     expect(result.effects).toEqual([
       {
         type: "ply-passed",
@@ -1346,13 +1527,6 @@ describe("applyOutOfTimePass", () => {
         sideToMove: "red",
         reason: "out-of-time",
         endOfTurn: [
-          {
-            type: "power-lost",
-            shipId: "green-1",
-            side: "green",
-            square: squareFromName("K5"),
-            power: 0,
-          },
           {
             type: "energy-collected",
             side: "green",
@@ -1364,7 +1538,7 @@ describe("applyOutOfTimePass", () => {
       },
     ]);
     const passedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(passedShip?.power).toBe(0);
+    expect(passedShip?.power).toBe(1);
   });
 
   it("is refused, returning the state and no effects, when the side to move still has time", () => {
@@ -1483,7 +1657,7 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
     );
   });
 
-  it("collects no energy and loses no power for a node the moving player stepped off this turn", () => {
+  it("collects no energy for a node the moving player stepped off this turn", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 3)],
       nodes: { H8: ["charged", 5] },
@@ -1504,9 +1678,6 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
     }
     expect(plyEnded.endOfTurn).not.toContainEqual(
       expect.objectContaining({ type: "energy-collected" }),
-    );
-    expect(plyEnded.endOfTurn).not.toContainEqual(
-      expect.objectContaining({ type: "power-lost" }),
     );
   });
 });
