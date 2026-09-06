@@ -1530,17 +1530,10 @@ describe("HUD wording", () => {
       power: 0 | 1 | 2 | 3 | 4;
     }[];
     charged?: readonly string[];
-    depleted?: readonly string[];
   }): GameState {
-    const nodes: Record<
-      string,
-      { state: "charged" | "depleted"; level: number }
-    > = {};
+    const nodes: Record<string, { state: "charged"; level: number }> = {};
     for (const square of config.charged ?? []) {
       nodes[square] = { state: "charged", level: 1 };
-    }
-    for (const square of config.depleted ?? []) {
-      nodes[square] = { state: "depleted", level: 1 };
     }
     return {
       ships: config.ships ?? [],
@@ -1565,7 +1558,7 @@ describe("HUD wording", () => {
         plyNumber: 1,
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held, standing on no depleted nodes.",
+        "Green: 0 energy, no nodes held.",
       );
     });
 
@@ -1585,7 +1578,7 @@ describe("HUD wording", () => {
         charged: ["H8"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 7 energy, 1 node held, standing on no depleted nodes.",
+        "Green: 7 energy, 1 node held.",
       );
     });
 
@@ -1611,7 +1604,7 @@ describe("HUD wording", () => {
         charged: ["H8", "E5"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 24 energy, 2 nodes held, standing on no depleted nodes.",
+        "Green: 24 energy, 2 nodes held.",
       );
     });
 
@@ -1631,70 +1624,7 @@ describe("HUD wording", () => {
         ],
         charged: ["K5", "H8"],
       });
-      expect(scoreSentence(state, "red")).toBe(
-        "Red: 1 energy, 1 node held, standing on no depleted nodes.",
-      );
-    });
-
-    it("uses the singular at one depleted node occupied", () => {
-      const state = stateWith({
-        energy: { green: 4, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        plyNumber: 5,
-        ships: [
-          {
-            id: "green-1",
-            side: "green",
-            square: squareAt("H", 8),
-            power: 4,
-          },
-        ],
-        depleted: ["H8"],
-      });
-      expect(scoreSentence(state, "green")).toBe(
-        "Green: 4 energy, no nodes held, standing on 1 depleted node.",
-      );
-    });
-
-    it("counts several depleted nodes occupied, plural", () => {
-      const state = stateWith({
-        energy: { green: 0, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        plyNumber: 5,
-        ships: [
-          {
-            id: "green-1",
-            side: "green",
-            square: squareAt("H", 8),
-            power: 4,
-          },
-          {
-            id: "green-2",
-            side: "green",
-            square: squareAt("E", 5),
-            power: 4,
-          },
-        ],
-        depleted: ["H8", "E5"],
-      });
-      expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held, standing on 2 depleted nodes.",
-      );
-    });
-
-    it("does not count the opponent's ships on depleted nodes", () => {
-      const state = stateWith({
-        energy: { green: 0, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        plyNumber: 5,
-        ships: [
-          { id: "red-1", side: "red", square: squareAt("H", 8), power: 4 },
-        ],
-        depleted: ["H8"],
-      });
-      expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held, standing on no depleted nodes.",
-      );
+      expect(scoreSentence(state, "red")).toBe("Red: 1 energy, 1 node held.");
     });
   });
 

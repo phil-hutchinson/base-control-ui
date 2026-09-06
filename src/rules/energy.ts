@@ -41,14 +41,6 @@ export function energyForNodesHeld(nodesHeld: number): number {
 }
 
 /**
- * The number of pips the HUD's depleted-node row draws
- * (`ScoreDisplay.tsx`), independent of how many depleted nodes a side is
- * actually occupying. No longer priced against anything — nothing subtracts
- * energy any more — this constant survives only for the row's own sizing.
- */
-export const MAX_DEPLETED_NODES_PRICED = ENERGY_BY_NODES_HELD.length - 1;
-
-/**
  * The charged nodes `side` is standing on right now, in board order. A node
  * counts only if one of that side's ships occupies its square **and** the
  * square's node state is `charged` (rules.md §8.4) — an inactive or depleted

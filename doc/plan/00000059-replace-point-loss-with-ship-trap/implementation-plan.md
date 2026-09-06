@@ -699,7 +699,39 @@ suite stays green. `grep -rn "depletedNodesOccupiedBy" src/` finds nothing.
 
 ### Step 4 — The HUD loses the depleted pip row
 
-Status: pending
+Status: committed
+
+Notes: Removed the depleted pip row and everything derived from its height,
+as planned. `ScoreDisplay.tsx` lost the row, its `--empty` variant, the
+`trappingNodesFor` call and the `MAX_DEPLETED_NODES_PRICED` import;
+`ScoreDisplay.css` lost every `depleted-pip` rule including the landscape
+font-size selector. `announcements.ts` lost `depletedNodesOccupiedPhrase` and
+`scoreSentence`'s depleted clause (now "Green: 24 energy, 3 nodes held.").
+`App.css`'s portrait `--region-extent` derivation was recomputed for one pip
+row and two internal gaps (4.475rem .. 6.35rem for the HUD cell, summing to
+roughly 9.7rem .. 15.0rem overall) and its clamp brought down to
+`clamp(9.85rem, 26.5vw, 15.2rem)`, keeping the same absolute headroom above
+the content range that the old clamp had (0.15rem at the floor, 0.2rem at
+the cap) and scaling the `vw` term by the new/old span ratio; the landscape
+`--region-extent` block was left untouched since it was already about the
+charged pip row alone. `index.css`'s `--color-node-depleted` token comment
+was corrected to say it has no HUD counterpart now, rather than that the
+HUD's pips agree with it. `useCountUp.ts` and `useDisplayedEnergy.ts` kept
+their falling-target branch (D11) with comments corrected to say the only
+falling target is a new game's reset, not anything play itself can produce;
+`ScoreDisplay.tsx`'s `SCORE_DIGITS` comment lost its "or cost" half. Deleted
+`MAX_DEPLETED_NODES_PRICED` from `src/rules/energy.ts` — the deferred item
+noted in Step 2, since this step removes its last caller. Updated
+`ScoreDisplay.test.tsx` (deleted the four depleted-pip tests, updated hidden
+sentences), `Hud.test.tsx`, `announcements.test.ts` (deleted the
+depleted-node `scoreSentence` tests and the now-unused `depleted` config
+field on its local `stateWith` helper), `App.test.tsx` and
+`GameOverPanel.test.tsx` for the shorter sentence. No deviation from the
+plan. `npm run typecheck`, `npm run lint`, `npm run format:check` and
+`npm test` (948 tests) all pass;
+`grep -rn "depleted-pip\|depletedOccupied\|depletedNodesOccupiedPhrase\|MAX_DEPLETED_NODES_PRICED" src/`
+finds nothing. The HUD's visual proportions are left for the owner's manual
+check in Step 12, per the plan.
 
 The second pip row measured the penalty; with the penalty gone it measures
 nothing, so it goes entirely (S4), together with everything derived from its

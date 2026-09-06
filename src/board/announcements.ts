@@ -8,7 +8,6 @@
 import { isPlanet } from "../rules/planets";
 import { squareName } from "../rules/board";
 import { chargedNodesHeldBy } from "../rules/energy";
-import { trappingNodesFor } from "../rules/trap";
 import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
@@ -64,17 +63,6 @@ function nodesHeldPhrase(count: number): string {
     return "no nodes held";
   }
   return `${count} ${count === 1 ? "node" : "nodes"} held`;
-}
-
-/** "standing on 2 depleted nodes", "standing on 1 depleted node", "standing on
- * no depleted nodes" — for the HUD's hidden score sentence. Named even when
- * zero (§8.4), so the sentence keeps one shape whether a side is paying or
- * not. */
-function depletedNodesOccupiedPhrase(count: number): string {
-  if (count === 0) {
-    return "standing on no depleted nodes";
-  }
-  return `standing on ${count} depleted ${count === 1 ? "node" : "nodes"}`;
 }
 
 /**
@@ -498,12 +486,10 @@ export function announcementForSession(session: Session): string {
   }
 }
 
-/** "Green: 24 energy, 3 nodes held, standing on 2 depleted nodes." — the HUD
- * score cell's hidden text. */
+/** "Green: 24 energy, 3 nodes held." — the HUD score cell's hidden text. */
 export function scoreSentence(state: GameState, side: Side): string {
   const nodesHeld = chargedNodesHeldBy(state, side).length;
-  const depletedOccupied = trappingNodesFor(state, side).length;
-  return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}, ${depletedNodesOccupiedPhrase(depletedOccupied)}.`;
+  return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}.`;
 }
 
 /** "35/100" — the HUD round counter's visible text, clamped at game over. */

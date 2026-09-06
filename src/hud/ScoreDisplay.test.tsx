@@ -68,9 +68,7 @@ describe("ScoreDisplay", () => {
     );
 
     expect(
-      screen.getByText(
-        "Green: 24 energy, no nodes held, standing on no depleted nodes.",
-      ),
+      screen.getByText("Green: 24 energy, no nodes held."),
     ).toBeInTheDocument();
   });
 
@@ -95,9 +93,7 @@ describe("ScoreDisplay", () => {
     expect(container).toHaveTextContent("0024");
     expect(container).toHaveTextContent("0009");
     expect(
-      screen.getByText(
-        "Red: 9 energy, no nodes held, standing on no depleted nodes.",
-      ),
+      screen.getByText("Red: 9 energy, no nodes held."),
     ).toBeInTheDocument();
   });
 
@@ -132,9 +128,7 @@ describe("ScoreDisplay", () => {
       2,
     );
     expect(
-      screen.getByText(
-        "Green: 0 energy, 2 nodes held, standing on no depleted nodes.",
-      ),
+      screen.getByText("Green: 0 energy, 2 nodes held."),
     ).toBeInTheDocument();
   });
 
@@ -151,89 +145,6 @@ describe("ScoreDisplay", () => {
     expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
       0,
     );
-  });
-
-  it("renders four depleted pips, none on when the side stands on nothing depleted", () => {
-    const state = buildState({});
-
-    const { container } = render(
-      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
-    );
-
-    expect(
-      container.querySelectorAll(".score-display__depleted-pip"),
-    ).toHaveLength(4);
-    expect(
-      container.querySelectorAll(".score-display__depleted-pip--on"),
-    ).toHaveLength(0);
-  });
-
-  it("lights one depleted pip per depleted node the side is standing on", () => {
-    const state = buildState({
-      nodes: { H8: "depleted", E5: "depleted", K5: "inactive" },
-      ships: [
-        ship("green-1", "green", "H8"),
-        ship("green-2", "green", "E5"),
-        ship("red-1", "red", "K5"),
-      ],
-    });
-
-    const { container } = render(
-      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
-    );
-
-    expect(
-      container.querySelectorAll(".score-display__depleted-pip--on"),
-    ).toHaveLength(2);
-    expect(
-      screen.getByText(
-        "Green: 0 energy, no nodes held, standing on 2 depleted nodes.",
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("lights all four depleted pips when the side stands on six depleted nodes", () => {
-    const state = buildState({
-      nodes: {
-        H8: "depleted",
-        E5: "depleted",
-        K5: "depleted",
-        F2: "depleted",
-        J2: "depleted",
-        B4: "depleted",
-      },
-      ships: [
-        ship("green-1", "green", "H8"),
-        ship("green-2", "green", "E5"),
-        ship("green-3", "green", "K5"),
-        ship("green-4", "green", "F2"),
-        ship("green-5", "green", "J2"),
-        ship("green-6", "green", "B4"),
-      ],
-    });
-
-    const { container } = render(
-      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
-    );
-
-    expect(
-      container.querySelectorAll(".score-display__depleted-pip--on"),
-    ).toHaveLength(4);
-  });
-
-  it("does not light a depleted pip for a depleted node the opposing side stands on", () => {
-    const state = buildState({
-      nodes: { K5: "depleted" },
-      ships: [ship("red-1", "red", "K5")],
-    });
-
-    const { container } = render(
-      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
-    );
-
-    expect(
-      container.querySelectorAll(".score-display__depleted-pip--on"),
-    ).toHaveLength(0);
   });
 
   it("has no static accessibility violations", async () => {
@@ -266,9 +177,7 @@ describe("ScoreDisplay", () => {
     render(<ScoreDisplay state={state} side="green" displayedTotal={0} />);
 
     expect(
-      screen.getByText(
-        "Green: 6 energy, no nodes held, standing on no depleted nodes.",
-      ),
+      screen.getByText("Green: 6 energy, no nodes held."),
     ).toBeInTheDocument();
   });
 });
