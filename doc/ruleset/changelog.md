@@ -48,6 +48,13 @@ the project's contribution notes).
   rarer fifth: which node is charged next is no longer one of them, and
   where the queue's new nodes appear, and which priority each is dealt,
   take its place.
+- **Appendix B's sizing figures are corrected against measured play.** Its
+  first draft carried numbers from a standalone simulation of the placement
+  rules alone; measured against the finished game, a node's charged life
+  runs closer to thirty turns than twenty, a charge lands roughly every
+  eight turns rather than five, the refill pool sizes and spread figures
+  move with them, and the board's fallback placement is confirmed never to
+  fire across the runs measured.
 
 ## 0.25 — a depleted node traps the ship on it, instead of costing energy
 

@@ -723,17 +723,21 @@ any.
 ## Appendix B — Sizing the queue
 
 The board carries **four** charged nodes and **three** inactive ones at all
-times, plus however many happen to be recovering — typically one or two —
-so the board as a whole runs at roughly **seven to nine** nodes, breathing
-rather than fixed at a count the way the twelve-node board once was.
+times, plus however many happen to be recovering — typically one or two,
+occasionally as many as four — so the board as a whole runs at roughly
+**seven to nine** nodes most of the time, breathing up to eleven rather than
+fixed at a count the way the twelve-node board once was.
 
 A node's life is a mix of empty and held turns rather than a fixed count,
-but the mix works out to roughly **twenty** turns charged, and recovery runs
-about **ten** more turns depleted before retirement. With four nodes charged
-at a time out of that roughly-twenty-turn charged life, a node charges on
-average about every **five** turns. A queue of three therefore typically
-survives a handful of turns, rotating once or twice, before some turn's
-charge sweeps it and deals a fresh three.
+but the mix works out to roughly **thirty** turns charged, and recovery runs
+about **ten** more turns depleted before retirement. A refilled node always
+starts at zero drain — unlike an opening-dealt one, which starts already
+part drained — which is most of why its charged life runs longer than the
+opening deal alone would suggest. With four nodes charged at a time out of
+that roughly-thirty-turn charged life, a node charges on average about every
+**eight** turns. A queue of three therefore typically survives around eight
+turns, rotating some six or seven times, before some turn's charge sweeps it
+and deals a fresh three.
 
 **An inactive node never waits more than three turns to reach the front of
 the queue.** Rotation alone carries a node from priority 1 to priority 3 in
@@ -751,24 +755,27 @@ the turn it appears.
 
 On an empty board the strict pool holds **51** squares and the widened pool
 holds **79** (section 3.2). On a played board — four charged nodes down and
-a dozen ships on it — a refill's three draws pick from roughly **33**, **53**
-and **49** squares respectively, the pool widening as each draw lifts the
+a dozen ships on it — a refill's three draws pick from roughly **32**, **47**
+and **43** squares respectively, the pool widening as each draw lifts the
 one-square-in constraint and narrowing again as ships and the nodes already
 placed this refill block squares of their own.
 
-The weighting earns its keep: simulated over 20,000 dealt trios, the
-smallest pairwise gap within a freshly refilled trio averages **5.08**
-squares, against **3.98** for an unweighted draw from the same pools. About
-**1.23** of the three land one square in from the edge and **0.24** in a
-corner region, against **0.94** and **0.15** unweighted — the widening does
-push the second and third draws outward, but the weighting keeps them from
-crowding the rim.
+The weighting earns its keep: measured over several hundred turns of actual
+play across a handful of seeds, the smallest pairwise gap within a freshly
+refilled trio averages **4.78** squares, against **3.78** for an unweighted
+draw from the same pools, computed the same run. About **1.11** of the three
+land one square in from the edge and **0.14** in a corner region, against
+**0.83** and **0.07** unweighted — the widening does push the second and
+third draws outward, but the weighting keeps them from crowding the rim.
 
 Section 3.2's fallback, which places a node without regard to spacing, is
 even less likely to fire than it was at the old twelve-node count: there are
-fewer nodes to place at once and a wider pool to place them in. It stays in
-the rules because it is what makes placement total, not because it is
-expected to be seen.
+fewer nodes to place at once and a wider pool to place them in. Across
+every placement in every run the app's own long-run test drives — every
+opening deal, every refill and every direct-fourth placement, several
+hundred turns deep across a handful of seeds — it has never once fired. It
+stays in the rules because it is what makes placement total, not because it
+is expected to be seen.
 
 **What the app guards:** that the queue is always exactly three nodes
 carrying priorities 1, 2 and 3, one each; that the board is always back at
@@ -778,6 +785,6 @@ directly — is legal, under the right pool, at the moment it appears; and
 that a freshly refilled trio comes out measurably more spread than an
 unweighted draw from the same pools would.
 
-These counts — seven to nine nodes breathing, a charge roughly every five
+These counts — seven to nine nodes breathing, a charge roughly every eight
 turns, the pool sizes and the spread figures above — are first guesses to be
 play-tested and retuned like every other number in this document.

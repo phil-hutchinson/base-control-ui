@@ -1056,7 +1056,49 @@ drawn for the right priority.
 
 ### Step 7 — The long-run economy, rebuilt
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `src/rules/nodePool.test.ts` end to end: `runEconomy` now
+drives `runEndOfTurn` from a real starting position over 500 plies across
+the five existing seeds, with no ship activity, and — from each ply's
+`before` state and its effects alone, without reaching into `runEndOfTurn`'s
+private working state — reconstructs exactly what `legalNodePool` saw at
+every refill draw and every direct-fourth placement. A local
+`satisfiesOrdinaryPoolConstraints` reimplements §3.2's six ordinary
+constraints from scratch (rather than checking pool membership against
+whatever `legalNodePool` actually returned, which would trivially pass even
+from its fallback); a square that clears every constraint could not have
+come from the fallback, so this single helper doubles as both the
+"legal at the moment it appears" check and the "fallback never fires"
+evidence the step asked for. Covered: the three/four-node invariants at
+every ply; the total node count's band; every opening-deal, refill and
+direct-fourth placement's legality and edge exclusion; the spread the
+weighting buys, with the unweighted comparison computed in-test from the
+same reconstructed pools via a seed stream of its own (`drawUniformSquare`,
+never touching the game's own seed); refill cadence; and rotation, checked
+by requiring every segment between refills of three samples or more (a
+segment length the 1→2→3→1 cycle itself guarantees is enough) to have shown
+priority 3 to all three of its nodes. Kept the pre-existing
+"expiries stay spread" check, since it is still valid and unrelated to the
+queue.
+
+Measured (500 plies × 5 seeds, no ship activity) against the finished
+economy, materially different from what Step 1 wrote into Appendix B from
+`story.md`'s standalone simulation: mean smallest pairwise refill gap 4.78
+weighted vs. 3.78 unweighted (not 5.08/3.98); refills roughly every 7.9
+turns, not 5, because a node's charged life averages roughly 29 turns, not
+20 (a refilled node always opens at zero drain, unlike the partially
+drained opening deal); pool sizes roughly 32/47/43, not 33/53/49;
+ring-one-per-trio 1.11 weighted vs 0.83 unweighted and corner-per-trio 0.14
+vs 0.07, not 1.23/0.94 and 0.24/0.15; total node count ranged 7–11 (not
+"seven to nine"), averaging 8.4; and §3.2's fallback never fired once
+across every placement in the run. Corrected Appendix B in
+`doc/ruleset/rules.md` to match every one of these figures and folded the
+correction into the existing `## 0.26` changelog entry as one additional
+bullet — no second version bump, no second entry. `rulesVersion.test.ts`
+still passes. No deviation from the plan beyond the Appendix B correction
+the plan itself anticipated. `npm test` (1010 tests, up from 982), `npm run
+typecheck`, `npm run lint` and `npm run format:check` all pass.
 
 Rewrite `src/rules/nodePool.test.ts` as the new model's guard (D12). Step 4 left
 it thin; this step makes it earn its place again, with bounds measured against

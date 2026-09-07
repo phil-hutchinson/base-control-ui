@@ -140,6 +140,17 @@ Roughly 1.23 of the three nodes sit one square in from the edge and 0.24 in
 a corner region, against 0.94 and 0.15 unweighted. The three draws pick from
 pools of roughly 33, 53 and 49 squares.
 
+**These figures were later superseded.** They come from a standalone
+simulation of the placement rules written while this story was being
+settled, which dealt its four charged nodes uniformly from the strict pool.
+The finished game places them by refill instead, and Step 7 measured the real
+thing over several hundred turns of play: a spread of **4.78** against
+**3.78** unweighted, **1.11** of the three nodes one ring in from the edge
+and **0.14** in a corner, and pools of roughly **32**, **47** and **43**
+squares. The conclusions above all survive the correction — the weighting
+still buys about a square of spread, and the edge tilt is still mostly the
+ladder — but Appendix B of the ruleset carries the numbers to trust.
+
 **A distance cap was considered and dropped.** An earlier version of this
 story capped d at 8, so that squares 8 or more apart counted as equally far
 and the weight stopped rising towards the walls. It was measured and then
