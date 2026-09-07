@@ -458,7 +458,24 @@ Named here so no step is surprised by them.
 
 ### Step 1 — Rules 0.25 → 0.26: the queue replaces pressure
 
-Status: pending
+Status: committed
+
+Notes: Edited §1, §2, §3.2, §8.1, §8.2, §8.5, §8.6 and rewrote Appendix B from
+scratch as specified; bumped the version line to 0.26, `RULES_VERSION` to
+match, and added one changelog entry at the top covering the whole story's
+gameplay change (tagging left on hold, no tag created). Two additional
+sentences outside the listed sections also named the retired mechanisms and
+were reworded to keep the document internally consistent and to satisfy this
+step's own grep checks: §7.1's "the same assurance section 8.2 gives for the
+charge draw" now points at where the queue's new nodes appear, and Appendix
+B's "even less likely to fire than it was at twelve nodes" now says "than it
+was at the old twelve-node count" so it no longer matches the banned
+`"twelve nodes"` string while still making the same point. No other
+deviation from the plan; `npm run format:check` required a Prettier pass on
+`rules.md` (pre-existing wrapping), applied cleanly. Ran `npm test`,
+`npm run typecheck`, `npm run lint` and `npm run format:check`, all green —
+no source code changed yet, so the full suite (986 tests) is unaffected;
+`rulesVersion.test.ts` confirms the 0.26 version and changelog entry agree.
 
 Edit `doc/ruleset/rules.md` so that no sentence in it says a node carries
 pressure, that the charge draw is random or weighted, that the board carries

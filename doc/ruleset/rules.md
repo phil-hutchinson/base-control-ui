@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.25**
+**Rules version: 0.26**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -24,17 +24,18 @@ planets. A ship holding a node cannot be attacked while it holds it. A node
 that has burned out traps the ship standing on it until it retires.
 
 The board is not a fixed map with lights moving across it: nodes are born,
-burn out and are replaced somewhere else, so the map itself redraws as the
-game runs, and the squares worth racing for change over the course of a
-game, not just which of them are lit.
+burn out and leave, and whenever one charges the whole set of nodes still
+waiting is swept away and a fresh set drawn elsewhere, so the map itself
+redraws as the game runs, and the squares worth racing for change over the
+course of a game, not just which of them are lit.
 
-The game has five random elements that shape every game — the opening
-board itself, which node is charged next, where a new node appears when one
-ends, which planet the two ships in a fight are pushed back to, and how fast
-a node burns — plus a sixth, rarer one: when a trapped player's relief finds
-two nodes tied for the least remaining life, which of them ends first
-(section 8.6). No two games start on the same board, and neither player has
-seen this one before.
+The game has four random elements that shape every game — the opening
+board itself, where the three new nodes appear when the waiting set is
+refilled and which of them gets which priority, which planet the two ships
+in a fight are pushed back to, and how fast a node burns — plus a fifth,
+rarer one: when a trapped player's relief finds two nodes tied for the least
+remaining life, which of them ends first (section 8.6). No two games start
+on the same board, and neither player has seen this one before.
 
 ---
 
@@ -57,19 +58,20 @@ refilled only on planets.
 until the node under it retires.
 
 **Node** — a position on the board that comes into being, runs through three
-states — **inactive**, **charged** and **depleted** — and then ends. The
-instant a node ends, a new inactive node appears somewhere else on the board
-(section 3.2). The board aims to keep four nodes charged at any moment,
-though it may fall short.
+states — **inactive**, **charged** and **depleted** — and then ends and
+simply leaves the board. The board always carries **four** charged nodes and
+**three** inactive ones, plus however many happen to be recovering at the
+time (section 8.1).
+
+**Priority** — a number, 1, 2 or 3, carried by each of the three inactive
+nodes at once, one each, never a repeat. The inactive node with the highest
+priority is the one that charges next (section 8.2).
 
 **Capacity** — how much a node has to give before it is spent. Every node
 starts with the same 60.
 
 **Drain** — how much of a node's capacity has been spent. It rises every
 turn, faster while a ship is standing on the node.
-
-**Pressure** — how long a node has been waiting to be charged. The longer it
-waits, the likelier the board is to pick it.
 
 ---
 
@@ -138,8 +140,7 @@ P  planet          S  a starting square (fleet size decides which are used)
 
 There are no fixed positions on the board any more. A node's square is drawn
 when the node appears, and it stays there for exactly as long as that node
-lasts — when the node ends, a new one is drawn a square of its own,
-somewhere else.
+lasts.
 
 A square is a legal place for a new node when **all** of these hold:
 
@@ -162,16 +163,47 @@ eighteen mutually non-adjacent nodes fit with room to spare.
 is placed uniformly among the squares that hold no node and are not a
 planet. This is the whole of the relaxation, applied all at once rather than
 one constraint dropped at a time, and it exists so that placement can never
-fail. At twelve nodes it was not observed to fire even once in simulation —
-neither at the opening deal, with the board otherwise empty or with all
-twelve ships scattered through the interior blocking squares of their own,
-nor at a mid-game replacement — so it is better read as the guarantee that
-placement always succeeds than as something a player should expect to see.
+fail. It was not observed to fire even once in simulation — neither at the
+opening deal, with the board otherwise empty or with every ship scattered
+through the interior blocking squares of their own, nor at a mid-game
+refill — so it is better read as the guarantee that placement always
+succeeds than as something a player should expect to see.
 
-**A replacement never appears on the square the node it replaces just
-left.** The retiring node's own square is excluded from the draw, so a node
-that ends always ends somewhere visibly different from where the next one
-starts.
+**Refilling the three inactive nodes draws from a pool that widens once**
+(section 8.2). A refill draws three squares, one at a time: the first uses
+all six constraints above; the second and third lift constraint 4 only —
+"not one square in from the outer edge" — and nothing else. Constraint 3 is
+never lifted for these ordinary draws: the outer edge itself stays closed to
+a new node however far the pool widens. On an empty board the strict pool
+holds the 51 squares above, and the widened pool holds **79**.
+
+**The draw is weighted, not uniform.** For a candidate square `s`, with `C`
+the squares holding **charged** nodes and `N` the squares already chosen for
+new inactive nodes in the same refill:
+
+    w(s) = 1 + ( sum over c in C of d(s,c) ) * ( product over n in N of d(s,n) )
+
+where `d` is **Chebyshev distance** — the greater of the column difference
+and the row difference between two squares — and the product over an empty
+`N` is 1, so the first square of a refill is weighted by distance from the
+charged nodes alone. Distance from the charged nodes sets a square's base
+appeal, and each inactive node already placed in the same refill multiplies
+it down: a square close to _any_ already-placed node collapses towards the
+floor, because the product follows the nearest one rather than averaging
+across all of them — that is what spreads the three new nodes apart from
+each other, rather than merely pushing the group outward together.
+Chebyshev distance is used rather than taxicab distance because it is the
+closer of the two to how far apart squares actually play — a diagonal step
+is a single move (section 6), which taxicab distance charges as two. A
+depleted node carries no weight at all, though it still blocks its own
+square and its neighbours through constraint 5. The leading 1 is a
+positivity guarantee, not a fairness floor: it keeps the total weight
+positive and makes the draw uniform on the rare board with no charged nodes
+at all, but it buys a poorly placed square no meaningful chance otherwise.
+
+The one node the game ever places directly as **charged**, rather than
+through the three inactive nodes (section 8.2), is drawn **uniformly**, with
+no weighting, from this same widened pool.
 
 ---
 
@@ -339,7 +371,7 @@ A returning ship goes to a planet chosen **at random** from the planets
 **empty at that moment**, every empty planet equally likely.
 
 The choice is genuinely random, and neither player can see it coming — the
-same assurance section 8.2 gives for the charge draw.
+same assurance section 8.2 gives for where the queue's new nodes appear.
 
 A returning ship is placed **immediately**, as part of resolving the fight,
 before anything else happens. Every fight returns two ships: the attacker is
@@ -369,8 +401,9 @@ ships charging — not an instant refill.
 
 Every node is always in exactly one of three states:
 
-- **Inactive** — eligible to be charged, producing nothing, and costing
-  nothing.
+- **Inactive** — one of exactly three nodes waiting to be charged, each
+  carrying a **priority** of 1, 2 or 3, one each, never a repeat (section
+  8.2). Producing nothing, and costing nothing.
 - **Charged** — producing energy: a ship standing on it collects (section
   8.4) and can neither attack nor be attacked (section 7). It takes nothing
   from the ship holding it.
@@ -379,26 +412,28 @@ Every node is always in exactly one of three states:
   cannot move, and can neither attack nor be attacked (section 7), until the
   node retires.
 
-A node cycles inactive → charged → depleted → **ends**. The instant a node
-ends, a new inactive node appears somewhere else on the board (section 3.2).
+A node cycles inactive → charged → depleted → **ends**, and simply leaves
+the board.
 
-The board **aims** to keep four nodes charged at all times: at the end of
-every turn it charges as many inactive nodes as it takes to bring the
-charged count back to four (section 8.2). If there are not enough inactive
-nodes, it charges what it can and simply runs short until the next turn.
+The board keeps **four** nodes charged at all times: at the end of every
+turn, whatever shortfall there is against four is filled from the three
+inactive nodes, highest priority first, and if that still is not enough, one
+further node is placed directly, already charged (section 8.2). The
+shortfall is always filled on the turn it appears — the board is never left
+short of four charged.
 
-**The opening board is dealt.** The game opens with **twelve** nodes, at
-twelve squares drawn under section 3.2:
+**The opening board is dealt.** The game opens with **seven** nodes:
 
-- **Four of the twelve are charged**, at squares drawn at random with every
-  legal square equally likely and no two the same. No square is privileged;
-  the centre is not guaranteed.
+- **Four are charged**, at squares drawn under section 3.2, at random, with
+  every legal square equally likely and no two the same. No square is
+  privileged; the centre is not guaranteed.
 - **Each of the four starts part-drained**, at a drain drawn from the opening
   drain table below — never more than 40, two-thirds of the capacity of 60
   (section 8.3), so every dealt node has enough life left to be worth racing
   for.
-- **The other eight start inactive**, at a pressure drawn from the opening
-  pressure table below, rather than at 1 (section 8.2).
+- **The other three start inactive**, placed by the same refill procedure
+  that fills the queue during play (section 8.2), and dealt priorities 1, 2
+  and 3 at random.
 - **Nothing is depleted at the start.**
 
 | Drain | 0   | 5   | 10  | 15  | 20  | 25  | 30  | 35  | 40  | Average |
@@ -409,14 +444,6 @@ An average opening node has 46 of its capacity left: about 22 turns if
 nobody ever reaches it, about 10 if a ship arrives and holds it from the
 first turn. The most-used opening node has 20 left.
 
-| Pressure | 1   | 5   | 10  | 15  | 20  | 25  | 30  | 40  | 50  | Average |
-| -------- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ------- |
-| Share    | 24% | 20% | 16% | 12% | 9%  | 7%  | 5%  | 4%  | 3%  | 12.79   |
-
-Most nodes have waited only a little, but the tail means a game can open
-with one or two nodes already close to the cap of 50, which are the nodes
-the first charge draw will favour.
-
 Nothing needs to spread their expiries out by hand. The four now open at
 different ages as well as draining at independently drawn rates, so they are
 spread apart from the first turn rather than spreading within the first
@@ -424,28 +451,46 @@ few.
 
 ### 8.2 Charging a node
 
-At the end of every turn, as many **inactive** nodes as it takes to bring the
-charged count back to four are chosen at random, one at a time. If fewer
-than that are inactive, fewer are charged and the board runs below four
-until the next turn — with twelve nodes on the board and a target of four,
-this is now the uncommon case rather than the likely one. Charged nodes
-still run out on schedule whether or not the board is at its four.
+At any moment the board carries exactly three **inactive** nodes, holding
+priorities 1, 2 and 3 — one each, never a repeat (section 8.1).
 
-The draw does not look at occupancy: a node with a ship standing on it can be
-charged like any other. That ship is holding a node from that moment — it
-collects (section 8.4) at the end of its owner's next turn, exactly
-as if it had moved onto a node.
+At the end of every turn, whatever shortfall there is against four charged
+is filled from the three inactive nodes, in descending order of priority —
+the 3 first, then the 2, then the 1, as many as the shortfall calls for.
+There is no draw and no weighting: a player who can see the priorities knows
+which node charges before it happens. Charging does not look at occupancy: a
+node with a ship standing on it can be charged like any other. That ship is
+holding a node from that moment — it collects (section 8.4) at the end of
+its owner's next turn, exactly as if it had moved onto a node.
 
-The choice is genuinely random, and neither player can see it coming — but it
-is no longer an equal chance for every inactive node. An inactive node
-carries **pressure**: it goes inactive at **1** and gains **1** at the end of
-every turn it stays inactive, up to a maximum of **50** — except at the start
-of the game, where the opening deal gives each inactive node a pressure of
-its own (section 8.1). Each inactive node's chance of being drawn is its
-pressure as a share of the total pressure of all inactive nodes, so a node
-that has been waiting a long time is more likely to be picked than one that
-has just cycled. Because pressure is never less than 1, no inactive node can
-ever be excluded outright.
+**If the shortfall is four**, all three inactive nodes charge and one more
+is needed besides. That fourth node is placed directly, already **charged**,
+at zero drain, at a square drawn uniformly from the same widened pool a
+refill's second and third squares use (section 3.2). It never spends a turn
+inactive and never carries a priority — it is the one node in the game that
+appears already charged, out of nowhere.
+
+**Priorities rotate at the end of every turn on which nothing charged**: 1
+becomes 2, 2 becomes 3, and 3 becomes 1. The nodes themselves do not move —
+only their priorities change — so over three such turns each of the three
+takes its turn at the front.
+
+**Any turn on which one or more nodes charge, the three inactive nodes are
+replaced together.** Whichever of the three did not charge are discarded —
+they leave the board exactly as a node that ends does — and three new
+inactive nodes are drawn by the refill procedure below, with priorities 1, 2
+and 3 dealt to them at random. A freshly refilled trio is never rotated in
+the same turn it was dealt; rotation only happens to a trio that survives a
+turn untouched.
+
+**The refill procedure** draws three squares one at a time, from the pool
+that widens once (section 3.2): the first square is drawn from the strict
+pool, and the second and third from the widened pool, each draw seeing the
+squares already chosen so that the three new nodes are never adjacent to
+each other. Each square is drawn by the weighted formula in section 3.2,
+which favours squares far from the charged nodes and from the other new
+nodes as they are placed. The three priorities 1, 2 and 3 are then dealt to
+the three squares in random order.
 
 A depleted node **recovers** instead of simply cooling down. A node goes
 depleted at its capacity, or a little past it — the drain draw that tips it
@@ -456,11 +501,10 @@ at random:
 | -------- | --- | --- | --- | --- | --- | ------- |
 | Depleted | 10% | 25% | 30% | 25% | 10% | 6       |
 
-When it reaches zero or below, the node **retires**: it leaves the board, and
-at that same instant a new inactive node appears somewhere else, at 1
-pressure, drawn under section 3.2 and never on the square the retiring node
-just left. Recovery always starts from about the same level, so retirement
-always comes about ten turns after a node goes depleted.
+When it reaches zero or below, the node **retires**: it leaves the board and
+nothing appears in its place. Recovery always starts from about the same
+level, so retirement always comes about ten turns after a node goes
+depleted.
 
 ### 8.3 How long a node lives
 
@@ -520,7 +564,8 @@ its square is no longer a node at all, but an ordinary square, and it is an
 ordinary ship, free to move or attack like any other.
 
 The two are not the same. An **inactive** node pays nothing and costs
-nothing, so waiting on one for the charge draw is free. A **depleted** node
+nothing, so a ship may camp on one for free — its priority rises and falls
+exactly as it would with nobody standing on it (section 8.2). A **depleted** node
 pays nothing and takes something harder to spare from the ship trapped on
 it: its freedom. A **charged** node, by contrast, pays energy to the ship
 holding it and takes nothing from it (section 8.1). None of the three states
@@ -534,11 +579,17 @@ choose to be.
 
 A node's own cycle carries on underneath the ship. A depleted node recovers
 towards retirement on schedule regardless of what is standing on it, and an
-inactive node is eligible for the charge draw whether or not a ship is
-standing on it (section 8.2). If the node underneath a ship retires, the
-ship is untouched — it keeps its square and its power — but the square it
-stands on is no longer a node at all, so from that instant it is an
+inactive node's priority rotates or is swept exactly as it would if nobody
+were standing on it (section 8.2). If the node underneath a ship retires,
+the ship is untouched — it keeps its square and its power — but the square
+it stands on is no longer a node at all, so from that instant it is an
 ordinary square, and any ship trapped there is free.
+
+The same is true when a refill sweeps an inactive node out from under a ship
+rather than the node ending on its own (section 8.2): the ship is untouched,
+keeps its square and its power, and finds itself on an ordinary square from
+that instant. An inactive node never traps, whether it is charged, passed
+over by rotation, or discarded by a refill.
 
 When a node runs out under the ship holding it (section 8.3), the ship does
 not simply lose its protection — it trades one kind of protection for
@@ -560,26 +611,30 @@ Everything that happens at the end of a turn happens in this order:
 3. Every charged node adds its drain (section 8.3); any that reaches capacity
    goes depleted, and any ship standing on it is **trapped** there (section
    8.5).
-4. As many inactive nodes as it takes to bring the board back to four
-   charged are charged, drawn by pressure (section 8.2).
-5. Every node still inactive gains a point of pressure, to the cap of 50
-   (section 8.2).
+4. Whatever shortfall there is against four charged is filled from the three
+   inactive nodes, highest priority first; if the shortfall still exceeds
+   what the three can cover, one further node is placed directly, already
+   charged (section 8.2).
+5. If step 4 charged anything, the three inactive nodes are replaced
+   together: whichever did not charge are discarded, and three new ones are
+   drawn and dealt priorities 1, 2 and 3 at random (section 8.2). Otherwise,
+   the three inactive nodes' priorities rotate: 1 becomes 2, 2 becomes 3, and
+   3 becomes 1.
 6. Every node that was depleted **before this turn began** subtracts its
-   recovery (section 8.2); any that reaches zero or below **retires and is
-   replaced**: it leaves the board, and a new inactive node appears
-   somewhere else, at 1 pressure, drawn under section 3.2. Any ship that was
+   recovery (section 8.2); any that reaches zero or below **retires**: it
+   leaves the board and nothing appears in its place. Any ship that was
    trapped on it is freed.
 7. For each player in turn — the player who just moved, then their
    opponent — if **every** one of that player's ships is trapped, the game
    grants relief rather than leaving them to pass turn after turn: among the
    depleted nodes carrying those ships, only those whose ship **would have a
    legal move if freed** are considered, and the one among those with the
-   **least remaining life** ends at once — retiring and being replaced
-   exactly as step 6 retires and replaces — and its ship is freed. If two or
-   more qualifying nodes are tied on remaining life, one of them is chosen at
-   random, with every tied node equally likely. If no depleted node under
-   that player's ships qualifies, nothing happens, and that player's turn
-   passes under section 5.
+   **least remaining life** ends at once — retiring exactly as step 6
+   retires a node, with nothing appearing in its place — and its ship is
+   freed. If two or more qualifying nodes are tied on remaining life, one of
+   them is chosen at random, with every tied node equally likely. If no
+   depleted node under that player's ships qualifies, nothing happens, and
+   that player's turn passes under section 5.
 
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
@@ -588,21 +643,18 @@ passing player standing on a planet still gains power at the section 3.1
 rate; the passing player still collects exactly as they would if they had
 acted.
 
-Step 6 is last among the ordinary steps **deliberately**, for the same
-reason as before: it is what makes a node spend at least one whole turn
-inactive before it can be charged. A node that appears — whether from the
-opening deal or as a replacement in step 6 — is inactive for the whole of
-the next turn and is first eligible in that next turn's draw, at 1 pressure.
-A node that finishes recovering and is replaced at the end of turn N
-produces a new node that is inactive for the whole of turn N+1, first
-eligible in turn N+1's charge draw. Running the steps in any other order
-would let a node retire, be replaced and be charged inside a single
-end-of-turn sequence, and the replacement would never be visibly inactive at
-all.
+Step 5 sits **before** recovery **deliberately**. A node placed by a refill
+is inactive for the whole of the next turn and can first be charged at the
+end of it, never sooner. Running the steps in the other order would let a
+node retire in step 6 and have its very square reused by that same turn's
+refill, collapsing a whole turn's wait into none — exactly the kind of
+same-turn collapse this sequence exists to avoid.
 
-Step 5 sits **after** the charge draw for the matching reason: a node is
-drawn at the pressure it has held all turn, so its first appearance in a
-draw is at weight 1, not 2.
+Charging in step 4 from the priorities already on the board, rather than
+from a fresh draw, is what makes the queue worth reading: the arrangement of
+priorities a player looks at while taking their turn is exactly the
+arrangement that governs the charge at the end of it, and the rotation or
+refill in step 5 that follows is the next player's to plan against.
 
 Step 7 runs **last of all**, after step 6, because it must see the board's
 depleted set exactly as it stands once both step 3's new arrivals and step
@@ -618,8 +670,8 @@ is for: a node must not drain or recover on the very turn it entered its new
 state.
 
 A node's state changes only in this sequence, and never as part of resolving
-an action. A node's ending and its replacement's appearance are likewise
-both part of this sequence, at step 6 or step 7, never part of resolving an
+an action. A node's ending, and any refill or direct placement that follows
+it, are likewise both part of this sequence, never part of resolving an
 action.
 
 ---
@@ -668,49 +720,64 @@ any.
 
 ---
 
-## Appendix B — Sizing the node pool
+## Appendix B — Sizing the queue
 
-The board carries **twelve** nodes at all times: one out, one in, whenever a
-node retires. A node's life is a mix of empty and held turns rather than a
-fixed count, but the mix works out to roughly **twenty** turns charged, and
-recovery runs about **ten** more turns depleted before retirement — thirty
-turns from birth to death. For four of the twelve to be charged at any
-moment, a whole life runs about 20 × 12 / 4 ≈ **sixty** turns, of which
-about **thirty** are spent waiting inactive: roughly 4 charged, 2 depleted
-and 6 inactive at any moment, so a node charges about every **five** turns.
+The board carries **four** charged nodes and **three** inactive ones at all
+times, plus however many happen to be recovering — typically one or two —
+so the board as a whole runs at roughly **seven to nine** nodes, breathing
+rather than fixed at a count the way the twelve-node board once was.
 
-Running short of four charged remains a **legal outcome**, not a failure the
-pool must be sized to prevent — section 8.2 charges as many inactive nodes
-as it can and simply falls short when it has to. With roughly six of the
-twelve nodes inactive at any moment, against a target of only four, this
-stays the **uncommon** case rather than the likely one: the pool is
-comfortable enough that the charge draw usually finds all the inactive
-nodes it needs.
+A node's life is a mix of empty and held turns rather than a fixed count,
+but the mix works out to roughly **twenty** turns charged, and recovery runs
+about **ten** more turns depleted before retirement. With four nodes charged
+at a time out of that roughly-twenty-turn charged life, a node charges on
+average about every **five** turns. A queue of three therefore typically
+survives a handful of turns, rotating once or twice, before some turn's
+charge sweeps it and deals a fresh three.
 
-The pressure cap of 50 sits comfortably above the average inactive wait of
-about thirty turns — the relationship it was originally set against — so
-weighting by pressure still sharpens meaningfully rather than flattening
-back towards uniform at the top end. What is worth checking first when
-these numbers are next retuned is that relationship, and the size of the
-inactive pool against the target of four charged.
+**An inactive node never waits more than three turns to reach the front of
+the queue.** Rotation alone carries a node from priority 1 to priority 3 in
+two turns, and it is swept before it can wait any longer than that: a queue
+that goes unrotated for a whole cycle without a charge has, by definition,
+had its 3 sitting at the front the entire time, available to charge every
+turn. There is no version of this rule under which a node waits
+unboundedly.
 
-These counts — twelve nodes, four charged, eight inactive at the deal — are
-first guesses to be play-tested and retuned like every other number in this
-document.
+**The board is never short of four charged.** The three inactive nodes cover
+a shortfall of up to three by themselves, and the one node placed directly
+(section 8.2) covers the one case they cannot — all four charged nodes
+running out on the same turn. Between the two, every shortfall is filled on
+the turn it appears.
 
-Section 3.2's fallback, which places a node without regard to spacing, was
-not observed to fire at all at twelve nodes — not at the opening deal, and
-not at a mid-game replacement. It stays in the rules because it is what
-makes placement total, not because it is expected. It is the first thing
-that would start firing if the node count rose against this pool: fifteen
-nodes would reach it on roughly a fifth of deals, and a third of them with
-every ship scattered through the interior.
+On an empty board the strict pool holds **51** squares and the widened pool
+holds **79** (section 3.2). On a played board — four charged nodes down and
+a dozen ships on it — a refill's three draws pick from roughly **33**, **53**
+and **49** squares respectively, the pool widening as each draw lifts the
+one-square-in constraint and narrowing again as ships and the nodes already
+placed this refill block squares of their own.
 
-The app guards this with a test that the inactive pool stays comfortably
-populated over a long run, that expiries stay spread rather than arriving
-together, and that no node waits unboundedly long between appearing and
-being charged.
+The weighting earns its keep: simulated over 20,000 dealt trios, the
+smallest pairwise gap within a freshly refilled trio averages **5.08**
+squares, against **3.98** for an unweighted draw from the same pools. About
+**1.23** of the three land one square in from the edge and **0.24** in a
+corner region, against **0.94** and **0.15** unweighted — the widening does
+push the second and third draws outward, but the weighting keeps them from
+crowding the rim.
 
-The opening deal (section 8.1) starts the board closer to this steady state
-than an unweighted opening did, so the first twenty turns are no longer an
-unrepresentative settling-in period.
+Section 3.2's fallback, which places a node without regard to spacing, is
+even less likely to fire than it was at the old twelve-node count: there are
+fewer nodes to place at once and a wider pool to place them in. It stays in
+the rules because it is what makes placement total, not because it is
+expected to be seen.
+
+**What the app guards:** that the queue is always exactly three nodes
+carrying priorities 1, 2 and 3, one each; that the board is always back at
+four charged by the end of every turn; that every node placed — the
+opening deal's seven, a refill's three, and the one node ever placed
+directly — is legal, under the right pool, at the moment it appears; and
+that a freshly refilled trio comes out measurably more spread than an
+unweighted draw from the same pools would.
+
+These counts — seven to nine nodes breathing, a charge roughly every five
+turns, the pool sizes and the spread figures above — are first guesses to be
+play-tested and retuned like every other number in this document.

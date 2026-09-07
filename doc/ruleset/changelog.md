@@ -7,6 +7,48 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.26 — three inactive nodes, and a priority you can read
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **Eight inactive nodes become three.** The board now carries exactly three
+  inactive nodes at all times, each holding a **priority** of 1, 2 or 3 — one
+  each, never a repeat.
+- **Priority replaces pressure, and it is visible.** Where an inactive node
+  used to carry a hidden number that grew every turn, it now carries a
+  priority a player can read directly on the board. Pressure is gone
+  entirely: the value, the cap of 50, the turn-by-turn gain, the opening
+  pressure table, and the weighting it gave the charge draw.
+- **Charging is deterministic.** At the end of every turn, whatever
+  shortfall there is against four charged nodes is filled from the three
+  inactive nodes top-down by priority — the 3 first, then the 2, then the
+  1. There is no draw and no weighting.
+- **Priorities rotate every turn that nothing charges** — 1 becomes 2, 2
+  becomes 3, 3 becomes 1 — so a player can read not only which node charges
+  next but which charges the turn after that.
+- **A charge sweeps the queue.** Any turn one or more nodes charge, whatever
+  inactive nodes are left are discarded, and three new ones are drawn,
+  spread apart from the charged nodes and from each other by a distance
+  weighting, and dealt priorities 1, 2 and 3 at random.
+- **New inactive nodes are drawn from a pool that widens once**, after the
+  first of the three draws. The outer edge is never open to an ordinary
+  draw.
+- **A fourth charged node can appear directly, already charged**, on the one
+  turn all four charged nodes run out at once — the only shortfall the
+  three-node queue cannot cover by itself.
+- **A retiring node is not replaced.** It simply leaves the board; nothing
+  appears in its place, and the rule that a replacement could never appear
+  on the square its predecessor just left goes with it, having nothing left
+  to govern.
+- **The opening board now deals seven nodes** — four charged, three
+  inactive — instead of twelve, with the opening pressure table gone along
+  with pressure itself.
+- **Section 1's random elements go back down to four**, plus the same
+  rarer fifth: which node is charged next is no longer one of them, and
+  where the queue's new nodes appear, and which priority each is dealt,
+  take its place.
+
 ## 0.25 — a depleted node traps the ship on it, instead of costing energy
 
 This is a gameplay change. Tagging stays on hold until the game plays (see
