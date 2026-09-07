@@ -155,8 +155,8 @@ export function NodeMarker({
   }
 
   const { radius, stops } = nodeArtwork(state, cyclePosition);
-  // SVG ids are document-global, and seventeen nodes are drawn into one
-  // document at once, so the gradient id carries the square's own name.
+  // SVG ids are document-global, and several node markers are drawn into
+  // one document at once, so the gradient id carries the square's own name.
   const gradientId = `node-${squareName}-fill`;
 
   return (

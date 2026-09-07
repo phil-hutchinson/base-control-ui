@@ -167,7 +167,7 @@ function queueRefilledClause(effect: QueueRefilledEffect): string {
   const gone =
     effect.discardedSquares.length > 0
       ? `The nodes waiting at ${joinWithAnd(effect.discardedSquares.map(squareName))} are gone.`
-      : "The nodes waiting are gone.";
+      : "Nothing was left waiting.";
   const newSquares = effect.newNodes.map((node) => squareName(node.square));
   const next = effect.newNodes.find(
     (node) => node.priority === TOP_NODE_PRIORITY,

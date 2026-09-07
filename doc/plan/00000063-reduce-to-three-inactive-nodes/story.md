@@ -32,8 +32,8 @@ What changes:
 - **Priority is visible**: one, two or three rings on the node's artwork.
 - **Charging is deterministic.** The highest priority charges first; if the
   board needs two, the top two charge, and so on down.
-- **Priorities rotate every turn** — 1→2, 2→3, 3→1 — so which node is next
-  depends on which turn the charge lands on.
+- **Priorities rotate on every turn that nothing charges** — 1→2, 2→3, 3→1 —
+  so which node is next depends on which turn the charge lands on.
 - **A charge sweeps the queue.** Any turn one or more nodes charge, whatever
   inactive nodes remain are discarded and three new ones are drawn.
 - **New nodes are drawn spread out**, by a distance weighting, from a pool

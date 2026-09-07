@@ -74,7 +74,12 @@ install, no account, no server.
 > likes while it waits its turn. On a turn when nothing lights, the rings shift
 > round — the single becomes a double, the double becomes a triple, and the
 > triple drops back to a single — so you can read not just what lights next but
-> what lights the turn after that. A lit node's
+> what lights the turn after that. Whatever runs out during a turn is made
+> up at the end of it by lighting from the waiting three, highest rings
+> first, so the board is always brought back to four lit nodes by the time
+> your turn begins; on the rare turn all four run out at once, one further
+> node appears somewhere else already lit to make up the difference. A lit
+> node's
 > glow shifts as it burns down, so you can see roughly how much life it has left,
 > and it runs out at a random pace — faster while a ship is sitting on it than
 > while it stands empty. A ship caught standing on a node the instant it runs out

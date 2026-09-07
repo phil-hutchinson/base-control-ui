@@ -147,10 +147,10 @@ export function legalNodePool(
 }
 
 /**
- * Draws one square for a new node from `legalNodePool`'s pool, uniformly —
- * a new node has no priority to weight by, exactly as the opening deal's
- * charged draw is uniform (rules.md §8.1). Advances the seed exactly once,
- * via `drawIndex`, so a recorded game replays exactly.
+ * Draws one square for a new node from `legalNodePool`'s strict pool,
+ * uniformly — a new node has no priority to weight by (rules.md §8.1).
+ * Used by the opening deal for its four charged squares. Advances the seed
+ * exactly once, via `drawIndex`, so a recorded game replays exactly.
  */
 export function drawNodeSquare(
   occupiedNodeSquares: readonly Square[],

@@ -32,10 +32,12 @@ course of a game, not just which of them are lit.
 The game has four random elements that shape every game — the opening
 board itself, where the three new nodes appear when the waiting set is
 refilled and which of them gets which priority, which planet the two ships
-in a fight are pushed back to, and how fast a node burns — plus a fifth,
-rarer one: when a trapped player's relief finds two nodes tied for the least
-remaining life, which of them ends first (section 8.6). No two games start
-on the same board, and neither player has seen this one before.
+in a fight are pushed back to, and how fast a node burns — plus two rarer
+ones: where the fourth charged node appears on the one turn all four run
+out at once (section 8.2), and when a trapped player's relief finds two
+nodes tied for the least remaining life, which of them ends first (section
+8.6). No two games start on the same board, and neither player has seen
+this one before.
 
 ---
 
@@ -612,9 +614,9 @@ Everything that happens at the end of a turn happens in this order:
    goes depleted, and any ship standing on it is **trapped** there (section
    8.5).
 4. Whatever shortfall there is against four charged is filled from the three
-   inactive nodes, highest priority first; if the shortfall still exceeds
-   what the three can cover, one further node is placed directly, already
-   charged (section 8.2).
+   inactive nodes, highest priority first; if the shortfall is four — one
+   more than the three can cover — one further node is placed directly,
+   already charged (section 8.2).
 5. If step 4 charged anything, the three inactive nodes are replaced
    together: whichever did not charge are discarded, and three new ones are
    drawn and dealt priorities 1, 2 and 3 at random (section 8.2). Otherwise,

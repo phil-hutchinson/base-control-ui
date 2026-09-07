@@ -8,9 +8,9 @@
 // procedure a later charge uses.
 
 import { ALL_SQUARES, type Square, squareName } from "./board";
-import { legalNodePool } from "./nodePlacement";
+import { drawNodeSquare } from "./nodePlacement";
 import { refillQueue } from "./nodeQueue";
-import { drawIndex, drawWeightedIndex } from "./random";
+import { drawWeightedIndex } from "./random";
 
 /** The three states a node can be in (rules.md §8.1). */
 export type NodeState = "inactive" | "charged" | "depleted";
@@ -120,10 +120,10 @@ export function drawTableAmount(
  * The draw order is fixed and must not change, because a recorded game
  * replays by replaying the seed:
  *
- * 1. Draw `TARGET_CHARGED_NODES` (4) squares, one at a time, each from
- *    `legalNodePool` recomputed against the squares placed so far — so each
- *    placement respects the ones before it — and drawn uniformly via
- *    `drawIndex`, since at the deal no node has any priority to weight by.
+ * 1. Draw `TARGET_CHARGED_NODES` (4) squares, one at a time, via
+ *    `drawNodeSquare`, each recomputed against the squares placed so far —
+ *    so each placement respects the ones before it — and drawn uniformly,
+ *    since at the deal no node has any priority to weight by.
  * 2. Walk those four squares in board order, drawing one `drawTableAmount`
  *    call each from `OPENING_DRAIN_TABLE`. The result becomes the node's
  *    `level`; its state is `charged`.
@@ -149,9 +149,12 @@ export function dealOpeningBoard(
   let workingSeed = seed;
 
   for (let count = 0; count < TARGET_CHARGED_NODES; count++) {
-    const pool = legalNodePool(chargedSquares, shipSquares);
-    const [index, nextSeed] = drawIndex(workingSeed, pool.length);
-    chargedSquares.push(pool[index]);
+    const [square, nextSeed] = drawNodeSquare(
+      chargedSquares,
+      shipSquares,
+      workingSeed,
+    );
+    chargedSquares.push(square);
     workingSeed = nextSeed;
   }
 
@@ -195,13 +198,12 @@ export function nodeCyclePosition(
   state: "charged" | "depleted",
   level: number,
 ): number {
-  const denominator = NODE_CAPACITY;
   let raw: number;
 
   if (state === "charged") {
-    raw = level / denominator;
+    raw = level / NODE_CAPACITY;
   } else {
-    raw = 1 - level / denominator;
+    raw = 1 - level / NODE_CAPACITY;
   }
 
   return Math.min(1, Math.max(0, raw));

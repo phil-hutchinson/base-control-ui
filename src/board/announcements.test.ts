@@ -614,7 +614,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
-        "The nodes waiting are gone. New nodes are waiting at F3, H12 and N4. N4 charges next. " +
+        "Nothing was left waiting. New nodes are waiting at F3, H12 and N4. N4 charges next. " +
         "Red's turn, 1 action left.",
     );
   });

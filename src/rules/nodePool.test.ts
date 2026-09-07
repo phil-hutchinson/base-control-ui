@@ -16,15 +16,6 @@
 // whichever pool `legalNodePool` actually returned — a square that failed
 // any of those constraints could only ever have come from the fallback, so
 // every placement clearing them is itself the fallback-never-fired evidence.
-//
-// This file replaces a much thinner version left by the story that
-// introduced the queue (see `doc/plan/00000063-.../implementation-plan.md`,
-// Step 4's notes): that version could only assert the invariants Step 4
-// itself could measure, before the direct-fourth placement existed to
-// complete the economy. This version measures the finished behaviour
-// end to end, and where its figures materially disagreed with the ones
-// `rules.md`'s Appendix B carried in from a standalone simulation of the
-// placement rules alone, this step corrected the appendix to match.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -85,13 +76,9 @@ const MINIMUM_SPREAD_ADVANTAGE = 0.5;
 /**
  * The band the mean number of turns between one refill and the next is
  * allowed to sit in, pooled across `SEEDS`. Measured at roughly 7.9 turns —
- * noticeably longer than the five turns Appendix B guessed at before this
- * step existed to measure against; a charged node's own life turned out to
- * average closer to twenty-nine turns than twenty, mostly because a
- * refilled node always starts at zero drain, where the partially-drained
- * opening deal that the old five-turn guess implicitly weighted toward does
- * not. This step corrects Appendix B to match. The bounds below leave
- * generous margin either side of the measured figure.
+ * a charged node's own life averages closer to twenty-nine turns than
+ * twenty, mostly because a refilled node always starts at zero drain. The
+ * bounds below leave generous margin either side of the measured figure.
  */
 const MINIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
 const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 12;

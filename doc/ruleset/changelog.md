@@ -44,10 +44,12 @@ the project's contribution notes).
 - **The opening board now deals seven nodes** — four charged, three
   inactive — instead of twelve, with the opening pressure table gone along
   with pressure itself.
-- **Section 1's random elements go back down to four**, plus the same
-  rarer fifth: which node is charged next is no longer one of them, and
-  where the queue's new nodes appear, and which priority each is dealt,
-  take its place.
+- **Section 1's random elements go back down to four**, plus two rarer
+  ones: which node is charged next is no longer one of them, and where the
+  queue's new nodes appear, and which priority each is dealt, take its
+  place; the relief's tie-break remains the other rare element, joined by
+  where the fourth charged node appears on the one turn all four run out at
+  once.
 - **Appendix B's sizing figures are corrected against measured play.** Its
   first draft carried numbers from a standalone simulation of the placement
   rules alone; measured against the finished game, a node's charged life

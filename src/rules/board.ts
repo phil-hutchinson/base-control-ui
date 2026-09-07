@@ -81,10 +81,9 @@ export const ALL_SQUARES: readonly Square[] = ROW_NUMBERS.flatMap((row) =>
 
 /**
  * Chebyshev distance between two squares — the greater of the column
- * difference and the row difference. Used wherever the rules measure how far
- * apart two squares are (section 3.2's node-spread weighting, section 6's
- * reach table), because a diagonal step is a single move here, which
- * taxicab distance would charge as two.
+ * difference and the row difference. Used by section 3.2's node-spread
+ * weighting, because a diagonal step is a single move here, which taxicab
+ * distance would charge as two.
  */
 export function chebyshevDistance(a: Square, b: Square): number {
   const columnDelta = Math.abs(
