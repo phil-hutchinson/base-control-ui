@@ -30,17 +30,19 @@ export interface Ship {
  * A node's current state, plus its `level` — a single number whose meaning
  * depends on the state it is attached to (rules.md §8.1–§8.3):
  *
- * | State    | `level` is           | Starts at            | Moves at end of turn | Changes state at |
- * | -------- | --------------------- | --------------------- | --------------------- | ----------------- |
- * | Inactive | pressure              | 1                     | +1, capped at 50      | drawn (§8.2)       |
- * | Charged  | drain                 | 0                     | + the drain draw      | ≥ capacity         |
- * | Depleted | the drain to recover  | the drain it carried  | − the recovery draw   | ≤ 0                |
+ * | State    | `level` is            | Starts at                   | Moves at end of turn                | Changes state at |
+ * | -------- | ---------------------- | ---------------------------- | ------------------------------------ | ----------------- |
+ * | Inactive | priority (1, 2 or 3)   | dealt at random by a refill  | rotates 1→2, 2→3, 3→1, or is swept   | charged (§8.2)     |
+ * | Charged  | drain                  | 0                             | + the drain draw                     | ≥ capacity         |
+ * | Depleted | the drain to recover   | the drain it carried          | − the recovery draw                  | ≤ 0                |
  *
  * A depleted node's `level` carries over from whatever drain the node had
  * when it went depleted — always at or a little past capacity, since a node
  * now ends only that way — so recovery always starts from about the same
  * level. That carry is a real property of the design, not an implementation
- * convenience, and is why there is one field rather than three.
+ * convenience, and is why there is one field rather than three. An
+ * inactive node's `level` is its priority, not a clock — `nodeQueue.ts`
+ * owns the type (`NodePriority`) and every operation on it.
  */
 export interface NodeStatus {
   readonly state: NodeState;
@@ -99,11 +101,11 @@ export interface GameState {
 
 /**
  * The state the game starts from: `startingFleet(fleetSize)`'s ships, a
- * dealt board (`dealOpeningBoard`, rules.md §8.1) — four of the twelve
- * nodes charged at a drawn drain, the rest inactive at a drawn pressure,
- * nothing depleted — green to move, `ACTIONS_PER_PLY` actions remaining,
- * nothing moved, ply 1, both sides at 0 energy, neither side out of time,
- * and the given game length.
+ * dealt board (`dealOpeningBoard`, rules.md §8.1) — four of the seven nodes
+ * charged at a drawn drain, the other three inactive at priorities 1, 2 and
+ * 3 dealt at random, nothing depleted — green to move, `ACTIONS_PER_PLY`
+ * actions remaining, nothing moved, ply 1, both sides at 0 energy, neither
+ * side out of time, and the given game length.
  *
  * The fleet is built before the deal so its ships' squares can be passed to
  * `dealOpeningBoard`, which excludes them from where a node may appear;
@@ -111,7 +113,7 @@ export interface GameState {
  * unaffected.
  *
  * The seed argument is the seed the **deal** starts from, not the seed the
- * game's first turn draws from: dealing the board consumes 24 steps of the
+ * game's first turn draws from: dealing the board consumes 12 steps of the
  * stream before play begins, and the resulting state's `randomSeed` is the
  * seed the deal left behind. That argument is also recorded verbatim as
  * `openingSeed`, so the state remembers where its deal started even once

@@ -108,9 +108,11 @@ export function Board({ session, onIntent }: BoardProps) {
         const planet = planetForSquare(arrangement, square);
         const nodeStatus = nodeStatusAt(session.state, square);
         const nodeState = nodeStatus?.state;
-        const cyclePosition = nodeStatus
-          ? nodeCyclePosition(nodeStatus.state, nodeStatus.level)
-          : undefined;
+        const cyclePosition =
+          nodeStatus &&
+          (nodeStatus.state === "charged" || nodeStatus.state === "depleted")
+            ? nodeCyclePosition(nodeStatus.state, nodeStatus.level)
+            : undefined;
         const ship = ships.get(name);
         const occupant = ship && { side: ship.side, power: ship.power };
         const condition = ship && shipCondition(ship);

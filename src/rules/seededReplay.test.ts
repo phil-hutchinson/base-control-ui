@@ -26,13 +26,16 @@
 // test now covers it too: the same seed deals the same opening board, and a
 // different seed deals a different one.
 //
-// 0.20 also gives a depleted node's retirement a new consumer of the seeded
-// stream: the square its replacement appears at (§3.2, §8.2). The sequence
-// of `node-replaced` effects a game produces — which node ended and where
-// its replacement appeared, in order — is recorded and compared below
-// alongside the planet-return and charge-draw sequences, for the same reason:
-// it is drawn from the same stream, and a recorded game must replay it
-// exactly too.
+// 0.26 replaces that charge draw with the queue (§8.2): charging itself
+// draws nothing any more, but the queue's own refill — drawing three new
+// inactive nodes, spread apart by a distance weighting, whenever a charge
+// sweeps the surviving ones — is now the stream's biggest consumer. The
+// sequence of `queue-refilled` effects a game produces — the squares
+// discarded and the trio drawn to replace them, in order — is recorded and
+// compared below, for the same reason: it is drawn from the same stream, and
+// a recorded game must replay it exactly too. A retiring node's own square
+// (`node-retired`) is recorded alongside it, though retirement itself draws
+// nothing since 0.26 — nothing appears in a retiring node's place any more.
 
 import { describe, expect, it } from "vitest";
 import { type Square, squareName } from "./board";
@@ -102,23 +105,47 @@ function chargedSquares(
   return squares;
 }
 
-/** Both squares of every `node-replaced` effect nested inside an end-of-action effect, if any, as `"<retired>-><new>"`. */
-function replacedNodes(
+/** The square name of every `node-retired` effect nested inside an end-of-action effect, if any. */
+function retiredNodes(
   effects: readonly (MoveEffect | AttackEffect | EndOfActionEffect)[],
 ): readonly string[] {
-  const replacements: string[] = [];
+  const squares: string[] = [];
   for (const effect of effects) {
     if (effect.type === "ply-ended" || effect.type === "ply-passed") {
       for (const sub of effect.endOfTurn) {
-        if (sub.type === "node-replaced") {
-          replacements.push(
-            `${squareName(sub.retiredSquare)}->${squareName(sub.newSquare)}`,
-          );
+        if (sub.type === "node-retired") {
+          squares.push(squareName(sub.square));
         }
       }
     }
   }
-  return replacements;
+  return squares;
+}
+
+/**
+ * Every `queue-refilled` effect nested inside an end-of-action effect, if
+ * any, as one string per sweep: the discarded squares, then the trio drawn
+ * to replace them with the priority each was dealt, e.g.
+ * `"D8,K5=>F3:2,H9:3,C11:1"`.
+ */
+function queueRefills(
+  effects: readonly (MoveEffect | AttackEffect | EndOfActionEffect)[],
+): readonly string[] {
+  const refills: string[] = [];
+  for (const effect of effects) {
+    if (effect.type === "ply-ended" || effect.type === "ply-passed") {
+      for (const sub of effect.endOfTurn) {
+        if (sub.type === "queue-refilled") {
+          const discarded = sub.discardedSquares.map(squareName).join(",");
+          const drawn = sub.newNodes
+            .map((node) => `${squareName(node.square)}:${node.priority}`)
+            .join(",");
+          refills.push(`${discarded}=>${drawn}`);
+        }
+      }
+    }
+  }
+  return refills;
 }
 
 /** A hard ceiling on actions applied, so a regression fails an assertion, not the test runner. */
@@ -129,7 +156,8 @@ interface PlayedGame {
   readonly openingBoard: Readonly<Record<string, GameState["nodes"][string]>>;
   readonly planetReturns: readonly string[];
   readonly chargedNodes: readonly string[];
-  readonly replacedNodes: readonly string[];
+  readonly retiredNodes: readonly string[];
+  readonly queueRefills: readonly string[];
   readonly fightCount: number;
 }
 
@@ -138,17 +166,18 @@ interface PlayedGame {
  * policy above, and records the opening board the seed dealt (§8.1) before
  * play began, the square name of every planet a `fight-resolved` effect
  * returned a ship to, in the order the fights happened, how many fights
- * happened, the square name of every node the end-of-turn charge draw
- * (§8.2) charged, in the order it charged them, and both squares of every
- * node the end-of-turn sequence retired and replaced (§3.2, §8.2), in the
- * order those retirements happened.
+ * happened, the square name of every node the queue charged, in the order it
+ * charged them, the square name of every node the end-of-turn sequence
+ * retired, in order, and every sweep the queue's refill produced, in order
+ * (§3.2, §8.2).
  */
 function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
   let state = startingGameState(seed, lengthInRounds);
   const openingBoard = state.nodes;
   const planetReturns: string[] = [];
   const chargedNodes: string[] = [];
-  const replacedNodeSquares: string[] = [];
+  const retiredNodeSquares: string[] = [];
+  const queueRefillSweeps: string[] = [];
   let fightCount = 0;
 
   let actionsApplied = 0;
@@ -167,7 +196,8 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
       state = nextState;
       if (effect !== undefined) {
         chargedNodes.push(...chargedSquares([effect]));
-        replacedNodeSquares.push(...replacedNodes([effect]));
+        retiredNodeSquares.push(...retiredNodes([effect]));
+        queueRefillSweeps.push(...queueRefills([effect]));
       }
       continue;
     }
@@ -189,7 +219,8 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
         }
       }
       chargedNodes.push(...chargedSquares(result.effects));
-      replacedNodeSquares.push(...replacedNodes(result.effects));
+      retiredNodeSquares.push(...retiredNodes(result.effects));
+      queueRefillSweeps.push(...queueRefills(result.effects));
     } else {
       const result = applyMove(state, action.shipId, action.destination);
       if (result.outcome !== "applied") {
@@ -199,7 +230,8 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
       }
       state = result.state;
       chargedNodes.push(...chargedSquares(result.effects));
-      replacedNodeSquares.push(...replacedNodes(result.effects));
+      retiredNodeSquares.push(...retiredNodes(result.effects));
+      queueRefillSweeps.push(...queueRefills(result.effects));
     }
   }
 
@@ -208,7 +240,8 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     openingBoard,
     planetReturns,
     chargedNodes,
-    replacedNodes: replacedNodeSquares,
+    retiredNodes: retiredNodeSquares,
+    queueRefills: queueRefillSweeps,
     fightCount,
   };
 }
@@ -222,10 +255,15 @@ function nodeLevels(state: GameState): Readonly<Record<string, number>> {
   return levels;
 }
 
-describe("a seeded game replays its opening board, its fights, its planets, its charge draws and its node replacements exactly", () => {
-  it("produces plenty of fights, charge draws and node replacements, over a forty-round game — the run is not vacuous", () => {
-    const { planetReturns, chargedNodes, replacedNodes, fightCount } =
-      playSeededGame(20260819, 40);
+describe("a seeded game replays its opening board, its fights, its planets, its charges and its queue refills exactly", () => {
+  it("produces plenty of fights, charges and queue refills, over a forty-round game — the run is not vacuous", () => {
+    const {
+      planetReturns,
+      chargedNodes,
+      retiredNodes,
+      queueRefills,
+      fightCount,
+    } = playSeededGame(20260819, 40);
 
     // Ships start on ordinary edge squares and are attackable from the
     // first turn — a ship only becomes unattackable by flying onto a
@@ -236,24 +274,22 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     // reach (0.24); the floors below leave margin below that.
     expect(fightCount).toBeGreaterThanOrEqual(2);
     expect(planetReturns.length).toBeGreaterThanOrEqual(4);
-    // Re-measured at 9 for this seed over forty rounds (0.24); the floor
-    // here leaves margin below that.
+    // Re-measured at 10 charges, 8 retirements and 9 refills for this seed
+    // over forty rounds (0.26); the floors below leave margin below that.
     expect(chargedNodes.length).toBeGreaterThanOrEqual(7);
-    // Re-measured at 9 for this seed over forty rounds (0.24; a mortal
-    // node's life is much shorter against a game this long than the
-    // board's steady state is against the several-hundred-turn runs
-    // `nodePool.test.ts` drives); the floor here leaves margin below that.
-    expect(replacedNodes.length).toBeGreaterThanOrEqual(6);
+    expect(retiredNodes.length).toBeGreaterThanOrEqual(6);
+    expect(queueRefills.length).toBeGreaterThanOrEqual(6);
   });
 
-  it("replays the same opening board, the same planet sequence, the same charged-node sequence, the same node-replacement sequence and the same final state from the same seed", () => {
+  it("replays the same opening board, the same planet sequence, the same charged-node sequence, the same retirement and refill sequences and the same final state from the same seed", () => {
     const first = playSeededGame(20260819, 40);
     const second = playSeededGame(20260819, 40);
 
     expect(second.openingBoard).toEqual(first.openingBoard);
     expect(second.planetReturns).toEqual(first.planetReturns);
     expect(second.chargedNodes).toEqual(first.chargedNodes);
-    expect(second.replacedNodes).toEqual(first.replacedNodes);
+    expect(second.retiredNodes).toEqual(first.retiredNodes);
+    expect(second.queueRefills).toEqual(first.queueRefills);
     expect(second.finalState).toEqual(first.finalState);
     // The final state's equality above already covers this, but it is
     // worth naming directly: the drain and recovery draws that now
@@ -262,7 +298,7 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     expect(nodeLevels(second.finalState)).toEqual(nodeLevels(first.finalState));
   });
 
-  it("deals a different opening board, and produces a different planet sequence, a different charged-node sequence and a different node-replacement sequence, from a different seed", () => {
+  it("deals a different opening board, and produces a different planet sequence, a different charged-node sequence and a different refill sequence, from a different seed", () => {
     // Any pair of distinct seeds is expected to diverge; these two are
     // confirmed to by running this test. If a future change to the game
     // happens to make this pair coincide, pick another pair.
@@ -272,6 +308,6 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     expect(second.openingBoard).not.toEqual(first.openingBoard);
     expect(second.planetReturns).not.toEqual(first.planetReturns);
     expect(second.chargedNodes).not.toEqual(first.chargedNodes);
-    expect(second.replacedNodes).not.toEqual(first.replacedNodes);
+    expect(second.queueRefills).not.toEqual(first.queueRefills);
   });
 });

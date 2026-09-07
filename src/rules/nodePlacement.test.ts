@@ -121,20 +121,6 @@ describe("legalNodePool", () => {
     expect(pool.map(squareName)).not.toContain(squareName(target));
   });
 
-  it("excludes the given square to exclude", () => {
-    const target = squareAt("H", 8);
-    const pool = legalNodePool([], [], target);
-
-    expect(pool.map(squareName)).not.toContain(squareName(target));
-  });
-
-  it("excludes the given square to exclude from the fallback pool too", () => {
-    const excluded = squareAt("H", 8);
-    const pool = legalNodePool(interiorSquares(), [], excluded);
-
-    expect(pool.map(squareName)).not.toContain(squareName(excluded));
-  });
-
   it("excludes every planet, and every square orthogonally or diagonally adjacent to one", () => {
     const pool = legalNodePool([], []);
 
@@ -207,7 +193,7 @@ describe("legalNodePool", () => {
     expect(() => legalNodePool(nonPlanetSquares, [])).toThrow(RangeError);
   });
 
-  it("deals and replaces nodes for many rounds without ever throwing", () => {
+  it("deals nodes for many rounds without ever throwing", () => {
     let seed = 20260905;
     let occupied: readonly Square[] = [];
 
@@ -217,16 +203,6 @@ describe("legalNodePool", () => {
       occupied = [...occupied, square];
     }
 
-    for (let round = 0; round < 500; round++) {
-      const retiring = occupied[round % occupied.length];
-      const remaining = occupied.filter(
-        (square) => squareName(square) !== squareName(retiring),
-      );
-      const [square, nextSeed] = drawNodeSquare(remaining, [], seed, retiring);
-      seed = nextSeed;
-      occupied = [...remaining, square];
-    }
-
     expect(occupied).toHaveLength(12);
   });
 });
@@ -234,7 +210,7 @@ describe("legalNodePool", () => {
 describe("legalNodePool with the widened pool", () => {
   it("is 79 squares on an empty board, a strict superset of the 51-square strict pool", () => {
     const strict = legalNodePool([], []);
-    const widened = legalNodePool([], [], undefined, "widened");
+    const widened = legalNodePool([], [], "widened");
 
     expect(strict).toHaveLength(51);
     expect(widened).toHaveLength(79);
@@ -250,7 +226,7 @@ describe("legalNodePool with the widened pool", () => {
     // B8 is one square in from the edge, not a planet and not adjacent to one.
     const target = squareAt("B", 8);
     const strict = legalNodePool([], []);
-    const widened = legalNodePool([], [], undefined, "widened");
+    const widened = legalNodePool([], [], "widened");
 
     expect(strict.map(squareName)).not.toContain(squareName(target));
     expect(widened.map(squareName)).toContain(squareName(target));
@@ -258,7 +234,7 @@ describe("legalNodePool with the widened pool", () => {
 
   it("never includes a square on the outer edge, in either pool", () => {
     const strict = legalNodePool([], []);
-    const widened = legalNodePool([], [], undefined, "widened");
+    const widened = legalNodePool([], [], "widened");
 
     for (const pool of [strict, widened]) {
       for (const square of pool) {
@@ -286,13 +262,6 @@ describe("drawNodeSquare", () => {
     const second = drawNodeSquare([squareAt("H", 8)], [squareAt("D", 4)], 42);
 
     expect(first).toEqual(second);
-  });
-
-  it("never draws the excluded square", () => {
-    for (let seed = 0; seed < 50; seed++) {
-      const [square] = drawNodeSquare([], [], seed, squareAt("H", 8));
-      expect(squareName(square)).not.toBe("H8");
-    }
   });
 });
 

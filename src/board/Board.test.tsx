@@ -12,7 +12,7 @@ import {
   startingFleet,
   type FleetEntry,
 } from "../rules/fleet";
-import { NODE_CAPACITY, PRESSURE_CAP } from "../rules/nodes";
+import { NODE_CAPACITY } from "../rules/nodes";
 import {
   startingGameState,
   type GameState,
@@ -53,8 +53,8 @@ const TEST_SEED = 1;
 
 /**
  * The board this file has always been rendered against: H8, E5, K5, E11 and
- * K11 charged at drain 0, the other twelve nodes inactive at pressure 1 — an
- * arbitrary fixed board, not the opening rules.md §8.1 deals since 0.18. Node
+ * K11 charged at drain 0, the other twelve nodes inactive, all at level 1 —
+ * an arbitrary fixed board, not the opening rules.md §8.1 deals since 0.18. Node
  * positions are drawn rather than fixed since 0.20, so this board is no
  * longer any table in `rules.md` either — it is simply a board this file
  * states for itself, not built by calling any of `nodes.ts`'s production
@@ -511,42 +511,6 @@ describe("Board", () => {
       const { container } = render(<Board session={session} onIntent={noop} />);
 
       expect(middleStopOffset(container, "depleted")).toBe("25%");
-    });
-
-    it("shows two inactive nodes at different pressures with visibly different markers", () => {
-      const state: GameState = {
-        ships: [],
-        nodes: {
-          [squareName(squareAt("H", 8))]: { state: "inactive", level: 1 },
-          [squareName(squareAt("E", 5))]: {
-            state: "inactive",
-            level: PRESSURE_CAP,
-          },
-        },
-        sideToMove: "green",
-        actionsRemaining: 1,
-        actedThisPly: [],
-        plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
-        energy: { green: 0, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        outOfTime: { green: false, red: false },
-      };
-      const session: Session = {
-        state,
-        selectedShipId: undefined,
-        lastEvent: undefined,
-      };
-      const { container } = render(<Board session={session} onIntent={noop} />);
-
-      const radii = Array.from(
-        container.querySelectorAll(".node-marker--inactive circle"),
-      ).map((circle) => circle.getAttribute("r"));
-
-      expect(radii).toHaveLength(2);
-      expect(radii).toContain("12");
-      expect(radii).toContain("24");
     });
   });
 

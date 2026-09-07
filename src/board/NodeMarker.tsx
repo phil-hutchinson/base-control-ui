@@ -1,8 +1,9 @@
 // Decorative node-state artwork: one radial-gradient circle at the square's
 // centre, drawn behind any ship on the same square, with one appearance per
-// rules.md §8.1 state. Inactive is a disc that grows and warms as the node's
-// pressure builds; charged and depleted are the same larger shape, wider than
-// the square and cropped to it by the outer <svg>, one gold and one grey.
+// rules.md §8.1 state. Inactive is a disc that grows and warms as its own
+// cycle position advances; charged and depleted are the same larger shape,
+// wider than the square and cropped to it by the outer <svg>, one gold and
+// one grey.
 // Purely decorative - a screen reader gets the node and its state from the
 // occupying square's accessible name (see squareLabel.ts), so the SVG
 // carries no title or description and is hidden from the accessibility
@@ -17,8 +18,9 @@ interface NodeMarkerProps {
   /**
    * How far the node has travelled through its state's own cycle (0 to 1,
    * see `nodeCyclePosition` in `../rules/nodes`): drain for charged,
-   * remaining drain for depleted, pressure for inactive. Falls back to the
-   * state's start-of-cycle appearance when absent.
+   * remaining drain for depleted. `nodeCyclePosition` no longer has an
+   * inactive case, so this is never given for an inactive node, which
+   * always falls back to its start-of-cycle appearance below.
    */
   readonly cyclePosition?: number;
 }
@@ -58,8 +60,8 @@ function middleStopOffsetPercent(
   );
 }
 
-// Inactive's start-to-end travel, at a freshly-cycled node's pressure of 1 and
-// at the pressure cap: the small pale disc from node-artwork.md's "Dormant"
+// Inactive's start-to-end travel, at a freshly-cycled node's start of travel
+// and at its end: the small pale disc from node-artwork.md's "Dormant"
 // section growing and warming into the larger disc from that same document's
 // "Active" section (see nodeArtwork's comment for why those pre-0.11
 // headings do not mean what they mean in the code).
@@ -121,10 +123,10 @@ function hexLerp(
 // happen to match the code's own state names below, but "Dormant" and
 // "Active" name neither — they are the two ends of what the code now calls
 // the inactive state's travel. Inactive travels between two of that
-// document's sections: its "Dormant" section — the small pale disc — at a
-// freshly cycled node's pressure of 1, and its "Active" section — the
+// document's sections: its "Dormant" section — the small pale disc — at the
+// start of a freshly cycled node's travel, and its "Active" section — the
 // larger gold disc, what the code has always drawn for this state — at the
-// pressure cap). One artwork per node state; the exhaustive switch has no
+// end of it). One artwork per node state; the exhaustive switch has no
 // default, so a new state is a compile error rather than a silent gap.
 function nodeArtwork(
   state: NodeState,

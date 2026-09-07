@@ -1,7 +1,8 @@
 // Where a new node may appear (rules.md §3.2), and how one is drawn there.
 // A pure function of the nodes placed so far and the squares ships occupy —
-// used by the opening deal, before a GameState exists, and by end-of-turn
-// retirement, whose caller reads those two things off its state itself.
+// used by the opening deal, before a `GameState` exists, and by the refill
+// procedure in `nodeQueue.ts`, whose caller reads those two things off its
+// state itself.
 
 import {
   ALL_SQUARES,
@@ -80,9 +81,7 @@ function isAdjacentToAnyPlanet(square: Square): boolean {
 /**
  * The squares a new node may legally occupy (rules.md §3.2), given the
  * squares that already hold a node and the squares ships occupy, in board
- * order. An optional square to exclude — the one a retiring node has just
- * left — is removed from the result too, in the ordinary pool and in the
- * fallback alike.
+ * order.
  *
  * A square qualifies when all six of §3.2's constraints hold:
  *
@@ -98,32 +97,28 @@ function isAdjacentToAnyPlanet(square: Square): boolean {
  *
  * If nothing qualifies, the pool falls back to every square that holds no
  * node and is not a planet — the whole relaxation at once, not one
- * constraint dropped at a time — still honouring the excluded square. The
- * fallback is the same regardless of `poolWidth`: it is already the whole
- * relaxation at once, so there is nothing left for `poolWidth` to widen. The
- * fallback keeps a node off a planet, but, unlike the ordinary pool, does
- * **not** keep it off a planet's neighbours or the board's edge: it may
- * legitimately hand back a square adjacent to a planet. If even the
- * fallback is empty, throws a `RangeError` naming the situation, rather than
- * returning an empty pool for `drawNodeSquare` to fail on with a generic
- * message.
+ * constraint dropped at a time. The fallback is the same regardless of
+ * `poolWidth`: it is already the whole relaxation at once, so there is
+ * nothing left for `poolWidth` to widen. The fallback keeps a node off a
+ * planet, but, unlike the ordinary pool, does **not** keep it off a
+ * planet's neighbours or the board's edge: it may legitimately hand back a
+ * square adjacent to a planet. If even the fallback is empty, throws a
+ * `RangeError` naming the situation, rather than returning an empty pool for
+ * `drawNodeSquare` to fail on with a generic message.
  */
 export function legalNodePool(
   occupiedNodeSquares: readonly Square[],
   shipSquares: readonly Square[],
-  exclude?: Square,
   poolWidth: NodePoolWidth = "strict",
 ): readonly Square[] {
   const nodeNames = new Set(occupiedNodeSquares.map(squareName));
   const shipNames = new Set(shipSquares.map(squareName));
-  const excludedName = exclude ? squareName(exclude) : undefined;
   const excludedEdgeRings =
     poolWidth === "widened" ? WIDENED_EXCLUDED_EDGE_RINGS : EXCLUDED_EDGE_RINGS;
 
   const pool = ALL_SQUARES.filter((square) => {
     const name = squareName(square);
     return (
-      name !== excludedName &&
       !nodeNames.has(name) &&
       !shipNames.has(name) &&
       distanceFromEdge(square) >= excludedEdgeRings &&
@@ -139,7 +134,7 @@ export function legalNodePool(
 
   const fallback = ALL_SQUARES.filter((square) => {
     const name = squareName(square);
-    return name !== excludedName && !nodeNames.has(name) && !isPlanet(square);
+    return !nodeNames.has(name) && !isPlanet(square);
   });
 
   if (fallback.length === 0) {
@@ -153,17 +148,16 @@ export function legalNodePool(
 
 /**
  * Draws one square for a new node from `legalNodePool`'s pool, uniformly —
- * a new node has no pressure to weight by, exactly as the opening deal's
- * charged draw is uniform today. Advances the seed exactly once, via
- * `drawIndex`, so a recorded game replays exactly.
+ * a new node has no priority to weight by, exactly as the opening deal's
+ * charged draw is uniform (rules.md §8.1). Advances the seed exactly once,
+ * via `drawIndex`, so a recorded game replays exactly.
  */
 export function drawNodeSquare(
   occupiedNodeSquares: readonly Square[],
   shipSquares: readonly Square[],
   seed: number,
-  exclude?: Square,
 ): [square: Square, nextSeed: number] {
-  const pool = legalNodePool(occupiedNodeSquares, shipSquares, exclude);
+  const pool = legalNodePool(occupiedNodeSquares, shipSquares);
   const [index, nextSeed] = drawIndex(seed, pool.length);
   return [pool[index], nextSeed];
 }

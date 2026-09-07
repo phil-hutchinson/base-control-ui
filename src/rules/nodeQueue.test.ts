@@ -16,6 +16,7 @@ import {
   type NodePriority,
   PRIORITY_PERMUTATIONS,
   TOP_NODE_PRIORITY,
+  inactivePriority,
   orderByPriorityDescending,
   refillQueue,
   rotatePriority,
@@ -116,7 +117,6 @@ describe("refillQueue", () => {
       const widenedPoolAfterFirst = legalNodePool(
         [...CHARGED_SQUARES, nodes[0].square],
         [],
-        undefined,
         "widened",
       );
       expect(widenedPoolAfterFirst.map(squareName)).toContain(
@@ -126,7 +126,6 @@ describe("refillQueue", () => {
       const widenedPoolAfterSecond = legalNodePool(
         [...CHARGED_SQUARES, nodes[0].square, nodes[1].square],
         [],
-        undefined,
         "widened",
       );
       expect(widenedPoolAfterSecond.map(squareName)).toContain(
@@ -242,6 +241,14 @@ describe("refillQueue", () => {
     }
 
     expect(totalMinimumGap / trials).toBeGreaterThan(4.5);
+  });
+});
+
+describe("inactivePriority", () => {
+  it("reads the priority straight off the status's level", () => {
+    expect(inactivePriority({ level: 1 })).toBe(1);
+    expect(inactivePriority({ level: 2 })).toBe(2);
+    expect(inactivePriority({ level: 3 })).toBe(3);
   });
 });
 

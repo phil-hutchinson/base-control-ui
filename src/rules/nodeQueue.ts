@@ -97,7 +97,6 @@ export function refillQueue(
     const widenedPool = legalNodePool(
       [...occupiedNodeSquares, ...drawnSquares],
       shipSquares,
-      undefined,
       "widened",
     );
     const [square, nextSeed] = drawWeightedNodeSquare(
@@ -122,6 +121,20 @@ export function refillQueue(
   }));
 
   return [nodes, seedAfterPermutation];
+}
+
+/**
+ * Reads an inactive node's priority off its status's `level` (rules.md
+ * §8.2, `gameState.ts`'s `NodeStatus` doc table). The one place outside
+ * this module that treats `.level` as a priority, so no caller of
+ * `runCharging` or the end-of-turn sequence has to write that cast itself.
+ * Takes a plain `{ level }` shape rather than `NodeStatus` so this module
+ * need not import `gameState.ts`.
+ */
+export function inactivePriority(status: {
+  readonly level: number;
+}): NodePriority {
+  return status.level as NodePriority;
 }
 
 /**

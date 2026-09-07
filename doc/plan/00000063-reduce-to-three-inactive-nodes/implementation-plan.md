@@ -765,7 +765,63 @@ Also run `npm test`, `npm run typecheck`, `npm run lint`, `npm run format:check`
 
 ### Step 4 — The queue replaces pressure, end to end
 
-Status: pending
+Status: committed
+
+Notes: Implemented all four parts together as specified — `nodes.ts`'s
+opening deal now draws four charged squares, their opening drains, then one
+`refillQueue` call for the inactive trio (12 seed steps); `chargeDraw.ts` was
+renamed `charging.ts` (`runChargeDraw` → `runCharging`) and now charges
+top-down by priority with no randomness, leaving an over-four shortfall
+unfilled with a comment pointing at rules.md §8.2's fourth-node case rather
+than at a plan step number, per the project's comment convention;
+`endOfTurn.ts` step 5 sweeps and refills (one `queue-refilled` effect) or
+rotates (silently) depending on whether step 4 charged anything; step 6/7
+retirement (`retireNode`) removes a node's entry and places nothing. Repointed
+`gameState.ts`, `announcements.ts` (new `node-retired` and `queue-refilled`
+clauses) and `Board.tsx` (computes `cyclePosition` only for charged/depleted)
+as directed, and added `nodeQueue.ts`'s `inactivePriority` reader (D1's
+deferred bridge) since this step is the first real caller reading `.level` as
+a priority. Deleted `legalNodePool`'s `exclude` parameter alongside
+`drawNodeSquare`'s (not just the latter, as the step's own text names): once
+retirement stopped drawing, `legalNodePool`'s excluded-square support had no
+remaining caller or purpose, and its doc comment referenced retirement
+directly, so removing both together kept the module honest.
+
+Test updates mostly matched D12 exactly, with these deviations: (1)
+`nodePool.test.ts` was thinned further than its three named deletions —
+"places every node ... legal under §3.2", "never exceeds four charged (a
+shortfall stays legal)", the six/seven-inactive steady-state stat and
+"reaches every one of the 51 legal squares" were also deleted rather than
+mechanically patched, because they exercised the retirement-replacement
+mechanism this step removes or measured a statistic (the inactive count)
+that is now a fixed invariant rather than a thing to sample; what remains is
+the "exactly three inactive nodes, priorities {1,2,3}, at every ply"
+invariant this step's own bullet list calls for, plus the still-valid
+"expiries stay spread" check — Step 7 rebuilds the rest against the finished
+economy as planned. (2) `openingBoard.test.ts`'s "runs to completion" block
+needed more than a count change: because a charge sweeps the _whole_ queue,
+not just the node that charged, only some — not necessarily all — of the
+three dealt-inactive nodes are ever charged in their own lifetime (measured:
+2–3 of 3 across three seeds), so "every dealt-inactive node charges" became
+"at least one does," with a comment explaining why; its pressure-favours
+block was replaced with the deterministic "first charge picks the
+priority-3 node" test D12 calls for. (3) In `ply.test.ts`, the two
+near-duplicate "flying over an inactive node" tests were consolidated into
+one (the second was an exact duplicate of the first bar wording), rewritten
+to assert the normal end-of-turn rotation rather than an unchanged level,
+since rotation now always moves a surviving priority instead of clamping at
+a cap. (4) A narrow, wording-only sweep of `NodeMarker.tsx`,
+`NodeMarker.test.tsx` and one `Board.test.tsx` comment replaced their
+"pressure" wording with cycle-position language, with no change to rendering
+logic or constants — required by this step's own `grep -rni "pressure" src`
+check; the actual rings redraw stays Step 6's, as the plan directs. All
+other touched files (`endOfTurn.test.ts`, `seededReplay.test.ts`,
+`camping.test.ts`, `gameState.test.ts`, `nodes.test.ts`, `announcements.test.ts`,
+`Board.test.tsx`, `nodePlacement.test.ts`, `nodeQueue.test.ts`) were updated
+per D12/D9 with re-measured floors where a test drove a real simulation.
+`npm test` (977 tests, up from 1015 minus deletions), `npm run typecheck`,
+`npm run lint` and `npm run format:check` all pass; `grep -rni "pressure"
+src` finds nothing.
 
 The cutover. These four changes must land together, because the invariant
 "exactly three inactive nodes at all times" is what makes each of them correct;

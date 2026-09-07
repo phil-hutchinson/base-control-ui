@@ -26,8 +26,8 @@ interface ExpectedArtwork {
 // Radii, stop offsets, colours and opacities as specified in
 // doc/plan/00000023-update-node-visual/node-artwork.md, transcribed here as
 // the expectation an assertion checks against, independently of
-// NodeMarker.tsx's own table. Inactive's own start and end sit at pressure 1
-// and the pressure cap respectively (see NodeMarker.tsx's ACTIVE_*
+// NodeMarker.tsx's own table. Inactive's own start and end sit at the start
+// and the end of its travel respectively (see NodeMarker.tsx's ACTIVE_*
 // constants).
 const ACTIVE_START: ExpectedArtwork = {
   radius: "12",
@@ -182,7 +182,7 @@ describe("NodeMarker", () => {
     },
   );
 
-  it("renders inactive's pressure-1 appearance at cycle position 0", () => {
+  it("renders inactive's start-of-travel appearance at cycle position 0", () => {
     const { container } = render(
       <NodeMarker
         state="inactive"
@@ -202,7 +202,7 @@ describe("NodeMarker", () => {
     );
   });
 
-  it("renders today's disc at inactive's pressure cap, cycle position 1", () => {
+  it("renders today's disc at inactive's end-of-travel, cycle position 1", () => {
     const { container } = render(
       <NodeMarker
         state="inactive"
@@ -240,7 +240,7 @@ describe("NodeMarker", () => {
     expect(stops[1]).toHaveAttribute("stop-opacity", "0.625");
   });
 
-  it("falls back to inactive's pressure-1 appearance when no cycle position is given", () => {
+  it("falls back to inactive's start-of-travel appearance when no cycle position is given", () => {
     const { container } = render(
       <NodeMarker state="inactive" squareName={SQUARE_NAME} />,
     );

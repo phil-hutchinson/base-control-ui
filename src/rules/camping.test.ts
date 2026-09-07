@@ -1,25 +1,25 @@
 // Integration cover for camping: staying put has stopped being free once a
 // node runs out from under you (rules.md §8.5). A ship on an inactive node
-// still owes and is owed nothing, and the charge draw does not look at
-// occupancy (§8.2). A ship holding a **charged** node is protected while it
-// holds it (§7) and pays nothing for holding it, and leaving one no longer
-// ends it (§8.3) — but staying on it to the very end costs the ship its
-// freedom: the instant the node runs out it is **trapped** there (§8.1,
-// §8.5), with no legal destination and no legal target of its own, and
-// nothing an enemy does can dislodge or attack it either. That lasts until
-// the node retires, at which point its square is an ordinary square again
-// and the ship can leave it like any other. A move may not land on a
-// depleted node at all (§6), whether or not a ship is trapped there. Driven
-// entirely through the public rules API — `applyMove`, `applyAttack`,
-// `moveRefusalReason`, `attackRefusalReason`, `legalDestinations`,
-// `legalTargets` and the `EndOfTurnEffect`s an action carries — rather than
-// by calling `runEndOfTurn` or `runChargeDraw` directly, so this proves the
-// same thing a player's turn would.
+// still owes and is owed nothing, and charging does not look at occupancy
+// (§8.2). A ship holding a **charged** node is protected while it holds it
+// (§7) and pays nothing for holding it, and leaving one no longer ends it
+// (§8.3) — but staying on it to the very end costs the ship its freedom:
+// the instant the node runs out it is **trapped** there (§8.1, §8.5), with
+// no legal destination and no legal target of its own, and nothing an enemy
+// does can dislodge or attack it either. That lasts until the node retires,
+// at which point its square is an ordinary square again and the ship can
+// leave it like any other — nothing appears in the retired node's place.
+// A move may not land on a depleted node at all (§6), whether or not a ship
+// is trapped there. Driven entirely through the public rules API —
+// `applyMove`, `applyAttack`, `moveRefusalReason`, `attackRefusalReason`,
+// `legalDestinations`, `legalTargets` and the `EndOfTurnEffect`s an action
+// carries — rather than by calling `runEndOfTurn` or `runCharging` directly,
+// so this proves the same thing a player's turn would.
 
 import { describe, expect, it } from "vitest";
 import { squareFromName } from "./board";
 import { attackRefusalReason, legalTargets } from "./combat";
-import type { NodeReplacedEffect } from "./endOfTurn";
+import type { NodeRetiredEffect } from "./endOfTurn";
 import type { ShipId } from "./fleet";
 import {
   ACTIONS_PER_PLY,
@@ -178,7 +178,7 @@ describe("camping — a node charges under a parked ship (§8.1, §8.2, §8.5)",
   });
 });
 
-describe("camping — a ship on a depleted node outlasts it, until the node retires and is replaced elsewhere (§8.2, §8.5, §8.6)", () => {
+describe("camping — a ship on a depleted node outlasts it, until the node retires and simply leaves (§8.2, §8.5, §8.6)", () => {
   it("keeps its square and power through retirement, costing it nothing before or after", () => {
     const initial = {
       ...buildState({
@@ -205,20 +205,20 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
     // Green's turn: green-camper still occupies H8, genuinely depleted, when
     // step 6 retires it later in this very sequence — nothing is taken for
     // standing there, before or after. Step 6 removes H8 from `state.nodes`
-    // and writes one new inactive node elsewhere; the camper is untouched by
-    // any of it, because retirement (§8.6 step 6) does not look at occupancy
-    // any more than the charge draw does.
+    // and puts nothing in its place; the camper is untouched by any of it,
+    // because retirement (§8.6 step 6) does not look at occupancy any more
+    // than charging does.
     const afterGreenTurn = appliedOrThrow(
       applyMove(initial, "green-mover", squareFromName("A3")),
     );
     const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
     expect(afterGreenTurn.state.energy.green).toBe(10);
-    const replaced = greenTurnEffects.find(
-      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
+    const retired = greenTurnEffects.find(
+      (effect): effect is NodeRetiredEffect => effect.type === "node-retired",
     );
-    expect(replaced?.retiredSquare).toEqual(squareFromName("H8"));
+    expect(retired?.square).toEqual(squareFromName("H8"));
     expect(afterGreenTurn.state.nodes.H8).toBeUndefined();
-    expect(Object.keys(afterGreenTurn.state.nodes)).toHaveLength(5);
+    expect(Object.keys(afterGreenTurn.state.nodes)).toHaveLength(4);
     const camperAfterRetirement = afterGreenTurn.state.ships.find(
       (candidate) => candidate.id === "green-camper",
     );

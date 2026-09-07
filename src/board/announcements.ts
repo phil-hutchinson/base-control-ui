@@ -12,9 +12,11 @@ import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
   PowerGainedEffect,
+  QueueRefilledEffect,
 } from "../rules/endOfTurn";
 import type { Side } from "../rules/fleet";
 import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
+import { TOP_NODE_PRIORITY } from "../rules/nodeQueue";
 import {
   currentRound,
   gameResult,
@@ -155,23 +157,44 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
 }
 
 /**
+ * A charge sweeping the queue and dealing a fresh trio, as one sentence
+ * (rules.md §8.2, §8.6 step 5): the nodes that were waiting are gone, new
+ * ones are waiting in their place, and the priority-3 node among them is
+ * named directly — the one piece of the rings a listener cannot see for
+ * themselves.
+ */
+function queueRefilledClause(effect: QueueRefilledEffect): string {
+  const gone =
+    effect.discardedSquares.length > 0
+      ? `The nodes waiting at ${joinWithAnd(effect.discardedSquares.map(squareName))} are gone.`
+      : "The nodes waiting are gone.";
+  const newSquares = effect.newNodes.map((node) => squareName(node.square));
+  const next = effect.newNodes.find(
+    (node) => node.priority === TOP_NODE_PRIORITY,
+  );
+  const nextClause =
+    next !== undefined ? ` ${squareName(next.square)} charges next.` : "";
+  return `${gone} New nodes are waiting at ${joinWithAnd(newSquares)}.${nextClause}`;
+}
+
+/**
  * The clauses an end-of-turn sequence produced, in the order the sequence
  * produced them. All of a sequence's power gains are grouped into one
  * clause, ahead of the rest — there is no longer a power-loss clause to sit
  * it next to, since no end-of-turn step takes power away any more (§4.1).
  * `node-charged` speaks — a node becoming charged is the thing both players
- * are racing towards. `node-replaced` speaks too, in one sentence naming
- * both squares: unlike the old cycle-in-place, a node ending and a new one
- * appearing elsewhere is a visible change to the map and to where the next
- * race will be. `ship-trapped` and `ship-freed` each speak too, right after
- * the node event that caused them, since a player needs to know a ship was
- * caught or released, not just that a node changed. `node-relief` speaks
- * ahead of the `node-replaced` effect it caused, naming the side it
- * relieved, so a player hears why that node ended early, not just that it
- * did. A zero collection produces no effect at all (rules.md §8.4), so
- * there is nothing here to skip for it — a turn that collects nothing
- * simply has no collection clause, and nothing in this sequence ever
- * takes energy away.
+ * are racing towards. `queue-refilled` speaks too, as one sentence for the
+ * whole sweep: the queue a player was reading is gone and a new one has
+ * taken its place. `node-retired` speaks for a node that simply leaves,
+ * naming only its own square — nothing appears to replace it. `ship-trapped`
+ * and `ship-freed` each speak too, right after the node event that caused
+ * them, since a player needs to know a ship was caught or released, not
+ * just that a node changed. `node-relief` speaks ahead of the `node-retired`
+ * effect it caused, naming the side it relieved, so a player hears why that
+ * node ended early, not just that it did. A zero collection produces no
+ * effect at all (rules.md §8.4), so there is nothing here to skip for it —
+ * a turn that collects nothing simply has no collection clause, and nothing
+ * in this sequence ever takes energy away.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -201,10 +224,11 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
       case "node-charged":
         clauses.push(`A new node charged at ${squareName(effect.square)}.`);
         break;
-      case "node-replaced":
-        clauses.push(
-          `The node at ${squareName(effect.retiredSquare)} is gone, and a new node appeared at ${squareName(effect.newSquare)}.`,
-        );
+      case "queue-refilled":
+        clauses.push(queueRefilledClause(effect));
+        break;
+      case "node-retired":
+        clauses.push(`The node at ${squareName(effect.square)} is gone.`);
         break;
       case "ship-freed":
         clauses.push(

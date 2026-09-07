@@ -1,14 +1,15 @@
 // The three states a node can be in (rules.md §8.1), and how a node's
 // single `level` number moves within each state: a charged node's capacity
-// and its two drawn drain distributions (§8.3), a depleted node's drawn
-// recovery distribution (§8.2), and the pressure cap an inactive node's
-// level is capped at (§8.2). Also the opening deal (§8.1), which draws the
-// whole starting board at once — twelve squares, from `nodePlacement.ts` —
-// and then the level of every one of them from its own opening drain and
-// opening pressure tables.
+// and its two drawn drain distributions (§8.3), and a depleted node's drawn
+// recovery distribution (§8.2). An inactive node's `level` carries its
+// priority instead (`nodeQueue.ts` owns everything about that). Also the
+// opening deal (§8.1), which draws the four charged squares and their
+// opening drains, then places the three inactive nodes by the same refill
+// procedure a later charge uses.
 
 import { ALL_SQUARES, type Square, squareName } from "./board";
 import { legalNodePool } from "./nodePlacement";
+import { refillQueue } from "./nodeQueue";
 import { drawIndex, drawWeightedIndex } from "./random";
 
 /** The three states a node can be in (rules.md §8.1). */
@@ -22,33 +23,13 @@ export type NodeState = "inactive" | "charged" | "depleted";
 export const NODE_CAPACITY = 60;
 
 /**
- * The most pressure an inactive node can build (rules.md §8.2). A first guess
- * to be play-tested and retuned, not a claim that 50 is right.
- */
-export const PRESSURE_CAP = 50;
-
-/**
- * The pressure an inactive node starts at when it finishes recovering
- * (rules.md §8.2, §8.6 step 6). The opening deal is the one exception: it
- * draws each inactive node's opening pressure from `OPENING_PRESSURE_TABLE`
- * instead (rules.md §8.1).
- */
-export const STARTING_PRESSURE = 1;
-
-/**
- * How many nodes the board aims to keep charged at all times (rules.md
- * §8.1, §8.2). This is an aim, not an invariant: the board charges up to
- * this many inactive nodes at the end of every turn, and falls short when
- * there are not enough inactive nodes to reach it.
+ * How many nodes the board keeps charged at all times (rules.md §8.1,
+ * §8.2). Unlike the pre-0.26 aim this now always holds exactly: the
+ * shortfall against this many is filled every turn, from the three
+ * inactive nodes and, if that is not enough, by the direct fourth
+ * placement.
  */
 export const TARGET_CHARGED_NODES = 4;
-
-/**
- * How many nodes the board carries at all times (rules.md §8.1, §8.2): the
- * opening deal places this many, and one retiring node is always replaced by
- * one new one, so the count never moves.
- */
-export const NODE_COUNT = 12;
 
 /** One outcome of a weighted draw: an amount, and its share of the total weight. */
 export interface WeightedAmount {
@@ -73,23 +54,6 @@ export const OPENING_DRAIN_TABLE: readonly WeightedAmount[] = [
   { amount: 30, weight: 7 },
   { amount: 35, weight: 6 },
   { amount: 40, weight: 4 },
-];
-
-/**
- * The pressure a dealt node opens at, drawn once for each of the eight
- * nodes the opening deal leaves inactive (rules.md §8.1). Weights are the
- * whole-number percentages the rules table shows. Average 12.79.
- */
-export const OPENING_PRESSURE_TABLE: readonly WeightedAmount[] = [
-  { amount: 1, weight: 24 },
-  { amount: 5, weight: 20 },
-  { amount: 10, weight: 16 },
-  { amount: 15, weight: 12 },
-  { amount: 20, weight: 9 },
-  { amount: 25, weight: 7 },
-  { amount: 30, weight: 5 },
-  { amount: 40, weight: 4 },
-  { amount: 50, weight: 3 },
 ];
 
 /**
@@ -147,11 +111,11 @@ export function drawTableAmount(
 
 /**
  * Deals a whole opening board (rules.md §8.1): the squares the fleet stands
- * on and a seed in, `NODE_COUNT` (12) node statuses keyed by `squareName`,
- * and the next seed out. `startingGameState` builds the fleet first so it
- * can pass the ships' squares here, which are excluded from where a node
- * may appear — building it consumes no randomness, so the seeded stream is
- * unaffected.
+ * on and a seed in, seven node statuses keyed by `squareName` — four charged
+ * and three inactive — and the next seed out. `startingGameState` builds
+ * the fleet first so it can pass the ships' squares here, which are
+ * excluded from where a node may appear — building it consumes no
+ * randomness, so the seeded stream is unaffected.
  *
  * The draw order is fixed and must not change, because a recorded game
  * replays by replaying the seed:
@@ -159,21 +123,18 @@ export function drawTableAmount(
  * 1. Draw `TARGET_CHARGED_NODES` (4) squares, one at a time, each from
  *    `legalNodePool` recomputed against the squares placed so far — so each
  *    placement respects the ones before it — and drawn uniformly via
- *    `drawIndex`, since at the deal no node has any pressure to weight by.
- * 2. Draw `NODE_COUNT - TARGET_CHARGED_NODES` (8) more squares the same
- *    way, from the pool the four charged squares have already narrowed.
- *    These are the nodes that open inactive.
- * 3. Walk all twelve dealt squares in board order (not charged-then-
- *    inactive). For each, one `drawTableAmount` call: the opening drain
- *    table if it was drawn charged in step 1, the opening pressure table
- *    otherwise. The result becomes the node's `level`; its state is
- *    `charged` or `inactive` to match.
+ *    `drawIndex`, since at the deal no node has any priority to weight by.
+ * 2. Walk those four squares in board order, drawing one `drawTableAmount`
+ *    call each from `OPENING_DRAIN_TABLE`. The result becomes the node's
+ *    `level`; its state is `charged`.
+ * 3. Place the three inactive nodes by one call to `refillQueue` (§8.2),
+ *    against the board as the four charged squares leave it — the same
+ *    procedure a later charge's refill uses, so the trio is spread apart
+ *    from the charged nodes and from each other and dealt priorities 1, 2
+ *    and 3 at random.
  *
- * That is 4 + 8 + 12 = 24 seed steps before green's first turn. Nothing is
- * dealt `depleted`. The shape of the deal has not changed — same three
- * phases, same order, still 24 steps — but a given seed now deals a
- * different board, because the fifth square drawn takes its level from the
- * opening pressure table instead of the opening drain table.
+ * That is 4 + 4 + 4 = 12 seed steps before green's first turn. Nothing is
+ * dealt `depleted`.
  */
 export function dealOpeningBoard(
   shipSquares: readonly Square[],
@@ -184,44 +145,39 @@ export function dealOpeningBoard(
   >,
   nextSeed: number,
 ] {
-  const dealtSquares: Square[] = [];
-  const chargedNames = new Set<string>();
+  const chargedSquares: Square[] = [];
   let workingSeed = seed;
 
   for (let count = 0; count < TARGET_CHARGED_NODES; count++) {
-    const pool = legalNodePool(dealtSquares, shipSquares);
+    const pool = legalNodePool(chargedSquares, shipSquares);
     const [index, nextSeed] = drawIndex(workingSeed, pool.length);
-    const square = pool[index];
-    dealtSquares.push(square);
-    chargedNames.add(squareName(square));
+    chargedSquares.push(pool[index]);
     workingSeed = nextSeed;
   }
 
-  const inactiveCount = NODE_COUNT - TARGET_CHARGED_NODES;
-  for (let count = 0; count < inactiveCount; count++) {
-    const pool = legalNodePool(dealtSquares, shipSquares);
-    const [index, nextSeed] = drawIndex(workingSeed, pool.length);
-    dealtSquares.push(pool[index]);
-    workingSeed = nextSeed;
-  }
-
-  const dealtNames = new Set(dealtSquares.map(squareName));
-  const orderedSquares = ALL_SQUARES.filter((square) =>
-    dealtNames.has(squareName(square)),
+  const chargedNames = new Set(chargedSquares.map(squareName));
+  const orderedChargedSquares = ALL_SQUARES.filter((square) =>
+    chargedNames.has(squareName(square)),
   );
 
   const nodes: Record<string, { state: NodeState; level: number }> = {};
 
-  for (const square of orderedSquares) {
-    const name = squareName(square);
-    const charged = chargedNames.has(name);
-    const [level, nextSeed] = drawTableAmount(
-      workingSeed,
-      charged ? OPENING_DRAIN_TABLE : OPENING_PRESSURE_TABLE,
-    );
-    nodes[name] = { state: charged ? "charged" : "inactive", level };
+  for (const square of orderedChargedSquares) {
+    const [level, nextSeed] = drawTableAmount(workingSeed, OPENING_DRAIN_TABLE);
+    nodes[squareName(square)] = { state: "charged", level };
     workingSeed = nextSeed;
   }
+
+  const [inactiveNodes, seedAfterRefill] = refillQueue(
+    chargedSquares,
+    chargedSquares,
+    shipSquares,
+    workingSeed,
+  );
+  for (const { square, priority } of inactiveNodes) {
+    nodes[squareName(square)] = { state: "inactive", level: priority };
+  }
+  workingSeed = seedAfterRefill;
 
   return [nodes, workingSeed];
 }
@@ -229,26 +185,23 @@ export function dealOpeningBoard(
 /**
  * How far a node's `level` has travelled through its state's own artwork
  * cycle, clamped to [0, 1]: a charged node's drain against `NODE_CAPACITY`,
- * a depleted node's remaining drain against `NODE_CAPACITY` (so a node ended
- * early begins its depleted spell already part travelled), and an inactive node's
- * pressure against `PRESSURE_CAP`, from 1 up. Every state reports a
- * position; none is undefined.
+ * and a depleted node's remaining drain against `NODE_CAPACITY` (so a node
+ * ended early begins its depleted spell already part travelled). An
+ * inactive node has no cycle position of its own any more — its artwork is
+ * drawn straight from its priority (`../board/NodeMarker.tsx`) — so this
+ * only ever takes `"charged"` or `"depleted"`.
  */
-export function nodeCyclePosition(state: NodeState, level: number): number {
-  const denominator = state === "inactive" ? PRESSURE_CAP - 1 : NODE_CAPACITY;
-
-  if (denominator <= 0) {
-    return 0;
-  }
-
+export function nodeCyclePosition(
+  state: "charged" | "depleted",
+  level: number,
+): number {
+  const denominator = NODE_CAPACITY;
   let raw: number;
 
   if (state === "charged") {
     raw = level / denominator;
-  } else if (state === "depleted") {
-    raw = 1 - level / denominator;
   } else {
-    raw = (level - 1) / denominator;
+    raw = 1 - level / denominator;
   }
 
   return Math.min(1, Math.max(0, raw));

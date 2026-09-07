@@ -20,10 +20,10 @@ import {
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
 import { drawIndex } from "./random";
+import { TOP_NODE_PRIORITY, rotatePriority } from "./nodeQueue";
 import {
   drawTableAmount,
   EMPTY_NODE_DRAIN_TABLE,
-  PRESSURE_CAP,
   type NodeState,
 } from "./nodes";
 
@@ -194,16 +194,19 @@ describe("applyMove", () => {
   });
 
   it("flying over an inactive node without stopping leaves it inactive (rules.md §8.2)", () => {
-    // Four charged nodes elsewhere hold the board at its target, so the
-    // charge draw has no shortfall to fill and never considers I8; I8
-    // itself sits at the pressure cap, so the pressure step also leaves it
-    // untouched — between the two, nothing about the end-of-turn sequence
-    // this move triggers can touch it. The L from H8 to J9 turns through I8
-    // (its orthogonal corner) without stopping there (rules.md §6).
+    // Four charged nodes elsewhere hold the board at its target, so
+    // charging has no shortfall to fill and never considers I8 — nothing
+    // about the end-of-turn sequence this move triggers can charge it. The
+    // L from H8 to J9 turns through I8 (its orthogonal corner) without
+    // stopping there (rules.md §6). I8's priority still rotates as normal,
+    // since nothing charged this turn — that is the ordinary end-of-turn
+    // sequence's own doing, not something the move itself causes. A red
+    // ship far away, with a legal move of its own, keeps red from
+    // auto-passing and running a second end-of-turn sequence of its own.
     const state = buildState({
-      ships: [ship("green-1", "green", "H8")],
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O15")],
       nodes: {
-        I8: ["inactive", PRESSURE_CAP],
+        I8: ["inactive", TOP_NODE_PRIORITY],
         C3: ["charged", 0],
         F3: ["charged", 0],
         C6: ["charged", 0],
@@ -218,34 +221,12 @@ describe("applyMove", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(result.state.nodes.I8).toEqual(state.nodes.I8);
+    expect(result.state.nodes.I8).toEqual({
+      state: "inactive",
+      level: rotatePriority(TOP_NODE_PRIORITY),
+    });
     const movedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(movedShip?.square).toEqual(squareFromName("J9"));
-  });
-
-  it("leaves an inactive node flown over unaffected", () => {
-    // As above: four charged nodes elsewhere leave the charge draw with no
-    // shortfall, and I8 sits at the pressure cap so the pressure step
-    // leaves it untouched too.
-    const state = buildState({
-      ships: [ship("green-1", "green", "H8")],
-      nodes: {
-        I8: ["inactive", PRESSURE_CAP],
-        C3: ["charged", 0],
-        F3: ["charged", 0],
-        C6: ["charged", 0],
-        F6: ["charged", 0],
-      },
-      plyNumber: 4,
-    });
-
-    const result = applyMove(state, "green-1", squareFromName("J9"));
-
-    expect(result.outcome).toBe("applied");
-    if (result.outcome !== "applied") {
-      throw new Error("expected the move to be applied");
-    }
-    expect(result.state.nodes.I8).toEqual(state.nodes.I8);
   });
 
   it("leaves the node set and every node's state unchanged when a move touches no node", () => {

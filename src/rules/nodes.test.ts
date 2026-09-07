@@ -16,16 +16,14 @@ import {
   EMPTY_NODE_DRAIN_TABLE,
   HELD_NODE_DRAIN_TABLE,
   NODE_CAPACITY,
-  NODE_COUNT,
   OPENING_DRAIN_TABLE,
-  OPENING_PRESSURE_TABLE,
-  PRESSURE_CAP,
   TARGET_CHARGED_NODES,
   type WeightedAmount,
   dealOpeningBoard,
   drawTableAmount,
   nodeCyclePosition,
 } from "./nodes";
+import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 
 /** The 121 squares C3-M13 — the interior §3.2's two ring exclusions leave. */
 function interiorSquares(): readonly Square[] {
@@ -77,15 +75,14 @@ const LEGAL_SQUARE_NAMES: readonly string[] = ALL_SQUARES.filter((square) => {
 }).map(squareName);
 
 describe("the board's charged target (rules.md §8.1, §8.2)", () => {
-  it("aims to keep four nodes charged", () => {
+  it("keeps four nodes charged at all times", () => {
     expect(TARGET_CHARGED_NODES).toBe(4);
   });
 });
 
-describe("capacity and pressure cap (rules.md §8.3, §8.2)", () => {
-  it("has a node capacity of 60 and a pressure cap of 50", () => {
+describe("capacity (rules.md §8.3)", () => {
+  it("has a node capacity of 60", () => {
     expect(NODE_CAPACITY).toBe(60);
-    expect(PRESSURE_CAP).toBe(50);
   });
 });
 
@@ -109,12 +106,6 @@ describe.each([
     table: OPENING_DRAIN_TABLE,
     outcomes: [0, 5, 10, 15, 20, 25, 30, 35, 40],
     average: 14,
-  },
-  {
-    name: "the opening pressure table",
-    table: OPENING_PRESSURE_TABLE,
-    outcomes: [1, 5, 10, 15, 20, 25, 30, 40, 50],
-    average: 12.79,
   },
   {
     name: "the empty-node drain table",
@@ -181,14 +172,13 @@ describe("dealing the opening board (rules.md §8.1)", () => {
   const drainAmounts = new Set(
     OPENING_DRAIN_TABLE.map((entry) => entry.amount),
   );
-  const pressureAmounts = new Set(
-    OPENING_PRESSURE_TABLE.map((entry) => entry.amount),
-  );
 
-  it("deals exactly twelve nodes, four charged and eight inactive, none depleted", () => {
+  it("deals exactly seven nodes, four charged and three inactive, none depleted", () => {
     const [nodes] = dealOpeningBoard(FLEET_SQUARES, 1);
 
-    expect(Object.keys(nodes)).toHaveLength(NODE_COUNT);
+    expect(Object.keys(nodes)).toHaveLength(
+      TARGET_CHARGED_NODES + INACTIVE_NODE_COUNT,
+    );
 
     const charged = Object.values(nodes).filter(
       (status) => status.state === "charged",
@@ -201,11 +191,25 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     );
 
     expect(charged).toHaveLength(TARGET_CHARGED_NODES);
-    expect(inactive).toHaveLength(NODE_COUNT - TARGET_CHARGED_NODES);
+    expect(inactive).toHaveLength(INACTIVE_NODE_COUNT);
     expect(depleted).toHaveLength(0);
   });
 
-  it("deals every square legal under §3.2 — inside C3-M13, off any ship, no two dealt squares adjacent — over many seeds", () => {
+  it("deals the three inactive nodes priorities {1, 2, 3}, one each, never a repeat", () => {
+    let seed = 1;
+    for (let i = 0; i < 300; i++) {
+      const [nodes, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
+      seed = nextSeed;
+
+      const priorities = Object.values(nodes)
+        .filter((status) => status.state === "inactive")
+        .map((status) => status.level)
+        .sort();
+      expect(priorities).toEqual([1, 2, 3]);
+    }
+  });
+
+  it("deals every square legal under §3.2 — the four charged inside C3-M13, none on the outer edge, off any ship, no two dealt squares adjacent — over many seeds", () => {
     const fleetNames = new Set(FLEET_SQUARES.map(squareName));
     let seed = 1;
     for (let i = 0; i < 500; i++) {
@@ -215,9 +219,23 @@ describe("dealing the opening board (rules.md §8.1)", () => {
       const names = Object.keys(nodes);
       const dealtSquares = names.map(squareFromName);
 
+      // The four charged squares are always drawn from the strict pool
+      // (rules.md §3.2), so they stay inside the 11 x 11 interior; the
+      // inactive trio's second and third squares are drawn from the
+      // widened pool (§8.2's refill procedure), which may land one ring in
+      // from the edge — outside the interior, but never on the outer edge
+      // itself.
       for (const name of names) {
-        expect(INTERIOR_NAMES.has(name)).toBe(true);
+        if (nodes[name].state === "charged") {
+          expect(INTERIOR_NAMES.has(name)).toBe(true);
+        }
         expect(fleetNames.has(name)).toBe(false);
+      }
+      for (const square of dealtSquares) {
+        expect(square.row).not.toBe(1);
+        expect(square.row).not.toBe(BOARD_SIZE);
+        expect(square.column).not.toBe("A");
+        expect(square.column).not.toBe("O");
       }
 
       for (let a = 0; a < dealtSquares.length; a++) {
@@ -228,14 +246,12 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     }
   });
 
-  it("draws every charged level from the opening drain table and every inactive level from the opening pressure table", () => {
+  it("draws every charged level from the opening drain table", () => {
     const [nodes] = dealOpeningBoard(FLEET_SQUARES, 1);
 
     for (const status of Object.values(nodes)) {
       if (status.state === "charged") {
         expect(drainAmounts.has(status.level)).toBe(true);
-      } else {
-        expect(pressureAmounts.has(status.level)).toBe(true);
       }
     }
   });
@@ -272,12 +288,12 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     expect(secondStates).not.toEqual(firstStates);
   });
 
-  it("advances the seed by exactly 24 steps", () => {
+  it("advances the seed by exactly 12 steps", () => {
     const seed = 987654321;
     const [, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
 
     let expectedSeed = seed;
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < 12; i++) {
       const [, advanced] = mulberry32(expectedSeed);
       expectedSeed = advanced;
     }
@@ -285,17 +301,10 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     expect(nextSeed).toBe(expectedSeed);
   });
 
-  it("draws levels at frequencies close to their tables' weights, over many deals", () => {
-    // Each deal now costs a `legalNodePool` scan per placement rather than a
-    // constant-size array lookup, so this is far fewer deals than the old
-    // fixed-square version — still tens of thousands of level draws, which is
-    // plenty to hold the same 3% margin.
+  it("draws charged levels at frequencies close to the opening drain table's weights, over many deals", () => {
     const DEALS = 3_000;
     const drainCounts = new Map(
       OPENING_DRAIN_TABLE.map((entry) => [entry.amount, 0]),
-    );
-    const pressureCounts = new Map(
-      OPENING_PRESSURE_TABLE.map((entry) => [entry.amount, 0]),
     );
 
     let seed = 42;
@@ -309,11 +318,6 @@ describe("dealing the opening board (rules.md §8.1)", () => {
             status.level,
             (drainCounts.get(status.level) ?? 0) + 1,
           );
-        } else {
-          pressureCounts.set(
-            status.level,
-            (pressureCounts.get(status.level) ?? 0) + 1,
-          );
         }
       }
     }
@@ -321,17 +325,6 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     const totalDrains = [...drainCounts.values()].reduce((a, b) => a + b, 0);
     for (const entry of OPENING_DRAIN_TABLE) {
       const share = (drainCounts.get(entry.amount) ?? 0) / totalDrains;
-      const expectedShare = entry.weight / 100;
-      expect(share).toBeGreaterThan(expectedShare - 0.03);
-      expect(share).toBeLessThan(expectedShare + 0.03);
-    }
-
-    const totalPressures = [...pressureCounts.values()].reduce(
-      (a, b) => a + b,
-      0,
-    );
-    for (const entry of OPENING_PRESSURE_TABLE) {
-      const share = (pressureCounts.get(entry.amount) ?? 0) / totalPressures;
       const expectedShare = entry.weight / 100;
       expect(share).toBeGreaterThan(expectedShare - 0.03);
       expect(share).toBeLessThan(expectedShare + 0.03);
@@ -361,7 +354,7 @@ describe("dealing the opening board (rules.md §8.1)", () => {
   });
 });
 
-describe("the node cycle position (rules.md §8.3, §8.2)", () => {
+describe("the node cycle position (rules.md §8.3)", () => {
   it("has charged report 0 at drain 0 and 1 at capacity", () => {
     expect(nodeCyclePosition("charged", 0)).toBe(0);
     expect(nodeCyclePosition("charged", NODE_CAPACITY)).toBe(1);
@@ -380,15 +373,5 @@ describe("the node cycle position (rules.md §8.3, §8.2)", () => {
   it("clamps depleted outside [0, 1], including a level carried above capacity", () => {
     expect(nodeCyclePosition("depleted", NODE_CAPACITY + 10)).toBe(0);
     expect(nodeCyclePosition("depleted", -10)).toBe(1);
-  });
-
-  it("has inactive report 0 at pressure 1 and 1 at the pressure cap", () => {
-    expect(nodeCyclePosition("inactive", 1)).toBe(0);
-    expect(nodeCyclePosition("inactive", PRESSURE_CAP)).toBe(1);
-  });
-
-  it("clamps inactive outside [0, 1]", () => {
-    expect(nodeCyclePosition("inactive", 0)).toBe(0);
-    expect(nodeCyclePosition("inactive", PRESSURE_CAP + 10)).toBe(1);
   });
 });
