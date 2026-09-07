@@ -732,10 +732,13 @@ any.
 ## Appendix B — Sizing the queue
 
 The board carries **four** charged nodes and **three** inactive ones at all
-times, plus however many happen to be depleted and counting down —
-typically none or one, occasionally more — so the board as a whole runs at
-roughly **seven to eight** nodes most of the time, breathing a little higher
-rather than fixed at a count the way the twelve-node board once was.
+times, plus however many happen to be depleted and counting down. Measured
+over several hundred turns of sustained play, that count breathes between
+**seven** and **eleven** — a charged node's own countdown and the depleted
+node it can leave behind each run most of a dozen turns, so several are
+often alive together, and the total sits nearer the top of that range more
+often than the bottom — rather than fixed at a count the way the
+twelve-node board once was.
 
 A node's life is no longer a mix of drawn rates: a charged node lasts
 **11 turns** once a ship steps on it, and **forever** if nobody does — a
@@ -762,11 +765,11 @@ two** — comfortably inside what the three inactive nodes always cover.
 Every shortfall is filled on the turn it appears.
 
 On an empty board the strict pool holds **51** squares and the widened pool
-holds **79** (section 3.2). On a played board — four charged nodes down and
-a dozen ships on it — a refill's three draws pick from roughly **32**, **47**
-and **43** squares respectively, the pool widening as each draw lifts the
-one-square-in constraint and narrowing again as ships and the nodes already
-placed this refill block squares of their own.
+holds **79** (section 3.2). On a played board — closer to eleven nodes down
+than seven, and a dozen ships on it — a refill's three draws pick from
+roughly **25**, **38** and **34** squares respectively, the pool widening as
+each draw lifts the one-square-in constraint and narrowing again as ships
+and the nodes already placed this refill block squares of their own.
 
 The weighting earns its keep: measured over several hundred turns of actual
 play across a handful of seeds, the smallest pairwise gap within a freshly
@@ -791,6 +794,6 @@ opening deal's seven and a refill's three — is legal, under the right
 pool, at the moment it appears; and that a freshly refilled trio comes out
 measurably more spread than an unweighted draw from the same pools would.
 
-These counts — seven to eight nodes breathing, the pool sizes and the
-spread figures above — are first guesses to be play-tested and retuned like
-every other number in this document.
+These counts — the node count breathing between seven and eleven, the pool
+sizes and the spread figures above — are first guesses to be play-tested and
+retuned like every other number in this document.

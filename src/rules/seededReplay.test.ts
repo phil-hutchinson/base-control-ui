@@ -161,6 +161,25 @@ function queueRefills(
   return refills;
 }
 
+/**
+ * D9's first long-run invariant: a charged node carrying a countdown always
+ * has a ship standing on it. A countdown starts only when a ship moves onto
+ * the node and ends the instant it either leaves (§8.3) or the node
+ * depletes (§8.6 step 3), so this must hold after every action in a real,
+ * ship-driven game — unlike `nodePool.test.ts`'s synthetic driver, which
+ * gives a charged node a countdown with no ship to back it.
+ */
+function assertChargedCountdownHasShip(state: GameState): void {
+  const shipSquareNames = new Set(
+    state.ships.map((ship) => squareName(ship.square)),
+  );
+  for (const [name, status] of Object.entries(state.nodes)) {
+    if (status.state === "charged" && status.level > 0) {
+      expect(shipSquareNames.has(name)).toBe(true);
+    }
+  }
+}
+
 /** A hard ceiling on actions applied, so a regression fails an assertion, not the test runner. */
 const MAX_ACTIONS = 10_000;
 
@@ -207,6 +226,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     if (action === undefined) {
       const { state: nextState, effect } = applyPassGuard(state);
       state = nextState;
+      assertChargedCountdownHasShip(state);
       if (effect !== undefined) {
         chargedNodes.push(...chargedSquares([effect]));
         retiredNodeSquares.push(...retiredNodes([effect]));
@@ -223,6 +243,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
         );
       }
       state = result.state;
+      assertChargedCountdownHasShip(state);
       for (const effect of result.effects) {
         if (effect.type === "fight-resolved") {
           fightCount += 1;
@@ -242,6 +263,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
         );
       }
       state = result.state;
+      assertChargedCountdownHasShip(state);
       chargedNodes.push(...chargedSquares(result.effects));
       retiredNodeSquares.push(...retiredNodes(result.effects));
       queueRefillSweeps.push(...queueRefills(result.effects));

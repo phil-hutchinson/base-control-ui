@@ -967,7 +967,39 @@ element is `aria-hidden` with no accessible text, like the other artwork.
 
 ### Step 7 — The long-run economy and Appendix B's figures
 
-Status: pending
+Status: committed
+
+Notes: `nodePool.test.ts`'s rebuild was already largely finished in Step 4
+(D14's driver, and the cadence test already restated against it), so this
+step's remaining work was: replacing the two soft, measured expiry bounds
+(`MAXIMUM_MULTI_EXPIRY_SHARE`, `MAXIMUM_EXPIRIES_IN_ONE_PLY`) with D9's
+invariants 2 and 3 as hard, exact assertions — at most one `node-ran-out`
+and at most two `node-charged` effects on any single sampled ply, tracked
+via a new `nodesChargedThisPly` field on `EconomySample` — proved to hold
+for every sample of every seed rather than merely bounded by a measured
+share; and adding D9's invariant 1 (a charged node with a countdown always
+has a ship on it) to `seededReplay.test.ts` as `assertChargedCountdownHasShip`,
+called after every action `playSeededGame` applies, per the header comment
+in `nodePool.test.ts` (added in Step 4) that already named
+`seededReplay.test.ts` as where it belonged. `fullGame.test.ts` was not
+touched, since `seededReplay.test.ts` already had the natural seam.
+Re-measured Appendix B's figures against a fresh run of `nodePool.test.ts`'s
+own driver (via a throwaway instrumented copy, deleted before finishing):
+the total-node-count band's comment was stale (claimed a mean of 8.4; the
+driver's actual mean is 10.9, confirmed against the real file, not just the
+throwaway copy) and is corrected in place; `rules.md`'s Appendix B "roughly
+seven to eight nodes" and the refill pool-size figures (32/47/43) were both
+measurably wrong against the same driver and are corrected to "seven to
+eleven" and 25/38/34 respectively, folded into the existing 0.27 changelog
+entry per S12 (no version bump, no second entry, since the changelog's own
+wording never named the specific figures). The spread figures (4.78/3.78
+squares, 1.11/0.14 edge/corner shares) were re-measured too and found still
+accurate to within rounding (4.79/3.71, 1.18/0.16) — §3.2 is untouched by
+this story, so these were expected to hold and needed no correction.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and the full
+suite (`npm test`, 1024 tests) are all green. No deviation from the plan
+beyond the note above about `fullGame.test.ts` vs `seededReplay.test.ts` for
+invariant 1, which the plan explicitly left either file free to take.
 
 With the model in and the deletions done, measure it and pin the invariants
 the deletions rest on.

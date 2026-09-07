@@ -102,34 +102,14 @@ const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
 /**
  * The band the board's total node count — four charged, three inactive,
  * plus however many are depleted — is allowed to breathe within. Measured
- * range across `SEEDS` and `PLIES_TO_RUN`: 7 to 11, with a mean around 8.4.
- * This bound leaves a little margin either side of the measured range.
+ * range across `SEEDS` and `PLIES_TO_RUN`: 7 to 11, with a mean around 10.9
+ * — the driver this file's header describes starts a countdown so eagerly
+ * that several traps and exits are typically depleted and counting down at
+ * once, closer to the top of the range than the bottom. This bound leaves a
+ * little margin either side of the measured range.
  */
 const MINIMUM_TOTAL_NODES = 6;
 const MAXIMUM_TOTAL_NODES = 12;
-
-/**
- * How often two or more nodes are allowed to run out on the same turn, as a
- * share of turns played. Measured at 0% over `SEEDS`: the driver this file's
- * header describes starts at most one countdown per ply, and every
- * countdown runs the same length, so two started on different plies always
- * expire on different plies too (rules.md §8.3's "at most one countdown
- * starts per turn" argument, exercised here rather than only reasoned
- * about). The bound below still leaves room above zero, so a future change
- * that makes a double expiry possible is caught rather than silently passed.
- */
-const MAXIMUM_MULTI_EXPIRY_SHARE = 0.1;
-
-/**
- * No turn was observed to run out all four charged nodes at once across
- * this file's runs, so `MAXIMUM_EXPIRIES_IN_ONE_PLY` below is set one short
- * of `TARGET_CHARGED_NODES`. That is a description of what was measured, not
- * a rule the game enforces: the driver this file's header describes starts
- * at most one countdown per ply, which is what keeps four simultaneous
- * expiries essentially unreachable here, just as it is in a real game
- * (rules.md §8.3).
- */
-const MAXIMUM_EXPIRIES_IN_ONE_PLY = TARGET_CHARGED_NODES - 1;
 
 /** One ply's sample of the board, taken from `result.state` after `runEndOfTurn`. */
 interface EconomySample {
@@ -137,6 +117,7 @@ interface EconomySample {
   readonly depletedCount: number;
   readonly totalNodeCount: number;
   readonly nodesRanOutThisPly: number;
+  readonly nodesChargedThisPly: number;
   /** Every inactive node's square name and priority, for the invariant and rotation checks. */
   readonly inactiveByName: ReadonlyMap<string, number>;
 }
@@ -237,6 +218,9 @@ function runEconomy(seed: number, plies: number): EconomyRun {
       totalNodeCount: nodeSquares(result.state).length,
       nodesRanOutThisPly: result.effects.filter(
         (effect) => effect.type === "node-ran-out",
+      ).length,
+      nodesChargedThisPly: result.effects.filter(
+        (effect) => effect.type === "node-charged",
       ).length,
       inactiveByName,
     });
@@ -357,22 +341,21 @@ describe("the queue's invariants hold at every turn (Appendix B)", () => {
   );
 
   it.each(SEEDS)(
-    "keeps expiries spread rather than arriving together (seed %d)",
+    "runs out at most one charged node, and charges at most two, in any single turn (rules.md §8.3, D9 invariants 2 and 3) (seed %d)",
     (seed) => {
+      // At most one countdown starts per turn — a turn is one action, and a
+      // move onto a charged node is the only way in (§8.3) — so at most one
+      // countdown of any kind expires on a given turn: at most one node runs
+      // out, and the shortfall it (plus at most one departure) can create is
+      // never more than two, which the queue's three inactive nodes always
+      // cover. Both bounds are exact, not measured, and hold for every
+      // sample of every seed this file runs, with no slack.
       const run = runEconomy(seed, PLIES_TO_RUN);
 
-      const multiExpiryPlies = run.samples.filter(
-        (sample) => sample.nodesRanOutThisPly >= 2,
-      ).length;
-      expect(multiExpiryPlies / run.samples.length).toBeLessThan(
-        MAXIMUM_MULTI_EXPIRY_SHARE,
-      );
-
-      for (const sample of run.samples) {
-        expect(sample.nodesRanOutThisPly).toBeLessThanOrEqual(
-          MAXIMUM_EXPIRIES_IN_ONE_PLY,
-        );
-      }
+      run.samples.forEach((sample, i) => {
+        expect(sample.nodesRanOutThisPly, `ply ${i}`).toBeLessThanOrEqual(1);
+        expect(sample.nodesChargedThisPly, `ply ${i}`).toBeLessThanOrEqual(2);
+      });
     },
   );
 });
