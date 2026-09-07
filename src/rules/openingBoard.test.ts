@@ -3,13 +3,22 @@
 // opening board" block already checks a deal's own shape and distributions
 // in isolation; this file checks the properties that only show up once a
 // dealt board is actually played from: the economy still runs to
-// completion from wherever the deal put it, the first charge of the game
-// charges exactly the priority-3 node, and a node dealt deep into its life
-// runs out sooner than one dealt fresh.
+// completion from wherever the deal put it, and the first charge of the
+// game charges exactly the priority-3 node.
+//
+// A dealt board's four charged nodes carry no countdown (rules.md §8.1,
+// §8.3) and never change on their own, so "runs to completion" needs a
+// stand-in for a ship stepping onto one: at the start of each ply, at most
+// one charged node with no countdown already running is given one. At most
+// **one** matters, mirroring "at most one countdown starts per turn"
+// (rules.md §8.3) — it is what keeps expiries staggered rather than piling
+// up together. This is a driver standing in for play, not a claim about
+// what a real game does.
 
 import { describe, expect, it } from "vitest";
 import { squareFromName, squareName } from "./board";
 import { runCharging } from "./charging";
+import { CHARGED_COUNTDOWN_PLIES } from "./countdown";
 import { runEndOfTurn } from "./endOfTurn";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
@@ -20,11 +29,33 @@ import {
   startingGameState,
 } from "./gameState";
 import { TOP_NODE_PRIORITY } from "./nodeQueue";
-import { NODE_CAPACITY, TARGET_CHARGED_NODES, dealOpeningBoard } from "./nodes";
+import { TARGET_CHARGED_NODES, dealOpeningBoard } from "./nodes";
 
 const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
   (entry) => entry.square,
 );
+
+/**
+ * Gives a countdown to the first charged node with none, in board order, if
+ * any — the driver this file's header describes. Returns `state` unchanged
+ * if every charged node already has one running (or there are none).
+ */
+function startOneCountdown(state: GameState): GameState {
+  for (const square of nodeSquares(state)) {
+    const name = squareName(square);
+    const status = state.nodes[name];
+    if (status?.state === "charged" && status.level === 0) {
+      return {
+        ...state,
+        nodes: {
+          ...state.nodes,
+          [name]: { state: "charged", level: CHARGED_COUNTDOWN_PLIES },
+        },
+      };
+    }
+  }
+  return state;
+}
 
 const RUN_TO_COMPLETION_SEEDS = [70210001, 70210002, 70210003];
 const RUN_TO_COMPLETION_PLIES = 500;
@@ -50,6 +81,7 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       const charged = new Set<string>();
 
       for (let ply = 0; ply < RUN_TO_COMPLETION_PLIES; ply++) {
+        state = startOneCountdown(state);
         const result = runEndOfTurn(state);
         for (const effect of result.effects) {
           if (effect.type === "node-ran-out") {
@@ -63,8 +95,8 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
         state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
       }
 
-      // Every node the deal charged eventually drains and goes depleted —
-      // nothing sits at its dealt drain forever.
+      // Every node the deal charged eventually runs out — nothing sits at
+      // baseline forever once the driver has reached it.
       for (const name of dealtChargedNames) {
         expect(ranOut.has(name)).toBe(true);
       }
@@ -74,16 +106,12 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       // node-charged effect. Not necessarily all three: a charge sweeps the
       // whole queue (§8.2), so whichever of the three did not charge on the
       // turn the shortfall was filled are discarded, unused, rather than
-      // waiting their own turn — a genuine change from the pre-0.26 charge
-      // draw, which drew nodes one at a time without ever discarding one
-      // unused.
+      // waiting their own turn.
       const dealtInactiveCharged = dealtInactiveNames.filter((name) =>
         charged.has(name),
       );
       expect(dealtInactiveCharged.length).toBeGreaterThan(0);
-      // The queue charges a healthy number of distinct squares over the
-      // run — measured at 45-51 across the three seeds above; the floor
-      // here leaves generous margin below that.
+      // The queue charges a healthy number of distinct squares over the run.
       expect(charged.size).toBeGreaterThan(15);
       // The board is back at its target count by the end of the run.
       const finalCharged = nodeSquares(state).filter(
@@ -124,7 +152,7 @@ describe("the first charge of a game charges the priority-3 node (rules.md §8.1
         ships: [],
         nodes: {
           ...dealt,
-          [chargedName]: { state: "depleted", level: NODE_CAPACITY },
+          [chargedName]: { state: "depleted", level: 1 },
         },
         sideToMove: "green",
         actionsRemaining: 1,
@@ -143,68 +171,5 @@ describe("the first charge of a game charges the priority-3 node (rules.md §8.1
         { type: "node-charged", square: squareFromName(priorityThreeName) },
       ]);
     }
-  });
-});
-
-/** A minimal state with a single charged node at H8 and nothing else, so nothing but its own drain draw can affect when it runs out. */
-function singleChargedNodeState(seed: number, level: number): GameState {
-  return {
-    ships: [],
-    nodes: { H8: { state: "charged", level } },
-    sideToMove: "green",
-    actionsRemaining: 1,
-    actedThisPly: [],
-    plyNumber: 1,
-    randomSeed: seed,
-    openingSeed: seed,
-    energy: { green: 0, red: 0 },
-    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-    outOfTime: { green: false, red: false },
-  };
-}
-
-/** The ply H8 first runs out on, running empty end-of-turns from `level` with no ship anywhere. */
-function firstRunOutPly(seed: number, level: number): number {
-  let state = singleChargedNodeState(seed, level);
-
-  for (let ply = 1; ply <= 200; ply++) {
-    const result = runEndOfTurn(state);
-    for (const effect of result.effects) {
-      if (
-        effect.type === "node-ran-out" &&
-        squareName(effect.square) === "H8"
-      ) {
-        return ply;
-      }
-    }
-    state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
-  }
-
-  throw new Error("H8 never ran out within 200 plies — likely a regression");
-}
-
-const RUN_OUT_SEEDS = Array.from({ length: 30 }, (_, index) => 4102000 + index);
-
-describe("a node dealt deep into its life runs out sooner than one dealt fresh (rules.md §8.1, §8.3)", () => {
-  it("runs out in about 10 plies from drain 40, and about 29 from drain 0", () => {
-    const pliesFromZero = RUN_OUT_SEEDS.map((seed) => firstRunOutPly(seed, 0));
-    const pliesFromForty = RUN_OUT_SEEDS.map((seed) =>
-      firstRunOutPly(seed, 40),
-    );
-
-    const average = (values: readonly number[]): number =>
-      values.reduce((total, value) => total + value, 0) / values.length;
-
-    const averageFromZero = average(pliesFromZero);
-    const averageFromForty = average(pliesFromForty);
-
-    // The empty-node drain table averages 2.1 a turn, so a node with 60 to
-    // burn averages about 29 plies and one with 20 left averages about 10 —
-    // generous bounds around those, not a target to tune to.
-    expect(averageFromZero).toBeGreaterThan(20);
-    expect(averageFromZero).toBeLessThan(40);
-    expect(averageFromForty).toBeGreaterThan(5);
-    expect(averageFromForty).toBeLessThan(18);
-    expect(averageFromForty).toBeLessThan(averageFromZero);
   });
 });

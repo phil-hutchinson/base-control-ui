@@ -689,7 +689,92 @@ returns a square a ship stands on.
 
 ### Step 4 — The countdown replaces drain and recovery, end to end
 
-Status: pending
+Status: committed
+
+Notes: Landed the model exactly as D1/D6/D7 specify. `gameState.ts`'s
+`NodeStatus` doc comment now matches D1's table (no field change).
+`nodes.ts` lost `NODE_CAPACITY`, all four tables, `WeightedAmount` and
+`drawTableAmount`; `dealOpeningBoard` deals its four charged squares at
+level 0 in 8 seed steps (down from 12), and `nodeCyclePosition` is gone
+(it moved to `countdown.ts` in Step 2). `endOfTurn.ts` step 3 now spends
+one ply off every charged node carrying a countdown (`level` above 0,
+deterministic, no seed draw) and deposits `TRAP_COUNTDOWN_PLIES` on
+runout; step 6 spends one ply off every already-depleted node the same
+way. `ply.ts`'s `applyMove` gained the two node changes D6 describes —
+departure depletes the left square at once with `EXIT_COUNTDOWN_PLIES`
+and a `node-spent` effect pushed first, arrival on a countdown-less
+charged node starts one at `CHARGED_COUNTDOWN_PLIES` — and its own and
+`assertFightInvariants`'s doc comments are reworded to name the move as
+the one exception to "a node's state changes only in the end-of-turn
+sequence." `announcements.ts` speaks `node-spent` in the `moved` sentence,
+between the move and cost clauses and the action-ending clause.
+`Board.tsx` repoints its `nodeCyclePosition` import to `countdown.ts` and
+now passes whether a ship stands on the square, computing `ship` before
+`cyclePosition` to do so — this is only the ball's arithmetic; `NodeCountdown`
+and the visible number are Step 6's job.
+
+Every file D13 lists for this step was updated; three needed more than a
+mechanical fix because the model change makes their old premises false,
+not just their imports:
+
+- `camping.test.ts` was substantially rewritten, not just trimmed: beyond
+  deleting the two blocks D13 names (a node charging under a parked ship;
+  an inactive node's camping cost), the whole "a node left lit still burns
+  down, and either side may retake it" block asserted the literal opposite
+  of the new rule (leaving no longer ends a node) and was replaced with
+  two tests for leaving ending a node at once, per D6/D7/S3.
+- `endOfTurn.test.ts`'s closing describe block, "the opening board does not
+  fall into lockstep", drove `runEndOfTurn` with no ship activity and
+  asserted charged nodes eventually ran out — impossible now that a
+  charged node only gets a countdown from a ship. Replaced with "a quiet
+  board does nothing at all", asserting the opening board's four charged
+  nodes stay at baseline and the seed never moves across many plies with
+  nobody acting — one of the plan's required new integration behaviours.
+  The rest of that file's tests survive with their drain/recovery language
+  and seed arithmetic replaced by the deterministic countdown, and several
+  filler charged nodes that were harmlessly non-zero under the old drain
+  model (where low levels meant "barely charged") had to move to level 0
+  (baseline) so they do not now spuriously deplete mid-test.
+- `openingBoard.test.ts`'s "a game played from a dealt board runs to
+  completion" had the same no-ship-activity problem as the file above; it
+  was **not** in D13's delete/survive list (only the "dealt deep" test and
+  the first-charge test were named), so this is a deviation: rather than
+  delete it, it gained the same synthetic one-countdown-per-ply driver
+  D14 specifies for `nodePool.test.ts`, since deleting it would have left
+  this file's central "runs to completion" claim completely uncovered.
+  The "dealt deep into its life" test is deleted outright per D13, and the
+  first-charge test's `NODE_CAPACITY` placeholder became a plain countdown
+  level.
+
+Also beyond D13's list: `nodePool.test.ts` needed D14's synthetic
+one-countdown-per-ply driver to remain non-vacuous — the plan's Step 7
+text says to "finish" this file's rebuild, implying Step 4 starts it, and
+D13's own file list does assign it here — so the driver, the header note
+explaining it, and every affected measured constant (cadence dropped from
+~7.9 to ~2.8 plies between refills once several staggered countdowns can
+run at once; the multi-expiry share is now a measured 0%, matching the
+"at most one countdown per turn" argument exercised rather than only
+reasoned about) were re-measured and updated in place; the total-node-count
+band happened to still hold unchanged. `seededReplay.test.ts` gained D14's
+second policy preference (move onto a charged node when available) and had
+its non-vacuous floors re-measured and lowered to match (fights dropped
+from 3 to 2 over the same seed now that the policy sometimes prefers a
+charged-node move over an available attack); its header's stream-narrative
+prose is left for Step 9's sweep, per the plan's own division of labour.
+`gameState.test.ts`, `ply.test.ts`, `fullGame.test.ts` (its greedy policy's
+doc comment, naming the no-longer-landable inactive node) and
+`announcements.test.ts` (a new case for the `node-spent` clause, not
+required by D13 but a direct consequence of D7) round out the test
+changes. `trap.test.ts` and `src/game/session.test.ts` needed no changes at
+all — the former's helpers hard-code `level: 0` and never touch the
+countdown, and the latter's only affected case was already fixed in Step 3.
+
+Ran `npx prettier --write` on the two files it flagged after the code
+changes (`EnergyOverlay.tsx`, `endOfTurn.ts`). `npm run typecheck`,
+`npm run lint`, `npm run format:check` and the full suite (`npm test`,
+1023 tests) are all green, and the step's grep checklist
+(`NODE_CAPACITY`, `DRAIN_TABLE`, `DEPLETED_RECOVERY_TABLE`,
+`drawTableAmount`) has no surviving matches in `src/`.
 
 The story's central change, and the largest step in this plan. It is one step
 because the model change is atomic: the moment the drain tables stop running

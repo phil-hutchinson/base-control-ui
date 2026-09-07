@@ -6,7 +6,7 @@
 // "node", never "ply" or "hub".
 
 import { isPlanet } from "../rules/planets";
-import { squareName } from "../rules/board";
+import { type Square, squareName } from "../rules/board";
 import { chargedNodesHeldBy } from "../rules/energy";
 import type {
   EndOfTurnEffect,
@@ -27,6 +27,7 @@ import type {
   AttackEffect,
   FightResolvedEffect,
   MoveEffect,
+  NodeSpentEffect,
   PassEffect,
   PlyEndedEffect,
 } from "../rules/ply";
@@ -296,9 +297,20 @@ function moveCostClause(cost: PowerLevel, powerAfter: PowerLevel): string {
 }
 
 /**
- * "What the move was": the ship's journey, whether it ended on a planet, and
- * what the move cost (rules.md §6). Either side's ship reads the same way;
- * the side is already named at the start of the sentence.
+ * A charged node depleting the instant its holder left it (rules.md §8.3):
+ * one sentence, naming the square, for the `node-spent` effect a departing
+ * move carries.
+ */
+function nodeSpentClause(square: Square): string {
+  return `The node at ${squareName(square)} ended when the ship left it.`;
+}
+
+/**
+ * "What the move was": the ship's journey, whether it ended on a planet, what
+ * the move cost (rules.md §6), and — between those and the action-ending
+ * clauses — whether it spent a charged node by leaving it (§8.3). Either
+ * side's ship reads the same way; the side is already named at the start of
+ * the sentence.
  */
 function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);
@@ -307,7 +319,13 @@ function moveSentence(event: MovedEvent): string {
     ? `${capitalize(event.side)} ship moved from ${from} onto the ${to} planet.`
     : `${capitalize(event.side)} ship moved from ${from} to ${to}.`;
 
-  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}`;
+  const nodeSpent = event.effects.find(
+    (effect): effect is NodeSpentEffect => effect.type === "node-spent",
+  );
+  const nodeSpentClauseText =
+    nodeSpent !== undefined ? ` ${nodeSpentClause(nodeSpent.square)}` : "";
+
+  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}${nodeSpentClauseText}`;
 }
 
 /**

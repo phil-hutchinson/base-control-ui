@@ -132,6 +132,23 @@ describe("announcementFor", () => {
     );
   });
 
+  it("announces a node spent by leaving it, between the move sentence and the action-ending clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("G", 7),
+      to: squareAt("H", 8),
+      effects: [{ type: "node-spent", square: squareAt("G", 7) }],
+      actionsRemaining: 1,
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from G7 to H8. The move cost 1 power, leaving 5. The node at G7 ended when the ship left it. Green has 1 action left.",
+    );
+  });
+
   it("announces a move that ends the ply", () => {
     const event: MovedEvent = {
       type: "moved",

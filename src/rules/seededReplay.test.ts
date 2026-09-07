@@ -42,7 +42,7 @@ import { type Square, squareName } from "./board";
 import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
-import { type GameState, startingGameState } from "./gameState";
+import { type GameState, nodeStateAt, startingGameState } from "./gameState";
 import { legalDestinations } from "./movement";
 import {
   type AttackEffect,
@@ -67,14 +67,27 @@ type Action =
 
 /**
  * An attack-first policy: the first ship, in fleet order, with a legal
- * attack takes it; failing that, the first ship with a legal move takes it;
- * failing that, there is nothing to do and the pass guard handles it.
+ * attack takes it; failing that, the first ship, in fleet-then-destination
+ * order, with a legal move onto a charged node takes it — a countdown only
+ * ever starts this way (rules.md §8.3), and a ship that then holds the node
+ * to the end leaves it, so this is also what drives the departures that
+ * turn a charged node into an exit; failing that, the first ship with any
+ * legal move takes it; failing that, there is nothing to do and the pass
+ * guard handles it.
  */
 function chooseAction(state: GameState): Action | undefined {
   for (const ship of state.ships) {
     const targets = legalTargets(state, ship.id);
     if (targets.length > 0) {
       return { kind: "attack", shipId: ship.id, target: targets[0] };
+    }
+  }
+
+  for (const ship of state.ships) {
+    for (const destination of legalDestinations(state, ship.id)) {
+      if (nodeStateAt(state, destination) === "charged") {
+        return { kind: "move", shipId: ship.id, destination };
+      }
     }
   }
 
@@ -269,16 +282,19 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     // first turn — a ship only becomes unattackable by flying onto a
     // planet, away from the board's outer edge — so this attack-first
     // policy keeps finding fights across the run rather than stalling
-    // early. Re-measured at 3 fights (6 planet returns) for this seed over
-    // forty rounds since §6's move table shrank to two shapes' worth of
-    // reach (0.24); the floors below leave margin below that.
-    expect(fightCount).toBeGreaterThanOrEqual(2);
-    expect(planetReturns.length).toBeGreaterThanOrEqual(4);
-    // Re-measured at 10 charges, 8 retirements and 9 refills for this seed
-    // over forty rounds (0.26); the floors below leave margin below that.
-    expect(chargedNodes.length).toBeGreaterThanOrEqual(7);
-    expect(retiredNodes.length).toBeGreaterThanOrEqual(6);
-    expect(queueRefills.length).toBeGreaterThanOrEqual(6);
+    // early. Re-measured at 2 fights (4 planet returns) for this seed over
+    // forty rounds under the countdown model (0.27), whose second
+    // preference (moving onto a charged node) now competes with attacking
+    // for a ship's action; the floors below leave margin below that.
+    expect(fightCount).toBeGreaterThanOrEqual(1);
+    expect(planetReturns.length).toBeGreaterThanOrEqual(2);
+    // Re-measured at 6 charges, 6 retirements and 6 refills for this seed
+    // over forty rounds (0.27) — the countdown's own second preference is
+    // what drives these now, rather than nodes expiring on their own; the
+    // floors below leave margin below that.
+    expect(chargedNodes.length).toBeGreaterThanOrEqual(4);
+    expect(retiredNodes.length).toBeGreaterThanOrEqual(4);
+    expect(queueRefills.length).toBeGreaterThanOrEqual(4);
   });
 
   it("replays the same opening board, the same planet sequence, the same charged-node sequence, the same retirement and refill sequences and the same final state from the same seed", () => {

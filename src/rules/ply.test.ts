@@ -21,11 +21,8 @@ import {
 import { MAX_POWER, type PowerLevel } from "./power";
 import { drawIndex } from "./random";
 import { TOP_NODE_PRIORITY, rotatePriority } from "./nodeQueue";
-import {
-  drawTableAmount,
-  EMPTY_NODE_DRAIN_TABLE,
-  type NodeState,
-} from "./nodes";
+import { type NodeState } from "./nodes";
+import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
 
 function ship(
   id: ShipId,
@@ -200,12 +197,15 @@ describe("applyMove", () => {
     ]);
   });
 
-  it("landing on a charged node leaves it charged: nothing a ship does changes a node's state (rules.md §8.2)", () => {
+  it("landing on a charged node with no countdown starts one (rules.md §8.3)", () => {
     // A ship may only ever end a move on a charged node (rules.md §6) — an
     // inactive or depleted destination is refused before it can be reached.
+    // red-1 gives red a legal move, so applyPassGuard does not immediately
+    // run a second end-of-turn sequence for a passed red ply — this checks
+    // exactly the state green's own move produces, nothing beyond it.
     const state = buildState({
-      ships: [ship("green-1", "green", "H8")],
-      nodes: { J8: ["charged", 1] },
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
+      nodes: { J8: ["charged", 0] },
       plyNumber: 5,
     });
 
@@ -215,10 +215,12 @@ describe("applyMove", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    // A charged node's drain still rises at the end of every turn regardless
-    // of what a ship does (§8.3), so only its state is asserted here, not
-    // its exact level.
-    expect(result.state.nodes.J8.state).toBe("charged");
+    // The countdown starts at CHARGED_COUNTDOWN_PLIES as the move resolves,
+    // and this same call's own end-of-turn sequence spends its first ply.
+    expect(result.state.nodes.J8).toEqual({
+      state: "charged",
+      level: CHARGED_COUNTDOWN_PLIES - 1,
+    });
     const movedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(movedShip?.square).toEqual(squareFromName("J8"));
   });
@@ -736,13 +738,13 @@ describe("applyAttack", () => {
     );
   });
 
-  it("advances randomSeed exactly twice for the fight itself, then once per charged node's drain", () => {
+  it("advances randomSeed exactly twice for the fight itself, and nothing further", () => {
     // Drawing the second return from the same seed the first draw used
     // would silently break replay: the pool is just one square shorter, so
     // the draw still looks legal. Four charged nodes elsewhere hold the
-    // board at its target, so charging has no shortfall to fill and the
-    // only draws the end-of-turn sequence adds beyond the fight itself are
-    // each charged node's own step 3 drain draw.
+    // board at its target, so charging has no shortfall to fill, and none
+    // of them carries a countdown, so nothing in the end-of-turn sequence
+    // draws from the seed beyond the fight itself.
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
       nodes: {
@@ -767,23 +769,7 @@ describe("applyAttack", () => {
       seedAfterAttackerDraw,
       PLANETS.length - 1,
     );
-    const [, seedAfterC3] = drawTableAmount(
-      seedAfterDefenderDraw,
-      EMPTY_NODE_DRAIN_TABLE,
-    );
-    const [, seedAfterE3] = drawTableAmount(
-      seedAfterC3,
-      EMPTY_NODE_DRAIN_TABLE,
-    );
-    const [, seedAfterG3] = drawTableAmount(
-      seedAfterE3,
-      EMPTY_NODE_DRAIN_TABLE,
-    );
-    const [, seedAfterI3] = drawTableAmount(
-      seedAfterG3,
-      EMPTY_NODE_DRAIN_TABLE,
-    );
-    expect(result.state.randomSeed).toBe(seedAfterI3);
+    expect(result.state.randomSeed).toBe(seedAfterDefenderDraw);
   });
 
   it("places both ships on different planets, whatever the seed, when exactly two planets are empty", () => {
@@ -1495,16 +1481,16 @@ describe("applyPassGuard", () => {
         ship("red-2", "red", "A2"),
       ],
       nodes: {
-        // Comfortably above the recovery table's largest single draw (8),
-        // so A1 stays depleted through this very sequence rather than
-        // retiring in it — this test is about the pass guard, not step 6.
+        // Comfortably above one, so A1 stays depleted through this very
+        // sequence rather than retiring in it — this test is about the
+        // pass guard, not step 6.
         A1: ["depleted", 30],
-        // A lone charged node, unoccupied, keeps the shortfall at three
-        // rather than four — a shortfall of four would place a fourth node
-        // directly and refill the queue, which is not this test's subject
-        // — and there is no inactive node for it to charge from either
-        // way.
-        H8: ["charged", 1],
+        // A lone charged node, unoccupied and carrying no countdown, keeps
+        // the shortfall at three rather than four — a shortfall of four
+        // would place a fourth node directly and refill the queue, which is
+        // not this test's subject — and there is no inactive node for it to
+        // charge from either way.
+        H8: ["charged", 0],
       },
     });
 
@@ -1759,14 +1745,14 @@ describe("applyOutOfTimePass", () => {
   });
 });
 
-describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
-  it("leaves a charged node charged when a ship moves off it, its drain risen only by that turn's empty-rate draw", () => {
+describe("a ship leaving a charged node depletes it at once (rules.md §8.3)", () => {
+  it("depletes the square the ship left, carrying EXIT_COUNTDOWN_PLIES, and raises node-spent as the move's own effect — not the end-of-turn sequence's", () => {
     // red-1 gives red a legal move, so applyPassGuard does not immediately
     // run a second end-of-turn sequence for a passed red ply — this checks
     // exactly the state green's own move produces, nothing beyond it.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
-      nodes: { H8: ["charged", 23] },
+      nodes: { H8: ["charged", CHARGED_COUNTDOWN_PLIES] },
     });
 
     const result = applyMove(state, "green-1", squareFromName("H9"));
@@ -1778,27 +1764,23 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
     expect(result.effects.some((effect) => effect.type === "ply-passed")).toBe(
       false,
     );
-    // H8 was charged when this ply began and stays charged — leaving it no
-    // longer ends it. Since green-1 has left, its drain comes from the
-    // empty table (rules.md §8.3), not the held one, and no announcement is
-    // made about it.
-    const [emptyDrawAmount] = drawTableAmount(
-      state.randomSeed,
-      EMPTY_NODE_DRAIN_TABLE,
-    );
-    expect(result.state.nodes.H8).toEqual({
-      state: "charged",
-      level: 23 + emptyDrawAmount,
+    expect(result.effects[0]).toEqual({
+      type: "node-spent",
+      square: squareFromName("H8"),
     });
-    expect(result.effects).not.toContainEqual(
-      expect.objectContaining({ type: "node-vacated" }),
-    );
+    // The move's own effect fires before this same turn's end-of-turn
+    // sequence spends the exit's first ply, so by the time this call
+    // returns the two plies it started with are already down to one.
+    expect(result.state.nodes.H8).toEqual({
+      state: "depleted",
+      level: EXIT_COUNTDOWN_PLIES - 1,
+    });
   });
 
-  it("leaves a node charged when a ship simply arrives on it — arriving is not a departure", () => {
+  it("does not deplete anything when a ship simply arrives on a charged node — arriving is not a departure", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H7")],
-      nodes: { H8: ["charged", 5] },
+      nodes: { H8: ["charged", 0] },
     });
 
     const result = applyMove(state, "green-1", squareFromName("H8"));
@@ -1807,16 +1789,68 @@ describe("a ship leaving a node no longer ends it (rules.md §8.3)", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(result.state.nodes.H8.state).toBe("charged");
     expect(result.effects).not.toContainEqual(
-      expect.objectContaining({ type: "node-vacated" }),
+      expect.objectContaining({ type: "node-spent" }),
     );
+  });
+
+  it("starts a countdown on a charged node with none when a ship moves onto it", () => {
+    // red-1 gives red a legal move, so applyPassGuard does not immediately
+    // run a second end-of-turn sequence for a passed red ply.
+    const state = buildState({
+      ships: [ship("green-1", "green", "H7"), ship("red-1", "red", "A1")],
+      nodes: { H8: ["charged", 0] },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H8"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    // The end-of-turn sequence that same call runs spends the countdown's
+    // first ply, so it is already one below where it started.
+    expect(result.state.nodes.H8).toEqual({
+      state: "charged",
+      level: CHARGED_COUNTDOWN_PLIES - 1,
+    });
+  });
+
+  it("starts a fresh countdown on the destination and depletes the origin in one move between two charged nodes", () => {
+    // red-1 gives red a legal move, so applyPassGuard does not immediately
+    // run a second end-of-turn sequence for a passed red ply.
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "A1")],
+      nodes: {
+        H8: ["charged", CHARGED_COUNTDOWN_PLIES],
+        H9: ["charged", 0],
+      },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.effects[0]).toEqual({
+      type: "node-spent",
+      square: squareFromName("H8"),
+    });
+    expect(result.state.nodes.H8).toEqual({
+      state: "depleted",
+      level: EXIT_COUNTDOWN_PLIES - 1,
+    });
+    expect(result.state.nodes.H9).toEqual({
+      state: "charged",
+      level: CHARGED_COUNTDOWN_PLIES - 1,
+    });
   });
 
   it("collects no energy for a node the moving player stepped off this turn", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 3)],
-      nodes: { H8: ["charged", 5] },
+      nodes: { H8: ["charged", CHARGED_COUNTDOWN_PLIES] },
     });
 
     const result = applyMove(state, "green-1", squareFromName("H9"));

@@ -11,18 +11,7 @@ import {
 import { PLANETS } from "./planets";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { mulberry32 } from "./random";
-import {
-  DEPLETED_RECOVERY_TABLE,
-  EMPTY_NODE_DRAIN_TABLE,
-  HELD_NODE_DRAIN_TABLE,
-  NODE_CAPACITY,
-  OPENING_DRAIN_TABLE,
-  TARGET_CHARGED_NODES,
-  type WeightedAmount,
-  dealOpeningBoard,
-  drawTableAmount,
-  nodeCyclePosition,
-} from "./nodes";
+import { TARGET_CHARGED_NODES, dealOpeningBoard } from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 
 /** The 121 squares C3-M13 — the interior §3.2's two ring exclusions leave. */
@@ -80,99 +69,7 @@ describe("the board's charged target (rules.md §8.1, §8.2)", () => {
   });
 });
 
-describe("capacity (rules.md §8.3)", () => {
-  it("has a node capacity of 60", () => {
-    expect(NODE_CAPACITY).toBe(60);
-  });
-});
-
-/** Every distinct amount a table can draw, in ascending order. */
-function amounts(table: readonly WeightedAmount[]): readonly number[] {
-  return table.map((entry) => entry.amount);
-}
-
-/** The weighted average a table's outcomes and weights predict. */
-function expectedAverage(table: readonly WeightedAmount[]): number {
-  const totalWeight = table.reduce((sum, entry) => sum + entry.weight, 0);
-  return (
-    table.reduce((sum, entry) => sum + entry.amount * entry.weight, 0) /
-    totalWeight
-  );
-}
-
-describe.each([
-  {
-    name: "the opening drain table",
-    table: OPENING_DRAIN_TABLE,
-    outcomes: [0, 5, 10, 15, 20, 25, 30, 35, 40],
-    average: 14,
-  },
-  {
-    name: "the empty-node drain table",
-    table: EMPTY_NODE_DRAIN_TABLE,
-    outcomes: [1, 2, 3],
-    average: 2.1,
-  },
-  {
-    name: "the held-node drain table",
-    table: HELD_NODE_DRAIN_TABLE,
-    outcomes: [3, 4, 5, 6],
-    average: 4.6,
-  },
-  {
-    name: "the depleted recovery table",
-    table: DEPLETED_RECOVERY_TABLE,
-    outcomes: [4, 5, 6, 7, 8],
-    average: 6.0,
-  },
-])("$name (rules.md §8.1, §8.2, §8.3)", ({ table, outcomes, average }) => {
-  it("has exactly the outcomes the rules table lists", () => {
-    expect(amounts(table)).toEqual(outcomes);
-  });
-
-  it("has weights that sum to 100", () => {
-    const total = table.reduce((sum, entry) => sum + entry.weight, 0);
-    expect(total).toBe(100);
-  });
-
-  it("has the weighted average the rules table gives", () => {
-    expect(expectedAverage(table)).toBeCloseTo(average, 5);
-  });
-
-  it("draws only the listed outcomes, at frequencies close to their weights", () => {
-    const DRAWS = 20_000;
-    const counts = new Map<number, number>(outcomes.map((o) => [o, 0]));
-    let seed = 7;
-    for (let i = 0; i < DRAWS; i++) {
-      const [amount, nextSeed] = drawTableAmount(seed, table);
-      seed = nextSeed;
-      expect(outcomes).toContain(amount);
-      counts.set(amount, (counts.get(amount) ?? 0) + 1);
-    }
-
-    for (const entry of table) {
-      const observedShare = (counts.get(entry.amount) ?? 0) / DRAWS;
-      const expectedShare = entry.weight / 100;
-      expect(observedShare).toBeGreaterThan(expectedShare - 0.03);
-      expect(observedShare).toBeLessThan(expectedShare + 0.03);
-    }
-  });
-});
-
-describe("the opening drain table's cap (rules.md §8.1, §8.3)", () => {
-  it("never exceeds two-thirds of capacity, leaving at least 20 to reach", () => {
-    for (const entry of OPENING_DRAIN_TABLE) {
-      expect(entry.amount).toBeLessThanOrEqual((2 / 3) * NODE_CAPACITY);
-      expect(NODE_CAPACITY - entry.amount).toBeGreaterThanOrEqual(20);
-    }
-  });
-});
-
 describe("dealing the opening board (rules.md §8.1)", () => {
-  const drainAmounts = new Set(
-    OPENING_DRAIN_TABLE.map((entry) => entry.amount),
-  );
-
   it("deals exactly seven nodes, four charged and three inactive, none depleted", () => {
     const [nodes] = dealOpeningBoard(FLEET_SQUARES, 1);
 
@@ -193,6 +90,19 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     expect(charged).toHaveLength(TARGET_CHARGED_NODES);
     expect(inactive).toHaveLength(INACTIVE_NODE_COUNT);
     expect(depleted).toHaveLength(0);
+  });
+
+  it("deals every charged node at baseline — no countdown until a ship steps on it", () => {
+    let seed = 1;
+    for (let i = 0; i < 200; i++) {
+      const [nodes, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
+      seed = nextSeed;
+      for (const status of Object.values(nodes)) {
+        if (status.state === "charged") {
+          expect(status.level).toBe(0);
+        }
+      }
+    }
   });
 
   it("deals the three inactive nodes priorities {1, 2, 3}, one each, never a repeat", () => {
@@ -246,30 +156,6 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     }
   });
 
-  it("draws every charged level from the opening drain table", () => {
-    const [nodes] = dealOpeningBoard(FLEET_SQUARES, 1);
-
-    for (const status of Object.values(nodes)) {
-      if (status.state === "charged") {
-        expect(drainAmounts.has(status.level)).toBe(true);
-      }
-    }
-  });
-
-  it("never deals a charged node above two-thirds of capacity, leaving at least 20 to reach", () => {
-    let seed = 1;
-    for (let i = 0; i < 200; i++) {
-      const [nodes, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
-      seed = nextSeed;
-      for (const status of Object.values(nodes)) {
-        if (status.state === "charged") {
-          expect(status.level).toBeLessThanOrEqual((2 / 3) * NODE_CAPACITY);
-          expect(NODE_CAPACITY - status.level).toBeGreaterThanOrEqual(20);
-        }
-      }
-    }
-  });
-
   it("deals the same board and the same next seed from the same seed", () => {
     const [firstStates, firstNextSeed] = dealOpeningBoard(FLEET_SQUARES, 12345);
     const [secondStates, secondNextSeed] = dealOpeningBoard(
@@ -288,47 +174,17 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     expect(secondStates).not.toEqual(firstStates);
   });
 
-  it("advances the seed by exactly 12 steps", () => {
+  it("advances the seed by exactly 8 steps", () => {
     const seed = 987654321;
     const [, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
 
     let expectedSeed = seed;
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 8; i++) {
       const [, advanced] = mulberry32(expectedSeed);
       expectedSeed = advanced;
     }
 
     expect(nextSeed).toBe(expectedSeed);
-  });
-
-  it("draws charged levels at frequencies close to the opening drain table's weights, over many deals", () => {
-    const DEALS = 3_000;
-    const drainCounts = new Map(
-      OPENING_DRAIN_TABLE.map((entry) => [entry.amount, 0]),
-    );
-
-    let seed = 42;
-    for (let i = 0; i < DEALS; i++) {
-      const [nodes, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
-      seed = nextSeed;
-
-      for (const status of Object.values(nodes)) {
-        if (status.state === "charged") {
-          drainCounts.set(
-            status.level,
-            (drainCounts.get(status.level) ?? 0) + 1,
-          );
-        }
-      }
-    }
-
-    const totalDrains = [...drainCounts.values()].reduce((a, b) => a + b, 0);
-    for (const entry of OPENING_DRAIN_TABLE) {
-      const share = (drainCounts.get(entry.amount) ?? 0) / totalDrains;
-      const expectedShare = entry.weight / 100;
-      expect(share).toBeGreaterThan(expectedShare - 0.03);
-      expect(share).toBeLessThan(expectedShare + 0.03);
-    }
   });
 
   // The pool is a fixed 51 squares whose balance is settled by the planet
@@ -351,27 +207,5 @@ describe("dealing the opening board (rules.md §8.1)", () => {
     for (const name of LEGAL_SQUARE_NAMES) {
       expect(seenSquares.has(name), name).toBe(true);
     }
-  });
-});
-
-describe("the node cycle position (rules.md §8.3)", () => {
-  it("has charged report 0 at drain 0 and 1 at capacity", () => {
-    expect(nodeCyclePosition("charged", 0)).toBe(0);
-    expect(nodeCyclePosition("charged", NODE_CAPACITY)).toBe(1);
-  });
-
-  it("clamps charged outside [0, 1]", () => {
-    expect(nodeCyclePosition("charged", -10)).toBe(0);
-    expect(nodeCyclePosition("charged", NODE_CAPACITY + 10)).toBe(1);
-  });
-
-  it("has depleted report 0 at a level of capacity (just gone depleted) and 1 at level 0 (fully recovered)", () => {
-    expect(nodeCyclePosition("depleted", NODE_CAPACITY)).toBe(0);
-    expect(nodeCyclePosition("depleted", 0)).toBe(1);
-  });
-
-  it("clamps depleted outside [0, 1], including a level carried above capacity", () => {
-    expect(nodeCyclePosition("depleted", NODE_CAPACITY + 10)).toBe(0);
-    expect(nodeCyclePosition("depleted", -10)).toBe(1);
   });
 });

@@ -19,8 +19,10 @@ interface NodeMarkerProps {
   readonly squareName: string;
   /**
    * How far the node has travelled through its state's own cycle (0 to 1,
-   * see `nodeCyclePosition` in `../rules/nodes`): drain for charged,
-   * remaining drain for depleted. Ignored for an inactive node.
+   * see `nodeCyclePosition` in `../rules/countdown`): its countdown for a
+   * charged node carrying one, and for a depleted node with a ship on it
+   * (a trap); 0 always for a charged node with no countdown and for a
+   * depleted node with no ship (an exit). Ignored for an inactive node.
    */
   readonly cyclePosition?: number;
   /**

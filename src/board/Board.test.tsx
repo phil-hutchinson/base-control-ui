@@ -12,7 +12,6 @@ import {
   startingFleet,
   type FleetEntry,
 } from "../rules/fleet";
-import { NODE_CAPACITY } from "../rules/nodes";
 import {
   startingGameState,
   type GameState,
@@ -437,17 +436,22 @@ describe("Board", () => {
     expect(container.querySelectorAll(".ship-model--green")).toHaveLength(6);
   });
 
-  describe("the node cycle position reaching the marker", () => {
+  describe("the node countdown reaching the marker", () => {
     // A minimal hand-built state with a single node square, isolating the
-    // wiring from Board.tsx through the node's level to the marker's middle
-    // gradient stop.
+    // wiring from Board.tsx through the node's countdown to the marker's
+    // middle gradient stop. `hasShip` places a green ship on the node
+    // square, since a depleted node's cycle position depends on whether a
+    // ship is standing there (a trap) or not (an exit, `../rules/countdown`).
     function stateWithNode(
       square: Square,
       state: "charged" | "depleted",
       level: number,
+      hasShip = false,
     ): GameState {
       return {
-        ships: [],
+        ships: hasShip
+          ? [{ id: "green-1", side: "green", square, power: 4 }]
+          : [],
         nodes: {
           [squareName(square)]: { state, level },
         },
@@ -469,7 +473,7 @@ describe("Board", () => {
       return stops?.[1]?.getAttribute("offset");
     }
 
-    it("shows a charged node at its start-of-cycle offset at drain 0", () => {
+    it("shows a charged node with no countdown at its start-of-cycle offset", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 0),
         selectedShipId: undefined,
@@ -480,9 +484,20 @@ describe("Board", () => {
       expect(middleStopOffset(container, "charged")).toBe("25%");
     });
 
-    it("shows a charged node at its end-of-cycle offset at capacity", () => {
+    it("shows a charged node at its start-of-cycle offset the ply its countdown starts", () => {
       const session: Session = {
-        state: stateWithNode(squareAt("H", 8), "charged", NODE_CAPACITY),
+        state: stateWithNode(squareAt("H", 8), "charged", 11, true),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      expect(middleStopOffset(container, "charged")).toBe("25%");
+    });
+
+    it("shows a charged node at its end-of-cycle offset with one ply left", () => {
+      const session: Session = {
+        state: stateWithNode(squareAt("H", 8), "charged", 1, true),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -491,11 +506,9 @@ describe("Board", () => {
       expect(middleStopOffset(container, "charged")).toBe("50%");
     });
 
-    it("shows a depleted node at its start-of-cycle offset at a level of capacity", () => {
-      // A depleted node's level is the drain it has left to recover: full
-      // capacity is the start of its cooling travel (rules.md §8.2).
+    it("shows a trap (a depleted node with a ship) at its start-of-cycle offset the ply it traps", () => {
       const session: Session = {
-        state: stateWithNode(squareAt("H", 8), "depleted", NODE_CAPACITY),
+        state: stateWithNode(squareAt("H", 8), "depleted", 11, true),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -504,15 +517,26 @@ describe("Board", () => {
       expect(middleStopOffset(container, "depleted")).toBe("50%");
     });
 
-    it("shows a depleted node at its end-of-cycle offset at level 0", () => {
+    it("shows a trap at its end-of-cycle offset with one ply left", () => {
       const session: Session = {
-        state: stateWithNode(squareAt("H", 8), "depleted", 0),
+        state: stateWithNode(squareAt("H", 8), "depleted", 1, true),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
 
       expect(middleStopOffset(container, "depleted")).toBe("25%");
+    });
+
+    it("shows an exit node (a depleted node with no ship) at its start-of-cycle offset, whatever its plies left", () => {
+      const session: Session = {
+        state: stateWithNode(squareAt("H", 8), "depleted", 2),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      expect(middleStopOffset(container, "depleted")).toBe("50%");
     });
   });
 

@@ -7,10 +7,11 @@ import {
   type QueueRefilledEffect,
   type ShipFreedEffect,
 } from "./endOfTurn";
+import { CHARGED_COUNTDOWN_PLIES, TRAP_COUNTDOWN_PLIES } from "./countdown";
 import type { ShipId } from "./fleet";
 import { legalDestinations } from "./movement";
 import { PLANETS } from "./planets";
-import { reliefSquare } from "./relief";
+import { drawIndex } from "./random";
 import {
   type GameState,
   type Ship,
@@ -27,14 +28,7 @@ import {
   TOP_NODE_PRIORITY,
   rotatePriority,
 } from "./nodeQueue";
-import {
-  DEPLETED_RECOVERY_TABLE,
-  EMPTY_NODE_DRAIN_TABLE,
-  NODE_CAPACITY,
-  TARGET_CHARGED_NODES,
-  drawTableAmount,
-  type NodeState,
-} from "./nodes";
+import { TARGET_CHARGED_NODES, type NodeState } from "./nodes";
 
 function ship(
   id: ShipId,
@@ -256,10 +250,10 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
     const state = buildState({
       sideToMove: "green",
       nodes: {
-        H8: ["charged", 1],
+        H8: ["charged", 0],
         K5: ["inactive", 1],
-        L8: ["charged", 1],
-        E11: ["charged", 1],
+        L8: ["charged", 0],
+        E11: ["charged", 0],
       },
       ships: [
         ship("green-1", "green", "H8", 3),
@@ -338,7 +332,7 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
     const planetSquareName = squareName(PLANETS[0]);
     const state = buildState({
       sideToMove: "green",
-      nodes: { H8: ["charged", 1] },
+      nodes: { H8: ["charged", 0] },
       ships: [
         ship("green-1", "green", planetSquareName, 2),
         ship("green-2", "green", "H8", 3),
@@ -359,52 +353,40 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
   });
 });
 
-describe("runEndOfTurn — step 3, drain (§8.3)", () => {
-  it("rises an empty node's drain by 1, 2 or 3, and never anything else", () => {
-    const observed = new Set<number>();
-    for (let seed = 1; seed <= 300; seed++) {
-      const state = buildState({
-        nodes: { H8: ["charged", 0] },
-        randomSeed: seed,
-      });
+describe("runEndOfTurn — step 3, the charged countdown (§8.3)", () => {
+  it("spends exactly one ply off a running countdown, whoever is standing on it or not", () => {
+    for (const ships of [
+      [],
+      [ship("green-1", "green", "H8", 4)],
+      [ship("red-1", "red", "H8", 4)],
+    ]) {
+      const state = buildState({ nodes: { H8: ["charged", 5] }, ships });
       const result = runEndOfTurn(state);
-      const level = result.state.nodes.H8.level;
-      expect([1, 2, 3]).toContain(level);
-      observed.add(level);
-    }
-    expect(observed).toEqual(new Set([1, 2, 3]));
-  });
-
-  it("rises a held node's drain by 3, 4, 5 or 6, and never anything else, whichever side the ship belongs to", () => {
-    for (const side of ["green", "red"] as const) {
-      const observed = new Set<number>();
-      for (let seed = 1; seed <= 300; seed++) {
-        const state = buildState({
-          nodes: { H8: ["charged", 0] },
-          ships: [ship("ship-1", side, "H8", 4)],
-          randomSeed: seed,
-        });
-        const result = runEndOfTurn(state);
-        const level = result.state.nodes.H8.level;
-        expect([3, 4, 5, 6]).toContain(level);
-        observed.add(level);
-      }
-      expect(observed).toEqual(new Set([3, 4, 5, 6]));
+      expect(result.state.nodes.H8).toEqual({ state: "charged", level: 4 });
     }
   });
 
-  it("goes depleted, carrying its level unclamped, once drain reaches or passes capacity, trapping the ship on it (§8.5)", () => {
-    // Any drawn amount (empty table's minimum is 1) crosses capacity from
-    // NODE_CAPACITY - 1, so this is deterministic without pinning a seed.
+  it("leaves a charged node with no countdown at 0, indefinitely", () => {
+    const state = buildState({ nodes: { H8: ["charged", 0] } });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.nodes.H8).toEqual({ state: "charged", level: 0 });
+    expect(
+      result.effects.some((effect) => effect.type === "node-ran-out"),
+    ).toBe(false);
+  });
+
+  it("goes depleted, carrying TRAP_COUNTDOWN_PLIES, when the last ply is spent, trapping the ship on it (§8.5)", () => {
     // Three other charged nodes keep the shortfall at one once H8 runs
     // out, so nothing charges to fill it (no inactive node is queued) and
-    // this stays a pure test of H8's own drain and trap.
+    // this stays a pure test of H8's own countdown and trap.
     const state = buildState({
       nodes: {
-        H8: ["charged", NODE_CAPACITY - 1],
-        C3: ["charged", 1],
-        E3: ["charged", 1],
-        G3: ["charged", 1],
+        H8: ["charged", 1],
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
       },
       // A second green ship on a plain square, free of any node, so green
       // is not all-trapped and step 7's relief does not fire — a real
@@ -418,8 +400,10 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.nodes.H8.state).toBe("depleted");
-    expect(result.state.nodes.H8.level).toBeGreaterThanOrEqual(NODE_CAPACITY);
+    expect(result.state.nodes.H8).toEqual({
+      state: "depleted",
+      level: TRAP_COUNTDOWN_PLIES,
+    });
     expect(result.effects).toEqual([
       {
         type: "energy-collected",
@@ -451,10 +435,10 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     // further to report.
     const state = buildState({
       nodes: {
-        H8: ["charged", NODE_CAPACITY - 1],
-        C3: ["charged", 1],
-        E3: ["charged", 1],
-        G3: ["charged", 1],
+        H8: ["charged", 1],
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
       },
     });
 
@@ -466,83 +450,68 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     ]);
   });
 
-  it("stays charged, unaffected, when drain is nowhere near capacity", () => {
+  it("draws nothing from the seed, whatever it does", () => {
     const state = buildState({
-      nodes: { H8: ["charged", 0] },
+      nodes: { H8: ["charged", 1], K5: ["charged", 5] },
+      randomSeed: 20260907,
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.nodes.H8.state).toBe("charged");
-    expect(
-      result.effects.some((effect) => effect.type === "node-ran-out"),
-    ).toBe(false);
+    expect(result.state.randomSeed).toBe(state.randomSeed);
   });
 });
 
 describe("runEndOfTurn — lifetimes (§8.3)", () => {
-  /** Drives a single charged node from `startLevel` until it goes depleted, counting plies. */
-  function pliesUntilDepleted(
-    startLevel: number,
-    seed: number,
-    held: boolean,
-  ): number {
-    let state = buildState({
-      nodes: { H8: ["charged", startLevel] },
-      // When held, a second green ship sits on a plain square, free of any
-      // node, so green is never all-trapped once H8 depletes — without it
-      // step 7's relief would end H8 the instant it goes depleted, and this
-      // test is about the depleted clock, not the relief.
-      ships: held
-        ? [ship("green-1", "green", "H8", 4), ship("green-2", "green", "F8")]
-        : [],
-      randomSeed: seed,
-    });
-    let plies = 0;
-    for (;;) {
-      const result = runEndOfTurn(state);
-      plies += 1;
-      if (result.state.nodes.H8.state === "depleted") {
-        return plies;
+  it("holds a node from the ply a countdown starts for exactly CHARGED_COUNTDOWN_PLIES plies, whoever holds it", () => {
+    for (const ships of [
+      // A second ship of the same side, on a plain square free of any node,
+      // so that side is never all-trapped once H8 depletes — without it
+      // step 7's relief would end H8 the instant it traps a lone ship, and
+      // this test is about the trap's own length, not the relief.
+      [ship("green-1", "green", "H8", 4), ship("green-2", "green", "F8")],
+      [ship("red-1", "red", "H8", 4), ship("red-2", "red", "F8")],
+    ]) {
+      let state = buildState({
+        nodes: { H8: ["charged", CHARGED_COUNTDOWN_PLIES] },
+        ships,
+      });
+      let plies = 0;
+      for (;;) {
+        const result = runEndOfTurn(state);
+        plies += 1;
+        if (result.state.nodes.H8.state === "depleted") {
+          break;
+        }
+        state = result.state;
       }
-      state = result.state;
+      expect(plies).toBe(CHARGED_COUNTDOWN_PLIES);
     }
-  }
-
-  it("holds a node from the ply it is charged for about 13 plies", () => {
-    const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    const average =
-      SEEDS.reduce((sum, seed) => sum + pliesUntilDepleted(0, seed, true), 0) /
-      SEEDS.length;
-
-    expect(average).toBeGreaterThan(9);
-    expect(average).toBeLessThan(17);
   });
 
-  it("leaves a node nobody visits running for about 28 plies", () => {
-    const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    const average =
-      SEEDS.reduce((sum, seed) => sum + pliesUntilDepleted(0, seed, false), 0) /
-      SEEDS.length;
-
-    expect(average).toBeGreaterThan(21);
-    expect(average).toBeLessThan(36);
+  it("leaves a node nobody visits running forever — no countdown, nothing to spend", () => {
+    let state = buildState({ nodes: { H8: ["charged", 0] } });
+    for (let ply = 0; ply < 100; ply++) {
+      const result = runEndOfTurn(state);
+      expect(result.state.nodes.H8).toEqual({ state: "charged", level: 0 });
+      state = result.state;
+    }
   });
 });
 
 describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
   it("retires a depleted node once its level reaches zero or below, and nothing appears in its place", () => {
-    // The recovery table's minimum draw is 4, so a level of 4 is guaranteed
-    // to reach zero or below on a single draw, regardless of seed. Three
-    // other charged nodes keep the shortfall at one after H8 retires, so
-    // nothing charges to fill it and step 6's retirement stays the only
+    // A level of 1 spends its last ply this very sequence, deterministically.
+    // Three other charged nodes with no countdown keep the shortfall at one
+    // after H8 retires, so nothing charges to fill it and step 6's
+    // retirement stays the only
     // event.
     const state = buildState({
       nodes: {
-        H8: ["depleted", 4],
-        C3: ["charged", 1],
-        E3: ["charged", 1],
-        G3: ["charged", 1],
+        H8: ["depleted", 1],
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
       },
     });
 
@@ -561,10 +530,10 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
     const state = buildState({
       nodes: {
         ...Object.fromEntries(
-          chargedNames.map((name) => [name, ["charged", 1] as const]),
+          chargedNames.map((name) => [name, ["charged", 0] as const]),
         ),
-        // The recovery table's minimum draw is 4, guaranteeing retirement.
-        [depletedName]: ["depleted", 4],
+        // A level of 1 guarantees retirement in one ply.
+        [depletedName]: ["depleted", 1],
         C5: ["inactive", 1],
         E5: ["inactive", 2],
         G5: ["inactive", 3],
@@ -581,10 +550,10 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
   it("handles two retirements in the same sequence, each reported independently, in board order", () => {
     const state = buildState({
       nodes: {
-        H8: ["depleted", 4],
-        K5: ["depleted", 4],
-        F2: ["charged", 1],
-        J2: ["charged", 1],
+        H8: ["depleted", 1],
+        K5: ["depleted", 1],
+        F2: ["charged", 0],
+        J2: ["charged", 0],
         B4: ["inactive", 1],
         D8: ["inactive", 2],
         N4: ["inactive", 3],
@@ -608,13 +577,13 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
   });
 
   it("does not retire a node that only went depleted during this very sequence", () => {
-    // H8's level guarantees it crosses capacity in step 3 (see the drain
-    // tests above): it is genuinely `charged`, not `depleted`, at the start
-    // of this state, so `runEndOfTurn` derives an empty depleted-before-ply
-    // set on its own and step 6 must not touch H8 even though it is
-    // depleted by the time step 6 runs.
+    // H8's level of 1 spends its last ply in step 3: it is genuinely
+    // `charged`, not `depleted`, at the start of this state, so
+    // `runEndOfTurn` derives an empty depleted-before-ply set on its own and
+    // step 6 must not touch H8 even though it is depleted by the time step 6
+    // runs.
     const state = buildState({
-      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
+      nodes: { H8: ["charged", 1] },
     });
 
     const result = runEndOfTurn(state);
@@ -633,12 +602,9 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
     ).toBe(true);
   });
 
-  it("retires a node ended at half capacity in roughly half the plies a full one takes", () => {
-    function pliesToRetire(startLevel: number, seed: number): number {
-      let state = buildState({
-        nodes: { H8: ["depleted", startLevel] },
-        randomSeed: seed,
-      });
+  it("retires a depleted node in exactly as many plies as its starting level, whatever that level is", () => {
+    function pliesToRetire(startLevel: number): number {
+      let state = buildState({ nodes: { H8: ["depleted", startLevel] } });
       let plies = 0;
       for (;;) {
         const result = runEndOfTurn(state);
@@ -650,31 +616,22 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
       }
     }
 
-    const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    const averageHalf =
-      SEEDS.reduce((sum, seed) => sum + pliesToRetire(30, seed), 0) /
-      SEEDS.length;
-    const averageFull =
-      SEEDS.reduce((sum, seed) => sum + pliesToRetire(60, seed), 0) /
-      SEEDS.length;
-
-    expect(averageHalf).toBeGreaterThan(averageFull * 0.3);
-    expect(averageHalf).toBeLessThan(averageFull * 0.7);
+    expect(pliesToRetire(TRAP_COUNTDOWN_PLIES)).toBe(TRAP_COUNTDOWN_PLIES);
+    expect(pliesToRetire(2)).toBe(2);
   });
 });
 
 describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §8.5)", () => {
   it("reports node-retired then ship-freed, keeping the freed ship's square and power, when a retiring node had a ship on it", () => {
-    // The recovery table's minimum draw is 4, so a level of 4 is guaranteed
-    // to retire on a single draw, regardless of seed. Three other charged
-    // nodes keep the shortfall at one after H8 retires, so nothing charges
-    // to fill it.
+    // A level of 1 guarantees retirement this very ply. Three other charged
+    // nodes with no countdown keep the shortfall at one after H8 retires, so
+    // nothing charges to fill it.
     const state = buildState({
       nodes: {
-        H8: ["depleted", 4],
-        C3: ["charged", 1],
-        E3: ["charged", 1],
-        G3: ["charged", 1],
+        H8: ["depleted", 1],
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
       },
       ships: [ship("green-1", "green", "H8", 3)],
     });
@@ -697,7 +654,7 @@ describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §
 
   it("reports no ship-freed when a retiring node had no ship on it", () => {
     const state = buildState({
-      nodes: { H8: ["depleted", 4] },
+      nodes: { H8: ["depleted", 1] },
     });
 
     const result = runEndOfTurn(state);
@@ -708,11 +665,10 @@ describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §
   });
 
   it("does not free the ship a node traps in step 3 of the same sequence — step 6 only touches nodes depleted before the ply began", () => {
-    // Any drawn amount (empty table's minimum is 1) crosses capacity from
-    // NODE_CAPACITY - 1, so H8 is guaranteed to go depleted in step 3 here,
-    // never having been depleted before this ply began.
+    // A level of 1 spends its last ply in step 3, so H8 is guaranteed to go
+    // depleted here, never having been depleted before this ply began.
     const state = buildState({
-      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
+      nodes: { H8: ["charged", 1] },
       // A second green ship on a plain square, free of any node, so green
       // is not all-trapped and step 7's relief does not also end H8 this
       // very ply — that would be a true fact about the relief, not about
@@ -810,7 +766,7 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
     // leaves nothing in the queue to charge from, so charging draws nothing
     // either way.
     const state = buildState({
-      nodes: { A1: ["depleted", 30], H8: ["charged", 1] },
+      nodes: { A1: ["depleted", 30], H8: ["charged", 0] },
       ships: [
         ship("green-1", "green", "A1", 0),
         ship("red-1", "red", "B1"),
@@ -828,18 +784,9 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       ),
     ).toBe(false);
     expect(result.state.nodes.A1.state).toBe("depleted");
-    // The only seed draws the whole sequence makes here are step 3's drain
-    // for H8 and step 6's recovery draw for A1 — step 7 finds no qualifying
-    // candidate and draws nothing.
-    const [, seedAfterDrain] = drawTableAmount(
-      state.randomSeed,
-      EMPTY_NODE_DRAIN_TABLE,
-    );
-    const [, expectedSeed] = drawTableAmount(
-      seedAfterDrain,
-      DEPLETED_RECOVERY_TABLE,
-    );
-    expect(result.state.randomSeed).toBe(expectedSeed);
+    // Nothing in the sequence draws from the seed: step 3 and step 6 are
+    // both deterministic now, and step 7 finds no qualifying candidate.
+    expect(result.state.randomSeed).toBe(state.randomSeed);
   });
 
   it("relieves the side that did not just move, as well as the side that did", () => {
@@ -901,75 +848,34 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
   });
 
   it("draws once for the tie-break and nothing further, so a tied relief stays replayable", () => {
-    // Four charged nodes (C3, E3, G3, I3 — all in row 3, ahead of D8 and L8
-    // in board order) hold the board at its target, so charging and the
-    // refill draw nothing; their own step 3 drain draws are accounted for
-    // below, ahead of D8 and L8's step 6 recovery draws (D8 first, then
-    // L8, the order `nodeSquares` walks them in), so both land on the same
-    // remaining life — a genuine tie for step 7 to break. Their starting
-    // levels are computed from the actual draws a state entering with this
-    // seed will make, so this only works because nothing else in the
-    // sequence draws before reaching them.
-    const seed = 1;
-    const [, seedAfterC3] = drawTableAmount(seed, EMPTY_NODE_DRAIN_TABLE);
-    const [, seedAfterE3] = drawTableAmount(
-      seedAfterC3,
-      EMPTY_NODE_DRAIN_TABLE,
-    );
-    const [, seedAfterG3] = drawTableAmount(
-      seedAfterE3,
-      EMPTY_NODE_DRAIN_TABLE,
-    );
-    const [, seedAfterI3] = drawTableAmount(
-      seedAfterG3,
-      EMPTY_NODE_DRAIN_TABLE,
-    );
-    const [amountD8, seedAfterD8] = drawTableAmount(
-      seedAfterI3,
-      DEPLETED_RECOVERY_TABLE,
-    );
-    const [amountL8, seedAfterRecovery] = drawTableAmount(
-      seedAfterD8,
-      DEPLETED_RECOVERY_TABLE,
-    );
+    // D8 and L8 are given exactly the same level, a tie step 7 must break at
+    // random (rules.md §8.6 step 7) — nothing else in the sequence draws
+    // from the seed under the countdown model, so the tie-break is the
+    // sequence's only draw.
     const tiedLevel = 30;
+    const seed = 1;
 
     const state = buildState({
       nodes: {
-        C3: ["charged", 1],
-        E3: ["charged", 1],
-        G3: ["charged", 1],
-        I3: ["charged", 1],
-        D8: ["depleted", tiedLevel + amountD8],
-        L8: ["depleted", tiedLevel + amountL8],
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
+        I3: ["charged", 0],
+        D8: ["depleted", tiedLevel],
+        L8: ["depleted", tiedLevel],
       },
       ships: [ship("green-1", "green", "D8"), ship("green-2", "green", "L8")],
       sideToMove: "green",
       randomSeed: seed,
     });
 
-    // The state step 6 leaves behind, built independently of `runEndOfTurn`
-    // so the tie-break can be predicted rather than merely observed. The
-    // four charged nodes' own drained levels do not matter to
-    // `reliefSquare`, which only ever looks at the depleted nodes trapping
-    // ships, so they are left at their starting level here.
-    const afterStep6: GameState = {
-      ...state,
-      nodes: {
-        C3: { state: "charged", level: 1 },
-        E3: { state: "charged", level: 1 },
-        G3: { state: "charged", level: 1 },
-        I3: { state: "charged", level: 1 },
-        D8: { state: "depleted", level: tiedLevel },
-        L8: { state: "depleted", level: tiedLevel },
-      },
-      randomSeed: seedAfterRecovery,
-    };
-    const [tieSquare, seedAfterTie] = reliefSquare(afterStep6, "green");
-    if (tieSquare === undefined) {
-      throw new Error("expected a genuine tie between D8 and L8");
-    }
-    const otherName = squareName(tieSquare) === "D8" ? "L8" : ("D8" as const);
+    // `trappingNodesFor` (`trap.ts`) lists D8 before L8 (board order), so a
+    // tie between them draws an index into a two-candidate list in that
+    // order — computed independently of `runEndOfTurn` so the outcome is
+    // predicted, not merely observed.
+    const [tieIndex, seedAfterTie] = drawIndex(seed, 2);
+    const tieSquareName = tieIndex === 0 ? "D8" : "L8";
+    const otherName = tieSquareName === "D8" ? "L8" : "D8";
 
     const result = runEndOfTurn(state);
 
@@ -979,32 +885,34 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
     expect(relief).toEqual({
       type: "node-relief",
       side: "green",
-      square: tieSquare,
+      square: squareFromName(tieSquareName),
     });
     const retired = result.effects.find(
       (effect): effect is NodeRetiredEffect => effect.type === "node-retired",
     );
-    expect(retired?.square).toEqual(tieSquare);
+    expect(retired?.square).toEqual(squareFromName(tieSquareName));
     // Retirement draws nothing (§8.2), so the tie-break itself is the last
     // draw the whole sequence makes.
     expect(result.state.randomSeed).toBe(seedAfterTie);
+    // Step 6 spends one ply off both tied nodes, ahead of step 7's tie-break
+    // — they are still tied, just one ply lower, when the tie is drawn.
     expect(result.state.nodes[otherName]).toEqual({
       state: "depleted",
-      level: tiedLevel,
+      level: tiedLevel - 1,
     });
   });
 });
 
 describe("runEndOfTurn — step 4, charging never charges a node that only appears in step 6 of the same sequence (§8.6 step ordering)", () => {
   it("leaves the board with nothing charged when the only inactive candidate is a node retiring this very ply", () => {
-    // H8 is guaranteed to retire this ply (level 4, see above); F2 is
-    // guaranteed to run out this ply (level NODE_CAPACITY - 1, empty). H8 is
-    // genuinely depleted, and F2 genuinely charged, before this ply begins,
-    // so `runEndOfTurn` derives the right depleted-before-ply set on its own.
+    // H8 is guaranteed to retire this ply (level 1); F2 is guaranteed to run
+    // out this ply (level 1). H8 is genuinely depleted, and F2 genuinely
+    // charged, before this ply begins, so `runEndOfTurn` derives the right
+    // depleted-before-ply set on its own.
     const state = buildState({
       nodes: {
-        H8: ["depleted", 4],
-        F2: ["charged", NODE_CAPACITY - 1],
+        H8: ["depleted", 1],
+        F2: ["charged", 1],
       },
     });
 
@@ -1031,10 +939,10 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
     // has no shortfall to fill and the three inactive nodes simply rotate.
     const state = buildState({
       nodes: {
-        D4: ["charged", 1],
-        L4: ["charged", 1],
-        D12: ["charged", 1],
-        L12: ["charged", 1],
+        D4: ["charged", 0],
+        L4: ["charged", 0],
+        D12: ["charged", 0],
+        L12: ["charged", 0],
         F2: ["inactive", 1],
         N4: ["inactive", 2],
         H8: ["inactive", 3],
@@ -1066,9 +974,9 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
     // left waiting their own turn.
     const state = buildState({
       nodes: {
-        D4: ["charged", 1],
-        L4: ["charged", 1],
-        D12: ["charged", 1],
+        D4: ["charged", 0],
+        L4: ["charged", 0],
+        D12: ["charged", 0],
         F2: ["inactive", 1],
         N4: ["inactive", 2],
         H8: ["inactive", TOP_NODE_PRIORITY],
@@ -1105,9 +1013,9 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
   it("keeps a ship on a swept inactive node exactly where it was, at the power it had, and never traps it", () => {
     const state = buildState({
       nodes: {
-        D4: ["charged", 1],
-        L4: ["charged", 1],
-        D12: ["charged", 1],
+        D4: ["charged", 0],
+        L4: ["charged", 0],
+        D12: ["charged", 0],
         F2: ["inactive", 1],
         N4: ["inactive", 2],
         H8: ["inactive", 3],
@@ -1189,10 +1097,10 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       nodes: {
         H8: ["depleted", 0],
         K5: ["depleted", 0],
-        C3: ["charged", 1],
-        E3: ["charged", 1],
-        G3: ["charged", 1],
-        I3: ["charged", 1],
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
+        I3: ["charged", 0],
       },
       ships: [ship("green-1", "green", "D2")],
     });
@@ -1208,7 +1116,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("pays the side that just played and leaves the other side's total untouched", () => {
     const state = buildState({
       sideToMove: "green",
-      nodes: { H8: ["charged", 1] },
+      nodes: { H8: ["charged", 5] },
       ships: [ship("green-1", "green", "H8", 0)],
     });
 
@@ -1228,9 +1136,9 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     const state = buildState({
       sideToMove: "green",
       nodes: {
-        H8: ["charged", 1],
-        K5: ["charged", 1],
-        L8: ["charged", 1],
+        H8: ["charged", 5],
+        K5: ["charged", 5],
+        L8: ["charged", 5],
       },
       ships: [
         ship("green-1", "green", "H8", 0),
@@ -1255,10 +1163,10 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.state.energy).toEqual({ green: 6, red: 0 });
   });
 
-  it("pays for a node whose drain reaches capacity at the end of this very turn (before step 3 ticks)", () => {
+  it("pays for a node whose countdown runs out at the end of this very turn (before step 3 ticks)", () => {
     const state = buildState({
       sideToMove: "green",
-      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
+      nodes: { H8: ["charged", 1] },
       // A second green ship on a plain square, free of any node, so green
       // is not all-trapped once H8 depletes and step 7's relief does not
       // fire — this test is about step 2's collection, not the relief.
@@ -1284,7 +1192,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("collects energy for a node held regardless of the holding ship's own power (§4.1: holding a node no longer touches it)", () => {
     const state = buildState({
       sideToMove: "green",
-      nodes: { H8: ["charged", 1] },
+      nodes: { H8: ["charged", 5] },
       ships: [ship("green-1", "green", "H8", 0)],
     });
 
@@ -1304,7 +1212,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("pays this side nothing for a node held by the opponent", () => {
     const state = buildState({
       sideToMove: "green",
-      nodes: { H8: ["charged", 1] },
+      nodes: { H8: ["charged", 5] },
       ships: [ship("red-1", "red", "H8", 3)],
     });
 
@@ -1357,7 +1265,7 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
     const state = {
       ...buildState({
         sideToMove: "green",
-        nodes: { K5: ["charged", 1] },
+        nodes: { K5: ["charged", 5] },
         ships: [ship("green-1", "green", "K5", 1)],
       }),
       actedThisPly: ["green-1" as ShipId],
@@ -1408,37 +1316,34 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
   });
 });
 
-describe("runEndOfTurn — the opening board does not fall into lockstep (§8.1)", () => {
-  it("does not run all four opening nodes out on the same ply", () => {
+describe("runEndOfTurn — a quiet board does nothing at all (§8.1, §8.3)", () => {
+  it("leaves the opening board's four charged nodes at baseline, charges and depletes nothing, and never touches the seed, across many plies with nobody moving", () => {
     const SEEDS = [20260828, 20260829, 20260830, 20260831, 20260832];
     const PLIES_TO_RUN = 60;
 
     for (const seed of SEEDS) {
-      let state = startingGameState(seed, DEFAULT_GAME_LENGTH_ROUNDS);
-      // Whichever nodes the game opened with, not a fixed list.
-      const openingSquares = Object.keys(state.nodes).filter(
-        (name) => state.nodes[name]?.state === "charged",
+      const opening = startingGameState(seed, DEFAULT_GAME_LENGTH_ROUNDS);
+      const chargedNames = Object.keys(opening.nodes).filter(
+        (name) => opening.nodes[name]?.state === "charged",
       );
-      const runOutPly = new Map<string, number>();
+      let state = opening;
 
       for (let ply = 1; ply <= PLIES_TO_RUN; ply++) {
         const result = runEndOfTurn(state);
-        for (const effect of result.effects) {
-          if (effect.type === "node-ran-out") {
-            const name = squareName(effect.square);
-            if (openingSquares.includes(name) && !runOutPly.has(name)) {
-              runOutPly.set(name, ply);
-            }
-          }
+        // No ship stands on any of the four, so none of them ever starts a
+        // countdown, and with nothing depleted there is nothing to charge
+        // from the queue either — the only thing left to happen is the
+        // queue's own silent rotation (§8.2), which is not this story's
+        // concern and raises no effect and moves no seed.
+        expect(result.effects).toEqual([]);
+        for (const name of chargedNames) {
+          expect(result.state.nodes[name]).toEqual({
+            state: "charged",
+            level: 0,
+          });
         }
+        expect(result.state.randomSeed).toBe(opening.randomSeed);
         state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
-      }
-
-      const plies = openingSquares
-        .filter((name) => runOutPly.has(name))
-        .map((name) => runOutPly.get(name));
-      if (plies.length === openingSquares.length) {
-        expect(new Set(plies).size).toBeGreaterThan(1);
       }
     }
   });
