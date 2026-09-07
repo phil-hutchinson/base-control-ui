@@ -694,7 +694,26 @@ Also run `npm run typecheck`, `npm run lint` and `npm run format:check`.
 
 ### Step 3 — `src/rules/nodeQueue.ts`: the refill procedure and the rotation
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/nodeQueue.ts` exactly per D2/D4: `NodePriority`,
+`INACTIVE_NODE_COUNT` (3), `TOP_NODE_PRIORITY` (3), the lexicographic
+`PRIORITY_PERMUTATIONS` table, `refillQueue` (built on Step 2's
+`drawWeightedNodeSquare` and `legalNodePool`'s `poolWidth` option, plus
+`drawIndex` for the one-of-six permutation draw — four seed steps total, in
+the stated order), `rotatePriority`, and the ordering helper
+`orderByPriorityDescending`. The module imports only `board.ts`,
+`nodePlacement.ts` and `random.ts`, per D2's layering, and is not yet called
+by anything. New `src/rules/nodeQueue.test.ts` covers every bullet in the
+step's verification list on hand-built inputs against a fixed four-charged
+board. One minor scope note: D1 mentions nodeQueue.ts exporting "a named
+reader for the priority of this inactive node" alongside the comparator;
+Step 3's own export list (and D2's own bullet list) name only the ordering
+helper, not a separate reader, so only `orderByPriorityDescending` was
+added — Step 4, which is the first caller reading `NodeStatus.level` as a
+priority, is where that bridge is needed and can add it then if it turns
+out to earn its place. `npm test` (1015 tests, up from 1000), `npm run
+typecheck`, `npm run lint` and `npm run format:check` all pass.
 
 Add the new leaf module described in D2. It knows nothing about `GameState` and
 is not called by anything yet.
