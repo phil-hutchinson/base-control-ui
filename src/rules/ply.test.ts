@@ -1122,8 +1122,10 @@ describe("nothing a ship does changes any node's state (rules.md §8.2)", () => 
     // started with enough recovery left (§8.2) that three end-of-turn
     // sequences cannot bring either back to inactive, so only their *state*
     // is asserted too, not their exact level. No node here is ever
-    // inactive, so the charge draw never has a pool to draw from across any
-    // of the three sequences.
+    // inactive, so charging has no queue to charge from, and with K5 still
+    // charged the shortfall never reaches four, so nothing is ever placed
+    // directly either — charging draws nothing across any of the three
+    // sequences.
     const state = buildState({
       ships: [
         ship("green-1", "green", "G8", 0),

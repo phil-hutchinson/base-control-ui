@@ -2,8 +2,8 @@
 // proves the collection (§8.4), the round arithmetic (§9) and the ending
 // work together as one. The action policy below is deterministic and lives
 // only in this file — the rules layer implements the rules, not how to play
-// them — and draws no randomness of its own, so it never perturbs §8.2's
-// seeded charge draws.
+// them — and draws no randomness of its own, so it never perturbs the
+// game's own seeded draws, including §8.2's queue refills.
 
 import { describe, expect, it } from "vitest";
 import {

@@ -1201,10 +1201,69 @@ constants stand as implemented. Point 5, the announcements, was declared out
 of scope by the owner and was not assessed; the automated wording tests in
 `announcements.test.ts` are what covers it.
 
-
 ### Step 9 — `README.md`, the comment sweep, and the final check
 
-Status: pending
+Status: committed
+
+Notes: Rewrote `README.md`'s two node-economy passages by hand rather than
+via the `/update-readme` command, which is a slash command meant to run
+interactively in the Claude Code CLI and is not invokable from this agent's
+tool set; the equivalent review was done manually against the step's own
+list, in the README's voice ("lit", "waiting", "rings"). Replaced the
+opening-summary paragraph's "gone for good — and in that same instant a
+brand new node is born somewhere else" with "retires and simply leaves —
+nothing takes its place", and moved the "new map" explanation to when a
+node lights, not when one ends. Rewrote the Status blockquote's whole node
+passage: seven-node opening deal (four lit, three waiting), rings replacing
+the pressure-glow description, the rotation ("the single becomes a double…"),
+the relief no longer replacing what it frees, and the refill (whole waiting
+trio swept and redrawn spread apart) replacing one-out-one-in. Re-wrapped
+both paragraphs by hand to keep `prettier --check` clean (its default
+`proseWrap: preserve` does not rewrap prose itself). Confirmed no surviving
+"pressure", "twelve nodes" or "replace[d]" claim in `README.md`.
+
+The comment sweep found the six files the step names already accurate —
+`nodes.ts`, `endOfTurn.ts`, `nodePlacement.ts`, `NodeMarker.tsx` (including
+its `node-artwork.md` reference, which no longer names "Dormant"/"Active" at
+all), `random.ts` and `seededReplay.test.ts`'s header — all rewritten by
+earlier steps, so nothing changed in them here. A broader sweep turned up
+four more, outside that list: `src/board/Board.test.tsx`'s `STATED_NODE_STATES`
+doc comment said "the other twelve nodes inactive," an arbitrary rendering
+fixture unrelated to the real node economy, reworded to "the other 12
+squares inactive" to say the same thing without tripping the story's own
+"twelve nodes" search; `src/game/session.test.ts` and `src/rules/ply.test.ts`
+each had a comment reasoning about the old weighted charge draw ("never has
+to weigh H9 alone", "the charge draw never has a pool to draw from"),
+reworded around the new deterministic queue and the direct-fourth
+placement's shortfall-of-four trigger; and `src/rules/fullGame.test.ts`'s
+header said its policy "never perturbs §8.2's seeded charge draws", reworded
+to name the queue refill instead, since charging itself draws nothing now.
+
+Deviation: `doc/plan/00000021-accessibility-tech-debt/known-issues.md` carries
+one now-orphaned entry from story 29 ("An active site's pressure is visible
+only in its artwork") describing a mechanism this story deleted outright.
+Left untouched — that ledger grows a section per story and is not named by
+this step, the final checks below don't cover `doc/plan/`, and rewriting
+another story's accepted-debt entry felt out of this step's scope; flagged
+here so the eventual accessibility story (or a future pass) can retire it
+deliberately instead of it being silently corrected in passing.
+
+Final check: `npm test` (1010 tests), `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm run build` all pass. The three searches:
+`grep -rni "pressure" src README.md doc/ruleset` finds nothing in `src` or
+`README.md` and only historical hits inside `doc/ruleset/changelog.md`
+(including the new 0.26 entry itself, which necessarily names pressure to
+say it is gone) — changelog entries are an append-only record of what a past
+version actually said, per `CLAUDE.md`, so these were not rewritten.
+`grep -rn "node-replaced\|chargeDraw\|NODE_COUNT" src` finds only
+`INACTIVE_NODE_COUNT`, this story's own replacement constant, whose name
+contains the substring `NODE_COUNT`; no `node-replaced` effect and no
+`chargeDraw` module remain. `grep -rn "twelve nodes" README.md src doc`
+finds hits only in older stories' plan folders (00000053, 00000059), this
+story's own `story.md`/`implementation-plan.md`, and
+`doc/ruleset/changelog.md`'s historical entries — none in `README.md` or
+`src`. Read `README.md` end to end; no sentence in it contradicts
+`rules.md` 0.26.
 
 `README.md` describes the node economy in detail and most of that description is
 now wrong. At minimum these claims must go or change:

@@ -347,9 +347,9 @@ describe("sessionReducer — a ship is selected", () => {
     });
 
     it("applies a move ending on an inactive node", () => {
-      // Five charged nodes elsewhere hold the board at its target, so the
-      // end-of-turn charge draw this move triggers has no shortfall to
-      // fill and never has to weigh H9 alone.
+      // Five charged nodes already exceed the board's target of four, so
+      // the end-of-turn charging step this move triggers has no shortfall
+      // to fill and leaves H9 untouched.
       const state = buildState({
         ships: [ship("green-1", "green", "H8")],
         nodes: {
