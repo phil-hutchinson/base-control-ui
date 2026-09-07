@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { squareFromName } from "./board";
+import {
+  BOARD_SIZE,
+  COLUMN_LETTERS,
+  squareFromName,
+  squareName,
+} from "./board";
 import { runCharging } from "./charging";
 import type { ShipId } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { GameState, Ship, NodeStatus } from "./gameState";
+import { drawUniformSquare, legalNodePool } from "./nodePlacement";
 import type { PowerLevel } from "./power";
+import { mulberry32 } from "./random";
 import { TARGET_CHARGED_NODES, type NodeState } from "./nodes";
 
 function ship(
@@ -127,7 +134,7 @@ describe("runCharging — the shortfall (§8.2, §8.6 step 4)", () => {
     expect(result.state).toEqual(state);
   });
 
-  it("leaves the shortfall's remainder unfilled when it exceeds the three inactive nodes", () => {
+  it("fills a shortfall of four with the three queue nodes, in priority order, then a fourth placed directly", () => {
     const state = buildState({
       nodes: {
         N4: ["inactive", 3],
@@ -138,12 +145,93 @@ describe("runCharging — the shortfall (§8.2, §8.6 step 4)", () => {
 
     const result = runCharging(state);
 
-    expect(result.effects).toHaveLength(3);
+    expect(result.effects.slice(0, 3)).toEqual([
+      { type: "node-charged", square: squareFromName("N4") },
+      { type: "node-charged", square: squareFromName("H8") },
+      { type: "node-charged", square: squareFromName("D8") },
+    ]);
+    expect(result.effects).toHaveLength(4);
+    expect(result.effects[3].type).toBe("node-appeared-charged");
     const chargedCount = Object.values(result.state.nodes).filter(
       (status) => status.state === "charged",
     ).length;
-    expect(chargedCount).toBe(3);
-    expect(chargedCount).toBeLessThan(TARGET_CHARGED_NODES);
+    expect(chargedCount).toBe(TARGET_CHARGED_NODES);
+  });
+
+  it("never places a fourth node when the shortfall is three, the largest the queue alone can cover", () => {
+    const state = buildState({
+      nodes: {
+        F2: ["charged", 0],
+        N4: ["inactive", 3],
+        D8: ["inactive", 1],
+        H8: ["inactive", 2],
+      },
+    });
+
+    const result = runCharging(state);
+
+    expect(
+      result.effects.some((effect) => effect.type === "node-appeared-charged"),
+    ).toBe(false);
+    expect(result.effects).toHaveLength(3);
+  });
+});
+
+describe("runCharging — the direct fourth placement (§8.2, §8.6 step 4)", () => {
+  it("places the fourth node at drain 0, legal under the widened pool at the moment it appears, and never on the outer edge", () => {
+    const state = buildState({
+      nodes: {
+        N4: ["inactive", 3],
+        D8: ["inactive", 1],
+        H8: ["inactive", 2],
+      },
+    });
+
+    const result = runCharging(state);
+
+    const appeared = result.effects.find(
+      (effect) => effect.type === "node-appeared-charged",
+    );
+    if (appeared === undefined) {
+      throw new Error("expected a node-appeared-charged effect");
+    }
+    const occupiedBeforeAppearing = [
+      squareFromName("N4"),
+      squareFromName("D8"),
+      squareFromName("H8"),
+    ];
+    const widenedPool = legalNodePool(occupiedBeforeAppearing, [], "widened");
+
+    expect(widenedPool).toContainEqual(appeared.square);
+    expect(appeared.square.row).not.toBe(1);
+    expect(appeared.square.row).not.toBe(BOARD_SIZE);
+    expect(appeared.square.column).not.toBe(COLUMN_LETTERS[0]);
+    expect(appeared.square.column).not.toBe(
+      COLUMN_LETTERS[COLUMN_LETTERS.length - 1],
+    );
+
+    const level = result.state.nodes[squareName(appeared.square)];
+    expect(level).toEqual({ state: "charged", level: 0 });
+  });
+
+  it("consumes exactly one seed step, drawn uniformly from the widened pool, and the same seed places the same square", () => {
+    const state = buildState({ randomSeed: 77, nodes: {} });
+    const [, expectedSeed] = mulberry32(77);
+    const expectedPool = legalNodePool([], [], "widened");
+    const [expectedSquare] = drawUniformSquare(expectedPool, 77);
+
+    const first = runCharging(state);
+    const second = runCharging(state);
+
+    expect(first.state.randomSeed).toBe(expectedSeed);
+    expect(second).toEqual(first);
+    const appeared = first.effects.find(
+      (effect) => effect.type === "node-appeared-charged",
+    );
+    if (appeared === undefined) {
+      throw new Error("expected a node-appeared-charged effect");
+    }
+    expect(appeared.square).toEqual(expectedSquare);
   });
 });
 
@@ -175,9 +263,16 @@ describe("runCharging — consumes no randomness", () => {
 
 describe("runCharging — the pool", () => {
   it("never charges a depleted node, even when the board is short", () => {
+    // Three charged nodes keep the shortfall at one rather than four, so
+    // this stays a pure test of the depleted node's own immunity — a
+    // shortfall of four would also place a fourth node directly (tested
+    // separately below) and that is not this test's subject.
     const state = buildState({
       nodes: {
         F2: ["depleted", 0],
+        C3: ["charged", 1],
+        E3: ["charged", 1],
+        G3: ["charged", 1],
       },
     });
 
@@ -188,10 +283,16 @@ describe("runCharging — the pool", () => {
   });
 
   it("charges an occupied inactive node like any other, under the ship standing on it", () => {
+    // Three charged nodes keep the shortfall at one, so only F2 charges —
+    // a shortfall of four would also place a fourth node directly, which is
+    // not this test's subject.
     const state = buildState({
       ships: [ship("green-1", "green", "F2", 3)],
       nodes: {
         F2: ["inactive", 3],
+        C3: ["charged", 1],
+        E3: ["charged", 1],
+        G3: ["charged", 1],
       },
     });
 

@@ -183,7 +183,10 @@ function queueRefilledClause(effect: QueueRefilledEffect): string {
  * clause, ahead of the rest — there is no longer a power-loss clause to sit
  * it next to, since no end-of-turn step takes power away any more (§4.1).
  * `node-charged` speaks — a node becoming charged is the thing both players
- * are racing towards. `queue-refilled` speaks too, as one sentence for the
+ * are racing towards. `node-appeared-charged` speaks too, and reads as
+ * unusual, because a node appearing out of nowhere already charged is —
+ * it only happens on the one turn all four charged nodes run out at once.
+ * `queue-refilled` speaks too, as one sentence for the
  * whole sweep: the queue a player was reading is gone and a new one has
  * taken its place. `node-retired` speaks for a node that simply leaves,
  * naming only its own square — nothing appears to replace it. `ship-trapped`
@@ -223,6 +226,11 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
         break;
       case "node-charged":
         clauses.push(`A new node charged at ${squareName(effect.square)}.`);
+        break;
+      case "node-appeared-charged":
+        clauses.push(
+          `Out of nowhere, a node appeared already charged at ${squareName(effect.square)}.`,
+        );
         break;
       case "queue-refilled":
         clauses.push(queueRefilledClause(effect));

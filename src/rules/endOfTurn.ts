@@ -33,7 +33,11 @@
 import type { Square } from "./board";
 import { squareName } from "./board";
 import { isPlanet } from "./planets";
-import { type NodeChargedEffect, runCharging } from "./charging";
+import {
+  type NodeAppearedChargedEffect,
+  type NodeChargedEffect,
+  runCharging,
+} from "./charging";
 import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
 import type { Side, ShipId } from "./fleet";
 import {
@@ -166,6 +170,7 @@ export type EndOfTurnEffect =
   | NodeRanOutEffect
   | ShipTrappedEffect
   | NodeChargedEffect
+  | NodeAppearedChargedEffect
   | QueueRefilledEffect
   | NodeRetiredEffect
   | ShipFreedEffect
@@ -314,10 +319,10 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
 
   // Step 4: the shortfall against four charged is filled from the three
   // inactive nodes, top-down by priority (§8.2, §8.6 step 4) — no draw, no
-  // weighting, no seed movement. If the shortfall is greater than the
-  // queue can cover, the remainder is left unfilled here; the direct
-  // fourth placement rules.md §8.2 describes for that one case is added
-  // separately.
+  // weighting, no seed movement. On the one turn the shortfall is four, the
+  // queue's three cannot cover it; `runCharging` places the fourth directly
+  // as a charged node at a square drawn uniformly from the widened pool,
+  // reported as `node-appeared-charged`.
   const charging = runCharging(workingState);
   workingState = charging.state;
   effects.push(...charging.effects);

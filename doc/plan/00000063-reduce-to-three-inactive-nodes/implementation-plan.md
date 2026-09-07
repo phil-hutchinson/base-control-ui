@@ -912,7 +912,39 @@ code: `grep -rni "pressure" src` finds nothing.
 
 ### Step 5 — Four at once: the fourth charged node placed directly
 
-Status: pending
+Status: committed
+
+Notes: Completed across two agent runs after an interruption by an API
+limit. The first run left the production side done and correct (`charging.ts`'s
+`node-appeared-charged` branch, drawing uniformly from the widened pool at
+`shortfall === TARGET_CHARGED_NODES` for exactly one seed step, and
+`announcements.ts`'s clause), but left 23 tests failing across
+`charging.test.ts`, `endOfTurn.test.ts`, `ply.test.ts` and `session.test.ts` —
+hand-built fixtures with fewer than four charged nodes now legitimately trip
+the new top-up path, adding a node and advancing the seed where the old
+fixtures expected neither. This run fixed every failing test by giving each
+fixture a full (or otherwise shortfall-avoiding) set of charged nodes where
+the fourth-placement path was not the test's subject, and rewrote
+`charging.test.ts`'s "leaves the shortfall's remainder unfilled when it
+exceeds the three inactive nodes" test (Step 4's deliberate placeholder) into
+this step's expectation — a shortfall of four now ends with four charged, the
+fourth via `node-appeared-charged`. Added new tests per the step's
+verification list: the zero-charged/full-queue case ending at four charged,
+drain 0 and legality (widened pool, never the outer edge) for the placed
+node, exactly one seed step and seed-stable placement (cross-checked against
+`drawUniformSquare` directly), no fourth placement when the shortfall is
+three or fewer, the full-`runEndOfTurn` case proving the board ends at
+exactly four charged and three inactive with the refill spreading the new
+trio away from all four charged squares (including the one just placed
+directly), and the announcement's wording. One deviation: two of the
+`endOfTurn.test.ts` fixes (the "draws no seed doing so" and "tied relief"
+tests) needed a lone extra charged node rather than a full four, because
+their own subject is an exact seed-accounting claim that a fourth charged
+node's own step-3 drain draw would have disturbed just as much as the new
+branch would — the comments explain why. `npm test` (982 tests, up from 977),
+`npm run typecheck`, `npm run lint` and `npm run format:check` all pass;
+`seededReplay.test.ts` required no fixture change, since its recorded
+sequence does not cross a four-charged shortfall.
 
 Close the one shortfall the queue cannot cover (S7). In
 `src/rules/charging.ts`, after the three queue charges, if the shortfall is
