@@ -4,6 +4,7 @@ import {
   BOARD_SIZE,
   COLUMN_LETTERS,
   ROW_NUMBERS,
+  chebyshevDistance,
   isOnBoard,
   squareAt,
   squareFromName,
@@ -81,5 +82,28 @@ describe("bounds", () => {
     expect(() => squareFromName("8H")).toThrow();
     expect(() => squareFromName("h8")).toThrow();
     expect(() => squareFromName("")).toThrow();
+  });
+});
+
+describe("chebyshevDistance", () => {
+  it("is zero from a square to itself", () => {
+    expect(chebyshevDistance(squareAt("H", 8), squareAt("H", 8))).toBe(0);
+  });
+
+  it("is symmetric", () => {
+    const a = squareAt("C", 3);
+    const b = squareAt("K", 11);
+    expect(chebyshevDistance(a, b)).toBe(chebyshevDistance(b, a));
+  });
+
+  it("is 1 for a diagonal neighbour", () => {
+    expect(chebyshevDistance(squareAt("H", 8), squareAt("I", 9))).toBe(1);
+  });
+
+  it("is the larger of the two axis differences on a spread pair", () => {
+    // Column A to K is 10 letters apart; row 1 to 4 is 3 apart.
+    expect(chebyshevDistance(squareAt("A", 1), squareAt("K", 4))).toBe(10);
+    // Column A to C is 2 letters apart; row 1 to 9 is 8 apart.
+    expect(chebyshevDistance(squareAt("A", 1), squareAt("C", 9))).toBe(8);
   });
 });

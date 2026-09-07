@@ -18,8 +18,8 @@ nodes take it in turn to be next, and a player looking at the board can see
 not only which node charges if one charges now, but which charges the turn
 after, and the turn after that.
 
-Randomness moves out of *which* node charges and into *where the next three
-appear*. Whenever a charge happens, the surviving inactive nodes are swept
+Randomness moves out of _which_ node charges and into _where the next three
+appear_. Whenever a charge happens, the surviving inactive nodes are swept
 off the board and three fresh ones are drawn, spread deliberately apart from
 the charged nodes and from each other, and dealt priorities 1, 2 and 3 in
 random order. The queue you have been reading for the last few turns is
@@ -58,7 +58,7 @@ knows the answer before it happens.
 The nodes do not move — only their rings change — so over three turns each
 of the three takes a turn at the front.
 
-**What the player saw is what charges.** The rotation happens at the *end* of
+**What the player saw is what charges.** The rotation happens at the _end_ of
 a turn, after that turn's charge. So the arrangement of rings a player looks
 at while taking their turn is exactly the arrangement that governs the charge
 at the end of it; the rotation they then see is the next player's to plan
@@ -114,7 +114,7 @@ Distance from the charged nodes sets a square's base appeal, and each
 inactive node already placed this refill multiplies it. The product is the
 point: under a sum, being close to one placed node can be bought off by
 being far from another, and the two trade against each other. Under a
-product they cannot — being close to *any* placed node collapses the whole
+product they cannot — being close to _any_ placed node collapses the whole
 weight, because the product follows the nearest one. That is what spreads
 the trio rather than merely pushing it outward.
 

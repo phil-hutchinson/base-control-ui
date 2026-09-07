@@ -8,8 +8,13 @@ import {
   squareName,
 } from "./board";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
-import { drawNodeSquare, legalNodePool } from "./nodePlacement";
-import { mulberry32 } from "./random";
+import {
+  drawNodeSquare,
+  drawUniformSquare,
+  drawWeightedNodeSquare,
+  legalNodePool,
+} from "./nodePlacement";
+import { drawWeightedIndex, mulberry32 } from "./random";
 
 /** The 121 squares C3-M13, in board order — the interior §3.2's two ring exclusions leave. */
 function interiorSquares(): Square[] {
@@ -226,6 +231,46 @@ describe("legalNodePool", () => {
   });
 });
 
+describe("legalNodePool with the widened pool", () => {
+  it("is 79 squares on an empty board, a strict superset of the 51-square strict pool", () => {
+    const strict = legalNodePool([], []);
+    const widened = legalNodePool([], [], undefined, "widened");
+
+    expect(strict).toHaveLength(51);
+    expect(widened).toHaveLength(79);
+
+    const strictNames = new Set(strict.map(squareName));
+    const widenedNames = new Set(widened.map(squareName));
+    for (const name of strictNames) {
+      expect(widenedNames.has(name)).toBe(true);
+    }
+  });
+
+  it("contains a square one ring in from the edge that the strict pool excludes", () => {
+    // B8 is one square in from the edge, not a planet and not adjacent to one.
+    const target = squareAt("B", 8);
+    const strict = legalNodePool([], []);
+    const widened = legalNodePool([], [], undefined, "widened");
+
+    expect(strict.map(squareName)).not.toContain(squareName(target));
+    expect(widened.map(squareName)).toContain(squareName(target));
+  });
+
+  it("never includes a square on the outer edge, in either pool", () => {
+    const strict = legalNodePool([], []);
+    const widened = legalNodePool([], [], undefined, "widened");
+
+    for (const pool of [strict, widened]) {
+      for (const square of pool) {
+        expect(square.row).not.toBe(1);
+        expect(square.row).not.toBe(15);
+        expect(square.column).not.toBe("A");
+        expect(square.column).not.toBe("O");
+      }
+    }
+  });
+});
+
 describe("drawNodeSquare", () => {
   it("returns a member of the pool and advances the seed exactly once", () => {
     const [, expectedNextSeed] = mulberry32(999);
@@ -247,6 +292,126 @@ describe("drawNodeSquare", () => {
     for (let seed = 0; seed < 50; seed++) {
       const [square] = drawNodeSquare([], [], seed, squareAt("H", 8));
       expect(squareName(square)).not.toBe("H8");
+    }
+  });
+});
+
+describe("drawUniformSquare", () => {
+  it("returns a member of the given pool and advances the seed exactly once", () => {
+    const pool = legalNodePool([], []);
+    const [, expectedNextSeed] = mulberry32(7);
+    const [square, nextSeed] = drawUniformSquare(pool, 7);
+
+    expect(pool.map(squareName)).toContain(squareName(square));
+    expect(nextSeed).toBe(expectedNextSeed);
+  });
+
+  it("returns the same square and seed for the same inputs", () => {
+    const pool = [squareAt("C", 3), squareAt("D", 4), squareAt("E", 5)];
+
+    expect(drawUniformSquare(pool, 42)).toEqual(drawUniformSquare(pool, 42));
+  });
+});
+
+describe("drawWeightedNodeSquare", () => {
+  it("advances the seed exactly once", () => {
+    const pool = [squareAt("C", 3), squareAt("D", 4)];
+    const [, expectedNextSeed] = mulberry32(123);
+    const [, nextSeed] = drawWeightedNodeSquare(pool, [], [], 123);
+
+    expect(nextSeed).toBe(expectedNextSeed);
+  });
+
+  it("returns the same square and seed for the same inputs", () => {
+    const pool = [squareAt("C", 3), squareAt("D", 4), squareAt("J", 10)];
+    const charged = [squareAt("H", 8)];
+    const placed = [squareAt("E", 5)];
+
+    expect(drawWeightedNodeSquare(pool, charged, placed, 55)).toEqual(
+      drawWeightedNodeSquare(pool, charged, placed, 55),
+    );
+  });
+
+  it("is uniform with no charged nodes and no already-placed nodes", () => {
+    const pool = [squareAt("C", 3), squareAt("F", 6), squareAt("J", 10)];
+    const counts = pool.map(() => 0);
+    const trials = 6000;
+    let seed = 1;
+
+    for (let i = 0; i < trials; i++) {
+      const [square, nextSeed] = drawWeightedNodeSquare(pool, [], [], seed);
+      seed = nextSeed;
+      const index = pool.findIndex(
+        (candidate) => squareName(candidate) === squareName(square),
+      );
+      counts[index] += 1;
+    }
+
+    for (const count of counts) {
+      expect(count / trials).toBeGreaterThan(0.3);
+      expect(count / trials).toBeLessThan(0.37);
+    }
+  });
+
+  it("with one charged node, picks a far square far more often than a near one, at the formula's ratio", () => {
+    const charged = [squareAt("H", 8)];
+    const near = squareAt("H", 9); // d = 1, weight = 1 + 1*1 = 2
+    const far = squareAt("A", 1); // d = 7, weight = 1 + 7*1 = 8
+    const pool = [near, far];
+    // Expected share: near 2/10 = 0.2, far 8/10 = 0.8.
+    let nearCount = 0;
+    let farCount = 0;
+    const trials = 6000;
+    let seed = 2;
+
+    for (let i = 0; i < trials; i++) {
+      const [square, nextSeed] = drawWeightedNodeSquare(
+        pool,
+        charged,
+        [],
+        seed,
+      );
+      seed = nextSeed;
+      if (squareName(square) === squareName(near)) {
+        nearCount += 1;
+      } else {
+        farCount += 1;
+      }
+    }
+
+    expect(nearCount + farCount).toBe(trials);
+    expect(nearCount / trials).toBeGreaterThan(0.12);
+    expect(nearCount / trials).toBeLessThan(0.28);
+    expect(farCount / trials).toBeGreaterThan(0.72);
+    expect(farCount / trials).toBeLessThan(0.88);
+  });
+
+  it("collapses the weight of a square near an already-placed node, matching the formula exactly", () => {
+    const charged = [squareAt("H", 8)];
+    const placed = [squareAt("C", 3)];
+    // D4: d(D4, H8) = max(4, 4) = 4; d(D4, C3) = max(1, 1) = 1.
+    // weight(D4) = 1 + 4 * 1 = 5.
+    const nearPlaced = squareAt("D", 4);
+    // N13: d(N13, H8) = max(6, 5) = 6; d(N13, C3) = max(11, 10) = 11.
+    // weight(N13) = 1 + 6 * 11 = 67.
+    const farFromPlaced = squareAt("N", 13);
+    const pool = [nearPlaced, farFromPlaced];
+    const expectedWeights = [5, 67];
+
+    for (const seed of [999, 12345, 0, 42]) {
+      const [expectedIndex, expectedNextSeed] = drawWeightedIndex(
+        seed,
+        expectedWeights,
+      );
+      const [square, nextSeed] = drawWeightedNodeSquare(
+        pool,
+        charged,
+        placed,
+        seed,
+      );
+
+      expect(squareName(square)).toBe(squareName(pool[expectedIndex]));
+      expect(nextSeed).toBe(expectedNextSeed);
     }
   });
 });

@@ -621,7 +621,27 @@ finds hits in §1, §2, §3.2, §8.1, §8.2, §8.6 and Appendix B. Run
 
 ### Step 2 — The two pools, Chebyshev distance and the weighted draw
 
-Status: pending
+Status: committed
+
+Notes: Added `chebyshevDistance` to `src/rules/board.ts`. Gave `legalNodePool`
+a fourth parameter, `poolWidth: NodePoolWidth = "strict"` (a named
+`"strict" | "widened"` union rather than a boolean), leaving `exclude` in its
+existing third position untouched per the step's instruction; added
+`WIDENED_EXCLUDED_EDGE_RINGS = 1` beside the existing `EXCLUDED_EDGE_RINGS = 2`,
+both documented against §3.2's constraints 3 and 4. Added `drawUniformSquare`
+(a pool-and-seed uniform draw, for the opening deal's charged squares and
+Step 5's direct fourth placement) and `drawWeightedNodeSquare` plus a private
+`nodeSquareWeight` implementing S6's formula exactly, both in
+`nodePlacement.ts` beside the pool per D6. New tests in `board.test.ts`
+(chebyshevDistance) and `nodePlacement.test.ts` (widened pool size and
+superset relationship, edge exclusion, uniform draw, and the weighted draw —
+including a deterministic formula cross-check against `drawWeightedIndex` for
+the already-placed-node case, plus statistical checks for the no-charged-node
+uniform case and the one-charged-node far-vs-near case). No deviation from
+the plan. `npm test` (1000 tests, up from 986, all green), `npm run
+typecheck`, `npm run lint` and `npm run format:check` all pass; the one
+format warning (`doc/plan/00000063-reduce-to-three-inactive-nodes/story.md`)
+predates this branch and is untouched by this step.
 
 Purely additive plumbing in the placement layer, with no behaviour change for
 any existing caller. Nothing in this step is called by the game yet.
