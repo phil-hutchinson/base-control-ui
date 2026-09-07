@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chebyshevDistance, squareFromName, squareName } from "./board";
+import { squareFromName, squareName } from "./board";
 import {
   runEndOfTurn,
   type NodeReliefEffect,
@@ -11,7 +11,6 @@ import { CHARGED_COUNTDOWN_PLIES, TRAP_COUNTDOWN_PLIES } from "./countdown";
 import type { ShipId } from "./fleet";
 import { legalDestinations } from "./movement";
 import { PLANETS } from "./planets";
-import { drawIndex } from "./random";
 import {
   type GameState,
   type Ship,
@@ -760,11 +759,8 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
     // A1 is a corner: at power 0 the only affordable moves are the two
     // orthogonal steps to B1 and A2, and both are occupied by an enemy ship
     // — boxed in by ships and the edge of the board, not by the trap. H8 is
-    // a lone charged node, unoccupied, that keeps the shortfall at three
-    // rather than four — a shortfall of four would place a fourth node
-    // directly, drawing a seed step that is not this test's subject — and
-    // leaves nothing in the queue to charge from, so charging draws nothing
-    // either way.
+    // a lone charged node, unoccupied, leaving nothing in the queue to
+    // charge from, so charging draws nothing.
     const state = buildState({
       nodes: { A1: ["depleted", 30], H8: ["charged", 0] },
       ships: [
@@ -847,11 +843,13 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
     );
   });
 
-  it("draws once for the tie-break and nothing further, so a tied relief stays replayable", () => {
-    // D8 and L8 are given exactly the same level, a tie step 7 must break at
-    // random (rules.md §8.6 step 7) — nothing else in the sequence draws
-    // from the seed under the countdown model, so the tie-break is the
-    // sequence's only draw.
+  it("breaks a tie on remaining life by board order and draws nothing from the seed", () => {
+    // D8 and L8 are given exactly the same level. This tie cannot arise in
+    // real play (rules.md §8.3: a side's trapped ships' nodes always have
+    // distinct remaining lives), so this is a hand-built fixture pinning
+    // `reliefSquare`'s deterministic tidy-up of the unreachable case —
+    // `trappingNodesFor` (`trap.ts`) lists D8 before L8 (board order), so D8
+    // wins, with no seed movement at all.
     const tiedLevel = 30;
     const seed = 1;
 
@@ -869,14 +867,6 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       randomSeed: seed,
     });
 
-    // `trappingNodesFor` (`trap.ts`) lists D8 before L8 (board order), so a
-    // tie between them draws an index into a two-candidate list in that
-    // order — computed independently of `runEndOfTurn` so the outcome is
-    // predicted, not merely observed.
-    const [tieIndex, seedAfterTie] = drawIndex(seed, 2);
-    const tieSquareName = tieIndex === 0 ? "D8" : "L8";
-    const otherName = tieSquareName === "D8" ? "L8" : "D8";
-
     const result = runEndOfTurn(state);
 
     const relief = result.effects.find(
@@ -885,18 +875,17 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
     expect(relief).toEqual({
       type: "node-relief",
       side: "green",
-      square: squareFromName(tieSquareName),
+      square: squareFromName("D8"),
     });
     const retired = result.effects.find(
       (effect): effect is NodeRetiredEffect => effect.type === "node-retired",
     );
-    expect(retired?.square).toEqual(squareFromName(tieSquareName));
-    // Retirement draws nothing (§8.2), so the tie-break itself is the last
-    // draw the whole sequence makes.
-    expect(result.state.randomSeed).toBe(seedAfterTie);
-    // Step 6 spends one ply off both tied nodes, ahead of step 7's tie-break
-    // — they are still tied, just one ply lower, when the tie is drawn.
-    expect(result.state.nodes[otherName]).toEqual({
+    expect(retired?.square).toEqual(squareFromName("D8"));
+    // Nothing in the sequence draws from the seed any more.
+    expect(result.state.randomSeed).toBe(seed);
+    // Step 6 spends one ply off both tied nodes, ahead of step 7's choice —
+    // they are still tied, just one ply lower, when the choice is made.
+    expect(result.state.nodes.L8).toEqual({
       state: "depleted",
       level: tiedLevel - 1,
     });
@@ -1041,7 +1030,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
     ).toBe(false);
   });
 
-  it("fills a zero-charged board to four — three from the queue and one placed directly — and refills the queue away from all four (§8.2, §8.6 steps 4 and 5)", () => {
+  it("fills a zero-charged board from the three queue nodes alone, never placing a fourth from anywhere, and refills the queue afterwards (§8.2, §8.6 steps 4 and 5)", () => {
     const state = buildState({
       nodes: {
         N4: ["inactive", 3],
@@ -1058,16 +1047,8 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
     const inactiveNow = nodeSquares(result.state).filter(
       (square) => nodeStateAt(result.state, square) === "inactive",
     );
-    expect(chargedNow).toHaveLength(TARGET_CHARGED_NODES);
+    expect(chargedNow).toHaveLength(TARGET_CHARGED_NODES - 1);
     expect(inactiveNow).toHaveLength(INACTIVE_NODE_COUNT);
-
-    const appeared = result.effects.find(
-      (effect) => effect.type === "node-appeared-charged",
-    );
-    if (appeared === undefined) {
-      throw new Error("expected a node-appeared-charged effect");
-    }
-    expect(chargedNow.map(squareName)).toContain(squareName(appeared.square));
 
     const refills = result.effects.filter(
       (effect): effect is QueueRefilledEffect =>
@@ -1075,14 +1056,6 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
     );
     expect(refills).toHaveLength(1);
     expect(refills[0].newNodes).toHaveLength(INACTIVE_NODE_COUNT);
-    // The refill's weighting spreads the new trio away from all four
-    // charged nodes, including the one step 4 just placed directly — none
-    // of the newly drawn squares is adjacent to it.
-    for (const { square } of refills[0].newNodes) {
-      expect(chebyshevDistance(square, appeared.square)).toBeGreaterThanOrEqual(
-        2,
-      );
-    }
   });
 });
 

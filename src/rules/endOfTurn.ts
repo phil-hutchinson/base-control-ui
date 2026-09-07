@@ -35,20 +35,17 @@
 // retirements — a node step 3 just depleted is a legitimate relief
 // candidate, and a node step 6 already retired must not be reconsidered. It
 // runs once for `state.sideToMove` — the side that just played — and then
-// once for the other side, always in that fixed order, because it is the
-// only step past this point that still draws from the seeded stream when it
-// fires (rules.md §8.6 step 7) — a tie on remaining life is broken at
-// random — and a data-dependent order would make a recorded game's replay
-// depend on which side happened to need relief first.
+// once for the other side, always in that fixed order, so a recorded
+// game's replay never depends on which side happened to need relief first.
+// Nothing in this whole sequence draws from the seeded stream any more
+// except step 5's refill: a tie on remaining life can no longer arise
+// (rules.md §8.3, §8.6 step 7), so the relief's choice is fully
+// deterministic.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
 import { isPlanet } from "./planets";
-import {
-  type NodeAppearedChargedEffect,
-  type NodeChargedEffect,
-  runCharging,
-} from "./charging";
+import { type NodeChargedEffect, runCharging } from "./charging";
 import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
 import type { Side, ShipId } from "./fleet";
 import {
@@ -174,7 +171,6 @@ export type EndOfTurnEffect =
   | NodeRanOutEffect
   | ShipTrappedEffect
   | NodeChargedEffect
-  | NodeAppearedChargedEffect
   | QueueRefilledEffect
   | NodeRetiredEffect
   | ShipFreedEffect
@@ -324,10 +320,8 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
 
   // Step 4: the shortfall against four charged is filled from the three
   // inactive nodes, top-down by priority (§8.2, §8.6 step 4) — no draw, no
-  // weighting, no seed movement. On the one turn the shortfall is four, the
-  // queue's three cannot cover it; `runCharging` places the fourth directly
-  // as a charged node at a square drawn uniformly from the widened pool,
-  // reported as `node-appeared-charged`.
+  // weighting, no seed movement. The shortfall never exceeds two (§8.3), so
+  // the three-node queue always covers it.
   const charging = runCharging(workingState);
   workingState = charging.state;
   effects.push(...charging.effects);
@@ -430,17 +424,16 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   // for however many turns its trap countdown would otherwise still take,
   // the depleted node with the least remaining life among those whose ship
   // would actually have a legal move once freed ends at once (`relief.ts`'s
-  // choice); a tie on remaining life is broken at random. Runs for `side` —
-  // the one that just played — first, then for the other side, always in
-  // that fixed order: it is the only step left that draws from the seeded
-  // stream when it fires — its own tie-break — and a data-dependent order
-  // would make a recorded game's replay depend on which side happened to
-  // need relief first. At most one node ends per side per ply — freeing one
-  // ship is enough that the side is no longer all-trapped — so the question
-  // is asked once per side, never in a loop.
+  // choice); on a tie, the first candidate in board order — a tie can no
+  // longer arise (§8.3), so this is a deterministic tidy-up of an
+  // unreachable case, not a rule. Runs for `side` — the one that just
+  // played — first, then for the other side, always in that fixed order, so
+  // a recorded game's replay never depends on which side happened to need
+  // relief first. At most one node ends per side per ply — freeing one ship
+  // is enough that the side is no longer all-trapped — so the question is
+  // asked once per side, never in a loop.
   for (const reliefSide of [side, otherSide(side)]) {
-    const [square, seedAfterRelief] = reliefSquare(workingState, reliefSide);
-    workingState = { ...workingState, randomSeed: seedAfterRelief };
+    const square = reliefSquare(workingState, reliefSide);
     if (square === undefined) {
       continue;
     }

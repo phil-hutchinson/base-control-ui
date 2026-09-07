@@ -847,7 +847,36 @@ regression net. Also grep `src/` and confirm no surviving reference to
 
 ### Step 5 — Delete the two rules that die with camping
 
-Status: pending
+Status: committed
+
+Notes: Deleted `NodeAppearedChargedEffect` and the direct-placement branch
+from `charging.ts` (`runCharging` now just fills the shortfall from the
+queue and stops, per D9), and removed it from `EndOfTurnEffect` and
+`endOfTurnClauses` in `endOfTurn.ts`/`announcements.ts`. Rewrote
+`relief.ts`'s `reliefSquare` per D9: it now returns just `Square | undefined`
+(seed argument and return dropped entirely, the option D9 offers), taking
+the first candidate in board order on a tie instead of drawing, and
+`endOfTurn.ts`'s step 7 no longer threads a seed through it. Updated the
+module comments in `charging.ts`, `endOfTurn.ts` (header and steps 4 and 7)
+and `relief.ts` to state the new ceiling (shortfall never exceeds two) and
+that nothing left in the sequence draws from the seed except step 5's
+refill. Rewrote the tests D13 names for this step
+(`charging.test.ts`'s direct-fourth sites, `relief.test.ts`'s tie-break
+tests, `endOfTurn.test.ts` and `announcements.test.ts`'s
+`node-appeared-charged` sites, `nodePool.test.ts`'s direct-fourth
+handling — its `DirectFourthRecord`, the `NodeAppearedChargedEffect`
+tracking in `runEconomy`, and the "places the rare direct-fourth node"
+test) rather than merely deleting them where a replacement test still made
+sense (e.g. `charging.test.ts`'s shortfall-of-four case now asserts
+`runCharging` charges only the three queue nodes and leaves the fourth
+uncovered; `relief.test.ts`'s tie-break test now asserts the deterministic
+board-order choice). One deviation beyond D13's list: while here, swept a
+handful of comments in `charging.test.ts`, `ply.test.ts` and
+`nodePlacement.ts`'s `drawUniformSquare` doc comment that referred to the
+now-deleted direct-fourth placement or "a shortfall of four would place a
+fourth node directly" — left as dangling references to deleted machinery
+otherwise. `npm run typecheck`, `npm run lint`, `npm run format:check` and
+the full suite (`npm test`, 1013 tests) are all green.
 
 Both deletions are safe only because Steps 3 and 4 landed (D9, and the
 story's argument in "Two rules that die with camping").

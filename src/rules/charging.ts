@@ -3,20 +3,19 @@
 // the three inactive nodes, top-down by priority — the priority-3 node
 // first, then the 2, then the 1 — with no draw, no weighting and no seed
 // movement at all: a player who can see the priorities already knows which
-// node charges next. If the shortfall is four — all four charged nodes ran
-// out on the same turn, so the three-node queue cannot cover it — one
-// further node is placed directly as charged, at a square drawn uniformly
-// from the widened pool (§3.2, §8.2). That is the only draw this step ever
-// makes, and it happens at most once: the shortfall can never exceed four.
+// node charges next. The shortfall can never exceed two — at most one
+// countdown starts per turn, so at most one node expires per turn, plus at
+// most one node a player can walk off in the same turn — which the
+// three-node queue always covers, so this step never needs to place a node
+// any other way.
 
-import { type Square, squareName } from "./board";
+import { squareName, type Square } from "./board";
 import {
   type GameState,
   nodeSquares,
   nodeStateAt,
   nodeStatusAt,
 } from "./gameState";
-import { legalNodePool, drawUniformSquare } from "./nodePlacement";
 import { inactivePriority, orderByPriorityDescending } from "./nodeQueue";
 import { TARGET_CHARGED_NODES } from "./nodes";
 
@@ -26,21 +25,10 @@ export interface NodeChargedEffect {
   readonly square: Square;
 }
 
-/**
- * A fourth charged node appeared out of nowhere, already charged at zero
- * drain, because all four charged nodes ran out on the same turn and the
- * three-node queue could cover only three of the four (rules.md §8.2). It
- * never spent a turn inactive and never carried a priority.
- */
-export interface NodeAppearedChargedEffect {
-  readonly type: "node-appeared-charged";
-  readonly square: Square;
-}
-
 /** The state resulting from charging, and the effects it produced. */
 export interface ChargingResult {
   readonly state: GameState;
-  readonly effects: readonly (NodeChargedEffect | NodeAppearedChargedEffect)[];
+  readonly effects: readonly NodeChargedEffect[];
 }
 
 /**
@@ -49,10 +37,7 @@ export interface ChargingResult {
  * §8.6 step 4). Charging does not look at occupancy: a node with a ship
  * standing on it charges like any other. The queue order is decided
  * entirely by `orderByPriorityDescending` and consumes no randomness at
- * all. If the shortfall is four — the one turn all four charged nodes ran
- * out at once — one further node is placed directly as charged, at a
- * square drawn uniformly from the widened pool, consuming exactly one seed
- * step; `state.randomSeed` moves only in that case.
+ * all. `state.randomSeed` is never touched here.
  */
 export function runCharging(state: GameState): ChargingResult {
   const squares = nodeSquares(state);
@@ -73,7 +58,7 @@ export function runCharging(state: GameState): ChargingResult {
   const toCharge = orderByPriorityDescending(inactiveNodes).slice(0, shortfall);
 
   let workingState = state;
-  const effects: (NodeChargedEffect | NodeAppearedChargedEffect)[] = [];
+  const effects: NodeChargedEffect[] = [];
 
   for (const { square } of toCharge) {
     const name = squareName(square);
@@ -85,23 +70,6 @@ export function runCharging(state: GameState): ChargingResult {
       },
     };
     effects.push({ type: "node-charged", square });
-  }
-
-  if (shortfall === TARGET_CHARGED_NODES) {
-    const occupiedSquares = nodeSquares(workingState);
-    const shipSquares = workingState.ships.map((ship) => ship.square);
-    const widenedPool = legalNodePool(occupiedSquares, shipSquares, "widened");
-    const [square, nextSeed] = drawUniformSquare(
-      widenedPool,
-      workingState.randomSeed,
-    );
-    const name = squareName(square);
-    workingState = {
-      ...workingState,
-      nodes: { ...workingState.nodes, [name]: { state: "charged", level: 0 } },
-      randomSeed: nextSeed,
-    };
-    effects.push({ type: "node-appeared-charged", square });
   }
 
   return { state: workingState, effects };

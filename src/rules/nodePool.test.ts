@@ -21,13 +21,13 @@
 //
 // One finding is worth recording here for Appendix B's benefit, since nothing
 // else in the codebase measures it: across every seed this file runs, and
-// every refill, direct-fourth placement and opening deal within them,
-// section 3.2's fallback never had to fire once. "Legal at the moment it
-// appears" below is checked by independently recomputing each ordinary
-// constraint against the board as the code built it, not by trusting
-// whichever pool `legalNodePool` actually returned — a square that failed
-// any of those constraints could only ever have come from the fallback, so
-// every placement clearing them is itself the fallback-never-fired evidence.
+// every refill and opening deal within them, section 3.2's fallback never
+// had to fire once. "Legal at the moment it appears" below is checked by
+// independently recomputing each ordinary constraint against the board as
+// the code built it, not by trusting whichever pool `legalNodePool` actually
+// returned — a square that failed any of those constraints could only ever
+// have come from the fallback, so every placement clearing them is itself
+// the fallback-never-fired evidence.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -37,7 +37,6 @@ import {
   chebyshevDistance,
   squareName,
 } from "./board";
-import type { NodeAppearedChargedEffect } from "./charging";
 import { CHARGED_COUNTDOWN_PLIES } from "./countdown";
 import { type QueueRefilledEffect, runEndOfTurn } from "./endOfTurn";
 import {
@@ -124,10 +123,11 @@ const MAXIMUM_MULTI_EXPIRY_SHARE = 0.1;
 /**
  * No turn was observed to run out all four charged nodes at once across
  * this file's runs, so `MAXIMUM_EXPIRIES_IN_ONE_PLY` below is set one short
- * of `TARGET_CHARGED_NODES`. That is a description of what was measured,
- * not a rule the game enforces: it can happen (rules.md §8.2), and when it
- * does the direct-fourth placement covers it, exercised deliberately in
- * `charging.test.ts` and `endOfTurn.test.ts` rather than waited for here.
+ * of `TARGET_CHARGED_NODES`. That is a description of what was measured, not
+ * a rule the game enforces: the driver this file's header describes starts
+ * at most one countdown per ply, which is what keeps four simultaneous
+ * expiries essentially unreachable here, just as it is in a real game
+ * (rules.md §8.3).
  */
 const MAXIMUM_EXPIRIES_IN_ONE_PLY = TARGET_CHARGED_NODES - 1;
 
@@ -146,24 +146,16 @@ interface RefillRecord {
   readonly newNodes: readonly InactiveNodeDraw[];
   /**
    * Every square that held a node immediately before this refill's three
-   * draws — the discarded survivors already removed, the direct-fourth
-   * placement (if any, this same ply) already added — reconstructed from
+   * draws — the discarded survivors already removed — reconstructed from
    * the ply's `before` state and its effects rather than read off any
    * private state `runEndOfTurn` does not expose.
    */
   readonly occupiedBeforeRefill: readonly Square[];
 }
 
-/** One direct-fourth placement this run observed, with the board it appeared against. */
-interface DirectFourthRecord {
-  readonly square: Square;
-  readonly occupiedBefore: readonly Square[];
-}
-
 interface EconomyRun {
   readonly samples: readonly EconomySample[];
   readonly refills: readonly RefillRecord[];
-  readonly directFourths: readonly DirectFourthRecord[];
   readonly shipSquares: readonly Square[];
 }
 
@@ -193,39 +185,23 @@ function startOneCountdown(state: GameState): GameState {
 /**
  * Drives the end-of-turn sequence for `plies` turns from the opening
  * position, with no ship ever moving beyond the synthetic countdown driver
- * this file's header describes, and samples the board after each turn.
- * Also reconstructs, from each ply's `before` state and its effects,
- * exactly what `legalNodePool` saw at the moment of every refill draw and
- * every direct-fourth placement — without reaching into `runEndOfTurn`'s
- * private working state — so the legality and spread checks below can be
- * run against the real thing rather than a hand-built stand-in.
+ * this file's header describes, and samples the board after each turn. Also
+ * reconstructs, from each ply's `before` state and its effects, exactly what
+ * `legalNodePool` saw at the moment of every refill draw — without reaching
+ * into `runEndOfTurn`'s private working state — so the legality and spread
+ * checks below can be run against the real thing rather than a hand-built
+ * stand-in.
  */
 function runEconomy(seed: number, plies: number): EconomyRun {
   let state: GameState = startingGameState(seed, NOMINAL_LENGTH_IN_ROUNDS);
   const shipSquares = state.ships.map((ship) => ship.square);
   const samples: EconomySample[] = [];
   const refills: RefillRecord[] = [];
-  const directFourths: DirectFourthRecord[] = [];
 
   for (let i = 0; i < plies; i++) {
     state = startOneCountdown(state);
     const beforeState = state;
     const result = runEndOfTurn(state);
-
-    const appeared = result.effects.find(
-      (effect): effect is NodeAppearedChargedEffect =>
-        effect.type === "node-appeared-charged",
-    );
-    if (appeared !== undefined) {
-      directFourths.push({
-        square: appeared.square,
-        // Step 4/5's charging never removes a square before this one is
-        // drawn (a queue charge only relabels a square, and this square is
-        // brand new), so every node present at the start of the ply is
-        // still occupying its square at the moment this one is drawn.
-        occupiedBefore: nodeSquares(beforeState),
-      });
-    }
 
     const refilled = result.effects.find(
       (effect): effect is QueueRefilledEffect =>
@@ -233,9 +209,9 @@ function runEconomy(seed: number, plies: number): EconomyRun {
     );
     if (refilled !== undefined) {
       const discardedNames = new Set(refilled.discardedSquares.map(squareName));
-      const occupiedBeforeRefill = nodeSquares(beforeState)
-        .filter((square) => !discardedNames.has(squareName(square)))
-        .concat(appeared !== undefined ? [appeared.square] : []);
+      const occupiedBeforeRefill = nodeSquares(beforeState).filter(
+        (square) => !discardedNames.has(squareName(square)),
+      );
       refills.push({ newNodes: refilled.newNodes, occupiedBeforeRefill });
     }
 
@@ -268,7 +244,7 @@ function runEconomy(seed: number, plies: number): EconomyRun {
     state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
   }
 
-  return { samples, refills, directFourths, shipSquares };
+  return { samples, refills, shipSquares };
 }
 
 function ringsFromEdge(square: Square): number {
@@ -496,31 +472,6 @@ describe("every new node is legal the moment it appears, and the fallback never 
             COLUMN_LETTERS[COLUMN_LETTERS.length - 1],
           );
         }
-      }
-    },
-  );
-
-  it.each(SEEDS)(
-    "places the rare direct-fourth node legally under the widened pool, if the run ever sees one (seed %d)",
-    (seed) => {
-      // The shortfall this covers — all four charged nodes running out on
-      // the same turn — was not observed once across this file's runs
-      // (`charging.test.ts` and `endOfTurn.test.ts` exercise it directly,
-      // by construction). This still checks it if it happens, so the check
-      // is not silently skipped should a future change make it common.
-      const run = runEconomy(seed, PLIES_TO_RUN);
-
-      for (const placement of run.directFourths) {
-        expect(placement.square.row).not.toBe(1);
-        expect(placement.square.row).not.toBe(BOARD_SIZE);
-        expect(
-          satisfiesOrdinaryPoolConstraints(
-            placement.square,
-            placement.occupiedBefore,
-            run.shipSquares,
-            "widened",
-          ),
-        ).toBe(true);
       }
     },
   );

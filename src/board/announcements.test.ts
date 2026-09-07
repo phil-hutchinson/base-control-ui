@@ -537,33 +537,6 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("announces a node appearing already charged, on the one turn all four charged nodes run out at once (§8.2)", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-3",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            { type: "node-appeared-charged", square: squareAt("G", 9) },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
-        "Out of nowhere, a node appeared already charged at G9. Red's turn, 1 action left.",
-    );
-  });
-
   it("announces a queue refill, naming the discarded squares, the new squares and the priority-3 node (§8.2, §8.6 step 5)", () => {
     const event: MovedEvent = {
       type: "moved",

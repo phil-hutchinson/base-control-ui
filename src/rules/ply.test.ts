@@ -1485,11 +1485,9 @@ describe("applyPassGuard", () => {
         // sequence rather than retiring in it — this test is about the
         // pass guard, not step 6.
         A1: ["depleted", 30],
-        // A lone charged node, unoccupied and carrying no countdown, keeps
-        // the shortfall at three rather than four — a shortfall of four
-        // would place a fourth node directly and refill the queue, which is
-        // not this test's subject — and there is no inactive node for it to
-        // charge from either way.
+        // A lone charged node, unoccupied and carrying no countdown, and
+        // there is no inactive node for the shortfall to charge from either
+        // way — not this test's subject.
         H8: ["charged", 0],
       },
     });

@@ -47,8 +47,7 @@ describe("reliefSquare", () => {
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "D2")],
     });
 
-    const [square] = reliefSquare(state, "green");
-    expect(square).toBeUndefined();
+    expect(reliefSquare(state, "green")).toBeUndefined();
   });
 
   it("answers nothing when every ship is trapped but none would have a legal move once freed", () => {
@@ -64,8 +63,7 @@ describe("reliefSquare", () => {
       ],
     });
 
-    const [square] = reliefSquare(state, "green");
-    expect(square).toBeUndefined();
+    expect(reliefSquare(state, "green")).toBeUndefined();
   });
 
   it("answers nothing when a trapped ship's only reachable squares are other depleted nodes", () => {
@@ -83,22 +81,18 @@ describe("reliefSquare", () => {
       ships: [ship("green-1", "green", "H8", 0)],
     });
 
-    const [square] = reliefSquare(state, "green");
-    expect(square).toBeUndefined();
+    expect(reliefSquare(state, "green")).toBeUndefined();
   });
 
-  it("picks the qualifying node with the least remaining life among several, with no draw made", () => {
+  it("picks the qualifying node with the least remaining life among several", () => {
     // D8 has more remaining life (level 5) than L8 (level 2), so L8's ship —
-    // with less remaining life — is the one freed outright: there is no tie,
-    // so no seed is drawn.
+    // with less remaining life — is the one freed.
     const state = buildState({
       nodes: { D8: node("depleted", 5), L8: node("depleted", 2) },
       ships: [ship("green-1", "green", "L8"), ship("green-2", "green", "D8")],
     });
 
-    const [square, nextSeed] = reliefSquare(state, "green");
-    expect(square).toEqual(squareFromName("L8"));
-    expect(nextSeed).toBe(state.randomSeed);
+    expect(reliefSquare(state, "green")).toEqual(squareFromName("L8"));
   });
 
   it("skips a lower-level candidate that would have no move, in favour of a higher-level one that would", () => {
@@ -112,74 +106,37 @@ describe("reliefSquare", () => {
       ],
     });
 
-    const [square, nextSeed] = reliefSquare(state, "green");
-    expect(square).toEqual(squareFromName("H8"));
-    expect(nextSeed).toBe(state.randomSeed);
+    expect(reliefSquare(state, "green")).toEqual(squareFromName("H8"));
   });
 
-  it("breaks a tie on the lowest level at random, following the seed rather than which square comes first", () => {
+  it("breaks a tie on the lowest level by board order, not at random", () => {
     // D8 and L8 tie at level 3, and both ships would have a legal move once
-    // freed, so this is a genuine tie: which one ends is decided by drawing
-    // from the seeded stream, not by which comes first on the board. Seeds 1
-    // and 7 are chosen because they draw opposite outcomes from this
-    // two-candidate tie.
+    // freed. This tie cannot arise in real play (rules.md §8.3: a side's
+    // trapped ships' nodes always have distinct remaining lives), so this is
+    // a hand-built fixture pinning the deterministic tidy-up of the
+    // unreachable case — the first candidate in board order wins.
     const nodes = { D8: node("depleted", 3), L8: node("depleted", 3) };
     const ships = [
       ship("green-1", "green", "L8"),
       ship("green-2", "green", "D8"),
     ];
 
-    const [squareForSeed1] = reliefSquare(
-      buildState({ nodes, ships, randomSeed: 1 }),
-      "green",
+    expect(reliefSquare(buildState({ nodes, ships }), "green")).toEqual(
+      squareFromName("D8"),
     );
-    const [squareForSeed7] = reliefSquare(
-      buildState({ nodes, ships, randomSeed: 7 }),
-      "green",
-    );
-
-    expect(squareForSeed1).toEqual(squareFromName("L8"));
-    expect(squareForSeed7).toEqual(squareFromName("D8"));
-    expect(squareForSeed1).not.toEqual(squareForSeed7);
   });
 
-  it("picks the same square from the same seed every time", () => {
+  it("picks the same square every time, regardless of the seed", () => {
     const state = buildState({
       nodes: { D8: node("depleted", 3), L8: node("depleted", 3) },
       ships: [ship("green-1", "green", "L8"), ship("green-2", "green", "D8")],
       randomSeed: 1,
     });
 
-    const [firstSquare] = reliefSquare(state, "green");
-    const [secondSquare] = reliefSquare(state, "green");
+    const first = reliefSquare(state, "green");
+    const second = reliefSquare(state, "green");
 
-    expect(firstSquare).toEqual(secondSquare);
-  });
-
-  it("advances the seed only when a tie is actually broken", () => {
-    const tied = buildState({
-      nodes: { D8: node("depleted", 3), L8: node("depleted", 3) },
-      ships: [ship("green-1", "green", "L8"), ship("green-2", "green", "D8")],
-      randomSeed: 1,
-    });
-    const [, nextSeedForTie] = reliefSquare(tied, "green");
-    expect(nextSeedForTie).not.toBe(tied.randomSeed);
-
-    const untied = buildState({
-      nodes: { D8: node("depleted", 5), L8: node("depleted", 2) },
-      ships: [ship("green-1", "green", "L8"), ship("green-2", "green", "D8")],
-      randomSeed: 1,
-    });
-    const [, nextSeedForUntied] = reliefSquare(untied, "green");
-    expect(nextSeedForUntied).toBe(untied.randomSeed);
-
-    const noCandidate = buildState({
-      nodes: { H8: node("depleted", 3), D2: node("charged", 0) },
-      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "D2")],
-      randomSeed: 1,
-    });
-    const [, nextSeedForNoCandidate] = reliefSquare(noCandidate, "green");
-    expect(nextSeedForNoCandidate).toBe(noCandidate.randomSeed);
+    expect(first).toEqual(second);
   });
 
   it("does not modify the state it is given", () => {
