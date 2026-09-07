@@ -405,7 +405,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(destinations).toContain("J9");
   });
 
-  it("allows a move to end on an inactive, a depleted or a charged destination alike", () => {
+  it("allows a move to end on an inactive or a charged destination, but refuses landing on a depleted one", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7")],
       nodes: {
@@ -418,16 +418,16 @@ describe("legalDestinations and moveRefusalReason", () => {
     const destinations = legalDestinations(state, "green-1").map(squareName);
     expect(destinations).toContain("G7");
     expect(destinations).toContain("F7");
-    expect(destinations).toContain("C7");
     expect(destinations).toContain("D7");
     expect(destinations).toContain("F8");
+    expect(destinations).not.toContain("C7");
 
     expect(
       moveRefusalReason(state, "green-1", squareFromName("G7")),
     ).toBeUndefined();
-    expect(
-      moveRefusalReason(state, "green-1", squareFromName("C7")),
-    ).toBeUndefined();
+    expect(moveRefusalReason(state, "green-1", squareFromName("C7"))).toBe(
+      "destination-depleted-node",
+    );
     expect(
       moveRefusalReason(state, "green-1", squareFromName("F7")),
     ).toBeUndefined();
@@ -437,6 +437,70 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(
       moveRefusalReason(state, "green-1", squareFromName("F8")),
     ).toBeUndefined();
+  });
+
+  it("flies over a depleted node freely, both as the middle square of a two-square orthogonal move and as either corner of an L", () => {
+    const overOrthogonal = buildState({
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { F7: "depleted" },
+    });
+    expect(
+      moveRefusalReason(overOrthogonal, "green-1", squareFromName("G7")),
+    ).toBeUndefined();
+    expect(
+      legalDestinations(overOrthogonal, "green-1").map(squareName),
+    ).toContain("G7");
+
+    // The L from H8 to J9 turns through I8 (its orthogonal corner) and I9
+    // (its diagonal corner) — a depleted node at either is still just flown
+    // over.
+    const overOrthogonalCorner = buildState({
+      ships: [ship("green-1", "green", "H8")],
+      nodes: { I8: "depleted" },
+    });
+    expect(
+      moveRefusalReason(overOrthogonalCorner, "green-1", squareFromName("J9")),
+    ).toBeUndefined();
+    expect(
+      legalDestinations(overOrthogonalCorner, "green-1").map(squareName),
+    ).toContain("J9");
+
+    const overDiagonalCorner = buildState({
+      ships: [ship("green-1", "green", "H8")],
+      nodes: { I9: "depleted" },
+    });
+    expect(
+      moveRefusalReason(overDiagonalCorner, "green-1", squareFromName("J9")),
+    ).toBeUndefined();
+    expect(
+      legalDestinations(overDiagonalCorner, "green-1").map(squareName),
+    ).toContain("J9");
+  });
+
+  it("refuses a depleted destination that also holds a ship with destination-occupied, not destination-depleted-node", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7"), ship("red-1", "red", "C7", 0)],
+      nodes: { C7: "depleted" },
+    });
+
+    expect(moveRefusalReason(state, "green-1", squareFromName("C7"))).toBe(
+      "destination-occupied",
+    );
+  });
+
+  it("refuses every move for a trapped ship with ship-trapped, never range or blocking", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { E7: "depleted" },
+    });
+
+    expect(legalDestinations(state, "green-1")).toEqual([]);
+    expect(moveRefusalReason(state, "green-1", squareFromName("F7"))).toBe(
+      "ship-trapped",
+    );
+    expect(moveRefusalReason(state, "green-1", squareFromName("O15"))).toBe(
+      "ship-trapped",
+    );
   });
 
   it("reports not-your-ship for the side not to move, and ship-already-acted for a ship that has already acted", () => {
@@ -528,16 +592,26 @@ describe("legalDestinations and moveRefusalReason", () => {
     const underpowered = buildState({
       ships: [ship("green-1", "green", "H8", 1)],
     });
+    const trapped = buildState({
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { E7: "depleted" },
+    });
+    const depletedDestination = buildState({
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { C7: "depleted" },
+    });
 
     const expectations: ReadonlyArray<
       readonly [GameState, ShipId, string, MoveRefusalReason]
     > = [
       [notYourTurn, "green-1", "H9", "not-your-ship"],
       [alreadyMoved, "green-1", "H9", "ship-already-acted"],
+      [trapped, "green-1", "F7", "ship-trapped"],
       [blocking, "green-1", "O15", "out-of-range"],
       [underpowered, "green-1", "J9", "cannot-afford"],
       [blocking, "green-1", "G10", "path-blocked"],
       [blocking, "green-1", "H9", "destination-occupied"],
+      [depletedDestination, "green-1", "C7", "destination-depleted-node"],
     ];
 
     for (const [state, shipId, square, reason] of expectations) {
@@ -577,7 +651,7 @@ describe("sideToMoveHasLegalMove", () => {
 });
 
 describe("legalDestinations on a node that is not charged (§8.5)", () => {
-  it("leaves a ship standing on a depleted node free to move a different ship, with no refusal anywhere", () => {
+  it("traps a ship standing on a depleted node, but leaves a different ship free to move", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       nodes: { E7: "depleted" },
@@ -585,10 +659,13 @@ describe("legalDestinations on a node that is not charged (§8.5)", () => {
     });
 
     expect(legalDestinations(state, "green-2").length).toBeGreaterThan(0);
-    expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
+    expect(legalDestinations(state, "green-1")).toEqual([]);
     expect(
       moveRefusalReason(state, "green-2", squareFromName("A2")),
     ).toBeUndefined();
+    expect(moveRefusalReason(state, "green-1", squareFromName("D7"))).toBe(
+      "ship-trapped",
+    );
   });
 
   it("does not blow the stack: a repeated sweep completes promptly", () => {

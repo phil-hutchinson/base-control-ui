@@ -21,10 +21,11 @@ function prefersReducedMotion(): boolean {
  * The number to draw, rolling towards `target` and always settling exactly
  * on it. A fresh render returns `target` unchanged — nothing rolls up from
  * zero — and a `target` that changes mid-roll re-targets from wherever the
- * display currently sits. A `target` lower than what is currently displayed
- * snaps to it instantly instead of rolling down; only a rising target
- * animates. Under prefers-reduced-motion, jumps straight to `target` and
- * schedules nothing.
+ * display currently sits. Under §8.4 a score only ever rises during play, so
+ * the only way `target` can be lower than what is currently displayed is a
+ * new game resetting both totals to 0; that snaps to it instantly instead of
+ * rolling down, and only a rising target animates. Under
+ * prefers-reduced-motion, jumps straight to `target` and schedules nothing.
  */
 export function useCountUp(target: number): number {
   const [displayed, setDisplayed] = useState(target);

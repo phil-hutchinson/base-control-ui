@@ -275,6 +275,11 @@ describe("announcementFor", () => {
       "No ship on G4. Choose one of your own ships.",
     ],
     [
+      "ship-trapped",
+      squareAt("G", 7),
+      "That ship is trapped on a depleted node and cannot move until the node goes.",
+    ],
+    [
       "out-of-range",
       squareAt("J", 7),
       "J7 is out of range for the selected ship.",
@@ -287,6 +292,11 @@ describe("announcementFor", () => {
     ["path-blocked", squareAt("C", 8), "An enemy ship is in the way of C8."],
     ["destination-occupied", squareAt("C", 7), "C7 is occupied."],
     [
+      "destination-depleted-node",
+      squareAt("H", 8),
+      "H8 is a depleted node — a ship may fly over one, but cannot land on it.",
+    ],
+    [
       "attacker-on-planet",
       squareAt("H", 15),
       "A ship on a planet cannot attack. Move it off first.",
@@ -297,6 +307,11 @@ describe("announcementFor", () => {
       "A ship holding a charged node cannot attack while it stands there. Move it off first.",
     ],
     [
+      "attacker-on-depleted-node",
+      squareAt("H", 8),
+      "A ship trapped on a depleted node cannot attack.",
+    ],
+    [
       "target-on-planet",
       squareAt("A", 6),
       "A ship on a planet cannot be attacked.",
@@ -305,6 +320,11 @@ describe("announcementFor", () => {
       "target-on-charged-node",
       squareAt("H", 8),
       "A ship holding a charged node cannot be attacked.",
+    ],
+    [
+      "target-on-depleted-node",
+      squareAt("H", 8),
+      "A ship trapped on a depleted node cannot be attacked.",
     ],
     [
       "target-out-of-range",
@@ -369,6 +389,118 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. The move was free; it still has 6 power. The node at K5 ran out. Red's turn, 1 action left.",
+    );
+  });
+
+  it("announces a node running out and trapping the ship on it, right after the node's own clause (§7, §8.1, §8.5)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            { type: "node-ran-out", square: squareAt("K", 5) },
+            {
+              type: "ship-trapped",
+              shipId: "red-2",
+              side: "red",
+              square: squareAt("K", 5),
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
+        "The node at K5 ran out. The red ship at K5 is trapped there until the node retires. " +
+        "Red's turn, 1 action left.",
+    );
+  });
+
+  it("announces a node retiring and freeing the ship on it, right after the replacement clause (§8.5, §8.6 step 6)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "node-replaced",
+              retiredSquare: squareAt("D", 8),
+              newSquare: squareAt("K", 11),
+            },
+            {
+              type: "ship-freed",
+              shipId: "green-3",
+              side: "green",
+              square: squareAt("D", 8),
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
+        "The node at D8 is gone, and a new node appeared at K11. The green ship at D8 is free again. " +
+        "Red's turn, 1 action left.",
+    );
+  });
+
+  it("announces a node ended early to relieve an all-trapped side, ahead of the replacement it caused (§8.6 step 7, §5)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            { type: "node-relief", side: "red", square: squareAt("D", 8) },
+            {
+              type: "node-replaced",
+              retiredSquare: squareAt("D", 8),
+              newSquare: squareAt("K", 11),
+            },
+            {
+              type: "ship-freed",
+              shipId: "red-2",
+              side: "red",
+              square: squareAt("D", 8),
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
+        "Every red ship was trapped, so the node at D8 ended early. " +
+        "The node at D8 is gone, and a new node appeared at K11. The red ship at D8 is free again. " +
+        "Red's turn, 1 action left.",
     );
   });
 
@@ -993,190 +1125,6 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
   });
 });
 
-describe("announcementFor — energy penalty (rules.md §8.4)", () => {
-  it("announces one depleted node occupied", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-2",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "energy-penalty",
-              side: "green",
-              amount: 1,
-              newTotal: 4,
-              squares: [squareAt("H", 8)],
-            },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green lost 1 energy to the depleted node at H8, and now has 4. Red's turn, 1 action left.",
-    );
-  });
-
-  it("announces several depleted nodes occupied, naming the count and every square", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-2",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "energy-penalty",
-              side: "green",
-              amount: 3,
-              newTotal: 0,
-              squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
-            },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green lost 3 energy to 3 depleted nodes at D8, H8 and K11, and now has 0. Red's turn, 1 action left.",
-    );
-  });
-
-  it("names every depleted node occupied and says four are penalised once the cap is passed", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-2",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "energy-penalty",
-              side: "green",
-              amount: 10,
-              newTotal: 0,
-              squares: [
-                squareAt("D", 8),
-                squareAt("H", 8),
-                squareAt("K", 11),
-                squareAt("E", 5),
-                squareAt("K", 5),
-                squareAt("G", 6),
-              ],
-            },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green lost 10 energy to 6 depleted nodes at D8, H8, K11, E5, K5 and G6, 4 of which are penalised, and now has 0. Red's turn, 1 action left.",
-    );
-  });
-
-  it("produces no clause when nothing was paid", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-3",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Red's turn, 1 action left.",
-    );
-  });
-
-  it("reads a turn that both collects and pays as two sentences, collection first", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-2",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            {
-              type: "energy-collected",
-              side: "green",
-              amount: 6,
-              newTotal: 6,
-              squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
-            },
-            {
-              type: "energy-penalty",
-              side: "green",
-              amount: 3,
-              newTotal: 3,
-              squares: [squareAt("E", 5), squareAt("K", 5)],
-            },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 6. Green lost 3 energy to 2 depleted nodes at E5 and K5, and now has 3. Red's turn, 1 action left.",
-    );
-  });
-
-  it("a passed turn still carries its own penalty clause", () => {
-    const event: PassEffect = {
-      type: "ply-passed",
-      side: "red",
-      sideToMove: "green",
-      reason: "no-legal-action",
-      endOfTurn: [
-        {
-          type: "energy-penalty",
-          side: "red",
-          amount: 3,
-          newTotal: 0,
-          squares: [squareAt("E", 5), squareAt("K", 5)],
-        },
-      ],
-    };
-    expect(announcementFor(event)).toBe(
-      "Red has no legal action, so the turn passes. Red lost 3 energy to 2 depleted nodes at E5 and K5, and now has 0. Green's turn, 1 action left.",
-    );
-  });
-});
-
 describe("resultSentence", () => {
   it("names green as the winner, with both totals", () => {
     const result: GameResult = {
@@ -1714,17 +1662,10 @@ describe("HUD wording", () => {
       power: 0 | 1 | 2 | 3 | 4;
     }[];
     charged?: readonly string[];
-    depleted?: readonly string[];
   }): GameState {
-    const nodes: Record<
-      string,
-      { state: "charged" | "depleted"; level: number }
-    > = {};
+    const nodes: Record<string, { state: "charged"; level: number }> = {};
     for (const square of config.charged ?? []) {
       nodes[square] = { state: "charged", level: 1 };
-    }
-    for (const square of config.depleted ?? []) {
-      nodes[square] = { state: "depleted", level: 1 };
     }
     return {
       ships: config.ships ?? [],
@@ -1749,7 +1690,7 @@ describe("HUD wording", () => {
         plyNumber: 1,
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held, standing on no depleted nodes.",
+        "Green: 0 energy, no nodes held.",
       );
     });
 
@@ -1769,7 +1710,7 @@ describe("HUD wording", () => {
         charged: ["H8"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 7 energy, 1 node held, standing on no depleted nodes.",
+        "Green: 7 energy, 1 node held.",
       );
     });
 
@@ -1795,7 +1736,7 @@ describe("HUD wording", () => {
         charged: ["H8", "E5"],
       });
       expect(scoreSentence(state, "green")).toBe(
-        "Green: 24 energy, 2 nodes held, standing on no depleted nodes.",
+        "Green: 24 energy, 2 nodes held.",
       );
     });
 
@@ -1815,70 +1756,7 @@ describe("HUD wording", () => {
         ],
         charged: ["K5", "H8"],
       });
-      expect(scoreSentence(state, "red")).toBe(
-        "Red: 1 energy, 1 node held, standing on no depleted nodes.",
-      );
-    });
-
-    it("uses the singular at one depleted node occupied", () => {
-      const state = stateWith({
-        energy: { green: 4, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        plyNumber: 5,
-        ships: [
-          {
-            id: "green-1",
-            side: "green",
-            square: squareAt("H", 8),
-            power: 4,
-          },
-        ],
-        depleted: ["H8"],
-      });
-      expect(scoreSentence(state, "green")).toBe(
-        "Green: 4 energy, no nodes held, standing on 1 depleted node.",
-      );
-    });
-
-    it("counts several depleted nodes occupied, plural", () => {
-      const state = stateWith({
-        energy: { green: 0, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        plyNumber: 5,
-        ships: [
-          {
-            id: "green-1",
-            side: "green",
-            square: squareAt("H", 8),
-            power: 4,
-          },
-          {
-            id: "green-2",
-            side: "green",
-            square: squareAt("E", 5),
-            power: 4,
-          },
-        ],
-        depleted: ["H8", "E5"],
-      });
-      expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held, standing on 2 depleted nodes.",
-      );
-    });
-
-    it("does not count the opponent's ships on depleted nodes", () => {
-      const state = stateWith({
-        energy: { green: 0, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        plyNumber: 5,
-        ships: [
-          { id: "red-1", side: "red", square: squareAt("H", 8), power: 4 },
-        ],
-        depleted: ["H8"],
-      });
-      expect(scoreSentence(state, "green")).toBe(
-        "Green: 0 energy, no nodes held, standing on no depleted nodes.",
-      );
+      expect(scoreSentence(state, "red")).toBe("Red: 1 energy, 1 node held.");
     });
   });
 

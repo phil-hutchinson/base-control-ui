@@ -26,17 +26,17 @@
        - title: line-height 1.5 x clamp(1.5rem, 4vw, 3.5rem) plus its 1rem
          bottom margin -> 3.25rem .. 6.25rem;
        - the taller HUD cell, ScoreDisplay: name (1.5 x clamp(0.75rem, 1.5vw,
-         1rem)) + digits (1.5 x clamp(1.5rem, 4vw, 2.5rem)) + two 0.6rem pip
-         rows + three 0.25rem internal gaps -> 5.325rem .. 7.2rem;
+         1rem)) + digits (1.5 x clamp(1.5rem, 4vw, 2.5rem)) + one 0.6rem pip
+         row + two 0.25rem internal gaps -> 4.475rem .. 6.35rem;
        - the HUD's 0.5rem row gap, plus the turn indicator (line-height 1.5 x
          clamp(1rem, 2.5vw, 1.25rem)) -> 2rem .. 2.375rem.
-     Summed: roughly 10.6rem at the clamps' minima, 15.8rem at their maxima.
+     Summed: roughly 9.7rem at the clamps' minima, 15.0rem at their maxima.
      `--region-extent` tracks that range with the same viewport-width scale
      as the content itself, rounded up slightly for breathing room rather
      than padded generously — an over-generous `P` costs the board's size
      directly (see the play-size formula below). Landscape overrides this
      token in its own media query. */
-  --region-extent: clamp(10.75rem, 26vw, 16rem);
+  --region-extent: clamp(9.85rem, 26.5vw, 15.2rem);
   --region-gap: 1rem;
 
   /* The play area's side, `S`, from the story's section 4, stated once for

@@ -222,3 +222,33 @@ whoever picks this up: "The node at D8 ended, and a new node appeared at
 K11."
 
 Where: `src/board/announcements.ts`.
+
+## From story 59 — a depleted node traps the ship on it
+
+Source: `doc/plan/00000059-replace-point-loss-with-ship-trap/implementation-plan.md`
+decision D12, and Step 11's own review.
+
+### 1. A trapped ship's own square says only "depleted node"; nothing says "trapped"
+
+Per D12, no mark, condition or accessible-name segment was added anywhere for
+the trap: a square's accessible name still reports only a node's state and,
+for the side to move, the existing `no-action` condition — unchanged wording
+that already covers a ship merely boxed in by other ships or the board's
+edge. A listener cannot tell "trapped by a depleted node" apart from "boxed
+in," and for an opponent's ship — `no-action` is computed for the side to
+move only — there is no condition segment at all, so the only route to "this
+ship cannot move, cannot attack, and cannot be attacked" is inferring it from
+"depleted node" plus the rule itself.
+
+This is a new gap, not a carried-over one: before this story a depleted
+node's occupant carried no legal-action consequence at all (the energy
+penalty was a background subtraction, not something that changed what a ship
+could do), so a screen-reader user reading an opponent's ship had nothing to
+miss. Now that square-level silence hides a real fact — the ship is immune
+to attack — from a listener who does not already know the rule.
+
+It is mitigated: a trapped ship can no longer be attacked at all (§7), so no
+attack decision depends on spotting it, and the acting player's own trapped
+ships already read as `no-action` on their turn.
+
+Where: `src/board/squareLabel.ts`, `src/rules/trap.ts`.

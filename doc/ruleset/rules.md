@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.24**
+**Rules version: 0.25**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -21,18 +21,20 @@ fight, and rejoin the game from there.
 
 A ship carries **power**, a reserve it spends to move and refills only on
 planets. A ship holding a node cannot be attacked while it holds it. A node
-that has burned out still costs its owner energy every turn and gives
-nothing back.
+that has burned out traps the ship standing on it until it retires.
 
 The board is not a fixed map with lights moving across it: nodes are born,
 burn out and are replaced somewhere else, so the map itself redraws as the
 game runs, and the squares worth racing for change over the course of a
 game, not just which of them are lit.
 
-The game has five random elements: the opening board itself, which node is
-charged next, where a new node appears when one ends, which planet the two
-ships in a fight are pushed back to, and how fast a node burns. No two games
-start on the same board, and neither player has seen this one before.
+The game has five random elements that shape every game — the opening
+board itself, which node is charged next, where a new node appears when one
+ends, which planet the two ships in a fight are pushed back to, and how fast
+a node burns — plus a sixth, rarer one: when a trapped player's relief finds
+two nodes tied for the least remaining life, which of them ends first
+(section 8.6). No two games start on the same board, and neither player has
+seen this one before.
 
 ---
 
@@ -50,6 +52,9 @@ ship.
 
 **Power** — what a ship carries and spends to move: how far it can go. It is
 refilled only on planets.
+
+**Trapped** — a ship on a depleted node, which cannot move and cannot attack
+until the node under it retires.
 
 **Node** — a position on the board that comes into being, runs through three
 states — **inactive**, **charged** and **depleted** — and then ends. The
@@ -237,8 +242,10 @@ A player must take as many of their turn's actions as are available. If a
 player has no legal action at all, their turn passes. This should be
 uncommon — a player always has at least five ships — but an action is not
 always available: an attack reaches only as far as the attacker's power
-allows, and a ship holding a node has no attack available to it at all. The
-rule is here so the game can never deadlock.
+allows, and a ship holding a node has no attack available to it at all. A
+**trapped** ship (section 8.5) offers no action at all, so a player whose
+ships are all trapped would otherwise pass; section 8.6 step 7 exists to
+prevent that. The rule is here so the game can never deadlock.
 
 A turn also passes when the player to move is out of time (section 10). That
 is the second, and only other, reason a turn can pass.
@@ -269,12 +276,14 @@ tank.
 **The path must be clear of enemy ships.** Every square a move passes over
 must be free of an **enemy** ship — a ship flies over its own side freely —
 and the square it lands on must be empty of any ship, of either side: a ship
-can never land on a square another ship occupies, friendly or enemy. The L
+can never land on a square another ship occupies, friendly or enemy. Nor may
+it land on a **depleted node**: flying **over** one is still free, exactly
+like flying over any other square, but a move may not end there. The L
 passes over two squares, its two corners: the one it turns through
 orthogonally and the one it turns through diagonally — for example, the L
 from H8 to J9 turns through I8 (the orthogonal corner) and I9 (the diagonal
 corner). An enemy ship on **either** corner blocks the L; only one of the two
-need be occupied.
+need be occupied. A **trapped** ship (section 8.5) has no move at all.
 
 Moving and attacking are entirely separate: a ship never attacks by moving
 onto its target.
@@ -296,12 +305,17 @@ a ship with 2 power or more strikes anywhere in the twenty. Attacking is
 always the attacking player's choice; ships never fight automatically.
 
 Neither ship may be on a planet: a ship on a planet cannot attack, and
-cannot be attacked. And neither ship may be standing on a **charged node**: a
-ship holding a node cannot attack, and cannot be attacked. This is not only
-protection — a ship holding a node has given up striking out while it stands
-there. It applies to charged nodes alone: a ship standing on an **inactive**
-or a **depleted** node is an ordinary target, and fights and is fought
-exactly like a ship on any other square (section 8.5).
+cannot be attacked. And neither ship may be standing on a node that is
+**charged** or **depleted**: a ship on either can neither attack nor be
+attacked. Only a ship on an **inactive** node — or on no node at all — is an
+ordinary target, and fights and is fought exactly like a ship on any other
+square (section 8.5).
+
+The two protections are not the same bargain. A ship holding a **charged**
+node has given up striking out while it stands there, but it chose its
+position and may leave whenever it likes. A **trapped** ship on a
+**depleted** node has neither choice: it cannot leave, and cannot attack,
+until the node retires (section 8.5).
 
 **There is no winner.** Both ships — the attacker and the ship it attacked —
 are returned to planets (section 7.1), and both squares are left empty. The
@@ -361,9 +375,9 @@ Every node is always in exactly one of three states:
   8.4) and can neither attack nor be attacked (section 7). It takes nothing
   from the ship holding it.
 - **Depleted** — recovering after running out. Not eligible to be charged,
-  producing nothing, and costing the player whose ship stands on it: energy
-  (section 8.4), at the end of each of that player's turns, for nothing in
-  return.
+  producing nothing, and **trapping** any ship standing on it: that ship
+  cannot move, and can neither attack nor be attacked (section 7), until the
+  node retires.
 
 A node cycles inactive → charged → depleted → **ends**. The instant a node
 ends, a new inactive node appears somewhere else on the board (section 3.2).
@@ -467,7 +481,7 @@ runs up more than twice as fast when one is.
 
 A node ends **one** way: when its drain reaches or passes capacity, it is
 spent, and it goes depleted at the end of that turn and simply stops paying. A
-ship left standing on it stays where it is (section 8.5). A ship that leaves
+ship left standing on it is trapped there (section 8.5). A ship that leaves
 a node does not end it — the node simply reverts to the slower empty rate
 and burns on. An empty node lasts about 28 turns; a held one
 lasts about 13, and those two figures now bracket every node's life.
@@ -475,10 +489,9 @@ lasts about 13, and those two figures now bracket every node's life.
 ### 8.4 Energy
 
 At the end of each player's turn, that player collects energy for the
-charged nodes they are **standing on**, and then pays for the depleted
-nodes they are **standing on**. A node counts for either half only if one of
-that player's ships is on it at that moment — flying across a charged node or
-a depleted node and moving on neither collects nor costs anything.
+charged nodes they are **standing on**, priced off the table below. A node
+counts only if one of that player's ships is on it at that moment — flying
+across a charged node and moving on collects nothing.
 
 | Nodes counted | Energy |
 | ------------- | ------ |
@@ -488,43 +501,36 @@ a depleted node and moving on neither collects nor costs anything.
 | 3             | 6      |
 | 4             | 10     |
 
-The charged nodes a player holds are priced off this table exactly as
-before. Unlike charged nodes there is no limit on how many nodes are
-depleted at once — up to eight of the twelve can be, since at most four are
-ever charged — so the depleted count is **capped at four** before it is
-priced: five or six depleted nodes cost the same 10 that four do. The most a
-turn can pay is 10, so the most a turn can cost is now exactly 10 too —
-neither half of this section can outrun the other.
-
-The two halves are applied in that order — collect, then pay — and
-they are **not netted**. Holding nodes and sitting on depleted ones are
-separately priced, and both are priced steeply: a player holding three
-charged nodes while standing on two depleted nodes collects 6 and then pays
-3, for a net of **+3**, not the +1 that a net count of one node held would
-have paid.
-
-**A player's total energy never falls below zero.** Where a turn's penalty
-is larger than the energy the player has, their total lands on 0 rather
-than going negative.
+Nothing in the game subtracts energy. A player's total only ever rises.
 
 ### 8.5 Standing on a node that is not charged
 
-Standing on an inactive or a depleted node is allowed and ordinary. A ship
-may end a move on either, and may stay there for the rest of the game if its
-owner likes — nothing about it obliges the owner to move it, or anything
-else, on a later turn.
+Standing on an **inactive** node is allowed and ordinary. A ship may end a
+move on one, and may stay there for the rest of the game if its owner likes —
+nothing about it obliges the owner to move it, or anything else, on a later
+turn.
+
+A **depleted** node is different, and a ship is never there by choice: a move
+may not end on one (section 6), so the only way a ship comes to be standing
+on a depleted node is being caught there the instant the node it was holding
+runs out beneath it (section 8.3). That ship is **trapped**: it cannot move,
+and can neither attack nor be attacked (section 7), for as long as the node
+stays depleted. It is released the moment the node retires — at which point
+its square is no longer a node at all, but an ordinary square, and it is an
+ordinary ship, free to move or attack like any other.
 
 The two are not the same. An **inactive** node pays nothing and costs
 nothing, so waiting on one for the charge draw is free. A **depleted** node
-pays nothing and **costs**: an energy penalty (section 8.4) at the end of
-each of the owner's turns, for nothing in return. A **charged** node, by
-contrast, pays energy to the ship holding it and takes nothing from it
-(section 8.1). Neither state touches a ship's power (section 4.1) at all —
-only a planet does.
+pays nothing and takes something harder to spare from the ship trapped on
+it: its freedom. A **charged** node, by contrast, pays energy to the ship
+holding it and takes nothing from it (section 8.1). None of the three states
+touches a ship's power (section 4.1) at all — only a planet does.
 
-Neither an inactive nor a depleted node offers what a charged node offers: a
-ship standing on one can be attacked like any other ship, and may attack
-like any other ship (section 7).
+Only an **inactive** node leaves a ship as an ordinary target: a ship
+standing on one can be attacked like any other ship, and may attack like any
+other ship (section 7). A ship trapped on a depleted node is out of combat in
+both directions, exactly as a charged node's holder is, though it did not
+choose to be.
 
 A node's own cycle carries on underneath the ship. A depleted node recovers
 towards retirement on schedule regardless of what is standing on it, and an
@@ -532,14 +538,15 @@ inactive node is eligible for the charge draw whether or not a ship is
 standing on it (section 8.2). If the node underneath a ship retires, the
 ship is untouched — it keeps its square and its power — but the square it
 stands on is no longer a node at all, so from that instant it is an
-ordinary square: it costs nothing further.
+ordinary square, and any ship trapped there is free.
 
-When a node runs out under the ship holding it (section 8.3), the ship
-loses its protection at that same instant — it stops being a node, and so
-stops being a refuge (section 7) — even though it does not start costing
-anything straight away: the holder pays from the end of its owner's next
-turn unless it leaves before then. The ship stays or leaves, exactly as its
-owner prefers, and leaving now costs the node nothing.
+When a node runs out under the ship holding it (section 8.3), the ship does
+not simply lose its protection — it trades one kind of protection for
+another, in the same instant. It stops being protected as a node's holder,
+free to leave whenever it likes, and becomes protected as a **trapped** ship,
+unable to leave at all. What it loses is its freedom and its income, not its
+safety: it stays exactly where it is until the node retires, however long
+that takes.
 
 ### 8.6 End-of-turn order
 
@@ -548,12 +555,11 @@ Everything that happens at the end of a turn happens in this order:
 1. Each of the moving player's ships standing on a planet gains power — one,
    or two if it is the only one of that player's ships charging (section
    3.1) — up to the maximum of 6 (section 4.1).
-2. The moving player collects energy for the charged nodes they hold and
-   then pays for the depleted nodes they occupy (section 8.4).
-3. Every charged node adds its drain (section 8.3); any that reaches capacity
-   goes depleted, and any ship standing on it keeps standing there, collecting
-   nothing and, from the end of its owner's next turn, paying for it
+2. The moving player collects energy for the charged nodes they hold
    (section 8.4).
+3. Every charged node adds its drain (section 8.3); any that reaches capacity
+   goes depleted, and any ship standing on it is **trapped** there (section
+   8.5).
 4. As many inactive nodes as it takes to bring the board back to four
    charged are charged, drawn by pressure (section 8.2).
 5. Every node still inactive gains a point of pressure, to the cap of 50
@@ -561,29 +567,48 @@ Everything that happens at the end of a turn happens in this order:
 6. Every node that was depleted **before this turn began** subtracts its
    recovery (section 8.2); any that reaches zero or below **retires and is
    replaced**: it leaves the board, and a new inactive node appears
-   somewhere else, at 1 pressure, drawn under section 3.2.
+   somewhere else, at 1 pressure, drawn under section 3.2. Any ship that was
+   trapped on it is freed.
+7. For each player in turn — the player who just moved, then their
+   opponent — if **every** one of that player's ships is trapped, the game
+   grants relief rather than leaving them to pass turn after turn: among the
+   depleted nodes carrying those ships, only those whose ship **would have a
+   legal move if freed** are considered, and the one among those with the
+   **least remaining life** ends at once — retiring and being replaced
+   exactly as step 6 retires and replaces — and its ship is freed. If two or
+   more qualifying nodes are tied on remaining life, one of them is chosen at
+   random, with every tied node equally likely. If no depleted node under
+   that player's ships qualifies, nothing happens, and that player's turn
+   passes under section 5.
 
 A turn that passes because no legal action was available (section 5) is still
 a turn: this sequence runs for it in full, just as it would for a turn in
 which an action was taken. The node clocks still tick, and a ship of the
 passing player standing on a planet still gains power at the section 3.1
-rate; the passing player still collects and still pays exactly as they would
-if they had acted.
+rate; the passing player still collects exactly as they would if they had
+acted.
 
-Step 6 is last **deliberately**, for the same reason as before: it is what
-makes a node spend at least one whole turn inactive before it can be
-charged. A node that appears — whether from the opening deal or as a
-replacement in step 6 — is inactive for the whole of the next turn and is
-first eligible in that next turn's draw, at 1 pressure. A node that finishes
-recovering and is replaced at the end of turn N produces a new node that is
-inactive for the whole of turn N+1, first eligible in turn N+1's charge
-draw. Running the steps in any other order would let a node retire, be
-replaced and be charged inside a single end-of-turn sequence, and the
-replacement would never be visibly inactive at all.
+Step 6 is last among the ordinary steps **deliberately**, for the same
+reason as before: it is what makes a node spend at least one whole turn
+inactive before it can be charged. A node that appears — whether from the
+opening deal or as a replacement in step 6 — is inactive for the whole of
+the next turn and is first eligible in that next turn's draw, at 1 pressure.
+A node that finishes recovering and is replaced at the end of turn N
+produces a new node that is inactive for the whole of turn N+1, first
+eligible in turn N+1's charge draw. Running the steps in any other order
+would let a node retire, be replaced and be charged inside a single
+end-of-turn sequence, and the replacement would never be visibly inactive at
+all.
 
 Step 5 sits **after** the charge draw for the matching reason: a node is
 drawn at the pressure it has held all turn, so its first appearance in a
 draw is at weight 1, not 2.
+
+Step 7 runs **last of all**, after step 6, because it must see the board's
+depleted set exactly as it stands once both step 3's new arrivals and step
+6's retirements have happened — a node cannot be judged a candidate for
+relief, or judged to have the least remaining life, on a picture of the
+board that is still one step out of date.
 
 The two clocks are symmetric about the turn a state is entered. A node
 charged in step 4 of turn N first drains in step 3 of turn N+1, and a node
@@ -594,7 +619,8 @@ state.
 
 A node's state changes only in this sequence, and never as part of resolving
 an action. A node's ending and its replacement's appearance are likewise
-both part of this sequence, at step 6, never part of resolving an action.
+both part of this sequence, at step 6 or step 7, never part of resolving an
+action.
 
 ---
 

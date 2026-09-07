@@ -13,22 +13,31 @@
 // turn N first drains in step 3 of turn N+1, and a node that goes depleted
 // in step 3 of turn N first retires (if it does) in step 6 of turn N+1 —
 // which is why step 6 works from the depleted list captured at entry, before
-// step 3 runs.
+// step 3 runs. A ship standing on a node that runs out in step 3 is trapped
+// there (§7, §8.1, §8.5), and a ship trapped on a node that retires in step
+// 6 is freed — both are reported as their own effect, immediately after the
+// node event that caused them. Step 7, the relief, runs last of all,
+// because it must see the depleted set exactly as it stands after both
+// step 3's new arrivals and step 6's retirements — a node step 3 just
+// depleted is a legitimate relief candidate, and a node step 6 already
+// retired must not be reconsidered. It runs once for `state.sideToMove` —
+// the side that just played — and then once for the other side, always in
+// that fixed order, because it is the only step past this point that still
+// draws from the seeded stream when it fires (rules.md §8.6 step 7) — a tie
+// on remaining life is broken at random, drawing before the replacement
+// draw that follows it — and a data-dependent order would make a recorded
+// game's replay depend on which side happened to need relief first.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
 import { isPlanet } from "./planets";
 import { type NodeChargedEffect, runChargeDraw } from "./chargeDraw";
-import {
-  chargedNodesHeldBy,
-  depletedNodesOccupiedBy,
-  energyForDepletedNodes,
-  energyForNodesHeld,
-} from "./energy";
+import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
 import type { Side, ShipId } from "./fleet";
 import {
   type GameState,
   type NodeStatus,
+  type Ship,
   nodeSquares,
   shipsBySquare,
   nodeStateAt,
@@ -44,6 +53,11 @@ import {
   STARTING_PRESSURE,
   drawTableAmount,
 } from "./nodes";
+import { reliefSquare } from "./relief";
+
+function otherSide(side: Side): Side {
+  return side === "green" ? "red" : "green";
+}
 
 /**
  * A ship standing on a planet gained power at the end of its side's turn
@@ -69,24 +83,22 @@ export interface EnergyCollectedEffect {
   readonly squares: readonly Square[];
 }
 
-/**
- * The side that just played paid energy for the depleted nodes it occupies
- * (§8.6 step 2, §8.4). `amount` is the energy actually deducted, never more
- * than the side had — where §8.4's floor of 0 bites, `amount` is smaller
- * than the table price, so `newTotal` is always `previousTotal - amount`
- * exactly.
- */
-export interface EnergyPenaltyEffect {
-  readonly type: "energy-penalty";
-  readonly side: Side;
-  readonly amount: number;
-  readonly newTotal: number;
-  readonly squares: readonly Square[];
-}
-
 /** A charged node's drain reached its capacity and it went depleted (§8.6 step 3, §8.3). */
 export interface NodeRanOutEffect {
   readonly type: "node-ran-out";
+  readonly square: Square;
+}
+
+/**
+ * A ship was standing on a node when it ran out and is now trapped there
+ * (§7, §8.1, §8.5): it can neither move nor attack until the node retires.
+ * Always immediately after the `node-ran-out` effect for the same node —
+ * the node's event first, its consequence for the ship second.
+ */
+export interface ShipTrappedEffect {
+  readonly type: "ship-trapped";
+  readonly shipId: ShipId;
+  readonly side: Side;
   readonly square: Square;
 }
 
@@ -101,14 +113,45 @@ export interface NodeReplacedEffect {
   readonly newSquare: Square;
 }
 
+/**
+ * A ship trapped on a node that just retired is free again: its square is
+ * now an ordinary square (§8.5, §8.6 step 6). Always immediately after the
+ * `node-replaced` effect for the same node, whether that node retired on
+ * the ordinary recovery clock (step 6) or was ended early by the relief
+ * (step 7) — it is the same fact either way.
+ */
+export interface ShipFreedEffect {
+  readonly type: "ship-freed";
+  readonly shipId: ShipId;
+  readonly side: Side;
+  readonly square: Square;
+}
+
+/**
+ * A side whose every ship was trapped had one of its depleted nodes ended
+ * early, so it was not left to pass for the ten turns its recovery clock
+ * would otherwise take (§8.6 step 7, §5). `side` is the side being
+ * relieved, not necessarily the side that just played — step 7 asks the
+ * question of both sides. Always immediately **before** the `node-replaced`
+ * effect for the same node, so a listener hears the cause first, then the
+ * map change, then the ship it freed.
+ */
+export interface NodeReliefEffect {
+  readonly type: "node-relief";
+  readonly side: Side;
+  readonly square: Square;
+}
+
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
 export type EndOfTurnEffect =
   | PowerGainedEffect
   | EnergyCollectedEffect
-  | EnergyPenaltyEffect
   | NodeRanOutEffect
+  | ShipTrappedEffect
   | NodeChargedEffect
-  | NodeReplacedEffect;
+  | NodeReplacedEffect
+  | ShipFreedEffect
+  | NodeReliefEffect;
 
 /** The state resulting from the end-of-turn sequence, and the effects it produced. */
 export interface EndOfTurnResult {
@@ -181,9 +224,11 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   let workingState: GameState = { ...state, ships };
 
   // Step 2: the moving side collects energy for the charged nodes it holds
-  // right now (§8.4). A zero payout is not an event — no effect, no other
-  // state change — so a player standing on nothing does not read as having
-  // had something happen to them.
+  // right now (§8.4). Nothing is subtracted any more — a depleted node traps
+  // the ship standing on it (§8.1, §8.5) rather than costing its owner
+  // energy. A zero payout is not an event — no effect, no other state
+  // change — so a player standing on nothing does not read as having had
+  // something happen to them.
   const heldSquares = chargedNodesHeldBy(workingState, side);
   const amount = energyForNodesHeld(heldSquares.length);
   if (amount > 0) {
@@ -201,39 +246,17 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     });
   }
 
-  // Step 2 (continued): the moving side then pays for the depleted nodes it
-  // occupies right now (§8.4), taken from the total the collection above
-  // has already raised. The table price is clamped to a count of four
-  // depleted nodes; the amount actually taken is floored so the side's total
-  // never goes below 0, and it is that floored amount — not the table
-  // price — that is reported, so `newTotal` is always exactly
-  // `previousTotal - amount`. A zero deduction is not an event, whether
-  // because nothing depleted is occupied or because there is nothing left to
-  // take: no effect, no other state change.
-  const depletedSquares = depletedNodesOccupiedBy(workingState, side);
-  const price = energyForDepletedNodes(depletedSquares.length);
-  const penalty = Math.min(price, workingState.energy[side]);
-  if (penalty > 0) {
-    const newTotal = workingState.energy[side] - penalty;
-    workingState = {
-      ...workingState,
-      energy: { ...workingState.energy, [side]: newTotal },
-    };
-    effects.push({
-      type: "energy-penalty",
-      side,
-      amount: penalty,
-      newTotal,
-      squares: depletedSquares,
-    });
-  }
-
   // Step 3: every charged node adds its drain — drawn from the held table if
   // a ship of either side is standing on it right now, the empty table
   // otherwise — and any that reaches capacity goes depleted carrying its
-  // drain unclamped (§8.3). A ship left standing on it simply stays there,
-  // collecting nothing (§8.5). The ordered snapshot is taken once, up front,
-  // rather than recomputed on every iteration.
+  // drain unclamped (§8.3). A ship left standing on it is trapped there
+  // (§8.5): it cannot move and cannot attack until the node retires. The
+  // `occupants` index was captured at this function's entry, before any node
+  // changed state, so it is safe here for a ship's identity and square — a
+  // ship never moves during this sequence — but must not be read for its
+  // power, which step 1 above may have already changed. The ordered
+  // snapshot of squares is taken once, up front, rather than recomputed on
+  // every iteration.
   const step3Squares = nodeSquares(workingState);
   for (const square of step3Squares) {
     const name = squareName(square);
@@ -261,6 +284,15 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
 
     if (nextStatus.state === "depleted") {
       effects.push({ type: "node-ran-out", square });
+      const trappedShip = occupants.get(name);
+      if (trappedShip !== undefined) {
+        effects.push({
+          type: "ship-trapped",
+          shipId: trappedShip.id,
+          side: trappedShip.side,
+          square,
+        });
+      }
     }
   }
 
@@ -332,38 +364,103 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
       continue;
     }
 
-    // The retiring node's entry is removed before the replacement pool is
-    // built, so the adjacency constraint (§3.2) does not see it: the
-    // replacement may legitimately land next to the square just vacated,
-    // and only that square itself is barred, via `drawNodeSquare`'s
-    // excluded-square argument. Only the current retiring square is barred
-    // this way — a square freed by an earlier retirement in this same
-    // sequence is not, since its entry is already gone from `workingState`
-    // and nothing excludes it a second time, so a later replacement in the
-    // sequence may land squarely on it.
-    const nodesWithoutRetired = { ...workingState.nodes };
-    delete nodesWithoutRetired[name];
-    workingState = { ...workingState, nodes: nodesWithoutRetired };
+    const retirement = retireAndReplaceNode(workingState, square, occupants);
+    workingState = retirement.state;
+    effects.push(...retirement.effects);
+  }
 
-    const [newSquare, seedAfterDraw] = drawNodeSquare(
-      nodeSquares(workingState),
-      workingState.ships.map((ship) => ship.square),
-      workingState.randomSeed,
-      square,
-    );
-    const newName = squareName(newSquare);
-    workingState = {
-      ...workingState,
-      nodes: {
-        ...workingState.nodes,
-        [newName]: { state: "inactive", level: STARTING_PRESSURE },
-      },
-      randomSeed: seedAfterDraw,
-    };
+  // Step 7: the all-trapped relief (§8.6 step 7, §5). A side whose every
+  // ship is trapped has no action at all, so rather than leaving it to pass
+  // for the ten turns its recovery clock would otherwise take, the depleted
+  // node with the least remaining life among those whose ship would
+  // actually have a legal move once freed ends at once (`relief.ts`'s
+  // choice); a tie on remaining life is broken at random. Runs for `side` —
+  // the one that just played — first, then for the other side, always in
+  // that fixed order: it is the only step left that draws from the seeded
+  // stream when it fires — both for its own tie-break and for the
+  // replacement draw that follows it — and a data-dependent order would make
+  // a recorded game's replay depend on which side happened to need relief
+  // first. At most one node ends per side per ply — freeing one ship is
+  // enough that the side is no longer all-trapped — so the question is asked
+  // once per side, never in a loop.
+  for (const reliefSide of [side, otherSide(side)]) {
+    const [square, seedAfterRelief] = reliefSquare(workingState, reliefSide);
+    workingState = { ...workingState, randomSeed: seedAfterRelief };
+    if (square === undefined) {
+      continue;
+    }
+    effects.push({ type: "node-relief", side: reliefSide, square });
+    const relief = retireAndReplaceNode(workingState, square, occupants);
+    workingState = relief.state;
+    effects.push(...relief.effects);
+  }
+
+  return { state: workingState, effects };
+}
+
+/**
+ * Retires the node at `square` and replaces it elsewhere, at pressure 1
+ * (§8.2, §8.6 step 6) — the body shared by an ordinary retirement (step 6,
+ * a node whose recovery reached zero) and the relief's early ending (step
+ * 7, §8.6). Emits `node-replaced`, then `ship-freed` if the retiring node
+ * had a ship on it: the trap's release is the same fact either way. Not
+ * exported — `relief.ts` needs only the choice of which node ends, never
+ * this application of it, and exporting it would make `endOfTurn.ts` and
+ * `relief.ts` import each other.
+ *
+ * `occupants` is the entry-time square-to-ship index; it is safe here for a
+ * ship's identity and square, since a ship never moves during this
+ * sequence, but must not be read for its power.
+ */
+function retireAndReplaceNode(
+  state: GameState,
+  square: Square,
+  occupants: ReadonlyMap<string, Ship>,
+): { state: GameState; effects: EndOfTurnEffect[] } {
+  const name = squareName(square);
+  const effects: EndOfTurnEffect[] = [];
+
+  // The retiring node's entry is removed before the replacement pool is
+  // built, so the adjacency constraint (§3.2) does not see it: the
+  // replacement may legitimately land next to the square just vacated, and
+  // only that square itself is barred, via `drawNodeSquare`'s
+  // excluded-square argument. Only the current retiring square is barred
+  // this way — a square freed by an earlier retirement in this same
+  // sequence is not, since its entry is already gone from `state` and
+  // nothing excludes it a second time, so a later replacement in the
+  // sequence may land squarely on it.
+  const nodesWithoutRetired = { ...state.nodes };
+  delete nodesWithoutRetired[name];
+  let workingState: GameState = { ...state, nodes: nodesWithoutRetired };
+
+  const [newSquare, seedAfterDraw] = drawNodeSquare(
+    nodeSquares(workingState),
+    workingState.ships.map((ship) => ship.square),
+    workingState.randomSeed,
+    square,
+  );
+  const newName = squareName(newSquare);
+  workingState = {
+    ...workingState,
+    nodes: {
+      ...workingState.nodes,
+      [newName]: { state: "inactive", level: STARTING_PRESSURE },
+    },
+    randomSeed: seedAfterDraw,
+  };
+  effects.push({
+    type: "node-replaced",
+    retiredSquare: square,
+    newSquare,
+  });
+
+  const freedShip = occupants.get(name);
+  if (freedShip !== undefined) {
     effects.push({
-      type: "node-replaced",
-      retiredSquare: square,
-      newSquare,
+      type: "ship-freed",
+      shipId: freedShip.id,
+      side: freedShip.side,
+      square,
     });
   }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PLANETS, isPlanet } from "./planets";
 import { squareFromName, squareName } from "./board";
+import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import {
   ACTIONS_PER_PLY,
@@ -934,7 +935,7 @@ describe("applyAttack", () => {
     });
   });
 
-  it("sends both ships to planets when the target stands on a depleted node, with nothing constraining either side's next turn (§8.5)", () => {
+  it("refuses an attack on a ship trapped on a depleted node, which stays exactly where it stands (§7)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "K8", 4), ship("red-1", "red", "K9", 2)],
       nodes: { K8: "depleted" },
@@ -942,23 +943,35 @@ describe("applyAttack", () => {
       actionsRemaining: 1,
     });
 
+    // red-1 reaches K8 and can afford the shot, but the trapped ship is
+    // never offered as a target in the first place (rules.md §7), not only
+    // refused when named directly.
+    expect(legalTargets(state, "red-1")).toEqual([]);
+
     const result = applyAttack(state, "red-1", squareFromName("K8"));
 
-    expect(result.outcome).toBe("applied");
-    if (result.outcome !== "applied") {
-      throw new Error("expected the attack to be applied");
-    }
-    expect(result.state.sideToMove).toBe("green");
-    const attacker = result.state.ships.find((s) => s.id === "red-1");
-    const target = result.state.ships.find((s) => s.id === "green-1");
-    expect(attacker && isPlanet(attacker.square)).toBe(true);
-    // The attack is this ply's only action, so it also ends the ply — the
-    // attacker (red, the moving side) then gains on its planet under §8.6
-    // step 1, at the lone-charger rate of 2 since it is the only red ship;
-    // the target (green, not the moving side this ply) does not.
-    expect(attacker?.power).toBe(4);
-    expect(target && isPlanet(target.square)).toBe(true);
-    expect(target?.power).toBe(4);
+    expect(result).toEqual({
+      outcome: "refused",
+      reason: "target-on-depleted-node",
+    });
+  });
+
+  it("still blocks an enemy's path even though it is trapped and has no action of its own (rules.md §7)", () => {
+    // green-1's own reach never matters here — it is red-1, sitting trapped
+    // on the depleted node at D4, that has to still be an obstacle: a
+    // trapped ship holds its square exactly as a charged-node holder does,
+    // and blocks a path through it just the same.
+    const state = buildState({
+      ships: [ship("green-1", "green", "D3", 4), ship("red-1", "red", "D4")],
+      nodes: { D4: "depleted" },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("D5"));
+
+    expect(result).toEqual({
+      outcome: "refused",
+      reason: "path-blocked",
+    });
   });
 
   it("marks the attacker as having acted, even though it ends the action on a planet itself", () => {
@@ -1034,19 +1047,20 @@ describe("nothing a ship does changes any node's state (rules.md §8.2)", () => 
     // K5 is a charged node: its drain rises every end-of-turn sequence
     // regardless of what a ship does (§8.3), so what this test can hold
     // onto across the sequence is that its *state* never changes — not
-    // that its drain is literally unchanged. H8 and I8 are both depleted —
-    // H8 is the fight's target (rules.md §7: a ship holding a charged node
-    // cannot be attacked, so the target must be depleted or inactive) —
-    // both started with enough recovery left (§8.2) that three
-    // end-of-turn sequences cannot bring either back to inactive, so only
-    // their *state* is asserted too, not their exact level. No node here is
-    // ever inactive, so the charge draw never has a pool to draw from
-    // across any of the three sequences.
+    // that its drain is literally unchanged. H8 and I8 are both depleted,
+    // and untouched by anything below — a ship on either would be trapped
+    // and could neither attack nor be attacked (rules.md §7), so the fight
+    // targets red-1 on the ordinary square F8 instead. Both depleted nodes
+    // started with enough recovery left (§8.2) that three end-of-turn
+    // sequences cannot bring either back to inactive, so only their *state*
+    // is asserted too, not their exact level. No node here is ever
+    // inactive, so the charge draw never has a pool to draw from across any
+    // of the three sequences.
     const state = buildState({
       ships: [
         ship("green-1", "green", "G8", 0),
         ship("green-2", "green", "A5", 4),
-        ship("red-1", "red", "H8", 4),
+        ship("red-1", "red", "F8", 4),
         ship("red-2", "red", "O5", 4),
       ],
       nodes: {
@@ -1082,11 +1096,12 @@ describe("nothing a ship does changes any node's state (rules.md §8.2)", () => 
     }
     expectNodesUnaffected(afterRedMove.state);
 
-    // Green's next ply: a fight at the depleted node, sending both ships home.
+    // Green's next ply: a fight off the nodes entirely, sending both ships
+    // home, touching neither depleted node nor the charged one.
     const afterAttack = applyAttack(
       afterRedMove.state,
       "green-1",
-      squareFromName("H8"),
+      squareFromName("F8"),
     );
     expect(afterAttack.outcome).toBe("applied");
     if (afterAttack.outcome !== "applied") {
@@ -1375,6 +1390,42 @@ describe("applyPassGuard", () => {
         },
       ],
     });
+  });
+
+  it("passes the ply when every one of the side's ships is trapped and §8.6 step 7 cannot relieve any of them (rules.md §5, §8.6)", () => {
+    // green-1 is trapped on the depleted node at A1 and, even if freed,
+    // would have nowhere to go: its only two on-board orthogonal
+    // neighbours, A2 and B1, are occupied, and it cannot afford the one
+    // diagonal square left (B2) at 0 power. Boxed in by ships and the
+    // board's own corner, not by the trap — so §8.6 step 7's relief
+    // (src/rules/relief.ts) finds no qualifying candidate, and the side
+    // genuinely has no action at all, rather than looping the guard
+    // forever waiting for one.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "A1", 0),
+        ship("red-1", "red", "B1"),
+        ship("red-2", "red", "A2"),
+      ],
+      // Comfortably above the recovery table's largest single draw (8), so
+      // A1 stays depleted through this very sequence rather than retiring
+      // in it — this test is about the pass guard, not step 6.
+      nodes: { A1: ["depleted", 30] },
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state.sideToMove).toBe("red");
+    expect(result.effect).toEqual({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      reason: "no-legal-action",
+      endOfTurn: [],
+    });
+    expect(result.state.nodes.A1.state).toBe("depleted");
+    const trapped = result.state.ships.find((s) => s.id === "green-1");
+    expect(trapped?.square).toEqual(squareFromName("A1"));
   });
 
   it("leaves a state with a legal move untouched", () => {

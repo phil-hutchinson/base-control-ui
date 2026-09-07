@@ -26,12 +26,6 @@
   color: var(--color-red);
 }
 
-/* A penalty sinks and fades, the mirror of a collection's float, so a loss
-   never reads as a gain even at a glance. */
-.energy-overlay__amount--negative {
-  animation-name: energy-overlay-sink;
-}
-
 @keyframes energy-overlay-float {
   from {
     opacity: 1;
@@ -40,17 +34,6 @@
   to {
     opacity: 0;
     transform: translate(-50%, -180%);
-  }
-}
-
-@keyframes energy-overlay-sink {
-  from {
-    opacity: 1;
-    transform: translate(-50%, -50%);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, 180%);
   }
 }
 
@@ -72,11 +55,6 @@
   color: var(--color-red);
 }
 
-/* A penalty's pulse contracts, the mirror of a collection's expanding ring. */
-.energy-overlay__pulse--negative {
-  animation-name: energy-overlay-pulse-contract;
-}
-
 @keyframes energy-overlay-pulse {
   from {
     opacity: 0.9;
@@ -88,29 +66,15 @@
   }
 }
 
-@keyframes energy-overlay-pulse-contract {
-  from {
-    opacity: 0.9;
-    transform: translate(-50%, -50%) scale(1.4);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.6);
-  }
-}
-
 /* No state here is ever carried by motion alone: the number and the pulse
-   still appear and fade, just without travelling or scaling - for both a
-   gain and a loss. */
+   still appear and fade, just without travelling or scaling. */
 @media (prefers-reduced-motion: reduce) {
-  .energy-overlay__amount,
-  .energy-overlay__amount--negative {
+  .energy-overlay__amount {
     animation: energy-overlay-fade 1.2s ease-out forwards;
     transform: translate(-50%, -50%);
   }
 
-  .energy-overlay__pulse,
-  .energy-overlay__pulse--negative {
+  .energy-overlay__pulse {
     animation: energy-overlay-fade 0.8s ease-out forwards;
     transform: translate(-50%, -50%);
   }

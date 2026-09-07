@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { squareFromName, squareName, type Square } from "./board";
-import { runEndOfTurn, type NodeReplacedEffect } from "./endOfTurn";
+import {
+  runEndOfTurn,
+  type NodeReliefEffect,
+  type NodeReplacedEffect,
+  type ShipFreedEffect,
+} from "./endOfTurn";
 import type { ShipId } from "./fleet";
-import { legalNodePool } from "./nodePlacement";
+import { legalDestinations } from "./movement";
+import { drawNodeSquare, legalNodePool } from "./nodePlacement";
 import { PLANETS } from "./planets";
+import { reliefSquare } from "./relief";
 import {
   type GameState,
   type Ship,
@@ -15,10 +22,12 @@ import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { PowerLevel } from "./power";
 import {
+  DEPLETED_RECOVERY_TABLE,
   NODE_CAPACITY,
   NODE_COUNT,
   PRESSURE_CAP,
   STARTING_PRESSURE,
+  drawTableAmount,
   type NodeState,
 } from "./nodes";
 
@@ -208,7 +217,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
     ).toBe(false);
   });
 
-  it("collects and pays no energy for a ship recovering on a planet", () => {
+  it("collects no energy for a ship recovering on a planet", () => {
     const state = buildState({
       sideToMove: "green",
       ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 2)],
@@ -218,9 +227,6 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
 
     expect(
       result.effects.some((effect) => effect.type === "energy-collected"),
-    ).toBe(false);
-    expect(
-      result.effects.some((effect) => effect.type === "energy-penalty"),
     ).toBe(false);
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
   });
@@ -293,7 +299,7 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
     });
   });
 
-  it("leaves a ship on a depleted node with the power it had, while still paying the energy penalty", () => {
+  it("leaves a ship on a depleted node with the power it had", () => {
     const state = buildState({
       sideToMove: "green",
       nodes: {
@@ -382,12 +388,19 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
     }
   });
 
-  it("goes depleted, carrying its level unclamped, once drain reaches or passes capacity, leaving a ship on it untouched (§8.5)", () => {
+  it("goes depleted, carrying its level unclamped, once drain reaches or passes capacity, trapping the ship on it (§8.5)", () => {
     // Any drawn amount (empty table's minimum is 1) crosses capacity from
     // NODE_CAPACITY - 1, so this is deterministic without pinning a seed.
     const state = buildState({
       nodes: { H8: ["charged", NODE_CAPACITY - 1] },
-      ships: [ship("green-1", "green", "H8", 1)],
+      // A second green ship on a plain square, free of any node, so green
+      // is not all-trapped and step 7's relief does not fire — a real
+      // fleet has seven ships, and this one contributes no effect of its
+      // own.
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("green-2", "green", "F8"),
+      ],
     });
 
     const result = runEndOfTurn(state);
@@ -403,11 +416,17 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
         squares: [squareFromName("H8")],
       },
       { type: "node-ran-out", square: squareFromName("H8") },
+      {
+        type: "ship-trapped",
+        shipId: "green-1",
+        side: "green",
+        square: squareFromName("H8"),
+      },
     ]);
     // Holding a charged node no longer costs power (§4.1), so green's own
     // ship is untouched by step 1 even as step 3 spends the node out from
-    // under it in the same sequence — it simply stays there, at the power it
-    // started with.
+    // under it in the same sequence — it simply stays there, trapped, at
+    // the power it started with.
     const untouchedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(untouchedShip?.power).toBe(1);
     expect(untouchedShip?.square).toEqual(squareFromName("H8"));
@@ -449,7 +468,13 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
   ): number {
     let state = buildState({
       nodes: { H8: ["charged", startLevel] },
-      ships: held ? [ship("green-1", "green", "H8", 4)] : [],
+      // When held, a second green ship sits on a plain square, free of any
+      // node, so green is never all-trapped once H8 depletes — without it
+      // step 7's relief would end H8 the instant it goes depleted, and this
+      // test is about the depleted clock, not the relief.
+      ships: held
+        ? [ship("green-1", "green", "H8", 4), ship("green-2", "green", "F8")]
+        : [],
       randomSeed: seed,
     });
     let plies = 0;
@@ -750,6 +775,301 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
   });
 });
 
+describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §8.5)", () => {
+  it("reports node-replaced then ship-freed, keeping the freed ship's square and power, when a retiring node had a ship on it", () => {
+    // The recovery table's minimum draw is 4, so a level of 4 is guaranteed
+    // to retire on a single draw, regardless of seed.
+    const state = buildState({
+      nodes: { H8: ["depleted", 4] },
+      ships: [ship("green-1", "green", "H8", 3)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(
+      result.effects.findIndex((effect) => effect.type === "node-replaced"),
+    ).toBe(0);
+    expect(result.effects[1]).toEqual({
+      type: "ship-freed",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+    });
+    const freedShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(freedShip?.square).toEqual(squareFromName("H8"));
+    expect(freedShip?.power).toBe(3);
+  });
+
+  it("reports no ship-freed when a retiring node had no ship on it", () => {
+    const state = buildState({
+      nodes: { H8: ["depleted", 4] },
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects.some((effect) => effect.type === "ship-freed")).toBe(
+      false,
+    );
+  });
+
+  it("does not free the ship a node traps in step 3 of the same sequence — step 6 only touches nodes depleted before the ply began", () => {
+    // Any drawn amount (empty table's minimum is 1) crosses capacity from
+    // NODE_CAPACITY - 1, so H8 is guaranteed to go depleted in step 3 here,
+    // never having been depleted before this ply began.
+    const state = buildState({
+      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
+      // A second green ship on a plain square, free of any node, so green
+      // is not all-trapped and step 7's relief does not also end H8 this
+      // very ply — that would be a true fact about the relief, not about
+      // step 6, and would defeat what this test is checking.
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("green-2", "green", "F8"),
+      ],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.nodes.H8.state).toBe("depleted");
+    expect(
+      result.effects.some((effect) => effect.type === "ship-trapped"),
+    ).toBe(true);
+    expect(result.effects.some((effect) => effect.type === "ship-freed")).toBe(
+      false,
+    );
+    expect(
+      result.effects.some((effect) => effect.type === "node-replaced"),
+    ).toBe(false);
+  });
+});
+
+describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", () => {
+  it("ends exactly the lowest-level qualifying node, replaces it, and frees its ship, emitting node-relief, node-replaced and ship-freed in that order", () => {
+    // Both H8 and D8 have plenty of life left (well above the recovery
+    // table's maximum draw of 8), so neither retires in step 6 — both are
+    // still depleted, and both movable once freed, when step 7 runs. H8's
+    // level (30) is lower than D8's (40), so H8 has the least remaining
+    // life and is the one the relief ends; D8 stays trapping green-2.
+    const state = buildState({
+      nodes: { H8: ["depleted", 30], D8: ["depleted", 40] },
+      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "D8")],
+      sideToMove: "green",
+    });
+
+    const result = runEndOfTurn(state);
+
+    const reliefs = result.effects.filter(
+      (effect): effect is NodeReliefEffect => effect.type === "node-relief",
+    );
+    expect(reliefs).toEqual([
+      { type: "node-relief", side: "green", square: squareFromName("H8") },
+    ]);
+
+    const reliefIndex = result.effects.indexOf(reliefs[0]);
+    const replacedIndex = result.effects.findIndex(
+      (effect) => effect.type === "node-replaced",
+    );
+    const freed = result.effects.filter(
+      (effect): effect is ShipFreedEffect => effect.type === "ship-freed",
+    );
+    expect(freed).toHaveLength(1);
+    const freedIndex = result.effects.indexOf(freed[0]);
+    expect(reliefIndex).toBeLessThan(replacedIndex);
+    expect(replacedIndex).toBeLessThan(freedIndex);
+    expect(freed[0].shipId).toBe("green-1");
+
+    expect(result.state.nodes.H8).toBeUndefined();
+    expect(result.state.nodes.D8.state).toBe("depleted");
+    const freedShip = result.state.ships.find((s) => s.id === "green-1")!;
+    expect(freedShip.square).toEqual(squareFromName("H8"));
+    expect(legalDestinations(result.state, "green-1").length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it("ends nothing when one ship of the side is still free", () => {
+    const state = buildState({
+      nodes: { H8: ["depleted", 30] },
+      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "F8")],
+      sideToMove: "green",
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects.some((effect) => effect.type === "node-relief")).toBe(
+      false,
+    );
+    expect(result.effects.some((effect) => effect.type === "ship-freed")).toBe(
+      false,
+    );
+    expect(result.state.nodes.H8.state).toBe("depleted");
+  });
+
+  it("ends nothing when every ship is trapped but none would have a legal move once freed, and draws no seed doing so", () => {
+    // A1 is a corner: at power 0 the only affordable moves are the two
+    // orthogonal steps to B1 and A2, and both are occupied by an enemy ship
+    // — boxed in by ships and the edge of the board, not by the trap.
+    const state = buildState({
+      nodes: { A1: ["depleted", 30] },
+      ships: [
+        ship("green-1", "green", "A1", 0),
+        ship("red-1", "red", "B1"),
+        ship("red-2", "red", "A2"),
+      ],
+      sideToMove: "green",
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(
+      result.effects.some(
+        (effect) =>
+          effect.type === "node-relief" || effect.type === "ship-freed",
+      ),
+    ).toBe(false);
+    expect(result.state.nodes.A1.state).toBe("depleted");
+    // The only seed draw the whole sequence makes here is step 6's recovery
+    // draw for A1 — step 7 finds no qualifying candidate and draws nothing.
+    const [, expectedSeed] = drawTableAmount(
+      state.randomSeed,
+      DEPLETED_RECOVERY_TABLE,
+    );
+    expect(result.state.randomSeed).toBe(expectedSeed);
+  });
+
+  it("relieves the side that did not just move, as well as the side that did", () => {
+    const state = buildState({
+      nodes: { H8: ["depleted", 30] },
+      ships: [ship("red-1", "red", "H8")],
+      sideToMove: "green",
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "node-relief",
+      side: "red",
+      square: squareFromName("H8"),
+    });
+    expect(result.state.nodes.H8).toBeUndefined();
+  });
+
+  it("relieves both sides when both are all-trapped, the side that just moved first", () => {
+    const state = buildState({
+      nodes: { H8: ["depleted", 30], D8: ["depleted", 40] },
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "D8")],
+      sideToMove: "green",
+    });
+
+    const result = runEndOfTurn(state);
+
+    const reliefs = result.effects.filter(
+      (effect): effect is NodeReliefEffect => effect.type === "node-relief",
+    );
+    expect(reliefs.map((effect) => effect.side)).toEqual(["green", "red"]);
+    expect(result.state.nodes.H8).toBeUndefined();
+    expect(result.state.nodes.D8).toBeUndefined();
+  });
+
+  it("consumes no more seed when the relief cannot fire than the same state without any trapped side at all", () => {
+    const withBoxedTrap = buildState({
+      nodes: { A1: ["depleted", 30] },
+      ships: [
+        ship("green-1", "green", "A1", 0),
+        ship("red-1", "red", "B1"),
+        ship("red-2", "red", "A2"),
+      ],
+      sideToMove: "green",
+    });
+    const withoutAnyShips = buildState({
+      nodes: { A1: ["depleted", 30] },
+      ships: [],
+      sideToMove: "green",
+    });
+
+    const resultWithBoxedTrap = runEndOfTurn(withBoxedTrap);
+    const resultWithoutAnyShips = runEndOfTurn(withoutAnyShips);
+
+    expect(resultWithBoxedTrap.state.randomSeed).toBe(
+      resultWithoutAnyShips.state.randomSeed,
+    );
+  });
+
+  it("threads the tie-break draw into the replacement draw that follows it, so a tied relief stays replayable", () => {
+    // D8 and L8 are set up so that after step 6's two independent recovery
+    // draws (D8 first, then L8, the order `nodeSquares` walks them in) both
+    // land on the same remaining life — a genuine tie for step 7 to break.
+    // Their starting
+    // levels are computed from the actual recovery draws a state entering
+    // with this seed will make, so this only works because step 6 makes no
+    // other seed draw before reaching them (no charged node, no inactive
+    // node to draw for).
+    const seed = 1;
+    const [amountD8, seedAfterD8] = drawTableAmount(
+      seed,
+      DEPLETED_RECOVERY_TABLE,
+    );
+    const [amountL8, seedAfterRecovery] = drawTableAmount(
+      seedAfterD8,
+      DEPLETED_RECOVERY_TABLE,
+    );
+    const tiedLevel = 30;
+
+    const state = buildState({
+      nodes: {
+        D8: ["depleted", tiedLevel + amountD8],
+        L8: ["depleted", tiedLevel + amountL8],
+      },
+      ships: [ship("green-1", "green", "D8"), ship("green-2", "green", "L8")],
+      sideToMove: "green",
+      randomSeed: seed,
+    });
+
+    // The state step 6 leaves behind, built independently of `runEndOfTurn`
+    // so the tie-break can be predicted rather than merely observed.
+    const afterStep6: GameState = {
+      ...state,
+      nodes: {
+        D8: { state: "depleted", level: tiedLevel },
+        L8: { state: "depleted", level: tiedLevel },
+      },
+      randomSeed: seedAfterRecovery,
+    };
+    const [tieSquare, seedAfterTie] = reliefSquare(afterStep6, "green");
+    if (tieSquare === undefined) {
+      throw new Error("expected a genuine tie between D8 and L8");
+    }
+    const otherName = squareName(tieSquare) === "D8" ? "L8" : ("D8" as const);
+    const [expectedNewSquare, expectedFinalSeed] = drawNodeSquare(
+      [squareFromName(otherName)],
+      [squareFromName("D8"), squareFromName("L8")],
+      seedAfterTie,
+      tieSquare,
+    );
+
+    const result = runEndOfTurn(state);
+
+    const relief = result.effects.find(
+      (effect): effect is NodeReliefEffect => effect.type === "node-relief",
+    );
+    expect(relief).toEqual({
+      type: "node-relief",
+      side: "green",
+      square: tieSquare,
+    });
+    const replaced = result.effects.find(
+      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
+    );
+    expect(replaced?.retiredSquare).toEqual(tieSquare);
+    expect(replaced?.newSquare).toEqual(expectedNewSquare);
+    expect(result.state.randomSeed).toBe(expectedFinalSeed);
+    expect(result.state.nodes[otherName]).toEqual({
+      state: "depleted",
+      level: tiedLevel,
+    });
+  });
+});
+
 describe("runEndOfTurn — step 4, the charge draw never charges a node that only appears in step 6 of the same sequence (§8.6 step ordering)", () => {
   it("leaves the board with nothing charged when the only inactive candidate is a node retiring this very ply", () => {
     // H8 is guaranteed to retire this ply (level 4, see above); F2 is
@@ -894,7 +1214,13 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     const state = buildState({
       sideToMove: "green",
       nodes: { H8: ["charged", NODE_CAPACITY - 1] },
-      ships: [ship("green-1", "green", "H8", 0)],
+      // A second green ship on a plain square, free of any node, so green
+      // is not all-trapped once H8 depletes and step 7's relief does not
+      // fire — this test is about step 2's collection, not the relief.
+      ships: [
+        ship("green-1", "green", "H8", 0),
+        ship("green-2", "green", "F8"),
+      ],
     });
 
     const result = runEndOfTurn(state);
@@ -944,127 +1270,8 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     ).toBe(false);
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
   });
-});
 
-describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
-  it("prices one, two, three and four depleted nodes off the collection table", () => {
-    const cases: readonly [number, number][] = [
-      [1, 1],
-      [2, 3],
-      [3, 6],
-      [4, 10],
-    ];
-    for (const [depletedCount, expectedAmount] of cases) {
-      const names = ["H8", "K5", "L8", "D8", "K11"].slice(0, depletedCount);
-      const state = {
-        ...buildState({
-          sideToMove: "green",
-          nodes: Object.fromEntries(
-            names.map((name) => [name, ["depleted", 0] as const]),
-          ),
-          ships: names.map((name, index) =>
-            ship(`green-${index + 1}` as ShipId, "green", name, 0),
-          ),
-        }),
-        energy: { green: 100, red: 0 },
-      };
-
-      const result = runEndOfTurn(state);
-
-      const penalty = result.effects.find(
-        (effect) => effect.type === "energy-penalty",
-      );
-      expect(penalty).toMatchObject({
-        type: "energy-penalty",
-        side: "green",
-        amount: expectedAmount,
-        newTotal: 100 - expectedAmount,
-      });
-      expect(result.state.energy.green).toBe(100 - expectedAmount);
-    }
-  });
-
-  it("prices five and six depleted nodes the same as four, raising no error", () => {
-    const sixNames = ["H8", "K5", "L8", "D8", "K11", "E5"];
-    for (const depletedCount of [5, 6]) {
-      const names = sixNames.slice(0, depletedCount);
-      const state = {
-        ...buildState({
-          sideToMove: "green",
-          nodes: Object.fromEntries(
-            names.map((name) => [name, ["depleted", 0] as const]),
-          ),
-          ships: names.map((name, index) =>
-            ship(`green-${index + 1}` as ShipId, "green", name, 0),
-          ),
-        }),
-        energy: { green: 100, red: 0 },
-      };
-
-      const result = runEndOfTurn(state);
-
-      expect(result.effects).toContainEqual(
-        expect.objectContaining({ type: "energy-penalty", amount: 10 }),
-      );
-      expect(result.state.energy.green).toBe(90);
-    }
-  });
-
-  it("collects for the charged nodes held and then pays for the depleted nodes occupied, not netted", () => {
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: {
-          H8: ["charged", 1],
-          K5: ["charged", 1],
-          L8: ["charged", 1],
-          D8: ["depleted", 0],
-          K11: ["depleted", 0],
-        },
-        ships: [
-          ship("green-1", "green", "H8", 0),
-          ship("green-2", "green", "K5", 0),
-          ship("green-3", "green", "L8", 0),
-          ship("green-4", "green", "D8", 4),
-          ship("green-5", "green", "K11", 4),
-        ],
-      }),
-      energy: { green: 0, red: 0 },
-    };
-
-    const result = runEndOfTurn(state);
-
-    const collectedIndex = result.effects.findIndex(
-      (effect) => effect.type === "energy-collected",
-    );
-    const penaltyIndex = result.effects.findIndex(
-      (effect) => effect.type === "energy-penalty",
-    );
-    expect(collectedIndex).toBeGreaterThanOrEqual(0);
-    expect(penaltyIndex).toBeGreaterThan(collectedIndex);
-
-    expect(result.effects).toContainEqual({
-      type: "energy-collected",
-      side: "green",
-      amount: 6,
-      newTotal: 6,
-      squares: [
-        squareFromName("K5"),
-        squareFromName("H8"),
-        squareFromName("L8"),
-      ],
-    });
-    expect(result.effects).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 3,
-      newTotal: 3,
-      squares: [squareFromName("D8"), squareFromName("K11")],
-    });
-    expect(result.state.energy.green).toBe(3);
-  });
-
-  it("floors a penalty larger than the side's energy at 0, reporting only what was actually deducted", () => {
+  it("never lowers a total: standing on several depleted nodes costs nothing", () => {
     const state = {
       ...buildState({
         sideToMove: "green",
@@ -1072,111 +1279,27 @@ describe("runEndOfTurn — step 2, the energy penalty (§8.4)", () => {
           H8: ["depleted", 0],
           K5: ["depleted", 0],
           L8: ["depleted", 0],
+          D8: ["depleted", 0],
         },
         ships: [
-          ship("green-1", "green", "H8", 4),
-          ship("green-2", "green", "K5", 4),
-          ship("green-3", "green", "L8", 4),
+          ship("green-1", "green", "H8", 0),
+          ship("green-2", "green", "K5", 0),
+          ship("green-3", "green", "L8", 0),
+          ship("green-4", "green", "D8", 0),
         ],
       }),
-      energy: { green: 2, red: 0 },
+      energy: { green: 3, red: 7 },
     };
 
     const result = runEndOfTurn(state);
 
-    expect(result.effects).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 2,
-      newTotal: 0,
-      squares: [
-        squareFromName("K5"),
-        squareFromName("H8"),
-        squareFromName("L8"),
-      ],
-    });
-    expect(result.state.energy.green).toBe(0);
-  });
-
-  it("raises no penalty effect for a side with 0 energy standing on depleted nodes", () => {
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: { H8: ["depleted", 0] },
-        ships: [ship("green-1", "green", "H8", 4)],
-      }),
-      energy: { green: 0, red: 0 },
-    };
-
-    const result = runEndOfTurn(state);
-
-    expect(
-      result.effects.some((effect) => effect.type === "energy-penalty"),
-    ).toBe(false);
-    expect(result.state.energy.green).toBe(0);
-  });
-
-  it("raises no penalty effect for a side standing on no depleted node", () => {
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: { H8: ["inactive", 1] },
-        ships: [ship("green-1", "green", "H8", 0)],
-      }),
-      energy: { green: 5, red: 0 },
-    };
-
-    const result = runEndOfTurn(state);
-
-    expect(
-      result.effects.some((effect) => effect.type === "energy-penalty"),
-    ).toBe(false);
-    expect(result.state.energy.green).toBe(5);
-  });
-
-  it("costs this side nothing for a depleted node occupied by the opponent", () => {
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: { H8: ["depleted", 0] },
-        ships: [ship("red-1", "red", "H8", 0)],
-      }),
-      energy: { green: 5, red: 5 },
-    };
-
-    const result = runEndOfTurn(state);
-
-    expect(
-      result.effects.some((effect) => effect.type === "energy-penalty"),
-    ).toBe(false);
-    expect(result.state.energy).toEqual({ green: 5, red: 5 });
-  });
-
-  it("prices the depleted node occupied and ignores one with no ship standing on it", () => {
-    // green-1 ends on H8, depleted: it pays for that. K5, also depleted, is
-    // never occupied at all here, so it never counts — a node with no ship
-    // standing on it at the moment the count is taken costs nothing,
-    // regardless of why. (`camping.test.ts` carries the genuine fly-over
-    // case, driven through movement.)
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: { H8: ["depleted", 0], K5: ["depleted", 0] },
-        ships: [ship("green-1", "green", "H8", 0)],
-      }),
-      energy: { green: 5, red: 0 },
-    };
-
-    const result = runEndOfTurn(state);
-
-    expect(result.effects).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 1,
-      newTotal: 4,
-      squares: [squareFromName("H8")],
-    });
-    expect(result.state.energy.green).toBe(4);
+    expect(result.state.energy.green).toBeGreaterThanOrEqual(3);
+    expect(result.state.energy.red).toBeGreaterThanOrEqual(7);
+    for (const effect of result.effects) {
+      if (effect.type === "energy-collected") {
+        expect(effect.newTotal).toBeGreaterThanOrEqual(0);
+      }
+    }
   });
 });
 
@@ -1215,7 +1338,7 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
     expect(passedShip?.power).toBe(1);
   });
 
-  it("pays the side that passes while standing on a depleted node, through applyPassGuard", () => {
+  it("costs the side that passes nothing while standing on a depleted node, through applyPassGuard", () => {
     const state = {
       ...buildState({
         sideToMove: "green",
@@ -1230,14 +1353,13 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
     const result = applyPassGuard(state);
 
     expect(result.effect?.type).toBe("ply-passed");
-    expect(result.effect?.endOfTurn).toContainEqual({
-      type: "energy-penalty",
-      side: "green",
-      amount: 1,
-      newTotal: 4,
-      squares: [squareFromName("K5")],
-    });
-    expect(result.state.energy).toEqual({ green: 4, red: 0 });
+    expect(
+      result.effect?.endOfTurn.some(
+        (effect) =>
+          effect.type === "energy-collected" || effect.type === "power-gained",
+      ),
+    ).toBe(false);
+    expect(result.state.energy).toEqual({ green: 5, red: 0 });
   });
 });
 

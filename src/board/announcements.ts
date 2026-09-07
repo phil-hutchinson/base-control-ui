@@ -7,15 +7,10 @@
 
 import { isPlanet } from "../rules/planets";
 import { squareName } from "../rules/board";
-import {
-  chargedNodesHeldBy,
-  depletedNodesOccupiedBy,
-  MAX_DEPLETED_NODES_PRICED,
-} from "../rules/energy";
+import { chargedNodesHeldBy } from "../rules/energy";
 import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
-  EnergyPenaltyEffect,
   PowerGainedEffect,
 } from "../rules/endOfTurn";
 import type { Side } from "../rules/fleet";
@@ -68,17 +63,6 @@ function nodesHeldPhrase(count: number): string {
     return "no nodes held";
   }
   return `${count} ${count === 1 ? "node" : "nodes"} held`;
-}
-
-/** "standing on 2 depleted nodes", "standing on 1 depleted node", "standing on
- * no depleted nodes" — for the HUD's hidden score sentence. Named even when
- * zero (§8.4), so the sentence keeps one shape whether a side is paying or
- * not. */
-function depletedNodesOccupiedPhrase(count: number): string {
-  if (count === 0) {
-    return "standing on no depleted nodes";
-  }
-  return `standing on ${count} depleted ${count === 1 ? "node" : "nodes"}`;
 }
 
 /**
@@ -171,30 +155,6 @@ function energyCollectedClause(effect: EnergyCollectedEffect): string {
 }
 
 /**
- * A single turn's penalty (rules.md §8.4): one depleted node names itself,
- * several name their count and squares — the mirror of
- * `energyCollectedClause`. There is at most one of these per sequence, for
- * the same reason there is at most one collection.
- *
- * The count priced is capped at `MAX_DEPLETED_NODES_PRICED` (§8.4), but every
- * occupied depleted node is still named — nothing is ranked or selected, the
- * cap just stops counting. So a side over the cap hears which nodes it is
- * standing on, and that only `MAX_DEPLETED_NODES_PRICED` of them are
- * counted, not that some subset was chosen.
- */
-function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
-  const side = capitalize(effect.side);
-  const squares = effect.squares.map((square) => squareName(square));
-  const source =
-    squares.length === 1
-      ? `the depleted node at ${squares[0]}`
-      : squares.length > MAX_DEPLETED_NODES_PRICED
-        ? `${squares.length} depleted nodes at ${joinWithAnd(squares)}, ${MAX_DEPLETED_NODES_PRICED} of which are penalised`
-        : `${squares.length} depleted nodes at ${joinWithAnd(squares)}`;
-  return `${side} lost ${effect.amount} energy to ${source}, and now has ${effect.newTotal}.`;
-}
-
-/**
  * The clauses an end-of-turn sequence produced, in the order the sequence
  * produced them. All of a sequence's power gains are grouped into one
  * clause, ahead of the rest — there is no longer a power-loss clause to sit
@@ -203,11 +163,15 @@ function energyPenaltyClause(effect: EnergyPenaltyEffect): string {
  * are racing towards. `node-replaced` speaks too, in one sentence naming
  * both squares: unlike the old cycle-in-place, a node ending and a new one
  * appearing elsewhere is a visible change to the map and to where the next
- * race will be. A zero collection or a zero penalty produces no effect at
- * all (rules.md §8.4), so there is nothing here to skip for either case — a
- * turn that only pays reads as one sentence, and a turn that collects and
- * then pays reads as two, in that order, because the sequence pushes the
- * collection effect before the penalty effect.
+ * race will be. `ship-trapped` and `ship-freed` each speak too, right after
+ * the node event that caused them, since a player needs to know a ship was
+ * caught or released, not just that a node changed. `node-relief` speaks
+ * ahead of the `node-replaced` effect it caused, naming the side it
+ * relieved, so a player hears why that node ended early, not just that it
+ * did. A zero collection produces no effect at all (rules.md §8.4), so
+ * there is nothing here to skip for it — a turn that collects nothing
+ * simply has no collection clause, and nothing in this sequence ever
+ * takes energy away.
  */
 function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
   const clauses: string[] = [];
@@ -226,11 +190,13 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
       case "energy-collected":
         clauses.push(energyCollectedClause(effect));
         break;
-      case "energy-penalty":
-        clauses.push(energyPenaltyClause(effect));
-        break;
       case "node-ran-out":
         clauses.push(`The node at ${squareName(effect.square)} ran out.`);
+        break;
+      case "ship-trapped":
+        clauses.push(
+          `The ${effect.side} ship at ${squareName(effect.square)} is trapped there until the node retires.`,
+        );
         break;
       case "node-charged":
         clauses.push(`A new node charged at ${squareName(effect.square)}.`);
@@ -238,6 +204,16 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
       case "node-replaced":
         clauses.push(
           `The node at ${squareName(effect.retiredSquare)} is gone, and a new node appeared at ${squareName(effect.newSquare)}.`,
+        );
+        break;
+      case "ship-freed":
+        clauses.push(
+          `The ${effect.side} ship at ${squareName(effect.square)} is free again.`,
+        );
+        break;
+      case "node-relief":
+        clauses.push(
+          `Every ${effect.side} ship was trapped, so the node at ${squareName(effect.square)} ended early.`,
         );
         break;
     }
@@ -396,6 +372,8 @@ function rejectionSentence(event: RejectedEvent): string {
       return "That ship has already acted this turn. Choose another.";
     case "nothing-to-select":
       return `No ship on ${square}. Choose one of your own ships.`;
+    case "ship-trapped":
+      return "That ship is trapped on a depleted node and cannot move until the node goes.";
     case "out-of-range":
       return `${square} is out of range for the selected ship.`;
     case "cannot-afford":
@@ -404,14 +382,20 @@ function rejectionSentence(event: RejectedEvent): string {
       return `An enemy ship is in the way of ${square}.`;
     case "destination-occupied":
       return `${square} is occupied.`;
+    case "destination-depleted-node":
+      return `${square} is a depleted node — a ship may fly over one, but cannot land on it.`;
     case "attacker-on-planet":
       return "A ship on a planet cannot attack. Move it off first.";
     case "attacker-on-charged-node":
       return "A ship holding a charged node cannot attack while it stands there. Move it off first.";
+    case "attacker-on-depleted-node":
+      return "A ship trapped on a depleted node cannot attack.";
     case "target-on-planet":
       return "A ship on a planet cannot be attacked.";
     case "target-on-charged-node":
       return "A ship holding a charged node cannot be attacked.";
+    case "target-on-depleted-node":
+      return "A ship trapped on a depleted node cannot be attacked.";
     case "target-out-of-range":
       return `${square} is not one of the shapes a ship can attack from here — an orthogonal or diagonal step, two squares orthogonally, or an L — whatever power it carries.`;
     case "cannot-afford-target":
@@ -530,12 +514,10 @@ export function announcementForSession(session: Session): string {
   }
 }
 
-/** "Green: 24 energy, 3 nodes held, standing on 2 depleted nodes." — the HUD
- * score cell's hidden text. */
+/** "Green: 24 energy, 3 nodes held." — the HUD score cell's hidden text. */
 export function scoreSentence(state: GameState, side: Side): string {
   const nodesHeld = chargedNodesHeldBy(state, side).length;
-  const depletedOccupied = depletedNodesOccupiedBy(state, side).length;
-  return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}, ${depletedNodesOccupiedPhrase(depletedOccupied)}.`;
+  return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}.`;
 }
 
 /** "35/100" — the HUD round counter's visible text, clamped at game over. */

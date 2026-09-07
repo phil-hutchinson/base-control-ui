@@ -1,10 +1,11 @@
 // Movement (rules.md §6): a ship moves one or two squares, orthogonally,
 // diagonally or in an L, priced by §6's table, and a ship may take any shape
-// it can afford — reach, a clear path and an empty destination are the whole
-// of the restriction. This is the only implementation of §6 in the app;
-// every caller that needs a legal move or the reason one is refused calls the
-// functions here. §9's game-over check is layered in front of §6's own
-// checks in each public function below.
+// it can afford — reach, a clear path, an empty destination and a
+// destination that is not a depleted node are the whole of the restriction.
+// A trapped ship (rules.md §8.5) has no move at all. This is the only
+// implementation of §6 in the app; every caller that needs a legal move or
+// the reason one is refused calls the functions here. §9's game-over check is
+// layered in front of §6's own checks in each public function below.
 
 import {
   COLUMN_LETTERS,
@@ -15,8 +16,14 @@ import {
 } from "./board";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
-import { type GameState, type Ship, shipsBySquare } from "./gameState";
+import {
+  type GameState,
+  type Ship,
+  nodeStateAt,
+  shipsBySquare,
+} from "./gameState";
 import type { PowerLevel } from "./power";
+import { isShipTrapped } from "./trap";
 
 type StraightKind = "orthogonal" | "diagonal";
 
@@ -228,10 +235,12 @@ export function shapeReaching(
 export type MoveRefusalReason =
   | "not-your-ship"
   | "ship-already-acted"
+  | "ship-trapped"
   | "out-of-range"
   | "cannot-afford"
   | "path-blocked"
   | "destination-occupied"
+  | "destination-depleted-node"
   | "game-over";
 
 /** The ship with the given id in this state, or throws if there is none. */
@@ -249,11 +258,15 @@ export function findShip(state: GameState, shipId: ShipId): Ship {
  * checked in order from the most fundamental (whether the game is even still
  * being played) to the most specific (the destination square itself):
  * whether the game is over, whose ship it is, whether it has already acted,
- * and finally §6's reach, affordability, path and destination-occupancy
- * checks. "Out of range" now means only that no shape reaches the square at
- * all — a real shape the ship cannot currently pay for is "cannot afford"
- * instead, since the two are refused for different reasons and read
- * differently to a player.
+ * whether it is trapped (rules.md §8.5 — a fact about the ship itself, so it
+ * is checked alongside the others before anything about the destination), and
+ * finally §6's reach, affordability, path, destination-occupancy and
+ * depleted-destination checks. "Out of range" now means only that no shape
+ * reaches the square at all — a real shape the ship cannot currently pay for
+ * is "cannot afford" instead, since the two are refused for different reasons
+ * and read differently to a player. `destination-occupied` is checked before
+ * `destination-depleted-node`, because the two can co-occur — a trapped enemy
+ * ship stands on a depleted node — and occupancy is the more immediate fact.
  */
 export function moveRefusalReason(
   state: GameState,
@@ -271,6 +284,9 @@ export function moveRefusalReason(
   }
   if (state.actedThisPly.includes(shipId)) {
     return "ship-already-acted";
+  }
+  if (isShipTrapped(state, shipId)) {
+    return "ship-trapped";
   }
 
   const entry = shapeReaching(ship.square, destination);
@@ -292,6 +308,9 @@ export function moveRefusalReason(
   if (occupied.has(squareName(destination))) {
     return "destination-occupied";
   }
+  if (nodeStateAt(state, destination) === "depleted") {
+    return "destination-depleted-node";
+  }
 
   return undefined;
 }
@@ -300,8 +319,11 @@ export function moveRefusalReason(
  * Every square `shipId` may legally move to in the given state: the
  * affordable subset of its §6 reach, filtered by path and destination
  * occupancy - only an enemy ship on a passed-over square blocks. Empty once
- * the game is over, or when the ship does not belong to the side to move or
- * has already acted this ply.
+ * the game is over, when the ship does not belong to the side to move or has
+ * already acted this ply, or when the ship is trapped (rules.md §8.5). A
+ * depleted destination needs no filter of its own here — `moveRefusalReason`
+ * already excludes it below — flying over one is still free, only landing is
+ * barred.
  */
 export function legalDestinations(
   state: GameState,
@@ -312,7 +334,11 @@ export function legalDestinations(
   }
 
   const ship = findShip(state, shipId);
-  if (ship.side !== state.sideToMove || state.actedThisPly.includes(shipId)) {
+  if (
+    ship.side !== state.sideToMove ||
+    state.actedThisPly.includes(shipId) ||
+    isShipTrapped(state, shipId)
+  ) {
     return [];
   }
 

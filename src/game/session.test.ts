@@ -386,33 +386,21 @@ describe("sessionReducer — a ship is selected", () => {
       });
     });
 
-    it("applies a move ending on a depleted node", () => {
+    it("rejects a move ending on a depleted node as destination-depleted-node", () => {
       const state = buildState({
         ships: [ship("green-1", "green", "H8")],
         nodes: { H9: "depleted" },
       });
       const selected = activate(sessionFor(state), "H8");
-      const destination = squareFromName("H9");
 
       const result = activate(selected, "H9");
 
-      expect(result.selectedShipId).toBeUndefined();
-      const direct = applyMove(state, "green-1", destination);
-      expect(direct.outcome).toBe("applied");
-      if (direct.outcome !== "applied") {
-        throw new Error("expected the move to be applied");
-      }
-      expect(result.state).toEqual(direct.state);
+      expect(result.selectedShipId).toBe("green-1");
+      expect(result.state).toBe(state);
       expect(result.lastEvent).toEqual({
-        type: "moved",
-        shipId: "green-1",
-        side: "green",
-        from: squareFromName("H8"),
-        to: destination,
-        effects: direct.effects,
-        actionsRemaining: direct.state.actionsRemaining,
-        cost: direct.cost,
-        powerAfter: direct.powerAfter,
+        type: "rejected",
+        reason: "destination-depleted-node",
+        square: squareFromName("H9"),
       });
     });
   });

@@ -111,6 +111,24 @@ describe("sideToMoveHasLegalAction", () => {
     expect(sideToMoveHasLegalAction(state)).toBe(false);
   });
 
+  it("is false when the side's only ship is trapped on a depleted node and has no legal move, even surrounded by enemies (rules.md §7)", () => {
+    // As with the charged-node case above, every one of these four
+    // neighbours would otherwise be a legal target. Being trapped removes
+    // the attack entirely, so the side has no legal action at all.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 0),
+        ship("red-1", "red", "G8"),
+        ship("red-2", "red", "I8"),
+        ship("red-3", "red", "H7"),
+        ship("red-4", "red", "H9"),
+      ],
+      nodes: { H8: "depleted" },
+    });
+
+    expect(sideToMoveHasLegalAction(state)).toBe(false);
+  });
+
   it("answers false once the game has ended, even with an obvious legal move (rules.md §9)", () => {
     const ships = [ship("green-1", "green", "H8")];
     const lastPly = pliesForGameLength(DEFAULT_GAME_LENGTH_ROUNDS);
@@ -167,7 +185,7 @@ describe("shipHasLegalAction", () => {
     expect(shipHasLegalAction(boxedIn, "green-1")).toBe(false);
   });
 
-  it("is true for a ship standing on a depleted node, and for a sibling elsewhere, with neither held back (§8.5)", () => {
+  it("is false for a ship trapped on a depleted node, but true for a sibling elsewhere (§8.5)", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "E5", 4),
@@ -177,7 +195,27 @@ describe("shipHasLegalAction", () => {
       nodes: { E5: "depleted" },
     });
 
-    expect(shipHasLegalAction(state, "green-1")).toBe(true);
+    // green-1 is trapped on the depleted node: it has no legal destination
+    // and, with no enemy within reach, no legal target either.
+    expect(shipHasLegalAction(state, "green-1")).toBe(false);
     expect(shipHasLegalAction(state, "green-2")).toBe(true);
+  });
+
+  it("is false for a ship trapped on a depleted node with no legal move, even with an enemy in range (rules.md §7)", () => {
+    // Without the trap's protection, H9 would be a legal target: pin the
+    // case where every other neighbour is also blocked, leaving only the
+    // (refused) attack.
+    const boxedIn = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 0),
+        ship("green-2", "green", "G8"),
+        ship("green-3", "green", "I8"),
+        ship("green-4", "green", "H7"),
+        ship("red-1", "red", "H9"),
+      ],
+      nodes: { H8: "depleted" },
+    });
+
+    expect(shipHasLegalAction(boxedIn, "green-1")).toBe(false);
   });
 });

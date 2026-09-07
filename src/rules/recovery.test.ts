@@ -157,11 +157,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
       ),
     ).toBe(false);
     expect(
-      fightEndEffects.some(
-        (effect) =>
-          effect.type === "energy-collected" ||
-          effect.type === "energy-penalty",
-      ),
+      fightEndEffects.some((effect) => effect.type === "energy-collected"),
     ).toBe(false);
     expect(fight.state.energy).toEqual({ green: 10, red: 7 });
 

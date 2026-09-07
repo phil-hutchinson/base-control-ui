@@ -16,8 +16,8 @@ export interface DisplayedEnergy {
  * Rolls each side's displayed total towards `energy`. `settled` is true
  * exactly when both displayed values already equal their targets — true on
  * a fresh render, true again once a roll finishes, and true immediately
- * under prefers-reduced-motion or when a target falls, since `useCountUp`
- * does not animate either of those cases.
+ * under prefers-reduced-motion or when a new game resets both totals to 0,
+ * since `useCountUp` does not animate either of those cases.
  */
 export function useDisplayedEnergy(energy: EnergyTotals): DisplayedEnergy {
   const green = useCountUp(energy.green);
