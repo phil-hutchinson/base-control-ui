@@ -473,7 +473,21 @@ nodes expire by themselves. After this story they do not, and each needs a
 
 ### Step 1 — Rules 0.26 → 0.27: the countdown replaces both clocks
 
-Status: pending
+Status: committed
+
+Notes: Rewrote sections 1, 2, 3.2, 6, 8.1, 8.2, 8.3 (rebuilt from scratch),
+8.5 (retitled to "Standing on a depleted node"), 8.6 and Appendix B per the
+step's instructions; bumped `RULES_VERSION` to "0.27" and added one
+changelog entry covering the whole story. One incidental fix beyond the
+listed sections: §4.1 said a charged node "does not drain" a ship's power —
+reworded to "does not reduce" so the banned word `drain` doesn't survive
+in the document at all, even in this unrelated sense (the step's
+verification greps for the bare word). Ran `npx prettier --write` on
+`rules.md` afterwards to fix table column alignment; `format:check` and the
+full suite (`npm test`, `npm run typecheck`, `npm run lint`) are all green,
+and the grep checklist in the step's verification (`capacity`, `Drain`,
+`drain`, `recovery table`, `already charged`, `at random, with every tied`,
+`inactive node is allowed`) has no remaining matches.
 
 Edit `doc/ruleset/rules.md` so that no sentence in it says a node carries a
 capacity or a drain, that a node ages without a ship on it, that a depleted

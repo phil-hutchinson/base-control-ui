@@ -7,6 +7,50 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.27 — a node's countdown starts when you step on it
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **Both node clocks are gone.** Capacity, the empty and held drain tables,
+  the opening drain table and the depleted recovery table are all deleted.
+  How fast a node burns is no longer one of the game's random elements —
+  there is nothing left to draw.
+- **A charged node has a countdown only while a ship is standing on it.** A
+  node nobody has stepped on sits at its baseline, with no countdown, for
+  the rest of the game if nobody comes. A ship **moving onto** a charged
+  node is the only way a countdown starts, at **11 turns**, landing on six
+  of that player's own turn ends. A **black number** in the middle of the
+  node counts those turns down from 6 to 1.
+- **Leaving a charged node depletes it immediately**, as the move resolves —
+  not at the end of the turn. It does not revert to waiting for the next
+  visitor, the opponent cannot inherit it, and that turn's energy from it is
+  forfeited.
+- **Depleted nodes now come in two lengths.** A node that runs out under its
+  holder traps the ship exactly as before, with an 11-turn countdown and a
+  **white number** counting the trapped player's own turns down from 5. A
+  node left behind by a ship walking off carries a 2-turn countdown and no
+  number. Both simply retire when their countdown runs out.
+- **A ship can no longer stand on an inactive node.** A move may not end on
+  one, exactly as it may not end on a depleted node — only a charged node is
+  a square a ship may occupy. Section 3.2's fallback placement is narrowed
+  to relax spacing only, so a node can never appear beneath a ship either:
+  between the two, a node can never charge under a parked ship.
+- **Two rules that existed only for camping are deleted.** The fourth
+  charged node that could appear directly, already charged, when all four
+  ran out at once, and the relief step's random tie-break, are both gone —
+  neither case can arise once a ship can no longer camp on an inactive
+  node.
+- **Section 1's random elements drop to three**: the opening board, where
+  the queue's new nodes appear and which priority each gets, and which
+  planet a beaten ship goes to. How fast a node burns and both rarer
+  elements are gone with the rules that produced them.
+- **Appendix B's sizing figures are rewritten around the countdown.** A
+  charged node now lasts exactly 11 turns once held, or forever if ignored;
+  a depleted node lasts 11 turns as a trap or 2 as an exit; and the board is
+  never short of four charged because at most one countdown can start, and
+  so at most one node can expire, per turn.
+
 ## 0.26 — three inactive nodes, and a priority you can read
 
 This is a gameplay change. Tagging stays on hold until the game plays (see
