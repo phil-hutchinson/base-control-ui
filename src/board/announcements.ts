@@ -414,8 +414,8 @@ function rejectionSentence(event: RejectedEvent): string {
       return `An enemy ship is in the way of ${square}.`;
     case "destination-occupied":
       return `${square} is occupied.`;
-    case "destination-depleted-node":
-      return `${square} is a depleted node — a ship may fly over one, but cannot land on it.`;
+    case "destination-uncharged-node":
+      return `${square} holds a node that is not charged — a ship may fly over one, but cannot land on it.`;
     case "attacker-on-planet":
       return "A ship on a planet cannot attack. Move it off first.";
     case "attacker-on-charged-node":

@@ -637,7 +637,27 @@ position returned is inside [0, 1].
 
 ### Step 3 — No ship on an uncharged node, and no node under a ship
 
-Status: pending
+Status: committed
+
+Notes: Renamed `destination-depleted-node` to `destination-uncharged-node` in
+`movement.ts`, firing for both `depleted` and `inactive` destinations (D8),
+and widened the refusal wording in `announcements.ts` to name neither state.
+Narrowed `legalNodePool`'s fallback in `nodePlacement.ts` to also exclude
+ship squares, and updated its doc comment and `RangeError` message. Updated
+the tests D13 lists for this step: `movement.test.ts` (renamed reason,
+inactive-destination refusal, and a new "flies over an inactive node freely"
+case), `session.test.ts` (the "applies a move
+ending on an inactive node" test now asserts a refusal, split alongside a
+matching depleted-node case), `announcements.test.ts` (the refusal wording),
+`camping.test.ts` (its depleted-destination case's expected reason), and
+`nodePlacement.test.ts` (rewrote the fallback test to assert the ship square
+is now excluded rather than included, and added a `RangeError` case for a
+board where every non-planet, non-node square holds a ship). One addition
+beyond D13's list: added a `RangeError` test for the all-ships-occupied
+fallback case, since it directly exercises the new ship exclusion and no
+existing test covered a fully-blocked-by-ships board. `npm test`,
+`npm run typecheck`, `npm run lint` and `npm run format:check` are all
+green (1046 tests).
 
 Two independent restrictions, neither of which needs the countdown:
 

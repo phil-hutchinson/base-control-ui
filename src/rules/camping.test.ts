@@ -442,7 +442,7 @@ describe("camping — a depleted node cannot be entered (§6)", () => {
     if (result.outcome !== "refused") {
       throw new Error("expected the move to be refused");
     }
-    expect(result.reason).toBe("destination-depleted-node");
+    expect(result.reason).toBe("destination-uncharged-node");
   });
 });
 

@@ -48,7 +48,7 @@ square a ship may occupy.
 
 **And no node ever appears under a ship.** §3.2's constraint 2 already says a
 new node's square must hold no ship, so this is nearly true today; the one
-hole is §3.2's fallback, which relaxes *every* constraint at once and would
+hole is §3.2's fallback, which relaxes _every_ constraint at once and would
 happily drop a node onto an occupied square. The fallback is narrowed to
 relax spacing only: it still never places a node on a planet, on another
 node, or **on a ship**. It has never been observed to fire, and it stays a
@@ -113,15 +113,15 @@ last turn passes before the node's last ply does, the 1 simply stays up.
 
 Green walks a ship onto a charged node:
 
-| When                     | Number | What happened                              |
-| ------------------------ | ------ | ------------------------------------------ |
-| green's turn, on arrival | **6**  | countdown set to 11 plies                  |
-| end of green's turn      | **5**  | green collects; first ply spent            |
-| end of red's turn        | 5      | second ply spent                           |
-| end of green's turn      | **4**  | green collects; third ply spent            |
-| …                        |        |                                            |
-| end of green's turn      | **1**  | ninth ply spent                            |
-| end of red's turn        | 1      | tenth ply spent                            |
+| When                     | Number | What happened                                                               |
+| ------------------------ | ------ | --------------------------------------------------------------------------- |
+| green's turn, on arrival | **6**  | countdown set to 11 plies                                                   |
+| end of green's turn      | **5**  | green collects; first ply spent                                             |
+| end of red's turn        | 5      | second ply spent                                                            |
+| end of green's turn      | **4**  | green collects; third ply spent                                             |
+| …                        |        |                                                                             |
+| end of green's turn      | **1**  | ninth ply spent                                                             |
+| end of red's turn        | 1      | tenth ply spent                                                             |
 | end of green's turn      | —      | green collects a sixth time, then the node depletes and the ship is trapped |
 
 The number falls only at the end of the holder's own turns, so each value
@@ -203,16 +203,16 @@ Because this countdown starts at a turn end rather than in the middle of one,
 its eleven plies cover **five** of the trapped player's turns rather than six,
 and the node retires at the end of the **opponent's** turn:
 
-| When                    | Number | What happened                              |
-| ----------------------- | ------ | ------------------------------------------ |
-| end of green's turn     | **5**  | the node depletes, green's ship is trapped |
-| end of red's turn       | 5      | first ply spent                            |
-| end of green's turn     | **4**  | second ply spent — one trapped turn gone   |
-| …                       |        |                                            |
-| end of green's turn     | **1**  | eighth ply spent                           |
-| end of red's turn       | 1      | ninth ply spent                            |
-| end of green's turn     | 1      | tenth ply spent — green's last trapped turn |
-| end of red's turn       | —      | eleventh ply spent: the node retires and the ship is free |
+| When                | Number | What happened                                             |
+| ------------------- | ------ | --------------------------------------------------------- |
+| end of green's turn | **5**  | the node depletes, green's ship is trapped                |
+| end of red's turn   | 5      | first ply spent                                           |
+| end of green's turn | **4**  | second ply spent — one trapped turn gone                  |
+| …                   |        |                                                           |
+| end of green's turn | **1**  | eighth ply spent                                          |
+| end of red's turn   | 1      | ninth ply spent                                           |
+| end of green's turn | 1      | tenth ply spent — green's last trapped turn               |
+| end of red's turn   | —      | eleventh ply spent: the node retires and the ship is free |
 
 So the white number counts the turns green will spend stuck, and green's ship
 is released just before green's turn, ready to move immediately rather than
@@ -281,7 +281,7 @@ charged" argument is rewritten around the queue alone.
 
 - **Capacity**, and the number 60 with it.
 - **Both drain tables** — empty and held — and the whole idea of a node
-  ageing faster because somebody is on it. A node now ages *only* because
+  ageing faster because somebody is on it. A node now ages _only_ because
   somebody is on it.
 - **The opening drain table.** The four charged nodes of the opening board
   are dealt at baseline, with no countdown, exactly like any node charged

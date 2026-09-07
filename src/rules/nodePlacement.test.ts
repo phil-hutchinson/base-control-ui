@@ -143,16 +143,16 @@ describe("legalNodePool", () => {
     expect(pool.length).toBeGreaterThan(0);
   });
 
-  it("falls back to every non-planet, unoccupied square when the ordinary pool is empty, dropping the ship and ring constraints", () => {
+  it("falls back to every non-planet, unoccupied, unshipped square when the ordinary pool is empty, dropping only the ring and spacing constraints", () => {
     // A node on every one of the 121 interior squares leaves no square
     // satisfying all six constraints, so the fallback must fire.
     const nodes = interiorSquares();
     const nodeNames = new Set(nodes.map(squareName));
     // A ship standing on a non-planet square outside the interior — under
     // the ordinary constraints this square would be doubly excluded (a ship
-    // on it, and it is one square in from the edge), so its presence in the
-    // fallback pool shows the fallback really drops those constraints
-    // rather than just having room left over from the node exclusion.
+    // on it, and it is one square in from the edge). The fallback still
+    // excludes it (rules.md §3.2, S7): a node can never appear beneath a
+    // ship, in the fallback or otherwise.
     const shipSquare = squareAt("B", 8);
     const pool = legalNodePool(nodes, [shipSquare]);
 
@@ -161,7 +161,7 @@ describe("legalNodePool", () => {
       expect(nodeNames.has(squareName(square))).toBe(false);
       expect(isPlanet(square)).toBe(false);
     }
-    expect(pool.map(squareName)).toContain(squareName(shipSquare));
+    expect(pool.map(squareName)).not.toContain(squareName(shipSquare));
     // The draw's uniformity over the pool is covered by the spread tests
     // elsewhere (nodes.test.ts, nodePool.test.ts); this test covers only
     // which squares the fallback pool contains.
@@ -191,6 +191,12 @@ describe("legalNodePool", () => {
     const nonPlanetSquares = ALL_SQUARES.filter((square) => !isPlanet(square));
 
     expect(() => legalNodePool(nonPlanetSquares, [])).toThrow(RangeError);
+  });
+
+  it("throws a RangeError when every non-planet, non-node square holds a ship", () => {
+    const nonPlanetSquares = ALL_SQUARES.filter((square) => !isPlanet(square));
+
+    expect(() => legalNodePool([], nonPlanetSquares)).toThrow(RangeError);
   });
 
   it("deals nodes for many rounds without ever throwing", () => {
