@@ -1156,7 +1156,7 @@ assertions and its measured bounds recorded in comments. Run `npm run typecheck`
 
 ### Step 8 — The owner plays a game and reads the board
 
-Status: pending
+Status: committed
 
 The one manual gate. Everything is implemented; this is the owner's eye on the
 things a test cannot judge: whether the queue is actually **readable** at board
@@ -1192,6 +1192,15 @@ change requested here is a small follow-up edit — most likely to D10's constan
 in `NodeMarker.tsx` or to D9's wording in `announcements.ts` — re-verified by
 `npm test` and by the owner's second look. If the owner asks for a **rules**
 change here, it folds into the same 0.26 entry (S11).
+
+Notes: The owner played a game and confirmed points 1, 2, 3, 4 and 6 — the
+rings are tellable apart at a glance, the rotation reads as a queue moving,
+the sweep is legible, the trio lands genuinely spread, and three inactive
+nodes read better than eight. No change was asked for, so D10's ring
+constants stand as implemented. Point 5, the announcements, was declared out
+of scope by the owner and was not assessed; the automated wording tests in
+`announcements.test.ts` are what covers it.
+
 
 ### Step 9 — `README.md`, the comment sweep, and the final check
 
