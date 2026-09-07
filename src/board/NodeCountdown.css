@@ -1,0 +1,10 @@
+/* The countdown number's box only - its size, weight and colour are set per
+   render in NodeCountdown.tsx, the same split NodeMarker.css uses for the
+   node artwork. */
+
+.node-countdown {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}

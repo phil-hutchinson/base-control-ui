@@ -906,7 +906,35 @@ that the stream has stopped moving outside refills and fights.
 
 ### Step 6 — The board draws the countdown: the number and the ball
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/NodeCountdown.tsx` (a centred SVG `<text>` in the
+same 0-100 viewBox as `NodeMarker`/`ShipModel`, `aria-hidden`, black or
+white per its `color` prop) and `NodeCountdown.css` per D11.
+`BoardSquare.tsx` gained a `countdownNumber` prop, rendered as a
+`NodeCountdown` after `ShipModel` and before the interaction markings; its
+colour is derived from `nodeState` (`depleted` → white, otherwise black)
+rather than threaded as a separate prop, since D11 ties the colour to the
+node's state one-to-one and `BoardSquare` already receives `nodeState`.
+`Board.tsx` computes the number per square via `countdown.ts`'s existing
+`countdownNumber` (added in Step 2, already exported), reusing the same
+`ship`/`nodeStatus` values the cycle-position computation already builds,
+and passes it through alongside `cyclePosition`. `NodeMarker.tsx` is
+untouched, as specified. Added the D12 accessibility note under a new
+"From story 60" heading in
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md`. Test cover:
+new `NodeCountdown.test.tsx` (text content, colour, `aria-hidden`/no
+title-desc, axe), three new `BoardSquare.test.tsx` cases (DOM order after
+the ship, black-on-charged, white-on-depleted, none when absent), and a
+new `Board.test.tsx` describe block reusing the existing
+`stateWithNode` helper — lifted from the neighbouring cycle-position
+describe block to module scope so both blocks can call it — covering all
+four D4/D3 cases (charged with a countdown, charged at baseline, a trap,
+an exit). `npm run typecheck`, `npm run lint`, `npm run format:check` and
+the full suite (`npm test`, 1024 tests) are all green. No deviation from
+the plan beyond the `stateWithNode` scope lift, which was needed only to
+share the fixture between the two describe blocks and changes no
+behaviour.
 
 Add `src/board/NodeCountdown.tsx` and `NodeCountdown.css` per D11, thread the
 number through `BoardSquare` and `Board`, and repoint the cycle position at

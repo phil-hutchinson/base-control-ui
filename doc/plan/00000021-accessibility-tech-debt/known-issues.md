@@ -256,3 +256,36 @@ not left with nothing — what is lost is reading the queue's current state at
 any other moment.
 
 Where: `src/board/NodeMarker.tsx`, `src/board/squareLabel.ts`.
+
+## From story 60 — a node's countdown starts when you step on it
+
+Source: `doc/plan/00000060-fixed-duration-nodes/implementation-plan.md`
+decision D12, Step 6.
+
+### 1. The two countdown numbers are visible-only
+
+A charged node carrying a countdown draws a black number, and a trap draws a
+white one (rules.md §8.3), but neither reaches a square's accessible name —
+it still says only "charged node" or "depleted node". A screen-reader user
+cannot read how many turns a node has left, and cannot tell a trap apart from
+a two-ply exit node by anything the name says.
+
+Where: `src/board/squareLabel.ts`, `src/board/NodeCountdown.tsx`.
+
+### 2. A countdown starting or falling is never announced
+
+Nothing is spoken when a ship stepping onto a charged node starts its
+countdown, nor as the number falls at each turn end. The only node events
+that still reach the live region are the existing end-of-turn ones plus the
+`node-spent` clause this story adds for a node a holder walks off.
+
+Where: `src/board/announcements.ts`.
+
+### 3. Fewer squares are reachable by keyboard
+
+An inactive node is no longer a legal move destination (rules.md §6), so the
+set of squares a keyboard user can move a ship to is smaller than before.
+The widened `destination-uncharged-node` refusal message explains why a
+square cannot be landed on, but it names neither uncharged state.
+
+Where: `src/rules/movement.ts`, `src/board/announcements.ts`.

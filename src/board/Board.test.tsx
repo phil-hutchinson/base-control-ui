@@ -92,6 +92,35 @@ function statedOpeningState(): GameState {
 
 const startingSession = createSession(statedOpeningState());
 
+/** A minimal hand-built state with a single node square, isolating the
+ * wiring from Board.tsx through the node's countdown to the marker's
+ * middle gradient stop and to the countdown number. `hasShip` places a
+ * green ship on the node square, since a depleted node's cycle position
+ * and number both depend on whether a ship is standing there (a trap) or
+ * not (an exit, `../rules/countdown`). */
+function stateWithNode(
+  square: Square,
+  state: "charged" | "depleted",
+  level: number,
+  hasShip = false,
+): GameState {
+  return {
+    ships: hasShip ? [{ id: "green-1", side: "green", square, power: 4 }] : [],
+    nodes: {
+      [squareName(square)]: { state, level },
+    },
+    sideToMove: "green",
+    actionsRemaining: 1,
+    actedThisPly: [],
+    plyNumber: 1,
+    randomSeed: 1,
+    openingSeed: 1,
+    energy: { green: 0, red: 0 },
+    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    outOfTime: { green: false, red: false },
+  };
+}
+
 describe("Board", () => {
   it("renders 225 gridcells in 15 rows", () => {
     render(<Board session={startingSession} onIntent={noop} />);
@@ -437,36 +466,6 @@ describe("Board", () => {
   });
 
   describe("the node countdown reaching the marker", () => {
-    // A minimal hand-built state with a single node square, isolating the
-    // wiring from Board.tsx through the node's countdown to the marker's
-    // middle gradient stop. `hasShip` places a green ship on the node
-    // square, since a depleted node's cycle position depends on whether a
-    // ship is standing there (a trap) or not (an exit, `../rules/countdown`).
-    function stateWithNode(
-      square: Square,
-      state: "charged" | "depleted",
-      level: number,
-      hasShip = false,
-    ): GameState {
-      return {
-        ships: hasShip
-          ? [{ id: "green-1", side: "green", square, power: 4 }]
-          : [],
-        nodes: {
-          [squareName(square)]: { state, level },
-        },
-        sideToMove: "green",
-        actionsRemaining: 1,
-        actedThisPly: [],
-        plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
-        energy: { green: 0, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        outOfTime: { green: false, red: false },
-      };
-    }
-
     function middleStopOffset(container: HTMLElement, state: string) {
       const marker = container.querySelector(`.node-marker--${state}`);
       const stops = marker?.querySelectorAll("stop");
@@ -537,6 +536,62 @@ describe("Board", () => {
       const { container } = render(<Board session={session} onIntent={noop} />);
 
       expect(middleStopOffset(container, "depleted")).toBe("50%");
+    });
+  });
+
+  describe("the countdown number reaching the board", () => {
+    // Reuses stateWithNode from the block above, isolating the wiring from
+    // Board.tsx through countdown.ts's countdownNumber to NodeCountdown.
+    it("shows the black number a charged node's countdown gives", () => {
+      const session: Session = {
+        state: stateWithNode(squareAt("H", 8), "charged", 11, true),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      expect(container.querySelector(".node-countdown")?.textContent).toBe("6");
+      expect(container.querySelector(".node-countdown text")).toHaveAttribute(
+        "fill",
+        "black",
+      );
+    });
+
+    it("draws no number on a charged node with no countdown", () => {
+      const session: Session = {
+        state: stateWithNode(squareAt("H", 8), "charged", 0),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      expect(container.querySelector(".node-countdown")).toBeNull();
+    });
+
+    it("shows the white number a trap's countdown gives", () => {
+      const session: Session = {
+        state: stateWithNode(squareAt("H", 8), "depleted", 5, true),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      expect(container.querySelector(".node-countdown")?.textContent).toBe("2");
+      expect(container.querySelector(".node-countdown text")).toHaveAttribute(
+        "fill",
+        "white",
+      );
+    });
+
+    it("draws no number on an exit node (a depleted node with no ship)", () => {
+      const session: Session = {
+        state: stateWithNode(squareAt("H", 8), "depleted", 2),
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      expect(container.querySelector(".node-countdown")).toBeNull();
     });
   });
 

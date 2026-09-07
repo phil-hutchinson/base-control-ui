@@ -11,7 +11,7 @@ import { shipHasLegalAction } from "../rules/actions";
 import { legalTargets } from "../rules/combat";
 import { shipsBySquare, nodeStatusAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
-import { nodeCyclePosition } from "../rules/countdown";
+import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import { inactivePriority } from "../rules/nodeQueue";
 import type { Session, SessionIntent } from "../game/session";
 import { announcementForSession } from "./announcements";
@@ -119,6 +119,15 @@ export function Board({ session, onIntent }: BoardProps) {
                 ship !== undefined,
               )
             : undefined;
+        const countdown =
+          nodeStatus &&
+          (nodeStatus.state === "charged" || nodeStatus.state === "depleted")
+            ? countdownNumber(
+                nodeStatus.state,
+                nodeStatus.level,
+                ship !== undefined,
+              )
+            : undefined;
         const priority =
           nodeStatus && nodeStatus.state === "inactive"
             ? inactivePriority(nodeStatus)
@@ -147,6 +156,7 @@ export function Board({ session, onIntent }: BoardProps) {
               nodeState={nodeState}
               cyclePosition={cyclePosition}
               priority={priority}
+              countdownNumber={countdown}
               occupant={occupant}
               hasActed={hasActed}
               condition={condition}

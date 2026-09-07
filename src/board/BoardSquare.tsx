@@ -1,5 +1,6 @@
 // One square's stacked contents: a planet's drawing beneath everything else,
-// then the node marker beneath any ship standing on it, then, during ship
+// then the node marker beneath any ship standing on it, then the node's
+// countdown number (rules.md §8.3) above the ship, then, during ship
 // selection, one of three selection markings — a legal destination, a legal
 // attack target, or the selected ship's own square — all sharing the square
 // in a single-cell grid rather than absolute positioning (see
@@ -28,6 +29,7 @@ import { ShipModel } from "../ships/ShipModel";
 import { Planet } from "./Planet";
 import type { PlanetArt } from "./planetArt";
 import { NodeMarker } from "./NodeMarker";
+import { NodeCountdown } from "./NodeCountdown";
 import "./BoardSquare.css";
 
 export interface BoardSquareProps {
@@ -38,6 +40,14 @@ export interface BoardSquareProps {
   readonly nodeState?: NodeState;
   readonly cyclePosition?: number;
   readonly priority?: NodePriority;
+  /**
+   * The countdown number a charged or trapped node shows (rules.md §8.3, see
+   * `../rules/countdown`'s `countdownNumber`), or `undefined` when the node
+   * shows none: a charged node with no countdown, an exit node, or no node
+   * at all. Its colour follows `nodeState` — black on `charged`, white on
+   * `depleted` — so callers do not have to state the colour separately.
+   */
+  readonly countdownNumber?: number;
   readonly occupant?: SquareOccupant;
   readonly hasActed?: boolean;
   readonly condition?: ShipCondition;
@@ -204,6 +214,7 @@ export function BoardSquare({
   nodeState,
   cyclePosition,
   priority,
+  countdownNumber,
   occupant,
   hasActed,
   condition,
@@ -238,6 +249,12 @@ export function BoardSquare({
         />
       )}
       {occupant && <ShipModel side={occupant.side} power={occupant.power} />}
+      {countdownNumber !== undefined && (
+        <NodeCountdown
+          number={countdownNumber}
+          color={nodeState === "depleted" ? "white" : "black"}
+        />
+      )}
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}
       {mark === "target" && <TargetMark />}
