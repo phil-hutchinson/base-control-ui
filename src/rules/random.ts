@@ -38,8 +38,8 @@ export function drawIndex(
 /**
  * Draws an index from a list of weights, with each index's chance of being
  * drawn proportional to its own weight's share of the total. Backs every
- * weighted draw the game makes: the three node-drain and recovery
- * distributions, and the pressure-weighted charge draw.
+ * weighted draw the game makes: the node-drain and recovery distributions,
+ * and a refill's node-spread weighting (§3.2).
  *
  * Advances the seed exactly once, like drawIndex, so a caller's seed
  * consumption is predictable and a recorded game replays. Throws a

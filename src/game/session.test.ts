@@ -347,9 +347,9 @@ describe("sessionReducer — a ship is selected", () => {
     });
 
     it("applies a move ending on an inactive node", () => {
-      // Five charged nodes elsewhere hold the board at its target, so the
-      // end-of-turn charge draw this move triggers has no shortfall to
-      // fill and never has to weigh H9 alone.
+      // Five charged nodes already exceed the board's target of four, so
+      // the end-of-turn charging step this move triggers has no shortfall
+      // to fill and leaves H9 untouched.
       const state = buildState({
         ships: [ship("green-1", "green", "H8")],
         nodes: {
@@ -430,8 +430,12 @@ describe("sessionReducer — dismiss", () => {
 
 describe("sessionReducer — a full ply", () => {
   it("passes the turn after one action, and the moved event says so", () => {
+    // Four charged nodes elsewhere hold the board at its target, so
+    // charging has no shortfall to fill and the end-of-turn effects stay
+    // empty.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O1")],
+      nodes: { C3: "charged", E3: "charged", G3: "charged", I3: "charged" },
     });
 
     let session = sessionFor(state);
@@ -499,6 +503,10 @@ describe("createSession", () => {
         ship("red-7", "red", "E6"),
         ship("red-8", "red", "E7"),
       ],
+      // Four charged nodes elsewhere hold the board at its target, so
+      // charging has no shortfall to fill and the end-of-turn effects stay
+      // empty.
+      nodes: { H8: "charged", K8: "charged", H12: "charged", K12: "charged" },
     });
 
     const session = createSession(state);
@@ -807,8 +815,12 @@ describe("sessionReducer — clock-expired", () => {
 
 describe("sessionReducer — pass-out-of-time", () => {
   it("passes the side to move's turn, advancing the ply and recording the out-of-time pass as lastEvent", () => {
+    // Four charged nodes elsewhere hold the board at its target, so
+    // charging has no shortfall to fill and the end-of-turn effects stay
+    // empty.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
+      nodes: { C3: "charged", E3: "charged", G3: "charged", I3: "charged" },
       outOfTime: { green: true, red: false },
     });
     const session = sessionFor(state);

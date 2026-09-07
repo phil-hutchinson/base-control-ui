@@ -426,7 +426,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("announces a node retiring and freeing the ship on it, right after the replacement clause (§8.5, §8.6 step 6)", () => {
+  it("announces a node retiring and freeing the ship on it, right after the retirement clause (§8.5, §8.6 step 6)", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -439,11 +439,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           side: "green",
           sideToMove: "red",
           endOfTurn: [
-            {
-              type: "node-replaced",
-              retiredSquare: squareAt("D", 8),
-              newSquare: squareAt("K", 11),
-            },
+            { type: "node-retired", square: squareAt("D", 8) },
             {
               type: "ship-freed",
               shipId: "green-3",
@@ -459,12 +455,12 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
-        "The node at D8 is gone, and a new node appeared at K11. The green ship at D8 is free again. " +
+        "The node at D8 is gone. The green ship at D8 is free again. " +
         "Red's turn, 1 action left.",
     );
   });
 
-  it("announces a node ended early to relieve an all-trapped side, ahead of the replacement it caused (§8.6 step 7, §5)", () => {
+  it("announces a node ended early to relieve an all-trapped side, ahead of the retirement it caused (§8.6 step 7, §5)", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -478,11 +474,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             { type: "node-relief", side: "red", square: squareAt("D", 8) },
-            {
-              type: "node-replaced",
-              retiredSquare: squareAt("D", 8),
-              newSquare: squareAt("K", 11),
-            },
+            { type: "node-retired", square: squareAt("D", 8) },
             {
               type: "ship-freed",
               shipId: "red-2",
@@ -499,7 +491,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
         "Every red ship was trapped, so the node at D8 ended early. " +
-        "The node at D8 is gone, and a new node appeared at K11. The red ship at D8 is free again. " +
+        "The node at D8 is gone. The red ship at D8 is free again. " +
         "Red's turn, 1 action left.",
     );
   });
@@ -528,7 +520,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     );
   });
 
-  it("announces a node being replaced, naming both squares in one sentence (§8.2, §8.6)", () => {
+  it("announces a node appearing already charged, on the one turn all four charged nodes run out at once (§8.2)", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -541,11 +533,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           side: "green",
           sideToMove: "red",
           endOfTurn: [
-            {
-              type: "node-replaced",
-              retiredSquare: squareAt("D", 8),
-              newSquare: squareAt("K", 11),
-            },
+            { type: "node-appeared-charged", square: squareAt("G", 9) },
           ],
         },
       ],
@@ -554,11 +542,12 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The move was free; it still has 6 power. The node at D8 is gone, and a new node appeared at K11. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
+        "Out of nowhere, a node appeared already charged at G9. Red's turn, 1 action left.",
     );
   });
 
-  it("announces two nodes being replaced in one sequence, in the order the effects were produced", () => {
+  it("announces a queue refill, naming the discarded squares, the new squares and the priority-3 node (§8.2, §8.6 step 5)", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -572,14 +561,13 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           sideToMove: "red",
           endOfTurn: [
             {
-              type: "node-replaced",
-              retiredSquare: squareAt("D", 8),
-              newSquare: squareAt("K", 11),
-            },
-            {
-              type: "node-replaced",
-              retiredSquare: squareAt("H", 12),
-              newSquare: squareAt("F", 3),
+              type: "queue-refilled",
+              discardedSquares: [squareAt("D", 8), squareAt("K", 11)],
+              newNodes: [
+                { square: squareAt("F", 3), priority: 1 },
+                { square: squareAt("H", 12), priority: 3 },
+                { square: squareAt("N", 4), priority: 2 },
+              ],
             },
           ],
         },
@@ -590,13 +578,48 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
-        "The node at D8 is gone, and a new node appeared at K11. " +
-        "The node at H12 is gone, and a new node appeared at F3. " +
+        "The nodes waiting at D8 and K11 are gone. New nodes are waiting at F3, H12 and N4. H12 charges next. " +
         "Red's turn, 1 action left.",
     );
   });
 
-  it("announces a node replaced after a node charged, matching step 6 running after the charge draw", () => {
+  it("announces a queue refill with nothing discarded when all three of the previous queue charged", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-3",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "queue-refilled",
+              discardedSquares: [],
+              newNodes: [
+                { square: squareAt("F", 3), priority: 2 },
+                { square: squareAt("H", 12), priority: 1 },
+                { square: squareAt("N", 4), priority: 3 },
+              ],
+            },
+          ],
+        },
+      ],
+      actionsRemaining: ACTIONS_PER_PLY,
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
+        "Nothing was left waiting. New nodes are waiting at F3, H12 and N4. N4 charges next. " +
+        "Red's turn, 1 action left.",
+    );
+  });
+
+  it("announces a queue refill after a node charged, matching step 5 running after charging", () => {
     const event: MovedEvent = {
       type: "moved",
       shipId: "green-3",
@@ -611,9 +634,12 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           endOfTurn: [
             { type: "node-charged", square: squareAt("D", 8) },
             {
-              type: "node-replaced",
-              retiredSquare: squareAt("H", 12),
-              newSquare: squareAt("F", 3),
+              type: "queue-refilled",
+              discardedSquares: [squareAt("H", 12)],
+              newNodes: [
+                { square: squareAt("F", 3), priority: 3 },
+                { square: squareAt("N", 4), priority: 1 },
+              ],
             },
           ],
         },
@@ -625,7 +651,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
         "A new node charged at D8. " +
-        "The node at H12 is gone, and a new node appeared at F3. " +
+        "The nodes waiting at H12 are gone. New nodes are waiting at F3 and N4. F3 charges next. " +
         "Red's turn, 1 action left.",
     );
   });
@@ -903,11 +929,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
               amount: 2,
             },
             { type: "node-ran-out", square: squareAt("K", 5) },
-            {
-              type: "node-replaced",
-              retiredSquare: squareAt("N", 4),
-              newSquare: squareAt("F", 3),
-            },
+            { type: "node-retired", square: squareAt("N", 4) },
           ],
         },
       ],
@@ -919,7 +941,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       "Green ship moved from K4 to K5. The move was free; it still has 6 power. " +
         "Green ship at K5 gained 2 points of power, reaching the maximum of 6. " +
         "The node at K5 ran out. " +
-        "The node at N4 is gone, and a new node appeared at F3. " +
+        "The node at N4 is gone. " +
         "Red's turn, 1 action left.",
     );
   });

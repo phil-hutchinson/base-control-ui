@@ -78,3 +78,17 @@ export function squareFromName(name: string): Square {
 export const ALL_SQUARES: readonly Square[] = ROW_NUMBERS.flatMap((row) =>
   COLUMN_LETTERS.map((column) => squareAt(column, row)),
 );
+
+/**
+ * Chebyshev distance between two squares — the greater of the column
+ * difference and the row difference. Used by section 3.2's node-spread
+ * weighting, because a diagonal step is a single move here, which taxicab
+ * distance would charge as two.
+ */
+export function chebyshevDistance(a: Square, b: Square): number {
+  const columnDelta = Math.abs(
+    COLUMN_LETTERS.indexOf(a.column) - COLUMN_LETTERS.indexOf(b.column),
+  );
+  const rowDelta = Math.abs(a.row - b.row);
+  return Math.max(columnDelta, rowDelta);
+}

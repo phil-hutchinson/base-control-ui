@@ -1,48 +1,52 @@
 // An integration test of the node economy over a long run, with no ship
-// activity to interfere (rules.md Appendix B). A node's life is randomly
-// drawn rather than fixed, so the guard this file offers is statistical
-// rather than exact: it drives the end-of-turn sequence for several hundred
-// turns from the opening position and checks the shape Appendix B predicts
-// holds up — the board stays at twelve nodes, four of them charged, the
-// inactive pool stays comfortably populated, nodes do not run out in
-// clumps, and the pressure weighting keeps every node's wait between
-// charges bounded.
+// activity to interfere (rules.md Appendix B). It drives `runEndOfTurn` from
+// real starting positions across a handful of seeds and several hundred
+// plies each, and checks the claims Appendix B makes about the finished
+// game: the queue's invariants hold at every ply, every node the run ever
+// places is legal at the moment it appears, the weighting measurably
+// spreads a freshly dealt trio, and the cadence and node-count figures the
+// appendix quotes are in the right neighbourhood.
 //
-// A node's life ends in retirement rather than recovery: it leaves the board
-// and one new inactive node appears elsewhere (§3.2, §8.2). That makes two
-// things true that were not true of a fixed board: a square's identity does
-// not persist across a retirement, so waits and charge counts are tracked
-// per node *life*, not per square (see `nodeWaitStats` below); and every
-// appearance — the opening deal's twelve and every later replacement — has
-// somewhere new to be legal about, which this file now checks directly
-// against the board as it stood at that moment, not just at the deal.
-//
-// Every bound below was measured for twelve mortal nodes, by running this
-// file's own `runEconomy` over `SEEDS` at `PLIES_TO_RUN` turns each (see each
-// constant's comment for the figure that run produced) — five seeds chosen
-// over more turns, per this run's own cost: a retirement now costs a pool
-// scan per placement, and five seeds already gives every bound here
-// generous margin without the suite noticeably slowing down. Since the
-// generator is seeded, this measurement is exactly reproducible.
+// One finding is worth recording here for Appendix B's benefit, since nothing
+// else in the codebase measures it: across every seed this file runs, and
+// every refill, direct-fourth placement and opening deal within them,
+// section 3.2's fallback never had to fire once. "Legal at the moment it
+// appears" below is checked by independently recomputing each ordinary
+// constraint against the board as the code built it, not by trusting
+// whichever pool `legalNodePool` actually returned — a square that failed
+// any of those constraints could only ever have come from the fallback, so
+// every placement clearing them is itself the fallback-never-fired evidence.
 
 import { describe, expect, it } from "vitest";
 import {
-  ALL_SQUARES,
   BOARD_SIZE,
   COLUMN_LETTERS,
   type Square,
+  chebyshevDistance,
   squareName,
 } from "./board";
-import { PLANETS, isPlanet } from "./planets";
-import { runEndOfTurn } from "./endOfTurn";
+import type { NodeAppearedChargedEffect } from "./charging";
+import { type QueueRefilledEffect, runEndOfTurn } from "./endOfTurn";
 import {
   type GameState,
   nodeSquares,
   nodeStateAt,
+  nodeStatusAt,
   startingGameState,
 } from "./gameState";
-import { legalNodePool } from "./nodePlacement";
-import { NODE_COUNT, type NodeState, TARGET_CHARGED_NODES } from "./nodes";
+import {
+  type NodePoolWidth,
+  drawUniformSquare,
+  legalNodePool,
+} from "./nodePlacement";
+import {
+  INACTIVE_NODE_COUNT,
+  type InactiveNodeDraw,
+  TOP_NODE_PRIORITY,
+  inactivePriority,
+} from "./nodeQueue";
+import { TARGET_CHARGED_NODES } from "./nodes";
+import { PLANETS, isPlanet } from "./planets";
 
 /** A generous game length: this test drives `runEndOfTurn` directly and never consults `isGameOver`. */
 const NOMINAL_LENGTH_IN_ROUNDS = 1_000;
@@ -51,384 +55,574 @@ const PLIES_TO_RUN = 500;
 const SEEDS = [20260819, 20260820, 20260821, 20260822, 20260823];
 
 /**
- * Appendix B now predicts about 6 of the twelve inactive at any moment;
- * measured over `SEEDS` at `PLIES_TO_RUN` turns, the lowest instantaneous
- * count seen was 4. The floor here leaves one node of margin below that, so
- * this fails only if the economy actually collapses rather than merely
- * drifting.
+ * The lowest a freshly refilled trio's mean smallest pairwise Chebyshev gap
+ * is allowed to fall to, pooled across `SEEDS`. Measured at 4.78 over an
+ * actually-played economy — lower than `nodeQueue.test.ts`'s idealised
+ * empty-board figure of roughly 5.1, because a played board's charged
+ * nodes, ships and surviving depleted nodes crowd the pool the weighting
+ * draws from. This bound leaves comfortable margin below that.
  */
-const MINIMUM_INACTIVE_NODES = 3;
+const MINIMUM_MEAN_REFILL_GAP = 4;
+
+/**
+ * How much further, on average, the weighted mean gap above must clear the
+ * mean gap an unweighted draw from the very same pools produces (computed
+ * in this file, from the very same occupied squares, so the comparison is
+ * self-contained). Measured at a difference of roughly 1.0 (4.78 weighted
+ * against 3.78 unweighted); this bound leaves margin.
+ */
+const MINIMUM_SPREAD_ADVANTAGE = 0.5;
+
+/**
+ * The band the mean number of turns between one refill and the next is
+ * allowed to sit in, pooled across `SEEDS`. Measured at roughly 7.9 turns —
+ * a charged node's own life averages closer to twenty-nine turns than
+ * twenty, mostly because a refilled node always starts at zero drain. The
+ * bounds below leave generous margin either side of the measured figure.
+ */
+const MINIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
+const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 12;
+
+/**
+ * The band the board's total node count — four charged, three inactive,
+ * plus however many are depleted — is allowed to breathe within. Measured
+ * range across `SEEDS` and `PLIES_TO_RUN`: 7 to 11, with a mean around 8.4.
+ * This bound leaves a little margin either side of the measured range.
+ */
+const MINIMUM_TOTAL_NODES = 6;
+const MAXIMUM_TOTAL_NODES = 12;
 
 /**
  * How often two or more nodes are allowed to run out on the same turn, as a
  * share of turns played. Measured over `SEEDS` this sits at or under 1.4%;
- * the bound below leaves generous margin above that.
+ * the bound below leaves generous margin above that. Unaffected by the
+ * queue — the drain and depletion clocks this measures are untouched by
+ * this story.
  */
 const MAXIMUM_MULTI_EXPIRY_SHARE = 0.1;
 
 /**
- * No turn should run out all four charged nodes at once. Derived from
- * `TARGET_CHARGED_NODES` so it follows that number if it ever changes.
- * Measured over `SEEDS` the observed maximum is 3, which is exactly this
- * value — there is no margin left, so a future retune of the node economy
- * that pushes expiries any higher will need this bound raised too.
+ * No turn was observed to run out all four charged nodes at once across
+ * this file's runs, so `MAXIMUM_EXPIRIES_IN_ONE_PLY` below is set one short
+ * of `TARGET_CHARGED_NODES`. That is a description of what was measured,
+ * not a rule the game enforces: it can happen (rules.md §8.2), and when it
+ * does the direct-fourth placement covers it, exercised deliberately in
+ * `charging.test.ts` and `endOfTurn.test.ts` rather than waited for here.
  */
 const MAXIMUM_EXPIRIES_IN_ONE_PLY = TARGET_CHARGED_NODES - 1;
 
-/**
- * The longest wait, in turns, any one node's own life is allowed between
- * appearing inactive — from the deal, or from a replacement (§3.2, §8.2) —
- * and being charged. A node cannot retire without first being charged
- * (§8.2), so nothing here waits for ever, but under a uniform draw this
- * tail would in principle be unbounded. Measured over `SEEDS` the observed
- * maximum is 173 turns; no broader sweep was re-run at this target. The
- * bound below leaves generous margin above that, so it is a loose sanity
- * check on the economy rather than a guard on the pressure weighting
- * itself — `chargeDraw.test.ts`'s "weighted by pressure" describe block
- * (§8.2) is what actually guards the weighting, by asserting its 2:1 ratio
- * directly.
- */
-const MAXIMUM_TURNS_BETWEEN_CHARGES = 400;
-
-/**
- * How many charges the run should produce in total, over 500 turns and no
- * ship activity. Measured at 68-70 across `SEEDS`; the floor here leaves
- * generous margin below that, so this fails only if the economy's overall
- * pace of charging actually collapses.
- */
-const MINIMUM_TOTAL_CHARGES = 40;
-
-/**
- * The names of the squares that satisfy all six of §3.2's constraints on an
- * empty board with no ships: the interior, minus the twelve planets and every
- * square orthogonally or diagonally adjacent to one. Derived from `PLANETS`
- * rather than typed out, so the set follows the geometry — this restates
- * §3.2's rule, not `legalNodePool`'s implementation.
- */
-const LEGAL_SQUARE_NAMES: readonly string[] = ALL_SQUARES.filter((square) => {
-  const columnIndex = COLUMN_LETTERS.indexOf(square.column);
-  const inInterior =
-    columnIndex >= 2 &&
-    columnIndex <= COLUMN_LETTERS.length - 3 &&
-    square.row >= 3 &&
-    square.row <= BOARD_SIZE - 2;
-  return (
-    inInterior &&
-    !PLANETS.some(
-      (planet) =>
-        Math.abs(COLUMN_LETTERS.indexOf(planet.column) - columnIndex) <= 1 &&
-        Math.abs(planet.row - square.row) <= 1,
-    )
-  );
-}).map(squareName);
-
-function countInState(state: GameState, target: NodeState): number {
-  return nodeSquares(state).filter(
-    (square) => nodeStateAt(state, square) === target,
-  ).length;
-}
-
-interface Replacement {
-  readonly retiredSquare: Square;
-  readonly newSquare: Square;
-}
-
+/** One ply's sample of the board, taken from `result.state` after `runEndOfTurn`. */
 interface EconomySample {
-  readonly nodeCount: number;
-  readonly nodesOnPlanets: number;
-  readonly charged: number;
-  readonly inactive: number;
-  readonly depleted: number;
+  readonly chargedCount: number;
+  readonly depletedCount: number;
+  readonly totalNodeCount: number;
   readonly nodesRanOutThisPly: number;
-  readonly chargedSquareNames: readonly string[];
-  readonly replacements: readonly Replacement[];
+  /** Every inactive node's square name and priority, for the invariant and rotation checks. */
+  readonly inactiveByName: ReadonlyMap<string, number>;
+}
+
+/** One refill this run observed, with enough reconstructed context to check every draw's legality. */
+interface RefillRecord {
+  readonly newNodes: readonly InactiveNodeDraw[];
+  /**
+   * Every square that held a node immediately before this refill's three
+   * draws — the discarded survivors already removed, the direct-fourth
+   * placement (if any, this same ply) already added — reconstructed from
+   * the ply's `before` state and its effects rather than read off any
+   * private state `runEndOfTurn` does not expose.
+   */
+  readonly occupiedBeforeRefill: readonly Square[];
+}
+
+/** One direct-fourth placement this run observed, with the board it appeared against. */
+interface DirectFourthRecord {
+  readonly square: Square;
+  readonly occupiedBefore: readonly Square[];
 }
 
 interface EconomyRun {
   readonly samples: readonly EconomySample[];
-  /** The board's twelve squares before the first ply of the run — the deal's own placements. */
-  readonly initialSquares: readonly Square[];
-  /**
-   * The squares the deal placed that opened inactive, captured once before
-   * the run starts — the starting point for tracking how long each of
-   * those first lives waits to be charged.
-   */
-  readonly initialInactiveNames: readonly string[];
-  /** The squares ships occupy — fixed for the whole run, since no ship ever moves here. */
+  readonly refills: readonly RefillRecord[];
+  readonly directFourths: readonly DirectFourthRecord[];
   readonly shipSquares: readonly Square[];
 }
 
 /**
  * Drives the end-of-turn sequence for `plies` turns from the opening
- * position, with no ship ever moving, and samples the board after each turn.
+ * position, with no ship ever moving, and samples the board after each
+ * turn. Also reconstructs, from each ply's `before` state and its effects,
+ * exactly what `legalNodePool` saw at the moment of every refill draw and
+ * every direct-fourth placement — without reaching into `runEndOfTurn`'s
+ * private working state — so the legality and spread checks below can be
+ * run against the real thing rather than a hand-built stand-in.
  */
 function runEconomy(seed: number, plies: number): EconomyRun {
-  let state = startingGameState(seed, NOMINAL_LENGTH_IN_ROUNDS);
-  const initialSquares = nodeSquares(state);
+  let state: GameState = startingGameState(seed, NOMINAL_LENGTH_IN_ROUNDS);
   const shipSquares = state.ships.map((ship) => ship.square);
-  const initialInactiveNames = initialSquares
-    .filter((square) => nodeStateAt(state, square) === "inactive")
-    .map(squareName);
   const samples: EconomySample[] = [];
+  const refills: RefillRecord[] = [];
+  const directFourths: DirectFourthRecord[] = [];
 
   for (let i = 0; i < plies; i++) {
+    const beforeState = state;
     const result = runEndOfTurn(state);
+
+    const appeared = result.effects.find(
+      (effect): effect is NodeAppearedChargedEffect =>
+        effect.type === "node-appeared-charged",
+    );
+    if (appeared !== undefined) {
+      directFourths.push({
+        square: appeared.square,
+        // Step 4/5's charging never removes a square before this one is
+        // drawn (a queue charge only relabels a square, and this square is
+        // brand new), so every node present at the start of the ply is
+        // still occupying its square at the moment this one is drawn.
+        occupiedBefore: nodeSquares(beforeState),
+      });
+    }
+
+    const refilled = result.effects.find(
+      (effect): effect is QueueRefilledEffect =>
+        effect.type === "queue-refilled",
+    );
+    if (refilled !== undefined) {
+      const discardedNames = new Set(refilled.discardedSquares.map(squareName));
+      const occupiedBeforeRefill = nodeSquares(beforeState)
+        .filter((square) => !discardedNames.has(squareName(square)))
+        .concat(appeared !== undefined ? [appeared.square] : []);
+      refills.push({ newNodes: refilled.newNodes, occupiedBeforeRefill });
+    }
+
+    const chargedSquares = nodeSquares(result.state).filter(
+      (square) => nodeStateAt(result.state, square) === "charged",
+    );
+    const depletedSquares = nodeSquares(result.state).filter(
+      (square) => nodeStateAt(result.state, square) === "depleted",
+    );
+    const inactiveSquares = nodeSquares(result.state).filter(
+      (square) => nodeStateAt(result.state, square) === "inactive",
+    );
+    const inactiveByName = new Map(
+      inactiveSquares.map((square) => [
+        squareName(square),
+        inactivePriority(nodeStatusAt(result.state, square)!),
+      ]),
+    );
+
     samples.push({
-      nodeCount: nodeSquares(result.state).length,
-      nodesOnPlanets: nodeSquares(result.state).filter(isPlanet).length,
-      charged: countInState(result.state, "charged"),
-      inactive: countInState(result.state, "inactive"),
-      depleted: countInState(result.state, "depleted"),
+      chargedCount: chargedSquares.length,
+      depletedCount: depletedSquares.length,
+      totalNodeCount: nodeSquares(result.state).length,
       nodesRanOutThisPly: result.effects.filter(
         (effect) => effect.type === "node-ran-out",
       ).length,
-      chargedSquareNames: result.effects
-        .filter((effect) => effect.type === "node-charged")
-        .map((effect) => squareName(effect.square)),
-      replacements: result.effects
-        .filter((effect) => effect.type === "node-replaced")
-        .map((effect) => ({
-          retiredSquare: effect.retiredSquare,
-          newSquare: effect.newSquare,
-        })),
+      inactiveByName,
     });
+
     state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
   }
 
-  return { samples, initialSquares, initialInactiveNames, shipSquares };
+  return { samples, refills, directFourths, shipSquares };
+}
+
+function ringsFromEdge(square: Square): number {
+  const columnIndex = COLUMN_LETTERS.indexOf(square.column);
+  const columnDistance = Math.min(
+    columnIndex,
+    COLUMN_LETTERS.length - 1 - columnIndex,
+  );
+  const rowDistance = Math.min(square.row - 1, BOARD_SIZE - square.row);
+  return Math.min(columnDistance, rowDistance);
+}
+
+function isAdjacent(a: Square, b: Square): boolean {
+  return chebyshevDistance(a, b) <= 1;
 }
 
 /**
- * For every node's own life — inactive from the moment it appears, whether
- * dealt that way at the opening or created by a replacement, until the
- * moment it is charged — the longest wait seen, and how many charges
- * happened in total. A node cannot retire without first being charged
- * (§8.2), so a life still waiting when the run ends is not lost; its wait
- * so far still counts towards the longest seen.
+ * Independently checks `square` against every one of section 3.2's six
+ * ordinary constraints for the given occupied node squares, ship squares
+ * and pool width — reimplemented here rather than delegating to
+ * `legalNodePool`, because a square drawn from `legalNodePool`'s fallback
+ * would trivially pass a membership check against whatever pool it was
+ * drawn from. A square that clears every constraint here could not have
+ * come from the fallback: the fallback only ever fires when no square
+ * anywhere clears them all, which this square, by clearing them, disproves.
  */
-function nodeWaitStats(run: EconomyRun): {
-  readonly maxGap: number;
-  readonly totalCharges: number;
-} {
-  const waitingSince = new Map<string, number>();
-  for (const name of run.initialInactiveNames) {
-    waitingSince.set(name, -1);
+function satisfiesOrdinaryPoolConstraints(
+  square: Square,
+  occupiedSquares: readonly Square[],
+  shipSquares: readonly Square[],
+  poolWidth: NodePoolWidth,
+): boolean {
+  const requiredRings = poolWidth === "widened" ? 1 : 2;
+  const name = squareName(square);
+
+  if (occupiedSquares.some((occupied) => squareName(occupied) === name)) {
+    return false;
   }
-
-  let maxGap = 0;
-  let totalCharges = 0;
-
-  run.samples.forEach((sample, plyIndex) => {
-    for (const name of sample.chargedSquareNames) {
-      totalCharges += 1;
-      const startedWaiting = waitingSince.get(name);
-      if (startedWaiting !== undefined) {
-        maxGap = Math.max(maxGap, plyIndex - startedWaiting);
-        waitingSince.delete(name);
-      }
-    }
-    for (const { newSquare } of sample.replacements) {
-      waitingSince.set(squareName(newSquare), plyIndex);
-    }
-  });
-
-  for (const startedWaiting of waitingSince.values()) {
-    maxGap = Math.max(maxGap, run.samples.length - startedWaiting);
+  if (shipSquares.some((ship) => squareName(ship) === name)) {
+    return false;
   }
-
-  return { maxGap, totalCharges };
+  if (ringsFromEdge(square) < requiredRings) {
+    return false;
+  }
+  if (occupiedSquares.some((occupied) => isAdjacent(square, occupied))) {
+    return false;
+  }
+  if (isPlanet(square)) {
+    return false;
+  }
+  if (PLANETS.some((planet) => isAdjacent(square, planet))) {
+    return false;
+  }
+  return true;
 }
 
-/**
- * Every square that ever held a node during the run — the deal's twelve
- * plus every replacement's new square — as a set, so a square that is
- * reused (a replacement landing where an earlier one once stood) counts
- * once.
- */
-function allOccupiedSquareNames(run: EconomyRun): ReadonlySet<string> {
-  const names = new Set(run.initialSquares.map(squareName));
-  for (const sample of run.samples) {
-    for (const { newSquare } of sample.replacements) {
-      names.add(squareName(newSquare));
+function smallestPairwiseGap(squares: readonly Square[]): number {
+  let minimum = Infinity;
+  for (let a = 0; a < squares.length; a++) {
+    for (let b = a + 1; b < squares.length; b++) {
+      minimum = Math.min(minimum, chebyshevDistance(squares[a], squares[b]));
     }
   }
-  return names;
+  return minimum;
 }
 
-describe("the long-run node economy (Appendix B)", () => {
+function average(values: readonly number[]): number {
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+describe("the queue's invariants hold at every turn (Appendix B)", () => {
   it.each(SEEDS)(
-    "holds exactly twelve nodes at every turn, none of them on a planet (seed %d)",
+    "holds exactly three inactive nodes at every turn, holding priorities {1, 2, 3} (seed %d)",
     (seed) => {
-      const { samples } = runEconomy(seed, PLIES_TO_RUN);
+      const run = runEconomy(seed, PLIES_TO_RUN);
 
-      samples.forEach((sample, i) => {
-        expect(sample.nodeCount, `ply ${i}`).toBe(NODE_COUNT);
-        expect(sample.nodesOnPlanets, `ply ${i}`).toBe(0);
+      run.samples.forEach((sample, i) => {
+        const priorities = [...sample.inactiveByName.values()];
+        expect(priorities, `ply ${i}`).toHaveLength(INACTIVE_NODE_COUNT);
+        expect([...priorities].sort(), `ply ${i}`).toEqual([1, 2, 3]);
       });
     },
   );
 
   it.each(SEEDS)(
-    "places every node — the deal's twelve and every replacement — on a square legal under §3.2 at the moment it appears (seed %d)",
+    "holds exactly four charged nodes after every turn (seed %d)",
     (seed) => {
-      const { initialSquares, shipSquares, samples } = runEconomy(
-        seed,
-        PLIES_TO_RUN,
-      );
+      const run = runEconomy(seed, PLIES_TO_RUN);
 
-      // The deal's own twelve: each is checked against the other eleven,
-      // which is exactly the constraint §3.2 states — no node adjacent to
-      // another, none on a ship, none off the interior.
-      for (const square of initialSquares) {
-        const others = initialSquares.filter(
-          (other) => squareName(other) !== squareName(square),
+      run.samples.forEach((sample, i) => {
+        expect(sample.chargedCount, `ply ${i}`).toBe(TARGET_CHARGED_NODES);
+      });
+    },
+  );
+
+  it.each(SEEDS)(
+    "keeps the board's total node count within a sane, measured band (seed %d)",
+    (seed) => {
+      const run = runEconomy(seed, PLIES_TO_RUN);
+
+      run.samples.forEach((sample, i) => {
+        expect(sample.totalNodeCount, `ply ${i}`).toBeGreaterThanOrEqual(
+          MINIMUM_TOTAL_NODES,
         );
-        const pool = legalNodePool(others, shipSquares);
-        expect(
-          pool.some(
-            (candidate) => squareName(candidate) === squareName(square),
-          ),
-          `dealt square ${squareName(square)}`,
-        ).toBe(true);
-      }
-
-      // Every replacement: reconstruct the board exactly as endOfTurn.ts
-      // built it — the retiring square removed before the pool is drawn —
-      // and confirm the square actually written was a member of that pool.
-      let boardSquares = initialSquares;
-      samples.forEach((sample, i) => {
-        for (const { retiredSquare, newSquare } of sample.replacements) {
-          boardSquares = boardSquares.filter(
-            (square) => squareName(square) !== squareName(retiredSquare),
-          );
-          const pool = legalNodePool(boardSquares, shipSquares, retiredSquare);
-          expect(
-            pool.some(
-              (candidate) => squareName(candidate) === squareName(newSquare),
-            ),
-            `ply ${i}: replacement for ${squareName(retiredSquare)} at ${squareName(newSquare)}`,
-          ).toBe(true);
-          expect(
-            isPlanet(newSquare),
-            `ply ${i}: ${squareName(newSquare)}`,
-          ).toBe(false);
-          boardSquares = [...boardSquares, newSquare];
-        }
+        expect(sample.totalNodeCount, `ply ${i}`).toBeLessThanOrEqual(
+          MAXIMUM_TOTAL_NODES,
+        );
       });
-    },
-  );
-
-  it.each(SEEDS)(
-    "never exceeds four charged, and is back at four by the end of the run — a shortfall stays legal (seed %d)",
-    (seed) => {
-      const { samples } = runEconomy(seed, PLIES_TO_RUN);
-
-      for (const sample of samples) {
-        expect(sample.charged).toBeLessThanOrEqual(TARGET_CHARGED_NODES);
-      }
-      expect(samples[samples.length - 1].charged).toBe(TARGET_CHARGED_NODES);
-    },
-  );
-
-  it.each(SEEDS)(
-    "keeps the inactive pool comfortably populated (seed %d)",
-    (seed) => {
-      const { samples } = runEconomy(seed, PLIES_TO_RUN);
-
-      for (const sample of samples) {
-        expect(sample.inactive).toBeGreaterThanOrEqual(MINIMUM_INACTIVE_NODES);
-      }
     },
   );
 
   it.each(SEEDS)(
     "keeps expiries spread rather than arriving together (seed %d)",
     (seed) => {
-      const { samples } = runEconomy(seed, PLIES_TO_RUN);
+      const run = runEconomy(seed, PLIES_TO_RUN);
 
-      const multiExpiryPlies = samples.filter(
+      const multiExpiryPlies = run.samples.filter(
         (sample) => sample.nodesRanOutThisPly >= 2,
       ).length;
-      expect(multiExpiryPlies / samples.length).toBeLessThan(
+      expect(multiExpiryPlies / run.samples.length).toBeLessThan(
         MAXIMUM_MULTI_EXPIRY_SHARE,
       );
 
-      for (const sample of samples) {
+      for (const sample of run.samples) {
         expect(sample.nodesRanOutThisPly).toBeLessThanOrEqual(
           MAXIMUM_EXPIRIES_IN_ONE_PLY,
         );
       }
     },
   );
+});
 
+describe("every new node is legal the moment it appears, and the fallback never fires (Appendix B)", () => {
   it.each(SEEDS)(
-    "bounds how long any node's own life can wait before it is charged, via the pressure weighting (seed %d)",
+    "deals an opening board whose seven nodes are all individually legal (seed %d)",
     (seed) => {
-      const run = runEconomy(seed, PLIES_TO_RUN);
-      const { maxGap, totalCharges } = nodeWaitStats(run);
+      const state = startingGameState(seed, NOMINAL_LENGTH_IN_ROUNDS);
+      const shipSquares = state.ships.map((ship) => ship.square);
+      const allNodeSquares = nodeSquares(state);
+      const chargedSquares = allNodeSquares.filter(
+        (square) => nodeStateAt(state, square) === "charged",
+      );
+      const inactiveSquares = allNodeSquares.filter(
+        (square) => nodeStateAt(state, square) === "inactive",
+      );
 
-      expect(maxGap).toBeLessThan(MAXIMUM_TURNS_BETWEEN_CHARGES);
-      expect(totalCharges).toBeGreaterThanOrEqual(MINIMUM_TOTAL_CHARGES);
+      expect(chargedSquares).toHaveLength(TARGET_CHARGED_NODES);
+      expect(inactiveSquares).toHaveLength(INACTIVE_NODE_COUNT);
+
+      for (const square of chargedSquares) {
+        const others = allNodeSquares.filter(
+          (candidate) => squareName(candidate) !== squareName(square),
+        );
+        expect(
+          satisfiesOrdinaryPoolConstraints(
+            square,
+            others,
+            shipSquares,
+            "strict",
+          ),
+        ).toBe(true);
+      }
+
+      for (const square of inactiveSquares) {
+        const others = allNodeSquares.filter(
+          (candidate) => squareName(candidate) !== squareName(square),
+        );
+        // The draw order within the dealt trio is not recoverable from the
+        // finished state, so this checks the constraint every one of the
+        // three draws shares — the widened pool — rather than singling out
+        // the strict first draw from the widened second and third.
+        // `nodeQueue.test.ts` already checks that distinction directly
+        // against `refillQueue` in isolation.
+        expect(
+          satisfiesOrdinaryPoolConstraints(
+            square,
+            others,
+            shipSquares,
+            "widened",
+          ),
+        ).toBe(true);
+      }
     },
   );
 
-  it("keeps roughly four charged, one or two depleted and six or seven inactive in the steady state", () => {
-    const { samples } = runEconomy(20260819, PLIES_TO_RUN);
-    // Skip the opening settling in; Appendix B's arithmetic is about the
-    // steady state, not the first few turns.
-    const steady = samples.slice(50);
+  it.each(SEEDS)(
+    "draws every refill's three squares from the right pool, never the outer edge, and never the fallback (seed %d)",
+    (seed) => {
+      const run = runEconomy(seed, PLIES_TO_RUN);
+      expect(run.refills.length).toBeGreaterThan(10);
 
-    const meanDepleted =
-      steady.reduce((total, sample) => total + sample.depleted, 0) /
-      steady.length;
-    const meanInactive =
-      steady.reduce((total, sample) => total + sample.inactive, 0) /
-      steady.length;
+      for (const refill of run.refills) {
+        const [first, second, third] = refill.newNodes;
 
-    // Measured (this seed, this run): meanDepleted ~1.49, meanInactive
-    // ~6.51, against Appendix B's prediction of about 2 and 6. The gap is
-    // expected and confirms the model rather than contradicting it: no ship
-    // ever moves here, so every charged node drains at the empty rate of 2.1
-    // a turn and lives about 60 / 2.1 = 29 turns, where Appendix B's twenty
-    // is a mix of empty and held turns. Redo its arithmetic with 29: the
-    // charged share is fixed at 4 of 12, so a whole life runs about
-    // 12/4 x 29 ≈ 87 turns, of which ~10 are depleted and ~48 inactive —
-    // about 1.4 depleted and 6.6 inactive of the twelve, close to what came
-    // out. A played game holds nodes and so sits nearer Appendix B's
-    // figures; do not "correct" the document to match this file. The bounds
-    // below leave generous margin either side of what was measured: the
-    // inactive bound at 8 leaves margin above the measured ~6.51.
-    expect(meanDepleted).toBeGreaterThan(0.5);
-    expect(meanDepleted).toBeLessThan(4);
-    expect(meanInactive).toBeGreaterThan(4);
-    expect(meanInactive).toBeLessThan(8);
-  });
+        expect(
+          satisfiesOrdinaryPoolConstraints(
+            first.square,
+            refill.occupiedBeforeRefill,
+            run.shipSquares,
+            "strict",
+          ),
+        ).toBe(true);
+        expect(
+          satisfiesOrdinaryPoolConstraints(
+            second.square,
+            [...refill.occupiedBeforeRefill, first.square],
+            run.shipSquares,
+            "widened",
+          ),
+        ).toBe(true);
+        expect(
+          satisfiesOrdinaryPoolConstraints(
+            third.square,
+            [...refill.occupiedBeforeRefill, first.square, second.square],
+            run.shipSquares,
+            "widened",
+          ),
+        ).toBe(true);
 
-  // The pool is a fixed 51 squares whose balance is settled by the planet
-  // geometry itself (planets.test.ts checks that geometry directly): over a
-  // long run, every legal square is used at least once, either at the deal
-  // or as a replacement. The fallback (§3.2) can occasionally hand back a
-  // square outside those 51 — one adjacent to a planet, say — so this checks
-  // that every one of the 51 was reached, not that nothing else ever was.
-  //
-  // The 51-square pool is more scattered than the old 29 were, so
-  // `PLIES_TO_RUN`'s 500 turns leaves one or two squares unseen across
-  // `SEEDS` (measured: I9 missing at 500 turns); a longer run of 1,000 turns
-  // per seed reaches all 51. That extra length is paid only here, not by
-  // raising `PLIES_TO_RUN` for every test in this file.
-  it("reaches every one of the 51 legal squares, over a long run", () => {
-    const PLIES_FOR_FULL_COVERAGE = 1000;
-    const seenSquares = new Set<string>();
+        for (const { square } of refill.newNodes) {
+          expect(square.row).not.toBe(1);
+          expect(square.row).not.toBe(BOARD_SIZE);
+          expect(square.column).not.toBe(COLUMN_LETTERS[0]);
+          expect(square.column).not.toBe(
+            COLUMN_LETTERS[COLUMN_LETTERS.length - 1],
+          );
+        }
+      }
+    },
+  );
+
+  it.each(SEEDS)(
+    "places the rare direct-fourth node legally under the widened pool, if the run ever sees one (seed %d)",
+    (seed) => {
+      // The shortfall this covers — all four charged nodes running out on
+      // the same turn — was not observed once across this file's runs
+      // (`charging.test.ts` and `endOfTurn.test.ts` exercise it directly,
+      // by construction). This still checks it if it happens, so the check
+      // is not silently skipped should a future change make it common.
+      const run = runEconomy(seed, PLIES_TO_RUN);
+
+      for (const placement of run.directFourths) {
+        expect(placement.square.row).not.toBe(1);
+        expect(placement.square.row).not.toBe(BOARD_SIZE);
+        expect(
+          satisfiesOrdinaryPoolConstraints(
+            placement.square,
+            placement.occupiedBefore,
+            run.shipSquares,
+            "widened",
+          ),
+        ).toBe(true);
+      }
+    },
+  );
+});
+
+describe("the spread the weighting buys (Appendix B)", () => {
+  it("keeps a freshly refilled trio's mean smallest pairwise gap above a floor, and measurably above what an unweighted draw from the same pools would produce", () => {
+    const weightedGaps: number[] = [];
+    const unweightedGaps: number[] = [];
+    let comparisonSeed = 424242;
 
     for (const seed of SEEDS) {
-      const run = runEconomy(seed, PLIES_FOR_FULL_COVERAGE);
-      for (const name of allOccupiedSquareNames(run)) {
-        seenSquares.add(name);
+      const run = runEconomy(seed, PLIES_TO_RUN);
+
+      for (const refill of run.refills) {
+        weightedGaps.push(
+          smallestPairwiseGap(refill.newNodes.map((node) => node.square)),
+        );
+
+        // The unweighted comparison draws from exactly the same pools the
+        // real refill saw, uniformly rather than by §3.2's weighting, via a
+        // seed stream of its own so it never disturbs the seed the economy
+        // above is actually driven by.
+        const strictPool = legalNodePool(
+          refill.occupiedBeforeRefill,
+          run.shipSquares,
+        );
+        const [firstSquare, seedAfterFirst] = drawUniformSquare(
+          strictPool,
+          comparisonSeed,
+        );
+        const widenedPoolAfterFirst = legalNodePool(
+          [...refill.occupiedBeforeRefill, firstSquare],
+          run.shipSquares,
+          "widened",
+        );
+        const [secondSquare, seedAfterSecond] = drawUniformSquare(
+          widenedPoolAfterFirst,
+          seedAfterFirst,
+        );
+        const widenedPoolAfterSecond = legalNodePool(
+          [...refill.occupiedBeforeRefill, firstSquare, secondSquare],
+          run.shipSquares,
+          "widened",
+        );
+        const [thirdSquare, seedAfterThird] = drawUniformSquare(
+          widenedPoolAfterSecond,
+          seedAfterSecond,
+        );
+        comparisonSeed = seedAfterThird;
+
+        unweightedGaps.push(
+          smallestPairwiseGap([firstSquare, secondSquare, thirdSquare]),
+        );
       }
     }
 
-    for (const name of LEGAL_SQUARE_NAMES) {
-      expect(seenSquares.has(name), name).toBe(true);
+    expect(weightedGaps.length).toBeGreaterThan(100);
+    expect(weightedGaps.length).toBe(unweightedGaps.length);
+
+    const meanWeightedGap = average(weightedGaps);
+    const meanUnweightedGap = average(unweightedGaps);
+
+    expect(meanWeightedGap).toBeGreaterThan(MINIMUM_MEAN_REFILL_GAP);
+    expect(meanWeightedGap - meanUnweightedGap).toBeGreaterThan(
+      MINIMUM_SPREAD_ADVANTAGE,
+    );
+  });
+});
+
+describe("how often the queue is swept (Appendix B)", () => {
+  it("keeps the mean turns between refills within a generous band around the measured figure", () => {
+    let totalPlies = 0;
+    let totalRefills = 0;
+
+    for (const seed of SEEDS) {
+      const run = runEconomy(seed, PLIES_TO_RUN);
+      totalPlies += run.samples.length;
+      totalRefills += run.refills.length;
     }
+
+    expect(totalRefills).toBeGreaterThan(10);
+    const meanPliesBetweenRefills = totalPlies / totalRefills;
+
+    expect(meanPliesBetweenRefills).toBeGreaterThan(
+      MINIMUM_MEAN_PLIES_BETWEEN_REFILLS,
+    );
+    expect(meanPliesBetweenRefills).toBeLessThan(
+      MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS,
+    );
+  });
+});
+
+describe("rotation actually cycles (Appendix B)", () => {
+  it("carries every inactive node that survives long enough through priority three at least once", () => {
+    // A rotation is a 3-cycle (1→2, 2→3, 3→1), so a node dealt priority 1
+    // reaches 3 after exactly two rotations. A segment between refills of
+    // three samples or more — the dealt ply itself, plus at least two
+    // rotations — is therefore guaranteed by the rule itself to have shown
+    // priority 3 to all three of its nodes; this checks that guarantee
+    // actually holds end to end, through the real end-of-turn sequence,
+    // rather than only against `rotatePriority` in isolation
+    // (`nodeQueue.test.ts` already covers that).
+    const MINIMUM_SEGMENT_LENGTH = 3;
+    let segmentsChecked = 0;
+
+    for (const seed of SEEDS) {
+      const run = runEconomy(seed, PLIES_TO_RUN);
+
+      let previousNames: readonly string[] | null = null;
+      let segmentLength = 0;
+      let segmentMaxPriority = new Map<string, number>();
+
+      const finalizeSegment = () => {
+        if (previousNames !== null && segmentLength >= MINIMUM_SEGMENT_LENGTH) {
+          segmentsChecked++;
+          for (const name of previousNames) {
+            expect(segmentMaxPriority.get(name)).toBe(TOP_NODE_PRIORITY);
+          }
+        }
+      };
+
+      for (const sample of run.samples) {
+        const currentNames = [...sample.inactiveByName.keys()].sort();
+        const sameSegment =
+          previousNames !== null &&
+          currentNames.length === previousNames.length &&
+          currentNames.every((name, i) => name === previousNames![i]);
+
+        if (!sameSegment) {
+          finalizeSegment();
+          previousNames = currentNames;
+          segmentLength = 0;
+          segmentMaxPriority = new Map();
+        }
+
+        segmentLength++;
+        for (const [name, priority] of sample.inactiveByName) {
+          segmentMaxPriority.set(
+            name,
+            Math.max(segmentMaxPriority.get(name) ?? 0, priority),
+          );
+        }
+      }
+      finalizeSegment();
+    }
+
+    expect(segmentsChecked).toBeGreaterThan(50);
   });
 });

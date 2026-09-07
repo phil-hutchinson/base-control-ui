@@ -3,14 +3,13 @@
 // opening board" block already checks a deal's own shape and distributions
 // in isolation; this file checks the properties that only show up once a
 // dealt board is actually played from: the economy still runs to
-// completion from wherever the deal put it, the first charge draw of the
-// game is not a level field once nodes open at different dealt pressures,
-// and a node dealt deep into its life runs out sooner than one dealt
-// fresh.
+// completion from wherever the deal put it, the first charge of the game
+// charges exactly the priority-3 node, and a node dealt deep into its life
+// runs out sooner than one dealt fresh.
 
 import { describe, expect, it } from "vitest";
-import { squareName } from "./board";
-import { runChargeDraw } from "./chargeDraw";
+import { squareFromName, squareName } from "./board";
+import { runCharging } from "./charging";
 import { runEndOfTurn } from "./endOfTurn";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
@@ -20,6 +19,7 @@ import {
   nodeStateAt,
   startingGameState,
 } from "./gameState";
+import { TOP_NODE_PRIORITY } from "./nodeQueue";
 import { NODE_CAPACITY, TARGET_CHARGED_NODES, dealOpeningBoard } from "./nodes";
 
 const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
@@ -32,14 +32,10 @@ const RUN_TO_COMPLETION_LENGTH_IN_ROUNDS = 1_000;
 
 describe("a game played from a dealt board runs to completion (rules.md §8.1, §8.6)", () => {
   it.each(RUN_TO_COMPLETION_SEEDS)(
-    "runs every dealt node out, retires and replaces a depleted node, tops the board back up to four, and charges every one of the dealt nodes at least once (seed %d)",
+    "runs every dealt node out, retires depleted nodes, tops the board back up to four, and charges at least one of the dealt-inactive nodes (seed %d)",
     (seed) => {
       let state = startingGameState(seed, RUN_TO_COMPLETION_LENGTH_IN_ROUNDS);
 
-      // A node cannot retire without first being charged, so the twelve
-      // squares the deal placed are still the right set to check "charged
-      // at least once" against, even though the board's own squares
-      // reshuffle as replacements land elsewhere over the run.
       const dealtNodeNames = nodeSquares(state).map(squareName);
       const dealtChargedNames = dealtNodeNames.filter(
         (name) => state.nodes[name]?.state === "charged",
@@ -58,8 +54,8 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
         for (const effect of result.effects) {
           if (effect.type === "node-ran-out") {
             ranOut.add(squareName(effect.square));
-          } else if (effect.type === "node-replaced") {
-            retired.add(squareName(effect.retiredSquare));
+          } else if (effect.type === "node-retired") {
+            retired.add(squareName(effect.square));
           } else if (effect.type === "node-charged") {
             charged.add(squareName(effect.square));
           }
@@ -72,23 +68,22 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       for (const name of dealtChargedNames) {
         expect(ranOut.has(name)).toBe(true);
       }
-      // At least one depleted node retires and is replaced over the run.
+      // At least one depleted node retires over the run.
       expect(retired.size).toBeGreaterThan(0);
-      // Every one of the eight dealt-inactive nodes earns a real
-      // node-charged effect: an inactive node can never retire without
-      // first being charged. (The four dealt already charged are excluded
-      // — they were charged at the deal itself, which raises no effect of
-      // its own to observe here. A square a much later replacement happens
-      // to reoccupy can also turn up in `charged`, under an entirely
-      // different node's life — harmless, and not what this checks.)
-      for (const name of dealtInactiveNames) {
-        expect(charged.has(name)).toBe(true);
-      }
-      // The draw charges a healthy number of distinct squares over the run,
-      // not just the eight dealt-inactive ones above — re-measured against
-      // the 51-square pool the planet-adjacency constraint leaves (rules.md
-      // §3.2's sixth constraint): minimum 34 across the three seeds (34, 39,
-      // 39), floor set well below that.
+      // At least one of the three dealt-inactive nodes earns a real
+      // node-charged effect. Not necessarily all three: a charge sweeps the
+      // whole queue (§8.2), so whichever of the three did not charge on the
+      // turn the shortfall was filled are discarded, unused, rather than
+      // waiting their own turn — a genuine change from the pre-0.26 charge
+      // draw, which drew nodes one at a time without ever discarding one
+      // unused.
+      const dealtInactiveCharged = dealtInactiveNames.filter((name) =>
+        charged.has(name),
+      );
+      expect(dealtInactiveCharged.length).toBeGreaterThan(0);
+      // The queue charges a healthy number of distinct squares over the
+      // run — measured at 45-51 across the three seeds above; the floor
+      // here leaves generous margin below that.
       expect(charged.size).toBeGreaterThan(15);
       // The board is back at its target count by the end of the run.
       const finalCharged = nodeSquares(state).filter(
@@ -99,31 +94,30 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
   );
 });
 
-const PRESSURE_FAVOURS_TRIALS = 3_000;
-/**
- * The higher-pressure half of the pool should be drawn far more often than
- * the lower half; a prototype of this deal measured about 0.83 across 5,000
- * trials, so this leaves generous margin above an even 0.5 split.
- */
-const MINIMUM_HIGHER_HALF_SHARE = 0.65;
-
-describe("the first charge draw of a game favours the nodes dealt the most pressure (rules.md §8.1, §8.2)", () => {
-  it("draws from the higher-pressure half of the pool far more often than the lower half, and still sometimes draws a node dealt pressure 1", () => {
+describe("the first charge of a game charges the priority-3 node (rules.md §8.1, §8.2)", () => {
+  it("charges exactly the priority-3 inactive node, deterministically, over many seeds", () => {
     let seed = 20260901;
-    let higherHalfDraws = 0;
-    let sawPressureOneDraw = false;
 
-    for (let trial = 0; trial < PRESSURE_FAVOURS_TRIALS; trial++) {
+    for (let trial = 0; trial < 1_000; trial++) {
       const [dealt, dealtSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
+      seed = dealtSeed;
 
-      // Make room for one draw: the first dealt charged node goes depleted
-      // instead, leaving four charged and the usual ten inactive nodes to
-      // draw from — `runChargeDraw` then draws exactly once.
+      // Make room for one charge: the first dealt charged node goes
+      // depleted instead, leaving a shortfall of one for `runCharging` to
+      // fill.
       const chargedName = Object.keys(dealt).find(
         (name) => dealt[name].state === "charged",
       );
       if (chargedName === undefined) {
         throw new Error("a deal with no charged node cannot happen");
+      }
+      const priorityThreeName = Object.keys(dealt).find(
+        (name) =>
+          dealt[name].state === "inactive" &&
+          dealt[name].level === TOP_NODE_PRIORITY,
+      );
+      if (priorityThreeName === undefined) {
+        throw new Error("a deal always carries a priority-3 node");
       }
 
       const state: GameState = {
@@ -136,42 +130,19 @@ describe("the first charge draw of a game favours the nodes dealt the most press
         actionsRemaining: 1,
         actedThisPly: [],
         plyNumber: 1,
-        randomSeed: dealtSeed,
+        randomSeed: seed,
         openingSeed: seed,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         outOfTime: { green: false, red: false },
       };
 
-      const inactiveNames = Object.keys(state.nodes).filter(
-        (name) => state.nodes[name].state === "inactive",
-      );
-      const sortedByPressure = [...inactiveNames].sort(
-        (a, b) => state.nodes[a].level - state.nodes[b].level,
-      );
-      const upperHalfNames = new Set(
-        sortedByPressure.slice(Math.floor(sortedByPressure.length / 2)),
-      );
+      const { effects } = runCharging(state);
 
-      const { state: afterDraw, effects } = runChargeDraw(state);
-      seed = afterDraw.randomSeed;
-
-      expect(effects).toHaveLength(1);
-      const drawnName = squareName(effects[0].square);
-      const drawnPressure = state.nodes[drawnName].level;
-
-      if (upperHalfNames.has(drawnName)) {
-        higherHalfDraws += 1;
-      }
-      if (drawnPressure === 1) {
-        sawPressureOneDraw = true;
-      }
+      expect(effects).toEqual([
+        { type: "node-charged", square: squareFromName(priorityThreeName) },
+      ]);
     }
-
-    expect(higherHalfDraws / PRESSURE_FAVOURS_TRIALS).toBeGreaterThan(
-      MINIMUM_HIGHER_HALF_SHARE,
-    );
-    expect(sawPressureOneDraw).toBe(true);
   });
 });
 

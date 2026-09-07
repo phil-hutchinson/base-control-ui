@@ -12,11 +12,8 @@ import {
   nodeStatusAt,
   startingGameState,
 } from "./gameState";
-import {
-  OPENING_DRAIN_TABLE,
-  OPENING_PRESSURE_TABLE,
-  dealOpeningBoard,
-} from "./nodes";
+import { OPENING_DRAIN_TABLE, dealOpeningBoard } from "./nodes";
+import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 import { MAX_POWER } from "./power";
 
 const SEED = 12345;
@@ -56,41 +53,40 @@ describe("startingGameState", () => {
     expect(state.openingSeed).not.toBe(state.randomSeed);
   });
 
-  it("deals the board dealOpeningBoard deals for the same seed: four charged, eight inactive, none depleted", () => {
+  it("deals the board dealOpeningBoard deals for the same seed: four charged, three inactive, none depleted", () => {
     const state = startingGameState(SEED);
     const [dealt] = dealOpeningBoard(STARTING_FLEET_SQUARES, SEED);
 
     expect(state.nodes).toEqual(dealt);
 
     const allStatuses = Object.values(state.nodes);
-    expect(allStatuses).toHaveLength(12);
+    expect(allStatuses).toHaveLength(4 + INACTIVE_NODE_COUNT);
     expect(
       allStatuses.filter((status) => status.state === "charged"),
     ).toHaveLength(4);
     expect(
       allStatuses.filter((status) => status.state === "inactive"),
-    ).toHaveLength(8);
+    ).toHaveLength(INACTIVE_NODE_COUNT);
     expect(
       allStatuses.filter((status) => status.state === "depleted"),
     ).toHaveLength(0);
   });
 
-  it("draws every charged level from the opening drain table and every inactive level from the opening pressure table", () => {
+  it("draws every charged level from the opening drain table and every inactive level a priority of {1, 2, 3}", () => {
     const state = startingGameState(SEED);
     const drainAmounts = new Set(
       OPENING_DRAIN_TABLE.map((entry) => entry.amount),
     );
-    const pressureAmounts = new Set(
-      OPENING_PRESSURE_TABLE.map((entry) => entry.amount),
-    );
 
+    const priorities: number[] = [];
     for (const status of Object.values(state.nodes)) {
       if (status.state === "charged") {
         expect(drainAmounts.has(status.level)).toBe(true);
       } else {
-        expect(pressureAmounts.has(status.level)).toBe(true);
+        priorities.push(status.level);
       }
     }
+    expect(priorities.sort()).toEqual([1, 2, 3]);
   });
 
   it("deals the same board for the same seed, and a different board for a different seed", () => {

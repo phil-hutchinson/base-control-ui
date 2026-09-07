@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { squareFromName, squareName, type Square } from "./board";
+import { chebyshevDistance, squareFromName, squareName } from "./board";
 import {
   runEndOfTurn,
   type NodeReliefEffect,
-  type NodeReplacedEffect,
+  type NodeRetiredEffect,
+  type QueueRefilledEffect,
   type ShipFreedEffect,
 } from "./endOfTurn";
 import type { ShipId } from "./fleet";
 import { legalDestinations } from "./movement";
-import { drawNodeSquare, legalNodePool } from "./nodePlacement";
 import { PLANETS } from "./planets";
 import { reliefSquare } from "./relief";
 import {
@@ -16,17 +16,22 @@ import {
   type Ship,
   type NodeStatus,
   nodeSquares,
+  nodeStateAt,
   startingGameState,
 } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { PowerLevel } from "./power";
 import {
+  INACTIVE_NODE_COUNT,
+  TOP_NODE_PRIORITY,
+  rotatePriority,
+} from "./nodeQueue";
+import {
   DEPLETED_RECOVERY_TABLE,
+  EMPTY_NODE_DRAIN_TABLE,
   NODE_CAPACITY,
-  NODE_COUNT,
-  PRESSURE_CAP,
-  STARTING_PRESSURE,
+  TARGET_CHARGED_NODES,
   drawTableAmount,
   type NodeState,
 } from "./nodes";
@@ -391,8 +396,16 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
   it("goes depleted, carrying its level unclamped, once drain reaches or passes capacity, trapping the ship on it (§8.5)", () => {
     // Any drawn amount (empty table's minimum is 1) crosses capacity from
     // NODE_CAPACITY - 1, so this is deterministic without pinning a seed.
+    // Three other charged nodes keep the shortfall at one once H8 runs
+    // out, so nothing charges to fill it (no inactive node is queued) and
+    // this stays a pure test of H8's own drain and trap.
     const state = buildState({
-      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
+      nodes: {
+        H8: ["charged", NODE_CAPACITY - 1],
+        C3: ["charged", 1],
+        E3: ["charged", 1],
+        G3: ["charged", 1],
+      },
       // A second green ship on a plain square, free of any node, so green
       // is not all-trapped and step 7's relief does not fire — a real
       // fleet has seven ships, and this one contributes no effect of its
@@ -433,8 +446,16 @@ describe("runEndOfTurn — step 3, drain (§8.3)", () => {
   });
 
   it("goes depleted with nothing further to report when the node was empty", () => {
+    // Three other charged nodes keep the shortfall at one once H8 runs
+    // out, so nothing charges to fill it and the sequence has nothing
+    // further to report.
     const state = buildState({
-      nodes: { H8: ["charged", NODE_CAPACITY - 1] },
+      nodes: {
+        H8: ["charged", NODE_CAPACITY - 1],
+        C3: ["charged", 1],
+        E3: ["charged", 1],
+        G3: ["charged", 1],
+      },
     });
 
     const result = runEndOfTurn(state);
@@ -509,75 +530,34 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
   });
 });
 
-describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", () => {
-  it("retires a depleted node once its level reaches zero or below, replacing it with one new inactive node at pressure 1", () => {
+describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
+  it("retires a depleted node once its level reaches zero or below, and nothing appears in its place", () => {
     // The recovery table's minimum draw is 4, so a level of 4 is guaranteed
-    // to reach zero or below on a single draw, regardless of seed.
-    const state = buildState({
-      nodes: { H8: ["depleted", 4] },
-    });
-
-    const result = runEndOfTurn(state);
-
-    expect(result.effects).toHaveLength(1);
-    const [effect] = result.effects;
-    if (effect.type !== "node-replaced") {
-      throw new Error(`expected a node-replaced effect, got "${effect.type}"`);
-    }
-    expect(squareName(effect.retiredSquare)).toBe("H8");
-    const newName = squareName(effect.newSquare);
-    expect(newName).not.toBe("H8");
-
-    expect(result.state.nodes.H8).toBeUndefined();
-    expect(Object.keys(result.state.nodes)).toEqual([newName]);
-    expect(result.state.nodes[newName]).toEqual({
-      state: "inactive",
-      level: STARTING_PRESSURE,
-    });
-  });
-
-  it("draws the replacement from a square legal under §3.2 given the board at that moment, and never the retiring node's own square", () => {
+    // to reach zero or below on a single draw, regardless of seed. Three
+    // other charged nodes keep the shortfall at one after H8 retires, so
+    // nothing charges to fill it and step 6's retirement stays the only
+    // event.
     const state = buildState({
       nodes: {
         H8: ["depleted", 4],
-        F2: ["charged", 1],
-        J2: ["charged", 1],
-        B4: ["charged", 1],
-        L8: ["charged", 1],
-        D8: ["charged", 1],
+        C3: ["charged", 1],
+        E3: ["charged", 1],
+        G3: ["charged", 1],
       },
-      ships: [ship("green-1", "green", "A1"), ship("red-1", "red", "O15")],
     });
 
     const result = runEndOfTurn(state);
 
-    const replaced = result.effects.find(
-      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
-    );
-    if (replaced === undefined) {
-      throw new Error("expected a node-replaced effect");
-    }
-    expect(squareName(replaced.retiredSquare)).toBe("H8");
-    expect(squareName(replaced.newSquare)).not.toBe("H8");
-
-    // Legal given the board as it stood the instant before the draw: H8
-    // already removed, the surviving nodes and the ships' squares (ships
-    // never move during end-of-turn, so these are also where they started).
-    const survivingNodeSquares = nodeSquares(result.state).filter(
-      (square) => squareName(square) !== squareName(replaced.newSquare),
-    );
-    const pool = legalNodePool(
-      survivingNodeSquares,
-      result.state.ships.map((s) => s.square),
-      replaced.retiredSquare,
-    );
-    expect(pool.map(squareName)).toContain(squareName(replaced.newSquare));
+    expect(result.effects).toEqual([
+      { type: "node-retired", square: squareFromName("H8") },
+    ]);
+    expect(result.state.nodes.H8).toBeUndefined();
+    expect(Object.keys(result.state.nodes).sort()).toEqual(["C3", "E3", "G3"]);
   });
 
-  it("keeps the node count at twelve across a retirement", () => {
-    const chargedNames = ["C3", "E3", "G3", "I3", "K3"];
+  it("reduces the node count by exactly one, with nothing to replace it", () => {
+    const chargedNames = ["C3", "E3", "G3", "I3"];
     const depletedName = "M3";
-    const inactiveNames = ["C5", "E5", "G5", "I5", "K5", "M5"];
     const state = buildState({
       nodes: {
         ...Object.fromEntries(
@@ -585,90 +565,46 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
         ),
         // The recovery table's minimum draw is 4, guaranteeing retirement.
         [depletedName]: ["depleted", 4],
-        ...Object.fromEntries(
-          inactiveNames.map((name) => [name, ["inactive", 10] as const]),
-        ),
+        C5: ["inactive", 1],
+        E5: ["inactive", 2],
+        G5: ["inactive", 3],
       },
     });
-    expect(Object.keys(state.nodes)).toHaveLength(NODE_COUNT);
+    const startingCount = Object.keys(state.nodes).length;
 
     const result = runEndOfTurn(state);
 
     expect(result.state.nodes[depletedName]).toBeUndefined();
-    expect(Object.keys(result.state.nodes)).toHaveLength(NODE_COUNT);
+    expect(Object.keys(result.state.nodes)).toHaveLength(startingCount - 1);
   });
 
-  it("handles two retirements in the same sequence one after another, in board order, so the second replacement lands beside neither the first nor any surviving node", () => {
+  it("handles two retirements in the same sequence, each reported independently, in board order", () => {
     const state = buildState({
       nodes: {
         H8: ["depleted", 4],
         K5: ["depleted", 4],
         F2: ["charged", 1],
         J2: ["charged", 1],
-        B4: ["charged", 1],
+        B4: ["inactive", 1],
+        D8: ["inactive", 2],
+        N4: ["inactive", 3],
       },
     });
 
     const result = runEndOfTurn(state);
 
-    const replacements = result.effects.filter(
-      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
+    const retirements = result.effects.filter(
+      (effect): effect is NodeRetiredEffect => effect.type === "node-retired",
     );
-    expect(replacements).toHaveLength(2);
+    expect(retirements).toHaveLength(2);
     // Board order: K5 (row 5) is processed before H8 (row 8).
-    expect(
-      replacements.map((effect) => squareName(effect.retiredSquare)),
-    ).toEqual(["K5", "H8"]);
+    expect(retirements.map((effect) => squareName(effect.square))).toEqual([
+      "K5",
+      "H8",
+    ]);
 
     expect(result.state.nodes.H8).toBeUndefined();
     expect(result.state.nodes.K5).toBeUndefined();
-    expect(Object.keys(result.state.nodes)).toHaveLength(5);
-
-    const finalSquares = nodeSquares(result.state);
-    const isAdjacent = (a: Square, b: Square): boolean =>
-      Math.abs(a.row - b.row) <= 1 &&
-      Math.abs(
-        "ABCDEFGHIJKLMNO".indexOf(a.column) -
-          "ABCDEFGHIJKLMNO".indexOf(b.column),
-      ) <= 1;
-    for (const square of finalSquares) {
-      const others = finalSquares.filter(
-        (other) => squareName(other) !== squareName(square),
-      );
-      expect(others.some((other) => isAdjacent(square, other))).toBe(false);
-    }
-  });
-
-  it("lets a later replacement in the same sequence land on the square an earlier retirement just vacated", () => {
-    // Seed 6, found by search: D3 (board order's first of the two) retires
-    // and is replaced at J8, then H8 retires and is replaced at D3 itself —
-    // the square D3's own retirement just freed. Only the square a node's
-    // own retirement vacates is excluded from that node's own draw; a
-    // square freed earlier in the same sequence is not excluded from a
-    // later one.
-    const state = buildState({
-      nodes: {
-        D3: ["depleted", 4],
-        H8: ["depleted", 4],
-        K12: ["charged", 1],
-        K13: ["charged", 1],
-        M6: ["charged", 1],
-      },
-      randomSeed: 6,
-    });
-
-    const result = runEndOfTurn(state);
-
-    const replacements = result.effects.filter(
-      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
-    );
-    expect(
-      replacements.map((effect) => squareName(effect.retiredSquare)),
-    ).toEqual(["D3", "H8"]);
-    expect(squareName(replacements[0].newSquare)).toBe("J8");
-    expect(squareName(replacements[1].newSquare)).toBe("D3");
-    expect(result.state.nodes.D3.state).toBe("inactive");
-    expect(result.state.nodes.H8).toBeUndefined();
   });
 
   it("does not retire a node that only went depleted during this very sequence", () => {
@@ -685,7 +621,7 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
 
     expect(result.state.nodes.H8.state).toBe("depleted");
     expect(
-      result.effects.some((effect) => effect.type === "node-replaced"),
+      result.effects.some((effect) => effect.type === "node-retired"),
     ).toBe(false);
     // It first has a chance to retire at the end of the next ply, once it
     // truly was depleted when that one began — `result.state` genuinely has
@@ -725,69 +661,28 @@ describe("runEndOfTurn — step 6, retirement and replacement (§8.2, §3.2)", (
     expect(averageHalf).toBeGreaterThan(averageFull * 0.3);
     expect(averageHalf).toBeLessThan(averageFull * 0.7);
   });
-
-  it("keeps the two clocks symmetric across a retirement: a replacement is inactive through the whole of the next turn, first charged in that turn's draw, and first drains the turn after that", () => {
-    // H8 is guaranteed to retire this ply (level 4); F2 is guaranteed to run
-    // out this ply (level NODE_CAPACITY - 1, empty). Both are genuine at the
-    // start of this state, so `runEndOfTurn` derives the right
-    // depleted-before-ply set on its own.
-    const turnN = buildState({
-      nodes: {
-        H8: ["depleted", 4],
-        F2: ["charged", NODE_CAPACITY - 1],
-      },
-    });
-
-    const afterTurnN = runEndOfTurn(turnN);
-
-    expect(afterTurnN.state.nodes.F2.state).toBe("depleted");
-    expect(
-      afterTurnN.effects.some((effect) => effect.type === "node-charged"),
-    ).toBe(false);
-    const replaced = afterTurnN.effects.find(
-      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
-    );
-    if (replaced === undefined) {
-      throw new Error("expected a node-replaced effect");
-    }
-    const replacementName = squareName(replaced.newSquare);
-    // Untouched by turn N's own step 5, which already ran before step 6
-    // wrote it.
-    expect(afterTurnN.state.nodes[replacementName]).toEqual({
-      state: "inactive",
-      level: STARTING_PRESSURE,
-    });
-
-    // Turn N+1: the replacement is the board's only inactive node, so the
-    // shortfall (F2 is depleted, nothing charged) charges it deterministically.
-    const afterTurnNPlus1 = runEndOfTurn(afterTurnN.state);
-    expect(afterTurnNPlus1.effects).toContainEqual({
-      type: "node-charged",
-      square: replaced.newSquare,
-    });
-    expect(afterTurnNPlus1.state.nodes[replacementName].state).toBe("charged");
-
-    // Turn N+2: now charged, it first drains.
-    const afterTurnNPlus2 = runEndOfTurn(afterTurnNPlus1.state);
-    expect(afterTurnNPlus2.state.nodes[replacementName].level).toBeGreaterThan(
-      afterTurnNPlus1.state.nodes[replacementName].level,
-    );
-  });
 });
 
 describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §8.5)", () => {
-  it("reports node-replaced then ship-freed, keeping the freed ship's square and power, when a retiring node had a ship on it", () => {
+  it("reports node-retired then ship-freed, keeping the freed ship's square and power, when a retiring node had a ship on it", () => {
     // The recovery table's minimum draw is 4, so a level of 4 is guaranteed
-    // to retire on a single draw, regardless of seed.
+    // to retire on a single draw, regardless of seed. Three other charged
+    // nodes keep the shortfall at one after H8 retires, so nothing charges
+    // to fill it.
     const state = buildState({
-      nodes: { H8: ["depleted", 4] },
+      nodes: {
+        H8: ["depleted", 4],
+        C3: ["charged", 1],
+        E3: ["charged", 1],
+        G3: ["charged", 1],
+      },
       ships: [ship("green-1", "green", "H8", 3)],
     });
 
     const result = runEndOfTurn(state);
 
     expect(
-      result.effects.findIndex((effect) => effect.type === "node-replaced"),
+      result.effects.findIndex((effect) => effect.type === "node-retired"),
     ).toBe(0);
     expect(result.effects[1]).toEqual({
       type: "ship-freed",
@@ -838,13 +733,13 @@ describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §
       false,
     );
     expect(
-      result.effects.some((effect) => effect.type === "node-replaced"),
+      result.effects.some((effect) => effect.type === "node-retired"),
     ).toBe(false);
   });
 });
 
 describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", () => {
-  it("ends exactly the lowest-level qualifying node, replaces it, and frees its ship, emitting node-relief, node-replaced and ship-freed in that order", () => {
+  it("ends exactly the lowest-level qualifying node and frees its ship, emitting node-relief, node-retired and ship-freed in that order", () => {
     // Both H8 and D8 have plenty of life left (well above the recovery
     // table's maximum draw of 8), so neither retires in step 6 — both are
     // still depleted, and both movable once freed, when step 7 runs. H8's
@@ -866,16 +761,16 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
     ]);
 
     const reliefIndex = result.effects.indexOf(reliefs[0]);
-    const replacedIndex = result.effects.findIndex(
-      (effect) => effect.type === "node-replaced",
+    const retiredIndex = result.effects.findIndex(
+      (effect) => effect.type === "node-retired",
     );
     const freed = result.effects.filter(
       (effect): effect is ShipFreedEffect => effect.type === "ship-freed",
     );
     expect(freed).toHaveLength(1);
     const freedIndex = result.effects.indexOf(freed[0]);
-    expect(reliefIndex).toBeLessThan(replacedIndex);
-    expect(replacedIndex).toBeLessThan(freedIndex);
+    expect(reliefIndex).toBeLessThan(retiredIndex);
+    expect(retiredIndex).toBeLessThan(freedIndex);
     expect(freed[0].shipId).toBe("green-1");
 
     expect(result.state.nodes.H8).toBeUndefined();
@@ -908,9 +803,14 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
   it("ends nothing when every ship is trapped but none would have a legal move once freed, and draws no seed doing so", () => {
     // A1 is a corner: at power 0 the only affordable moves are the two
     // orthogonal steps to B1 and A2, and both are occupied by an enemy ship
-    // — boxed in by ships and the edge of the board, not by the trap.
+    // — boxed in by ships and the edge of the board, not by the trap. H8 is
+    // a lone charged node, unoccupied, that keeps the shortfall at three
+    // rather than four — a shortfall of four would place a fourth node
+    // directly, drawing a seed step that is not this test's subject — and
+    // leaves nothing in the queue to charge from, so charging draws nothing
+    // either way.
     const state = buildState({
-      nodes: { A1: ["depleted", 30] },
+      nodes: { A1: ["depleted", 30], H8: ["charged", 1] },
       ships: [
         ship("green-1", "green", "A1", 0),
         ship("red-1", "red", "B1"),
@@ -928,10 +828,15 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       ),
     ).toBe(false);
     expect(result.state.nodes.A1.state).toBe("depleted");
-    // The only seed draw the whole sequence makes here is step 6's recovery
-    // draw for A1 — step 7 finds no qualifying candidate and draws nothing.
-    const [, expectedSeed] = drawTableAmount(
+    // The only seed draws the whole sequence makes here are step 3's drain
+    // for H8 and step 6's recovery draw for A1 — step 7 finds no qualifying
+    // candidate and draws nothing.
+    const [, seedAfterDrain] = drawTableAmount(
       state.randomSeed,
+      EMPTY_NODE_DRAIN_TABLE,
+    );
+    const [, expectedSeed] = drawTableAmount(
+      seedAfterDrain,
       DEPLETED_RECOVERY_TABLE,
     );
     expect(result.state.randomSeed).toBe(expectedSeed);
@@ -995,18 +900,32 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
     );
   });
 
-  it("threads the tie-break draw into the replacement draw that follows it, so a tied relief stays replayable", () => {
-    // D8 and L8 are set up so that after step 6's two independent recovery
-    // draws (D8 first, then L8, the order `nodeSquares` walks them in) both
-    // land on the same remaining life — a genuine tie for step 7 to break.
-    // Their starting
-    // levels are computed from the actual recovery draws a state entering
-    // with this seed will make, so this only works because step 6 makes no
-    // other seed draw before reaching them (no charged node, no inactive
-    // node to draw for).
+  it("draws once for the tie-break and nothing further, so a tied relief stays replayable", () => {
+    // Four charged nodes (C3, E3, G3, I3 — all in row 3, ahead of D8 and L8
+    // in board order) hold the board at its target, so charging and the
+    // refill draw nothing; their own step 3 drain draws are accounted for
+    // below, ahead of D8 and L8's step 6 recovery draws (D8 first, then
+    // L8, the order `nodeSquares` walks them in), so both land on the same
+    // remaining life — a genuine tie for step 7 to break. Their starting
+    // levels are computed from the actual draws a state entering with this
+    // seed will make, so this only works because nothing else in the
+    // sequence draws before reaching them.
     const seed = 1;
+    const [, seedAfterC3] = drawTableAmount(seed, EMPTY_NODE_DRAIN_TABLE);
+    const [, seedAfterE3] = drawTableAmount(
+      seedAfterC3,
+      EMPTY_NODE_DRAIN_TABLE,
+    );
+    const [, seedAfterG3] = drawTableAmount(
+      seedAfterE3,
+      EMPTY_NODE_DRAIN_TABLE,
+    );
+    const [, seedAfterI3] = drawTableAmount(
+      seedAfterG3,
+      EMPTY_NODE_DRAIN_TABLE,
+    );
     const [amountD8, seedAfterD8] = drawTableAmount(
-      seed,
+      seedAfterI3,
       DEPLETED_RECOVERY_TABLE,
     );
     const [amountL8, seedAfterRecovery] = drawTableAmount(
@@ -1017,6 +936,10 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
 
     const state = buildState({
       nodes: {
+        C3: ["charged", 1],
+        E3: ["charged", 1],
+        G3: ["charged", 1],
+        I3: ["charged", 1],
         D8: ["depleted", tiedLevel + amountD8],
         L8: ["depleted", tiedLevel + amountL8],
       },
@@ -1026,10 +949,17 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
     });
 
     // The state step 6 leaves behind, built independently of `runEndOfTurn`
-    // so the tie-break can be predicted rather than merely observed.
+    // so the tie-break can be predicted rather than merely observed. The
+    // four charged nodes' own drained levels do not matter to
+    // `reliefSquare`, which only ever looks at the depleted nodes trapping
+    // ships, so they are left at their starting level here.
     const afterStep6: GameState = {
       ...state,
       nodes: {
+        C3: { state: "charged", level: 1 },
+        E3: { state: "charged", level: 1 },
+        G3: { state: "charged", level: 1 },
+        I3: { state: "charged", level: 1 },
         D8: { state: "depleted", level: tiedLevel },
         L8: { state: "depleted", level: tiedLevel },
       },
@@ -1040,12 +970,6 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       throw new Error("expected a genuine tie between D8 and L8");
     }
     const otherName = squareName(tieSquare) === "D8" ? "L8" : ("D8" as const);
-    const [expectedNewSquare, expectedFinalSeed] = drawNodeSquare(
-      [squareFromName(otherName)],
-      [squareFromName("D8"), squareFromName("L8")],
-      seedAfterTie,
-      tieSquare,
-    );
 
     const result = runEndOfTurn(state);
 
@@ -1057,12 +981,13 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       side: "green",
       square: tieSquare,
     });
-    const replaced = result.effects.find(
-      (effect): effect is NodeReplacedEffect => effect.type === "node-replaced",
+    const retired = result.effects.find(
+      (effect): effect is NodeRetiredEffect => effect.type === "node-retired",
     );
-    expect(replaced?.retiredSquare).toEqual(tieSquare);
-    expect(replaced?.newSquare).toEqual(expectedNewSquare);
-    expect(result.state.randomSeed).toBe(expectedFinalSeed);
+    expect(retired?.square).toEqual(tieSquare);
+    // Retirement draws nothing (§8.2), so the tie-break itself is the last
+    // draw the whole sequence makes.
+    expect(result.state.randomSeed).toBe(seedAfterTie);
     expect(result.state.nodes[otherName]).toEqual({
       state: "depleted",
       level: tiedLevel,
@@ -1070,7 +995,7 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
   });
 });
 
-describe("runEndOfTurn — step 4, the charge draw never charges a node that only appears in step 6 of the same sequence (§8.6 step ordering)", () => {
+describe("runEndOfTurn — step 4, charging never charges a node that only appears in step 6 of the same sequence (§8.6 step ordering)", () => {
   it("leaves the board with nothing charged when the only inactive candidate is a node retiring this very ply", () => {
     // H8 is guaranteed to retire this ply (level 4, see above); F2 is
     // guaranteed to run out this ply (level NODE_CAPACITY - 1, empty). H8 is
@@ -1092,7 +1017,7 @@ describe("runEndOfTurn — step 4, the charge draw never charges a node that onl
       square: squareFromName("F2"),
     });
     expect(
-      result.effects.some((effect) => effect.type === "node-replaced"),
+      result.effects.some((effect) => effect.type === "node-retired"),
     ).toBe(true);
     expect(
       result.effects.some((effect) => effect.type === "node-charged"),
@@ -1100,62 +1025,182 @@ describe("runEndOfTurn — step 4, the charge draw never charges a node that onl
   });
 });
 
-describe("runEndOfTurn — step 5, pressure (§8.2)", () => {
-  it("gains a point of pressure every ply it stays inactive", () => {
-    // Four other nodes are already charged so the board is not short and
-    // H8 cannot itself be drawn by step 4 — this isolates step 5.
+describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () => {
+  it("rotates every surviving priority one step and emits no effect when nothing charges", () => {
+    // Four charged nodes already hold the board at its target, so charging
+    // has no shortfall to fill and the three inactive nodes simply rotate.
     const state = buildState({
       nodes: {
-        H8: ["inactive", 10],
-        F2: ["charged", 1],
-        J2: ["charged", 1],
-        B4: ["charged", 1],
-        L8: ["charged", 1],
+        D4: ["charged", 1],
+        L4: ["charged", 1],
+        D12: ["charged", 1],
+        L12: ["charged", 1],
+        F2: ["inactive", 1],
+        N4: ["inactive", 2],
+        H8: ["inactive", 3],
       },
     });
 
     const result = runEndOfTurn(state);
 
+    expect(
+      result.effects.some((effect) => effect.type === "queue-refilled"),
+    ).toBe(false);
+    expect(result.state.nodes.F2).toEqual({
+      state: "inactive",
+      level: rotatePriority(1),
+    });
+    expect(result.state.nodes.N4).toEqual({
+      state: "inactive",
+      level: rotatePriority(2),
+    });
     expect(result.state.nodes.H8).toEqual({
       state: "inactive",
-      level: 11,
+      level: rotatePriority(3),
     });
   });
 
-  it("stops at the pressure cap and never exceeds it", () => {
+  it("sweeps the whole queue, leaving three inactive nodes at priorities {1, 2, 3}, when something charges", () => {
+    // Three charged nodes leave a shortfall of one, which the priority-3
+    // node (H8) alone covers — the other two are discarded, not merely
+    // left waiting their own turn.
     const state = buildState({
       nodes: {
-        H8: ["inactive", PRESSURE_CAP],
-        F2: ["charged", 1],
-        J2: ["charged", 1],
-        B4: ["charged", 1],
-        L8: ["charged", 1],
+        D4: ["charged", 1],
+        L4: ["charged", 1],
+        D12: ["charged", 1],
+        F2: ["inactive", 1],
+        N4: ["inactive", 2],
+        H8: ["inactive", TOP_NODE_PRIORITY],
+      },
+      randomSeed: 20260906,
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "node-charged",
+      square: squareFromName("H8"),
+    });
+    const refills = result.effects.filter(
+      (effect): effect is QueueRefilledEffect =>
+        effect.type === "queue-refilled",
+    );
+    expect(refills).toHaveLength(1);
+    // Board order: F2 (row 2) before N4 (row 4) — neither charged, so both
+    // are discarded, not just the one at the back of the queue.
+    expect(refills[0].discardedSquares.map(squareName)).toEqual(["F2", "N4"]);
+    expect(refills[0].newNodes).toHaveLength(INACTIVE_NODE_COUNT);
+
+    const inactiveNow = nodeSquares(result.state).filter(
+      (square) => nodeStateAt(result.state, square) === "inactive",
+    );
+    expect(inactiveNow).toHaveLength(INACTIVE_NODE_COUNT);
+    const priorities = inactiveNow
+      .map((square) => result.state.nodes[squareName(square)].level)
+      .sort();
+    expect(priorities).toEqual([1, 2, 3]);
+  });
+
+  it("keeps a ship on a swept inactive node exactly where it was, at the power it had, and never traps it", () => {
+    const state = buildState({
+      nodes: {
+        D4: ["charged", 1],
+        L4: ["charged", 1],
+        D12: ["charged", 1],
+        F2: ["inactive", 1],
+        N4: ["inactive", 2],
+        H8: ["inactive", 3],
+      },
+      ships: [ship("green-1", "green", "F2", 3)],
+      randomSeed: 20260906,
+    });
+
+    const result = runEndOfTurn(state);
+
+    const campingShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(campingShip?.square).toEqual(squareFromName("F2"));
+    expect(campingShip?.power).toBe(3);
+    // A ship's own square is never a candidate for the refill (§3.2
+    // constraint 2), so a square it was camping on is left an ordinary,
+    // node-free square once the sweep discards it.
+    expect(nodeStateAt(result.state, squareFromName("F2"))).toBeUndefined();
+    expect(
+      result.effects.some(
+        (effect) =>
+          effect.type === "ship-trapped" || effect.type === "ship-freed",
+      ),
+    ).toBe(false);
+  });
+
+  it("fills a zero-charged board to four — three from the queue and one placed directly — and refills the queue away from all four (§8.2, §8.6 steps 4 and 5)", () => {
+    const state = buildState({
+      nodes: {
+        N4: ["inactive", 3],
+        D8: ["inactive", 1],
+        H8: ["inactive", 2],
       },
     });
 
     const result = runEndOfTurn(state);
 
-    expect(result.state.nodes.H8).toEqual({
-      state: "inactive",
-      level: PRESSURE_CAP,
-    });
+    const chargedNow = nodeSquares(result.state).filter(
+      (square) => nodeStateAt(result.state, square) === "charged",
+    );
+    const inactiveNow = nodeSquares(result.state).filter(
+      (square) => nodeStateAt(result.state, square) === "inactive",
+    );
+    expect(chargedNow).toHaveLength(TARGET_CHARGED_NODES);
+    expect(inactiveNow).toHaveLength(INACTIVE_NODE_COUNT);
+
+    const appeared = result.effects.find(
+      (effect) => effect.type === "node-appeared-charged",
+    );
+    if (appeared === undefined) {
+      throw new Error("expected a node-appeared-charged effect");
+    }
+    expect(chargedNow.map(squareName)).toContain(squareName(appeared.square));
+
+    const refills = result.effects.filter(
+      (effect): effect is QueueRefilledEffect =>
+        effect.type === "queue-refilled",
+    );
+    expect(refills).toHaveLength(1);
+    expect(refills[0].newNodes).toHaveLength(INACTIVE_NODE_COUNT);
+    // The refill's weighting spreads the new trio away from all four
+    // charged nodes, including the one step 4 just placed directly — none
+    // of the newly drawn squares is adjacent to it.
+    for (const { square } of refills[0].newNodes) {
+      expect(chebyshevDistance(square, appeared.square)).toBeGreaterThanOrEqual(
+        2,
+      );
+    }
   });
 });
 
 describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("emits no effect and leaves both totals unchanged when nothing is held", () => {
-    // Depleted rather than inactive, so step 4's charge draw has no pool to
-    // draw these two from and this stays a pure test of step 2 alone.
+    // Depleted rather than charged or inactive, so nothing here is a
+    // candidate for step 2's energy collection. Four other charged nodes
+    // hold the board at its target, so step 4's charging has no shortfall
+    // to fill either, and this stays a pure test of step 2 alone.
     const state = buildState({
       sideToMove: "green",
-      nodes: { H8: ["depleted", 0], K5: ["depleted", 0] },
+      nodes: {
+        H8: ["depleted", 0],
+        K5: ["depleted", 0],
+        C3: ["charged", 1],
+        E3: ["charged", 1],
+        G3: ["charged", 1],
+        I3: ["charged", 1],
+      },
       ships: [ship("green-1", "green", "D2")],
     });
 
     const result = runEndOfTurn(state);
 
     expect(
-      result.effects.filter((effect) => effect.type !== "node-replaced"),
+      result.effects.filter((effect) => effect.type !== "node-retired"),
     ).toEqual([]);
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
   });

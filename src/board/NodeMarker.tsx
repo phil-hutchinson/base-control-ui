@@ -1,14 +1,17 @@
-// Decorative node-state artwork: one radial-gradient circle at the square's
-// centre, drawn behind any ship on the same square, with one appearance per
-// rules.md §8.1 state. Inactive is a disc that grows and warms as the node's
-// pressure builds; charged and depleted are the same larger shape, wider than
-// the square and cropped to it by the outer <svg>, one gold and one grey.
+// Decorative node-state artwork, drawn behind any ship on the same square,
+// with one appearance per rules.md §8.1 state. Charged and depleted are a
+// radial-gradient circle, wider than the square and cropped to it by the
+// outer <svg>, one gold and one grey, that shifts its middle gradient stop
+// as the node travels through its own cycle. Inactive is drawn differently:
+// concentric gold rings, one per priority the node carries (rules.md §8.2)
+// — a priority-3 node shows three rings, and nothing is drawn behind them.
 // Purely decorative - a screen reader gets the node and its state from the
 // occupying square's accessible name (see squareLabel.ts), so the SVG
 // carries no title or description and is hidden from the accessibility
 // tree.
 
 import type { NodeState } from "../rules/nodes";
+import type { NodePriority } from "../rules/nodeQueue";
 import "./NodeMarker.css";
 
 interface NodeMarkerProps {
@@ -17,10 +20,14 @@ interface NodeMarkerProps {
   /**
    * How far the node has travelled through its state's own cycle (0 to 1,
    * see `nodeCyclePosition` in `../rules/nodes`): drain for charged,
-   * remaining drain for depleted, pressure for inactive. Falls back to the
-   * state's start-of-cycle appearance when absent.
+   * remaining drain for depleted. Ignored for an inactive node.
    */
   readonly cyclePosition?: number;
+  /**
+   * The priority an inactive node carries (rules.md §8.2), 1 to 3, drawn as
+   * that many concentric rings. Ignored for a charged or depleted node.
+   */
+  readonly priority?: NodePriority;
 }
 
 interface GradientStop {
@@ -58,107 +65,26 @@ function middleStopOffsetPercent(
   );
 }
 
-// Inactive's start-to-end travel, at a freshly-cycled node's pressure of 1 and
-// at the pressure cap: the small pale disc from node-artwork.md's "Dormant"
-// section growing and warming into the larger disc from that same document's
-// "Active" section (see nodeArtwork's comment for why those pre-0.11
-// headings do not mean what they mean in the code).
-const INACTIVE_START_RADIUS = 12;
-const INACTIVE_END_RADIUS = 24;
-const INACTIVE_START_INNER_COLOR = "#F1DBA5";
-const INACTIVE_END_INNER_COLOR = "#DAA520";
-const INACTIVE_OUTER_COLOR = "#DAA520";
-const INACTIVE_START_OUTER_OPACITY = 0.75;
-const INACTIVE_END_OUTER_OPACITY = 0.5;
+// An inactive node's rings, innermost first, in the marker's 100-unit
+// viewBox. Priority p draws the innermost p rings, so a priority-1 node is
+// one small ring and a priority-3 node is three rings growing outward: the
+// node visibly fills up as its turn approaches. Starting values for the
+// owner's eye, not a measured result.
+const INACTIVE_RING_RADII: readonly number[] = [18, 28, 38];
+const INACTIVE_RING_STROKE_WIDTH = 5;
+const INACTIVE_RING_COLOR = "#DAA520";
 
-/** Linear interpolation between two numbers, at a position clamped to [0, 1] (or the start if none is given). */
-function lerpNumber(
-  start: number,
-  end: number,
-  position: number | undefined,
-): number {
-  const clamped = Math.min(1, Math.max(0, position ?? 0));
-  return start + (end - start) * clamped;
-}
-
-/** One colour channel, as a two-digit hex string. */
-function hexChannel(value: number): string {
-  return value.toString(16).padStart(2, "0").toUpperCase();
-}
-
-/** The three 0–255 channels of a six-digit `#RRGGBB` colour. */
-function hexChannels(color: string): readonly [number, number, number] {
-  const digits = color.slice(1);
-  return [
-    parseInt(digits.slice(0, 2), 16),
-    parseInt(digits.slice(2, 4), 16),
-    parseInt(digits.slice(4, 6), 16),
-  ];
-}
-
-/**
- * Linear interpolation between two six-digit `#RRGGBB` colours, one channel
- * at a time, at a position clamped to [0, 1] (or the start if none is
- * given).
+/** Radii, gradient stops, colours and opacities for the two clocked states, taken from
+ * doc/plan/00000023-update-node-visual/node-artwork.md exactly as specified
+ * there. One artwork per clocked state; the exhaustive switch has no
+ * default, so a new clocked state is a compile error rather than a silent
+ * gap. Inactive is drawn separately, as rings, by `NodeMarker` itself.
  */
-function hexLerp(
-  start: string,
-  end: string,
-  position: number | undefined,
-): string {
-  const clamped = Math.min(1, Math.max(0, position ?? 0));
-  const startChannels = hexChannels(start);
-  const endChannels = hexChannels(end);
-  const mixed = startChannels.map((channel, index) =>
-    Math.round(channel + (endChannels[index] - channel) * clamped),
-  );
-  return `#${mixed.map(hexChannel).join("")}`;
-}
-
-// Radii, gradient stops, colours and opacities, taken from
-// doc/plan/00000023-update-node-visual/node-artwork.md exactly as specified
-// there (that document's own, pre-0.11 headings: "Charged" and "Depleted"
-// happen to match the code's own state names below, but "Dormant" and
-// "Active" name neither — they are the two ends of what the code now calls
-// the inactive state's travel. Inactive travels between two of that
-// document's sections: its "Dormant" section — the small pale disc — at a
-// freshly cycled node's pressure of 1, and its "Active" section — the
-// larger gold disc, what the code has always drawn for this state — at the
-// pressure cap). One artwork per node state; the exhaustive switch has no
-// default, so a new state is a compile error rather than a silent gap.
 function nodeArtwork(
-  state: NodeState,
+  state: "charged" | "depleted",
   cyclePosition: number | undefined,
 ): NodeStateArtwork {
   switch (state) {
-    case "inactive":
-      return {
-        radius: lerpNumber(
-          INACTIVE_START_RADIUS,
-          INACTIVE_END_RADIUS,
-          cyclePosition,
-        ),
-        stops: [
-          {
-            offsetPercent: 0,
-            color: hexLerp(
-              INACTIVE_START_INNER_COLOR,
-              INACTIVE_END_INNER_COLOR,
-              cyclePosition,
-            ),
-            opacity: 1,
-          },
-          {
-            offsetPercent: 100,
-            color: INACTIVE_OUTER_COLOR,
-            opacity: lerpNumber(
-              INACTIVE_START_OUTER_OPACITY,
-              INACTIVE_END_OUTER_OPACITY,
-              cyclePosition,
-            ),
-          },
-        ],
-      };
     case "charged":
       return {
         radius: 70,
@@ -200,10 +126,37 @@ export function NodeMarker({
   state,
   squareName,
   cyclePosition,
+  priority,
 }: NodeMarkerProps) {
+  if (state === "inactive") {
+    // A priority is always given for a real inactive node (Board.tsx reads
+    // one off its NodeStatus); the fallback of one ring only guards a marker
+    // rendered without one, so it degrades rather than drawing nothing.
+    const ringCount = priority ?? 1;
+    return (
+      <svg
+        className={`node-marker node-marker--${state}`}
+        viewBox="0 0 100 100"
+        aria-hidden="true"
+      >
+        {INACTIVE_RING_RADII.slice(0, ringCount).map((radius) => (
+          <circle
+            key={radius}
+            cx={50}
+            cy={50}
+            r={radius}
+            fill="none"
+            stroke={INACTIVE_RING_COLOR}
+            strokeWidth={INACTIVE_RING_STROKE_WIDTH}
+          />
+        ))}
+      </svg>
+    );
+  }
+
   const { radius, stops } = nodeArtwork(state, cyclePosition);
-  // SVG ids are document-global, and seventeen nodes are drawn into one
-  // document at once, so the gradient id carries the square's own name.
+  // SVG ids are document-global, and several node markers are drawn into
+  // one document at once, so the gradient id carries the square's own name.
   const gradientId = `node-${squareName}-fill`;
 
   return (

@@ -12,6 +12,7 @@ import { legalTargets } from "../rules/combat";
 import { shipsBySquare, nodeStatusAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
 import { nodeCyclePosition } from "../rules/nodes";
+import { inactivePriority } from "../rules/nodeQueue";
 import type { Session, SessionIntent } from "../game/session";
 import { announcementForSession } from "./announcements";
 import { squareForGridPosition } from "./boardView";
@@ -108,9 +109,15 @@ export function Board({ session, onIntent }: BoardProps) {
         const planet = planetForSquare(arrangement, square);
         const nodeStatus = nodeStatusAt(session.state, square);
         const nodeState = nodeStatus?.state;
-        const cyclePosition = nodeStatus
-          ? nodeCyclePosition(nodeStatus.state, nodeStatus.level)
-          : undefined;
+        const cyclePosition =
+          nodeStatus &&
+          (nodeStatus.state === "charged" || nodeStatus.state === "depleted")
+            ? nodeCyclePosition(nodeStatus.state, nodeStatus.level)
+            : undefined;
+        const priority =
+          nodeStatus && nodeStatus.state === "inactive"
+            ? inactivePriority(nodeStatus)
+            : undefined;
         const ship = ships.get(name);
         const occupant = ship && { side: ship.side, power: ship.power };
         const condition = ship && shipCondition(ship);
@@ -135,6 +142,7 @@ export function Board({ session, onIntent }: BoardProps) {
               planet={planet}
               nodeState={nodeState}
               cyclePosition={cyclePosition}
+              priority={priority}
               occupant={occupant}
               hasActed={hasActed}
               condition={condition}

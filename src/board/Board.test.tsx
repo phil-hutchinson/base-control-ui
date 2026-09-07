@@ -12,7 +12,7 @@ import {
   startingFleet,
   type FleetEntry,
 } from "../rules/fleet";
-import { NODE_CAPACITY, PRESSURE_CAP } from "../rules/nodes";
+import { NODE_CAPACITY } from "../rules/nodes";
 import {
   startingGameState,
   type GameState,
@@ -53,8 +53,8 @@ const TEST_SEED = 1;
 
 /**
  * The board this file has always been rendered against: H8, E5, K5, E11 and
- * K11 charged at drain 0, the other twelve nodes inactive at pressure 1 — an
- * arbitrary fixed board, not the opening rules.md §8.1 deals since 0.18. Node
+ * K11 charged at drain 0, the other 12 squares inactive, all at level 1 —
+ * an arbitrary fixed board, not the opening rules.md §8.1 deals since 0.18. Node
  * positions are drawn rather than fixed since 0.20, so this board is no
  * longer any table in `rules.md` either — it is simply a board this file
  * states for itself, not built by calling any of `nodes.ts`'s production
@@ -322,19 +322,21 @@ describe("Board", () => {
       }
     });
 
-    it("gives every node marker's gradient its own document-unique id", () => {
+    it("gives every charged or depleted node marker's gradient its own document-unique id", () => {
       const { container } = render(
         <Board session={startingSession} onIntent={noop} />,
       );
 
       // Counted within the node markers themselves, since the board now also
-      // mounts the planet sprite's own radial gradients as a sibling.
+      // mounts the planet sprite's own radial gradients as a sibling. An
+      // inactive marker carries no gradient at all - it is a stack of
+      // stroked rings - so only the charged and depleted squares count here.
       const gradientIds = Array.from(
         container.querySelectorAll(".node-marker radialGradient"),
       ).map((gradient) => gradient.getAttribute("id"));
 
-      expect(gradientIds).toHaveLength(NODE_SQUARES.length);
-      expect(new Set(gradientIds).size).toBe(NODE_SQUARES.length);
+      expect(gradientIds).toHaveLength(CHARGED_NODE_SQUARES.length);
+      expect(new Set(gradientIds).size).toBe(CHARGED_NODE_SQUARES.length);
 
       // Document-unique, not merely unique among node markers: every id the
       // whole board renders is distinct, so a node gradient can never be
@@ -512,16 +514,15 @@ describe("Board", () => {
 
       expect(middleStopOffset(container, "depleted")).toBe("25%");
     });
+  });
 
-    it("shows two inactive nodes at different pressures with visibly different markers", () => {
+  describe("an inactive node's priority reaching the marker", () => {
+    it("shows two inactive nodes at different priorities with visibly different markers", () => {
       const state: GameState = {
         ships: [],
         nodes: {
           [squareName(squareAt("H", 8))]: { state: "inactive", level: 1 },
-          [squareName(squareAt("E", 5))]: {
-            state: "inactive",
-            level: PRESSURE_CAP,
-          },
+          [squareName(squareAt("E", 5))]: { state: "inactive", level: 3 },
         },
         sideToMove: "green",
         actionsRemaining: 1,
@@ -540,13 +541,14 @@ describe("Board", () => {
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
 
-      const radii = Array.from(
-        container.querySelectorAll(".node-marker--inactive circle"),
-      ).map((circle) => circle.getAttribute("r"));
+      const markers = container.querySelectorAll(".node-marker--inactive");
+      expect(markers).toHaveLength(2);
 
-      expect(radii).toHaveLength(2);
-      expect(radii).toContain("12");
-      expect(radii).toContain("24");
+      const ringCounts = Array.from(
+        markers,
+        (marker) => marker.querySelectorAll("circle").length,
+      ).sort();
+      expect(ringCounts).toEqual([1, 3]);
     });
   });
 

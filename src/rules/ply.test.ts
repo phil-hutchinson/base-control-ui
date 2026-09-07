@@ -20,10 +20,10 @@ import {
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
 import { drawIndex } from "./random";
+import { TOP_NODE_PRIORITY, rotatePriority } from "./nodeQueue";
 import {
   drawTableAmount,
   EMPTY_NODE_DRAIN_TABLE,
-  PRESSURE_CAP,
   type NodeState,
 } from "./nodes";
 
@@ -80,10 +80,18 @@ describe("applyMove", () => {
     // end-of-turn sequence this move triggers cannot retire it — this test
     // is about the move itself, not about the board's own per-turn clock,
     // which the end-of-turn drain and recovery run regardless of what a
-    // ship does.
+    // ship does. Four charged nodes elsewhere hold the board at its
+    // target, so charging has no shortfall to fill and nothing charges or
+    // refills.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
-      nodes: { E6: ["depleted", 40] },
+      nodes: {
+        E6: ["depleted", 40],
+        C3: ["charged", 0],
+        F3: ["charged", 0],
+        C6: ["charged", 0],
+        F9: ["charged", 0],
+      },
     });
     const before = structuredClone(state);
 
@@ -101,7 +109,13 @@ describe("applyMove", () => {
 
     // Its own per-turn clock still runs — its recovery still falls — so
     // only its state, and the set of node squares, are asserted here.
-    expect(Object.keys(result.state.nodes)).toEqual(["E6"]);
+    expect(Object.keys(result.state.nodes).sort()).toEqual([
+      "C3",
+      "C6",
+      "E6",
+      "F3",
+      "F9",
+    ]);
     expect(result.state.nodes.E6.state).toBe("depleted");
 
     // The input state itself is never mutated.
@@ -117,8 +131,17 @@ describe("applyMove", () => {
     // effect at all, where the move only ever carries the ship's power —
     // its cost already paid — onto the planet for the end-of-turn step to
     // then act on. This move is a free orthogonal step, so its cost is 0.
+    // Four charged nodes elsewhere hold the board at its target, so
+    // charging has no shortfall to fill and the end-of-turn effects stay
+    // just the power gain.
     const endsOnPlanet = buildState({
       ships: [ship("green-1", "green", "C6", 2), ship("red-1", "red", "O15")],
+      nodes: {
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
+        I3: ["charged", 0],
+      },
     });
     const endResult = applyMove(endsOnPlanet, "green-1", squareFromName("D6"));
     expect(endResult.outcome).toBe("applied");
@@ -150,8 +173,15 @@ describe("applyMove", () => {
     // orthogonal move, which costs 2 (rules.md §6) — the planet itself adds
     // nothing beyond that: the ship lands on E6, not a planet, carrying
     // exactly what it started with less that cost, with no gain effect.
+    // Four charged nodes elsewhere again hold the board at its target.
     const passesOverPlanet = buildState({
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
+      nodes: {
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
+        I3: ["charged", 0],
+      },
     });
     const passResult = applyMove(
       passesOverPlanet,
@@ -194,16 +224,19 @@ describe("applyMove", () => {
   });
 
   it("flying over an inactive node without stopping leaves it inactive (rules.md §8.2)", () => {
-    // Four charged nodes elsewhere hold the board at its target, so the
-    // charge draw has no shortfall to fill and never considers I8; I8
-    // itself sits at the pressure cap, so the pressure step also leaves it
-    // untouched — between the two, nothing about the end-of-turn sequence
-    // this move triggers can touch it. The L from H8 to J9 turns through I8
-    // (its orthogonal corner) without stopping there (rules.md §6).
+    // Four charged nodes elsewhere hold the board at its target, so
+    // charging has no shortfall to fill and never considers I8 — nothing
+    // about the end-of-turn sequence this move triggers can charge it. The
+    // L from H8 to J9 turns through I8 (its orthogonal corner) without
+    // stopping there (rules.md §6). I8's priority still rotates as normal,
+    // since nothing charged this turn — that is the ordinary end-of-turn
+    // sequence's own doing, not something the move itself causes. A red
+    // ship far away, with a legal move of its own, keeps red from
+    // auto-passing and running a second end-of-turn sequence of its own.
     const state = buildState({
-      ships: [ship("green-1", "green", "H8")],
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O15")],
       nodes: {
-        I8: ["inactive", PRESSURE_CAP],
+        I8: ["inactive", TOP_NODE_PRIORITY],
         C3: ["charged", 0],
         F3: ["charged", 0],
         C6: ["charged", 0],
@@ -218,34 +251,12 @@ describe("applyMove", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(result.state.nodes.I8).toEqual(state.nodes.I8);
+    expect(result.state.nodes.I8).toEqual({
+      state: "inactive",
+      level: rotatePriority(TOP_NODE_PRIORITY),
+    });
     const movedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(movedShip?.square).toEqual(squareFromName("J9"));
-  });
-
-  it("leaves an inactive node flown over unaffected", () => {
-    // As above: four charged nodes elsewhere leave the charge draw with no
-    // shortfall, and I8 sits at the pressure cap so the pressure step
-    // leaves it untouched too.
-    const state = buildState({
-      ships: [ship("green-1", "green", "H8")],
-      nodes: {
-        I8: ["inactive", PRESSURE_CAP],
-        C3: ["charged", 0],
-        F3: ["charged", 0],
-        C6: ["charged", 0],
-        F6: ["charged", 0],
-      },
-      plyNumber: 4,
-    });
-
-    const result = applyMove(state, "green-1", squareFromName("J9"));
-
-    expect(result.outcome).toBe("applied");
-    if (result.outcome !== "applied") {
-      throw new Error("expected the move to be applied");
-    }
-    expect(result.state.nodes.I8).toEqual(state.nodes.I8);
   });
 
   it("leaves the node set and every node's state unchanged when a move touches no node", () => {
@@ -254,10 +265,18 @@ describe("applyMove", () => {
     // end-of-turn sequence this move triggers cannot retire it — the
     // "unchanged" under test here is about the move itself, not about the
     // board's own per-turn clock, which the end-of-turn drain and recovery
-    // run regardless of what a ship does (see endOfTurn.test.ts).
+    // run regardless of what a ship does (see endOfTurn.test.ts). Four
+    // charged nodes elsewhere hold the board at its target, so charging
+    // has no shortfall to fill and nothing charges or refills.
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
-      nodes: { E6: ["depleted", 40] },
+      nodes: {
+        E6: ["depleted", 40],
+        C3: ["charged", 0],
+        F3: ["charged", 0],
+        C6: ["charged", 0],
+        F9: ["charged", 0],
+      },
     });
 
     const result = applyMove(state, "green-1", squareFromName("H9"));
@@ -268,7 +287,13 @@ describe("applyMove", () => {
     }
     // Its own per-turn clock still runs, so only its state, and the set of
     // node squares, are asserted here rather than the whole record.
-    expect(Object.keys(result.state.nodes)).toEqual(["E6"]);
+    expect(Object.keys(result.state.nodes).sort()).toEqual([
+      "C3",
+      "C6",
+      "E6",
+      "F3",
+      "F9",
+    ]);
     expect(result.state.nodes.E6.state).toBe("depleted");
   });
 
@@ -293,8 +318,17 @@ describe("applyMove", () => {
   });
 
   it("spends the ply's one action before passing the turn, then clears the moved-this-ply marks", () => {
+    // Four charged nodes elsewhere hold the board at its target, so
+    // charging has no shortfall to fill and the end-of-turn effects stay
+    // empty.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O15")],
+      nodes: {
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
+        I3: ["charged", 0],
+      },
     });
 
     const result = applyMove(state, "green-1", squareFromName("H9"));
@@ -702,12 +736,21 @@ describe("applyAttack", () => {
     );
   });
 
-  it("advances randomSeed exactly twice for every fight", () => {
+  it("advances randomSeed exactly twice for the fight itself, then once per charged node's drain", () => {
     // Drawing the second return from the same seed the first draw used
     // would silently break replay: the pool is just one square shorter, so
-    // the draw still looks legal.
+    // the draw still looks legal. Four charged nodes elsewhere hold the
+    // board at its target, so charging has no shortfall to fill and the
+    // only draws the end-of-turn sequence adds beyond the fight itself are
+    // each charged node's own step 3 drain draw.
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
+      nodes: {
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
+        I3: ["charged", 0],
+      },
     });
     const result = applyAttack(state, "green-1", squareFromName("H9"));
     if (result.outcome !== "applied") {
@@ -724,7 +767,23 @@ describe("applyAttack", () => {
       seedAfterAttackerDraw,
       PLANETS.length - 1,
     );
-    expect(result.state.randomSeed).toBe(seedAfterDefenderDraw);
+    const [, seedAfterC3] = drawTableAmount(
+      seedAfterDefenderDraw,
+      EMPTY_NODE_DRAIN_TABLE,
+    );
+    const [, seedAfterE3] = drawTableAmount(
+      seedAfterC3,
+      EMPTY_NODE_DRAIN_TABLE,
+    );
+    const [, seedAfterG3] = drawTableAmount(
+      seedAfterE3,
+      EMPTY_NODE_DRAIN_TABLE,
+    );
+    const [, seedAfterI3] = drawTableAmount(
+      seedAfterG3,
+      EMPTY_NODE_DRAIN_TABLE,
+    );
+    expect(result.state.randomSeed).toBe(seedAfterI3);
   });
 
   it("places both ships on different planets, whatever the seed, when exactly two planets are empty", () => {
@@ -975,8 +1034,17 @@ describe("applyAttack", () => {
   });
 
   it("marks the attacker as having acted, even though it ends the action on a planet itself", () => {
+    // Four charged nodes elsewhere hold the board at its target, so
+    // charging has no shortfall to fill and the end-of-turn effects stay
+    // just the power gain.
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
+      nodes: {
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
+        I3: ["charged", 0],
+      },
     });
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -1054,8 +1122,10 @@ describe("nothing a ship does changes any node's state (rules.md §8.2)", () => 
     // started with enough recovery left (§8.2) that three end-of-turn
     // sequences cannot bring either back to inactive, so only their *state*
     // is asserted too, not their exact level. No node here is ever
-    // inactive, so the charge draw never has a pool to draw from across any
-    // of the three sequences.
+    // inactive, so charging has no queue to charge from, and with K5 still
+    // charged the shortfall never reaches four, so nothing is ever placed
+    // directly either — charging draws nothing across any of the three
+    // sequences.
     const state = buildState({
       ships: [
         ship("green-1", "green", "G8", 0),
@@ -1290,6 +1360,15 @@ describe("applyPassGuard", () => {
         ship("red-1", "red", "B1"),
         ship("red-2", "red", "A2"),
       ],
+      // Four charged nodes elsewhere hold the board at its target, so
+      // charging has no shortfall to fill and the end-of-turn effects stay
+      // empty.
+      nodes: {
+        H8: ["charged", 0],
+        K8: ["charged", 0],
+        H12: ["charged", 0],
+        K12: ["charged", 0],
+      },
       actedThisPly: ["green-1"],
       actionsRemaining: 1,
     });
@@ -1310,7 +1389,9 @@ describe("applyPassGuard", () => {
     // green-1 is on the D6 planet, so §3.1 forbids it to attack regardless
     // of what stands next to it, and every square it could otherwise reach —
     // C6, E6, D5 and D7, its four orthogonal neighbours, its only reach at
-    // 0 power — is occupied.
+    // 0 power — is occupied. Four charged nodes elsewhere hold the board
+    // at its target, so charging has no shortfall to fill and the
+    // end-of-turn effects stay just the power gain.
     const state = buildState({
       ships: [
         ship("green-1", "green", "D6", 0),
@@ -1319,6 +1400,12 @@ describe("applyPassGuard", () => {
         ship("red-3", "red", "D5"),
         ship("red-4", "red", "D7"),
       ],
+      nodes: {
+        H8: ["charged", 0],
+        K8: ["charged", 0],
+        H12: ["charged", 0],
+        K12: ["charged", 0],
+      },
     });
 
     const result = applyPassGuard(state);
@@ -1407,10 +1494,18 @@ describe("applyPassGuard", () => {
         ship("red-1", "red", "B1"),
         ship("red-2", "red", "A2"),
       ],
-      // Comfortably above the recovery table's largest single draw (8), so
-      // A1 stays depleted through this very sequence rather than retiring
-      // in it — this test is about the pass guard, not step 6.
-      nodes: { A1: ["depleted", 30] },
+      nodes: {
+        // Comfortably above the recovery table's largest single draw (8),
+        // so A1 stays depleted through this very sequence rather than
+        // retiring in it — this test is about the pass guard, not step 6.
+        A1: ["depleted", 30],
+        // A lone charged node, unoccupied, keeps the shortfall at three
+        // rather than four — a shortfall of four would place a fourth node
+        // directly and refill the queue, which is not this test's subject
+        // — and there is no inactive node for it to charge from either
+        // way.
+        H8: ["charged", 1],
+      },
     });
 
     const result = applyPassGuard(state);
@@ -1438,7 +1533,17 @@ describe("applyPassGuard", () => {
   });
 
   it("passes once, unconditionally, when no ship at all has a legal move", () => {
-    const state = buildState({ ships: [] });
+    // Four charged nodes hold the board at its target, so charging has no
+    // shortfall to fill and the end-of-turn effects stay empty.
+    const state = buildState({
+      ships: [],
+      nodes: {
+        H8: ["charged", 0],
+        K8: ["charged", 0],
+        H12: ["charged", 0],
+        K12: ["charged", 0],
+      },
+    });
 
     const result = applyPassGuard(state);
 
