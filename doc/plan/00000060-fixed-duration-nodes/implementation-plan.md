@@ -1031,7 +1031,10 @@ seed the file runs.
 
 ### Step 8 — The owner plays a game and reads the numbers
 
-Status: pending
+Status: committed
+
+Notes: The owner played the game on the dev server and confirmed points 1-8
+behave as the step describes. No changes requested.
 
 The one manual gate. Everything is implemented; this is the owner's eye on
 what a test cannot judge: whether the two numbers are readable and whether a
