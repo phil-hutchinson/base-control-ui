@@ -981,7 +981,40 @@ Also run `npm test`, `npm run typecheck`, `npm run lint`, `npm run format:check`
 
 ### Step 6 — The rings: an inactive node's priority is drawn
 
-Status: pending
+Status: committed
+
+Notes: `NodeMarker.tsx` now takes an optional `priority?: NodePriority` prop
+and draws an inactive node as `priority` concentric stroked rings (radii 18,
+28, 38; stroke width 5; colour `#DAA520`), with no disc and no gradient
+behind them; `nodeArtwork`'s switch was narrowed to `"charged" | "depleted"`
+since inactive no longer shares its shape, and the dead interpolation
+helpers/constants (`lerpNumber`, `hexLerp`, `hexChannel(s)`, the
+`INACTIVE_START_*`/`INACTIVE_END_*`/`INACTIVE_OUTER_COLOR` constants) were
+deleted; `middleStopOffsetPercent` and the charged/depleted tables were left
+untouched. `BoardSquare.tsx` threads the new `priority` prop through to
+`NodeMarker`; `Board.tsx` reads it off an inactive `NodeStatus` via
+`nodeQueue.ts`'s `inactivePriority` reader (D1) and passes it, alongside the
+existing charged/depleted-only `cyclePosition`. No change was needed to
+`NodeMarker.css` — the rings share the existing 100-unit viewBox and the same
+element box as before. `NodeMarker.test.tsx` was rewritten: the
+gradient/cycle-position assertions now iterate only the two clocked states
+(the old inactive pressure-travel tests — start/end/halfway/clamp — are gone
+with their subject), and a new "an inactive node's rings" block asserts one,
+two and three rings at the stated radii/stroke/colour for priorities 1-3, no
+gradient or `<defs>` at all, and a one-ring fallback when no priority is
+given (named per the step's instruction). `Board.test.tsx` gets back the
+priority-count test deleted in Step 4, in its new form (two inactive nodes
+at priorities 1 and 3 render 1 and 3 circles respectively); its neighbouring
+"gradient id" test was narrowed to count only the charged/depleted markers,
+since an inactive marker no longer has a gradient at all — a mechanical
+fix the step's file list implied but did not spell out by name, needed
+because that test iterated all node squares including inactive ones. Added
+the required accessibility note to
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md` recording D11's
+accepted loss. `npm test` (982 tests, unchanged count — deletions and
+additions balanced), `npm run typecheck`, `npm run lint` and
+`npm run format:check` all pass (one Prettier pass needed on the two edited
+test files, applied cleanly).
 
 Redraw the inactive node as rings (D10). Charged and depleted artwork is
 untouched (S13).

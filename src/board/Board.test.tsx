@@ -322,19 +322,21 @@ describe("Board", () => {
       }
     });
 
-    it("gives every node marker's gradient its own document-unique id", () => {
+    it("gives every charged or depleted node marker's gradient its own document-unique id", () => {
       const { container } = render(
         <Board session={startingSession} onIntent={noop} />,
       );
 
       // Counted within the node markers themselves, since the board now also
-      // mounts the planet sprite's own radial gradients as a sibling.
+      // mounts the planet sprite's own radial gradients as a sibling. An
+      // inactive marker carries no gradient at all - it is a stack of
+      // stroked rings - so only the charged and depleted squares count here.
       const gradientIds = Array.from(
         container.querySelectorAll(".node-marker radialGradient"),
       ).map((gradient) => gradient.getAttribute("id"));
 
-      expect(gradientIds).toHaveLength(NODE_SQUARES.length);
-      expect(new Set(gradientIds).size).toBe(NODE_SQUARES.length);
+      expect(gradientIds).toHaveLength(CHARGED_NODE_SQUARES.length);
+      expect(new Set(gradientIds).size).toBe(CHARGED_NODE_SQUARES.length);
 
       // Document-unique, not merely unique among node markers: every id the
       // whole board renders is distinct, so a node gradient can never be
@@ -511,6 +513,42 @@ describe("Board", () => {
       const { container } = render(<Board session={session} onIntent={noop} />);
 
       expect(middleStopOffset(container, "depleted")).toBe("25%");
+    });
+  });
+
+  describe("an inactive node's priority reaching the marker", () => {
+    it("shows two inactive nodes at different priorities with visibly different markers", () => {
+      const state: GameState = {
+        ships: [],
+        nodes: {
+          [squareName(squareAt("H", 8))]: { state: "inactive", level: 1 },
+          [squareName(squareAt("E", 5))]: { state: "inactive", level: 3 },
+        },
+        sideToMove: "green",
+        actionsRemaining: 1,
+        actedThisPly: [],
+        plyNumber: 1,
+        randomSeed: 1,
+        openingSeed: 1,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        outOfTime: { green: false, red: false },
+      };
+      const session: Session = {
+        state,
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      const { container } = render(<Board session={session} onIntent={noop} />);
+
+      const markers = container.querySelectorAll(".node-marker--inactive");
+      expect(markers).toHaveLength(2);
+
+      const ringCounts = Array.from(
+        markers,
+        (marker) => marker.querySelectorAll("circle").length,
+      ).sort();
+      expect(ringCounts).toEqual([1, 3]);
     });
   });
 

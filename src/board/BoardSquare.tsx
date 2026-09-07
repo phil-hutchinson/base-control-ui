@@ -23,6 +23,7 @@
 import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
 import type { NodeState } from "../rules/nodes";
+import type { NodePriority } from "../rules/nodeQueue";
 import { ShipModel } from "../ships/ShipModel";
 import { Planet } from "./Planet";
 import type { PlanetArt } from "./planetArt";
@@ -36,6 +37,7 @@ export interface BoardSquareProps {
   readonly planet?: PlanetArt;
   readonly nodeState?: NodeState;
   readonly cyclePosition?: number;
+  readonly priority?: NodePriority;
   readonly occupant?: SquareOccupant;
   readonly hasActed?: boolean;
   readonly condition?: ShipCondition;
@@ -201,6 +203,7 @@ export function BoardSquare({
   planet,
   nodeState,
   cyclePosition,
+  priority,
   occupant,
   hasActed,
   condition,
@@ -231,6 +234,7 @@ export function BoardSquare({
           state={nodeState}
           squareName={squareName}
           cyclePosition={cyclePosition}
+          priority={priority}
         />
       )}
       {occupant && <ShipModel side={occupant.side} power={occupant.power} />}

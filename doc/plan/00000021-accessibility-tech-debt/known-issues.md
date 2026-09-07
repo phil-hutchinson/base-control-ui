@@ -252,3 +252,24 @@ attack decision depends on spotting it, and the acting player's own trapped
 ships already read as `no-action` on their turn.
 
 Where: `src/board/squareLabel.ts`, `src/rules/trap.ts`.
+
+## From story 63 — reduce to three inactive nodes
+
+Source: `doc/plan/00000063-reduce-to-three-inactive-nodes/implementation-plan.md`
+decision D11, Step 6.
+
+### 1. An inactive node's priority is conveyed by ring count only
+
+An inactive node now carries a priority of 1, 2 or 3 (rules.md §8.2), drawn as
+that many concentric rings, and the node with three rings is the one that
+charges next. The rings are the only place the priority appears: the square's
+accessible name still says only "inactive node", with no priority attached, so
+a screen-reader user cannot tell a freshly refilled node from one about to
+charge, and cannot read the queue between refills.
+
+It is mitigated but not resolved: the `queue-refilled` announcement does name
+the square that opens at priority 3 when a refill happens, so a listener is
+not left with nothing — what is lost is reading the queue's current state at
+any other moment.
+
+Where: `src/board/NodeMarker.tsx`, `src/board/squareLabel.ts`.

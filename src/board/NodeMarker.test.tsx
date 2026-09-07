@@ -4,11 +4,18 @@ import { cleanup, render } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { NodeState } from "../rules/nodes";
+import type { NodePriority } from "../rules/nodeQueue";
 import { NodeMarker } from "./NodeMarker";
 
 afterEach(cleanup);
 
 const STATES: readonly NodeState[] = ["inactive", "charged", "depleted"];
+
+// The two clocked states, whose artwork is a single gradient-filled circle
+// that travels through a cycle position. Inactive is drawn differently (a
+// stack of rings, tested separately below), so it is excluded from the
+// gradient-shaped assertions this constant feeds.
+const CLOCKED_STATES = ["charged", "depleted"] as const;
 
 const SQUARE_NAME = "H8";
 
@@ -26,27 +33,11 @@ interface ExpectedArtwork {
 // Radii, stop offsets, colours and opacities as specified in
 // doc/plan/00000023-update-node-visual/node-artwork.md, transcribed here as
 // the expectation an assertion checks against, independently of
-// NodeMarker.tsx's own table. Inactive's own start and end sit at the start
-// and the end of its travel respectively (see NodeMarker.tsx's ACTIVE_*
-// constants).
-const ACTIVE_START: ExpectedArtwork = {
-  radius: "12",
-  stops: [
-    { offset: "0%", color: "#F1DBA5", opacity: "1" },
-    { offset: "100%", color: "#DAA520", opacity: "0.75" },
-  ],
-};
-
-const ACTIVE_END: ExpectedArtwork = {
-  radius: "24",
-  stops: [
-    { offset: "0%", color: "#DAA520", opacity: "1" },
-    { offset: "100%", color: "#DAA520", opacity: "0.5" },
-  ],
-};
-
-const EXPECTED_ARTWORK: Record<NodeState, ExpectedArtwork> = {
-  inactive: ACTIVE_START,
+// NodeMarker.tsx's own table.
+const EXPECTED_ARTWORK: Record<
+  (typeof CLOCKED_STATES)[number],
+  ExpectedArtwork
+> = {
   charged: {
     radius: "70",
     stops: [
@@ -64,6 +55,13 @@ const EXPECTED_ARTWORK: Record<NodeState, ExpectedArtwork> = {
     ],
   },
 };
+
+// The rings an inactive node draws, radii innermost first, matching
+// NodeMarker.tsx's own INACTIVE_RING_RADII exactly, so this file's
+// expectation does not silently track the production constant.
+const INACTIVE_RING_RADII = ["18", "28", "38"];
+const INACTIVE_RING_STROKE_WIDTH = "5";
+const INACTIVE_RING_COLOR = "#DAA520";
 
 describe("NodeMarker", () => {
   it.each(STATES)("gives %s its own state modifier class", (state) => {
@@ -87,15 +85,21 @@ describe("NodeMarker", () => {
     expect(container).toHaveTextContent("");
   });
 
-  it.each(STATES)(
-    "renders exactly one centred circle in the shared viewBox for %s",
+  it.each(STATES)("shares the same 100-unit viewBox for %s", (state) => {
+    const { container } = render(
+      <NodeMarker state={state} squareName={SQUARE_NAME} />,
+    );
+
+    const svg = container.querySelector("svg");
+    expect(svg).toHaveAttribute("viewBox", "0 0 100 100");
+  });
+
+  it.each(CLOCKED_STATES)(
+    "renders exactly one centred circle for %s",
     (state) => {
       const { container } = render(
         <NodeMarker state={state} squareName={SQUARE_NAME} />,
       );
-
-      const svg = container.querySelector("svg");
-      expect(svg).toHaveAttribute("viewBox", "0 0 100 100");
 
       const circles = container.querySelectorAll("circle");
       expect(circles).toHaveLength(1);
@@ -104,7 +108,7 @@ describe("NodeMarker", () => {
     },
   );
 
-  it.each(STATES)(
+  it.each(CLOCKED_STATES)(
     "draws %s's radius, gradient stops, colours and opacities as specified",
     (state) => {
       const { container } = render(
@@ -128,7 +132,7 @@ describe("NodeMarker", () => {
     },
   );
 
-  it.each(STATES)(
+  it.each(CLOCKED_STATES)(
     "fills %s's circle with a gradient id built from its square name",
     (state) => {
       const { container } = render(
@@ -182,96 +186,7 @@ describe("NodeMarker", () => {
     },
   );
 
-  it("renders inactive's start-of-travel appearance at cycle position 0", () => {
-    const { container } = render(
-      <NodeMarker
-        state="inactive"
-        squareName={SQUARE_NAME}
-        cyclePosition={0}
-      />,
-    );
-
-    const circle = container.querySelector("circle");
-    expect(circle).toHaveAttribute("r", ACTIVE_START.radius);
-
-    const stops = container.querySelectorAll("stop");
-    expect(stops[0]).toHaveAttribute("stop-color", ACTIVE_START.stops[0].color);
-    expect(stops[1]).toHaveAttribute(
-      "stop-opacity",
-      ACTIVE_START.stops[1].opacity,
-    );
-  });
-
-  it("renders today's disc at inactive's end-of-travel, cycle position 1", () => {
-    const { container } = render(
-      <NodeMarker
-        state="inactive"
-        squareName={SQUARE_NAME}
-        cyclePosition={1}
-      />,
-    );
-
-    const circle = container.querySelector("circle");
-    expect(circle).toHaveAttribute("r", ACTIVE_END.radius);
-
-    const stops = container.querySelectorAll("stop");
-    expect(stops[0]).toHaveAttribute("stop-color", ACTIVE_END.stops[0].color);
-    expect(stops[1]).toHaveAttribute(
-      "stop-opacity",
-      ACTIVE_END.stops[1].opacity,
-    );
-  });
-
-  it("sits halfway between inactive's two ends at cycle position 0.5", () => {
-    const { container } = render(
-      <NodeMarker
-        state="inactive"
-        squareName={SQUARE_NAME}
-        cyclePosition={0.5}
-      />,
-    );
-
-    const circle = container.querySelector("circle");
-    expect(circle).toHaveAttribute("r", "18");
-
-    const stops = container.querySelectorAll("stop");
-    // #F1DBA5 -> #DAA520, per channel: F1->DA, DB->A5, A5->20.
-    expect(stops[0]).toHaveAttribute("stop-color", "#E6C063");
-    expect(stops[1]).toHaveAttribute("stop-opacity", "0.625");
-  });
-
-  it("falls back to inactive's start-of-travel appearance when no cycle position is given", () => {
-    const { container } = render(
-      <NodeMarker state="inactive" squareName={SQUARE_NAME} />,
-    );
-
-    const circle = container.querySelector("circle");
-    expect(circle).toHaveAttribute("r", ACTIVE_START.radius);
-
-    const stops = container.querySelectorAll("stop");
-    expect(stops[0]).toHaveAttribute("stop-color", ACTIVE_START.stops[0].color);
-  });
-
-  it.each([
-    { cyclePosition: -0.5, expected: ACTIVE_START },
-    { cyclePosition: 1.5, expected: ACTIVE_END },
-  ])(
-    "clamps inactive's cycle position $cyclePosition to its nearer end",
-    ({ cyclePosition, expected }) => {
-      const { container } = render(
-        <NodeMarker
-          state="inactive"
-          squareName={SQUARE_NAME}
-          cyclePosition={cyclePosition}
-        />,
-      );
-
-      const circle = container.querySelector("circle");
-      expect(circle).toHaveAttribute("r", expected.radius);
-    },
-  );
-
-  it.each(["charged", "depleted"] as const)(
+  it.each(CLOCKED_STATES)(
     "falls back to %s's start-of-cycle offset when no cycle position is given",
     (state) => {
       const { container } = render(
@@ -286,10 +201,64 @@ describe("NodeMarker", () => {
     },
   );
 
+  describe("an inactive node's rings", () => {
+    it.each([
+      { priority: 1, expectedRadii: INACTIVE_RING_RADII.slice(0, 1) },
+      { priority: 2, expectedRadii: INACTIVE_RING_RADII.slice(0, 2) },
+      { priority: 3, expectedRadii: INACTIVE_RING_RADII.slice(0, 3) },
+    ] satisfies { priority: NodePriority; expectedRadii: readonly string[] }[])(
+      "draws $priority ring(s) at the stated radii for priority $priority",
+      ({ priority, expectedRadii }) => {
+        const { container } = render(
+          <NodeMarker
+            state="inactive"
+            squareName={SQUARE_NAME}
+            priority={priority}
+          />,
+        );
+
+        const circles = container.querySelectorAll("circle");
+        expect(circles).toHaveLength(expectedRadii.length);
+        expect(
+          Array.from(circles, (circle) => circle.getAttribute("r")),
+        ).toEqual(expectedRadii);
+        for (const circle of circles) {
+          expect(circle).toHaveAttribute("cx", "50");
+          expect(circle).toHaveAttribute("cy", "50");
+          expect(circle).toHaveAttribute("fill", "none");
+          expect(circle).toHaveAttribute("stroke", INACTIVE_RING_COLOR);
+          expect(circle).toHaveAttribute(
+            "stroke-width",
+            INACTIVE_RING_STROKE_WIDTH,
+          );
+        }
+      },
+    );
+
+    it("draws no gradient at all, unlike the charged and depleted artwork", () => {
+      const { container } = render(
+        <NodeMarker state="inactive" squareName={SQUARE_NAME} priority={2} />,
+      );
+
+      expect(container.querySelector("radialGradient")).not.toBeInTheDocument();
+      expect(container.querySelector("defs")).not.toBeInTheDocument();
+    });
+
+    it("degrades to a single ring, rather than throwing, when no priority is given", () => {
+      const { container } = render(
+        <NodeMarker state="inactive" squareName={SQUARE_NAME} />,
+      );
+
+      const circles = container.querySelectorAll("circle");
+      expect(circles).toHaveLength(1);
+      expect(circles[0]).toHaveAttribute("r", INACTIVE_RING_RADII[0]);
+    });
+  });
+
   it("reports no axe violations for any state", async () => {
     for (const state of STATES) {
       const { container } = render(
-        <NodeMarker state={state} squareName={SQUARE_NAME} />,
+        <NodeMarker state={state} squareName={SQUARE_NAME} priority={3} />,
       );
 
       const results = await axe.run(container, {
