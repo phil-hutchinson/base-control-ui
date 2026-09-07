@@ -23,19 +23,22 @@ to a planet, chosen at random from wherever the board has one standing empty
 already having paid for its shot — and fly again from there. Ships are never
 destroyed.
 
-Nodes do not last. Standing on one burns it down faster than leaving it alone,
-but walking away costs it nothing — a node someone abandons stays lit and keeps
-burning at its slower pace, there for either player to reach. Either way it
-eventually runs out, and once it has wound all the way down it retires and
-simply leaves — nothing takes its place there. New nodes only appear when a node
-lights: the three still waiting are swept away together and three fresh ones
-appear elsewhere, so the map itself keeps reshaping as the game runs and you
-will not know where the next three will land until they do. A ship still
-standing on a node the moment it burns out is trapped there — it can neither
-move nor attack, and cannot be attacked — until the node finishes retiring some
-ten turns later, so it pays to leave in good time. A ship can fly over a
-depleted node, but cannot land on one; the only place a ship's power comes back
-is a planet.
+A node doesn't wear down on its own: it just sits there, lit, for as long as
+it takes until a ship lands on it and starts its countdown. From that moment
+it lasts six of the holder's own turns, with a number in the middle counting
+them down, before it runs out and traps the ship still standing there.
+Walking away instead ends the node immediately, the moment you leave — there
+is no way to abandon a node and come back to it later, and your opponent
+cannot inherit it either. New nodes only appear when a node lights: the three
+still waiting are swept away together and three fresh ones appear elsewhere,
+so the map itself keeps reshaping as the game runs and you will not know
+where the next three will land until they do. A ship trapped when its node
+runs out stays stuck — it can neither move nor attack, and cannot be attacked
+— for five more of its own turns, then it is freed just before its next turn,
+ready to move right away. A node left behind by a ship walking off blocks its
+square for two turns and then it too is gone. A ship can fly over a waiting
+or a depleted node, but cannot land on either; the only place a ship's power
+comes back is a planet.
 
 This is the game's web app. It runs entirely in your browser — nothing to
 install, no account, no server.
@@ -66,34 +69,36 @@ install, no account, no server.
 > already full doesn't count towards that. Green goes first, and each player takes
 > one action a turn — a move or an attack — by mouse or by keyboard. Every game
 > deals a different opening board: it opens with seven nodes — four already lit
-> and three still waiting. The four lit ones are chosen at random too, and they do
-> not all start fresh: some are already part-way through their life and will run
-> out sooner than the rest. Each waiting node carries one, two or three rings, and
-> the one with three rings is the one that lights next; a ship may stop anywhere
-> it can reach, including a waiting node, and camp there for as long as its owner
-> likes while it waits its turn. On a turn when nothing lights, the rings shift
-> round — the single becomes a double, the double becomes a triple, and the
-> triple drops back to a single — so you can read not just what lights next but
-> what lights the turn after that. Whatever runs out during a turn is made
-> up at the end of it by lighting from the waiting three, highest rings
-> first, so the board is always brought back to four lit nodes by the time
-> your turn begins; on the rare turn all four run out at once, one further
-> node appears somewhere else already lit to make up the difference. A lit
-> node's
-> glow shifts as it burns down, so you can see roughly how much life it has left,
-> and it runs out at a random pace — faster while a ship is sitting on it than
-> while it stands empty. A ship caught standing on a node the instant it runs out
-> is trapped there: it can neither move nor attack, and cannot be attacked either,
-> for as long as the node stays depleted — about ten turns, on the same clock that
-> governs the rest of a node's life. A ship can still fly over a depleted node on
-> its way somewhere else; it simply cannot land on one, so the only way to end up
-> trapped is to have been standing on a node when it burned out, never by choosing
-> to land there. If every one of a player's ships is ever trapped at once, the
-> game will not leave them stuck passing turn after turn: it ends the depleted
-> node with the least life left among those that would set a ship free to move
-> again, right away. A node that finishes recovering, or is freed this way, simply
-> leaves the board for good — nothing appears where it stood, and any ship that
-> was trapped there is free again, keeping whatever power it had. New nodes only
+> and three still waiting. The four lit ones are chosen at random too, but none
+> of them carries a countdown yet, so at the start of the game all four are
+> exactly as fresh as each other — a lit node only starts running down once a
+> ship lands on it. Each waiting node carries one, two or three rings, and the
+> one with three rings is the one that lights next. A ship can fly straight
+> over a waiting node, but landing on one has to wait until it lights. On a
+> turn when nothing lights, the rings shift round — the single becomes a
+> double, the double becomes a triple, and the triple drops back to a single —
+> so you can read not just what lights next but what lights the turn after
+> that. Whatever runs out during a turn is made up at the end of it by
+> lighting from the waiting three, highest rings first, so the board is always
+> brought back to four lit nodes by the time your turn begins. Land a ship on
+> a lit node and a black number appears in its middle: six, counting down by
+> one at the end of each of your own turns while the glow itself grows
+> steadily brighter, until it runs out on your sixth turn there and traps you.
+> Leave a node you are holding instead and it ends immediately, right there in
+> the middle of your turn — you cannot hand it back, and your opponent cannot
+> pick it up after you — though it stays on the board, dim, for a couple more
+> turns before it disappears for good. A ship can fly over any node that isn't
+> lit; it simply cannot land on one, so the only way to end up trapped is to
+> have been standing on a node when it ran out, never by choosing to land
+> there. A ship caught this way is trapped for five more of its own turns,
+> counted down by a white number the same way, and is freed just before its
+> own next turn, ready to move right away. If every one of a player's ships is
+> ever trapped at once, the game will not leave them stuck passing turn after
+> turn: it ends the depleted node with the least life left among those that
+> would set a ship free to move again, right away. A node that finishes its
+> countdown, or is freed this way, simply leaves the board for good — nothing
+> appears where it stood, and any ship that was trapped there is free again,
+> keeping whatever power it had. New nodes only
 > appear when a node lights: the whole waiting trio is swept away at once and
 > three fresh ones appear elsewhere, spread apart from the lit nodes and from each
 > other, so the map itself keeps reshaping as the game runs and you will not know

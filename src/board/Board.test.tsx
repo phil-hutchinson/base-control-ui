@@ -52,8 +52,8 @@ const TEST_SEED = 1;
 
 /**
  * The board this file has always been rendered against: H8, E5, K5, E11 and
- * K11 charged at drain 0, the other 12 squares inactive, all at level 1 —
- * an arbitrary fixed board, not the opening rules.md §8.1 deals since 0.18. Node
+ * K11 charged at baseline (no countdown), the other 12 squares inactive, all
+ * at level 1 — an arbitrary fixed board, not the opening rules.md §8.1 deals since 0.18. Node
  * positions are drawn rather than fixed since 0.20, so this board is no
  * longer any table in `rules.md` either — it is simply a board this file
  * states for itself, not built by calling any of `nodes.ts`'s production

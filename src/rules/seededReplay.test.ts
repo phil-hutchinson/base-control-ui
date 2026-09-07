@@ -7,35 +7,31 @@
 // plenty of fights, unlike `fullGame.test.ts`'s greedy policy, which only
 // attacks when no ship has a legal move at all.
 //
-// The board's own end-of-turn charge draw (§8.2) is a consumer of the seeded
-// stream too, alongside planet returns, so the same property is proven for it:
-// the sequence of nodes the draw charges over a game replays identically
-// from the same seed. Since 0.12 the stream's bulk is neither of those —
-// every charged node's drain and every depleted node's recovery are drawn
-// every turn (§8.3, §8.2), so a ply now consumes several times as many seed
-// steps as it did under 0.11. Those per-node draws are not tracked
-// separately here; they are exercised indirectly, and their effect on the
-// final state is what the whole-state equality check below proves replays.
-//
 // Since 0.18 the stream starts even earlier than green's first turn: the
 // opening board itself is dealt from the same seed (`dealOpeningBoard`,
-// §8.1). Since 0.20 that deal draws each node's square rather than filling a
-// fixed list, consuming 24 steps — twelve square draws and twelve level
-// draws — before a single ply is played. `startingGameState` is what a
-// recorded game would call to reproduce that deal, so the property under
-// test now covers it too: the same seed deals the same opening board, and a
-// different seed deals a different one.
+// §8.1). `startingGameState` is what a recorded game would call to
+// reproduce that deal, so the property under test covers it too: the same
+// seed deals the same opening board, and a different seed deals a different
+// one. Since 0.27 the deal's four charged squares are dealt at baseline,
+// with no countdown to draw, so the deal consumes 8 steps rather than the
+// 24 it once did — four square draws for the charged nodes and four more
+// for the inactive trio's refill.
 //
-// 0.26 replaces that charge draw with the queue (§8.2): charging itself
-// draws nothing any more, but the queue's own refill — drawing three new
-// inactive nodes, spread apart by a distance weighting, whenever a charge
-// sweeps the surviving ones — is now the stream's biggest consumer. The
-// sequence of `queue-refilled` effects a game produces — the squares
-// discarded and the trio drawn to replace them, in order — is recorded and
-// compared below, for the same reason: it is drawn from the same stream, and
-// a recorded game must replay it exactly too. A retiring node's own square
-// (`node-retired`) is recorded alongside it, though retirement itself draws
-// nothing since 0.26 — nothing appears in a retiring node's place any more.
+// 0.26 replaced the board's own end-of-turn charge draw (§8.2) with the
+// queue: charging itself draws nothing, but the queue's own refill —
+// drawing three new inactive nodes, spread apart by a distance weighting,
+// whenever a charge sweeps the surviving ones — is the stream's biggest
+// consumer. 0.27 removed the last of the other node draws too: a charged
+// node's countdown starts and runs down deterministically once a ship steps
+// on it (§8.3), and a depleted node's countdown does the same, so nothing
+// about how long a node lives, charged or depleted, draws from the seed any
+// more. The sequence of `queue-refilled` effects a game produces — the
+// squares discarded and the trio drawn to replace them, in order — is
+// recorded and compared below, for the same reason: it is drawn from the
+// same stream, and a recorded game must replay it exactly too. A retiring
+// node's own square (`node-retired`) is recorded alongside it, though
+// retirement itself draws nothing — nothing appears in a retiring node's
+// place any more.
 
 import { describe, expect, it } from "vitest";
 import { type Square, squareName } from "./board";
@@ -281,7 +277,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
   };
 }
 
-/** Every node's `level` at the end of a game, keyed by square name — the part of the state the drain and recovery draws write to. */
+/** Every node's `level` at the end of a game, keyed by square name — the part of the state a countdown ply spends. */
 function nodeLevels(state: GameState): Readonly<Record<string, number>> {
   const levels: Record<string, number> = {};
   for (const [name, status] of Object.entries(state.nodes)) {
@@ -330,9 +326,9 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     expect(second.queueRefills).toEqual(first.queueRefills);
     expect(second.finalState).toEqual(first.finalState);
     // The final state's equality above already covers this, but it is
-    // worth naming directly: the drain and recovery draws that now
-    // dominate the seeded stream (§8.2, §8.3) write to every node's
-    // `level`, not only to which nodes get charged.
+    // worth naming directly: the queue's refill draw (§8.2) writes to
+    // every node's `level`, not only to which nodes get charged, and the
+    // countdown's own deterministic per-ply spend (§8.3) does too.
     expect(nodeLevels(second.finalState)).toEqual(nodeLevels(first.finalState));
   });
 

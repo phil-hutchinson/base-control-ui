@@ -102,8 +102,9 @@ export interface GameState {
 /**
  * The state the game starts from: `startingFleet(fleetSize)`'s ships, a
  * dealt board (`dealOpeningBoard`, rules.md §8.1) — four of the seven nodes
- * charged at a drawn drain, the other three inactive at priorities 1, 2 and
- * 3 dealt at random, nothing depleted — green to move, `ACTIONS_PER_PLY`
+ * charged at baseline, with no countdown, the other three inactive at
+ * priorities 1, 2 and 3 dealt at random, nothing depleted — green to move,
+ * `ACTIONS_PER_PLY`
  * actions remaining, nothing moved, ply 1, both sides at 0 energy, neither
  * side out of time, and the given game length.
  *

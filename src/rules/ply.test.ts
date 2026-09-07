@@ -72,14 +72,12 @@ function buildState(config: {
 
 describe("applyMove", () => {
   it("moves the ship and touches nothing else", () => {
-    // E6 is an ordinary depleted node, given enough recovery left
-    // (comfortably above the recovery table's maximum of 8) that the one
-    // end-of-turn sequence this move triggers cannot retire it — this test
-    // is about the move itself, not about the board's own per-turn clock,
-    // which the end-of-turn drain and recovery run regardless of what a
-    // ship does. Four charged nodes elsewhere hold the board at its
-    // target, so charging has no shortfall to fill and nothing charges or
-    // refills.
+    // E6 is an ordinary depleted node with plies to spare, so the one
+    // end-of-turn sequence this move triggers spends only one of them and
+    // cannot retire it — this test is about the move itself, not about the
+    // board's own countdown, which spends a ply regardless of what a ship
+    // does. Four charged nodes elsewhere hold the board at its target, so
+    // charging has no shortfall to fill and nothing charges or refills.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
       nodes: {
@@ -104,7 +102,7 @@ describe("applyMove", () => {
     const other = result.state.ships.find((s) => s.id === "red-1");
     expect(other).toEqual(ship("red-1", "red", "A1"));
 
-    // Its own per-turn clock still runs — its recovery still falls — so
+    // Its own countdown still spends a ply — its level still falls — so
     // only its state, and the set of node squares, are asserted here.
     expect(Object.keys(result.state.nodes).sort()).toEqual([
       "C3",
@@ -262,14 +260,13 @@ describe("applyMove", () => {
   });
 
   it("leaves the node set and every node's state unchanged when a move touches no node", () => {
-    // E6 is an ordinary depleted node, given enough recovery left
-    // (comfortably above the recovery table's maximum of 8) that the one
-    // end-of-turn sequence this move triggers cannot retire it — the
-    // "unchanged" under test here is about the move itself, not about the
-    // board's own per-turn clock, which the end-of-turn drain and recovery
-    // run regardless of what a ship does (see endOfTurn.test.ts). Four
-    // charged nodes elsewhere hold the board at its target, so charging
-    // has no shortfall to fill and nothing charges or refills.
+    // E6 is an ordinary depleted node with plies to spare, so the one
+    // end-of-turn sequence this move triggers spends only one of them and
+    // cannot retire it — the "unchanged" under test here is about the move
+    // itself, not about the board's own countdown, which spends a ply
+    // regardless of what a ship does (see endOfTurn.test.ts). Four charged
+    // nodes elsewhere hold the board at its target, so charging has no
+    // shortfall to fill and nothing charges or refills.
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
       nodes: {
@@ -1096,22 +1093,19 @@ describe("applyAttack", () => {
   });
 });
 
-describe("nothing a ship does changes any node's state (rules.md §8.2)", () => {
+describe("an action that never lands on or leaves a charged node touches no node's state (rules.md §8.3, §8.6)", () => {
   it("leaves every node's state as it was across a sequence of moves and a fight", () => {
-    // K5 is a charged node: its drain rises every end-of-turn sequence
-    // regardless of what a ship does (§8.3), so what this test can hold
-    // onto across the sequence is that its *state* never changes — not
-    // that its drain is literally unchanged. H8 and I8 are both depleted,
-    // and untouched by anything below — a ship on either would be trapped
-    // and could neither attack nor be attacked (rules.md §7), so the fight
-    // targets red-1 on the ordinary square F8 instead. Both depleted nodes
-    // started with enough recovery left (§8.2) that three end-of-turn
-    // sequences cannot bring either back to inactive, so only their *state*
-    // is asserted too, not their exact level. No node here is ever
-    // inactive, so charging has no queue to charge from, and with K5 still
-    // charged the shortfall never reaches four, so nothing is ever placed
-    // directly either — charging draws nothing across any of the three
-    // sequences.
+    // K5 is a charged node with no ship on it, so it carries no countdown
+    // and neither its state nor its level moves at all (§8.3). H8 and I8
+    // are both depleted, and untouched by anything below — a ship on
+    // either would be trapped and could neither attack nor be attacked
+    // (rules.md §7), so the fight targets red-1 on the ordinary square F8
+    // instead. Both depleted nodes started with plies to spare, so three
+    // end-of-turn sequences cannot retire either, and only their *state* is
+    // asserted, not their exact level. No node here is ever inactive, so
+    // charging has no queue to charge from, and with K5 still charged the
+    // shortfall never reaches four — nothing charges across any of the
+    // three sequences.
     const state = buildState({
       ships: [
         ship("green-1", "green", "G8", 0),

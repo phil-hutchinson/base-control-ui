@@ -1080,7 +1080,50 @@ entry (S12).
 
 ### Step 9 — `README.md`, the comment sweep, and the final check
 
-Status: pending
+Status: committed
+
+Notes: `/update-readme` was not available as a subagent in this session, so
+the README was rewritten by hand against `git diff main...HEAD`, in its own
+voice: the intro paragraph now describes a node that only starts its
+countdown once a ship lands on it, holding to the sixth turn and being
+trapped, leaving ending a node at once with no hand-back and no inheriting,
+the five-turn trap release, and the two-turn grey exit; the status
+blockquote's opening-deal, waiting-node-camping, glow/pace, ten-turn-recovery
+and direct-fourth sentences are replaced the same way. Comment sweep found
+and fixed several places this story falsified but no step had touched:
+`src/rules/trap.ts`'s header (§6 now bars landing on any uncharged node, not
+only a depleted one), `src/rules/random.ts`'s `drawWeightedIndex` doc (its
+only remaining caller is the refill's spread weighting — the drain/recovery
+distributions it used to back are gone), `src/rules/gameState.ts`'s
+`startingGameState` doc ("charged at a drawn drain" → "charged at baseline,
+with no countdown"), `src/rules/seededReplay.test.ts`'s header and two
+further inline comments (the 0.12/0.18/0.20/0.26 stream narrative, the
+24-step opening deal, and a "drain and recovery draws" reference all
+rewritten around 0.27's three consumers and the 8-step deal),
+`src/rules/endOfTurn.test.ts` (a stale "drain draw never reaches capacity"
+comment and a stale "recovery table's maximum draw of 8" comment, both
+predating this story and untouched by Steps 4-5), `src/rules/ply.test.ts`
+(four "recovery table" / "drain and recovery" comments and a describe title,
+"nothing a ship does changes any node's state", that stated the old
+blanket invariant Step 4's D6 exception falsifies — retitled to scope it to
+actions that avoid a charged node, matching what the test actually drives),
+and `src/board/Board.test.tsx`'s fixture-board doc ("charged at drain 0" →
+"charged at baseline (no countdown)"). Left deliberately unchanged:
+`src/rules/camping.test.ts` and the one pre-existing, story-60-untouched
+`endOfTurn.test.ts` fixture that stands a ship on an inactive node to test
+the refill's ship-exclusion — both use "camp"/"camping" as ship-naming and
+scenario vocabulary for a ship holding a node still or sitting put, not for
+the deleted waiting-node concept, and D13 explicitly keeps `camping.test.ts`
+under that name; `recovery.test.ts` and the handful of `recovery`/`drain`
+mentions in `announcements.ts`, `endOfTurn.ts`, `squareLabel.ts` and
+`ply.test.ts` that are about a ship's power recovering on a planet (§4.1),
+which this story leaves alone. All five checks are green:
+`npm test` (1024 tests), `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm run build`. The final grep for `drain`,
+`capacity`, `recovery` and `camp` outside `doc/plan/` and
+`doc/ruleset/changelog.md` turns up only the §4.1 power-recovery mentions
+above and the two deliberately-kept "camp" usages just described — no
+deviation from the plan.
 
 `README.md` describes the old model in detail and is wrong in several places
 after this story — the "standing on one burns it down faster than leaving it

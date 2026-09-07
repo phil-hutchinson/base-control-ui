@@ -288,9 +288,9 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
     });
     // Step 4: the board is one node short of four, and K5 is the only
     // inactive node, so it is charged deterministically — the draw needs no
-    // choice among a pool of one. Every charged node's level is small (1),
-    // so step 3's drain draw never reaches capacity and adds no effect of
-    // its own.
+    // choice among a pool of one. None of the charged nodes carries a
+    // countdown, so step 3 has nothing to spend and adds no effect of its
+    // own.
     expect(result.effects).toContainEqual({
       type: "node-charged",
       square: squareFromName("K5"),
@@ -695,8 +695,8 @@ describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §
 
 describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", () => {
   it("ends exactly the lowest-level qualifying node and frees its ship, emitting node-relief, node-retired and ship-freed in that order", () => {
-    // Both H8 and D8 have plenty of life left (well above the recovery
-    // table's maximum draw of 8), so neither retires in step 6 — both are
+    // Both H8 and D8 are given more life than a real countdown ever carries
+    // (11 plies, at most), just so neither retires in step 6 — both are
     // still depleted, and both movable once freed, when step 7 runs. H8's
     // level (30) is lower than D8's (40), so H8 has the least remaining
     // life and is the one the relief ends; D8 stays trapping green-2.
