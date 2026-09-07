@@ -603,7 +603,17 @@ changes here — so it must stay green as it stands.
 
 ### Step 2 — `src/rules/countdown.ts`: the constants and the arithmetic
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/countdown.ts` with `CHARGED_COUNTDOWN_PLIES`,
+`TRAP_COUNTDOWN_PLIES` (both 11), `EXIT_COUNTDOWN_PLIES` (2), `spendPly`,
+`countdownNumber` and `nodeCyclePosition`, importing only `NodeState` from
+`nodes.ts` (one-way, per D2). `nodes.ts`'s existing `nodeCyclePosition` is
+untouched. Added `src/rules/countdown.test.ts` pinning both of D4's tables
+row for row, the no-number cases (baseline charged, exit, inactive), and
+D5's cycle-position requirements (minimum/maximum, one-tenth-per-ply rise,
+trap tracking the charged curve, exit pinned at 0, and every value staying
+inside [0, 1]). No deviation from the plan.
 
 Add the new leaf module described in D2, with unit tests, wired to nothing
 yet. It holds the three constants, the spend-one-ply operation, the number a
