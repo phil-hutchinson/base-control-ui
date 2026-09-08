@@ -257,9 +257,9 @@ Green: C15, M15, O6, A6. Red: O10, M1, C1, A10.
 
 Green: H15, O6, A6. Red: O10, H1, A10.
 
-All four layouts are exact half-turn rotations of one another — each
-player's starting fleet is the rotation of the other's — so neither side
-begins with better ground.
+In each of the four layouts, one player's starting fleet is the exact
+half-turn rotation of the other's, so neither side begins with better
+ground.
 
 Every ship starts at full power (6).
 

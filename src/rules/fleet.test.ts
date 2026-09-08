@@ -253,10 +253,10 @@ describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
 });
 
 describe("alternation around the clockwise ring", () => {
-  // Holds for the five-ship layout, which alternates all the way round,
-  // including the wraparound. It does not hold for the six-ship layout by
-  // design (rules.md §4): dropping H15 leaves D15 red next to L15 red, and
-  // dropping H1 leaves L1 green next to D1 green.
+  // §4's five-a-side layout puts five ships on a ring of five starting
+  // squares, and they alternate perfectly around it, including the
+  // wraparound. §4's six-a-side layout does not: dropping H15 leaves D15 red
+  // next to L15 red, and dropping H1 leaves L1 green next to D1 green.
   it("alternates sides around the clockwise ring, including the wraparound, at 5 a side", () => {
     const fleet = startingFleet(5);
     for (let index = 0; index < fleet.length; index++) {
@@ -266,8 +266,9 @@ describe("alternation around the clockwise ring", () => {
     }
   });
 
-  // Six ships around a ring of six starting squares alternate perfectly,
-  // the same as five a side (rules.md §4).
+  // §4's three-a-side layout puts six ships on a ring of six starting
+  // squares, and they alternate perfectly, including the wraparound, the
+  // same as five a side.
   it("alternates sides around the clockwise ring, including the wraparound, at 3 a side", () => {
     const fleet = startingFleet(3);
     for (let index = 0; index < fleet.length; index++) {
@@ -277,10 +278,13 @@ describe("alternation around the clockwise ring", () => {
     }
   });
 
-  // Eight ships cannot alternate perfectly around an even ring (rules.md
-  // §4): the two breaks sit where the six-a-side layout puts its own, on
-  // the top edge (C15, M15, both green) and the bottom edge (M1, C1, both
-  // red).
+  // §4's four-a-side layout puts eight ships on an even ring of eight
+  // starting squares, which cannot alternate perfectly: the half-turn
+  // rotation maps every square to one of the same parity, so a perfectly
+  // alternating assignment would send each side onto itself rather than its
+  // opponent. The two breaks sit where the six-a-side layout puts its own,
+  // on the top edge (C15, M15, both green) and the bottom edge (M1, C1,
+  // both red).
   it("has exactly two same-side neighbours at 4 a side, on the top and bottom edges", () => {
     const fleet = startingFleet(4);
     const breaks: [string, string][] = [];

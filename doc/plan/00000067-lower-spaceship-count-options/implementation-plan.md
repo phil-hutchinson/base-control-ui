@@ -287,10 +287,14 @@ to eighteen, extended `EMPTY_STARTING_SQUARES_BY_FLEET_SIZE` to all four
 sizes (five and six a side gained C1/C15/M1/M15 to their empty lists), and
 added alternation tests: three a side alternates perfectly including the
 wraparound, and four a side has exactly two same-side neighbour pairs, at
-`M1`/`C1` (red, bottom) and the wraparound `C15`/`M15` (green, top). No
-deviation from the plan. `npm test` shows one pre-existing failure in
-`gameState.test.ts` ("throws a RangeError for a fleet size of 4"), which is
-expected and explicitly Step 3's job to fix (4 is now a valid size).
+`M1`/`C1` (red, bottom) and the wraparound `C15`/`M15` (green, top).
+
+Deviation: this step's own widening of `FleetSize` to include 4 makes
+`gameState.test.ts`'s `it.each([4, 7, 8, 6.5])` — which still asserts that 4
+throws — fail, so `npm test` is red at this step's commit (`1ea5d97`). The
+step's verification only names `fleet.test.ts` and `npm run typecheck`, both
+of which pass; Step 3 clears the `gameState.test.ts` failure by updating that
+table for the new valid size.
 
 Widen the fleet sizes and add the two layouts in `src/rules/fleet.ts`:
 

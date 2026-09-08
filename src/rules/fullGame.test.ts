@@ -604,8 +604,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
   it("draws both fighting ships' returns only from the planets left empty, tight to a six-ship game's own arithmetic", () => {
     // A six-ship game has twelve ships in all; with the fight's own two
     // excluded, at most ten other ships can occupy a planet, so exactly two
-    // of the twelve are free — the tightest §7.1's arithmetic ever gets,
-    // and the reason seven-a-side (fourteen ships) is gone.
+    // of the twelve are free — the tightest §7.1's arithmetic ever gets.
     const emptyPlanetNames = PLANETS.slice(0, 2).map(squareName);
     const state: GameState = {
       ships: [

@@ -23,11 +23,11 @@ the project's contribution notes).
   to eighteen. They are ordinary squares in every other way; no planet and
   no node placement rule is affected.
 - **Five and six a side are unchanged** — same squares, same colours.
-- **Two consistency repairs**, both made true again by this change rather
-  than newly imposed: section 5's "a player always has at least five ships"
-  becomes "at least three ships", and section 7.1's justification now reads
-  "with at most twelve ships and twelve planets" instead of stating twelve
-  as the count.
+- **Two consistency repairs.** Both are sentences this change made untrue,
+  restated rather than newly imposed: section 5's "a player always has at
+  least five ships" becomes "at least three ships", and section 7.1's
+  justification now reads "with at most twelve ships and twelve planets"
+  instead of stating twelve as the count.
 - **Documentation correction, not a rules change**: section 3.1's board
   diagram was missing the planet at I12, shown in the surrounding text and
   in `src/rules/planets.ts` as the half-turn rotation of G4. The diagram now

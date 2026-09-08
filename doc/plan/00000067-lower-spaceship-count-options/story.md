@@ -155,8 +155,10 @@ written; they are noted here only so they are not mistaken for bugs.
 
 - This is a gameplay change: `doc/ruleset/rules.md` needs a version bump, a
   `changelog.md` entry, and edits to section 1 ("a fleet of five or six
-  ships"), section 3.1 (the count, the diagram and the caption) and section
-  4 (the "five or six" opening sentence and two new layout tables).
+  ships"), section 3.1 (the count, the diagram and the caption), section 4
+  (the "five or six" opening sentence and two new layout tables), section 5
+  ("at least five ships" becomes "at least three") and section 7.1 ("with at
+  most twelve ships").
 - `README.md` says "or six ships" and lists the start-screen options as "six
   or five, six to start"; both need updating.
 - **Fold in a fix to section 3.1's board diagram**, which is missing the
