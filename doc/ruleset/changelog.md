@@ -7,6 +7,28 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.29 — one point per node, per turn
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **Section 8.4's table is gone.** A charged node's payout no longer scales
+  with how many a player holds at once — one paid 1, two paid 3, three paid
+  6, four paid 10. That table is deleted.
+- **Energy collected is now the flat count of charged nodes held.** At the
+  end of each player's turn, that player collects one energy for each
+  charged node they are standing on — hold three, collect three. There is
+  no upper bound written into the rule; four is the most the board ever
+  charges at once (sections 8.1, 8.2), but that is a fact about the board,
+  not a cap on the arithmetic.
+- **Everything else about collection is unchanged.** A node counts only if
+  charged and only if one of that player's ships is standing on it at the
+  moment their turn ends — flying across a charged node and moving on still
+  collects nothing. Collection stays step 2 of the end-of-turn order
+  (section 8.6), still ahead of depletion at step 3, so a node held to the
+  very end of its countdown still pays on the same turn it traps its
+  holder. Nothing in the game subtracts energy; a total only ever rises.
+
 ## 0.28 — fleets of three to six
 
 This is a gameplay change. Tagging stays on hold until the game plays (see
