@@ -47,14 +47,44 @@ const FIVE_A_SIDE: readonly [string, "green" | "red"][] = [
   ["D15", "red"],
 ];
 
+/**
+ * §4's four-a-side layout, clockwise from M15: H15 and H1 start empty, so
+ * the list starts at M15, the first occupied starting square after H15.
+ */
+const FOUR_A_SIDE: readonly [string, "green" | "red"][] = [
+  ["M15", "green"],
+  ["O10", "red"],
+  ["O6", "green"],
+  ["M1", "red"],
+  ["C1", "red"],
+  ["A6", "green"],
+  ["A10", "red"],
+  ["C15", "green"],
+];
+
+/**
+ * §4's three-a-side layout, clockwise from H15: H15 is occupied, so the
+ * list starts there.
+ */
+const THREE_A_SIDE: readonly [string, "green" | "red"][] = [
+  ["H15", "green"],
+  ["O10", "red"],
+  ["O6", "green"],
+  ["H1", "red"],
+  ["A6", "green"],
+  ["A10", "red"],
+];
+
 const LAYOUTS_BY_FLEET_SIZE: Readonly<
   Record<FleetSize, readonly [string, "green" | "red"][]>
 > = {
+  3: THREE_A_SIDE,
+  4: FOUR_A_SIDE,
   5: FIVE_A_SIDE,
   6: SIX_A_SIDE,
 };
 
-/** §4's fourteen starting squares. */
+/** §4's eighteen starting squares. */
 const ALL_STARTING_SQUARES = [
   "H15",
   "L15",
@@ -70,14 +100,33 @@ const ALL_STARTING_SQUARES = [
   "A10",
   "A14",
   "D15",
+  "C15",
+  "M15",
+  "C1",
+  "M1",
 ];
 
 /** §4's empty starting squares, per fleet size. */
 const EMPTY_STARTING_SQUARES_BY_FLEET_SIZE: Readonly<
   Record<FleetSize, readonly string[]>
 > = {
-  5: ["O14", "O2", "A14", "A2"],
-  6: ["H15", "H1"],
+  3: [
+    "L15",
+    "O14",
+    "O2",
+    "L1",
+    "D1",
+    "A2",
+    "A14",
+    "D15",
+    "C15",
+    "M15",
+    "C1",
+    "M1",
+  ],
+  4: ["H15", "L15", "O14", "O2", "L1", "H1", "D1", "A2", "A14", "D15"],
+  5: ["O14", "O2", "A14", "A2", "C15", "M15", "C1", "M1"],
+  6: ["H15", "H1", "C15", "M15", "C1", "M1"],
 };
 
 function entryBySquare(
@@ -89,7 +138,7 @@ function entryBySquare(
 
 describe("FLEET_SIZES", () => {
   it("is largest first, so the leftmost start-screen choice is the default game", () => {
-    expect(FLEET_SIZES).toEqual([6, 5]);
+    expect(FLEET_SIZES).toEqual([6, 5, 4, 3]);
   });
 
   it("puts the largest fleet size in MAX_SHIPS_PER_SIDE regardless of list order", () => {
@@ -215,6 +264,38 @@ describe("alternation around the clockwise ring", () => {
       const next = fleet[(index + 1) % fleet.length];
       expect(next.side).not.toBe(current.side);
     }
+  });
+
+  // Six ships around a ring of six starting squares alternate perfectly,
+  // the same as five a side (rules.md §4).
+  it("alternates sides around the clockwise ring, including the wraparound, at 3 a side", () => {
+    const fleet = startingFleet(3);
+    for (let index = 0; index < fleet.length; index++) {
+      const current = fleet[index];
+      const next = fleet[(index + 1) % fleet.length];
+      expect(next.side).not.toBe(current.side);
+    }
+  });
+
+  // Eight ships cannot alternate perfectly around an even ring (rules.md
+  // §4): the two breaks sit where the six-a-side layout puts its own, on
+  // the top edge (C15, M15, both green) and the bottom edge (M1, C1, both
+  // red).
+  it("has exactly two same-side neighbours at 4 a side, on the top and bottom edges", () => {
+    const fleet = startingFleet(4);
+    const breaks: [string, string][] = [];
+
+    for (let index = 0; index < fleet.length; index++) {
+      const current = fleet[index];
+      const next = fleet[(index + 1) % fleet.length];
+      if (next.side === current.side) {
+        breaks.push([squareName(current.square), squareName(next.square)]);
+      }
+    }
+
+    expect(breaks).toHaveLength(2);
+    expect(breaks).toContainEqual(["M1", "C1"]);
+    expect(breaks).toContainEqual(["C15", "M15"]);
   });
 });
 

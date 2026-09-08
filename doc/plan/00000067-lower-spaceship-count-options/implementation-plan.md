@@ -274,7 +274,23 @@ row `r → 16 − r`) of that layout's red ships.
 
 ### Step 2 — `fleet.ts`: the three- and four-a-side layouts
 
-Status: pending
+Status: committed
+
+Notes: Widened `FleetSize` to `3 | 4 | 5 | 6`, `FLEET_SIZES` to `[6, 5, 4,
+3]`, added `FOUR_A_SIDE_LAYOUT` and `THREE_A_SIDE_LAYOUT` in the clockwise
+order D2 fixes, registered both in `LAYOUTS_BY_FLEET_SIZE`, updated the
+file's header and `FleetSize`'s doc comment, and reworded
+`MAX_SHIPS_PER_SIDE`'s comment per D5 (dropped the stale `energy.ts`
+reference). Extended `fleet.test.ts` per D6: hand-transcribed both new
+layouts and their own `LAYOUTS_BY_FLEET_SIZE`, grew `ALL_STARTING_SQUARES`
+to eighteen, extended `EMPTY_STARTING_SQUARES_BY_FLEET_SIZE` to all four
+sizes (five and six a side gained C1/C15/M1/M15 to their empty lists), and
+added alternation tests: three a side alternates perfectly including the
+wraparound, and four a side has exactly two same-side neighbour pairs, at
+`M1`/`C1` (red, bottom) and the wraparound `C15`/`M15` (green, top). No
+deviation from the plan. `npm test` shows one pre-existing failure in
+`gameState.test.ts` ("throws a RangeError for a fleet size of 4"), which is
+expected and explicitly Step 3's job to fix (4 is now a valid size).
 
 Widen the fleet sizes and add the two layouts in `src/rules/fleet.ts`:
 
