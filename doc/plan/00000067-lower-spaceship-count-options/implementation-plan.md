@@ -450,7 +450,7 @@ eight after choosing 4.
 
 ### Step 5 — The owner plays the small games
 
-Status: pending
+Status: committed
 
 No code. The owner runs the app (`npm run dev`) and checks the story's intent
 landed. Nothing in this step is implemented by an agent; it is the pause point
