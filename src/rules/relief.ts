@@ -105,9 +105,7 @@ export function reliefSquare(state: GameState, side: Side): Square | undefined {
     return undefined;
   }
 
-  const lowestLevel = Math.min(
-    ...candidates.map((candidate) => candidate.level),
-  );
-  return candidates.find((candidate) => candidate.level === lowestLevel)!
-    .square;
+  return candidates.reduce((lowest, candidate) =>
+    candidate.level < lowest.level ? candidate : lowest,
+  ).square;
 }

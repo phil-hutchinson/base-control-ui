@@ -82,8 +82,8 @@ install, no account, no server.
 > lighting from the waiting three, highest rings first, so the board is always
 > brought back to four lit nodes by the time your turn begins. Land a ship on
 > a lit node and a black number appears in its middle: six, counting down by
-> one at the end of each of your own turns while the glow itself grows
-> steadily brighter, until it runs out on your sixth turn there and traps you.
+> one at the end of each of your own turns while the ball itself grows
+> steadily larger, until it runs out on your sixth turn there and traps you.
 > Leave a node you are holding instead and it ends immediately, right there in
 > the middle of your turn — you cannot hand it back, and your opponent cannot
 > pick it up after you — though it stays on the board, dim, for a couple more

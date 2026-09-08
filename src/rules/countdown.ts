@@ -43,38 +43,38 @@ export const EXIT_COUNTDOWN_PLIES = 2;
  * this is never called on one — callers only spend a countdown that is
  * already running.
  */
-export function spendPly(plyRemaining: number): number {
-  return Math.max(0, plyRemaining - 1);
+export function spendPly(pliesRemaining: number): number {
+  return Math.max(0, pliesRemaining - 1);
 }
 
 /**
  * The number a node shows in its middle, or `undefined` when it shows none
  * (rules.md §8.3): how many of the holder's own turns the node has left.
  *
- * - A charged node with no countdown (`plyRemaining === 0`) shows nothing —
+ * - A charged node with no countdown (`pliesRemaining === 0`) shows nothing —
  *   it is at baseline.
  * - A charged node with a countdown counts down from the moment a ship steps
- *   on: `ceil(plyRemaining / 2)`, 6 down to 1, never 0.
+ *   on: `ceil(pliesRemaining / 2)`, 6 down to 1, never 0.
  * - A depleted node with a ship on it (a trap) counts the trapped player's
- *   own turns: `floor(plyRemaining / 2)`, floored at 1 so the last ply
+ *   own turns: `floor(pliesRemaining / 2)`, floored at 1 so the last ply
  *   still reads 1 rather than 0.
  * - A depleted node with no ship on it (the exit left by a holder walking
  *   off) shows nothing at all, however many plies it has left.
  */
 export function countdownNumber(
   state: NodeState,
-  plyRemaining: number,
+  pliesRemaining: number,
   hasShip: boolean,
 ): number | undefined {
   if (state === "charged") {
-    if (plyRemaining <= 0) {
+    if (pliesRemaining <= 0) {
       return undefined;
     }
-    return Math.ceil(plyRemaining / 2);
+    return Math.ceil(pliesRemaining / 2);
   }
 
   if (state === "depleted" && hasShip) {
-    return Math.max(1, Math.floor(plyRemaining / 2));
+    return Math.max(1, Math.floor(pliesRemaining / 2));
   }
 
   return undefined;
@@ -95,10 +95,10 @@ export function countdownNumber(
  */
 export function nodeCyclePosition(
   state: NodeState,
-  plyRemaining: number,
+  pliesRemaining: number,
   hasShip: boolean,
 ): number {
-  if (state === "charged" && plyRemaining <= 0) {
+  if (state === "charged" && pliesRemaining <= 0) {
     return 0;
   }
 
@@ -106,6 +106,6 @@ export function nodeCyclePosition(
     return 0;
   }
 
-  const raw = (11 - plyRemaining) / 10;
+  const raw = (11 - pliesRemaining) / 10;
   return Math.min(1, Math.max(0, raw));
 }

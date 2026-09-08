@@ -46,11 +46,7 @@ import {
   nodeStatusAt,
   startingGameState,
 } from "./gameState";
-import {
-  type NodePoolWidth,
-  drawUniformSquare,
-  legalNodePool,
-} from "./nodePlacement";
+import { type NodePoolWidth, legalNodePool } from "./nodePlacement";
 import {
   INACTIVE_NODE_COUNT,
   type InactiveNodeDraw,
@@ -59,12 +55,27 @@ import {
 } from "./nodeQueue";
 import { TARGET_CHARGED_NODES } from "./nodes";
 import { PLANETS, isPlanet } from "./planets";
+import { drawIndex } from "./random";
 
 /** A generous game length: this test drives `runEndOfTurn` directly and never consults `isGameOver`. */
 const NOMINAL_LENGTH_IN_ROUNDS = 1_000;
 const PLIES_TO_RUN = 500;
 
 const SEEDS = [20260819, 20260820, 20260821, 20260822, 20260823];
+
+/**
+ * Draws one square uniformly from an already-computed pool — the unweighted
+ * comparison draw below needs the same uniform-from-a-pool arithmetic that
+ * §3.2's weighting is measured against. Advances the seed exactly once, via
+ * `drawIndex`, so a recorded game replays exactly.
+ */
+function drawUniformSquare(
+  pool: readonly Square[],
+  seed: number,
+): [square: Square, nextSeed: number] {
+  const [index, nextSeed] = drawIndex(seed, pool.length);
+  return [pool[index], nextSeed];
+}
 
 /**
  * The lowest a freshly refilled trio's mean smallest pairwise Chebyshev gap

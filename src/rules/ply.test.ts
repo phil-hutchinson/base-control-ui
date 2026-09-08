@@ -1293,7 +1293,7 @@ describe("assertFightInvariants (rules.md §7)", () => {
     ).toThrow(RangeError);
   });
 
-  it("still throws when a node's state changes at all — no action changes a node's state (rules.md §8.6)", () => {
+  it("still throws when a node's state changes at all — an attack never changes one (rules.md §8.6)", () => {
     const before = buildState({
       ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
       nodes: { H8: ["charged", 10] },

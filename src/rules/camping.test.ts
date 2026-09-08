@@ -22,7 +22,7 @@ import { describe, expect, it } from "vitest";
 import { squareFromName } from "./board";
 import { CHARGED_COUNTDOWN_PLIES, TRAP_COUNTDOWN_PLIES } from "./countdown";
 import { attackRefusalReason, legalTargets } from "./combat";
-import type { NodeRetiredEffect } from "./endOfTurn";
+import type { EndOfTurnEffect, NodeRetiredEffect } from "./endOfTurn";
 import type { ShipId } from "./fleet";
 import {
   ACTIONS_PER_PLY,
@@ -32,6 +32,7 @@ import {
 } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { legalDestinations, moveRefusalReason } from "./movement";
+import { TOP_NODE_PRIORITY } from "./nodeQueue";
 import {
   type MoveEffect,
   type NodeSpentEffect,
@@ -523,9 +524,10 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
 });
 
 describe("camping — leaving a charged node ends it at once (rules.md §8.3)", () => {
-  it("depletes the node the instant its holder leaves, raises node-spent, forfeits that turn's energy, and starts an exit node lasting exactly two plies", () => {
-    // Three other charged nodes, at baseline, keep the shortfall at one once
-    // F2 becomes an exit node, so nothing else on the board stirs.
+  it("depletes the node the instant its holder leaves, raises node-spent, forfeits that turn's energy, charges the queue's front node at the same turn's end, and starts an exit node lasting exactly two plies", () => {
+    // Three other charged nodes, at baseline, keep the board at four charged
+    // until F2 becomes an exit node; M5 is the queue's front node, so it is
+    // what charges to fill the shortfall that departure opens.
     const initial = buildState({
       ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "D2")],
       nodes: {
@@ -533,6 +535,7 @@ describe("camping — leaving a charged node ends it at once (rules.md §8.3)", 
         E11: ["charged", 0],
         H11: ["charged", 0],
         K11: ["charged", 0],
+        M5: ["inactive", TOP_NODE_PRIORITY],
       },
     });
 
@@ -561,6 +564,19 @@ describe("camping — leaving a charged node ends it at once (rules.md §8.3)", 
     // Leaving forfeits that turn's energy from the node — green held it
     // right up to the move, but a ply that ends on nothing collects nothing.
     expect(afterDeparture.state.energy.green).toBe(0);
+
+    // The shortfall F2's departure opened is filled at the end of the very
+    // same turn (rules.md §8.3), not the opponent's — M5 charges at once,
+    // at baseline, with no draw involved.
+    const departureTurnEffects = endOfTurnEffects(afterDeparture.effects);
+    expect(departureTurnEffects).toContainEqual({
+      type: "node-charged",
+      square: squareFromName("M5"),
+    });
+    expect(afterDeparture.state.nodes.M5).toEqual({
+      state: "charged",
+      level: 0,
+    });
 
     // Nothing may land on F2 for the rest of the turn or the whole of red's.
     expect(
@@ -617,6 +633,154 @@ describe("camping — leaving a charged node ends it at once (rules.md §8.3)", 
         "green-1",
         squareFromName("F2"),
       ),
+    ).toBeUndefined();
+  });
+});
+
+describe("camping — a node held to the very end collects energy six times, trapped on the sixth (rules.md §8.1, §8.3)", () => {
+  it("credits green once at the end of each of its own six turns holding H8, then traps it the instant the node runs out on the sixth", () => {
+    let state: GameState = buildState({
+      ships: [
+        ship("green-camper", "green", "H8"),
+        ship("green-mover", "green", "A1"),
+        ship("red-mover", "red", "O4"),
+      ],
+      nodes: {
+        H8: ["charged", CHARGED_COUNTDOWN_PLIES],
+        F2: ["charged", 0],
+        J2: ["charged", 0],
+        B4: ["charged", 0],
+      },
+    });
+
+    let greenMoverAt = "A1";
+    let redMoverAt = "O4";
+    let collections = 0;
+    let lastGreenTurnEffects: readonly EndOfTurnEffect[] = [];
+
+    // Eleven plies, alternating green and red starting with green, matches
+    // the charged row of rules.md §8.3's worked table exactly.
+    for (let ply = 1; ply <= 11; ply += 1) {
+      if (ply % 2 === 1) {
+        const to = greenMoverAt === "A1" ? "A2" : "A1";
+        const result = appliedOrThrow(
+          applyMove(state, "green-mover", squareFromName(to)),
+        );
+        state = result.state;
+        greenMoverAt = to;
+        lastGreenTurnEffects = endOfTurnEffects(result.effects);
+        if (
+          lastGreenTurnEffects.some(
+            (effect) => effect.type === "energy-collected",
+          )
+        ) {
+          collections += 1;
+        }
+      } else {
+        const to = redMoverAt === "O4" ? "O5" : "O4";
+        const result = appliedOrThrow(
+          applyMove(state, "red-mover", squareFromName(to)),
+        );
+        state = result.state;
+        redMoverAt = to;
+      }
+    }
+
+    expect(collections).toBe(6);
+    expect(state.energy.green).toBe(6);
+    expect(state.nodes.H8).toEqual({
+      state: "depleted",
+      level: TRAP_COUNTDOWN_PLIES,
+    });
+    const camper = state.ships.find(
+      (candidate) => candidate.id === "green-camper",
+    );
+    expect(camper?.square).toEqual(squareFromName("H8"));
+
+    // The sixth collection is the last thing paid before the trap closes —
+    // energy is step 2 of the end-of-turn order, depletion is step 3.
+    const collectedIndex = lastGreenTurnEffects.findIndex(
+      (effect) => effect.type === "energy-collected",
+    );
+    const ranOutIndex = lastGreenTurnEffects.findIndex(
+      (effect) => effect.type === "node-ran-out",
+    );
+    expect(collectedIndex).toBeGreaterThanOrEqual(0);
+    expect(ranOutIndex).toBeGreaterThan(collectedIndex);
+  });
+});
+
+describe("camping — a trap lasts eleven plies: exactly five of the trapped player's own turns, released at the opponent's turn end (rules.md §8.3)", () => {
+  it("keeps green-camper trapped for five of green's own turns and frees it only once, at the end of red's turn", () => {
+    // The trap begins at the end of green's own turn (rules.md §8.3), so
+    // this state picks up with red to move next.
+    let state: GameState = {
+      ...buildState({
+        ships: [
+          ship("green-camper", "green", "H8"),
+          ship("green-mover", "green", "A1"),
+          ship("red-mover", "red", "O4"),
+        ],
+        nodes: {
+          H8: ["depleted", TRAP_COUNTDOWN_PLIES],
+          F2: ["charged", 0],
+          J2: ["charged", 0],
+          B4: ["charged", 0],
+          L8: ["charged", 0],
+        },
+      }),
+      sideToMove: "red",
+    };
+
+    expect(legalDestinations(state, "green-camper")).toEqual([]);
+
+    let greenMoverAt = "A1";
+    let redMoverAt = "O4";
+    let greenTrappedTurns = 0;
+    let lastEffects: readonly EndOfTurnEffect[] = [];
+
+    // Eleven plies, alternating red and green starting with red — the trap
+    // was created at the end of green's own turn, so red moves first.
+    for (let ply = 1; ply <= 11; ply += 1) {
+      if (ply % 2 === 1) {
+        const to = redMoverAt === "O4" ? "O5" : "O4";
+        const result = appliedOrThrow(
+          applyMove(state, "red-mover", squareFromName(to)),
+        );
+        state = result.state;
+        redMoverAt = to;
+        lastEffects = endOfTurnEffects(result.effects);
+      } else {
+        expect(
+          moveRefusalReason(state, "green-camper", squareFromName("H9")),
+        ).toBe("ship-trapped");
+        greenTrappedTurns += 1;
+        const to = greenMoverAt === "A1" ? "A2" : "A1";
+        const result = appliedOrThrow(
+          applyMove(state, "green-mover", squareFromName(to)),
+        );
+        state = result.state;
+        greenMoverAt = to;
+      }
+    }
+
+    expect(greenTrappedTurns).toBe(5);
+    expect(lastEffects).toContainEqual({
+      type: "node-retired",
+      square: squareFromName("H8"),
+    });
+    expect(lastEffects).toContainEqual({
+      type: "ship-freed",
+      shipId: "green-camper",
+      side: "green",
+      square: squareFromName("H8"),
+    });
+    expect(state.nodes.H8).toBeUndefined();
+
+    // Freed at the end of red's turn, so green-camper can move on its own
+    // very next turn without delay.
+    expect(
+      moveRefusalReason(state, "green-camper", squareFromName("H9")),
     ).toBeUndefined();
   });
 });

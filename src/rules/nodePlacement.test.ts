@@ -10,7 +10,6 @@ import {
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import {
   drawNodeSquare,
-  drawUniformSquare,
   drawWeightedNodeSquare,
   legalNodePool,
 } from "./nodePlacement";
@@ -268,23 +267,6 @@ describe("drawNodeSquare", () => {
     const second = drawNodeSquare([squareAt("H", 8)], [squareAt("D", 4)], 42);
 
     expect(first).toEqual(second);
-  });
-});
-
-describe("drawUniformSquare", () => {
-  it("returns a member of the given pool and advances the seed exactly once", () => {
-    const pool = legalNodePool([], []);
-    const [, expectedNextSeed] = mulberry32(7);
-    const [square, nextSeed] = drawUniformSquare(pool, 7);
-
-    expect(pool.map(squareName)).toContain(squareName(square));
-    expect(nextSeed).toBe(expectedNextSeed);
-  });
-
-  it("returns the same square and seed for the same inputs", () => {
-    const pool = [squareAt("C", 3), squareAt("D", 4), squareAt("E", 5)];
-
-    expect(drawUniformSquare(pool, 42)).toEqual(drawUniformSquare(pool, 42));
   });
 });
 

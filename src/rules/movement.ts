@@ -1,7 +1,8 @@
 // Movement (rules.md §6): a ship moves one or two squares, orthogonally,
 // diagonally or in an L, priced by §6's table, and a ship may take any shape
-// it can afford — reach, a clear path, an empty destination and a
-// destination that is charged are the whole of the restriction.
+// it can afford — reach, a clear path, an empty destination, and a
+// destination that holds no node unless that node is charged, are the whole
+// of the restriction.
 // A trapped ship (rules.md §8.5) has no move at all. This is the only
 // implementation of §6 in the app; every caller that needs a legal move or
 // the reason one is refused calls the functions here. §9's game-over check is
@@ -326,7 +327,7 @@ export function moveRefusalReason(
  * affordable subset of its §6 reach, filtered by path and destination
  * occupancy - only an enemy ship on a passed-over square blocks. Empty once
  * the game is over, when the ship does not belong to the side to move or has
- * already acted this ply, or when the ship is trapped (rules.md §8.5). A
+ * already acted this ply, or when the ship is trapped (rules.md §8.5). An
  * uncharged destination needs no filter of its own here — `moveRefusalReason`
  * already excludes it below — flying over one is still free, only landing is
  * barred.

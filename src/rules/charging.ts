@@ -34,10 +34,11 @@ export interface ChargingResult {
 /**
  * Charges as many of the three inactive nodes as the shortfall against
  * `TARGET_CHARGED_NODES` calls for, highest priority first (rules.md §8.2,
- * §8.6 step 4). Charging does not look at occupancy: a node with a ship
- * standing on it charges like any other. The queue order is decided
- * entirely by `orderByPriorityDescending` and consumes no randomness at
- * all. `state.randomSeed` is never touched here.
+ * §8.6 step 4). A charged node starts at baseline with no countdown, and a
+ * newly charged node never has a ship on it already, since no node ever
+ * appears under one. The queue order is decided entirely by
+ * `orderByPriorityDescending` and consumes no randomness at all.
+ * `state.randomSeed` is never touched here.
  */
 export function runCharging(state: GameState): ChargingResult {
   const squares = nodeSquares(state);

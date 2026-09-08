@@ -164,25 +164,6 @@ export function drawNodeSquare(
 }
 
 /**
- * Draws one square uniformly from an already-computed pool. No production
- * caller uses this any more — the opening deal's four charged squares draw
- * with `drawNodeSquare` instead, and §3.2's other uniform draw, the fourth
- * node once placed directly when all four charged nodes ran out at once, no
- * longer exists (§8.2, §8.3: the shortfall never exceeds two). Kept for
- * `nodePool.test.ts`'s unweighted comparison draw, which needs the same
- * uniform-from-a-pool arithmetic to measure what the weighting buys against.
- * Advances the seed exactly once, via `drawIndex`, so a recorded game
- * replays exactly.
- */
-export function drawUniformSquare(
-  pool: readonly Square[],
-  seed: number,
-): [square: Square, nextSeed: number] {
-  const [index, nextSeed] = drawIndex(seed, pool.length);
-  return [pool[index], nextSeed];
-}
-
-/**
  * §3.2's node-spread weight for a candidate square `s`, given the squares
  * holding **charged** nodes (`C`) and the squares already chosen for new
  * inactive nodes in the same refill (`N`):

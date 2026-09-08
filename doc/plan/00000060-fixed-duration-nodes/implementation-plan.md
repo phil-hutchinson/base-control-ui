@@ -364,9 +364,15 @@ nothing, retirement draws nothing, the relief draws nothing. `nodes.test.ts`
 asserts the deal advances the seed by 12 and must be changed to 8.
 
 `drawUniformSquare` in `nodePlacement.ts` loses its only production caller
-with the direct-fourth placement. Delete it, and its tests, unless the
-long-run test still needs it as a comparison draw (it currently uses it for
-the unweighted control in the spread measurement — check before deleting).
+with the direct-fourth placement. `nodePool.test.ts` still needs it as the
+unweighted control in the spread measurement, so Step 5 kept it exported
+from `nodePlacement.ts` for that one caller. Peer review on this story
+reversed that: a rules module exporting a function with no production
+caller invites a future reader to treat it as game behaviour, so
+`drawUniformSquare` was deleted from `nodePlacement.ts`, its dedicated
+tests in `nodePlacement.test.ts` deleted with it, and the same
+uniform-from-a-pool arithmetic rebuilt as a local helper over `drawIndex`
+inside `nodePool.test.ts`, the one place that still needs it.
 
 ### D11 — The number is drawn above the ship
 

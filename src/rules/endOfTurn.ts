@@ -306,6 +306,11 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
 
     if (nextStatus.state === "depleted") {
       effects.push({ type: "node-ran-out", square });
+      // A charged node only ever carries a countdown while a ship holds it,
+      // so `trappedShip` is always defined here in play — a countdown ends
+      // the instant its holder leaves. The `undefined` branch cannot occur;
+      // `TRAP_COUNTDOWN_PLIES` above is deposited regardless, and its choice
+      // there is arbitrary rather than derived from ship presence.
       const trappedShip = occupants.get(name);
       if (trappedShip !== undefined) {
         effects.push({

@@ -338,9 +338,8 @@ always the attacking player's choice; ships never fight automatically.
 Neither ship may be on a planet: a ship on a planet cannot attack, and
 cannot be attacked. And neither ship may be standing on a node that is
 **charged** or **depleted**: a ship on either can neither attack nor be
-attacked. Only a ship on an **inactive** node — or on no node at all — is an
-ordinary target, and fights and is fought exactly like a ship on any other
-square (section 8.5).
+attacked. Any other ship is an ordinary target, and fights and is fought
+exactly like a ship on any other square.
 
 The two protections are not the same bargain. A ship holding a **charged**
 node has given up striking out while it stands there, but it chose its
@@ -770,6 +769,14 @@ than seven, and a dozen ships on it — a refill's three draws pick from
 roughly **25**, **38** and **34** squares respectively, the pool widening as
 each draw lifts the one-square-in constraint and narrowing again as ships
 and the nodes already placed this refill block squares of their own.
+
+Both the node count above and the pool sizes here come from a stand-in for
+play that starts a new countdown somewhere on the board every single turn
+and never moves a ship. No real game turns nodes over that fast — a
+countdown only starts when a player actually spends a turn's move landing
+on a node — so these numbers are a ceiling: a real game's node count runs
+lower than seven to eleven, and its pools run larger than 25, 38 and 34,
+not smaller.
 
 The weighting earns its keep: measured over several hundred turns of actual
 play across a handful of seeds, the smallest pairwise gap within a freshly

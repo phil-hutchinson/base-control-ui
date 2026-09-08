@@ -18,18 +18,14 @@ interface NodeCountdownProps {
   readonly color: "black" | "white";
 }
 
-// Starting values for the owner's eye, not a measured result (D11, Step 8 is
-// where the owner judges them). The ship art leaves a clear band across the
-// middle of the square for a centred number to read through.
+// Starting values for the owner's eye, not a measured result. The ship art
+// leaves a clear band across the middle of the square for a centred number
+// to read through.
 const FONT_SIZE = 44;
 
 export function NodeCountdown({ number, color }: NodeCountdownProps) {
   return (
-    <svg
-      className={`node-countdown node-countdown--${color}`}
-      viewBox="0 0 100 100"
-      aria-hidden="true"
-    >
+    <svg className="node-countdown" viewBox="0 0 100 100" aria-hidden="true">
       <text
         x={50}
         y={50}
