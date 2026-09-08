@@ -141,6 +141,23 @@ describe("StartScreen", () => {
     expect(onPlay).not.toHaveBeenCalled();
   });
 
+  it("calls the ships change handler, and not the others, when 3 is chosen", async () => {
+    const user = userEvent.setup();
+    const {
+      onFleetSizeChange,
+      onLengthInRoundsChange,
+      onClockSettingChange,
+      onPlay,
+    } = renderStartScreen({ fleetSize: 6 });
+
+    await user.click(screen.getByRole("radio", { name: "3" }));
+
+    expect(onFleetSizeChange).toHaveBeenCalledExactlyOnceWith(3);
+    expect(onLengthInRoundsChange).not.toHaveBeenCalled();
+    expect(onClockSettingChange).not.toHaveBeenCalled();
+    expect(onPlay).not.toHaveBeenCalled();
+  });
+
   it("calls the rounds change handler, and not the others, when a different value is chosen", async () => {
     const user = userEvent.setup();
     const {

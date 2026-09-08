@@ -403,7 +403,22 @@ policy choosing an illegal action. Run `npm run typecheck` and `npm run lint`.
 
 ### Step 4 — The start screen offers 6, 5, 4, 3
 
-Status: pending
+Status: committed
+
+Notes: No component or CSS change was needed (D4 held). Added a
+`StartScreen.test.tsx` case mirroring the "5" case for clicking "3", and two
+`App.test.tsx` cases for choosing 3 (six ship cells) and 4 (eight ship
+cells) then pressing PLAY. Confirmed no accessible-name collision: the
+Rounds group's labels (30/45/60/90) and the Clock group's (Unlimited/6s/4s/2s)
+share nothing with "3" or "4".
+
+Correction of the plan's mistaken premise, directed by the orchestrator:
+Step 3's own Notes flagged that `session.test.ts`'s fleet-size case was
+`it.each<FleetSize>([6, 5])`, not already iterating `FLEET_SIZES` as this
+step's plan text assumed. Per the orchestrator's direction, changed it to
+`it.each<FleetSize>(FLEET_SIZES)` (adding the `FLEET_SIZES` import) so the
+session layer now exercises all four sizes; the case's body and assertions
+were left untouched.
 
 `src/start/StartScreen.tsx` maps `FLEET_SIZES` to render the Ships group, so
 the two extra radios appear with no component change and no CSS change (D4).

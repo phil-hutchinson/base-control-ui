@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { squareFromName, squareName } from "../rules/board";
 import {
   DEFAULT_FLEET_SIZE,
+  FLEET_SIZES,
   startingFleet,
   type FleetSize,
   type ShipId,
@@ -638,7 +639,7 @@ describe("sessionReducer — new-game", () => {
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
   });
 
-  it.each<FleetSize>([6, 5])(
+  it.each<FleetSize>(FLEET_SIZES)(
     "honours the given fleet size, dealing %i ships a side on its own layout",
     (fleetSize) => {
       const session = sessionFor(buildState({ ships: [] }));
