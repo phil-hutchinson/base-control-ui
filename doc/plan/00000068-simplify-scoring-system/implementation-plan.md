@@ -324,7 +324,12 @@ either a `power-gained` effect or unrelated to energy collection.
 
 ### Step 4 — Owner plays a game and watches the number
 
-Status: pending
+Status: committed
+
+Notes: The owner played a game on 2026-09-08 and confirmed points 1, 2, 4, 5,
+6 and 7. Point 3 (the announcement sentence) was not checked — the owner does
+not test announcements by hand; `src/board/announcements.test.ts` covers it.
+Nothing was given up visually, so no accessibility note was recorded.
 
 The rest of the story is arithmetic; this is the one check that the change
 reads correctly on the board. Nothing is implemented in this step.
