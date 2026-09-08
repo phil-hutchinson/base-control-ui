@@ -36,8 +36,8 @@ function sessionWithEvent(event: SessionEvent | undefined): Session {
 const THREE_NODE_COLLECTION: EnergyCollectedEffect = {
   type: "energy-collected",
   side: "green",
-  amount: 6,
-  newTotal: 24,
+  amount: 3,
+  newTotal: 21,
   squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
 };
 
@@ -89,7 +89,7 @@ describe("EnergyOverlay", () => {
 
     const gains = container.querySelectorAll(".energy-overlay__amount");
     expect(gains).toHaveLength(1);
-    expect(gains[0]).toHaveTextContent("+6");
+    expect(gains[0]).toHaveTextContent("+3");
     expect(gains[0]).toHaveClass("energy-overlay__amount--green");
 
     const pulses = container.querySelectorAll(".energy-overlay__pulse");
@@ -169,8 +169,8 @@ describe("EnergyOverlay", () => {
         {
           type: "energy-collected",
           side: "red",
-          amount: 3,
-          newTotal: 3,
+          amount: 2,
+          newTotal: 2,
           squares: [squareAt("E", 5), squareAt("K", 5)],
         },
       ],

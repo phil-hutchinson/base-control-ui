@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.28**
+**Rules version: 0.29**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -585,18 +585,12 @@ they leave the board and nothing appears in their place.
 
 ### 8.4 Energy
 
-At the end of each player's turn, that player collects energy for the
-charged nodes they are **standing on**, priced off the table below. A node
+At the end of each player's turn, that player collects **one energy for
+each charged node they are standing on** — hold three, collect three. A node
 counts only if one of that player's ships is on it at that moment — flying
-across a charged node and moving on collects nothing.
-
-| Nodes counted | Energy |
-| ------------- | ------ |
-| 0             | 0      |
-| 1             | 1      |
-| 2             | 3      |
-| 3             | 6      |
-| 4             | 10     |
+across a charged node and moving on collects nothing. The board never
+charges more than four nodes at once (sections 8.1, 8.2), but that is a
+fact about the board, not a cap on what collecting can pay.
 
 Nothing in the game subtracts energy. A player's total only ever rises.
 

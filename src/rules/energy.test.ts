@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ALL_SQUARES, squareFromName } from "./board";
-import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
+import { chargedNodesHeldBy } from "./energy";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
@@ -42,30 +42,6 @@ function buildState(config: {
     outOfTime: { green: false, red: false },
   };
 }
-
-describe("energyForNodesHeld", () => {
-  it.each([
-    [0, 0],
-    [1, 1],
-    [2, 3],
-    [3, 6],
-    [4, 10],
-  ])("pays %i for holding %i nodes", (nodesHeld, energy) => {
-    expect(energyForNodesHeld(nodesHeld)).toBe(energy);
-  });
-
-  it("throws for a negative count", () => {
-    expect(() => energyForNodesHeld(-1)).toThrow(RangeError);
-  });
-
-  it("throws for a count above four", () => {
-    expect(() => energyForNodesHeld(5)).toThrow(RangeError);
-  });
-
-  it("throws for a fractional count", () => {
-    expect(() => energyForNodesHeld(2.5)).toThrow(RangeError);
-  });
-});
 
 describe("chargedNodesHeldBy", () => {
   it("counts a ship standing on a charged node", () => {

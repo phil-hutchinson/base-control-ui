@@ -282,8 +282,8 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
     expect(result.effects[0]).toEqual({
       type: "energy-collected",
       side: "green",
-      amount: 3,
-      newTotal: 3,
+      amount: 2,
+      newTotal: 2,
       squares: [squareFromName("H8"), squareFromName("L8")],
     });
     // Step 4: the board is one node short of four, and K5 is the only
@@ -1125,15 +1125,49 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.effects).toContainEqual({
       type: "energy-collected",
       side: "green",
-      amount: 6,
-      newTotal: 6,
+      amount: 3,
+      newTotal: 3,
       squares: [
         squareFromName("K5"),
         squareFromName("H8"),
         squareFromName("L8"),
       ],
     });
-    expect(result.state.energy).toEqual({ green: 6, red: 0 });
+    expect(result.state.energy).toEqual({ green: 3, red: 0 });
+  });
+
+  it("pays for four held nodes, the most the board can charge at once, with no cap in the arithmetic", () => {
+    const state = buildState({
+      sideToMove: "green",
+      nodes: {
+        H8: ["charged", 5],
+        K5: ["charged", 5],
+        L8: ["charged", 5],
+        C3: ["charged", 5],
+      },
+      ships: [
+        ship("green-1", "green", "H8", 0),
+        ship("green-2", "green", "K5", 0),
+        ship("green-3", "green", "L8", 0),
+        ship("green-4", "green", "C3", 0),
+      ],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-collected",
+      side: "green",
+      amount: 4,
+      newTotal: 4,
+      squares: [
+        squareFromName("C3"),
+        squareFromName("K5"),
+        squareFromName("H8"),
+        squareFromName("L8"),
+      ],
+    });
+    expect(result.state.energy).toEqual({ green: 4, red: 0 });
   });
 
   it("pays for a node whose countdown runs out at the end of this very turn (before step 3 ticks)", () => {

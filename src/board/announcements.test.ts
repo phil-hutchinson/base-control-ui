@@ -1040,8 +1040,8 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
             {
               type: "energy-collected",
               side: "green",
-              amount: 6,
-              newTotal: 24,
+              amount: 3,
+              newTotal: 21,
               squares: [squareAt("D", 8), squareAt("H", 8), squareAt("K", 11)],
             },
           ],
@@ -1052,7 +1052,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       powerAfter: 6,
     };
     expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green collected 6 energy from 3 nodes at D8, H8 and K11, and now has 24. Red's turn, 1 action left.",
+      "Green ship moved from C7 to C6. The move was free; it still has 6 power. Green collected 3 energy from 3 nodes at D8, H8 and K11, and now has 21. Red's turn, 1 action left.",
     );
   });
 
@@ -1120,8 +1120,8 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
     const collected: EnergyCollectedEffect = {
       type: "energy-collected",
       side: "red",
-      amount: 3,
-      newTotal: 3,
+      amount: 2,
+      newTotal: 2,
       squares: [squareAt("E", 5), squareAt("K", 5)],
     };
     const event: PassEffect = {
@@ -1132,7 +1132,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       endOfTurn: [collected],
     };
     expect(announcementFor(event)).toBe(
-      "Red has no legal action, so the turn passes. Red collected 3 energy from 2 nodes at E5 and K5, and now has 3. Green's turn, 1 action left.",
+      "Red has no legal action, so the turn passes. Red collected 2 energy from 2 nodes at E5 and K5, and now has 2. Green's turn, 1 action left.",
     );
   });
 });
