@@ -366,7 +366,23 @@ than fixing it (`CLAUDE.md`, pre-release stance); no note is expected.
 
 ### Step 5 — `README.md`, the prose sweep, and the final check
 
-Status: pending
+Status: committed
+
+Notes: Rewrote the README's "holding several at once pays far more than
+holding them one at a time would" clause to state the flat rate — "one energy
+for each charged node held, so a player standing on several at once collects
+that many" — and rewrapped that hand-wrapped paragraph so no line exceeds the
+document's existing width convention. Edited directly rather than running
+`/update-readme`, since the change is a single settled clause and the
+plan's own text already specifies the replacement wording. Swept `src/` and
+`doc/` for `ENERGY_BY_NODES_HELD`, `energyForNodesHeld`, "table" near energy,
+"1, 3, 6" and "3, 6, 10": every hit outside `doc/ruleset/changelog.md` and
+other stories' plan folders was either already correct (this story's own
+Steps 1–2 notes, `energy.ts`, `endOfTurn.ts`, `rules.md` §8.4) or an unrelated
+table (the §6 movement-cost table, the §8.3 countdown tables, the node-queue
+ordering table). No stale prose found needing a fix, so no file besides
+`README.md` changed. `npm test`, `npm run typecheck`, `npm run lint` and
+`npm run format:check` all pass.
 
 - `README.md`'s rules summary currently reads that a node "pays energy at the
   end of each turn to the player sitting on it, and holding several at once

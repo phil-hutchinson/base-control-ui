@@ -113,15 +113,15 @@ install, no account, no server.
 > still topping up power on a planet, up to a full six — a ship already full
 > doesn't count towards that. A ship attacks exactly as far as it moves, and a
 > ship holding a node can neither attack nor be attacked while it stands there.
-> A node also pays energy at the end of each turn to the player sitting on it,
-> and holding several at once pays far more than holding them one at a time
-> would. The app keeps score and shows it, along with how many nodes each player
-> holds and which round the game is in. Once the game reaches the number of
-> rounds you chose, it ends: the player with the most energy wins, an equal
-> score is a draw, and the "New Game" button returns you to the start screen
-> with the same choices still set, ready to play again. There is still no way to
-> save or record a game and no computer opponent to play against. The project is
-> being built up story by story.
+> A node also pays energy at the end of each turn to the player sitting on it:
+> one energy for each charged node held, so a player standing on several at once
+> collects that many. The app keeps score and shows it, along with how many
+> nodes each player holds and which round the game is in. Once the game reaches
+> the number of rounds you chose, it ends: the player with the most energy wins,
+> an equal score is a draw, and the "New Game" button returns you to the start
+> screen with the same choices still set, ready to play again. There is still no
+> way to save or record a game and no computer opponent to play against. The
+> project is being built up story by story.
 
 ## The rules
 
