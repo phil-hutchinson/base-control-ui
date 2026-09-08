@@ -48,7 +48,8 @@ sit on.
 
 Scores get smaller and much flatter. A 30-round game in which a player holds
 two nodes throughout now scores 60 rather than 90, and the gap between a
-player holding four and a player holding one is 3 energy a turn rather than 9. Holding more nodes is still strictly better — it is just no longer
+player holding four and a player holding one is 3 energy a turn rather
+than 9. Holding more nodes is still strictly better — it is just no longer
 worth abandoning a safe node to chase a fourth.
 
 Nothing in the game is sized against the old numbers: game length is counted

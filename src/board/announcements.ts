@@ -145,7 +145,8 @@ function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
 /**
  * A single turn's collection (rules.md §8.4): one node names itself, several
  * name their count and squares. There is at most one of these per sequence —
- * §8.4 pays once, for the count of nodes held, never once per node.
+ * a turn's whole collection is announced as a single amount, however many
+ * nodes it came from.
  */
 function energyCollectedClause(effect: EnergyCollectedEffect): string {
   const side = capitalize(effect.side);

@@ -10,9 +10,10 @@ import type { GameState } from "../rules/gameState";
 import { TARGET_CHARGED_NODES } from "../rules/nodes";
 import "./ScoreDisplay.css";
 
-/** The most a turn can pay is 10 (§8.4), so the longest game (90 rounds)
- * tops out around 900. Four digits stays anyway, so the arcade readout's
- * fixed width never reflows as the total grows. */
+/** A turn pays at most the four charged nodes the board holds (§8.1, §8.2,
+ * §8.4), so the longest game tops out in the hundreds. Four digits stays
+ * anyway, so the arcade readout's fixed width never reflows as the total
+ * grows. */
 const SCORE_DIGITS = 4;
 
 const SIDE_NAME: Readonly<Record<Side, string>> = {

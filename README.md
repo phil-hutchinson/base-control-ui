@@ -114,7 +114,7 @@ install, no account, no server.
 > doesn't count towards that. A ship attacks exactly as far as it moves, and a
 > ship holding a node can neither attack nor be attacked while it stands there.
 > A node also pays energy at the end of each turn to the player sitting on it:
-> one energy for each charged node held, so a player standing on several at once
+> one energy for each lit node held, so a player standing on several at once
 > collects that many. The app keeps score and shows it, along with how many
 > nodes each player holds and which round the game is in. Once the game reaches
 > the number of rounds you chose, it ends: the player with the most energy wins,

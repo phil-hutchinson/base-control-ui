@@ -588,10 +588,9 @@ they leave the board and nothing appears in their place.
 At the end of each player's turn, that player collects **one energy for
 each charged node they are standing on** — hold three, collect three. A node
 counts only if one of that player's ships is on it at that moment — flying
-across a charged node and moving on collects nothing. There is no upper
-bound written into this rule: the board never charges more than four nodes
-at once (sections 8.1, 8.2), but that is a fact about the board, not a cap
-on what collecting can pay.
+across a charged node and moving on collects nothing. The board never
+charges more than four nodes at once (sections 8.1, 8.2), but that is a
+fact about the board, not a cap on what collecting can pay.
 
 Nothing in the game subtracts energy. A player's total only ever rises.
 
