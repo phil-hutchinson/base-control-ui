@@ -343,7 +343,27 @@ alternation assertions must pass. Also run `npm run typecheck`.
 
 ### Step 3 — The rest of the rules layer accepts three and four a side
 
-Status: pending
+Status: committed
+
+Notes: Rebuilt `startingGameState`'s `RangeError` message from `FLEET_SIZES`
+per D3 (`src/rules/gameState.ts`). In `gameState.test.ts`, changed the
+full-power test to iterate `FLEET_SIZES` instead of `[6, 5]`, changed the
+same-seed test to compare `Math.min(...FLEET_SIZES)` against
+`Math.max(...FLEET_SIZES)`, and replaced the invalid-size table
+`[4, 7, 8, 6.5]` with `[2, 7, 8, 6.5]` since 4 is now valid. Added
+three-a-side and four-a-side cases to `fullGame.test.ts`'s "smaller fleets
+play end to end" block, same seed (20260819) and round count (30) as the
+neighbouring five- and six-a-side cases, asserting ship count (6 and 8),
+final ply, and that each side's energy equals what it collected. Confirmed
+`src/game/session.test.ts` still passes with no edit.
+
+Deviation: the plan states `session.test.ts`'s fleet-size case "already runs
+… over `FLEET_SIZES`", but it is actually `it.each<FleetSize>([6, 5])` — a
+hardcoded pair, not the exported list. Per the plan's explicit instruction
+for this file ("confirm it passes rather than changing it"), it was left
+alone; it still passes, but it does not exercise fleet sizes 3 or 4 at the
+session layer. Flagging this in case a later step (4, which touches the
+start screen and its session wiring) wants that coverage.
 
 Nothing downstream of `fleet.ts` hardcodes the sizes except one error message
 and a handful of tests. Bring them along:

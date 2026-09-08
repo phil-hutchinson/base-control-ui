@@ -468,6 +468,38 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     expect(finalState.energy.red).toBe(sumAmounts(redCollected));
   });
 
+  it("plays a three-a-side game to its end, with totals consistent throughout", () => {
+    const seed = 20260819;
+    const { finalState, greenCollected, redCollected } = playFullGame(
+      seed,
+      30,
+      3,
+    );
+
+    expect(finalState.ships).toHaveLength(6);
+    expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+    expect(isGameOver(finalState)).toBe(true);
+
+    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
+    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+  });
+
+  it("plays a four-a-side game to its end, with totals consistent throughout", () => {
+    const seed = 20260819;
+    const { finalState, greenCollected, redCollected } = playFullGame(
+      seed,
+      30,
+      4,
+    );
+
+    expect(finalState.ships).toHaveLength(8);
+    expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+    expect(isGameOver(finalState)).toBe(true);
+
+    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
+    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+  });
+
   it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
     const state = startingGameState(20260819, 30, 5);
     const shipSquareNames = new Set(

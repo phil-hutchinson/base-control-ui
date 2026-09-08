@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { squareFromName, squareName } from "./board";
-import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
+import { DEFAULT_FLEET_SIZE, FLEET_SIZES, startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
   type GameState,
@@ -203,14 +203,24 @@ describe("startingGameState", () => {
   });
 
   it("deals the same board for the same seed whatever the fleet size", () => {
-    const fiveASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 5);
-    const sixASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 6);
+    const smallestFleetSize = Math.min(...FLEET_SIZES);
+    const largestFleetSize = Math.max(...FLEET_SIZES);
+    const smallestASide = startingGameState(
+      SEED,
+      DEFAULT_GAME_LENGTH_ROUNDS,
+      smallestFleetSize,
+    );
+    const largestASide = startingGameState(
+      SEED,
+      DEFAULT_GAME_LENGTH_ROUNDS,
+      largestFleetSize,
+    );
 
-    expect(fiveASide.nodes).toEqual(sixASide.nodes);
+    expect(smallestASide.nodes).toEqual(largestASide.nodes);
   });
 
   it("starts every ship at full power whatever the fleet size", () => {
-    for (const fleetSize of [6, 5] as const) {
+    for (const fleetSize of FLEET_SIZES) {
       const state = startingGameState(
         SEED,
         DEFAULT_GAME_LENGTH_ROUNDS,
@@ -222,7 +232,7 @@ describe("startingGameState", () => {
     }
   });
 
-  it.each([4, 7, 8, 6.5])(
+  it.each([2, 7, 8, 6.5])(
     "throws a RangeError for a fleet size of %s",
     (fleetSize) => {
       expect(() =>
