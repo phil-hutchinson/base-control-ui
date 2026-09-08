@@ -152,6 +152,26 @@ describe("App", () => {
     expect(shipCells()).toHaveLength(10);
   });
 
+  it("pressing PLAY after choosing 3 ships deals a three-a-side game", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("radio", { name: "3" }));
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    expect(shipCells()).toHaveLength(6);
+  });
+
+  it("pressing PLAY after choosing 4 ships deals a four-a-side game", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("radio", { name: "4" }));
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    expect(shipCells()).toHaveLength(8);
+  });
+
   it("pressing PLAY after choosing 45 rounds starts a game of that length", async () => {
     const user = userEvent.setup();
     render(<App />);

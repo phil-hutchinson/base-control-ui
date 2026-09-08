@@ -468,6 +468,38 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     expect(finalState.energy.red).toBe(sumAmounts(redCollected));
   });
 
+  it("plays a three-a-side game to its end, with totals consistent throughout", () => {
+    const seed = 20260819;
+    const { finalState, greenCollected, redCollected } = playFullGame(
+      seed,
+      30,
+      3,
+    );
+
+    expect(finalState.ships).toHaveLength(6);
+    expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+    expect(isGameOver(finalState)).toBe(true);
+
+    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
+    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+  });
+
+  it("plays a four-a-side game to its end, with totals consistent throughout", () => {
+    const seed = 20260819;
+    const { finalState, greenCollected, redCollected } = playFullGame(
+      seed,
+      30,
+      4,
+    );
+
+    expect(finalState.ships).toHaveLength(8);
+    expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+    expect(isGameOver(finalState)).toBe(true);
+
+    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
+    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+  });
+
   it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
     const state = startingGameState(20260819, 30, 5);
     const shipSquareNames = new Set(
@@ -572,8 +604,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
   it("draws both fighting ships' returns only from the planets left empty, tight to a six-ship game's own arithmetic", () => {
     // A six-ship game has twelve ships in all; with the fight's own two
     // excluded, at most ten other ships can occupy a planet, so exactly two
-    // of the twelve are free — the tightest §7.1's arithmetic ever gets,
-    // and the reason seven-a-side (fourteen ships) is gone.
+    // of the twelve are free — the tightest §7.1's arithmetic ever gets.
     const emptyPlanetNames = PLANETS.slice(0, 2).map(squareName);
     const state: GameState = {
       ships: [

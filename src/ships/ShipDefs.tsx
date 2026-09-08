@@ -1,6 +1,6 @@
 // The shared artwork every ship model `<use>`s: both sides' gradients, the
 // green ship's turbojet group, and each side's whole hull, declared once
-// here so every ship's `<use>` shares the same definitions - up to fourteen
+// here so every ship's `<use>` shares the same definitions - up to twelve
 // ships are on the board at once, and each one only needs a reference into
 // this sprite rather than its own copy of every id and every node in it.
 //

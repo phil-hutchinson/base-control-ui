@@ -618,7 +618,7 @@ describe("applyAttack", () => {
     });
 
     // Both planets are empty before the fight, so the attacker's draw picks
-    // from all fourteen; the defender's draw is then made against the pool
+    // from all twelve; the defender's draw is then made against the pool
     // with the attacker's planet removed.
     const [attackerIndex, seedAfterAttackerDraw] = drawIndex(
       state.randomSeed,
@@ -756,8 +756,8 @@ describe("applyAttack", () => {
       throw new Error("expected the attack to be applied");
     }
     // Both planets start empty, so the attacker's draw picks from all
-    // fourteen and the defender's draw — against the state that already
-    // holds the attacker — picks from the remaining thirteen.
+    // twelve and the defender's draw — against the state that already
+    // holds the attacker — picks from the remaining eleven.
     const [, seedAfterAttackerDraw] = drawIndex(
       state.randomSeed,
       PLANETS.length,

@@ -50,6 +50,15 @@ ones. Together, the statuses and notes make the plan the single source of
 truth for how far the story has progressed, so work can resume from a fresh
 session with no other context.
 
+### Each step's verification runs the whole suite
+
+A step's automated verification is never scoped to only the files it
+touched. It runs the full `npm test` (and `npm run typecheck` and
+`npm run lint` where the step's language calls for them), so that a step
+which leaves an unrelated test red — for example by widening a type another
+file's test still assumes is narrow — is caught before it is committed.
+Every step must be independently green before the next one begins.
+
 ### Build bottom-up — no forward dependencies
 
 Earlier steps must not depend on anything introduced in a later step. Design the

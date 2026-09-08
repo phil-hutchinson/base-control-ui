@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.27**
+**Rules version: 0.28**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -11,7 +11,7 @@ is right and the app has a bug.
 ## 1. Overview
 
 Base Control is a two-player game played on a square board. Each player
-commands a fleet of five or six ships and competes to occupy the board's
+commands a fleet of three to six ships and competes to occupy the board's
 contested nodes, collecting **energy** for every turn they hold one. The
 player with the most energy when the game ends is the winner.
 
@@ -107,18 +107,18 @@ A planet is an ordinary square in every way except two:
 Planets are not owned. Either player's ships may use any planet.
 
 This diagram shows the board's fixed squares: the twelve planets, and the
-fourteen starting squares (section 4) where ships begin — fleet size decides
-which of the fourteen are used. A starting square is otherwise an ordinary
+eighteen starting squares (section 4) where ships begin — fleet size decides
+which of the eighteen are used. A starting square is otherwise an ordinary
 square: it gives nothing and protects nothing. The diagram does not show any
 node, because a node's square is not fixed — where nodes stand changes as
 the game runs (section 3.2):
 
 ```
      A B C D E F G H I J K L M N O
- 15  . . . S . . . S . . . S . . .
+ 15  . . S S . . . S . . . S S . .
  14  S . . . . P . . . . . . . . S
  13  . . . . . . . . . . . . . P .
- 12  . P . . . . . . . . . . . . .
+ 12  . P . . . . . . P . . . . . .
  11  . . . . . . . . . . . . . . .
  10  S . . . P . . . . . . P . . S
   9  . . . . . . . . . . . . . . .
@@ -129,7 +129,7 @@ the game runs (section 3.2):
   4  . . . . . . P . . . . . . P .
   3  . P . . . . . . . . . . . . .
   2  S . . . . . . . . P . . . . S
-  1  . . . S . . . S . . . S . . .
+  1  . . S S . . . S . . . S S . .
 
 P  planet          S  a starting square (fleet size decides which are used)
 ```
@@ -205,9 +205,9 @@ at all, but it buys a poorly placed square no meaningful chance otherwise.
 
 ## 4. Ships
 
-Each player has **five or six** ships — the same number for both players,
-chosen before play begins; **six is the standard game**. One player is
-**green**, the other **red**. Green takes the first turn.
+Each player has **three, four, five or six** ships — the same number for
+both players, chosen before play begins; **six is the standard game**. One
+player is **green**, the other **red**. Green takes the first turn.
 
 A ship starts on a **starting square** (section 3.1) — an ordinary square in
 every way, occupied or not. Which starting squares are used, and which
@@ -235,9 +235,31 @@ Green: O14, O6, D1, L1, A14, A6. Red: D15, L15, O10, O2, A10, A2.
 
 Green: H15, O10, A10, D1, L1. Red: D15, L15, O6, A6, H1.
 
-Both layouts are exact half-turn rotations of one another — each player's
-starting fleet is the rotation of the other's — so neither side begins with
-better ground.
+**Four a side (8 ships).**
+
+| Edge   | Left to right / top to bottom |
+| ------ | ----------------------------- |
+| Top    | C15 green, M15 green          |
+| Right  | O10 red, O6 green             |
+| Bottom | C1 red, M1 red                |
+| Left   | A10 red, A6 green             |
+
+Green: C15, M15, O6, A6. Red: O10, M1, C1, A10.
+
+**Three a side (6 ships).**
+
+| Edge   | Left to right / top to bottom |
+| ------ | ----------------------------- |
+| Top    | H15 green                     |
+| Right  | O10 red, O6 green             |
+| Bottom | H1 red                        |
+| Left   | A10 red, A6 green             |
+
+Green: H15, O6, A6. Red: O10, H1, A10.
+
+In each of the four layouts, one player's starting fleet is the exact
+half-turn rotation of the other's, so neither side begins with better
+ground.
 
 Every ship starts at full power (6).
 
@@ -268,7 +290,7 @@ Green takes the first turn, and the players alternate. On a turn a player takes
 
 A player must take as many of their turn's actions as are available. If a
 player has no legal action at all, their turn passes. This should be
-uncommon — a player always has at least five ships — but an action is not
+uncommon — a player always has at least three ships — but an action is not
 always available: an attack reaches only as far as the attacker's power
 allows, and a ship holding a node has no attack available to it at all. A
 **trapped** ship (section 8.5) offers no action at all, so a player whose
@@ -377,10 +399,11 @@ placed first, and the defender's planet is then drawn from the planets still
 empty. Which ship is placed first makes no difference to the odds, but
 fixing the order is what lets a recorded game replay exactly.
 
-There is always somewhere to go: with twelve ships and twelve planets, the
-two ships in a fight were by definition not on planets, so at most ten
-planets are occupied and at least two are free — enough for the attacker's
-placement, and the defender's after it, to each find an empty one.
+There is always somewhere to go: with at most twelve ships and twelve
+planets, the two ships in a fight were by definition not on planets, so at
+most ten planets are occupied and at least two are free — enough for the
+attacker's placement, and the defender's after it, to each find an empty
+one.
 
 ### 7.2 Returning by choice
 
