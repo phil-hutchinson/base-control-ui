@@ -53,7 +53,7 @@ interface LayoutEntry {
 }
 
 /**
- * The six-a-side layout (rules.md §4): twelve of the fourteen starting
+ * The six-a-side layout (rules.md §4): twelve of the eighteen starting
  * squares are occupied, H15 and H1 left empty. Listed clockwise starting
  * from L15.
  */
@@ -73,7 +73,7 @@ const SIX_A_SIDE_LAYOUT: readonly LayoutEntry[] = [
 ];
 
 /**
- * The five-a-side layout (rules.md §4): ten of the fourteen starting
+ * The five-a-side layout (rules.md §4): ten of the eighteen starting
  * squares are occupied, O14, O2, A14 and A2 left empty. Listed clockwise
  * from H15.
  */

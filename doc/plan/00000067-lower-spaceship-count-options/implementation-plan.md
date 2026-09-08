@@ -482,7 +482,27 @@ fixing it (`CLAUDE.md`, pre-release stance); no note is expected.
 
 ### Step 6 — `README.md`, the comment sweep, and the final check
 
-Status: pending
+Status: committed
+
+Notes: Edited `README.md`'s three stale spots directly (did not run
+`/update-readme`, since the changes were small and well scoped): the opening
+paragraph now reads "a fleet of three, four, five or six ships", the status
+block's ships choice reads "six, five, four or three, six to start", and the
+same block's starting-squares count reads "eighteen" instead of "fourteen".
+Rewrapped only the touched lines rather than the whole status paragraph, to
+keep the diff minimal. Swept `src/` and `doc/` for "five or six", "5 or 6",
+"fourteen" and "at least five": found and fixed two stale doc comments in
+`src/rules/fleet.ts` (`SIX_A_SIDE_LAYOUT` and `FIVE_A_SIDE_LAYOUT` still said
+"fourteen starting squares", now "eighteen") and one in
+`src/ships/ShipDefs.tsx` ("up to fourteen ships are on the board at once",
+stale since the seven-a-side removal in story 53, now "up to twelve", matching
+`MAX_SHIPS_PER_SIDE * 2`). Left two other "fourteen" hits alone,
+`src/rules/ply.test.ts` (two comments) and `src/rules/fullGame.test.ts` (one):
+both are about the twelve planets or the already-removed seven-a-side size,
+pre-existing staleness unrelated to this story's starting-square count, so
+fixing them would be out of this step's scope. All four checks (`npm test` —
+1047 passed, `npm run typecheck`, `npm run lint`, `npm run format:check`) are
+green.
 
 Bring the player-facing README and any stale in-code prose into line:
 

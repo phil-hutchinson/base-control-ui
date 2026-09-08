@@ -1,10 +1,10 @@
 # Base Control — Play in Your Browser
 
-Base Control is a game for two players. Each of you commands a fleet of five
-or six ships — you choose the size before play begins, with six the standard
-game — on a 15 x 15 board, competing for the handful of contested nodes that
-light up across it. Hold a node and it pays you energy every turn. The player
-with the most energy at the end wins.
+Base Control is a game for two players. Each of you commands a fleet of
+three, four, five or six ships — you choose the size before play begins, with
+six the standard game — on a 15 x 15 board, competing for the handful of
+contested nodes that light up across it. Hold a node and it pays you energy
+every turn. The player with the most energy at the end wins.
 
 Each ship carries power, a reserve it spends on every move and every attack. A
 single step up, down, left or right is free; a diagonal step costs 1; two
@@ -45,17 +45,18 @@ install, no account, no server.
 
 > **Status:** early development. The app now plays a whole game, from the opening
 > position to the final score. Opening it shows a start screen, not the board: the
-> game's name, a choice of how many ships a side (six or five, six to start), a
-> choice of how many rounds the game lasts (thirty, forty-five, sixty or ninety,
-> thirty to start), a choice of a clock (unlimited, or six, four or two seconds a
-> turn, unlimited to start) and a PLAY button. Changing any of the three choices
+> game's name, a choice of how many ships a side (six, five, four or three,
+> six to start), a choice of how many rounds the game lasts (thirty,
+> forty-five, sixty or ninety, thirty to start), a choice of a clock
+> (unlimited, or six, four or two seconds a turn, unlimited to start) and a
+> PLAY button. Changing any of the three choices
 > starts nothing — the board only appears once PLAY is pressed, dealt with the
 > choices you made. A clock is each player's own time for the whole game, not per
 > turn — a thirty-round game at six seconds a turn gives each of you three minutes
 > to spend however you like across your turns. A player who runs out passes every
 > turn from then on, and once both players have run out the game ends there and
 > then; running out is not a loss, since energy still decides who wins. A smaller
-> fleet starts from fewer of the board's fourteen starting squares, leaving the
+> fleet starts from fewer of the board's eighteen starting squares, leaving the
 > rest empty; every starting square is an ordinary square, whether or not a ship
 > stands there — it gives a ship nothing and protects it from nothing, so ships
 > are attackable from the very first turn. Twelve planets sit inside the board
