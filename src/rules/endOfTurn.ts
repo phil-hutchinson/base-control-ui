@@ -46,7 +46,7 @@ import type { Square } from "./board";
 import { squareName } from "./board";
 import { isPlanet } from "./planets";
 import { type NodeChargedEffect, runCharging } from "./charging";
-import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
+import { chargedNodesHeldBy } from "./energy";
 import type { Side, ShipId } from "./fleet";
 import {
   type GameState,
@@ -249,14 +249,14 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   });
   let workingState: GameState = { ...state, ships };
 
-  // Step 2: the moving side collects energy for the charged nodes it holds
-  // right now (§8.4). Nothing is subtracted any more — a depleted node traps
-  // the ship standing on it (§8.1, §8.5) rather than costing its owner
-  // energy. A zero payout is not an event — no effect, no other state
-  // change — so a player standing on nothing does not read as having had
-  // something happen to them.
+  // Step 2: the moving side collects one energy for each charged node it
+  // holds right now (§8.4) — no table, no upper bound written here. Nothing
+  // is subtracted any more — a depleted node traps the ship standing on it
+  // (§8.1, §8.5) rather than costing its owner energy. A zero payout is not
+  // an event — no effect, no other state change — so a player standing on
+  // nothing does not read as having had something happen to them.
   const heldSquares = chargedNodesHeldBy(workingState, side);
-  const amount = energyForNodesHeld(heldSquares.length);
+  const amount = heldSquares.length;
   if (amount > 0) {
     const newTotal = workingState.energy[side] + amount;
     workingState = {

@@ -282,8 +282,8 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
     expect(result.effects[0]).toEqual({
       type: "energy-collected",
       side: "green",
-      amount: 3,
-      newTotal: 3,
+      amount: 2,
+      newTotal: 2,
       squares: [squareFromName("H8"), squareFromName("L8")],
     });
     // Step 4: the board is one node short of four, and K5 is the only
@@ -1125,15 +1125,15 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.effects).toContainEqual({
       type: "energy-collected",
       side: "green",
-      amount: 6,
-      newTotal: 6,
+      amount: 3,
+      newTotal: 3,
       squares: [
         squareFromName("K5"),
         squareFromName("H8"),
         squareFromName("L8"),
       ],
     });
-    expect(result.state.energy).toEqual({ green: 6, red: 0 });
+    expect(result.state.energy).toEqual({ green: 3, red: 0 });
   });
 
   it("pays for a node whose countdown runs out at the end of this very turn (before step 3 ticks)", () => {

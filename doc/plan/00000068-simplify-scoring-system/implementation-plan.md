@@ -226,7 +226,17 @@ rate, and no cap.
 
 ### Step 2 — Pay the count: delete the pricing function and award `heldSquares.length`
 
-Status: pending
+Status: committed
+
+Notes: Deleted `ENERGY_BY_NODES_HELD` and `energyForNodesHeld` from
+`energy.ts` (doc comments included) and rewrote the module header comment to
+drop the table reference. `endOfTurn.ts` step 2 now awards
+`heldSquares.length` directly, with the `amount > 0` guard and the
+`energy-collected` effect fields unchanged; its comment was reworded to
+describe the flat rate. Removed the `energyForNodesHeld` describe block
+(table cases and `RangeError` cases) from `energy.test.ts`, and updated
+`endOfTurn.test.ts`'s two-held-nodes and three-held-nodes expectations from
+the old table's 3/6 to the flat 2/3. No deviations from the plan.
 
 Implement the rule from Step 1 in the engine.
 
