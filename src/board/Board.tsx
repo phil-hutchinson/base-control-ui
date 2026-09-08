@@ -11,7 +11,7 @@ import { shipHasLegalAction } from "../rules/actions";
 import { legalTargets } from "../rules/combat";
 import { shipsBySquare, nodeStatusAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
-import { nodeCyclePosition } from "../rules/nodes";
+import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import { inactivePriority } from "../rules/nodeQueue";
 import type { Session, SessionIntent } from "../game/session";
 import { announcementForSession } from "./announcements";
@@ -109,16 +109,29 @@ export function Board({ session, onIntent }: BoardProps) {
         const planet = planetForSquare(arrangement, square);
         const nodeStatus = nodeStatusAt(session.state, square);
         const nodeState = nodeStatus?.state;
+        const ship = ships.get(name);
         const cyclePosition =
           nodeStatus &&
           (nodeStatus.state === "charged" || nodeStatus.state === "depleted")
-            ? nodeCyclePosition(nodeStatus.state, nodeStatus.level)
+            ? nodeCyclePosition(
+                nodeStatus.state,
+                nodeStatus.level,
+                ship !== undefined,
+              )
+            : undefined;
+        const countdown =
+          nodeStatus &&
+          (nodeStatus.state === "charged" || nodeStatus.state === "depleted")
+            ? countdownNumber(
+                nodeStatus.state,
+                nodeStatus.level,
+                ship !== undefined,
+              )
             : undefined;
         const priority =
           nodeStatus && nodeStatus.state === "inactive"
             ? inactivePriority(nodeStatus)
             : undefined;
-        const ship = ships.get(name);
         const occupant = ship && { side: ship.side, power: ship.power };
         const condition = ship && shipCondition(ship);
         const hasActed = ship
@@ -143,6 +156,7 @@ export function Board({ session, onIntent }: BoardProps) {
               nodeState={nodeState}
               cyclePosition={cyclePosition}
               priority={priority}
+              countdownNumber={countdown}
               occupant={occupant}
               hasActed={hasActed}
               condition={condition}

@@ -30,19 +30,19 @@ export interface Ship {
  * A node's current state, plus its `level` — a single number whose meaning
  * depends on the state it is attached to (rules.md §8.1–§8.3):
  *
- * | State    | `level` is            | Starts at                   | Moves at end of turn                | Changes state at |
- * | -------- | ---------------------- | ---------------------------- | ------------------------------------ | ----------------- |
- * | Inactive | priority (1, 2 or 3)   | dealt at random by a refill  | rotates 1→2, 2→3, 3→1, or is swept   | charged (§8.2)     |
- * | Charged  | drain                  | 0                             | + the drain draw                     | ≥ capacity         |
- * | Depleted | the drain to recover   | the drain it carried          | − the recovery draw                  | ≤ 0                |
+ * | State    | `level` is           | Set to                                                | At the end of a ply             | Changes state at |
+ * | -------- | --------------------- | ------------------------------------------------------ | -------------------------------- | ------------------ |
+ * | Inactive | priority (1, 2 or 3)  | dealt at random by a refill                             | rotates 1→2, 2→3, 3→1, or swept  | charged (§8.2)      |
+ * | Charged  | plies remaining        | **0** on charging or dealing; 11 when a ship steps on   | −1, but only if above 0          | depleted at 0       |
+ * | Depleted | plies remaining        | 11 (trap) or 2 (exit)                                   | −1                                | retires at 0        |
  *
- * A depleted node's `level` carries over from whatever drain the node had
- * when it went depleted — always at or a little past capacity, since a node
- * now ends only that way — so recovery always starts from about the same
- * level. That carry is a real property of the design, not an implementation
- * convenience, and is why there is one field rather than three. An
- * inactive node's `level` is its priority, not a clock — `nodeQueue.ts`
- * owns the type (`NodePriority`) and every operation on it.
+ * `level === 0` on a charged node means "no countdown" — a charged node
+ * nobody has stepped on sits there indefinitely (rules.md §8.3). This is
+ * unambiguous: a countdown that reaches 0 depletes the node inside the same
+ * step (`endOfTurn.ts` step 3), so a charged node never sits at 0 with a
+ * countdown that has simply run out. `countdown.ts` owns the arithmetic on
+ * this field for the charged and depleted states; `nodeQueue.ts` owns the
+ * type (`NodePriority`) for the inactive state.
  */
 export interface NodeStatus {
   readonly state: NodeState;
@@ -102,8 +102,9 @@ export interface GameState {
 /**
  * The state the game starts from: `startingFleet(fleetSize)`'s ships, a
  * dealt board (`dealOpeningBoard`, rules.md §8.1) — four of the seven nodes
- * charged at a drawn drain, the other three inactive at priorities 1, 2 and
- * 3 dealt at random, nothing depleted — green to move, `ACTIONS_PER_PLY`
+ * charged at baseline, with no countdown, the other three inactive at
+ * priorities 1, 2 and 3 dealt at random, nothing depleted — green to move,
+ * `ACTIONS_PER_PLY`
  * actions remaining, nothing moved, ply 1, both sides at 0 energy, neither
  * side out of time, and the given game length.
  *

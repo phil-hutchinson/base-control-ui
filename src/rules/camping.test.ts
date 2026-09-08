@@ -1,25 +1,28 @@
-// Integration cover for camping: staying put has stopped being free once a
-// node runs out from under you (rules.md §8.5). A ship on an inactive node
-// still owes and is owed nothing, and charging does not look at occupancy
-// (§8.2). A ship holding a **charged** node is protected while it holds it
-// (§7) and pays nothing for holding it, and leaving one no longer ends it
-// (§8.3) — but staying on it to the very end costs the ship its freedom:
-// the instant the node runs out it is **trapped** there (§8.1, §8.5), with
-// no legal destination and no legal target of its own, and nothing an enemy
-// does can dislodge or attack it either. That lasts until the node retires,
-// at which point its square is an ordinary square again and the ship can
-// leave it like any other — nothing appears in the retired node's place.
-// A move may not land on a depleted node at all (§6), whether or not a ship
-// is trapped there. Driven entirely through the public rules API —
-// `applyMove`, `applyAttack`, `moveRefusalReason`, `attackRefusalReason`,
-// `legalDestinations`, `legalTargets` and the `EndOfTurnEffect`s an action
-// carries — rather than by calling `runEndOfTurn` or `runCharging` directly,
-// so this proves the same thing a player's turn would.
+// Integration cover for standing on a node (rules.md §8.3, §8.5). A ship
+// holding a **charged** node is protected while it holds it (§7) and pays
+// nothing for holding it (§4.1), but staying on it to the very end costs the
+// ship its freedom: the instant the node runs out it is **trapped** there
+// (§8.1, §8.5), with no legal destination and no legal target of its own,
+// and nothing an enemy does can dislodge or attack it either. That lasts
+// until the node retires, at which point its square is an ordinary square
+// again and the ship can leave it like any other — nothing appears in the
+// retired node's place. Leaving a charged node ends it at once (§8.3): the
+// square becomes a depleted node on the spot, forfeiting that turn's energy
+// from it and denying it to the opponent. A move may not land on an
+// uncharged node at all (§6), whether inactive or depleted, and a ship can
+// no longer stand on an inactive node — only a charged node is a square a
+// ship may occupy (rules.md §8.1). Driven entirely through the public rules
+// API — `applyMove`, `applyAttack`, `moveRefusalReason`, `attackRefusalReason`,
+// `legalDestinations`, `legalTargets` and the `EndOfTurnEffect`s and
+// `MoveEffect`s an action carries — rather than by calling `runEndOfTurn` or
+// `runCharging` directly, so this proves the same thing a player's turn
+// would.
 
 import { describe, expect, it } from "vitest";
 import { squareFromName } from "./board";
+import { CHARGED_COUNTDOWN_PLIES, TRAP_COUNTDOWN_PLIES } from "./countdown";
 import { attackRefusalReason, legalTargets } from "./combat";
-import type { NodeRetiredEffect } from "./endOfTurn";
+import type { EndOfTurnEffect, NodeRetiredEffect } from "./endOfTurn";
 import type { ShipId } from "./fleet";
 import {
   ACTIONS_PER_PLY,
@@ -29,14 +32,16 @@ import {
 } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { legalDestinations, moveRefusalReason } from "./movement";
+import { TOP_NODE_PRIORITY } from "./nodeQueue";
 import {
   type MoveEffect,
+  type NodeSpentEffect,
   type PlyEndedEffect,
   applyAttack,
   applyMove,
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
-import { NODE_CAPACITY, type NodeState } from "./nodes";
+import type { NodeState } from "./nodes";
 
 function ship(
   id: ShipId,
@@ -100,99 +105,19 @@ function endOfTurnEffects(effects: readonly MoveEffect[]) {
   return plyEnded.endOfTurn;
 }
 
-describe("camping — a node charges under a parked ship (§8.1, §8.2, §8.5)", () => {
-  it("charges with no move of the camping ship's own, and pays energy at the end of its owner's next turn, without touching its power", () => {
-    const initial = buildState({
-      ships: [
-        ship("green-camper", "green", "H8"),
-        ship("green-mover", "green", "A1"),
-        ship("red-mover", "red", "O4"),
-      ],
-      nodes: {
-        H8: ["inactive", 5],
-        F2: ["charged", 0],
-        J2: ["charged", 0],
-        B4: ["charged", 0],
-      },
-    });
-
-    // Green's turn: green-camper never acts. H8 is the only inactive node,
-    // so the board's one-node shortfall charges it deterministically —
-    // under a ship that has not moved at all.
-    const afterGreenTurn = appliedOrThrow(
-      applyMove(initial, "green-mover", squareFromName("A3")),
-    );
-    const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
-    expect(greenTurnEffects).toContainEqual({
-      type: "node-charged",
-      square: squareFromName("H8"),
-    });
-    expect(
-      greenTurnEffects.some((effect) => effect.type === "energy-collected"),
-    ).toBe(false);
-    const camperAfterGreenTurn = afterGreenTurn.state.ships.find(
-      (candidate) => candidate.id === "green-camper",
-    );
-    expect(camperAfterGreenTurn?.square).toEqual(squareFromName("H8"));
-    expect(camperAfterGreenTurn?.power).toBe(4);
-
-    // Red's turn: an ordinary move elsewhere. H8 is charged now and green
-    // stands on it, but step 2 pays only the side that just played — red —
-    // so the camper's side still collects nothing.
-    const afterRedTurn = appliedOrThrow(
-      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
-    );
-    const redTurnEffects = endOfTurnEffects(afterRedTurn.effects);
-    expect(
-      redTurnEffects.some((effect) => effect.type === "energy-collected"),
-    ).toBe(false);
-    const camperAfterRedTurn = afterRedTurn.state.ships.find(
-      (candidate) => candidate.id === "green-camper",
-    );
-    expect(camperAfterRedTurn?.square).toEqual(squareFromName("H8"));
-    expect(camperAfterRedTurn?.power).toBe(4);
-
-    // Green's own next turn: green-camper still has not moved. Now it is
-    // green's own turn again, and step 2 pays it for the node it has been
-    // sitting on all along — but holding a charged node no longer costs it
-    // any power (§4.1), so the camper is exactly as full as it started.
-    const afterGreenNextTurn = appliedOrThrow(
-      applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
-    );
-    const greenNextTurnEffects = endOfTurnEffects(afterGreenNextTurn.effects);
-    expect(greenNextTurnEffects).toContainEqual({
-      type: "energy-collected",
-      side: "green",
-      amount: 1,
-      newTotal: 1,
-      squares: [squareFromName("H8")],
-    });
-    expect(
-      greenNextTurnEffects.some((effect) => effect.type === "power-gained"),
-    ).toBe(false);
-    const camperAfterGreenNextTurn = afterGreenNextTurn.state.ships.find(
-      (candidate) => candidate.id === "green-camper",
-    );
-    expect(camperAfterGreenNextTurn?.square).toEqual(squareFromName("H8"));
-    expect(camperAfterGreenNextTurn?.power).toBe(4);
-  });
-});
-
-describe("camping — a ship on a depleted node outlasts it, until the node retires and simply leaves (§8.2, §8.5, §8.6)", () => {
+describe("camping — a ship holding a charged node pays nothing for holding it, and is trapped the instant it runs out (§8.1, §8.5)", () => {
   it("keeps its square and power through retirement, costing it nothing before or after", () => {
     const initial = {
       ...buildState({
         ships: [
-          // At full power, so a depleted node's own gain has nothing left
-          // to give it — this test is about retirement, not recovery.
+          // At full power, so nothing here is about recovery.
           ship("green-camper", "green", "H8", MAX_POWER),
           ship("green-mover", "green", "A1"),
           ship("red-mover", "red", "O4"),
         ],
         nodes: {
-          // The recovery table's smallest single draw is 4, so this retires
-          // in one.
-          H8: ["depleted", 4],
+          // One ply from retiring, so it goes in this test's first turn.
+          H8: ["depleted", 1],
           F2: ["charged", 0],
           J2: ["charged", 0],
           B4: ["charged", 0],
@@ -205,9 +130,7 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
     // Green's turn: green-camper still occupies H8, genuinely depleted, when
     // step 6 retires it later in this very sequence — nothing is taken for
     // standing there, before or after. Step 6 removes H8 from `state.nodes`
-    // and puts nothing in its place; the camper is untouched by any of it,
-    // because retirement (§8.6 step 6) does not look at occupancy any more
-    // than charging does.
+    // and puts nothing in its place; the camper is untouched by any of it.
     const afterGreenTurn = appliedOrThrow(
       applyMove(initial, "green-mover", squareFromName("A3")),
     );
@@ -273,75 +196,6 @@ describe("camping — a ship on a depleted node outlasts it, until the node reti
   });
 });
 
-describe("camping — an inactive node grants and takes nothing, and a depleted node never grants power any more (§4.1, §8.5)", () => {
-  it("grants no power and collects no energy for a ship on an inactive node, and grants no power for one on a depleted node whether or not it has room left to gain", () => {
-    // green-depleted-camper starts with room to gain (2), unlike the old
-    // rule's ceiling corner case — the point here is that a depleted node
-    // grants nothing at all now (§4.1), not that this particular ship
-    // happened to have nowhere left to put a gain. A depleted node no
-    // longer costs anything either, so green's energy stays at the default
-    // of 0 throughout.
-    const initial = buildState({
-      ships: [
-        ship("green-inactive-camper", "green", "H4"),
-        ship("green-depleted-camper", "green", "C10", 2),
-        ship("green-mover", "green", "A1"),
-        ship("red-mover", "red", "O4"),
-      ],
-      nodes: {
-        H4: ["inactive", 5],
-        // The recovery table's largest single draw is 8, so two turns of
-        // recovery cannot bring this anywhere near zero.
-        C10: ["depleted", 55],
-        F2: ["charged", 0],
-        J2: ["charged", 0],
-        B4: ["charged", 0],
-        L8: ["charged", 0],
-      },
-    });
-
-    function assertUntouched(state: GameState) {
-      const inactive = state.ships.find(
-        (candidate) => candidate.id === "green-inactive-camper",
-      );
-      const depleted = state.ships.find(
-        (candidate) => candidate.id === "green-depleted-camper",
-      );
-      expect(inactive?.square).toEqual(squareFromName("H4"));
-      expect(inactive?.power).toBe(4);
-      expect(depleted?.square).toEqual(squareFromName("C10"));
-      expect(depleted?.power).toBe(2);
-      expect(state.energy.green).toBe(0);
-    }
-
-    // The board is already at its target of four charged nodes, so H4
-    // never gets drawn during this test — it is a clean, indefinite control.
-    const afterGreenTurn = appliedOrThrow(
-      applyMove(initial, "green-mover", squareFromName("A3")),
-    );
-    const greenTurnEffects = endOfTurnEffects(afterGreenTurn.effects);
-    expect(
-      greenTurnEffects.some(
-        (effect) =>
-          effect.type === "power-gained" || effect.type === "energy-collected",
-      ),
-    ).toBe(false);
-    assertUntouched(afterGreenTurn.state);
-
-    const afterRedTurn = appliedOrThrow(
-      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
-    );
-    const redTurnEffects = endOfTurnEffects(afterRedTurn.effects);
-    expect(
-      redTurnEffects.some(
-        (effect) =>
-          effect.type === "power-gained" || effect.type === "energy-collected",
-      ),
-    ).toBe(false);
-    assertUntouched(afterRedTurn.state);
-  });
-});
-
 describe("camping — a node running out under a ship traps it (§8.3, §8.5)", () => {
   it("raises node-ran-out, leaves the ship exactly where it is, and traps it from its owner's next turn", () => {
     const initial = buildState({
@@ -351,7 +205,7 @@ describe("camping — a node running out under a ship traps it (§8.3, §8.5)", 
         ship("red-mover", "red", "O4"),
       ],
       nodes: {
-        H8: ["charged", NODE_CAPACITY - 1],
+        H8: ["charged", 1],
         F2: ["charged", 0],
         J2: ["charged", 0],
         B4: ["charged", 0],
@@ -378,7 +232,10 @@ describe("camping — a node running out under a ship traps it (§8.3, §8.5)", 
       type: "node-ran-out",
       square: squareFromName("H8"),
     });
-    expect(afterGreenTurn.state.nodes.H8.state).toBe("depleted");
+    expect(afterGreenTurn.state.nodes.H8).toEqual({
+      state: "depleted",
+      level: TRAP_COUNTDOWN_PLIES,
+    });
     const camperAfterRunout = afterGreenTurn.state.ships.find(
       (candidate) => candidate.id === "green-camper",
     );
@@ -424,13 +281,13 @@ describe("camping — a node running out under a ship traps it (§8.3, §8.5)", 
   });
 });
 
-describe("camping — a depleted node cannot be entered (§6)", () => {
+describe("camping — a move may not land on an uncharged node (§6)", () => {
   it("refuses a move landing on a depleted node, leaving the mover exactly where it started", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "O1")],
       nodes: {
-        F2: ["charged", 15],
-        G3: ["depleted", 60],
+        F2: ["charged", 0],
+        G3: ["depleted", 2],
       },
     });
 
@@ -442,7 +299,7 @@ describe("camping — a depleted node cannot be entered (§6)", () => {
     if (result.outcome !== "refused") {
       throw new Error("expected the move to be refused");
     }
-    expect(result.reason).toBe("destination-depleted-node");
+    expect(result.reason).toBe("destination-uncharged-node");
   });
 });
 
@@ -456,9 +313,9 @@ describe("camping — a depleted node costs and grants nothing, every one of its
           ship("red-mover", "red", "O4"),
         ],
         nodes: {
-          // Comfortably above the recovery table's largest single draw (8),
-          // so it stays depleted through every recovery tick in this test.
-          H8: ["depleted", 60],
+          // Comfortably above the number of turns this test runs, so it
+          // stays depleted (a trap: green-camper stands on it) throughout.
+          H8: ["depleted", TRAP_COUNTDOWN_PLIES],
         },
       }),
       energy: { green: 10, red: 0 },
@@ -519,73 +376,6 @@ describe("camping — a depleted node costs and grants nothing, every one of its
   });
 });
 
-describe("camping — an inactive node still pays nothing, for as many turns as a ship stays on it (§8.5)", () => {
-  it("grants no power and costs no power or energy, across several turns, with non-zero power and energy at stake", () => {
-    const initial: GameState = {
-      ...buildState({
-        ships: [
-          ship("green-camper", "green", "H4", 2),
-          ship("green-mover", "green", "A1"),
-          ship("red-mover", "red", "O4"),
-        ],
-        nodes: {
-          H4: ["inactive", 5],
-          F2: ["charged", 0],
-          J2: ["charged", 0],
-          B4: ["charged", 0],
-          L8: ["charged", 0],
-        },
-      }),
-      energy: { green: 10, red: 0 },
-    };
-
-    function assertUntouched(state: GameState) {
-      const camper = state.ships.find(
-        (candidate) => candidate.id === "green-camper",
-      );
-      expect(camper?.square).toEqual(squareFromName("H4"));
-      expect(camper?.power).toBe(2);
-      expect(state.energy.green).toBe(10);
-    }
-
-    function assertNoSettlement(effects: readonly MoveEffect[]) {
-      const plyEffects = endOfTurnEffects(effects);
-      expect(
-        plyEffects.some(
-          (effect) =>
-            effect.type === "power-gained" ||
-            effect.type === "energy-collected",
-        ),
-      ).toBe(false);
-    }
-
-    // The board is already at its target of four charged nodes, so H4
-    // never gets drawn during this test — it is a clean, indefinite control,
-    // proven across two full rounds rather than one.
-    const afterGreenTurn = appliedOrThrow(
-      applyMove(initial, "green-mover", squareFromName("A3")),
-    );
-    assertNoSettlement(afterGreenTurn.effects);
-    assertUntouched(afterGreenTurn.state);
-
-    const afterRedTurn = appliedOrThrow(
-      applyMove(afterGreenTurn.state, "red-mover", squareFromName("O6")),
-    );
-    assertUntouched(afterRedTurn.state);
-
-    const afterGreenNextTurn = appliedOrThrow(
-      applyMove(afterRedTurn.state, "green-mover", squareFromName("A1")),
-    );
-    assertNoSettlement(afterGreenNextTurn.effects);
-    assertUntouched(afterGreenNextTurn.state);
-
-    const afterRedNextTurn = appliedOrThrow(
-      applyMove(afterGreenNextTurn.state, "red-mover", squareFromName("O4")),
-    );
-    assertUntouched(afterRedNextTurn.state);
-  });
-});
-
 describe("camping — a ship trapped on a depleted node has no move to make (§8.5)", () => {
   it("refuses the trapped ship's own move, though the depleted node it stands on never granted it power to begin with (§4.1)", () => {
     const initial: GameState = {
@@ -595,7 +385,7 @@ describe("camping — a ship trapped on a depleted node has no move to make (§8
           ship("red-mover", "red", "O4"),
         ],
         nodes: {
-          H8: ["depleted", 60],
+          H8: ["depleted", TRAP_COUNTDOWN_PLIES],
         },
       }),
       energy: { green: 10, red: 0 },
@@ -620,7 +410,7 @@ describe("camping — flying across a depleted node costs nothing (§8.4)", () =
           ship("red-mover", "red", "O4"),
         ],
         nodes: {
-          H8: ["depleted", 60],
+          H8: ["depleted", 2],
         },
       }),
       energy: { green: 10, red: 0 },
@@ -663,9 +453,8 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
         ship("red-mover", "red", "O2"),
       ],
       nodes: {
-        // The held table's smallest draw is 3, so one turn spent occupied
-        // is certain to tip this to capacity, whatever is drawn.
-        H8: ["charged", NODE_CAPACITY - 3],
+        // One ply from running out, so it is certain to tip this turn.
+        H8: ["charged", 1],
       },
     });
 
@@ -685,9 +474,8 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
     );
     expect(legalTargets(withRedToMove, "red-camper")).toEqual([]);
 
-    // Green spends its turn elsewhere. H8 is occupied by red-camper, so its
-    // drain is drawn from the held table (rules.md §8.3) and, at the level
-    // chosen above, is certain to reach capacity in this one turn.
+    // Green spends its turn elsewhere. H8's countdown is down to its last
+    // ply, so it runs out at the end of this very turn (rules.md §8.3).
     const afterGreenTurn = appliedOrThrow(
       applyMove(initial, "green-mover", squareFromName("A3")),
     );
@@ -735,101 +523,264 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
   });
 });
 
-describe("camping — a node left lit still burns down, and either side may retake it (rules.md §7, §8.3)", () => {
-  it("keeps draining at the empty rate if nobody retakes it, and goes depleted only when its drain reaches capacity", () => {
-    const initial = buildState({
-      ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "A1")],
-      nodes: { F2: ["charged", 0] },
-    });
-
-    const afterDeparture = appliedOrThrow(
-      applyMove(initial, "green-1", squareFromName("F4")),
-    );
-    // F2 stays charged the moment it is left — leaving it no longer ends it.
-    expect(afterDeparture.state.nodes.F2.state).toBe("charged");
-    expect(afterDeparture.effects).not.toContainEqual(
-      expect.objectContaining({ type: "node-vacated" }),
-    );
-
-    // Both sides shuffle back and forth with a free one-square orthogonal
-    // step (rules.md §6), so forty rounds of it never runs either ship out
-    // of power to pay with.
-    const greenSquares = ["F5", "F4"] as const;
-    const redSquares = ["A2", "A1"] as const;
-    const moves: Array<[ShipId, string]> = [];
-    for (let round = 0; round < 40; round++) {
-      // Green's own move (F2 -> F4, above) already spent green's turn, so
-      // red moves first in every round from here on.
-      moves.push(["red-1", redSquares[round % 2]]);
-      moves.push(["green-1", greenSquares[round % 2]]);
-    }
-
-    let state = afterDeparture.state;
-    let previousLevel = afterDeparture.state.nodes.F2.level;
-    let ranOut = false;
-    for (const [shipId, square] of moves) {
-      const result = appliedOrThrow(
-        applyMove(state, shipId, squareFromName(square)),
-      );
-      state = result.state;
-      ranOut = endOfTurnEffects(result.effects).some(
-        (effect) => effect.type === "node-ran-out",
-      );
-      if (ranOut) {
-        break;
-      }
-      // Neither ship ever stands on F2 in this scenario, so every one of
-      // these turns draws from the empty table — never the held table's
-      // higher amounts — while the node stays charged.
-      const level = state.nodes.F2.level;
-      expect(level - previousLevel).toBeGreaterThanOrEqual(1);
-      expect(level - previousLevel).toBeLessThanOrEqual(3);
-      expect(state.nodes.F2.state).toBe("charged");
-      previousLevel = level;
-    }
-
-    expect(ranOut).toBe(true);
-    expect(state.nodes.F2.state).toBe("depleted");
-  });
-
-  it("lets the opponent's ship move onto the still-charged node and start collecting there", () => {
+describe("camping — leaving a charged node ends it at once (rules.md §8.3)", () => {
+  it("depletes the node the instant its holder leaves, raises node-spent, forfeits that turn's energy, charges the queue's front node at the same turn's end, and starts an exit node lasting exactly two plies", () => {
+    // Three other charged nodes, at baseline, keep the board at four charged
+    // until F2 becomes an exit node; M5 is the queue's front node, so it is
+    // what charges to fill the shortfall that departure opens.
     const initial = buildState({
       ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "D2")],
-      nodes: { F2: ["charged", 5] },
+      nodes: {
+        F2: ["charged", CHARGED_COUNTDOWN_PLIES],
+        E11: ["charged", 0],
+        H11: ["charged", 0],
+        K11: ["charged", 0],
+        M5: ["inactive", TOP_NODE_PRIORITY],
+      },
     });
 
     const afterDeparture = appliedOrThrow(
       applyMove(initial, "green-1", squareFromName("F4")),
     );
-    expect(afterDeparture.state.nodes.F2.state).toBe("charged");
 
-    // red-1 is the opponent of the ship that held F2 — the case the story is
-    // about: either side may take a node its holder chose to leave.
-    const afterOpponentArrives = appliedOrThrow(
-      applyMove(afterDeparture.state, "red-1", squareFromName("F2")),
+    // The square is depleted on the spot, as the move resolves — not at the
+    // end of the turn — and the move's own effects, not the end-of-turn
+    // sequence's, carry the news of it. By the time this call returns, the
+    // same turn's own end-of-turn sequence has already spent the exit's
+    // first ply (rules.md §8.3), so its two plies are already down to one.
+    expect(afterDeparture.state.nodes.F2).toEqual({
+      state: "depleted",
+      level: 1,
+    });
+    expect(afterDeparture.effects).toContainEqual({
+      type: "node-spent",
+      square: squareFromName("F2"),
+    });
+    const nodeSpent = afterDeparture.effects.find(
+      (effect): effect is NodeSpentEffect => effect.type === "node-spent",
     );
-    const redAfterArrival = afterOpponentArrives.state.ships.find(
-      (candidate) => candidate.id === "red-1",
-    );
-    expect(redAfterArrival?.square).toEqual(squareFromName("F2"));
-    expect(afterOpponentArrives.state.nodes.F2.state).toBe("charged");
+    expect(afterDeparture.effects.indexOf(nodeSpent!)).toBe(0);
 
-    // D2 to F2 is a two-square orthogonal move, which costs 2 (rules.md
-    // §6), leaving red-1 at 2 on arrival; holding the charged node takes
-    // nothing further on top of that (§4.1) — only the energy still comes
-    // due, exactly as it always has (§8.4).
-    const opponentTurnEffects = endOfTurnEffects(afterOpponentArrives.effects);
-    const redAfterOpponentTurn = afterOpponentArrives.state.ships.find(
-      (candidate) => candidate.id === "red-1",
+    // Leaving forfeits that turn's energy from the node — green held it
+    // right up to the move, but a ply that ends on nothing collects nothing.
+    expect(afterDeparture.state.energy.green).toBe(0);
+
+    // The shortfall F2's departure opened is filled at the end of the very
+    // same turn (rules.md §8.3), not the opponent's — M5 charges at once,
+    // at baseline, with no draw involved.
+    const departureTurnEffects = endOfTurnEffects(afterDeparture.effects);
+    expect(departureTurnEffects).toContainEqual({
+      type: "node-charged",
+      square: squareFromName("M5"),
+    });
+    expect(afterDeparture.state.nodes.M5).toEqual({
+      state: "charged",
+      level: 0,
+    });
+
+    // Nothing may land on F2 for the rest of the turn or the whole of red's.
+    expect(
+      moveRefusalReason(afterDeparture.state, "red-1", squareFromName("F2")),
+    ).toBe("destination-uncharged-node");
+
+    // Red's turn passes; the exit's second and last ply is spent at the end
+    // of it, and it retires without a trace.
+    const afterRedTurn = appliedOrThrow(
+      applyMove(afterDeparture.state, "red-1", squareFromName("D3")),
     );
-    expect(redAfterOpponentTurn?.power).toBe(2);
+    const redTurnEffects = endOfTurnEffects(afterRedTurn.effects);
+    expect(redTurnEffects).toContainEqual({
+      type: "node-retired",
+      square: squareFromName("F2"),
+    });
+    expect(afterRedTurn.state.nodes.F2).toBeUndefined();
+  });
+
+  it("does not hand the node back or let the opponent inherit it — the departed square stays uncharged for both plies", () => {
+    // Three other charged nodes, at baseline, keep the shortfall at one once
+    // F2 becomes an exit node, so nothing else on the board stirs.
+    const initial = buildState({
+      ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "D2")],
+      nodes: {
+        F2: ["charged", CHARGED_COUNTDOWN_PLIES],
+        E11: ["charged", 0],
+        H11: ["charged", 0],
+        K11: ["charged", 0],
+      },
+    });
+
+    const afterDeparture = appliedOrThrow(
+      applyMove(initial, "green-1", squareFromName("F4")),
+    );
+    expect(afterDeparture.state.nodes.F2.state).toBe("depleted");
+
+    // red-1 cannot take the node green-1 just left — landing on it is
+    // refused like any other uncharged square.
     expect(
-      opponentTurnEffects.some((effect) => effect.type === "power-gained"),
-    ).toBe(false);
+      moveRefusalReason(afterDeparture.state, "red-1", squareFromName("F2")),
+    ).toBe("destination-uncharged-node");
+
+    const afterRedTurn = appliedOrThrow(
+      applyMove(afterDeparture.state, "red-1", squareFromName("D4")),
+    );
+    expect(afterRedTurn.state.nodes.F2).toBeUndefined();
+
+    // And once it is gone, green-1 cannot step back onto it either — there
+    // is no node left there at all to inherit.
     expect(
-      opponentTurnEffects.some(
-        (effect) => effect.type === "energy-collected" && effect.side === "red",
+      moveRefusalReason(
+        { ...afterRedTurn.state, sideToMove: "green", actedThisPly: [] },
+        "green-1",
+        squareFromName("F2"),
       ),
-    ).toBe(true);
+    ).toBeUndefined();
+  });
+});
+
+describe("camping — a node held to the very end collects energy six times, trapped on the sixth (rules.md §8.1, §8.3)", () => {
+  it("credits green once at the end of each of its own six turns holding H8, then traps it the instant the node runs out on the sixth", () => {
+    let state: GameState = buildState({
+      ships: [
+        ship("green-camper", "green", "H8"),
+        ship("green-mover", "green", "A1"),
+        ship("red-mover", "red", "O4"),
+      ],
+      nodes: {
+        H8: ["charged", CHARGED_COUNTDOWN_PLIES],
+        F2: ["charged", 0],
+        J2: ["charged", 0],
+        B4: ["charged", 0],
+      },
+    });
+
+    let greenMoverAt = "A1";
+    let redMoverAt = "O4";
+    let collections = 0;
+    let lastGreenTurnEffects: readonly EndOfTurnEffect[] = [];
+
+    // Eleven plies, alternating green and red starting with green, matches
+    // the charged row of rules.md §8.3's worked table exactly.
+    for (let ply = 1; ply <= 11; ply += 1) {
+      if (ply % 2 === 1) {
+        const to = greenMoverAt === "A1" ? "A2" : "A1";
+        const result = appliedOrThrow(
+          applyMove(state, "green-mover", squareFromName(to)),
+        );
+        state = result.state;
+        greenMoverAt = to;
+        lastGreenTurnEffects = endOfTurnEffects(result.effects);
+        if (
+          lastGreenTurnEffects.some(
+            (effect) => effect.type === "energy-collected",
+          )
+        ) {
+          collections += 1;
+        }
+      } else {
+        const to = redMoverAt === "O4" ? "O5" : "O4";
+        const result = appliedOrThrow(
+          applyMove(state, "red-mover", squareFromName(to)),
+        );
+        state = result.state;
+        redMoverAt = to;
+      }
+    }
+
+    expect(collections).toBe(6);
+    expect(state.energy.green).toBe(6);
+    expect(state.nodes.H8).toEqual({
+      state: "depleted",
+      level: TRAP_COUNTDOWN_PLIES,
+    });
+    const camper = state.ships.find(
+      (candidate) => candidate.id === "green-camper",
+    );
+    expect(camper?.square).toEqual(squareFromName("H8"));
+
+    // The sixth collection is the last thing paid before the trap closes —
+    // energy is step 2 of the end-of-turn order, depletion is step 3.
+    const collectedIndex = lastGreenTurnEffects.findIndex(
+      (effect) => effect.type === "energy-collected",
+    );
+    const ranOutIndex = lastGreenTurnEffects.findIndex(
+      (effect) => effect.type === "node-ran-out",
+    );
+    expect(collectedIndex).toBeGreaterThanOrEqual(0);
+    expect(ranOutIndex).toBeGreaterThan(collectedIndex);
+  });
+});
+
+describe("camping — a trap lasts eleven plies: exactly five of the trapped player's own turns, released at the opponent's turn end (rules.md §8.3)", () => {
+  it("keeps green-camper trapped for five of green's own turns and frees it only once, at the end of red's turn", () => {
+    // The trap begins at the end of green's own turn (rules.md §8.3), so
+    // this state picks up with red to move next.
+    let state: GameState = {
+      ...buildState({
+        ships: [
+          ship("green-camper", "green", "H8"),
+          ship("green-mover", "green", "A1"),
+          ship("red-mover", "red", "O4"),
+        ],
+        nodes: {
+          H8: ["depleted", TRAP_COUNTDOWN_PLIES],
+          F2: ["charged", 0],
+          J2: ["charged", 0],
+          B4: ["charged", 0],
+          L8: ["charged", 0],
+        },
+      }),
+      sideToMove: "red",
+    };
+
+    expect(legalDestinations(state, "green-camper")).toEqual([]);
+
+    let greenMoverAt = "A1";
+    let redMoverAt = "O4";
+    let greenTrappedTurns = 0;
+    let lastEffects: readonly EndOfTurnEffect[] = [];
+
+    // Eleven plies, alternating red and green starting with red — the trap
+    // was created at the end of green's own turn, so red moves first.
+    for (let ply = 1; ply <= 11; ply += 1) {
+      if (ply % 2 === 1) {
+        const to = redMoverAt === "O4" ? "O5" : "O4";
+        const result = appliedOrThrow(
+          applyMove(state, "red-mover", squareFromName(to)),
+        );
+        state = result.state;
+        redMoverAt = to;
+        lastEffects = endOfTurnEffects(result.effects);
+      } else {
+        expect(
+          moveRefusalReason(state, "green-camper", squareFromName("H9")),
+        ).toBe("ship-trapped");
+        greenTrappedTurns += 1;
+        const to = greenMoverAt === "A1" ? "A2" : "A1";
+        const result = appliedOrThrow(
+          applyMove(state, "green-mover", squareFromName(to)),
+        );
+        state = result.state;
+        greenMoverAt = to;
+      }
+    }
+
+    expect(greenTrappedTurns).toBe(5);
+    expect(lastEffects).toContainEqual({
+      type: "node-retired",
+      square: squareFromName("H8"),
+    });
+    expect(lastEffects).toContainEqual({
+      type: "ship-freed",
+      shipId: "green-camper",
+      side: "green",
+      square: squareFromName("H8"),
+    });
+    expect(state.nodes.H8).toBeUndefined();
+
+    // Freed at the end of red's turn, so green-camper can move on its own
+    // very next turn without delay.
+    expect(
+      moveRefusalReason(state, "green-camper", squareFromName("H9")),
+    ).toBeUndefined();
   });
 });

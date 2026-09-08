@@ -12,7 +12,7 @@ import {
   nodeStatusAt,
   startingGameState,
 } from "./gameState";
-import { OPENING_DRAIN_TABLE, dealOpeningBoard } from "./nodes";
+import { dealOpeningBoard } from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 import { MAX_POWER } from "./power";
 
@@ -72,16 +72,13 @@ describe("startingGameState", () => {
     ).toHaveLength(0);
   });
 
-  it("draws every charged level from the opening drain table and every inactive level a priority of {1, 2, 3}", () => {
+  it("deals every charged node at baseline (no countdown) and every inactive level a priority of {1, 2, 3}", () => {
     const state = startingGameState(SEED);
-    const drainAmounts = new Set(
-      OPENING_DRAIN_TABLE.map((entry) => entry.amount),
-    );
 
     const priorities: number[] = [];
     for (const status of Object.values(state.nodes)) {
       if (status.state === "charged") {
-        expect(drainAmounts.has(status.level)).toBe(true);
+        expect(status.level).toBe(0);
       } else {
         priorities.push(status.level);
       }

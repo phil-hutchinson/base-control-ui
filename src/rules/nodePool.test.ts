@@ -7,15 +7,27 @@
 // spreads a freshly dealt trio, and the cadence and node-count figures the
 // appendix quotes are in the right neighbourhood.
 //
+// A charged node only ever gets a countdown when a ship steps on it (rules.md
+// §8.3), and this file drives no ships at all, so `runEconomy` below stands
+// in for one: at the start of each ply, if any charged node carries no
+// countdown, the first such node in board order is given one. At most
+// **one** per ply, mirroring "at most one countdown starts per turn" — the
+// same restraint a real game is under, since a turn is one action — which is
+// what keeps expiries spread out here exactly as they are in a real game.
+// This is a documented stand-in for a ship, not a claim about what a real
+// game does, and it is also why this file cannot assert that a charged node
+// with a countdown always has a ship on it: its synthetic countdowns never
+// do. That invariant belongs to a ship-driven run instead (`seededReplay.test.ts`).
+//
 // One finding is worth recording here for Appendix B's benefit, since nothing
 // else in the codebase measures it: across every seed this file runs, and
-// every refill, direct-fourth placement and opening deal within them,
-// section 3.2's fallback never had to fire once. "Legal at the moment it
-// appears" below is checked by independently recomputing each ordinary
-// constraint against the board as the code built it, not by trusting
-// whichever pool `legalNodePool` actually returned — a square that failed
-// any of those constraints could only ever have come from the fallback, so
-// every placement clearing them is itself the fallback-never-fired evidence.
+// every refill and opening deal within them, section 3.2's fallback never
+// had to fire once. "Legal at the moment it appears" below is checked by
+// independently recomputing each ordinary constraint against the board as
+// the code built it, not by trusting whichever pool `legalNodePool` actually
+// returned — a square that failed any of those constraints could only ever
+// have come from the fallback, so every placement clearing them is itself
+// the fallback-never-fired evidence.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -25,7 +37,7 @@ import {
   chebyshevDistance,
   squareName,
 } from "./board";
-import type { NodeAppearedChargedEffect } from "./charging";
+import { CHARGED_COUNTDOWN_PLIES } from "./countdown";
 import { type QueueRefilledEffect, runEndOfTurn } from "./endOfTurn";
 import {
   type GameState,
@@ -34,11 +46,7 @@ import {
   nodeStatusAt,
   startingGameState,
 } from "./gameState";
-import {
-  type NodePoolWidth,
-  drawUniformSquare,
-  legalNodePool,
-} from "./nodePlacement";
+import { type NodePoolWidth, legalNodePool } from "./nodePlacement";
 import {
   INACTIVE_NODE_COUNT,
   type InactiveNodeDraw,
@@ -47,12 +55,27 @@ import {
 } from "./nodeQueue";
 import { TARGET_CHARGED_NODES } from "./nodes";
 import { PLANETS, isPlanet } from "./planets";
+import { drawIndex } from "./random";
 
 /** A generous game length: this test drives `runEndOfTurn` directly and never consults `isGameOver`. */
 const NOMINAL_LENGTH_IN_ROUNDS = 1_000;
 const PLIES_TO_RUN = 500;
 
 const SEEDS = [20260819, 20260820, 20260821, 20260822, 20260823];
+
+/**
+ * Draws one square uniformly from an already-computed pool — the unweighted
+ * comparison draw below needs the same uniform-from-a-pool arithmetic that
+ * §3.2's weighting is measured against. Advances the seed exactly once, via
+ * `drawIndex`, so a recorded game replays exactly.
+ */
+function drawUniformSquare(
+  pool: readonly Square[],
+  seed: number,
+): [square: Square, nextSeed: number] {
+  const [index, nextSeed] = drawIndex(seed, pool.length);
+  return [pool[index], nextSeed];
+}
 
 /**
  * The lowest a freshly refilled trio's mean smallest pairwise Chebyshev gap
@@ -75,41 +98,29 @@ const MINIMUM_SPREAD_ADVANTAGE = 0.5;
 
 /**
  * The band the mean number of turns between one refill and the next is
- * allowed to sit in, pooled across `SEEDS`. Measured at roughly 7.9 turns —
- * a charged node's own life averages closer to twenty-nine turns than
- * twenty, mostly because a refilled node always starts at zero drain. The
- * bounds below leave generous margin either side of the measured figure.
+ * allowed to sit in, pooled across `SEEDS`. Measured at roughly 2.8 turns
+ * under the driver this file's header describes: with up to four charged
+ * nodes able to sit at baseline at once and the driver starting a countdown
+ * on one of them every single ply that any is waiting, several countdowns
+ * run staggered a ply or two apart rather than one at a time, so a charge
+ * (and the refill it triggers) comes round far more often than a charged
+ * node's own eleven-ply life would suggest on its own. The bounds below
+ * leave generous margin either side of the measured figure.
  */
-const MINIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
-const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 12;
+const MINIMUM_MEAN_PLIES_BETWEEN_REFILLS = 1.5;
+const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
 
 /**
  * The band the board's total node count — four charged, three inactive,
  * plus however many are depleted — is allowed to breathe within. Measured
- * range across `SEEDS` and `PLIES_TO_RUN`: 7 to 11, with a mean around 8.4.
- * This bound leaves a little margin either side of the measured range.
+ * range across `SEEDS` and `PLIES_TO_RUN`: 7 to 11, with a mean around 10.9
+ * — the driver this file's header describes starts a countdown so eagerly
+ * that several traps and exits are typically depleted and counting down at
+ * once, closer to the top of the range than the bottom. This bound leaves a
+ * little margin either side of the measured range.
  */
 const MINIMUM_TOTAL_NODES = 6;
 const MAXIMUM_TOTAL_NODES = 12;
-
-/**
- * How often two or more nodes are allowed to run out on the same turn, as a
- * share of turns played. Measured over `SEEDS` this sits at or under 1.4%;
- * the bound below leaves generous margin above that. Unaffected by the
- * queue — the drain and depletion clocks this measures are untouched by
- * this story.
- */
-const MAXIMUM_MULTI_EXPIRY_SHARE = 0.1;
-
-/**
- * No turn was observed to run out all four charged nodes at once across
- * this file's runs, so `MAXIMUM_EXPIRIES_IN_ONE_PLY` below is set one short
- * of `TARGET_CHARGED_NODES`. That is a description of what was measured,
- * not a rule the game enforces: it can happen (rules.md §8.2), and when it
- * does the direct-fourth placement covers it, exercised deliberately in
- * `charging.test.ts` and `endOfTurn.test.ts` rather than waited for here.
- */
-const MAXIMUM_EXPIRIES_IN_ONE_PLY = TARGET_CHARGED_NODES - 1;
 
 /** One ply's sample of the board, taken from `result.state` after `runEndOfTurn`. */
 interface EconomySample {
@@ -117,6 +128,7 @@ interface EconomySample {
   readonly depletedCount: number;
   readonly totalNodeCount: number;
   readonly nodesRanOutThisPly: number;
+  readonly nodesChargedThisPly: number;
   /** Every inactive node's square name and priority, for the invariant and rotation checks. */
   readonly inactiveByName: ReadonlyMap<string, number>;
 }
@@ -126,61 +138,62 @@ interface RefillRecord {
   readonly newNodes: readonly InactiveNodeDraw[];
   /**
    * Every square that held a node immediately before this refill's three
-   * draws — the discarded survivors already removed, the direct-fourth
-   * placement (if any, this same ply) already added — reconstructed from
+   * draws — the discarded survivors already removed — reconstructed from
    * the ply's `before` state and its effects rather than read off any
    * private state `runEndOfTurn` does not expose.
    */
   readonly occupiedBeforeRefill: readonly Square[];
 }
 
-/** One direct-fourth placement this run observed, with the board it appeared against. */
-interface DirectFourthRecord {
-  readonly square: Square;
-  readonly occupiedBefore: readonly Square[];
-}
-
 interface EconomyRun {
   readonly samples: readonly EconomySample[];
   readonly refills: readonly RefillRecord[];
-  readonly directFourths: readonly DirectFourthRecord[];
   readonly shipSquares: readonly Square[];
 }
 
 /**
+ * Gives a countdown to the first charged node with none, in board order, if
+ * any — the stand-in for a ship this file's header describes. Returns
+ * `state` unchanged if every charged node already carries one (or there are
+ * none).
+ */
+function startOneCountdown(state: GameState): GameState {
+  for (const square of nodeSquares(state)) {
+    const name = squareName(square);
+    const status = state.nodes[name];
+    if (status?.state === "charged" && status.level === 0) {
+      return {
+        ...state,
+        nodes: {
+          ...state.nodes,
+          [name]: { state: "charged", level: CHARGED_COUNTDOWN_PLIES },
+        },
+      };
+    }
+  }
+  return state;
+}
+
+/**
  * Drives the end-of-turn sequence for `plies` turns from the opening
- * position, with no ship ever moving, and samples the board after each
- * turn. Also reconstructs, from each ply's `before` state and its effects,
- * exactly what `legalNodePool` saw at the moment of every refill draw and
- * every direct-fourth placement — without reaching into `runEndOfTurn`'s
- * private working state — so the legality and spread checks below can be
- * run against the real thing rather than a hand-built stand-in.
+ * position, with no ship ever moving beyond the synthetic countdown driver
+ * this file's header describes, and samples the board after each turn. Also
+ * reconstructs, from each ply's `before` state and its effects, exactly what
+ * `legalNodePool` saw at the moment of every refill draw — without reaching
+ * into `runEndOfTurn`'s private working state — so the legality and spread
+ * checks below can be run against the real thing rather than a hand-built
+ * stand-in.
  */
 function runEconomy(seed: number, plies: number): EconomyRun {
   let state: GameState = startingGameState(seed, NOMINAL_LENGTH_IN_ROUNDS);
   const shipSquares = state.ships.map((ship) => ship.square);
   const samples: EconomySample[] = [];
   const refills: RefillRecord[] = [];
-  const directFourths: DirectFourthRecord[] = [];
 
   for (let i = 0; i < plies; i++) {
+    state = startOneCountdown(state);
     const beforeState = state;
     const result = runEndOfTurn(state);
-
-    const appeared = result.effects.find(
-      (effect): effect is NodeAppearedChargedEffect =>
-        effect.type === "node-appeared-charged",
-    );
-    if (appeared !== undefined) {
-      directFourths.push({
-        square: appeared.square,
-        // Step 4/5's charging never removes a square before this one is
-        // drawn (a queue charge only relabels a square, and this square is
-        // brand new), so every node present at the start of the ply is
-        // still occupying its square at the moment this one is drawn.
-        occupiedBefore: nodeSquares(beforeState),
-      });
-    }
 
     const refilled = result.effects.find(
       (effect): effect is QueueRefilledEffect =>
@@ -188,9 +201,9 @@ function runEconomy(seed: number, plies: number): EconomyRun {
     );
     if (refilled !== undefined) {
       const discardedNames = new Set(refilled.discardedSquares.map(squareName));
-      const occupiedBeforeRefill = nodeSquares(beforeState)
-        .filter((square) => !discardedNames.has(squareName(square)))
-        .concat(appeared !== undefined ? [appeared.square] : []);
+      const occupiedBeforeRefill = nodeSquares(beforeState).filter(
+        (square) => !discardedNames.has(squareName(square)),
+      );
       refills.push({ newNodes: refilled.newNodes, occupiedBeforeRefill });
     }
 
@@ -217,13 +230,16 @@ function runEconomy(seed: number, plies: number): EconomyRun {
       nodesRanOutThisPly: result.effects.filter(
         (effect) => effect.type === "node-ran-out",
       ).length,
+      nodesChargedThisPly: result.effects.filter(
+        (effect) => effect.type === "node-charged",
+      ).length,
       inactiveByName,
     });
 
     state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
   }
 
-  return { samples, refills, directFourths, shipSquares };
+  return { samples, refills, shipSquares };
 }
 
 function ringsFromEdge(square: Square): number {
@@ -336,22 +352,21 @@ describe("the queue's invariants hold at every turn (Appendix B)", () => {
   );
 
   it.each(SEEDS)(
-    "keeps expiries spread rather than arriving together (seed %d)",
+    "runs out at most one charged node, and charges at most two, in any single turn (rules.md §8.3, D9 invariants 2 and 3) (seed %d)",
     (seed) => {
+      // At most one countdown starts per turn — a turn is one action, and a
+      // move onto a charged node is the only way in (§8.3) — so at most one
+      // countdown of any kind expires on a given turn: at most one node runs
+      // out, and the shortfall it (plus at most one departure) can create is
+      // never more than two, which the queue's three inactive nodes always
+      // cover. Both bounds are exact, not measured, and hold for every
+      // sample of every seed this file runs, with no slack.
       const run = runEconomy(seed, PLIES_TO_RUN);
 
-      const multiExpiryPlies = run.samples.filter(
-        (sample) => sample.nodesRanOutThisPly >= 2,
-      ).length;
-      expect(multiExpiryPlies / run.samples.length).toBeLessThan(
-        MAXIMUM_MULTI_EXPIRY_SHARE,
-      );
-
-      for (const sample of run.samples) {
-        expect(sample.nodesRanOutThisPly).toBeLessThanOrEqual(
-          MAXIMUM_EXPIRIES_IN_ONE_PLY,
-        );
-      }
+      run.samples.forEach((sample, i) => {
+        expect(sample.nodesRanOutThisPly, `ply ${i}`).toBeLessThanOrEqual(1);
+        expect(sample.nodesChargedThisPly, `ply ${i}`).toBeLessThanOrEqual(2);
+      });
     },
   );
 });
@@ -451,31 +466,6 @@ describe("every new node is legal the moment it appears, and the fallback never 
             COLUMN_LETTERS[COLUMN_LETTERS.length - 1],
           );
         }
-      }
-    },
-  );
-
-  it.each(SEEDS)(
-    "places the rare direct-fourth node legally under the widened pool, if the run ever sees one (seed %d)",
-    (seed) => {
-      // The shortfall this covers — all four charged nodes running out on
-      // the same turn — was not observed once across this file's runs
-      // (`charging.test.ts` and `endOfTurn.test.ts` exercise it directly,
-      // by construction). This still checks it if it happens, so the check
-      // is not silently skipped should a future change make it common.
-      const run = runEconomy(seed, PLIES_TO_RUN);
-
-      for (const placement of run.directFourths) {
-        expect(placement.square.row).not.toBe(1);
-        expect(placement.square.row).not.toBe(BOARD_SIZE);
-        expect(
-          satisfiesOrdinaryPoolConstraints(
-            placement.square,
-            placement.occupiedBefore,
-            run.shipSquares,
-            "widened",
-          ),
-        ).toBe(true);
       }
     },
   );

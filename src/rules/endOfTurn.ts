@@ -8,36 +8,44 @@
 // the charge at the end of it (§8.2). Retirement (step 6) runs after both
 // of those, deliberately: a node a refill places is inactive for the whole
 // of the next turn and can first be charged at the end of it, never inside
-// the same sequence that placed it. And the two clocks are symmetric about
-// the turn a state is entered: a node charged in step 4 of turn N first
-// drains in step 3 of turn N+1, and a node that goes depleted in step 3 of
-// turn N first retires (if it does) in step 6 of turn N+1 — which is why
-// step 6 works from the depleted list captured at entry, before step 3
-// runs. A ship standing on a node that runs out in step 3 is trapped there
-// (§7, §8.1, §8.5), and a ship trapped on a node that retires in step 6 is
-// freed — both are reported as their own effect, immediately after the
-// node event that caused them. A retiring node is never replaced (§8.2): it
-// simply leaves, and step 5's refill is the only thing that ever creates a
-// new inactive node. Step 7, the relief, runs last of all, because it must
-// see the depleted set exactly as it stands after both step 3's new
-// arrivals and step 6's retirements — a node step 3 just depleted is a
-// legitimate relief candidate, and a node step 6 already retired must not
-// be reconsidered. It runs once for `state.sideToMove` — the side that
-// just played — and then once for the other side, always in that fixed
-// order, because it is the only step past this point that still draws from
-// the seeded stream when it fires (rules.md §8.6 step 7) — a tie on
-// remaining life is broken at random — and a data-dependent order would
-// make a recorded game's replay depend on which side happened to need
-// relief first.
+// the same sequence that placed it.
+//
+// Step 3 spends one ply off every charged node that carries a countdown
+// (rules.md §8.3). A node charging fresh out of the queue in step 4 carries
+// none — it sits at baseline until a ship steps onto it (`ply.ts`'s
+// `applyMove`) — so charging here never itself starts one. A node whose
+// countdown reaches zero goes depleted, carrying `TRAP_COUNTDOWN_PLIES`, and
+// traps the ship standing on it (§7, §8.1, §8.5). Step 6 spends one ply off
+// every node that was *already* depleted when this sequence began — the
+// `depletedBeforePly` snapshot captured at entry, below, before step 3 runs
+// — and retires any that reaches zero. That snapshot is taken after the
+// ply's own action has already resolved, which is why it is exact for both
+// of a depleted node's two starting points: an exit node a ship left behind
+// by walking off a charged node earlier in this very turn (`ply.ts`'s
+// `applyMove`) *is* in it, so it spends its first ply at the end of this
+// same turn (rules.md §8.3), while a trap step 3 creates below is *not* — it
+// first spends a ply at the end of the next turn instead. Either way, a
+// ship trapped on a node that runs out or retires is reported as its own
+// effect, immediately after the node event that caused it. A retiring node
+// is never replaced (§8.2): it simply leaves, and step 5's refill is the
+// only thing that ever creates a new inactive node.
+//
+// Step 7, the relief, runs last of all, because it must see the depleted
+// set exactly as it stands after both step 3's new arrivals and step 6's
+// retirements — a node step 3 just depleted is a legitimate relief
+// candidate, and a node step 6 already retired must not be reconsidered. It
+// runs once for `state.sideToMove` — the side that just played — and then
+// once for the other side, always in that fixed order, so a recorded
+// game's replay never depends on which side happened to need relief first.
+// Nothing in this whole sequence draws from the seeded stream any more
+// except step 5's refill: a tie on remaining life can no longer arise
+// (rules.md §8.3, §8.6 step 7), so the relief's choice is fully
+// deterministic.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
 import { isPlanet } from "./planets";
-import {
-  type NodeAppearedChargedEffect,
-  type NodeChargedEffect,
-  runCharging,
-} from "./charging";
+import { type NodeChargedEffect, runCharging } from "./charging";
 import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
 import type { Side, ShipId } from "./fleet";
 import {
@@ -55,13 +63,7 @@ import {
   rotatePriority,
 } from "./nodeQueue";
 import { gainPower, MAX_POWER, type PowerLevel } from "./power";
-import {
-  DEPLETED_RECOVERY_TABLE,
-  EMPTY_NODE_DRAIN_TABLE,
-  HELD_NODE_DRAIN_TABLE,
-  NODE_CAPACITY,
-  drawTableAmount,
-} from "./nodes";
+import { spendPly, TRAP_COUNTDOWN_PLIES } from "./countdown";
 import { reliefSquare } from "./relief";
 
 function otherSide(side: Side): Side {
@@ -92,7 +94,7 @@ export interface EnergyCollectedEffect {
   readonly squares: readonly Square[];
 }
 
-/** A charged node's drain reached its capacity and it went depleted (§8.6 step 3, §8.3). */
+/** A charged node's countdown ran out and it went depleted (§8.6 step 3, §8.3). */
 export interface NodeRanOutEffect {
   readonly type: "node-ran-out";
   readonly square: Square;
@@ -112,9 +114,8 @@ export interface ShipTrappedEffect {
 }
 
 /**
- * A depleted node's recovery reached zero and it retired (§8.6 step 6,
- * §8.2). Nothing takes its place — a retiring node simply leaves the
- * board.
+ * A depleted node's countdown ran out and it retired (§8.6 step 6, §8.2).
+ * Nothing takes its place — a retiring node simply leaves the board.
  */
 export interface NodeRetiredEffect {
   readonly type: "node-retired";
@@ -124,9 +125,9 @@ export interface NodeRetiredEffect {
 /**
  * A ship trapped on a node that just retired is free again: its square is
  * now an ordinary square (§8.5, §8.6 step 6). Always immediately after the
- * `node-retired` effect for the same node, whether that node retired on the
- * ordinary recovery clock (step 6) or was ended early by the relief
- * (step 7) — it is the same fact either way.
+ * `node-retired` effect for the same node, whether that node retired on its
+ * ordinary countdown (step 6) or was ended early by the relief (step 7) —
+ * it is the same fact either way.
  */
 export interface ShipFreedEffect {
   readonly type: "ship-freed";
@@ -137,8 +138,8 @@ export interface ShipFreedEffect {
 
 /**
  * A side whose every ship was trapped had one of its depleted nodes ended
- * early, so it was not left to pass for the ten turns its recovery clock
- * would otherwise take (§8.6 step 7, §5). `side` is the side being
+ * early, so it was not left to pass for however many turns its countdown
+ * would otherwise still take (§8.6 step 7, §5). `side` is the side being
  * relieved, not necessarily the side that just played — step 7 asks the
  * question of both sides. Always immediately **before** the `node-retired`
  * effect for the same node, so a listener hears the cause first, then the
@@ -170,7 +171,6 @@ export type EndOfTurnEffect =
   | NodeRanOutEffect
   | ShipTrappedEffect
   | NodeChargedEffect
-  | NodeAppearedChargedEffect
   | QueueRefilledEffect
   | NodeRetiredEffect
   | ShipFreedEffect
@@ -186,14 +186,19 @@ export interface EndOfTurnResult {
  * Runs §8.6's end-of-turn steps, in order, for the ply that is ending.
  * `state`'s `sideToMove` is read as the player who just played that ply and
  * `plyNumber` as the ply itself — the caller runs this **before** swapping
- * sides or advancing the ply counter.
+ * sides or advancing the ply counter, and **after** the ply's own action has
+ * already resolved (`ply.ts`).
  *
- * Step 6 must retire exactly the nodes that were depleted before this ply
- * began, never one that only goes depleted during this very sequence, in step
- * 3 below. The ordered list is captured here, at entry, before step 3 runs —
- * it is exact because no action changes a node's state (rules.md §8.6), so
- * the set of depleted nodes when this function is entered is exactly the set
- * from the start of the ply. It is a snapshot, not a live walk, so that a
+ * Step 6 must retire exactly the nodes that were depleted before this
+ * sequence began, never one that only goes depleted during the sequence
+ * itself, in step 3 below. The ordered list is captured here, at entry,
+ * before step 3 runs. Because it is captured after the ply's action already
+ * resolved, it correctly includes an exit node that action left behind by
+ * walking a ship off a charged node (rules.md §8.3) — a knowing exception to
+ * §8.6's rule that a node's state changes only in this sequence — so that
+ * node spends its first ply at the end of this same turn, while a node step
+ * 3 below depletes into a trap is excluded and first spends a ply at the end
+ * of the next turn instead. It is a snapshot, not a live walk, so that a
  * node written mid-sequence is never visited a second time.
  */
 export function runEndOfTurn(state: GameState): EndOfTurnResult {
@@ -267,44 +272,45 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     });
   }
 
-  // Step 3: every charged node adds its drain — drawn from the held table if
-  // a ship of either side is standing on it right now, the empty table
-  // otherwise — and any that reaches capacity goes depleted carrying its
-  // drain unclamped (§8.3). A ship left standing on it is trapped there
-  // (§8.5): it cannot move and cannot attack until the node retires. The
-  // `occupants` index was captured at this function's entry, before any node
-  // changed state, so it is safe here for a ship's identity and square — a
-  // ship never moves during this sequence — but must not be read for its
-  // power, which step 1 above may have already changed. The ordered
-  // snapshot of squares is taken once, up front, rather than recomputed on
-  // every iteration.
+  // Step 3: every charged node carrying a countdown (`level` above 0, per
+  // `gameState.ts`'s `NodeStatus` doc comment) spends one ply of it (rules.md
+  // §8.3); a node at 0 carries none and is untouched. One that reaches zero
+  // goes depleted, carrying `TRAP_COUNTDOWN_PLIES`, and traps the ship
+  // standing on it (§8.5): it cannot move and cannot attack until the node
+  // retires. The `occupants` index was captured at this function's entry,
+  // before any node changed state, so it is safe here for a ship's identity
+  // and square — a ship never moves during this sequence — but must not be
+  // read for its power, which step 1 above may have already changed. The
+  // ordered snapshot of squares is taken once, up front, rather than
+  // recomputed on every iteration. Nothing here draws from the seed.
   const step3Squares = nodeSquares(workingState);
   for (const square of step3Squares) {
     const name = squareName(square);
     const status = workingState.nodes[name];
-    if (status === undefined || status.state !== "charged") {
+    if (
+      status === undefined ||
+      status.state !== "charged" ||
+      status.level <= 0
+    ) {
       continue;
     }
-    const table = occupants.has(name)
-      ? HELD_NODE_DRAIN_TABLE
-      : EMPTY_NODE_DRAIN_TABLE;
-    const [drawnAmount, nextSeed] = drawTableAmount(
-      workingState.randomSeed,
-      table,
-    );
-    const level = status.level + drawnAmount;
+    const remaining = spendPly(status.level);
     const nextStatus: NodeStatus =
-      level < NODE_CAPACITY
-        ? { state: "charged", level }
-        : { state: "depleted", level };
+      remaining > 0
+        ? { state: "charged", level: remaining }
+        : { state: "depleted", level: TRAP_COUNTDOWN_PLIES };
     workingState = {
       ...workingState,
       nodes: { ...workingState.nodes, [name]: nextStatus },
-      randomSeed: nextSeed,
     };
 
     if (nextStatus.state === "depleted") {
       effects.push({ type: "node-ran-out", square });
+      // A charged node only ever carries a countdown while a ship holds it,
+      // so `trappedShip` is always defined here in play — a countdown ends
+      // the instant its holder leaves. The `undefined` branch cannot occur;
+      // `TRAP_COUNTDOWN_PLIES` above is deposited regardless, and its choice
+      // there is arbitrary rather than derived from ship presence.
       const trappedShip = occupants.get(name);
       if (trappedShip !== undefined) {
         effects.push({
@@ -319,10 +325,8 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
 
   // Step 4: the shortfall against four charged is filled from the three
   // inactive nodes, top-down by priority (§8.2, §8.6 step 4) — no draw, no
-  // weighting, no seed movement. On the one turn the shortfall is four, the
-  // queue's three cannot cover it; `runCharging` places the fourth directly
-  // as a charged node at a square drawn uniformly from the widened pool,
-  // reported as `node-appeared-charged`.
+  // weighting, no seed movement. The shortfall never exceeds two (§8.3), so
+  // the three-node queue always covers it.
   const charging = runCharging(workingState);
   workingState = charging.state;
   effects.push(...charging.effects);
@@ -387,26 +391,22 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   }
 
   // Step 6: every node that was depleted before this ply began (the
-  // `depletedBeforePly` list captured at entry, above) subtracts its
-  // recovery; any that reaches zero or below retires and simply leaves the
-  // board — nothing appears in its place (§8.2). A node that only went
-  // depleted during this very sequence — in step 3 above — was charged when
-  // the ply began, so it is excluded and first has a chance to retire at the
-  // end of the next ply. The loop walks the entry snapshot, not a live walk
-  // of the current board, and re-reads each square's current status,
-  // skipping it if it is no longer depleted.
+  // `depletedBeforePly` list captured at entry, above) spends one ply of its
+  // countdown; any that reaches zero retires and simply leaves the board —
+  // nothing appears in its place (§8.2). A node that only went depleted
+  // during this very sequence — in step 3 above — carried a charged
+  // countdown (or none) when the ply began, so it is excluded and first
+  // spends a ply at the end of the next ply. The loop walks the entry
+  // snapshot, not a live walk of the current board, and re-reads each
+  // square's current status, skipping it if it is no longer depleted.
+  // Nothing here draws from the seed.
   for (const square of depletedBeforePly) {
     const name = squareName(square);
     const status = workingState.nodes[name];
     if (status === undefined || status.state !== "depleted") {
       continue;
     }
-    const [drawnAmount, nextSeed] = drawTableAmount(
-      workingState.randomSeed,
-      DEPLETED_RECOVERY_TABLE,
-    );
-    const level = status.level - drawnAmount;
-    workingState = { ...workingState, randomSeed: nextSeed };
+    const level = spendPly(status.level);
 
     if (level > 0) {
       workingState = {
@@ -426,20 +426,19 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
 
   // Step 7: the all-trapped relief (§8.6 step 7, §5). A side whose every
   // ship is trapped has no action at all, so rather than leaving it to pass
-  // for the ten turns its recovery clock would otherwise take, the depleted
-  // node with the least remaining life among those whose ship would
-  // actually have a legal move once freed ends at once (`relief.ts`'s
-  // choice); a tie on remaining life is broken at random. Runs for `side` —
-  // the one that just played — first, then for the other side, always in
-  // that fixed order: it is the only step left that draws from the seeded
-  // stream when it fires — its own tie-break — and a data-dependent order
-  // would make a recorded game's replay depend on which side happened to
-  // need relief first. At most one node ends per side per ply — freeing one
-  // ship is enough that the side is no longer all-trapped — so the question
-  // is asked once per side, never in a loop.
+  // for however many turns its trap countdown would otherwise still take,
+  // the depleted node with the least remaining life among those whose ship
+  // would actually have a legal move once freed ends at once (`relief.ts`'s
+  // choice); on a tie, the first candidate in board order — a tie can no
+  // longer arise (§8.3), so this is a deterministic tidy-up of an
+  // unreachable case, not a rule. Runs for `side` — the one that just
+  // played — first, then for the other side, always in that fixed order, so
+  // a recorded game's replay never depends on which side happened to need
+  // relief first. At most one node ends per side per ply — freeing one ship
+  // is enough that the side is no longer all-trapped — so the question is
+  // asked once per side, never in a loop.
   for (const reliefSide of [side, otherSide(side)]) {
-    const [square, seedAfterRelief] = reliefSquare(workingState, reliefSide);
-    workingState = { ...workingState, randomSeed: seedAfterRelief };
+    const square = reliefSquare(workingState, reliefSide);
     if (square === undefined) {
       continue;
     }
@@ -454,7 +453,7 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
 
 /**
  * Retires the node at `square` (§8.2, §8.6 step 6) — the body shared by an
- * ordinary retirement (step 6, a node whose recovery reached zero) and the
+ * ordinary retirement (step 6, a node whose countdown ran out) and the
  * relief's early ending (step 7, §8.6). It removes the node's entry and
  * places nothing in its stead: a retiring node simply leaves the board.
  * Emits `node-retired`, then `ship-freed` if the retiring node had a ship

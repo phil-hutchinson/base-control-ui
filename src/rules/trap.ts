@@ -3,8 +3,8 @@
 // and nothing is stored on the node or the ship to record it — "trapped" is
 // a fact derived, on demand, from where a ship is and what that square's
 // node is doing. A ship can only ever come to be there by a node burning out
-// underneath it (rules.md §6 bars landing on a depleted node), never by
-// walking into one.
+// underneath it (rules.md §6 bars landing on any node that isn't charged),
+// never by walking into one.
 //
 // This module is a leaf: it imports only `board.ts`, `fleet.ts` and
 // `gameState.ts`. `movement.ts` and `combat.ts` import it to ask whether a

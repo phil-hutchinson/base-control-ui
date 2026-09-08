@@ -58,6 +58,65 @@ describe("BoardSquare", () => {
     expect(markerIndex).toBeLessThan(shipIndex);
   });
 
+  it("draws the countdown number after the ship, in black on a charged node", () => {
+    const { container } = render(
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        nodeState="charged"
+        countdownNumber={6}
+        occupant={{ side: "green", power: 4 }}
+      />,
+    );
+
+    const square = container.querySelector(".board-square");
+    const children = Array.from(square?.children ?? []);
+    const shipIndex = children.findIndex((child) =>
+      child.classList.contains("ship-model"),
+    );
+    const countdownIndex = children.findIndex((child) =>
+      child.classList.contains("node-countdown"),
+    );
+
+    expect(shipIndex).toBeGreaterThanOrEqual(0);
+    expect(countdownIndex).toBeGreaterThan(shipIndex);
+    expect(container.querySelector(".node-countdown")?.textContent).toBe("6");
+    expect(container.querySelector(".node-countdown text")).toHaveAttribute(
+      "fill",
+      "black",
+    );
+  });
+
+  it("draws the countdown number in white on a depleted node (a trap)", () => {
+    const { container } = render(
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        nodeState="depleted"
+        countdownNumber={5}
+        occupant={{ side: "green", power: 4 }}
+      />,
+    );
+
+    expect(container.querySelector(".node-countdown text")).toHaveAttribute(
+      "fill",
+      "white",
+    );
+  });
+
+  it("draws no countdown number when none is given", () => {
+    const { container } = render(
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        nodeState="charged"
+        occupant={{ side: "green", power: 4 }}
+      />,
+    );
+
+    expect(container.querySelector(".node-countdown")).toBeNull();
+  });
+
   it("renders no planet when none is given, and renders one, aria-hidden, when it is", () => {
     const { container: bare } = render(
       <BoardSquare isPlanet={false} squareName="H8" />,

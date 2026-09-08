@@ -96,13 +96,14 @@ function isAdjacentToAnyPlanet(square: Square): boolean {
  *    one.
  *
  * If nothing qualifies, the pool falls back to every square that holds no
- * node and is not a planet — the whole relaxation at once, not one
+ * node, holds no ship and is not a planet — relaxing spacing only, not one
  * constraint dropped at a time. The fallback is the same regardless of
- * `poolWidth`: it is already the whole relaxation at once, so there is
- * nothing left for `poolWidth` to widen. The fallback keeps a node off a
- * planet, but, unlike the ordinary pool, does **not** keep it off a
- * planet's neighbours or the board's edge: it may legitimately hand back a
- * square adjacent to a planet. If even the fallback is empty, throws a
+ * `poolWidth`: it is already the whole spacing relaxation at once, so there
+ * is nothing left for `poolWidth` to widen. The fallback keeps a node off a
+ * planet and off a ship, but, unlike the ordinary pool, does **not** keep it
+ * off a planet's neighbours or the board's edge: it may legitimately hand
+ * back a square adjacent to a planet. Between constraint 2 and this, a node
+ * can never appear beneath a ship. If even the fallback is empty, throws a
  * `RangeError` naming the situation, rather than returning an empty pool for
  * `drawNodeSquare` to fail on with a generic message.
  */
@@ -134,12 +135,12 @@ export function legalNodePool(
 
   const fallback = ALL_SQUARES.filter((square) => {
     const name = squareName(square);
-    return !nodeNames.has(name) && !isPlanet(square);
+    return !nodeNames.has(name) && !shipNames.has(name) && !isPlanet(square);
   });
 
   if (fallback.length === 0) {
     throw new RangeError(
-      "legalNodePool: no square is available for a new node — every square that is not a planet already holds one",
+      "legalNodePool: no square is available for a new node — every square that is not a planet or a ship already holds one",
     );
   }
 
@@ -158,21 +159,6 @@ export function drawNodeSquare(
   seed: number,
 ): [square: Square, nextSeed: number] {
   const pool = legalNodePool(occupiedNodeSquares, shipSquares);
-  const [index, nextSeed] = drawIndex(seed, pool.length);
-  return [pool[index], nextSeed];
-}
-
-/**
- * Draws one square uniformly from an already-computed pool. For the two
- * draws §3.2 makes with no distance weighting at all: the opening deal's
- * four charged squares, and the fourth node placed directly when all four
- * charged nodes run out at once (§8.2). Advances the seed exactly once, via
- * `drawIndex`, so a recorded game replays exactly.
- */
-export function drawUniformSquare(
-  pool: readonly Square[],
-  seed: number,
-): [square: Square, nextSeed: number] {
   const [index, nextSeed] = drawIndex(seed, pool.length);
   return [pool[index], nextSeed];
 }

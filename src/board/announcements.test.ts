@@ -132,6 +132,23 @@ describe("announcementFor", () => {
     );
   });
 
+  it("announces a node spent by leaving it, between the move sentence and the action-ending clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("G", 7),
+      to: squareAt("H", 8),
+      effects: [{ type: "node-spent", square: squareAt("G", 7) }],
+      actionsRemaining: 1,
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from G7 to H8. The move cost 1 power, leaving 5. The node at G7 ended when the ship left it. Green has 1 action left.",
+    );
+  });
+
   it("announces a move that ends the ply", () => {
     const event: MovedEvent = {
       type: "moved",
@@ -292,9 +309,9 @@ describe("announcementFor", () => {
     ["path-blocked", squareAt("C", 8), "An enemy ship is in the way of C8."],
     ["destination-occupied", squareAt("C", 7), "C7 is occupied."],
     [
-      "destination-depleted-node",
+      "destination-uncharged-node",
       squareAt("H", 8),
-      "H8 is a depleted node — a ship may fly over one, but cannot land on it.",
+      "H8 holds a node that is not charged — a ship may fly over one, but cannot land on it.",
     ],
     [
       "attacker-on-planet",
@@ -517,33 +534,6 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C7 to C6. The move was free; it still has 6 power. A new node charged at D8. Red's turn, 1 action left.",
-    );
-  });
-
-  it("announces a node appearing already charged, on the one turn all four charged nodes run out at once (§8.2)", () => {
-    const event: MovedEvent = {
-      type: "moved",
-      shipId: "green-3",
-      side: "green",
-      from: squareAt("C", 7),
-      to: squareAt("C", 6),
-      effects: [
-        {
-          type: "ply-ended",
-          side: "green",
-          sideToMove: "red",
-          endOfTurn: [
-            { type: "node-appeared-charged", square: squareAt("G", 9) },
-          ],
-        },
-      ],
-      actionsRemaining: ACTIONS_PER_PLY,
-      cost: 0,
-      powerAfter: 6,
-    };
-    expect(announcementFor(event)).toBe(
-      "Green ship moved from C7 to C6. The move was free; it still has 6 power. " +
-        "Out of nowhere, a node appeared already charged at G9. Red's turn, 1 action left.",
     );
   });
 

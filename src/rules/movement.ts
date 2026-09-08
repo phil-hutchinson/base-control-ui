@@ -1,7 +1,8 @@
 // Movement (rules.md §6): a ship moves one or two squares, orthogonally,
 // diagonally or in an L, priced by §6's table, and a ship may take any shape
-// it can afford — reach, a clear path, an empty destination and a
-// destination that is not a depleted node are the whole of the restriction.
+// it can afford — reach, a clear path, an empty destination, and a
+// destination that holds no node unless that node is charged, are the whole
+// of the restriction.
 // A trapped ship (rules.md §8.5) has no move at all. This is the only
 // implementation of §6 in the app; every caller that needs a legal move or
 // the reason one is refused calls the functions here. §9's game-over check is
@@ -240,7 +241,7 @@ export type MoveRefusalReason =
   | "cannot-afford"
   | "path-blocked"
   | "destination-occupied"
-  | "destination-depleted-node"
+  | "destination-uncharged-node"
   | "game-over";
 
 /** The ship with the given id in this state, or throws if there is none. */
@@ -261,12 +262,14 @@ export function findShip(state: GameState, shipId: ShipId): Ship {
  * whether it is trapped (rules.md §8.5 — a fact about the ship itself, so it
  * is checked alongside the others before anything about the destination), and
  * finally §6's reach, affordability, path, destination-occupancy and
- * depleted-destination checks. "Out of range" now means only that no shape
+ * uncharged-destination checks. "Out of range" now means only that no shape
  * reaches the square at all — a real shape the ship cannot currently pay for
  * is "cannot afford" instead, since the two are refused for different reasons
  * and read differently to a player. `destination-occupied` is checked before
- * `destination-depleted-node`, because the two can co-occur — a trapped enemy
- * ship stands on a depleted node — and occupancy is the more immediate fact.
+ * `destination-uncharged-node`, because the two can co-occur — a trapped
+ * enemy ship stands on a depleted node — and occupancy is the more immediate
+ * fact. Inactive and depleted destinations are refused the same way, since
+ * §6 states both in one sentence and a ship may occupy only a charged node.
  */
 export function moveRefusalReason(
   state: GameState,
@@ -308,8 +311,12 @@ export function moveRefusalReason(
   if (occupied.has(squareName(destination))) {
     return "destination-occupied";
   }
-  if (nodeStateAt(state, destination) === "depleted") {
-    return "destination-depleted-node";
+  const destinationNodeState = nodeStateAt(state, destination);
+  if (
+    destinationNodeState === "depleted" ||
+    destinationNodeState === "inactive"
+  ) {
+    return "destination-uncharged-node";
   }
 
   return undefined;
@@ -320,8 +327,8 @@ export function moveRefusalReason(
  * affordable subset of its §6 reach, filtered by path and destination
  * occupancy - only an enemy ship on a passed-over square blocks. Empty once
  * the game is over, when the ship does not belong to the side to move or has
- * already acted this ply, or when the ship is trapped (rules.md §8.5). A
- * depleted destination needs no filter of its own here — `moveRefusalReason`
+ * already acted this ply, or when the ship is trapped (rules.md §8.5). An
+ * uncharged destination needs no filter of its own here — `moveRefusalReason`
  * already excludes it below — flying over one is still free, only landing is
  * barred.
  */

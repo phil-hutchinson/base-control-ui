@@ -405,7 +405,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(destinations).toContain("J9");
   });
 
-  it("allows a move to end on an inactive or a charged destination, but refuses landing on a depleted one", () => {
+  it("allows a move to end on a charged destination, but refuses landing on an inactive or a depleted one", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7")],
       nodes: {
@@ -416,17 +416,17 @@ describe("legalDestinations and moveRefusalReason", () => {
     });
 
     const destinations = legalDestinations(state, "green-1").map(squareName);
-    expect(destinations).toContain("G7");
+    expect(destinations).not.toContain("G7");
     expect(destinations).toContain("F7");
     expect(destinations).toContain("D7");
     expect(destinations).toContain("F8");
     expect(destinations).not.toContain("C7");
 
-    expect(
-      moveRefusalReason(state, "green-1", squareFromName("G7")),
-    ).toBeUndefined();
+    expect(moveRefusalReason(state, "green-1", squareFromName("G7"))).toBe(
+      "destination-uncharged-node",
+    );
     expect(moveRefusalReason(state, "green-1", squareFromName("C7"))).toBe(
-      "destination-depleted-node",
+      "destination-uncharged-node",
     );
     expect(
       moveRefusalReason(state, "green-1", squareFromName("F7")),
@@ -477,7 +477,18 @@ describe("legalDestinations and moveRefusalReason", () => {
     ).toContain("J9");
   });
 
-  it("refuses a depleted destination that also holds a ship with destination-occupied, not destination-depleted-node", () => {
+  it("flies over an inactive node freely and lands beyond it on an empty ordinary square", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { F7: "inactive" },
+    });
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("G7")),
+    ).toBeUndefined();
+    expect(legalDestinations(state, "green-1").map(squareName)).toContain("G7");
+  });
+
+  it("refuses an uncharged destination that also holds a ship with destination-occupied, not destination-uncharged-node", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("red-1", "red", "C7", 0)],
       nodes: { C7: "depleted" },
@@ -596,7 +607,7 @@ describe("legalDestinations and moveRefusalReason", () => {
       ships: [ship("green-1", "green", "E7")],
       nodes: { E7: "depleted" },
     });
-    const depletedDestination = buildState({
+    const unchargedDestination = buildState({
       ships: [ship("green-1", "green", "E7")],
       nodes: { C7: "depleted" },
     });
@@ -611,7 +622,7 @@ describe("legalDestinations and moveRefusalReason", () => {
       [underpowered, "green-1", "J9", "cannot-afford"],
       [blocking, "green-1", "G10", "path-blocked"],
       [blocking, "green-1", "H9", "destination-occupied"],
-      [depletedDestination, "green-1", "C7", "destination-depleted-node"],
+      [unchargedDestination, "green-1", "C7", "destination-uncharged-node"],
     ];
 
     for (const [state, shipId, square, reason] of expectations) {

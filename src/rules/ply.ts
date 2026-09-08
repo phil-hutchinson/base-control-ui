@@ -10,16 +10,20 @@
 // from the planets standing empty, attacker first; the attacker arrives
 // having already paid the shot's cost, the defender carries what it had
 // before the fight untouched, and both squares they left are left empty.
-// There is no winner and no advance. Nothing a ship does changes a node's
-// state: a node's state changes only in the end-of-turn sequence
-// (rules.md §8.6). Every action — a move or
-// an attack — marks the acting ship as having acted this ply, so a further
-// attempt by the same ship this ply is refused. When the ply's actions are all
-// spent, play passes to the other side. The pass guard covers the case §5 sets
-// out for when the side to move has no legal action at all.
+// There is no winner and no advance. An attack never changes a node's state
+// — a node's state changes only in the end-of-turn sequence (rules.md
+// §8.6) — but a move is the one knowing exception: leaving a charged node
+// depletes it on the spot, as the move resolves, and stepping onto one with
+// no countdown starts one (§8.3, `applyMove` below). Every action — a move
+// or an attack — marks the acting ship as having acted this ply, so a
+// further attempt by the same ship this ply is refused. When the ply's
+// actions are all spent, play passes to the other side. The pass guard
+// covers the case §5 sets out for when the side to move has no legal
+// action at all.
 
 import { sideToMoveHasLegalAction } from "./actions";
 import { type Square, squareName } from "./board";
+import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
 import {
   type AttackRefusalReason,
   attackReach,
@@ -74,8 +78,22 @@ export interface PlyEndedEffect {
  */
 export type EndOfActionEffect = PlyEndedEffect | PassEffect;
 
+/**
+ * A charged node depleted the instant its holder left it (rules.md §8.3):
+ * the square the ship moved away from. Raised only by a move that leaves a
+ * charged node, never by one that merely starts on an ordinary square or
+ * arrives on one — leaving is what spends it, not the ship's presence
+ * beforehand. Always the first effect a move carries, ahead of whichever
+ * `EndOfActionEffect` closes it out, so a listener hears the node spent
+ * before hearing how the turn ended.
+ */
+export interface NodeSpentEffect {
+  readonly type: "node-spent";
+  readonly square: Square;
+}
+
 /** Something that happened as a result of applying a move, beyond the move itself. */
-export type MoveEffect = EndOfActionEffect;
+export type MoveEffect = NodeSpentEffect | EndOfActionEffect;
 
 /**
  * A move applied successfully, with the resulting state and what happened.
@@ -312,12 +330,23 @@ function applyEndOfActionTail(
  * so the ship's power is untouched by it. A ship that ends the move on a
  * planet does not gain anything on arrival — it recovers a point at a time,
  * through the end-of-turn sequence (rules.md §3.1, §4.1), like any other
- * planet stay. If the square the ship left was a charged node, it stays
- * charged — leaving a node does not end it (rules.md §8.3). When the ply's
- * last action is spent, play passes to the other side and the acted-this-ply
- * marks clear. The result then passes through `applyPassGuard`, so a move
- * that leaves the side now to move with no legal move at all is followed
- * immediately by a pass.
+ * planet stay.
+ *
+ * Two node changes happen as the move resolves — the one knowing exception
+ * to a node's state changing only in the end-of-turn sequence (rules.md
+ * §8.3, §8.6). If the square the ship left carries a charged node, it
+ * depletes on the spot, carrying `EXIT_COUNTDOWN_PLIES`, and a
+ * `NodeSpentEffect` is raised for it: leaving a node spends it, it is never
+ * handed back, and the opponent cannot inherit it. If the square the ship
+ * arrives on carries a charged node with no countdown, its countdown is set
+ * to `CHARGED_COUNTDOWN_PLIES`; one that already carries a countdown is left
+ * alone, which can only happen if this move somehow lands on an occupied
+ * square, since a countdown's own holder is standing there.
+ *
+ * When the ply's last action is spent, play passes to the other side and the
+ * acted-this-ply marks clear. The result then passes through
+ * `applyPassGuard`, so a move that leaves the side now to move with no legal
+ * move at all is followed immediately by a pass.
  */
 export function applyMove(
   state: GameState,
@@ -346,7 +375,35 @@ export function applyMove(
       : candidate,
   );
 
-  const afterMove: GameState = { ...state, ships };
+  const leftSquareName = squareName(ship.square);
+  const destinationSquareName = squareName(destination);
+  let nodes = state.nodes;
+
+  const leftStatus = state.nodes[leftSquareName];
+  if (leftStatus !== undefined && leftStatus.state === "charged") {
+    nodes = {
+      ...nodes,
+      [leftSquareName]: { state: "depleted", level: EXIT_COUNTDOWN_PLIES },
+    };
+    effects.push({ type: "node-spent", square: ship.square });
+  }
+
+  const destinationStatus = state.nodes[destinationSquareName];
+  if (
+    destinationStatus !== undefined &&
+    destinationStatus.state === "charged" &&
+    destinationStatus.level === 0
+  ) {
+    nodes = {
+      ...nodes,
+      [destinationSquareName]: {
+        state: "charged",
+        level: CHARGED_COUNTDOWN_PLIES,
+      },
+    };
+  }
+
+  const afterMove: GameState = { ...state, ships, nodes };
   const settled = applyEndOfActionTail(afterMove, effects, shipId);
 
   return {
@@ -390,9 +447,12 @@ function placeOnPlanet(
  * ships either side has.
  *
  * The node-state check is a plain identity comparison: no node's state or
- * `level` may differ between `before` and `after` at all. No action changes
- * a node's state, full stop — a node's state changes only in the end-of-turn
- * sequence (rules.md §8.6), never while an action is being resolved.
+ * `level` may differ between `before` and `after` at all. An attack never
+ * changes a node's state — a node's state changes only in the end-of-turn
+ * sequence (rules.md §8.6), or in the middle of a **move** (§8.3, `applyMove`
+ * above) — and neither combatant in a fight can be standing on a charged
+ * node (§7 keeps a node's holder and a trapped ship out of combat in both
+ * directions), so an attack cannot touch one either way.
  *
  * The returned-ship checks pin what §7.1's random draw guarantees: each of
  * the two returned ships ends on a planet, they do not share a planet, and
@@ -491,7 +551,7 @@ export function assertFightInvariants(
       beforeStatus.level === afterStatus.level;
     if (!unchanged) {
       throw new RangeError(
-        `node "${name}" changed from "${beforeStatus?.state}" to "${afterStatus?.state}": no action changes a node's state, rules.md §8.6 says a node's state changes only in the end-of-turn sequence`,
+        `node "${name}" changed from "${beforeStatus?.state}" to "${afterStatus?.state}": an attack never changes a node's state, rules.md §8.6 says a node's state changes only in the end-of-turn sequence, or mid-move`,
       );
     }
   }

@@ -7,42 +7,38 @@
 // plenty of fights, unlike `fullGame.test.ts`'s greedy policy, which only
 // attacks when no ship has a legal move at all.
 //
-// The board's own end-of-turn charge draw (§8.2) is a consumer of the seeded
-// stream too, alongside planet returns, so the same property is proven for it:
-// the sequence of nodes the draw charges over a game replays identically
-// from the same seed. Since 0.12 the stream's bulk is neither of those —
-// every charged node's drain and every depleted node's recovery are drawn
-// every turn (§8.3, §8.2), so a ply now consumes several times as many seed
-// steps as it did under 0.11. Those per-node draws are not tracked
-// separately here; they are exercised indirectly, and their effect on the
-// final state is what the whole-state equality check below proves replays.
-//
 // Since 0.18 the stream starts even earlier than green's first turn: the
 // opening board itself is dealt from the same seed (`dealOpeningBoard`,
-// §8.1). Since 0.20 that deal draws each node's square rather than filling a
-// fixed list, consuming 24 steps — twelve square draws and twelve level
-// draws — before a single ply is played. `startingGameState` is what a
-// recorded game would call to reproduce that deal, so the property under
-// test now covers it too: the same seed deals the same opening board, and a
-// different seed deals a different one.
+// §8.1). `startingGameState` is what a recorded game would call to
+// reproduce that deal, so the property under test covers it too: the same
+// seed deals the same opening board, and a different seed deals a different
+// one. Since 0.27 the deal's four charged squares are dealt at baseline,
+// with no countdown to draw, so the deal consumes 8 steps rather than the
+// 24 it once did — four square draws for the charged nodes and four more
+// for the inactive trio's refill.
 //
-// 0.26 replaces that charge draw with the queue (§8.2): charging itself
-// draws nothing any more, but the queue's own refill — drawing three new
-// inactive nodes, spread apart by a distance weighting, whenever a charge
-// sweeps the surviving ones — is now the stream's biggest consumer. The
-// sequence of `queue-refilled` effects a game produces — the squares
-// discarded and the trio drawn to replace them, in order — is recorded and
-// compared below, for the same reason: it is drawn from the same stream, and
-// a recorded game must replay it exactly too. A retiring node's own square
-// (`node-retired`) is recorded alongside it, though retirement itself draws
-// nothing since 0.26 — nothing appears in a retiring node's place any more.
+// 0.26 replaced the board's own end-of-turn charge draw (§8.2) with the
+// queue: charging itself draws nothing, but the queue's own refill —
+// drawing three new inactive nodes, spread apart by a distance weighting,
+// whenever a charge sweeps the surviving ones — is the stream's biggest
+// consumer. 0.27 removed the last of the other node draws too: a charged
+// node's countdown starts and runs down deterministically once a ship steps
+// on it (§8.3), and a depleted node's countdown does the same, so nothing
+// about how long a node lives, charged or depleted, draws from the seed any
+// more. The sequence of `queue-refilled` effects a game produces — the
+// squares discarded and the trio drawn to replace them, in order — is
+// recorded and compared below, for the same reason: it is drawn from the
+// same stream, and a recorded game must replay it exactly too. A retiring
+// node's own square (`node-retired`) is recorded alongside it, though
+// retirement itself draws nothing — nothing appears in a retiring node's
+// place any more.
 
 import { describe, expect, it } from "vitest";
 import { type Square, squareName } from "./board";
 import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
-import { type GameState, startingGameState } from "./gameState";
+import { type GameState, nodeStateAt, startingGameState } from "./gameState";
 import { legalDestinations } from "./movement";
 import {
   type AttackEffect,
@@ -67,14 +63,27 @@ type Action =
 
 /**
  * An attack-first policy: the first ship, in fleet order, with a legal
- * attack takes it; failing that, the first ship with a legal move takes it;
- * failing that, there is nothing to do and the pass guard handles it.
+ * attack takes it; failing that, the first ship, in fleet-then-destination
+ * order, with a legal move onto a charged node takes it — a countdown only
+ * ever starts this way (rules.md §8.3), and a ship that then holds the node
+ * to the end leaves it, so this is also what drives the departures that
+ * turn a charged node into an exit; failing that, the first ship with any
+ * legal move takes it; failing that, there is nothing to do and the pass
+ * guard handles it.
  */
 function chooseAction(state: GameState): Action | undefined {
   for (const ship of state.ships) {
     const targets = legalTargets(state, ship.id);
     if (targets.length > 0) {
       return { kind: "attack", shipId: ship.id, target: targets[0] };
+    }
+  }
+
+  for (const ship of state.ships) {
+    for (const destination of legalDestinations(state, ship.id)) {
+      if (nodeStateAt(state, destination) === "charged") {
+        return { kind: "move", shipId: ship.id, destination };
+      }
     }
   }
 
@@ -148,6 +157,25 @@ function queueRefills(
   return refills;
 }
 
+/**
+ * D9's first long-run invariant: a charged node carrying a countdown always
+ * has a ship standing on it. A countdown starts only when a ship moves onto
+ * the node and ends the instant it either leaves (§8.3) or the node
+ * depletes (§8.6 step 3), so this must hold after every action in a real,
+ * ship-driven game — unlike `nodePool.test.ts`'s synthetic driver, which
+ * gives a charged node a countdown with no ship to back it.
+ */
+function assertChargedCountdownHasShip(state: GameState): void {
+  const shipSquareNames = new Set(
+    state.ships.map((ship) => squareName(ship.square)),
+  );
+  for (const [name, status] of Object.entries(state.nodes)) {
+    if (status.state === "charged" && status.level > 0) {
+      expect(shipSquareNames.has(name)).toBe(true);
+    }
+  }
+}
+
 /** A hard ceiling on actions applied, so a regression fails an assertion, not the test runner. */
 const MAX_ACTIONS = 10_000;
 
@@ -194,6 +222,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     if (action === undefined) {
       const { state: nextState, effect } = applyPassGuard(state);
       state = nextState;
+      assertChargedCountdownHasShip(state);
       if (effect !== undefined) {
         chargedNodes.push(...chargedSquares([effect]));
         retiredNodeSquares.push(...retiredNodes([effect]));
@@ -210,6 +239,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
         );
       }
       state = result.state;
+      assertChargedCountdownHasShip(state);
       for (const effect of result.effects) {
         if (effect.type === "fight-resolved") {
           fightCount += 1;
@@ -229,6 +259,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
         );
       }
       state = result.state;
+      assertChargedCountdownHasShip(state);
       chargedNodes.push(...chargedSquares(result.effects));
       retiredNodeSquares.push(...retiredNodes(result.effects));
       queueRefillSweeps.push(...queueRefills(result.effects));
@@ -246,7 +277,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
   };
 }
 
-/** Every node's `level` at the end of a game, keyed by square name — the part of the state the drain and recovery draws write to. */
+/** Every node's `level` at the end of a game, keyed by square name — the part of the state a countdown ply spends. */
 function nodeLevels(state: GameState): Readonly<Record<string, number>> {
   const levels: Record<string, number> = {};
   for (const [name, status] of Object.entries(state.nodes)) {
@@ -269,16 +300,19 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     // first turn — a ship only becomes unattackable by flying onto a
     // planet, away from the board's outer edge — so this attack-first
     // policy keeps finding fights across the run rather than stalling
-    // early. Re-measured at 3 fights (6 planet returns) for this seed over
-    // forty rounds since §6's move table shrank to two shapes' worth of
-    // reach (0.24); the floors below leave margin below that.
-    expect(fightCount).toBeGreaterThanOrEqual(2);
-    expect(planetReturns.length).toBeGreaterThanOrEqual(4);
-    // Re-measured at 10 charges, 8 retirements and 9 refills for this seed
-    // over forty rounds (0.26); the floors below leave margin below that.
-    expect(chargedNodes.length).toBeGreaterThanOrEqual(7);
-    expect(retiredNodes.length).toBeGreaterThanOrEqual(6);
-    expect(queueRefills.length).toBeGreaterThanOrEqual(6);
+    // early. Re-measured at 2 fights (4 planet returns) for this seed over
+    // forty rounds under the countdown model (0.27), whose second
+    // preference (moving onto a charged node) now competes with attacking
+    // for a ship's action; the floors below leave margin below that.
+    expect(fightCount).toBeGreaterThanOrEqual(1);
+    expect(planetReturns.length).toBeGreaterThanOrEqual(2);
+    // Re-measured at 6 charges, 6 retirements and 6 refills for this seed
+    // over forty rounds (0.27) — the countdown's own second preference is
+    // what drives these now, rather than nodes expiring on their own; the
+    // floors below leave margin below that.
+    expect(chargedNodes.length).toBeGreaterThanOrEqual(4);
+    expect(retiredNodes.length).toBeGreaterThanOrEqual(4);
+    expect(queueRefills.length).toBeGreaterThanOrEqual(4);
   });
 
   it("replays the same opening board, the same planet sequence, the same charged-node sequence, the same retirement and refill sequences and the same final state from the same seed", () => {
@@ -292,9 +326,9 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     expect(second.queueRefills).toEqual(first.queueRefills);
     expect(second.finalState).toEqual(first.finalState);
     // The final state's equality above already covers this, but it is
-    // worth naming directly: the drain and recovery draws that now
-    // dominate the seeded stream (§8.2, §8.3) write to every node's
-    // `level`, not only to which nodes get charged.
+    // worth naming directly: the queue's refill draw (§8.2) writes to
+    // every node's `level`, not only to which nodes get charged, and the
+    // countdown's own deterministic per-ply spend (§8.3) does too.
     expect(nodeLevels(second.finalState)).toEqual(nodeLevels(first.finalState));
   });
 

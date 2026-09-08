@@ -58,9 +58,12 @@ function chebyshevDistance(a: Square, b: Square): number {
 
 /**
  * The distance from `square` to the nearest charged or inactive node right
- * now. Inactive means eligible to be charged (rules.md §8.1), so this heads
- * for either a charged node or one that might become one — heading for a
- * depleted node would be pointless, since it cannot be charged next.
+ * now. Inactive means eligible to charge next (rules.md §8.1, §8.2), so
+ * this heads for either a node a ship can land on today or one that might
+ * become landable soon — never to land on the inactive node itself, which
+ * a move may not do (rules.md §6), only to be nearby when it charges.
+ * Heading for a depleted node would be pointless, since it cannot be
+ * charged next.
  */
 function distanceToNearestChargedOrInactive(
   state: GameState,

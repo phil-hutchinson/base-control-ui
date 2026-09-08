@@ -12,6 +12,7 @@ import type {
 } from "../rules/endOfTurn";
 import type {
   FightResolvedEffect,
+  NodeSpentEffect,
   PassEffect,
   PlyEndedEffect,
 } from "../rules/ply";
@@ -43,11 +44,14 @@ function settlementsIn(effects: readonly EndOfTurnEffect[]): Settlement[] {
  * The `ply-ended` and `ply-passed` settlements out of a move's or an
  * attack's effect list. Takes the two effect lists' common shape rather than
  * either one by name, since a move's effects and an attack's effects are
- * otherwise different types (an attack's can also carry a
- * `FightResolvedEffect`, which carries no settlement of its own).
+ * otherwise different types (a move's can also carry a `NodeSpentEffect` and
+ * an attack's a `FightResolvedEffect`, neither of which carries a settlement
+ * of its own).
  */
 function endOfActionSettlements(
-  effects: readonly (PassEffect | PlyEndedEffect | FightResolvedEffect)[],
+  effects: readonly (
+    PassEffect | PlyEndedEffect | FightResolvedEffect | NodeSpentEffect
+  )[],
 ): Settlement[] {
   const plyEnded = effects.find(
     (effect): effect is PlyEndedEffect => effect.type === "ply-ended",
