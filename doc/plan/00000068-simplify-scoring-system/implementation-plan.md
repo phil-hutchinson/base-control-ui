@@ -280,7 +280,18 @@ hits left.
 
 ### Step 3 — Realign the display-layer test fixtures with the flat rate
 
-Status: pending
+Status: committed
+
+Notes: In `src/board/announcements.test.ts`, the three-square effect's
+`amount: 6` became `amount: 3` and its `newTotal: 24` became `21` (keeping the
+implied prior total of 18 unchanged), with the expected sentence updated to
+match; the two-square pass-turn effect's `amount: 3` / `newTotal: 3` became
+`amount: 2` / `newTotal: 2`, with its sentence updated. In
+`src/board/EnergyOverlay.test.tsx`, `THREE_NODE_COLLECTION` became
+`amount: 3` / `newTotal: 21` and its rendered-text assertion became `+3`; the
+pass-event effect over two squares became `amount: 2` / `newTotal: 2`. Pulse
+counts were per-square already and needed no change. No production code
+touched. No deviations from the plan.
 
 `src/board/announcements.test.ts` and `src/board/EnergyOverlay.test.tsx`
 build `energy-collected` effects by hand rather than running the engine, so
