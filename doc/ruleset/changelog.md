@@ -7,6 +7,32 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.28 — fleets of three to six
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **Two new fleet sizes.** A player may now choose **three** or **four**
+  ships a side, alongside the existing five and six; six remains the
+  standard game. Each new size gets its own starting layout — three a side:
+  green H15, O6, A6, red O10, H1, A10; four a side: green C15, M15, O6, A6,
+  red O10, M1, C1, A10 — each the exact half-turn rotation of the other
+  colour's, matching how the five- and six-a-side layouts are built.
+- **Four new starting squares — C1, C15, M1 and M15** — used only by the
+  four-a-side layout, take the board's fixed starting squares from fourteen
+  to eighteen. They are ordinary squares in every other way; no planet and
+  no node placement rule is affected.
+- **Five and six a side are unchanged** — same squares, same colours.
+- **Two consistency repairs**, both made true again by this change rather
+  than newly imposed: section 5's "a player always has at least five ships"
+  becomes "at least three ships", and section 7.1's justification now reads
+  "with at most twelve ships and twelve planets" instead of stating twelve
+  as the count.
+- **Documentation correction, not a rules change**: section 3.1's board
+  diagram was missing the planet at I12, shown in the surrounding text and
+  in `src/rules/planets.ts` as the half-turn rotation of G4. The diagram now
+  shows all twelve planets, alongside the four new starting-square marks.
+
 ## 0.27 — a node's countdown starts when you step on it
 
 This is a gameplay change. Tagging stays on hold until the game plays (see
