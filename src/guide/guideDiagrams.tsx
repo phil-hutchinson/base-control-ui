@@ -34,15 +34,16 @@ function chargedNodeCell(
   };
 }
 
-/** Diagram 1: three charged nodes reading 3, 1 and 2, three ships at three different fuel levels, then a "+3" note. */
+/** Diagram 1: three charged nodes reading 3, 1 and 2, three ships at three different fuel levels, an arrow, then a "+3" note. */
 export function ScoringDiagram() {
   const cells: readonly GuideDiagramCell[] = [
     chargedNodeCell("guide-scoring-1", 6, 5),
     chargedNodeCell("guide-scoring-2", 2, 3),
     chargedNodeCell("guide-scoring-3", 4, 1),
+    { kind: "arrow" },
     { kind: "note", text: "+3" },
   ];
-  return <GuideDiagram columns={4} cells={cells} />;
+  return <GuideDiagram columns={5} cells={cells} />;
 }
 
 const MOVEMENT_GRID_OFFSETS = [-2, -1, 0, 1, 2];

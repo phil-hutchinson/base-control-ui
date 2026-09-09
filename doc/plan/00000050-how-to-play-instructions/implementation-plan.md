@@ -822,7 +822,14 @@ only under `src/guide/`.
 
 ### Step 10 — An arrow into the scoring diagram's `+3`
 
-Status: pending
+Status: committed
+
+Notes: Added an `arrow` cell between the third charged-node cell and the
+`+3` note in `ScoringDiagram` (`src/guide/guideDiagrams.tsx`), moving
+`columns` from 4 to 5; nothing else about the diagram changed. Updated
+`guideDiagrams.test.tsx`'s scoring case to assert one `.guide-diagram__arrow`
+alongside the existing checks, and updated diagram 1's description in
+`story.md` to name the arrow. No deviations from the plan.
 
 From Step 8's manual gate: the owner asked that diagram 1 read as the three
 ships **producing** the `+3`, rather than setting the two beside each other.

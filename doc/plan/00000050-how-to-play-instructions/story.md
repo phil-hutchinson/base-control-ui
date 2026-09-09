@@ -96,9 +96,10 @@ The five:
 
 1. **Scoring.** Three spaceships, each on a charged node, the three nodes
    showing remaining-turn numbers **3, 1 and 2**, and the three ships each
-   carrying a **different amount of fuel**. Alongside, a graphic reading
-   **+3**. The differing fuel levels and differing countdowns are the point:
-   neither changes what the position scores.
+   carrying a **different amount of fuel**. An arrow, then a graphic reading
+   **+3**, so the picture reads as the three ships producing that total. The
+   differing fuel levels and differing countdowns are the point: neither
+   changes what the position scores.
 2. **Movement.** A 5 × 5 grid with a **fully-fuelled** spaceship in the
    centre square, and a large number on each square giving what it costs to
    move there: **0** on the four orthogonal neighbours, **1** on the four

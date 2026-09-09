@@ -19,7 +19,7 @@ function litGaugeSlotCounts(container: HTMLElement, selector: string) {
 }
 
 describe("ScoringDiagram", () => {
-  it("shows three charged nodes, three ships at different fuel levels, and +3", () => {
+  it("shows three charged nodes, three ships at different fuel levels, an arrow, and +3", () => {
     const { container, getByText } = render(<ScoringDiagram />);
 
     expect(container.querySelectorAll(".node-marker--charged")).toHaveLength(3);
@@ -34,6 +34,7 @@ describe("ScoringDiagram", () => {
     const litCounts = litGaugeSlotCounts(container, ".ship-model--green");
     expect(new Set(litCounts).size).toBe(3);
 
+    expect(container.querySelectorAll(".guide-diagram__arrow")).toHaveLength(1);
     expect(getByText("+3")).toBeInTheDocument();
     expect(container.querySelectorAll(".ship-model--red")).toHaveLength(0);
   });
