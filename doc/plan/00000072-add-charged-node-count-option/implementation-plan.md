@@ -771,7 +771,7 @@ Step 5's 1065), `npm run typecheck` (clean), `npm run lint` (clean),
 
 ### Step 7 — The start screen's fourth group, and `UNLIMITED`
 
-Status: pending
+Status: committed
 
 - `src/start/StartScreen.tsx` gains `chargedNodeCount` and
   `onChargedNodeCountChange` props and a fourth `fieldset`, **between Ships
@@ -813,6 +813,38 @@ Verification (automated): Run `npm test`, `npm run typecheck`,
 `StartScreen.test.tsx` proving the group's position, options and default and
 the `UNLIMITED` label, and `App.test.tsx` proving a chosen 4 reaches a real
 game. The look of the screen is Step 10's.
+
+**Notes:** Implemented as written. `StartScreen.tsx` gained
+`chargedNodeCount` / `onChargedNodeCountChange` props and a fourth
+`fieldset`, legend "Charged nodes", between Ships and Rounds, rendering
+`CHARGED_NODE_COUNTS` through the existing `OptionChoice` with its own
+`useId` group name and no new styling (the legend's uppercasing already comes
+from `StartScreen.css`, unchanged). `CLOCK_SETTING_LABELS.none` changed from
+`"Unlimited"` to `"UNLIMITED"`; the `6s`/`4s`/`2s` labels are untouched. The
+"three options" doc comments became "four". `App.tsx` destructures
+`chargedNodeCount` / `setChargedNodeCount` from `useAppScreen` and passes them
+straight through to `StartScreen`, matching the other three options.
+
+Tests: `StartScreen.test.tsx` gained a rendering test for the new group (both
+values, 4 checked when chosen), a default-checked-at-5 test, a group-order
+test asserting the four legends read Ships / Charged nodes / Rounds / Clock
+(time per move) in DOM order, and a handler test proving choosing 4 calls
+only `onChargedNodeCountChange`. Its own `CLOCK_SETTING_LABELS` mirror was
+updated to `UNLIMITED` to match. Per the plan's warning, every fleet-size
+query for "5" or "4" that was not already scoped to a group was scoped with
+`within(screen.getByRole("group", { name: "Ships" }))` (or "Charged nodes"
+for the new group's own queries) in both `StartScreen.test.tsx` and
+`App.test.tsx`; queries for values with no collision ("3", "6", "45", "6s")
+were left as plain `screen.getByRole` calls. `App.test.tsx`'s opening test
+now also asserts 5 is checked in the Charged nodes group and that the Clock
+group reads `UNLIMITED`, and gained a new case pressing PLAY after choosing 4
+charged nodes and asserting the board shows exactly four gridcells whose
+accessible name contains ", charged node".
+
+Verification: `npm test` (59 files, 1071 tests, all green — up from 1066 at
+Step 6's commit), `npm run typecheck` (clean), `npm run lint` (clean),
+`npm run format:check` (clean after `prettier --write` on
+`StartScreen.test.tsx`). No deviation from the step as written.
 
 ### Step 8 — The long-run economy at both counts, and the figures re-measured
 

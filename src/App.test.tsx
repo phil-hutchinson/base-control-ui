@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -32,15 +32,21 @@ async function pressPlay() {
 }
 
 describe("App", () => {
-  it("opens on the start screen: the name, all three option groups at their defaults, and PLAY — no board, no HUD", () => {
+  it("opens on the start screen: the name, all four option groups at their defaults, and PLAY — no board, no HUD", () => {
     render(<App />);
 
     expect(
       screen.getByRole("heading", { level: 1, name: GAME_NAME }),
     ).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "6" })).toBeChecked();
+    expect(
+      within(screen.getByRole("group", { name: "Charged nodes" })).getByRole(
+        "radio",
+        { name: "5" },
+      ),
+    ).toBeChecked();
     expect(screen.getByRole("radio", { name: "30" })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "Unlimited" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "UNLIMITED" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
@@ -146,7 +152,8 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("radio", { name: "5" }));
+    const shipsGroup = screen.getByRole("group", { name: "Ships" });
+    await user.click(within(shipsGroup).getByRole("radio", { name: "5" }));
     await user.click(screen.getByRole("button", { name: "Play" }));
 
     expect(shipCells()).toHaveLength(10);
@@ -166,10 +173,28 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("radio", { name: "4" }));
+    const shipsGroup = screen.getByRole("group", { name: "Ships" });
+    await user.click(within(shipsGroup).getByRole("radio", { name: "4" }));
     await user.click(screen.getByRole("button", { name: "Play" }));
 
     expect(shipCells()).toHaveLength(8);
+  });
+
+  it("pressing PLAY after choosing 4 charged nodes shows a four-charged board", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const chargedNodesGroup = screen.getByRole("group", {
+      name: "Charged nodes",
+    });
+    await user.click(
+      within(chargedNodesGroup).getByRole("radio", { name: "4" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    expect(
+      screen.getAllByRole("gridcell", { name: /, charged node/ }),
+    ).toHaveLength(4);
   });
 
   it("pressing PLAY after choosing 45 rounds starts a game of that length", async () => {
