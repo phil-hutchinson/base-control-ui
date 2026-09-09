@@ -26,7 +26,11 @@ import {
 } from "./gameState";
 import { type EnergyCollectedEffect, runEndOfTurn } from "./endOfTurn";
 import { legalDestinations } from "./movement";
-import { DEFAULT_CHARGED_NODE_COUNT } from "./nodes";
+import {
+  CHARGED_NODE_COUNTS,
+  DEFAULT_CHARGED_NODE_COUNT,
+  type ChargedNodeCount,
+} from "./nodes";
 import {
   type AttackEffect,
   type MoveEffect,
@@ -165,14 +169,20 @@ interface PlayedGame {
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
- * above, dealt with `fleetSize` ships a side (rules.md §4, default six).
+ * above, dealt with `fleetSize` ships a side (rules.md §4, default six) and
+ * `chargedNodeCount` charged nodes (rules.md §8.1, default five).
  */
 function playFullGame(
   seed: number,
   lengthInRounds: number,
   fleetSize: FleetSize = DEFAULT_FLEET_SIZE,
+  chargedNodeCount: ChargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
 ): PlayedGame {
-  let state = startingGameState(seed, { lengthInRounds, fleetSize });
+  let state = startingGameState(seed, {
+    lengthInRounds,
+    fleetSize,
+    chargedNodeCount,
+  });
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
 
@@ -331,74 +341,86 @@ function shipsFillingPlanetsExcept(
   );
 }
 
+describe.each(CHARGED_NODE_COUNTS)(
+  "a full game, end to end, at %d charged nodes",
+  (chargedNodeCount) => {
+    it("plays a hundred-round game to its end, with totals consistent throughout", () => {
+      const seed = 20260819;
+      const { finalState, greenCollected, redCollected } = playFullGame(
+        seed,
+        100,
+        DEFAULT_FLEET_SIZE,
+        chargedNodeCount,
+      );
+
+      expect(finalState.plyNumber).toBe(pliesForGameLength(100) + 1);
+      expect(isGameOver(finalState)).toBe(true);
+
+      // The ledger holds exactly (§8.4, §8.6 step 2): a side's final total is
+      // exactly what it collected for the charged nodes it held — nothing
+      // subtracts energy any more, so there is no other side of the ledger to
+      // net against.
+      expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
+      expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+
+      // The policy should actually score, not merely reach the end.
+      expect(finalState.energy.green).toBeGreaterThan(0);
+      expect(finalState.energy.red).toBeGreaterThan(0);
+
+      const result = gameResult(finalState);
+      if (finalState.energy.green > finalState.energy.red) {
+        expect(result.outcome).toBe("green-won");
+        expect(result.winner).toBe("green");
+      } else if (finalState.energy.red > finalState.energy.green) {
+        expect(result.outcome).toBe("red-won");
+        expect(result.winner).toBe("red");
+      } else {
+        expect(result.outcome).toBe("draw");
+        expect(result.winner).toBeUndefined();
+      }
+      expect(result.energy).toEqual(finalState.energy);
+
+      // Whether the played-out final position happens to leave two ships in
+      // attack range is not something this test controls, so only the move
+      // and pass refusals are relied on here; the attack refusal is asserted
+      // separately below, against a state built to guarantee one.
+      assertRefusesEverything(finalState);
+    });
+
+    it("plays a three-round game to its end, by the same route", () => {
+      const seed = 20260819;
+      const { finalState, greenCollected, redCollected } = playFullGame(
+        seed,
+        3,
+        DEFAULT_FLEET_SIZE,
+        chargedNodeCount,
+      );
+
+      expect(finalState.plyNumber).toBe(pliesForGameLength(3) + 1);
+      expect(isGameOver(finalState)).toBe(true);
+
+      expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
+      expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+
+      const result = gameResult(finalState);
+      if (finalState.energy.green > finalState.energy.red) {
+        expect(result.outcome).toBe("green-won");
+      } else if (finalState.energy.red > finalState.energy.green) {
+        expect(result.outcome).toBe("red-won");
+      } else {
+        expect(result.outcome).toBe("draw");
+      }
+      expect(result.energy).toEqual(finalState.energy);
+
+      // Under one action per turn, six actions never bring two ships within
+      // reach of one another, so no attack is expected here; the move
+      // and pass refusals are still checked.
+      assertRefusesEverything(finalState);
+    });
+  },
+);
+
 describe("a full game, end to end", () => {
-  it("plays a hundred-round game to its end, with totals consistent throughout", () => {
-    const seed = 20260819;
-    const { finalState, greenCollected, redCollected } = playFullGame(
-      seed,
-      100,
-    );
-
-    expect(finalState.plyNumber).toBe(pliesForGameLength(100) + 1);
-    expect(isGameOver(finalState)).toBe(true);
-
-    // The ledger holds exactly (§8.4, §8.6 step 2): a side's final total is
-    // exactly what it collected for the charged nodes it held — nothing
-    // subtracts energy any more, so there is no other side of the ledger to
-    // net against.
-    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
-    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
-
-    // The policy should actually score, not merely reach the end.
-    expect(finalState.energy.green).toBeGreaterThan(0);
-    expect(finalState.energy.red).toBeGreaterThan(0);
-
-    const result = gameResult(finalState);
-    if (finalState.energy.green > finalState.energy.red) {
-      expect(result.outcome).toBe("green-won");
-      expect(result.winner).toBe("green");
-    } else if (finalState.energy.red > finalState.energy.green) {
-      expect(result.outcome).toBe("red-won");
-      expect(result.winner).toBe("red");
-    } else {
-      expect(result.outcome).toBe("draw");
-      expect(result.winner).toBeUndefined();
-    }
-    expect(result.energy).toEqual(finalState.energy);
-
-    // Whether the played-out final position happens to leave two ships in
-    // attack range is not something this test controls, so only the move
-    // and pass refusals are relied on here; the attack refusal is asserted
-    // separately below, against a state built to guarantee one.
-    assertRefusesEverything(finalState);
-  });
-
-  it("plays a three-round game to its end, by the same route", () => {
-    const seed = 20260819;
-    const { finalState, greenCollected, redCollected } = playFullGame(seed, 3);
-
-    expect(finalState.plyNumber).toBe(pliesForGameLength(3) + 1);
-    expect(isGameOver(finalState)).toBe(true);
-
-    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
-    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
-
-    const result = gameResult(finalState);
-    if (finalState.energy.green > finalState.energy.red) {
-      expect(result.outcome).toBe("green-won");
-    } else if (finalState.energy.red > finalState.energy.green) {
-      expect(result.outcome).toBe("red-won");
-    } else {
-      expect(result.outcome).toBe("draw");
-    }
-    expect(result.energy).toEqual(finalState.energy);
-
-    // Under one action per turn, six actions never bring two ships within
-    // reach of one another, so no attack is expected here; the move
-    // and pass refusals are still checked.
-    assertRefusesEverything(finalState);
-  });
-
   it("refuses an attack, not only a move and a pass, once the game is over", () => {
     // Built rather than played out, so the attack refusal does not depend
     // on two ships happening to end a played game within range of each
@@ -438,69 +460,78 @@ describe("a full game, end to end", () => {
 });
 
 describe("smaller fleets play end to end (rules.md §4)", () => {
-  it("plays a five-a-side game to its end, with totals consistent throughout", () => {
-    const seed = 20260819;
-    const { finalState, greenCollected, redCollected } = playFullGame(
-      seed,
-      30,
-      5,
-    );
+  describe.each(CHARGED_NODE_COUNTS)(
+    "at %d charged nodes",
+    (chargedNodeCount) => {
+      it("plays a five-a-side game to its end, with totals consistent throughout", () => {
+        const seed = 20260819;
+        const { finalState, greenCollected, redCollected } = playFullGame(
+          seed,
+          30,
+          5,
+          chargedNodeCount,
+        );
 
-    expect(finalState.ships).toHaveLength(10);
-    expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
-    expect(isGameOver(finalState)).toBe(true);
+        expect(finalState.ships).toHaveLength(10);
+        expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+        expect(isGameOver(finalState)).toBe(true);
 
-    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
-    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
-  });
+        expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
+        expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+      });
 
-  it("plays a six-a-side game to its end, with totals consistent throughout", () => {
-    const seed = 20260819;
-    const { finalState, greenCollected, redCollected } = playFullGame(
-      seed,
-      30,
-      6,
-    );
+      it("plays a six-a-side game to its end, with totals consistent throughout", () => {
+        const seed = 20260819;
+        const { finalState, greenCollected, redCollected } = playFullGame(
+          seed,
+          30,
+          6,
+          chargedNodeCount,
+        );
 
-    expect(finalState.ships).toHaveLength(12);
-    expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
-    expect(isGameOver(finalState)).toBe(true);
+        expect(finalState.ships).toHaveLength(12);
+        expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+        expect(isGameOver(finalState)).toBe(true);
 
-    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
-    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
-  });
+        expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
+        expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+      });
 
-  it("plays a three-a-side game to its end, with totals consistent throughout", () => {
-    const seed = 20260819;
-    const { finalState, greenCollected, redCollected } = playFullGame(
-      seed,
-      30,
-      3,
-    );
+      it("plays a three-a-side game to its end, with totals consistent throughout", () => {
+        const seed = 20260819;
+        const { finalState, greenCollected, redCollected } = playFullGame(
+          seed,
+          30,
+          3,
+          chargedNodeCount,
+        );
 
-    expect(finalState.ships).toHaveLength(6);
-    expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
-    expect(isGameOver(finalState)).toBe(true);
+        expect(finalState.ships).toHaveLength(6);
+        expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+        expect(isGameOver(finalState)).toBe(true);
 
-    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
-    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
-  });
+        expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
+        expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+      });
 
-  it("plays a four-a-side game to its end, with totals consistent throughout", () => {
-    const seed = 20260819;
-    const { finalState, greenCollected, redCollected } = playFullGame(
-      seed,
-      30,
-      4,
-    );
+      it("plays a four-a-side game to its end, with totals consistent throughout", () => {
+        const seed = 20260819;
+        const { finalState, greenCollected, redCollected } = playFullGame(
+          seed,
+          30,
+          4,
+          chargedNodeCount,
+        );
 
-    expect(finalState.ships).toHaveLength(8);
-    expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
-    expect(isGameOver(finalState)).toBe(true);
+        expect(finalState.ships).toHaveLength(8);
+        expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+        expect(isGameOver(finalState)).toBe(true);
 
-    expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
-    expect(finalState.energy.red).toBe(sumAmounts(redCollected));
-  });
+        expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
+        expect(finalState.energy.red).toBe(sumAmounts(redCollected));
+      });
+    },
+  );
 
   it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
     const state = startingGameState(20260819, {

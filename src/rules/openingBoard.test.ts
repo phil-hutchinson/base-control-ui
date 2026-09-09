@@ -29,7 +29,7 @@ import {
   startingGameState,
 } from "./gameState";
 import { TOP_NODE_PRIORITY } from "./nodeQueue";
-import { DEFAULT_CHARGED_NODE_COUNT, dealOpeningBoard } from "./nodes";
+import { CHARGED_NODE_COUNTS, dealOpeningBoard } from "./nodes";
 
 const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
   (entry) => entry.square,
@@ -61,122 +61,129 @@ const RUN_TO_COMPLETION_SEEDS = [70210001, 70210002, 70210003];
 const RUN_TO_COMPLETION_PLIES = 500;
 const RUN_TO_COMPLETION_LENGTH_IN_ROUNDS = 1_000;
 
-describe("a game played from a dealt board runs to completion (rules.md §8.1, §8.6)", () => {
-  it.each(RUN_TO_COMPLETION_SEEDS)(
-    "runs every dealt node out, retires depleted nodes, tops the board back up to its target, and charges at least one of the dealt-inactive nodes (seed %d)",
-    (seed) => {
-      let state = startingGameState(seed, {
-        lengthInRounds: RUN_TO_COMPLETION_LENGTH_IN_ROUNDS,
-      });
+describe.each(CHARGED_NODE_COUNTS)(
+  "a game played from a dealt board runs to completion, at %d charged nodes (rules.md §8.1, §8.6)",
+  (chargedNodeCount) => {
+    it.each(RUN_TO_COMPLETION_SEEDS)(
+      "runs every dealt node out, retires depleted nodes, tops the board back up to its target, and charges at least one of the dealt-inactive nodes (seed %d)",
+      (seed) => {
+        let state = startingGameState(seed, {
+          lengthInRounds: RUN_TO_COMPLETION_LENGTH_IN_ROUNDS,
+          chargedNodeCount,
+        });
 
-      const dealtNodeNames = nodeSquares(state).map(squareName);
-      const dealtChargedNames = dealtNodeNames.filter(
-        (name) => state.nodes[name]?.state === "charged",
-      );
-      expect(dealtChargedNames).toHaveLength(state.chargedNodeCount);
-      const dealtInactiveNames = dealtNodeNames.filter(
-        (name) => !dealtChargedNames.includes(name),
-      );
+        const dealtNodeNames = nodeSquares(state).map(squareName);
+        const dealtChargedNames = dealtNodeNames.filter(
+          (name) => state.nodes[name]?.state === "charged",
+        );
+        expect(dealtChargedNames).toHaveLength(state.chargedNodeCount);
+        const dealtInactiveNames = dealtNodeNames.filter(
+          (name) => !dealtChargedNames.includes(name),
+        );
 
-      const ranOut = new Set<string>();
-      const retired = new Set<string>();
-      const charged = new Set<string>();
+        const ranOut = new Set<string>();
+        const retired = new Set<string>();
+        const charged = new Set<string>();
 
-      for (let ply = 0; ply < RUN_TO_COMPLETION_PLIES; ply++) {
-        state = startOneCountdown(state);
-        const result = runEndOfTurn(state);
-        for (const effect of result.effects) {
-          if (effect.type === "node-ran-out") {
-            ranOut.add(squareName(effect.square));
-          } else if (effect.type === "node-retired") {
-            retired.add(squareName(effect.square));
-          } else if (effect.type === "node-charged") {
-            charged.add(squareName(effect.square));
+        for (let ply = 0; ply < RUN_TO_COMPLETION_PLIES; ply++) {
+          state = startOneCountdown(state);
+          const result = runEndOfTurn(state);
+          for (const effect of result.effects) {
+            if (effect.type === "node-ran-out") {
+              ranOut.add(squareName(effect.square));
+            } else if (effect.type === "node-retired") {
+              retired.add(squareName(effect.square));
+            } else if (effect.type === "node-charged") {
+              charged.add(squareName(effect.square));
+            }
           }
+          state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
         }
-        state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
+
+        // Every node the deal charged eventually runs out — nothing sits at
+        // baseline forever once the driver has reached it.
+        for (const name of dealtChargedNames) {
+          expect(ranOut.has(name)).toBe(true);
+        }
+        // At least one depleted node retires over the run.
+        expect(retired.size).toBeGreaterThan(0);
+        // At least one of the three dealt-inactive nodes earns a real
+        // node-charged effect. Not necessarily all three: a charge sweeps the
+        // whole queue (§8.2), so whichever of the three did not charge on the
+        // turn the shortfall was filled are discarded, unused, rather than
+        // waiting their own turn.
+        const dealtInactiveCharged = dealtInactiveNames.filter((name) =>
+          charged.has(name),
+        );
+        expect(dealtInactiveCharged.length).toBeGreaterThan(0);
+        // The queue charges a healthy number of distinct squares over the run.
+        expect(charged.size).toBeGreaterThan(15);
+        // The board is back at its target count by the end of the run.
+        const finalCharged = nodeSquares(state).filter(
+          (square) => nodeStateAt(state, square) === "charged",
+        ).length;
+        expect(finalCharged).toBe(state.chargedNodeCount);
+      },
+    );
+  },
+);
+
+describe.each(CHARGED_NODE_COUNTS)(
+  "the first charge of a game charges the priority-3 node, at %d charged nodes (rules.md §8.1, §8.2)",
+  (chargedNodeCount) => {
+    it("charges exactly the priority-3 inactive node, deterministically, over many seeds", () => {
+      let seed = 20260901;
+
+      for (let trial = 0; trial < 1_000; trial++) {
+        const [dealt, dealtSeed] = dealOpeningBoard(
+          FLEET_SQUARES,
+          chargedNodeCount,
+          seed,
+        );
+        seed = dealtSeed;
+
+        // Make room for one charge: the first dealt charged node goes
+        // depleted instead, leaving a shortfall of one for `runCharging` to
+        // fill.
+        const chargedName = Object.keys(dealt).find(
+          (name) => dealt[name].state === "charged",
+        );
+        if (chargedName === undefined) {
+          throw new Error("a deal with no charged node cannot happen");
+        }
+        const priorityThreeName = Object.keys(dealt).find(
+          (name) =>
+            dealt[name].state === "inactive" &&
+            dealt[name].level === TOP_NODE_PRIORITY,
+        );
+        if (priorityThreeName === undefined) {
+          throw new Error("a deal always carries a priority-3 node");
+        }
+
+        const state: GameState = {
+          ships: [],
+          nodes: {
+            ...dealt,
+            [chargedName]: { state: "depleted", level: 1 },
+          },
+          sideToMove: "green",
+          actionsRemaining: 1,
+          actedThisPly: [],
+          plyNumber: 1,
+          randomSeed: seed,
+          openingSeed: seed,
+          energy: { green: 0, red: 0 },
+          lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+          chargedNodeCount,
+          outOfTime: { green: false, red: false },
+        };
+
+        const { effects } = runCharging(state);
+
+        expect(effects).toEqual([
+          { type: "node-charged", square: squareFromName(priorityThreeName) },
+        ]);
       }
-
-      // Every node the deal charged eventually runs out — nothing sits at
-      // baseline forever once the driver has reached it.
-      for (const name of dealtChargedNames) {
-        expect(ranOut.has(name)).toBe(true);
-      }
-      // At least one depleted node retires over the run.
-      expect(retired.size).toBeGreaterThan(0);
-      // At least one of the three dealt-inactive nodes earns a real
-      // node-charged effect. Not necessarily all three: a charge sweeps the
-      // whole queue (§8.2), so whichever of the three did not charge on the
-      // turn the shortfall was filled are discarded, unused, rather than
-      // waiting their own turn.
-      const dealtInactiveCharged = dealtInactiveNames.filter((name) =>
-        charged.has(name),
-      );
-      expect(dealtInactiveCharged.length).toBeGreaterThan(0);
-      // The queue charges a healthy number of distinct squares over the run.
-      expect(charged.size).toBeGreaterThan(15);
-      // The board is back at its target count by the end of the run.
-      const finalCharged = nodeSquares(state).filter(
-        (square) => nodeStateAt(state, square) === "charged",
-      ).length;
-      expect(finalCharged).toBe(state.chargedNodeCount);
-    },
-  );
-});
-
-describe("the first charge of a game charges the priority-3 node (rules.md §8.1, §8.2)", () => {
-  it("charges exactly the priority-3 inactive node, deterministically, over many seeds", () => {
-    let seed = 20260901;
-
-    for (let trial = 0; trial < 1_000; trial++) {
-      const [dealt, dealtSeed] = dealOpeningBoard(
-        FLEET_SQUARES,
-        DEFAULT_CHARGED_NODE_COUNT,
-        seed,
-      );
-      seed = dealtSeed;
-
-      // Make room for one charge: the first dealt charged node goes
-      // depleted instead, leaving a shortfall of one for `runCharging` to
-      // fill.
-      const chargedName = Object.keys(dealt).find(
-        (name) => dealt[name].state === "charged",
-      );
-      if (chargedName === undefined) {
-        throw new Error("a deal with no charged node cannot happen");
-      }
-      const priorityThreeName = Object.keys(dealt).find(
-        (name) =>
-          dealt[name].state === "inactive" &&
-          dealt[name].level === TOP_NODE_PRIORITY,
-      );
-      if (priorityThreeName === undefined) {
-        throw new Error("a deal always carries a priority-3 node");
-      }
-
-      const state: GameState = {
-        ships: [],
-        nodes: {
-          ...dealt,
-          [chargedName]: { state: "depleted", level: 1 },
-        },
-        sideToMove: "green",
-        actionsRemaining: 1,
-        actedThisPly: [],
-        plyNumber: 1,
-        randomSeed: seed,
-        openingSeed: seed,
-        energy: { green: 0, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
-        outOfTime: { green: false, red: false },
-      };
-
-      const { effects } = runCharging(state);
-
-      expect(effects).toEqual([
-        { type: "node-charged", square: squareFromName(priorityThreeName) },
-      ]);
-    }
-  });
-});
+    });
+  },
+);

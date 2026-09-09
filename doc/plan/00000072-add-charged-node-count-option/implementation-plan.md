@@ -848,7 +848,7 @@ Step 6's commit), `npm run typecheck` (clean), `npm run lint` (clean),
 
 ### Step 8 — The long-run economy at both counts, and the figures re-measured
 
-Status: pending
+Status: committed
 
 Make the long-run tests exercise both counts, and take the measurements
 Appendix B needs (D9).
@@ -891,6 +891,93 @@ Verification (automated): Run `npm test`, `npm run typecheck`,
 suites passing at both counts. The step is not done until the measured
 figures listed above are written into its Notes, because Step 9 is written
 from them.
+
+**Notes:** `nodePool.test.ts`'s `runEconomy` gained a required
+`chargedNodeCount: ChargedNodeCount` parameter, threaded to
+`startingGameState`, and every one of the file's five `describe` blocks
+(the queue's invariants, legality/fallback, the spread the weighting buys,
+sweep cadence, rotation) was nested one level deeper inside a single
+`describe.each(CHARGED_NODE_COUNTS)("the node economy at %d charged nodes
+(Appendix B)", ...)` wrapper, so the whole suite runs once at five and once
+at four (33 tests → 66). The "holds exactly the game's own charged-node
+count" and "deals an opening board..." assertions now compare against the
+loop's own `chargedNodeCount` rather than `DEFAULT_CHARGED_NODE_COUNT`.
+`openingBoard.test.ts`'s two describes (run-to-completion,
+first-charge-is-priority-3) were each wrapped the same way (4 tests → 8),
+threading the count into `startingGameState` and `dealOpeningBoard`.
+`fullGame.test.ts`'s `playFullGame` gained an optional `chargedNodeCount`
+parameter (default `DEFAULT_CHARGED_NODE_COUNT`); the "a full game, end to
+end" describe was split so its two played-out games (100-round, 3-round) run
+under a `describe.each(CHARGED_NODE_COUNTS)` wrapper while the hand-built
+"refuses an attack" test (unaffected by the count) stays in a plain
+`describe` alongside it; the "smaller fleets play end to end" describe
+gained a nested `describe.each(CHARGED_NODE_COUNTS)` around its four
+`plays a *-a-side game` tests only, leaving the positional-starting-square
+and planet-return-arithmetic tests (which do not touch node economy) at the
+default count (12 tests → 18).
+
+Every tuned constant in `nodePool.test.ts` was re-measured with temporary
+instrumentation (a standalone script run via `vite-node` against the real
+`runEconomy`-equivalent logic, deleted after use — nothing temporary was
+committed) at both counts, over the file's own `SEEDS` (5 seeds) and
+`PLIES_TO_RUN` (500 plies each), reusing exactly the pools and gap
+computations the file's own "spread" test already builds:
+
+- **Total node count:** min 8 / max 13 / mean 12.88 at five charged; min 7 /
+  max 11 / mean 10.91 at four. Matches Step 4's interim five-charged figures
+  exactly and confirms the pre-existing four-charged figures in `rules.md`.
+  `MINIMUM_TOTAL_NODES` (7) / `MAXIMUM_TOTAL_NODES` (14) already cover both
+  ranges with margin and were **not retuned**.
+- **Refill pool sizes** (strict first draw / widened second / widened
+  third): at five charged, 6–34 (mean 21.31) / 19–48 (mean 31.78) / 15–45
+  (mean 28.54); at four charged, 11–37 (mean 25.20) / 24–54 (mean 37.63) /
+  22–48 (mean 34.35). The four-charged means (25/38/34) match the figures
+  already quoted in `rules.md` almost exactly. No test constant depends on
+  these directly; they feed Step 9's Appendix B text.
+- **Weighted vs. unweighted mean smallest pairwise gap:** at five charged,
+  4.875 weighted vs. 3.721 unweighted (n = 1125 refills), spread advantage
+  1.154; at four charged, 4.790 vs. 3.714 (n = 900), spread advantage 1.076.
+  `MINIMUM_MEAN_REFILL_GAP` (4) and `MINIMUM_SPREAD_ADVANTAGE` (0.5) already
+  clear both with comfortable margin and were **not retuned**; their
+  comments now state both counts' figures.
+- **Mean turns between refills:** 2500 plies / 1125 refills = 2.222 at five
+  charged; 2500 / 900 = 2.778 at four. Both already sit inside
+  `MINIMUM_MEAN_PLIES_BETWEEN_REFILLS` (1.5) /
+  `MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS` (5), **not retuned**; the comment now
+  states both figures and explains why five charged sweeps faster (one more
+  node for the synthetic driver to keep counting down).
+- **§3.2's fallback:** never fired at either count. The fallback only fires
+  when a pool is empty, and the minimum pool size measured at any of the
+  three draws, at either count, was 6 (five charged, first draw) — always
+  greater than zero — so this is confirmed by the same pool-size
+  measurements above rather than needing separate instrumentation.
+- **Edge/corner figures** (the "1.11 one square in, 0.14 in a corner"
+  figures Appendix B currently quotes at four charged): **not measured in
+  this step.** They are not in the plan's list of figures this step must
+  take, and no existing test computes them — `nodePool.test.ts` checks
+  legality by reimplementing the ordinary constraints, not by classifying
+  where a draw landed relative to the edge. Step 9 should therefore state
+  plainly that these remain measured only at four charged and are expected
+  to move only slightly, per the step's own fallback instruction, rather
+  than adding new instrumentation here (out of this step's stated scope).
+
+None of the five tuned constants needed retuning at either count — every
+measurement landed comfortably inside the existing bounds — so this step
+only widened the comments to state both counts' figures explicitly,
+consistent with S6 (re-measured, not re-fitted).
+
+Runtime: the whole suite ran in 55.7s (`real`, via `time npm test -- --run`)
+after this step's changes, against a 54.4s baseline measured before it —
+not "noticeably slower" than the ~58s the plan anticipated, so the
+four-charged pass was **not** shortened to a smaller seed list; both counts
+run the full `SEEDS` array everywhere. Test count rose from 1071 to 1114
+(+43: nodePool.test.ts 33→66, openingBoard.test.ts 4→8, fullGame.test.ts
+12→18).
+
+Verification: `npm test` (59 files, 1114 tests, all green), `npm run
+typecheck` (clean), `npm run lint` (clean), `npm run format:check` (clean).
+No deviation from the step as written, beyond the edge/corner figures being
+left unmeasured, which the step's own text anticipates and permits.
 
 ### Step 9 — Appendix B re-stated at both counts
 
