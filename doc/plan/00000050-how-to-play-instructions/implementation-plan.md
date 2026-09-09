@@ -555,7 +555,20 @@ and `npm run format:check` — all green, with the new diagram cases passing.
 
 ### Step 5 — The guide screen
 
-Status: pending
+Status: committed
+
+Notes: Created `src/guide/GuideScreen.tsx`, `src/guide/GuideScreen.css`, and
+`src/guide/GuideScreen.test.tsx`. `GuideScreen` takes a single `onBack`
+callback, renders a top and a bottom `Back` button (D14, identical DOM text,
+class and callback), the `h1` title, the intro paragraph and scoring diagram,
+then the four headed sections each pairing a `GUIDE_SECTIONS` entry with its
+diagram from Step 4, and mounts `PlanetDefs` once so the refuelling diagram's
+planet resolves (D12). Styling follows the start screen's tokens, scrolls
+inside the cabinet per D15, and the back button is its own quiet-treatment
+class per D16's sibling reasoning. Appended a "From story 50" section to
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md` recording the
+diagrams' `aria-hidden` numbers and note as a knowing loss (D18). No
+deviations from the plan.
 
 Create `src/guide/GuideScreen.tsx` and `src/guide/GuideScreen.css`: the page
 itself, assembled from Step 1's copy and Step 4's diagrams. It takes one prop
