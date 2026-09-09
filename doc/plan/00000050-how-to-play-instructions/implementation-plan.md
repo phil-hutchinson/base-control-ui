@@ -431,7 +431,16 @@ and `npm run format:check` — all green, including the new
 
 ### Step 3 — Derive the movement diagram's costs from the rules
 
-Status: pending
+Status: committed
+
+Notes: Created `src/guide/movementCosts.ts` (`MovementCostOffset` and
+`movementCostOffsets()`), deriving the twenty offsets from `allShapesFrom` at
+a fixed central origin (H8), and `src/guide/movementCosts.test.ts`. The
+origin-invariance test independently recomputes offsets from a second central
+square (L12) via `allShapesFrom` and compares the sorted sets, rather than
+adding an origin parameter to the module's public API — the module answers
+exactly the one question Step 4 needs (a fixed offset table), so no origin
+parameter is exposed. No other deviations from the plan.
 
 Create a small pure module in `src/guide/` (for example
 `movementCosts.ts`) that answers the one question the movement diagram asks:
