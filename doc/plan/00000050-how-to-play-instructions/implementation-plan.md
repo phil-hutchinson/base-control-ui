@@ -782,7 +782,25 @@ than fixing it (`CLAUDE.md`, pre-release stance).
 
 ### Step 9 — `README.md`, the ruleset check, and the final sweep
 
-Status: pending
+Status: committed
+
+Notes: Updated the `README.md` status note's start-screen paragraph to
+mention the Quick Guide button, describing it as a first read (not a full
+rules reference) covering scoring, movement, refuelling and how nodes come
+and go, and that Back returns to the start screen with the three choices
+untouched; kept the file's existing hand-wrapped line width and did not
+describe the diagrams square by square. Confirmed `doc/ruleset/rules.md`
+still reads version 0.29, `RULES_VERSION` is still `"0.29"`, and
+`doc/ruleset/changelog.md` has no new entry (`git diff main --stat` shows no
+change to any of the three). Swept the branch diff: `fuel` appears in `src/`
+only under `src/guide/`, and every non-guide hit of `points` is a pre-existing
+unrelated use ("point(s) of power" in energy announcements/tests, SVG
+`points` attributes, and "points at" meaning a reference) rather than a leak
+of the guide's vocabulary exception. Confirmed the Step 5 accessibility note
+is present in `doc/plan/00000021-accessibility-tech-debt/known-issues.md`
+("From story 50 — the quick guide's diagrams are decorative"); Step 8 added
+no further note, and Step 10's visual change required none. No deviations
+from the plan.
 
 - `README.md`'s status note describes what opening the app shows: the game's
   name, the three choices and a PLAY button. It is now missing the Quick
