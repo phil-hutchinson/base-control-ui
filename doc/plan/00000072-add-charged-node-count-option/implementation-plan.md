@@ -1055,7 +1055,7 @@ extend.
 
 ### Step 10 — The owner plays it
 
-Status: pending
+Status: committed
 
 The manual gate. The owner runs `npm run dev` and confirms:
 
@@ -1090,6 +1090,12 @@ Verification (manual): The owner performs points 1–8 and confirms, or names
 what to change. If something visual is knowingly given up here, record it as
 a note in `doc/plan/00000021-accessibility-tech-debt/known-issues.md` rather
 than fixing it (`CLAUDE.md`, pre-release stance); no note is expected.
+
+**Notes:** The owner ran the app and confirmed all eight points pass —
+"That's working well." Nothing was reported to change, so no finding was
+raised against point 4 (the five-pip row at the narrow end of
+`--region-extent`), and nothing visual was knowingly given up, so no note
+was added to `doc/plan/00000021-accessibility-tech-debt/known-issues.md`.
 
 ### Step 11 — `README.md`, the prose sweep, and the final check
 
