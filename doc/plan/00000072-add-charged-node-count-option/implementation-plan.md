@@ -1099,7 +1099,7 @@ was added to `doc/plan/00000021-accessibility-tech-debt/known-issues.md`.
 
 ### Step 11 — `README.md`, the prose sweep, and the final check
 
-Status: pending
+Status: committed
 
 - Update `README.md` in the player's voice: the start screen now offers a
   choice of charged nodes alongside ships, rounds and clock; a game opens
@@ -1129,3 +1129,61 @@ Verification (automated): Run `npm test`, `npm run typecheck`,
 search terms above return no stale hit outside `doc/ruleset/changelog.md`
 and other stories' plan folders, and that `README.md` describes the choice
 and no longer describes a board that is always four.
+
+**Notes:** Rewrote `README.md`'s status paragraph: the start-screen sentence
+now lists the charged-node choice (five or four, five to start) between the
+ships choice and the rounds choice, and "any of the three choices" became
+"any of the four"; the opening-board sentence now reads "it opens with five
+lit nodes, or four if you chose four, and three still waiting — eight nodes
+in all, or seven at four," with "all four are exactly as fresh as each
+other" generalised to "they are all exactly as fresh as each other"; and
+"brought back to four lit nodes by the time your turn begins" became
+"brought back to whichever count you chose by the time your turn begins".
+The touched paragraph (one long unbroken blockquote) was re-wrapped locally
+to the file's own ~72–84-character convention afterwards, since the direct
+edits had left one very short line and one 89-character line. Ran
+`/update-readme`'s job by hand rather than invoking the command, since the
+exact wording was already dictated by the step and by `story.md`'s own
+"In scope" bullet.
+
+The prose sweep's search terms turned up one stale hit outside plan folders
+and the changelog: `src/rules/camping.test.ts`'s comment "Three other
+charged nodes, at baseline, keep the board at four charged until F2 becomes
+an exit node" — stale because the fixture's `chargedNodeCount` now defaults
+to five (`DEFAULT_CHARGED_NODE_COUNT`) while the fixture itself hand-builds
+only four charged nodes, so "four charged" no longer reads as the board's
+target. The test's assertions never depended on the board being full to
+target, so this was a comment-only fix: reworded to "sit alongside F2 until
+it becomes an exit node," dropping the implication that four was the
+target. Every other hit for the eight search terms, across `src/`,
+`README.md`, `CONTRIBUTING.md`, `doc/ruleset/rules.md` and
+`doc/guidelines/`, was either an intentional Appendix B statement already
+labelled "at four charged only" / "at both five and four charged" (Step 9),
+or lived in another story's plan folder or in `changelog.md`'s historical
+entries, both left untouched per `CONTRIBUTING.md`.
+
+While reading Appendix B for the sweep, tidied the two dangling sentences
+flagged during Step 9's review — "...they are expected to move only
+slightly too, not to be guessed at until they are." and "...are expected to
+move only slightly at five, once they are." — into "...the figures are
+expected to move only slightly too, so they are left as measured rather
+than guessed at." and "...and are expected to move only slightly once they
+are measured at five." Neither edit changes what the sentences claim (the
+edge and corner figures stay measured at four charged only, expected to
+move only slightly at five); no version bump, no new changelog entry.
+
+`story.md` was read against the finished implementation and needs no
+correction: its README bullet, its `TARGET_CHARGED_NODES` and pip-row
+descriptions, and its verification list all match what Steps 1–10 actually
+built.
+
+Verification: `npm test` (59 files, 1114 tests, all green — unchanged from
+Step 10's commit, as expected for a docs/comments-only step), `npm run
+typecheck` (clean), `npm run lint` (clean), `npm run format:check` (clean).
+The eight search terms return no stale hit outside `doc/ruleset/changelog.md`
+and other stories' plan folders. `doc/ruleset/changelog.md` still has
+exactly one `## 0.30` heading (unchanged by this step). No deviation from
+the step as written, beyond running `/update-readme`'s review by hand
+instead of invoking the command itself, and the small local re-wrap the
+`README.md` edits needed to stay within the file's existing line-length
+convention.

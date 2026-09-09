@@ -46,10 +46,11 @@ install, no account, no server.
 > **Status:** early development. The app now plays a whole game, from the
 > opening position to the final score. Opening it shows a start screen, not the
 > board: the game's name, a choice of how many ships a side (six, five, four or
-> three, six to start), a choice of how many rounds the game lasts (thirty,
+> three, six to start), a choice of how many nodes are lit at once (five or
+> four, five to start), a choice of how many rounds the game lasts (thirty,
 > forty-five, sixty or ninety, thirty to start), a choice of a clock (unlimited,
 > or six, four or two seconds a turn, unlimited to start) and a PLAY button.
-> Changing any of the three choices starts nothing — the board only appears once
+> Changing any of the four choices starts nothing — the board only appears once
 > PLAY is pressed, dealt with the choices you made. A clock is each player's own
 > time for the whole game, not per turn — a thirty-round game at six seconds a
 > turn gives each of you three minutes to spend however you like across your
@@ -69,19 +70,20 @@ install, no account, no server.
 > player's ships still topping up power on a planet, up to a full six. A ship
 > already full doesn't count towards that. Green goes first, and each player
 > takes one action a turn — a move or an attack — by mouse or by keyboard. Every
-> game deals a different opening board: it opens with seven nodes — four already
-> lit and three still waiting. The four lit ones are chosen at random too, but
-> none of them carries a countdown yet, so at the start of the game all four are
-> exactly as fresh as each other — a lit node only starts running down once a
-> ship lands on it. Each waiting node carries one, two or three rings, and the
-> one with three rings is the one that lights next. A ship can fly straight over
-> a waiting node, but landing on one has to wait until it lights. On a turn when
-> nothing lights, the rings shift round — the single becomes a double, the
-> double becomes a triple, and the triple drops back to a single — so you can
-> read not just what lights next but what lights the turn after that. Whatever
-> runs out during a turn is made up at the end of it by lighting from the
-> waiting three, highest rings first, so the board is always brought back to
-> four lit nodes by the time your turn begins. Land a ship on a lit node and a
+> game deals a different opening board: it opens with five lit nodes, or four
+> if you chose four, and three still waiting — eight nodes in all, or seven
+> at four. The lit ones are chosen at random too, but none of them carries
+> a countdown yet, so at the start of the game they are all exactly as fresh
+> as each other — a lit node only starts running down once a ship lands on
+> it. Each waiting node carries one, two or three rings, and the one with three
+> rings is the one that lights next. A ship can fly straight over a waiting
+> node, but landing on one has to wait until it lights. On a turn when nothing
+> lights, the rings shift round — the single becomes a double, the double
+> becomes a triple, and the triple drops back to a single — so you can read
+> not just what lights next but what lights the turn after that. Whatever runs
+> out during a turn is made up at the end of it by lighting from the waiting
+> three, highest rings first, so the board is always brought back to whichever
+> count you chose by the time your turn begins. Land a ship on a lit node and a
 > black number appears in its middle: six, counting down by one at the end of
 > each of your own turns while the ball itself grows steadily larger, until it
 > runs out on your sixth turn there and traps you. Leave a node you are holding

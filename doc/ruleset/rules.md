@@ -826,10 +826,10 @@ squares — and **4.79** against **3.71** at four, an advantage of about
 square in from the edge and **0.14** in a corner region, against **0.83**
 and **0.07** unweighted — the widening does push the second and third draws
 outward, but the weighting keeps them from crowding the rim. These edge and
-corner figures are measured **at four charged only**; they have not been
-re-measured at five, and since the pools there narrow only slightly, they
-are expected to move only slightly too, not to be guessed at until they
-are.
+corner figures are measured **at four charged only** and have not been
+re-measured at five; since the pools there narrow only slightly, the
+figures are expected to move only slightly too, so they are left as
+measured rather than guessed at.
 
 Section 3.2's fallback, which places a node without regard to spacing, is
 even less likely to fire than it was at the old twelve-node count: there are
@@ -851,5 +851,5 @@ the same pools would. These guards run at both five and four charged.
 These counts — the node count's range, the pool sizes and the spread
 figures above — are first guesses to be play-tested and retuned like every
 other number in this document, and are now measured at both five and four
-charged. The edge and corner figures remain measured at four charged only
-and are expected to move only slightly at five, once they are.
+charged. The edge and corner figures remain measured at four charged only,
+and are expected to move only slightly once they are measured at five.
