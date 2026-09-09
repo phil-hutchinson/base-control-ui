@@ -737,7 +737,7 @@ cases passing.
 
 ### Step 8 — Owner reads the guide in a browser
 
-Status: pending
+Status: committed
 
 Nothing is implemented in this step. The guide is a page of pictures, and
 jsdom has no layout, so this is the gate where it is judged (S9 — no fixture,
@@ -771,7 +771,12 @@ Start the app with `npm run dev` and confirm:
 Depends on: Steps 1–7 (the whole feature must be in place).
 
 Verification (manual): The owner performs points 1–9 and confirms, or names
-what to change. If something visual is knowingly given up here, record it as
+what to change.
+
+**Outcome (2026-09-09): passed, with one change asked for.** The owner read
+the guide and approved points 1–9, and asked that diagram 1 carry an arrow
+between the ships and the `+3`. That is Step 10, which runs before Step 9's
+sweep. If something visual is knowingly given up here, record it as
 a note in `doc/plan/00000021-accessibility-tech-debt/known-issues.md` rather
 than fixing it (`CLAUDE.md`, pre-release stance).
 
@@ -814,3 +819,30 @@ the Quick Guide button; `git diff main --stat` shows no change to
 `doc/ruleset/rules.md`, `doc/ruleset/changelog.md` or
 `src/rules/rulesVersion.ts`; and the `fuel` / `points` search returns hits
 only under `src/guide/`.
+
+### Step 10 — An arrow into the scoring diagram's `+3`
+
+Status: pending
+
+From Step 8's manual gate: the owner asked that diagram 1 read as the three
+ships **producing** the `+3`, rather than setting the two beside each other.
+
+- In `src/guide/guideDiagrams.tsx`, `ScoringDiagram` gains an `arrow` cell
+  between the third charged-node cell and the `+3` note, and its `columns`
+  goes from 4 to 5. `GuideDiagram` already draws this cell kind (Step 2), so
+  nothing new is needed in the diagram grid or its stylesheet.
+- Change nothing else about the diagram: the three countdowns stay 3, 1 and
+  2, the three fuel levels stay different from one another, every ship stays
+  green, and the note stays `+3`.
+- Update `guideDiagrams.test.tsx`'s scoring case to expect the arrow, so the
+  count of arrows in the diagram is asserted rather than incidental.
+- Update the diagram 1 description in
+  `doc/plan/00000050-how-to-play-instructions/story.md` ("The diagrams",
+  item 1) to name the arrow, so the story records what was actually built.
+
+Depends on: Steps 2 and 4. Runs **before** Step 9, so the sweep sees it.
+
+Verification (automated): Run `npm test`, `npm run typecheck`, `npm run lint`
+and `npm run format:check` — all green. The scoring diagram's test asserts
+one arrow, three squares and the note. The owner sees the result at the
+sign-off gate rather than in a second manual step.
