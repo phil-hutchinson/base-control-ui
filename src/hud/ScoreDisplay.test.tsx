@@ -14,6 +14,7 @@ import type {
 } from "../rules/gameState";
 import type { PowerLevel } from "../rules/power";
 import type { NodeState } from "../rules/nodes";
+import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { ScoreDisplay } from "./ScoreDisplay";
 
 afterEach(cleanup);
@@ -51,6 +52,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }
@@ -97,14 +99,16 @@ describe("ScoreDisplay", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders four pips, none lit when the side holds no charged node", () => {
+  it("renders one pip per charged node the board keeps, none lit when the side holds none", () => {
     const state = buildState({});
 
     const { container } = render(
       <ScoreDisplay state={state} side="green" displayedTotal={0} />,
     );
 
-    expect(container.querySelectorAll(".score-display__pip")).toHaveLength(4);
+    expect(container.querySelectorAll(".score-display__pip")).toHaveLength(
+      DEFAULT_CHARGED_NODE_COUNT,
+    );
     expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
       0,
     );

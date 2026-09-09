@@ -146,10 +146,13 @@ reader would otherwise have to make twice.
   parameters with a comment warning about the order (a comment is not a
   guard).
 
-- **D4. `dealOpeningBoard` takes the count as a required third positional
-  parameter.** It has exactly one production caller and a handful of test
-  callers, and a required parameter means the compiler names every one of
-  them. It is not given a default: a deal that quietly falls back to five
+- **D4. `dealOpeningBoard` takes the count as a required positional
+  parameter, before the seed.** It has exactly one production caller and a
+  handful of test callers, and a required parameter means the compiler names
+  every one of them. It sits second, ahead of `seed`, because every seeded
+  function in `src/rules/` takes its seed last (`drawNodeSquare`,
+  `refillQueue`, `random.ts`'s own helpers), and the count is a fact about
+  the board being dealt rather than about the stream. It is not given a default: a deal that quietly falls back to five
   would hide a plumbing mistake.
 
 - **D5. The `new-game` intent carries the count as a required field,** like
@@ -473,7 +476,7 @@ step as written.
 
 ### Step 4 — The count becomes part of the game state, and five becomes the standard game
 
-Status: pending
+Status: committed
 
 The substantive change. In `src/rules/`:
 
@@ -488,7 +491,8 @@ The substantive change. In `src/rules/`:
   and throwing a `RangeError` naming the offered counts when it is anything
   else — exactly as the fleet-size check does. It is passed to the deal and
   stored on the returned state.
-- **`dealOpeningBoard` takes the count as a required third parameter** (D4)
+- **`dealOpeningBoard` takes the count as a required parameter, second,
+  ahead of the seed** (D4)
   and draws that many charged squares. Its documented draw order is
   otherwise unchanged: the charged squares one at a time by
   `drawNodeSquare`, then **one** `refillQueue` call for the three inactive
@@ -562,6 +566,75 @@ five `charged` at level 0 and three `inactive` at priorities 1, 2 and 3; with
 `chargedNodeCount: 4` it deals **seven**, four charged and three inactive;
 and with `chargedNodeCount: 3` it throws a `RangeError`. Delete the script
 afterwards — it is a check, not an artifact.
+
+**Notes:** Implemented as written. `GameState` gained `chargedNodeCount:
+ChargedNodeCount`; `StartingGameStateOptions` gained the matching optional
+field, validated with `isChargedNodeCount` and defaulting to
+`DEFAULT_CHARGED_NODE_COUNT`; `dealOpeningBoard` took the count as a required
+second positional parameter (before `seed`); `runCharging` now reads
+`state.chargedNodeCount`; `TARGET_CHARGED_NODES` is gone from `nodes.ts`.
+Corrected the comments named in the step (`endOfTurn.ts` step 4,
+`nodePlacement.ts`'s deal comment, `gameState.ts`'s deal description and its
+already-stale "12 steps" claim was fixed in Step 3) plus a few more the
+compiler's churn surfaced: `charging.ts`'s module header, and `nodes.ts`'s
+own doc comment and module header. `ScoreDisplay.tsx` swaps the deleted
+constant for `state.chargedNodeCount` only — no `min`, per the step.
+
+Every hand-built `GameState` literal across the inventory (23 files) gained
+`chargedNodeCount`, almost always `DEFAULT_CHARGED_NODE_COUNT` inside a
+`buildState`-style helper; a handful of fixtures that hard-code "the board
+at its target" alongside an actual inactive node to charge — one case each
+in `charging.test.ts`, `endOfTurn.test.ts` (two) and `ply.test.ts` (one) —
+needed an explicit `chargedNodeCount: 4` instead, because the shortfall
+against the new default of five would otherwise have charged the inactive
+node the fixture was relying on staying put; this is a direct consequence of
+the default flipping, not a new kind of fixture. `nodes.test.ts`'s whole
+"dealing the opening board" block was reshaped into `describe.each`
+(`CHARGED_NODE_COUNTS`) so the deal is asserted at both 5 and 4 in one pass,
+including seed-step counts of 9 and 8 respectively; the old
+`TARGET_CHARGED_NODES` test is gone (Step 2's block covers the offered
+counts). `charging.test.ts` gained a `chargedNodeCount` field on its
+`buildState` config and two new cases (full at five, shortfall measured
+against five rather than a constant) alongside the existing ones, each now
+pinned to whichever count its fixture actually assumes.
+
+`nodePool.test.ts`: only `MINIMUM_TOTAL_NODES` / `MAXIMUM_TOTAL_NODES` needed
+widening at five charged — the others (`MINIMUM_MEAN_REFILL_GAP`,
+`MINIMUM_SPREAD_ADVANTAGE`, the refill-cadence band) held without change.
+Measured (temporary instrumentation, 5 seeds × 500 plies, removed before
+committing): total node count ranged **8 to 13**, mean **≈12.88** (was 7–11,
+mean ≈10.9, at four charged). Widened `MINIMUM_TOTAL_NODES` 6→7 and
+`MAXIMUM_TOTAL_NODES` 12→14, keeping the same one-either-side margin
+philosophy as the existing bounds, and restated the comment attributing
+both the four- and five-charged figures explicitly. These are Step 4's own
+measurements for compiling a green suite at the new default; Step 8 re-runs
+the file properly (at both counts, with its full instrumentation pass) and
+Step 9 is what actually rewrites Appendix B from that.
+
+`seededReplay.test.ts` was in the plan's list for this step but was missed
+on the first pass through the inventory and caught by a second read of the
+step against the diff before finishing: its header comment (deal seed-step
+count) and its two measured-floor comments were still stated at four
+charged even though its fixtures run at the new default of five. Re-measured
+with the same temporary-instrumentation-then-remove approach: fight count 4
+(was "2"), planet returns 8 (was "4"), charged-node count 18, retirements
+17, refills 16 (was "6, 6, 6") for seed 20260819 over forty rounds. Updated
+both comments to the new figures and to name 0.30/five-charged explicitly;
+the floors themselves (`>= 1`, `>= 2`, `>= 4`, `>= 4`, `>= 4`) already sit
+comfortably below the new measurements and were left alone, since they were
+never tied to a specific count.
+
+Verification: `npm test` (59 files, 1065 tests, all green — up from 1049 at
+Step 3's commit), `npm run typecheck` (clean), `npm run lint` (clean),
+`npm run format:check` (clean after `prettier --write` on five files whose
+new lines the formatter re-wrapped). The improvised script (deleted after
+use) confirmed: no count deals 8 nodes (5 charged at level 0, 3 inactive at
+priorities 1/2/3, `chargedNodeCount: 5`); `chargedNodeCount: 4` deals 7 nodes
+(4 charged, 3 inactive, `chargedNodeCount: 4`); `chargedNodeCount: 3` throws
+`RangeError: startingGameState: chargedNodeCount must be one of 5, 4, got
+3`. No deviation from the step as written, beyond the `seededReplay.test.ts`
+catch-up noted above, which the step already listed as in scope — it was a
+sequencing slip on this agent's part, not a plan gap.
 
 ### Step 5 — The pip row is re-cut, and the comments that reasoned from four
 

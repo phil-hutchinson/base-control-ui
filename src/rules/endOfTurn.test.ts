@@ -27,7 +27,11 @@ import {
   TOP_NODE_PRIORITY,
   rotatePriority,
 } from "./nodeQueue";
-import { TARGET_CHARGED_NODES, type NodeState } from "./nodes";
+import {
+  DEFAULT_CHARGED_NODE_COUNT,
+  type ChargedNodeCount,
+  type NodeState,
+} from "./nodes";
 
 function ship(
   id: ShipId,
@@ -55,6 +59,7 @@ function buildState(config: {
   sideToMove?: "green" | "red";
   plyNumber?: number;
   randomSeed?: number;
+  chargedNodeCount?: ChargedNodeCount;
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -67,6 +72,7 @@ function buildState(config: {
     openingSeed: config.randomSeed ?? 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }
@@ -527,6 +533,7 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
     const chargedNames = ["C3", "E3", "G3", "I3"];
     const depletedName = "M3";
     const state = buildState({
+      chargedNodeCount: 4,
       nodes: {
         ...Object.fromEntries(
           chargedNames.map((name) => [name, ["charged", 0] as const]),
@@ -927,6 +934,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
     // Four charged nodes already hold the board at its target, so charging
     // has no shortfall to fill and the three inactive nodes simply rotate.
     const state = buildState({
+      chargedNodeCount: 4,
       nodes: {
         D4: ["charged", 0],
         L4: ["charged", 0],
@@ -962,6 +970,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
     // node (H8) alone covers — the other two are discarded, not merely
     // left waiting their own turn.
     const state = buildState({
+      chargedNodeCount: 4,
       nodes: {
         D4: ["charged", 0],
         L4: ["charged", 0],
@@ -1032,6 +1041,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
 
   it("fills a zero-charged board from the three queue nodes alone, never placing a fourth from anywhere, and refills the queue afterwards (§8.2, §8.6 steps 4 and 5)", () => {
     const state = buildState({
+      chargedNodeCount: 4,
       nodes: {
         N4: ["inactive", 3],
         D8: ["inactive", 1],
@@ -1047,7 +1057,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
     const inactiveNow = nodeSquares(result.state).filter(
       (square) => nodeStateAt(result.state, square) === "inactive",
     );
-    expect(chargedNow).toHaveLength(TARGET_CHARGED_NODES - 1);
+    expect(chargedNow).toHaveLength(state.chargedNodeCount - 1);
     expect(inactiveNow).toHaveLength(INACTIVE_NODE_COUNT);
 
     const refills = result.effects.filter(
@@ -1324,7 +1334,7 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
 });
 
 describe("runEndOfTurn — a quiet board does nothing at all (§8.1, §8.3)", () => {
-  it("leaves the opening board's four charged nodes at baseline, charges and depletes nothing, and never touches the seed, across many plies with nobody moving", () => {
+  it("leaves the opening board's charged nodes at baseline, charges and depletes nothing, and never touches the seed, across many plies with nobody moving", () => {
     const SEEDS = [20260828, 20260829, 20260830, 20260831, 20260832];
     const PLIES_TO_RUN = 60;
 
@@ -1339,11 +1349,11 @@ describe("runEndOfTurn — a quiet board does nothing at all (§8.1, §8.3)", ()
 
       for (let ply = 1; ply <= PLIES_TO_RUN; ply++) {
         const result = runEndOfTurn(state);
-        // No ship stands on any of the four, so none of them ever starts a
-        // countdown, and with nothing depleted there is nothing to charge
-        // from the queue either — the only thing left to happen is the
-        // queue's own silent rotation (§8.2), which is not this story's
-        // concern and raises no effect and moves no seed.
+        // No ship stands on any of them, so none ever starts a countdown,
+        // and with nothing depleted there is nothing to charge from the
+        // queue either — the only thing left to happen is the queue's own
+        // silent rotation (§8.2), which is not this story's concern and
+        // raises no effect and moves no seed.
         expect(result.effects).toEqual([]);
         for (const name of chargedNames) {
           expect(result.state.nodes[name]).toEqual({

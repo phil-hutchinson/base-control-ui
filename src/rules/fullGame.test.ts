@@ -26,6 +26,7 @@ import {
 } from "./gameState";
 import { type EnergyCollectedEffect, runEndOfTurn } from "./endOfTurn";
 import { legalDestinations } from "./movement";
+import { DEFAULT_CHARGED_NODE_COUNT } from "./nodes";
 import {
   type AttackEffect,
   type MoveEffect,
@@ -427,6 +428,7 @@ describe("a full game, end to end", () => {
       openingSeed: 1,
       energy: { green: 0, red: 0 },
       lengthInRounds: 1,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
     };
 
@@ -577,6 +579,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       openingSeed: 1,
       energy: { green: 0, red: 0 },
       lengthInRounds: 30,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
     };
 
@@ -627,6 +630,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       openingSeed: 1,
       energy: { green: 0, red: 0 },
       lengthInRounds: 30,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
     };
 
@@ -676,6 +680,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       openingSeed: 1,
       energy: { green: 50, red: 0 },
       lengthInRounds: 30,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
     };
 

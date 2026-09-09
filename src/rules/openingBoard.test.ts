@@ -6,7 +6,7 @@
 // completion from wherever the deal put it, and the first charge of the
 // game charges exactly the priority-3 node.
 //
-// A dealt board's four charged nodes carry no countdown (rules.md §8.1,
+// A dealt board's charged nodes carry no countdown (rules.md §8.1,
 // §8.3) and never change on their own, so "runs to completion" needs a
 // stand-in for a ship stepping onto one: at the start of each ply, at most
 // one charged node with no countdown already running is given one. At most
@@ -29,7 +29,7 @@ import {
   startingGameState,
 } from "./gameState";
 import { TOP_NODE_PRIORITY } from "./nodeQueue";
-import { TARGET_CHARGED_NODES, dealOpeningBoard } from "./nodes";
+import { DEFAULT_CHARGED_NODE_COUNT, dealOpeningBoard } from "./nodes";
 
 const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
   (entry) => entry.square,
@@ -63,7 +63,7 @@ const RUN_TO_COMPLETION_LENGTH_IN_ROUNDS = 1_000;
 
 describe("a game played from a dealt board runs to completion (rules.md §8.1, §8.6)", () => {
   it.each(RUN_TO_COMPLETION_SEEDS)(
-    "runs every dealt node out, retires depleted nodes, tops the board back up to four, and charges at least one of the dealt-inactive nodes (seed %d)",
+    "runs every dealt node out, retires depleted nodes, tops the board back up to its target, and charges at least one of the dealt-inactive nodes (seed %d)",
     (seed) => {
       let state = startingGameState(seed, {
         lengthInRounds: RUN_TO_COMPLETION_LENGTH_IN_ROUNDS,
@@ -73,7 +73,7 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       const dealtChargedNames = dealtNodeNames.filter(
         (name) => state.nodes[name]?.state === "charged",
       );
-      expect(dealtChargedNames).toHaveLength(TARGET_CHARGED_NODES);
+      expect(dealtChargedNames).toHaveLength(state.chargedNodeCount);
       const dealtInactiveNames = dealtNodeNames.filter(
         (name) => !dealtChargedNames.includes(name),
       );
@@ -119,7 +119,7 @@ describe("a game played from a dealt board runs to completion (rules.md §8.1, �
       const finalCharged = nodeSquares(state).filter(
         (square) => nodeStateAt(state, square) === "charged",
       ).length;
-      expect(finalCharged).toBe(TARGET_CHARGED_NODES);
+      expect(finalCharged).toBe(state.chargedNodeCount);
     },
   );
 });
@@ -129,7 +129,11 @@ describe("the first charge of a game charges the priority-3 node (rules.md §8.1
     let seed = 20260901;
 
     for (let trial = 0; trial < 1_000; trial++) {
-      const [dealt, dealtSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
+      const [dealt, dealtSeed] = dealOpeningBoard(
+        FLEET_SQUARES,
+        DEFAULT_CHARGED_NODE_COUNT,
+        seed,
+      );
       seed = dealtSeed;
 
       // Make room for one charge: the first dealt charged node goes
@@ -164,6 +168,7 @@ describe("the first charge of a game charges the priority-3 node (rules.md §8.1
         openingSeed: seed,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       };
 

@@ -12,7 +12,11 @@ import {
   nodeStatusAt,
   startingGameState,
 } from "./gameState";
-import { dealOpeningBoard } from "./nodes";
+import {
+  CHARGED_NODE_COUNTS,
+  DEFAULT_CHARGED_NODE_COUNT,
+  dealOpeningBoard,
+} from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 import { MAX_POWER } from "./power";
 
@@ -36,7 +40,11 @@ describe("startingGameState", () => {
 
   it("has green to move, one action remaining, nothing moved, ply 1 and the deal's advanced seed", () => {
     const state = startingGameState(SEED);
-    const [, dealtSeed] = dealOpeningBoard(STARTING_FLEET_SQUARES, SEED);
+    const [, dealtSeed] = dealOpeningBoard(
+      STARTING_FLEET_SQUARES,
+      DEFAULT_CHARGED_NODE_COUNT,
+      SEED,
+    );
 
     expect(state.sideToMove).toBe("green");
     expect(state.actionsRemaining).toBe(1);
@@ -53,17 +61,23 @@ describe("startingGameState", () => {
     expect(state.openingSeed).not.toBe(state.randomSeed);
   });
 
-  it("deals the board dealOpeningBoard deals for the same seed: four charged, three inactive, none depleted", () => {
+  it("deals the board dealOpeningBoard deals for the same seed: five charged, three inactive, none depleted", () => {
     const state = startingGameState(SEED);
-    const [dealt] = dealOpeningBoard(STARTING_FLEET_SQUARES, SEED);
+    const [dealt] = dealOpeningBoard(
+      STARTING_FLEET_SQUARES,
+      DEFAULT_CHARGED_NODE_COUNT,
+      SEED,
+    );
 
     expect(state.nodes).toEqual(dealt);
 
     const allStatuses = Object.values(state.nodes);
-    expect(allStatuses).toHaveLength(4 + INACTIVE_NODE_COUNT);
+    expect(allStatuses).toHaveLength(
+      DEFAULT_CHARGED_NODE_COUNT + INACTIVE_NODE_COUNT,
+    );
     expect(
       allStatuses.filter((status) => status.state === "charged"),
-    ).toHaveLength(4);
+    ).toHaveLength(DEFAULT_CHARGED_NODE_COUNT);
     expect(
       allStatuses.filter((status) => status.state === "inactive"),
     ).toHaveLength(INACTIVE_NODE_COUNT);
@@ -246,6 +260,41 @@ describe("startingGameState", () => {
           fleetSize,
         }),
       ).toThrow(RangeError);
+    },
+  );
+
+  it("defaults to five charged nodes, §8.1's standard game, when none is given", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.chargedNodeCount).toBe(DEFAULT_CHARGED_NODE_COUNT);
+  });
+
+  it("takes a given charged-node count, dealing that many charged and leaving everything else about the state alone", () => {
+    const defaultCount = startingGameState(SEED);
+    const fourCharged = startingGameState(SEED, { chargedNodeCount: 4 });
+
+    expect(fourCharged.chargedNodeCount).toBe(4);
+    expect({
+      ...fourCharged,
+      chargedNodeCount: defaultCount.chargedNodeCount,
+      nodes: defaultCount.nodes,
+      randomSeed: defaultCount.randomSeed,
+    }).toEqual(defaultCount);
+  });
+
+  it("is fixed for the game's lifetime once set — the same field a fresh state carries, untouched by anything else", () => {
+    const state = startingGameState(SEED, { chargedNodeCount: 4 });
+
+    expect(CHARGED_NODE_COUNTS).toContain(state.chargedNodeCount);
+    expect(state.chargedNodeCount).toBe(4);
+  });
+
+  it.each([3, 6, 0, 4.5])(
+    "throws a RangeError for a charged-node count of %s",
+    (chargedNodeCount) => {
+      expect(() => startingGameState(SEED, { chargedNodeCount })).toThrow(
+        RangeError,
+      );
     },
   );
 });

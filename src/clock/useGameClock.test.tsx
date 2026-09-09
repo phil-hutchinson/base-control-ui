@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SessionIntent } from "../game/session";
 import type { GameState } from "../rules/gameState";
 import { pliesForGameLength } from "../rules/gameLength";
+import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { useGameClock } from "./useGameClock";
 
 function buildState(overrides: Partial<GameState> = {}): GameState {
@@ -19,6 +20,7 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: 30,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     ...overrides,
   };

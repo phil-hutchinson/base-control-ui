@@ -21,7 +21,11 @@ import {
 import { MAX_POWER, type PowerLevel } from "./power";
 import { drawIndex } from "./random";
 import { TOP_NODE_PRIORITY, rotatePriority } from "./nodeQueue";
-import { type NodeState } from "./nodes";
+import {
+  DEFAULT_CHARGED_NODE_COUNT,
+  type ChargedNodeCount,
+  type NodeState,
+} from "./nodes";
 import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
 
 function ship(
@@ -52,6 +56,7 @@ function buildState(config: {
   nodes?: Readonly<Record<string, NodeState | readonly [NodeState, number]>>;
   plyNumber?: number;
   lengthInRounds?: number;
+  chargedNodeCount?: ChargedNodeCount;
   energy?: { green: number; red: number };
   outOfTime?: { green: boolean; red: boolean };
 }): GameState {
@@ -66,6 +71,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: config.outOfTime ?? { green: false, red: false },
   };
 }
@@ -234,6 +240,7 @@ describe("applyMove", () => {
     // ship far away, with a legal move of its own, keeps red from
     // auto-passing and running a second end-of-turn sequence of its own.
     const state = buildState({
+      chargedNodeCount: 4,
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O15")],
       nodes: {
         I8: ["inactive", TOP_NODE_PRIORITY],

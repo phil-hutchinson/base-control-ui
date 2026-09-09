@@ -7,7 +7,6 @@ import { scoreSentence } from "../board/announcements";
 import { chargedNodesHeldBy } from "../rules/energy";
 import type { Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
-import { TARGET_CHARGED_NODES } from "../rules/nodes";
 import "./ScoreDisplay.css";
 
 /** A turn pays at most the four charged nodes the board holds (§8.1, §8.2,
@@ -44,7 +43,7 @@ export function ScoreDisplay({
         {displayedTotal.toString().padStart(SCORE_DIGITS, "0")}
       </span>
       <span className="score-display__pips" aria-hidden="true">
-        {Array.from({ length: TARGET_CHARGED_NODES }, (_, index) => (
+        {Array.from({ length: state.chargedNodeCount }, (_, index) => (
           <span
             key={index}
             className={

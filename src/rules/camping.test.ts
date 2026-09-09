@@ -42,6 +42,7 @@ import {
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
 import type { NodeState } from "./nodes";
+import { DEFAULT_CHARGED_NODE_COUNT } from "./nodes";
 
 function ship(
   id: ShipId,
@@ -78,6 +79,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }

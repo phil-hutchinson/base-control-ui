@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { startingGameState, type GameState } from "../rules/gameState";
+import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { TurnIndicator } from "./TurnIndicator";
 
 afterEach(cleanup);
@@ -20,6 +21,7 @@ function finishedState(): GameState {
     openingSeed: 1,
     energy: { green: 4, red: 7 },
     lengthInRounds: 1,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }

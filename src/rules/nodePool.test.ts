@@ -53,7 +53,7 @@ import {
   TOP_NODE_PRIORITY,
   inactivePriority,
 } from "./nodeQueue";
-import { TARGET_CHARGED_NODES } from "./nodes";
+import { DEFAULT_CHARGED_NODE_COUNT } from "./nodes";
 import { PLANETS, isPlanet } from "./planets";
 import { drawIndex } from "./random";
 
@@ -99,7 +99,7 @@ const MINIMUM_SPREAD_ADVANTAGE = 0.5;
 /**
  * The band the mean number of turns between one refill and the next is
  * allowed to sit in, pooled across `SEEDS`. Measured at roughly 2.8 turns
- * under the driver this file's header describes: with up to four charged
+ * under the driver this file's header describes: with several charged
  * nodes able to sit at baseline at once and the driver starting a countdown
  * on one of them every single ply that any is waiting, several countdowns
  * run staggered a ply or two apart rather than one at a time, so a charge
@@ -111,16 +111,19 @@ const MINIMUM_MEAN_PLIES_BETWEEN_REFILLS = 1.5;
 const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
 
 /**
- * The band the board's total node count — four charged, three inactive,
+ * The band the board's total node count — five charged, three inactive,
  * plus however many are depleted — is allowed to breathe within. Measured
- * range across `SEEDS` and `PLIES_TO_RUN`: 7 to 11, with a mean around 10.9
- * — the driver this file's header describes starts a countdown so eagerly
- * that several traps and exits are typically depleted and counting down at
- * once, closer to the top of the range than the bottom. This bound leaves a
- * little margin either side of the measured range.
+ * range across `SEEDS` and `PLIES_TO_RUN`, at the standard game's five
+ * charged: 8 to 13, with a mean around 12.9 — the driver this file's header
+ * describes starts a countdown so eagerly that several traps and exits are
+ * typically depleted and counting down at once, closer to the top of the
+ * range than the bottom. (At four charged, the range measured 7 to 11 with
+ * a mean around 10.9 — one lower throughout, since one fewer charged node
+ * sits on the board at any moment.) This bound leaves a little margin
+ * either side of the five-charged range, which is wider than four's.
  */
-const MINIMUM_TOTAL_NODES = 6;
-const MAXIMUM_TOTAL_NODES = 12;
+const MINIMUM_TOTAL_NODES = 7;
+const MAXIMUM_TOTAL_NODES = 14;
 
 /** One ply's sample of the board, taken from `result.state` after `runEndOfTurn`. */
 interface EconomySample {
@@ -327,12 +330,14 @@ describe("the queue's invariants hold at every turn (Appendix B)", () => {
   );
 
   it.each(SEEDS)(
-    "holds exactly four charged nodes after every turn (seed %d)",
+    "holds exactly the game's own charged-node count after every turn (seed %d)",
     (seed) => {
       const run = runEconomy(seed, PLIES_TO_RUN);
 
       run.samples.forEach((sample, i) => {
-        expect(sample.chargedCount, `ply ${i}`).toBe(TARGET_CHARGED_NODES);
+        expect(sample.chargedCount, `ply ${i}`).toBe(
+          DEFAULT_CHARGED_NODE_COUNT,
+        );
       });
     },
   );
@@ -375,7 +380,7 @@ describe("the queue's invariants hold at every turn (Appendix B)", () => {
 
 describe("every new node is legal the moment it appears, and the fallback never fires (Appendix B)", () => {
   it.each(SEEDS)(
-    "deals an opening board whose seven nodes are all individually legal (seed %d)",
+    "deals an opening board whose nodes are all individually legal (seed %d)",
     (seed) => {
       const state = startingGameState(seed, {
         lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
@@ -389,7 +394,7 @@ describe("every new node is legal the moment it appears, and the fallback never 
         (square) => nodeStateAt(state, square) === "inactive",
       );
 
-      expect(chargedSquares).toHaveLength(TARGET_CHARGED_NODES);
+      expect(chargedSquares).toHaveLength(DEFAULT_CHARGED_NODE_COUNT);
       expect(inactiveSquares).toHaveLength(INACTIVE_NODE_COUNT);
 
       for (const square of chargedSquares) {

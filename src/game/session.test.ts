@@ -20,7 +20,7 @@ import { legalTargets } from "../rules/combat";
 import { legalDestinations } from "../rules/movement";
 import { applyAttack, applyMove } from "../rules/ply";
 import { MAX_POWER, type PowerLevel } from "../rules/power";
-import type { NodeState } from "../rules/nodes";
+import { DEFAULT_CHARGED_NODE_COUNT, type NodeState } from "../rules/nodes";
 import { createSession, type Session, sessionReducer } from "./session";
 
 function ship(
@@ -60,6 +60,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: config.outOfTime ?? { green: false, red: false },
   };
 }
