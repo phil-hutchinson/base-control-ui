@@ -760,14 +760,14 @@ any.
 The board carries the **chosen number** of charged nodes — five or four —
 and **three** inactive ones at all times, plus however many happen to be
 depleted and counting down. Measured over several hundred turns of
-sustained play **at four charged**, that count breathes between **seven**
-and **eleven** — a charged node's own countdown and the depleted node it
+sustained play, that count breathes between **eight** and **thirteen** at
+five charged (mean **12.88**) and between **seven** and **eleven** at four
+(mean **10.91**) — a charged node's own countdown and the depleted node it
 can leave behind each run most of a dozen turns, so several are often
-alive together, and the total sits nearer the top of that range more often
-than the bottom — rather than fixed at a count the way the twelve-node
-board once was. These figures have not yet been re-measured at five
-charged; a board carrying one more charged node throughout will breathe
-somewhat higher than this range, not lower.
+alive together, and the total sits nearer the top of either range more
+often than the bottom — rather than fixed at a count the way the
+twelve-node board once was. A board carrying one more charged node
+throughout breathes higher, as expected, not lower.
 
 A node's life is no longer a mix of drawn rates: a charged node lasts
 **11 turns** once a ship steps on it, and **forever** if nobody does — a
@@ -775,7 +775,10 @@ board both players ignore never changes. A depleted node lasts 11 turns as a
 **trap**, or 2 turns as an **exit**, and then retires either way. Turnover —
 a node charging, a node depleting, a refill sweeping the queue — happens
 only because the players use the nodes on the board (section 8.3); it is not
-a clock the game runs on its own.
+a clock the game runs on its own. Measured over the same runs, a refill
+sweeps the queue on average every **2.22** turns at five charged and every
+**2.78** at four — five charged sweeps faster because there is one more
+node for the stand-in driver described below to keep counting down.
 
 **An inactive node never waits more than three turns to reach the front of
 the queue.** Rotation alone carries a node from priority 1 to priority 3 in
@@ -797,40 +800,45 @@ why the queue does not need to grow with it. Every shortfall is filled on
 the turn it appears.
 
 On an empty board the strict pool holds **51** squares and the widened pool
-holds **79** (section 3.2). On a played board **at four charged** — closer
-to eleven nodes down than seven, and a dozen ships on it — a refill's three
-draws pick from roughly **25**, **38** and **34** squares respectively, the
-pool widening as each draw lifts the one-square-in constraint and narrowing
-again as ships and the nodes already placed this refill block squares of
-their own. At five charged the board carries one more node throughout, so
-these pools narrow slightly; they have not yet been re-measured at five.
+holds **79** (section 3.2). On a played board — closer to the top of the
+node count above than the bottom, and a dozen ships on it — a refill's
+three draws pick from roughly **21**, **32** and **29** squares
+respectively at five charged, and roughly **25**, **38** and **34** at
+four, the pool widening as each draw lifts the one-square-in constraint and
+narrowing again as ships and the nodes already placed this refill block
+squares of their own. The five-charged pools run narrower throughout,
+exactly as expected from carrying one more node at all times.
 
 Both the node count above and the pool sizes here come from a stand-in for
 play that starts a new countdown somewhere on the board every single turn
 and never moves a ship. No real game turns nodes over that fast — a
 countdown only starts when a player actually spends a turn's move landing
 on a node — so these numbers are a ceiling: a real game's node count runs
-lower than seven to eleven, and its pools run larger than 25, 38 and 34,
-not smaller. These figures are stated at four charged; the same ceiling
-argument holds at five.
+lower than the ranges above, and its pools run larger than the figures
+just given, not smaller, at either count.
 
 The weighting earns its keep: measured over several hundred turns of actual
-play across a handful of seeds **at four charged**, the smallest pairwise
-gap within a freshly refilled trio averages **4.78** squares, against
-**3.78** for an unweighted draw from the same pools, computed the same run.
-About **1.11** of the three land one square in from the edge and **0.14**
-in a corner region, against **0.83** and **0.07** unweighted — the widening
-does push the second and third draws outward, but the weighting keeps them
-from crowding the rim. These figures have not yet been re-measured at five
-charged.
+play across a handful of seeds, the smallest pairwise gap within a freshly
+refilled trio averages **4.88** squares against **3.72** for an unweighted
+draw from the same pools at five charged — an advantage of about **1.15**
+squares — and **4.79** against **3.71** at four, an advantage of about
+**1.08**, computed the same runs. About **1.11** of the three land one
+square in from the edge and **0.14** in a corner region, against **0.83**
+and **0.07** unweighted — the widening does push the second and third draws
+outward, but the weighting keeps them from crowding the rim. These edge and
+corner figures are measured **at four charged only**; they have not been
+re-measured at five, and since the pools there narrow only slightly, they
+are expected to move only slightly too, not to be guessed at until they
+are.
 
 Section 3.2's fallback, which places a node without regard to spacing, is
 even less likely to fire than it was at the old twelve-node count: there are
 fewer nodes to place at once and a wider pool to place them in. Across
 every placement in every run the app's own long-run test drives — every
 opening deal and every refill, several hundred turns deep across a handful
-of seeds — it has never once fired. It stays in the rules because it is
-what makes placement total, not because it is expected to be seen.
+of seeds, at both five and four charged — it has never once fired. It stays
+in the rules because it is what makes placement total, not because it is
+expected to be seen.
 
 **What the app guards:** that the queue is always exactly three nodes
 carrying priorities 1, 2 and 3, one each; that the board is always back at
@@ -838,11 +846,10 @@ the chosen number of charged nodes by the end of every turn; that every
 node placed — the opening deal's eight or seven and a refill's three — is
 legal, under the right pool, at the moment it appears; and that a freshly
 refilled trio comes out measurably more spread than an unweighted draw from
-the same pools would.
+the same pools would. These guards run at both five and four charged.
 
-These counts — the node count breathing between seven and eleven, the pool
-sizes and the spread figures above — are first guesses to be play-tested and
-retuned like every other number in this document. They are stated at four
-charged, the only count the app's long-run test has measured so far, and
-are expected to be re-measured at five in a future revision of this
-appendix.
+These counts — the node count's range, the pool sizes and the spread
+figures above — are first guesses to be play-tested and retuned like every
+other number in this document, and are now measured at both five and four
+charged. The edge and corner figures remain measured at four charged only
+and are expected to move only slightly at five, once they are.

@@ -981,7 +981,7 @@ left unmeasured, which the step's own text anticipates and permits.
 
 ### Step 9 — Appendix B re-stated at both counts
 
-Status: pending
+Status: committed
 
 Replace Appendix B's measured figures with the numbers Step 8 recorded
 (D8). Same version, same changelog entry — extend the 0.30 entry in place if
@@ -1016,6 +1016,42 @@ agrees at 0.30) and `npm run format:check`. Then confirm every figure in
 Appendix B either appears in Step 8's Notes or is explicitly labelled as an
 approximation measured at four charged, and that `doc/ruleset/changelog.md`
 still has exactly **one** 0.30 entry.
+
+**Notes:** Rewrote Appendix B's measured paragraphs from Step 8's Notes,
+with no version bump and no new changelog entry. The node-count paragraph
+now states both counts directly (eight to thirteen, mean 12.88, at five;
+seven to eleven, mean 10.91, at four). A new sentence was added to the
+"node's life" paragraph for the mean turns between refills (2.22 at five,
+2.78 at four), a figure the plan's list called for but that had no home in
+the appendix's existing prose. The pool-size paragraph states both counts'
+rounded means (21/32/29 at five, 25/38/34 at four, matching Step 8's
+21.31/31.78/28.54 and 25.20/37.63/34.35). The weighting paragraph states
+both counts' weighted-vs-unweighted gaps (4.88 vs 3.72, advantage ~1.15, at
+five; 4.79 vs 3.71, advantage ~1.08, at four) and, per the step's own
+instruction and Step 8's Notes, leaves the edge/corner figures (1.11, 0.14,
+0.83, 0.07) exactly as they were but now explicitly labelled "measured at
+four charged only… expected to move only slightly" rather than restated as
+five-charged numbers or guessed at. The fallback paragraph and "What the app
+guards" now say the guards and the never-fired result hold "at both five and
+four charged". The closing paragraph says the counts are now measured at
+both, except the edge/corner figures, which stay at four only. The "never
+short" and queue-sizing paragraphs (Step 1's) were re-read and left
+unchanged — they still read true and never depended on the target. Extended
+the existing 0.30 changelog entry's Appendix B bullet in place to say the
+figures are now measured at both counts, with the edge/corner exception
+named; no second entry was added and no version bump made.
+
+Verification: `npm test` (59 files, 1114 tests, all green — unchanged from
+Step 8's commit, as expected for a docs-only step), `npm run typecheck`
+(clean), `npm run lint` (clean), `npm run format:check` (clean). Confirmed by
+grep that `doc/ruleset/changelog.md` has exactly one `## 0.30` heading, and
+that every remaining "four charged/four nodes/five charged/five nodes"
+mention in `rules.md` either names the choice, states a figure measured at
+both counts, or is explicitly labelled as an approximation measured at four
+charged only (the edge/corner figures). No deviation from the step as
+written, beyond adding the mean-turns-between-refills sentence, which the
+step's own figure list required but which had no existing paragraph to
+extend.
 
 ### Step 10 — The owner plays it
 

@@ -32,9 +32,11 @@ the project's contribution notes).
   number the board is filling towards; the queue's size was never derived
   from the target, so it needs no change (Appendix B).
 - **Appendix B is restated for a chosen target** rather than a fixed one; its
-  measured figures — the node count's range, the refill pool sizes, and the
-  weighted-versus-unweighted spread — remain those measured at four charged,
-  explicitly labelled as such, pending re-measurement at five.
+  measured figures — the node count's range, the refill pool sizes, the
+  weighted-versus-unweighted spread, and the mean turns between refills —
+  are now measured at both five and four charged. The edge- and
+  corner-placement figures remain measured at four charged only, and are
+  expected to move only slightly at five.
 
 ## 0.29 — one point per node, per turn
 
