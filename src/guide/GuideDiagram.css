@@ -1,0 +1,67 @@
+/* `--guide-square` drives every diagram's column and row size from one
+   place. Its floor keeps the widest diagram — node selection's seven
+   tracks (four nodes, three arrows) — inside a 360px-wide window with the
+   cabinet's own padding; its ceiling keeps a diagram comfortably smaller
+   than the board on a desktop window. */
+.guide-diagram {
+  --guide-square: clamp(2.25rem, 8vw, 4.5rem);
+  display: grid;
+  grid-template-columns: repeat(
+    var(--guide-diagram-columns),
+    var(--guide-square)
+  );
+  grid-auto-rows: var(--guide-square);
+  gap: 2px;
+  justify-content: center;
+  margin: 1rem auto;
+}
+
+.guide-diagram__cell {
+  width: var(--guide-square);
+  height: var(--guide-square);
+}
+
+/* A single-cell grid, the same idiom `BoardSquare.css` uses for its own
+   stacked contents, so the numeral sits on top of the square rather than
+   beside it. */
+.guide-diagram__overlay {
+  display: grid;
+  width: 100%;
+  height: 100%;
+}
+
+.guide-diagram__overlay > * {
+  grid-area: 1 / 1;
+}
+
+.guide-diagram__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-arcade);
+  font-size: calc(var(--guide-square) * 0.45);
+  font-weight: 700;
+  color: var(--color-text-bright);
+  text-shadow: 0 0 0.3em var(--glow-text);
+}
+
+/* The board's own settlement look (`EnergyOverlay.css`'s "+N"), without the
+   float animation and without the absolute positioning that only makes
+   sense against a board-sized box. */
+.guide-diagram__note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-arcade);
+  font-size: calc(var(--guide-square) * 0.4);
+  font-weight: 700;
+  color: var(--color-green);
+  text-shadow: 0 0 0.4em currentcolor;
+}
+
+.guide-diagram__arrow {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--color-text-dim);
+}

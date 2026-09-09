@@ -368,7 +368,16 @@ identical, slips included.
 
 ### Step 2 — `GuideDiagram`: the grid every diagram is drawn on
 
-Status: pending
+Status: committed
+
+Notes: Created `src/guide/GuideDiagram.tsx` (`GuideDiagram` component and the
+`GuideDiagramCell` union — `square`, `number`, `note`, `arrow`, `empty`) and
+`src/guide/GuideDiagram.css`, with `--guide-square: clamp(2.25rem, 8vw,
+4.5rem)` as the sizing token (D19). The "number" cell wraps a caller-given
+`BoardSquare` and a numeral in a single-cell grid, the same stacking idiom
+`BoardSquare.css` uses, so the numeral overlays the square without touching
+`countdownNumber`'s colour. Added `src/guide/GuideDiagram.test.tsx` covering
+all five cell kinds plus the outer `aria-hidden`. No deviations from the plan.
 
 Create `src/guide/GuideDiagram.tsx` and `src/guide/GuideDiagram.css`: the one
 component all five diagrams are built from (D4). It is presentational, takes
