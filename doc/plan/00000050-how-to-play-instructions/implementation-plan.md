@@ -476,7 +476,19 @@ matches `rules.md` §6.
 
 ### Step 4 — The five diagrams
 
-Status: pending
+Status: committed
+
+Notes: Created `src/guide/guideDiagrams.tsx` (`ScoringDiagram`,
+`MovementDiagram`, `RefuellingDiagram`, `NodeLifecycleDiagram`,
+`NodeSelectionDiagram`) and `src/guide/guideDiagrams.test.tsx`. Each diagram
+hands `GuideDiagram` a fixed cell list built from `BoardSquare` props, with
+countdowns and cycle positions derived through `countdownNumber` /
+`nodeCyclePosition` (D7) and the movement diagram's twenty numbers derived
+from Step 3's `movementCostOffsets` (D8). The refuelling diagram uses
+`PLANET_ART[0]` for both frames (D12); the node-lifecycle diagram keeps the
+same fuel level in both frames (D13); every ship is green throughout, and no
+`.ship-model--red` appears anywhere in the tests. No deviations from the
+plan.
 
 Create the five diagram components in `src/guide/` (one file exporting all
 five is fine; name each after its section). Each is a thin component handing
