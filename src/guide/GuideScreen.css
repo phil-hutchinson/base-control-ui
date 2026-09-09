@@ -1,7 +1,7 @@
 .guide-screen {
   /* The cabinet's single `flex: 1` child, like `.start-screen` and
      `.game-over-panel`, but this one scrolls inside the frame instead of
-     centring a fixed amount of content (D15). */
+     centring a fixed amount of content. */
   display: flex;
   flex: 1;
   min-height: 0;

@@ -1,25 +1,30 @@
 // The guide's five diagrams (story.md, "The diagrams"): each a thin
 // component handing `GuideDiagram` a fixed list of cells built from real
 // `BoardSquare`s, so a future restyle of ship or node art redraws these for
-// free. Every ship is green (S4 in the implementation plan); no square
-// carries a selection mark, an already-acted bar or a condition bar (S7).
-// Countdown numbers and cycle positions are derived from
-// `../rules/countdown`, exactly as `Board` derives them, rather than typed
-// in by hand.
+// free. Every ship is green; no square carries a selection mark, an
+// already-acted bar or a condition bar. Countdown numbers and cycle
+// positions are derived from `../rules/countdown`, exactly as `Board`
+// derives them, rather than typed in by hand.
 
 import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import type { NodePriority } from "../rules/nodeQueue";
+import type { PowerLevel } from "../rules/power";
 import { MAX_POWER } from "../rules/power";
 import { PLANET_ART } from "../board/planetArt";
 import type { GuideDiagramCell } from "./GuideDiagram";
 import { GuideDiagram } from "./GuideDiagram";
 import { movementCostOffsets } from "./movementCosts";
 
-/** A charged node holding a ship, showing the given plies-remaining as its countdown and gauge. */
+/**
+ * A charged node holding a ship, showing the given plies-remaining as its
+ * countdown and gauge. `power` excludes zero: a ship at zero fuel draws no
+ * gauge marks, so it would be indistinguishable from one with no level at
+ * all — never a state this guide shows.
+ */
 function chargedNodeCell(
   squareName: string,
   pliesRemaining: number,
-  power: 1 | 2 | 3 | 4 | 5 | 6,
+  power: Exclude<PowerLevel, 0>,
 ): GuideDiagramCell {
   return {
     kind: "square",

@@ -306,3 +306,13 @@ It is mitigated: the paragraph above each diagram states its meaning in
 words, so nothing a diagram shows is the only place that fact appears.
 
 Where: `src/guide/`.
+
+### 2. The guide's two Back buttons share one accessible name
+
+The guide has a Back button above the copy and a second one after the last
+diagram (D14), so a reader does not have to scroll back to the top to leave.
+Both carry the DOM text `Back` and call the same callback, so a screen-reader
+user cannot tell the two apart by name — only by where each sits on the
+page.
+
+Where: `src/guide/GuideScreen.tsx`.

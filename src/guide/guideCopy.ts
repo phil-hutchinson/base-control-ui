@@ -18,8 +18,16 @@ export const GUIDE_INTRO_PARAGRAPH =
   "game. At the end of each turn, gain one point for each spaceship you " +
   "have in a charged node.";
 
+/**
+ * Identifies one of the guide's four headed sections, so a caller can pair
+ * a section with its diagram without relying on array position.
+ */
+export type GuideSectionId =
+  "movement" | "refuelling" | "nodeLifecycle" | "nodeSelection";
+
 /** One of the guide's four headed sections: a heading and its paragraph. */
 export interface GuideSection {
+  readonly id: GuideSectionId;
   readonly heading: string;
   readonly paragraph: string;
 }
@@ -30,12 +38,14 @@ export interface GuideSection {
  */
 export const GUIDE_SECTIONS: readonly GuideSection[] = [
   {
+    id: "movement",
     heading: "MOVEMENT",
     paragraph:
       "One spaceship can move per turn. For longer moves, fuel is " +
       "required, as follows:",
   },
   {
+    id: "refuelling",
     heading: "REFUELING",
     paragraph:
       "Spaceships can hold up to six fuel. At the end of a player's turn, " +
@@ -43,6 +53,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
       "only one spaceship gaining fuel and it has room, it gains two fuel.",
   },
   {
+    id: "nodeLifecycle",
     heading: "NODE LIFECYCLE",
     paragraph:
       "There are always four charged nodes. When a spaceship enters a " +
@@ -54,6 +65,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
       "spaceship is trapped for 5 turns.",
   },
   {
+    id: "nodeSelection",
     heading: "NEW CHARGED NODE SELECTION",
     paragraph:
       "Three indicators appear on the board, with one, two, and three " +

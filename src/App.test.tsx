@@ -220,6 +220,15 @@ describe("App", () => {
     assertNoDuplicateIds(container);
   });
 
+  it("never repeats an id in the rendered document, on the guide screen", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Quick Guide" }));
+
+    assertNoDuplicateIds(container);
+  });
+
   it("opens the guide from Quick Guide, and returns to the start screen with the chosen options untouched, without ever starting a game", async () => {
     const user = userEvent.setup();
     render(<App />);

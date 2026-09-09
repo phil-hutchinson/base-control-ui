@@ -5,8 +5,9 @@
 The start screen gains a **Quick Guide** button, directly below the game
 title and above the three option groups. Pressing it replaces the start
 screen with a **guide screen**: a scrollable page of five short sections,
-each a paragraph of text and one diagram, with a **back** button that
-returns to the start screen with the three options exactly as they were.
+each a paragraph of text and one diagram, with a back button at the top and
+another at the foot of the page, both returning to the start screen with the
+three options exactly as they were.
 
 The guide is a first read for someone who has never played, not a reference.
 It covers scoring, movement, refuelling, the node lifecycle, and how the
@@ -123,12 +124,12 @@ carry no interactivity, no selection marks and no square names on screen.
 ## Navigation
 
 `useAppScreen`'s `Screen` union gains a third value for the guide, alongside
-`start` and `game`, with an action to open it and an action to leave it. The
-guide is reachable **only from the start screen** and returns **only to the
-start screen**:
+`start` and `game`, with an action to open it; leaving reuses the existing
+return-to-start action. The guide is reachable **only from the start screen**
+and returns **only to the start screen**:
 
 - The three options are held where they already are, so opening and closing
-  the guide leaves Ships, Rounds and Timer exactly as they were set.
+  the guide leaves Ships, Rounds and Clock exactly as they were set.
 - No game is started, dispatched to, or disturbed by any of this.
 - There is no route to the guide from a game in progress, and no Play button
   on the guide.
@@ -137,7 +138,8 @@ start screen**:
 
 - The **Quick Guide** button on the start screen, below the title and above
   the Ships group.
-- The guide screen: the copy above, the five diagrams, and a back button.
+- The guide screen: the copy above, the five diagrams, and a back button at
+  the top and another at the foot of the page.
 - A small diagram component built on `BoardSquare`, plus the fixed
   positions each of the five diagrams needs.
 - Whatever `App.tsx` and `useAppScreen` need to show a third screen.
@@ -168,9 +170,9 @@ start screen**:
 
 - The start screen shows a **Quick Guide** button between the title and the
   Ships group.
-- Pressing it shows the guide; pressing back returns to the start screen with
-  Ships, Rounds and Timer still set the way they were left, and no game
-  started.
+- Pressing it shows the guide; pressing either back button returns to the
+  start screen with Ships, Rounds and Clock still set the way they were
+  left, and no game started.
 - The guide's five sections appear in order with the copy above, and each has
   its diagram.
 - Every ship drawn anywhere in the guide is green.

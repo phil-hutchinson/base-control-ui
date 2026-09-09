@@ -1,24 +1,34 @@
-/* `--guide-square` drives every diagram's column and row size from one
-   place. Its floor keeps the widest diagram — node selection's seven
-   tracks (four nodes, three arrows) — inside a 360px-wide window with the
-   cabinet's own padding; its ceiling keeps a diagram comfortably smaller
-   than the board on a desktop window. */
+/* `--guide-square` gives every diagram's cells their preferred size; its
+   ceiling keeps a diagram comfortably smaller than the board on a desktop
+   window. Columns are `minmax(0, var(--guide-square))` rather than a flat
+   `var(--guide-square)`, so a diagram that would otherwise overflow — node
+   selection's seven tracks are the widest — shrinks its squares to fit a
+   narrow window instead of forcing a horizontal scrollbar; a diagram that
+   already fits keeps its preferred size, since the columns still grow up
+   to `--guide-square` whenever there is room. */
 .guide-diagram {
   --guide-square: clamp(2.25rem, 8vw, 4.5rem);
   display: grid;
+  max-width: 100%;
   grid-template-columns: repeat(
     var(--guide-diagram-columns),
-    var(--guide-square)
+    minmax(0, var(--guide-square))
   );
-  grid-auto-rows: var(--guide-square);
+  grid-auto-rows: auto;
   gap: 2px;
   justify-content: center;
   margin: 1rem auto;
 }
 
+/* Fills its column's resolved width and derives its height from it, rather
+   than both axes reading the same fixed token, so a cell that has been
+   shrunk to fit stays square instead of merely losing width. Establishes a
+   sizing container so its own contents can scale from that resolved width
+   too (see `.guide-diagram__number` and `.guide-diagram__note`). */
 .guide-diagram__cell {
-  width: var(--guide-square);
-  height: var(--guide-square);
+  container-type: inline-size;
+  width: 100%;
+  aspect-ratio: 1;
 }
 
 /* A single-cell grid, the same idiom `BoardSquare.css` uses for its own
@@ -39,7 +49,7 @@
   align-items: center;
   justify-content: center;
   font-family: var(--font-arcade);
-  font-size: calc(var(--guide-square) * 0.45);
+  font-size: 45cqw;
   font-weight: 700;
   color: var(--color-text-bright);
   text-shadow: 0 0 0.3em var(--glow-text);
@@ -53,7 +63,7 @@
   align-items: center;
   justify-content: center;
   font-family: var(--font-arcade);
-  font-size: calc(var(--guide-square) * 0.4);
+  font-size: 40cqw;
   font-weight: 700;
   color: var(--color-green);
   text-shadow: 0 0 0.4em currentcolor;
