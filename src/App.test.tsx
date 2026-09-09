@@ -220,6 +220,36 @@ describe("App", () => {
     assertNoDuplicateIds(container);
   });
 
+  it("opens the guide from Quick Guide, and returns to the start screen with the chosen options untouched, without ever starting a game", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const renderCountBefore = vi.mocked(Board).mock.calls.length;
+
+    await user.click(screen.getByRole("radio", { name: "5" }));
+    await user.click(screen.getByRole("radio", { name: "45" }));
+    await user.click(screen.getByRole("button", { name: "Quick Guide" }));
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "QUICK GUIDE" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Play" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+    expect(vi.mocked(Board).mock.calls.length).toBe(renderCountBefore);
+
+    await user.click(screen.getAllByRole("button", { name: "Back" })[0]);
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "5" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "45" })).toBeChecked();
+    expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+    expect(vi.mocked(Board).mock.calls.length).toBe(renderCountBefore);
+  });
+
   it("does not repaint the board on a clock tick", async () => {
     // `shouldAdvanceTime` lets user-event's own internal scheduling (pointer
     // events, focus handling) keep resolving in the background while the

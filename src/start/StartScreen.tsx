@@ -26,6 +26,7 @@ interface StartScreenProps {
   readonly clockSetting: ClockSetting;
   readonly onClockSettingChange: (clockSetting: ClockSetting) => void;
   readonly onPlay: () => void;
+  readonly onOpenGuide: () => void;
 }
 
 /**
@@ -42,6 +43,7 @@ export function StartScreen({
   clockSetting,
   onClockSettingChange,
   onPlay,
+  onOpenGuide,
 }: StartScreenProps) {
   const fleetSizeGroupName = useId();
   const lengthGroupName = useId();
@@ -50,6 +52,13 @@ export function StartScreen({
   return (
     <div className="start-screen">
       <h1 className="start-screen__title">{GAME_NAME}</h1>
+      <button
+        type="button"
+        className="start-screen__guide"
+        onClick={onOpenGuide}
+      >
+        Quick Guide
+      </button>
       <fieldset className="start-screen__options">
         <legend className="start-screen__legend">Ships</legend>
         <div className="start-screen__choices">

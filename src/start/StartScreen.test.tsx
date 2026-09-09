@@ -38,6 +38,7 @@ interface RenderOverrides {
   readonly onLengthInRoundsChange?: (lengthInRounds: number) => void;
   readonly onClockSettingChange?: (clockSetting: ClockSetting) => void;
   readonly onPlay?: () => void;
+  readonly onOpenGuide?: () => void;
 }
 
 function renderStartScreen(overrides: RenderOverrides = {}) {
@@ -45,6 +46,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   const onLengthInRoundsChange = overrides.onLengthInRoundsChange ?? vi.fn();
   const onClockSettingChange = overrides.onClockSettingChange ?? vi.fn();
   const onPlay = overrides.onPlay ?? vi.fn();
+  const onOpenGuide = overrides.onOpenGuide ?? vi.fn();
   render(
     <StartScreen
       fleetSize={overrides.fleetSize ?? DEFAULT_FLEET_SIZE}
@@ -54,6 +56,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
       clockSetting={overrides.clockSetting ?? DEFAULT_CLOCK_SETTING}
       onClockSettingChange={onClockSettingChange}
       onPlay={onPlay}
+      onOpenGuide={onOpenGuide}
     />,
   );
   return {
@@ -61,6 +64,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
     onLengthInRoundsChange,
     onClockSettingChange,
     onPlay,
+    onOpenGuide,
   };
 }
 
@@ -199,5 +203,31 @@ describe("StartScreen", () => {
     await user.click(screen.getByRole("button", { name: "Play" }));
 
     expect(onPlay).toHaveBeenCalledOnce();
+  });
+
+  it("renders a Quick Guide button before the Ships group, calling onOpenGuide and changing none of the three options", async () => {
+    const user = userEvent.setup();
+    const {
+      onOpenGuide,
+      onFleetSizeChange,
+      onLengthInRoundsChange,
+      onClockSettingChange,
+      onPlay,
+    } = renderStartScreen();
+
+    const guideButton = screen.getByRole("button", { name: "Quick Guide" });
+    const shipsGroup = screen.getByRole("group", { name: "Ships" });
+    expect(
+      guideButton.compareDocumentPosition(shipsGroup) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    await user.click(guideButton);
+
+    expect(onOpenGuide).toHaveBeenCalledOnce();
+    expect(onFleetSizeChange).not.toHaveBeenCalled();
+    expect(onLengthInRoundsChange).not.toHaveBeenCalled();
+    expect(onClockSettingChange).not.toHaveBeenCalled();
+    expect(onPlay).not.toHaveBeenCalled();
   });
 });

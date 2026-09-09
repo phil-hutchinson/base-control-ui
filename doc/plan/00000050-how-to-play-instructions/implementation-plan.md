@@ -672,7 +672,30 @@ and `npm run format:check` — all green, with the new hook cases passing.
 
 ### Step 7 — The Quick Guide button and the app's screen switch
 
-Status: pending
+Status: committed
+
+Notes: Added `onOpenGuide` to `StartScreenProps` and rendered a `Quick Guide`
+button (DOM text `Quick Guide`) between the title and the Ships fieldset,
+styled as `.start-screen__guide` in `StartScreen.css` — the same quiet
+outlined idiom as `.guide-screen__back` / `.game-over-panel__button`,
+deliberately quieter than `.start-screen__play`. `App.tsx` now reads
+`handleOpenGuide` from `useAppScreen`, passes it to `StartScreen`, and adds a
+`screen === "guide"` branch rendering `GuideScreen` with `handleReturnToStart`
+as `onBack`, alongside the existing start / game-over / in-game branches.
+Extended `StartScreen.test.tsx` with a case asserting the button's DOM
+position (before the Ships group via `compareDocumentPosition`), that it
+calls `onOpenGuide`, and that it leaves the three option handlers and `onPlay`
+untouched. Extended `App.test.tsx` with a case that changes Ships and Rounds,
+opens the guide (asserting the `QUICK GUIDE` heading, no radios, no PLAY, no
+grid, and no growth in the mocked `Board`'s call count), presses the first
+Back button, and confirms the start screen returns with Ships and Rounds
+still at the chosen values and the board still never rendered. One deviation
+from the plan's literal wording: the plan suggested a render-count assertion
+on `Board` "if it reads more clearly than the absence of a `grid` role" — both
+are asserted together, since the mock's call count does not reset between
+tests in this file and a bare `not.toHaveBeenCalled()` would fail from prior
+tests' renders, so the count is captured before the guide is opened and
+checked for no growth rather than zero. No other deviations.
 
 Wire the two ends together: the start screen gets its button, and `App`
 learns to show the guide.
