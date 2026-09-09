@@ -638,7 +638,7 @@ sequencing slip on this agent's part, not a plan gap.
 
 ### Step 5 — The pip row is re-cut, and the comments that reasoned from four
 
-Status: pending
+Status: committed
 
 In `src/hud/ScoreDisplay.tsx`, draw as many pips as the side could ever hold
 at once: the **smaller of that side's ship count and
@@ -682,6 +682,37 @@ Verification (automated): Run `npm test`, `npm run typecheck`,
 `ScoreDisplay.test.tsx` proving the row length is the smaller of the two
 numbers in each of the three cases and that a pip lights per charged node
 held. The visual check of the wider row is Step 10's.
+
+**Notes:** `ScoreDisplay.tsx` now derives `pipCount` as
+`Math.min(shipCount, state.chargedNodeCount)`, with `shipCount` counted from
+`state.ships` filtered to `side`; a comment explains the `min` in S7's terms.
+`SCORE_DIGITS`' comment now says "the chosen number of charged nodes" rather
+than "the four". `App.css`'s landscape sizing comment was rewritten per the
+step: it now states the five-pip figure (`4.4em ≈ 0.77P`), says plainly that
+the pip row can be the widest thing in the column rather than the title or
+turn indicator, and that `--region-extent` is deliberately not re-derived for
+it (S8). `ScoreDisplay.css`'s landscape comment needed no change — it only
+points at `App.css` for "what is now the widest thing in the column" without
+itself stating which one, so it was already correct.
+
+`ScoreDisplay.test.tsx`'s `buildState` gained an optional `chargedNodeCount`
+field (defaulting to `DEFAULT_CHARGED_NODE_COUNT`), and a `shipsFor(side,
+count)` helper was added to place a fleet at squares no test node uses, since
+the helper's ship-less default now draws zero pips. The old single "renders
+four pips" test became one test asserting three row lengths — five pips at
+six ships and five nodes, four at six ships and four nodes, three at three
+ships at the default count — with none lit in any case. The "does not light a
+pip for a node the opposing side holds" test gained a green ship not on the
+charged square, because with zero green ships the pip row (and the
+assertion) had gone vacuous; the "lights a pip per charged node" test already
+supplied enough ships and needed no change. No other test in the file checks
+pip counts, so none else needed a fleet.
+
+Verification: `npm test` (59 files, 1065 tests, all green — the same count
+as Step 4's commit, since one test was replaced rather than added),
+`npm run typecheck` (clean), `npm run lint` (clean), `npm run format:check`
+(clean after `prettier --write` on `ScoreDisplay.test.tsx`). No deviation
+from the step as written.
 
 ### Step 6 — The `new-game` intent and the app's screen state carry the count
 

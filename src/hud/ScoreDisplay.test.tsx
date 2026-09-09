@@ -13,7 +13,7 @@ import type {
   NodeStatus,
 } from "../rules/gameState";
 import type { PowerLevel } from "../rules/power";
-import type { NodeState } from "../rules/nodes";
+import type { ChargedNodeCount, NodeState } from "../rules/nodes";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { ScoreDisplay } from "./ScoreDisplay";
 
@@ -28,6 +28,15 @@ function ship(
   return { id, side, square: squareFromName(square), power };
 }
 
+const UNUSED_SQUARES = ["A1", "B1", "C1", "D1", "E1", "F1"] as const;
+
+/** `count` ships for `side`, at squares no test node uses. */
+function shipsFor(side: "green" | "red", count: number): readonly Ship[] {
+  return UNUSED_SQUARES.slice(0, count).map((square, index) =>
+    ship(`${side}-${index + 1}`, side, square),
+  );
+}
+
 function nodeStatuses(
   states: Readonly<Record<string, NodeState>>,
 ): Record<string, NodeStatus> {
@@ -40,6 +49,7 @@ function buildState(config: {
   energy?: EnergyTotals;
   ships?: readonly Ship[];
   nodes?: Readonly<Record<string, NodeState>>;
+  chargedNodeCount?: ChargedNodeCount;
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -52,7 +62,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+    chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }
@@ -99,19 +109,39 @@ describe("ScoreDisplay", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders one pip per charged node the board keeps, none lit when the side holds none", () => {
-    const state = buildState({});
+  it("draws a row as long as the smaller of the side's ship count and the board's charged-node count, none lit when the side holds none", () => {
+    const sixShipsFiveNodes = buildState({
+      ships: shipsFor("green", 6),
+      chargedNodeCount: 5,
+    });
+    const sixShipsFourNodes = buildState({
+      ships: shipsFor("green", 6),
+      chargedNodeCount: 4,
+    });
+    const threeShips = buildState({
+      ships: shipsFor("green", 3),
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+    });
 
-    const { container } = render(
-      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    const rendered = [sixShipsFiveNodes, sixShipsFourNodes, threeShips].map(
+      (state) =>
+        render(<ScoreDisplay state={state} side="green" displayedTotal={0} />),
     );
 
-    expect(container.querySelectorAll(".score-display__pip")).toHaveLength(
-      DEFAULT_CHARGED_NODE_COUNT,
-    );
-    expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
-      0,
-    );
+    expect(
+      rendered[0].container.querySelectorAll(".score-display__pip"),
+    ).toHaveLength(5);
+    expect(
+      rendered[1].container.querySelectorAll(".score-display__pip"),
+    ).toHaveLength(4);
+    expect(
+      rendered[2].container.querySelectorAll(".score-display__pip"),
+    ).toHaveLength(3);
+    for (const { container } of rendered) {
+      expect(
+        container.querySelectorAll(".score-display__pip--lit"),
+      ).toHaveLength(0);
+    }
   });
 
   it("lights a pip per charged node the side is standing on", () => {
@@ -139,7 +169,7 @@ describe("ScoreDisplay", () => {
   it("does not light a pip for a node the opposing side holds", () => {
     const state = buildState({
       nodes: { K5: "charged" },
-      ships: [ship("red-1", "red", "K5")],
+      ships: [ship("red-1", "red", "K5"), ship("green-1", "green", "E5")],
     });
 
     const { container } = render(
