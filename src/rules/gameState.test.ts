@@ -154,7 +154,7 @@ describe("startingGameState", () => {
 
   it("takes a given length, changing nothing else about the state", () => {
     const defaultLength = startingGameState(SEED);
-    const shortGame = startingGameState(SEED, 3);
+    const shortGame = startingGameState(SEED, { lengthInRounds: 3 });
 
     expect(shortGame.lengthInRounds).toBe(3);
     expect({
@@ -164,7 +164,9 @@ describe("startingGameState", () => {
   });
 
   it.each([0, -1, 2.5])("throws a RangeError for a length of %s", (length) => {
-    expect(() => startingGameState(SEED, length)).toThrow(RangeError);
+    expect(() => startingGameState(SEED, { lengthInRounds: length })).toThrow(
+      RangeError,
+    );
   });
 
   it("defaults to a six-a-side fleet when none is given", () => {
@@ -180,8 +182,14 @@ describe("startingGameState", () => {
   });
 
   it("takes a given fleet size, dealing that layout's ships", () => {
-    const fiveASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 5);
-    const sixASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 6);
+    const fiveASide = startingGameState(SEED, {
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      fleetSize: 5,
+    });
+    const sixASide = startingGameState(SEED, {
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      fleetSize: 6,
+    });
 
     const expectedFive = startingFleet(5);
     expect(fiveASide.ships).toHaveLength(10);
@@ -205,27 +213,24 @@ describe("startingGameState", () => {
   it("deals the same board for the same seed whatever the fleet size", () => {
     const smallestFleetSize = Math.min(...FLEET_SIZES);
     const largestFleetSize = Math.max(...FLEET_SIZES);
-    const smallestASide = startingGameState(
-      SEED,
-      DEFAULT_GAME_LENGTH_ROUNDS,
-      smallestFleetSize,
-    );
-    const largestASide = startingGameState(
-      SEED,
-      DEFAULT_GAME_LENGTH_ROUNDS,
-      largestFleetSize,
-    );
+    const smallestASide = startingGameState(SEED, {
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      fleetSize: smallestFleetSize,
+    });
+    const largestASide = startingGameState(SEED, {
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      fleetSize: largestFleetSize,
+    });
 
     expect(smallestASide.nodes).toEqual(largestASide.nodes);
   });
 
   it("starts every ship at full power whatever the fleet size", () => {
     for (const fleetSize of FLEET_SIZES) {
-      const state = startingGameState(
-        SEED,
-        DEFAULT_GAME_LENGTH_ROUNDS,
+      const state = startingGameState(SEED, {
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         fleetSize,
-      );
+      });
       for (const ship of state.ships) {
         expect(ship.power).toBe(MAX_POWER);
       }
@@ -236,7 +241,10 @@ describe("startingGameState", () => {
     "throws a RangeError for a fleet size of %s",
     (fleetSize) => {
       expect(() =>
-        startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, fleetSize),
+        startingGameState(SEED, {
+          lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+          fleetSize,
+        }),
       ).toThrow(RangeError);
     },
   );

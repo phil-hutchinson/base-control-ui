@@ -65,7 +65,9 @@ describe("a game played from a dealt board runs to completion (rules.md ยง8.1, ย
   it.each(RUN_TO_COMPLETION_SEEDS)(
     "runs every dealt node out, retires depleted nodes, tops the board back up to four, and charges at least one of the dealt-inactive nodes (seed %d)",
     (seed) => {
-      let state = startingGameState(seed, RUN_TO_COMPLETION_LENGTH_IN_ROUNDS);
+      let state = startingGameState(seed, {
+        lengthInRounds: RUN_TO_COMPLETION_LENGTH_IN_ROUNDS,
+      });
 
       const dealtNodeNames = nodeSquares(state).map(squareName);
       const dealtChargedNames = dealtNodeNames.filter(

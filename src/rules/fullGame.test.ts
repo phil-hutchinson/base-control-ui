@@ -171,7 +171,7 @@ function playFullGame(
   lengthInRounds: number,
   fleetSize: FleetSize = DEFAULT_FLEET_SIZE,
 ): PlayedGame {
-  let state = startingGameState(seed, lengthInRounds, fleetSize);
+  let state = startingGameState(seed, { lengthInRounds, fleetSize });
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
 
@@ -501,7 +501,10 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
   });
 
   it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
-    const state = startingGameState(20260819, 30, 5);
+    const state = startingGameState(20260819, {
+      lengthInRounds: 30,
+      fleetSize: 5,
+    });
     const shipSquareNames = new Set(
       state.ships.map((s) => squareName(s.square)),
     );
@@ -527,7 +530,10 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
   });
 
   it("starts a six-ship game with L15 occupied and H15, H1 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
-    const state = startingGameState(20260819, 30, 6);
+    const state = startingGameState(20260819, {
+      lengthInRounds: 30,
+      fleetSize: 6,
+    });
     const shipSquareNames = new Set(
       state.ships.map((s) => squareName(s.square)),
     );

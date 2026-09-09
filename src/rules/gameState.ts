@@ -101,6 +101,27 @@ export interface GameState {
 }
 
 /**
+ * The options `startingGameState` accepts beyond the seed, each fixed for
+ * the game's lifetime once set. All are optional and fall back to the
+ * standard game's defaults.
+ */
+export interface StartingGameStateOptions {
+  /**
+   * The game's length in rounds (rules.md §9). Defaults to
+   * `DEFAULT_GAME_LENGTH_ROUNDS`. Must be a positive whole number; anything
+   * else is a caller bug and throws a `RangeError`.
+   */
+  readonly lengthInRounds?: number;
+  /**
+   * The fleet size (rules.md §4). Defaults to `DEFAULT_FLEET_SIZE`. Must be
+   * one of `fleet.ts`'s valid fleet sizes, or this throws a `RangeError`. It
+   * is **not** stored on the resulting state: `state.ships` is the record of
+   * it, since a side's fleet size is simply the count of its ships.
+   */
+  readonly fleetSize?: number;
+}
+
+/**
  * The state the game starts from: `startingFleet(fleetSize)`'s ships, a
  * dealt board (`dealOpeningBoard`, rules.md §8.1) — four of the seven nodes
  * charged at baseline, with no countdown, the other three inactive at
@@ -115,7 +136,7 @@ export interface GameState {
  * unaffected.
  *
  * The seed argument is the seed the **deal** starts from, not the seed the
- * game's first turn draws from: dealing the board consumes 12 steps of the
+ * game's first turn draws from: dealing the board consumes 8 steps of the
  * stream before play begins, and the resulting state's `randomSeed` is the
  * seed the deal left behind. That argument is also recorded verbatim as
  * `openingSeed`, so the state remembers where its deal started even once
@@ -123,22 +144,19 @@ export interface GameState {
  * opening seed comes from. Every test passes one explicitly, so a game's
  * opening position is always reproducible.
  *
- * The game's length in rounds defaults to `DEFAULT_GAME_LENGTH_ROUNDS`
- * (rules.md §9) and, once set, is fixed for the game's lifetime. It must be
- * a positive whole number; anything else is a caller bug and throws a
- * `RangeError`.
- *
- * The fleet size (rules.md §4) defaults to `DEFAULT_FLEET_SIZE` and, like
- * the length, is fixed for the game's lifetime once set — it must be one of
- * `fleet.ts`'s valid fleet sizes, or this throws a `RangeError`. It is
- * **not** stored on the resulting state: `state.ships` is the record of it,
- * since a side's fleet size is simply the count of its ships.
+ * `options` carries everything else, each optional and documented on
+ * `StartingGameStateOptions` — see there for the fields and their defaults
+ * and validation.
  */
 export function startingGameState(
   randomSeed: number,
-  lengthInRounds: number = DEFAULT_GAME_LENGTH_ROUNDS,
-  fleetSize: number = DEFAULT_FLEET_SIZE,
+  options: StartingGameStateOptions = {},
 ): GameState {
+  const {
+    lengthInRounds = DEFAULT_GAME_LENGTH_ROUNDS,
+    fleetSize = DEFAULT_FLEET_SIZE,
+  } = options;
+
   if (!isGameLengthRounds(lengthInRounds)) {
     throw new RangeError(
       `startingGameState: lengthInRounds must be a positive integer, got ${lengthInRounds}`,

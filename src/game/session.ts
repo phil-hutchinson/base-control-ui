@@ -292,11 +292,10 @@ export function sessionReducer(
 ): Session {
   if (intent.type === "new-game") {
     return createSession(
-      startingGameState(
-        intent.randomSeed,
-        intent.lengthInRounds,
-        intent.fleetSize,
-      ),
+      startingGameState(intent.randomSeed, {
+        lengthInRounds: intent.lengthInRounds,
+        fleetSize: intent.fleetSize,
+      }),
     );
   }
 

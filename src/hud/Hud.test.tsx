@@ -11,7 +11,7 @@ afterEach(cleanup);
 describe("Hud", () => {
   it("renders both scores, the round counter and the turn indicator", () => {
     const state = {
-      ...startingGameState(1, 100),
+      ...startingGameState(1, { lengthInRounds: 100 }),
       energy: { green: 24, red: 9 },
       plyNumber: 69,
     };
@@ -29,7 +29,10 @@ describe("Hud", () => {
   });
 
   it("reads a shorter game's own length in the round counter", () => {
-    const state = { ...startingGameState(1, 3), plyNumber: 3 };
+    const state = {
+      ...startingGameState(1, { lengthInRounds: 3 }),
+      plyNumber: 3,
+    };
 
     render(<Hud state={state} displayedEnergy={state.energy} />);
 

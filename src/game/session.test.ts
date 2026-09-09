@@ -602,7 +602,10 @@ describe("sessionReducer — new-game", () => {
     // it dealing the opening board, and the reducer must carry that seed
     // rather than the one it started from.
     expect(result.state.randomSeed).toBe(
-      startingGameState(42, 100, DEFAULT_FLEET_SIZE).randomSeed,
+      startingGameState(42, {
+        lengthInRounds: 100,
+        fleetSize: DEFAULT_FLEET_SIZE,
+      }).randomSeed,
     );
     expect(result.state.lengthInRounds).toBe(100);
   });
@@ -667,7 +670,7 @@ describe("sessionReducer — new-game", () => {
       // Not the literal seed the intent carried — see the seed assertion
       // above.
       expect(result.state.randomSeed).toBe(
-        startingGameState(9, 30, fleetSize).randomSeed,
+        startingGameState(9, { lengthInRounds: 30, fleetSize }).randomSeed,
       );
       expect(result.state.lengthInRounds).toBe(30);
     },

@@ -419,7 +419,7 @@ the step as written.
 
 ### Step 3 — `startingGameState` takes an options object
 
-Status: pending
+Status: committed
 
 A pure refactor with **no behaviour change** (D3). Change
 `startingGameState`'s signature from
@@ -447,6 +447,29 @@ Verification (automated): Run `npm test`, `npm run typecheck`,
 expectation edited**: the only test changes in this step are the shape of
 `startingGameState` calls. `git diff` should show no change to any expected
 value, count or seed.
+
+**Notes:** Added and exported `StartingGameStateOptions` from
+`src/rules/gameState.ts` (`lengthInRounds?`, `fleetSize?`), changed
+`startingGameState`'s signature to `(randomSeed, options = {})`, moved the
+two fields' doc comments onto the new interface, and fixed the doc comment's
+stale "consumes 12 steps" claim to the correct 8. Updated the one production
+call site (`src/game/session.ts`'s `new-game` branch in `sessionReducer`) and
+every test call site passing more than a seed — 12 files, roughly 40
+individual call sites (`src/game/session.ts`, `src/game/session.test.ts`,
+`src/hud/Hud.test.tsx`, `src/hud/RoundCounter.test.tsx`,
+`src/rules/endOfTurn.test.ts`, `src/rules/fullGame.test.ts`,
+`src/rules/gameLength.test.ts`, `src/rules/gameState.ts`,
+`src/rules/gameState.test.ts`, `src/rules/nodePool.test.ts`,
+`src/rules/openingBoard.test.ts`, `src/rules/seededReplay.test.ts`) — to the
+options-object shape; the ~32 seed-only call sites were left untouched, as
+the step describes. Verification: `npm test` (59 files, 1049 tests, all
+green — the same count as Step 2's commit, confirming no test was added,
+removed or re-expected), `npm run typecheck` (clean), `npm run lint`
+(clean), `npm run format:check` (clean after `prettier --write` on the
+touched files). `git diff` reviewed by eye across every touched test file:
+every hunk is a call-shape change from positional arguments to an options
+object, with no expected value, count or seed altered. No deviation from the
+step as written.
 
 ### Step 4 — The count becomes part of the game state, and five becomes the standard game
 

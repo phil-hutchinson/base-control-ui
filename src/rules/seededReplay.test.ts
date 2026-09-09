@@ -200,7 +200,7 @@ interface PlayedGame {
  * (§3.2, §8.2).
  */
 function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
-  let state = startingGameState(seed, lengthInRounds);
+  let state = startingGameState(seed, { lengthInRounds });
   const openingBoard = state.nodes;
   const planetReturns: string[] = [];
   const chargedNodes: string[] = [];

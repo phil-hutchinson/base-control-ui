@@ -185,7 +185,9 @@ function startOneCountdown(state: GameState): GameState {
  * stand-in.
  */
 function runEconomy(seed: number, plies: number): EconomyRun {
-  let state: GameState = startingGameState(seed, NOMINAL_LENGTH_IN_ROUNDS);
+  let state: GameState = startingGameState(seed, {
+    lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
+  });
   const shipSquares = state.ships.map((ship) => ship.square);
   const samples: EconomySample[] = [];
   const refills: RefillRecord[] = [];
@@ -375,7 +377,9 @@ describe("every new node is legal the moment it appears, and the fallback never 
   it.each(SEEDS)(
     "deals an opening board whose seven nodes are all individually legal (seed %d)",
     (seed) => {
-      const state = startingGameState(seed, NOMINAL_LENGTH_IN_ROUNDS);
+      const state = startingGameState(seed, {
+        lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
+      });
       const shipSquares = state.ships.map((ship) => ship.square);
       const allNodeSquares = nodeSquares(state);
       const chargedSquares = allNodeSquares.filter(
