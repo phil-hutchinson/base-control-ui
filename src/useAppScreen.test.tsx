@@ -12,6 +12,7 @@ describe("useAppScreen", () => {
 
     expect(result.current.screen).toBe("start");
     expect(result.current.fleetSize).toBe(6);
+    expect(result.current.chargedNodeCount).toBe(5);
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
   });
@@ -22,6 +23,9 @@ describe("useAppScreen", () => {
 
     act(() => {
       result.current.setFleetSize(5);
+    });
+    act(() => {
+      result.current.setChargedNodeCount(4);
     });
     act(() => {
       result.current.setLengthInRounds(45);
@@ -37,6 +41,7 @@ describe("useAppScreen", () => {
       expect.objectContaining({
         type: "new-game",
         fleetSize: 5,
+        chargedNodeCount: 4,
         lengthInRounds: 45,
       }),
     );
@@ -49,6 +54,9 @@ describe("useAppScreen", () => {
 
     act(() => {
       result.current.setFleetSize(6);
+    });
+    act(() => {
+      result.current.setChargedNodeCount(4);
     });
     act(() => {
       result.current.setLengthInRounds(60);
@@ -67,6 +75,7 @@ describe("useAppScreen", () => {
 
     expect(result.current.screen).toBe("start");
     expect(result.current.fleetSize).toBe(6);
+    expect(result.current.chargedNodeCount).toBe(4);
     expect(result.current.lengthInRounds).toBe(60);
     expect(result.current.clockSetting).toBe(4);
     expect(dispatch).not.toHaveBeenCalled();

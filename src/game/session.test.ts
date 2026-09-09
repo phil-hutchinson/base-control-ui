@@ -594,6 +594,7 @@ describe("sessionReducer — new-game", () => {
       randomSeed: 42,
       lengthInRounds: 100,
       fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     });
 
     expect(result.selectedShipId).toBeUndefined();
@@ -606,6 +607,7 @@ describe("sessionReducer — new-game", () => {
       startingGameState(42, {
         lengthInRounds: 100,
         fleetSize: DEFAULT_FLEET_SIZE,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       }).randomSeed,
     );
     expect(result.state.lengthInRounds).toBe(100);
@@ -619,6 +621,7 @@ describe("sessionReducer — new-game", () => {
       randomSeed: 7,
       lengthInRounds: 3,
       fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     });
 
     expect(result.state.lengthInRounds).toBe(3);
@@ -632,12 +635,14 @@ describe("sessionReducer — new-game", () => {
       randomSeed: 1,
       lengthInRounds: 5,
       fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     });
     const second = sessionReducer(session, {
       type: "new-game",
       randomSeed: 2,
       lengthInRounds: 5,
       fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     });
 
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
@@ -653,6 +658,7 @@ describe("sessionReducer — new-game", () => {
         randomSeed: 9,
         lengthInRounds: 30,
         fleetSize,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       });
 
       const expectedFleet = startingFleet(fleetSize);
@@ -671,11 +677,34 @@ describe("sessionReducer — new-game", () => {
       // Not the literal seed the intent carried — see the seed assertion
       // above.
       expect(result.state.randomSeed).toBe(
-        startingGameState(9, { lengthInRounds: 30, fleetSize }).randomSeed,
+        startingGameState(9, {
+          lengthInRounds: 30,
+          fleetSize,
+          chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+        }).randomSeed,
       );
       expect(result.state.lengthInRounds).toBe(30);
     },
   );
+
+  it("honours a chosen charged-node count, dealing a board with that many nodes charged", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 9,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: 4,
+    });
+
+    expect(result.state.chargedNodeCount).toBe(4);
+    expect(
+      Object.values(result.state.nodes).filter(
+        (node) => node.state === "charged",
+      ),
+    ).toHaveLength(4);
+  });
 });
 
 describe("sessionReducer — a side is out of time", () => {

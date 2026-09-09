@@ -716,7 +716,7 @@ from the step as written.
 
 ### Step 6 — The `new-game` intent and the app's screen state carry the count
 
-Status: pending
+Status: committed
 
 - `src/game/session.ts`: `SessionIntent`'s `new-game` gains a required
   `chargedNodeCount` field of type `ChargedNodeCount` (D5), and
@@ -746,6 +746,28 @@ Verification (automated): Run `npm test`, `npm run typecheck`,
 `session.test.ts` and `useAppScreen.test.tsx` covering the default, a chosen
 4 reaching the game state, and the choice surviving a return to the start
 screen.
+
+**Notes:** Implemented as written. `SessionIntent`'s `new-game` gained a
+required `chargedNodeCount: ChargedNodeCount`, and `sessionReducer` passes it
+straight to `startingGameState` alongside the seed, the length and the fleet
+size, reaching for no default of its own; the intent's doc comment now names
+the fourth thing it carries. `useAppScreen` holds `chargedNodeCount` at
+`DEFAULT_CHARGED_NODE_COUNT`, exposes `setChargedNodeCount`, includes it in
+`handlePlay`'s dispatched intent, and leaves it untouched by
+`handleReturnToStart`; the module header and the hook's doc comment say four
+options rather than three. `App.tsx` was deliberately left alone — it gains
+the prop wiring in Step 7.
+
+Tests: `session.test.ts`'s six existing `new-game` call sites gained
+`chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT`, plus one new case asserting a
+chosen 4 both lands on `state.chargedNodeCount` and deals a board with exactly
+four charged nodes. `useAppScreen.test.tsx` asserts the default reads 5, that
+PLAY dispatches the chosen count, and that it survives a return to the start
+screen.
+
+Verification: `npm test` (59 files, 1066 tests, all green — one new test since
+Step 5's 1065), `npm run typecheck` (clean), `npm run lint` (clean),
+`npm run format:check` (clean). No deviation from the step as written.
 
 ### Step 7 — The start screen's fourth group, and `UNLIMITED`
 
