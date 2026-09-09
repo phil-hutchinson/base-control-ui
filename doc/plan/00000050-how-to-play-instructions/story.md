@@ -28,14 +28,14 @@ followed by its paragraph and then its diagram.
 > **MOVEMENT**
 >
 > One spaceship can move per turn. For longer moves, fuel is required, as
-> follow:
+> follows:
 >
 > _{Diagram 2}_
 >
 > **REFUELING**
 >
 > Spaceships can hold up to six fuel. At the end of a player's turn,
-> spaceships sitting on planets regain one fuel. If a players has only one
+> spaceships sitting on planets regain one fuel. If a player has only one
 > spaceship gaining fuel and it has room, it gains two fuel.
 >
 > _{Diagram 3}_

@@ -311,7 +311,13 @@ the SVGs are `aria-hidden`; the guide's tests follow the same idiom.
 
 ### Step 1 — The guide's copy, in one module
 
-Status: pending
+Status: committed
+
+Notes: Created `src/guide/guideCopy.ts` (`GUIDE_TITLE`, `GUIDE_INTRO_PARAGRAPH`,
+and `GUIDE_SECTIONS`, an ordered array of the four headed sections) and
+`src/guide/guideCopy.test.ts`. Applied the two owner corrections ("as
+follows:" and "If a player has") to both the shipped copy and the quoted copy
+in `story.md`. No deviations from the plan.
 
 Create `src/guide/guideCopy.ts`: the guide's page title and its five
 sections' text, exactly as quoted in `story.md`, and nothing else (D2). No
