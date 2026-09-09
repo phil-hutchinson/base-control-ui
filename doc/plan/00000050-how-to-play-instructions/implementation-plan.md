@@ -633,7 +633,15 @@ in the file's existing style.
 
 ### Step 6 — A third screen in `useAppScreen`
 
-Status: pending
+Status: committed
+
+Notes: Widened `Screen` to `"start" | "game" | "guide"` and added
+`handleOpenGuide`, which only calls `setScreen("guide")`; no close action was
+added, per D17, and the hook's doc comment now says so explicitly. Extended
+`src/useAppScreen.test.tsx` with the two new cases (opening the guide leaves
+the three options and never dispatches; options set before opening the guide
+survive opening it and returning to start) alongside the existing PLAY and
+return-to-start cases, which are unchanged. No deviations from the plan.
 
 Widen `src/useAppScreen.ts`'s `Screen` union with a third value for the guide
 (`"guide"`), and add one action that opens it (S6, D17).
