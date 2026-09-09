@@ -11,7 +11,13 @@ import {
 import { PLANETS } from "./planets";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { mulberry32 } from "./random";
-import { TARGET_CHARGED_NODES, dealOpeningBoard } from "./nodes";
+import {
+  CHARGED_NODE_COUNTS,
+  DEFAULT_CHARGED_NODE_COUNT,
+  TARGET_CHARGED_NODES,
+  dealOpeningBoard,
+  isChargedNodeCount,
+} from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 
 /** The 121 squares C3-M13 — the interior §3.2's two ring exclusions leave. */
@@ -67,6 +73,28 @@ describe("the board's charged target (rules.md §8.1, §8.2)", () => {
   it("keeps four nodes charged at all times", () => {
     expect(TARGET_CHARGED_NODES).toBe(4);
   });
+});
+
+describe("the offered charged-node counts (rules.md §8.1)", () => {
+  it("is largest first, so the leftmost start-screen choice is the default game", () => {
+    expect(CHARGED_NODE_COUNTS).toEqual([5, 4]);
+  });
+
+  it("defaults to five, §8.1's standard game", () => {
+    expect(DEFAULT_CHARGED_NODE_COUNT).toBe(5);
+    expect(CHARGED_NODE_COUNTS).toContain(DEFAULT_CHARGED_NODE_COUNT);
+  });
+
+  it.each([4, 5])("accepts %i as a valid charged-node count", (value) => {
+    expect(isChargedNodeCount(value)).toBe(true);
+  });
+
+  it.each([3, 6, 0, 4.5, NaN])(
+    "rejects %s as a valid charged-node count",
+    (value) => {
+      expect(isChargedNodeCount(value)).toBe(false);
+    },
+  );
 });
 
 describe("dealing the opening board (rules.md §8.1)", () => {

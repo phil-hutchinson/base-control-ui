@@ -374,7 +374,7 @@ explicitly labelled as measured at four charged.
 
 ### Step 2 — The offered counts, the default and the guard
 
-Status: pending
+Status: committed
 
 Add to `src/rules/nodes.ts`, in the shape `fleet.ts` uses for fleet sizes
 (D1, D2):
@@ -402,6 +402,20 @@ Verification (automated): Run `npm test`, `npm run typecheck` and
 `npm run lint` — all green, with the new block in `nodes.test.ts` passing.
 No existing test's expectations change in this step; if one does, something
 has been wired up early.
+
+**Notes:** Added `ChargedNodeCount`, `CHARGED_NODE_COUNTS` (`[5, 4]`),
+`DEFAULT_CHARGED_NODE_COUNT` (5) and `isChargedNodeCount` to `nodes.ts`, in
+`fleet.ts`'s shape, immediately after `TARGET_CHARGED_NODES`, which is left
+untouched (Step 4 deletes it). Updated the module header to mention the
+offered counts alongside the node states and the opening deal. Added a
+`describe("the offered charged-node counts (rules.md §8.1)")` block to
+`nodes.test.ts` asserting the list order, the default and its membership,
+and the guard's accept/reject cases (4, 5 accepted; 3, 6, 0, 4.5, `NaN`
+rejected). Verification: `npm test` (59 files, 1049 tests, all green — up
+from 1040 at Step 1's commit, with no existing expectation changed),
+`npm run typecheck` (clean), `npm run lint` (clean), `npm run format:check`
+(clean after `prettier --write` on the two touched files). No deviation from
+the step as written.
 
 ### Step 3 — `startingGameState` takes an options object
 

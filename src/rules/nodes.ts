@@ -1,10 +1,10 @@
-// The three states a node can be in (rules.md §8.1), and the opening deal
-// (rules.md §8.1): it draws the four charged squares, deals each at
-// baseline (no countdown), and places the three inactive nodes by the same
-// refill procedure a later charge uses. An inactive node's `level` carries
-// its priority instead (`nodeQueue.ts` owns everything about that); a
-// charged or depleted node's `level` is plies remaining in its countdown,
-// owned by `countdown.ts`.
+// The three states a node can be in (rules.md §8.1), the offered
+// charged-node counts (rules.md §8.1), and the opening deal (rules.md §8.1):
+// it draws the charged squares, deals each at baseline (no countdown), and
+// places the three inactive nodes by the same refill procedure a later
+// charge uses. An inactive node's `level` carries its priority instead
+// (`nodeQueue.ts` owns everything about that); a charged or depleted node's
+// `level` is plies remaining in its countdown, owned by `countdown.ts`.
 
 import { ALL_SQUARES, type Square, squareName } from "./board";
 import { drawNodeSquare } from "./nodePlacement";
@@ -19,6 +19,23 @@ export type NodeState = "inactive" | "charged" | "depleted";
  * three inactive nodes.
  */
 export const TARGET_CHARGED_NODES = 4;
+
+/** How many nodes the board keeps charged, chosen before play (rules.md §8.1). */
+export type ChargedNodeCount = 4 | 5;
+
+/**
+ * The offered charged-node counts, in the order the start screen renders
+ * them: largest first, so the leftmost choice is the default game.
+ */
+export const CHARGED_NODE_COUNTS: readonly ChargedNodeCount[] = [5, 4];
+
+/** §8.1's standard game: five charged nodes. */
+export const DEFAULT_CHARGED_NODE_COUNT: ChargedNodeCount = 5;
+
+/** Whether a value is one of the offered charged-node counts. */
+export function isChargedNodeCount(value: number): value is ChargedNodeCount {
+  return (CHARGED_NODE_COUNTS as readonly number[]).includes(value);
+}
 
 /**
  * Deals a whole opening board (rules.md §8.1): the squares the fleet stands
