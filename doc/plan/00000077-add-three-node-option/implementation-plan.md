@@ -412,7 +412,17 @@ third long-run pass makes it noticeably slower than before.
 
 ### Step 4 — Rules-layer coverage at three charged
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator. `gameState.test.ts` gained a case
+asserting a count of three deals six nodes — three charged, three
+inactive, none depleted — and `charging.test.ts` gained two: nothing
+charges when three are already charged, and the shortfall is measured
+against three. `nodes.test.ts`, `openingBoard.test.ts` and
+`fullGame.test.ts` needed **nothing**: all three already reach every
+offered count through `describe.each(CHARGED_NODE_COUNTS)` (two such
+blocks each in `openingBoard.test.ts` and `fullGame.test.ts`). Suite
+1203 → 1206, the three cases added. No `src/` production change.
 
 Add the coverage that proves the rules layer treats three as a first-class
 count, rather than merely not crashing on it.
