@@ -335,7 +335,23 @@ count plus three at some ply.
 
 ### Step 3 — Three joins the offered counts
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator rather than by an agent, at the
+owner's instruction that small steps do not warrant a dispatch.
+`ChargedNodeCount` is `3 | 4 | 5`, `CHARGED_NODE_COUNTS` is `[5, 4, 3]`,
+`DEFAULT_CHARGED_NODE_COUNT` unchanged at 5. `dealOpeningBoard`'s and
+`startingGameState`'s doc comments gained the third count (six nodes,
+seven seed steps). Exactly the five predicted test failures needed
+fixing, and no others: `nodes.test.ts`'s array and its accept/reject
+lists (3 moved to accepted, 2 took its place among the rejects),
+`gameState.test.ts`'s RangeError list (same swap), and the two
+screen-wide `radio` name "3" queries in `StartScreen.test.tsx` and
+`App.test.tsx`, both scoped with `within(...)` on the Ships group (D6).
+No production file outside `nodes.ts` needed a logic change, as D8
+predicted. The suite went from 1151 to 1203 tests — the 52 new ones are
+the already-parameterised suites now running at three charged, including
+the long-run economy, which passed at three with no retuning.
 
 Widen the offered counts, and update the tests that name them by hand so the
 suite stays green.

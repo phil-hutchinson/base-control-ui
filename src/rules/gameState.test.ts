@@ -289,7 +289,7 @@ describe("startingGameState", () => {
     expect(state.chargedNodeCount).toBe(4);
   });
 
-  it.each([3, 6, 0, 4.5])(
+  it.each([2, 6, 0, 4.5])(
     "throws a RangeError for a charged-node count of %s",
     (chargedNodeCount) => {
       expect(() => startingGameState(SEED, { chargedNodeCount })).toThrow(

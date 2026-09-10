@@ -227,7 +227,8 @@ describe("StartScreen", () => {
       onPlay,
     } = renderStartScreen({ fleetSize: 6 });
 
-    await user.click(screen.getByRole("radio", { name: "3" }));
+    const shipsGroup = screen.getByRole("group", { name: "Ships" });
+    await user.click(within(shipsGroup).getByRole("radio", { name: "3" }));
 
     expect(onFleetSizeChange).toHaveBeenCalledExactlyOnceWith(3);
     expect(onChargedNodeCountChange).not.toHaveBeenCalled();

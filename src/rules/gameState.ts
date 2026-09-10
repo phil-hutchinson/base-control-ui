@@ -163,12 +163,12 @@ export interface StartingGameStateOptions {
  * The seed argument is the seed the **deal** starts from, not the seed the
  * game's first turn draws from: dealing the board consumes `chargedNodeCount
  * + 4` steps of the stream before play begins — nine at five charged, eight
- * at four — and the resulting state's `randomSeed` is the seed the deal left
- * behind. That argument is also recorded verbatim as `openingSeed`, so the
- * state remembers where its deal started even once `randomSeed` has moved
- * on. See `src/game/seed.ts` for where the app's opening seed comes from.
- * Every test passes one explicitly, so a game's opening position is always
- * reproducible.
+ * at four, seven at three — and the resulting state's `randomSeed` is the
+ * seed the deal left behind. That argument is also recorded verbatim as
+ * `openingSeed`, so the state remembers where its deal started even once
+ * `randomSeed` has moved on. See `src/game/seed.ts` for where the app's
+ * opening seed comes from. Every test passes one explicitly, so a game's
+ * opening position is always reproducible.
  *
  * `options` carries everything else, each optional and documented on
  * `StartingGameStateOptions` — see there for the fields and their defaults

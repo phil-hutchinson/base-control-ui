@@ -163,7 +163,8 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("radio", { name: "3" }));
+    const shipsGroup = screen.getByRole("group", { name: "Ships" });
+    await user.click(within(shipsGroup).getByRole("radio", { name: "3" }));
     await user.click(screen.getByRole("button", { name: "Play" }));
 
     expect(shipCells()).toHaveLength(6);
