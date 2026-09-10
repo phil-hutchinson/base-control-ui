@@ -71,9 +71,10 @@ to it alongside the rulebook and change log.
 - **A recorded game replays the same.** Nothing in the random sequence moves.
 - **The pass rule stays**, both reasons for it, and section 8.6 step 7's
   relief that exists to prevent one of them.
-- **The "no legal move or attack" marking on the board stays.** It marks a
-  pinned ship — a real, reachable state — and is a separate fact from the
-  one being removed.
+- **The "no legal move or attack" marking on the board stays** — the faded
+  ship and its bottom-edge hollow bar. It marks a pinned ship, a state a
+  player really can reach, and is a separate fact from the already-acted bar
+  being retired above.
 
 ## Code
 
@@ -127,14 +128,39 @@ to it alongside the rulebook and change log.
   `ShipCondition`'s single member `"no-action"` and its wording "no action
   available this turn" are renamed for the same reason as the module above —
   proposed `"cannot-move-or-attack"` and "cannot move or attack this turn".
-- **`BoardSquare.tsx` / `.css`** — `AlreadyActedMark`,
-  `ALREADY_ACTED_BAR_TOP_INSET` and the `--already-acted` CSS rule go. The
-  `--no-action` class is renamed alongside the condition.
-- **`Board.tsx`** — the `hasActed` computation goes, and the comment above
-  `shipCondition` loses the paragraph explaining how having acted relates to
-  the condition.
-- **`guideDiagrams.tsx`** — its header comment names the already-acted bar;
-  update it.
+
+#### The already-acted marking
+
+The bar drawn at a square's top edge to say "this ship has already gone this
+turn" is retired outright — with one action a turn there is no moment at
+which a player could ever see it. It is **three separate things**, and the
+condition marking that shares its machinery **stays**:
+
+- **`BoardSquare.tsx`** — the `hasActed` prop, the `AlreadyActedMark`
+  component, the `ALREADY_ACTED_BAR_TOP_INSET` constant and the
+  `{hasActed && <AlreadyActedMark />}` render all go. `CONDITION_BAR_WIDTH`
+  and `CONDITION_BAR_HEIGHT` are shared with `NoActionMark` and **stay**;
+  only the top inset was the bar's own.
+- **`BoardSquare.css`** — `.board-square__mark--already-acted` is the first
+  half of a **comma selector** it shares with `.board-square__mark--no-action`
+  (line 30). Delete the one selector line, **not the rule** — the condition
+  marking still needs its dimmed colour. Two comments in the file also name
+  the bar and need reworking: the `.board-square__mark` header lists "having
+  moved" among the interaction markings, and the dampened-ship comment
+  explains a ship is faded "because it has moved and has no target left" and
+  that "Having moved is drawn separately, at the square's top edge, and never
+  dampens a ship by itself" — with the bar gone, a dampened ship is a pinned
+  ship and nothing else.
+- **`Board.tsx`** — the `hasActed` computation and both places it is passed
+  down go, and the comment above `shipCondition` loses the paragraph
+  explaining how having acted relates to the condition.
+
+What stays: `NoActionMark`, the bottom-edge hollow bar, and the dampened
+ship. Those mark a pinned ship — a state a player really can reach — and are
+only renamed, per the bullet above.
+
+- **`guideDiagrams.tsx`** — the guide never draws the bar, but its header
+  comment names it among the marks its diagrams omit; update the comment.
 
 ### Tests
 
@@ -148,8 +174,9 @@ removed fields taken out; most are mechanical. The ones with real work:
 - **`session.test.ts`** — the `ship-already-acted` rejection cases go.
 - **`announcements.test.ts`** — expected sentences lose their action counts;
   any case asserting the "1 action left" wording goes with the branch.
-- **`Board.test.tsx`, `squareLabel.test.ts`, `BoardSquare.test.tsx`** — the
-  already-acted marking and label segment go.
+- **`Board.test.tsx`, `squareLabel.test.ts`, `BoardSquare.test.tsx`** — every
+  case covering the already-acted bar or its label segment goes. The cases
+  covering the no-action marking stay, with renamed wording.
 - **`rulesVersion.test.ts`** — unchanged, but it pins the version bump below.
 
 ## Notes
