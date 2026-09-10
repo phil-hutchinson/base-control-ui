@@ -20,7 +20,7 @@ import { legalTargets } from "../rules/combat";
 import { legalDestinations } from "../rules/movement";
 import { applyAttack, applyMove } from "../rules/ply";
 import { MAX_POWER, type PowerLevel } from "../rules/power";
-import type { NodeState } from "../rules/nodes";
+import { DEFAULT_CHARGED_NODE_COUNT, type NodeState } from "../rules/nodes";
 import { createSession, type Session, sessionReducer } from "./session";
 
 function ship(
@@ -60,6 +60,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: config.outOfTime ?? { green: false, red: false },
   };
 }
@@ -409,9 +410,8 @@ describe("sessionReducer — dismiss", () => {
 
 describe("sessionReducer — a full ply", () => {
   it("passes the turn after one action, and the moved event says so", () => {
-    // Four charged nodes elsewhere hold the board at its target, so
-    // charging has no shortfall to fill and the end-of-turn effects stay
-    // empty.
+    // No inactive node is queued, so charging has nothing to charge with,
+    // whatever the shortfall, and the end-of-turn effects stay empty.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O1")],
       nodes: { C3: "charged", E3: "charged", G3: "charged", I3: "charged" },
@@ -482,9 +482,8 @@ describe("createSession", () => {
         ship("red-7", "red", "E6"),
         ship("red-8", "red", "E7"),
       ],
-      // Four charged nodes elsewhere hold the board at its target, so
-      // charging has no shortfall to fill and the end-of-turn effects stay
-      // empty.
+      // No inactive node is queued, so charging has nothing to charge with,
+      // whatever the shortfall, and the end-of-turn effects stay empty.
       nodes: { H8: "charged", K8: "charged", H12: "charged", K12: "charged" },
     });
 
@@ -593,6 +592,7 @@ describe("sessionReducer — new-game", () => {
       randomSeed: 42,
       lengthInRounds: 100,
       fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     });
 
     expect(result.selectedShipId).toBeUndefined();
@@ -602,7 +602,11 @@ describe("sessionReducer — new-game", () => {
     // it dealing the opening board, and the reducer must carry that seed
     // rather than the one it started from.
     expect(result.state.randomSeed).toBe(
-      startingGameState(42, 100, DEFAULT_FLEET_SIZE).randomSeed,
+      startingGameState(42, {
+        lengthInRounds: 100,
+        fleetSize: DEFAULT_FLEET_SIZE,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      }).randomSeed,
     );
     expect(result.state.lengthInRounds).toBe(100);
   });
@@ -615,6 +619,7 @@ describe("sessionReducer — new-game", () => {
       randomSeed: 7,
       lengthInRounds: 3,
       fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     });
 
     expect(result.state.lengthInRounds).toBe(3);
@@ -628,12 +633,14 @@ describe("sessionReducer — new-game", () => {
       randomSeed: 1,
       lengthInRounds: 5,
       fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     });
     const second = sessionReducer(session, {
       type: "new-game",
       randomSeed: 2,
       lengthInRounds: 5,
       fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     });
 
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
@@ -649,6 +656,7 @@ describe("sessionReducer — new-game", () => {
         randomSeed: 9,
         lengthInRounds: 30,
         fleetSize,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       });
 
       const expectedFleet = startingFleet(fleetSize);
@@ -667,11 +675,34 @@ describe("sessionReducer — new-game", () => {
       // Not the literal seed the intent carried — see the seed assertion
       // above.
       expect(result.state.randomSeed).toBe(
-        startingGameState(9, 30, fleetSize).randomSeed,
+        startingGameState(9, {
+          lengthInRounds: 30,
+          fleetSize,
+          chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+        }).randomSeed,
       );
       expect(result.state.lengthInRounds).toBe(30);
     },
   );
+
+  it("honours a chosen charged-node count, dealing a board with that many nodes charged", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 9,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: 4,
+    });
+
+    expect(result.state.chargedNodeCount).toBe(4);
+    expect(
+      Object.values(result.state.nodes).filter(
+        (node) => node.state === "charged",
+      ),
+    ).toHaveLength(4);
+  });
 });
 
 describe("sessionReducer — a side is out of time", () => {
@@ -794,9 +825,8 @@ describe("sessionReducer — clock-expired", () => {
 
 describe("sessionReducer — pass-out-of-time", () => {
   it("passes the side to move's turn, advancing the ply and recording the out-of-time pass as lastEvent", () => {
-    // Four charged nodes elsewhere hold the board at its target, so
-    // charging has no shortfall to fill and the end-of-turn effects stay
-    // empty.
+    // No inactive node is queued, so charging has nothing to charge with,
+    // whatever the shortfall, and the end-of-turn effects stay empty.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O2")],
       nodes: { C3: "charged", E3: "charged", G3: "charged", I3: "charged" },

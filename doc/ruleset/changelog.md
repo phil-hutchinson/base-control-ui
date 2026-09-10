@@ -7,6 +7,37 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.30 — a chosen number of charged nodes
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **The charged-node count is now a choice**, made before play begins,
+  alongside the fleet size, the number of rounds and the clock: **five or
+  four**, the same number for both players and fixed for the game's
+  lifetime.
+- **Five is the standard game**, a change from the four the board has dealt
+  since version 0.21. Four remains playable, one choice away.
+- **The opening deal follows the choice**: the game opens with **eight**
+  nodes at five charged (five charged, three inactive) and **seven** at four
+  (four charged, three inactive), the charged ones drawn under section 3.2
+  at random and each starting at baseline with no countdown. Nothing is
+  dealt depleted, as before.
+- **The end-of-turn charge follows the choice**: the shortfall filled from
+  the three inactive nodes at the end of every turn is now measured against
+  the chosen number, not against a fixed four.
+- **The queue stays at three inactive nodes at both counts.** Three inactive
+  nodes cover the largest shortfall a single turn can produce — never more
+  than two, one node expiring and one walked off — regardless of which
+  number the board is filling towards; the queue's size was never derived
+  from the target, so it needs no change (Appendix B).
+- **Appendix B is restated for a chosen target** rather than a fixed one; its
+  measured figures — the node count's range, the refill pool sizes, the
+  weighted-versus-unweighted spread, and the mean turns between refills —
+  are now measured at both five and four charged. The edge- and
+  corner-placement figures remain measured at four charged only, and are
+  expected to move only slightly at five.
+
 ## 0.29 — one point per node, per turn
 
 This is a gameplay change. Tagging stays on hold until the game plays (see

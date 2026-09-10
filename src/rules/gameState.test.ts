@@ -12,7 +12,11 @@ import {
   nodeStatusAt,
   startingGameState,
 } from "./gameState";
-import { dealOpeningBoard } from "./nodes";
+import {
+  CHARGED_NODE_COUNTS,
+  DEFAULT_CHARGED_NODE_COUNT,
+  dealOpeningBoard,
+} from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 import { MAX_POWER } from "./power";
 
@@ -36,7 +40,11 @@ describe("startingGameState", () => {
 
   it("has green to move, one action remaining, nothing moved, ply 1 and the deal's advanced seed", () => {
     const state = startingGameState(SEED);
-    const [, dealtSeed] = dealOpeningBoard(STARTING_FLEET_SQUARES, SEED);
+    const [, dealtSeed] = dealOpeningBoard(
+      STARTING_FLEET_SQUARES,
+      DEFAULT_CHARGED_NODE_COUNT,
+      SEED,
+    );
 
     expect(state.sideToMove).toBe("green");
     expect(state.actionsRemaining).toBe(1);
@@ -53,17 +61,23 @@ describe("startingGameState", () => {
     expect(state.openingSeed).not.toBe(state.randomSeed);
   });
 
-  it("deals the board dealOpeningBoard deals for the same seed: four charged, three inactive, none depleted", () => {
+  it("deals the board dealOpeningBoard deals for the same seed: five charged, three inactive, none depleted", () => {
     const state = startingGameState(SEED);
-    const [dealt] = dealOpeningBoard(STARTING_FLEET_SQUARES, SEED);
+    const [dealt] = dealOpeningBoard(
+      STARTING_FLEET_SQUARES,
+      DEFAULT_CHARGED_NODE_COUNT,
+      SEED,
+    );
 
     expect(state.nodes).toEqual(dealt);
 
     const allStatuses = Object.values(state.nodes);
-    expect(allStatuses).toHaveLength(4 + INACTIVE_NODE_COUNT);
+    expect(allStatuses).toHaveLength(
+      DEFAULT_CHARGED_NODE_COUNT + INACTIVE_NODE_COUNT,
+    );
     expect(
       allStatuses.filter((status) => status.state === "charged"),
-    ).toHaveLength(4);
+    ).toHaveLength(DEFAULT_CHARGED_NODE_COUNT);
     expect(
       allStatuses.filter((status) => status.state === "inactive"),
     ).toHaveLength(INACTIVE_NODE_COUNT);
@@ -154,7 +168,7 @@ describe("startingGameState", () => {
 
   it("takes a given length, changing nothing else about the state", () => {
     const defaultLength = startingGameState(SEED);
-    const shortGame = startingGameState(SEED, 3);
+    const shortGame = startingGameState(SEED, { lengthInRounds: 3 });
 
     expect(shortGame.lengthInRounds).toBe(3);
     expect({
@@ -164,7 +178,9 @@ describe("startingGameState", () => {
   });
 
   it.each([0, -1, 2.5])("throws a RangeError for a length of %s", (length) => {
-    expect(() => startingGameState(SEED, length)).toThrow(RangeError);
+    expect(() => startingGameState(SEED, { lengthInRounds: length })).toThrow(
+      RangeError,
+    );
   });
 
   it("defaults to a six-a-side fleet when none is given", () => {
@@ -180,8 +196,14 @@ describe("startingGameState", () => {
   });
 
   it("takes a given fleet size, dealing that layout's ships", () => {
-    const fiveASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 5);
-    const sixASide = startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, 6);
+    const fiveASide = startingGameState(SEED, {
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      fleetSize: 5,
+    });
+    const sixASide = startingGameState(SEED, {
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      fleetSize: 6,
+    });
 
     const expectedFive = startingFleet(5);
     expect(fiveASide.ships).toHaveLength(10);
@@ -205,27 +227,24 @@ describe("startingGameState", () => {
   it("deals the same board for the same seed whatever the fleet size", () => {
     const smallestFleetSize = Math.min(...FLEET_SIZES);
     const largestFleetSize = Math.max(...FLEET_SIZES);
-    const smallestASide = startingGameState(
-      SEED,
-      DEFAULT_GAME_LENGTH_ROUNDS,
-      smallestFleetSize,
-    );
-    const largestASide = startingGameState(
-      SEED,
-      DEFAULT_GAME_LENGTH_ROUNDS,
-      largestFleetSize,
-    );
+    const smallestASide = startingGameState(SEED, {
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      fleetSize: smallestFleetSize,
+    });
+    const largestASide = startingGameState(SEED, {
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      fleetSize: largestFleetSize,
+    });
 
     expect(smallestASide.nodes).toEqual(largestASide.nodes);
   });
 
   it("starts every ship at full power whatever the fleet size", () => {
     for (const fleetSize of FLEET_SIZES) {
-      const state = startingGameState(
-        SEED,
-        DEFAULT_GAME_LENGTH_ROUNDS,
+      const state = startingGameState(SEED, {
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         fleetSize,
-      );
+      });
       for (const ship of state.ships) {
         expect(ship.power).toBe(MAX_POWER);
       }
@@ -236,8 +255,46 @@ describe("startingGameState", () => {
     "throws a RangeError for a fleet size of %s",
     (fleetSize) => {
       expect(() =>
-        startingGameState(SEED, DEFAULT_GAME_LENGTH_ROUNDS, fleetSize),
+        startingGameState(SEED, {
+          lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+          fleetSize,
+        }),
       ).toThrow(RangeError);
+    },
+  );
+
+  it("defaults to five charged nodes, §8.1's standard game, when none is given", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.chargedNodeCount).toBe(DEFAULT_CHARGED_NODE_COUNT);
+  });
+
+  it("takes a given charged-node count, dealing that many charged and leaving everything else about the state alone", () => {
+    const defaultCount = startingGameState(SEED);
+    const fourCharged = startingGameState(SEED, { chargedNodeCount: 4 });
+
+    expect(fourCharged.chargedNodeCount).toBe(4);
+    expect({
+      ...fourCharged,
+      chargedNodeCount: defaultCount.chargedNodeCount,
+      nodes: defaultCount.nodes,
+      randomSeed: defaultCount.randomSeed,
+    }).toEqual(defaultCount);
+  });
+
+  it("is one of the offered charged-node counts, exactly the one given", () => {
+    const state = startingGameState(SEED, { chargedNodeCount: 4 });
+
+    expect(CHARGED_NODE_COUNTS).toContain(state.chargedNodeCount);
+    expect(state.chargedNodeCount).toBe(4);
+  });
+
+  it.each([3, 6, 0, 4.5])(
+    "throws a RangeError for a charged-node count of %s",
+    (chargedNodeCount) => {
+      expect(() => startingGameState(SEED, { chargedNodeCount })).toThrow(
+        RangeError,
+      );
     },
   );
 });

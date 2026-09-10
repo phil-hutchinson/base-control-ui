@@ -89,12 +89,18 @@ describe("isGameOver", () => {
   });
 
   it("is not over at ply 6 of a three-round game", () => {
-    const state = { ...startingGameState(SEED, 3), plyNumber: 6 };
+    const state = {
+      ...startingGameState(SEED, { lengthInRounds: 3 }),
+      plyNumber: 6,
+    };
     expect(isGameOver(state)).toBe(false);
   });
 
   it("is over at ply 7 of a three-round game", () => {
-    const state = { ...startingGameState(SEED, 3), plyNumber: 7 };
+    const state = {
+      ...startingGameState(SEED, { lengthInRounds: 3 }),
+      plyNumber: 7,
+    };
     expect(isGameOver(state)).toBe(true);
   });
 
@@ -135,7 +141,10 @@ describe("currentRound", () => {
     [6, 3],
     [7, 3],
   ])("reads %i as round %i in a three-round game", (plyNumber, round) => {
-    const state = { ...startingGameState(SEED, 3), plyNumber };
+    const state = {
+      ...startingGameState(SEED, { lengthInRounds: 3 }),
+      plyNumber,
+    };
     expect(currentRound(state)).toBe(round);
   });
 });

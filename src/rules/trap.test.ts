@@ -4,6 +4,7 @@ import type { ShipId } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import type { GameState, NodeStatus, Ship } from "./gameState";
 import type { NodeState } from "./nodes";
+import { DEFAULT_CHARGED_NODE_COUNT } from "./nodes";
 import { PLANETS } from "./planets";
 import type { PowerLevel } from "./power";
 import {
@@ -45,6 +46,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }

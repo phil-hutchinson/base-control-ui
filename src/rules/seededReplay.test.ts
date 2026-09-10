@@ -12,9 +12,10 @@
 // §8.1). `startingGameState` is what a recorded game would call to
 // reproduce that deal, so the property under test covers it too: the same
 // seed deals the same opening board, and a different seed deals a different
-// one. Since 0.27 the deal's four charged squares are dealt at baseline,
-// with no countdown to draw, so the deal consumes 8 steps rather than the
-// 24 it once did — four square draws for the charged nodes and four more
+// one. Since 0.27 the deal's charged squares are dealt at baseline, with no
+// countdown to draw, so the deal consumes `chargedNodeCount + 4` steps —
+// nine at the standard game's five charged (0.30), eight at four — rather
+// than the 24 it once did: one square draw per charged node, plus four more
 // for the inactive trio's refill.
 //
 // 0.26 replaced the board's own end-of-turn charge draw (§8.2) with the
@@ -200,7 +201,7 @@ interface PlayedGame {
  * (§3.2, §8.2).
  */
 function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
-  let state = startingGameState(seed, lengthInRounds);
+  let state = startingGameState(seed, { lengthInRounds });
   const openingBoard = state.nodes;
   const planetReturns: string[] = [];
   const chargedNodes: string[] = [];
@@ -300,16 +301,18 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     // first turn — a ship only becomes unattackable by flying onto a
     // planet, away from the board's outer edge — so this attack-first
     // policy keeps finding fights across the run rather than stalling
-    // early. Re-measured at 2 fights (4 planet returns) for this seed over
-    // forty rounds under the countdown model (0.27), whose second
-    // preference (moving onto a charged node) now competes with attacking
-    // for a ship's action; the floors below leave margin below that.
+    // early. Re-measured at five charged (0.30): 4 fights (8 planet
+    // returns) for this seed over forty rounds, whose second preference
+    // (moving onto a charged node) competes with attacking for a ship's
+    // action; the floors below leave margin below that.
     expect(fightCount).toBeGreaterThanOrEqual(1);
     expect(planetReturns.length).toBeGreaterThanOrEqual(2);
-    // Re-measured at 6 charges, 6 retirements and 6 refills for this seed
-    // over forty rounds (0.27) — the countdown's own second preference is
-    // what drives these now, rather than nodes expiring on their own; the
-    // floors below leave margin below that.
+    // Re-measured at five charged (0.30): 18 charges, 17 retirements and 16
+    // refills for this seed over forty rounds. At five charged the opening
+    // deal consumes one more seed step than at four, so this seed deals an
+    // entirely different board and the run diverges from the old
+    // four-charged figures — these are simply this run's own numbers,
+    // re-measured; the floors below leave margin below that.
     expect(chargedNodes.length).toBeGreaterThanOrEqual(4);
     expect(retiredNodes.length).toBeGreaterThanOrEqual(4);
     expect(queueRefills.length).toBeGreaterThanOrEqual(4);

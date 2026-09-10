@@ -11,7 +11,13 @@ import {
 import { PLANETS } from "./planets";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import { mulberry32 } from "./random";
-import { TARGET_CHARGED_NODES, dealOpeningBoard } from "./nodes";
+import {
+  CHARGED_NODE_COUNTS,
+  DEFAULT_CHARGED_NODE_COUNT,
+  dealOpeningBoard,
+  isChargedNodeCount,
+  type ChargedNodeCount,
+} from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 
 /** The 121 squares C3-M13 — the interior §3.2's two ring exclusions leave. */
@@ -63,149 +69,201 @@ const LEGAL_SQUARE_NAMES: readonly string[] = ALL_SQUARES.filter((square) => {
   );
 }).map(squareName);
 
-describe("the board's charged target (rules.md §8.1, §8.2)", () => {
-  it("keeps four nodes charged at all times", () => {
-    expect(TARGET_CHARGED_NODES).toBe(4);
+describe("the offered charged-node counts (rules.md §8.1)", () => {
+  it("is largest first, so the leftmost start-screen choice is the default game", () => {
+    expect(CHARGED_NODE_COUNTS).toEqual([5, 4]);
   });
+
+  it("defaults to five, §8.1's standard game", () => {
+    expect(DEFAULT_CHARGED_NODE_COUNT).toBe(5);
+    expect(CHARGED_NODE_COUNTS).toContain(DEFAULT_CHARGED_NODE_COUNT);
+  });
+
+  it.each([4, 5])("accepts %i as a valid charged-node count", (value) => {
+    expect(isChargedNodeCount(value)).toBe(true);
+  });
+
+  it.each([3, 6, 0, 4.5, NaN])(
+    "rejects %s as a valid charged-node count",
+    (value) => {
+      expect(isChargedNodeCount(value)).toBe(false);
+    },
+  );
 });
 
-describe("dealing the opening board (rules.md §8.1)", () => {
-  it("deals exactly seven nodes, four charged and three inactive, none depleted", () => {
-    const [nodes] = dealOpeningBoard(FLEET_SQUARES, 1);
+describe.each(CHARGED_NODE_COUNTS)(
+  "dealing the opening board at %i charged (rules.md §8.1)",
+  (chargedNodeCount: ChargedNodeCount) => {
+    const totalNodes = chargedNodeCount + INACTIVE_NODE_COUNT;
 
-    expect(Object.keys(nodes)).toHaveLength(
-      TARGET_CHARGED_NODES + INACTIVE_NODE_COUNT,
-    );
+    it(`deals exactly ${totalNodes} nodes, ${chargedNodeCount} charged and three inactive, none depleted`, () => {
+      const [nodes] = dealOpeningBoard(FLEET_SQUARES, chargedNodeCount, 1);
 
-    const charged = Object.values(nodes).filter(
-      (status) => status.state === "charged",
-    );
-    const inactive = Object.values(nodes).filter(
-      (status) => status.state === "inactive",
-    );
-    const depleted = Object.values(nodes).filter(
-      (status) => status.state === "depleted",
-    );
+      expect(Object.keys(nodes)).toHaveLength(totalNodes);
 
-    expect(charged).toHaveLength(TARGET_CHARGED_NODES);
-    expect(inactive).toHaveLength(INACTIVE_NODE_COUNT);
-    expect(depleted).toHaveLength(0);
-  });
+      const charged = Object.values(nodes).filter(
+        (status) => status.state === "charged",
+      );
+      const inactive = Object.values(nodes).filter(
+        (status) => status.state === "inactive",
+      );
+      const depleted = Object.values(nodes).filter(
+        (status) => status.state === "depleted",
+      );
 
-  it("deals every charged node at baseline — no countdown until a ship steps on it", () => {
-    let seed = 1;
-    for (let i = 0; i < 200; i++) {
-      const [nodes, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
-      seed = nextSeed;
-      for (const status of Object.values(nodes)) {
-        if (status.state === "charged") {
-          expect(status.level).toBe(0);
+      expect(charged).toHaveLength(chargedNodeCount);
+      expect(inactive).toHaveLength(INACTIVE_NODE_COUNT);
+      expect(depleted).toHaveLength(0);
+    });
+
+    it("deals every charged node at baseline — no countdown until a ship steps on it", () => {
+      let seed = 1;
+      for (let i = 0; i < 200; i++) {
+        const [nodes, nextSeed] = dealOpeningBoard(
+          FLEET_SQUARES,
+          chargedNodeCount,
+          seed,
+        );
+        seed = nextSeed;
+        for (const status of Object.values(nodes)) {
+          if (status.state === "charged") {
+            expect(status.level).toBe(0);
+          }
         }
       }
-    }
-  });
+    });
 
-  it("deals the three inactive nodes priorities {1, 2, 3}, one each, never a repeat", () => {
-    let seed = 1;
-    for (let i = 0; i < 300; i++) {
-      const [nodes, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
-      seed = nextSeed;
+    it("deals the three inactive nodes priorities {1, 2, 3}, one each, never a repeat", () => {
+      let seed = 1;
+      for (let i = 0; i < 300; i++) {
+        const [nodes, nextSeed] = dealOpeningBoard(
+          FLEET_SQUARES,
+          chargedNodeCount,
+          seed,
+        );
+        seed = nextSeed;
 
-      const priorities = Object.values(nodes)
-        .filter((status) => status.state === "inactive")
-        .map((status) => status.level)
-        .sort();
-      expect(priorities).toEqual([1, 2, 3]);
-    }
-  });
+        const priorities = Object.values(nodes)
+          .filter((status) => status.state === "inactive")
+          .map((status) => status.level)
+          .sort();
+        expect(priorities).toEqual([1, 2, 3]);
+      }
+    });
 
-  it("deals every square legal under §3.2 — the four charged inside C3-M13, none on the outer edge, off any ship, no two dealt squares adjacent — over many seeds", () => {
-    const fleetNames = new Set(FLEET_SQUARES.map(squareName));
-    let seed = 1;
-    for (let i = 0; i < 500; i++) {
-      const [nodes, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
-      seed = nextSeed;
+    it("deals every square legal under §3.2 — the charged squares inside C3-M13, none on the outer edge, off any ship, no two dealt squares adjacent — over many seeds", () => {
+      const fleetNames = new Set(FLEET_SQUARES.map(squareName));
+      let seed = 1;
+      for (let i = 0; i < 500; i++) {
+        const [nodes, nextSeed] = dealOpeningBoard(
+          FLEET_SQUARES,
+          chargedNodeCount,
+          seed,
+        );
+        seed = nextSeed;
 
-      const names = Object.keys(nodes);
-      const dealtSquares = names.map(squareFromName);
+        const names = Object.keys(nodes);
+        const dealtSquares = names.map(squareFromName);
 
-      // The four charged squares are always drawn from the strict pool
-      // (rules.md §3.2), so they stay inside the 11 x 11 interior; the
-      // inactive trio's second and third squares are drawn from the
-      // widened pool (§8.2's refill procedure), which may land one ring in
-      // from the edge — outside the interior, but never on the outer edge
-      // itself.
-      for (const name of names) {
-        if (nodes[name].state === "charged") {
-          expect(INTERIOR_NAMES.has(name)).toBe(true);
+        // The charged squares are always drawn from the strict pool
+        // (rules.md §3.2), so they stay inside the 11 x 11 interior; the
+        // inactive trio's second and third squares are drawn from the
+        // widened pool (§8.2's refill procedure), which may land one ring in
+        // from the edge — outside the interior, but never on the outer edge
+        // itself.
+        for (const name of names) {
+          if (nodes[name].state === "charged") {
+            expect(INTERIOR_NAMES.has(name)).toBe(true);
+          }
+          expect(fleetNames.has(name)).toBe(false);
         }
-        expect(fleetNames.has(name)).toBe(false);
-      }
-      for (const square of dealtSquares) {
-        expect(square.row).not.toBe(1);
-        expect(square.row).not.toBe(BOARD_SIZE);
-        expect(square.column).not.toBe("A");
-        expect(square.column).not.toBe("O");
-      }
+        for (const square of dealtSquares) {
+          expect(square.row).not.toBe(1);
+          expect(square.row).not.toBe(BOARD_SIZE);
+          expect(square.column).not.toBe("A");
+          expect(square.column).not.toBe("O");
+        }
 
-      for (let a = 0; a < dealtSquares.length; a++) {
-        for (let b = a + 1; b < dealtSquares.length; b++) {
-          expect(isAdjacent(dealtSquares[a], dealtSquares[b])).toBe(false);
+        for (let a = 0; a < dealtSquares.length; a++) {
+          for (let b = a + 1; b < dealtSquares.length; b++) {
+            expect(isAdjacent(dealtSquares[a], dealtSquares[b])).toBe(false);
+          }
         }
       }
-    }
-  });
+    });
 
-  it("deals the same board and the same next seed from the same seed", () => {
-    const [firstStates, firstNextSeed] = dealOpeningBoard(FLEET_SQUARES, 12345);
-    const [secondStates, secondNextSeed] = dealOpeningBoard(
-      FLEET_SQUARES,
-      12345,
-    );
+    it("deals the same board and the same next seed from the same seed", () => {
+      const [firstStates, firstNextSeed] = dealOpeningBoard(
+        FLEET_SQUARES,
+        chargedNodeCount,
+        12345,
+      );
+      const [secondStates, secondNextSeed] = dealOpeningBoard(
+        FLEET_SQUARES,
+        chargedNodeCount,
+        12345,
+      );
 
-    expect(secondStates).toEqual(firstStates);
-    expect(secondNextSeed).toBe(firstNextSeed);
-  });
+      expect(secondStates).toEqual(firstStates);
+      expect(secondNextSeed).toBe(firstNextSeed);
+    });
 
-  it("deals a different board from a different seed (confirmed for this pair; any other distinct pair is expected to work the same way)", () => {
-    const [firstStates] = dealOpeningBoard(FLEET_SQUARES, 12345);
-    const [secondStates] = dealOpeningBoard(FLEET_SQUARES, 54321);
+    it("deals a different board from a different seed (confirmed for this pair; any other distinct pair is expected to work the same way)", () => {
+      const [firstStates] = dealOpeningBoard(
+        FLEET_SQUARES,
+        chargedNodeCount,
+        12345,
+      );
+      const [secondStates] = dealOpeningBoard(
+        FLEET_SQUARES,
+        chargedNodeCount,
+        54321,
+      );
 
-    expect(secondStates).not.toEqual(firstStates);
-  });
+      expect(secondStates).not.toEqual(firstStates);
+    });
 
-  it("advances the seed by exactly 8 steps", () => {
-    const seed = 987654321;
-    const [, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
+    it(`advances the seed by exactly ${chargedNodeCount + 4} steps`, () => {
+      const seed = 987654321;
+      const [, nextSeed] = dealOpeningBoard(
+        FLEET_SQUARES,
+        chargedNodeCount,
+        seed,
+      );
 
-    let expectedSeed = seed;
-    for (let i = 0; i < 8; i++) {
-      const [, advanced] = mulberry32(expectedSeed);
-      expectedSeed = advanced;
-    }
-
-    expect(nextSeed).toBe(expectedSeed);
-  });
-
-  // The pool is a fixed 51 squares whose balance is settled by the planet
-  // geometry itself (planets.test.ts checks that geometry directly): over
-  // many deals, every legal square is dealt at least once.
-  it("deals every one of the 51 legal squares at least once, over many deals", () => {
-    const DEALS = 3_000;
-    const seenSquares = new Set<string>();
-
-    let seed = 1;
-    for (let i = 0; i < DEALS; i++) {
-      const [nodes, nextSeed] = dealOpeningBoard(FLEET_SQUARES, seed);
-      seed = nextSeed;
-
-      for (const name of Object.keys(nodes)) {
-        seenSquares.add(name);
+      let expectedSeed = seed;
+      for (let i = 0; i < chargedNodeCount + 4; i++) {
+        const [, advanced] = mulberry32(expectedSeed);
+        expectedSeed = advanced;
       }
-    }
 
-    for (const name of LEGAL_SQUARE_NAMES) {
-      expect(seenSquares.has(name), name).toBe(true);
-    }
-  });
-});
+      expect(nextSeed).toBe(expectedSeed);
+    });
+
+    // The pool is a fixed 51 squares whose balance is settled by the planet
+    // geometry itself (planets.test.ts checks that geometry directly): over
+    // many deals, every legal square is dealt at least once.
+    it("deals every one of the 51 legal squares at least once, over many deals", () => {
+      const DEALS = 3_000;
+      const seenSquares = new Set<string>();
+
+      let seed = 1;
+      for (let i = 0; i < DEALS; i++) {
+        const [nodes, nextSeed] = dealOpeningBoard(
+          FLEET_SQUARES,
+          chargedNodeCount,
+          seed,
+        );
+        seed = nextSeed;
+
+        for (const name of Object.keys(nodes)) {
+          seenSquares.add(name);
+        }
+      }
+
+      for (const name of LEGAL_SQUARE_NAMES) {
+        expect(seenSquares.has(name), name).toBe(true);
+      }
+    });
+  },
+);

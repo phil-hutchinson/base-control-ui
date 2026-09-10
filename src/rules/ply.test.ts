@@ -21,7 +21,11 @@ import {
 import { MAX_POWER, type PowerLevel } from "./power";
 import { drawIndex } from "./random";
 import { TOP_NODE_PRIORITY, rotatePriority } from "./nodeQueue";
-import { type NodeState } from "./nodes";
+import {
+  DEFAULT_CHARGED_NODE_COUNT,
+  type ChargedNodeCount,
+  type NodeState,
+} from "./nodes";
 import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
 
 function ship(
@@ -52,6 +56,7 @@ function buildState(config: {
   nodes?: Readonly<Record<string, NodeState | readonly [NodeState, number]>>;
   plyNumber?: number;
   lengthInRounds?: number;
+  chargedNodeCount?: ChargedNodeCount;
   energy?: { green: number; red: number };
   outOfTime?: { green: boolean; red: boolean };
 }): GameState {
@@ -66,6 +71,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: config.outOfTime ?? { green: false, red: false },
   };
 }
@@ -76,8 +82,8 @@ describe("applyMove", () => {
     // end-of-turn sequence this move triggers spends only one of them and
     // cannot retire it — this test is about the move itself, not about the
     // board's own countdown, which spends a ply regardless of what a ship
-    // does. Four charged nodes elsewhere hold the board at its target, so
-    // charging has no shortfall to fill and nothing charges or refills.
+    // does. No inactive node is queued, so charging has nothing to charge
+    // with, whatever the shortfall, and nothing charges or refills.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
       nodes: {
@@ -126,9 +132,9 @@ describe("applyMove", () => {
     // effect at all, where the move only ever carries the ship's power —
     // its cost already paid — onto the planet for the end-of-turn step to
     // then act on. This move is a free orthogonal step, so its cost is 0.
-    // Four charged nodes elsewhere hold the board at its target, so
-    // charging has no shortfall to fill and the end-of-turn effects stay
-    // just the power gain.
+    // No inactive node is queued, so charging has nothing to charge with,
+    // whatever the shortfall, and the end-of-turn effects stay just the
+    // power gain.
     const endsOnPlanet = buildState({
       ships: [ship("green-1", "green", "C6", 2), ship("red-1", "red", "O15")],
       nodes: {
@@ -168,7 +174,8 @@ describe("applyMove", () => {
     // orthogonal move, which costs 2 (rules.md §6) — the planet itself adds
     // nothing beyond that: the ship lands on E6, not a planet, carrying
     // exactly what it started with less that cost, with no gain effect.
-    // Four charged nodes elsewhere again hold the board at its target.
+    // No inactive node is queued, so charging again has nothing to charge
+    // with, whatever the shortfall.
     const passesOverPlanet = buildState({
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
       nodes: {
@@ -234,6 +241,7 @@ describe("applyMove", () => {
     // ship far away, with a legal move of its own, keeps red from
     // auto-passing and running a second end-of-turn sequence of its own.
     const state = buildState({
+      chargedNodeCount: 4,
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O15")],
       nodes: {
         I8: ["inactive", TOP_NODE_PRIORITY],
@@ -264,9 +272,9 @@ describe("applyMove", () => {
     // end-of-turn sequence this move triggers spends only one of them and
     // cannot retire it — the "unchanged" under test here is about the move
     // itself, not about the board's own countdown, which spends a ply
-    // regardless of what a ship does (see endOfTurn.test.ts). Four charged
-    // nodes elsewhere hold the board at its target, so charging has no
-    // shortfall to fill and nothing charges or refills.
+    // regardless of what a ship does (see endOfTurn.test.ts). No inactive
+    // node is queued, so charging has nothing to charge with, whatever the
+    // shortfall, and nothing charges or refills.
     const state = buildState({
       ships: [ship("green-1", "green", "H8")],
       nodes: {
@@ -317,9 +325,8 @@ describe("applyMove", () => {
   });
 
   it("spends the ply's one action before passing the turn, then clears the moved-this-ply marks", () => {
-    // Four charged nodes elsewhere hold the board at its target, so
-    // charging has no shortfall to fill and the end-of-turn effects stay
-    // empty.
+    // No inactive node is queued, so charging has nothing to charge with,
+    // whatever the shortfall, and the end-of-turn effects stay empty.
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O15")],
       nodes: {
@@ -738,10 +745,10 @@ describe("applyAttack", () => {
   it("advances randomSeed exactly twice for the fight itself, and nothing further", () => {
     // Drawing the second return from the same seed the first draw used
     // would silently break replay: the pool is just one square shorter, so
-    // the draw still looks legal. Four charged nodes elsewhere hold the
-    // board at its target, so charging has no shortfall to fill, and none
-    // of them carries a countdown, so nothing in the end-of-turn sequence
-    // draws from the seed beyond the fight itself.
+    // the draw still looks legal. No inactive node is queued, so charging
+    // has nothing to charge with, whatever the shortfall, and none of them
+    // carries a countdown, so nothing in the end-of-turn sequence draws
+    // from the seed beyond the fight itself.
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
       nodes: {
@@ -1017,9 +1024,9 @@ describe("applyAttack", () => {
   });
 
   it("marks the attacker as having acted, even though it ends the action on a planet itself", () => {
-    // Four charged nodes elsewhere hold the board at its target, so
-    // charging has no shortfall to fill and the end-of-turn effects stay
-    // just the power gain.
+    // No inactive node is queued, so charging has nothing to charge with,
+    // whatever the shortfall, and the end-of-turn effects stay just the
+    // power gain.
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
       nodes: {
@@ -1340,9 +1347,8 @@ describe("applyPassGuard", () => {
         ship("red-1", "red", "B1"),
         ship("red-2", "red", "A2"),
       ],
-      // Four charged nodes elsewhere hold the board at its target, so
-      // charging has no shortfall to fill and the end-of-turn effects stay
-      // empty.
+      // No inactive node is queued, so charging has nothing to charge with,
+      // whatever the shortfall, and the end-of-turn effects stay empty.
       nodes: {
         H8: ["charged", 0],
         K8: ["charged", 0],
@@ -1369,9 +1375,9 @@ describe("applyPassGuard", () => {
     // green-1 is on the D6 planet, so §3.1 forbids it to attack regardless
     // of what stands next to it, and every square it could otherwise reach —
     // C6, E6, D5 and D7, its four orthogonal neighbours, its only reach at
-    // 0 power — is occupied. Four charged nodes elsewhere hold the board
-    // at its target, so charging has no shortfall to fill and the
-    // end-of-turn effects stay just the power gain.
+    // 0 power — is occupied. No inactive node is queued, so charging has
+    // nothing to charge with, whatever the shortfall, and the end-of-turn
+    // effects stay just the power gain.
     const state = buildState({
       ships: [
         ship("green-1", "green", "D6", 0),
@@ -1511,8 +1517,8 @@ describe("applyPassGuard", () => {
   });
 
   it("passes once, unconditionally, when no ship at all has a legal move", () => {
-    // Four charged nodes hold the board at its target, so charging has no
-    // shortfall to fill and the end-of-turn effects stay empty.
+    // No inactive node is queued, so charging has nothing to charge with,
+    // whatever the shortfall, and the end-of-turn effects stay empty.
     const state = buildState({
       ships: [],
       nodes: {

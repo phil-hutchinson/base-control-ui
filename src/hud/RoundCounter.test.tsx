@@ -10,7 +10,7 @@ afterEach(cleanup);
 
 function atPly(plyNumber: number, lengthInRounds?: number) {
   return {
-    ...startingGameState(1, lengthInRounds),
+    ...startingGameState(1, { lengthInRounds }),
     plyNumber,
   };
 }

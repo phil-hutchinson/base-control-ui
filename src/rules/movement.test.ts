@@ -21,7 +21,7 @@ import {
   sideToMoveHasLegalMove,
 } from "./movement";
 import type { PowerLevel } from "./power";
-import type { NodeState } from "./nodes";
+import { DEFAULT_CHARGED_NODE_COUNT, type NodeState } from "./nodes";
 
 const POWER_LEVELS: readonly PowerLevel[] = [0, 1, 2, 3, 4, 5, 6];
 
@@ -286,6 +286,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }
