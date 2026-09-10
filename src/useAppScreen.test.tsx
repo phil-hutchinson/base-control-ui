@@ -48,6 +48,28 @@ describe("useAppScreen", () => {
     expect(result.current.screen).toBe("game");
   });
 
+  it("carries a chosen charged-node count of three into the new-game intent, and keeps it on returning to start", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch));
+
+    act(() => {
+      result.current.setChargedNodeCount(3);
+    });
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", chargedNodeCount: 3 }),
+    );
+
+    act(() => {
+      result.current.handleReturnToStart();
+    });
+
+    expect(result.current.chargedNodeCount).toBe(3);
+  });
+
   it("returning to start moves to the start screen and changes none of the options", () => {
     const dispatch = vi.fn();
     const { result } = renderHook(() => useAppScreen(dispatch));

@@ -685,6 +685,25 @@ describe("sessionReducer — new-game", () => {
     },
   );
 
+  it("honours a chosen charged-node count of three, dealing a three-charged board", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 9,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: 3,
+    });
+
+    expect(result.state.chargedNodeCount).toBe(3);
+    expect(
+      Object.values(result.state.nodes).filter(
+        (node) => node.state === "charged",
+      ),
+    ).toHaveLength(3);
+  });
+
   it("honours a chosen charged-node count, dealing a board with that many nodes charged", () => {
     const session = sessionFor(buildState({ ships: [] }));
 

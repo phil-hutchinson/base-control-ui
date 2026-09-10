@@ -198,6 +198,23 @@ describe("App", () => {
     ).toHaveLength(4);
   });
 
+  it("pressing PLAY after choosing 3 charged nodes shows a three-charged board", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const chargedNodesGroup = screen.getByRole("group", {
+      name: "Charged nodes",
+    });
+    await user.click(
+      within(chargedNodesGroup).getByRole("radio", { name: "3" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    expect(
+      screen.getAllByRole("gridcell", { name: /, charged node/ }),
+    ).toHaveLength(3);
+  });
+
   it("pressing PLAY after choosing 45 rounds starts a game of that length", async () => {
     const user = userEvent.setup();
     render(<App />);

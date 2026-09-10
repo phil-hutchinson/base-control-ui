@@ -134,6 +134,17 @@ describe("StartScreen", () => {
     expect(within(group).getByRole("radio", { name: "5" })).toBeChecked();
   });
 
+  it("renders the charged nodes group's values in order, largest first", () => {
+    renderStartScreen();
+
+    const group = screen.getByRole("group", { name: "Charged nodes" });
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual(["5", "4", "3"]);
+  });
+
   it("renders the four option groups in order: Ships, Charged nodes, Rounds, Clock", () => {
     renderStartScreen();
 
@@ -211,6 +222,26 @@ describe("StartScreen", () => {
     await user.click(within(group).getByRole("radio", { name: "4" }));
 
     expect(onChargedNodeCountChange).toHaveBeenCalledExactlyOnceWith(4);
+    expect(onFleetSizeChange).not.toHaveBeenCalled();
+    expect(onLengthInRoundsChange).not.toHaveBeenCalled();
+    expect(onClockSettingChange).not.toHaveBeenCalled();
+    expect(onPlay).not.toHaveBeenCalled();
+  });
+
+  it("calls the charged nodes change handler with 3, and not the others, when 3 charged nodes are chosen", async () => {
+    const user = userEvent.setup();
+    const {
+      onFleetSizeChange,
+      onChargedNodeCountChange,
+      onLengthInRoundsChange,
+      onClockSettingChange,
+      onPlay,
+    } = renderStartScreen({ chargedNodeCount: 5 });
+
+    const group = screen.getByRole("group", { name: "Charged nodes" });
+    await user.click(within(group).getByRole("radio", { name: "3" }));
+
+    expect(onChargedNodeCountChange).toHaveBeenCalledExactlyOnceWith(3);
     expect(onFleetSizeChange).not.toHaveBeenCalled();
     expect(onLengthInRoundsChange).not.toHaveBeenCalled();
     expect(onClockSettingChange).not.toHaveBeenCalled();

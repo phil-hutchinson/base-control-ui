@@ -457,7 +457,19 @@ cases added.
 
 ### Step 5 — The chosen 3 reaches the game, end to end
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator. Five new cases plus two
+extensions: `StartScreen.test.tsx` asserts the group's values in order
+(`["5", "4", "3"]` — the existing tests looped over the array and would
+have passed on membership alone) and that choosing 3 calls only
+`onChargedNodeCountChange`, with 3; `useAppScreen.test.tsx` carries 3
+into the `new-game` intent and keeps it across a return to start;
+`session.test.ts` deals a three-charged board from an intent carrying 3;
+`App.test.tsx` presses PLAY on 3 and counts three charged gridcells;
+`ScoreDisplay.test.tsx`'s pip-row test gained six-ships-three-nodes and
+three-ships-three-nodes, both three pips. **No production change was
+needed anywhere**, as D8 predicted. Suite 1206 → 1211.
 
 Prove the whole path from the start screen to a three-charged board, in
 tests. Expect **no production change** (D8); if one is needed, make it and
