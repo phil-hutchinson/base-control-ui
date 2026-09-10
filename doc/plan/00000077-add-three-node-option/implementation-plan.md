@@ -283,7 +283,24 @@ Appendix B claims to be measured at three charged.
 
 ### Step 2 — The long-run total-node floor becomes per-count
 
-Status: pending
+Status: committed
+
+Notes: In `src/rules/nodePool.test.ts`, removed the module-level
+`MINIMUM_TOTAL_NODES` constant and replaced it with `minimumTotalNodes`,
+computed inside the `describe.each(CHARGED_NODE_COUNTS)` block as
+`chargedNodeCount + INACTIVE_NODE_COUNT`, used by the "keeps the board's
+total node count within a sane, measured band" assertion. Rewrote the
+comment above `MAXIMUM_TOTAL_NODES` (the only constant left there) to keep
+the measured-range prose, explain that the lower bound is now derived per
+count rather than fixed, and re-state `MAXIMUM_TOTAL_NODES` as a shared
+ceiling that exists to catch a runaway rather than describe any one count's
+measured range (D1, D2). No behaviour change: at five and four charged the
+derived floor is still 8 and 7, matching the removed constant's values at
+those counts, so the suite is green exactly as before. `npm run typecheck`,
+`npm run lint` and `npm test` all pass (1151 tests, same count as Step 1);
+`npm run format:check` reports only the same pre-existing, unrelated
+warning on `src/board/planetArt.ts` noted in Step 1. No deviation from the
+plan.
 
 In `src/rules/nodePool.test.ts`, replace the module-level
 `MINIMUM_TOTAL_NODES = 7` with a floor derived **per count** inside the

@@ -125,12 +125,20 @@ const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
  * board at any moment. The driver this file's header describes starts a
  * countdown so eagerly that several traps and exits are typically depleted
  * and counting down at once, closer to the top of each range than the
- * bottom. The lower bound is the board's structural floor at four
- * charged — four charged nodes plus three inactive, nothing yet depleted —
- * so it is exact by construction rather than a measured margin; the upper
- * bound leaves comfortable margin above both measured ranges.
+ * bottom.
+ *
+ * The lower bound is not fixed here: it is derived per count, inside the
+ * `describe.each` block below, as `chargedNodeCount + INACTIVE_NODE_COUNT`.
+ * The board is always back at its own charged-node count by the end of
+ * every turn, plus exactly three inactive nodes, nothing else guaranteed —
+ * so that sum is the board's structural floor at every count, exact by
+ * construction rather than a measured margin.
+ *
+ * `MAXIMUM_TOTAL_NODES` stays a single shared ceiling rather than a figure
+ * measured at any one count: it exists to catch a runaway, not to describe
+ * a count, and it leaves generous margin above every count's measured
+ * range above.
  */
-const MINIMUM_TOTAL_NODES = 7;
 const MAXIMUM_TOTAL_NODES = 14;
 
 /** One ply's sample of the board, taken from `result.state` after `runEndOfTurn`. */
@@ -331,6 +339,11 @@ function average(values: readonly number[]): number {
 describe.each(CHARGED_NODE_COUNTS)(
   "the node economy at %d charged nodes (Appendix B)",
   (chargedNodeCount) => {
+    // The board's structural floor at this count: it is always back at its
+    // own charged-node count by the end of every turn, plus exactly three
+    // inactive nodes, nothing else guaranteed.
+    const minimumTotalNodes = chargedNodeCount + INACTIVE_NODE_COUNT;
+
     describe("the queue's invariants hold at every turn", () => {
       it.each(SEEDS)(
         "holds exactly three inactive nodes at every turn, holding priorities {1, 2, 3} (seed %d)",
@@ -363,7 +376,7 @@ describe.each(CHARGED_NODE_COUNTS)(
 
           run.samples.forEach((sample, i) => {
             expect(sample.totalNodeCount, `ply ${i}`).toBeGreaterThanOrEqual(
-              MINIMUM_TOTAL_NODES,
+              minimumTotalNodes,
             );
             expect(sample.totalNodeCount, `ply ${i}`).toBeLessThanOrEqual(
               MAXIMUM_TOTAL_NODES,
