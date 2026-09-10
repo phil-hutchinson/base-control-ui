@@ -14,7 +14,14 @@ import {
 } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS, isGameLengthRounds } from "./gameLength";
 import type { PowerLevel } from "./power";
-import { dealOpeningBoard, type NodeState } from "./nodes";
+import {
+  CHARGED_NODE_COUNTS,
+  dealOpeningBoard,
+  DEFAULT_CHARGED_NODE_COUNT,
+  isChargedNodeCount,
+  type ChargedNodeCount,
+  type NodeState,
+} from "./nodes";
 
 /** How many actions a side takes each ply (rules.md §5). */
 export const ACTIONS_PER_PLY = 1;
@@ -89,6 +96,16 @@ export interface GameState {
    */
   readonly lengthInRounds: number;
   /**
+   * How many nodes the board keeps charged (rules.md §8.1), fixed for the
+   * game's lifetime once set by `startingGameState`. Every piece of
+   * charging arithmetic — the opening deal and every turn's shortfall —
+   * reads it from here rather than from a constant. It cannot be derived
+   * from `state.nodes` the way a fleet size is derived from `state.ships`:
+   * a board that is legitimately one node short of it, mid-sequence, would
+   * have the count derived wrong.
+   */
+  readonly chargedNodeCount: ChargedNodeCount;
+  /**
    * Which sides have run out of time (rules.md §10), both starting false.
    * This is a fact about the game, not about wall-clock time: the rules
    * layer never reads a clock, and never will. It is set, once, by an
@@ -101,9 +118,38 @@ export interface GameState {
 }
 
 /**
+ * The options `startingGameState` accepts beyond the seed, each fixed for
+ * the game's lifetime once set. All are optional and fall back to the
+ * standard game's defaults.
+ */
+export interface StartingGameStateOptions {
+  /**
+   * The game's length in rounds (rules.md §9). Defaults to
+   * `DEFAULT_GAME_LENGTH_ROUNDS`. Must be a positive whole number; anything
+   * else is a caller bug and throws a `RangeError`.
+   */
+  readonly lengthInRounds?: number;
+  /**
+   * The fleet size (rules.md §4). Defaults to `DEFAULT_FLEET_SIZE`. Must be
+   * one of `fleet.ts`'s valid fleet sizes, or this throws a `RangeError`. It
+   * is **not** stored on the resulting state: `state.ships` is the record of
+   * it, since a side's fleet size is simply the count of its ships.
+   */
+  readonly fleetSize?: number;
+  /**
+   * How many nodes the board keeps charged (rules.md §8.1). Defaults to
+   * `DEFAULT_CHARGED_NODE_COUNT`. Must be one of `nodes.ts`'s offered
+   * charged-node counts, or this throws a `RangeError`. Stored on the
+   * resulting state as `chargedNodeCount`, unlike `fleetSize`, because it
+   * cannot be derived back from the dealt board.
+   */
+  readonly chargedNodeCount?: number;
+}
+
+/**
  * The state the game starts from: `startingFleet(fleetSize)`'s ships, a
- * dealt board (`dealOpeningBoard`, rules.md §8.1) — four of the seven nodes
- * charged at baseline, with no countdown, the other three inactive at
+ * dealt board (`dealOpeningBoard`, rules.md §8.1) — the chosen number of
+ * nodes charged at baseline, with no countdown, the other three inactive at
  * priorities 1, 2 and 3 dealt at random, nothing depleted — green to move,
  * `ACTIONS_PER_PLY`
  * actions remaining, nothing moved, ply 1, both sides at 0 energy, neither
@@ -115,30 +161,29 @@ export interface GameState {
  * unaffected.
  *
  * The seed argument is the seed the **deal** starts from, not the seed the
- * game's first turn draws from: dealing the board consumes 12 steps of the
- * stream before play begins, and the resulting state's `randomSeed` is the
- * seed the deal left behind. That argument is also recorded verbatim as
- * `openingSeed`, so the state remembers where its deal started even once
- * `randomSeed` has moved on. See `src/game/seed.ts` for where the app's
- * opening seed comes from. Every test passes one explicitly, so a game's
- * opening position is always reproducible.
+ * game's first turn draws from: dealing the board consumes `chargedNodeCount
+ * + 4` steps of the stream before play begins — nine at five charged, eight
+ * at four — and the resulting state's `randomSeed` is the seed the deal left
+ * behind. That argument is also recorded verbatim as `openingSeed`, so the
+ * state remembers where its deal started even once `randomSeed` has moved
+ * on. See `src/game/seed.ts` for where the app's opening seed comes from.
+ * Every test passes one explicitly, so a game's opening position is always
+ * reproducible.
  *
- * The game's length in rounds defaults to `DEFAULT_GAME_LENGTH_ROUNDS`
- * (rules.md §9) and, once set, is fixed for the game's lifetime. It must be
- * a positive whole number; anything else is a caller bug and throws a
- * `RangeError`.
- *
- * The fleet size (rules.md §4) defaults to `DEFAULT_FLEET_SIZE` and, like
- * the length, is fixed for the game's lifetime once set — it must be one of
- * `fleet.ts`'s valid fleet sizes, or this throws a `RangeError`. It is
- * **not** stored on the resulting state: `state.ships` is the record of it,
- * since a side's fleet size is simply the count of its ships.
+ * `options` carries everything else, each optional and documented on
+ * `StartingGameStateOptions` — see there for the fields and their defaults
+ * and validation.
  */
 export function startingGameState(
   randomSeed: number,
-  lengthInRounds: number = DEFAULT_GAME_LENGTH_ROUNDS,
-  fleetSize: number = DEFAULT_FLEET_SIZE,
+  options: StartingGameStateOptions = {},
 ): GameState {
+  const {
+    lengthInRounds = DEFAULT_GAME_LENGTH_ROUNDS,
+    fleetSize = DEFAULT_FLEET_SIZE,
+    chargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
+  } = options;
+
   if (!isGameLengthRounds(lengthInRounds)) {
     throw new RangeError(
       `startingGameState: lengthInRounds must be a positive integer, got ${lengthInRounds}`,
@@ -147,6 +192,11 @@ export function startingGameState(
   if (!isFleetSize(fleetSize)) {
     throw new RangeError(
       `startingGameState: fleetSize must be one of ${FLEET_SIZES.join(", ")}, got ${fleetSize}`,
+    );
+  }
+  if (!isChargedNodeCount(chargedNodeCount)) {
+    throw new RangeError(
+      `startingGameState: chargedNodeCount must be one of ${CHARGED_NODE_COUNTS.join(", ")}, got ${chargedNodeCount}`,
     );
   }
 
@@ -159,6 +209,7 @@ export function startingGameState(
 
   const [nodes, nextSeed] = dealOpeningBoard(
     ships.map((ship) => ship.square),
+    chargedNodeCount,
     randomSeed,
   );
 
@@ -173,6 +224,7 @@ export function startingGameState(
     openingSeed: randomSeed,
     energy: { green: 0, red: 0 },
     lengthInRounds,
+    chargedNodeCount,
     outOfTime: { green: false, red: false },
   };
 }

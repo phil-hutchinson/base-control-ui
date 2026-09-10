@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { squareAt } from "../rules/board";
 import type { EnergyCollectedEffect } from "../rules/endOfTurn";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
+import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import type { GameState } from "../rules/gameState";
 import type { PassEffect } from "../rules/ply";
 import type { MovedEvent, Session, SessionEvent } from "../game/session";
@@ -25,6 +26,7 @@ function buildState(plyNumber: number): GameState {
     openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }

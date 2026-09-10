@@ -3,6 +3,7 @@ import { squareAt } from "../rules/board";
 import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import type { GameResult } from "../rules/gameLength";
+import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import type { EnergyCollectedEffect } from "../rules/endOfTurn";
 import type {
   AttackedEvent,
@@ -1184,6 +1185,7 @@ describe("announcementForSession", () => {
       openingSeed: 1,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: config.outOfTime ?? { green: false, red: false },
     };
   }
@@ -1620,6 +1622,7 @@ describe("turnIndicatorText", () => {
         openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       }),
     ).toBe("Green to play");
@@ -1638,6 +1641,7 @@ describe("turnIndicatorText", () => {
         openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       }),
     ).toBe("Red to play");
@@ -1656,6 +1660,7 @@ describe("turnIndicatorText", () => {
         openingSeed: 1,
         energy: { green: 4, red: 4 },
         lengthInRounds: 3,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       }),
     ).toBe("Game over");
@@ -1690,6 +1695,7 @@ describe("HUD wording", () => {
       openingSeed: 1,
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
     };
   }

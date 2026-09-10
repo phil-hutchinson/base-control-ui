@@ -42,6 +42,7 @@ import {
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
 import type { NodeState } from "./nodes";
+import { DEFAULT_CHARGED_NODE_COUNT } from "./nodes";
 
 function ship(
   id: ShipId,
@@ -78,6 +79,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }
@@ -525,9 +527,9 @@ describe("camping — the node refuge: a ship holding a charged node cannot be a
 
 describe("camping — leaving a charged node ends it at once (rules.md §8.3)", () => {
   it("depletes the node the instant its holder leaves, raises node-spent, forfeits that turn's energy, charges the queue's front node at the same turn's end, and starts an exit node lasting exactly two plies", () => {
-    // Three other charged nodes, at baseline, keep the board at four charged
-    // until F2 becomes an exit node; M5 is the queue's front node, so it is
-    // what charges to fill the shortfall that departure opens.
+    // Three other charged nodes, at baseline, sit alongside F2 until it
+    // becomes an exit node; M5 is the queue's front node, so it is what
+    // charges to fill the shortfall that departure opens.
     const initial = buildState({
       ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "D2")],
       nodes: {
@@ -597,8 +599,9 @@ describe("camping — leaving a charged node ends it at once (rules.md §8.3)", 
   });
 
   it("does not hand the node back or let the opponent inherit it — the departed square stays uncharged for both plies", () => {
-    // Three other charged nodes, at baseline, keep the shortfall at one once
-    // F2 becomes an exit node, so nothing else on the board stirs.
+    // No inactive node is queued, so once F2 becomes an exit node charging
+    // has nothing to charge with, whatever the shortfall, and nothing else
+    // on the board stirs.
     const initial = buildState({
       ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "D2")],
       nodes: {

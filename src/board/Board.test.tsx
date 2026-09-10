@@ -18,6 +18,7 @@ import {
   type NodeStatus,
 } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
+import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { legalDestinations } from "../rules/movement";
 import { legalTargets } from "../rules/combat";
 import type { PowerLevel } from "../rules/power";
@@ -117,6 +118,7 @@ function stateWithNode(
     openingSeed: 1,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }
@@ -611,6 +613,7 @@ describe("Board", () => {
         openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       };
       const session: Session = {
@@ -751,6 +754,7 @@ describe("Board", () => {
         openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       };
     }
@@ -911,6 +915,7 @@ describe("Board", () => {
         openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       };
     }
@@ -1109,6 +1114,7 @@ describe("Board", () => {
         openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       };
     }
@@ -1251,6 +1257,7 @@ describe("Board", () => {
         openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       };
       const session: Session = {
@@ -1290,6 +1297,7 @@ describe("Board", () => {
         openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       };
       const session: Session = {
@@ -1327,6 +1335,7 @@ describe("Board", () => {
         openingSeed: 1,
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       };
       const session: Session = {

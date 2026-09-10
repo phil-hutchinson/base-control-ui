@@ -12,8 +12,10 @@
 // renders black) is written as the explicit `#000` it already rendered as;
 // planet 9's stray `opacity="0.8 "` trailing spaces are trimmed; and planets
 // 1 and 2's hardcoded backing fills (`black`, `#151c31`) are unified to
-// `#151c31`, the --color-space-raised literal. Nothing else about the
-// geometry, colours or structure differs from the gallery. Planets 11 and 12
+// `#151c31`, the --color-space-raised literal. One later change departs from
+// the gallery deliberately: planet 2's four moons, drawn there in the
+// planet's own gradient, each carry a colour of their own. Nothing else
+// about the geometry, colours or structure differs. Planets 11 and 12
 // - the gallery's rose-and-cream storm planet and its cream-and-olive crater
 // planet - are dropped from the catalogue and are not declared here; the
 // remaining numbers keep their gaps rather than being renumbered.
@@ -92,19 +94,35 @@ export function PlanetDefs() {
           <circle cx="50" cy="50" r="28" fill={`url(#${p1.surface})`} />
         </g>
 
-        {/* Planet 2: peru-and-purple planet with four identical moons */}
+        {/* Planet 2: peru-and-purple planet with four differently coloured moons */}
         <radialGradient id={p2.surface} cx="40%" cy="40%" r="70%">
           <stop offset="0%" stopColor="peru" stopOpacity="1" />
           <stop offset="100%" stopColor="rebeccapurple" stopOpacity="0.3" />
+        </radialGradient>
+        <radialGradient id={p2["moon-1"]} cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stopColor="#ac81c6" stopOpacity="1" />
+          <stop offset="100%" stopColor="#ac81c6" stopOpacity="0.3" />
+        </radialGradient>
+        <radialGradient id={p2["moon-2"]} cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stopColor="#b59410" stopOpacity="1" />
+          <stop offset="100%" stopColor="#b59410" stopOpacity="0.3" />
+        </radialGradient>
+        <radialGradient id={p2["moon-3"]} cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stopColor="#c6c6c6" stopOpacity="1" />
+          <stop offset="100%" stopColor="#c6c6c6" stopOpacity="0.3" />
+        </radialGradient>
+        <radialGradient id={p2["moon-4"]} cx="40%" cy="40%" r="70%">
+          <stop offset="0%" stopColor="#ffaa4a" stopOpacity="1" />
+          <stop offset="100%" stopColor="#ffaa4a" stopOpacity="0.3" />
         </radialGradient>
         <g id={p2.body}>
           <circle cx="50" cy="50" r="25" fill="#151c31" />
           <circle cx="50" cy="50" r="25" fill={`url(#${p2.surface})`} />
           <circle cx="37" cy="51" r="8" fill="#151c31" />
-          <circle cx="37" cy="51" r="8" fill={`url(#${p2.surface})`} />
-          <circle cx="28" cy="84" r="6" fill={`url(#${p2.surface})`} />
-          <circle cx="87" cy="63" r="8" fill={`url(#${p2.surface})`} />
-          <circle cx="11" cy="57" r="7" fill={`url(#${p2.surface})`} />
+          <circle cx="37" cy="51" r="8" fill={`url(#${p2["moon-1"]})`} />
+          <circle cx="28" cy="84" r="6" fill={`url(#${p2["moon-2"]})`} />
+          <circle cx="87" cy="63" r="8" fill={`url(#${p2["moon-3"]})`} />
+          <circle cx="11" cy="57" r="7" fill={`url(#${p2["moon-4"]})`} />
         </g>
 
         {/* Planet 3: banded chocolate-brown planet */}

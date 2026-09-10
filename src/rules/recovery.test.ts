@@ -19,6 +19,7 @@ import { squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
 import { ACTIONS_PER_PLY, type GameState, type Ship } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
+import { DEFAULT_CHARGED_NODE_COUNT } from "./nodes";
 import { legalDestinations, reachFrom } from "./movement";
 import {
   type AttackEffect,
@@ -54,6 +55,7 @@ function buildState(config: {
     openingSeed: 1,
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
   };
 }

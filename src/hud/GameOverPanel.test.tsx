@@ -9,6 +9,7 @@ import { Board } from "../board/Board";
 import { squareAt, squareName } from "../rules/board";
 import { isGameOver } from "../rules/gameLength";
 import type { GameState } from "../rules/gameState";
+import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { createSession, sessionReducer } from "../game/session";
 import { GameOverPanel } from "./GameOverPanel";
 import { Hud } from "./Hud";
@@ -29,6 +30,7 @@ function finishedState(overrides: Partial<GameState> = {}): GameState {
     openingSeed: 1,
     energy: { green: 4, red: 7 },
     lengthInRounds: 1,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     ...overrides,
   };
@@ -187,6 +189,7 @@ describe("GameOverPanel", () => {
         openingSeed: 1,
         energy: { green: 4, red: 7 },
         lengthInRounds: 1,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       };
     }
@@ -219,6 +222,7 @@ describe("GameOverPanel", () => {
         openingSeed: 1,
         energy: { green: 4, red: 6 },
         lengthInRounds: 1,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
       };
     }

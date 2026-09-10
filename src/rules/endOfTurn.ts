@@ -323,10 +323,10 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
     }
   }
 
-  // Step 4: the shortfall against four charged is filled from the three
-  // inactive nodes, top-down by priority (§8.2, §8.6 step 4) — no draw, no
-  // weighting, no seed movement. The shortfall never exceeds two (§8.3), so
-  // the three-node queue always covers it.
+  // Step 4: the shortfall against the chosen charged-node count is filled
+  // from the three inactive nodes, top-down by priority (§8.2, §8.6 step
+  // 4) — no draw, no weighting, no seed movement. The shortfall never
+  // exceeds two (§8.3), so the three-node queue always covers it.
   const charging = runCharging(workingState);
   workingState = charging.state;
   effects.push(...charging.effects);

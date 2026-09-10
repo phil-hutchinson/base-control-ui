@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.29**
+**Rules version: 0.30**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -59,9 +59,10 @@ until the node under it retires.
 
 **Node** — a position on the board that comes into being, runs through three
 states — **inactive**, **charged** and **depleted** — and then ends and
-simply leaves the board. The board always carries **four** charged nodes and
+simply leaves the board. The board always carries the **chosen number** of
+charged nodes — five or four, chosen before play begins (section 8.1) — and
 **three** inactive ones, plus however many happen to be depleted at the
-time (section 8.1).
+time.
 
 **Priority** — a number, 1, 2 or 3, carried by each of the three inactive
 nodes at once, one each, never a repeat. The inactive node with the highest
@@ -437,18 +438,21 @@ Every node is always in exactly one of three states:
 A node cycles inactive → charged → depleted → **ends**, and simply leaves
 the board.
 
-The board keeps **four** nodes charged at all times: at the end of every
-turn, whatever shortfall there is against four is filled from the three
-inactive nodes, highest priority first. The shortfall is always filled on
-the turn it appears — the board is never left short of four charged
-(Appendix B).
+A player chooses how many nodes the board keeps charged before play
+begins: **five or four**, the same number for both players and fixed for
+the game's lifetime, with **five the standard game**. At the end of every
+turn, whatever shortfall there is against the chosen number is filled from
+the three inactive nodes, highest priority first. The shortfall is always
+filled on the turn it appears — the board is never left short of the
+chosen number of charged nodes (Appendix B).
 
-**The opening board is dealt.** The game opens with **seven** nodes:
+**The opening board is dealt.** The game opens with **eight** nodes at
+five charged, **seven** at four:
 
-- **Four are charged**, at squares drawn under section 3.2, at random, with
-  every legal square equally likely and no two the same. No square is
-  privileged; the centre is not guaranteed.
-- **Each of the four starts at baseline**, with no countdown, exactly like
+- **The chosen number are charged**, at squares drawn under section 3.2, at
+  random, with every legal square equally likely and no two the same. No
+  square is privileged; the centre is not guaranteed.
+- **Each of them starts at baseline**, with no countdown, exactly like
   any node charged during play — nothing about a freshly charged node is
   random, and it will sit there for the rest of the game if no ship reaches
   it.
@@ -462,13 +466,19 @@ the turn it appears — the board is never left short of four charged
 At any moment the board carries exactly three **inactive** nodes, holding
 priorities 1, 2 and 3 — one each, never a repeat (section 8.1).
 
-At the end of every turn, whatever shortfall there is against four charged
-is filled from the three inactive nodes, in descending order of priority —
-the 3 first, then the 2, then the 1, as many as the shortfall calls for.
-There is no draw and no weighting: a player who can see the priorities knows
-which node charges before it happens. A charged node starts at **baseline**,
-with no countdown (section 8.3) — no node ever appears under a ship (section
-3.2), so a newly charged node never has one standing on it already.
+At the end of every turn, whatever shortfall there is against the chosen
+number of charged nodes (section 8.1) is filled from the three inactive
+nodes, in descending order of priority — the 3 first, then the 2, then the
+1, as many as the shortfall calls for. There is no draw and no weighting: a
+player who can see the priorities knows which node charges before it
+happens. A charged node starts at **baseline**, with no countdown
+(section 8.3) — no node ever appears under a ship (section 3.2), so a newly
+charged node never has one standing on it already.
+
+The queue's size is unrelated to the chosen target: three inactive nodes
+cover the largest shortfall a single turn can produce, which is two,
+whether the board is filling towards five charged or towards four
+(Appendix B).
 
 **Priorities rotate at the end of every turn on which nothing charged**: 1
 becomes 2, 2 becomes 3, and 3 becomes 1. The nodes themselves do not move —
@@ -548,8 +558,8 @@ stepping away and coming back later. Nor can the opponent inherit it — a
 node you leave is not there to be taken. Leaving also forfeits that turn's
 energy from it, since energy counts the nodes a player is standing on when
 their turn ends. The shortfall this creates is filled at the **end of the
-turn**, exactly like any other shortfall against four charged (section
-8.2) — nothing charges in the middle of a turn.
+turn**, exactly like any other shortfall against the chosen number of
+charged nodes (section 8.2) — nothing charges in the middle of a turn.
 
 A depleted node comes in two lengths, depending on how it was created:
 
@@ -589,8 +599,8 @@ At the end of each player's turn, that player collects **one energy for
 each charged node they are standing on** — hold three, collect three. A node
 counts only if one of that player's ships is on it at that moment — flying
 across a charged node and moving on collects nothing. The board never
-charges more than four nodes at once (sections 8.1, 8.2), but that is a
-fact about the board, not a cap on what collecting can pay.
+charges more than the chosen number of nodes at once (sections 8.1, 8.2),
+but that is a fact about the board, not a cap on what collecting can pay.
 
 Nothing in the game subtracts energy. A player's total only ever rises.
 
@@ -631,8 +641,8 @@ Everything that happens at the end of a turn happens in this order:
 3. Every charged node **carrying a countdown** spends one turn of it; any
    that runs out goes depleted, with an 11-turn countdown, and traps the
    ship standing on it (section 8.5).
-4. Whatever shortfall there is against four charged is filled from the three
-   inactive nodes, highest priority first.
+4. Whatever shortfall there is against the chosen number of charged nodes is
+   filled from the three inactive nodes, highest priority first.
 5. If step 4 charged anything, the three inactive nodes are replaced
    together: whichever did not charge are discarded, and three new ones are
    drawn and dealt priorities 1, 2 and 3 at random (section 8.2). Otherwise,
@@ -713,9 +723,9 @@ player with the most energy wins, and equal energy is a draw.
 
 ## 10. The clock
 
-Alongside the fleet size and the number of rounds, a player chooses a
-**clock** before play begins: no clock, or 6, 4 or 2 seconds a turn, with no
-clock the standard game.
+Alongside the fleet size, the number of rounds and the charged-node count
+(section 8.1), a player chooses a **clock** before play begins: no clock,
+or 6, 4 or 2 seconds a turn, with no clock the standard game.
 
 Each player's clock starts with a budget: their seconds a turn multiplied by
 the number of turns the chosen length gives them. The whole game is
@@ -747,14 +757,17 @@ any.
 
 ## Appendix B — Sizing the queue
 
-The board carries **four** charged nodes and **three** inactive ones at all
-times, plus however many happen to be depleted and counting down. Measured
-over several hundred turns of sustained play, that count breathes between
-**seven** and **eleven** — a charged node's own countdown and the depleted
-node it can leave behind each run most of a dozen turns, so several are
-often alive together, and the total sits nearer the top of that range more
+The board carries the **chosen number** of charged nodes — five or four —
+and **three** inactive ones at all times, plus however many happen to be
+depleted and counting down. Measured over several hundred turns of
+sustained play, that count breathes between **eight** and **thirteen** at
+five charged (mean **12.88**) and between **seven** and **eleven** at four
+(mean **10.91**) — a charged node's own countdown and the depleted node it
+can leave behind each run most of a dozen turns, so several are often
+alive together, and the total sits nearer the top of either range more
 often than the bottom — rather than fixed at a count the way the
-twelve-node board once was.
+twelve-node board once was. A board carrying one more charged node
+throughout breathes higher, as expected, not lower.
 
 A node's life is no longer a mix of drawn rates: a charged node lasts
 **11 turns** once a ship steps on it, and **forever** if nobody does — a
@@ -762,7 +775,10 @@ board both players ignore never changes. A depleted node lasts 11 turns as a
 **trap**, or 2 turns as an **exit**, and then retires either way. Turnover —
 a node charging, a node depleting, a refill sweeping the queue — happens
 only because the players use the nodes on the board (section 8.3); it is not
-a clock the game runs on its own.
+a clock the game runs on its own. Measured over the same runs, a refill
+sweeps the queue on average every **2.22** turns at five charged and every
+**2.78** at four — five charged sweeps faster because there is one more
+node for the stand-in driver described below to keep counting down.
 
 **An inactive node never waits more than three turns to reach the front of
 the queue.** Rotation alone carries a node from priority 1 to priority 3 in
@@ -772,52 +788,68 @@ had its 3 sitting at the front the entire time, available to charge every
 turn. There is no version of this rule under which a node waits
 unboundedly.
 
-**The board is never short of four charged.** Because a move is one action
-and a turn is one action, **at most one countdown can start per turn** —
-so, since every countdown is the same length, **at most one node expires
-per turn**. Add the one node a player can leave behind by walking off in the
-same turn, and the shortfall against four charged is **never more than
-two** — comfortably inside what the three inactive nodes always cover.
-Every shortfall is filled on the turn it appears.
+**The board is never short of the chosen number of charged nodes.** Because
+a move is one action and a turn is one action, **at most one countdown can
+start per turn** — so, since every countdown is the same length, **at most
+one node expires per turn**. Add the one node a player can leave behind by
+walking off in the same turn, and the shortfall against the chosen number
+is **never more than two** — comfortably inside what the three inactive
+nodes always cover, whether the board is filling towards five charged or
+towards four. This argument never depended on the target, which is exactly
+why the queue does not need to grow with it. Every shortfall is filled on
+the turn it appears.
 
 On an empty board the strict pool holds **51** squares and the widened pool
-holds **79** (section 3.2). On a played board — closer to eleven nodes down
-than seven, and a dozen ships on it — a refill's three draws pick from
-roughly **25**, **38** and **34** squares respectively, the pool widening as
-each draw lifts the one-square-in constraint and narrowing again as ships
-and the nodes already placed this refill block squares of their own.
+holds **79** (section 3.2). On a played board — closer to the top of the
+node count above than the bottom, and a dozen ships on it — a refill's
+three draws pick from roughly **21**, **32** and **29** squares
+respectively at five charged, and roughly **25**, **38** and **34** at
+four, the pool widening as each draw lifts the one-square-in constraint and
+narrowing again as ships and the nodes already placed this refill block
+squares of their own. The five-charged pools run narrower throughout,
+exactly as expected from carrying one more node at all times.
 
 Both the node count above and the pool sizes here come from a stand-in for
 play that starts a new countdown somewhere on the board every single turn
 and never moves a ship. No real game turns nodes over that fast — a
 countdown only starts when a player actually spends a turn's move landing
 on a node — so these numbers are a ceiling: a real game's node count runs
-lower than seven to eleven, and its pools run larger than 25, 38 and 34,
-not smaller.
+lower than the ranges above, and its pools run larger than the figures
+just given, not smaller, at either count.
 
 The weighting earns its keep: measured over several hundred turns of actual
 play across a handful of seeds, the smallest pairwise gap within a freshly
-refilled trio averages **4.78** squares, against **3.78** for an unweighted
-draw from the same pools, computed the same run. About **1.11** of the three
-land one square in from the edge and **0.14** in a corner region, against
-**0.83** and **0.07** unweighted — the widening does push the second and
-third draws outward, but the weighting keeps them from crowding the rim.
+refilled trio averages **4.88** squares against **3.72** for an unweighted
+draw from the same pools at five charged — an advantage of about **1.15**
+squares — and **4.79** against **3.71** at four, an advantage of about
+**1.08**, computed the same runs. About **1.11** of the three land one
+square in from the edge and **0.14** in a corner region, against **0.83**
+and **0.07** unweighted — the widening does push the second and third draws
+outward, but the weighting keeps them from crowding the rim. These edge and
+corner figures are measured **at four charged only** and have not been
+re-measured at five; since the pools there narrow only slightly, the
+figures are expected to move only slightly too, so they are left as
+measured rather than guessed at.
 
 Section 3.2's fallback, which places a node without regard to spacing, is
 even less likely to fire than it was at the old twelve-node count: there are
 fewer nodes to place at once and a wider pool to place them in. Across
 every placement in every run the app's own long-run test drives — every
 opening deal and every refill, several hundred turns deep across a handful
-of seeds — it has never once fired. It stays in the rules because it is
-what makes placement total, not because it is expected to be seen.
+of seeds, at both five and four charged — it has never once fired. It stays
+in the rules because it is what makes placement total, not because it is
+expected to be seen.
 
 **What the app guards:** that the queue is always exactly three nodes
 carrying priorities 1, 2 and 3, one each; that the board is always back at
-four charged by the end of every turn; that every node placed — the
-opening deal's seven and a refill's three — is legal, under the right
-pool, at the moment it appears; and that a freshly refilled trio comes out
-measurably more spread than an unweighted draw from the same pools would.
+the chosen number of charged nodes by the end of every turn; that every
+node placed — the opening deal's eight or seven and a refill's three — is
+legal, under the right pool, at the moment it appears; and that a freshly
+refilled trio comes out measurably more spread than an unweighted draw from
+the same pools would. These guards run at both five and four charged.
 
-These counts — the node count breathing between seven and eleven, the pool
-sizes and the spread figures above — are first guesses to be play-tested and
-retuned like every other number in this document.
+These counts — the node count's range, the pool sizes and the spread
+figures above — are first guesses to be play-tested and retuned like every
+other number in this document, and are now measured at both five and four
+charged. The edge and corner figures remain measured at four charged only,
+and are expected to move only slightly once they are measured at five.

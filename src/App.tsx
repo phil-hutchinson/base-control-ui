@@ -41,6 +41,8 @@ export function App() {
     screen,
     fleetSize,
     setFleetSize,
+    chargedNodeCount,
+    setChargedNodeCount,
     lengthInRounds,
     setLengthInRounds,
     clockSetting,
@@ -66,6 +68,8 @@ export function App() {
           <StartScreen
             fleetSize={fleetSize}
             onFleetSizeChange={setFleetSize}
+            chargedNodeCount={chargedNodeCount}
+            onChargedNodeCountChange={setChargedNodeCount}
             lengthInRounds={lengthInRounds}
             onLengthInRoundsChange={setLengthInRounds}
             clockSetting={clockSetting}

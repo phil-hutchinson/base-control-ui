@@ -1,5 +1,5 @@
 // The start screen: the app's front door. Carries the game's on-screen
-// name, the three options a player sets before a game begins, and the PLAY
+// name, the four options a player sets before a game begins, and the PLAY
 // button. Rendered by `App` in place of the game whenever there is no game
 // in progress.
 
@@ -8,11 +8,12 @@ import { GAME_NAME } from "../gameName";
 import { type ClockSetting, CLOCK_SETTINGS } from "../rules/clock";
 import { type FleetSize, FLEET_SIZES } from "../rules/fleet";
 import { GAME_LENGTH_OPTIONS_ROUNDS } from "../rules/gameLength";
+import { type ChargedNodeCount, CHARGED_NODE_COUNTS } from "../rules/nodes";
 import "./StartScreen.css";
 
 /** The Clock group's labels — start-screen chrome, not a rules concern. */
 const CLOCK_SETTING_LABELS: Record<ClockSetting, string> = {
-  none: "Unlimited",
+  none: "UNLIMITED",
   6: "6s",
   4: "4s",
   2: "2s",
@@ -21,6 +22,10 @@ const CLOCK_SETTING_LABELS: Record<ClockSetting, string> = {
 interface StartScreenProps {
   readonly fleetSize: FleetSize;
   readonly onFleetSizeChange: (fleetSize: FleetSize) => void;
+  readonly chargedNodeCount: ChargedNodeCount;
+  readonly onChargedNodeCountChange: (
+    chargedNodeCount: ChargedNodeCount,
+  ) => void;
   readonly lengthInRounds: number;
   readonly onLengthInRoundsChange: (lengthInRounds: number) => void;
   readonly clockSetting: ClockSetting;
@@ -30,7 +35,7 @@ interface StartScreenProps {
 }
 
 /**
- * Controlled: the three options are held by the caller and mean nothing
+ * Controlled: the four options are held by the caller and mean nothing
  * until PLAY is pressed. This component holds no state of its own beyond
  * the ids it generates for its radio groups, and changing an option only
  * calls the matching handler — it dispatches nothing and starts no game.
@@ -38,6 +43,8 @@ interface StartScreenProps {
 export function StartScreen({
   fleetSize,
   onFleetSizeChange,
+  chargedNodeCount,
+  onChargedNodeCountChange,
   lengthInRounds,
   onLengthInRoundsChange,
   clockSetting,
@@ -46,6 +53,7 @@ export function StartScreen({
   onOpenGuide,
 }: StartScreenProps) {
   const fleetSizeGroupName = useId();
+  const chargedNodeCountGroupName = useId();
   const lengthGroupName = useId();
   const clockSettingGroupName = useId();
 
@@ -70,6 +78,21 @@ export function StartScreen({
               label={String(value)}
               checked={value === fleetSize}
               onChange={() => onFleetSizeChange(value)}
+            />
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="start-screen__options">
+        <legend className="start-screen__legend">Charged nodes</legend>
+        <div className="start-screen__choices">
+          {CHARGED_NODE_COUNTS.map((value) => (
+            <OptionChoice
+              key={value}
+              name={chargedNodeCountGroupName}
+              value={value}
+              label={String(value)}
+              checked={value === chargedNodeCount}
+              onChange={() => onChargedNodeCountChange(value)}
             />
           ))}
         </div>
