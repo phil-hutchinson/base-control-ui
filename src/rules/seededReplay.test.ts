@@ -14,7 +14,7 @@
 // seed deals the same opening board, and a different seed deals a different
 // one. Since 0.27 the deal's charged squares are dealt at baseline, with no
 // countdown to draw, so the deal consumes `chargedNodeCount + 4` steps —
-// nine at the standard game's five charged (0.30), eight at four — rather
+// nine at the app's default five charged (0.30), eight at four — rather
 // than the 24 it once did: one square draw per charged node, plus four more
 // for the inactive trio's refill.
 //

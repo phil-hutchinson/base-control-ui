@@ -28,7 +28,7 @@ export type FleetSize = 3 | 4 | 5 | 6;
  */
 export const FLEET_SIZES: readonly FleetSize[] = [6, 5, 4, 3];
 
-/** §4's standard game: six ships a side. */
+/** The app's default: six ships a side. */
 export const DEFAULT_FLEET_SIZE: FleetSize = 6;
 
 /** Whether a value is one of the valid fleet sizes. */

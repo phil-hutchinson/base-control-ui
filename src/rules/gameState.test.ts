@@ -263,7 +263,7 @@ describe("startingGameState", () => {
     },
   );
 
-  it("defaults to five charged nodes, §8.1's standard game, when none is given", () => {
+  it("defaults to five charged nodes, the app's default, when none is given", () => {
     const state = startingGameState(SEED);
 
     expect(state.chargedNodeCount).toBe(DEFAULT_CHARGED_NODE_COUNT);

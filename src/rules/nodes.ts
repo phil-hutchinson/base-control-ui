@@ -22,7 +22,7 @@ export type ChargedNodeCount = 3 | 4 | 5;
  */
 export const CHARGED_NODE_COUNTS: readonly ChargedNodeCount[] = [5, 4, 3];
 
-/** §8.1's standard game: five charged nodes. */
+/** The app's default: five charged nodes. */
 export const DEFAULT_CHARGED_NODE_COUNT: ChargedNodeCount = 5;
 
 /** Whether a value is one of the offered charged-node counts. */

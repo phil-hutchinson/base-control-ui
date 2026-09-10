@@ -213,7 +213,30 @@ are settled — do not reopen them.
 
 ### Step 1 — `rules.md` 0.31 → 0.32, and the appendices move to `tech-notes.md`
 
-Status: pending
+Status: committed
+
+Notes: Removed §2's Action entry and reworded Turn; retitled §5 to "Turns" and
+reworded its body without "action", keeping the pass rule and §8.6 step 7's
+relief; reworded §7.2, §8.3, §8.6's remaining "action" mentions; removed
+"standard game" from §2, §4, §8.1, §9 and §10, naming no default. Created
+`doc/ruleset/tech-notes.md` with the "Open items" and "Sizing the queue"
+sections (Appendix A and B verbatim in substance, references to `rules.md`
+made explicit), deleted both appendices from `rules.md`, and turned its three
+"(Appendix B)" cross-references into links to `tech-notes.md`. Bumped
+`rules.md` to 0.32, `RULES_VERSION` to match, and added one changelog entry.
+Updated the "standard game" and "Appendix B" comments in `fleet.ts`,
+`nodes.ts`, `clock.ts`, `gameState.ts`, `seededReplay.test.ts`,
+`gameState.test.ts`, `nodes.test.ts` and `nodePool.test.ts` (`gameLength.ts`
+already said "default game length" and needed no change, as anticipated).
+One deviation: prettier's markdown formatter rewrapped one paragraph in
+§8.6 (a "(section 5)" line break was ambiguous with an ordered-list marker)
+and one changelog line (`*Action*` → `_Action_` emphasis style); both were
+accepted as the pre-existing prettier style, not a content change. All
+checks green: typecheck, lint, and `npm test` (64 files, 1216 tests, same
+count as baseline) all pass; `format:check` reports only the two
+pre-existing warnings (`planetArt.ts`, this folder's `story.md`); grepping
+`doc/ruleset/` and `src/` for "standard game" and "Appendix" finds hits only
+in `changelog.md`'s historical entries.
 
 Update `doc/ruleset/rules.md` so it no longer speaks of an **action** and no
 longer names a **standard game**, move both appendices into a new

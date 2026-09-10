@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.31**
+**Rules version: 0.32**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -42,14 +42,10 @@ and neither player has seen this one before.
 ## 2. Words used in these rules
 
 **Turn** — everything one player does before play passes to their opponent. A
-turn is one action.
+turn is one move or one attack.
 
 **Round** — one turn for each player. The game lasts for the number of
-rounds chosen before play begins — 30, 45, 60 or 90 — and 30 is the
-standard game (section 9).
-
-**Action** — what a player does on their turn: move a ship, or attack with a
-ship.
+rounds chosen before play begins — 30, 45, 60 or 90 (section 9).
 
 **Power** — what a ship carries and spends to move: how far it can go. It is
 refilled only on planets.
@@ -207,8 +203,8 @@ at all, but it buys a poorly placed square no meaningful chance otherwise.
 ## 4. Ships
 
 Each player has **three, four, five or six** ships — the same number for
-both players, chosen before play begins; **six is the standard game**. One
-player is **green**, the other **red**. Green takes the first turn.
+both players, chosen before play begins. One player is **green**, the other
+**red**. Green takes the first turn.
 
 A ship starts on a **starting square** (section 3.1) — an ordinary square in
 every way, occupied or not. Which starting squares are used, and which
@@ -281,22 +277,18 @@ it.
 
 ---
 
-## 5. Turns and actions
+## 5. Turns
 
-Green takes the first turn, and the players alternate. On a turn a player takes
-**one action**. Each action is either:
+Green takes the first turn, and the players alternate. On a turn a player
+either **moves** one ship or **attacks** with one ship.
 
-- **Move** one ship, or
-- **Attack** with one ship.
-
-A player must take as many of their turn's actions as are available. If a
-player has no legal action at all, their turn passes. This should be
-uncommon — a player always has at least three ships — but an action is not
-always available: an attack reaches only as far as the attacker's power
-allows, and a ship holding a node has no attack available to it at all. A
-**trapped** ship (section 8.5) offers no action at all, so a player whose
-ships are all trapped would otherwise pass; section 8.6 step 7 exists to
-prevent that. The rule is here so the game can never deadlock.
+If a player can neither move nor attack, their turn passes. This should be
+uncommon — a player always has at least three ships — but neither is always
+available: an attack reaches only as far as the attacker's power allows, and
+a ship holding a node has no attack available to it at all. A **trapped**
+ship (section 8.5) can do neither, so a player whose ships are all trapped
+would otherwise pass; section 8.6 step 7 exists to prevent that. The rule is
+here so the game can never deadlock.
 
 A turn also passes when the player to move is out of time (section 10). That
 is the second, and only other, reason a turn can pass.
@@ -408,12 +400,12 @@ one.
 
 ### 7.2 Returning by choice
 
-A ship may also go back to a planet deliberately. This is not a special
-action — it is an ordinary move that ends on an empty planet, and like any
-move it must be within the ship's range, and it must be a shape the ship can
-afford, and have a clear path. What it gets there is recovery at the section
-3.1 rate — one power a turn, or two if it is the only one of its owner's
-ships charging — not an instant refill.
+A ship may also go back to a planet deliberately. This is not a special move —
+it is an ordinary one that ends on an empty planet, and like any move it must
+be within the ship's range, and it must be a shape the ship can afford, and
+have a clear path. What it gets there is recovery at the section 3.1 rate —
+one power a turn, or two if it is the only one of its owner's ships charging
+— not an instant refill.
 
 ---
 
@@ -440,11 +432,12 @@ the board.
 
 A player chooses how many nodes the board keeps charged before play
 begins: **five, four or three**, the same number for both players and
-fixed for the game's lifetime, with **five the standard game**. At the end
+fixed for the game's lifetime. At the end
 of every turn, whatever shortfall there is against the chosen number is
 filled from the three inactive nodes, highest priority first. The
 shortfall is always filled on the turn it appears — the board is never
-left short of the chosen number of charged nodes (Appendix B).
+left short of the chosen number of charged nodes
+([tech-notes.md](tech-notes.md)).
 
 **The opening board is dealt.** The game opens with **eight** nodes at
 five charged, **seven** at four, **six** at three:
@@ -478,7 +471,7 @@ charged node never has one standing on it already.
 The queue's size is unrelated to the chosen target: three inactive nodes
 cover the largest shortfall a single turn can produce, which is two,
 whether the board is filling towards five charged, towards four or
-towards three (Appendix B).
+towards three ([tech-notes.md](tech-notes.md)).
 
 **Priorities rotate at the end of every turn on which nothing charged**: 1
 becomes 2, 2 becomes 3, and 3 becomes 1. The nodes themselves do not move —
@@ -523,8 +516,8 @@ moved onto it and the five after. A charged node nobody has stepped on
 carries no countdown at all and sits at its **baseline** for the rest of the
 game if nobody comes.
 
-Because a move is one action and a turn is one action, **at most one
-countdown can start per turn** (Appendix B).
+Because a turn is one move or one attack, **at most one countdown can start
+per turn** ([tech-notes.md](tech-notes.md)).
 
 A charged node carrying a countdown shows a **black number**: how many of
 the **holder's own turns** the node still has left. It counts down from 6 to
@@ -663,11 +656,10 @@ Everything that happens at the end of a turn happens in this order:
    freed. If no depleted node under that player's ships qualifies, nothing
    happens, and that player's turn passes under section 5.
 
-A turn that passes because no legal action was available (section 5) is still
-a turn: this sequence runs for it in full, just as it would for a turn in
-which an action was taken. Countdowns still tick, and a ship of the passing
-player standing on a planet still gains power at the section 3.1 rate; the
-passing player still collects exactly as they would if they had acted.
+A turn that passes because the player could neither move nor attack (section 5) is still a turn: this sequence runs for it in full, just as it would for a
+turn in which a ship moved or attacked. Countdowns still tick, and a ship of
+the passing player standing on a planet still gains power at the section 3.1
+rate; the passing player still collects exactly as they would otherwise.
 
 Step 5 sits **before** step 6 **deliberately**. A node placed by a refill
 is inactive for the whole of the next turn and can first be charged at the
@@ -703,21 +695,21 @@ spends its first turn on the very turn it was created — exactly what section
 8.3 requires of it.
 
 A node's state changes only in this sequence, and never as part of resolving
-an action — **except** that a charged node depletes the instant its holder
-leaves it (section 8.3), which is why such a node is already depleted by the
-time this sequence begins and is caught by step 6 rather than step 3. A
-node's ending, and any refill that follows it, are otherwise both part of
-this sequence, never part of resolving an action.
+a move or an attack — **except** that a charged node depletes the instant its
+holder leaves it (section 8.3), which is why such a node is already depleted
+by the time this sequence begins and is caught by step 6 rather than step 3.
+A node's ending, and any refill that follows it, are otherwise both part of
+this sequence, never part of resolving a move or an attack.
 
 ---
 
 ## 9. Ending the game
 
 The game ends after the number of rounds chosen before play begins —
-**30, 45, 60 or 90 rounds**, that many turns each — with **30** the
-standard game. It also ends immediately, before its rounds are up, the
-moment both players have run out of time (section 10). Either way, the
-player with the most energy wins, and equal energy is a draw.
+**30, 45, 60 or 90 rounds**, that many turns each. It also ends immediately,
+before its rounds are up, the moment both players have run out of time
+(section 10). Either way, the player with the most energy wins, and equal
+energy is a draw.
 
 ---
 
@@ -725,7 +717,7 @@ player with the most energy wins, and equal energy is a draw.
 
 Alongside the fleet size, the number of rounds and the charged-node count
 (section 8.1), a player chooses a **clock** before play begins: no clock,
-or 6, 4 or 2 seconds a turn, with no clock the standard game.
+or 6, 4 or 2 seconds a turn.
 
 Each player's clock starts with a budget: their seconds a turn multiplied by
 the number of turns the chosen length gives them. The whole game is
@@ -744,118 +736,3 @@ When both players' clocks have reached zero, the game ends immediately
 
 Running out of time is **not** a loss. Energy decides the game however it
 ends.
-
----
-
-## Appendix A — Open items
-
-Nothing is currently outstanding. The rules are expected to keep changing as
-the game is built, so this appendix will list open items again when there are
-any.
-
----
-
-## Appendix B — Sizing the queue
-
-The board carries the **chosen number** of charged nodes — five, four or
-three — and **three** inactive ones at all times, plus however many happen
-to be depleted and counting down. Measured over several hundred turns of
-sustained play, that count breathes between **eight** and **thirteen** at
-five charged (mean **12.88**), between **seven** and **eleven** at four
-(mean **10.91**) and between **six** and **nine** at three (mean **8.93**)
-— a charged node's own countdown and the depleted node it can leave behind
-each run most of a dozen turns, so several are often alive together, and
-the total sits nearer the top of its range more often than the bottom —
-rather than fixed at a count the way the twelve-node board once was. A
-board carrying one more charged node throughout breathes higher, as
-expected, not lower.
-
-A node's life is no longer a mix of drawn rates: a charged node lasts
-**11 turns** once a ship steps on it, and **forever** if nobody does — a
-board both players ignore never changes. A depleted node lasts 11 turns as a
-**trap**, or 2 turns as an **exit**, and then retires either way. Turnover —
-a node charging, a node depleting, a refill sweeping the queue — happens
-only because the players use the nodes on the board (section 8.3); it is not
-a clock the game runs on its own. Measured over the same runs, a refill
-sweeps the queue on average every **2.22** turns at five charged, every
-**2.78** at four and every **3.70** at three — turnover slows as the
-charged count drops, because there are fewer charged nodes for the
-stand-in driver described below to keep counting down.
-
-**An inactive node never waits more than three turns to reach the front of
-the queue.** Rotation alone carries a node from priority 1 to priority 3 in
-two turns, and it is swept before it can wait any longer than that: a queue
-that goes unrotated for a whole cycle without a charge has, by definition,
-had its 3 sitting at the front the entire time, available to charge every
-turn. There is no version of this rule under which a node waits
-unboundedly.
-
-**The board is never short of the chosen number of charged nodes.** Because
-a move is one action and a turn is one action, **at most one countdown can
-start per turn** — so, since every countdown is the same length, **at most
-one node expires per turn**. Add the one node a player can leave behind by
-walking off in the same turn, and the shortfall against the chosen number
-is **never more than two** — comfortably inside what the three inactive
-nodes always cover, whether the board is filling towards five charged,
-towards four or towards three. This argument never depended on the target,
-which is exactly why the queue does not need to grow with it. Every
-shortfall is filled on the turn it appears.
-
-On an empty board the strict pool holds **51** squares and the widened pool
-holds **79** (section 3.2). On a played board — closer to the top of the
-node count above than the bottom, and a dozen ships on it — a refill's
-three draws pick from roughly **21**, **32** and **29** squares
-respectively at five charged, roughly **25**, **38** and **34** at four,
-and roughly **30**, **44** and **40** at three, the pool widening as each
-draw lifts the one-square-in constraint and narrowing again as ships and
-the nodes already placed this refill block squares of their own. The
-pools narrow as the charged count rises, exactly as expected from carrying
-more nodes on the board at once.
-
-Both the node count above and the pool sizes here come from a stand-in for
-play that starts a new countdown somewhere on the board every single turn
-and never moves a ship. No real game turns nodes over that fast — a
-countdown only starts when a player actually spends a turn's move landing
-on a node — so these numbers are a ceiling: a real game's node count runs
-lower than the ranges above, and its pools run larger than the figures
-just given, not smaller, at any of the three counts.
-
-The weighting earns its keep: measured over several hundred turns of actual
-play across a handful of seeds, the smallest pairwise gap within a freshly
-refilled trio averages **4.88** squares against **3.72** for an unweighted
-draw from the same pools at five charged — an advantage of about **1.15**
-squares — **4.79** against **3.71** at four, an advantage of about
-**1.08**, and **4.88** against **3.71** at three, an advantage of about
-**1.18**, all computed over the same runs. About **1.11** of the three
-land one square in from the edge and **0.14** in a corner region, against
-**0.83** and **0.07** unweighted — the widening does push the second and
-third draws outward, but the weighting keeps them from crowding the rim.
-These edge and corner figures are measured **at four charged only** and
-have not been re-measured at the other counts; since the pools move only
-slightly either way, the figures are expected to move only slightly too,
-so they are left as measured rather than guessed at.
-
-Section 3.2's fallback, which places a node without regard to spacing, is
-even less likely to fire than it was at the old twelve-node count: there are
-fewer nodes to place at once and a wider pool to place them in. Across
-every placement in every run the app's own long-run test drives — every
-opening deal and every refill, several hundred turns deep across a handful
-of seeds, at all three charged counts — it has never once fired. It stays
-in the rules because it is what makes placement total, not because it is
-expected to be seen.
-
-**What the app guards:** that the queue is always exactly three nodes
-carrying priorities 1, 2 and 3, one each; that the board is always back at
-the chosen number of charged nodes by the end of every turn; that every
-node placed — the opening deal's eight, seven or six and a refill's three —
-is legal, under the right pool, at the moment it appears; and that a
-freshly refilled trio comes out measurably more spread than an unweighted
-draw from the same pools would. These guards run at all three charged
-counts.
-
-These counts — the node count's range, the pool sizes and the spread
-figures above — are first guesses to be play-tested and retuned like every
-other number in this document, and are now measured at all three charged
-counts. The edge and corner figures remain measured at four charged only,
-and are expected to move only slightly once they are measured at the
-other counts.

@@ -14,11 +14,11 @@ export type ClockSetting = "none" | 6 | 4 | 2;
 
 /**
  * The offered clock settings, in the order the start screen renders them:
- * leftmost is the standard game.
+ * leftmost is the app's default.
  */
 export const CLOCK_SETTINGS: readonly ClockSetting[] = ["none", 6, 4, 2];
 
-/** §10's standard game: no clock. */
+/** The app's default: no clock. */
 export const DEFAULT_CLOCK_SETTING: ClockSetting = "none";
 
 /**

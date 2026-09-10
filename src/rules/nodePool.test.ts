@@ -1,27 +1,28 @@
 // An integration test of the node economy over a long run, with no ship
-// activity to interfere (rules.md Appendix B). It drives `runEndOfTurn` from
-// real starting positions across a handful of seeds and several hundred
-// plies each, at **all three** offered charged-node counts, and checks the
-// claims Appendix B makes about the finished game: the queue's invariants
-// hold at every ply, every node the run ever places is legal at the moment
-// it appears, the weighting measurably spreads a freshly dealt trio, and
-// the cadence and node-count figures the appendix quotes are in the right
-// neighbourhood, at each count.
+// activity to interfere (doc/ruleset/tech-notes.md, "Sizing the queue"). It
+// drives `runEndOfTurn` from real starting positions across a handful of
+// seeds and several hundred plies each, at **all three** offered
+// charged-node counts, and checks the claims that document makes about the
+// finished game: the queue's invariants hold at every ply, every node the
+// run ever places is legal at the moment it appears, the weighting
+// measurably spreads a freshly dealt trio, and the cadence and node-count
+// figures it quotes are in the right neighbourhood, at each count.
 //
 // A charged node only ever gets a countdown when a ship steps on it (rules.md
 // §8.3), and this file drives no ships at all, so `runEconomy` below stands
 // in for one: at the start of each ply, if any charged node carries no
 // countdown, the first such node in board order is given one. At most
 // **one** per ply, mirroring "at most one countdown starts per turn" — the
-// same restraint a real game is under, since a turn is one action — which is
-// what keeps expiries spread out here exactly as they are in a real game.
-// This is a documented stand-in for a ship, not a claim about what a real
-// game does, and it is also why this file cannot assert that a charged node
-// with a countdown always has a ship on it: its synthetic countdowns never
-// do. That invariant belongs to a ship-driven run instead (`seededReplay.test.ts`).
+// same restraint a real game is under, since a turn is one move or one
+// attack — which is what keeps expiries spread out here exactly as they are
+// in a real game. This is a documented stand-in for a ship, not a claim
+// about what a real game does, and it is also why this file cannot assert
+// that a charged node with a countdown always has a ship on it: its
+// synthetic countdowns never do. That invariant belongs to a ship-driven run
+// instead (`seededReplay.test.ts`).
 //
-// One finding is worth recording here for Appendix B's benefit, since nothing
-// else in the codebase measures it: across every seed this file runs, at
+// One finding is worth recording here for tech-notes.md's benefit, since
+// nothing else in the codebase measures it: across every seed this file runs, at
 // all three counts, and every refill and opening deal within them, section
 // 3.2's fallback never had to fire once. "Legal at the moment it appears"
 // below is checked by independently recomputing each ordinary constraint
@@ -345,7 +346,7 @@ function average(values: readonly number[]): number {
 }
 
 describe.each(CHARGED_NODE_COUNTS)(
-  "the node economy at %d charged nodes (Appendix B)",
+  'the node economy at %d charged nodes (tech-notes.md, "Sizing the queue")',
   (chargedNodeCount) => {
     // The board's structural floor at this count: it is always back at its
     // own charged-node count by the end of every turn, plus exactly three
@@ -396,12 +397,13 @@ describe.each(CHARGED_NODE_COUNTS)(
       it.each(SEEDS)(
         "runs out at most one charged node, and charges at most two, in any single turn (rules.md §8.3) (seed %d)",
         (seed) => {
-          // At most one countdown starts per turn — a turn is one action, and a
-          // move onto a charged node is the only way in (§8.3) — so at most one
-          // countdown of any kind expires on a given turn: at most one node runs
-          // out, and the shortfall it (plus at most one departure) can create is
-          // never more than two, which the queue's three inactive nodes always
-          // cover. Both bounds are exact, not measured, and hold for every
+          // At most one countdown starts per turn — a turn is one move or one
+          // attack, and a move onto a charged node is the only way in (§8.3) —
+          // so at most one countdown of any kind expires on a given turn: at
+          // most one node runs out, and the shortfall it (plus at most one
+          // departure) can create is never more than two, which the queue's
+          // three inactive nodes always cover. Both bounds are exact, not
+          // measured, and hold for every
           // sample of every seed this file runs, with no slack, at any count.
           const run = runEconomy(seed, PLIES_TO_RUN, chargedNodeCount);
 

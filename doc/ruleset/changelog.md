@@ -7,6 +7,33 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.32 — the action retires
+
+This is **not** a gameplay change — the game plays exactly as it did under
+0.31. Tagging stays on hold until the game plays (see the project's
+contribution notes).
+
+- **The word "action" leaves the document.** A turn has been one action
+  since version 0.18, so the word never named anything a player could
+  choose between; it counted to one and stopped. Section 2 loses its
+  _Action_ entry, and every other section that used the word is reworded to
+  say a move, an attack, or both.
+- **Section 5 becomes "Turns"** and states the rule plainly: Green takes the
+  first turn, the players alternate, and on a turn a player either moves one
+  ship or attacks with one ship. The pass rule is unchanged in substance,
+  reworded without "action": if a player can neither move nor attack, their
+  turn passes.
+- **No choice is called a standard game any more.** Sections 2, 4, 8.1, 9 and
+  10 each named one option among several as "the standard game" — fleet size,
+  charged-node count, rounds and clock. Each now lists its options and
+  names no default; which option the app preselects is unchanged and is
+  purely an app matter now.
+- **Both appendices move to a new `doc/ruleset/tech-notes.md`.** Appendix A's
+  open items and Appendix B's queue-sizing argument are unchanged in
+  substance; they are development notes, not part of the ruleset a player
+  reads, so they leave `rules.md` for a document of their own. The three
+  "(Appendix B)" cross-references in `rules.md` become links to it.
+
 ## 0.31 — three joins the chosen number of charged nodes
 
 This is a gameplay change. Tagging stays on hold until the game plays (see

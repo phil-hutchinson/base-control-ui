@@ -120,7 +120,7 @@ export interface GameState {
 /**
  * The options `startingGameState` accepts beyond the seed, each fixed for
  * the game's lifetime once set. All are optional and fall back to the
- * standard game's defaults.
+ * app's defaults.
  */
 export interface StartingGameStateOptions {
   /**
