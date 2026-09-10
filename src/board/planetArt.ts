@@ -12,11 +12,13 @@
 // kebab-case name for what it is. Most parts are drawn from a shared
 // vocabulary - `body`, `surface`, `sheen`, `blur`, `clip`, `moon-sheen`,
 // `moon-clip`, `ring`, `ring-sheen`, `ring-whole`, `ring-back`, `ring-front`
-// - reused across whichever planets need them. Two planets need something
+// - reused across whichever planets need them. Three planets need something
 // outside that vocabulary and name it plainly instead of forcing a fit:
 // planet 9's moon has its own base-colour gradient distinct from its sheen,
 // so it gets `moon-surface`; planet 13 is built from three stacked wave
-// bands, so it gets `band-1`, `band-2` and `band-3`.
+// bands, so it gets `band-1`, `band-2` and `band-3`. Planet 2 has four
+// moons, each its own colour, so its gradients are numbered the same way -
+// `moon-1` through `moon-4`, in the order they are drawn.
 //
 // `body` is the id every planet declares for its whole drawing - grouped
 // under one id, ready for `Planet.tsx` to `<use>` - and every other id is
@@ -83,9 +85,16 @@ export const PLANET_ART: readonly PlanetArt[] = [
   },
   {
     number: 2,
-    name: "Peru-and-purple planet with four small moons",
+    name: "Peru-and-purple planet with four small, separately coloured moons",
     surface: "plain",
-    ids: idsFor(2, ["body", "surface"]),
+    ids: idsFor(2, [
+      "body",
+      "surface",
+      "moon-1",
+      "moon-2",
+      "moon-3",
+      "moon-4",
+    ]),
   },
   {
     number: 3,
