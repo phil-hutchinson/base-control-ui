@@ -46,10 +46,11 @@ install, no account, no server.
 > **Status:** early development. The app now plays a whole game, from the
 > opening position to the final score. Opening it shows a start screen, not the
 > board: the game's name, a choice of how many ships a side (six, five, four or
-> three, six to start), a choice of how many nodes are lit at once (five or
-> four, five to start), a choice of how many rounds the game lasts (thirty,
-> forty-five, sixty or ninety, thirty to start), a choice of a clock (unlimited,
-> or six, four or two seconds a turn, unlimited to start) and a PLAY button.
+> three, six to start), a choice of how many nodes are lit at once (five, four
+> or three, five to start), a choice of how many rounds the game lasts (thirty,
+> forty-five, sixty or ninety, thirty to start), a choice of a clock
+> (unlimited, or six, four or two seconds a turn, unlimited to start) and a
+> PLAY button.
 > The start screen also offers a quick guide — a first read for someone who
 > has never played, not a full rules reference — explaining scoring, movement,
 > refuelling and how nodes come and go, with a back button that returns you to
@@ -74,9 +75,9 @@ install, no account, no server.
 > player's ships still topping up power on a planet, up to a full six. A ship
 > already full doesn't count towards that. Green goes first, and each player
 > takes one action a turn — a move or an attack — by mouse or by keyboard. Every
-> game deals a different opening board: it opens with five lit nodes, or four
-> if you chose four, and three still waiting — eight nodes in all, or seven
-> at four. The lit ones are chosen at random too, but none of them carries
+> game deals a different opening board: it opens with as many lit nodes as you
+> chose and three still waiting — eight nodes in all at five, seven at four,
+> six at three. The lit ones are chosen at random too, but none of them carries
 > a countdown yet, so at the start of the game they are all exactly as fresh
 > as each other — a lit node only starts running down once a ship lands on
 > it. Each waiting node carries one, two or three rings, and the one with three

@@ -735,7 +735,22 @@ turns out to be a rules question, which goes back to the owner.
 
 ### Step 10 — `README.md` and the final sweep
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator, running `/update-readme`'s review
+directly. Two sentences changed: the options list now reads "five, four or
+three, five to start", and the opening-board sentence reads "as many lit
+nodes as you chose and three still waiting — eight nodes in all at five,
+seven at four, six at three". Both were locally rewrapped; a full rewrap
+of the status blockquote was tried and reverted, because it produced an
+83-line diff for a two-sentence change. Sweep results: no "five or four"
+anywhere in `README.md`, `doc/ruleset/` or `src/`; exactly one `## 0.31`
+changelog heading; the two "both counts" phrases remaining in
+`changelog.md` are inside the **0.30** entry, where they are historically
+correct and must stay. Nothing was knowingly given up, so
+`known-issues.md` gets no entry (D6, S9), and `story.md` describes what
+was built — including the Quick Guide's one-sentence correction — so it
+needs no amendment.
 
 Bring `README.md` up to date and make the story's last read-through.
 
