@@ -4,6 +4,7 @@ import { ClockRegion } from "./clock/ClockRegion";
 import { freshSeed } from "./game/seed";
 import { createSession, sessionReducer } from "./game/session";
 import { GAME_NAME } from "./gameName";
+import { GuideScreen } from "./guide/GuideScreen";
 import { GameOverPanel } from "./hud/GameOverPanel";
 import { Hud } from "./hud/Hud";
 import { useDisplayedEnergy } from "./hud/useDisplayedEnergy";
@@ -24,10 +25,11 @@ function createStartingSession() {
 }
 
 /**
- * The app shell: the start screen until PLAY is pressed, then one cabinet
- * box holding the title, the HUD and the board, drawn from the game
- * session, swapped in full for the game-over panel once the game has ended
- * and the last turn's score roll has settled.
+ * The app shell: the start screen until PLAY is pressed, or the quick guide
+ * while Quick Guide is open, then one cabinet box holding the title, the
+ * HUD and the board, drawn from the game session, swapped in full for the
+ * game-over panel once the game has ended and the last turn's score roll
+ * has settled.
  */
 export function App() {
   const [session, dispatch] = useReducer(
@@ -47,6 +49,7 @@ export function App() {
     setClockSetting,
     handlePlay,
     handleReturnToStart,
+    handleOpenGuide,
   } = useAppScreen(dispatch);
   const { displayed: displayedEnergy, settled } = useDisplayedEnergy(
     session.state.energy,
@@ -72,7 +75,10 @@ export function App() {
             clockSetting={clockSetting}
             onClockSettingChange={setClockSetting}
             onPlay={handlePlay}
+            onOpenGuide={handleOpenGuide}
           />
+        ) : screen === "guide" ? (
+          <GuideScreen onBack={handleReturnToStart} />
         ) : gameOver ? (
           <GameOverPanel
             state={session.state}

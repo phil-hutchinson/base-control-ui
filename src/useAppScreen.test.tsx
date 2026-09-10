@@ -80,4 +80,46 @@ describe("useAppScreen", () => {
     expect(result.current.clockSetting).toBe(4);
     expect(dispatch).not.toHaveBeenCalled();
   });
+
+  it("opening the guide moves to the guide screen and changes nothing else", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch));
+
+    act(() => {
+      result.current.handleOpenGuide();
+    });
+
+    expect(result.current.screen).toBe("guide");
+    expect(result.current.fleetSize).toBe(6);
+    expect(result.current.lengthInRounds).toBe(30);
+    expect(result.current.clockSetting).toBe("none");
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("options set before opening the guide survive opening it and returning to start", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch));
+
+    act(() => {
+      result.current.setFleetSize(5);
+    });
+    act(() => {
+      result.current.setLengthInRounds(45);
+    });
+    act(() => {
+      result.current.setClockSetting(6);
+    });
+    act(() => {
+      result.current.handleOpenGuide();
+    });
+    act(() => {
+      result.current.handleReturnToStart();
+    });
+
+    expect(result.current.screen).toBe("start");
+    expect(result.current.fleetSize).toBe(5);
+    expect(result.current.lengthInRounds).toBe(45);
+    expect(result.current.clockSetting).toBe(6);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
 });

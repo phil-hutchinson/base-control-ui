@@ -289,3 +289,30 @@ The widened `destination-uncharged-node` refusal message explains why a
 square cannot be landed on, but it names neither uncharged state.
 
 Where: `src/rules/movement.ts`, `src/board/announcements.ts`.
+
+## From story 50 — the quick guide's diagrams are decorative
+
+Source: `doc/plan/00000050-how-to-play-instructions/implementation-plan.md`
+decision D18, Step 5.
+
+### 1. A diagram's numbers and note are not readable by a screen reader
+
+Each of the guide's five diagrams is marked `aria-hidden`, as every drawing
+inside `BoardSquare` already is, so nothing inside one — the "+3" settlement
+note, the movement diagram's twenty cost numbers, or a node's countdown
+figure — reaches a screen-reader user as readable content.
+
+It is mitigated: the paragraph above each diagram states its meaning in
+words, so nothing a diagram shows is the only place that fact appears.
+
+Where: `src/guide/`.
+
+### 2. The guide's two Back buttons share one accessible name
+
+The guide has a Back button above the copy and a second one after the last
+diagram (D14), so a reader does not have to scroll back to the top to leave.
+Both carry the DOM text `Back` and call the same callback, so a screen-reader
+user cannot tell the two apart by name — only by where each sits on the
+page.
+
+Where: `src/guide/GuideScreen.tsx`.

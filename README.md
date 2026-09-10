@@ -50,8 +50,12 @@ install, no account, no server.
 > four, five to start), a choice of how many rounds the game lasts (thirty,
 > forty-five, sixty or ninety, thirty to start), a choice of a clock (unlimited,
 > or six, four or two seconds a turn, unlimited to start) and a PLAY button.
-> Changing any of the four choices starts nothing — the board only appears once
-> PLAY is pressed, dealt with the choices you made. A clock is each player's own
+> The start screen also offers a quick guide — a first read for someone who
+> has never played, not a full rules reference — explaining scoring, movement,
+> refuelling and how nodes come and go, with a back button that returns you to
+> the start screen with the four choices exactly as you left them. Changing
+> any of the four choices starts nothing — the board only appears once PLAY
+> is pressed, dealt with the choices you made. A clock is each player's own
 > time for the whole game, not per turn — a thirty-round game at six seconds a
 > turn gives each of you three minutes to spend however you like across your
 > turns. A player who runs out passes every turn from then on, and once both

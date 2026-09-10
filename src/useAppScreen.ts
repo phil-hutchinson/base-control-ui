@@ -14,8 +14,11 @@ import {
   type ChargedNodeCount,
 } from "./rules/nodes";
 
-/** Which screen is on top: the start screen, or a game in progress. */
-export type Screen = "start" | "game";
+/**
+ * Which screen is on top: the start screen, a game in progress, or the
+ * quick guide.
+ */
+export type Screen = "start" | "game" | "guide";
 
 /** The app's current screen and options, plus the actions that change either. */
 export interface AppScreen {
@@ -30,6 +33,7 @@ export interface AppScreen {
   readonly setClockSetting: (clockSetting: ClockSetting) => void;
   readonly handlePlay: () => void;
   readonly handleReturnToStart: () => void;
+  readonly handleOpenGuide: () => void;
 }
 
 /**
@@ -41,6 +45,10 @@ export interface AppScreen {
  * switches back to the start screen and changes nothing else. The clock
  * setting is not part of `new-game` — the rules layer knows nothing about
  * time — so it is held here purely for the game screen to read.
+ * `handleOpenGuide` switches to the quick guide and changes nothing else;
+ * there is no matching close action, because `handleReturnToStart` already
+ * means "show the start screen and change nothing else", which is exactly
+ * what leaving the guide does.
  */
 export function useAppScreen(
   dispatch: (intent: SessionIntent) => void,
@@ -72,6 +80,10 @@ export function useAppScreen(
     setScreen("start");
   }
 
+  function handleOpenGuide() {
+    setScreen("guide");
+  }
+
   return {
     screen,
     fleetSize,
@@ -84,5 +96,6 @@ export function useAppScreen(
     setClockSetting,
     handlePlay,
     handleReturnToStart,
+    handleOpenGuide,
   };
 }

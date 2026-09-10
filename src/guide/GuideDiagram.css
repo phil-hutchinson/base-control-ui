@@ -1,0 +1,77 @@
+/* `--guide-square` gives every diagram's cells their preferred size; its
+   ceiling keeps a diagram comfortably smaller than the board on a desktop
+   window. Columns are `minmax(0, var(--guide-square))` rather than a flat
+   `var(--guide-square)`, so a diagram that would otherwise overflow — node
+   selection's seven tracks are the widest — shrinks its squares to fit a
+   narrow window instead of forcing a horizontal scrollbar; a diagram that
+   already fits keeps its preferred size, since the columns still grow up
+   to `--guide-square` whenever there is room. */
+.guide-diagram {
+  --guide-square: clamp(2.25rem, 8vw, 4.5rem);
+  display: grid;
+  max-width: 100%;
+  grid-template-columns: repeat(
+    var(--guide-diagram-columns),
+    minmax(0, var(--guide-square))
+  );
+  grid-auto-rows: auto;
+  gap: 2px;
+  justify-content: center;
+  margin: 1rem auto;
+}
+
+/* Fills its column's resolved width and derives its height from it, rather
+   than both axes reading the same fixed token, so a cell that has been
+   shrunk to fit stays square instead of merely losing width. Establishes a
+   sizing container so its own contents can scale from that resolved width
+   too (see `.guide-diagram__number` and `.guide-diagram__note`). */
+.guide-diagram__cell {
+  container-type: inline-size;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+/* A single-cell grid, the same idiom `BoardSquare.css` uses for its own
+   stacked contents, so the numeral sits on top of the square rather than
+   beside it. */
+.guide-diagram__overlay {
+  display: grid;
+  width: 100%;
+  height: 100%;
+}
+
+.guide-diagram__overlay > * {
+  grid-area: 1 / 1;
+}
+
+.guide-diagram__number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-arcade);
+  font-size: 45cqw;
+  font-weight: 700;
+  color: var(--color-text-bright);
+  text-shadow: 0 0 0.3em var(--glow-text);
+}
+
+/* The board's own settlement look (`EnergyOverlay.css`'s "+N"), without the
+   float animation and without the absolute positioning that only makes
+   sense against a board-sized box. */
+.guide-diagram__note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-arcade);
+  font-size: 40cqw;
+  font-weight: 700;
+  color: var(--color-green);
+  text-shadow: 0 0 0.4em currentcolor;
+}
+
+.guide-diagram__arrow {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--color-text-dim);
+}
