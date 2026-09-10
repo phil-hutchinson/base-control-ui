@@ -25,13 +25,14 @@ the project's contribution notes).
   never more than two, one node expiring and one walked off — regardless of
   which number the board is filling towards; the queue's size was never
   derived from the target, so it needs no change (Appendix B).
-- **Appendix B's prose now speaks of all three counts** — the queue-sizing
-  argument and the "never short" argument both name three alongside five
-  and four. Its measured figures stay attributed to five and four charged
-  for now; they are re-measured at three charged and added in a follow-up
-  edit within this same version, so no figure is left claiming a number the
-  board no longer produces. The edge- and corner-placement figures remain
-  measured at four charged only.
+- **Appendix B now speaks of all three counts, prose and figures alike** —
+  the queue-sizing argument and the "never short" argument both name three
+  alongside five and four, and its measured figures (the node count's
+  range and mean, the mean turns between refills, the refill pool sizes and
+  the trio's mean smallest gap) are re-measured at three charged and stated
+  alongside the existing five- and four-charged figures, so no figure is
+  left claiming a number the board no longer produces. The edge- and
+  corner-placement figures remain measured at four charged only.
 
 ## 0.30 — a chosen number of charged nodes
 

@@ -547,6 +547,7 @@ Notes: Measured with temporary instrumentation added to (and removed from)
 `src/rules/nodePool.test.ts`, over its own `SEEDS` (five seeds) and
 `PLIES_TO_RUN` (500 plies each, 2500 plies total) at three charged. Figures
 for Step 8:
+
 - total node count: min **6**, max **9**, mean **8.934** (2500 samples);
 - refill pool sizes (strict first draw, widened second, widened third):
   means **29.83 / 44.17 / 40.29**, minima **15 / 31 / 28**, over **675**
@@ -624,7 +625,33 @@ listed above is written into its Notes.
 
 ### Step 8 — Appendix B re-stated at three (same 0.31, no second bump)
 
-Status: pending
+Status: committed
+
+Notes: Extended Appendix B in `doc/ruleset/rules.md` with Step 7's
+three-charged figures, no version or changelog-heading change (still
+0.31, still exactly one `## 0.31` entry). Filled in: the node count's
+range and mean (6–9, mean 8.93), the mean turns between refills (3.70,
+worded as slowing turnover as the count drops), the three refill pool
+sizes (roughly 30, 44 and 40), and the trio's mean smallest gap weighted
+against unweighted (4.88 against 3.71, an advantage of about 1.18).
+Re-worded the sentences that contrasted "five charged" against "four"
+("the five-charged pools run narrower…", "five charged sweeps faster…",
+"at either count") to speak of all three, and changed "at both five and
+four charged" to "at all three charged counts" in the fallback paragraph
+and the closing "first guesses" paragraph. Left the edge- and
+corner-placement paragraph exactly as written — still flagged as measured
+at four charged only, no third caveat added, per the plan and D5/S4.
+Amended the existing 0.31 changelog entry's Appendix B bullet, in place,
+to say the figures are now stated at all three counts rather than "to
+follow in a later edit" — no new heading, no second entry. All figures
+used are exactly those Step 7 recorded; none invented. Also fixed a
+pre-existing missing blank line before Step 7's Notes bullet list (a
+`format:check` warning left over from that step, unrelated to this
+step's content) while editing this file. `npm run typecheck`, `npm run
+lint`, `npm test` (1211 tests, `rulesVersion.test.ts` still green at
+0.31) and `npm run format:check` (clean except the pre-existing,
+unrelated `src/board/planetArt.ts` warning) all pass. No deviation from
+the plan.
 
 Extend Appendix B in `doc/ruleset/rules.md` with the figures Step 7
 recorded. **Same version, same changelog entry**: extend the 0.31 entry in
