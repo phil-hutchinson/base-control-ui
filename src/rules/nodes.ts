@@ -14,13 +14,13 @@ import { refillQueue } from "./nodeQueue";
 export type NodeState = "inactive" | "charged" | "depleted";
 
 /** How many nodes the board keeps charged, chosen before play (rules.md §8.1). */
-export type ChargedNodeCount = 4 | 5;
+export type ChargedNodeCount = 3 | 4 | 5;
 
 /**
  * The offered charged-node counts, in the order the start screen renders
  * them: largest first, so the leftmost choice is the default game.
  */
-export const CHARGED_NODE_COUNTS: readonly ChargedNodeCount[] = [5, 4];
+export const CHARGED_NODE_COUNTS: readonly ChargedNodeCount[] = [5, 4, 3];
 
 /** §8.1's standard game: five charged nodes. */
 export const DEFAULT_CHARGED_NODE_COUNT: ChargedNodeCount = 5;
@@ -33,11 +33,11 @@ export function isChargedNodeCount(value: number): value is ChargedNodeCount {
 /**
  * Deals a whole opening board (rules.md §8.1): the squares the fleet stands
  * on, the chosen charged-node count, and a seed in; eight node statuses at
- * five charged, seven at four — `chargedNodeCount` charged and three
- * inactive — and the next seed out. `startingGameState` builds the fleet
- * first so it can pass the ships' squares here, which are excluded from
- * where a node may appear — building it consumes no randomness, so the
- * seeded stream is unaffected.
+ * five charged, seven at four, six at three — `chargedNodeCount` charged
+ * and three inactive — and the next seed out. `startingGameState` builds
+ * the fleet first so it can pass the ships' squares here, which are
+ * excluded from where a node may appear — building it consumes no
+ * randomness, so the seeded stream is unaffected.
  *
  * The draw order is fixed and must not change, because a recorded game
  * replays by replaying the seed:
@@ -55,7 +55,8 @@ export function isChargedNodeCount(value: number): value is ChargedNodeCount {
  *    and 3 at random.
  *
  * That is `chargedNodeCount + 4` seed steps before green's first turn —
- * nine at five charged, eight at four. Nothing is dealt `depleted`.
+ * nine at five charged, eight at four, seven at three. Nothing is dealt
+ * `depleted`.
  */
 export function dealOpeningBoard(
   shipSquares: readonly Square[],

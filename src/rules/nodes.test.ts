@@ -71,7 +71,7 @@ const LEGAL_SQUARE_NAMES: readonly string[] = ALL_SQUARES.filter((square) => {
 
 describe("the offered charged-node counts (rules.md §8.1)", () => {
   it("is largest first, so the leftmost start-screen choice is the default game", () => {
-    expect(CHARGED_NODE_COUNTS).toEqual([5, 4]);
+    expect(CHARGED_NODE_COUNTS).toEqual([5, 4, 3]);
   });
 
   it("defaults to five, §8.1's standard game", () => {
@@ -79,11 +79,11 @@ describe("the offered charged-node counts (rules.md §8.1)", () => {
     expect(CHARGED_NODE_COUNTS).toContain(DEFAULT_CHARGED_NODE_COUNT);
   });
 
-  it.each([4, 5])("accepts %i as a valid charged-node count", (value) => {
+  it.each([3, 4, 5])("accepts %i as a valid charged-node count", (value) => {
     expect(isChargedNodeCount(value)).toBe(true);
   });
 
-  it.each([3, 6, 0, 4.5, NaN])(
+  it.each([2, 6, 0, 4.5, NaN])(
     "rejects %s as a valid charged-node count",
     (value) => {
       expect(isChargedNodeCount(value)).toBe(false);

@@ -156,6 +156,44 @@ describe("runCharging — the shortfall (§8.2, §8.6 step 4)", () => {
     expect(result.state).toEqual(state);
   });
 
+  it("charges nothing when three are already charged", () => {
+    const state = buildState({
+      chargedNodeCount: 3,
+      nodes: {
+        F2: ["charged", 1],
+        J2: ["charged", 1],
+        B4: ["charged", 1],
+        K5: ["inactive", 3],
+      },
+    });
+
+    const result = runCharging(state);
+
+    expect(result.effects).toEqual([]);
+    expect(result.state).toEqual(state);
+  });
+
+  it("measures the shortfall against a count of three, charging only what three calls for", () => {
+    const state = buildState({
+      chargedNodeCount: 3,
+      nodes: {
+        F2: ["charged", 0],
+        J2: ["charged", 0],
+        N4: ["inactive", 3],
+        D8: ["inactive", 1],
+        H8: ["inactive", 2],
+      },
+    });
+
+    const result = runCharging(state);
+
+    expect(result.effects).toEqual([
+      { type: "node-charged", square: squareFromName("N4") },
+    ]);
+    expect(result.state.nodes.D8).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.H8).toEqual({ state: "inactive", level: 2 });
+  });
+
   it("measures the shortfall against the state's own count, not a fixed number", () => {
     const state = buildState({
       chargedNodeCount: 5,

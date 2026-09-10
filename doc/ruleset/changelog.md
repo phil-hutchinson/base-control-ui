@@ -7,6 +7,33 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.31 — three joins the chosen number of charged nodes
+
+This is a gameplay change. Tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **Three joins the charged-node choice**, made before play begins: **five,
+  four or three**, the same number for both players and fixed for the
+  game's lifetime. Five remains the standard game.
+- **The opening deal follows the choice**: the game opens with **eight**
+  nodes at five charged, **seven** at four, and **six** at three (the
+  chosen number charged, three inactive), the charged ones drawn under
+  section 3.2 at random and each starting at baseline with no countdown.
+  Nothing is dealt depleted, as before.
+- **The queue stays at three inactive nodes at all three counts.** Three
+  inactive nodes cover the largest shortfall a single turn can produce —
+  never more than two, one node expiring and one walked off — regardless of
+  which number the board is filling towards; the queue's size was never
+  derived from the target, so it needs no change (Appendix B).
+- **Appendix B now speaks of all three counts, prose and figures alike** —
+  the queue-sizing argument and the "never short" argument both name three
+  alongside five and four, and its measured figures (the node count's
+  range and mean, the mean turns between refills, the refill pool sizes and
+  the trio's mean smallest gap) are re-measured at three charged and stated
+  alongside the existing five- and four-charged figures, so no figure is
+  left claiming a number the board no longer produces. The edge- and
+  corner-placement figures remain measured at four charged only.
+
 ## 0.30 — a chosen number of charged nodes
 
 This is a gameplay change. Tagging stays on hold until the game plays (see

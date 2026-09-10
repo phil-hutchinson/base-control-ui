@@ -282,6 +282,22 @@ describe("startingGameState", () => {
     }).toEqual(defaultCount);
   });
 
+  it("takes a charged-node count of three, dealing six nodes: three charged, three inactive, none depleted", () => {
+    const state = startingGameState(SEED, { chargedNodeCount: 3 });
+
+    const states = Object.values(state.nodes).map((status) => status.state);
+
+    expect(state.chargedNodeCount).toBe(3);
+    expect(states).toHaveLength(3 + INACTIVE_NODE_COUNT);
+    expect(states.filter((nodeState) => nodeState === "charged")).toHaveLength(
+      3,
+    );
+    expect(states.filter((nodeState) => nodeState === "inactive")).toHaveLength(
+      INACTIVE_NODE_COUNT,
+    );
+    expect(states).not.toContain("depleted");
+  });
+
   it("is one of the offered charged-node counts, exactly the one given", () => {
     const state = startingGameState(SEED, { chargedNodeCount: 4 });
 
@@ -289,7 +305,7 @@ describe("startingGameState", () => {
     expect(state.chargedNodeCount).toBe(4);
   });
 
-  it.each([3, 6, 0, 4.5])(
+  it.each([2, 6, 0, 4.5])(
     "throws a RangeError for a charged-node count of %s",
     (chargedNodeCount) => {
       expect(() => startingGameState(SEED, { chargedNodeCount })).toThrow(

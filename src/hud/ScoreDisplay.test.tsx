@@ -109,51 +109,33 @@ describe("ScoreDisplay", () => {
     ).toBeInTheDocument();
   });
 
-  it("draws a row as long as the smaller of the side's ship count and the board's charged-node count, none lit when the side holds none", () => {
-    const sixShipsFiveNodes = buildState({
-      ships: shipsFor("green", 6),
-      chargedNodeCount: 5,
-    });
-    const sixShipsFourNodes = buildState({
-      ships: shipsFor("green", 6),
-      chargedNodeCount: 4,
-    });
-    const threeShips = buildState({
-      ships: shipsFor("green", 3),
-      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
-    });
-    const threeShipsFourNodes = buildState({
-      ships: shipsFor("green", 3),
-      chargedNodeCount: 4,
-    });
+  it.each([
+    { shipCount: 6, chargedNodeCount: 5 as const, pips: 5 },
+    { shipCount: 6, chargedNodeCount: 4 as const, pips: 4 },
+    { shipCount: 6, chargedNodeCount: 3 as const, pips: 3 },
+    { shipCount: 3, chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT, pips: 3 },
+    { shipCount: 3, chargedNodeCount: 4 as const, pips: 3 },
+    { shipCount: 3, chargedNodeCount: 3 as const, pips: 3 },
+  ])(
+    "draws $pips pips — the smaller of the side's $shipCount ships and the board's $chargedNodeCount charged nodes — none lit when the side holds none",
+    ({ shipCount, chargedNodeCount, pips }) => {
+      const state = buildState({
+        ships: shipsFor("green", shipCount),
+        chargedNodeCount,
+      });
 
-    const rendered = [
-      sixShipsFiveNodes,
-      sixShipsFourNodes,
-      threeShips,
-      threeShipsFourNodes,
-    ].map((state) =>
-      render(<ScoreDisplay state={state} side="green" displayedTotal={0} />),
-    );
+      const { container } = render(
+        <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+      );
 
-    expect(
-      rendered[0].container.querySelectorAll(".score-display__pip"),
-    ).toHaveLength(5);
-    expect(
-      rendered[1].container.querySelectorAll(".score-display__pip"),
-    ).toHaveLength(4);
-    expect(
-      rendered[2].container.querySelectorAll(".score-display__pip"),
-    ).toHaveLength(3);
-    expect(
-      rendered[3].container.querySelectorAll(".score-display__pip"),
-    ).toHaveLength(3);
-    for (const { container } of rendered) {
+      expect(container.querySelectorAll(".score-display__pip")).toHaveLength(
+        pips,
+      );
       expect(
         container.querySelectorAll(".score-display__pip--lit"),
       ).toHaveLength(0);
-    }
-  });
+    },
+  );
 
   it("lights a pip per charged node the side is standing on", () => {
     const state = buildState({

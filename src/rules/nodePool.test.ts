@@ -1,7 +1,7 @@
 // An integration test of the node economy over a long run, with no ship
 // activity to interfere (rules.md Appendix B). It drives `runEndOfTurn` from
 // real starting positions across a handful of seeds and several hundred
-// plies each, at **both** offered charged-node counts, and checks the
+// plies each, at **all three** offered charged-node counts, and checks the
 // claims Appendix B makes about the finished game: the queue's invariants
 // hold at every ply, every node the run ever places is legal at the moment
 // it appears, the weighting measurably spreads a freshly dealt trio, and
@@ -22,10 +22,10 @@
 //
 // One finding is worth recording here for Appendix B's benefit, since nothing
 // else in the codebase measures it: across every seed this file runs, at
-// both counts, and every refill and opening deal within them, section 3.2's
-// fallback never had to fire once. "Legal at the moment it appears" below is
-// checked by independently recomputing each ordinary constraint against the
-// board as the code built it, not by trusting whichever pool
+// all three counts, and every refill and opening deal within them, section
+// 3.2's fallback never had to fire once. "Legal at the moment it appears"
+// below is checked by independently recomputing each ordinary constraint
+// against the board as the code built it, not by trusting whichever pool
 // `legalNodePool` actually returned — a square that failed any of those
 // constraints could only ever have come from the fallback, so every
 // placement clearing them is itself the fallback-never-fired evidence.
@@ -81,12 +81,15 @@ function drawUniformSquare(
 /**
  * The lowest a freshly refilled trio's mean smallest pairwise Chebyshev gap
  * is allowed to fall to, pooled across `SEEDS`. Measured at **4.88 at five
- * charged and 4.79 at four**, over an actually-played economy at each count
- * — lower than `nodeQueue.test.ts`'s idealised empty-board figure of
- * roughly 5.1, because a played board's charged nodes, ships and surviving
- * depleted nodes crowd the pool the weighting draws from, and slightly
- * lower still at five charged, since one more node crowds that pool
- * further. This single bound leaves comfortable margin below both figures.
+ * charged, 4.79 at four and 4.88 at three**, over an actually-played economy
+ * at each count — lower than `nodeQueue.test.ts`'s idealised empty-board
+ * figure of roughly 5.1, because a played board's charged nodes, ships and
+ * surviving depleted nodes crowd the pool the weighting draws from. The
+ * three figures sit within a narrow band rather than trending with the
+ * count: the pools widen as the count drops, but the weighting is already
+ * spreading the trio across most of the board at every count, so a wider
+ * pool buys little further separation. This single bound leaves comfortable
+ * margin below all three figures.
  */
 const MINIMUM_MEAN_REFILL_GAP = 4;
 
@@ -94,24 +97,27 @@ const MINIMUM_MEAN_REFILL_GAP = 4;
  * How much further, on average, the weighted mean gap above must clear the
  * mean gap an unweighted draw from the very same pools produces (computed
  * in this file, from the very same occupied squares, so the comparison is
- * self-contained). Measured at a difference of **1.15 at five charged and
- * 1.08 at four** (4.88 weighted against 3.72 unweighted at five; 4.79
- * against 3.71 at four); this single bound leaves margin below both.
+ * self-contained). Measured at a difference of **1.15 at five charged, 1.08
+ * at four and 1.18 at three** (4.88 weighted against 3.72 unweighted at
+ * five; 4.79 against 3.71 at four; 4.88 against 3.71 at three); this single
+ * bound leaves margin below all three.
  */
 const MINIMUM_SPREAD_ADVANTAGE = 0.5;
 
 /**
- * The band the mean number of turns between one refill and the next is
- * allowed to sit in, pooled across `SEEDS`. Measured at roughly **2.2 turns
- * at five charged and 2.8 at four**, under the driver this file's header
- * describes: with several charged nodes able to sit at baseline at once and
- * the driver starting a countdown on one of them every single ply that any
- * is waiting, several countdowns run staggered a ply or two apart rather
- * than one at a time, so a charge (and the refill it triggers) comes round
- * far more often than a charged node's own eleven-ply life would suggest on
- * its own — and more often still at five charged, since there is one more
- * node for the driver to keep counting down. The bounds below leave
- * generous margin either side of both measured figures.
+ * The band the mean number of plies between one refill and the next is
+ * allowed to sit in, pooled across `SEEDS`. Measured at roughly **2.2 plies
+ * at five charged, 2.8 at four and 3.7 at three**, under the driver this
+ * file's header describes: with several charged nodes able to sit at
+ * baseline at once and the driver starting a countdown on one of them every
+ * single ply that any is waiting, several countdowns run staggered a ply or
+ * two apart rather than one at a time, so a charge (and the refill it
+ * triggers) comes round far more often than a charged node's own eleven-ply
+ * life would suggest on its own — and less often as the count drops, since
+ * there are fewer charged nodes for the driver to keep counting down at
+ * once. That trend puts three charged nearest the band's ceiling of any of
+ * the three counts, though still comfortably inside it. The bounds below
+ * leave generous margin either side of all three measured figures.
  */
 const MINIMUM_MEAN_PLIES_BETWEEN_REFILLS = 1.5;
 const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
@@ -120,17 +126,27 @@ const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
  * The band the board's total node count — the game's own charged-node
  * count, three inactive, plus however many are depleted — is allowed to
  * breathe within. Measured range across `SEEDS` and `PLIES_TO_RUN`: **8 to
- * 13, mean ≈12.9, at five charged**, and **7 to 11, mean ≈10.9, at four** —
- * one lower throughout at four, since one fewer charged node sits on the
- * board at any moment. The driver this file's header describes starts a
- * countdown so eagerly that several traps and exits are typically depleted
- * and counting down at once, closer to the top of each range than the
- * bottom. The lower bound is the board's structural floor at four
- * charged — four charged nodes plus three inactive, nothing yet depleted —
- * so it is exact by construction rather than a measured margin; the upper
- * bound leaves comfortable margin above both measured ranges.
+ * 13, mean ≈12.9, at five charged**; **7 to 11, mean ≈10.9, at four**; and
+ * **6 to 9, mean ≈8.9, at three** — the floor one lower at each step down
+ * and the ceiling and mean about two lower, since one fewer charged node
+ * sits on the board at any moment and takes the depleted node it can leave
+ * behind with it. The driver
+ * this file's header describes starts a countdown so eagerly that several
+ * traps and exits are typically depleted and counting down at once, closer
+ * to the top of each range than the bottom.
+ *
+ * The lower bound is not fixed here: it is derived per count, inside the
+ * `describe.each` block below, as `chargedNodeCount + INACTIVE_NODE_COUNT`.
+ * The board is always back at its own charged-node count by the end of
+ * every turn, plus exactly three inactive nodes, nothing else guaranteed —
+ * so that sum is the board's structural floor at every count, exact by
+ * construction rather than a measured margin.
+ *
+ * `MAXIMUM_TOTAL_NODES` stays a single shared ceiling rather than a figure
+ * measured at any one count: it exists to catch a runaway, not to describe
+ * a count, and it leaves generous margin above every count's measured
+ * range above.
  */
-const MINIMUM_TOTAL_NODES = 7;
 const MAXIMUM_TOTAL_NODES = 14;
 
 /** One ply's sample of the board, taken from `result.state` after `runEndOfTurn`. */
@@ -331,6 +347,11 @@ function average(values: readonly number[]): number {
 describe.each(CHARGED_NODE_COUNTS)(
   "the node economy at %d charged nodes (Appendix B)",
   (chargedNodeCount) => {
+    // The board's structural floor at this count: it is always back at its
+    // own charged-node count by the end of every turn, plus exactly three
+    // inactive nodes, nothing else guaranteed.
+    const minimumTotalNodes = chargedNodeCount + INACTIVE_NODE_COUNT;
+
     describe("the queue's invariants hold at every turn", () => {
       it.each(SEEDS)(
         "holds exactly three inactive nodes at every turn, holding priorities {1, 2, 3} (seed %d)",
@@ -363,7 +384,7 @@ describe.each(CHARGED_NODE_COUNTS)(
 
           run.samples.forEach((sample, i) => {
             expect(sample.totalNodeCount, `ply ${i}`).toBeGreaterThanOrEqual(
-              MINIMUM_TOTAL_NODES,
+              minimumTotalNodes,
             );
             expect(sample.totalNodeCount, `ply ${i}`).toBeLessThanOrEqual(
               MAXIMUM_TOTAL_NODES,
@@ -381,7 +402,7 @@ describe.each(CHARGED_NODE_COUNTS)(
           // out, and the shortfall it (plus at most one departure) can create is
           // never more than two, which the queue's three inactive nodes always
           // cover. Both bounds are exact, not measured, and hold for every
-          // sample of every seed this file runs, with no slack, at either count.
+          // sample of every seed this file runs, with no slack, at any count.
           const run = runEconomy(seed, PLIES_TO_RUN, chargedNodeCount);
 
           run.samples.forEach((sample, i) => {
