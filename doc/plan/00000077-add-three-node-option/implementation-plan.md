@@ -689,7 +689,10 @@ that `doc/ruleset/changelog.md` has exactly one `## 0.31` heading.
 
 ### Step 9 — The owner plays a three-node game
 
-Status: pending
+Status: committed
+
+Notes: The owner played the app at http://localhost:5273/ and approved,
+with nothing to fix. Points 1-8 confirmed; no rules question raised.
 
 The owner runs the app (`npm run dev` in the dev container) and plays. This
 is the story's gate: the plan pauses here.
