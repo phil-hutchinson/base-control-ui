@@ -26,6 +26,19 @@ function shipCells() {
   return screen.getAllByRole("gridcell", { name: /ship, power \d of 6$/ });
 }
 
+/**
+ * The start screen's option groups. Every radio query goes through one of
+ * these: with Ships offering 6, 5, 4, 3 and Charged nodes offering 5, 4, 3,
+ * a value alone no longer names a radio uniquely.
+ */
+function roundsGroup() {
+  return screen.getByRole("group", { name: "Rounds" });
+}
+
+function clockGroup() {
+  return screen.getByRole("group", { name: "Clock (time per move)" });
+}
+
 async function pressPlay() {
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Play" }));
@@ -38,15 +51,25 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: GAME_NAME }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "6" })).toBeChecked();
+    expect(
+      within(screen.getByRole("group", { name: "Ships" })).getByRole("radio", {
+        name: "6",
+      }),
+    ).toBeChecked();
     expect(
       within(screen.getByRole("group", { name: "Charged nodes" })).getByRole(
         "radio",
         { name: "5" },
       ),
     ).toBeChecked();
-    expect(screen.getByRole("radio", { name: "30" })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "UNLIMITED" })).toBeChecked();
+    expect(
+      within(screen.getByRole("group", { name: "Rounds" })).getByRole("radio", {
+        name: "30",
+      }),
+    ).toBeChecked();
+    expect(
+      within(clockGroup()).getByRole("radio", { name: "UNLIMITED" }),
+    ).toBeChecked();
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
@@ -219,7 +242,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("radio", { name: "45" }));
+    await user.click(within(roundsGroup()).getByRole("radio", { name: "45" }));
     await user.click(screen.getByRole("button", { name: "Play" }));
 
     expect(screen.getByText("1/45")).toBeInTheDocument();
@@ -279,7 +302,7 @@ describe("App", () => {
 
     const shipsGroup = screen.getByRole("group", { name: "Ships" });
     await user.click(within(shipsGroup).getByRole("radio", { name: "5" }));
-    await user.click(screen.getByRole("radio", { name: "45" }));
+    await user.click(within(roundsGroup()).getByRole("radio", { name: "45" }));
     await user.click(screen.getByRole("button", { name: "Quick Guide" }));
 
     expect(
@@ -302,7 +325,9 @@ describe("App", () => {
         name: "5",
       }),
     ).toBeChecked();
-    expect(screen.getByRole("radio", { name: "45" })).toBeChecked();
+    expect(
+      within(roundsGroup()).getByRole("radio", { name: "45" }),
+    ).toBeChecked();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(vi.mocked(Board).mock.calls.length).toBe(renderCountBefore);
   });
@@ -317,7 +342,7 @@ describe("App", () => {
       const user = userEvent.setup({ delay: null });
       render(<App />);
 
-      await user.click(screen.getByRole("radio", { name: "6s" }));
+      await user.click(within(clockGroup()).getByRole("radio", { name: "6s" }));
       await user.click(screen.getByRole("button", { name: "Play" }));
 
       expect(screen.getAllByText("3:00").length).toBeGreaterThan(0);

@@ -857,4 +857,5 @@ These counts — the node count's range, the pool sizes and the spread
 figures above — are first guesses to be play-tested and retuned like every
 other number in this document, and are now measured at all three charged
 counts. The edge and corner figures remain measured at four charged only,
-and are expected to move only slightly once they are measured at five.
+and are expected to move only slightly once they are measured at the
+other counts.

@@ -86,9 +86,10 @@ function drawUniformSquare(
  * figure of roughly 5.1, because a played board's charged nodes, ships and
  * surviving depleted nodes crowd the pool the weighting draws from. The
  * three figures sit within a narrow band rather than trending with the
- * count: fewer charged nodes leave more room on the board, but also mean
- * fewer refills to average across, so the two effects roughly cancel. This
- * single bound leaves comfortable margin below all three figures.
+ * count: the pools widen as the count drops, but the weighting is already
+ * spreading the trio across most of the board at every count, so a wider
+ * pool buys little further separation. This single bound leaves comfortable
+ * margin below all three figures.
  */
 const MINIMUM_MEAN_REFILL_GAP = 4;
 
@@ -104,8 +105,8 @@ const MINIMUM_MEAN_REFILL_GAP = 4;
 const MINIMUM_SPREAD_ADVANTAGE = 0.5;
 
 /**
- * The band the mean number of turns between one refill and the next is
- * allowed to sit in, pooled across `SEEDS`. Measured at roughly **2.2 turns
+ * The band the mean number of plies between one refill and the next is
+ * allowed to sit in, pooled across `SEEDS`. Measured at roughly **2.2 plies
  * at five charged, 2.8 at four and 3.7 at three**, under the driver this
  * file's header describes: with several charged nodes able to sit at
  * baseline at once and the driver starting a countdown on one of them every
@@ -126,8 +127,10 @@ const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
  * count, three inactive, plus however many are depleted — is allowed to
  * breathe within. Measured range across `SEEDS` and `PLIES_TO_RUN`: **8 to
  * 13, mean ≈12.9, at five charged**; **7 to 11, mean ≈10.9, at four**; and
- * **6 to 9, mean ≈8.9, at three** — one lower throughout at each step down,
- * since one fewer charged node sits on the board at any moment. The driver
+ * **6 to 9, mean ≈8.9, at three** — the floor one lower at each step down
+ * and the ceiling and mean about two lower, since one fewer charged node
+ * sits on the board at any moment and takes the depleted node it can leave
+ * behind with it. The driver
  * this file's header describes starts a countdown so eagerly that several
  * traps and exits are typically depleted and counting down at once, closer
  * to the top of each range than the bottom.
