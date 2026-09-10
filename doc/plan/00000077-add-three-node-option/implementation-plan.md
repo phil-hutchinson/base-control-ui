@@ -509,7 +509,16 @@ present and passing.
 
 ### Step 6 — The Quick Guide's stale sentence
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator. "There are always four charged
+nodes." became "The board always has the number of charged nodes chosen
+at the start: five, four or three." — one sentence, D7's recommended
+wording. The rest of the paragraph is untouched, including "gains 6
+points" and "trapped for 5 turns", which were checked against §8.3 at the
+plan-approval gate and are correct. `guideCopy.test.ts` asserts the
+paragraph as shipped; the string "always four charged nodes" no longer
+appears under `src/`.
 
 In `src/guide/guideCopy.ts`, replace the NODE LIFECYCLE paragraph's first
 sentence, "There are always four charged nodes.", with the corrected one —

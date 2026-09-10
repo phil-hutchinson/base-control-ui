@@ -56,7 +56,8 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
     id: "nodeLifecycle",
     heading: "NODE LIFECYCLE",
     paragraph:
-      "There are always four charged nodes. When a spaceship enters a " +
+      "The board always has the number of charged nodes chosen at the " +
+      "start: five, four or three. When a spaceship enters a " +
       "charged node, a countdown begins before it is depleted. The " +
       "spaceship gains 6 points if it stays on the node until it becomes " +
       "depleted. A charged node also becomes depleted if the spaceship " +
