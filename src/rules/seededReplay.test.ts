@@ -308,9 +308,11 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     expect(fightCount).toBeGreaterThanOrEqual(1);
     expect(planetReturns.length).toBeGreaterThanOrEqual(2);
     // Re-measured at five charged (0.30): 18 charges, 17 retirements and 16
-    // refills for this seed over forty rounds — one more charged node on
-    // the board means one more thing to charge and retire at any given
-    // moment; the floors below leave margin below that.
+    // refills for this seed over forty rounds. At five charged the opening
+    // deal consumes one more seed step than at four, so this seed deals an
+    // entirely different board and the run diverges from the old
+    // four-charged figures — these are simply this run's own numbers,
+    // re-measured; the floors below leave margin below that.
     expect(chargedNodes.length).toBeGreaterThanOrEqual(4);
     expect(retiredNodes.length).toBeGreaterThanOrEqual(4);
     expect(queueRefills.length).toBeGreaterThanOrEqual(4);

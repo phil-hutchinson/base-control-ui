@@ -383,9 +383,9 @@ describe("runEndOfTurn — step 3, the charged countdown (§8.3)", () => {
   });
 
   it("goes depleted, carrying TRAP_COUNTDOWN_PLIES, when the last ply is spent, trapping the ship on it (§8.5)", () => {
-    // Three other charged nodes keep the shortfall at one once H8 runs
-    // out, so nothing charges to fill it (no inactive node is queued) and
-    // this stays a pure test of H8's own countdown and trap.
+    // No inactive node is queued, so once H8 runs out charging has nothing
+    // to charge with, whatever the shortfall, and this stays a pure test of
+    // H8's own countdown and trap.
     const state = buildState({
       nodes: {
         H8: ["charged", 1],
@@ -435,8 +435,8 @@ describe("runEndOfTurn — step 3, the charged countdown (§8.3)", () => {
   });
 
   it("goes depleted with nothing further to report when the node was empty", () => {
-    // Three other charged nodes keep the shortfall at one once H8 runs
-    // out, so nothing charges to fill it and the sequence has nothing
+    // No inactive node is queued, so once H8 runs out charging has nothing
+    // to charge with, whatever the shortfall, and the sequence has nothing
     // further to report.
     const state = buildState({
       nodes: {
@@ -507,10 +507,9 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
 describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
   it("retires a depleted node once its level reaches zero or below, and nothing appears in its place", () => {
     // A level of 1 spends its last ply this very sequence, deterministically.
-    // Three other charged nodes with no countdown keep the shortfall at one
-    // after H8 retires, so nothing charges to fill it and step 6's
-    // retirement stays the only
-    // event.
+    // No inactive node is queued, so after H8 retires charging has nothing
+    // to charge with, whatever the shortfall, and step 6's retirement stays
+    // the only event.
     const state = buildState({
       nodes: {
         H8: ["depleted", 1],
@@ -629,9 +628,9 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
 
 describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §8.5)", () => {
   it("reports node-retired then ship-freed, keeping the freed ship's square and power, when a retiring node had a ship on it", () => {
-    // A level of 1 guarantees retirement this very ply. Three other charged
-    // nodes with no countdown keep the shortfall at one after H8 retires, so
-    // nothing charges to fill it.
+    // A level of 1 guarantees retirement this very ply. No inactive node is
+    // queued, so after H8 retires charging has nothing to charge with,
+    // whatever the shortfall.
     const state = buildState({
       nodes: {
         H8: ["depleted", 1],
@@ -1072,9 +1071,9 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
 describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
   it("emits no effect and leaves both totals unchanged when nothing is held", () => {
     // Depleted rather than charged or inactive, so nothing here is a
-    // candidate for step 2's energy collection. Four other charged nodes
-    // hold the board at its target, so step 4's charging has no shortfall
-    // to fill either, and this stays a pure test of step 2 alone.
+    // candidate for step 2's energy collection. No inactive node is queued,
+    // so step 4's charging has nothing to charge with either, whatever the
+    // shortfall, and this stays a pure test of step 2 alone.
     const state = buildState({
       sideToMove: "green",
       nodes: {
@@ -1146,7 +1145,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.state.energy).toEqual({ green: 3, red: 0 });
   });
 
-  it("pays for four held nodes, the most the board can charge at once, with no cap in the arithmetic", () => {
+  it("pays for four held nodes, with no cap in the arithmetic", () => {
     const state = buildState({
       sideToMove: "green",
       nodes: {
@@ -1178,6 +1177,43 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ],
     });
     expect(result.state.energy).toEqual({ green: 4, red: 0 });
+  });
+
+  it("pays for every held node at the default five charged, with no cap in the arithmetic", () => {
+    const state = buildState({
+      sideToMove: "green",
+      nodes: {
+        H8: ["charged", 5],
+        K5: ["charged", 5],
+        L8: ["charged", 5],
+        C3: ["charged", 5],
+        F3: ["charged", 5],
+      },
+      ships: [
+        ship("green-1", "green", "H8", 0),
+        ship("green-2", "green", "K5", 0),
+        ship("green-3", "green", "L8", 0),
+        ship("green-4", "green", "C3", 0),
+        ship("green-5", "green", "F3", 0),
+      ],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-collected",
+      side: "green",
+      amount: 5,
+      newTotal: 5,
+      squares: [
+        squareFromName("C3"),
+        squareFromName("F3"),
+        squareFromName("K5"),
+        squareFromName("H8"),
+        squareFromName("L8"),
+      ],
+    });
+    expect(result.state.energy).toEqual({ green: 5, red: 0 });
   });
 
   it("pays for a node whose countdown runs out at the end of this very turn (before step 3 ticks)", () => {

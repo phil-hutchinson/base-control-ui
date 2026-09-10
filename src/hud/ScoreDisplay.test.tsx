@@ -122,10 +122,18 @@ describe("ScoreDisplay", () => {
       ships: shipsFor("green", 3),
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     });
+    const threeShipsFourNodes = buildState({
+      ships: shipsFor("green", 3),
+      chargedNodeCount: 4,
+    });
 
-    const rendered = [sixShipsFiveNodes, sixShipsFourNodes, threeShips].map(
-      (state) =>
-        render(<ScoreDisplay state={state} side="green" displayedTotal={0} />),
+    const rendered = [
+      sixShipsFiveNodes,
+      sixShipsFourNodes,
+      threeShips,
+      threeShipsFourNodes,
+    ].map((state) =>
+      render(<ScoreDisplay state={state} side="green" displayedTotal={0} />),
     );
 
     expect(
@@ -136,6 +144,9 @@ describe("ScoreDisplay", () => {
     ).toHaveLength(4);
     expect(
       rendered[2].container.querySelectorAll(".score-display__pip"),
+    ).toHaveLength(3);
+    expect(
+      rendered[3].container.querySelectorAll(".score-display__pip"),
     ).toHaveLength(3);
     for (const { container } of rendered) {
       expect(

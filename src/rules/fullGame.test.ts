@@ -356,6 +356,11 @@ describe.each(CHARGED_NODE_COUNTS)(
       expect(finalState.plyNumber).toBe(pliesForGameLength(100) + 1);
       expect(isGameOver(finalState)).toBe(true);
 
+      // Fixed for the game's lifetime (rules.md §8.1): whatever the deal
+      // does to the board over a hundred rounds, the chosen count itself
+      // never moves.
+      expect(finalState.chargedNodeCount).toBe(chargedNodeCount);
+
       // The ledger holds exactly (§8.4, §8.6 step 2): a side's final total is
       // exactly what it collected for the charged nodes it held — nothing
       // subtracts energy any more, so there is no other side of the ledger to
@@ -398,6 +403,7 @@ describe.each(CHARGED_NODE_COUNTS)(
 
       expect(finalState.plyNumber).toBe(pliesForGameLength(3) + 1);
       expect(isGameOver(finalState)).toBe(true);
+      expect(finalState.chargedNodeCount).toBe(chargedNodeCount);
 
       expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
       expect(finalState.energy.red).toBe(sumAmounts(redCollected));

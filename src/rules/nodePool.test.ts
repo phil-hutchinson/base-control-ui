@@ -125,8 +125,10 @@ const MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS = 5;
  * board at any moment. The driver this file's header describes starts a
  * countdown so eagerly that several traps and exits are typically depleted
  * and counting down at once, closer to the top of each range than the
- * bottom. This single bound leaves a little margin either side of both
- * measured ranges.
+ * bottom. The lower bound is the board's structural floor at four
+ * charged — four charged nodes plus three inactive, nothing yet depleted —
+ * so it is exact by construction rather than a measured margin; the upper
+ * bound leaves comfortable margin above both measured ranges.
  */
 const MINIMUM_TOTAL_NODES = 7;
 const MAXIMUM_TOTAL_NODES = 14;
@@ -371,7 +373,7 @@ describe.each(CHARGED_NODE_COUNTS)(
       );
 
       it.each(SEEDS)(
-        "runs out at most one charged node, and charges at most two, in any single turn (rules.md §8.3, D9 invariants 2 and 3) (seed %d)",
+        "runs out at most one charged node, and charges at most two, in any single turn (rules.md §8.3) (seed %d)",
         (seed) => {
           // At most one countdown starts per turn — a turn is one action, and a
           // move onto a charged node is the only way in (§8.3) — so at most one

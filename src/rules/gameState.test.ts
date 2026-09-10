@@ -282,7 +282,7 @@ describe("startingGameState", () => {
     }).toEqual(defaultCount);
   });
 
-  it("is fixed for the game's lifetime once set — the same field a fresh state carries, untouched by anything else", () => {
+  it("is one of the offered charged-node counts, exactly the one given", () => {
     const state = startingGameState(SEED, { chargedNodeCount: 4 });
 
     expect(CHARGED_NODE_COUNTS).toContain(state.chargedNodeCount);

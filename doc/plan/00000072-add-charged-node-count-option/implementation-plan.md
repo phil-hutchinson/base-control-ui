@@ -123,7 +123,13 @@ reader would otherwise have to make twice.
   layer must keep accepting the three-round games the test suite builds;
   nothing needs a board charged to seven, and S1 puts other counts out of
   scope, so the narrow type is free and catches a bad literal at compile
-  time.
+  time. The narrow type does its work on `GameState.chargedNodeCount` and
+  on the `CHARGED_NODE_COUNTS` consumers; `StartingGameStateOptions.chargedNodeCount`
+  stays `number`, deliberately, the same as its sibling `fleetSize?: number`
+  and `lengthInRounds?: number` — the options object is a runtime-validated
+  boundary, not a place the narrow type is meant to reach, and widening it
+  there is one validation story for the whole boundary rather than a
+  one-off narrowing of this field.
 
 - **D3. `startingGameState` takes an options object** —
   `startingGameState(randomSeed, options?)` with `lengthInRounds`,
@@ -582,13 +588,18 @@ constant for `state.chargedNodeCount` only — no `min`, per the step.
 
 Every hand-built `GameState` literal across the inventory (23 files) gained
 `chargedNodeCount`, almost always `DEFAULT_CHARGED_NODE_COUNT` inside a
-`buildState`-style helper; a handful of fixtures that hard-code "the board
-at its target" alongside an actual inactive node to charge — one case each
-in `charging.test.ts`, `endOfTurn.test.ts` (two) and `ply.test.ts` (one) —
+`buildState`-style helper; eleven fixtures that hard-code "the board at its
+target" alongside an actual inactive node to charge — six in
+`charging.test.ts` (L60, 83, 104, 124, 190, 225), four in
+`endOfTurn.test.ts` (L536, 937, 973, 1044), one in `ply.test.ts` (L243) —
 needed an explicit `chargedNodeCount: 4` instead, because the shortfall
 against the new default of five would otherwise have charged the inactive
 node the fixture was relying on staying put; this is a direct consequence of
-the default flipping, not a new kind of fixture. `nodes.test.ts`'s whole
+the default flipping, not a new kind of fixture. (The `chargedNodeCount: 4`
+occurrences in `useAppScreen.test.tsx`, `session.test.ts` L698,
+`ScoreDisplay.test.tsx` L119 and `StartScreen.test.tsx` L110 are tests _of_
+the option itself, not pinned fixtures, and are not part of this count.)
+`nodes.test.ts`'s whole
 "dealing the opening board" block was reshaped into `describe.each`
 (`CHARGED_NODE_COUNTS`) so the deal is asserted at both 5 and 4 in one pass,
 including seed-step counts of 9 and 8 respectively; the old
@@ -926,8 +937,10 @@ computations the file's own "spread" test already builds:
 - **Total node count:** min 8 / max 13 / mean 12.88 at five charged; min 7 /
   max 11 / mean 10.91 at four. Matches Step 4's interim five-charged figures
   exactly and confirms the pre-existing four-charged figures in `rules.md`.
-  `MINIMUM_TOTAL_NODES` (7) / `MAXIMUM_TOTAL_NODES` (14) already cover both
-  ranges with margin and were **not retuned**.
+  `MINIMUM_TOTAL_NODES` (7) is the board's structural floor at four
+  charged — four charged plus three inactive, exact by construction rather
+  than a measured margin — and `MAXIMUM_TOTAL_NODES` (14) leaves comfortable
+  margin above both ranges; neither was retuned.
 - **Refill pool sizes** (strict first draw / widened second / widened
   third): at five charged, 6–34 (mean 21.31) / 19–48 (mean 31.78) / 15–45
   (mean 28.54); at four charged, 11–37 (mean 25.20) / 24–54 (mean 37.63) /

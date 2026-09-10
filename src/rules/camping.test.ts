@@ -599,8 +599,9 @@ describe("camping — leaving a charged node ends it at once (rules.md §8.3)", 
   });
 
   it("does not hand the node back or let the opponent inherit it — the departed square stays uncharged for both plies", () => {
-    // Three other charged nodes, at baseline, keep the shortfall at one once
-    // F2 becomes an exit node, so nothing else on the board stirs.
+    // No inactive node is queued, so once F2 becomes an exit node charging
+    // has nothing to charge with, whatever the shortfall, and nothing else
+    // on the board stirs.
     const initial = buildState({
       ships: [ship("green-1", "green", "F2", 4), ship("red-1", "red", "D2")],
       nodes: {
