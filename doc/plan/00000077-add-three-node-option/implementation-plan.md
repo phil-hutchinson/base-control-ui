@@ -212,7 +212,23 @@ charged-node count)`, unchanged from 0.30. At three charged it is three
 
 ### Step 1 — `rules.md` 0.30 → 0.31: three joins the choice
 
-Status: pending
+Status: committed
+
+Notes: Bumped `doc/ruleset/rules.md` to 0.31 and `RULES_VERSION` in
+`src/rules/rulesVersion.ts` to match. Widened every "five or four" mention
+(§2's Node entry, §8.1's choice sentence and opening-board sentence, §8.2's
+queue-size sentence, and Appendix B's opening sentence, "never short"
+paragraph and "What the app guards" paragraph) to the three-way "five, four
+or three". Left Appendix B's measured figures attributed to five and four
+only, per D5 — no figure claims three charged yet, since no code deals
+three charged until Step 3; those figures land in Step 8 alongside the same
+0.31 changelog entry, extended rather than duplicated. Added one
+`## 0.31` entry to `doc/ruleset/changelog.md`, newest first, in the shape
+the 0.30 entry uses, noting tagging stays on hold. `npm run typecheck`,
+`npm run lint` and `npm test` all pass (1151 tests, including
+`rulesVersion.test.ts` against the new 0.31 string); `npm run format:check`
+reports only a pre-existing, unrelated warning on `src/board/planetArt.ts`
+that this step did not touch. No deviation from the plan.
 
 Update `doc/ruleset/rules.md` so the charged-node count reads as a **three-way**
 choice everywhere it is named, bump the document to **0.31**, bump

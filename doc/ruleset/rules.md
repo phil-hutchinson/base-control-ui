@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.30**
+**Rules version: 0.31**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -60,9 +60,9 @@ until the node under it retires.
 **Node** — a position on the board that comes into being, runs through three
 states — **inactive**, **charged** and **depleted** — and then ends and
 simply leaves the board. The board always carries the **chosen number** of
-charged nodes — five or four, chosen before play begins (section 8.1) — and
-**three** inactive ones, plus however many happen to be depleted at the
-time.
+charged nodes — five, four or three, chosen before play begins (section
+8.1) — and **three** inactive ones, plus however many happen to be depleted
+at the time.
 
 **Priority** — a number, 1, 2 or 3, carried by each of the three inactive
 nodes at once, one each, never a repeat. The inactive node with the highest
@@ -439,15 +439,15 @@ A node cycles inactive → charged → depleted → **ends**, and simply leaves
 the board.
 
 A player chooses how many nodes the board keeps charged before play
-begins: **five or four**, the same number for both players and fixed for
-the game's lifetime, with **five the standard game**. At the end of every
-turn, whatever shortfall there is against the chosen number is filled from
-the three inactive nodes, highest priority first. The shortfall is always
-filled on the turn it appears — the board is never left short of the
-chosen number of charged nodes (Appendix B).
+begins: **five, four or three**, the same number for both players and
+fixed for the game's lifetime, with **five the standard game**. At the end
+of every turn, whatever shortfall there is against the chosen number is
+filled from the three inactive nodes, highest priority first. The
+shortfall is always filled on the turn it appears — the board is never
+left short of the chosen number of charged nodes (Appendix B).
 
 **The opening board is dealt.** The game opens with **eight** nodes at
-five charged, **seven** at four:
+five charged, **seven** at four, **six** at three:
 
 - **The chosen number are charged**, at squares drawn under section 3.2, at
   random, with every legal square equally likely and no two the same. No
@@ -477,8 +477,8 @@ charged node never has one standing on it already.
 
 The queue's size is unrelated to the chosen target: three inactive nodes
 cover the largest shortfall a single turn can produce, which is two,
-whether the board is filling towards five charged or towards four
-(Appendix B).
+whether the board is filling towards five charged, towards four or
+towards three (Appendix B).
 
 **Priorities rotate at the end of every turn on which nothing charged**: 1
 becomes 2, 2 becomes 3, and 3 becomes 1. The nodes themselves do not move —
@@ -757,9 +757,9 @@ any.
 
 ## Appendix B — Sizing the queue
 
-The board carries the **chosen number** of charged nodes — five or four —
-and **three** inactive ones at all times, plus however many happen to be
-depleted and counting down. Measured over several hundred turns of
+The board carries the **chosen number** of charged nodes — five, four or
+three — and **three** inactive ones at all times, plus however many happen
+to be depleted and counting down. Measured over several hundred turns of
 sustained play, that count breathes between **eight** and **thirteen** at
 five charged (mean **12.88**) and between **seven** and **eleven** at four
 (mean **10.91**) — a charged node's own countdown and the depleted node it
@@ -794,10 +794,10 @@ start per turn** — so, since every countdown is the same length, **at most
 one node expires per turn**. Add the one node a player can leave behind by
 walking off in the same turn, and the shortfall against the chosen number
 is **never more than two** — comfortably inside what the three inactive
-nodes always cover, whether the board is filling towards five charged or
-towards four. This argument never depended on the target, which is exactly
-why the queue does not need to grow with it. Every shortfall is filled on
-the turn it appears.
+nodes always cover, whether the board is filling towards five charged,
+towards four or towards three. This argument never depended on the target,
+which is exactly why the queue does not need to grow with it. Every
+shortfall is filled on the turn it appears.
 
 On an empty board the strict pool holds **51** squares and the widened pool
 holds **79** (section 3.2). On a played board — closer to the top of the
@@ -843,10 +843,11 @@ expected to be seen.
 **What the app guards:** that the queue is always exactly three nodes
 carrying priorities 1, 2 and 3, one each; that the board is always back at
 the chosen number of charged nodes by the end of every turn; that every
-node placed — the opening deal's eight or seven and a refill's three — is
-legal, under the right pool, at the moment it appears; and that a freshly
-refilled trio comes out measurably more spread than an unweighted draw from
-the same pools would. These guards run at both five and four charged.
+node placed — the opening deal's eight, seven or six and a refill's three —
+is legal, under the right pool, at the moment it appears; and that a
+freshly refilled trio comes out measurably more spread than an unweighted
+draw from the same pools would. These guards run at all three charged
+counts.
 
 These counts — the node count's range, the pool sizes and the spread
 figures above — are first guesses to be play-tested and retuned like every
