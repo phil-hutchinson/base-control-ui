@@ -541,7 +541,41 @@ string "always four charged nodes" no longer appears anywhere under `src/`.
 
 ### Step 7 — The economy measured at three, and the test's comments re-stated
 
-Status: pending
+Status: committed
+
+Notes: Measured with temporary instrumentation added to (and removed from)
+`src/rules/nodePool.test.ts`, over its own `SEEDS` (five seeds) and
+`PLIES_TO_RUN` (500 plies each, 2500 plies total) at three charged. Figures
+for Step 8:
+- total node count: min **6**, max **9**, mean **8.934** (2500 samples);
+- refill pool sizes (strict first draw, widened second, widened third):
+  means **29.83 / 44.17 / 40.29**, minima **15 / 31 / 28**, over **675**
+  refills;
+- mean smallest pairwise gap: weighted **4.883**, unweighted **3.705**,
+  advantage **1.178**, pooled over the same **675** refills;
+- mean plies between refills: **3.704** (2500 plies, 675 refills);
+- §3.2's fallback: never fired — the smallest pool measured at any draw
+  (the strict first draw) was 15, never zero.
+
+Every figure matches D3's planning-run prediction exactly, so **no bound
+needed widening**: `MINIMUM_MEAN_REFILL_GAP` (4), `MINIMUM_SPREAD_ADVANTAGE`
+(0.5), `MINIMUM_MEAN_PLIES_BETWEEN_REFILLS`/`MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS`
+(1.5/5) and `MAXIMUM_TOTAL_NODES` (14) all clear the three-charged figures
+comfortably, and the derived floor from Step 2
+(`chargedNodeCount + INACTIVE_NODE_COUNT` = 6 at three) matches the measured
+minimum exactly. Re-stated the comments on all four tuned bounds plus the
+file's header and one inline comment ("at either count" → "at any count") to
+name all three counts; called out in the `MINIMUM_MEAN_PLIES_BETWEEN_REFILLS`
+comment that three charged sits nearest the band's ceiling (3.7 against a
+ceiling of 5, versus 2.2 at five and 2.8 at four) because there are fewer
+charged nodes for the file's stand-in driver to keep counting down. The
+temporary instrumentation (one `it` block logging the figures via
+`console.log`) was added, run, read, and removed before finishing; `git
+diff` shows only comment changes, no script left in the tree.
+`npm run typecheck`, `npm run lint` and `npm test` all pass (1211 tests,
+unchanged from Step 6); `npm run format:check` reports only the same
+pre-existing, unrelated warning on `src/board/planetArt.ts` noted in
+earlier steps. No deviation from the plan.
 
 Take the measurements Appendix B needs at **three charged**, from
 `src/rules/nodePool.test.ts` — the app's only long-run instrument — and
