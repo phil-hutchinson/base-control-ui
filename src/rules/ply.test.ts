@@ -1214,42 +1214,6 @@ describe("applyPassGuard", () => {
     expect(result.effect).toBeUndefined();
   });
 
-  it("passes the ply when its one ship holds a charged node, with a nearby target it still cannot attack", () => {
-    // green-1 is boxed in for movement exactly as above, and red-1 stands
-    // right next to it — a legal-looking attack target, except that
-    // green-1 holds the charged node at A1 itself, which rules it out of
-    // combat entirely (§7). If `sideToMoveCanMoveOrAttack` did not consult
-    // that, it would still see this as a legal attack and the guard would
-    // never pass.
-    const state = buildState({
-      ships: [
-        ship("green-1", "green", "A1", 0),
-        ship("red-1", "red", "B1"),
-        ship("red-2", "red", "A2"),
-      ],
-      nodes: { A1: ["charged", 0] },
-    });
-
-    const result = applyPassGuard(state);
-
-    expect(result.state.sideToMove).toBe("red");
-    expect(result.effect).toEqual({
-      type: "ply-passed",
-      side: "green",
-      sideToMove: "red",
-      reason: "cannot-move-or-attack",
-      endOfTurn: [
-        {
-          type: "energy-collected",
-          side: "green",
-          amount: 1,
-          newTotal: 1,
-          squares: [squareFromName("A1")],
-        },
-      ],
-    });
-  });
-
   it("passes the ply when the side to move can neither move nor attack", () => {
     // green-1 is on the D6 planet, so §3.1 forbids it to attack regardless
     // of what stands next to it, and every square it could otherwise reach —
@@ -1301,11 +1265,10 @@ describe("applyPassGuard", () => {
   it("passes the ply, and runs the end-of-turn sequence in full, when the side's only ship holds a charged node and has no legal move (rules.md §5, §7)", () => {
     // Without the charged-node protection every one of green-1's eight
     // neighbours would be a legal attack (as in the plain "eight
-    // neighbours" case in combat.test.ts); with it, the side has no legal
-    // side has nothing legal to do, so it passes. Holding the node costs it
-    // no power any more
-    // (§4.1) — only the energy still comes due — at the end of the turn
-    // the pass still runs.
+    // neighbours" case in combat.test.ts); with it, the side has nothing
+    // legal to do, so it passes. Holding the node costs it no power any
+    // more (§4.1) — only the energy still comes due — at the end of the
+    // turn the pass still runs.
     const state = buildState({
       ships: [
         ship("green-1", "green", "H8", 1),
@@ -1436,16 +1399,20 @@ describe("applyPassGuard", () => {
   it("runs the end-of-turn sequence for the passing side, so a ship pinned on a charged node still pays the node's energy, untouched in its own power", () => {
     // green-1 holds K5, a charged node, so it has no attack at all
     // regardless of who stands nearby (§7); boxed in for movement by an
-    // enemy on each of its four affordable orthogonal neighbours at 0
-    // power, it has no legal move either. Holding the node costs it no
-    // power any more (§4.1) — only the energy still comes due.
+    // enemy on each of its eight neighbours, affordable at 1 power, it has
+    // no legal move either. Holding the node costs it no power any more
+    // (§4.1) — only the energy still comes due.
     const state = buildState({
       ships: [
-        ship("green-1", "green", "K5", 0),
-        ship("red-1", "red", "J5"),
+        ship("green-1", "green", "K5", 1),
+        ship("red-1", "red", "J4"),
         ship("red-2", "red", "K4"),
-        ship("red-3", "red", "K6"),
-        ship("red-4", "red", "L5"),
+        ship("red-3", "red", "L4"),
+        ship("red-4", "red", "J5"),
+        ship("red-5", "red", "L5"),
+        ship("red-6", "red", "J6"),
+        ship("red-7", "red", "K6"),
+        ship("red-8", "red", "L6"),
       ],
       nodes: { K5: "charged" },
     });
@@ -1468,7 +1435,7 @@ describe("applyPassGuard", () => {
       ],
     });
     const passedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(passedShip?.power).toBe(0);
+    expect(passedShip?.power).toBe(1);
   });
 
   it("the trap: returns the state untouched once the game is over, rather than passing an unbounded number of times", () => {

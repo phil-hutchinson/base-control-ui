@@ -66,19 +66,18 @@ export type AttackRefusalReason =
  * Why `target` is not a legal attack for `shipId` in the given state, as a
  * structured reason, or `undefined` when the attack is legal.
  *
- * Checked most fundamental first: whether the game is even still being
- * played, then whose ship it is, then whether the attacker is on a planet,
- * then whether the attacker holds a
- * charged node or is trapped on a depleted one (rules.md §7 — a ship on
- * either kind of node is out of combat in both directions), then everything
- * about the target — no ship there, a friendly ship, a ship on a planet, a
- * ship on a charged node, a ship trapped on a depleted node — and only then
- * range, affordability and path, which come last so a protected or planet
- * target within reach is still refused as such rather than as an
- * out-of-range square. A square no shape reaches is out of range; a shape
- * the attacker cannot pay for is unaffordable; only once both are settled
- * does the path matter. Once the game has ended, no attack is legal for
- * anyone, including one that would have been refused anyway.
+ * Checked most fundamental first: whether the game is even still being played,
+ * then whose ship it is, then whether the attacker is on a planet, then
+ * whether the attacker holds a charged node or is trapped on a depleted one
+ * (rules.md §7 — a ship on either kind of node is out of combat in both
+ * directions), then everything about the target — no ship there, a friendly
+ * ship, a ship on a planet, a ship on a charged node, a ship trapped on a
+ * depleted node — and only then range, affordability and path, which come last
+ * so a protected or planet target within reach is still refused as such rather
+ * than as an out-of-range square. A square no shape reaches is out of range; a
+ * shape the attacker cannot pay for is unaffordable; only once both are
+ * settled does the path matter. Once the game has ended, no attack is legal
+ * for anyone, including one that would have been refused anyway.
  */
 export function attackRefusalReason(
   state: GameState,

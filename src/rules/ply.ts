@@ -317,8 +317,8 @@ function endPly(
  *
  * A move ends the ply (rules.md §5): play passes to the other side. The
  * result then passes through `applyPassGuard`, so a move that leaves the
- * side now to move with no legal move at all is followed immediately by a
- * pass.
+ * side now to move with no legal move and no legal attack is followed
+ * immediately by a pass.
  */
 export function applyMove(
   state: GameState,

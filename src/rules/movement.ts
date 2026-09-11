@@ -256,19 +256,19 @@ export function findShip(state: GameState, shipId: ShipId): Ship {
  * Why `destination` is not a legal move for `shipId` in the given state, as a
  * structured reason, or `undefined` when the move is legal. Reasons are
  * checked in order from the most fundamental (whether the game is even still
- * being played) to the most specific (the destination square itself):
- * whether the game is over, whose ship it is, whether it is trapped
- * (rules.md §8.5 — a fact about the ship itself, so it is checked alongside
- * the others before anything about the destination), and finally §6's reach,
- * affordability, path, destination-occupancy and
- * uncharged-destination checks. "Out of range" now means only that no shape
- * reaches the square at all — a real shape the ship cannot currently pay for
- * is "cannot afford" instead, since the two are refused for different reasons
- * and read differently to a player. `destination-occupied` is checked before
- * `destination-uncharged-node`, because the two can co-occur — a trapped
- * enemy ship stands on a depleted node — and occupancy is the more immediate
- * fact. Inactive and depleted destinations are refused the same way, since
- * §6 states both in one sentence and a ship may occupy only a charged node.
+ * being played) to the most specific (the destination square itself): whether
+ * the game is over, whose ship it is, whether it is trapped (rules.md §8.5 — a
+ * fact about the ship itself, so it is checked alongside the others before
+ * anything about the destination), and finally §6's reach, affordability,
+ * path, destination-occupancy and uncharged-destination checks. "Out of range"
+ * now means only that no shape reaches the square at all — a real shape the
+ * ship cannot currently pay for is "cannot afford" instead, since the two are
+ * refused for different reasons and read differently to a player.
+ * `destination-occupied` is checked before `destination-uncharged-node`,
+ * because the two can co-occur — a trapped enemy ship stands on a depleted
+ * node — and occupancy is the more immediate fact. Inactive and depleted
+ * destinations are refused the same way, since §6 states both in one sentence
+ * and a ship may occupy only a charged node.
  */
 export function moveRefusalReason(
   state: GameState,

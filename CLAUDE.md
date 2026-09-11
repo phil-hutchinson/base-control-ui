@@ -17,7 +17,9 @@ backend API; it must be deployable from a static file host.
 played, and `doc/ruleset/changelog.md` records every change to it. Unlike a
 project whose rules come from elsewhere, **this repository owns the ruleset**:
 the app is where new rules get tried first, and the document is expected to
-change often.
+change often. `doc/ruleset/tech-notes.md` holds development notes — measured
+figures and the reasoning behind them — and is not part of the ruleset a
+player reads.
 
 Rule logic in `src/` implements that document. It never redefines the rules,
 and it never carries a rule the document does not state. When the two disagree,

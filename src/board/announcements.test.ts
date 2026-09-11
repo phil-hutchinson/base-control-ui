@@ -134,6 +134,25 @@ describe("announcementFor", () => {
     );
   });
 
+  it("announces a node spent by leaving it, between the move sentence and the turn-ending clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("G", 7),
+      to: squareAt("H", 8),
+      effects: [
+        { type: "node-spent", square: squareAt("G", 7) },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from G7 to H8. The move cost 1 power, leaving 5. The node at G7 ended when the ship left it. Red's turn.",
+    );
+  });
+
   it("announces a move that both ends on a planet and ends the ply", () => {
     const event: MovedEvent = {
       type: "moved",
@@ -1403,6 +1422,58 @@ describe("announcementFor — combat (rules.md §7)", () => {
         "The attacker returned to the A6 planet and the defender to the D1 planet. " +
         "Red cannot move or attack, so the turn passes. Green's turn.",
     );
+  });
+
+  it("announces a fight whatever power either ship carried, never naming a winner", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("J", 4),
+        power: 0,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("K", 5),
+        power: 4,
+      },
+      cost: 0,
+      returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("J", 4),
+          to: squareAt("A", 6),
+        },
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("K", 5),
+          to: squareAt("D", 1),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("J", 4),
+      target: squareAt("K", 5),
+      effects: [
+        fight,
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+    };
+    const sentence = announcementFor(event);
+    expect(sentence).toBe(
+      "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
+        "The attack was free; the attacker still has 0 power. The defender kept the power it was carrying. " +
+        "The attacker returned to the A6 planet and the defender to the D1 planet. " +
+        "Red's turn.",
+    );
+    expect(sentence).not.toMatch(/won|lost|advance|held its ground/);
   });
 });
 

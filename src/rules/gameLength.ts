@@ -5,7 +5,7 @@
 import type { EnergyTotals, GameState } from "./gameState";
 import type { Side } from "./fleet";
 
-/** §9's default game length in rounds. The one named place this number lives. */
+/** The app's default game length in rounds. The one named place this number lives. */
 export const DEFAULT_GAME_LENGTH_ROUNDS = 30;
 
 /**

@@ -35,7 +35,7 @@ Two pieces of cleanup ride along with it:
   *as many as*. The pass rule stays and is reworded: if a player can neither
   move nor attack, their turn passes.
 - **Everywhere else in the rules that says "action" is reworded** to say
-  move, attack, or both — sections 7.1, 8.3, 8.6 and the appendices.
+  move, attack, or both — sections 7.2, 8.3, 8.6 and the appendices.
 
 ### "Standard game" goes
 
@@ -86,9 +86,11 @@ to it alongside the rulebook and change log.
   every attack ends the ply, so it runs the end-of-turn sequence, advances
   the ply number and swaps sides unconditionally. Its `actedShipId`
   parameter goes with `actedThisPly`. Rename it to `endPly`, and
-  `EndOfActionEffect` to `PlyEndEffect` — it is the union of `ply-ended` and
-  `ply-passed`, which are both facts about a ply ending. `passPly` stops
-  resetting the two removed fields.
+  `EndOfActionEffect` to `EndOfPlyEffect` (not `PlyEndEffect` — that name
+  collides with `PlyEndedEffect`, which already exists and means something
+  different, the single `ply-ended` effect, one member of this union) — it
+  is the union of `ply-ended` and `ply-passed`, which are both facts about a
+  ply ending. `passPly` stops resetting the two removed fields.
 - **`actions.ts`** — the module survives (it is still the only place that
   asks a question neither §6 nor §7 owns, and keeping it avoids a cycle
   between movement and combat), but it is renamed with the concept it was

@@ -1215,7 +1215,7 @@ describe("Board", () => {
     }
 
     describe.each<InputMode>(["keyboard", "pointer"])("via %s", (mode) => {
-      it("selects an own unmoved ship, marks its destinations, and announces it", async () => {
+      it("selects an own ship, marks its destinations, and announces it", async () => {
         const user = userEvent.setup();
         render(<Harness initial={baseState()} />);
 
@@ -1253,7 +1253,7 @@ describe("Board", () => {
         expect(liveRegion()).toHaveTextContent("Selection cleared.");
       });
 
-      it("switches the selection to a different own unmoved ship", async () => {
+      it("switches the selection to a different own ship", async () => {
         const user = userEvent.setup();
         render(<Harness initial={baseState()} />);
 

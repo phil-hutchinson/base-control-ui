@@ -430,14 +430,13 @@ Every node is always in exactly one of three states:
 A node cycles inactive → charged → depleted → **ends**, and simply leaves
 the board.
 
-A player chooses how many nodes the board keeps charged before play
-begins: **five, four or three**, the same number for both players and
-fixed for the game's lifetime. At the end
-of every turn, whatever shortfall there is against the chosen number is
-filled from the three inactive nodes, highest priority first. The
-shortfall is always filled on the turn it appears — the board is never
-left short of the chosen number of charged nodes
-([tech-notes.md](tech-notes.md)).
+A player chooses how many nodes the board keeps charged before play begins:
+**five, four or three**, the same number for both players and fixed for the
+game's lifetime. At the end of every turn, whatever shortfall there is
+against the chosen number is filled from the three inactive nodes, highest
+priority first. The shortfall is always filled on the turn it appears — the
+board is never left short of the chosen number of charged nodes (see the
+[development notes](tech-notes.md)).
 
 **The opening board is dealt.** The game opens with **eight** nodes at
 five charged, **seven** at four, **six** at three:
@@ -469,9 +468,9 @@ happens. A charged node starts at **baseline**, with no countdown
 charged node never has one standing on it already.
 
 The queue's size is unrelated to the chosen target: three inactive nodes
-cover the largest shortfall a single turn can produce, which is two,
-whether the board is filling towards five charged, towards four or
-towards three ([tech-notes.md](tech-notes.md)).
+cover the largest shortfall a single turn can produce, which is two, whether
+the board is filling towards five charged, towards four or towards three
+(see the [development notes](tech-notes.md)).
 
 **Priorities rotate at the end of every turn on which nothing charged**: 1
 becomes 2, 2 becomes 3, and 3 becomes 1. The nodes themselves do not move —
@@ -517,7 +516,7 @@ carries no countdown at all and sits at its **baseline** for the rest of the
 game if nobody comes.
 
 Because a turn is one move or one attack, **at most one countdown can start
-per turn** ([tech-notes.md](tech-notes.md)).
+per turn** (see the [development notes](tech-notes.md)).
 
 A charged node carrying a countdown shows a **black number**: how many of
 the **holder's own turns** the node still has left. It counts down from 6 to
@@ -656,10 +655,12 @@ Everything that happens at the end of a turn happens in this order:
    freed. If no depleted node under that player's ships qualifies, nothing
    happens, and that player's turn passes under section 5.
 
-A turn that passes because the player could neither move nor attack (section 5) is still a turn: this sequence runs for it in full, just as it would for a
-turn in which a ship moved or attacked. Countdowns still tick, and a ship of
-the passing player standing on a planet still gains power at the section 3.1
-rate; the passing player still collects exactly as they would otherwise.
+A turn that passes because the player could neither move nor attack
+(section 5) is still a turn: this sequence runs for it in full, just as it
+would for a turn in which a ship moved or attacked. Countdowns still tick,
+and a ship of the passing player standing on a planet still gains power at
+the section 3.1 rate; the passing player still collects exactly as they
+would otherwise.
 
 Step 5 sits **before** step 6 **deliberately**. A node placed by a refill
 is inactive for the whole of the next turn and can first be charged at the

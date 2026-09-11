@@ -95,14 +95,14 @@ have not been re-measured at the other counts; since the pools move only
 slightly either way, the figures are expected to move only slightly too,
 so they are left as measured rather than guessed at.
 
-Section 3.2's fallback, which places a node without regard to spacing, is
-even less likely to fire than it was at the old twelve-node count: there are
-fewer nodes to place at once and a wider pool to place them in. Across
-every placement in every run the app's own long-run test drives — every
-opening deal and every refill, several hundred turns deep across a handful
-of seeds, at all three charged counts — it has never once fired. It stays
-in the rules because it is what makes placement total, not because it is
-expected to be seen.
+`rules.md` section 3.2's fallback, which places a node without regard to
+spacing, is even less likely to fire than it was at the old twelve-node
+count: there are fewer nodes to place at once and a wider pool to place them
+in. Across every placement in every run the app's own long-run test drives —
+every opening deal and every refill, several hundred turns deep across a
+handful of seeds, at all three charged counts — it has never once fired. It
+stays in the rules because it is what makes placement total, not because it
+is expected to be seen.
 
 **What the app guards:** that the queue is always exactly three nodes
 carrying priorities 1, 2 and 3, one each; that the board is always back at
@@ -115,7 +115,7 @@ counts.
 
 These counts — the node count's range, the pool sizes and the spread
 figures above — are first guesses to be play-tested and retuned like every
-other number in this document, and are now measured at all three charged
+other number in the rules, and are now measured at all three charged
 counts. The edge and corner figures remain measured at four charged only,
 and are expected to move only slightly once they are measured at the
 other counts.

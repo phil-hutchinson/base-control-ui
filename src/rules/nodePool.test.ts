@@ -403,8 +403,8 @@ describe.each(CHARGED_NODE_COUNTS)(
           // most one node runs out, and the shortfall it (plus at most one
           // departure) can create is never more than two, which the queue's
           // three inactive nodes always cover. Both bounds are exact, not
-          // measured, and hold for every
-          // sample of every seed this file runs, with no slack, at any count.
+          // measured, and hold for every sample of every seed this file runs,
+          // with no slack, at any count.
           const run = runEconomy(seed, PLIES_TO_RUN, chargedNodeCount);
 
           run.samples.forEach((sample, i) => {

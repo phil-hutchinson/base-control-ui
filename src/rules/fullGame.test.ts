@@ -169,8 +169,8 @@ interface PlayedGame {
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
- * above, dealt with `fleetSize` ships a side (rules.md §4, default six) and
- * `chargedNodeCount` charged nodes (rules.md §8.1, default five).
+ * above, dealt with `fleetSize` ships a side (the app's default six) and
+ * `chargedNodeCount` charged nodes (the app's default five).
  */
 function playFullGame(
   seed: number,
@@ -285,9 +285,9 @@ function findAttackLegalAMomentEarlier(
 /**
  * Confirms `state` refuses a move, a pass and — when one is available — an
  * attack, all as `"game-over"`. Returns whether an attack legal a moment
- * earlier was found to refuse: with only one move or attack a turn, a short game may
- * end before any two ships come within reach of one another, so the caller
- * decides whether that absence is expected (rules.md §5).
+ * earlier was found to refuse: with only one move or attack a turn, a short
+ * game may end before any two ships come within reach of one another, so the
+ * caller decides whether that absence is expected (rules.md §5).
  */
 function assertRefusesEverything(state: GameState): boolean {
   const move = findMoveLegalAMomentEarlier(state);
