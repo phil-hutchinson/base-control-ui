@@ -353,7 +353,31 @@ be in `changelog.md`'s historical entries, which are never rewritten.
 
 ### Step 2 — Retire the already-acted marking, and rename the condition that stays
 
-Status: pending
+Status: committed
+
+Notes: Removed the top-edge already-acted bar in full — `BoardSquare.tsx`'s
+`hasActed` prop, `AlreadyActedMark` component and `ALREADY_ACTED_BAR_TOP_INSET`
+constant, `BoardSquare.css`'s `.board-square__mark--already-acted` selector
+line, `squareLabel.ts`'s `hasActed` field and `ALREADY_ACTED_WORDING`, and
+`Board.tsx`'s `hasActed` computation and both call sites — and renamed the
+surviving marking per D2: `NoActionMark` → `CannotMoveOrAttackMark` and its
+CSS class, `ShipCondition`'s `"no-action"` → `"cannot-move-or-attack"` and its
+wording to "cannot move or attack this turn". Reworded the module-header and
+inline comments in all four files plus `guideDiagrams.tsx`'s header comment.
+Deleted the `BoardSquare.test.tsx`, `squareLabel.test.ts` and `Board.test.tsx`
+cases whose subject was the already-acted bar or its label segment, renamed
+the surviving condition cases' wording, and collapsed the `hasActedValues`
+combinatorial loop in `BoardSquare.test.tsx` down to iterating conditions
+only. Left untouched, per the step's own instruction, the `Board.test.tsx`
+cases that build `actedThisPly` states to check destinations/targets and the
+`ship-already-acted` rejection case — those are Step 3's. No deviations.
+Verification: `npm run typecheck`, `npm run lint` and `npm test` all green
+(64 files, 1205 tests, down from the 1216 baseline as expected). The
+specified grep for `hasActed`, `already-acted`, `AlreadyActed` and "already
+acted" finds hits only in `src/game/session.ts`, `src/board/announcements.ts`,
+`src/rules/movement.ts`, `src/rules/combat.ts`, `src/rules/actions.ts` and
+`src/rules/gameState.ts` (all the `ship-already-acted` refusal, Step 3's) and
+in test files covering that refusal.
 
 The board draws **two** short bars in the same accent: a **solid** bar at a
 square's **top** edge for a ship that has already acted, and a **hollow** bar

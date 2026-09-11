@@ -237,93 +237,27 @@ describe("BoardSquare", () => {
     expect(container.querySelector(".board-square__mark--selected")).toBeNull();
   });
 
-  it("renders the already-acted bar from hasActed alone, without dampening the square", () => {
-    const { container: marked } = render(
-      <BoardSquare
-        isPlanet={false}
-        squareName="H8"
-        occupant={{ side: "green", power: 0 }}
-        hasActed={true}
-      />,
-    );
-    const { container: unmarked } = render(
-      <BoardSquare
-        isPlanet={false}
-        squareName="H8"
-        occupant={{ side: "green", power: 0 }}
-      />,
-    );
-
-    expect(
-      marked.querySelector(".board-square__mark--already-acted"),
-    ).toBeInTheDocument();
-    expect(marked.querySelector(".board-square--dampened")).toBeNull();
-
-    expect(
-      unmarked.querySelector(".board-square__mark--already-acted"),
-    ).toBeNull();
-    expect(unmarked.querySelector(".board-square--dampened")).toBeNull();
-  });
-
-  it("renders the hollow bar and the dampened class for no-action, distinct from the solid already-acted bar", () => {
+  it("renders the hollow bar and the dampened class for cannot-move-or-attack", () => {
     const { container } = render(
       <BoardSquare
         isPlanet={false}
         squareName="H8"
         occupant={{ side: "green", power: 0 }}
-        condition="no-action"
+        condition="cannot-move-or-attack"
       />,
     );
 
     expect(
-      container.querySelector(".board-square__mark--no-action"),
+      container.querySelector(".board-square__mark--cannot-move-or-attack"),
     ).toBeInTheDocument();
-    expect(
-      container.querySelector(".board-square__mark--already-acted"),
-    ).toBeNull();
     expect(
       container.querySelector(".board-square--dampened"),
     ).toBeInTheDocument();
 
-    const bar = container.querySelector(".board-square__mark--no-action rect");
+    const bar = container.querySelector(
+      ".board-square__mark--cannot-move-or-attack rect",
+    );
     expect(bar).toHaveAttribute("fill", "none");
-  });
-
-  it("renders both the already-acted bar and the no-action bar together, and dampens the square", () => {
-    const { container } = render(
-      <BoardSquare
-        isPlanet={false}
-        squareName="H8"
-        occupant={{ side: "green", power: 0 }}
-        hasActed={true}
-        condition="no-action"
-      />,
-    );
-
-    expect(
-      container.querySelector(".board-square__mark--already-acted"),
-    ).toBeInTheDocument();
-    expect(
-      container.querySelector(".board-square__mark--no-action"),
-    ).toBeInTheDocument();
-    expect(
-      container.querySelector(".board-square--dampened"),
-    ).toBeInTheDocument();
-  });
-
-  it("distinguishes the already-acted bar from the no-action bar by fill, not only by class name", () => {
-    const { container } = render(
-      <BoardSquare
-        isPlanet={false}
-        squareName="H8"
-        occupant={{ side: "green", power: 0 }}
-        hasActed={true}
-      />,
-    );
-    const alreadyMovedBar = container.querySelector(
-      ".board-square__mark--already-acted rect",
-    );
-    expect(alreadyMovedBar?.getAttribute("fill")).toBe("currentColor");
   });
 
   it("renders a condition mark and a selection mark together", () => {
@@ -332,13 +266,13 @@ describe("BoardSquare", () => {
         isPlanet={false}
         squareName="H8"
         occupant={{ side: "green", power: 0 }}
-        condition="no-action"
+        condition="cannot-move-or-attack"
         mark="selected"
       />,
     );
 
     expect(
-      container.querySelector(".board-square__mark--no-action"),
+      container.querySelector(".board-square__mark--cannot-move-or-attack"),
     ).toBeInTheDocument();
     expect(
       container.querySelector(".board-square__mark--selected"),
@@ -363,38 +297,34 @@ describe("BoardSquare", () => {
     ).toBeInTheDocument();
   });
 
-  it("reports no axe violations for any condition or having-moved combination, and keeps every mark out of the accessibility tree", async () => {
+  it("reports no axe violations for any condition, and keeps every mark out of the accessibility tree", async () => {
     const conditions: readonly (ShipCondition | undefined)[] = [
       undefined,
-      "no-action",
+      "cannot-move-or-attack",
     ];
-    const hasActedValues: readonly boolean[] = [false, true];
     for (const condition of conditions) {
-      for (const hasActed of hasActedValues) {
-        const { container } = render(
-          <BoardSquare
-            isPlanet={false}
-            squareName="H8"
-            occupant={{ side: "green", power: 1 }}
-            hasActed={hasActed}
-            condition={condition}
-            mark="selected"
-          />,
-        );
+      const { container } = render(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          occupant={{ side: "green", power: 1 }}
+          condition={condition}
+          mark="selected"
+        />,
+      );
 
-        for (const mark of container.querySelectorAll(".board-square__mark")) {
-          expect(mark).toHaveAttribute("aria-hidden", "true");
-        }
-
-        const results = await axe.run(container, {
-          rules: {
-            "color-contrast": { enabled: false },
-          },
-        });
-
-        expect(results.violations).toEqual([]);
-        cleanup();
+      for (const mark of container.querySelectorAll(".board-square__mark")) {
+        expect(mark).toHaveAttribute("aria-hidden", "true");
       }
+
+      const results = await axe.run(container, {
+        rules: {
+          "color-contrast": { enabled: false },
+        },
+      });
+
+      expect(results.violations).toEqual([]);
+      cleanup();
     }
   });
 });

@@ -1,20 +1,17 @@
 // The wording of a square's accessible name: comma-separated segments, the
 // square name first, then "planet" or "<state> node" if the square is one of
 // those, then which side's ship (if any) stands there, then that ship's
-// power level, then whether it has already acted this ply, then its
-// condition (no action available), then last of all a mark saying that the
-// square is selected, a legal destination, or a legal attack target. A
-// square is never both a planet and a node — the node draw excludes planets
-// (rules.md §3.2) — so the two share one slot. Having acted, the condition
-// and the mark are three separately optional fields,
-// each computed on its own: a ship that has not yet acted can still carry
-// the no-action condition (a pinned ship, selectable but fruitless), and
-// the mark reflects the current selection or highlight independently of
-// both. `ShipCondition` currently has a single member, and
-// `CONDITION_WORDING` is where its wording lives. Ordinary empty squares
-// are named by their square name alone. The power level is stated even
-// when it is zero, so a listener hearing one square at a time can tell a
-// drained ship apart from an app that never reports power at all.
+// power level, then its condition (cannot move or attack), then last of all
+// a mark saying that the square is selected, a legal destination, or a legal
+// attack target. A square is never both a planet and a node — the node draw
+// excludes planets (rules.md §3.2) — so the two share one slot. The
+// condition and the mark are two separately optional fields, each computed
+// on its own: the mark reflects the current selection or highlight
+// independently of the condition. `ShipCondition` currently has a single
+// member, and `CONDITION_WORDING` is where its wording lives. Ordinary empty
+// squares are named by their square name alone. The power level is stated
+// even when it is zero, so a listener hearing one square at a time can tell
+// a drained ship apart from an app that never reports power at all.
 //
 // A fight has one outcome (rules.md §7), so a target square's mark is a
 // fixed phrase saying what attacking there does, the same as the selected
@@ -47,19 +44,15 @@ const MARK_WORDING: Record<SquareMark, string> = {
   target: "can attack here, both ships would return to planets",
 };
 
-/** How having acted this ply reads in a square's accessible name. */
-const ALREADY_ACTED_WORDING = "already acted this turn";
-
 /**
- * A ship's own condition, independent of the current selection and of
- * whether it has acted: it has no legal action available at all — no legal
- * move and no legal attack target.
+ * A ship's own condition, independent of the current selection: it can
+ * neither move nor attack.
  */
-export type ShipCondition = "no-action";
+export type ShipCondition = "cannot-move-or-attack";
 
 /** How each condition reads in a square's accessible name, in the players' vocabulary. */
 const CONDITION_WORDING: Record<ShipCondition, string> = {
-  "no-action": "no action available this turn",
+  "cannot-move-or-attack": "cannot move or attack this turn",
 };
 
 /** The information a square's accessible name is built from. */
@@ -68,18 +61,16 @@ export interface SquareLabelDescriptor {
   readonly isPlanet: boolean;
   readonly nodeState?: NodeState;
   readonly occupant?: SquareOccupant;
-  readonly hasActed?: boolean;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
 }
 
-/** Builds a square's accessible name from its name, planet/node status, occupant, having acted, condition and mark. */
+/** Builds a square's accessible name from its name, planet/node status, occupant, condition and mark. */
 export function squareLabel({
   square,
   isPlanet,
   nodeState,
   occupant,
-  hasActed,
   condition,
   mark,
 }: SquareLabelDescriptor): string {
@@ -92,9 +83,6 @@ export function squareLabel({
   if (occupant) {
     segments.push(`${occupant.side} ship`);
     segments.push(`power ${occupant.power} of ${MAX_POWER}`);
-  }
-  if (hasActed) {
-    segments.push(ALREADY_ACTED_WORDING);
   }
   if (condition) {
     segments.push(CONDITION_WORDING[condition]);

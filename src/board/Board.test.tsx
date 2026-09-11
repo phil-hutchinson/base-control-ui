@@ -678,33 +678,12 @@ describe("Board", () => {
       ).toHaveLength(destinations.length);
     });
 
-    it("marks a ship that has already acted this ply as also carrying no-action", () => {
-      render(<Board session={session} onIntent={noop} />);
-
-      const movedShip = state.ships.find((ship) => ship.id === "green-2");
-      expect(movedShip).toBeDefined();
-      // It is in actedThisPly and has already used its one move, so
-      // "already acted" and "no-action" both apply, in that order.
-      expect(
-        screen.getByRole("gridcell", {
-          name: new RegExp(
-            `^${squareName(movedShip!.square)},.*already acted this turn, no action available this turn$`,
-          ),
-        }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getAllByRole("gridcell", {
-          name: /already acted this turn/,
-        }),
-      ).toHaveLength(1);
-    });
-
     it("marks no square when nothing is selected", () => {
       render(<Board session={startingSession} onIntent={noop} />);
 
       expect(
         screen.queryByRole("gridcell", {
-          name: /, selected$|can move here$|already acted this turn$|can attack here/,
+          name: /, selected$|can move here$|can attack here/,
         }),
       ).not.toBeInTheDocument();
     });
@@ -1119,7 +1098,7 @@ describe("Board", () => {
       };
     }
 
-    it("names a ship trapped on a depleted node with the existing no-action condition, and leaves the rest of the fleet ordinary", () => {
+    it("names a ship trapped on a depleted node with the existing cannot-move-or-attack condition, and leaves the rest of the fleet ordinary", () => {
       const session: Session = {
         state: depletedNodeState(1),
         selectedShipId: undefined,
@@ -1129,10 +1108,11 @@ describe("Board", () => {
 
       // A trapped ship can neither move nor attack (rules.md §8.5), so
       // shipHasLegalAction is false for it and it carries the existing
-      // no-action condition — no new mark is added for the trap itself.
+      // cannot-move-or-attack condition — no new mark is added for the trap
+      // itself.
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted node, green ship, power 4 of 6, no action available this turn",
+          name: "H4, depleted node, green ship, power 4 of 6, cannot move or attack this turn",
         }),
       ).toBeInTheDocument();
       // Nothing holds the rest of the fleet back: green-2 and green-3 both
@@ -1145,7 +1125,7 @@ describe("Board", () => {
       ).toBeInTheDocument();
     });
 
-    it("combines the selected mark with the no-action condition for a ship trapped on a depleted node", () => {
+    it("combines the selected mark with the cannot-move-or-attack condition for a ship trapped on a depleted node", () => {
       const session: Session = {
         state: depletedNodeState(1),
         selectedShipId: "green-1",
@@ -1155,42 +1135,8 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H4, depleted node, green ship, power 4 of 6, no action available this turn, selected",
+          name: "H4, depleted node, green ship, power 4 of 6, cannot move or attack this turn, selected",
         }),
-      ).toBeInTheDocument();
-    });
-
-    it("reads a ship that has already acted as such, without holding the rest of the fleet back", () => {
-      const state: GameState = {
-        ...depletedNodeState(1),
-        actedThisPly: ["green-2"],
-      };
-      const session: Session = {
-        state,
-        selectedShipId: undefined,
-        lastEvent: undefined,
-      };
-      render(<Board session={session} onIntent={noop} />);
-
-      // green-1 is trapped on the depleted node itself, independently of
-      // actedThisPly.
-      expect(
-        screen.getByRole("gridcell", {
-          name: "H4, depleted node, green ship, power 4 of 6, no action available this turn",
-        }),
-      ).toBeInTheDocument();
-      // Green-2 has already acted this ply moving elsewhere, and has no
-      // enemy adjacent to attack, so it reads as both "already acted" and
-      // "no action available", dampened.
-      expect(
-        screen.getByRole("gridcell", {
-          name: "A1, green ship, power 4 of 6, already acted this turn, no action available this turn",
-        }),
-      ).toBeInTheDocument();
-      // Green-3 has not acted and has a normal move available under §6, so
-      // it carries no condition at all.
-      expect(
-        screen.getByRole("gridcell", { name: "B2, green ship, power 4 of 6" }),
       ).toBeInTheDocument();
     });
 
@@ -1207,7 +1153,7 @@ describe("Board", () => {
       ).toBeInTheDocument();
     });
 
-    it("names a pinned ship 'no action available'", () => {
+    it("names a pinned ship 'cannot move or attack'", () => {
       // green-1 sits at H8 with 0 power, so its only reach is the four
       // orthogonal neighbours (rules.md §6) — all four occupied by *friendly*
       // ships, leaving it with no legal destination. Blocking with green
@@ -1269,85 +1215,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H8, green ship, power 0 of 6, no action available this turn",
-        }),
-      ).toBeInTheDocument();
-    });
-
-    it("reads a moved ship as both acted and out of actions, even with an enemy adjacent: one action per ship (rules.md §5)", () => {
-      // green-1 has already acted this ply. red-1 sits adjacent to it, but
-      // an acted ship has no legal attack left either, so it carries the
-      // no-action condition alongside having acted.
-      const state: GameState = {
-        ships: [
-          {
-            id: "green-1",
-            side: "green",
-            square: squareAt("H", 8),
-            power: 2,
-          },
-          { id: "red-1", side: "red", square: squareAt("H", 9), power: 4 },
-        ],
-        nodes: {},
-        sideToMove: "green",
-        actionsRemaining: 1,
-        actedThisPly: ["green-1"],
-        plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
-        energy: { green: 0, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
-        outOfTime: { green: false, red: false },
-      };
-      const session: Session = {
-        state,
-        selectedShipId: undefined,
-        lastEvent: undefined,
-      };
-      render(<Board session={session} onIntent={noop} />);
-
-      expect(
-        screen.getByRole("gridcell", {
-          name: "H8, green ship, power 2 of 6, already acted this turn, no action available this turn",
-        }),
-      ).toBeInTheDocument();
-    });
-
-    it("reads a moved ship with no legal move and no legal target as both moved and out of actions", () => {
-      // green-1 has already acted this ply and has no adjacent enemy, so it
-      // has no legal move (its one move is spent) and no legal target.
-      const state: GameState = {
-        ships: [
-          {
-            id: "green-1",
-            side: "green",
-            square: squareAt("H", 8),
-            power: 2,
-          },
-        ],
-        nodes: {},
-        sideToMove: "green",
-        actionsRemaining: 1,
-        actedThisPly: ["green-1"],
-        plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
-        energy: { green: 0, red: 0 },
-        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
-        outOfTime: { green: false, red: false },
-      };
-      const session: Session = {
-        state,
-        selectedShipId: undefined,
-        lastEvent: undefined,
-      };
-      render(<Board session={session} onIntent={noop} />);
-
-      expect(
-        screen.getByRole("gridcell", {
-          name: "H8, green ship, power 2 of 6, already acted this turn, no action available this turn",
+          name: "H8, green ship, power 0 of 6, cannot move or attack this turn",
         }),
       ).toBeInTheDocument();
     });

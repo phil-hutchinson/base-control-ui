@@ -1,8 +1,8 @@
 // The guide's five diagrams (story.md, "The diagrams"): each a thin
 // component handing `GuideDiagram` a fixed list of cells built from real
 // `BoardSquare`s, so a future restyle of ship or node art redraws these for
-// free. Every ship is green; no square carries a selection mark, an
-// already-acted bar or a condition bar. Countdown numbers and cycle
+// free. Every ship is green; no square carries a selection mark or a
+// condition bar. Countdown numbers and cycle
 // positions are derived from `../rules/countdown`, exactly as `Board`
 // derives them, rather than typed in by hand.
 

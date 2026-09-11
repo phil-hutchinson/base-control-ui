@@ -12,14 +12,10 @@
 // is no occupancy condition anywhere below. A ship simply draws over it, as
 // it already does over a node marker.
 //
-// Having moved this ply and a ship's condition (no action available) are
-// separate, independently optional fields from each other and from the
-// selection mark, so a square can carry any combination of the three at
-// once. A ship with no legal action available at all — because it is
-// pinned, or because it has moved and has no attack target left — is drawn
-// dampened. Having moved never dampens a ship by itself: it stays a plain
-// fact, drawn as a bar at the square's top edge so it cannot collide with a
-// condition mark at the bottom.
+// A ship's condition and the selection mark are separate, independently
+// optional fields, so a square can carry either, both, or neither. The only
+// condition is a ship that can neither move nor attack — a pinned ship — and
+// it is drawn dampened, with a hollow bar at the square's bottom edge.
 
 import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
@@ -49,7 +45,6 @@ export interface BoardSquareProps {
    */
   readonly countdownNumber?: number;
   readonly occupant?: SquareOccupant;
-  readonly hasActed?: boolean;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
 }
@@ -66,7 +61,6 @@ const CONDITION_BAR_WIDTH = 30;
 const CONDITION_BAR_HEIGHT = 5;
 const CONDITION_BAR_BOTTOM_INSET = 8;
 const CONDITION_BAR_STROKE_WIDTH = 2;
-const ALREADY_ACTED_BAR_TOP_INSET = 8;
 const DAMPENED_OPACITY = 0.45;
 
 interface BracketCorner {
@@ -166,30 +160,11 @@ function SelectedMark() {
   );
 }
 
-/** A short solid bar near the square's top edge, marking a ship that has already acted this ply. */
-function AlreadyActedMark() {
+/** A hollow bar at the square's bottom edge, marking a ship that can neither move nor attack. */
+function CannotMoveOrAttackMark() {
   return (
     <svg
-      className="board-square__mark board-square__mark--already-acted"
-      viewBox="0 0 100 100"
-      aria-hidden="true"
-    >
-      <rect
-        x={50 - CONDITION_BAR_WIDTH / 2}
-        y={ALREADY_ACTED_BAR_TOP_INSET}
-        width={CONDITION_BAR_WIDTH}
-        height={CONDITION_BAR_HEIGHT}
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-/** The same bar, hollow: a ship with no legal action available for a different reason. */
-function NoActionMark() {
-  return (
-    <svg
-      className="board-square__mark board-square__mark--no-action"
+      className="board-square__mark board-square__mark--cannot-move-or-attack"
       viewBox="0 0 100 100"
       aria-hidden="true"
     >
@@ -216,7 +191,6 @@ export function BoardSquare({
   priority,
   countdownNumber,
   occupant,
-  hasActed,
   condition,
   mark,
 }: BoardSquareProps) {
@@ -226,7 +200,7 @@ export function BoardSquare({
     // tests to find a planet square.
     classNames.push("board-square--planet");
   }
-  const isDampened = condition === "no-action";
+  const isDampened = condition === "cannot-move-or-attack";
   if (isDampened) {
     classNames.push("board-square--dampened");
   }
@@ -258,8 +232,7 @@ export function BoardSquare({
       {mark === "destination" && <DestinationMark />}
       {mark === "selected" && <SelectedMark />}
       {mark === "target" && <TargetMark />}
-      {hasActed && <AlreadyActedMark />}
-      {condition === "no-action" && <NoActionMark />}
+      {condition === "cannot-move-or-attack" && <CannotMoveOrAttackMark />}
     </div>
   );
 }

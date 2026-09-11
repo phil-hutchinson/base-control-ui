@@ -14,12 +14,12 @@
   grid-area: 1 / 1;
 }
 
-/* The interaction markings (destination, selected, having moved, and the
-   ship condition) share one accent, kept distinct from the side colors,
-   the node marker's gold and grey/white artwork and the focus-ring amber,
-   so they read as one "you are choosing a move" layer rather than
-   game-state artwork. They differ from each other in shape, not color, so
-   the layer still reads in greyscale. */
+/* The interaction markings (destination, selected, and the ship condition)
+   share one accent, kept distinct from the side colors, the node marker's
+   gold and grey/white artwork and the focus-ring amber, so they read as one
+   "you are choosing a move" layer rather than game-state artwork. They
+   differ from each other in shape, not color, so the layer still reads in
+   greyscale. */
 .board-square__mark {
   display: block;
   width: 100%;
@@ -27,17 +27,13 @@
   color: var(--interaction-accent);
 }
 
-.board-square__mark--already-acted,
-.board-square__mark--no-action {
+.board-square__mark--cannot-move-or-attack {
   color: var(--color-text-dim);
 }
 
-/* A ship with no legal action available this ply — no legal move and no
-   legal attack target, whether because it is pinned or because it has moved
-   and has no target left — is drawn faded, alongside its own bottom-edge
-   hollow bar, so "dampened" is a deliberate marking rather than a lightness
-   accident. Having moved is drawn separately, at the square's top edge, and
-   never dampens a ship by itself. */
+/* A ship that can neither move nor attack this ply — a pinned ship — is
+   drawn faded, alongside its own bottom-edge hollow bar, so "dampened" is a
+   deliberate marking rather than a lightness accident. */
 .board-square--dampened .ship-model {
   opacity: var(--dampened-opacity, 1);
 }

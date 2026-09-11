@@ -82,18 +82,14 @@ export function Board({ session, onIntent }: BoardProps) {
         : [],
     );
     // A ship's condition, for the side to move only: an opponent's ship
-    // never carries one. The only condition is having no legal action at
-    // all — no legal move and no legal attack target — which covers a
-    // pinned ship and every ship that has already acted: an acted ship
-    // never has a legal move or attack left. Having acted is a separate,
-    // independent fact (`hasActed` below) and no longer contributes to the
-    // condition.
+    // never carries one. The only condition is a pinned ship — one that can
+    // neither move nor attack.
     function shipCondition(ship: Ship): ShipCondition | undefined {
       if (ship.side !== session.state.sideToMove) {
         return undefined;
       }
       if (!shipHasLegalAction(session.state, ship.id)) {
-        return "no-action";
+        return "cannot-move-or-attack";
       }
       return undefined;
     }
@@ -134,9 +130,6 @@ export function Board({ session, onIntent }: BoardProps) {
             : undefined;
         const occupant = ship && { side: ship.side, power: ship.power };
         const condition = ship && shipCondition(ship);
-        const hasActed = ship
-          ? session.state.actedThisPly.includes(ship.id)
-          : false;
 
         let mark: SquareMark | undefined;
         if (selectedShip && squareName(selectedShip.square) === name) {
@@ -158,7 +151,6 @@ export function Board({ session, onIntent }: BoardProps) {
               priority={priority}
               countdownNumber={countdown}
               occupant={occupant}
-              hasActed={hasActed}
               condition={condition}
               mark={mark}
             />
@@ -168,7 +160,6 @@ export function Board({ session, onIntent }: BoardProps) {
             isPlanet: planetSquare,
             nodeState,
             occupant,
-            hasActed,
             condition,
             mark,
           }),

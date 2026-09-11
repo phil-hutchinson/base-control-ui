@@ -100,51 +100,15 @@ describe("squareLabel", () => {
     ).toBe("G7, green ship, power 0 of 6, selected");
   });
 
-  it("adds 'already acted this turn' when hasActed is true, after the power level", () => {
+  it("adds 'cannot move or attack this turn' as the condition", () => {
     expect(
       squareLabel({
         square: squareAt("M", 10),
         isPlanet: false,
         occupant: { side: "green", power: 4 },
-        hasActed: true,
+        condition: "cannot-move-or-attack",
       }),
-    ).toBe("M10, green ship, power 4 of 6, already acted this turn");
-  });
-
-  it("says nothing about having acted when hasActed is false or absent", () => {
-    expect(
-      squareLabel({
-        square: squareAt("M", 10),
-        isPlanet: false,
-        occupant: { side: "green", power: 4 },
-        hasActed: false,
-      }),
-    ).toBe("M10, green ship, power 4 of 6");
-  });
-
-  it("combines having acted with the no-action condition, acted first", () => {
-    expect(
-      squareLabel({
-        square: squareAt("M", 10),
-        isPlanet: false,
-        occupant: { side: "green", power: 4 },
-        hasActed: true,
-        condition: "no-action",
-      }),
-    ).toBe(
-      "M10, green ship, power 4 of 6, already acted this turn, no action available this turn",
-    );
-  });
-
-  it("adds 'no action available this turn' as the condition", () => {
-    expect(
-      squareLabel({
-        square: squareAt("M", 10),
-        isPlanet: false,
-        occupant: { side: "green", power: 4 },
-        condition: "no-action",
-      }),
-    ).toBe("M10, green ship, power 4 of 6, no action available this turn");
+    ).toBe("M10, green ship, power 4 of 6, cannot move or attack this turn");
   });
 
   it("puts the condition before the mark, when a square carries both", () => {
@@ -153,26 +117,11 @@ describe("squareLabel", () => {
         square: squareAt("M", 10),
         isPlanet: false,
         occupant: { side: "green", power: 4 },
-        condition: "no-action",
+        condition: "cannot-move-or-attack",
         mark: "selected",
       }),
     ).toBe(
-      "M10, green ship, power 4 of 6, no action available this turn, selected",
-    );
-  });
-
-  it("orders having acted, the condition and the mark: power, acted, condition, mark", () => {
-    expect(
-      squareLabel({
-        square: squareAt("M", 10),
-        isPlanet: false,
-        occupant: { side: "green", power: 2 },
-        hasActed: true,
-        condition: "no-action",
-        mark: "selected",
-      }),
-    ).toBe(
-      "M10, green ship, power 2 of 6, already acted this turn, no action available this turn, selected",
+      "M10, green ship, power 4 of 6, cannot move or attack this turn, selected",
     );
   });
 
