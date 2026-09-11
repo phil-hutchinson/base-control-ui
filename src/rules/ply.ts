@@ -44,10 +44,10 @@ function otherSide(side: Side): Side {
   return side === "green" ? "red" : "green";
 }
 
-/** Why the side to move's ply passed instead of taking an action (rules.md §5). */
+/** Why the side to move's ply passed instead of moving or attacking (rules.md §5). */
 export type PassReason = "cannot-move-or-attack" | "out-of-time";
 
-/** The side to move's ply passed instead of an action being taken (rules.md §5). */
+/** The side to move's ply passed instead of a move or an attack being made (rules.md §5). */
 export interface PassEffect {
   readonly type: "ply-passed";
   readonly side: Side;
@@ -56,7 +56,7 @@ export interface PassEffect {
   readonly endOfTurn: readonly EndOfTurnEffect[];
 }
 
-/** A ply ended because its last action was spent (rules.md §5, §8.6). */
+/** A ply ended because a move or an attack was made (rules.md §5, §8.6). */
 export interface PlyEndedEffect {
   readonly type: "ply-ended";
   readonly side: Side;
@@ -234,7 +234,7 @@ export function applyPassGuard(state: GameState): {
  *
  * Otherwise the ply passes with reason "out of time", and the result is run
  * through `applyPassGuard` exactly as `applyMove` and `applyAttack` run their
- * own tail, so the side passed to never sits with no legal action. The
+ * own tail, so the side passed to never sits unable to move or attack. The
  * returned effects are therefore in order: the out-of-time pass, and — if the
  * guard fired — the cannot-move-or-attack pass that followed it.
  */

@@ -120,7 +120,7 @@ describe("applyMove", () => {
 
   it("a move's only effect on power is its own cost — landing on or flying over a planet adds nothing on top (rules.md §3.1, §6)", () => {
     // Recovery is the end-of-turn step's doing (§8.6 step 1), which this
-    // move triggers as the ply's last action, not the move itself. Proving
+    // move triggers by ending the ply, not the move itself. Proving
     // the planet case through that step's own power-gained effect rules out
     // an instant refill: a refill would leave the ship at 6 (it is the only
     // green ship, so it charges alone, at 2 a turn) and raise no gain
@@ -494,8 +494,8 @@ describe("applyAttack", () => {
       // H8 to H9 is an orthogonal jab, which costs nothing (rules.md §6),
       // so the fight itself leaves the attacker's power exactly as it found
       // it (asserted below, from the fight-resolved snapshot's cost of 0)
-      // and the defender's untouched, as always. The attack is this ply's
-      // only action, though, so it also ends the ply — and the attacker
+      // and the defender's untouched, as always. This attack is the whole of
+      // this ply, though, so it also ends the ply — and the attacker
       // (the moving side) then gains on its planet under §8.6 step 1 if it
       // has anything left to gain, at the lone-charger rate of 2 since it
       // is the only green ship; the defender, not the moving side this ply,
@@ -644,8 +644,8 @@ describe("applyAttack", () => {
       ],
     });
 
-    // Green's one action ends its ply, so the second fight is red's own
-    // action on the following ply, not a second green action.
+    // Green's attack ends its ply, so the second fight is red's own turn on
+    // the following ply, not a second green turn.
     const first = applyAttack(state, "green-1", squareFromName("H9"));
     expect(first.outcome).toBe("applied");
     if (first.outcome !== "applied") {
@@ -811,7 +811,7 @@ describe("applyAttack", () => {
     }
   });
 
-  it("lets a ship on each side attack in turn, one action per round", () => {
+  it("lets a ship on each side attack in turn, one attack each per round", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "H8", 1),
@@ -832,7 +832,7 @@ describe("applyAttack", () => {
     expect(second.outcome).toBe("applied");
   });
 
-  it("lets one side move and the other attack, in either order, as a round's two actions", () => {
+  it("lets one side move and the other attack, in either order, as a round's two turns", () => {
     const moveThenAttack = buildState({
       ships: [
         ship("green-1", "green", "H8", 1),
@@ -902,7 +902,7 @@ describe("applyAttack", () => {
     });
   });
 
-  it("still blocks an enemy's path even though it is trapped and has no action of its own (rules.md §7)", () => {
+  it("still blocks an enemy's path even though it is trapped and can neither move nor attack (rules.md §7)", () => {
     // green-1's own reach never matters here — it is red-1, sitting trapped
     // on the depleted node at D4, that has to still be an obstacle: a
     // trapped ship holds its square exactly as a charged-node holder does,
@@ -941,9 +941,9 @@ describe("applyAttack", () => {
     }
     const returnedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(isPlanet(returnedShip!.square)).toBe(true);
-    // Its one action is spent even though it ends on a planet itself, so
-    // the ply ends here rather than waiting for a further action — and
-    // that end-of-turn step also gives the returned ship power on its
+    // The attack ends the ply even though the attacker ends up on a planet
+    // itself, so nothing waits for a further move or attack — and that
+    // end-of-turn step also gives the returned ship power on its
     // planet (§8.6 step 1, §3.1), at the lone-charger rate of 2 since it is
     // the only green ship and it is the moving side.
     expect(result.effects).toContainEqual({
@@ -979,7 +979,7 @@ describe("applyAttack", () => {
   });
 });
 
-describe("an action that never lands on or leaves a charged node touches no node's state (rules.md §8.3, §8.6)", () => {
+describe("a move or an attack that never lands on or leaves a charged node touches no node's state (rules.md §8.3, §8.6)", () => {
   it("leaves every node's state as it was across a sequence of moves and a fight", () => {
     // K5 is a charged node with no ship on it, so it carries no countdown
     // and neither its state nor its level moves at all (§8.3). H8 and I8
@@ -1199,7 +1199,7 @@ describe("applyPassGuard", () => {
   it("does not pass the ply when the side to move has no legal move but has a legal attack", () => {
     // green-1 on A1 (0 power, not a planet) is boxed in for movement — its
     // only two on-board orthogonal squares, A2 and B1, are both occupied —
-    // but B1 is a legal attack target, so the side still has an action.
+    // but B1 is a legal attack target, so the side can still attack.
     const state = buildState({
       ships: [
         ship("green-1", "green", "A1", 0),
@@ -1218,7 +1218,7 @@ describe("applyPassGuard", () => {
     // green-1 is boxed in for movement exactly as above, and red-1 stands
     // right next to it — a legal-looking attack target, except that
     // green-1 holds the charged node at A1 itself, which rules it out of
-    // combat entirely (§7). If `sideToMoveHasLegalAction` did not consult
+    // combat entirely (§7). If `sideToMoveCanMoveOrAttack` did not consult
     // that, it would still see this as a legal attack and the guard would
     // never pass.
     const state = buildState({
@@ -1250,7 +1250,7 @@ describe("applyPassGuard", () => {
     });
   });
 
-  it("passes the ply when the side to move has no legal action at all", () => {
+  it("passes the ply when the side to move can neither move nor attack", () => {
     // green-1 is on the D6 planet, so §3.1 forbids it to attack regardless
     // of what stands next to it, and every square it could otherwise reach —
     // C6, E6, D5 and D7, its four orthogonal neighbours, its only reach at
@@ -1302,7 +1302,8 @@ describe("applyPassGuard", () => {
     // Without the charged-node protection every one of green-1's eight
     // neighbours would be a legal attack (as in the plain "eight
     // neighbours" case in combat.test.ts); with it, the side has no legal
-    // action, so it passes. Holding the node costs it no power any more
+    // side has nothing legal to do, so it passes. Holding the node costs it
+    // no power any more
     // (§4.1) — only the energy still comes due — at the end of the turn
     // the pass still runs.
     const state = buildState({
@@ -1349,7 +1350,7 @@ describe("applyPassGuard", () => {
     // diagonal square left (B2) at 0 power. Boxed in by ships and the
     // board's own corner, not by the trap — so §8.6 step 7's relief
     // (src/rules/relief.ts) finds no qualifying candidate, and the side
-    // genuinely has no action at all, rather than looping the guard
+    // genuinely can neither move nor attack, rather than looping the guard
     // forever waiting for one.
     const state = buildState({
       ships: [
@@ -1471,7 +1472,7 @@ describe("applyPassGuard", () => {
   });
 
   it("the trap: returns the state untouched once the game is over, rather than passing an unbounded number of times", () => {
-    // No ship at all has a legal action, which is exactly the condition the
+    // No ship at all can move or attack, which is exactly the condition the
     // guard would otherwise read as "pass". At ply 61 of a default-length
     // game the game is already over, so this must not run the end-of-turn
     // sequence, tick a clock, collect energy or advance the ply.
@@ -1496,7 +1497,7 @@ describe("applyPassGuard", () => {
     expect(result.effect).toBeUndefined();
   });
 
-  it("a state one action from the end, driven through that action, ends at ply 61 with the guard having fired nothing", () => {
+  it("a state one move from the end, driven through that move, ends at ply 61 with the guard having fired nothing", () => {
     const state = buildState({
       ships: [ship("red-1", "red", "H8")],
       sideToMove: "red",
@@ -1522,9 +1523,9 @@ describe("applyPassGuard", () => {
 
 describe("applyOutOfTimePass", () => {
   it("passes the side to move's ply, running the end-of-turn sequence in full, when it is out of time (rules.md §5, §10)", () => {
-    // green-1 sits on K5, a charged node, with plenty of legal moves and no
-    // ship having acted this ply, which proves the pass fires purely
-    // because green is out of time, not because it had nothing else to do.
+    // green-1 sits on K5, a charged node, with plenty of legal moves, which
+    // proves the pass fires purely because green is out of time, not because
+    // it had nothing else to do.
     const state = buildState({
       ships: [ship("green-1", "green", "K5", 1), ship("red-1", "red", "A1")],
       nodes: { K5: "charged" },
@@ -1584,10 +1585,11 @@ describe("applyOutOfTimePass", () => {
     expect(result.effects).toEqual([]);
   });
 
-  it("reports both effects, in order, when the pass leaves the other side with no legal action", () => {
+  it("reports both effects, in order, when the pass leaves the other side unable to move or attack", () => {
     // red-1 is boxed onto its D6 planet by green-1 (C6), green-2 (E6),
-    // green-3 (D5) and green-4 (D7), exactly the "no legal action at all"
-    // shape used above, but with the sides swapped and green to move and out
+    // green-3 (D5) and green-4 (D7), exactly the "can neither move nor
+    // attack" shape used above, but with the sides swapped and green to move
+    // and out
     // of time: green's out-of-time pass hands the ply to red, who then has
     // nothing to do at all and passes immediately behind it.
     const state = buildState({

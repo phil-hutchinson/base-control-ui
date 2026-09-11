@@ -866,7 +866,46 @@ forbids.
 
 ### Step 7 — `README.md`, `CLAUDE.md`, and the sweep for the retired word
 
-Status: pending
+Status: committed
+
+Notes: `README.md` dropped the "six the standard game" clause, reworded the
+"takes one action a turn" sentence to "moves one ship or attacks with one",
+and added a `tech-notes.md` pointer alongside the rulebook and change-log
+links; the rest of the README was already consistent with this story's
+changes and needed no further correction. `CLAUDE.md`'s Vocabulary section
+dropped the **Action** entry and restated **Ply** as "one move or one attack"
+per O2; the **Move** entry's own use of the word "action" was left alone, as
+neither `story.md` nor O2 named it. The sweep (D8) renamed
+`EnergyOverlay.tsx`'s private `endOfActionSettlements` to `endOfPlySettlements`
+and reworded its comment, reworded `endOfTurn.ts`'s "ply's own action" and
+"no action at all" comments, and reworded every other remaining game-concept
+use of "action" the final grep turned up: doc comments in `ply.ts`
+(`PassReason`, `PassEffect`, `PlyEndedEffect`, `applyOutOfTimePass`) and
+`combat.ts`; test titles and comments in `announcements.test.ts`,
+`EnergyOverlay.test.tsx`, `Board.test.tsx` (a stale `shipHasLegalAction`
+comment, corrected to `shipCanMoveOrAttack`), `AccessibleGrid.test.tsx` (a
+literal "2 actions left." fixture string), `session.test.ts`,
+`GameOverPanel.test.tsx`, `camping.test.ts`, `recovery.test.ts`,
+`canMoveOrAttack.test.ts` and throughout `ply.test.ts`. Two integration test
+harnesses, `fullGame.test.ts` and `seededReplay.test.ts`, each had a local
+`Action` type and `chooseAction`/`actionsApplied`/`MAX_ACTIONS` naming the
+same retired concept for their deterministic policies; both were renamed
+(`PlyChoice`, `choosePly`, `pliesApplied`, `MAX_PLIES`) as comment-adjacent
+identifier changes, not exported API, so this stays within D8's private-name
+allowance. Left alone, as ordinary English unrelated to the game concept:
+`useAppScreen.ts`, `AccessibleGrid.tsx`'s two remaining "action" comments,
+every CSS "fraction"/"interaction" hit, and the two "fractional" test titles
+in `gameLength.test.ts`/`random.test.ts`. One incidental fix while editing
+`endOfTurn.ts`: a stray line was dropped and a paragraph's line-wrapping was
+disturbed by a sequence of targeted string edits; both were caught before
+committing and the paragraph was rewrapped by hand — no content was lost,
+confirmed by re-reading the finished file. All checks green: `npm run
+typecheck`, `npm run lint`, and `npm test` (64 files, 1183 tests — unchanged
+from Step 6, as expected for a comment/name-only step) all pass; `npm run
+format:check` reports only the two pre-existing warnings
+(`src/board/planetArt.ts`, this folder's `story.md`). Grepping `src/`
+case-insensitively for "action" finds only ordinary English; grepping
+`README.md` for "standard game" and "action" finds no hits.
 
 **`README.md`** — two places, both player-facing prose:
 

@@ -155,7 +155,7 @@ describe("sessionReducer — a ship is selected", () => {
     expect(result.lastEvent).toEqual({ type: "selection-cleared" });
   });
 
-  it("switches the selection to another own ship that has not moved, without moving or spending an action", () => {
+  it("switches the selection to another own ship that has not moved, without moving or attacking", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "A1")],
     });
@@ -344,7 +344,7 @@ describe("sessionReducer — dismiss", () => {
 });
 
 describe("sessionReducer — a full ply", () => {
-  it("passes the turn after one action, and the moved event says so", () => {
+  it("passes the turn after one move, and the moved event says so", () => {
     // No inactive node is queued, so charging has nothing to charge with,
     // whatever the shortfall, and the end-of-turn effects stay empty.
     const state = buildState({
@@ -371,7 +371,7 @@ describe("sessionReducer — a full ply", () => {
       });
     }
 
-    // Red's own single action, proving the ply really did pass to it.
+    // Red's own move, proving the ply really did pass to it.
     session = activate(session, "O1");
     session = activate(session, "O2");
 

@@ -1053,7 +1053,7 @@ describe("Board", () => {
       render(<Board session={session} onIntent={noop} />);
 
       // A trapped ship can neither move nor attack (rules.md §8.5), so
-      // shipHasLegalAction is false for it and it carries the existing
+      // shipCanMoveOrAttack is false for it and it carries the existing
       // cannot-move-or-attack condition — no new mark is added for the trap
       // itself.
       expect(

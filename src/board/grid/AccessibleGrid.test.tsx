@@ -294,13 +294,11 @@ describe("AccessibleGrid", () => {
       <AccessibleGrid
         label="Fixture grid"
         rows={rows}
-        announcement="Green's turn, 2 actions left."
+        announcement="Green's turn."
       />,
     );
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Green's turn, 2 actions left.",
-    );
+    expect(screen.getByRole("status")).toHaveTextContent("Green's turn.");
   });
 
   it("renders an empty live region when no announcement is supplied", () => {

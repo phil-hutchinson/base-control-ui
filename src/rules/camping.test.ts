@@ -14,7 +14,7 @@
 // ship may occupy (rules.md §8.1). Driven entirely through the public rules
 // API — `applyMove`, `applyAttack`, `moveRefusalReason`, `attackRefusalReason`,
 // `legalDestinations`, `legalTargets` and the `EndOfTurnEffect`s and
-// `MoveEffect`s an action carries — rather than by calling `runEndOfTurn` or
+// `MoveEffect`s a move carries — rather than by calling `runEndOfTurn` or
 // `runCharging` directly, so this proves the same thing a player's turn
 // would.
 
@@ -87,7 +87,7 @@ function appliedOrThrow(result: ReturnType<typeof applyMove>) {
   return result;
 }
 
-/** The end-of-turn sequence's own effects, unwrapped from the `ply-ended` effect a ply's last action carries. */
+/** The end-of-turn sequence's own effects, unwrapped from the `ply-ended` effect a move or an attack carries. */
 function endOfTurnEffects(effects: readonly MoveEffect[]) {
   const plyEnded = effects.find(
     (effect): effect is PlyEndedEffect => effect.type === "ply-ended",

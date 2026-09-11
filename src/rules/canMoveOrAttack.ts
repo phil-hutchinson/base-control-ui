@@ -1,9 +1,9 @@
 // Whether a side, or a ship, can move or attack at all (rules.md §5).
 // `movement.ts` and `combat.ts` each answer "is this legal" for their own
-// kind of action; this module is the only place that asks whether either
-// kind is possible at all, which is genuinely neither §6's question nor
-// §7's, and keeping it separate is what stops `movement.ts` and `combat.ts`
-// importing each other.
+// kind, a move or an attack; this module is the only place that asks
+// whether either kind is possible at all, which is genuinely neither §6's
+// question nor §7's, and keeping it separate is what stops `movement.ts` and
+// `combat.ts` importing each other.
 
 import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";

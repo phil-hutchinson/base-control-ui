@@ -181,9 +181,9 @@ export function legalTargets(
  * `[planet: Square, nextSeed: number]` out, in the shape `drawIndex` and
  * `mulberry32` already use. The pool is every planet in `PLANETS` order with
  * no ship on it, judged against `state`'s current occupancy — recomputed at
- * every point of use and never stored, so a ship moving off a planet as one
- * action can change the answer for a later one. The caller must store the
- * returned seed.
+ * every point of use and never stored, so a ship moving off a planet can
+ * change the answer for a later call. The caller must store the returned
+ * seed.
  *
  * Every fight returns two ships: call this once to place the attacker, then
  * call it again against the state that already holds the attacker **and the

@@ -78,7 +78,7 @@ function attackAppliedOrThrow(result: ReturnType<typeof applyAttack>) {
   return result;
 }
 
-/** The end-of-turn sequence's own effects, unwrapped from the `ply-ended` effect a ply's last action carries. */
+/** The end-of-turn sequence's own effects, unwrapped from the `ply-ended` effect a move or an attack carries. */
 function endOfTurnEffects(effects: readonly (MoveEffect | AttackEffect)[]) {
   const plyEnded = effects.find(
     (effect): effect is PlyEndedEffect => effect.type === "ply-ended",
@@ -132,7 +132,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
     // Green initiated the fight, so this is the same call that closes out
     // green's own turn: green-1 arrives on a planet at the 0 power it
     // fought with (an orthogonal jab costs nothing) and, because the fight
-    // was its side's own last action, gains its first two points of
+    // was its side's own last turn, gains its first two points of
     // recovery in this very call (rules.md §3.1, §4.1) — it is the only
     // green ship on a planet, so it charges alone.
     const fightEndEffects = endOfTurnEffects(fight.effects);
@@ -254,7 +254,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
 describe("recovery — leaving a planet before it is full keeps what was recovered", () => {
   it("leaves at 2 power after just one of its owner's turns, with the reach of a 2-power ship", () => {
     // green-1 starts one square from a planet at 0 power — its only reach —
-    // and moves onto it as its own first action, rather than being placed
+    // and moves onto it as its own first move, rather than being placed
     // there directly, so this also proves applyMove itself grants no instant
     // refill on arrival (rules.md §3.1): the point comes from the
     // end-of-turn sequence the same move closes out, not from the move. It

@@ -98,7 +98,7 @@ describe("sideToMoveCanMoveOrAttack", () => {
     // Without the charged-node protection, every one of these four
     // neighbours would be a legal target — see the "is true with a legal
     // target and no legal move" case above. Standing on a charged node
-    // removes the attack entirely, so the side has no legal action at all.
+    // removes the attack entirely, so the side can neither move nor attack.
     const state = buildState({
       ships: [
         ship("green-1", "green", "H8", 0),
@@ -116,7 +116,7 @@ describe("sideToMoveCanMoveOrAttack", () => {
   it("is false when the side's only ship is trapped on a depleted node and has no legal move, even surrounded by enemies (rules.md §7)", () => {
     // As with the charged-node case above, every one of these four
     // neighbours would otherwise be a legal target. Being trapped removes
-    // the attack entirely, so the side has no legal action at all.
+    // the attack entirely, so the side can neither move nor attack.
     const state = buildState({
       ships: [
         ship("green-1", "green", "H8", 0),

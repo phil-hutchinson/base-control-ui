@@ -171,7 +171,7 @@ describe("GameOverPanel", () => {
       );
     }
 
-    // One action from the end of a one-round game: red's own last action,
+    // One turn from the end of a one-round game: red's own last turn,
     // moving red-1 from H8 to the empty H9 next to it.
     function nearEndState(): GameState {
       return {
@@ -194,9 +194,9 @@ describe("GameOverPanel", () => {
       return screen.getByRole("status");
     }
 
-    // One action from the end of a one-round game in which that last action
+    // One turn from the end of a one-round game in which that last turn
     // scores: red-1 already stands on a charged node and does not move;
-    // red-2's move is the ending action, so its own end-of-turn collects the
+    // red-2's move is the ending turn, so its own end-of-turn collects the
     // node red-1 holds and the HUD's score rolls before the panel appears.
     function scoringNearEndState(): GameState {
       return {
@@ -221,7 +221,7 @@ describe("GameOverPanel", () => {
       };
     }
 
-    it("is absent while the game is in progress, and appears once the last action ends it", async () => {
+    it("is absent while the game is in progress, and appears once the last turn ends it", async () => {
       const user = userEvent.setup();
       render(<Harness initial={nearEndState()} onReturnToStart={() => {}} />);
 

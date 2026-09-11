@@ -97,7 +97,7 @@ describe("announcementFor", () => {
     );
   });
 
-  it("says no actions are available when neither a move nor a target exists", () => {
+  it("says no moves or attacks are available when neither a move nor a target exists", () => {
     const event: SelectedEvent = {
       type: "selected",
       shipId: "green-1",

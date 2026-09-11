@@ -98,7 +98,7 @@ describe("EnergyOverlay", () => {
     }
   });
 
-  it("draws neither a gain nor a pulse when the action paid nothing", () => {
+  it("draws neither a gain nor a pulse when the move or attack paid nothing", () => {
     const { container } = render(
       <EnergyOverlay
         session={sessionWithEvent(movedEventWithCollection(undefined))}
@@ -113,7 +113,7 @@ describe("EnergyOverlay", () => {
     );
   });
 
-  it("draws both sides' collections when a ply-ending action is followed by the other side's pass", () => {
+  it("draws both sides' collections when a move or an attack ending the ply is followed by the other side's pass", () => {
     const passCollection: EnergyCollectedEffect = {
       type: "energy-collected",
       side: "red",
