@@ -1311,19 +1311,22 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
 
 describe("runEndOfTurn — a passed ply still settles both directions in full (§8.6 runs in full for a pass)", () => {
   it("pays the side that passes while standing on a charged node, through applyPassGuard", () => {
-    // green-1 sits on K5, a charged node, having already acted this ply: it
-    // has no move left (already acted) and no enemy stands anywhere near it
-    // to attack, so it passes — but §8.6 still runs in full for that passed
-    // turn, and green is still standing on the node.
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: { K5: ["charged", 5] },
-        ships: [ship("green-1", "green", "K5", 1)],
-      }),
-      actedThisPly: ["green-1" as ShipId],
-      actionsRemaining: 1,
-    };
+    // green-1 holds K5, a charged node, so it has no attack at all (§7);
+    // boxed in for movement by an enemy on each of its four affordable
+    // orthogonal neighbours at 0 power, it has no legal move either — so it
+    // passes, but §8.6 still runs in full for that passed turn, and green is
+    // still standing on the node.
+    const state = buildState({
+      sideToMove: "green",
+      nodes: { K5: ["charged", 5] },
+      ships: [
+        ship("green-1", "green", "K5", 0),
+        ship("red-1", "red", "J5"),
+        ship("red-2", "red", "K4"),
+        ship("red-3", "red", "K6"),
+        ship("red-4", "red", "L5"),
+      ],
+    });
 
     const result = applyPassGuard(state);
 
@@ -1341,7 +1344,7 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
     ]);
     expect(result.state.energy).toEqual({ green: 1, red: 0 });
     const passedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(passedShip?.power).toBe(1);
+    expect(passedShip?.power).toBe(0);
   });
 
   it("costs the side that passes nothing while standing on a depleted node, through applyPassGuard", () => {
@@ -1351,8 +1354,6 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
         nodes: { K5: ["depleted", 0] },
         ships: [ship("green-1", "green", "K5", 1)],
       }),
-      actedThisPly: ["green-1" as ShipId],
-      actionsRemaining: 1,
       energy: { green: 5, red: 0 },
     };
 

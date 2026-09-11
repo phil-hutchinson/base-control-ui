@@ -380,19 +380,6 @@ describe("attackRefusalReason / legalTargets", () => {
       );
     }
   });
-
-  it("refuses a ship that has already acted this ply, leaving it with no targets", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
-      actedThisPly: ["green-1"],
-      actionsRemaining: 1,
-    });
-
-    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
-      "ship-already-acted",
-    );
-    expect(legalTargets(state, "green-1")).toEqual([]);
-  });
 });
 
 describe("attackRefusalReason / legalTargets on an inactive node (§7)", () => {

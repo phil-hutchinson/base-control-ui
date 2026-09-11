@@ -190,16 +190,6 @@ function cleared(session: Session): Session {
   };
 }
 
-/**
- * Whether `shipId` may be selected: it has not acted this ply yet. A ship
- * with no legal action at all — a pinned ship — is still a legitimate, if
- * fruitless, first choice; a ship that has already acted has none left to
- * offer.
- */
-function isSelectable(state: GameState, shipId: ShipId): boolean {
-  return !state.actedThisPly.includes(shipId);
-}
-
 /** Activating a square when no ship is currently selected. */
 function activateWithNoSelection(session: Session, square: Square): Session {
   const ship = shipsBySquare(session.state).get(squareName(square));
@@ -209,9 +199,6 @@ function activateWithNoSelection(session: Session, square: Square): Session {
   }
   if (ship.side !== session.state.sideToMove) {
     return rejected(session, "not-your-ship", square);
-  }
-  if (!isSelectable(session.state, ship.id)) {
-    return rejected(session, "ship-already-acted", square);
   }
   return selected(session, ship.id, ship.side, square);
 }
@@ -236,9 +223,6 @@ function activateWithSelection(
   const other = shipsBySquare(session.state).get(squareName(square));
 
   if (other !== undefined && other.side === selectedShip.side) {
-    if (!isSelectable(session.state, other.id)) {
-      return rejected(session, "ship-already-acted", square);
-    }
     return selected(session, other.id, other.side, square);
   }
 

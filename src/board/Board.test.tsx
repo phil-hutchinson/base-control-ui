@@ -635,9 +635,8 @@ describe("Board", () => {
   });
 
   describe("selection markings", () => {
-    // A hand-built session with green-1 selected on H8, and green-2 (still
-    // on its starting square) already marked as having acted this ply. Built
-    // directly rather than through the fixture.
+    // A hand-built session with green-1 selected on H8. Built directly
+    // rather than through the fixture.
     const state: GameState = {
       ...startingGameState(TEST_SEED),
       ships: startingGameState(TEST_SEED).ships.map((ship) =>
@@ -645,7 +644,6 @@ describe("Board", () => {
           ? { ...ship, square: squareAt("H", 8), power: 2 }
           : ship,
       ),
-      actedThisPly: ["green-2"],
     };
     const session: Session = {
       state,
@@ -707,7 +705,6 @@ describe("Board", () => {
     function attackState(overrides?: {
       attackerPower?: PowerLevel;
       defenderPower?: PowerLevel;
-      actedThisPly?: string[];
     }): GameState {
       return {
         ships: [
@@ -726,8 +723,8 @@ describe("Board", () => {
         ],
         nodes: {},
         sideToMove: "green",
-        actionsRemaining: overrides?.actedThisPly ? 1 : 2,
-        actedThisPly: overrides?.actedThisPly ?? [],
+        actionsRemaining: 2,
+        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
@@ -767,23 +764,6 @@ describe("Board", () => {
         screen.queryByRole("gridcell", {
           name: /^H9,.*can move here$/,
         }),
-      ).not.toBeInTheDocument();
-    });
-
-    it("shows neither targets nor destinations for a ship that has already acted: one action per ship (rules.md §5)", () => {
-      const state = attackState({ actedThisPly: ["green-1"] });
-      const session: Session = {
-        state,
-        selectedShipId: "green-1",
-        lastEvent: undefined,
-      };
-      render(<Board session={session} onIntent={noop} />);
-
-      expect(
-        screen.queryByRole("gridcell", { name: /can attack here/ }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("gridcell", { name: /can move here$/ }),
       ).not.toBeInTheDocument();
     });
 
@@ -859,7 +839,6 @@ describe("Board", () => {
       defenderPower: PowerLevel;
       blockerSquare?: Square;
       blockerSide?: "green" | "red";
-      actedThisPly?: string[];
     }): GameState {
       const ships = [
         {
@@ -888,7 +867,7 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         actionsRemaining: 1,
-        actedThisPly: config.actedThisPly ?? [],
+        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
@@ -986,29 +965,6 @@ describe("Board", () => {
           name: "H10, red ship, power 4 of 6, can attack here, both ships would return to planets",
         }),
       ).toBeInTheDocument();
-    });
-
-    it("offers no highlight for a target beyond the eight neighbours when the attacking ship has already acted", () => {
-      const state = rangeState({
-        attackerSquare: squareAt("H", 8),
-        attackerPower: 3,
-        defenderSquare: squareAt("H", 10),
-        defenderPower: 4,
-        actedThisPly: ["green-1"],
-      });
-      const session: Session = {
-        state,
-        selectedShipId: "green-1",
-        lastEvent: undefined,
-      };
-      render(<Board session={session} onIntent={noop} />);
-
-      expect(
-        screen.queryByRole("gridcell", { name: /can attack here/ }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole("gridcell", { name: /can move here$/ }),
-      ).not.toBeInTheDocument();
     });
 
     it("has no static accessibility violations with a long-range target highlighted", async () => {
@@ -1379,27 +1335,6 @@ describe("Board", () => {
           screen.queryByRole("gridcell", { name: /selected$/ }),
         ).not.toBeInTheDocument();
         expect(cell(/^H8,.*green ship/)).toBeInTheDocument();
-      });
-
-      it("rejects activating an own ship that has already acted this turn", async () => {
-        const user = userEvent.setup();
-        const state = { ...baseState(), actedThisPly: ["green-2"] };
-        render(<Harness initial={state} />);
-
-        const movedEntry = STARTING_FLEET.find(
-          (entry) => entry.id === "green-2",
-        );
-        expect(movedEntry).toBeDefined();
-        const movedName = squareName(movedEntry!.square);
-
-        await activate(user, mode, cell(new RegExp(`^${movedName},`)));
-
-        expect(liveRegion()).toHaveTextContent(
-          "That ship has already acted this turn. Choose another.",
-        );
-        expect(
-          screen.queryByRole("gridcell", { name: /selected$/ }),
-        ).not.toBeInTheDocument();
       });
 
       it("rejects an out-of-range destination and keeps the selection", async () => {

@@ -10,8 +10,7 @@ import { legalDestinations, sideToMoveHasLegalMove } from "./movement";
 
 /**
  * Whether the side to move has any legal action at all — a legal move or a
- * legal attack target, with any ship that has not yet acted this ply. Used
- * by the §5 pass guard.
+ * legal attack target, with any of its ships. Used by the §5 pass guard.
  *
  * This is safe to call once the game has ended: `sideToMoveHasLegalMove` and
  * `legalTargets` both answer with nothing for an ended game (rules.md §9),
@@ -32,9 +31,7 @@ export function sideToMoveHasLegalAction(state: GameState): boolean {
 
 /**
  * Whether `shipId` has any legal action of its own: a legal move or a legal
- * attack target. Used by the board for the `no-action` condition; a ship
- * that has already acted this ply always answers false, since it has no
- * legal move or attack target left to offer.
+ * attack target. Used by the board for the `cannot-move-or-attack` condition.
  */
 export function shipHasLegalAction(state: GameState, shipId: ShipId): boolean {
   return (

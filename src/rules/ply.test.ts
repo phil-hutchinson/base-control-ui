@@ -351,27 +351,6 @@ describe("applyMove", () => {
     ]);
   });
 
-  it("refuses a second move of a ship that has already acted this ply, but allows it again next ply", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "A1")],
-      actedThisPly: ["green-1"],
-      actionsRemaining: 1,
-    });
-
-    const refused = applyMove(state, "green-1", squareFromName("H9"));
-    expect(refused).toEqual({
-      outcome: "refused",
-      reason: "ship-already-acted",
-    });
-
-    // Green's next ply: its action is available again, nothing moved yet.
-    const nextPly = buildState({
-      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "A1")],
-    });
-    const allowedAgain = applyMove(nextPly, "green-1", squareFromName("H9"));
-    expect(allowedAgain.outcome).toBe("applied");
-  });
-
   it("refuses a move of a ship belonging to the side not to move", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "A1")],
@@ -842,54 +821,6 @@ describe("applyAttack", () => {
     }
   });
 
-  it("refuses a second attack attempt by a ship that has already acted this ply, even with a fresh target in range", () => {
-    // Built directly rather than played into (rules.md §5): one action
-    // per turn always ends the ply, so a ship that has already acted is
-    // never seen again — by its own side — until the side's next turn.
-    // This stands for the moment right after green-1's fight at H9.
-    const state = buildState({
-      ships: [ship("green-1", "green", "H9", 2), ship("red-2", "red", "G9", 4)],
-      actedThisPly: ["green-1"],
-    });
-
-    const attempt = applyAttack(state, "green-1", squareFromName("G9"));
-
-    expect(attempt).toEqual({
-      outcome: "refused",
-      reason: "ship-already-acted",
-    });
-  });
-
-  it("refuses a move by a ship that has already acted this ply", () => {
-    // Built directly rather than played into (rules.md §5).
-    const state = buildState({
-      ships: [ship("green-1", "green", "H9", 3)],
-      actedThisPly: ["green-1"],
-    });
-
-    const attempt = applyMove(state, "green-1", squareFromName("H10"));
-
-    expect(attempt).toEqual({
-      outcome: "refused",
-      reason: "ship-already-acted",
-    });
-  });
-
-  it("refuses an attack by a ship that has already acted this ply", () => {
-    // Built directly rather than played into (rules.md §5).
-    const state = buildState({
-      ships: [ship("green-1", "green", "H9", 4), ship("red-1", "red", "H10")],
-      actedThisPly: ["green-1"],
-    });
-
-    const attempt = applyAttack(state, "green-1", squareFromName("H10"));
-
-    expect(attempt).toEqual({
-      outcome: "refused",
-      reason: "ship-already-acted",
-    });
-  });
-
   it("lets a ship on each side attack in turn, one action per round", () => {
     const state = buildState({
       ships: [
@@ -961,29 +892,6 @@ describe("applyAttack", () => {
     expect(secondMove.outcome).toBe("applied");
   });
 
-  it("refuses both a move and an attack for a ship that has already acted this ply", () => {
-    // Built directly rather than played into (rules.md §5).
-    const state = buildState({
-      ships: [
-        ship("green-1", "green", "H9", 1),
-        ship("red-1", "red", "H10", 3),
-      ],
-      actedThisPly: ["green-1"],
-    });
-
-    const move = applyMove(state, "green-1", squareFromName("G9"));
-    expect(move).toEqual({
-      outcome: "refused",
-      reason: "ship-already-acted",
-    });
-
-    const attack = applyAttack(state, "green-1", squareFromName("H10"));
-    expect(attack).toEqual({
-      outcome: "refused",
-      reason: "ship-already-acted",
-    });
-  });
-
   it("refuses an attack on a ship trapped on a depleted node, which stays exactly where it stands (§7)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "K8", 4), ship("red-1", "red", "K9", 2)],
@@ -1023,7 +931,7 @@ describe("applyAttack", () => {
     });
   });
 
-  it("marks the attacker as having acted, even though it ends the action on a planet itself", () => {
+  it("ends the ply even though the attack ends with the attacker itself on a planet", () => {
     // No inactive node is queued, so charging has nothing to charge with,
     // whatever the shortfall, and the end-of-turn effects stay just the
     // power gain.
@@ -1063,24 +971,6 @@ describe("applyAttack", () => {
           amount: 2,
         },
       ],
-    });
-
-    // Built directly rather than played into (rules.md §5): this stands
-    // for the moment right after the fight above, before the tail clears
-    // actedThisPly for the next ply — a further attempt by the same ship
-    // is still refused.
-    const alreadyActed = buildState({
-      ships: [ship("green-1", "green", "H15", 4)],
-      actedThisPly: ["green-1"],
-    });
-    const secondAttempt = applyMove(
-      alreadyActed,
-      "green-1",
-      squareFromName("H12"),
-    );
-    expect(secondAttempt).toEqual({
-      outcome: "refused",
-      reason: "ship-already-acted",
     });
   });
 
@@ -1335,28 +1225,20 @@ describe("applyPassGuard", () => {
     expect(result.effect).toBeUndefined();
   });
 
-  it("passes the ply when its one ship with a nearby target has already acted", () => {
+  it("passes the ply when its one ship holds a charged node, with a nearby target it still cannot attack", () => {
     // green-1 is boxed in for movement exactly as above, and red-1 stands
-    // right next to it — a legal attack target, if green-1 had not already
-    // spent its one action this ply. If `sideToMoveHasLegalAction` did not
-    // consult the already-acted check, it would still see this as a legal
-    // attack and the guard would never pass.
+    // right next to it — a legal-looking attack target, except that
+    // green-1 holds the charged node at A1 itself, which rules it out of
+    // combat entirely (§7). If `sideToMoveHasLegalAction` did not consult
+    // that, it would still see this as a legal attack and the guard would
+    // never pass.
     const state = buildState({
       ships: [
         ship("green-1", "green", "A1", 0),
         ship("red-1", "red", "B1"),
         ship("red-2", "red", "A2"),
       ],
-      // No inactive node is queued, so charging has nothing to charge with,
-      // whatever the shortfall, and the end-of-turn effects stay empty.
-      nodes: {
-        H8: ["charged", 0],
-        K8: ["charged", 0],
-        H12: ["charged", 0],
-        K12: ["charged", 0],
-      },
-      actedThisPly: ["green-1"],
-      actionsRemaining: 1,
+      nodes: { A1: ["charged", 0] },
     });
 
     const result = applyPassGuard(state);
@@ -1367,7 +1249,15 @@ describe("applyPassGuard", () => {
       side: "green",
       sideToMove: "red",
       reason: "no-legal-action",
-      endOfTurn: [],
+      endOfTurn: [
+        {
+          type: "energy-collected",
+          side: "green",
+          amount: 1,
+          newTotal: 1,
+          squares: [squareFromName("A1")],
+        },
+      ],
     });
   });
 
@@ -1555,17 +1445,21 @@ describe("applyPassGuard", () => {
     }
   });
 
-  it("runs the end-of-turn sequence for the passing side, so a ship that has moved and has no attack left still pays the node's energy, untouched in its own power", () => {
-    // green-1 sits on K5, a charged node, having already spent this ply's
-    // first action on a move: it has no move left (already acted) and no
-    // enemy stands anywhere near it to attack, so it passes with its second
-    // action still nominally available. Holding the node costs it no power
-    // any more (§4.1) — only the energy still comes due.
+  it("runs the end-of-turn sequence for the passing side, so a ship pinned on a charged node still pays the node's energy, untouched in its own power", () => {
+    // green-1 holds K5, a charged node, so it has no attack at all
+    // regardless of who stands nearby (§7); boxed in for movement by an
+    // enemy on each of its four affordable orthogonal neighbours at 0
+    // power, it has no legal move either. Holding the node costs it no
+    // power any more (§4.1) — only the energy still comes due.
     const state = buildState({
-      ships: [ship("green-1", "green", "K5", 1)],
+      ships: [
+        ship("green-1", "green", "K5", 0),
+        ship("red-1", "red", "J5"),
+        ship("red-2", "red", "K4"),
+        ship("red-3", "red", "K6"),
+        ship("red-4", "red", "L5"),
+      ],
       nodes: { K5: "charged" },
-      actedThisPly: ["green-1"],
-      actionsRemaining: 1,
     });
 
     const result = applyPassGuard(state);
@@ -1586,7 +1480,7 @@ describe("applyPassGuard", () => {
       ],
     });
     const passedShip = result.state.ships.find((s) => s.id === "green-1");
-    expect(passedShip?.power).toBe(1);
+    expect(passedShip?.power).toBe(0);
   });
 
   it("the trap: returns the state untouched once the game is over, rather than passing an unbounded number of times", () => {

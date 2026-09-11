@@ -473,7 +473,40 @@ never draws a top-edge bar and still fades a pinned ship — is Step 8's.
 
 ### Step 3 — Retire the `ship-already-acted` refusal
 
-Status: pending
+Status: committed
+
+Notes: Dropped `"ship-already-acted"` from `MoveRefusalReason` and
+`AttackRefusalReason` and the matching checks in `moveRefusalReason`,
+`legalDestinations`, `attackRefusalReason` and `legalTargets`; folded the
+retired `eligibleShips` into its only caller, `sideToMoveHasLegalMove`.
+Reworded the doc comments in `movement.ts`, `combat.ts` and `actions.ts`.
+Deleted `isSelectable` and both `ship-already-acted` rejection sites in
+`session.ts`, and the matching `rejectionSentence` case and sentence in
+`announcements.ts`. Deleted the already-acted-testing cases in
+`movement.test.ts`, `combat.test.ts`, `actions.test.ts`, `ply.test.ts`,
+`session.test.ts`, `announcements.test.ts` and `Board.test.tsx` per D6,
+keeping the surviving `not-your-ship` half of `movement.test.ts`'s combined
+case as its own case, and trimming a `moved`-then-refused test in `ply.test.ts`
+down to just its still-live subject (the ply-ended effect on a self-returning
+attacker). Rebuilt the four D7 cases with genuinely pinned positions rather
+than deleting them: `ply.test.ts`'s two `applyPassGuard` cases and
+`endOfTurn.test.ts`'s "pays the side that passes while standing on a charged
+node" case now pin the ship with a charged node it holds (attacker-on-charged-
+node) or, for the "runs the end-of-turn sequence" case, boxed in for movement
+by enemies on its affordable orthogonal neighbours; `endOfTurn.test.ts`'s
+depleted-node case simply lost its `actedThisPly` line, as the plan's recipe
+anticipated, since the trap already pins it. All four keep their original
+assertions (the `ply-passed`/`ply-ended` effect and the end-of-turn
+collection) unweakened. Also removed now-dead `actedThisPly` plumbing left
+over from Step 2 in `Board.test.tsx`'s `attackState`, `rangeState` and
+"selection markings" fixtures, since no case exercises it any more and it
+carried no visible effect after Step 2's marking removal — not explicitly
+named by the plan, but in the spirit of D6/D8 and flagged here as the one
+notable deviation. Verification: `npm run typecheck`, `npm run lint` and
+`npm test` all green (64 files, 1189 tests, down from 1205 after Step 2, as
+expected); `npm run format:check` reports only the two pre-existing warnings
+after running prettier on the two files it flagged post-edit; `grep -rn
+"ship-already-acted" src/` finds no hits.
 
 With `actedThisPly` unread by the board, remove the rule that a ship which
 has already acted may not act again. It cannot fire: a move or an attack ends

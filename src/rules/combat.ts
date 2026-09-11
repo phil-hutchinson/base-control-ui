@@ -49,7 +49,6 @@ export function attackReach(
  */
 export type AttackRefusalReason =
   | "not-your-ship"
-  | "ship-already-acted"
   | "attacker-on-planet"
   | "attacker-on-charged-node"
   | "attacker-on-depleted-node"
@@ -68,8 +67,8 @@ export type AttackRefusalReason =
  * structured reason, or `undefined` when the attack is legal.
  *
  * Checked most fundamental first: whether the game is even still being
- * played, then whose ship it is, then whether it has already acted, then
- * whether the attacker is on a planet, then whether the attacker holds a
+ * played, then whose ship it is, then whether the attacker is on a planet,
+ * then whether the attacker holds a
  * charged node or is trapped on a depleted one (rules.md §7 — a ship on
  * either kind of node is out of combat in both directions), then everything
  * about the target — no ship there, a friendly ship, a ship on a planet, a
@@ -94,9 +93,6 @@ export function attackRefusalReason(
 
   if (attacker.side !== state.sideToMove) {
     return "not-your-ship";
-  }
-  if (state.actedThisPly.includes(shipId)) {
-    return "ship-already-acted";
   }
   if (isPlanet(attacker.square)) {
     return "attacker-on-planet";
@@ -165,7 +161,6 @@ export function legalTargets(
   const attacker = findShip(state, shipId);
   if (
     attacker.side !== state.sideToMove ||
-    state.actedThisPly.includes(shipId) ||
     isPlanet(attacker.square) ||
     nodeStateAt(state, attacker.square) === "charged" ||
     isShipTrapped(state, shipId)

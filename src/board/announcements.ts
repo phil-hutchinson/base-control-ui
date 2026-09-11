@@ -411,8 +411,6 @@ function rejectionSentence(event: RejectedEvent): string {
   switch (event.reason) {
     case "not-your-ship":
       return "That is your opponent's ship. Choose one of your own.";
-    case "ship-already-acted":
-      return "That ship has already acted this turn. Choose another.";
     case "nothing-to-select":
       return `No ship on ${square}. Choose one of your own ships.`;
     case "ship-trapped":

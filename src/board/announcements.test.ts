@@ -283,11 +283,6 @@ describe("announcementFor", () => {
       "That is your opponent's ship. Choose one of your own.",
     ],
     [
-      "ship-already-acted",
-      squareAt("G", 7),
-      "That ship has already acted this turn. Choose another.",
-    ],
-    [
       "nothing-to-select",
       squareAt("G", 4),
       "No ship on G4. Choose one of your own ships.",

@@ -133,22 +133,6 @@ describe("sessionReducer — nothing selected", () => {
     });
   });
 
-  it("rejects an own ship that has already acted this ply as ship-already-acted", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "H8")],
-      actedThisPly: ["green-1"],
-    });
-    const result = activate(sessionFor(state), "H8");
-
-    expect(result.selectedShipId).toBeUndefined();
-    expect(result.state).toBe(state);
-    expect(result.lastEvent).toEqual({
-      type: "rejected",
-      reason: "ship-already-acted",
-      square: squareFromName("H8"),
-    });
-  });
-
   it("rejects an empty square as nothing to select there", () => {
     const state = buildState({ ships: [ship("green-1", "green", "H8")] });
     const result = activate(sessionFor(state), "A5");
@@ -269,48 +253,6 @@ describe("sessionReducer — a ship is selected", () => {
         type: "rejected",
         reason: "target-out-of-range",
         square: squareFromName("A1"),
-      });
-    });
-
-    it("rejects a friendly ship that has already acted as ship-already-acted, whether or not it still has a target in range", () => {
-      const withTarget = buildState({
-        ships: [
-          ship("green-1", "green", "H8"),
-          ship("green-2", "green", "K5"),
-          ship("red-1", "red", "K6"),
-        ],
-        actedThisPly: ["green-2"],
-      });
-      const selectedWithTarget = activate(sessionFor(withTarget), "H8");
-
-      const resultWithTarget = activate(selectedWithTarget, "K5");
-
-      expect(resultWithTarget.selectedShipId).toBe("green-1");
-      expect(resultWithTarget.state).toBe(withTarget);
-      expect(resultWithTarget.lastEvent).toEqual({
-        type: "rejected",
-        reason: "ship-already-acted",
-        square: squareFromName("K5"),
-      });
-
-      const withoutTarget = buildState({
-        ships: [
-          ship("green-1", "green", "H8"),
-          ship("green-2", "green", "K5"),
-          ship("red-1", "red", "A1"),
-        ],
-        actedThisPly: ["green-2"],
-      });
-      const selectedWithoutTarget = activate(sessionFor(withoutTarget), "H8");
-
-      const resultWithoutTarget = activate(selectedWithoutTarget, "K5");
-
-      expect(resultWithoutTarget.selectedShipId).toBe("green-1");
-      expect(resultWithoutTarget.state).toBe(withoutTarget);
-      expect(resultWithoutTarget.lastEvent).toEqual({
-        type: "rejected",
-        reason: "ship-already-acted",
-        square: squareFromName("K5"),
       });
     });
   });
