@@ -202,7 +202,6 @@ describe("sessionReducer — a ship is selected", () => {
       from: squareFromName("H8"),
       to: destination,
       effects: direct.effects,
-      actionsRemaining: direct.state.actionsRemaining,
       cost: direct.cost,
       powerAfter: direct.powerAfter,
     });
@@ -235,7 +234,6 @@ describe("sessionReducer — a ship is selected", () => {
         from: squareFromName("H8"),
         target,
         effects: direct.effects,
-        actionsRemaining: direct.state.actionsRemaining,
       });
     });
 

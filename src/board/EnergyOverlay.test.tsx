@@ -60,7 +60,6 @@ function movedEventWithCollection(
         endOfTurn: effect === undefined ? [] : [effect],
       },
     ],
-    actionsRemaining: 1,
     cost: 0,
     powerAfter: 6,
   };
@@ -145,7 +144,6 @@ describe("EnergyOverlay", () => {
           endOfTurn: [passCollection],
         },
       ],
-      actionsRemaining: 1,
       cost: 0,
       powerAfter: 6,
     };

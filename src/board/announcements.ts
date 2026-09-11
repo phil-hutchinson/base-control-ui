@@ -15,7 +15,7 @@ import type {
   QueueRefilledEffect,
 } from "../rules/endOfTurn";
 import type { Side } from "../rules/fleet";
-import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
+import type { GameState } from "../rules/gameState";
 import { TOP_NODE_PRIORITY } from "../rules/nodeQueue";
 import {
   currentRound,
@@ -42,10 +42,6 @@ import type {
 
 function capitalize(side: Side): string {
   return side === "green" ? "Green" : "Red";
-}
-
-function actionsPhrase(count: number): string {
-  return `${count} ${count === 1 ? "action" : "actions"}`;
 }
 
 function movesPhrase(count: number): string {
@@ -86,12 +82,12 @@ function selectionCountsPhrase(
   if (targetCount > 0) {
     return `${targetsPhrase(targetCount)} available.`;
   }
-  return "No actions available.";
+  return "No moves or attacks available.";
 }
 
-/** "Green's turn, 2 actions left" — used inside announcements, not the indicator. */
-function turnPhrase(side: Side, actionsRemaining: number): string {
-  return `${capitalize(side)}'s turn, ${actionsPhrase(actionsRemaining)} left`;
+/** "Green's turn" — used inside announcements, not the indicator. */
+function turnPhrase(side: Side): string {
+  return `${capitalize(side)}'s turn`;
 }
 
 /** "H8 and K5", "H8, K5 and E11" — a plain-language list, never an Oxford comma. */
@@ -249,13 +245,13 @@ function endOfTurnClauses(effects: readonly EndOfTurnEffect[]): string[] {
 }
 
 /**
- * A passed turn's opening clause (rules.md §5, §10): "no legal action" or
- * "out of time", depending on why the turn passed.
+ * A passed turn's opening clause (rules.md §5, §10): "cannot move or attack"
+ * or "out of time", depending on why the turn passed.
  */
 function passOpeningClause(effect: PassEffect): string {
   return effect.reason === "out-of-time"
     ? `${capitalize(effect.side)} is out of time, so the turn passes.`
-    : `${capitalize(effect.side)} has no legal action, so the turn passes.`;
+    : `${capitalize(effect.side)} cannot move or attack, so the turn passes.`;
 }
 
 /**
@@ -270,7 +266,7 @@ function passSentenceClauses(
   return [
     passOpeningClause(effect),
     ...endOfTurnClauses(effect.endOfTurn),
-    tailClause ?? `${turnPhrase(effect.sideToMove, ACTIONS_PER_PLY)}.`,
+    tailClause ?? `${turnPhrase(effect.sideToMove)}.`,
   ];
 }
 
@@ -300,7 +296,7 @@ function nodeSpentClause(square: Square): string {
 
 /**
  * "What the move was": the ship's journey, whether it ended on a planet, what
- * the move cost (rules.md §6), and — between those and the action-ending
+ * the move cost (rules.md §6), and — between those and the turn-ending
  * clauses — whether it spent a charged node by leaving it (§8.3). Either
  * side's ship reads the same way; the side is already named at the start of
  * the sentence.
@@ -322,19 +318,17 @@ function moveSentence(event: MovedEvent): string {
 }
 
 /**
- * How an action's ply ended, if at all: if the ply ended, the end-of-turn
- * sequence's own clauses followed by the other side's turn, a further pass
- * (with its own end-of-turn clauses) if the resulting side had no legal
- * action at all, or how many actions the acting side has left if the ply
- * simply continues. Shared by a move and an attack — both end a ply the
- * same way. `tailClause`, when given, replaces the "whose turn is next"
- * clause — the substitution `announcementForSession` makes at the end of the
- * game.
+ * How a turn ended: the end-of-turn sequence's own clauses followed by the
+ * other side's turn, or a further pass (with its own end-of-turn clauses) if
+ * the resulting side can neither move nor attack. A move or an attack always
+ * ends the ply, so `effects` always carries a `ply-ended` effect and, when
+ * the next side has nothing to do, a `ply-passed` one too. Shared by a move
+ * and an attack — both end a ply the same way. `tailClause`, when given,
+ * replaces the "whose turn is next" clause — the substitution
+ * `announcementForSession` makes at the end of the game.
  */
-function actionEndingClauses(
-  side: Side,
+function turnEndingClauses(
   effects: readonly (MoveEffect | AttackEffect)[],
-  actionsRemaining: number,
   tailClause?: string,
 ): string[] {
   const plyEndedEffect = effects.find(
@@ -355,20 +349,17 @@ function actionEndingClauses(
   if (plyEndedEffect !== undefined) {
     return [
       ...plyEndedClauses,
-      tailClause ??
-        `${turnPhrase(plyEndedEffect.sideToMove, ACTIONS_PER_PLY)}.`,
+      tailClause ?? `${turnPhrase(plyEndedEffect.sideToMove)}.`,
     ];
   }
 
-  return [`${capitalize(side)} has ${actionsPhrase(actionsRemaining)} left.`];
+  throw new RangeError("a move or an attack always ends the turn: rules.md §5");
 }
 
-function actionEndingClause(
-  side: Side,
+function turnEndingClause(
   effects: readonly (MoveEffect | AttackEffect)[],
-  actionsRemaining: number,
 ): string {
-  return actionEndingClauses(side, effects, actionsRemaining).join(" ");
+  return turnEndingClauses(effects).join(" ");
 }
 
 /**
@@ -472,9 +463,9 @@ export function announcementFor(event: SessionEvent | undefined): string {
     case "selection-cleared":
       return "Selection cleared.";
     case "moved":
-      return `${moveSentence(event)} ${actionEndingClause(event.side, event.effects, event.actionsRemaining)}`;
+      return `${moveSentence(event)} ${turnEndingClause(event.effects)}`;
     case "attacked":
-      return `${fightSentence(event)} ${actionEndingClause(event.side, event.effects, event.actionsRemaining)}`;
+      return `${fightSentence(event)} ${turnEndingClause(event.effects)}`;
     case "ply-passed":
       return passSentence(event);
     case "rejected":
@@ -522,8 +513,8 @@ function gameOverClause(state: GameState): string {
  * exactly `announcementFor(session.lastEvent)`. Once the game is over, the
  * "whose turn is next" clause a finished ply or pass would otherwise end
  * with is **replaced** by the game-over clause — never appended after it, so
- * a screen reader never hears "Green's turn — 2 actions left" immediately
- * followed by "the game is over".
+ * a screen reader never hears "Green's turn" immediately followed by "the
+ * game is over".
  */
 export function announcementForSession(session: Session): string {
   const { state, lastEvent } = session;
@@ -539,9 +530,9 @@ export function announcementForSession(session: Session): string {
 
   switch (lastEvent.type) {
     case "moved":
-      return `${moveSentence(lastEvent)} ${actionEndingClauses(lastEvent.side, lastEvent.effects, lastEvent.actionsRemaining, tailClause).join(" ")}`;
+      return `${moveSentence(lastEvent)} ${turnEndingClauses(lastEvent.effects, tailClause).join(" ")}`;
     case "attacked":
-      return `${fightSentence(lastEvent)} ${actionEndingClauses(lastEvent.side, lastEvent.effects, lastEvent.actionsRemaining, tailClause).join(" ")}`;
+      return `${fightSentence(lastEvent)} ${turnEndingClauses(lastEvent.effects, tailClause).join(" ")}`;
     case "ply-passed":
       return passSentenceClauses(lastEvent, tailClause).join(" ");
     // A selection, its clearing, or a rejection never carries a "whose turn

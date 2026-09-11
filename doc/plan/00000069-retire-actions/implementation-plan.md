@@ -593,7 +593,44 @@ this story must not do.
 
 ### Step 4 — The announcement layer stops counting actions
 
-Status: pending
+Status: committed
+
+Notes: Deleted `actionsPhrase`; `turnPhrase` dropped its `actionsRemaining`
+parameter and now returns just "Green's turn". `actionEndingClauses`/
+`actionEndingClause` were renamed to `turnEndingClauses`/`turnEndingClause`,
+lost their `side` and `actionsRemaining` parameters, and the function now
+throws a `RangeError` ("a move or an attack always ends the turn: rules.md §5")
+in place of the old "N action(s) left" branch, per D3. `selectionCountsPhrase`'s
+"No actions available." became "No moves or attacks available.";
+`passOpeningClause`'s "has no legal action" became "cannot move or attack"; the
+`ACTIONS_PER_PLY` import went with its last call site. Updated the module's doc
+comments that quoted the retired wording (`moveSentence`'s "action-ending"
+reference, `announcementForSession`'s "2 actions left" example). In
+`src/game/session.ts`, deleted `actionsRemaining` from `MovedEvent` and
+`AttackedEvent` and stopped populating it in `activateWithSelection`;
+`GameState.actionsRemaining` itself is untouched (Step 6). Also reworded
+`RejectionReason`'s doc comment ("nothing to do with either action" →
+"...either one"), since Step 4's own verification greps this file for
+"action" and the phrase named the retired concept — a small addition beyond
+the plan's explicit file list, in the spirit of the same step's wording
+change, not a new step. Updated `announcements.test.ts` (deleted the six
+mid-ply cases that asserted "N action(s) left" for a `moved` or `attacked`
+event with neither a `ply-ended` nor a `ply-passed` effect — two move cases,
+two duplicate "ends on a planet" mid-ply cases, and two combat cases, all now
+unreachable per D3/D6 — reworded the remaining expected sentences, and
+dropped `actionsRemaining` from the surviving event literals while leaving it
+in the file's `GameState` literals), `session.test.ts` (dropped
+`actionsRemaining` from the two `lastEvent` assertions; left
+`session.state.actionsRemaining` assertions alone, since `GameState` keeps the
+field until Step 6), `Board.test.tsx` and `EnergyOverlay.test.tsx` (dropped
+`actionsRemaining` from `MovedEvent` literals; `EnergyOverlay.test.tsx` was
+not named in the plan's file list but needed the same mechanical field
+removal once the type changed). All checks green: typecheck, lint, and
+`npm test` (64 files, 1183 tests, down from 1189 after Step 3, as expected)
+all pass; `format:check` reports only the two pre-existing warnings after
+running prettier on the two files it flagged post-edit; grepping
+`src/board/announcements.ts` and `src/game/session.ts` for "action"
+case-insensitively finds no hits describing the game concept.
 
 The live region still counts to one. This step takes the count out of the
 wording and out of the events that carried it.

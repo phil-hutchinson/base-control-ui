@@ -54,8 +54,6 @@ export interface MovedEvent {
   readonly from: Square;
   readonly to: Square;
   readonly effects: readonly MoveEffect[];
-  /** The mover's remaining actions after this move, from the resulting state. */
-  readonly actionsRemaining: number;
   /** The power the move cost (rules.md §6), from `AppliedMove`. */
   readonly cost: PowerLevel;
   /** The mover's power once that cost is paid, from `AppliedMove`. */
@@ -76,14 +74,12 @@ export interface AttackedEvent {
   readonly from: Square;
   readonly target: Square;
   readonly effects: readonly AttackEffect[];
-  /** The attacker's remaining actions after this attack, from the resulting state. */
-  readonly actionsRemaining: number;
 }
 
 /**
  * The reasons an activation is rejected outright: every reason a move or an
  * attack can be refused (rules.md §6, §7), plus activating an empty square
- * with no ship selected, which has nothing to do with either action.
+ * with no ship selected, which has nothing to do with either one.
  */
 export type RejectionReason =
   MoveRefusalReason | AttackRefusalReason | "nothing-to-select" | "out-of-time";
@@ -241,7 +237,6 @@ function activateWithSelection(
         from: selectedShip.square,
         target: square,
         effects: result.effects,
-        actionsRemaining: result.state.actionsRemaining,
       },
     };
   }
@@ -261,7 +256,6 @@ function activateWithSelection(
       from: selectedShip.square,
       to: square,
       effects: result.effects,
-      actionsRemaining: result.state.actionsRemaining,
       cost: result.cost,
       powerAfter: result.powerAfter,
     },
