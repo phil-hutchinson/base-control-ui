@@ -4,7 +4,6 @@ import { squareFromName, squareName } from "./board";
 import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import {
-  ACTIONS_PER_PLY,
   type GameState,
   type Ship,
   type NodeStatus,
@@ -51,8 +50,6 @@ function nodeStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
-  actionsRemaining?: number;
-  actedThisPly?: readonly ShipId[];
   nodes?: Readonly<Record<string, NodeState | readonly [NodeState, number]>>;
   plyNumber?: number;
   lengthInRounds?: number;
@@ -64,8 +61,6 @@ function buildState(config: {
     ships: config.ships,
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
-    actionsRemaining: config.actionsRemaining ?? ACTIONS_PER_PLY,
-    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
@@ -321,10 +316,9 @@ describe("applyMove", () => {
 
   it("gives green the first ply", () => {
     expect(startingGameState(1).sideToMove).toBe("green");
-    expect(startingGameState(1).actionsRemaining).toBe(ACTIONS_PER_PLY);
   });
 
-  it("spends the ply's one action before passing the turn, then clears the moved-this-ply marks", () => {
+  it("ends the ply and passes the turn", () => {
     // No inactive node is queued, so charging has nothing to charge with,
     // whatever the shortfall, and the end-of-turn effects stay empty.
     const state = buildState({
@@ -343,8 +337,6 @@ describe("applyMove", () => {
       throw new Error("expected the move to be applied");
     }
     expect(result.state.sideToMove).toBe("red");
-    expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
     expect(result.effects).toEqual([
       { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
@@ -445,8 +437,6 @@ describe("applyMove deducts the shape's cost (rules.md §6)", () => {
       state = {
         ...result.state,
         sideToMove: "green",
-        actedThisPly: [],
-        actionsRemaining: ACTIONS_PER_PLY,
       };
     }
 
@@ -897,7 +887,6 @@ describe("applyAttack", () => {
       ships: [ship("green-1", "green", "K8", 4), ship("red-1", "red", "K9", 2)],
       nodes: { K8: "depleted" },
       sideToMove: "red",
-      actionsRemaining: 1,
     });
 
     // red-1 reaches K8 and can afford the shot, but the trapped ship is
@@ -1287,8 +1276,6 @@ describe("applyPassGuard", () => {
     const result = applyPassGuard(state);
 
     expect(result.state.sideToMove).toBe("red");
-    expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
     // The pass still runs the end-of-turn sequence in full, and green-1 is
     // sitting on its planet — it is the only green ship, so it charges
@@ -1513,7 +1500,6 @@ describe("applyPassGuard", () => {
     const state = buildState({
       ships: [ship("red-1", "red", "H8")],
       sideToMove: "red",
-      actionsRemaining: 1,
       plyNumber: 60,
     });
 
@@ -1548,8 +1534,6 @@ describe("applyOutOfTimePass", () => {
     const result = applyOutOfTimePass(state);
 
     expect(result.state.sideToMove).toBe("red");
-    expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(result.state.actedThisPly).toEqual([]);
     expect(result.state.plyNumber).toBe(2);
     // The pass still runs the end-of-turn sequence in full: holding the
     // node costs green-1 no power any more (§4.1), but its side still

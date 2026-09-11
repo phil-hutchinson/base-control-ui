@@ -19,8 +19,6 @@ function buildState(plyNumber: number): GameState {
     ships: [],
     nodes: {},
     sideToMove: "green",
-    actionsRemaining: 1,
-    actedThisPly: [],
     plyNumber,
     randomSeed: 1,
     openingSeed: 1,

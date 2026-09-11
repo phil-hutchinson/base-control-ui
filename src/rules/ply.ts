@@ -1,25 +1,22 @@
-// Applying an action, and the ply it belongs to (rules.md §5, §3.1, §6, §7).
-// An action is a move or an attack, and each spends the acting ship's power
-// (§6): a move deducts its own cost, and an attack deducts the cost of the
-// shape it struck down. A move is either refused, with the reason from
-// movement.ts, or applied: the ship arrives with the power it had left after
-// paying, and spends one action. A ship that ends a move on a planet recovers
-// there at a point per turn (§3.1, §4.1), through the end-of-turn sequence —
-// not on arrival. An attack is either refused, with the reason from
-// combat.ts, or resolved: both ships are placed on planets drawn at random
-// from the planets standing empty, attacker first; the attacker arrives
-// having already paid the shot's cost, the defender carries what it had
-// before the fight untouched, and both squares they left are left empty.
-// There is no winner and no advance. An attack never changes a node's state
-// — a node's state changes only in the end-of-turn sequence (rules.md
-// §8.6) — but a move is the one knowing exception: leaving a charged node
-// depletes it on the spot, as the move resolves, and stepping onto one with
-// no countdown starts one (§8.3, `applyMove` below). Every action — a move
-// or an attack — marks the acting ship as having acted this ply, so a
-// further attempt by the same ship this ply is refused. When the ply's
-// actions are all spent, play passes to the other side. The pass guard
-// covers the case §5 sets out for when the side to move has no legal
-// action at all.
+// Applying a move or an attack, and the ply each one ends (rules.md §5, §3.1,
+// §6, §7). Both spend the acting ship's power (§6): a move deducts its own
+// cost, and an attack deducts the cost of the shape it struck down. A move is
+// either refused, with the reason from movement.ts, or applied: the ship
+// arrives with the power it had left after paying. A ship that ends a move on
+// a planet recovers there at a point per turn (§3.1, §4.1), through the
+// end-of-turn sequence — not on arrival. An attack is either refused, with
+// the reason from combat.ts, or resolved: both ships are placed on planets
+// drawn at random from the planets standing empty, attacker first; the
+// attacker arrives having already paid the shot's cost, the defender carries
+// what it had before the fight untouched, and both squares they left are
+// left empty. There is no winner and no advance. An attack never changes a
+// node's state — a node's state changes only in the end-of-turn sequence
+// (rules.md §8.6) — but a move is the one knowing exception: leaving a
+// charged node depletes it on the spot, as the move resolves, and stepping
+// onto one with no countdown starts one (§8.3, `applyMove` below). A turn is
+// one move or one attack (§5), so every move and every attack ends the ply:
+// play always passes to the other side. The pass guard covers the case §5
+// sets out for when the side to move can neither move nor attack at all.
 
 import { sideToMoveCanMoveOrAttack } from "./canMoveOrAttack";
 import { type Square, squareName } from "./board";
@@ -34,12 +31,7 @@ import { isPlanet } from "./planets";
 import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
 import type { Side, ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
-import {
-  ACTIONS_PER_PLY,
-  type GameState,
-  type Ship,
-  shipsBySquare,
-} from "./gameState";
+import { type GameState, type Ship, shipsBySquare } from "./gameState";
 import {
   type MoveRefusalReason,
   findShip,
@@ -73,10 +65,10 @@ export interface PlyEndedEffect {
 }
 
 /**
- * The two effects that can close out an action, shared by every kind of
- * action rather than tied to moves specifically.
+ * The two effects that can close out a ply, shared by a move and an attack
+ * alike rather than tied to either specifically.
  */
-export type EndOfActionEffect = PlyEndedEffect | PassEffect;
+export type EndOfPlyEffect = PlyEndedEffect | PassEffect;
 
 /**
  * A charged node depleted the instant its holder left it (rules.md §8.3):
@@ -84,7 +76,7 @@ export type EndOfActionEffect = PlyEndedEffect | PassEffect;
  * charged node, never by one that merely starts on an ordinary square or
  * arrives on one — leaving is what spends it, not the ship's presence
  * beforehand. Always the first effect a move carries, ahead of whichever
- * `EndOfActionEffect` closes it out, so a listener hears the node spent
+ * `EndOfPlyEffect` closes it out, so a listener hears the node spent
  * before hearing how the turn ended.
  */
 export interface NodeSpentEffect {
@@ -93,7 +85,7 @@ export interface NodeSpentEffect {
 }
 
 /** Something that happened as a result of applying a move, beyond the move itself. */
-export type MoveEffect = NodeSpentEffect | EndOfActionEffect;
+export type MoveEffect = NodeSpentEffect | EndOfPlyEffect;
 
 /**
  * A move applied successfully, with the resulting state and what happened.
@@ -155,7 +147,7 @@ export interface FightResolvedEffect {
  * Something that happened as a result of applying an attack, beyond the
  * fight itself.
  */
-export type AttackEffect = FightResolvedEffect | EndOfActionEffect;
+export type AttackEffect = FightResolvedEffect | EndOfPlyEffect;
 
 /** An attack applied successfully, with the resulting state and what happened. */
 export interface AppliedAttack {
@@ -174,8 +166,7 @@ export type ApplyAttackResult = AppliedAttack | RefusedAttack;
 
 /**
  * Passes the side to move's ply for `reason`: the end-of-turn sequence runs
- * for it (a passed ply is still a turn), the acted-this-ply marks clear, the
- * action count resets to `ACTIONS_PER_PLY`, the ply number advances and the
+ * for it (a passed ply is still a turn), the ply number advances and the
  * other side becomes the side to move (rules.md §5, §8.6). Shared by
  * `applyPassGuard` and `applyOutOfTimePass`, which differ only in why the
  * pass happens.
@@ -191,8 +182,6 @@ function passPly(
     ...endOfTurn.state,
     plyNumber: endOfTurn.state.plyNumber + 1,
     sideToMove,
-    actionsRemaining: ACTIONS_PER_PLY,
-    actedThisPly: [],
   };
 
   return {
@@ -209,14 +198,14 @@ function passPly(
 
 /**
  * If the side to move can neither move nor attack — no legal move with any
- * eligible ship and no legal attack target with any ship — its ply passes
+ * of its ships and no legal attack target with any of them — its ply passes
  * (rules.md §5, §8.6). Only the side to move is checked — the side passed to
  * is not — so this makes exactly one pass, never a second one back.
  *
- * Once the game is over, every action is refused (rules.md §9), which is
- * exactly the condition this guard fires on. Checked first, ahead of
- * `sideToMoveCanMoveOrAttack`, this returns the state untouched: otherwise
- * the guard would read "cannot move or attack" as a pass, run the
+ * Once the game is over, neither a move nor an attack is ever legal (rules.md
+ * §9), which is exactly the condition this guard fires on. Checked first,
+ * ahead of `sideToMoveCanMoveOrAttack`, this returns the state untouched:
+ * otherwise the guard would read "cannot move or attack" as a pass, run the
  * end-of-turn sequence for a ply that does not exist, and advance past the
  * end again on every subsequent call, without bound.
  */
@@ -269,49 +258,34 @@ export function applyOutOfTimePass(state: GameState): {
 }
 
 /**
- * Runs the tail every action shares once its own effects have been applied:
- * spends one action; if that was the ply's last, runs the end-of-turn
- * sequence, advances the ply number, swaps the side to move and clears
- * `actedThisPly`, recording a `ply-ended` effect; then runs `applyPassGuard`,
- * recording a `ply-passed` effect if it fires. `actedShipId` is added to
- * `actedThisPly` — a move and an attack both spend the acting ship's one
- * action for the turn (rules.md §5), so every caller passes its own ship's
- * id. Mutates `effects` by appending whichever of the two end-of-action effects
- * fired, and returns the resulting state. `effects` is typed to accept
+ * Runs the tail every move and every attack shares once its own effects have
+ * been applied: a turn is one move or one attack (rules.md §5), so this
+ * unconditionally runs the end-of-turn sequence, advances the ply number and
+ * swaps the side to move, recording a `ply-ended` effect; then runs
+ * `applyPassGuard`, recording a `ply-passed` effect if it fires. Mutates
+ * `effects` by appending the `ply-ended` effect and whichever pass effect
+ * follows it, and returns the resulting state. `effects` is typed to accept
  * either caller's effect list, since both `MoveEffect` and `AttackEffect`
- * include `EndOfActionEffect` as one of their members.
+ * include `EndOfPlyEffect` as one of their members.
  */
-function applyEndOfActionTail(
+function endPly(
   state: GameState,
   effects: (MoveEffect | AttackEffect)[],
-  actedShipId: ShipId,
 ): GameState {
-  const actionsRemaining = state.actionsRemaining - 1;
-  let next: GameState;
-  if (actionsRemaining > 0) {
-    next = {
-      ...state,
-      actedThisPly: [...state.actedThisPly, actedShipId],
-      actionsRemaining,
-    };
-  } else {
-    const side = state.sideToMove;
-    const sideToMove = otherSide(side);
-    const endOfTurn = runEndOfTurn(state);
-    next = {
-      ...endOfTurn.state,
-      plyNumber: endOfTurn.state.plyNumber + 1,
-      sideToMove,
-      actionsRemaining: ACTIONS_PER_PLY,
-      actedThisPly: [],
-    };
-    effects.push({
-      type: "ply-ended",
-      side,
-      sideToMove,
-      endOfTurn: endOfTurn.effects,
-    });
-  }
+  const side = state.sideToMove;
+  const sideToMove = otherSide(side);
+  const endOfTurn = runEndOfTurn(state);
+  const next: GameState = {
+    ...endOfTurn.state,
+    plyNumber: endOfTurn.state.plyNumber + 1,
+    sideToMove,
+  };
+  effects.push({
+    type: "ply-ended",
+    side,
+    sideToMove,
+    endOfTurn: endOfTurn.effects,
+  });
 
   const { state: settled, effect: passEffect } = applyPassGuard(next);
   if (passEffect !== undefined) {
@@ -325,12 +299,10 @@ function applyEndOfActionTail(
  * Applies a move of `shipId` to `destination` in `state`, or refuses it. A
  * legal move never mutates `state`: it returns a new state in which the ship
  * stands on `destination` having paid the shape's cost (rules.md §6) out of
- * its own power, the square it left is empty, the ship is marked as having
- * acted this ply, and one action is spent. An orthogonal step costs nothing,
- * so the ship's power is untouched by it. A ship that ends the move on a
- * planet does not gain anything on arrival — it recovers a point at a time,
- * through the end-of-turn sequence (rules.md §3.1, §4.1), like any other
- * planet stay.
+ * its own power. An orthogonal step costs nothing, so the ship's power is
+ * untouched by it. A ship that ends the move on a planet does not gain
+ * anything on arrival — it recovers a point at a time, through the
+ * end-of-turn sequence (rules.md §3.1, §4.1), like any other planet stay.
  *
  * Two node changes happen as the move resolves — the one knowing exception
  * to a node's state changing only in the end-of-turn sequence (rules.md
@@ -343,10 +315,10 @@ function applyEndOfActionTail(
  * alone, which can only happen if this move somehow lands on an occupied
  * square, since a countdown's own holder is standing there.
  *
- * When the ply's last action is spent, play passes to the other side and the
- * acted-this-ply marks clear. The result then passes through
- * `applyPassGuard`, so a move that leaves the side now to move with no legal
- * move at all is followed immediately by a pass.
+ * A move ends the ply (rules.md §5): play passes to the other side. The
+ * result then passes through `applyPassGuard`, so a move that leaves the
+ * side now to move with no legal move at all is followed immediately by a
+ * pass.
  */
 export function applyMove(
   state: GameState,
@@ -404,7 +376,7 @@ export function applyMove(
   }
 
   const afterMove: GameState = { ...state, ships, nodes };
-  const settled = applyEndOfActionTail(afterMove, effects, shipId);
+  const settled = endPly(afterMove, effects);
 
   return {
     outcome: "applied",
@@ -568,11 +540,9 @@ export function assertFightInvariants(
  * planets still empty afterwards, advancing `randomSeed` once per ship. Both
  * squares the ships fought from are left empty; there is no winner and no
  * advance. Neither square's node changes state: leaving a node does not end
- * it (rules.md §8.3). The attacking ship is added to `actedThisPly` even
- * though it ends the action on a planet itself: it spent its one action
- * regardless (rules.md §5). One action is spent; when the ply's last action
- * is spent, play passes to the other side exactly as it does after a move,
- * and the result then passes through `applyPassGuard`.
+ * it (rules.md §8.3). An attack ends the ply (rules.md §5), just as a move
+ * does: play passes to the other side, and the result then passes through
+ * `applyPassGuard`.
  */
 export function applyAttack(
   state: GameState,
@@ -657,7 +627,7 @@ export function applyAttack(
     },
   ];
 
-  const settled = applyEndOfActionTail(nextState, effects, attackerShip.id);
+  const settled = endPly(nextState, effects);
 
   return { outcome: "applied", state: settled, effects };
 }

@@ -111,8 +111,6 @@ function stateWithNode(
       [squareName(square)]: { state, level },
     },
     sideToMove: "green",
-    actionsRemaining: 1,
-    actedThisPly: [],
     plyNumber: 1,
     randomSeed: 1,
     openingSeed: 1,
@@ -606,8 +604,6 @@ describe("Board", () => {
           [squareName(squareAt("E", 5))]: { state: "inactive", level: 3 },
         },
         sideToMove: "green",
-        actionsRemaining: 1,
-        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
@@ -723,8 +719,6 @@ describe("Board", () => {
         ],
         nodes: {},
         sideToMove: "green",
-        actionsRemaining: 2,
-        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
@@ -866,8 +860,6 @@ describe("Board", () => {
         ships,
         nodes: {},
         sideToMove: "green",
-        actionsRemaining: 1,
-        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
@@ -1012,7 +1004,7 @@ describe("Board", () => {
     // green-2 and green-3 are ordinary green ships elsewhere with a normal
     // move available, and red-1 is the opponent, present to confirm it
     // never carries a condition.
-    function depletedNodeState(actionsRemaining: number): GameState {
+    function depletedNodeState(): GameState {
       return {
         ships: [
           {
@@ -1042,8 +1034,6 @@ describe("Board", () => {
           },
         },
         sideToMove: "green",
-        actionsRemaining,
-        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
@@ -1056,7 +1046,7 @@ describe("Board", () => {
 
     it("names a ship trapped on a depleted node with the existing cannot-move-or-attack condition, and leaves the rest of the fleet ordinary", () => {
       const session: Session = {
-        state: depletedNodeState(1),
+        state: depletedNodeState(),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -1083,7 +1073,7 @@ describe("Board", () => {
 
     it("combines the selected mark with the cannot-move-or-attack condition for a ship trapped on a depleted node", () => {
       const session: Session = {
-        state: depletedNodeState(1),
+        state: depletedNodeState(),
         selectedShipId: "green-1",
         lastEvent: undefined,
       };
@@ -1098,7 +1088,7 @@ describe("Board", () => {
 
     it("never gives the opponent's ship a condition", () => {
       const session: Session = {
-        state: depletedNodeState(1),
+        state: depletedNodeState(),
         selectedShipId: undefined,
         lastEvent: undefined,
       };
@@ -1152,8 +1142,6 @@ describe("Board", () => {
         ],
         nodes: {},
         sideToMove: "green",
-        actionsRemaining: 1,
-        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,

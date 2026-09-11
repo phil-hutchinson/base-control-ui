@@ -9,7 +9,6 @@ import {
   type Side,
 } from "../rules/fleet";
 import {
-  ACTIONS_PER_PLY,
   startingGameState,
   type GameState,
   type Ship,
@@ -43,7 +42,6 @@ function nodeStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: Side;
-  actedThisPly?: readonly ShipId[];
   nodes?: Readonly<Record<string, NodeState>>;
   plyNumber?: number;
   lengthInRounds?: number;
@@ -53,8 +51,6 @@ function buildState(config: {
     ships: config.ships,
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
-    actionsRemaining: ACTIONS_PER_PLY,
-    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
@@ -169,7 +165,6 @@ describe("sessionReducer — a ship is selected", () => {
 
     expect(result.selectedShipId).toBe("green-2");
     expect(result.state).toBe(state);
-    expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
     expect(result.state.ships).toEqual(state.ships);
     expect(result.lastEvent).toEqual({
       type: "selected",
@@ -362,8 +357,6 @@ describe("sessionReducer — a full ply", () => {
     session = activate(session, "H9");
 
     expect(session.state.sideToMove).toBe("red");
-    expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(session.state.actedThisPly).toEqual([]);
     expect(session.lastEvent).toMatchObject({
       type: "moved",
       shipId: "green-1",
@@ -383,8 +376,6 @@ describe("sessionReducer — a full ply", () => {
     session = activate(session, "O2");
 
     expect(session.state.sideToMove).toBe("green");
-    expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(session.state.actedThisPly).toEqual([]);
     expect(session.lastEvent).toMatchObject({
       type: "moved",
       shipId: "red-1",
@@ -430,7 +421,6 @@ describe("createSession", () => {
     const session = createSession(state);
 
     expect(session.state.sideToMove).toBe("red");
-    expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
     expect(session.state.plyNumber).toBe(2);
     expect(session.lastEvent).toEqual({
       type: "ply-passed",

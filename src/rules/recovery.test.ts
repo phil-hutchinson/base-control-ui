@@ -17,7 +17,7 @@ import { describe, expect, it } from "vitest";
 import { isPlanet } from "./planets";
 import { squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
-import { ACTIONS_PER_PLY, type GameState, type Ship } from "./gameState";
+import type { GameState, Ship } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { DEFAULT_CHARGED_NODE_COUNT } from "./nodes";
 import { legalDestinations, reachFrom } from "./movement";
@@ -48,8 +48,6 @@ function buildState(config: {
     ships: config.ships,
     nodes: {},
     sideToMove: "green",
-    actionsRemaining: ACTIONS_PER_PLY,
-    actedThisPly: [],
     plyNumber: 1,
     randomSeed: 1,
     openingSeed: 1,
@@ -327,7 +325,6 @@ describe("recovery — leaving a planet before it is full keeps what was recover
     const stateForReachCheck: GameState = {
       ...afterLeaving.state,
       sideToMove: "green",
-      actedThisPly: [],
     };
     const actualReach = legalDestinations(stateForReachCheck, "green-1")
       .map(squareName)

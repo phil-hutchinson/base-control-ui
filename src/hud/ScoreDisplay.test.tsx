@@ -55,8 +55,6 @@ function buildState(config: {
     ships: config.ships ?? [],
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: "green",
-    actionsRemaining: 1,
-    actedThisPly: [],
     plyNumber: 1,
     randomSeed: 1,
     openingSeed: 1,

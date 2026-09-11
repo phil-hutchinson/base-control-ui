@@ -14,8 +14,6 @@ function finishedState(): GameState {
     ships: [],
     nodes: {},
     sideToMove: "green",
-    actionsRemaining: 1,
-    actedThisPly: [],
     plyNumber: 3,
     randomSeed: 1,
     openingSeed: 1,

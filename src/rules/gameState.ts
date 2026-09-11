@@ -23,9 +23,6 @@ import {
   type NodeState,
 } from "./nodes";
 
-/** How many actions a side takes each ply (rules.md §5). */
-export const ACTIONS_PER_PLY = 1;
-
 /** One ship: its stable identity, side, current square and power level. */
 export interface Ship {
   readonly id: ShipId;
@@ -68,10 +65,6 @@ export interface GameState {
   readonly nodes: Readonly<Record<string, NodeStatus>>;
   /** The side whose ply it is. */
   readonly sideToMove: Side;
-  /** How many of the ply's actions remain. */
-  readonly actionsRemaining: number;
-  /** The ids of the ships that have already acted this ply (never more than `ACTIONS_PER_PLY`). */
-  readonly actedThisPly: readonly ShipId[];
   /** The ply currently being played, starting at 1. */
   readonly plyNumber: number;
   /** The 32-bit seed the next random draw will use (rules.md §8.2, §7.1). */
@@ -151,9 +144,8 @@ export interface StartingGameStateOptions {
  * dealt board (`dealOpeningBoard`, rules.md §8.1) — the chosen number of
  * nodes charged at baseline, with no countdown, the other three inactive at
  * priorities 1, 2 and 3 dealt at random, nothing depleted — green to move,
- * `ACTIONS_PER_PLY`
- * actions remaining, nothing moved, ply 1, both sides at 0 energy, neither
- * side out of time, and the given game length.
+ * ply 1, both sides at 0 energy, neither side out of time, and the given
+ * game length.
  *
  * The fleet is built before the deal so its ships' squares can be passed to
  * `dealOpeningBoard`, which excludes them from where a node may appear;
@@ -217,8 +209,6 @@ export function startingGameState(
     ships,
     nodes,
     sideToMove: "green",
-    actionsRemaining: ACTIONS_PER_PLY,
-    actedThisPly: [],
     plyNumber: 1,
     randomSeed: nextSeed,
     openingSeed: randomSeed,

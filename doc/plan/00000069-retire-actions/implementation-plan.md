@@ -755,7 +755,44 @@ delete or add a case. Grep `src/` for `no-legal-action`, `hasLegalAction` and
 
 ### Step 6 — The two fields leave `GameState`
 
-Status: pending
+Status: committed
+
+Notes: Deleted `ACTIONS_PER_PLY`, `actionsRemaining` and `actedThisPly` from
+`gameState.ts` (the interface, `startingGameState`'s object literal and its
+doc comment). In `ply.ts`, `applyEndOfActionTail` became `endPly` (S8):
+unconditional — no counting, no `actedShipId` parameter — running
+`runEndOfTurn`, advancing `plyNumber` and swapping `sideToMove` on every call,
+then `applyPassGuard` as before; `EndOfActionEffect` became `EndOfPlyEffect`
+per O1, not `PlyEndEffect`; `passPly` stopped resetting the two removed
+fields; rewrote the module header, `applyPassGuard`'s doc comment (also
+rewording its stray "any eligible ship" and "no legal action at all" per the
+orchestrator's note), and `applyMove`'s/`applyAttack`'s doc comments to drop
+the acted-and-spent language. `relief.ts`'s hypothetical state no longer
+empties `actedThisPly`, and its comment was trimmed to match; `trap.ts`'s
+comment about not consulting `actedThisPly` was deleted. Swept the ~25 test
+files the compiler enumerated: removed the two fields from every `GameState`
+literal and `buildState` helper (deleting now-unused `actionsRemaining`/
+`actedThisPly` config parameters where no caller overrode them), dropped the
+`ACTIONS_PER_PLY` import everywhere it was only used for that default,
+collapsed `Board.test.tsx`'s `depletedNodeState` helper's now-unused
+parameter, and reworded two test titles in `gameState.test.ts` and
+`ply.test.ts` whose assertions on the removed fields were deleted (no case's
+subject was the count itself needing a full case deletion — Step 3 already
+removed those when the already-acted refusal went, since `ACTIONS_PER_PLY`
+was always 1 and no "continues with actions remaining" case ever existed).
+Renamed `EndOfActionEffect` to `EndOfPlyEffect` in `seededReplay.test.ts`'s
+import and type unions. All checks green: typecheck, lint and `npm test` (64
+files, 1183 tests — the same count as after Step 5, since no case needed
+deleting, only literals trimmed); `format:check` reports only the two
+pre-existing warnings. `seededReplay.test.ts` and `fullGame.test.ts` passed
+with no re-recorded expectations. Grep for `actionsRemaining`, `actedThisPly`,
+`ACTIONS_PER_PLY`, `applyEndOfActionTail` and `EndOfActionEffect` across
+`src/` finds no hits. One incidental fix beyond the plan's literal-sweep
+description: `seededReplay.test.ts`'s implicit-`any` error at its
+`queueRefills` helper was purely cascading from the broken `EndOfActionEffect`
+import (confirmed by comparing typecheck output before and after this step's
+edits) and disappeared once the import was renamed — no separate change was
+needed or made for it.
 
 The state stops carrying a count that is always one and a list that is always
 empty, and the ply tail stops pretending it might not end the ply.

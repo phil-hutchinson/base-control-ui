@@ -43,7 +43,7 @@ import { type GameState, nodeStateAt, startingGameState } from "./gameState";
 import { legalDestinations } from "./movement";
 import {
   type AttackEffect,
-  type EndOfActionEffect,
+  type EndOfPlyEffect,
   type MoveEffect,
   applyAttack,
   applyMove,
@@ -100,7 +100,7 @@ function chooseAction(state: GameState): Action | undefined {
 
 /** The square name of every `node-charged` effect nested inside an end-of-action effect, if any. */
 function chargedSquares(
-  effects: readonly (MoveEffect | AttackEffect | EndOfActionEffect)[],
+  effects: readonly (MoveEffect | AttackEffect | EndOfPlyEffect)[],
 ): readonly string[] {
   const squares: string[] = [];
   for (const effect of effects) {
@@ -117,7 +117,7 @@ function chargedSquares(
 
 /** The square name of every `node-retired` effect nested inside an end-of-action effect, if any. */
 function retiredNodes(
-  effects: readonly (MoveEffect | AttackEffect | EndOfActionEffect)[],
+  effects: readonly (MoveEffect | AttackEffect | EndOfPlyEffect)[],
 ): readonly string[] {
   const squares: string[] = [];
   for (const effect of effects) {
@@ -139,7 +139,7 @@ function retiredNodes(
  * `"D8,K5=>F3:2,H9:3,C11:1"`.
  */
 function queueRefills(
-  effects: readonly (MoveEffect | AttackEffect | EndOfActionEffect)[],
+  effects: readonly (MoveEffect | AttackEffect | EndOfPlyEffect)[],
 ): readonly string[] {
   const refills: string[] = [];
   for (const effect of effects) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { squareAt } from "../rules/board";
-import { ACTIONS_PER_PLY, type GameState } from "../rules/gameState";
+import type { GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import type { GameResult } from "../rules/gameLength";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
@@ -1081,8 +1081,6 @@ describe("announcementForSession", () => {
       ships: [],
       nodes: {},
       sideToMove: config.sideToMove,
-      actionsRemaining: ACTIONS_PER_PLY,
-      actedThisPly: [],
       plyNumber: config.plyNumber,
       randomSeed: 1,
       openingSeed: 1,
@@ -1415,8 +1413,6 @@ describe("turnIndicatorText", () => {
         ships: [],
         nodes: {},
         sideToMove: "green",
-        actionsRemaining: ACTIONS_PER_PLY,
-        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
@@ -1434,8 +1430,6 @@ describe("turnIndicatorText", () => {
         ships: [],
         nodes: {},
         sideToMove: "red",
-        actionsRemaining: ACTIONS_PER_PLY,
-        actedThisPly: [],
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
@@ -1453,8 +1447,6 @@ describe("turnIndicatorText", () => {
         ships: [],
         nodes: {},
         sideToMove: "green",
-        actionsRemaining: ACTIONS_PER_PLY,
-        actedThisPly: [],
         plyNumber: 7,
         randomSeed: 1,
         openingSeed: 1,
@@ -1488,8 +1480,6 @@ describe("HUD wording", () => {
       ships: config.ships ?? [],
       nodes,
       sideToMove: "green",
-      actionsRemaining: ACTIONS_PER_PLY,
-      actedThisPly: [],
       plyNumber: config.plyNumber,
       randomSeed: 1,
       openingSeed: 1,

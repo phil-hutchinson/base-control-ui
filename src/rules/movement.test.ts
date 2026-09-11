@@ -269,9 +269,7 @@ function nodeStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
-  actedThisPly?: readonly ShipId[];
   nodes?: Readonly<Record<string, NodeState>>;
-  actionsRemaining?: number;
   plyNumber?: number;
   lengthInRounds?: number;
 }): GameState {
@@ -279,8 +277,6 @@ function buildState(config: {
     ships: config.ships,
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
-    actionsRemaining: config.actionsRemaining ?? 2,
-    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
@@ -561,7 +557,6 @@ describe("legalDestinations and moveRefusalReason", () => {
             ship("green-2", "green", "A1"),
           ],
           nodes: { E7: "inactive" },
-          actionsRemaining: 1,
         }),
         shipId: "green-2",
       },
@@ -638,7 +633,6 @@ describe("legalDestinations on a node that is not charged (§8.5)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       nodes: { E7: "depleted" },
-      actionsRemaining: 1,
     });
 
     expect(legalDestinations(state, "green-2").length).toBeGreaterThan(0);
@@ -659,7 +653,6 @@ describe("legalDestinations on a node that is not charged (§8.5)", () => {
         ship("green-3", "green", "D1"),
       ],
       nodes: { E7: "inactive" },
-      actionsRemaining: 1,
     });
 
     for (let i = 0; i < 500; i++) {

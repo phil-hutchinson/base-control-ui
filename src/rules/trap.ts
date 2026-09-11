@@ -74,8 +74,8 @@ export function trappedShips(state: GameState, side: Side): readonly Ship[] {
 
 /**
  * Whether every one of `side`'s ships is trapped. Every ship of that side,
- * full stop — `actedThisPly` is not consulted, because the question §8.6
- * step 7 asks is about the side's next turn, not the ply that just ended.
+ * full stop — the question §8.6 step 7 asks is about the side's next turn,
+ * not the ply that just ended.
  *
  * A ship on a planet is never trapped, since the node draw excludes planets
  * and their neighbours (§3.2) — so "every ship trapped" also means "none
