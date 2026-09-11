@@ -961,7 +961,10 @@ English unrelated to the game, and grep `README.md` for "standard game" and
 
 ### Step 8 — The owner plays a game and reads the new documents
 
-Status: pending
+Status: committed
+
+Notes: The owner ran the app and the documents through the seven checks above
+and reported it functioning correctly.
 
 The final gate: the owner runs the app and reads the two documents this
 story rewrote. Nothing in the app should look or behave differently except
