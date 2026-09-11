@@ -21,7 +21,7 @@
 // covers the case §5 sets out for when the side to move has no legal
 // action at all.
 
-import { sideToMoveHasLegalAction } from "./actions";
+import { sideToMoveCanMoveOrAttack } from "./canMoveOrAttack";
 import { type Square, squareName } from "./board";
 import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
 import {
@@ -53,7 +53,7 @@ function otherSide(side: Side): Side {
 }
 
 /** Why the side to move's ply passed instead of taking an action (rules.md §5). */
-export type PassReason = "no-legal-action" | "out-of-time";
+export type PassReason = "cannot-move-or-attack" | "out-of-time";
 
 /** The side to move's ply passed instead of an action being taken (rules.md §5). */
 export interface PassEffect {
@@ -208,17 +208,17 @@ function passPly(
 }
 
 /**
- * If the side to move has no legal action at all — no legal move with any
+ * If the side to move can neither move nor attack — no legal move with any
  * eligible ship and no legal attack target with any ship — its ply passes
  * (rules.md §5, §8.6). Only the side to move is checked — the side passed to
  * is not — so this makes exactly one pass, never a second one back.
  *
  * Once the game is over, every action is refused (rules.md §9), which is
  * exactly the condition this guard fires on. Checked first, ahead of
- * `sideToMoveHasLegalAction`, this returns the state untouched: otherwise the
- * guard would read "no legal action" as a pass, run the end-of-turn sequence
- * for a ply that does not exist, and advance past the end again on every
- * subsequent call, without bound.
+ * `sideToMoveCanMoveOrAttack`, this returns the state untouched: otherwise
+ * the guard would read "cannot move or attack" as a pass, run the
+ * end-of-turn sequence for a ply that does not exist, and advance past the
+ * end again on every subsequent call, without bound.
  */
 export function applyPassGuard(state: GameState): {
   readonly state: GameState;
@@ -228,11 +228,11 @@ export function applyPassGuard(state: GameState): {
     return { state, effect: undefined };
   }
 
-  if (sideToMoveHasLegalAction(state)) {
+  if (sideToMoveCanMoveOrAttack(state)) {
     return { state, effect: undefined };
   }
 
-  return passPly(state, "no-legal-action");
+  return passPly(state, "cannot-move-or-attack");
 }
 
 /**
@@ -247,7 +247,7 @@ export function applyPassGuard(state: GameState): {
  * through `applyPassGuard` exactly as `applyMove` and `applyAttack` run their
  * own tail, so the side passed to never sits with no legal action. The
  * returned effects are therefore in order: the out-of-time pass, and — if the
- * guard fired — the no-legal-action pass that followed it.
+ * guard fired — the cannot-move-or-attack pass that followed it.
  */
 export function applyOutOfTimePass(state: GameState): {
   readonly state: GameState;

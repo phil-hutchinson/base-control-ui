@@ -1248,7 +1248,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [
         {
           type: "energy-collected",
@@ -1297,7 +1297,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [
         {
           type: "power-gained",
@@ -1342,7 +1342,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [
         {
           type: "energy-collected",
@@ -1389,7 +1389,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [],
     });
     expect(result.state.nodes.A1.state).toBe("depleted");
@@ -1427,7 +1427,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [],
     });
   });
@@ -1468,7 +1468,7 @@ describe("applyPassGuard", () => {
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [
         {
           type: "energy-collected",
@@ -1632,7 +1632,7 @@ describe("applyOutOfTimePass", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
     });
   });
 });

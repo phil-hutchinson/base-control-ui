@@ -7,7 +7,7 @@ import { useCallback, useMemo } from "react";
 import { GAME_NAME } from "../gameName";
 import { BOARD_SIZE, squareName } from "../rules/board";
 import { isPlanet } from "../rules/planets";
-import { shipHasLegalAction } from "../rules/actions";
+import { shipCanMoveOrAttack } from "../rules/canMoveOrAttack";
 import { legalTargets } from "../rules/combat";
 import { shipsBySquare, nodeStatusAt, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
@@ -88,7 +88,7 @@ export function Board({ session, onIntent }: BoardProps) {
       if (ship.side !== session.state.sideToMove) {
         return undefined;
       }
-      if (!shipHasLegalAction(session.state, ship.id)) {
+      if (!shipCanMoveOrAttack(session.state, ship.id)) {
         return "cannot-move-or-attack";
       }
       return undefined;

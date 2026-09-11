@@ -165,7 +165,7 @@ describe("announcementFor", () => {
           type: "ply-passed",
           side: "red",
           sideToMove: "green",
-          reason: "no-legal-action",
+          reason: "cannot-move-or-attack",
           endOfTurn: [],
         },
       ],
@@ -182,7 +182,7 @@ describe("announcementFor", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [],
     };
     expect(announcementFor(event)).toBe(
@@ -863,7 +863,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           type: "ply-passed",
           side: "red",
           sideToMove: "green",
-          reason: "no-legal-action",
+          reason: "cannot-move-or-attack",
           endOfTurn: [],
         },
       ],
@@ -881,7 +881,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [
         {
           type: "power-gained",
@@ -1032,7 +1032,7 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [collected],
     };
     expect(announcementFor(event)).toBe(
@@ -1165,7 +1165,7 @@ describe("announcementForSession", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [],
     };
     const session: Session = {
@@ -1394,7 +1394,7 @@ describe("announcementFor — combat (rules.md §7)", () => {
           type: "ply-passed",
           side: "red",
           sideToMove: "green",
-          reason: "no-legal-action",
+          reason: "cannot-move-or-attack",
           endOfTurn: [],
         },
       ],

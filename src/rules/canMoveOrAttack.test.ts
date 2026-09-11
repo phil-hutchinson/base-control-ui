@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { squareFromName } from "./board";
-import { shipHasLegalAction, sideToMoveHasLegalAction } from "./actions";
+import {
+  shipCanMoveOrAttack,
+  sideToMoveCanMoveOrAttack,
+} from "./canMoveOrAttack";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS, pliesForGameLength } from "./gameLength";
@@ -48,11 +51,11 @@ function buildState(config: {
   };
 }
 
-describe("sideToMoveHasLegalAction", () => {
+describe("sideToMoveCanMoveOrAttack", () => {
   it("is true with a legal move and no legal target", () => {
     const state = buildState({ ships: [ship("green-1", "green", "H8")] });
 
-    expect(sideToMoveHasLegalAction(state)).toBe(true);
+    expect(sideToMoveCanMoveOrAttack(state)).toBe(true);
   });
 
   it("is true with a legal target and no legal move", () => {
@@ -73,7 +76,7 @@ describe("sideToMoveHasLegalAction", () => {
       ],
     });
 
-    expect(sideToMoveHasLegalAction(state)).toBe(true);
+    expect(sideToMoveCanMoveOrAttack(state)).toBe(true);
   });
 
   it("is false with neither a legal move nor a legal target", () => {
@@ -91,7 +94,7 @@ describe("sideToMoveHasLegalAction", () => {
       ],
     });
 
-    expect(sideToMoveHasLegalAction(state)).toBe(false);
+    expect(sideToMoveCanMoveOrAttack(state)).toBe(false);
   });
 
   it("is false when the side's only ship holds a charged node and has no legal move, even surrounded by enemies (rules.md §7)", () => {
@@ -110,7 +113,7 @@ describe("sideToMoveHasLegalAction", () => {
       nodes: { H8: "charged" },
     });
 
-    expect(sideToMoveHasLegalAction(state)).toBe(false);
+    expect(sideToMoveCanMoveOrAttack(state)).toBe(false);
   });
 
   it("is false when the side's only ship is trapped on a depleted node and has no legal move, even surrounded by enemies (rules.md §7)", () => {
@@ -128,7 +131,7 @@ describe("sideToMoveHasLegalAction", () => {
       nodes: { H8: "depleted" },
     });
 
-    expect(sideToMoveHasLegalAction(state)).toBe(false);
+    expect(sideToMoveCanMoveOrAttack(state)).toBe(false);
   });
 
   it("answers false once the game has ended, even with an obvious legal move (rules.md §9)", () => {
@@ -136,22 +139,22 @@ describe("sideToMoveHasLegalAction", () => {
     const lastPly = pliesForGameLength(DEFAULT_GAME_LENGTH_ROUNDS);
 
     expect(
-      sideToMoveHasLegalAction(buildState({ ships, plyNumber: lastPly })),
+      sideToMoveCanMoveOrAttack(buildState({ ships, plyNumber: lastPly })),
     ).toBe(true);
     expect(
-      sideToMoveHasLegalAction(buildState({ ships, plyNumber: lastPly + 1 })),
+      sideToMoveCanMoveOrAttack(buildState({ ships, plyNumber: lastPly + 1 })),
     ).toBe(false);
   });
 });
 
-describe("shipHasLegalAction", () => {
+describe("shipCanMoveOrAttack", () => {
   it("is false for a ship holding a charged node with no legal move, even with an enemy in range (rules.md §7)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 0), ship("red-1", "red", "H9")],
       nodes: { H8: "charged" },
     });
 
-    expect(shipHasLegalAction(state, "green-1")).toBe(true);
+    expect(shipCanMoveOrAttack(state, "green-1")).toBe(true);
     // The move above is still legal from H8's other three neighbours; pin
     // the case where every one of them is also blocked, leaving only the
     // (refused) attack.
@@ -166,7 +169,7 @@ describe("shipHasLegalAction", () => {
       nodes: { H8: "charged" },
     });
 
-    expect(shipHasLegalAction(boxedIn, "green-1")).toBe(false);
+    expect(shipCanMoveOrAttack(boxedIn, "green-1")).toBe(false);
   });
 
   it("is false for a ship trapped on a depleted node, but true for a sibling elsewhere (§8.5)", () => {
@@ -181,8 +184,8 @@ describe("shipHasLegalAction", () => {
 
     // green-1 is trapped on the depleted node: it has no legal destination
     // and, with no enemy within reach, no legal target either.
-    expect(shipHasLegalAction(state, "green-1")).toBe(false);
-    expect(shipHasLegalAction(state, "green-2")).toBe(true);
+    expect(shipCanMoveOrAttack(state, "green-1")).toBe(false);
+    expect(shipCanMoveOrAttack(state, "green-2")).toBe(true);
   });
 
   it("is false for a ship trapped on a depleted node with no legal move, even with an enemy in range (rules.md §7)", () => {
@@ -200,6 +203,6 @@ describe("shipHasLegalAction", () => {
       nodes: { H8: "depleted" },
     });
 
-    expect(shipHasLegalAction(boxedIn, "green-1")).toBe(false);
+    expect(shipCanMoveOrAttack(boxedIn, "green-1")).toBe(false);
   });
 });

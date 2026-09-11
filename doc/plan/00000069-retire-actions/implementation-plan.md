@@ -691,7 +691,31 @@ sentences; no manual listening is asked for (S10).
 
 ### Step 5 — Rename the concept in the rules layer
 
-Status: pending
+Status: committed
+
+Notes: Renamed `src/rules/actions.ts` to `src/rules/canMoveOrAttack.ts` and
+`src/rules/actions.test.ts` to `src/rules/canMoveOrAttack.test.ts` with
+`git mv`, per D1. Renamed `sideToMoveHasLegalAction` →
+`sideToMoveCanMoveOrAttack` and `shipHasLegalAction` → `shipCanMoveOrAttack`,
+rewrote the module header comment to describe the question without the
+retired word, and updated the two call sites (`src/rules/ply.ts`,
+`src/board/Board.tsx`) and every test reference including the `describe`
+titles. Renamed `PassReason`'s `"no-legal-action"` to
+`"cannot-move-or-attack"` (S9) in `ply.ts` (the type, `applyPassGuard`'s call
+to `passPly`, and its doc comment) and in every test literal carrying that
+value (`ply.test.ts`, `announcements.test.ts`, `EnergyOverlay.test.tsx`,
+`session.test.ts`); `announcements.ts` itself needed no change, as
+anticipated, since it only switches on `"out-of-time"`. One line beyond the
+plan's explicit list: `applyOutOfTimePass`'s doc comment also named the old
+"no-legal-action pass" literal by name, so it was updated alongside
+`applyPassGuard`'s for the same reason — it would otherwise reference a
+string that no longer exists — not a new decision, just following the
+rename through its one other literal mention. All checks green: typecheck,
+lint and `npm test` (64 files, 1183 tests — the same count as after Step 4,
+as the verification requires for a pure rename); `format:check` reports only
+the two pre-existing warnings after running prettier on the newly renamed
+test file. Grep for `no-legal-action`, `hasLegalAction` and `rules/actions`
+across `src/` finds no hits.
 
 Two names in `src/rules/` still carry the retired word even though what they
 describe is live.
