@@ -235,7 +235,6 @@ export function shapeReaching(
  */
 export type MoveRefusalReason =
   | "not-your-ship"
-  | "ship-already-acted"
   | "ship-trapped"
   | "out-of-range"
   | "cannot-afford"
@@ -257,19 +256,19 @@ export function findShip(state: GameState, shipId: ShipId): Ship {
  * Why `destination` is not a legal move for `shipId` in the given state, as a
  * structured reason, or `undefined` when the move is legal. Reasons are
  * checked in order from the most fundamental (whether the game is even still
- * being played) to the most specific (the destination square itself):
- * whether the game is over, whose ship it is, whether it has already acted,
- * whether it is trapped (rules.md §8.5 — a fact about the ship itself, so it
- * is checked alongside the others before anything about the destination), and
- * finally §6's reach, affordability, path, destination-occupancy and
- * uncharged-destination checks. "Out of range" now means only that no shape
- * reaches the square at all — a real shape the ship cannot currently pay for
- * is "cannot afford" instead, since the two are refused for different reasons
- * and read differently to a player. `destination-occupied` is checked before
- * `destination-uncharged-node`, because the two can co-occur — a trapped
- * enemy ship stands on a depleted node — and occupancy is the more immediate
- * fact. Inactive and depleted destinations are refused the same way, since
- * §6 states both in one sentence and a ship may occupy only a charged node.
+ * being played) to the most specific (the destination square itself): whether
+ * the game is over, whose ship it is, whether it is trapped (rules.md §8.5 — a
+ * fact about the ship itself, so it is checked alongside the others before
+ * anything about the destination), and finally §6's reach, affordability,
+ * path, destination-occupancy and uncharged-destination checks. "Out of range"
+ * now means only that no shape reaches the square at all — a real shape the
+ * ship cannot currently pay for is "cannot afford" instead, since the two are
+ * refused for different reasons and read differently to a player.
+ * `destination-occupied` is checked before `destination-uncharged-node`,
+ * because the two can co-occur — a trapped enemy ship stands on a depleted
+ * node — and occupancy is the more immediate fact. Inactive and depleted
+ * destinations are refused the same way, since §6 states both in one sentence
+ * and a ship may occupy only a charged node.
  */
 export function moveRefusalReason(
   state: GameState,
@@ -284,9 +283,6 @@ export function moveRefusalReason(
 
   if (ship.side !== state.sideToMove) {
     return "not-your-ship";
-  }
-  if (state.actedThisPly.includes(shipId)) {
-    return "ship-already-acted";
   }
   if (isShipTrapped(state, shipId)) {
     return "ship-trapped";
@@ -326,11 +322,10 @@ export function moveRefusalReason(
  * Every square `shipId` may legally move to in the given state: the
  * affordable subset of its §6 reach, filtered by path and destination
  * occupancy - only an enemy ship on a passed-over square blocks. Empty once
- * the game is over, when the ship does not belong to the side to move or has
- * already acted this ply, or when the ship is trapped (rules.md §8.5). An
- * uncharged destination needs no filter of its own here — `moveRefusalReason`
- * already excludes it below — flying over one is still free, only landing is
- * barred.
+ * the game is over, when the ship does not belong to the side to move, or
+ * when the ship is trapped (rules.md §8.5). An uncharged destination needs no
+ * filter of its own here — `moveRefusalReason` already excludes it below —
+ * flying over one is still free, only landing is barred.
  */
 export function legalDestinations(
   state: GameState,
@@ -341,11 +336,7 @@ export function legalDestinations(
   }
 
   const ship = findShip(state, shipId);
-  if (
-    ship.side !== state.sideToMove ||
-    state.actedThisPly.includes(shipId) ||
-    isShipTrapped(state, shipId)
-  ) {
+  if (ship.side !== state.sideToMove || isShipTrapped(state, shipId)) {
     return [];
   }
 
@@ -358,22 +349,11 @@ export function legalDestinations(
 }
 
 /**
- * The ships of the side to move that have not yet acted this ply, and so are
- * still eligible to take a move action.
- */
-function eligibleShips(state: GameState): readonly Ship[] {
-  return state.ships.filter(
-    (ship) =>
-      ship.side === state.sideToMove && !state.actedThisPly.includes(ship.id),
-  );
-}
-
-/**
- * Whether the side to move has any legal move at all, with any eligible
- * ship. Used by the §5 pass guard.
+ * Whether the side to move has any legal move at all, with any of its ships.
+ * Used by the §5 pass guard.
  */
 export function sideToMoveHasLegalMove(state: GameState): boolean {
-  return eligibleShips(state).some(
-    (ship) => legalDestinations(state, ship.id).length > 0,
-  );
+  return state.ships
+    .filter((ship) => ship.side === state.sideToMove)
+    .some((ship) => legalDestinations(state, ship.id).length > 0);
 }

@@ -167,8 +167,6 @@ describe.each(CHARGED_NODE_COUNTS)(
             [chargedName]: { state: "depleted", level: 1 },
           },
           sideToMove: "green",
-          actionsRemaining: 1,
-          actedThisPly: [],
           plyNumber: 1,
           randomSeed: seed,
           openingSeed: seed,

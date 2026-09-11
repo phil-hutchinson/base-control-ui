@@ -17,7 +17,9 @@ backend API; it must be deployable from a static file host.
 played, and `doc/ruleset/changelog.md` records every change to it. Unlike a
 project whose rules come from elsewhere, **this repository owns the ruleset**:
 the app is where new rules get tried first, and the document is expected to
-change often.
+change often. `doc/ruleset/tech-notes.md` holds development notes — measured
+figures and the reasoning behind them — and is not part of the ruleset a
+player reads.
 
 Rule logic in `src/` implements that document. It never redefines the rules,
 and it never carries a rule the document does not state. When the two disagree,
@@ -118,16 +120,13 @@ testing stance, comment convention, and architecture constraints.
 ## Vocabulary
 
 **Ply** — everything one player does before play passes to their opponent; in
-this game, two actions. Preferred in code over "turn" only because it is
-unambiguous in general usage.
+this game, one move or one attack. Preferred in code over "turn" only because
+it is unambiguous in general usage.
 
 **Turn** — the player-facing word for a ply. `rules.md`, the UI, and
 `README.md` all say "turn"; code, tests, and planning documents say "ply".
 
 **Round** — one ply for each player. The same word everywhere.
-
-**Action** — one of the two things a player does in a ply: a move, or an
-attack. The same word everywhere.
 
 **Move** — the movement action specifically: one ship changing squares. It is
 **never** a synonym for a ply or a turn. This is the trap to avoid — in most

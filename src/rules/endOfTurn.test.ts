@@ -65,8 +65,6 @@ function buildState(config: {
     ships: config.ships ?? [],
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
-    actionsRemaining: 1,
-    actedThisPly: [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: config.randomSeed ?? 1,
     openingSeed: config.randomSeed ?? 1,
@@ -1311,19 +1309,26 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
 
 describe("runEndOfTurn — a passed ply still settles both directions in full (§8.6 runs in full for a pass)", () => {
   it("pays the side that passes while standing on a charged node, through applyPassGuard", () => {
-    // green-1 sits on K5, a charged node, having already acted this ply: it
-    // has no move left (already acted) and no enemy stands anywhere near it
-    // to attack, so it passes — but §8.6 still runs in full for that passed
-    // turn, and green is still standing on the node.
-    const state = {
-      ...buildState({
-        sideToMove: "green",
-        nodes: { K5: ["charged", 5] },
-        ships: [ship("green-1", "green", "K5", 1)],
-      }),
-      actedThisPly: ["green-1" as ShipId],
-      actionsRemaining: 1,
-    };
+    // green-1 holds K5, a charged node, so it has no attack at all (§7);
+    // boxed in for movement by an enemy on each of its eight neighbours,
+    // affordable at 1 power, it has no legal move either — so it passes,
+    // but §8.6 still runs in full for that passed turn, and green is still
+    // standing on the node.
+    const state = buildState({
+      sideToMove: "green",
+      nodes: { K5: ["charged", 5] },
+      ships: [
+        ship("green-1", "green", "K5", 1),
+        ship("red-1", "red", "J4"),
+        ship("red-2", "red", "K4"),
+        ship("red-3", "red", "L4"),
+        ship("red-4", "red", "J5"),
+        ship("red-5", "red", "L5"),
+        ship("red-6", "red", "J6"),
+        ship("red-7", "red", "K6"),
+        ship("red-8", "red", "L6"),
+      ],
+    });
 
     const result = applyPassGuard(state);
 
@@ -1351,8 +1356,6 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
         nodes: { K5: ["depleted", 0] },
         ships: [ship("green-1", "green", "K5", 1)],
       }),
-      actedThisPly: ["green-1" as ShipId],
-      actionsRemaining: 1,
       energy: { green: 5, red: 0 },
     };
 

@@ -1,10 +1,10 @@
 # Base Control — Play in Your Browser
 
 Base Control is a game for two players. Each of you commands a fleet of
-three, four, five or six ships — you choose the size before play begins, with
-six the standard game — on a 15 x 15 board, competing for the handful of
-contested nodes that light up across it. Hold a node and it pays you energy
-every turn. The player with the most energy at the end wins.
+three, four, five or six ships — you choose the size before play begins — on
+a 15 x 15 board, competing for the handful of contested nodes that light up
+across it. Hold a node and it pays you energy every turn. The player with the
+most energy at the end wins.
 
 Each ship carries power, a reserve it spends on every move and every attack. A
 single step up, down, left or right is free; a diagonal step costs 1; two
@@ -74,8 +74,8 @@ install, no account, no server.
 > end of each of its owner's turns, or two if it is the only one of that
 > player's ships still topping up power on a planet, up to a full six. A ship
 > already full doesn't count towards that. Green goes first, and each player
-> takes one action a turn — a move or an attack — by mouse or by keyboard. Every
-> game deals a different opening board: it opens with as many lit nodes as you
+> moves one ship or attacks with one, by mouse or by keyboard. Every game
+> deals a different opening board: it opens with as many lit nodes as you
 > chose and three still waiting — eight nodes in all at five, seven at four,
 > six at three. The lit ones are chosen at random too, but none of them carries
 > a countdown yet, so at the start of the game they are all exactly as fresh
@@ -133,9 +133,10 @@ install, no account, no server.
 ## The rules
 
 The full rulebook is [doc/ruleset/rules.md](doc/ruleset/rules.md), with a
-[change log](doc/ruleset/changelog.md) recording how it has changed. The game
-is in active pre-release development and the rules are still moving, so it is
-worth a fresh look now and again.
+[change log](doc/ruleset/changelog.md) recording how it has changed, and
+[development notes](doc/ruleset/tech-notes.md) behind some of its numbers. The
+game is in active pre-release development and the rules are still moving, so
+it is worth a fresh look now and again.
 
 ## Development
 

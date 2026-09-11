@@ -49,7 +49,6 @@ export function attackReach(
  */
 export type AttackRefusalReason =
   | "not-your-ship"
-  | "ship-already-acted"
   | "attacker-on-planet"
   | "attacker-on-charged-node"
   | "attacker-on-depleted-node"
@@ -67,19 +66,18 @@ export type AttackRefusalReason =
  * Why `target` is not a legal attack for `shipId` in the given state, as a
  * structured reason, or `undefined` when the attack is legal.
  *
- * Checked most fundamental first: whether the game is even still being
- * played, then whose ship it is, then whether it has already acted, then
- * whether the attacker is on a planet, then whether the attacker holds a
- * charged node or is trapped on a depleted one (rules.md §7 — a ship on
- * either kind of node is out of combat in both directions), then everything
- * about the target — no ship there, a friendly ship, a ship on a planet, a
- * ship on a charged node, a ship trapped on a depleted node — and only then
- * range, affordability and path, which come last so a protected or planet
- * target within reach is still refused as such rather than as an
- * out-of-range square. A square no shape reaches is out of range; a shape
- * the attacker cannot pay for is unaffordable; only once both are settled
- * does the path matter. Once the game has ended, no attack is legal for
- * anyone, including one that would have been refused anyway.
+ * Checked most fundamental first: whether the game is even still being played,
+ * then whose ship it is, then whether the attacker is on a planet, then
+ * whether the attacker holds a charged node or is trapped on a depleted one
+ * (rules.md §7 — a ship on either kind of node is out of combat in both
+ * directions), then everything about the target — no ship there, a friendly
+ * ship, a ship on a planet, a ship on a charged node, a ship trapped on a
+ * depleted node — and only then range, affordability and path, which come last
+ * so a protected or planet target within reach is still refused as such rather
+ * than as an out-of-range square. A square no shape reaches is out of range; a
+ * shape the attacker cannot pay for is unaffordable; only once both are
+ * settled does the path matter. Once the game has ended, no attack is legal
+ * for anyone, including one that would have been refused anyway.
  */
 export function attackRefusalReason(
   state: GameState,
@@ -94,9 +92,6 @@ export function attackRefusalReason(
 
   if (attacker.side !== state.sideToMove) {
     return "not-your-ship";
-  }
-  if (state.actedThisPly.includes(shipId)) {
-    return "ship-already-acted";
   }
   if (isPlanet(attacker.square)) {
     return "attacker-on-planet";
@@ -165,7 +160,6 @@ export function legalTargets(
   const attacker = findShip(state, shipId);
   if (
     attacker.side !== state.sideToMove ||
-    state.actedThisPly.includes(shipId) ||
     isPlanet(attacker.square) ||
     nodeStateAt(state, attacker.square) === "charged" ||
     isShipTrapped(state, shipId)
@@ -186,9 +180,9 @@ export function legalTargets(
  * `[planet: Square, nextSeed: number]` out, in the shape `drawIndex` and
  * `mulberry32` already use. The pool is every planet in `PLANETS` order with
  * no ship on it, judged against `state`'s current occupancy — recomputed at
- * every point of use and never stored, so a ship moving off a planet as one
- * action can change the answer for a later one. The caller must store the
- * returned seed.
+ * every point of use and never stored, so a ship moving off a planet can
+ * change the answer for a later call. The caller must store the returned
+ * seed.
  *
  * Every fight returns two ships: call this once to place the attacker, then
  * call it again against the state that already holds the attacker **and the

@@ -269,9 +269,7 @@ function nodeStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
-  actedThisPly?: readonly ShipId[];
   nodes?: Readonly<Record<string, NodeState>>;
-  actionsRemaining?: number;
   plyNumber?: number;
   lengthInRounds?: number;
 }): GameState {
@@ -279,8 +277,6 @@ function buildState(config: {
     ships: config.ships,
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
-    actionsRemaining: config.actionsRemaining ?? 2,
-    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
@@ -515,7 +511,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     );
   });
 
-  it("reports not-your-ship for the side not to move, and ship-already-acted for a ship that has already acted", () => {
+  it("reports not-your-ship for the side not to move", () => {
     const notYourTurn = buildState({
       ships: [ship("green-1", "green", "H8")],
       sideToMove: "red",
@@ -524,15 +520,6 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(
       moveRefusalReason(notYourTurn, "green-1", squareFromName("H9")),
     ).toBe("not-your-ship");
-
-    const alreadyMoved = buildState({
-      ships: [ship("green-1", "green", "H8")],
-      actedThisPly: ["green-1"],
-    });
-    expect(legalDestinations(alreadyMoved, "green-1")).toEqual([]);
-    expect(
-      moveRefusalReason(alreadyMoved, "green-1", squareFromName("H9")),
-    ).toBe("ship-already-acted");
   });
 
   it("agrees with moveRefusalReason over every square on the board, across several states", () => {
@@ -570,7 +557,6 @@ describe("legalDestinations and moveRefusalReason", () => {
             ship("green-2", "green", "A1"),
           ],
           nodes: { E7: "inactive" },
-          actionsRemaining: 1,
         }),
         shipId: "green-2",
       },
@@ -597,10 +583,6 @@ describe("legalDestinations and moveRefusalReason", () => {
       ships: [ship("green-1", "green", "H8")],
       sideToMove: "red",
     });
-    const alreadyMoved = buildState({
-      ships: [ship("green-1", "green", "H8")],
-      actedThisPly: ["green-1"],
-    });
     const underpowered = buildState({
       ships: [ship("green-1", "green", "H8", 1)],
     });
@@ -617,7 +599,6 @@ describe("legalDestinations and moveRefusalReason", () => {
       readonly [GameState, ShipId, string, MoveRefusalReason]
     > = [
       [notYourTurn, "green-1", "H9", "not-your-ship"],
-      [alreadyMoved, "green-1", "H9", "ship-already-acted"],
       [trapped, "green-1", "F7", "ship-trapped"],
       [blocking, "green-1", "O15", "out-of-range"],
       [underpowered, "green-1", "J9", "cannot-afford"],
@@ -635,28 +616,13 @@ describe("legalDestinations and moveRefusalReason", () => {
 });
 
 describe("sideToMoveHasLegalMove", () => {
-  it("considers only the side to move's ships that have not yet moved", () => {
-    const state = buildState({
-      ships: [
-        ship("green-1", "green", "H8"),
-        ship("green-2", "green", "A1"),
-        ship("red-1", "red", "O15"),
-      ],
-      actedThisPly: ["green-2"],
-    });
-
-    expect(legalDestinations(state, "green-1").length).toBeGreaterThan(0);
-    expect(legalDestinations(state, "green-2")).toEqual([]);
-    expect(sideToMoveHasLegalMove(state)).toBe(true);
-  });
-
-  it("is true when the side to move has a legal move, false when it has none", () => {
+  it("is true when the side to move has a legal move, false when every ship of that side is trapped", () => {
     const canMove = buildState({ ships: [ship("green-1", "green", "H8")] });
     expect(sideToMoveHasLegalMove(canMove)).toBe(true);
 
     const cannotMove = buildState({
-      ships: [ship("green-1", "green", "H8")],
-      actedThisPly: ["green-1"],
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { E7: "depleted" },
     });
     expect(sideToMoveHasLegalMove(cannotMove)).toBe(false);
   });
@@ -667,7 +633,6 @@ describe("legalDestinations on a node that is not charged (§8.5)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("green-2", "green", "A1")],
       nodes: { E7: "depleted" },
-      actionsRemaining: 1,
     });
 
     expect(legalDestinations(state, "green-2").length).toBeGreaterThan(0);
@@ -688,7 +653,6 @@ describe("legalDestinations on a node that is not charged (§8.5)", () => {
         ship("green-3", "green", "D1"),
       ],
       nodes: { E7: "inactive" },
-      actionsRemaining: 1,
     });
 
     for (let i = 0; i < 500; i++) {

@@ -9,7 +9,6 @@ import {
   type Side,
 } from "../rules/fleet";
 import {
-  ACTIONS_PER_PLY,
   startingGameState,
   type GameState,
   type Ship,
@@ -43,7 +42,6 @@ function nodeStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: Side;
-  actedThisPly?: readonly ShipId[];
   nodes?: Readonly<Record<string, NodeState>>;
   plyNumber?: number;
   lengthInRounds?: number;
@@ -53,8 +51,6 @@ function buildState(config: {
     ships: config.ships,
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
-    actionsRemaining: ACTIONS_PER_PLY,
-    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
@@ -133,22 +129,6 @@ describe("sessionReducer — nothing selected", () => {
     });
   });
 
-  it("rejects an own ship that has already acted this ply as ship-already-acted", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "H8")],
-      actedThisPly: ["green-1"],
-    });
-    const result = activate(sessionFor(state), "H8");
-
-    expect(result.selectedShipId).toBeUndefined();
-    expect(result.state).toBe(state);
-    expect(result.lastEvent).toEqual({
-      type: "rejected",
-      reason: "ship-already-acted",
-      square: squareFromName("H8"),
-    });
-  });
-
   it("rejects an empty square as nothing to select there", () => {
     const state = buildState({ ships: [ship("green-1", "green", "H8")] });
     const result = activate(sessionFor(state), "A5");
@@ -175,7 +155,7 @@ describe("sessionReducer — a ship is selected", () => {
     expect(result.lastEvent).toEqual({ type: "selection-cleared" });
   });
 
-  it("switches the selection to another own ship that has not moved, without moving or spending an action", () => {
+  it("switches the selection to another own ship that has not moved, without moving or attacking", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "A1")],
     });
@@ -185,7 +165,6 @@ describe("sessionReducer — a ship is selected", () => {
 
     expect(result.selectedShipId).toBe("green-2");
     expect(result.state).toBe(state);
-    expect(result.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
     expect(result.state.ships).toEqual(state.ships);
     expect(result.lastEvent).toEqual({
       type: "selected",
@@ -218,7 +197,6 @@ describe("sessionReducer — a ship is selected", () => {
       from: squareFromName("H8"),
       to: destination,
       effects: direct.effects,
-      actionsRemaining: direct.state.actionsRemaining,
       cost: direct.cost,
       powerAfter: direct.powerAfter,
     });
@@ -251,7 +229,6 @@ describe("sessionReducer — a ship is selected", () => {
         from: squareFromName("H8"),
         target,
         effects: direct.effects,
-        actionsRemaining: direct.state.actionsRemaining,
       });
     });
 
@@ -269,48 +246,6 @@ describe("sessionReducer — a ship is selected", () => {
         type: "rejected",
         reason: "target-out-of-range",
         square: squareFromName("A1"),
-      });
-    });
-
-    it("rejects a friendly ship that has already acted as ship-already-acted, whether or not it still has a target in range", () => {
-      const withTarget = buildState({
-        ships: [
-          ship("green-1", "green", "H8"),
-          ship("green-2", "green", "K5"),
-          ship("red-1", "red", "K6"),
-        ],
-        actedThisPly: ["green-2"],
-      });
-      const selectedWithTarget = activate(sessionFor(withTarget), "H8");
-
-      const resultWithTarget = activate(selectedWithTarget, "K5");
-
-      expect(resultWithTarget.selectedShipId).toBe("green-1");
-      expect(resultWithTarget.state).toBe(withTarget);
-      expect(resultWithTarget.lastEvent).toEqual({
-        type: "rejected",
-        reason: "ship-already-acted",
-        square: squareFromName("K5"),
-      });
-
-      const withoutTarget = buildState({
-        ships: [
-          ship("green-1", "green", "H8"),
-          ship("green-2", "green", "K5"),
-          ship("red-1", "red", "A1"),
-        ],
-        actedThisPly: ["green-2"],
-      });
-      const selectedWithoutTarget = activate(sessionFor(withoutTarget), "H8");
-
-      const resultWithoutTarget = activate(selectedWithoutTarget, "K5");
-
-      expect(resultWithoutTarget.selectedShipId).toBe("green-1");
-      expect(resultWithoutTarget.state).toBe(withoutTarget);
-      expect(resultWithoutTarget.lastEvent).toEqual({
-        type: "rejected",
-        reason: "ship-already-acted",
-        square: squareFromName("K5"),
       });
     });
   });
@@ -409,7 +344,7 @@ describe("sessionReducer — dismiss", () => {
 });
 
 describe("sessionReducer — a full ply", () => {
-  it("passes the turn after one action, and the moved event says so", () => {
+  it("passes the turn after one move, and the moved event says so", () => {
     // No inactive node is queued, so charging has nothing to charge with,
     // whatever the shortfall, and the end-of-turn effects stay empty.
     const state = buildState({
@@ -422,8 +357,6 @@ describe("sessionReducer — a full ply", () => {
     session = activate(session, "H9");
 
     expect(session.state.sideToMove).toBe("red");
-    expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(session.state.actedThisPly).toEqual([]);
     expect(session.lastEvent).toMatchObject({
       type: "moved",
       shipId: "green-1",
@@ -438,13 +371,11 @@ describe("sessionReducer — a full ply", () => {
       });
     }
 
-    // Red's own single action, proving the ply really did pass to it.
+    // Red's own move, proving the ply really did pass to it.
     session = activate(session, "O1");
     session = activate(session, "O2");
 
     expect(session.state.sideToMove).toBe("green");
-    expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
-    expect(session.state.actedThisPly).toEqual([]);
     expect(session.lastEvent).toMatchObject({
       type: "moved",
       shipId: "red-1",
@@ -490,13 +421,12 @@ describe("createSession", () => {
     const session = createSession(state);
 
     expect(session.state.sideToMove).toBe("red");
-    expect(session.state.actionsRemaining).toBe(ACTIONS_PER_PLY);
     expect(session.state.plyNumber).toBe(2);
     expect(session.lastEvent).toEqual({
       type: "ply-passed",
       side: "green",
       sideToMove: "red",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [],
     });
   });

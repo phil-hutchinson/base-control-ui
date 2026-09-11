@@ -1,8 +1,8 @@
 // An integration test: plays whole games through the public rules API and
 // proves the property the seeded generator design exists for — the same
-// opening seed and the same sequence of actions produce the same game,
-// fights and planet draws included, and a different seed produces a different
-// one. The action policy below is deterministic, local to this file, and
+// opening seed and the same sequence of moves and attacks produce the same
+// game, fights and planet draws included, and a different seed produces a
+// different one. The ply policy below is deterministic, local to this file, and
 // draws no randomness of its own: it attacks before it moves, so it produces
 // plenty of fights, unlike `fullGame.test.ts`'s greedy policy, which only
 // attacks when no ship has a legal move at all.
@@ -14,7 +14,7 @@
 // seed deals the same opening board, and a different seed deals a different
 // one. Since 0.27 the deal's charged squares are dealt at baseline, with no
 // countdown to draw, so the deal consumes `chargedNodeCount + 4` steps —
-// nine at the standard game's five charged (0.30), eight at four — rather
+// nine at the app's default five charged (0.30), eight at four — rather
 // than the 24 it once did: one square draw per charged node, plus four more
 // for the inactive trio's refill.
 //
@@ -43,14 +43,14 @@ import { type GameState, nodeStateAt, startingGameState } from "./gameState";
 import { legalDestinations } from "./movement";
 import {
   type AttackEffect,
-  type EndOfActionEffect,
+  type EndOfPlyEffect,
   type MoveEffect,
   applyAttack,
   applyMove,
   applyPassGuard,
 } from "./ply";
 
-type Action =
+type PlyChoice =
   | {
       readonly kind: "attack";
       readonly shipId: ShipId;
@@ -72,7 +72,7 @@ type Action =
  * legal move takes it; failing that, there is nothing to do and the pass
  * guard handles it.
  */
-function chooseAction(state: GameState): Action | undefined {
+function choosePly(state: GameState): PlyChoice | undefined {
   for (const ship of state.ships) {
     const targets = legalTargets(state, ship.id);
     if (targets.length > 0) {
@@ -98,9 +98,9 @@ function chooseAction(state: GameState): Action | undefined {
   return undefined;
 }
 
-/** The square name of every `node-charged` effect nested inside an end-of-action effect, if any. */
+/** The square name of every `node-charged` effect nested inside an end-of-ply effect, if any. */
 function chargedSquares(
-  effects: readonly (MoveEffect | AttackEffect | EndOfActionEffect)[],
+  effects: readonly (MoveEffect | AttackEffect | EndOfPlyEffect)[],
 ): readonly string[] {
   const squares: string[] = [];
   for (const effect of effects) {
@@ -115,9 +115,9 @@ function chargedSquares(
   return squares;
 }
 
-/** The square name of every `node-retired` effect nested inside an end-of-action effect, if any. */
+/** The square name of every `node-retired` effect nested inside an end-of-ply effect, if any. */
 function retiredNodes(
-  effects: readonly (MoveEffect | AttackEffect | EndOfActionEffect)[],
+  effects: readonly (MoveEffect | AttackEffect | EndOfPlyEffect)[],
 ): readonly string[] {
   const squares: string[] = [];
   for (const effect of effects) {
@@ -133,13 +133,13 @@ function retiredNodes(
 }
 
 /**
- * Every `queue-refilled` effect nested inside an end-of-action effect, if
+ * Every `queue-refilled` effect nested inside an end-of-ply effect, if
  * any, as one string per sweep: the discarded squares, then the trio drawn
  * to replace them with the priority each was dealt, e.g.
  * `"D8,K5=>F3:2,H9:3,C11:1"`.
  */
 function queueRefills(
-  effects: readonly (MoveEffect | AttackEffect | EndOfActionEffect)[],
+  effects: readonly (MoveEffect | AttackEffect | EndOfPlyEffect)[],
 ): readonly string[] {
   const refills: string[] = [];
   for (const effect of effects) {
@@ -162,7 +162,7 @@ function queueRefills(
  * D9's first long-run invariant: a charged node carrying a countdown always
  * has a ship standing on it. A countdown starts only when a ship moves onto
  * the node and ends the instant it either leaves (§8.3) or the node
- * depletes (§8.6 step 3), so this must hold after every action in a real,
+ * depletes (§8.6 step 3), so this must hold after every ply in a real,
  * ship-driven game — unlike `nodePool.test.ts`'s synthetic driver, which
  * gives a charged node a countdown with no ship to back it.
  */
@@ -177,8 +177,8 @@ function assertChargedCountdownHasShip(state: GameState): void {
   }
 }
 
-/** A hard ceiling on actions applied, so a regression fails an assertion, not the test runner. */
-const MAX_ACTIONS = 10_000;
+/** A hard ceiling on plies applied, so a regression fails an assertion, not the test runner. */
+const MAX_PLIES = 10_000;
 
 interface PlayedGame {
   readonly finalState: GameState;
@@ -209,18 +209,18 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
   const queueRefillSweeps: string[] = [];
   let fightCount = 0;
 
-  let actionsApplied = 0;
+  let pliesApplied = 0;
   while (!isGameOver(state)) {
-    if (actionsApplied >= MAX_ACTIONS) {
+    if (pliesApplied >= MAX_PLIES) {
       throw new Error(
-        `seeded replay game exceeded ${MAX_ACTIONS} actions without ending — likely a regression`,
+        `seeded replay game exceeded ${MAX_PLIES} plies without ending — likely a regression`,
       );
     }
-    actionsApplied += 1;
+    pliesApplied += 1;
 
-    const action = chooseAction(state);
+    const choice = choosePly(state);
 
-    if (action === undefined) {
+    if (choice === undefined) {
       const { state: nextState, effect } = applyPassGuard(state);
       state = nextState;
       assertChargedCountdownHasShip(state);
@@ -232,11 +232,11 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
       continue;
     }
 
-    if (action.kind === "attack") {
-      const result = applyAttack(state, action.shipId, action.target);
+    if (choice.kind === "attack") {
+      const result = applyAttack(state, choice.shipId, choice.target);
       if (result.outcome !== "applied") {
         throw new Error(
-          `policy chose an illegal attack: ${result.reason} for ${action.shipId} on ${squareName(action.target)}`,
+          `policy chose an illegal attack: ${result.reason} for ${choice.shipId} on ${squareName(choice.target)}`,
         );
       }
       state = result.state;
@@ -253,10 +253,10 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
       retiredNodeSquares.push(...retiredNodes(result.effects));
       queueRefillSweeps.push(...queueRefills(result.effects));
     } else {
-      const result = applyMove(state, action.shipId, action.destination);
+      const result = applyMove(state, choice.shipId, choice.destination);
       if (result.outcome !== "applied") {
         throw new Error(
-          `policy chose an illegal move: ${result.reason} for ${action.shipId} to ${squareName(action.destination)}`,
+          `policy chose an illegal move: ${result.reason} for ${choice.shipId} to ${squareName(choice.destination)}`,
         );
       }
       state = result.state;
@@ -304,7 +304,7 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     // early. Re-measured at five charged (0.30): 4 fights (8 planet
     // returns) for this seed over forty rounds, whose second preference
     // (moving onto a charged node) competes with attacking for a ship's
-    // action; the floors below leave margin below that.
+    // ply; the floors below leave margin below that.
     expect(fightCount).toBeGreaterThanOrEqual(1);
     expect(planetReturns.length).toBeGreaterThanOrEqual(2);
     // Re-measured at five charged (0.30): 18 charges, 17 retirements and 16

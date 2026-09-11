@@ -38,7 +38,7 @@ describe("startingGameState", () => {
     });
   });
 
-  it("has green to move, one action remaining, nothing moved, ply 1 and the deal's advanced seed", () => {
+  it("has green to move, ply 1 and the deal's advanced seed", () => {
     const state = startingGameState(SEED);
     const [, dealtSeed] = dealOpeningBoard(
       STARTING_FLEET_SQUARES,
@@ -47,8 +47,6 @@ describe("startingGameState", () => {
     );
 
     expect(state.sideToMove).toBe("green");
-    expect(state.actionsRemaining).toBe(1);
-    expect(state.actedThisPly).toEqual([]);
     expect(state.plyNumber).toBe(1);
     expect(state.randomSeed).toBe(dealtSeed);
     expect(state.randomSeed).not.toBe(SEED);
@@ -145,7 +143,6 @@ describe("startingGameState", () => {
     expect(first).toEqual(second);
     expect(first.ships).not.toBe(second.ships);
     expect(first.nodes).not.toBe(second.nodes);
-    expect(first.actedThisPly).not.toBe(second.actedThisPly);
   });
 
   it("starts both sides at 0 energy", () => {
@@ -263,7 +260,7 @@ describe("startingGameState", () => {
     },
   );
 
-  it("defaults to five charged nodes, §8.1's standard game, when none is given", () => {
+  it("defaults to five charged nodes, the app's default, when none is given", () => {
     const state = startingGameState(SEED);
 
     expect(state.chargedNodeCount).toBe(DEFAULT_CHARGED_NODE_COUNT);

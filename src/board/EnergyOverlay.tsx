@@ -48,7 +48,7 @@ function settlementsIn(effects: readonly EndOfTurnEffect[]): Settlement[] {
  * an attack's a `FightResolvedEffect`, neither of which carries a settlement
  * of its own).
  */
-function endOfActionSettlements(
+function endOfPlySettlements(
   effects: readonly (
     PassEffect | PlyEndedEffect | FightResolvedEffect | NodeSpentEffect
   )[],
@@ -67,10 +67,10 @@ function endOfActionSettlements(
 
 /**
  * Every settlement (energy collected) the session's last event
- * reported. An action that ends a ply can be immediately followed by the
- * pass guard firing for the other side, so a `moved` or `attacked` event can
- * carry settlements from both - one from its `ply-ended` effect and one from
- * a nested `ply-passed` effect.
+ * reported. A move or an attack always ends the ply, and that can be
+ * immediately followed by the pass guard firing for the other side, so a
+ * `moved` or `attacked` event can carry settlements from both - one from its
+ * `ply-ended` effect and one from a nested `ply-passed` effect.
  */
 function settlementsForEvent(
   event: SessionEvent | undefined,
@@ -84,7 +84,7 @@ function settlementsForEvent(
   }
 
   if (event.type === "moved" || event.type === "attacked") {
-    return endOfActionSettlements(event.effects);
+    return endOfPlySettlements(event.effects);
   }
 
   return [];

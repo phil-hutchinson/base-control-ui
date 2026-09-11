@@ -32,10 +32,10 @@ import { isSideAllTrapped, trappedShips } from "./trap";
  * square becomes an ordinary square, while every other node (in
  * particular every other depleted node, still barring landing) and every
  * ship (friendly and enemy alike, still blocking as they will) are left
- * exactly as they are. `sideToMove` is set to the ship's own side and
- * `actedThisPly` is emptied, because the question is whether the ship would
- * have a move on its own turn, not on whichever ply just happened to end —
- * step 7 asks this for the side that did not just move, too.
+ * exactly as they are. `sideToMove` is set to the ship's own side, because
+ * the question is whether the ship would have a move on its own turn, not on
+ * whichever ply just happened to end — step 7 asks this for the side that
+ * did not just move, too.
  *
  * Only a **move** is considered, never an attack (§8.6 step 7 as written):
  * the relief exists to give a boxed-in player somewhere to go, and the
@@ -63,7 +63,6 @@ function wouldHaveLegalMoveIfFreed(
     ...state,
     nodes: nodesWithoutCandidate,
     sideToMove: ship.side,
-    actedThisPly: [],
   };
 
   return legalDestinations(hypothetical, ship.id).length > 0;

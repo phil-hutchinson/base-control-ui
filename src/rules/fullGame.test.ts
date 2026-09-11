@@ -1,6 +1,6 @@
 // An integration test: plays a whole game through the public rules API and
 // proves the collection (§8.4), the round arithmetic (§9) and the ending
-// work together as one. The action policy below is deterministic and lives
+// work together as one. The ply policy below is deterministic and lives
 // only in this file — the rules layer implements the rules, not how to play
 // them — and draws no randomness of its own, so it never perturbs the
 // game's own seeded draws, including §8.2's queue refills.
@@ -40,7 +40,7 @@ import {
   applyPassGuard,
 } from "./ply";
 
-type Action =
+type PlyChoice =
   | {
       readonly kind: "move";
       readonly shipId: ShipId;
@@ -91,9 +91,9 @@ function distanceToNearestChargedOrInactive(
 /**
  * A deterministic greedy policy: head for a charged node first, otherwise
  * close the distance to the nearest charged-or-eligible-to-be-charged node,
- * otherwise attack, otherwise pass. Evaluated fresh for every action.
+ * otherwise attack, otherwise pass. Evaluated fresh for every ply.
  */
-function chooseAction(state: GameState): Action | undefined {
+function choosePly(state: GameState): PlyChoice | undefined {
   const ships = state.ships;
 
   // 1. The first destination, in fleet-then-destination order, that is
@@ -158,8 +158,8 @@ function energyCollectedEffects(
   return collected;
 }
 
-/** A hard ceiling on actions applied, so a regression hangs the assertion, not the test runner. */
-const MAX_ACTIONS = 10_000;
+/** A hard ceiling on plies applied, so a regression hangs the assertion, not the test runner. */
+const MAX_PLIES = 10_000;
 
 interface PlayedGame {
   readonly finalState: GameState;
@@ -169,8 +169,8 @@ interface PlayedGame {
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
- * above, dealt with `fleetSize` ships a side (rules.md §4, default six) and
- * `chargedNodeCount` charged nodes (rules.md §8.1, default five).
+ * above, dealt with `fleetSize` ships a side (the app's default six) and
+ * `chargedNodeCount` charged nodes (the app's default five).
  */
 function playFullGame(
   seed: number,
@@ -186,36 +186,36 @@ function playFullGame(
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
 
-  let actionsApplied = 0;
+  let pliesApplied = 0;
   while (!isGameOver(state)) {
-    if (actionsApplied >= MAX_ACTIONS) {
+    if (pliesApplied >= MAX_PLIES) {
       throw new Error(
-        `full game exceeded ${MAX_ACTIONS} actions without ending — likely a regression`,
+        `full game exceeded ${MAX_PLIES} plies without ending — likely a regression`,
       );
     }
-    actionsApplied += 1;
+    pliesApplied += 1;
 
-    const action = chooseAction(state);
+    const choice = choosePly(state);
     let effects: readonly (MoveEffect | AttackEffect)[];
 
-    if (action === undefined) {
+    if (choice === undefined) {
       const { state: nextState, effect } = applyPassGuard(state);
       state = nextState;
       effects = effect === undefined ? [] : [effect];
-    } else if (action.kind === "move") {
-      const result = applyMove(state, action.shipId, action.destination);
+    } else if (choice.kind === "move") {
+      const result = applyMove(state, choice.shipId, choice.destination);
       if (result.outcome !== "applied") {
         throw new Error(
-          `policy chose an illegal move: ${result.reason} for ${action.shipId} to ${squareName(action.destination)}`,
+          `policy chose an illegal move: ${result.reason} for ${choice.shipId} to ${squareName(choice.destination)}`,
         );
       }
       state = result.state;
       effects = result.effects;
     } else {
-      const result = applyAttack(state, action.shipId, action.target);
+      const result = applyAttack(state, choice.shipId, choice.target);
       if (result.outcome !== "applied") {
         throw new Error(
-          `policy chose an illegal attack: ${result.reason} for ${action.shipId} on ${squareName(action.target)}`,
+          `policy chose an illegal attack: ${result.reason} for ${choice.shipId} on ${squareName(choice.target)}`,
         );
       }
       state = result.state;
@@ -285,9 +285,9 @@ function findAttackLegalAMomentEarlier(
 /**
  * Confirms `state` refuses a move, a pass and — when one is available — an
  * attack, all as `"game-over"`. Returns whether an attack legal a moment
- * earlier was found to refuse: under one action per turn, a short game may
- * end before any two ships come within reach of one another, so the caller
- * decides whether that absence is expected (rules.md §5).
+ * earlier was found to refuse: with only one move or attack a turn, a short
+ * game may end before any two ships come within reach of one another, so the
+ * caller decides whether that absence is expected (rules.md §5).
  */
 function assertRefusesEverything(state: GameState): boolean {
   const move = findMoveLegalAMomentEarlier(state);
@@ -418,8 +418,8 @@ describe.each(CHARGED_NODE_COUNTS)(
       }
       expect(result.energy).toEqual(finalState.energy);
 
-      // Under one action per turn, six actions never bring two ships within
-      // reach of one another, so no attack is expected here; the move
+      // With only one move or attack a turn, six turns never bring two ships
+      // within reach of one another, so no attack is expected here; the move
       // and pass refusals are still checked.
       assertRefusesEverything(finalState);
     });
@@ -449,8 +449,6 @@ describe("a full game, end to end", () => {
       ],
       nodes: {},
       sideToMove: "green",
-      actionsRemaining: 1,
-      actedThisPly: [],
       plyNumber: pliesForGameLength(1) + 1,
       randomSeed: 1,
       openingSeed: 1,
@@ -609,8 +607,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       ],
       nodes: {},
       sideToMove: "green",
-      actionsRemaining: 1,
-      actedThisPly: [],
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
@@ -660,8 +656,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       ],
       nodes: {},
       sideToMove: "green",
-      actionsRemaining: 1,
-      actedThisPly: [],
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
@@ -710,8 +704,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       ships,
       nodes,
       sideToMove: "green",
-      actionsRemaining: 1,
-      actedThisPly: [],
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,

@@ -19,8 +19,6 @@ function buildState(plyNumber: number): GameState {
     ships: [],
     nodes: {},
     sideToMove: "green",
-    actionsRemaining: 1,
-    actedThisPly: [],
     plyNumber,
     randomSeed: 1,
     openingSeed: 1,
@@ -60,7 +58,6 @@ function movedEventWithCollection(
         endOfTurn: effect === undefined ? [] : [effect],
       },
     ],
-    actionsRemaining: 1,
     cost: 0,
     powerAfter: 6,
   };
@@ -101,7 +98,7 @@ describe("EnergyOverlay", () => {
     }
   });
 
-  it("draws neither a gain nor a pulse when the action paid nothing", () => {
+  it("draws neither a gain nor a pulse when the move or attack paid nothing", () => {
     const { container } = render(
       <EnergyOverlay
         session={sessionWithEvent(movedEventWithCollection(undefined))}
@@ -116,7 +113,7 @@ describe("EnergyOverlay", () => {
     );
   });
 
-  it("draws both sides' collections when a ply-ending action is followed by the other side's pass", () => {
+  it("draws both sides' collections when a move or an attack ending the ply is followed by the other side's pass", () => {
     const passCollection: EnergyCollectedEffect = {
       type: "energy-collected",
       side: "red",
@@ -141,11 +138,10 @@ describe("EnergyOverlay", () => {
           type: "ply-passed",
           side: "red",
           sideToMove: "green",
-          reason: "no-legal-action",
+          reason: "cannot-move-or-attack",
           endOfTurn: [passCollection],
         },
       ],
-      actionsRemaining: 1,
       cost: 0,
       powerAfter: 6,
     };
@@ -166,7 +162,7 @@ describe("EnergyOverlay", () => {
       type: "ply-passed",
       side: "red",
       sideToMove: "green",
-      reason: "no-legal-action",
+      reason: "cannot-move-or-attack",
       endOfTurn: [
         {
           type: "energy-collected",

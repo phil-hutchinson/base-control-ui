@@ -34,9 +34,7 @@ function nodeStatuses(
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
-  actedThisPly?: readonly ShipId[];
   nodes?: Readonly<Record<string, NodeState>>;
-  actionsRemaining?: number;
   plyNumber?: number;
   lengthInRounds?: number;
 }): GameState {
@@ -44,8 +42,6 @@ function buildState(config: {
     ships: config.ships,
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
-    actionsRemaining: config.actionsRemaining ?? 2,
-    actedThisPly: config.actedThisPly ?? [],
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
@@ -379,19 +375,6 @@ describe("attackRefusalReason / legalTargets", () => {
         power === 0 ? 4 : power === 1 ? 8 : 20,
       );
     }
-  });
-
-  it("refuses a ship that has already acted this ply, leaving it with no targets", () => {
-    const state = buildState({
-      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 4)],
-      actedThisPly: ["green-1"],
-      actionsRemaining: 1,
-    });
-
-    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
-      "ship-already-acted",
-    );
-    expect(legalTargets(state, "green-1")).toEqual([]);
   });
 });
 

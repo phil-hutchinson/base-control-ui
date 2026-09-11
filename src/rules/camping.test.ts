@@ -14,7 +14,7 @@
 // ship may occupy (rules.md §8.1). Driven entirely through the public rules
 // API — `applyMove`, `applyAttack`, `moveRefusalReason`, `attackRefusalReason`,
 // `legalDestinations`, `legalTargets` and the `EndOfTurnEffect`s and
-// `MoveEffect`s an action carries — rather than by calling `runEndOfTurn` or
+// `MoveEffect`s a move carries — rather than by calling `runEndOfTurn` or
 // `runCharging` directly, so this proves the same thing a player's turn
 // would.
 
@@ -24,12 +24,7 @@ import { CHARGED_COUNTDOWN_PLIES, TRAP_COUNTDOWN_PLIES } from "./countdown";
 import { attackRefusalReason, legalTargets } from "./combat";
 import type { EndOfTurnEffect, NodeRetiredEffect } from "./endOfTurn";
 import type { ShipId } from "./fleet";
-import {
-  ACTIONS_PER_PLY,
-  type GameState,
-  type Ship,
-  type NodeStatus,
-} from "./gameState";
+import { type GameState, type Ship, type NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { legalDestinations, moveRefusalReason } from "./movement";
 import { TOP_NODE_PRIORITY } from "./nodeQueue";
@@ -72,8 +67,6 @@ function buildState(config: {
     ships: config.ships,
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: "green",
-    actionsRemaining: ACTIONS_PER_PLY,
-    actedThisPly: [],
     plyNumber: 1,
     randomSeed: 1,
     openingSeed: 1,
@@ -94,7 +87,7 @@ function appliedOrThrow(result: ReturnType<typeof applyMove>) {
   return result;
 }
 
-/** The end-of-turn sequence's own effects, unwrapped from the `ply-ended` effect a ply's last action carries. */
+/** The end-of-turn sequence's own effects, unwrapped from the `ply-ended` effect a move or an attack carries. */
 function endOfTurnEffects(effects: readonly MoveEffect[]) {
   const plyEnded = effects.find(
     (effect): effect is PlyEndedEffect => effect.type === "ply-ended",
@@ -632,7 +625,7 @@ describe("camping — leaving a charged node ends it at once (rules.md §8.3)", 
     // is no node left there at all to inherit.
     expect(
       moveRefusalReason(
-        { ...afterRedTurn.state, sideToMove: "green", actedThisPly: [] },
+        { ...afterRedTurn.state, sideToMove: "green" },
         "green-1",
         squareFromName("F2"),
       ),
