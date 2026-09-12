@@ -495,7 +495,19 @@ needs editing, the refactor changed behaviour and the step is wrong. Then
 
 ### Step 3 — The movement diagram derives its own grid extent
 
-Status: pending
+Status: committed
+
+Notes: Replaced the hard-coded `MOVEMENT_GRID_OFFSETS` with a
+`movementGridOffsets` helper that takes `movementCostOffsets()`'s result,
+finds the largest absolute `deltaColumn`/`deltaRow` among them, and returns
+the mirrored run of offsets from `-extent` to `extent`; `MovementDiagram`
+now iterates that run and passes its length as `GuideDiagram`'s `columns`.
+Updated the component's doc comment to describe the grid as sized to §6's
+reach rather than naming 5 x 5. Today's extent is still 2, so the diagram
+stays 5 x 5 with the same twenty-one squares, twenty numbers and four
+blanks, and `guideDiagrams.test.tsx` passed unchanged, as did the whole
+suite (64 files, 1184 tests, matching the baseline exactly). No deviations:
+nothing outside `guideDiagrams.tsx` needed a change.
 
 In `src/guide/guideDiagrams.tsx`, stop hard-coding the movement diagram's
 5 x 5 grid. Derive its extent from `movementCostOffsets()`: the largest
