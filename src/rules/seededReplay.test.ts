@@ -301,18 +301,19 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     // first turn — a ship only becomes unattackable by flying onto a
     // planet, away from the board's outer edge — so this attack-first
     // policy keeps finding fights across the run rather than stalling
-    // early. Re-measured at five charged (0.30): 4 fights (8 planet
+    // early. Re-measured at the wider reach of 0.33: 5 fights (10 planet
     // returns) for this seed over forty rounds, whose second preference
     // (moving onto a charged node) competes with attacking for a ship's
-    // ply; the floors below leave margin below that.
+    // ply; the earlier figure, measured before 0.33, was 4 fights (8
+    // planet returns); the floors below leave margin below the new one.
     expect(fightCount).toBeGreaterThanOrEqual(1);
     expect(planetReturns.length).toBeGreaterThanOrEqual(2);
-    // Re-measured at five charged (0.30): 18 charges, 17 retirements and 16
-    // refills for this seed over forty rounds. At five charged the opening
-    // deal consumes one more seed step than at four, so this seed deals an
-    // entirely different board and the run diverges from the old
-    // four-charged figures — these are simply this run's own numbers,
-    // re-measured; the floors below leave margin below that.
+    // Re-measured at the wider reach of 0.33: 21 charges, 20 retirements
+    // and 20 refills for this seed over forty rounds. The earlier figures,
+    // measured before 0.33, were 18 charges, 17 retirements and 16
+    // refills; the wider reach changes the course of every ply, so these
+    // are simply this run's own numbers, re-measured; the floors below
+    // leave margin below the new ones.
     expect(chargedNodes.length).toBeGreaterThanOrEqual(4);
     expect(retiredNodes.length).toBeGreaterThanOrEqual(4);
     expect(queueRefills.length).toBeGreaterThanOrEqual(4);

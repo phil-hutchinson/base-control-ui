@@ -306,9 +306,10 @@ describe("recovery — leaving a planet before it is full keeps what was recover
     expect(green1AfterLeaving.square).toEqual(destination);
 
     // Its reach from where it landed is exactly a 2-power ship's reach
-    // (rules.md §6) — which is already the full twenty-square range, since
-    // the dearest shape costs 2; a further refill would buy it a deeper
-    // budget to spend, not a longer reach. A 1-power ship's reach is smaller
+    // (rules.md §6) — twenty of the thirty-six squares a ship can ever
+    // reach, since 3 power buys three more shapes and unlocks the rest; a
+    // further refill would buy it a longer reach, not just a deeper budget
+    // to spend the same shapes from. A 1-power ship's reach is smaller
     // still, for contrast.
     const twoPowerReach = reachFrom(destination, 2)
       .map((entry) => squareName(entry.destination))
@@ -316,8 +317,13 @@ describe("recovery — leaving a planet before it is full keeps what was recover
     const onePowerReach = reachFrom(destination, 1)
       .map((entry) => squareName(entry.destination))
       .sort();
+    const threePowerReach = reachFrom(destination, 3)
+      .map((entry) => squareName(entry.destination))
+      .sort();
     expect(twoPowerReach).toHaveLength(20);
     expect(onePowerReach).not.toEqual(twoPowerReach);
+    expect(threePowerReach).toHaveLength(36);
+    expect(threePowerReach).not.toEqual(twoPowerReach);
     // legalDestinations also checks whose turn it is; the turn has already
     // passed to red by this point, so this asks the same question of a
     // state where it is green-1's own move to make, which is the only thing

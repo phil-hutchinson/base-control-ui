@@ -843,7 +843,43 @@ squares orthogonally, or an L" returning nothing.
 
 ### Step 8 — Re-measure the seeded replay's figures, and sweep the stale two-square prose
 
-Status: pending
+Status: committed
+
+Notes: Re-measured `playSeededGame(20260819, 40)` by temporarily logging the
+five counts from the "not vacuous" test, running that file alone, then
+removing the logging: **5 fights, 10 planet returns, 21 charges, 20
+retirements, 20 refills** — matching D9's planning-prototype sanity check
+exactly. Rewrote both comments in `seededReplay.test.ts` with the new
+figures, stating they were re-measured at 0.33's wider reach and giving the
+earlier (pre-0.33) figures for contrast; left the floors (1 fight, 2 returns,
+4 charges, 4 retirements, 4 refills) untouched, well clear of the new
+numbers. The different-seed divergence test (20260819 vs 20260820) still
+diverges under the wider reach, so no new seed pair was needed. Fixed
+`recovery.test.ts` at the assumption per D10: the comment no longer claims 2
+power is "already the full twenty-square range" or that a further refill
+buys "a deeper budget, not a longer reach"; it now says 2 power reaches
+twenty of the thirty-six a ship can ever reach, and a further refill buys a
+longer reach. Added `threePowerReach` alongside the existing
+`twoPowerReach`/`onePowerReach` locals and asserted it has length 36 and
+differs from the 2-power set, extending the check as D10 asked rather than
+just rewording the comment. Swept `src/` and `doc/` (excluding `doc/plan/`
+and `doc/ruleset/changelog.md`) for "twenty", "two squares", "one or two
+squares" and "the dearest shape": every remaining hit either correctly
+describes what 2 power reaches (`rules.md` §6/§7, `recovery.test.ts`), names
+a specific shape by its distance rather than claiming it is the longest
+(`announcements.ts`/`.test.ts`, `movement.test.ts`, `combat.test.ts`), or is
+generic code/test vocabulary meaning "a pair of squares" with no reach claim
+at all (`board.ts`, `boardView.test.ts`, `fullGame.test.ts`,
+`nodePlacement.test.ts`, `nodes.test.ts`, `planets.test.ts`); nothing needed
+changing beyond the two files above. Also checked for "costs more than",
+"longest move"/"full reach"/"the twenty" and reach-superlative phrasing more
+broadly — the only other hits were in `doc/ruleset/changelog.md` (history,
+left alone) and code already correctly describing "no shape reaches"
+(unrelated to this story). `npm test`: 64 files, 1208 tests, all green — the
+same count as Step 7's baseline, since this step only reworded comments and
+added two assertions to an existing test. `npm run typecheck` and
+`npm run lint` clean; `npx prettier --check` on both touched files passes.
+No deviations from the plan.
 
 Two jobs, both about statements that are now false even though no test fails
 (D9, D10).
