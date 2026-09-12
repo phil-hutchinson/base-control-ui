@@ -39,7 +39,7 @@ describe("reachFrom", () => {
       ["G7", "G8", "G9", "H7", "H9", "I7", "I8", "I9"].sort(),
     );
 
-    const fullReach = [
+    const twoPowerReach = [
       // one square orthogonally
       "G8",
       "I8",
@@ -66,13 +66,39 @@ describe("reachFrom", () => {
       "G6",
     ].sort();
 
-    for (const power of [2, 3, 4, 5, 6] as const) {
+    expect(destinationNames("H8", 2)).toEqual(twoPowerReach);
+
+    const fullReach = [
+      ...twoPowerReach,
+      // three squares orthogonally
+      "K8",
+      "E8",
+      "H11",
+      "H5",
+      // two squares diagonally
+      "J10",
+      "J6",
+      "F10",
+      "F6",
+      // the long knight
+      "K9",
+      "K7",
+      "E9",
+      "E7",
+      "I11",
+      "G11",
+      "I5",
+      "G5",
+    ].sort();
+
+    for (const power of [3, 4, 5, 6] as const) {
       expect(destinationNames("H8", power)).toEqual(fullReach);
     }
 
     expect(destinationNames("H8", 0)).toHaveLength(4);
     expect(destinationNames("H8", 1)).toHaveLength(8);
     expect(destinationNames("H8", 2)).toHaveLength(20);
+    expect(destinationNames("H8", 3)).toHaveLength(36);
   });
 
   it("accumulates upward: each power level's set is a superset of the previous", () => {
@@ -90,13 +116,28 @@ describe("reachFrom", () => {
     }
   });
 
-  it("never reaches two squares diagonally or three squares orthogonally, at any power level", () => {
+  it("never reaches the twelve offsets no shape covers, at any power level", () => {
+    // (±2, ±3), (±3, ±2) and (±3, ±3) from H8.
+    const unreachable = [
+      "F11",
+      "F5",
+      "J11",
+      "J5",
+      "E10",
+      "E6",
+      "K10",
+      "K6",
+      "E11",
+      "E5",
+      "K11",
+      "K5",
+    ];
+
     for (const power of POWER_LEVELS) {
       const destinations = destinationNames("H8", power);
-      expect(destinations).not.toContain("J10");
-      expect(destinations).not.toContain("F6");
-      expect(destinations).not.toContain("K8");
-      expect(destinations).not.toContain("E8");
+      for (const square of unreachable) {
+        expect(destinations).not.toContain(square);
+      }
     }
   });
 

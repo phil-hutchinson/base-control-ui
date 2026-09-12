@@ -538,7 +538,40 @@ was not supposed to change. Then `npm run typecheck` and `npm run lint`.
 
 ### Step 4 — Add the three shapes, and repair the tests the wider reach invalidates
 
-Status: pending
+Status: committed
+
+Notes: In `movement.ts`, widened `StraightReachOption.distance` to
+`1 | 2 | 3`, added the two new straight rows (three orthogonally, two
+diagonally, both cost 3), and added `LONG_KNIGHT_OFFSETS` (eight entries,
+transcribed from D6's table) as a third `"leap"` row at cost 3, with a doc
+comment in the L's voice worked against the H8→K9 example. Updated the
+file's stale prose: the module header ("one, two or three squares... or in
+the long knight"), `allShapesFrom`'s "thirty-six shapes", and
+`shapeReaching`'s "thirty-six shapes at all". Updated
+`src/guide/movementCosts.ts`'s two doc comments (the "three files/ranks from
+every edge" note and the offsets summary, now naming all three new shapes
+and the twelve genuinely unreachable offsets) — no code change there, as
+expected. Repaired exactly the seven tests in the four files D8 predicted,
+at the assumption, no others: `src/rules/movement.test.ts` — the §6 table
+test now checks 2-power reach separately, then folds in the sixteen new H8
+destinations for 3-power-and-up and asserts 4/8/20/36 across powers 0-3, and
+"never reaches two squares diagonally or three squares orthogonally" became
+"never reaches the twelve offsets no shape covers, at any power level"
+((±2,±3), (±3,±2), (±3,±3) from H8); `src/rules/combat.test.ts` — the
+out-of-range test's target moved from H11 (now a real three-orthogonal
+shape) to J11 (genuinely unreachable), and the per-power count expectation
+became `power === 2 ? 20 : 36` for power ≥ 2; `src/guide/movementCosts.test.ts`
+— "twenty offsets" became "thirty-six", added three new `it` blocks for the
+three-orthogonal, two-diagonal and long-knight offsets at cost 3, and
+retitled/reworked the centre-and-corners test to assert the centre plus the
+twelve genuinely unreachable offsets are absent; `src/guide/guideDiagrams.test.tsx`
+— the movement diagram test (already 7×7 for free per Step 3) now expects
+37 board squares, 49 cells, 12 blank cells, and 36 numbers (4/4/12/16 for
+0/1/2/3). No file outside these four needed a change — full suite ran green
+at 64 files / 1187 tests (1184 baseline + 3 new movementCosts assertions),
+confirming D1's no-leak claim held. `npm run typecheck`, `npm run lint` and
+`npm run format:check` (only the two pre-existing baseline warnings) all
+clean. No deviations from the plan.
 
 This is the behavioural heart of the story. In `src/rules/movement.ts`:
 

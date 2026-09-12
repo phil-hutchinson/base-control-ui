@@ -41,10 +41,10 @@ describe("ScoringDiagram", () => {
 });
 
 describe("MovementDiagram", () => {
-  it("draws twenty-one squares with the centre at full fuel and no number", () => {
+  it("draws thirty-seven squares with the centre at full fuel and no number", () => {
     const { container } = render(<MovementDiagram />);
 
-    expect(container.querySelectorAll(".board-square")).toHaveLength(21);
+    expect(container.querySelectorAll(".board-square")).toHaveLength(37);
 
     const greenShips = container.querySelectorAll(".ship-model--green");
     expect(greenShips).toHaveLength(1);
@@ -58,15 +58,16 @@ describe("MovementDiagram", () => {
     expect(numbers.filter((value) => value === "0")).toHaveLength(4);
     expect(numbers.filter((value) => value === "1")).toHaveLength(4);
     expect(numbers.filter((value) => value === "2")).toHaveLength(12);
-    expect(numbers).toHaveLength(20);
+    expect(numbers.filter((value) => value === "3")).toHaveLength(16);
+    expect(numbers).toHaveLength(36);
 
-    // 25 cells: 1 centre + 20 numbered + 4 blank corners.
+    // 49 cells: 1 centre + 36 numbered + 12 blank.
     const cells = container.querySelectorAll(".guide-diagram__cell");
-    expect(cells).toHaveLength(25);
+    expect(cells).toHaveLength(49);
     const emptyCells = Array.from(cells).filter(
       (cell) => cell.querySelector(".board-square") === null,
     );
-    expect(emptyCells).toHaveLength(4);
+    expect(emptyCells).toHaveLength(12);
 
     expect(container.querySelectorAll(".ship-model--red")).toHaveLength(0);
   });

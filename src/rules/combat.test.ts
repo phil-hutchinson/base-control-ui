@@ -285,11 +285,11 @@ describe("attackRefusalReason / legalTargets", () => {
     const state = buildState({
       ships: [
         ship("green-1", "green", "H8", 0),
-        ship("red-1", "red", "H11", 4),
+        ship("red-1", "red", "J11", 4),
       ],
     });
 
-    expect(attackRefusalReason(state, "green-1", squareFromName("H11"))).toBe(
+    expect(attackRefusalReason(state, "green-1", squareFromName("J11"))).toBe(
       "target-out-of-range",
     );
   });
@@ -372,7 +372,7 @@ describe("attackRefusalReason / legalTargets", () => {
       }
 
       expect(squareNames(destinations)).toHaveLength(
-        power === 0 ? 4 : power === 1 ? 8 : 20,
+        power === 0 ? 4 : power === 1 ? 8 : power === 2 ? 20 : 36,
       );
     }
   });

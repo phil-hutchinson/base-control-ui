@@ -28,8 +28,8 @@ function find(
 describe("movementCostOffsets", () => {
   const offsets = movementCostOffsets();
 
-  it("returns exactly twenty offsets", () => {
-    expect(offsets).toHaveLength(20);
+  it("returns exactly thirty-six offsets", () => {
+    expect(offsets).toHaveLength(36);
   });
 
   it("costs the four orthogonal neighbours 0", () => {
@@ -80,13 +80,58 @@ describe("movementCostOffsets", () => {
     }
   });
 
-  it("has no offset for the centre or the four (±2, ±2) corners", () => {
+  it("costs the four three-square orthogonal squares 3", () => {
     for (const [deltaColumn, deltaRow] of [
-      [0, 0],
+      [3, 0],
+      [-3, 0],
+      [0, 3],
+      [0, -3],
+    ] as const) {
+      expect(find(offsets, deltaColumn, deltaRow)?.cost).toBe(3);
+    }
+  });
+
+  it("costs the four two-square diagonal squares, formerly absent, 3", () => {
+    for (const [deltaColumn, deltaRow] of [
       [2, 2],
       [2, -2],
       [-2, 2],
       [-2, -2],
+    ] as const) {
+      expect(find(offsets, deltaColumn, deltaRow)?.cost).toBe(3);
+    }
+  });
+
+  it("costs the eight long-knight squares 3", () => {
+    for (const [deltaColumn, deltaRow] of [
+      [3, 1],
+      [3, -1],
+      [-3, 1],
+      [-3, -1],
+      [1, 3],
+      [-1, 3],
+      [1, -3],
+      [-1, -3],
+    ] as const) {
+      expect(find(offsets, deltaColumn, deltaRow)?.cost).toBe(3);
+    }
+  });
+
+  it("has no offset for the centre or the twelve offsets no shape reaches", () => {
+    for (const [deltaColumn, deltaRow] of [
+      [0, 0],
+      [2, 3],
+      [2, -3],
+      [-2, 3],
+      [-2, -3],
+      [3, 2],
+      [3, -2],
+      [-3, 2],
+      [-3, -2],
+      [3, 3],
+      [3, -3],
+      [-3, 3],
+      [-3, -3],
     ] as const) {
       expect(find(offsets, deltaColumn, deltaRow)).toBeUndefined();
     }
