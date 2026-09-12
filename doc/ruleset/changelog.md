@@ -7,6 +7,29 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.33 — a third unit of fuel buys a longer move
+
+This is a gameplay change — moves that were illegal are now legal — and so
+would be a tag candidate; tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **Three shapes join section 6's table, all priced at 3**: three squares
+  orthogonally, two squares diagonally, and the **long knight** — three
+  squares orthogonally and one square to either side. A ship's reach goes
+  from twenty squares to **thirty-six**, and the furthest a ship can land
+  goes from two squares away to three.
+- **The long knight is blocked by an enemy ship on any one of the five
+  squares it passes over** — for the long knight from H8 to K9, those are
+  I8, J8, K8, I9 and J9. Stepping across before starting the run (H9) is not
+  one of them, because every way of walking the shape begins by going
+  forward.
+- **Section 7's attack range follows section 6 as it always has**: a ship
+  with 3 power or more can now strike anywhere in the thirty-six, at the
+  same price a move to that square would cost.
+- Nothing else is retuned against the longer reach: countdown lengths, node
+  counts, the power tank's size (0–6), the charge rate, fleet sizes, rounds
+  and the clock all keep their values.
+
 ## 0.32 — the action retires
 
 This is **not** a gameplay change — the game plays exactly as it did under

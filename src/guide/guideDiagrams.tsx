@@ -12,6 +12,7 @@ import { MAX_POWER } from "../rules/power";
 import { PLANET_ART } from "../board/planetArt";
 import type { GuideDiagramCell } from "./GuideDiagram";
 import { GuideDiagram } from "./GuideDiagram";
+import type { MovementCostOffset } from "./movementCosts";
 import { movementCostOffsets } from "./movementCosts";
 
 /**
@@ -50,15 +51,35 @@ export function ScoringDiagram() {
   return <GuideDiagram columns={5} cells={cells} />;
 }
 
-const MOVEMENT_GRID_OFFSETS = [-2, -1, 0, 1, 2];
+/**
+ * The run of offsets the movement diagram's grid spans in each direction:
+ * the largest absolute row or column offset among the reachable squares,
+ * mirrored either side of the ship. This follows §6's reach rather than
+ * naming a fixed grid size, so a wider table grows the diagram for free.
+ */
+function movementGridOffsets(
+  offsets: readonly MovementCostOffset[],
+): readonly number[] {
+  const extent = offsets.reduce(
+    (max, offset) =>
+      Math.max(max, Math.abs(offset.deltaColumn), Math.abs(offset.deltaRow)),
+    0,
+  );
+  const run: number[] = [];
+  for (let value = -extent; value <= extent; value++) {
+    run.push(value);
+  }
+  return run;
+}
 
-/** Diagram 2: a 5 x 5 grid, a fully-fuelled ship at centre, and each reachable square's move cost. */
+/** Diagram 2: a grid sized to §6's reach, a fully-fuelled ship at centre, and each reachable square's move cost. */
 export function MovementDiagram() {
   const offsets = movementCostOffsets();
+  const gridOffsets = movementGridOffsets(offsets);
   const cells: GuideDiagramCell[] = [];
 
-  for (const deltaRow of MOVEMENT_GRID_OFFSETS) {
-    for (const deltaColumn of MOVEMENT_GRID_OFFSETS) {
+  for (const deltaRow of gridOffsets) {
+    for (const deltaColumn of gridOffsets) {
       const squareName = `guide-movement-${deltaColumn}-${deltaRow}`;
       if (deltaColumn === 0 && deltaRow === 0) {
         cells.push({
@@ -90,7 +111,7 @@ export function MovementDiagram() {
     }
   }
 
-  return <GuideDiagram columns={MOVEMENT_GRID_OFFSETS.length} cells={cells} />;
+  return <GuideDiagram columns={gridOffsets.length} cells={cells} />;
 }
 
 const REFUELLING_PLANET = PLANET_ART[0];

@@ -248,7 +248,7 @@ describe("announcementFor", () => {
     [
       "cannot-afford",
       squareAt("J", 9),
-      "J9 costs more power than the selected ship has. A step up, down, left or right is free; a diagonal step costs 1; two squares or an L cost 2.",
+      "J9 costs more power than the selected ship has. A step up, down, left or right is free; a diagonal step costs 1; two squares or an L cost 2; three squares, two diagonally, or three and one across cost 3.",
     ],
     ["path-blocked", squareAt("C", 8), "An enemy ship is in the way of C8."],
     ["destination-occupied", squareAt("C", 7), "C7 is occupied."],
@@ -290,12 +290,12 @@ describe("announcementFor", () => {
     [
       "target-out-of-range",
       squareAt("J", 7),
-      "J7 is not one of the shapes a ship can attack from here — an orthogonal or diagonal step, two squares orthogonally, or an L — whatever power it carries.",
+      "J7 is not one of the shapes a ship can attack from here — up to three squares orthogonally, up to two diagonally, an L, or three and one across — whatever power it carries.",
     ],
     [
       "cannot-afford-target",
       squareAt("J", 9),
-      "The selected ship does not have the power to strike J9. An orthogonal step is free, a diagonal costs 1, and two squares or an L cost 2.",
+      "The selected ship does not have the power to strike J9. An orthogonal step is free, a diagonal costs 1, two squares or an L cost 2, and three squares, two diagonally, or three and one across cost 3.",
     ],
     [
       "attack-path-blocked",

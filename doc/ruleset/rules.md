@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.32**
+**Rules version: 0.33**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -297,24 +297,30 @@ is the second, and only other, reason a turn can pass.
 
 ## 6. Movement
 
-A ship moves one or two squares: orthogonally, diagonally, or in an **L** —
-one orthogonal step and one diagonal step, in either order. What it may do
+A ship moves one, two or three squares, in the shapes the table below gives:
+orthogonally, diagonally, in an **L** — one orthogonal step and one diagonal
+step, in either order — or in a **long knight** — three squares in one
+orthogonal direction and then one square to either side. What it may do
 depends on what it can pay: every move has a price, out of the power it
 carries, and a ship may take any move it can afford, and is free to take a
 cheaper one and spend less.
 
-| Move                                                            | Cost |
-| --------------------------------------------------------------- | ---- |
-| one square orthogonally                                         | 0    |
-| one square diagonally                                           | 1    |
-| two squares orthogonally                                        | 2    |
-| the L — one orthogonal step and one diagonal step, either order | 2    |
+| Move                                                                       | Cost |
+| -------------------------------------------------------------------------- | ---- |
+| one square orthogonally                                                    | 0    |
+| one square diagonally                                                      | 1    |
+| two squares orthogonally                                                   | 2    |
+| the L — one orthogonal step and one diagonal step, either order            | 2    |
+| three squares orthogonally                                                 | 3    |
+| two squares diagonally                                                     | 3    |
+| the long knight — three squares orthogonally and one square to either side | 3    |
 
-A ship with 2 power or more can reach all twenty of the squares the four
-shapes give; a ship with 1 power reaches the eight orthogonal and diagonal
-single steps; a ship with 0 power reaches the four orthogonal single steps —
-and since that move is free, a ship can always make it, however empty its
-tank.
+A ship with 0 power reaches the four orthogonal single steps — and since
+that move is free, a ship can always make it, however empty its tank. A ship
+with 1 power reaches the eight orthogonal and diagonal single steps. A ship
+with 2 power reaches all twenty of the squares the first four shapes give. A
+ship with 3 power or more reaches all thirty-six of the squares the full
+table gives.
 
 **The path must be clear of enemy ships.** Every square a move passes over
 must be free of an **enemy** ship — a ship flies over its own side freely —
@@ -329,7 +335,17 @@ passes over two squares, its two corners: the one it turns through
 orthogonally and the one it turns through diagonally — for example, the L
 from H8 to J9 turns through I8 (the orthogonal corner) and I9 (the diagonal
 corner). An enemy ship on **either** corner blocks the L; only one of the two
-need be occupied. A **trapped** ship (section 8.5) has no move at all.
+need be occupied. Three squares orthogonally passes over the two squares
+between the ship's current square and its destination, and two squares
+diagonally passes over the one square between them, in the same way the
+shorter versions of each shape already do. The **long knight** passes over
+five squares, and an enemy ship on **any one** of them blocks it, in the
+same spirit as the L being blocked from either corner: the long knight from
+H8 to K9 passes over I8, J8, K8, I9 and J9. **H9 is not one of them** — the
+long knight is three squares forward with a one-square offset to the side,
+so every way of walking it, one step at a time, begins by going forward, not
+by stepping across first. A **trapped** ship (section 8.5) has no move at
+all.
 
 Moving and attacking are entirely separate: a ship never attacks by moving
 onto its target.
@@ -340,15 +356,17 @@ onto its target.
 
 A ship may attack an enemy ship within its **movement range** (section 6) —
 the same shapes, priced the same way, so an attack reaches whatever the
-attacker can currently **afford**, the L included. The attack **costs** that
-price: the attacker pays it out of its own reserve as the attack resolves,
-and arrives on its planet already having paid (section 7.1). The defender
-pays nothing. Every square the attack passes over must be free of an
-**enemy** ship, exactly as a move requires (section 6); the target square is
-of course occupied, by the enemy ship it strikes. At the two extremes: a
-ship at 0 power strikes only one square orthogonally and nothing else, while
-a ship with 2 power or more strikes anywhere in the twenty. Attacking is
-always the attacking player's choice; ships never fight automatically.
+attacker can currently **afford**, the L and the long knight included. The
+attack **costs** that price: the attacker pays it out of its own reserve as
+the attack resolves, and arrives on its planet already having paid (section
+7.1). The defender pays nothing. Every square the attack passes over must be
+free of an **enemy** ship, exactly as a move requires (section 6); the
+target square is of course occupied, by the enemy ship it strikes. At the
+two extremes: a ship at 0 power strikes only one square orthogonally and
+nothing else, while a ship with 3 power or more strikes anywhere in the
+thirty-six; in between, a ship with 2 power strikes anywhere in the twenty.
+Attacking is always the attacking player's choice; ships never fight
+automatically.
 
 Neither ship may be on a planet: a ship on a planet cannot attack, and
 cannot be attacked. And neither ship may be standing on a node that is

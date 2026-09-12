@@ -8,16 +8,21 @@ most energy at the end wins.
 
 Each ship carries power, a reserve it spends on every move and every attack. A
 single step up, down, left or right is free; a diagonal step costs 1; two
-squares in a line, or a new L-shaped move that turns a corner, cost 2 — and a
-ship is always free to take a cheaper move if that is all its reserve can pay
-for. Only an enemy ship blocks the path; a ship flies straight over its own
-side. The only way to refill is to sit on a planet: at the end of its owner's
-turn a ship parked on one gains a point of power, or two if it is the only one
-of that player's ships still topping up power on a planet at that moment — a
-ship already full doesn't count — up to a maximum of six. An attack costs its
-attacker the same price as the move it used to strike, while the ship being
-attacked keeps whatever power it had. A ship holding a node cannot be attacked
-while it holds it. A fight has no winner: both ships involved are pushed back
+squares in a line, or a new L-shaped move that turns a corner, cost 2; and
+three squares in a line, two squares diagonally, or a longer hop — three
+squares one way, then one more across — cost 3. A ship is always free to take
+a cheaper move if that is all its reserve can pay for, and a ship carrying 3
+or more can reach any of thirty-six squares around it in a single move — three
+squares away at the very most. Only an enemy ship blocks the path; a ship flies
+straight over its own side. The only way to refill is to sit on a planet: at
+the end of its owner's turn a ship parked on one gains a point of power, or two
+if it is the only one of that player's ships still topping up power on a planet
+at that moment — a ship already full doesn't count — up to a maximum of six. An
+attack costs its attacker the same price as the move it used to strike, and
+reaches exactly as far as a move does — a ship with 3 to spend can strike from
+three squares away, not just two — while the ship being attacked keeps whatever
+power it had. A ship holding a node cannot be attacked while it holds it. A
+fight has no winner: both ships involved are pushed back
 to a planet, chosen at random from wherever the board has one standing empty
 — the ship that was attacked carrying whatever power it had, and the attacker
 already having paid for its shot — and fly again from there. Ships are never

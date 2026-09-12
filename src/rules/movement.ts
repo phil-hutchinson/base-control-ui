@@ -1,8 +1,8 @@
-// Movement (rules.md §6): a ship moves one or two squares, orthogonally,
-// diagonally or in an L, priced by §6's table, and a ship may take any shape
-// it can afford — reach, a clear path, an empty destination, and a
-// destination that holds no node unless that node is charged, are the whole
-// of the restriction.
+// Movement (rules.md §6): a ship moves one, two or three squares,
+// orthogonally, diagonally, in an L or in the long knight, priced by §6's
+// table, and a ship may take any shape it can afford — reach, a clear path,
+// an empty destination, and a destination that holds no node unless that
+// node is charged, are the whole of the restriction.
 // A trapped ship (rules.md §8.5) has no move at all. This is the only
 // implementation of §6 in the app; every caller that needs a legal move or
 // the reason one is refused calls the functions here. §9's game-over check is
@@ -50,31 +50,31 @@ function directionsFor(
 
 interface StraightReachOption {
   readonly kind: StraightKind;
-  readonly distance: 1 | 2;
+  readonly distance: 1 | 2 | 3;
   /** The power this shape costs (rules.md §6's table). */
   readonly cost: PowerLevel;
 }
 
 /**
- * One of the L's eight destinations, as an offset from the origin in
- * (column, row) terms, together with the two squares it turns through: the
- * one it turns through orthogonally, and the one it turns through
- * diagonally. Both corners are given as offsets from the origin too.
+ * One of a leap shape's destinations, as an offset from the origin in
+ * (column, row) terms, together with the squares it passes over on the way —
+ * each also given as an offset from the origin. The L's two entries each
+ * carry two passed-over offsets: the one it turns through orthogonally, then
+ * the one it turns through diagonally.
  */
-interface LOffset {
+interface LeapOffset {
   readonly delta: readonly [number, number];
-  readonly orthogonalCorner: readonly [number, number];
-  readonly diagonalCorner: readonly [number, number];
+  readonly passedOver: readonly (readonly [number, number])[];
 }
 
-interface LReachOption {
-  readonly kind: "L";
+interface LeapReachOption {
+  readonly kind: "leap";
   /** The power this shape costs (rules.md §6's table). */
   readonly cost: PowerLevel;
-  readonly offsets: readonly LOffset[];
+  readonly offsets: readonly LeapOffset[];
 }
 
-type ReachOption = StraightReachOption | LReachOption;
+type ReachOption = StraightReachOption | LeapReachOption;
 
 /**
  * The L's eight destinations (rules.md §6): one orthogonal step and one
@@ -84,17 +84,164 @@ type ReachOption = StraightReachOption | LReachOption;
  * corner is one step along the longer axis and the diagonal corner is one
  * diagonal step towards the destination — e.g. the L from H8 to J9 is
  * (dc: 2, dr: 1), whose orthogonal corner is I8 and whose diagonal corner is
- * I9, exactly as rules.md §6 describes it.
+ * I9, exactly as rules.md §6 describes it. `passedOver` lists the orthogonal
+ * corner first, then the diagonal corner.
  */
-const L_OFFSETS: readonly LOffset[] = [
-  { delta: [2, 1], orthogonalCorner: [1, 0], diagonalCorner: [1, 1] },
-  { delta: [2, -1], orthogonalCorner: [1, 0], diagonalCorner: [1, -1] },
-  { delta: [-2, 1], orthogonalCorner: [-1, 0], diagonalCorner: [-1, 1] },
-  { delta: [-2, -1], orthogonalCorner: [-1, 0], diagonalCorner: [-1, -1] },
-  { delta: [1, 2], orthogonalCorner: [0, 1], diagonalCorner: [1, 1] },
-  { delta: [1, -2], orthogonalCorner: [0, -1], diagonalCorner: [1, -1] },
-  { delta: [-1, 2], orthogonalCorner: [0, 1], diagonalCorner: [-1, 1] },
-  { delta: [-1, -2], orthogonalCorner: [0, -1], diagonalCorner: [-1, -1] },
+const L_OFFSETS: readonly LeapOffset[] = [
+  {
+    delta: [2, 1],
+    passedOver: [
+      [1, 0],
+      [1, 1],
+    ],
+  },
+  {
+    delta: [2, -1],
+    passedOver: [
+      [1, 0],
+      [1, -1],
+    ],
+  },
+  {
+    delta: [-2, 1],
+    passedOver: [
+      [-1, 0],
+      [-1, 1],
+    ],
+  },
+  {
+    delta: [-2, -1],
+    passedOver: [
+      [-1, 0],
+      [-1, -1],
+    ],
+  },
+  {
+    delta: [1, 2],
+    passedOver: [
+      [0, 1],
+      [1, 1],
+    ],
+  },
+  {
+    delta: [1, -2],
+    passedOver: [
+      [0, -1],
+      [1, -1],
+    ],
+  },
+  {
+    delta: [-1, 2],
+    passedOver: [
+      [0, 1],
+      [-1, 1],
+    ],
+  },
+  {
+    delta: [-1, -2],
+    passedOver: [
+      [0, -1],
+      [-1, -1],
+    ],
+  },
+];
+
+/**
+ * The long knight's eight destinations (rules.md §6): three squares
+ * orthogonally, then one square to either side. Written down as data rather
+ * than derived, so it can be read against the rules at a glance;
+ * `movement.test.ts` pins the sign rule that generates it. For a destination
+ * offset (dc, dr) with |dc| = 3, let `s` be the sign of dc: the five
+ * passed-over offsets are (s, 0), (2s, 0), (3s, 0), (s, dr), (2s, dr) — the
+ * three squares of the run along the long axis, near to far, then the two
+ * offset squares, near to far. For |dr| = 3 the same rule applies with the
+ * axes swapped. For example, the long knight from H8 to K9 is (dc: 3, dr: 1),
+ * whose five passed-over squares are I8, J8, K8, I9 and J9 — H9 is
+ * deliberately not one of them, because the shape is three forward with a
+ * one-square offset, so every way of walking it begins by going forward
+ * (rules.md §6).
+ */
+const LONG_KNIGHT_OFFSETS: readonly LeapOffset[] = [
+  {
+    delta: [3, 1],
+    passedOver: [
+      [1, 0],
+      [2, 0],
+      [3, 0],
+      [1, 1],
+      [2, 1],
+    ],
+  },
+  {
+    delta: [3, -1],
+    passedOver: [
+      [1, 0],
+      [2, 0],
+      [3, 0],
+      [1, -1],
+      [2, -1],
+    ],
+  },
+  {
+    delta: [-3, 1],
+    passedOver: [
+      [-1, 0],
+      [-2, 0],
+      [-3, 0],
+      [-1, 1],
+      [-2, 1],
+    ],
+  },
+  {
+    delta: [-3, -1],
+    passedOver: [
+      [-1, 0],
+      [-2, 0],
+      [-3, 0],
+      [-1, -1],
+      [-2, -1],
+    ],
+  },
+  {
+    delta: [1, 3],
+    passedOver: [
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [1, 1],
+      [1, 2],
+    ],
+  },
+  {
+    delta: [-1, 3],
+    passedOver: [
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [-1, 1],
+      [-1, 2],
+    ],
+  },
+  {
+    delta: [1, -3],
+    passedOver: [
+      [0, -1],
+      [0, -2],
+      [0, -3],
+      [1, -1],
+      [1, -2],
+    ],
+  },
+  {
+    delta: [-1, -3],
+    passedOver: [
+      [0, -1],
+      [0, -2],
+      [0, -3],
+      [-1, -1],
+      [-1, -2],
+    ],
+  },
 ];
 
 /** §6's cost table, transcribed row for row. */
@@ -102,14 +249,19 @@ const REACH_OPTIONS: readonly ReachOption[] = [
   { kind: "orthogonal", distance: 1, cost: 0 },
   { kind: "diagonal", distance: 1, cost: 1 },
   { kind: "orthogonal", distance: 2, cost: 2 },
-  { kind: "L", cost: 2, offsets: L_OFFSETS },
+  { kind: "leap", cost: 2, offsets: L_OFFSETS },
+  { kind: "orthogonal", distance: 3, cost: 3 },
+  { kind: "diagonal", distance: 2, cost: 3 },
+  { kind: "leap", cost: 3, offsets: LONG_KNIGHT_OFFSETS },
 ];
 
 /**
  * One square a ship could move to: the destination, the squares passed over
  * on the way there (in order, excluding both the origin and the
  * destination), and the power the move costs (rules.md §6). The L's
- * `passedOver` carries both of its corners, orthogonal corner first.
+ * `passedOver` carries both of its corners, orthogonal corner first; the
+ * long knight's carries its five — the run along the long axis, near to
+ * far, then the two offset squares, near to far.
  */
 export interface ReachEntry {
   readonly destination: Square;
@@ -134,38 +286,37 @@ function squareAtOffset(
 }
 
 /**
- * Every one of §6's twenty shapes from `origin` on an otherwise empty board,
- * regardless of power, each carrying its own cost. Moves that would leave the
- * board are omitted entirely. Says nothing about occupancy, nodes, whose ply
- * it is, or what any particular ship can afford — `reachFrom` below narrows
- * this to the affordable subset, and every other caller in this module reads
- * one or the other rather than generating the geometry again.
+ * Every one of §6's thirty-six shapes from `origin` on an otherwise empty
+ * board, regardless of power, each carrying its own cost. Moves that would
+ * leave the board are omitted entirely. Says nothing about occupancy, nodes,
+ * whose ply it is, or what any particular ship can afford — `reachFrom` below
+ * narrows this to the affordable subset, and every other caller in this
+ * module reads one or the other rather than generating the geometry again.
  */
 export function allShapesFrom(origin: Square): readonly ReachEntry[] {
   const entries: ReachEntry[] = [];
 
   for (const option of REACH_OPTIONS) {
-    if (option.kind === "L") {
+    if (option.kind === "leap") {
       for (const offset of option.offsets) {
         const destination = squareAtOffset(origin, ...offset.delta);
         if (destination === undefined) {
           continue;
         }
 
-        const orthogonalCorner = squareAtOffset(
-          origin,
-          ...offset.orthogonalCorner,
-        );
-        const diagonalCorner = squareAtOffset(origin, ...offset.diagonalCorner);
-        if (orthogonalCorner === undefined || diagonalCorner === undefined) {
-          throw new RangeError(
-            `an L's corner left the board from ${squareName(origin)} while its destination did not`,
-          );
-        }
+        const passedOver = offset.passedOver.map((corner) => {
+          const square = squareAtOffset(origin, ...corner);
+          if (square === undefined) {
+            throw new RangeError(
+              `a leap's passed-over square left the board from ${squareName(origin)} while its destination did not`,
+            );
+          }
+          return square;
+        });
 
         entries.push({
           destination,
-          passedOver: [orthogonalCorner, diagonalCorner],
+          passedOver,
           cost: option.cost,
         });
       }
@@ -216,8 +367,8 @@ export function reachFrom(
 
 /**
  * The shape (if any) that reaches `destination` from `origin`, regardless of
- * power — used to tell "not one of the twenty shapes at all" apart from "a
- * shape the ship cannot currently afford".
+ * power — used to tell "not one of the thirty-six shapes at all" apart from
+ * "a shape the ship cannot currently afford".
  */
 export function shapeReaching(
   origin: Square,

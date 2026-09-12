@@ -409,7 +409,7 @@ function rejectionSentence(event: RejectedEvent): string {
     case "out-of-range":
       return `${square} is out of range for the selected ship.`;
     case "cannot-afford":
-      return `${square} costs more power than the selected ship has. A step up, down, left or right is free; a diagonal step costs 1; two squares or an L cost 2.`;
+      return `${square} costs more power than the selected ship has. A step up, down, left or right is free; a diagonal step costs 1; two squares or an L cost 2; three squares, two diagonally, or three and one across cost 3.`;
     case "path-blocked":
       return `An enemy ship is in the way of ${square}.`;
     case "destination-occupied":
@@ -429,9 +429,9 @@ function rejectionSentence(event: RejectedEvent): string {
     case "target-on-depleted-node":
       return "A ship trapped on a depleted node cannot be attacked.";
     case "target-out-of-range":
-      return `${square} is not one of the shapes a ship can attack from here — an orthogonal or diagonal step, two squares orthogonally, or an L — whatever power it carries.`;
+      return `${square} is not one of the shapes a ship can attack from here — up to three squares orthogonally, up to two diagonally, an L, or three and one across — whatever power it carries.`;
     case "cannot-afford-target":
-      return `The selected ship does not have the power to strike ${square}. An orthogonal step is free, a diagonal costs 1, and two squares or an L cost 2.`;
+      return `The selected ship does not have the power to strike ${square}. An orthogonal step is free, a diagonal costs 1, two squares or an L cost 2, and three squares, two diagonally, or three and one across cost 3.`;
     case "attack-path-blocked":
       return `An enemy ship stands in the way, so the attack cannot reach ${square}.`;
     // Unreachable through the board's own gesture — activating a friendly
