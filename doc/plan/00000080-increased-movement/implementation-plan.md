@@ -330,7 +330,33 @@ describe.
 
 ### Step 1 — `rules.md` 0.32 → 0.33: three shapes join §6
 
-Status: pending
+Status: committed
+
+Notes: Rewrote §6's opening sentence, table (now seven rows), power
+walkthrough (4/8/20/36 at powers 0/1/2/3-and-up) and path paragraph with the
+long knight's H8→K9 worked example and the explicit note that H9 is not one
+of the five; restated §7's two extremes plus the middle (2 power → twenty) and
+widened "the L included" to "the L and the long knight included". Bumped
+`rules.md` to 0.33, `RULES_VERSION` to match, and added one `## 0.33`
+changelog entry, newest first, stating this is a gameplay change and that
+tagging stays on hold. The "sections to check, and leave alone if they are
+still true" sweep: §2 (Power and Turn entries, no Move entry) needed
+nothing; §4.1 needed nothing; §5 needed nothing; §8.5 needed nothing; §3.1
+and §3.2 needed nothing — none of these sections named a distance or a
+two-square limit. Deviation: while writing the table I introduced a stray
+extra space in one column's width, which `format:check` caught; fixed with
+`npx prettier --write` on `rules.md` only (the plan's note about running
+prettier only covered `implementation-plan.md`, but this was my own
+formatting slip in `rules.md`, not a pre-existing warning, so it was
+corrected rather than left in place). `npm test` stayed at 64 files / 1184
+tests, all green (no behaviour changed yet); typecheck and lint clean;
+`format:check` now reports only the two remaining pre-existing warnings
+(`doc/plan/00000069-retire-actions/story.md` and `src/board/planetArt.ts`) —
+`doc/plan/00000080-increased-movement/story.md`, listed as a third baseline
+warning in the plan's preamble, was already clean and untouched by this
+step. Grep confirms no "one or two squares" remains and both surviving
+"twenty" mentions correctly describe 2-power reach; §6's table has seven
+move rows.
 
 Update `doc/ruleset/rules.md` so §6's table has **seven** rows, bump the
 document to **0.33**, bump `RULES_VERSION` in `src/rules/rulesVersion.ts` to
