@@ -786,7 +786,28 @@ cases passing. Then `npm run typecheck` and `npm run lint`.
 
 ### Step 7 — Rewrite the three refusal announcements
 
-Status: pending
+Status: committed
+
+Notes: Rewrote the three `announcements.ts` sentences exactly to D12's
+wording (no tightening applied — the proposed sentences already read well
+aloud and stayed single sentences): `cannot-afford` now ends "...two squares
+or an L cost 2; three squares, two diagonally, or three and one across cost
+3."; `target-out-of-range` now reads "...up to three squares orthogonally,
+up to two diagonally, an L, or three and one across — whatever power it
+carries."; `cannot-afford-target` now ends "...two squares or an L cost 2,
+and three squares, two diagonally, or three and one across cost 3." None of
+the three names "long knight". Updated the three matching literal-string
+assertions in `announcements.test.ts` to match. Swept the rest of
+`announcements.ts` for other stale shape/cost prose (the `moveCostClause`
+doc comment about the free orthogonal step, and the fight/pass sentences)
+and found nothing else naming a shape or a price — they were already
+generic. `npm test`: 64 files, 1208 tests, all green (same count as Step 6's
+baseline, since this step only reworded two literal strings and their
+matching test expectations). `npm run typecheck` and `npm run lint` clean.
+Grep for "two squares or an L cost 2" (as a full old sentence ending) and
+for "two squares orthogonally, or an L" across `src/` returns nothing. No
+manual verification attached, per `CLAUDE.md`'s stance that live-region
+wording is covered by the automated suite. No deviations from the plan.
 
 Three sentences in `src/board/announcements.ts` recite §6's old table and are
 now wrong: the `cannot-afford` move refusal, the `target-out-of-range` attack
