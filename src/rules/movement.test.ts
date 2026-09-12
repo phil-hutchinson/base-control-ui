@@ -577,18 +577,18 @@ describe("legalDestinations and moveRefusalReason", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "I8")],
     });
-    expect(
-      moveRefusalReason(state, "green-1", squareFromName("K9")),
-    ).toBe("path-blocked");
+    expect(moveRefusalReason(state, "green-1", squareFromName("K9"))).toBe(
+      "path-blocked",
+    );
   });
 
   it("is refused when an enemy stands on J8, one of the long knight's five passed-over squares", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "J8")],
     });
-    expect(
-      moveRefusalReason(state, "green-1", squareFromName("K9")),
-    ).toBe("path-blocked");
+    expect(moveRefusalReason(state, "green-1", squareFromName("K9"))).toBe(
+      "path-blocked",
+    );
   });
 
   it("is refused when an enemy stands on K8, one of the long knight's five passed-over squares (D5)", () => {
@@ -598,27 +598,27 @@ describe("legalDestinations and moveRefusalReason", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "K8")],
     });
-    expect(
-      moveRefusalReason(state, "green-1", squareFromName("K9")),
-    ).toBe("path-blocked");
+    expect(moveRefusalReason(state, "green-1", squareFromName("K9"))).toBe(
+      "path-blocked",
+    );
   });
 
   it("is refused when an enemy stands on I9, one of the long knight's five passed-over squares", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "I9")],
     });
-    expect(
-      moveRefusalReason(state, "green-1", squareFromName("K9")),
-    ).toBe("path-blocked");
+    expect(moveRefusalReason(state, "green-1", squareFromName("K9"))).toBe(
+      "path-blocked",
+    );
   });
 
   it("is refused when an enemy stands on J9, one of the long knight's five passed-over squares", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "J9")],
     });
-    expect(
-      moveRefusalReason(state, "green-1", squareFromName("K9")),
-    ).toBe("path-blocked");
+    expect(moveRefusalReason(state, "green-1", squareFromName("K9"))).toBe(
+      "path-blocked",
+    );
   });
 
   it("is legal for the long knight when a friendly ship stands on any of its five passed-over squares", () => {
