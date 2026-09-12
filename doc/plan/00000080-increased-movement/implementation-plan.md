@@ -642,7 +642,35 @@ power has **thirty-six** legal destinations, at 2 power twenty, at 1 eight, at
 
 ### Step 5 — Pin the new geometry in `movement.test.ts`
 
-Status: pending
+Status: committed
+
+Notes: Added a new `describe("the long knight (rules.md §6)", ...)` block
+next to the L's, geometry-only (no `GameState`), pinning: all eight
+destinations at cost 3, unaffordable at 2/1/0 (D2); the exact eight offsets
+(±3, ±1) and (±1, ±3); the five passed-over squares in the plan's defined
+order — run first, offset squares second (D3); and the sign rule of D6,
+computed independently of the literal table and compared against it. Added
+two assertions to the existing "names the squares passed over" test for the
+two new straight shapes (K8 passes over I8, J8; J10 passes over I9), and a
+new "gives all thirty-six destinations from a central square, pairwise
+distinct" test in the `reachFrom` describe (D7) — largely already covered by
+the pre-existing "no two shapes share a destination" test across several
+origins, added anyway since the plan calls it out by name. In
+`legalDestinations and moveRefusalReason`, added: a blocking test for three
+squares orthogonally (enemy on I8 or J8 blocks H8→K8, friendly does not);
+five separate `it` blocks, one per long-knight passed-over square (I8, J8,
+K8, I9, J9), each asserting `path-blocked` from an enemy there — kept
+deliberately separate per the task's emphasis rather than folded into one
+loop, with K8's carrying a comment on why it blocks despite not lying
+between origin and destination in a straight-line sense (D5); one test
+confirming a friendly ship on any of the five is legal; one test confirming
+an enemy on H9 does not block it; and one affordability test confirming K8,
+J10 and K9 are `cannot-afford` (not `out-of-range`) at 2 power, legal at 3,
+and that every 2-power destination remains reachable at 3. All new
+assertions passed against the existing implementation on the first run — no
+implementation bug found. No existing test was weakened or removed. `npm
+test`: 64 files, 1201 tests, all green (1187 baseline + 14 new). Typecheck
+and lint clean. No deviations from the plan.
 
 Extend `src/rules/movement.test.ts` so the new shapes are pinned as tightly as
 the L is. All of these are additions; keep the existing describe blocks'

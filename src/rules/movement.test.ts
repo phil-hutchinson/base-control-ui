@@ -181,6 +181,29 @@ describe("reachFrom", () => {
     );
     expect(oneSquareEntry).toBeDefined();
     expect(oneSquareEntry?.passedOver).toEqual([]);
+
+    const threeOrthogonalEntry = reachFrom(origin, 3).find(
+      (entry) => squareName(entry.destination) === "K8",
+    );
+    expect(threeOrthogonalEntry).toBeDefined();
+    expect(threeOrthogonalEntry?.passedOver.map(squareName)).toEqual([
+      "I8",
+      "J8",
+    ]);
+
+    const twoDiagonalEntry = reachFrom(origin, 3).find(
+      (entry) => squareName(entry.destination) === "J10",
+    );
+    expect(twoDiagonalEntry).toBeDefined();
+    expect(twoDiagonalEntry?.passedOver.map(squareName)).toEqual(["I9"]);
+  });
+
+  it("gives all thirty-six destinations from a central square, pairwise distinct", () => {
+    const destinations = allShapesFrom(squareFromName("H8")).map((entry) =>
+      squareName(entry.destination),
+    );
+    expect(destinations).toHaveLength(36);
+    expect(new Set(destinations).size).toBe(36);
   });
 
   it("prices every entry as §6's table prices its shape", () => {
@@ -286,6 +309,119 @@ describe("the L (rules.md §6)", () => {
 
       expect(expected.orthogonalCorner).toBe(squareName(orthogonalCorner));
       expect(expected.diagonalCorner).toBe(squareName(diagonalCorner));
+    }
+  });
+});
+
+describe("the long knight (rules.md §6)", () => {
+  const origin = squareFromName("H8");
+
+  const EXPECTED_LONG_KNIGHT_DESTINATIONS: ReadonlyArray<{
+    destination: string;
+    passedOver: readonly string[];
+  }> = [
+    { destination: "K9", passedOver: ["I8", "J8", "K8", "I9", "J9"] },
+    { destination: "K7", passedOver: ["I8", "J8", "K8", "I7", "J7"] },
+    { destination: "E9", passedOver: ["G8", "F8", "E8", "G9", "F9"] },
+    { destination: "E7", passedOver: ["G8", "F8", "E8", "G7", "F7"] },
+    { destination: "I11", passedOver: ["H9", "H10", "H11", "I9", "I10"] },
+    { destination: "G11", passedOver: ["H9", "H10", "H11", "G9", "G10"] },
+    { destination: "I5", passedOver: ["H7", "H6", "H5", "I7", "I6"] },
+    { destination: "G5", passedOver: ["H7", "H6", "H5", "G7", "G6"] },
+  ];
+
+  it("reaches all eight long knight destinations from an open square, each costing 3, none affordable at 2 or below", () => {
+    for (const expected of EXPECTED_LONG_KNIGHT_DESTINATIONS) {
+      const entry = shapeReaching(origin, squareFromName(expected.destination));
+      expect(entry).toBeDefined();
+      expect(entry?.cost).toBe(3);
+      expect(destinationNames("H8", 2)).not.toContain(expected.destination);
+      expect(destinationNames("H8", 1)).not.toContain(expected.destination);
+      expect(destinationNames("H8", 0)).not.toContain(expected.destination);
+    }
+  });
+
+  it("has exactly the eight offsets (±3, ±1) and (±1, ±3)", () => {
+    const columnIndex = (square: Square) =>
+      COLUMN_LETTERS.indexOf(square.column);
+    const offsetKey = ([deltaColumn, deltaRow]: readonly [number, number]) =>
+      `${deltaColumn},${deltaRow}`;
+
+    const actual = new Set(
+      EXPECTED_LONG_KNIGHT_DESTINATIONS.map((expected) => {
+        const destination = squareFromName(expected.destination);
+        return offsetKey([
+          columnIndex(destination) - columnIndex(origin),
+          destination.row - origin.row,
+        ]);
+      }),
+    );
+
+    const expected = new Set(
+      (
+        [
+          [3, 1],
+          [3, -1],
+          [-3, 1],
+          [-3, -1],
+          [1, 3],
+          [-1, 3],
+          [1, -3],
+          [-1, -3],
+        ] as const
+      ).map(offsetKey),
+    );
+
+    expect(actual).toEqual(expected);
+  });
+
+  it("passes over the three squares of its long run in order, then the two offset squares in order, exactly as §6 names them (D3)", () => {
+    for (const expected of EXPECTED_LONG_KNIGHT_DESTINATIONS) {
+      const entry = shapeReaching(origin, squareFromName(expected.destination));
+      expect(entry?.passedOver.map(squareName)).toEqual(expected.passedOver);
+    }
+  });
+
+  it("derives each long knight's five passed-over squares from the sign rule, independent of the literal table above (D6)", () => {
+    const columnIndex = (square: Square) =>
+      COLUMN_LETTERS.indexOf(square.column);
+    const sign = Math.sign;
+
+    for (const expected of EXPECTED_LONG_KNIGHT_DESTINATIONS) {
+      const destination = squareFromName(expected.destination);
+      const deltaColumn = columnIndex(destination) - columnIndex(origin);
+      const deltaRow = destination.row - origin.row;
+
+      const passedOverOffsets: ReadonlyArray<readonly [number, number]> =
+        Math.abs(deltaColumn) === 3
+          ? (() => {
+              const s = sign(deltaColumn);
+              return [
+                [s, 0],
+                [2 * s, 0],
+                [3 * s, 0],
+                [s, deltaRow],
+                [2 * s, deltaRow],
+              ];
+            })()
+          : (() => {
+              const s = sign(deltaRow);
+              return [
+                [0, s],
+                [0, 2 * s],
+                [0, 3 * s],
+                [deltaColumn, s],
+                [deltaColumn, 2 * s],
+              ];
+            })();
+
+      const passedOverSquares = passedOverOffsets.map(([dc, dr]) =>
+        squareName(
+          squareAt(COLUMN_LETTERS[columnIndex(origin) + dc], origin.row + dr),
+        ),
+      );
+
+      expect(expected.passedOver).toEqual(passedOverSquares);
     }
   });
 });
@@ -414,6 +550,129 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(
       moveRefusalReason(enemyOnDiagonalCorner, "green-1", squareFromName("J9")),
     ).toBe("path-blocked");
+  });
+
+  it("blocks three squares orthogonally from either intervening square, only for an enemy ship there", () => {
+    for (const square of ["I8", "J8"]) {
+      const friendlyState = buildState({
+        ships: [
+          ship("green-1", "green", "H8"),
+          ship("green-2", "green", square),
+        ],
+      });
+      expect(
+        moveRefusalReason(friendlyState, "green-1", squareFromName("K8")),
+      ).toBeUndefined();
+
+      const enemyState = buildState({
+        ships: [ship("green-1", "green", "H8"), ship("red-1", "red", square)],
+      });
+      expect(
+        moveRefusalReason(enemyState, "green-1", squareFromName("K8")),
+      ).toBe("path-blocked");
+    }
+  });
+
+  it("is refused when an enemy stands on I8, one of the long knight's five passed-over squares", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "I8")],
+    });
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("K9")),
+    ).toBe("path-blocked");
+  });
+
+  it("is refused when an enemy stands on J8, one of the long knight's five passed-over squares", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "J8")],
+    });
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("K9")),
+    ).toBe("path-blocked");
+  });
+
+  it("is refused when an enemy stands on K8, one of the long knight's five passed-over squares (D5)", () => {
+    // K8 blocks H8 to K9 even though it is not between origin and
+    // destination in any straight-line sense — the first route out of single
+    // steps turns through it.
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "K8")],
+    });
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("K9")),
+    ).toBe("path-blocked");
+  });
+
+  it("is refused when an enemy stands on I9, one of the long knight's five passed-over squares", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "I9")],
+    });
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("K9")),
+    ).toBe("path-blocked");
+  });
+
+  it("is refused when an enemy stands on J9, one of the long knight's five passed-over squares", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "J9")],
+    });
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("K9")),
+    ).toBe("path-blocked");
+  });
+
+  it("is legal for the long knight when a friendly ship stands on any of its five passed-over squares", () => {
+    for (const square of ["I8", "J8", "K8", "I9", "J9"]) {
+      const state = buildState({
+        ships: [
+          ship("green-1", "green", "H8"),
+          ship("green-2", "green", square),
+        ],
+      });
+      expect(
+        moveRefusalReason(state, "green-1", squareFromName("K9")),
+      ).toBeUndefined();
+    }
+  });
+
+  it("is not blocked by an enemy on H9, the square deliberately excluded from the long knight's five (D5)", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "H9")],
+    });
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("K9")),
+    ).toBeUndefined();
+  });
+
+  it("refuses each of the three new shapes with cannot-afford at 2 power, allows them at 3, and still allows every 2-power destination", () => {
+    const twoPower = buildState({
+      ships: [ship("green-1", "green", "H8", 2)],
+    });
+    for (const destination of ["K8", "J10", "K9"]) {
+      expect(
+        moveRefusalReason(twoPower, "green-1", squareFromName(destination)),
+      ).toBe("cannot-afford");
+    }
+
+    const threePower: GameState = {
+      ...twoPower,
+      ships: [ship("green-1", "green", "H8", 3)],
+    };
+    for (const destination of ["K8", "J10", "K9"]) {
+      expect(
+        moveRefusalReason(threePower, "green-1", squareFromName(destination)),
+      ).toBeUndefined();
+    }
+
+    const twoPowerDestinations = legalDestinations(twoPower, "green-1").map(
+      squareName,
+    );
+    const threePowerDestinations = new Set(
+      legalDestinations(threePower, "green-1").map(squareName),
+    );
+    for (const square of twoPowerDestinations) {
+      expect(threePowerDestinations.has(square)).toBe(true);
+    }
   });
 
   it("refuses an unaffordable shape with cannot-afford, distinct from a square out of range altogether", () => {
