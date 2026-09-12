@@ -1014,7 +1014,13 @@ squares is the longest move.
 
 ### Step 10 — The owner plays with the longer reach
 
-Status: pending
+Status: committed
+
+Notes: Verified by the owner on 2026-09-12 — the guide diagram, the
+board's highlighting at 3 power and at 2, the long knight's blocking,
+and a full game all behave as expected. The two judgement calls about
+how the game now plays were not called either way; they remain evidence
+for a later tuning story (S5).
 
 The story's manual checks, gathered in one place. Nothing to implement; the
 owner runs the app (`npm run dev`) and looks.
