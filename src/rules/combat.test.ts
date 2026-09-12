@@ -1,17 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { PLANETS, isPlanet } from "./planets";
-import { type Square, squareAt, squareFromName, squareName } from "./board";
+import {
+  COLUMN_LETTERS,
+  isOnBoard,
+  type Square,
+  squareAt,
+  squareFromName,
+  squareName,
+} from "./board";
 import {
   attackReach,
   attackRefusalReason,
   drawReturnPlanet,
   legalTargets,
 } from "./combat";
+import { applyAttack } from "./ply";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { reachFrom } from "./movement";
-import type { PowerLevel } from "./power";
+import { MAX_POWER, type PowerLevel } from "./power";
 import { DEFAULT_CHARGED_NODE_COUNT, type NodeState } from "./nodes";
 
 function ship(
@@ -73,6 +81,35 @@ function orthogonalNonPlanetNeighbourOf(square: Square): Square {
     );
   }
   return neighbour;
+}
+
+/**
+ * A square three squares orthogonally from `square` that is not itself a
+ * planet, so a long-range attack on `square` can be set up without also
+ * hitting a second planet's own protection. Derived rather than named, for
+ * the same reason as `orthogonalNonPlanetNeighbourOf`.
+ */
+function threeOrthogonalNonPlanetNeighbourOf(square: Square): Square {
+  const columnIndex = COLUMN_LETTERS.indexOf(square.column);
+  const offsets: readonly [number, number][] = [
+    [3, 0],
+    [-3, 0],
+    [0, 3],
+    [0, -3],
+  ];
+  for (const [deltaColumn, deltaRow] of offsets) {
+    const column = COLUMN_LETTERS[columnIndex + deltaColumn];
+    const row = square.row + deltaRow;
+    if (column !== undefined && isOnBoard(column, row)) {
+      const candidate = squareAt(column, row);
+      if (!isPlanet(candidate)) {
+        return candidate;
+      }
+    }
+  }
+  throw new Error(
+    `no three-orthogonal non-planet neighbour found for ${squareName(square)}`,
+  );
 }
 
 describe("attackReach", () => {
@@ -375,6 +412,149 @@ describe("attackRefusalReason / legalTargets", () => {
         power === 0 ? 4 : power === 1 ? 8 : power === 2 ? 20 : 36,
       );
     }
+  });
+});
+
+describe("attackRefusalReason / legalTargets at the wider reach (rules.md §6, §7)", () => {
+  it("lets a 3-power ship attack at long-knight range, paying the shot down to 0 before the same turn's charge lifts it back up", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "K9", 4)],
+    });
+
+    expect(
+      attackRefusalReason(state, "green-1", squareFromName("K9")),
+    ).toBeUndefined();
+
+    const result = applyAttack(state, "green-1", squareFromName("K9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    // The long knight costs 3 (rules.md §6), exactly what this ship carries,
+    // so the fight-resolved snapshot shows it spending everything: 3 power
+    // in, cost 3, nothing left the instant it lands on its planet.
+    expect(result.effects[0]).toMatchObject({
+      type: "fight-resolved",
+      attacker: { shipId: "green-1", power: 3 },
+      defender: { shipId: "red-1", power: 4 },
+      cost: 3,
+    });
+
+    const attacker = result.state.ships.find((s) => s.id === "green-1");
+    const defender = result.state.ships.find((s) => s.id === "red-1");
+    expect(isPlanet(attacker!.square)).toBe(true);
+    expect(isPlanet(defender!.square)).toBe(true);
+
+    const occupiedSquareNames = result.state.ships.map((s) =>
+      squareName(s.square),
+    );
+    expect(occupiedSquareNames).not.toContain("H8");
+    expect(occupiedSquareNames).not.toContain("K9");
+
+    // Landing empty, green-1 is the only green ship charging this turn, so
+    // it gains at the lone-charger rate (rules.md §3.1, §8.6 step 1); the
+    // defender is not the moving side this turn and keeps the power it had.
+    expect(attacker!.power).toBe(Math.min(0 + 2, MAX_POWER));
+    expect(defender!.power).toBe(4);
+  });
+
+  it("refuses the same long-knight shot at 2 power with cannot-afford-target, not target-out-of-range", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "K9", 4)],
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("K9"))).toBe(
+      "cannot-afford-target",
+    );
+    expect(legalTargets(state, "green-1")).not.toContainEqual(
+      squareFromName("K9"),
+    );
+  });
+
+  it("blocks a long-knight attack from K8, one of the five squares it passes over, and lets a friendly ship stand there instead", () => {
+    // K8 is not on the straight line between H8 and K9, but it is one of
+    // the long knight's five passed-over squares all the same (rules.md §6,
+    // the H8-to-K9 worked example) — the case D5 warns is easiest to get
+    // wrong.
+    const blockedByEnemy = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 4),
+        ship("red-blocker", "red", "K8", 4),
+        ship("red-target", "red", "K9", 4),
+      ],
+    });
+    const friendlyOnTheSameSquare = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 4),
+        ship("green-2", "green", "K8", 4),
+        ship("red-target", "red", "K9", 4),
+      ],
+    });
+
+    expect(
+      attackRefusalReason(blockedByEnemy, "green-1", squareFromName("K9")),
+    ).toBe("attack-path-blocked");
+    expect(
+      attackRefusalReason(
+        friendlyOnTheSameSquare,
+        "green-1",
+        squareFromName("K9"),
+      ),
+    ).toBeUndefined();
+  });
+
+  it("lets a 3-power ship attack three squares orthogonally, and refuses the same shot at 2 power", () => {
+    const withThreePower = buildState({
+      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "K8", 4)],
+    });
+    const withTwoPower = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "K8", 4)],
+    });
+
+    expect(
+      attackRefusalReason(withThreePower, "green-1", squareFromName("K8")),
+    ).toBeUndefined();
+    expect(
+      attackRefusalReason(withTwoPower, "green-1", squareFromName("K8")),
+    ).toBe("cannot-afford-target");
+  });
+
+  it("still refuses a target standing on a planet, reached at three-orthogonal range rather than one square", () => {
+    const planet = PLANETS[0];
+    const farSquare = threeOrthogonalNonPlanetNeighbourOf(planet);
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", squareName(farSquare), 3),
+        ship("red-1", "red", squareName(planet), 4),
+      ],
+    });
+
+    expect(attackRefusalReason(state, "green-1", planet)).toBe(
+      "target-on-planet",
+    );
+  });
+
+  it("still refuses a target on a charged node, reached at long-knight range rather than one square", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "K9", 4)],
+      nodes: { K9: "charged" },
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("K9"))).toBe(
+      "target-on-charged-node",
+    );
+  });
+
+  it("still refuses a target trapped on a depleted node, reached at long-knight range rather than one square", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "K9", 4)],
+      nodes: { K9: "depleted" },
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("K9"))).toBe(
+      "target-on-depleted-node",
+    );
   });
 });
 

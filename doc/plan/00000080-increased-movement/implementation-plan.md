@@ -713,7 +713,44 @@ passing. Then `npm run typecheck` and `npm run lint`.
 
 ### Step 6 — Pin attacks at the new range in `combat.test.ts`
 
-Status: pending
+Status: committed
+
+Notes: Added a new `describe("attackRefusalReason / legalTargets at the wider
+reach (rules.md §6, §7)", ...)` block with seven tests: a 3-power long-knight
+attack applied through `applyAttack` (fight-resolved snapshot shows power 3
+in, cost 3, defender's power untouched; both squares vacated; the attacker
+then gains at the lone-charger rate per §3.1/§8.6 step 1, landing at 2, not a
+bare 0 — see deviation below); the same shot refused at 2 power with
+`cannot-afford-target`, not `target-out-of-range`; a long-knight attack
+blocked by an enemy on K8 (one of the five, not on the straight line) and
+legal with a friendly ship there instead; a three-orthogonal attack legal at
+3 power and refused at 2 with `cannot-afford-target`; and three "still
+refuses" tests carrying the existing planet/charged-node/depleted-node
+target protections out to long range (three-orthogonal for the planet case,
+long-knight for the node cases), confirming none of them is a
+distance-limited check. Added a `threeOrthogonalNonPlanetNeighbourOf` helper
+alongside the existing `orthogonalNonPlanetNeighbourOf` to find a
+non-planet square three squares from a planet for the long-range
+planet-protection test. `combat.ts` needed no change — every new case passed
+against the existing implementation on the first run, confirming D1's
+no-leak claim for §7 as well as §6. No existing test was weakened or
+removed. Deviation: the plan's step text says the attack "leaves the
+attacker on a planet at 0 power"; measured against the real implementation,
+`applyAttack` also runs the same turn's end-of-turn sequence (§8.6 step 1),
+so a ship landing at 0 with no other green ship also charging gains the
+lone-charger rate immediately and ends at 2, not 0. This is existing,
+already-tested behaviour (ply.test.ts's jab test uses the identical
+`Math.min(power + 2, MAX_POWER)` idiom), not a combat-specific bug, so the
+test asserts the true value (2) while pinning the _payment_ itself — power
+3 in, cost 3 — via the fight-resolved effect, which is the part of "arrives
+having paid" that is actually combat's to prove; the post-charge lift is
+§8.6's concern, already covered elsewhere. Also added the target-protection
+cases (planet, charged node, depleted node) at long range beyond the plan
+step's own four bullets, since the dispatching brief asked for them
+explicitly and they fit the step's purpose of proving no attack-specific
+range or distance exception leaked in. `npm test`: 64 files, 1208 tests, all
+green (1201 baseline + 7 new); `combat.test.ts` alone: 44 tests (was 37).
+Typecheck and lint clean.
 
 `combat.ts` is expected to need **no change**: attack range is §6's range and
 it reads `movement.ts`'s lookups (D1, S3). This step proves that with tests
