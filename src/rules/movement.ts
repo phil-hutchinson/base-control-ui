@@ -259,7 +259,9 @@ const REACH_OPTIONS: readonly ReachOption[] = [
  * One square a ship could move to: the destination, the squares passed over
  * on the way there (in order, excluding both the origin and the
  * destination), and the power the move costs (rules.md §6). The L's
- * `passedOver` carries both of its corners, orthogonal corner first.
+ * `passedOver` carries both of its corners, orthogonal corner first; the
+ * long knight's carries its five — the run along the long axis, near to
+ * far, then the two offset squares, near to far.
  */
 export interface ReachEntry {
   readonly destination: Square;

@@ -348,13 +348,18 @@ describe("the long knight (rules.md §6)", () => {
       `${deltaColumn},${deltaRow}`;
 
     const actual = new Set(
-      EXPECTED_LONG_KNIGHT_DESTINATIONS.map((expected) => {
-        const destination = squareFromName(expected.destination);
-        return offsetKey([
-          columnIndex(destination) - columnIndex(origin),
-          destination.row - origin.row,
-        ]);
-      }),
+      allShapesFrom(origin)
+        .filter((entry) => entry.cost === 3)
+        .map((entry): readonly [number, number] => [
+          columnIndex(entry.destination) - columnIndex(origin),
+          entry.destination.row - origin.row,
+        ])
+        .filter(
+          ([deltaColumn, deltaRow]) =>
+            [Math.abs(deltaColumn), Math.abs(deltaRow)].sort().join(",") ===
+            "1,3",
+        )
+        .map(offsetKey),
     );
 
     const expected = new Set(
@@ -375,14 +380,14 @@ describe("the long knight (rules.md §6)", () => {
     expect(actual).toEqual(expected);
   });
 
-  it("passes over the three squares of its long run in order, then the two offset squares in order, exactly as §6 names them (D3)", () => {
+  it("passes over the three squares of its long run in order, then the two offset squares in order, exactly as §6 names them", () => {
     for (const expected of EXPECTED_LONG_KNIGHT_DESTINATIONS) {
       const entry = shapeReaching(origin, squareFromName(expected.destination));
       expect(entry?.passedOver.map(squareName)).toEqual(expected.passedOver);
     }
   });
 
-  it("derives each long knight's five passed-over squares from the sign rule, independent of the literal table above (D6)", () => {
+  it("derives each long knight's five passed-over squares from the sign rule, independent of the literal table above", () => {
     const columnIndex = (square: Square) =>
       COLUMN_LETTERS.indexOf(square.column);
     const sign = Math.sign;
@@ -591,7 +596,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     );
   });
 
-  it("is refused when an enemy stands on K8, one of the long knight's five passed-over squares (D5)", () => {
+  it("is refused when an enemy stands on K8, one of the long knight's five passed-over squares", () => {
     // K8 blocks H8 to K9 even though it is not between origin and
     // destination in any straight-line sense — the first route out of single
     // steps turns through it.
@@ -635,7 +640,7 @@ describe("legalDestinations and moveRefusalReason", () => {
     }
   });
 
-  it("is not blocked by an enemy on H9, the square deliberately excluded from the long knight's five (D5)", () => {
+  it("is not blocked by an enemy on H9, the square deliberately excluded from the long knight's five", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "H9")],
     });

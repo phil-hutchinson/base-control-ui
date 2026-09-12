@@ -25,9 +25,9 @@ const CENTRAL_ORIGIN = squareAt("H", 8);
  * Every square reachable in one move from a central square, as an offset
  * from that square, with what it costs (rules.md §6): the four orthogonal
  * neighbours at 0, the four diagonal neighbours at 1, the twelve two-step
- * squares — four straight, eight L-shaped — at 2, and the sixteen
- * three-square shapes — four straight orthogonally, four straight
- * diagonally, and eight long knight — at 3. The twelve offsets (±2, ±3),
+ * squares — four straight, eight L-shaped — at 2, and the sixteen squares
+ * that cost 3 — four three squares orthogonally, four two squares
+ * diagonally, and eight long knight. The twelve offsets (±2, ±3),
  * (±3, ±2) and (±3, ±3) are not reachable by any shape and are absent, and so
  * is the centre itself. If two shapes were ever to reach the same offset, the
  * cheaper is kept.

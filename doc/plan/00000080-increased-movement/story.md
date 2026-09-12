@@ -115,7 +115,9 @@ that were illegal are now legal), so it would be a tag candidate; tagging
 stays on hold (`CLAUDE.md`).
 
 - **§6's opening sentence** no longer says a ship moves one or two squares.
-  It moves one, two, three or four, in the shapes the table gives.
+  It moves one, two or three, in the shapes the table gives — the sentence
+  counts where the ship ends up, not the length of the walk, so the long
+  knight's four-step walk still counts as three.
 - **§6's table** gains the three rows above.
 - **§6's power walkthrough** is rewritten: 0 power reaches the four free
   orthogonal steps, 1 power the eight single steps, 2 power the twenty, and
@@ -238,8 +240,9 @@ knowingly lost goes in
 - The long knight from H8 to K9 is refused with **path blocked** when an
   enemy stands on I8, J8, K8, I9 or J9, and is legal when an enemy stands on
   H9 or when any of the five holds a **friendly** ship.
-- A ship at 3 power can attack an enemy at long-knight range and arrives on
-  a planet with 0 power; at 2 power the same shot is refused.
+- A ship at 3 power can attack an enemy at long-knight range, paying the
+  shot down to 0, then gains at the lone-charger rate in the same turn's
+  end-of-turn step, ending at 2; at 2 power the same shot is refused.
 - The Quick Guide's movement diagram is 7 x 7, with the ship at centre,
   sixteen squares reading 3, and the twelve corner-ish squares blank.
 - A full game plays through with the wider reach and the suite is green.

@@ -475,8 +475,7 @@ describe("attackRefusalReason / legalTargets at the wider reach (rules.md §6, �
   it("blocks a long-knight attack from K8, one of the five squares it passes over, and lets a friendly ship stand there instead", () => {
     // K8 is not on the straight line between H8 and K9, but it is one of
     // the long knight's five passed-over squares all the same (rules.md §6,
-    // the H8-to-K9 worked example) — the case D5 warns is easiest to get
-    // wrong.
+    // the H8-to-K9 worked example).
     const blockedByEnemy = buildState({
       ships: [
         ship("green-1", "green", "H8", 4),
