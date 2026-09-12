@@ -56,25 +56,25 @@ interface StraightReachOption {
 }
 
 /**
- * One of the L's eight destinations, as an offset from the origin in
- * (column, row) terms, together with the two squares it turns through: the
- * one it turns through orthogonally, and the one it turns through
- * diagonally. Both corners are given as offsets from the origin too.
+ * One of a leap shape's destinations, as an offset from the origin in
+ * (column, row) terms, together with the squares it passes over on the way —
+ * each also given as an offset from the origin. The L's two entries each
+ * carry two passed-over offsets: the one it turns through orthogonally, then
+ * the one it turns through diagonally.
  */
-interface LOffset {
+interface LeapOffset {
   readonly delta: readonly [number, number];
-  readonly orthogonalCorner: readonly [number, number];
-  readonly diagonalCorner: readonly [number, number];
+  readonly passedOver: readonly (readonly [number, number])[];
 }
 
-interface LReachOption {
-  readonly kind: "L";
+interface LeapReachOption {
+  readonly kind: "leap";
   /** The power this shape costs (rules.md §6's table). */
   readonly cost: PowerLevel;
-  readonly offsets: readonly LOffset[];
+  readonly offsets: readonly LeapOffset[];
 }
 
-type ReachOption = StraightReachOption | LReachOption;
+type ReachOption = StraightReachOption | LeapReachOption;
 
 /**
  * The L's eight destinations (rules.md §6): one orthogonal step and one
@@ -84,17 +84,66 @@ type ReachOption = StraightReachOption | LReachOption;
  * corner is one step along the longer axis and the diagonal corner is one
  * diagonal step towards the destination — e.g. the L from H8 to J9 is
  * (dc: 2, dr: 1), whose orthogonal corner is I8 and whose diagonal corner is
- * I9, exactly as rules.md §6 describes it.
+ * I9, exactly as rules.md §6 describes it. `passedOver` lists the orthogonal
+ * corner first, then the diagonal corner.
  */
-const L_OFFSETS: readonly LOffset[] = [
-  { delta: [2, 1], orthogonalCorner: [1, 0], diagonalCorner: [1, 1] },
-  { delta: [2, -1], orthogonalCorner: [1, 0], diagonalCorner: [1, -1] },
-  { delta: [-2, 1], orthogonalCorner: [-1, 0], diagonalCorner: [-1, 1] },
-  { delta: [-2, -1], orthogonalCorner: [-1, 0], diagonalCorner: [-1, -1] },
-  { delta: [1, 2], orthogonalCorner: [0, 1], diagonalCorner: [1, 1] },
-  { delta: [1, -2], orthogonalCorner: [0, -1], diagonalCorner: [1, -1] },
-  { delta: [-1, 2], orthogonalCorner: [0, 1], diagonalCorner: [-1, 1] },
-  { delta: [-1, -2], orthogonalCorner: [0, -1], diagonalCorner: [-1, -1] },
+const L_OFFSETS: readonly LeapOffset[] = [
+  {
+    delta: [2, 1],
+    passedOver: [
+      [1, 0],
+      [1, 1],
+    ],
+  },
+  {
+    delta: [2, -1],
+    passedOver: [
+      [1, 0],
+      [1, -1],
+    ],
+  },
+  {
+    delta: [-2, 1],
+    passedOver: [
+      [-1, 0],
+      [-1, 1],
+    ],
+  },
+  {
+    delta: [-2, -1],
+    passedOver: [
+      [-1, 0],
+      [-1, -1],
+    ],
+  },
+  {
+    delta: [1, 2],
+    passedOver: [
+      [0, 1],
+      [1, 1],
+    ],
+  },
+  {
+    delta: [1, -2],
+    passedOver: [
+      [0, -1],
+      [1, -1],
+    ],
+  },
+  {
+    delta: [-1, 2],
+    passedOver: [
+      [0, 1],
+      [-1, 1],
+    ],
+  },
+  {
+    delta: [-1, -2],
+    passedOver: [
+      [0, -1],
+      [-1, -1],
+    ],
+  },
 ];
 
 /** §6's cost table, transcribed row for row. */
@@ -102,7 +151,7 @@ const REACH_OPTIONS: readonly ReachOption[] = [
   { kind: "orthogonal", distance: 1, cost: 0 },
   { kind: "diagonal", distance: 1, cost: 1 },
   { kind: "orthogonal", distance: 2, cost: 2 },
-  { kind: "L", cost: 2, offsets: L_OFFSETS },
+  { kind: "leap", cost: 2, offsets: L_OFFSETS },
 ];
 
 /**
@@ -145,27 +194,26 @@ export function allShapesFrom(origin: Square): readonly ReachEntry[] {
   const entries: ReachEntry[] = [];
 
   for (const option of REACH_OPTIONS) {
-    if (option.kind === "L") {
+    if (option.kind === "leap") {
       for (const offset of option.offsets) {
         const destination = squareAtOffset(origin, ...offset.delta);
         if (destination === undefined) {
           continue;
         }
 
-        const orthogonalCorner = squareAtOffset(
-          origin,
-          ...offset.orthogonalCorner,
-        );
-        const diagonalCorner = squareAtOffset(origin, ...offset.diagonalCorner);
-        if (orthogonalCorner === undefined || diagonalCorner === undefined) {
-          throw new RangeError(
-            `an L's corner left the board from ${squareName(origin)} while its destination did not`,
-          );
-        }
+        const passedOver = offset.passedOver.map((corner) => {
+          const square = squareAtOffset(origin, ...corner);
+          if (square === undefined) {
+            throw new RangeError(
+              `a leap's passed-over square left the board from ${squareName(origin)} while its destination did not`,
+            );
+          }
+          return square;
+        });
 
         entries.push({
           destination,
-          passedOver: [orthogonalCorner, diagonalCorner],
+          passedOver,
           cost: option.cost,
         });
       }

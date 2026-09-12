@@ -441,7 +441,21 @@ twenty must be the ones that correctly describe what **2 power** reaches, and
 
 ### Step 2 — Generalise the L's corner pair into a list of passed-over offsets
 
-Status: pending
+Status: committed
+
+Notes: `LOffset` (now `LeapOffset`) carries `passedOver: readonly (readonly
+[number, number])[]` instead of `orthogonalCorner`/`diagonalCorner`; the L's
+table keeps its eight rows, each still listing the orthogonal corner first
+then the diagonal corner. `LReachOption` and its `"L"` kind became
+`LeapReachOption`/`"leap"`, and `allShapesFrom`'s branch now maps
+`offset.passedOver` in order instead of naming two corners, throwing the same
+`RangeError` (reworded from "an L's corner" to "a leap's passed-over square")
+if one leaves the board while the destination does not. `ReachEntry`'s doc
+comment was left as is per the step's instruction. `npm test` reports the
+same 64 files / 1184 tests, all green, with `movement.test.ts`'s and
+`combat.test.ts`'s corner-order assertions untouched (they use their own
+local fixtures, not the module's now-renamed internal type). Typecheck and
+lint clean. No deviations from the plan.
 
 In `src/rules/movement.ts` only, replace the L offset record's fixed
 `orthogonalCorner` / `diagonalCorner` pair with a **list of passed-over
