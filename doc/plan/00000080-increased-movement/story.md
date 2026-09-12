@@ -11,18 +11,18 @@ something a half-empty one cannot.
 This story spends the third unit. Three new shapes join §6's table, all
 priced at **3**:
 
-| Move                                                                      | Cost |
-| ------------------------------------------------------------------------- | ---- |
-| three squares orthogonally                                                | 3    |
-| two squares diagonally                                                    | 3    |
-| the **long knight** — three squares orthogonally and one to either side   | 3    |
+| Move                                                                    | Cost |
+| ----------------------------------------------------------------------- | ---- |
+| three squares orthogonally                                              | 3    |
+| two squares diagonally                                                  | 3    |
+| the **long knight** — three squares orthogonally and one to either side | 3    |
 
 Two of the three are returning: two squares diagonally and three squares
 orthogonally were both in the game before 0.28 and were dropped when the
 table was written. They come back at a price. The long knight is new.
 
-The reach goes from **twenty** squares to **thirty-six**, and the longest
-move on the board goes from two squares to four.
+The reach goes from **twenty** squares to **thirty-six**, and the furthest a
+ship can land goes from two squares away to three.
 
 ## What changes
 
@@ -61,12 +61,12 @@ squares each new shape passes over.
   The five are the union of every way of walking the shape out of single
   steps whose **first step is along the long axis**:
 
-  | Route                                    | Passes over    |
-  | ---------------------------------------- | -------------- |
-  | three orthogonal, then one across        | I8, J8, K8     |
-  | two orthogonal, then a diagonal          | I8, J8         |
-  | one orthogonal, a diagonal, one orthogonal | I8, J9       |
-  | a diagonal, then two orthogonal          | I9, J9         |
+  | Route                                      | Passes over |
+  | ------------------------------------------ | ----------- |
+  | three orthogonal, then one across          | I8, J8, K8  |
+  | two orthogonal, then a diagonal            | I8, J8      |
+  | one orthogonal, a diagonal, one orthogonal | I8, J9      |
+  | a diagonal, then two orthogonal            | I9, J9      |
 
   **H9 is not one of them.** Stepping across before starting the run is not
   a way of walking this shape — the shape is three forward with a one-square
@@ -83,17 +83,17 @@ one square orthogonally" and "a ship with 2 power or more strikes anywhere
 in the twenty" — are restated for the new table.
 
 This is the part of the change with the widest reach. A ship that was safe
-because no enemy stood within two squares may now be reachable from four,
+because no enemy stood within two squares may now be reachable from three,
 and a full ship that spends 3 on a shot still has 3 left for another.
 
 ## Effect on the game
 
-A 15 x 15 board crossed in two-square steps takes a while; at three and four
-squares a turn it opens up. A full tank now buys two long moves rather than
+A 15 x 15 board crossed in two-square steps takes a while; at three squares
+a turn it opens up. A full tank now buys two long moves rather than
 three medium ones, which is a real choice rather than an arithmetic one:
 arrive sooner and arrive empty, or arrive later with fuel to fight or
 retreat. Racing for a node that has just gone charged should get sharper,
-since a ship four squares out is now in the race.
+since a ship three squares out is now in the race.
 
 Blocking matters more than it did. The long knight crossing five squares is
 easy to stand in the way of, and a line of three is easier to interrupt than
@@ -166,8 +166,10 @@ stays on hold (`CLAUDE.md`).
 - **The three movement and attack refusal announcements in
   `announcements.ts`** name the old table verbatim — "two squares or an L
   cost 2", "an orthogonal or diagonal step, two squares orthogonally, or an
-  L". All three are rewritten against the new table, and kept short enough
-  to be worth hearing.
+  L". All three are rewritten against the new table, staying full recitals
+  of it. They **describe** the long knight rather than naming it — "three and
+  one across" — so a player who has not read the rules is not sent to look a
+  term up.
 - **`README.md`**'s movement sentence names the four old shapes and their
   prices; it gains the three new ones. Run `/update-readme` for the rest of
   the diff.
@@ -250,7 +252,8 @@ knowingly lost goes in
   version bump on this branch however many later rules edits it needs.
 - "Long knight" is the story's and the rules' word for the shape. It is the
   standard name for the (3, 1) leap and needs no invention; the document
-  should introduce it once in §6 and then use it.
+  introduces it once in §6 and then uses it. It stays out of the UI, which
+  describes the shape instead.
 - Manual check worth making once it runs: whether a node that goes charged
   mid-board is now contested by both sides rather than conceded, and
   whether the longer attack reach makes parking beside a node too dangerous
