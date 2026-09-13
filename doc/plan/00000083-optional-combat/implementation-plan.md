@@ -1031,7 +1031,13 @@ game that always has fighting.
 
 ### Step 11 — The owner plays an off game and an on game
 
-Status: pending
+Status: committed
+
+Notes: The owner played the app and reported it working well — the start
+screen's five groups, an off game that offers no fight and refuses an
+activated enemy ship, an on game behaving as §7 describes, and the choice
+surviving a return to the start screen. No layout problem reported on the
+fifth option group.
 
 The story's manual checks, gathered in one place. Nothing to implement; the
 owner runs the app (`npm run dev`) and looks.
