@@ -780,6 +780,37 @@ describe("Board", () => {
       ).not.toBeInTheDocument();
     });
 
+    it("marks no square as a target when combat is off, where the same position marks one with combat on (rules.md §7)", () => {
+      const off: Session = {
+        state: attackState({ combatEnabled: false }),
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={off} onIntent={noop} />);
+
+      expect(
+        screen.queryByRole("gridcell", { name: /can attack here/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("gridcell", { name: "H9, red ship, power 4 of 6" }),
+      ).toBeInTheDocument();
+
+      cleanup();
+
+      const on: Session = {
+        state: attackState({ combatEnabled: true }),
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={on} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H9, red ship, power 4 of 6, can attack here, both ships would return to planets",
+        }),
+      ).toBeInTheDocument();
+    });
+
     it("reads a legal target the same one way whatever power either ship carries", () => {
       const powerLevels: readonly PowerLevel[] = [0, 1, 2, 3, 4];
       for (const attackerPower of powerLevels) {
@@ -1170,6 +1201,60 @@ describe("Board", () => {
         screen.getByRole("gridcell", {
           name: "H8, green ship, power 0 of 6, cannot move or attack this turn",
         }),
+      ).toBeInTheDocument();
+    });
+
+    it("carries the cannot-move-or-attack condition with combat off, and does not with combat on, for a ship with no legal move and an enemy in range (rules.md §7)", () => {
+      // green-1 at H8 (1 power) reaches only its eight neighbours, every one
+      // of which is occupied by a red ship — no legal move, but every one of
+      // those red ships is a legal attack target with combat on, so the ship
+      // can still act; with combat off, none of them is, so it cannot.
+      const ships: GameState["ships"] = [
+        { id: "green-1", side: "green", square: squareAt("H", 8), power: 1 },
+        { id: "red-1", side: "red", square: squareAt("G", 7), power: 4 },
+        { id: "red-2", side: "red", square: squareAt("H", 7), power: 4 },
+        { id: "red-3", side: "red", square: squareAt("I", 7), power: 4 },
+        { id: "red-4", side: "red", square: squareAt("G", 8), power: 4 },
+        { id: "red-5", side: "red", square: squareAt("I", 8), power: 4 },
+        { id: "red-6", side: "red", square: squareAt("G", 9), power: 4 },
+        { id: "red-7", side: "red", square: squareAt("H", 9), power: 4 },
+        { id: "red-8", side: "red", square: squareAt("I", 9), power: 4 },
+      ];
+      const baseState: Omit<GameState, "combatEnabled"> = {
+        ships,
+        nodes: {},
+        sideToMove: "green",
+        plyNumber: 1,
+        randomSeed: 1,
+        openingSeed: 1,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+        outOfTime: { green: false, red: false },
+      };
+
+      const off: Session = {
+        state: { ...baseState, combatEnabled: false },
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={off} onIntent={noop} />);
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H8, green ship, power 1 of 6, cannot move or attack this turn",
+        }),
+      ).toBeInTheDocument();
+
+      cleanup();
+
+      const on: Session = {
+        state: { ...baseState, combatEnabled: true },
+        selectedShipId: undefined,
+        lastEvent: undefined,
+      };
+      render(<Board session={on} onIntent={noop} />);
+      expect(
+        screen.getByRole("gridcell", { name: "H8, green ship, power 1 of 6" }),
       ).toBeInTheDocument();
     });
   });

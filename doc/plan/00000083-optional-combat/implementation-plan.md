@@ -743,7 +743,7 @@ Verification (automated): `npm test` green with the new cases;
 
 ### Step 6 — The board shows no fight
 
-Status: implemented
+Status: committed
 
 Notes: Test-only, as planned, both in `src/board/Board.test.tsx`. In the
 existing "attack targets" describe block, added a case using the file's own
