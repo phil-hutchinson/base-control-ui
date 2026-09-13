@@ -533,6 +533,11 @@ pre-existing baseline warnings. No test's existing expectation changed,
 including `seededReplay.test.ts`'s recorded figures. No deviation from the
 plan. Orchestrator follow-up before committing: moved the Step 2 constants out of `combat.ts` into the new leaf module `combatSetting.ts` (and their tests into `combatSetting.test.ts`), because `gameState.ts` importing them from `combat.ts` created the first runtime import cycle in `src/rules/`. See the amendment on D2. Suite 65 files, 1215 tests, green.
 
+Peer review follow-up: `gameState.test.ts`'s many other `startingGameState`
+calls (none of which attack) were deliberately left unswept — this is the
+file where the default itself is the subject, so states left at the app's
+off default are the point, not an oversight.
+
 Add the field to the state and to the starting options, and sweep every test
 that builds a state so the suite stays green and **unchanged in meaning**.
 
@@ -929,6 +934,11 @@ pre-existing baseline warnings after running `prettier --write` on
 reordering that import alphabetically to match the production file's
 convention. No deviation from the plan.
 
+Peer review follow-up: `StartScreen.test.tsx` defines its own
+`COMBAT_SETTING_LABELS`, mirroring `StartScreen`'s map, rather than
+importing it — following the file's existing `CLOCK_SETTING_LABELS`
+precedent for the same reason, not a fresh departure.
+
 Layout note for the owner's manual check (Step 11): `.start-screen` is a
 single `flex-direction: column` box with `justify-content: center` and no
 `overflow` rule of its own; nothing in this step added height, but a fifth
@@ -995,12 +1005,15 @@ on game — the power sentence, the start screen's list of choices (now five,
 in both places that counted them), the starting-squares sentence, "moves one
 ship — or attacks with one, when combat is on", and the fight paragraph in the
 expandable detail. No second ruleset: the existing prose was qualified, not
-rewritten. Paragraphs touched were reflowed to the file's ~80-column fill.
-`/update-readme` was then run over the branch diff and found nothing further:
+rewritten. `/update-readme` was then run over the branch diff and found nothing further:
 the only player-visible changes on this branch are the Combat option and the
 refusal it produces, both already described. Confirmed `src/guide/guideCopy.ts`
 needs **no** change — it contains no mention of combat, attacking or fighting
 at all (S9).
+
+Peer review follow-up: five of the paragraphs this step touched had been left
+ragged mid-paragraph rather than reflowed to the file's ~80-column fill; they
+are reflowed now.
 
 `README.md` describes a game that always has fighting: "Each ship carries
 power, a reserve it spends on every move and every attack", a paragraph on

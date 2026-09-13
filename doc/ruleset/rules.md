@@ -288,13 +288,14 @@ ship instead.
 If a player can neither move nor attack, their turn passes — with combat off
 that means simply that the player cannot move. This should be uncommon — a
 player always has at least three ships, and the one-square orthogonal move is
-free (section 6), so a ship with an empty square beside it can always move.
-It is not impossible, though: a ship can be hemmed in by other ships with
-nothing it can reach and afford, and a **trapped** ship (section 8.5) can do
-nothing at all whatever stands around it. A player whose ships are all trapped
-would otherwise pass every turn; section 8.6 step 7 exists to prevent that.
-The rule is here so the game can never deadlock, whether combat is on or
-off.
+free (section 6), so a ship with an empty **ordinary** square beside it can
+always move. It is not impossible, though: a ship can be hemmed in by other
+ships and closed node squares — **inactive** or **depleted** (section 6) —
+with nothing it can reach and afford, and a **trapped** ship (section 8.5)
+can do nothing at all whatever stands around it. A player whose ships are
+all trapped would otherwise pass every turn; section 8.6 step 7 exists to
+prevent that. The rule is here so the game can never deadlock, whether
+combat is on or off.
 
 A turn also passes when the player to move is out of time (section 10). That
 is the second, and only other, reason a turn can pass.
@@ -363,8 +364,9 @@ onto its target.
 Combat is **off or on**, the same for both players, chosen before play
 begins and fixed for the game's lifetime. With it **off**, no attack is
 legal for either player, and the rest of this section and section 7.1 do not
-apply: every turn is a move (section 5). The rest of this section describes
-the game with combat **on**.
+apply — section 7.2 is unaffected, since it is a move and not an attack —
+so a turn is a move (section 5). The rest of this section describes the
+game with combat **on**.
 
 A ship may attack an enemy ship within its **movement range** (section 6) —
 the same shapes, priced the same way, so an attack reaches whatever the
@@ -547,8 +549,8 @@ moved onto it and the five after. A charged node nobody has stepped on
 carries no countdown at all and sits at its **baseline** for the rest of the
 game if nobody comes.
 
-Because a turn is one move or one attack, **at most one countdown can start
-per turn** (see the [development notes](tech-notes.md)).
+Because a turn is one move, or one attack when combat is on, **at most one
+countdown can start per turn** (see the [development notes](tech-notes.md)).
 
 A charged node carrying a countdown shows a **black number**: how many of
 the **holder's own turns** the node still has left. It counts down from 6 to

@@ -81,9 +81,10 @@ const STATED_NODE_STATES: Readonly<Record<string, NodeStatus>> = {
   J14: { state: "inactive", level: 1 },
 };
 
-/** `startingGameState(TEST_SEED)`, with its nodes replaced by the board this
- * file states (`STATED_NODE_STATES`) rather than whatever it happens to
- * deal. Ships, seed, ply and length still come from `startingGameState`. */
+/** `startingGameState(TEST_SEED, { combatEnabled: true })`, with its nodes
+ * replaced by the board this file states (`STATED_NODE_STATES`) rather than
+ * whatever it happens to deal. Ships, seed, ply and length still come from
+ * `startingGameState`. */
 function statedOpeningState(): GameState {
   return {
     ...startingGameState(TEST_SEED, { combatEnabled: true }),

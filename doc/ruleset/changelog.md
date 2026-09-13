@@ -16,9 +16,9 @@ the project's contribution notes).
 - **Section 7 now opens by stating combat as a choice**: off or on, the same
   for both players, chosen before play begins and fixed for the game's
   lifetime, naming no default. With it off, no attack is legal for either
-  player, and the rest of section 7 and section 7.1 do not apply — every
-  turn is a move (section 5). The rest of section 7 reads as it did before,
-  as the description of the game with combat on.
+  player, and the rest of section 7 and section 7.1 do not apply — a turn
+  is a move (section 5). The rest of section 7 reads as it did before, as
+  the description of the game with combat on.
 - **Section 7.2, returning to a planet by choice, is unaffected**: it is a
   move, not an attack, so it stays available whether combat is off or on,
   and with combat off it is the only way a ship reaches a planet.

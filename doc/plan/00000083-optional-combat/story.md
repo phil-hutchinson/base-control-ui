@@ -141,8 +141,8 @@ starts and read from there by everything that needs it — the same treatment
 cannot be derived from a board.
 
 - The offered settings, the default (**off**) and a type guard live in
-  `src/rules/combat.ts`, which is already §7's module, in the shape
-  `clock.ts`, `fleet.ts` and `nodes.ts` use for their own options.
+  `src/rules/combatSetting.ts`, in the shape `clock.ts`, `fleet.ts` and
+  `nodes.ts` use for their own options.
 - The state carries a **boolean**, `combatEnabled`: every point of use asks
   a yes/no question, and the OFF/ON wording is start-screen chrome, held in
   a label record the way `CLOCK_SETTING_LABELS` holds `UNLIMITED`.
@@ -259,9 +259,10 @@ knowingly lost is recorded in
 - **Showing the setting during a game.** The HUD gains nothing: no badge, no
   legend, no note in the game-over panel. A player who chose it knows.
 - **Rewording "cannot move or attack".** The square label, the ship
-  condition and the passed-turn announcement keep their current wording at
-  both settings — each is still literally true in an off game — and this
-  story does not open a pass over them.
+  condition, the passed-turn announcement and the selection announcement's
+  "No moves or attacks available." keep their current wording at both
+  settings — each is still literally true in an off game — and this story
+  does not open a pass over them.
 - **A softer refusal.** Activating an enemy ship with combat off is a
   rejection with a sentence, not a silent no-op and not a move attempt.
 - **Any other partial combat**: no "attacks cost more", no "attacks only in

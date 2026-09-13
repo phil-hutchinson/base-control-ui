@@ -1,10 +1,6 @@
 // Combat's pre-play choice (rules.md §7): the offered settings, the app's
 // default and the guard over them. Pure data about a choice, with no
-// knowledge of a game state — which is why it is here and not in
-// `combat.ts` beside §7's logic. `combat.ts` reads a `GameState` to answer
-// who may attack whom, and `gameState.ts` needs this default to build one:
-// holding the option here keeps that from becoming an import cycle, and
-// leaves every option module in `src/rules/` a leaf the way `clock.ts`,
+// knowledge of a game state, leaving this a leaf module the way `clock.ts`,
 // `fleet.ts` and `nodes.ts` already are.
 
 /**

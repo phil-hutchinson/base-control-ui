@@ -165,27 +165,31 @@ interface PlayedGame {
   readonly finalState: GameState;
   readonly greenCollected: readonly EnergyCollectedEffect[];
   readonly redCollected: readonly EnergyCollectedEffect[];
+  readonly attacksApplied: number;
 }
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
- * above, dealt with `fleetSize` ships a side (the app's default six) and
- * `chargedNodeCount` charged nodes (the app's default five).
+ * above, dealt with `fleetSize` ships a side (the app's default six),
+ * `chargedNodeCount` charged nodes (the app's default five) and combat on
+ * unless `combatEnabled` says otherwise.
  */
 function playFullGame(
   seed: number,
   lengthInRounds: number,
   fleetSize: FleetSize = DEFAULT_FLEET_SIZE,
   chargedNodeCount: ChargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
+  combatEnabled = true,
 ): PlayedGame {
   let state = startingGameState(seed, {
     lengthInRounds,
     fleetSize,
     chargedNodeCount,
-    combatEnabled: true,
+    combatEnabled,
   });
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
+  let attacksApplied = 0;
 
   let pliesApplied = 0;
   while (!isGameOver(state)) {
@@ -221,6 +225,7 @@ function playFullGame(
       }
       state = result.state;
       effects = result.effects;
+      attacksApplied += 1;
     }
 
     for (const collected of energyCollectedEffects(effects)) {
@@ -234,6 +239,7 @@ function playFullGame(
     finalState: state,
     greenCollected,
     redCollected,
+    attacksApplied,
   };
 }
 
@@ -464,6 +470,25 @@ describe("a full game, end to end", () => {
 
     expect(isGameOver(state)).toBe(true);
     expect(assertRefusesEverything(state)).toBe(true);
+  });
+
+  it("plays to its last round on moves alone when combat is off, and never deadlocks", () => {
+    const seed = 20260819;
+    const { finalState, attacksApplied } = playFullGame(
+      seed,
+      100,
+      DEFAULT_FLEET_SIZE,
+      DEFAULT_CHARGED_NODE_COUNT,
+      false,
+    );
+
+    // Reaching this point at all is most of the proof: `playFullGame` throws
+    // if the policy ever runs out of legal plies before the game ends
+    // (rules.md §5's never-deadlock guarantee, with combat off).
+    expect(finalState.plyNumber).toBe(pliesForGameLength(100) + 1);
+    expect(isGameOver(finalState)).toBe(true);
+    expect(finalState.combatEnabled).toBe(false);
+    expect(attacksApplied).toBe(0);
   });
 });
 
