@@ -56,6 +56,7 @@ function buildState(config: {
   chargedNodeCount?: ChargedNodeCount;
   energy?: { green: number; red: number };
   outOfTime?: { green: boolean; red: boolean };
+  combatEnabled?: boolean;
 }): GameState {
   return {
     ships: config.ships,
@@ -68,6 +69,7 @@ function buildState(config: {
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: config.outOfTime ?? { green: false, red: false },
+    combatEnabled: config.combatEnabled ?? true,
   };
 }
 

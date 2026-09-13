@@ -86,7 +86,7 @@ const STATED_NODE_STATES: Readonly<Record<string, NodeStatus>> = {
  * deal. Ships, seed, ply and length still come from `startingGameState`. */
 function statedOpeningState(): GameState {
   return {
-    ...startingGameState(TEST_SEED),
+    ...startingGameState(TEST_SEED, { combatEnabled: true }),
     nodes: STATED_NODE_STATES,
   };
 }
@@ -118,6 +118,7 @@ function stateWithNode(
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
+    combatEnabled: true,
   };
 }
 
@@ -611,6 +612,7 @@ describe("Board", () => {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
+        combatEnabled: true,
       };
       const session: Session = {
         state,
@@ -634,11 +636,12 @@ describe("Board", () => {
     // A hand-built session with green-1 selected on H8. Built directly
     // rather than through the fixture.
     const state: GameState = {
-      ...startingGameState(TEST_SEED),
-      ships: startingGameState(TEST_SEED).ships.map((ship) =>
-        ship.id === "green-1"
-          ? { ...ship, square: squareAt("H", 8), power: 2 }
-          : ship,
+      ...startingGameState(TEST_SEED, { combatEnabled: true }),
+      ships: startingGameState(TEST_SEED, { combatEnabled: true }).ships.map(
+        (ship) =>
+          ship.id === "green-1"
+            ? { ...ship, square: squareAt("H", 8), power: 2 }
+            : ship,
       ),
     };
     const session: Session = {
@@ -701,6 +704,7 @@ describe("Board", () => {
     function attackState(overrides?: {
       attackerPower?: PowerLevel;
       defenderPower?: PowerLevel;
+      combatEnabled?: boolean;
     }): GameState {
       return {
         ships: [
@@ -726,6 +730,7 @@ describe("Board", () => {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
+        combatEnabled: overrides?.combatEnabled ?? true,
       };
     }
 
@@ -833,6 +838,7 @@ describe("Board", () => {
       defenderPower: PowerLevel;
       blockerSquare?: Square;
       blockerSide?: "green" | "red";
+      combatEnabled?: boolean;
     }): GameState {
       const ships = [
         {
@@ -867,6 +873,7 @@ describe("Board", () => {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
+        combatEnabled: config.combatEnabled ?? true,
       };
     }
 
@@ -1041,6 +1048,7 @@ describe("Board", () => {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
+        combatEnabled: true,
       };
     }
 
@@ -1149,6 +1157,7 @@ describe("Board", () => {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
+        combatEnabled: true,
       };
       const session: Session = {
         state,
@@ -1421,7 +1430,7 @@ describe("Board", () => {
 describe("energy overlay composition", () => {
   it("draws it as a sibling of the grid, hidden from the accessibility tree", () => {
     const state: GameState = {
-      ...startingGameState(TEST_SEED),
+      ...startingGameState(TEST_SEED, { combatEnabled: true }),
     };
     const event: MovedEvent = {
       type: "moved",

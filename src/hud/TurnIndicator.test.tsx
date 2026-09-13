@@ -21,12 +21,16 @@ function finishedState(): GameState {
     lengthInRounds: 1,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
+    combatEnabled: true,
   };
 }
 
 describe("TurnIndicator", () => {
   it("says green to play, with the green side modifier", () => {
-    const state = { ...startingGameState(1), sideToMove: "green" as const };
+    const state = {
+      ...startingGameState(1, { combatEnabled: true }),
+      sideToMove: "green" as const,
+    };
 
     render(<TurnIndicator state={state} />);
 
@@ -36,7 +40,10 @@ describe("TurnIndicator", () => {
   });
 
   it("says red to play, with the red side modifier", () => {
-    const state = { ...startingGameState(1), sideToMove: "red" as const };
+    const state = {
+      ...startingGameState(1, { combatEnabled: true }),
+      sideToMove: "red" as const,
+    };
 
     render(<TurnIndicator state={state} />);
 
@@ -55,7 +62,7 @@ describe("TurnIndicator", () => {
   });
 
   it("is not a live region", () => {
-    const state = startingGameState(1);
+    const state = startingGameState(1, { combatEnabled: true });
 
     const { container } = render(<TurnIndicator state={state} />);
 

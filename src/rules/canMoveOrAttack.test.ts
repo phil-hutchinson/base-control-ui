@@ -33,6 +33,7 @@ function buildState(config: {
   sideToMove?: "green" | "red";
   nodes?: Readonly<Record<string, NodeState>>;
   plyNumber?: number;
+  combatEnabled?: boolean;
 }): GameState {
   return {
     ships: config.ships,
@@ -45,6 +46,7 @@ function buildState(config: {
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
+    combatEnabled: config.combatEnabled ?? true,
   };
 }
 

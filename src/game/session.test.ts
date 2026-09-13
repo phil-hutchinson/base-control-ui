@@ -46,6 +46,7 @@ function buildState(config: {
   plyNumber?: number;
   lengthInRounds?: number;
   outOfTime?: Readonly<Record<Side, boolean>>;
+  combatEnabled?: boolean;
 }): GameState {
   return {
     ships: config.ships,
@@ -58,6 +59,7 @@ function buildState(config: {
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: config.outOfTime ?? { green: false, red: false },
+    combatEnabled: config.combatEnabled ?? true,
   };
 }
 
@@ -536,6 +538,7 @@ describe("sessionReducer — new-game", () => {
         lengthInRounds: 100,
         fleetSize: DEFAULT_FLEET_SIZE,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+        combatEnabled: true,
       }).randomSeed,
     );
     expect(result.state.lengthInRounds).toBe(100);
@@ -609,6 +612,7 @@ describe("sessionReducer — new-game", () => {
           lengthInRounds: 30,
           fleetSize,
           chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+          combatEnabled: true,
         }).randomSeed,
       );
       expect(result.state.lengthInRounds).toBe(30);

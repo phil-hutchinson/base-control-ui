@@ -72,6 +72,7 @@ function buildState(config: {
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
+    combatEnabled: true,
   };
 }
 
@@ -1380,6 +1381,7 @@ describe("runEndOfTurn — a quiet board does nothing at all (§8.1, §8.3)", ()
     for (const seed of SEEDS) {
       const opening = startingGameState(seed, {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        combatEnabled: true,
       });
       const chargedNames = Object.keys(opening.nodes).filter(
         (name) => opening.nodes[name]?.state === "charged",

@@ -121,10 +121,20 @@ whose players have not fought yet. That is the same reason `lengthInRounds`
 and `chargedNodeCount` are stored, and the reason this must be state and not
 an app-level flag passed around beside the state.
 
-### D2. The option constants live in `combat.ts`, and there is nothing to validate
+### D2. The option constants live beside §7, and there is nothing to validate
 
-`src/rules/combat.ts` is already §7's module, so it holds the option, in the
-shape `clock.ts`, `fleet.ts` and `nodes.ts` use for theirs:
+**Amended during Step 3, by the orchestrator.** This decision originally put
+the option in `src/rules/combat.ts`, §7's own module. That turned out to
+create the first **runtime import cycle** in `src/rules/`: `gameState.ts`
+needs the default to build a state, and `combat.ts` value-imports
+`gameState.ts` for `shipsBySquare` and `nodeStateAt`. Every other option
+module is a leaf — `clock.ts`, `fleet.ts` and `nodes.ts` never import
+`gameState.ts`, and `gameLength.ts`'s back-import is type-only and so erases.
+The option therefore lives in **`src/rules/combatSetting.ts`**, a leaf module
+holding the pre-play choice as pure data, with §7's state-reading logic
+staying in `combat.ts`. Wherever this plan says the constants are in
+`combat.ts`, read `combatSetting.ts`; the shape below is unchanged, and it is
+still the shape `clock.ts`, `fleet.ts` and `nodes.ts` use for theirs:
 
 - the offered settings, in the order the start screen renders them, **off
   first** — leftmost is what the app preselects;
@@ -446,10 +456,12 @@ game has, and that §5's deadlock argument reads true with no attacks in it.
 Status: committed
 
 Notes: Done inline by the orchestrator rather than dispatched — the step is a
-constant, a default and a guard with no consumer. `combat.ts` gains
-`COMBAT_SETTINGS` (`[false, true]`, off first), `DEFAULT_COMBAT_ENABLED`
-(`false`) and `isCombatSetting`, with the module comment saying the option
-lives beside the §7 code it governs. `combat.test.ts` pins the order, the
+constant, a default and a guard with no consumer. `COMBAT_SETTINGS`
+(`[false, true]`, off first), `DEFAULT_COMBAT_ENABLED` (`false`) and
+`isCombatSetting` were added to `combat.ts` here, then moved to the new leaf
+module `combatSetting.ts` during Step 3 to avoid a runtime import cycle with
+`gameState.ts` — see the amendment on D2. Their tests moved with them, to
+`combatSetting.test.ts`. `combat.test.ts` pins the order, the
 default, and that the guard accepts both booleans and rejects a string, a
 number, `null`, `undefined` and an object. Nothing consumes any of it yet;
 `attackRefusalReason`, `legalTargets` and `attackReach` are untouched.
@@ -493,7 +505,33 @@ accepts both booleans and rejects a non-boolean (a string, a number, `null`,
 
 ### Step 3 — `combatEnabled` becomes part of the game state
 
-Status: pending
+Status: committed
+
+Notes: `GameState` gained the required `combatEnabled: boolean` and
+`StartingGameStateOptions` the optional `combatEnabled?: boolean` (default
+`DEFAULT_COMBAT_ENABLED` from Step 2, no runtime validation, per D2);
+`startingGameState` destructures it with the default and writes it onto the
+returned state, drawing no extra randomness. Swept 28 test files (the plan's
+24 plus the four "further files" it names — `Hud.test.tsx`,
+`RoundCounter.test.tsx`, `nodePool.test.ts`, `seededReplay.test.ts`), setting
+`combatEnabled: true` in every local builder and at every `startingGameState`
+call in a test, uniformly, per D4. Gave the optional `combatEnabled` config
+knob (default `true`) to `Board.test.tsx`'s `attackState` and `rangeState`,
+`session.test.ts`, `combat.test.ts`, `canMoveOrAttack.test.ts` and
+`ply.test.ts`, as D4/Step 3 direct, for the config-object builders those
+files' later steps will need to flip; other files' builders got a bare
+literal `true`. `gameState.test.ts` got the two exception cases (defaults to
+off; carries a given setting through, changing nothing else) plus a third
+pinning the field survives an applied move — `applyMove`'s result carries
+`combatEnabled: true` unchanged. `attackRefusalReason`, `legalTargets` and
+`attackReach` are untouched, so combat still happens in every game at the end
+of this step, exactly as intended. `npm run typecheck` (a missed builder
+would have been a compile error — none were) and `npm run lint` clean;
+`npm test` 64 files, 1215 tests, all green (up from 1212, the three new
+`gameState.test.ts` cases); `npm run format:check` reports only the two
+pre-existing baseline warnings. No test's existing expectation changed,
+including `seededReplay.test.ts`'s recorded figures. No deviation from the
+plan. Orchestrator follow-up before committing: moved the Step 2 constants out of `combat.ts` into the new leaf module `combatSetting.ts` (and their tests into `combatSetting.test.ts`), because `gameState.ts` importing them from `combat.ts` created the first runtime import cycle in `src/rules/`. See the amendment on D2. Suite 65 files, 1215 tests, green.
 
 Add the field to the state and to the starting options, and sweep every test
 that builds a state so the suite stays green and **unchanged in meaning**.

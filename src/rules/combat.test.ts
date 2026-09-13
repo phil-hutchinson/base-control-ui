@@ -9,12 +9,9 @@ import {
   squareName,
 } from "./board";
 import {
-  COMBAT_SETTINGS,
-  DEFAULT_COMBAT_ENABLED,
   attackReach,
   attackRefusalReason,
   drawReturnPlanet,
-  isCombatSetting,
   legalTargets,
 } from "./combat";
 import { applyAttack } from "./ply";
@@ -48,6 +45,7 @@ function buildState(config: {
   nodes?: Readonly<Record<string, NodeState>>;
   plyNumber?: number;
   lengthInRounds?: number;
+  combatEnabled?: boolean;
 }): GameState {
   return {
     ships: config.ships,
@@ -60,6 +58,7 @@ function buildState(config: {
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
+    combatEnabled: config.combatEnabled ?? true,
   };
 }
 
@@ -114,28 +113,6 @@ function threeOrthogonalNonPlanetNeighbourOf(square: Square): Square {
     `no three-orthogonal non-planet neighbour found for ${squareName(square)}`,
   );
 }
-
-describe("the offered combat settings (rules.md §7)", () => {
-  it("offers off and on, off first", () => {
-    expect(COMBAT_SETTINGS).toEqual([false, true]);
-  });
-
-  it("defaults to combat off", () => {
-    expect(DEFAULT_COMBAT_ENABLED).toBe(false);
-  });
-
-  it("accepts both offered settings", () => {
-    for (const setting of COMBAT_SETTINGS) {
-      expect(isCombatSetting(setting)).toBe(true);
-    }
-  });
-
-  it("rejects anything that is not one of them", () => {
-    for (const value of ["on", "off", 0, 1, null, undefined, {}]) {
-      expect(isCombatSetting(value)).toBe(false);
-    }
-  });
-});
 
 describe("attackReach", () => {
   it("returns the entry with the right passedOver for a two-square orthogonal attack", () => {

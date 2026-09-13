@@ -20,6 +20,7 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     lengthInRounds: 30,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
+    combatEnabled: true,
     ...overrides,
   };
 }

@@ -1107,6 +1107,7 @@ describe("announcementForSession", () => {
       lengthInRounds: config.lengthInRounds,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: config.outOfTime ?? { green: false, red: false },
+      combatEnabled: true,
     };
   }
 
@@ -1491,6 +1492,7 @@ describe("turnIndicatorText", () => {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
+        combatEnabled: true,
       }),
     ).toBe("Green to play");
   });
@@ -1508,6 +1510,7 @@ describe("turnIndicatorText", () => {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
+        combatEnabled: true,
       }),
     ).toBe("Red to play");
   });
@@ -1525,6 +1528,7 @@ describe("turnIndicatorText", () => {
         lengthInRounds: 3,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
+        combatEnabled: true,
       }),
     ).toBe("Game over");
   });
@@ -1558,6 +1562,7 @@ describe("HUD wording", () => {
       lengthInRounds: config.lengthInRounds,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
+      combatEnabled: true,
     };
   }
 

@@ -11,7 +11,7 @@ afterEach(cleanup);
 describe("Hud", () => {
   it("renders both scores, the round counter and the turn indicator", () => {
     const state = {
-      ...startingGameState(1, { lengthInRounds: 100 }),
+      ...startingGameState(1, { lengthInRounds: 100, combatEnabled: true }),
       energy: { green: 24, red: 9 },
       plyNumber: 69,
     };
@@ -30,7 +30,7 @@ describe("Hud", () => {
 
   it("reads a shorter game's own length in the round counter", () => {
     const state = {
-      ...startingGameState(1, { lengthInRounds: 3 }),
+      ...startingGameState(1, { lengthInRounds: 3, combatEnabled: true }),
       plyNumber: 3,
     };
 
@@ -40,7 +40,7 @@ describe("Hud", () => {
   });
 
   it("has no static accessibility violations", async () => {
-    const state = startingGameState(1);
+    const state = startingGameState(1, { combatEnabled: true });
 
     const { container } = render(
       <Hud state={state} displayedEnergy={state.energy} />,

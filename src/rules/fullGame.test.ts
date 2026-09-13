@@ -182,6 +182,7 @@ function playFullGame(
     lengthInRounds,
     fleetSize,
     chargedNodeCount,
+    combatEnabled: true,
   });
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
@@ -249,6 +250,7 @@ function findMoveLegalAMomentEarlier(
     ...state,
     lengthInRounds: state.lengthInRounds + 1,
     outOfTime: { green: false, red: false },
+    combatEnabled: true,
   };
   for (const ship of state.ships) {
     const [destination] = legalDestinations(notEnded, ship.id);
@@ -272,6 +274,7 @@ function findAttackLegalAMomentEarlier(
     ...state,
     lengthInRounds: state.lengthInRounds + 1,
     outOfTime: { green: false, red: false },
+    combatEnabled: true,
   };
   for (const ship of state.ships) {
     const [target] = legalTargets(notEnded, ship.id);
@@ -456,6 +459,7 @@ describe("a full game, end to end", () => {
       lengthInRounds: 1,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
+      combatEnabled: true,
     };
 
     expect(isGameOver(state)).toBe(true);
@@ -541,6 +545,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     const state = startingGameState(20260819, {
       lengthInRounds: 30,
       fleetSize: 5,
+      combatEnabled: true,
     });
     const shipSquareNames = new Set(
       state.ships.map((s) => squareName(s.square)),
@@ -570,6 +575,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     const state = startingGameState(20260819, {
       lengthInRounds: 30,
       fleetSize: 6,
+      combatEnabled: true,
     });
     const shipSquareNames = new Set(
       state.ships.map((s) => squareName(s.square)),
@@ -614,6 +620,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
+      combatEnabled: true,
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -663,6 +670,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
+      combatEnabled: true,
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -711,6 +719,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
+      combatEnabled: true,
     };
 
     expect(() => runEndOfTurn(state)).not.toThrow();

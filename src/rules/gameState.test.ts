@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { squareFromName, squareName } from "./board";
+import { DEFAULT_COMBAT_ENABLED } from "./combatSetting";
 import { DEFAULT_FLEET_SIZE, FLEET_SIZES, startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
@@ -18,7 +19,9 @@ import {
   dealOpeningBoard,
 } from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
+import { legalDestinations } from "./movement";
 import { MAX_POWER } from "./power";
+import { applyMove } from "./ply";
 
 const SEED = 12345;
 const STARTING_FLEET = startingFleet(DEFAULT_FLEET_SIZE);
@@ -310,6 +313,43 @@ describe("startingGameState", () => {
       );
     },
   );
+
+  it("defaults to combat off, the app's default, when none is given", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.combatEnabled).toBe(false);
+    expect(state.combatEnabled).toBe(DEFAULT_COMBAT_ENABLED);
+  });
+
+  it("takes a given combat setting, changing nothing else about the state", () => {
+    const defaultCombat = startingGameState(SEED);
+    const combatOn = startingGameState(SEED, { combatEnabled: true });
+
+    expect(combatOn.combatEnabled).toBe(true);
+    expect({
+      ...combatOn,
+      combatEnabled: defaultCombat.combatEnabled,
+    }).toEqual(defaultCombat);
+  });
+
+  it("carries combatEnabled unchanged through a move, for the game's lifetime", () => {
+    const state = startingGameState(SEED, { combatEnabled: true });
+    const ship = state.ships.find(
+      (candidate) => legalDestinations(state, candidate.id).length > 0,
+    );
+    if (ship === undefined) {
+      throw new Error("expected at least one ship with a legal move");
+    }
+    const [destination] = legalDestinations(state, ship.id);
+
+    const result = applyMove(state, ship.id, destination);
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.combatEnabled).toBe(true);
+  });
 });
 
 describe("markOutOfTime", () => {

@@ -220,6 +220,7 @@ function runEconomy(
   let state: GameState = startingGameState(seed, {
     lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
     chargedNodeCount,
+    combatEnabled: true,
   });
   const shipSquares = state.ships.map((ship) => ship.square);
   const samples: EconomySample[] = [];
@@ -426,6 +427,7 @@ describe.each(CHARGED_NODE_COUNTS)(
           const state = startingGameState(seed, {
             lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
             chargedNodeCount,
+            combatEnabled: true,
           });
           const shipSquares = state.ships.map((ship) => ship.square);
           const allNodeSquares = nodeSquares(state);
