@@ -789,7 +789,30 @@ Verification (automated): `npm test` green with the new cases;
 
 ### Step 7 — The `new-game` intent carries the choice
 
-Status: pending
+Status: committed
+
+Notes: `SessionIntent`'s `new-game` variant gained a required
+`combatEnabled: boolean`, and `sessionReducer` passes `intent.combatEnabled`
+straight into `startingGameState`'s options; the doc comment now names
+combat among the fields the reducer uses without reaching for a default.
+`useAppScreen.ts`'s single `new-game` dispatch passes
+`DEFAULT_COMBAT_ENABLED` from `combatSetting.ts` as a literal, exactly the
+stub the step describes — Step 8 replaces it with held state. In
+`session.test.ts`, the seven existing `new-game` dispatches gained
+`combatEnabled: true` (Step 3's sweep rule); added two cases asserting a
+dispatch with `combatEnabled: false` and one with `true` each produce a
+state carrying that value; added a case in "the attack gesture" asserting an
+otherwise-legal H8→H9 attack is rejected as `"combat-is-off"` with the
+selection surviving, using the file's existing `combatEnabled` knob on
+`buildState`; and added a case asserting a `selected` event reports
+`targetCount` 0 with combat off while `destinationCount` is unchanged from
+the same position with combat on (H8 with a 3-power ship and a target at
+H10, reusing the existing beyond-the-eight-neighbours fixture). No other
+test file needed a change — `useAppScreen.test.tsx`'s and `App.test.tsx`'s
+`new-game` assertions use `objectContaining`/have no exact-shape dispatch
+that the new required field would break. `npm run typecheck` and
+`npm run lint` clean; `npm test` 65 files, 1229 tests, all green (up from
+1225). No deviation from the plan.
 
 **`src/game/session.ts`:** the `new-game` intent gains a **required**
 `combatEnabled: boolean`, alongside the seed, the length, the fleet size and
@@ -827,7 +850,21 @@ Verification (automated): `npm test` green with the new cases;
 
 ### Step 8 — `useAppScreen` holds the choice
 
-Status: pending
+Status: committed
+
+Notes: `AppScreen` gained `combatEnabled` and `setCombatEnabled`, held with
+`useState(DEFAULT_COMBAT_ENABLED)` beside the other four options;
+`handlePlay` now dispatches the held `combatEnabled` instead of Step 7's
+literal. The hook's doc comment and the module header now say "five" instead
+of "four" and list combat among what `new-game` carries. In
+`useAppScreen.test.tsx`: the "opens on the start screen" case gained a
+`combatEnabled` assertion of `false`; the "PLAY dispatches" case's
+`objectContaining` gained `combatEnabled: false`; and a new case sets
+`combatEnabled(true)`, asserts the dispatched intent carries `true`, that the
+value survives `handleReturnToStart`, and that a second `handlePlay`
+dispatches `true` again. `npm run typecheck` and `npm run lint` clean;
+`npm test` 65 files, 1230 tests, all green (up from 1229). No deviation from
+the plan. Committed together with Step 7: the two steps were implemented in one dispatch and Step 8 replaces Step 7's temporary literal in the same file, so there is no intermediate state worth a commit of its own.
 
 **`src/useAppScreen.ts`:** replace Step 7's literal with held state.
 `AppScreen` gains `combatEnabled` and `setCombatEnabled`, initialised from
@@ -857,7 +894,48 @@ Verification (automated): `npm test` green with the new cases;
 
 ### Step 9 — The start screen's fifth group, and `App` wires it
 
-Status: pending
+Status: implemented
+
+Notes: `StartScreen.tsx` gained the `Combat` fieldset between `Charged nodes`
+and `Rounds`, rendered by the existing `OptionChoice` with `COMBAT_SETTINGS`
+(off first) from `combatSetting.ts`; the two labels ("OFF"/"ON") live in a
+new `COMBAT_SETTING_LABELS: Record<"off" | "on", string>` beside
+`CLOCK_SETTING_LABELS`, keyed by a small `combatSettingValue` helper that
+also supplies each radio's `value` attribute — the `Record<boolean, string>`
+TypeScript cannot express, per D7. New `combatEnabled`/
+`onCombatEnabledChange` props, controlled like the other four; no CSS
+touched. The module header and the component's doc comment now say "five"
+instead of "four". `App.tsx` threads `combatEnabled`/`setCombatEnabled` from
+`useAppScreen` to `StartScreen`; nothing else in `App` changed, per S2.
+`StartScreen.test.tsx` gained a render-overrides knob and helper labels for
+combat, extended the four-group order test to five (Ships, Charged nodes,
+Combat, Rounds, Clock), and added cases for both labels with the given one
+checked, OFF checked by default with radios ordered OFF then ON, and the
+change handler firing `true`/`false` on ON/OFF without touching the other
+four handlers. `App.test.tsx` gained a `combatGroup()` helper; the
+opening-screen test now asserts five groups with OFF preselected; the
+existing guide-round-trip test (already the file's established way of
+proving an option survives a return to the start screen, alongside
+`useAppScreen.test.tsx`'s direct coverage of `handleReturnToStart`) now also
+sets Combat to ON before opening the guide and asserts ON survives the
+return; and two new PLAY-and-select cases exercise D8's L1/O2 shot directly
+through the real app — the default OFF marks no square as a target, and
+choosing ON before PLAY marks O2 with the exact "can attack here, both ships
+would return to planets" wording — so the fallback in D8 was not needed.
+`npm run typecheck` and `npm run lint` clean; `npm test` 65 files, 1236
+tests, all green (up from 1230); `npm run format:check` reports only the two
+pre-existing baseline warnings after running `prettier --write` on
+`StartScreen.test.tsx` (whose new combat import needed wrapping) and
+reordering that import alphabetically to match the production file's
+convention. No deviation from the plan.
+
+Layout note for the owner's manual check (Step 11): `.start-screen` is a
+single `flex-direction: column` box with `justify-content: center` and no
+`overflow` rule of its own; nothing in this step added height, but a fifth
+fieldset is a fifth thing competing for the same fixed-height column on a
+short landscape window, and there is no scroll affordance if it overflows.
+Worth a specific look in Step 11 rather than assuming the existing layout
+absorbs a fifth group for free.
 
 **`src/start/StartScreen.tsx`:** add the fifth option group, **after Charged
 nodes and before Rounds** (D7): legend `Combat`, two `OptionChoice` radios
