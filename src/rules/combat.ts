@@ -6,6 +6,10 @@
 // shape lookups rather than carrying a second copy of the table. Only an
 // enemy ship blocks the path (§6); the target square's own occupant is never
 // treated as blocking the shot at it.
+//
+// Combat is off or on, chosen before play begins (rules.md §7). The offered
+// settings, the app's default and the guard over them live here, beside the
+// §7 code they govern, the way `clock.ts` and `nodes.ts` hold their own.
 
 import { type Square, squareName } from "./board";
 import { PLANETS, isPlanet } from "./planets";
@@ -20,6 +24,27 @@ import {
 } from "./movement";
 import { drawIndex } from "./random";
 import { isShipTrapped } from "./trap";
+
+/**
+ * The offered combat settings, in the order the start screen renders them:
+ * leftmost is what the app preselects. `false` is combat off — no attack is
+ * legal for either player (rules.md §7) — and `true` is the game §7
+ * describes.
+ */
+export const COMBAT_SETTINGS: readonly boolean[] = [false, true];
+
+/** The app's default: combat off. */
+export const DEFAULT_COMBAT_ENABLED = false;
+
+/**
+ * Whether a value is one of the offered combat settings. Nothing in the app
+ * calls this yet; it exists for the boundary a future caller will need — a
+ * saved-options load, or a game record — where a setting arrives from
+ * outside the type system, exactly as `isClockSetting` does for §10's.
+ */
+export function isCombatSetting(value: unknown): value is boolean {
+  return (COMBAT_SETTINGS as readonly unknown[]).includes(value);
+}
 
 /**
  * The lane `shipId` would attack down to reach `target`: the shape (rules.md

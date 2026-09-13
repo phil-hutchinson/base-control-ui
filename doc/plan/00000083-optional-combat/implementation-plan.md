@@ -443,7 +443,17 @@ game has, and that §5's deadlock argument reads true with no attacks in it.
 
 ### Step 2 — `combat.ts` gains the offered settings, the default and the guard
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator rather than dispatched — the step is a
+constant, a default and a guard with no consumer. `combat.ts` gains
+`COMBAT_SETTINGS` (`[false, true]`, off first), `DEFAULT_COMBAT_ENABLED`
+(`false`) and `isCombatSetting`, with the module comment saying the option
+lives beside the §7 code it governs. `combat.test.ts` pins the order, the
+default, and that the guard accepts both booleans and rejects a string, a
+number, `null`, `undefined` and an object. Nothing consumes any of it yet;
+`attackRefusalReason`, `legalTargets` and `attackReach` are untouched.
+Typecheck and lint clean; suite 1212 tests, up from 1208.
 
 Add to `src/rules/combat.ts`, beside the existing §7 code and in the shape
 `clock.ts`, `fleet.ts` and `nodes.ts` use for their own options:
