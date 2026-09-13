@@ -691,7 +691,26 @@ check landed in the wrong place.
 
 ### Step 5 — The rules-layer consumers follow for free
 
-Status: pending
+Status: committed
+
+Notes: Test-only, as planned. `src/rules/ply.test.ts` gained two cases:
+`applyAttack` on an otherwise perfectly legal H8-to-H9 jab with combat off
+refuses with `"combat-is-off"` and leaves the input state exactly as it went
+in (compared whole, via `structuredClone`, the same pattern the file's other
+"leaving the state exactly as it went in" case uses); and `applyPassGuard`,
+reusing the existing "no legal move but a legal attack" fixture (green-1
+boxed in at A1 with a legal attack at B1) with combat off instead of on,
+passes the ply with reason `"cannot-move-or-attack"`. `src/rules/canMoveOrAttack.test.ts`
+gained one case reusing the existing "eight neighbours, no legal move, every
+neighbour a legal target" fixture: with combat on both `shipCanMoveOrAttack`
+and `sideToMoveCanMoveOrAttack` answer true on it, and with combat off both
+answer false, asserted side by side from the same ship configuration. No
+production file changed — `attackRefusalReason`'s single gate (Step 4) was
+sufficient for both `applyAttack` and the pass guard's use of
+`sideToMoveCanMoveOrAttack`/`shipCanMoveOrAttack`, exactly as D3 predicted;
+no second gate was needed. `npm run typecheck` and `npm run lint` clean;
+`npm test` 65 files, 1223 tests, all green (up from 1220). No deviation from
+the plan.
 
 Test-only. This step exists to prove D3's claim — that one gate is enough —
 at the rules layer, and to leave the proof behind as tests.
@@ -724,7 +743,25 @@ Verification (automated): `npm test` green with the new cases;
 
 ### Step 6 — The board shows no fight
 
-Status: pending
+Status: implemented
+
+Notes: Test-only, as planned, both in `src/board/Board.test.tsx`. In the
+existing "attack targets" describe block, added a case using the file's own
+`attackState` builder (which already takes a `combatEnabled` override): with
+combat off, no square anywhere is marked `can attack here` and H9 renders as
+a plain occupant with no mark segment at all; the same `attackState()`
+position with combat on marks H9 with the existing target wording — one test,
+both settings, so it is about the setting and not the position. In "ship
+conditions", added a case reusing the eight-neighbours fixture from
+`canMoveOrAttack.test.ts` (a 1-power ship with every one of its eight
+neighbours held by an enemy, so it has no legal move but, with combat on, a
+legal attack at each of them): with combat off the ship carries the existing
+`cannot-move-or-attack this turn` condition, and with combat on it carries no
+condition at all. No production file changed — `Board.tsx`'s existing reads
+of `legalTargets` and `shipCanMoveOrAttack` needed nothing of their own, as
+D3 predicted. `npm run typecheck` and `npm run lint` clean; `npm test` 65
+files, 1225 tests, all green (up from 1223); `npm run format:check` reports
+only the two pre-existing baseline warnings. No deviation from the plan.
 
 Test-only, in `src/board/Board.test.tsx`:
 

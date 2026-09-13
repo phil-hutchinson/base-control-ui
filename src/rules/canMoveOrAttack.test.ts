@@ -146,6 +146,37 @@ describe("sideToMoveCanMoveOrAttack", () => {
   });
 });
 
+describe("shipCanMoveOrAttack and sideToMoveCanMoveOrAttack with combat off (rules.md §7)", () => {
+  it("both answer true with combat on and false with combat off, for a ship with a legal target and no legal move", () => {
+    // Reuses sideToMoveCanMoveOrAttack's "is true with a legal target and no
+    // legal move" fixture above: green-1 at H8 (1 power) reaches only its
+    // eight neighbours, every one of which is occupied by a red ship — no
+    // legal move, but every one of those red ships is a legal attack target
+    // with combat on.
+    const shipConfig = {
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("red-1", "red", "G7"),
+        ship("red-2", "red", "H7"),
+        ship("red-3", "red", "I7"),
+        ship("red-4", "red", "G8"),
+        ship("red-5", "red", "I8"),
+        ship("red-6", "red", "G9"),
+        ship("red-7", "red", "H9"),
+        ship("red-8", "red", "I9"),
+      ],
+    };
+
+    const withCombatOn = buildState({ ...shipConfig, combatEnabled: true });
+    expect(shipCanMoveOrAttack(withCombatOn, "green-1")).toBe(true);
+    expect(sideToMoveCanMoveOrAttack(withCombatOn)).toBe(true);
+
+    const withCombatOff = buildState({ ...shipConfig, combatEnabled: false });
+    expect(shipCanMoveOrAttack(withCombatOff, "green-1")).toBe(false);
+    expect(sideToMoveCanMoveOrAttack(withCombatOff)).toBe(false);
+  });
+});
+
 describe("shipCanMoveOrAttack", () => {
   it("is false for a ship holding a charged node with no legal move, even with an enemy in range (rules.md §7)", () => {
     const state = buildState({
