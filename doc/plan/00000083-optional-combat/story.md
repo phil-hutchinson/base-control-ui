@@ -143,15 +143,16 @@ cannot be derived from a board.
 - The offered settings, the default (**off**) and a type guard live in
   `src/rules/combat.ts`, which is already §7's module, in the shape
   `clock.ts`, `fleet.ts` and `nodes.ts` use for their own options.
-- Whether the state carries a boolean (`combatEnabled`) or a two-valued
-  setting in the shape of `ClockSetting` is the implementation plan's call.
-  The lean is the **boolean**: every point of use asks a yes/no question,
-  and the OFF/ON wording is start-screen chrome, held in a label record the
-  way `CLOCK_SETTING_LABELS` holds `UNLIMITED`. The plan should decide it
-  once, in one place, rather than let both shapes exist.
+- The state carries a **boolean**, `combatEnabled`: every point of use asks
+  a yes/no question, and the OFF/ON wording is start-screen chrome, held in
+  a label record the way `CLOCK_SETTING_LABELS` holds `UNLIMITED`.
 - `StartingGameStateOptions` gains the field, optional, defaulting to off,
-  validated the way the others are — a value that is not one of the offered
-  settings is a caller bug and throws a `RangeError`.
+  with **no runtime validation** — unlike `lengthInRounds`, `fleetSize` and
+  `chargedNodeCount`, which are typed `number` and so admit values the game
+  does not offer, a `boolean` admits only the two settings that exist, so
+  there is nothing for a `RangeError` to catch. The type guard is still
+  exported and unit-tested, unused for now in `isClockSetting`'s precedent,
+  for the boundary a game record or a saved-options load will need.
 - The `new-game` intent carries the choice, alongside the seed, the length,
   the fleet size and the charged-node count; the reducer uses what it is
   handed and reaches for no default of its own.
@@ -230,7 +231,8 @@ The tests that need real thought:
   and a ship that could only attack shows the `cannot-move-or-attack`
   condition.
 - **`gameState.test.ts`** — the new field is set from the option, defaults
-  to off, is rejected when invalid, and is fixed for the game's lifetime.
+  to off, and is fixed for the game's lifetime. There is no invalid value to
+  reject — see the option's shape above.
 - **`StartScreen.test.tsx`** — the fifth group, its position among the
   other four, its two labels, its default, and that choosing ON calls the
   handler.
