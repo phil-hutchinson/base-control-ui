@@ -762,6 +762,79 @@ describe("attackRefusalReason and legalTargets once the game is over", () => {
   });
 });
 
+describe("attackRefusalReason and legalTargets with combat off (rules.md §7)", () => {
+  it("refuses a target that would otherwise be perfectly legal", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 4)],
+      combatEnabled: false,
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "combat-is-off",
+    );
+  });
+
+  it("still answers game-over ahead of combat-is-off in an ended off game", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "H9", 4)],
+      plyNumber: 61,
+      combatEnabled: false,
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "game-over",
+    );
+  });
+
+  it("answers combat-is-off rather than the specific reason for a target refused anyway", () => {
+    const outOfRange = buildState({
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "K5", 4)],
+      combatEnabled: false,
+    });
+    const onPlanet = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 4),
+        ship("red-1", "red", squareName(PLANETS[0]), 4),
+      ],
+      combatEnabled: false,
+    });
+    const friendly = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 4),
+        ship("green-2", "green", "H9", 4),
+      ],
+      combatEnabled: false,
+    });
+
+    expect(
+      attackRefusalReason(outOfRange, "green-1", squareFromName("K5")),
+    ).toBe("combat-is-off");
+    expect(attackRefusalReason(onPlanet, "green-1", PLANETS[0])).toBe(
+      "combat-is-off",
+    );
+    expect(attackRefusalReason(friendly, "green-1", squareFromName("H9"))).toBe(
+      "combat-is-off",
+    );
+  });
+
+  it("legalTargets is empty for a ship with several targets when combat is on", () => {
+    const neighbours = ["G7", "G8", "G9", "H7", "H9", "I7", "I8", "I9"];
+    const onState = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ...neighbours.map((square, index) =>
+          ship(`red-${index}`, "red", square, 4),
+        ),
+      ],
+      combatEnabled: true,
+    });
+    const offState: GameState = { ...onState, combatEnabled: false };
+
+    expect(legalTargets(onState, "green-1").length).toBeGreaterThan(0);
+    expect(legalTargets(offState, "green-1")).toEqual([]);
+  });
+});
+
 describe("drawReturnPlanet", () => {
   const [FIRST_PLANET_NAME, SECOND_PLANET_NAME, THIRD_PLANET_NAME] =
     PLANETS.map(squareName);

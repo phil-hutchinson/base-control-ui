@@ -617,7 +617,33 @@ the new `gameState.test.ts` cases.
 
 ### Step 4 — The gate: `"combat-is-off"`, and the sentence that answers it
 
-Status: pending
+Status: committed
+
+Notes: Added `"combat-is-off"` to `AttackRefusalReason` in `src/rules/combat.ts`
+and returned it from `attackRefusalReason` immediately after the
+`isGameOver` check, ahead of every other check, per D3. Updated the
+function's doc comment to describe the new first-class check and its
+precedence (game-over still wins over it), and updated `legalTargets`'s doc
+comment to say it is empty with combat off and that it carries no combat
+check of its own — its existing final filter, which keeps only squares
+`attackRefusalReason` approves, already empties it. `attackReach` untouched.
+Added the case to `rejectionSentence` in `src/board/announcements.ts` with
+the wording from D6, unchanged: "Combat is off in this game, so ships
+cannot attack." Added four new cases to `combat.test.ts` (a perfectly legal
+target refused as `"combat-is-off"`; `"game-over"` still winning over it in
+an ended off game; `"combat-is-off"` answered rather than the specific
+reason for a target that would have been refused anyway — out of range, on
+a planet, friendly; `legalTargets` empty with combat off where the same
+position has several targets with combat on) and one row to
+`announcements.test.ts`'s parameterised rejection-sentence table. No
+production file needed a second gate — `Board.tsx`, `session.ts`, `ply.ts`
+and `canMoveOrAttack.ts` were not touched, as D3 predicted. `npm run
+typecheck` and `npm run lint` clean; `npm test` 65 files, 1220 tests, all
+green (up from 1215; every pre-existing test in every other file passed
+untouched, with combat on from Step 3's sweep); `npm run format:check`
+reports only the two pre-existing baseline warnings after running
+`prettier --write` on the new test additions in `combat.test.ts`. No
+deviation from the plan.
 
 **`src/rules/combat.ts`:**
 

@@ -313,6 +313,11 @@ describe("announcementFor", () => {
       squareAt("G", 4),
       "The game is over. Nothing further can be played.",
     ],
+    [
+      "combat-is-off",
+      squareAt("G", 4),
+      "Combat is off in this game, so ships cannot attack.",
+    ],
   ];
 
   it.each(cases)(
