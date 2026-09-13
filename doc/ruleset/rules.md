@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.33**
+**Rules version: 0.34**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -15,9 +15,11 @@ commands a fleet of three to six ships and competes to occupy the board's
 contested nodes, collecting **energy** for every turn they hold one. The
 player with the most energy when the game ends is the winner.
 
-Ships are never destroyed. A fight has no winner — both ships involved are
+Combat is a choice made before play begins (section 7). When it is on,
+ships are never destroyed: a fight has no winner — both ships involved are
 pushed back to a planet, carrying exactly what they carried before the
-fight, and rejoin the game from there.
+fight, and rejoin the game from there. With combat off, no fight ever
+happens.
 
 A ship carries **power**, a reserve it spends to move and refills only on
 planets. A ship holding a node cannot be attacked while it holds it. A node
@@ -31,18 +33,18 @@ course of a game, not just which of them are lit. That redrawing happens
 only because the players use the nodes on the board — a node nobody stands
 on never changes at all (section 8.3).
 
-The game has three random elements that shape every game — the opening
-board itself, where the three new nodes appear when the waiting set is
-refilled and which of them gets which priority, and which planet the two
-ships in a fight are pushed back to. No two games start on the same board,
-and neither player has seen this one before.
+The game has three random elements — the opening board itself, where the
+three new nodes appear when the waiting set is refilled and which of them
+gets which priority, and, when combat is on, which planet the two ships in
+a fight are pushed back to. No two games start on the same board, and
+neither player has seen this one before.
 
 ---
 
 ## 2. Words used in these rules
 
 **Turn** — everything one player does before play passes to their opponent. A
-turn is one move or one attack.
+turn is one move, or one attack when combat is on (section 7).
 
 **Round** — one turn for each player. The game lasts for the number of
 rounds chosen before play begins — 30, 45, 60 or 90 (section 9).
@@ -280,15 +282,19 @@ it.
 ## 5. Turns
 
 Green takes the first turn, and the players alternate. On a turn a player
-either **moves** one ship or **attacks** with one ship.
+**moves** one ship, or, when combat is on (section 7), **attacks** with one
+ship instead.
 
-If a player can neither move nor attack, their turn passes. This should be
-uncommon — a player always has at least three ships — but neither is always
-available: an attack reaches only as far as the attacker's power allows, and
-a ship holding a node has no attack available to it at all. A **trapped**
-ship (section 8.5) can do neither, so a player whose ships are all trapped
-would otherwise pass; section 8.6 step 7 exists to prevent that. The rule is
-here so the game can never deadlock.
+If a player can neither move nor attack, their turn passes — with combat off
+that means simply that the player cannot move. This should be uncommon — a
+player always has at least three ships, and the one-square orthogonal move is
+free (section 6), so a ship with an empty square beside it can always move.
+It is not impossible, though: a ship can be hemmed in by other ships with
+nothing it can reach and afford, and a **trapped** ship (section 8.5) can do
+nothing at all whatever stands around it. A player whose ships are all trapped
+would otherwise pass every turn; section 8.6 step 7 exists to prevent that.
+The rule is here so the game can never deadlock, whether combat is on or
+off.
 
 A turn also passes when the player to move is out of time (section 10). That
 is the second, and only other, reason a turn can pass.
@@ -353,6 +359,12 @@ onto its target.
 ---
 
 ## 7. Combat
+
+Combat is **off or on**, the same for both players, chosen before play
+begins and fixed for the game's lifetime. With it **off**, no attack is
+legal for either player, and the rest of this section and section 7.1 do not
+apply: every turn is a move (section 5). The rest of this section describes
+the game with combat **on**.
 
 A ship may attack an enemy ship within its **movement range** (section 6) —
 the same shapes, priced the same way, so an attack reaches whatever the
@@ -421,7 +433,9 @@ one.
 A ship may also go back to a planet deliberately. This is not a special move —
 it is an ordinary one that ends on an empty planet, and like any move it must
 be within the ship's range, and it must be a shape the ship can afford, and
-have a clear path. What it gets there is recovery at the section 3.1 rate —
+have a clear path. It is available whether combat is off or on: it is a move,
+not an attack, and with combat off it is the only way a ship reaches a
+planet. What it gets there is recovery at the section 3.1 rate —
 one power a turn, or two if it is the only one of its owner's ships charging
 — not an instant refill.
 
@@ -734,9 +748,9 @@ energy is a draw.
 
 ## 10. The clock
 
-Alongside the fleet size, the number of rounds and the charged-node count
-(section 8.1), a player chooses a **clock** before play begins: no clock,
-or 6, 4 or 2 seconds a turn.
+Alongside the fleet size, the number of rounds, the charged-node count
+(section 8.1) and whether combat is on or off (section 7), a player chooses a
+**clock** before play begins: no clock, or 6, 4 or 2 seconds a turn.
 
 Each player's clock starts with a budget: their seconds a turn multiplied by
 the number of turns the chosen length gives them. The whole game is

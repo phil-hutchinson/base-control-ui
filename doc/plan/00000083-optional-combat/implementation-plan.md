@@ -321,7 +321,30 @@ the reason recorded in `Notes:`.
 
 ### Step 1 — `rules.md` 0.33 → 0.34: combat becomes a choice
 
-Status: pending
+Status: committed
+
+Notes: Bumped `rules.md` to 0.34 and `RULES_VERSION` to match, and added one
+changelog entry. §7 now opens with the off/or-on statement (naming no
+default) and says the rest of §7/§7.1 do not apply with combat off; §7.2
+gained a clause stating it is unaffected and is the only way a ship reaches
+a planet with combat off; §2's Turn entry now reads "one move, or one attack
+when combat is on"; §5 restates the two kinds of turn and rebuilds the
+never-deadlock argument on the free one-square orthogonal move and the
+§8.6 step 7 relief rather than on attack range; §1's fights paragraph and
+its three-random-elements list are now conditional on the choice; §10's
+opening sentence adds combat to the list of what is chosen before play. §9
+needed no edit — it only ever named the number of rounds and never listed
+the other options either, so there was nothing to make conditional there.
+Checked and left unchanged, as protections that describe what happens when
+combat is on rather than claiming it always happens: §3.1's planet bullet,
+§2's Trapped entry, §8.1's charged/depleted bullets, §8.5, and §6's closing
+sentence on moving vs. attacking. `tech-notes.md`'s §8.2 sizing sentence
+("Because a turn is one move or one attack...") was also checked and left
+as-is: it still holds with combat off, where a turn is the "one move" half
+of that same disjunction, so it does not claim every game has attacks.
+`npm run typecheck`, `npm run lint` and `npm test` (64 files, 1208 tests, all
+green — unchanged from baseline) all clean; `npm run format:check` reports
+only the two pre-existing warnings. No deviation from the plan. Orchestrator correction before committing: §5's rebuilt paragraph claimed that only a trapped ship can do nothing at all, which the game can violate — a ship hemmed in by other ships with nothing it can reach and afford also cannot move. Reworded so the pass rule stays a real possibility rather than a claim the app could contradict.
 
 Update `doc/ruleset/rules.md` so no section states attacking as a fact about
 every game, bump the document to **0.34**, bump `RULES_VERSION` in
