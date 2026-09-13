@@ -6,8 +6,9 @@ a 15 x 15 board, competing for the handful of contested nodes that light up
 across it. Hold a node and it pays you energy every turn. The player with the
 most energy at the end wins.
 
-Each ship carries power, a reserve it spends on every move and every attack. A
-single step up, down, left or right is free; a diagonal step costs 1; two
+Each ship carries power, a reserve it spends on every move, and on every attack
+in a game with combat turned on. A single step up, down, left or right is free;
+a diagonal step costs 1; two
 squares in a line, or a new L-shaped move that turns a corner, cost 2; and
 three squares in a line, two squares diagonally, or a longer hop — three
 squares one way, then one more across — cost 3. A ship is always free to take
@@ -17,8 +18,11 @@ squares away at the very most. Only an enemy ship blocks the path; a ship flies
 straight over its own side. The only way to refill is to sit on a planet: at
 the end of its owner's turn a ship parked on one gains a point of power, or two
 if it is the only one of that player's ships still topping up power on a planet
-at that moment — a ship already full doesn't count — up to a maximum of six. An
-attack costs its attacker the same price as the move it used to strike, and
+at that moment — a ship already full doesn't count — up to a maximum of six.
+Fighting is a choice you make before play begins: the app starts with combat
+off, and a game with it off has no attacks in it at all — nodes are won by
+getting there first and held by staying put. Turn it on and it works like this.
+An attack costs its attacker the same price as the move it used to strike, and
 reaches exactly as far as a move does — a ship with 3 to spend can strike from
 three squares away, not just two — while the ship being attacked keeps whatever
 power it had. A ship holding a node cannot be attacked while it holds it. A
@@ -52,15 +56,16 @@ install, no account, no server.
 > opening position to the final score. Opening it shows a start screen, not the
 > board: the game's name, a choice of how many ships a side (six, five, four or
 > three, six to start), a choice of how many nodes are lit at once (five, four
-> or three, five to start), a choice of how many rounds the game lasts (thirty,
-> forty-five, sixty or ninety, thirty to start), a choice of a clock
+> or three, five to start), a choice of whether combat is on or off (off to
+> start), a choice of how many rounds the game lasts (thirty, forty-five, sixty
+> or ninety, thirty to start), a choice of a clock
 > (unlimited, or six, four or two seconds a turn, unlimited to start) and a
 > PLAY button.
 > The start screen also offers a quick guide — a first read for someone who
 > has never played, not a full rules reference — explaining scoring, movement,
 > refuelling and how nodes come and go, with a back button that returns you to
-> the start screen with the four choices exactly as you left them. Changing
-> any of the four choices starts nothing — the board only appears once PLAY
+> the start screen with the five choices exactly as you left them. Changing
+> any of the five choices starts nothing — the board only appears once PLAY
 > is pressed, dealt with the choices you made. A clock is each player's own
 > time for the whole game, not per turn — a thirty-round game at six seconds a
 > turn gives each of you three minutes to spend however you like across your
@@ -69,18 +74,20 @@ install, no account, no server.
 > since energy still decides who wins. A smaller fleet starts from fewer of the
 > board's eighteen starting squares, leaving the rest empty; every starting
 > square is an ordinary square, whether or not a ship stands there — it gives a
-> ship nothing and protects it from nothing, so ships are attackable from the
-> very first turn. Twelve planets sit inside the board instead, at fixed
-> squares, none of them on the outer edge, each showing one of twelve different
-> drawings. Which drawing sits on which planet is dealt out afresh at the start
+> ship nothing and protects it from nothing, so in a game with combat on ships
+> are attackable from the very first turn. Twelve planets sit inside the board
+> instead, at fixed squares, none of them on the outer edge, each showing one
+> of twelve different drawings. Which drawing sits on which planet is dealt out
+> afresh at the start
 > of every game, so no two games look alike, but the twelve squares the planets
 > occupy never change. A planet is not just scenery: a ship standing on one
 > cannot attack and cannot be attacked, and gains back a point of power at the
 > end of each of its owner's turns, or two if it is the only one of that
 > player's ships still topping up power on a planet, up to a full six. A ship
 > already full doesn't count towards that. Green goes first, and each player
-> moves one ship or attacks with one, by mouse or by keyboard. Every game
-> deals a different opening board: it opens with as many lit nodes as you
+> moves one ship — or attacks with one, when combat is on — by mouse or by
+> keyboard. Every game deals a different opening board: it opens with as many
+> lit nodes as you
 > chose and three still waiting — eight nodes in all at five, seven at four,
 > six at three. The lit ones are chosen at random too, but none of them carries
 > a countdown yet, so at the start of the game they are all exactly as fresh
@@ -115,9 +122,10 @@ install, no account, no server.
 > appear elsewhere, spread apart from the lit nodes and from each other, so the
 > map itself keeps reshaping as the game runs and you will not know where the
 > next three will appear until they do. A node is never drawn on a planet, and
-> all but never right next to one. A fight has no winner: both ships involved —
-> the attacker and the ship it attacked — are sent to planets chosen at random
-> from whichever planets are standing empty; the ship that was attacked keeps
+> all but never right next to one. With combat on, a fight has no winner: both
+> ships involved — the attacker and the ship it attacked — are sent to planets
+> chosen at random from whichever planets are standing empty; the ship that was
+> attacked keeps
 > whatever power it carried, and the attacker arrives having already paid for
 > its shot, so neither of you can know in advance where either will end up. A
 > planet is where a ship recovers: it gains a point of power at the end of each

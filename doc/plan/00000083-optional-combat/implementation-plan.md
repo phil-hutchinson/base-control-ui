@@ -986,7 +986,21 @@ reporting only the two pre-existing warnings from the baseline.
 
 ### Step 10 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator. The README now introduces fighting as
+a choice made before play, says the app starts with combat off and a game with
+it off has no attacks in it at all, and holds the existing attack prose as the
+on game — the power sentence, the start screen's list of choices (now five,
+in both places that counted them), the starting-squares sentence, "moves one
+ship — or attacks with one, when combat is on", and the fight paragraph in the
+expandable detail. No second ruleset: the existing prose was qualified, not
+rewritten. Paragraphs touched were reflowed to the file's ~80-column fill.
+`/update-readme` was then run over the branch diff and found nothing further:
+the only player-visible changes on this branch are the Combat option and the
+refusal it produces, both already described. Confirmed `src/guide/guideCopy.ts`
+needs **no** change — it contains no mention of combat, attacking or fighting
+at all (S9).
 
 `README.md` describes a game that always has fighting: "Each ship carries
 power, a reserve it spends on every move and every attack", a paragraph on
