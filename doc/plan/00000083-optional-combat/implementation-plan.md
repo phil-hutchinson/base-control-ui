@@ -894,7 +894,7 @@ Verification (automated): `npm test` green with the new cases;
 
 ### Step 9 — The start screen's fifth group, and `App` wires it
 
-Status: implemented
+Status: committed
 
 Notes: `StartScreen.tsx` gained the `Combat` fieldset between `Charged nodes`
 and `Rounds`, rendered by the existing `OptionChoice` with `COMBAT_SETTINGS`

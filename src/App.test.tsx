@@ -35,6 +35,10 @@ function roundsGroup() {
   return screen.getByRole("group", { name: "Rounds" });
 }
 
+function combatGroup() {
+  return screen.getByRole("group", { name: "Combat" });
+}
+
 function clockGroup() {
   return screen.getByRole("group", { name: "Clock (time per move)" });
 }
@@ -45,7 +49,7 @@ async function pressPlay() {
 }
 
 describe("App", () => {
-  it("opens on the start screen: the name, all four option groups at their defaults, and PLAY — no board, no HUD", () => {
+  it("opens on the start screen: the name, all five option groups at their defaults, and PLAY — no board, no HUD", () => {
     render(<App />);
 
     expect(
@@ -61,6 +65,9 @@ describe("App", () => {
         "radio",
         { name: "5" },
       ),
+    ).toBeChecked();
+    expect(
+      within(combatGroup()).getByRole("radio", { name: "OFF" }),
     ).toBeChecked();
     expect(
       within(screen.getByRole("group", { name: "Rounds" })).getByRole("radio", {
@@ -248,6 +255,33 @@ describe("App", () => {
     expect(screen.getByText("1/45")).toBeInTheDocument();
   });
 
+  it("pressing PLAY with the default OFF starts a game in which selecting green's L1 ship marks no square as a target", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    await user.click(screen.getByRole("gridcell", { name: /^L1,/ }));
+
+    expect(
+      screen.queryByRole("gridcell", { name: /can attack here/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("choosing ON before PLAY starts a game in which selecting green's L1 ship marks red's O2 as a target", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(within(combatGroup()).getByRole("radio", { name: "ON" }));
+    await user.click(screen.getByRole("button", { name: "Play" }));
+    await user.click(screen.getByRole("gridcell", { name: /^L1,/ }));
+
+    expect(
+      screen.getByRole("gridcell", {
+        name: "O2, red ship, power 6 of 6, can attack here, both ships would return to planets",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("has no static accessibility violations once a game is in progress", async () => {
     const { container } = render(<App />);
 
@@ -303,6 +337,7 @@ describe("App", () => {
     const shipsGroup = screen.getByRole("group", { name: "Ships" });
     await user.click(within(shipsGroup).getByRole("radio", { name: "5" }));
     await user.click(within(roundsGroup()).getByRole("radio", { name: "45" }));
+    await user.click(within(combatGroup()).getByRole("radio", { name: "ON" }));
     await user.click(screen.getByRole("button", { name: "Quick Guide" }));
 
     expect(
@@ -327,6 +362,9 @@ describe("App", () => {
     ).toBeChecked();
     expect(
       within(roundsGroup()).getByRole("radio", { name: "45" }),
+    ).toBeChecked();
+    expect(
+      within(combatGroup()).getByRole("radio", { name: "ON" }),
     ).toBeChecked();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(vi.mocked(Board).mock.calls.length).toBe(renderCountBefore);
