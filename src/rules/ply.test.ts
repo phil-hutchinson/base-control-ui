@@ -56,6 +56,7 @@ function buildState(config: {
   chargedNodeCount?: ChargedNodeCount;
   energy?: { green: number; red: number };
   outOfTime?: { green: boolean; red: boolean };
+  combatEnabled?: boolean;
 }): GameState {
   return {
     ships: config.ships,
@@ -68,6 +69,7 @@ function buildState(config: {
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: config.outOfTime ?? { green: false, red: false },
+    combatEnabled: config.combatEnabled ?? true,
   };
 }
 
@@ -977,6 +979,24 @@ describe("applyAttack", () => {
     });
     expect(state).toEqual(before);
   });
+
+  it("refuses an otherwise perfectly legal attack when combat is off, leaving the state exactly as it went in (rules.md §7)", () => {
+    // H8 to H9 is an orthogonal jab: in range, affordable, unobstructed, and
+    // neither ship is on a planet or a charged or depleted node — with
+    // combat on this is the very first case in this file. With it off, no
+    // ship moves, no power is spent, no seed advances and the ply does not
+    // end, so the whole state, not just a field or two, is compared.
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
+      combatEnabled: false,
+    });
+    const before = structuredClone(state);
+
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
+
+    expect(result).toEqual({ outcome: "refused", reason: "combat-is-off" });
+    expect(state).toEqual(before);
+  });
 });
 
 describe("a move or an attack that never lands on or leaves a charged node touches no node's state (rules.md §8.3, §8.6)", () => {
@@ -1212,6 +1232,32 @@ describe("applyPassGuard", () => {
 
     expect(result.state).toEqual(state);
     expect(result.effect).toBeUndefined();
+  });
+
+  it("passes the ply when the side to move has no legal move and, with combat off, no legal attack either (rules.md §5, §7)", () => {
+    // The same fixture as the case above — green-1 boxed in for movement
+    // with a legal attack at B1 — but with combat off, so that legal attack
+    // is not a thing this game offers and the side genuinely has nothing
+    // left to do.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "A1", 0),
+        ship("red-1", "red", "B1"),
+        ship("red-2", "red", "A2"),
+      ],
+      combatEnabled: false,
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state.sideToMove).toBe("red");
+    expect(result.effect).toEqual({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      reason: "cannot-move-or-attack",
+      endOfTurn: [],
+    });
   });
 
   it("passes the ply when the side to move can neither move nor attack", () => {

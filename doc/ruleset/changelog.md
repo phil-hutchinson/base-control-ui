@@ -7,6 +7,43 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.34 — combat becomes a choice
+
+This is a gameplay change — a whole kind of turn becomes optional — and so
+would be a tag candidate; tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **Section 7 now opens by stating combat as a choice**: off or on, the same
+  for both players, chosen before play begins and fixed for the game's
+  lifetime, naming no default. With it off, no attack is legal for either
+  player, and the rest of section 7 and section 7.1 do not apply — a turn
+  is a move (section 5). The rest of section 7 reads as it did before, as
+  the description of the game with combat on.
+- **Section 7.2, returning to a planet by choice, is unaffected**: it is a
+  move, not an attack, so it stays available whether combat is off or on,
+  and with combat off it is the only way a ship reaches a planet.
+- **Section 2's Turn entry** now reads "a turn is one move, or one attack
+  when combat is on".
+- **Section 5** states the two kinds of turn as one kind plus the other when
+  combat is on, and rebuilds its "the game can never deadlock" argument on
+  what holds at both settings — the free one-square orthogonal move, and the
+  relief section 8.6 step 7 gives a side whose ships are all trapped —
+  rather than on an attack's range, which no longer holds when combat is
+  off.
+- **Section 1's overview** states the fights paragraph and the third random
+  element — which planet the two ships in a fight are pushed back to — as
+  arising only when combat is on.
+- **Section 10's opening sentence** adds combat to the list of what is
+  chosen alongside the fleet size, the number of rounds, the charged-node
+  count and the clock.
+- Every remaining "cannot be attacked" statement (section 3.1's planet
+  bullet, section 2's Trapped entry, section 8.1, section 8.5) is unchanged:
+  each describes a protection that simply is never tested with combat off,
+  not a claim that every game has attacks in it.
+- Nothing else changes: the same board, the same fleets, the same movement
+  and power, the same nodes, the same energy, the same ending, at either
+  setting.
+
 ## 0.33 — a third unit of fuel buys a longer move
 
 This is a gameplay change — moves that were illegal are now legal — and so

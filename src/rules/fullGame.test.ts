@@ -165,26 +165,31 @@ interface PlayedGame {
   readonly finalState: GameState;
   readonly greenCollected: readonly EnergyCollectedEffect[];
   readonly redCollected: readonly EnergyCollectedEffect[];
+  readonly attacksApplied: number;
 }
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
- * above, dealt with `fleetSize` ships a side (the app's default six) and
- * `chargedNodeCount` charged nodes (the app's default five).
+ * above, dealt with `fleetSize` ships a side (the app's default six),
+ * `chargedNodeCount` charged nodes (the app's default five) and combat on
+ * unless `combatEnabled` says otherwise.
  */
 function playFullGame(
   seed: number,
   lengthInRounds: number,
   fleetSize: FleetSize = DEFAULT_FLEET_SIZE,
   chargedNodeCount: ChargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
+  combatEnabled = true,
 ): PlayedGame {
   let state = startingGameState(seed, {
     lengthInRounds,
     fleetSize,
     chargedNodeCount,
+    combatEnabled,
   });
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
+  let attacksApplied = 0;
 
   let pliesApplied = 0;
   while (!isGameOver(state)) {
@@ -220,6 +225,7 @@ function playFullGame(
       }
       state = result.state;
       effects = result.effects;
+      attacksApplied += 1;
     }
 
     for (const collected of energyCollectedEffects(effects)) {
@@ -233,6 +239,7 @@ function playFullGame(
     finalState: state,
     greenCollected,
     redCollected,
+    attacksApplied,
   };
 }
 
@@ -249,6 +256,7 @@ function findMoveLegalAMomentEarlier(
     ...state,
     lengthInRounds: state.lengthInRounds + 1,
     outOfTime: { green: false, red: false },
+    combatEnabled: true,
   };
   for (const ship of state.ships) {
     const [destination] = legalDestinations(notEnded, ship.id);
@@ -272,6 +280,7 @@ function findAttackLegalAMomentEarlier(
     ...state,
     lengthInRounds: state.lengthInRounds + 1,
     outOfTime: { green: false, red: false },
+    combatEnabled: true,
   };
   for (const ship of state.ships) {
     const [target] = legalTargets(notEnded, ship.id);
@@ -456,10 +465,30 @@ describe("a full game, end to end", () => {
       lengthInRounds: 1,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
+      combatEnabled: true,
     };
 
     expect(isGameOver(state)).toBe(true);
     expect(assertRefusesEverything(state)).toBe(true);
+  });
+
+  it("plays to its last round on moves alone when combat is off, and never deadlocks", () => {
+    const seed = 20260819;
+    const { finalState, attacksApplied } = playFullGame(
+      seed,
+      100,
+      DEFAULT_FLEET_SIZE,
+      DEFAULT_CHARGED_NODE_COUNT,
+      false,
+    );
+
+    // Reaching this point at all is most of the proof: `playFullGame` throws
+    // if the policy ever runs out of legal plies before the game ends
+    // (rules.md §5's never-deadlock guarantee, with combat off).
+    expect(finalState.plyNumber).toBe(pliesForGameLength(100) + 1);
+    expect(isGameOver(finalState)).toBe(true);
+    expect(finalState.combatEnabled).toBe(false);
+    expect(attacksApplied).toBe(0);
   });
 });
 
@@ -541,6 +570,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     const state = startingGameState(20260819, {
       lengthInRounds: 30,
       fleetSize: 5,
+      combatEnabled: true,
     });
     const shipSquareNames = new Set(
       state.ships.map((s) => squareName(s.square)),
@@ -570,6 +600,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     const state = startingGameState(20260819, {
       lengthInRounds: 30,
       fleetSize: 6,
+      combatEnabled: true,
     });
     const shipSquareNames = new Set(
       state.ships.map((s) => squareName(s.square)),
@@ -614,6 +645,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
+      combatEnabled: true,
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -663,6 +695,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
+      combatEnabled: true,
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -711,6 +744,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
+      combatEnabled: true,
     };
 
     expect(() => runEndOfTurn(state)).not.toThrow();

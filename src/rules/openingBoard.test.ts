@@ -70,6 +70,7 @@ describe.each(CHARGED_NODE_COUNTS)(
         let state = startingGameState(seed, {
           lengthInRounds: RUN_TO_COMPLETION_LENGTH_IN_ROUNDS,
           chargedNodeCount,
+          combatEnabled: true,
         });
 
         const dealtNodeNames = nodeSquares(state).map(squareName);
@@ -174,6 +175,7 @@ describe.each(CHARGED_NODE_COUNTS)(
           lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
           chargedNodeCount,
           outOfTime: { green: false, red: false },
+          combatEnabled: true,
         };
 
         const { effects } = runCharging(state);

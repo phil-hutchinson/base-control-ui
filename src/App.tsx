@@ -43,6 +43,8 @@ export function App() {
     setFleetSize,
     chargedNodeCount,
     setChargedNodeCount,
+    combatEnabled,
+    setCombatEnabled,
     lengthInRounds,
     setLengthInRounds,
     clockSetting,
@@ -70,6 +72,8 @@ export function App() {
             onFleetSizeChange={setFleetSize}
             chargedNodeCount={chargedNodeCount}
             onChargedNodeCountChange={setChargedNodeCount}
+            combatEnabled={combatEnabled}
+            onCombatEnabledChange={setCombatEnabled}
             lengthInRounds={lengthInRounds}
             onLengthInRoundsChange={setLengthInRounds}
             clockSetting={clockSetting}

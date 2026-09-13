@@ -13,6 +13,7 @@ describe("useAppScreen", () => {
     expect(result.current.screen).toBe("start");
     expect(result.current.fleetSize).toBe(6);
     expect(result.current.chargedNodeCount).toBe(5);
+    expect(result.current.combatEnabled).toBe(false);
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
   });
@@ -42,10 +43,42 @@ describe("useAppScreen", () => {
         type: "new-game",
         fleetSize: 5,
         chargedNodeCount: 4,
+        combatEnabled: false,
         lengthInRounds: 45,
       }),
     );
     expect(result.current.screen).toBe("game");
+  });
+
+  it("carries a chosen combat setting of on into the new-game intent, and keeps it on returning to start", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch));
+
+    act(() => {
+      result.current.setCombatEnabled(true);
+    });
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", combatEnabled: true }),
+    );
+
+    act(() => {
+      result.current.handleReturnToStart();
+    });
+
+    expect(result.current.combatEnabled).toBe(true);
+
+    dispatch.mockClear();
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", combatEnabled: true }),
+    );
   });
 
   it("carries a chosen charged-node count of three into the new-game intent, and keeps it on returning to start", () => {

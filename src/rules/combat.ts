@@ -6,6 +6,10 @@
 // shape lookups rather than carrying a second copy of the table. Only an
 // enemy ship blocks the path (§6); the target square's own occupant is never
 // treated as blocking the shot at it.
+//
+// Combat is off or on, chosen before play begins (rules.md §7). That
+// choice's offered settings, default and guard live in `combatSetting.ts`,
+// which knows nothing about a game state; everything here reads one.
 
 import { type Square, squareName } from "./board";
 import { PLANETS, isPlanet } from "./planets";
@@ -60,16 +64,19 @@ export type AttackRefusalReason =
   | "target-out-of-range"
   | "cannot-afford-target"
   | "attack-path-blocked"
-  | "game-over";
+  | "game-over"
+  | "combat-is-off";
 
 /**
  * Why `target` is not a legal attack for `shipId` in the given state, as a
  * structured reason, or `undefined` when the attack is legal.
  *
  * Checked most fundamental first: whether the game is even still being played,
- * then whose ship it is, then whether the attacker is on a planet, then
- * whether the attacker holds a charged node or is trapped on a depleted one
- * (rules.md §7 — a ship on either kind of node is out of combat in both
+ * then whether combat is on in this game at all (rules.md §7 — with it off,
+ * no attack is legal for either player, and every other check below would
+ * only mislead), then whose ship it is, then whether the attacker is on a
+ * planet, then whether the attacker holds a charged node or is trapped on a
+ * depleted one (a ship on either kind of node is out of combat in both
  * directions), then everything about the target — no ship there, a friendly
  * ship, a ship on a planet, a ship on a charged node, a ship trapped on a
  * depleted node — and only then range, affordability and path, which come last
@@ -77,7 +84,8 @@ export type AttackRefusalReason =
  * than as an out-of-range square. A square no shape reaches is out of range; a
  * shape the attacker cannot pay for is unaffordable; only once both are
  * settled does the path matter. Once the game has ended, no attack is legal
- * for anyone, including one that would have been refused anyway.
+ * for anyone, including one that would have been refused anyway — that check
+ * still wins over `"combat-is-off"` in an ended off game.
  */
 export function attackRefusalReason(
   state: GameState,
@@ -86,6 +94,9 @@ export function attackRefusalReason(
 ): AttackRefusalReason | undefined {
   if (isGameOver(state)) {
     return "game-over";
+  }
+  if (!state.combatEnabled) {
+    return "combat-is-off";
   }
 
   const attacker = findShip(state, shipId);
@@ -144,10 +155,13 @@ export function attackRefusalReason(
  * Every square `shipId` may legally attack in the given state: every square
  * within the affordable subset of its §6 movement reach holding an enemy
  * ship — only an enemy ship on a passed-over square blocks the shot — with
- * §9's game-over check applied first — empty once the game is over, once the
- * attacker is trapped on a depleted node, or once the attacker holds a
- * charged node. A ship trapped on a depleted node is never offered as a
- * target, exactly as a ship on a charged node never is (rules.md §7).
+ * §9's game-over check applied first. Empty once the game is over, once
+ * combat is off for this game (rules.md §7), once the attacker is trapped on
+ * a depleted node, or once the attacker holds a charged node. A ship trapped
+ * on a depleted node is never offered as a target, exactly as a ship on a
+ * charged node never is. There is no separate combat-off check here: the
+ * final filter already keeps only squares `attackRefusalReason` approves,
+ * and that function refuses every square once combat is off.
  */
 export function legalTargets(
   state: GameState,

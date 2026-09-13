@@ -434,6 +434,8 @@ function rejectionSentence(event: RejectedEvent): string {
       return `The selected ship does not have the power to strike ${square}. An orthogonal step is free, a diagonal costs 1, two squares or an L cost 2, and three squares, two diagonally, or three and one across cost 3.`;
     case "attack-path-blocked":
       return `An enemy ship stands in the way, so the attack cannot reach ${square}.`;
+    case "combat-is-off":
+      return "Combat is off in this game, so ships cannot attack.";
     // Unreachable through the board's own gesture — activating a friendly
     // ship re-selects it and activating an empty square is a move attempt —
     // but `attackRefusalReason` answers for every square, so both are worded.

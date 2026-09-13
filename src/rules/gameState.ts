@@ -12,6 +12,7 @@ import {
   type Side,
   type ShipId,
 } from "./fleet";
+import { DEFAULT_COMBAT_ENABLED } from "./combatSetting";
 import { DEFAULT_GAME_LENGTH_ROUNDS, isGameLengthRounds } from "./gameLength";
 import type { PowerLevel } from "./power";
 import {
@@ -108,6 +109,16 @@ export interface GameState {
    * true once both sides carry this flag.
    */
   readonly outOfTime: Readonly<Record<Side, boolean>>;
+  /**
+   * Whether combat (rules.md §7) is on for this game, fixed for the game's
+   * lifetime once set by `startingGameState`. Every place that decides
+   * whether an attack is legal reads it from here rather than from an app
+   * default. It cannot be derived from `state.ships` or `state.nodes` the
+   * way a fleet size is derived from the ship list: a board with no fights
+   * on it is indistinguishable from one whose players simply have not
+   * fought yet.
+   */
+  readonly combatEnabled: boolean;
 }
 
 /**
@@ -137,6 +148,15 @@ export interface StartingGameStateOptions {
    * cannot be derived back from the dealt board.
    */
   readonly chargedNodeCount?: number;
+  /**
+   * Whether combat (rules.md §7) is on for this game. Defaults to
+   * `DEFAULT_COMBAT_ENABLED` (off). Unlike its three neighbours above, this
+   * is **not** validated at runtime: those are typed `number` and so admit
+   * values the game does not offer, but a `boolean` admits only the two
+   * settings the game offers, so there is nothing for a `RangeError` to
+   * reject.
+   */
+  readonly combatEnabled?: boolean;
 }
 
 /**
@@ -174,6 +194,7 @@ export function startingGameState(
     lengthInRounds = DEFAULT_GAME_LENGTH_ROUNDS,
     fleetSize = DEFAULT_FLEET_SIZE,
     chargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
+    combatEnabled = DEFAULT_COMBAT_ENABLED,
   } = options;
 
   if (!isGameLengthRounds(lengthInRounds)) {
@@ -216,6 +237,7 @@ export function startingGameState(
     lengthInRounds,
     chargedNodeCount,
     outOfTime: { green: false, red: false },
+    combatEnabled,
   };
 }
 

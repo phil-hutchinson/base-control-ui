@@ -46,6 +46,7 @@ function buildState(config: {
   plyNumber?: number;
   lengthInRounds?: number;
   outOfTime?: Readonly<Record<Side, boolean>>;
+  combatEnabled?: boolean;
 }): GameState {
   return {
     ships: config.ships,
@@ -58,6 +59,7 @@ function buildState(config: {
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: config.outOfTime ?? { green: false, red: false },
+    combatEnabled: config.combatEnabled ?? true,
   };
 }
 
@@ -90,6 +92,38 @@ describe("sessionReducer — nothing selected", () => {
       destinationCount: legalDestinations(state, "green-1").length,
       targetCount: legalTargets(state, "green-1").length,
     });
+  });
+
+  it("reports a target count of zero with combat off, leaving the destination count as it is with combat on", () => {
+    const onState = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 3),
+        ship("red-1", "red", "H10", 4),
+      ],
+      combatEnabled: true,
+    });
+    const offState = { ...onState, combatEnabled: false };
+
+    const onResult = activate(sessionFor(onState), "H8");
+    const offResult = activate(sessionFor(offState), "H8");
+
+    expect(offResult.lastEvent).toEqual({
+      type: "selected",
+      shipId: "green-1",
+      side: "green",
+      square: squareFromName("H8"),
+      destinationCount: legalDestinations(offState, "green-1").length,
+      targetCount: 0,
+    });
+    if (onResult.lastEvent?.type !== "selected") {
+      throw new Error("expected a selected event");
+    }
+    if (offResult.lastEvent?.type !== "selected") {
+      throw new Error("expected a selected event");
+    }
+    expect(offResult.lastEvent.destinationCount).toBe(
+      onResult.lastEvent.destinationCount,
+    );
   });
 
   it("reports a target count that includes a target beyond the eight neighbours", () => {
@@ -246,6 +280,27 @@ describe("sessionReducer — a ship is selected", () => {
         type: "rejected",
         reason: "target-out-of-range",
         square: squareFromName("A1"),
+      });
+    });
+
+    it("rejects an otherwise legal attack as combat-is-off, keeping the selection", () => {
+      const state = buildState({
+        ships: [
+          ship("green-1", "green", "H8", 4),
+          ship("red-1", "red", "H9", 4),
+        ],
+        combatEnabled: false,
+      });
+      const selected = activate(sessionFor(state), "H8");
+
+      const result = activate(selected, "H9");
+
+      expect(result.selectedShipId).toBe("green-1");
+      expect(result.state).toBe(state);
+      expect(result.lastEvent).toEqual({
+        type: "rejected",
+        reason: "combat-is-off",
+        square: squareFromName("H9"),
       });
     });
   });
@@ -523,6 +578,7 @@ describe("sessionReducer — new-game", () => {
       lengthInRounds: 100,
       fleetSize: DEFAULT_FLEET_SIZE,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
     });
 
     expect(result.selectedShipId).toBeUndefined();
@@ -536,6 +592,7 @@ describe("sessionReducer — new-game", () => {
         lengthInRounds: 100,
         fleetSize: DEFAULT_FLEET_SIZE,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+        combatEnabled: true,
       }).randomSeed,
     );
     expect(result.state.lengthInRounds).toBe(100);
@@ -550,6 +607,7 @@ describe("sessionReducer — new-game", () => {
       lengthInRounds: 3,
       fleetSize: DEFAULT_FLEET_SIZE,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
     });
 
     expect(result.state.lengthInRounds).toBe(3);
@@ -564,6 +622,7 @@ describe("sessionReducer — new-game", () => {
       lengthInRounds: 5,
       fleetSize: DEFAULT_FLEET_SIZE,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
     });
     const second = sessionReducer(session, {
       type: "new-game",
@@ -571,6 +630,7 @@ describe("sessionReducer — new-game", () => {
       lengthInRounds: 5,
       fleetSize: DEFAULT_FLEET_SIZE,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
     });
 
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
@@ -587,6 +647,7 @@ describe("sessionReducer — new-game", () => {
         lengthInRounds: 30,
         fleetSize,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+        combatEnabled: true,
       });
 
       const expectedFleet = startingFleet(fleetSize);
@@ -609,6 +670,7 @@ describe("sessionReducer — new-game", () => {
           lengthInRounds: 30,
           fleetSize,
           chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+          combatEnabled: true,
         }).randomSeed,
       );
       expect(result.state.lengthInRounds).toBe(30);
@@ -624,6 +686,7 @@ describe("sessionReducer — new-game", () => {
       lengthInRounds: 30,
       fleetSize: DEFAULT_FLEET_SIZE,
       chargedNodeCount: 3,
+      combatEnabled: true,
     });
 
     expect(result.state.chargedNodeCount).toBe(3);
@@ -643,6 +706,7 @@ describe("sessionReducer — new-game", () => {
       lengthInRounds: 30,
       fleetSize: DEFAULT_FLEET_SIZE,
       chargedNodeCount: 4,
+      combatEnabled: true,
     });
 
     expect(result.state.chargedNodeCount).toBe(4);
@@ -651,6 +715,36 @@ describe("sessionReducer — new-game", () => {
         (node) => node.state === "charged",
       ),
     ).toHaveLength(4);
+  });
+
+  it("honours a chosen combat setting of off, dealing a state that carries it", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 9,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: false,
+    });
+
+    expect(result.state.combatEnabled).toBe(false);
+  });
+
+  it("honours a chosen combat setting of on, dealing a state that carries it", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 9,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
+    });
+
+    expect(result.state.combatEnabled).toBe(true);
   });
 });
 

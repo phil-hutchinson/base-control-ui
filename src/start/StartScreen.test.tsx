@@ -10,6 +10,10 @@ import {
   DEFAULT_CLOCK_SETTING,
 } from "../rules/clock";
 import {
+  COMBAT_SETTINGS,
+  DEFAULT_COMBAT_ENABLED,
+} from "../rules/combatSetting";
+import {
   DEFAULT_FLEET_SIZE,
   FLEET_SIZES,
   type FleetSize,
@@ -35,15 +39,23 @@ const CLOCK_SETTING_LABELS: Record<ClockSetting, string> = {
   2: "2s",
 };
 
+/** The Combat group's labels, mirroring `StartScreen`'s own map. */
+const COMBAT_SETTING_LABELS: Record<"off" | "on", string> = {
+  off: "OFF",
+  on: "ON",
+};
+
 interface RenderOverrides {
   readonly fleetSize?: FleetSize;
   readonly chargedNodeCount?: ChargedNodeCount;
+  readonly combatEnabled?: boolean;
   readonly lengthInRounds?: number;
   readonly clockSetting?: ClockSetting;
   readonly onFleetSizeChange?: (fleetSize: FleetSize) => void;
   readonly onChargedNodeCountChange?: (
     chargedNodeCount: ChargedNodeCount,
   ) => void;
+  readonly onCombatEnabledChange?: (combatEnabled: boolean) => void;
   readonly onLengthInRoundsChange?: (lengthInRounds: number) => void;
   readonly onClockSettingChange?: (clockSetting: ClockSetting) => void;
   readonly onPlay?: () => void;
@@ -54,6 +66,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   const onFleetSizeChange = overrides.onFleetSizeChange ?? vi.fn();
   const onChargedNodeCountChange =
     overrides.onChargedNodeCountChange ?? vi.fn();
+  const onCombatEnabledChange = overrides.onCombatEnabledChange ?? vi.fn();
   const onLengthInRoundsChange = overrides.onLengthInRoundsChange ?? vi.fn();
   const onClockSettingChange = overrides.onClockSettingChange ?? vi.fn();
   const onPlay = overrides.onPlay ?? vi.fn();
@@ -66,6 +79,8 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
         overrides.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT
       }
       onChargedNodeCountChange={onChargedNodeCountChange}
+      combatEnabled={overrides.combatEnabled ?? DEFAULT_COMBAT_ENABLED}
+      onCombatEnabledChange={onCombatEnabledChange}
       lengthInRounds={overrides.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS}
       onLengthInRoundsChange={onLengthInRoundsChange}
       clockSetting={overrides.clockSetting ?? DEFAULT_CLOCK_SETTING}
@@ -77,6 +92,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   return {
     onFleetSizeChange,
     onChargedNodeCountChange,
+    onCombatEnabledChange,
     onLengthInRoundsChange,
     onClockSettingChange,
     onPlay,
@@ -145,13 +161,47 @@ describe("StartScreen", () => {
     ).toEqual(["5", "4", "3"]);
   });
 
-  it("renders the four option groups in order: Ships, Charged nodes, Rounds, Clock", () => {
+  it("renders the five option groups in order: Ships, Charged nodes, Combat, Rounds, Clock", () => {
     renderStartScreen();
 
     const groups = screen.getAllByRole("group");
     expect(
       groups.map((group) => group.querySelector("legend")?.textContent ?? ""),
-    ).toEqual(["Ships", "Charged nodes", "Rounds", "Clock (time per move)"]);
+    ).toEqual([
+      "Ships",
+      "Charged nodes",
+      "Combat",
+      "Rounds",
+      "Clock (time per move)",
+    ]);
+  });
+
+  it("renders the combat group with both labels and the given one checked", () => {
+    renderStartScreen({ combatEnabled: true });
+
+    const group = screen.getByRole("group", { name: "Combat" });
+    for (const value of COMBAT_SETTINGS) {
+      const radio = within(group).getByRole("radio", {
+        name: COMBAT_SETTING_LABELS[value ? "on" : "off"],
+      });
+      if (value) {
+        expect(radio).toBeChecked();
+      } else {
+        expect(radio).not.toBeChecked();
+      }
+    }
+  });
+
+  it("checks OFF by default, with the radios in order OFF then ON", () => {
+    renderStartScreen();
+
+    const group = screen.getByRole("group", { name: "Combat" });
+    expect(within(group).getByRole("radio", { name: "OFF" })).toBeChecked();
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual(["off", "on"]);
   });
 
   it("renders the rounds group with its values and the selected one checked", () => {
@@ -266,6 +316,40 @@ describe("StartScreen", () => {
     expect(onLengthInRoundsChange).not.toHaveBeenCalled();
     expect(onClockSettingChange).not.toHaveBeenCalled();
     expect(onPlay).not.toHaveBeenCalled();
+  });
+
+  it("calls the combat change handler with true when ON is chosen, and not the others", async () => {
+    const user = userEvent.setup();
+    const {
+      onFleetSizeChange,
+      onChargedNodeCountChange,
+      onCombatEnabledChange,
+      onLengthInRoundsChange,
+      onClockSettingChange,
+      onPlay,
+    } = renderStartScreen({ combatEnabled: false });
+
+    const group = screen.getByRole("group", { name: "Combat" });
+    await user.click(within(group).getByRole("radio", { name: "ON" }));
+
+    expect(onCombatEnabledChange).toHaveBeenCalledExactlyOnceWith(true);
+    expect(onFleetSizeChange).not.toHaveBeenCalled();
+    expect(onChargedNodeCountChange).not.toHaveBeenCalled();
+    expect(onLengthInRoundsChange).not.toHaveBeenCalled();
+    expect(onClockSettingChange).not.toHaveBeenCalled();
+    expect(onPlay).not.toHaveBeenCalled();
+  });
+
+  it("calls the combat change handler with false when OFF is chosen from an ON state", async () => {
+    const user = userEvent.setup();
+    const { onCombatEnabledChange } = renderStartScreen({
+      combatEnabled: true,
+    });
+
+    const group = screen.getByRole("group", { name: "Combat" });
+    await user.click(within(group).getByRole("radio", { name: "OFF" }));
+
+    expect(onCombatEnabledChange).toHaveBeenCalledExactlyOnceWith(false);
   });
 
   it("calls the rounds change handler, and not the others, when a different value is chosen", async () => {
