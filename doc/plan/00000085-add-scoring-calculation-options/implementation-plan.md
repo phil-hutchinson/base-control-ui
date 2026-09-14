@@ -1593,7 +1593,9 @@ turn is paying, which is what the new number row shows.
 
 ### Step 14 — The owner plays a simple game and a bonus game
 
-Status: pending
+Status: committed
+
+Notes: the owner played both a simple and a bonus game in the running app and confirmed the story's manual checks. No finding raised; nothing retuned against bonus (S9).
 
 The story's manual checks, gathered in one place. Nothing to implement; the
 owner runs the app (`npm run dev`) and looks.
