@@ -990,7 +990,43 @@ reporting only the three pre-existing warnings from the baseline.
 
 ### Step 8 — The option group legends are centred
 
-Status: pending
+Status: committed
+
+Notes (owner check, second pass): the owner confirmed in the running app
+that `margin-inline: auto` centres all six legends, and asked for **a
+slightly larger gap between a legend and its row of choices**. Added
+`padding-block-start: 0.5rem` to `.start-screen__options` (written as the
+`padding` shorthand the rule already had). The gap could not come from that
+rule's existing `gap: 0.75rem`: the legend is not a flex item, so the
+choices row is the fieldset's only one and the gap never applied between
+them — the legend-to-choices distance had been effectively zero all along.
+This is a knowing, owner-requested widening of **S13**, which otherwise
+keeps this story off the start screen's styling; it is one further property
+in the same stylesheet and changes nothing else about the screen's spacing,
+sizing or order.
+
+Notes: Applied the first candidate from D9 — `margin-inline: auto` on
+`.start-screen__legend` — with a comment explaining why a legend needs its
+own rule (it is laid out at the fieldset's block-start edge rather than as
+an ordinary flex item, and it is already sized to fit its content rather
+than stretched, which is what gives the auto margin room to centre it).
+This container was not actually run in a browser here — there is no
+headless browser in this environment (per the step's own instructions) —
+so this is applied on the strength of the reasoning in D9 plus the fact
+that `margin: auto` centring a `<legend>` whose width is shrink-to-fit is a
+widely documented, cross-browser technique, not a guess made from nothing.
+Confidence is moderate-to-good, not certain: **the owner's visual check
+(`npm run dev`) is what actually decides this**, per the step's own
+verification method. If it does not visibly move the legends, the next
+candidate to try is `width: 100%` with `text-align: center` on the legend;
+`align-self: center` is confirmed not worth trying (D9). No other rule in
+the stylesheet was touched, and the groups' vertical spacing (the
+`.start-screen__options` `gap`) is untouched. `npm run typecheck`,
+`npm run lint` and `npm test` all clean/green (66 files, 1264 tests,
+unchanged — no DOM changed); `npm run format:check` reports only the two
+pre-existing warnings (`doc/plan/00000069-retire-actions/story.md` and
+`src/board/planetArt.ts`). No deviation from the plan beyond the
+verification note above.
 
 Everything else on the start screen is centred and the six legends are not.
 This step is the cleanup, and it is **one rule in one stylesheet** (S13):
