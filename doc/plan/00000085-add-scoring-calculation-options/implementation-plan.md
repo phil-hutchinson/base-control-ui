@@ -763,7 +763,30 @@ complete. `npm run lint` clean. Test count rises by the new
 
 ### Step 5 — `endOfTurn.ts` step 2 prices the turn
 
-Status: pending
+Status: committed
+
+Notes: `endOfTurn.ts` step 2 now computes
+`energyForNodesHeld(heldSquares.length, workingState.scoring)` (reading
+`workingState`, the entry state carried through the sequence, rather than
+the outer `state` binding, since `scoring` does not change mid-sequence
+either way) and updated step 2's code comment to describe pricing rather
+than the flat rate; the `amount > 0` guard, the squares on the effect and
+the step's position before step 3 are all untouched. Added cases to
+`endOfTurn.test.ts` (bonus pays 6 for the same three squares that pay 3
+under simple; one node pays 1 at both settings; holding nothing is not an
+event under bonus either) and to `fullGame.test.ts` (a hundred-round bonus
+game collects at least as much as the same seed and options at simple, and
+both sides' running totals only ever rise at either setting). No change was
+needed to `EnergyOverlay.tsx` or `announcements.ts` (S5): both already read
+`effect.amount` and `effect.squares` separately, so the single
+`energy-collected` effect this step now sizes differently reaches both
+unchanged. No second production caller needed the pricing. `npm run
+typecheck` and `npm run lint` clean; `npm test` green at 66 files, 1257
+tests (up from 66/1253 — 4 new `endOfTurn.test.ts` cases and 1 new
+`fullGame.test.ts` case); `npm run format:check` reports only the two
+pre-existing warnings (`doc/plan/00000069-retire-actions/story.md` and
+`src/board/planetArt.ts`); `seededReplay.test.ts`'s three recorded
+expectations unchanged. No deviation from the plan.
 
 **`src/rules/endOfTurn.ts`:** step 2 currently awards `heldSquares.length`
 directly. It becomes `energyForNodesHeld(heldSquares.length, state.scoring)`,

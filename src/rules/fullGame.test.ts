@@ -439,6 +439,50 @@ describe.each(CHARGED_NODE_COUNTS)(
   },
 );
 
+describe("a full game, end to end, at bonus scoring (§8.4)", () => {
+  it("collects at least as much as the same game at simple, and both sides' totals only ever rise, at either setting", () => {
+    const seed = 20260819;
+    const lengthInRounds = 100;
+
+    const simpleGame = playFullGame(
+      seed,
+      lengthInRounds,
+      DEFAULT_FLEET_SIZE,
+      DEFAULT_CHARGED_NODE_COUNT,
+      true,
+      "simple",
+    );
+    const bonusGame = playFullGame(
+      seed,
+      lengthInRounds,
+      DEFAULT_FLEET_SIZE,
+      DEFAULT_CHARGED_NODE_COUNT,
+      true,
+      "bonus",
+    );
+
+    expect(bonusGame.finalState.energy.green).toBeGreaterThanOrEqual(
+      simpleGame.finalState.energy.green,
+    );
+    expect(bonusGame.finalState.energy.red).toBeGreaterThanOrEqual(
+      simpleGame.finalState.energy.red,
+    );
+
+    for (const game of [simpleGame, bonusGame]) {
+      let greenRunningTotal = 0;
+      let redRunningTotal = 0;
+      for (const collected of game.greenCollected) {
+        expect(collected.newTotal).toBeGreaterThanOrEqual(greenRunningTotal);
+        greenRunningTotal = collected.newTotal;
+      }
+      for (const collected of game.redCollected) {
+        expect(collected.newTotal).toBeGreaterThanOrEqual(redRunningTotal);
+        redRunningTotal = collected.newTotal;
+      }
+    }
+  });
+});
+
 describe("a full game, end to end", () => {
   it("refuses an attack, not only a move and a pass, once the game is over", () => {
     // Built rather than played out, so the attack refusal does not depend
