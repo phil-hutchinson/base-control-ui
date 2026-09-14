@@ -15,6 +15,7 @@ import type {
 import type { PowerLevel } from "../rules/power";
 import type { ChargedNodeCount, NodeState } from "../rules/nodes";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
+import type { ScoringSetting } from "../rules/scoring";
 import { ScoreDisplay } from "./ScoreDisplay";
 
 afterEach(cleanup);
@@ -50,6 +51,7 @@ function buildState(config: {
   ships?: readonly Ship[];
   nodes?: Readonly<Record<string, NodeState>>;
   chargedNodeCount?: ChargedNodeCount;
+  scoring?: ScoringSetting;
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -63,6 +65,7 @@ function buildState(config: {
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     combatEnabled: true,
+    scoring: config.scoring ?? "simple",
   };
 }
 

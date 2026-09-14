@@ -641,7 +641,40 @@ Verification (automated): `npm test` green with the new cases;
 
 ### Step 4 — `scoring` becomes part of the game state
 
-Status: pending
+Status: committed
+
+Notes: `GameState` gained a required `scoring: ScoringSetting`, and
+`StartingGameStateOptions` an optional `scoring?: string` (D3), validated in
+`startingGameState` with `isScoringSetting` and a `RangeError` naming the
+offered settings, in the same shape and position as `chargedNodeCount`'s
+guard. `endOfTurn.ts` is untouched, so every game still pays the flat rate
+after this step. The sweep set `scoring: "simple"` in the local
+state-literal builder of 22 files (`typecheck` found every one
+exhaustively): `Board.test.tsx`, `EnergyOverlay.test.tsx`,
+`announcements.test.ts`, `ClockRegion.test.tsx`, `useGameClock.test.tsx`,
+`session.test.ts`, `GameOverPanel.test.tsx`, `ScoreDisplay.test.tsx`,
+`TurnIndicator.test.tsx`, `camping.test.ts`, `canMoveOrAttack.test.ts`,
+`charging.test.ts`, `combat.test.ts`, `endOfTurn.test.ts`, `energy.test.ts`,
+`fullGame.test.ts`, `movement.test.ts`, `openingBoard.test.ts`,
+`ply.test.ts`, `recovery.test.ts`, `relief.test.ts`, `trap.test.ts` — one
+fewer than the plan's 23 because `gameLength.test.ts` builds its states
+through `startingGameState` alone (confirmed by grep before starting) and so
+needed no touch at all, exactly as D5 predicts for every `startingGameState`
+caller. Gave the `scoring` knob (default `"simple"`) to the three builders
+Step 9's plan calls for: `endOfTurn.test.ts`'s and `ScoreDisplay.test.tsx`'s
+config-object builders, and `fullGame.test.ts`'s `playFullGame`, whose
+positional-parameter shape took a new trailing `scoring: ScoringSetting =
+"simple"` parameter passed through to `startingGameState`. Added the
+`gameState.test.ts` cases from the plan: default is simple, a given setting
+round-trips with nothing else about the state changed, the setting is one of
+`SCORING_SETTINGS`, it survives a move unchanged, and an off-list string (a
+near-miss, an unrelated word, and an empty string) throws a `RangeError`.
+`npm run typecheck` and `npm run lint` clean; `npm test` green at 66 files,
+1253 tests (up from 66/1245 — the 8 new `gameState.test.ts` cases);
+`src/rules/seededReplay.test.ts`'s three recorded expectations unchanged.
+`npm run format:check` reports only the two pre-existing warnings
+(`doc/plan/00000069-retire-actions/story.md` and `src/board/planetArt.ts`).
+No deviation from the plan.
 
 Add the field to the state and to the starting options, and sweep every test
 that builds a state literal so the suite stays green and **unchanged in

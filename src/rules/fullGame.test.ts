@@ -31,6 +31,7 @@ import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
 } from "./nodes";
+import type { ScoringSetting } from "./scoring";
 import {
   type AttackEffect,
   type MoveEffect,
@@ -171,8 +172,9 @@ interface PlayedGame {
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
  * above, dealt with `fleetSize` ships a side (the app's default six),
- * `chargedNodeCount` charged nodes (the app's default five) and combat on
- * unless `combatEnabled` says otherwise.
+ * `chargedNodeCount` charged nodes (the app's default five), combat on
+ * unless `combatEnabled` says otherwise, and simple scoring unless
+ * `scoring` says otherwise.
  */
 function playFullGame(
   seed: number,
@@ -180,12 +182,14 @@ function playFullGame(
   fleetSize: FleetSize = DEFAULT_FLEET_SIZE,
   chargedNodeCount: ChargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
   combatEnabled = true,
+  scoring: ScoringSetting = "simple",
 ): PlayedGame {
   let state = startingGameState(seed, {
     lengthInRounds,
     fleetSize,
     chargedNodeCount,
     combatEnabled,
+    scoring,
   });
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
@@ -466,6 +470,7 @@ describe("a full game, end to end", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
       combatEnabled: true,
+      scoring: "simple",
     };
 
     expect(isGameOver(state)).toBe(true);
@@ -646,6 +651,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
       combatEnabled: true,
+      scoring: "simple",
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -696,6 +702,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
       combatEnabled: true,
+      scoring: "simple",
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -745,6 +752,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
       combatEnabled: true,
+      scoring: "simple",
     };
 
     expect(() => runEndOfTurn(state)).not.toThrow();

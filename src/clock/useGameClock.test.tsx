@@ -21,6 +21,7 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     combatEnabled: true,
+    scoring: "simple",
     ...overrides,
   };
 }

@@ -176,6 +176,7 @@ describe.each(CHARGED_NODE_COUNTS)(
           chargedNodeCount,
           outOfTime: { green: false, red: false },
           combatEnabled: true,
+          scoring: "simple",
         };
 
         const { effects } = runCharging(state);

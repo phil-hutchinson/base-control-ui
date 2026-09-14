@@ -32,6 +32,7 @@ import {
   type ChargedNodeCount,
   type NodeState,
 } from "./nodes";
+import type { ScoringSetting } from "./scoring";
 
 function ship(
   id: ShipId,
@@ -60,6 +61,7 @@ function buildState(config: {
   plyNumber?: number;
   randomSeed?: number;
   chargedNodeCount?: ChargedNodeCount;
+  scoring?: ScoringSetting;
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -73,6 +75,7 @@ function buildState(config: {
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     combatEnabled: true,
+    scoring: config.scoring ?? "simple",
   };
 }
 

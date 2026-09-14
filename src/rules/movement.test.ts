@@ -467,6 +467,7 @@ function buildState(config: {
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     combatEnabled: true,
+    scoring: "simple",
   };
 }
 

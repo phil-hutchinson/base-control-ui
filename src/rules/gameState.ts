@@ -23,6 +23,12 @@ import {
   type ChargedNodeCount,
   type NodeState,
 } from "./nodes";
+import {
+  DEFAULT_SCORING,
+  isScoringSetting,
+  SCORING_SETTINGS,
+  type ScoringSetting,
+} from "./scoring";
 
 /** One ship: its stable identity, side, current square and power level. */
 export interface Ship {
@@ -119,6 +125,14 @@ export interface GameState {
    * fought yet.
    */
   readonly combatEnabled: boolean;
+  /**
+   * The scoring setting (rules.md §8.4), fixed for the game's lifetime
+   * once set by `startingGameState`. Every place that prices a collection
+   * reads it from here rather than from an app default. It cannot be
+   * derived from a board: a board carries no record of what its turns
+   * paid, and a total of 6 is three turns at simple or one at bonus.
+   */
+  readonly scoring: ScoringSetting;
 }
 
 /**
@@ -157,6 +171,16 @@ export interface StartingGameStateOptions {
    * reject.
    */
   readonly combatEnabled?: boolean;
+  /**
+   * The scoring setting (rules.md §8.4). Defaults to `DEFAULT_SCORING`
+   * (simple). Deliberately typed `string`, not `ScoringSetting`: a setting
+   * arriving from outside the type system — a saved options blob, a game
+   * record, a URL — can be any string, unlike `combatEnabled`'s boolean,
+   * which admits only the two settings the game offers and so has nothing
+   * to reject. Must be one of `scoring.ts`'s offered settings, or this
+   * throws a `RangeError`.
+   */
+  readonly scoring?: string;
 }
 
 /**
@@ -195,6 +219,7 @@ export function startingGameState(
     fleetSize = DEFAULT_FLEET_SIZE,
     chargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
     combatEnabled = DEFAULT_COMBAT_ENABLED,
+    scoring = DEFAULT_SCORING,
   } = options;
 
   if (!isGameLengthRounds(lengthInRounds)) {
@@ -210,6 +235,11 @@ export function startingGameState(
   if (!isChargedNodeCount(chargedNodeCount)) {
     throw new RangeError(
       `startingGameState: chargedNodeCount must be one of ${CHARGED_NODE_COUNTS.join(", ")}, got ${chargedNodeCount}`,
+    );
+  }
+  if (!isScoringSetting(scoring)) {
+    throw new RangeError(
+      `startingGameState: scoring must be one of ${SCORING_SETTINGS.join(", ")}, got ${scoring}`,
     );
   }
 
@@ -238,6 +268,7 @@ export function startingGameState(
     chargedNodeCount,
     outOfTime: { green: false, red: false },
     combatEnabled,
+    scoring,
   };
 }
 
