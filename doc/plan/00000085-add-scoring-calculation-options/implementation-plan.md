@@ -411,7 +411,29 @@ in `doc/plan/00000021-accessibility-tech-debt/known-issues.md` as part of Step
 
 ### Step 1 — `rules.md` 0.34 → 0.35: scoring becomes a choice
 
-Status: pending
+Status: committed
+
+Notes: `rules.md` bumped to 0.35; `RULES_VERSION` matched; one changelog entry
+added, newest first, in the 0.34 entry's shape. §8.4 now opens by stating
+scoring as simple-or-bonus, chosen before play and fixed for the game's
+lifetime, naming no default, then gives both rates (simple: one per node
+held; bonus: the triangular total, 1/3/6/10/15), keeping the "board never
+charges more than the chosen number" and "nothing subtracts energy"
+paragraphs as they were. §8.3's leaving paragraph is restated so it no longer
+attributes a share of the collection to the individual node left behind.
+§10's opening sentence adds scoring to the list of pre-play choices. Checked,
+not rewritten (all already correct and figure-free): §2's Node entry, §8.1's
+Charged bullet, §8.6 step 2, §1's overview, §8.3's worked table and the
+paragraph under it, §8.5. §9 does not list the pre-play choices at all
+(it only names the rounds), so nothing there needed scoring added.
+`tech-notes.md` contains no mention of energy, scoring or payout figures, so
+nothing there assumes the flat rate. `npm run typecheck`, `npm run lint` and
+`npm test` all clean/green (65 files, 1237 tests — unchanged, as expected
+since no behaviour changed yet); `npm run format:check` reports two
+pre-existing warnings (`doc/plan/00000069-retire-actions/story.md` and
+`src/board/planetArt.ts`), one fewer than the baseline's three because this
+story's own `story.md` is no longer flagged — not touched by this step. No
+deviation from the plan.
 
 Update `doc/ruleset/rules.md` so no section states one energy per node as the
 only rate, bump the document to **0.35**, bump `RULES_VERSION` in

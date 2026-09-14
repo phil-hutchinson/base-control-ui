@@ -7,6 +7,30 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.35 — scoring becomes a choice
+
+This is a gameplay change — the same board can now pay two different
+amounts — and so would be a tag candidate; tagging stays on hold until the
+game plays (see the project's contribution notes).
+
+- **Section 8.4 now opens by stating scoring as a choice**: simple or bonus,
+  the same for both players, chosen before play begins and fixed for the
+  game's lifetime, naming no default. Simple pays one energy for each
+  charged node held, hold three collect three. Bonus pays each node held
+  one more than the node before it, so a turn's whole collection is **1, 3,
+  6, 10 or 15** for one through five nodes held — stated as the turn's
+  payout as a whole, not as a rate per node.
+- **Section 8.3's leaving paragraph** no longer attributes a share of a
+  turn's collection to the individual node left behind — bonus has no way
+  to do that. It now says leaving drops that turn's collection to whatever
+  the remaining nodes pay.
+- **Section 10's opening sentence** adds scoring to the list of what is
+  chosen alongside the fleet size, the number of rounds, the charged-node
+  count and combat.
+- Nothing else changes: which nodes count and when (section 8.4), that
+  nothing subtracts energy (section 8.4), and the end-of-turn order
+  (section 8.6) are all unchanged — only the amount step 2 hands over does.
+
 ## 0.34 — combat becomes a choice
 
 This is a gameplay change — a whole kind of turn becomes optional — and so
