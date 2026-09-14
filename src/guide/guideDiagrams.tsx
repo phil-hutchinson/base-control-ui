@@ -6,14 +6,33 @@
 // them, rather than typed in by hand.
 
 import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
+import { energyForNodesHeld } from "../rules/energy";
 import type { NodePriority } from "../rules/nodeQueue";
 import type { PowerLevel } from "../rules/power";
 import { MAX_POWER } from "../rules/power";
+import type { ScoringSetting } from "../rules/scoring";
 import { PLANET_ART } from "../board/planetArt";
 import type { GuideDiagramCell } from "./GuideDiagram";
 import { GuideDiagram } from "./GuideDiagram";
 import type { MovementCostOffset } from "./movementCosts";
 import { movementCostOffsets } from "./movementCosts";
+
+/** One through five: the largest charged-node count the board offers, and so the widest the scoring diagram's table needs to run. */
+const SCORING_TABLE_COUNTS = [1, 2, 3, 4, 5] as const;
+
+/** A scoring table row: its label, then what a turn pays for each count in `SCORING_TABLE_COUNTS`, from `energyForNodesHeld` (§8.4) rather than a hard-coded figure. */
+function scoringTableRow(
+  label: string,
+  scoring: ScoringSetting,
+): readonly GuideDiagramCell[] {
+  return [
+    { kind: "label", text: label },
+    ...SCORING_TABLE_COUNTS.map((count): GuideDiagramCell => ({
+      kind: "label",
+      text: String(energyForNodesHeld(count, scoring)),
+    })),
+  ];
+}
 
 /**
  * A charged node holding a ship, showing the given plies-remaining as its
@@ -39,16 +58,19 @@ function chargedNodeCell(
   };
 }
 
-/** Diagram 1: three charged nodes reading 3, 1 and 2, three ships at three different fuel levels, an arrow, then a "+3" note. */
+/** Diagram 1: the full scoring breakdown — one through five nodes held, under both simple and bonus scoring, as a six-column table under a legend line. */
 export function ScoringDiagram() {
   const cells: readonly GuideDiagramCell[] = [
-    chargedNodeCell("guide-scoring-1", 6, 5),
-    chargedNodeCell("guide-scoring-2", 2, 3),
-    chargedNodeCell("guide-scoring-3", 4, 1),
-    { kind: "arrow" },
-    { kind: "note", text: "+3" },
+    { kind: "label", text: "NODES" },
+    ...SCORING_TABLE_COUNTS.map((count): GuideDiagramCell => ({
+      kind: "label",
+      text: String(count),
+    })),
+    { kind: "rule" },
+    ...scoringTableRow("SIMPLE", "simple"),
+    ...scoringTableRow("BONUS", "bonus"),
   ];
-  return <GuideDiagram columns={5} cells={cells} />;
+  return <GuideDiagram columns={6} cells={cells} labelColumn />;
 }
 
 /**

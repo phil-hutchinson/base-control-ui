@@ -1346,7 +1346,43 @@ a rules extract.
 
 ### Step 12 — The Quick Guide's scoring diagram
 
-Status: pending
+Status: committed
+
+Notes: `ScoringDiagram` now renders a 6-column x 3-row table (18 cells,
+`labelColumn`): an empty corner then node counts 1-5, a SIMPLE row and a
+BONUS row, both rows' figures computed by `energyForNodesHeld` (Step 3)
+rather than hard-coded. `GuideDiagram` gained the two things D-level
+described as the minimum: a new `"label"` cell kind (`GuideDiagramLabel`,
+`.guide-diagram__label` — quiet arcade text, `--color-text-bright`, no glow,
+distinct from `.guide-diagram__note`'s green settlement look) rendered in a
+cell carrying `.guide-diagram__cell--label` (`aspect-ratio: auto` instead of
+the forced `aspect-ratio: 1`), and an opt-in `labelColumn` prop that adds a
+`.guide-diagram--label-column` modifier class sizing the first column to
+`max-content` (via a `--guide-diagram-data-columns` custom property driving
+`repeat()` for the remaining columns) instead of sharing `--guide-square`
+with the value columns, so SIMPLE/BONUS are not squeezed into a square cell.
+Both additions are opt-in: no existing diagram passes `labelColumn` or uses
+`kind: "label"`, and `guideDiagrams.test.tsx`'s MovementDiagram,
+RefuellingDiagram, NodeLifecycleDiagram and NodeSelectionDiagram cases, plus
+all six of `GuideDiagram.test.tsx`'s pre-existing cases (square, number,
+note, arrow, empty, aria-hidden), pass unchanged. `ScoringDiagram`'s own
+test in `guideDiagrams.test.tsx` was rewritten (expected, not a violation of
+"opt-in": the diagram this step replaces is exactly its subject) to assert
+the 18-cell grid and the label text sequence
+`1 2 3 4 5 SIMPLE 1 2 3 4 5 BONUS 1 3 6 10 15`, with no board square, arrow
+or note in the diagram. Four new cases were added to `GuideDiagram.test.tsx`
+covering the new `"label"` kind, its unforced-square cell class, and the
+opt-in `labelColumn` class appearing only when passed. `npm run typecheck`,
+`npm run lint` and `npm test` all clean/green (66 files, 1277 tests, up from
+66/1273 — the rewritten ScoringDiagram case plus 4 new GuideDiagram.test.tsx
+cases and 1 net-new guideDiagrams.test.tsx case count unchanged since the
+old one was replaced 1-for-1); `npm run format:check` reports only the two
+pre-existing warnings (`doc/plan/00000069-retire-actions/story.md` and
+`src/board/planetArt.ts`) after running `npx prettier --write` on this
+step's three touched source files, which it had flagged. This step's
+verification is manual (the owner's eye, per the step's own instructions);
+no rendering was attempted in this container (no headless browser). No
+deviation from the plan.
 
 > **This step is a deliberate placeholder.** The owner decided during plan
 > approval that the guide's scoring diagram must be fixed, and will supply
@@ -1447,6 +1483,30 @@ table of both methods' rates, `SIMPLE` and `BONUS` are legible and not
 cramped, the figures are right (`1 2 3 4 5` and `1 3 6 10 15`), it sits
 sensibly under the intro paragraph, the other four diagrams look exactly as
 they did, and none of it overflows on a narrow window or in landscape.
+
+---
+
+**Notes (owner check, second pass):** on seeing the grid the owner asked
+for two additions, both made: the top-left corner cell carries **NODES**
+(it was `{ kind: "empty" }`), and a **white line runs under the heading
+row**, making it a legend line. The line is a new `rule` cell kind that
+spans every column (`grid-column: 1 / -1`) rather than a border on each of
+the six heading cells, because the grid's 2px gap would break a per-cell
+border into dashes. It is opt-in like `label`: no other diagram uses it.
+
+**Notes (owner check, third pass):** the owner reported the legend line
+sitting too far right. The line was correct; the labels were not. Every
+`.guide-diagram__cell` is an inline-size container, which implies
+`contain: inline-size`, so a cell's width may not depend on its contents —
+but the label column is sized `max-content`, which asks precisely that.
+The column therefore collapsed to its own padding and the centred,
+`nowrap` labels overflowed both sides of it, bleeding left of the grid's
+true edge while the rule began at that edge. Fixed by taking label cells
+out of containment (`container-type: normal`), which is also why the
+label's font-size moves off `4cqw` — with no container, container units
+have nothing to resolve against — onto a window-based clamp. This was
+flagged as a suspicion when Step 12 was first handed over and is now
+confirmed and repaired.
 
 ---
 
