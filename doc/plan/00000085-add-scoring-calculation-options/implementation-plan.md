@@ -583,7 +583,22 @@ Verification (automated): `npm test` green with the new `scoring.test.ts`;
 
 ### Step 3 — `energyForNodesHeld` in `src/rules/energy.ts`
 
-Status: pending
+Status: committed
+
+Notes: Added `energyForNodesHeld(nodesHeld, scoring)` beside
+`chargedNodesHeldBy` in `src/rules/energy.ts`, written as the formula (simple
+returns the count, bonus returns the triangular total), with a doc comment
+naming §8.4 and stating it is the whole turn's payout rather than a per-node
+rate. Updated the module header, which previously stated the flat rate as the
+only one. `chargedNodesHeldBy` and its tests are untouched. Added cases to
+`src/rules/energy.test.ts` for simple (0–5), bonus (0–5, expecting
+0/1/3/6/10/15), zero at both settings, and the uncapped formula at six and
+seven (21, 28). No consumer wired up yet, as the plan specifies — `endOfTurn`
+is Step 5. `npm run typecheck` and `npm run lint` clean; `npm test` green at
+66 files, 1245 tests (up from 66/1241 — the four new cases); `npm run
+format:check` reports only the two pre-existing warnings
+(`doc/plan/00000069-retire-actions/story.md` and `src/board/planetArt.ts`). No
+deviation from the plan.
 
 Add `energyForNodesHeld(nodesHeld, scoring)` to `src/rules/energy.ts`, beside
 `chargedNodesHeldBy`, because that module is where §8.4 lives (D4):
