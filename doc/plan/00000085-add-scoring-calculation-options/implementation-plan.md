@@ -1284,7 +1284,25 @@ with six ships and five charged nodes:
 
 ### Step 11 — The Quick Guide's copy
 
-Status: pending
+Status: committed
+
+Notes: `GUIDE_INTRO_PARAGRAPH`'s second sentence became "At the end of each
+turn, gain points for the charged nodes your spaceships are on — one each
+under simple scoring, or more for each extra node under bonus scoring."
+(replacing "gain one point for each spaceship you have in a charged node").
+The NODE LIFECYCLE paragraph's "The spaceship gains 6 points if it stays on
+the node until it becomes depleted" became "The spaceship gains points every
+turn it stays on the node, until it becomes depleted", with the rest of the
+paragraph (countdown, leaving depletes the node, the replacement node, the
+five-turn trap) unchanged. `guideCopy.test.ts`'s two matching cases were
+updated verbatim to the new strings; the other cases, the section order and
+`guideDiagrams.tsx` were untouched, per the step's explicit instruction not
+to pre-empt Step 12. `npm run typecheck`, `npm run lint` and `npm test` all
+clean/green (66 files, 1273 tests, unchanged — no new cases, only two
+existing ones' expected strings changed); `npm run format:check` reports
+only the two pre-existing warnings
+(`doc/plan/00000069-retire-actions/story.md` and `src/board/planetArt.ts`).
+No deviation from the plan.
 
 **`src/guide/guideCopy.ts`**, in the guide's own plain voice and its own
 vocabulary — **points**, not energy; **spaceship**, not ship; **fuel**, not

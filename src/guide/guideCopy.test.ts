@@ -10,11 +10,12 @@ describe("guideCopy", () => {
     expect(GUIDE_TITLE).toBe("QUICK GUIDE");
   });
 
-  it("has the intro paragraph, corrections applied", () => {
+  it("has the intro paragraph, stating scoring as a choice", () => {
     expect(GUIDE_INTRO_PARAGRAPH).toBe(
       "The object of the game is to have the most points at the end of the " +
-        "game. At the end of each turn, gain one point for each spaceship " +
-        "you have in a charged node.",
+        "game. At the end of each turn, gain points for the charged nodes " +
+        "your spaceships are on — one each under simple scoring, or more " +
+        "for each extra node under bonus scoring.",
     );
   });
 
@@ -43,16 +44,16 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the node lifecycle paragraph", () => {
+  it("has the node lifecycle paragraph, without a points figure", () => {
     expect(GUIDE_SECTIONS[2].paragraph).toBe(
       "The board always has the number of charged nodes chosen at the " +
         "start: five, four or three. When a spaceship enters a " +
         "charged node, a countdown begins before it is depleted. The " +
-        "spaceship gains 6 points if it stays on the node until it becomes " +
-        "depleted. A charged node also becomes depleted if the spaceship " +
-        "leaves it. When the node becomes depleted, a new charged node is " +
-        "created. If a node depletes with a spaceship still inside it, the " +
-        "spaceship is trapped for 5 turns.",
+        "spaceship gains points every turn it stays on the node, until it " +
+        "becomes depleted. A charged node also becomes depleted if the " +
+        "spaceship leaves it. When the node becomes depleted, a new " +
+        "charged node is created. If a node depletes with a spaceship " +
+        "still inside it, the spaceship is trapped for 5 turns.",
     );
   });
 
