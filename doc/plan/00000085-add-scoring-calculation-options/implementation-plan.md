@@ -1512,7 +1512,37 @@ confirmed and repaired.
 
 ### Step 13 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Edited the three places found during planning. The opening
+paragraph's "Hold a node and it pays you energy every turn" gained ", at a
+rate you choose before play begins" — a short clause in the same style
+already used there for the fleet-size choice, rather than restating the
+figures, which stay for the Status block. The Status block's option list
+gained a sixth entry, "a choice of how energy is scored (a flat rate, one
+energy for each node held, or a bonus rate that pays more for each extra
+node held at once, flat to start)", placed between the charged-node choice
+and the combat choice to match the start screen's order, and both instances
+of "the five choices" became "the six choices". The rules-summary sentence
+"A node also pays energy at the end of each turn to the player sitting on
+it: one energy for each lit node held, so a player standing on several at
+once collects that many." became "A node also pays energy at the end of
+each turn to the player sitting on it, at a rate chosen before play begins:
+the app starts with a flat rate, one energy for each lit node held, so a
+player standing on several at once collects that many; choose the bonus
+rate instead and each extra node held is worth more than the last, so a
+turn pays 1, 3, 6, 10 or 15." — holding the existing flat-rate prose as the
+simple game's description and adding the bonus figures alongside it, as the
+step specifies. Ran `/update-readme`'s review by hand over the whole branch
+diff: the HUD's number row and the Quick Guide's scoring table are both
+covered by README passages that already describe the app only in general
+terms (score display, quick guide contents) and needed no change, per the
+step's own instruction to mention the pip numbers only if their absence
+would make the Status block wrong. `npm run typecheck`, `npm run lint` and
+`npm test` all clean/green (66 files, 1278 tests, unchanged — README carries
+no tests); `npm run format:check` reports only the two pre-existing warnings
+(`doc/plan/00000069-retire-actions/story.md` and `src/board/planetArt.ts`).
+No deviation from the plan.
 
 `README.md` describes the flat rate as the only rate, in three places found
 during planning:
@@ -1545,6 +1575,19 @@ baseline; and a read of `README.md` confirming it describes scoring as a
 choice made before play, says the app starts with simple, counts **six**
 choices in both places that count them, and no longer states one energy per
 node as the only rate.
+
+---
+
+**Notes (orchestrator, on verifying):** two corrections were made to the
+agent's README edit before committing. It called the two settings "a flat
+rate" and "a bonus rate" and said "flat to start"; the word **flat** appears
+nowhere in the rules or the UI, and the README names every other option by
+the words on the start screen ("on or off", "unlimited"), so the passages
+now say **simple** and **bonus**. The edit had also left two lines at 112
+and 130 characters where the file otherwise wraps at about 80 — Prettier
+does not reflow prose, so `format:check` did not catch it — and those
+paragraphs were re-wrapped. The HUD sentence also now mentions what the
+turn is paying, which is what the new number row shows.
 
 ---
 
