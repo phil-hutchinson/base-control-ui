@@ -524,7 +524,20 @@ of a turn's collection to an individual node.
 
 ### Step 2 — `src/rules/scoring.ts`: the offered settings, the default, the guard
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/scoring.ts` as a leaf module (imports nothing from
+`src/rules`) with `ScoringSetting`, `SCORING_SETTINGS` (`["simple", "bonus"]`),
+`DEFAULT_SCORING` (`"simple"`) and `isScoringSetting`, in the shape
+`combatSetting.ts` uses, with the guard's doc comment noting it has a real
+caller from the start (D3) rather than the "nothing calls this yet" note
+`isClockSetting`/`isCombatSetting` carry. Added `src/rules/scoring.test.ts`
+covering the offered order, the default, acceptance of both settings and
+rejection of a near-miss string, an arbitrary string, numbers, `null`,
+`undefined` and an object. No consumer wired up yet, as the plan specifies.
+`npm run typecheck` and `npm run lint` clean; `npm test` green at 66 files,
+1241 tests (up from 65/1237 — the four new cases). No deviation from the
+plan.
 
 Add a **new leaf module** `src/rules/scoring.ts` holding the pre-play choice
 as pure data, in the shape `clock.ts`, `combatSetting.ts`, `fleet.ts` and
