@@ -909,7 +909,27 @@ Verification (automated): `npm test` green with the new cases;
 
 ### Step 7 — The start screen's sixth group, and `App` wires it
 
-Status: pending
+Status: committed
+
+Notes: `StartScreen.tsx` gained a `Scoring` fieldset between Charged nodes and
+Combat, rendered by the same `OptionChoice` as the other five groups, with a
+local `SCORING_SETTING_LABELS` map (`simple` → `SIMPLE`, `bonus` → `BONUS`)
+beside the existing clock/combat label maps, new `scoring` / `onScoringChange`
+props, and its own `useId` group name; the module header and component doc
+comment were updated from "five options" to "six". `App.tsx` now takes
+`scoring` and `setScoring` from `useAppScreen` and passes them straight
+through to `StartScreen`; nothing else in `App` changed. `StartScreen.test.tsx`
+mirrors the label map, extends the group-order test to the six-group order,
+and adds cases for the Scoring group's labels/default/order and for clicking
+BONUS/SIMPLE calling only the scoring handler. `App.test.tsx`'s opening
+assertion now checks all six groups (including SIMPLE preselected), and its
+existing Quick-Guide round-trip test additionally sets BONUS before opening
+the guide and asserts BONUS is still checked on return. `npm run typecheck`
+and `npm run lint` clean; `npm test` green at 66 files, 1264 tests (up from
+66/1260 — four new `StartScreen.test.tsx` cases); `npm run format:check`
+reports only the two pre-existing warnings
+(`doc/plan/00000069-retire-actions/story.md` and `src/board/planetArt.ts`). No
+deviation from the plan.
 
 **`src/start/StartScreen.tsx`:** add the sixth option group, **after Charged
 nodes and before Combat**, so the order reads **Ships, Charged nodes,

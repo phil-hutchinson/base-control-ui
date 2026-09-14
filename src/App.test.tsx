@@ -39,6 +39,10 @@ function combatGroup() {
   return screen.getByRole("group", { name: "Combat" });
 }
 
+function scoringGroup() {
+  return screen.getByRole("group", { name: "Scoring" });
+}
+
 function clockGroup() {
   return screen.getByRole("group", { name: "Clock (time per move)" });
 }
@@ -49,7 +53,7 @@ async function pressPlay() {
 }
 
 describe("App", () => {
-  it("opens on the start screen: the name, all five option groups at their defaults, and PLAY — no board, no HUD", () => {
+  it("opens on the start screen: the name, all six option groups at their defaults, and PLAY — no board, no HUD", () => {
     render(<App />);
 
     expect(
@@ -65,6 +69,9 @@ describe("App", () => {
         "radio",
         { name: "5" },
       ),
+    ).toBeChecked();
+    expect(
+      within(scoringGroup()).getByRole("radio", { name: "SIMPLE" }),
     ).toBeChecked();
     expect(
       within(combatGroup()).getByRole("radio", { name: "OFF" }),
@@ -338,6 +345,9 @@ describe("App", () => {
     await user.click(within(shipsGroup).getByRole("radio", { name: "5" }));
     await user.click(within(roundsGroup()).getByRole("radio", { name: "45" }));
     await user.click(within(combatGroup()).getByRole("radio", { name: "ON" }));
+    await user.click(
+      within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
+    );
     await user.click(screen.getByRole("button", { name: "Quick Guide" }));
 
     expect(
@@ -365,6 +375,9 @@ describe("App", () => {
     ).toBeChecked();
     expect(
       within(combatGroup()).getByRole("radio", { name: "ON" }),
+    ).toBeChecked();
+    expect(
+      within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
     ).toBeChecked();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(vi.mocked(Board).mock.calls.length).toBe(renderCountBefore);

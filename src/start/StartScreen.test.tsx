@@ -27,6 +27,11 @@ import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
 } from "../rules/nodes";
+import {
+  DEFAULT_SCORING,
+  SCORING_SETTINGS,
+  type ScoringSetting,
+} from "../rules/scoring";
 import { StartScreen } from "./StartScreen";
 
 afterEach(cleanup);
@@ -45,10 +50,17 @@ const COMBAT_SETTING_LABELS: Record<"off" | "on", string> = {
   on: "ON",
 };
 
+/** The Scoring group's labels, mirroring `StartScreen`'s own map. */
+const SCORING_SETTING_LABELS: Record<ScoringSetting, string> = {
+  simple: "SIMPLE",
+  bonus: "BONUS",
+};
+
 interface RenderOverrides {
   readonly fleetSize?: FleetSize;
   readonly chargedNodeCount?: ChargedNodeCount;
   readonly combatEnabled?: boolean;
+  readonly scoring?: ScoringSetting;
   readonly lengthInRounds?: number;
   readonly clockSetting?: ClockSetting;
   readonly onFleetSizeChange?: (fleetSize: FleetSize) => void;
@@ -56,6 +68,7 @@ interface RenderOverrides {
     chargedNodeCount: ChargedNodeCount,
   ) => void;
   readonly onCombatEnabledChange?: (combatEnabled: boolean) => void;
+  readonly onScoringChange?: (scoring: ScoringSetting) => void;
   readonly onLengthInRoundsChange?: (lengthInRounds: number) => void;
   readonly onClockSettingChange?: (clockSetting: ClockSetting) => void;
   readonly onPlay?: () => void;
@@ -67,6 +80,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   const onChargedNodeCountChange =
     overrides.onChargedNodeCountChange ?? vi.fn();
   const onCombatEnabledChange = overrides.onCombatEnabledChange ?? vi.fn();
+  const onScoringChange = overrides.onScoringChange ?? vi.fn();
   const onLengthInRoundsChange = overrides.onLengthInRoundsChange ?? vi.fn();
   const onClockSettingChange = overrides.onClockSettingChange ?? vi.fn();
   const onPlay = overrides.onPlay ?? vi.fn();
@@ -81,6 +95,8 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
       onChargedNodeCountChange={onChargedNodeCountChange}
       combatEnabled={overrides.combatEnabled ?? DEFAULT_COMBAT_ENABLED}
       onCombatEnabledChange={onCombatEnabledChange}
+      scoring={overrides.scoring ?? DEFAULT_SCORING}
+      onScoringChange={onScoringChange}
       lengthInRounds={overrides.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS}
       onLengthInRoundsChange={onLengthInRoundsChange}
       clockSetting={overrides.clockSetting ?? DEFAULT_CLOCK_SETTING}
@@ -93,6 +109,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
     onFleetSizeChange,
     onChargedNodeCountChange,
     onCombatEnabledChange,
+    onScoringChange,
     onLengthInRoundsChange,
     onClockSettingChange,
     onPlay,
@@ -161,7 +178,7 @@ describe("StartScreen", () => {
     ).toEqual(["5", "4", "3"]);
   });
 
-  it("renders the five option groups in order: Ships, Charged nodes, Combat, Rounds, Clock", () => {
+  it("renders the six option groups in order: Ships, Charged nodes, Scoring, Combat, Rounds, Clock", () => {
     renderStartScreen();
 
     const groups = screen.getAllByRole("group");
@@ -170,10 +187,73 @@ describe("StartScreen", () => {
     ).toEqual([
       "Ships",
       "Charged nodes",
+      "Scoring",
       "Combat",
       "Rounds",
       "Clock (time per move)",
     ]);
+  });
+
+  it("renders the scoring group with both labels and the given one checked", () => {
+    renderStartScreen({ scoring: "bonus" });
+
+    const group = screen.getByRole("group", { name: "Scoring" });
+    for (const value of SCORING_SETTINGS) {
+      const radio = within(group).getByRole("radio", {
+        name: SCORING_SETTING_LABELS[value],
+      });
+      if (value === "bonus") {
+        expect(radio).toBeChecked();
+      } else {
+        expect(radio).not.toBeChecked();
+      }
+    }
+  });
+
+  it("checks SIMPLE by default, with the radios in order SIMPLE then BONUS", () => {
+    renderStartScreen();
+
+    const group = screen.getByRole("group", { name: "Scoring" });
+    expect(within(group).getByRole("radio", { name: "SIMPLE" })).toBeChecked();
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual(["simple", "bonus"]);
+  });
+
+  it("calls the scoring change handler with bonus when BONUS is chosen, and not the others", async () => {
+    const user = userEvent.setup();
+    const {
+      onFleetSizeChange,
+      onChargedNodeCountChange,
+      onScoringChange,
+      onCombatEnabledChange,
+      onLengthInRoundsChange,
+      onClockSettingChange,
+      onPlay,
+    } = renderStartScreen({ scoring: "simple" });
+
+    const group = screen.getByRole("group", { name: "Scoring" });
+    await user.click(within(group).getByRole("radio", { name: "BONUS" }));
+
+    expect(onScoringChange).toHaveBeenCalledExactlyOnceWith("bonus");
+    expect(onFleetSizeChange).not.toHaveBeenCalled();
+    expect(onChargedNodeCountChange).not.toHaveBeenCalled();
+    expect(onCombatEnabledChange).not.toHaveBeenCalled();
+    expect(onLengthInRoundsChange).not.toHaveBeenCalled();
+    expect(onClockSettingChange).not.toHaveBeenCalled();
+    expect(onPlay).not.toHaveBeenCalled();
+  });
+
+  it("calls the scoring change handler with simple when SIMPLE is chosen from a bonus state", async () => {
+    const user = userEvent.setup();
+    const { onScoringChange } = renderStartScreen({ scoring: "bonus" });
+
+    const group = screen.getByRole("group", { name: "Scoring" });
+    await user.click(within(group).getByRole("radio", { name: "SIMPLE" }));
+
+    expect(onScoringChange).toHaveBeenCalledExactlyOnceWith("simple");
   });
 
   it("renders the combat group with both labels and the given one checked", () => {

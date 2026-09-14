@@ -45,6 +45,8 @@ export function App() {
     setChargedNodeCount,
     combatEnabled,
     setCombatEnabled,
+    scoring,
+    setScoring,
     lengthInRounds,
     setLengthInRounds,
     clockSetting,
@@ -74,6 +76,8 @@ export function App() {
             onChargedNodeCountChange={setChargedNodeCount}
             combatEnabled={combatEnabled}
             onCombatEnabledChange={setCombatEnabled}
+            scoring={scoring}
+            onScoringChange={setScoring}
             lengthInRounds={lengthInRounds}
             onLengthInRoundsChange={setLengthInRounds}
             clockSetting={clockSetting}
