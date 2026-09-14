@@ -137,9 +137,9 @@ install, no account, no server.
 > app keeps score and shows it, along with how many nodes each player holds,
 > what the turn is paying them, and which round the game is in. Once the game
 > reaches the number of rounds you chose, it ends: the player with the most
-> energy wins, an equal score is a draw, and the "New Game"
-> button returns you to the start screen with the same choices still set, ready
-> to play again. There is still no way to save or record a game and no computer
+> energy wins, an equal score is a draw, and the "New Game" button returns
+> you to the start screen with the same choices still set, ready to play
+> again. There is still no way to save or record a game and no computer
 > opponent to play against. The project is being built up story by story.
 
 ## The rules

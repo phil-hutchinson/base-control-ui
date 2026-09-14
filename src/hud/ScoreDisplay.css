@@ -64,7 +64,7 @@
 
 /* Each pip sits in its own column, above the number it goes with, so the
    number is centred under its pip by construction and the two never drift
-   apart at any fleet size, charged-node count or orientation (D7). The
+   apart at any fleet size, charged-node count or orientation. The
    column's width is fixed in `em` — the row's own font-size — so it scales
    with the landscape rule below exactly as the pip and the gap already do. */
 .score-display__pip-column {

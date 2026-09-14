@@ -196,8 +196,12 @@ section 8.4.
   not an ordinary flex item, so `.start-screen__options`'s `align-items:
 center` does not reach it — and the plan should confirm in the running app
   what actually moves it before writing the rule. Whatever it turns out to
-  be, it belongs in `.start-screen__legend` or `.start-screen__options`, and
-  it is one rule in one stylesheet, not a pass over the screen's layout.
+  be, it belongs in `.start-screen__legend` or `.start-screen__options`. This
+  story touches two rules on the start screen: `margin-inline: auto` on
+  `.start-screen__legend`, which centres the legends, and
+  `padding-block-start: 0.5rem` on `.start-screen__options`, which adds the
+  gap between a legend and its row of choices that the fieldset's own `gap`
+  never reached — not a pass over the screen's layout.
 - **The pip row gains a number under each pip**, in `ScoreDisplay`:
   - The number under pip `k` is what a turn pays when `k` nodes are held —
     `energyForNodesHeld(k, state.scoring)` — so it reads `1 2 3 4 5` under
@@ -307,8 +311,9 @@ accurate; it is simply no longer the whole of what the cell shows.
   the smaller of the ship count and the charged-node count, still lit by the
   nodes held, and is not re-scaled, re-spaced or re-coloured beyond making
   room for the numbers beneath it.
-- **Restyling the start screen.** The legends are centred; nothing else
-  about the screen's spacing, sizing or order is opened.
+- **Restyling the start screen.** The legends are centred and the gap
+  between a legend and its choices is widened; nothing else about the
+  screen's spacing, sizing or order is opened.
 - **Re-tuning anything against bonus**: the countdown lengths, the node
   economy, the fleet sizes, the game lengths and the clock all keep their
   values.

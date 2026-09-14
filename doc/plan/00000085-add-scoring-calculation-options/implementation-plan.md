@@ -1382,7 +1382,10 @@ pre-existing warnings (`doc/plan/00000069-retire-actions/story.md` and
 step's three touched source files, which it had flagged. This step's
 verification is manual (the owner's eye, per the step's own instructions);
 no rendering was attempted in this container (no headless browser). No
-deviation from the plan.
+deviation from the plan. This diagram makes `guideDiagrams.tsx` a third
+caller of `energyForNodesHeld`, but D4's escalation clause is aimed at a
+second site that _pays_ someone — this table prices nothing, so the clause
+does not apply.
 
 > **This step is a deliberate placeholder.** The owner decided during plan
 > approval that the guide's scoring diagram must be fixed, and will supply

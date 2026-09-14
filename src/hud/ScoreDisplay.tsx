@@ -9,10 +9,11 @@ import type { Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
 import "./ScoreDisplay.css";
 
-/** A turn pays at most the chosen number of charged nodes the board holds
- * (§8.1, §8.2, §8.4), so the longest game tops out in the hundreds. Four
- * digits stays anyway, so the arcade readout's fixed width never reflows as
- * the total grows. */
+/** The most a turn can pay is whatever the chosen setting pays for the
+ * board's charged-node count (§8.4) — 15 at bonus with five nodes held. Over
+ * the longest offered game, 90 rounds, that reaches roughly 1,350, so four
+ * digits still comfortably covers it and the arcade readout's fixed width
+ * never reflows as the total grows. */
 const SCORE_DIGITS = 4;
 
 const SIDE_NAME: Readonly<Record<Side, string>> = {

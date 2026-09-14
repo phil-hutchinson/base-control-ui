@@ -472,11 +472,11 @@ describe("a full game, end to end, at bonus scoring (§8.4)", () => {
       let greenRunningTotal = 0;
       let redRunningTotal = 0;
       for (const collected of game.greenCollected) {
-        expect(collected.newTotal).toBeGreaterThanOrEqual(greenRunningTotal);
+        expect(collected.newTotal).toBeGreaterThan(greenRunningTotal);
         greenRunningTotal = collected.newTotal;
       }
       for (const collected of game.redCollected) {
-        expect(collected.newTotal).toBeGreaterThanOrEqual(redRunningTotal);
+        expect(collected.newTotal).toBeGreaterThan(redRunningTotal);
         redRunningTotal = collected.newTotal;
       }
     }
