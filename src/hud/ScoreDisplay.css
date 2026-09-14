@@ -82,7 +82,12 @@
 .score-display__pip-value {
   font-family: var(--font-arcade);
   font-size: 0.55em;
-  color: var(--color-text-dim);
+  /* Dimmer than `--color-text-dim`, which at this size reads as white
+     rather than grey. Mixed towards the ground rather than given a token of
+     its own: only this row wants it, and it has to stay a step below the
+     dim text everywhere else in the cell so the one number in the side's
+     colour is unmistakably the lit one. */
+  color: color-mix(in srgb, var(--color-text-dim) 55%, var(--color-space));
 }
 
 .score-display__pip-value--green {

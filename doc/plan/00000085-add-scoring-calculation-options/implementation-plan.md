@@ -1185,6 +1185,18 @@ reporting only the three pre-existing warnings. The layout of the new row is
 
 ---
 
+**Notes (owner check, follow-up to Step 9):** on seeing the row in the
+running app the owner asked for the unlit numbers to be **grey rather than
+white**. `--color-text-dim` (`#a3aec9`) is a light blue-grey that reads as
+white at `0.55em`, so `.score-display__pip-value` now mixes it 55% towards
+`--color-space`, landing near `#5f677d`. Mixed towards the ground rather
+than given a token of its own: only this row wants it, and it must stay a
+step below the dim text elsewhere in the cell so the one number in the
+side's colour is unmistakably the lit one. The side-coloured modifier is
+unchanged.
+
+---
+
 ### Step 10 — `--region-extent` is re-derived
 
 Status: committed
