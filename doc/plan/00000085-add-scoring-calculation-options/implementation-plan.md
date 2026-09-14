@@ -1187,7 +1187,40 @@ reporting only the three pre-existing warnings. The layout of the new row is
 
 ### Step 10 — `--region-extent` is re-derived
 
-Status: pending
+Status: committed
+
+Notes: Re-derived the portrait score-cell contribution from the actual
+`ScoreDisplay.css` values Step 9 landed: the pip row (`.score-display__pips`,
+no font-size set in portrait, so `1em = 1rem`) became a pip block per column —
+pip `0.6rem` + in-column gap `0.1rem` + the number's own `1.5 x 0.55rem`
+line (`0.825rem`) — fixed at `1.525rem`, replacing the old fixed `0.6rem`
+pip row; the cell's two `0.25rem` cell-level gaps are unchanged (three
+children, same as before: name, digits, pip block). New score-cell range is
+`5.4rem .. 7.275rem` (was `4.475rem .. 6.35rem`), a flat `+0.925rem` at both
+ends since the added block carries no `vw` term. Title and turn-indicator
+contributions are untouched, so the full sum becomes `10.65rem .. 15.9rem`
+(was `9.725rem .. 14.975rem` before rounding). Moved the `clamp()` by adding
+that same flat `0.925rem` to both of the old, already-rounded bounds rather
+than inventing new rounding: `clamp(9.85rem, 26.5vw, 15.2rem)` becomes
+`clamp(10.775rem, 26.5vw, 16.125rem)`; the `26.5vw` preferred term is
+unchanged because the added height has no `vw` component of its own, so it
+shifts the floor and ceiling uniformly without changing the slope between
+them. In portrait at the clamp's minimum this takes `2 x 0.925 = 1.85rem`
+off the board (`P` is subtracted twice in `--play-size`), and the same at the
+maximum. Corrected the landscape comment's width claim: a five-column pip
+block (pip-over-number, `ScoreDisplay.css`) draws
+`5 x 0.66em + 4 x 0.35em = 4.7em`, which at the landscape row font-size
+(`0.175 x --region-extent`) is `4.7 x 0.175P ≈ 0.82P` (was `4.4em ≈ 0.77P`
+for the old pip-only row) — still comfortably under the fixed-width info
+column, so the landscape `--region-extent` clamp itself did not need to
+change. `npm run typecheck`, `npm run lint` and `npm test` all clean/green
+(66 files, 1273 tests, unchanged — no DOM or behaviour changed by a CSS
+comment and a token value); `npm run format:check` reports only the two
+pre-existing warnings (`doc/plan/00000069-retire-actions/story.md` and
+`src/board/planetArt.ts`). No rendering could be done in this environment
+(no headless browser), so the arithmetic above is what stands behind the
+change; the owner's `npm run dev` check is what confirms it. No deviation
+from the plan.
 
 **Read D8 before starting.** `App.css`'s `:root` comment itemises how the
 side regions' extent `P` is arrived at, and the ScoreDisplay cell — now
