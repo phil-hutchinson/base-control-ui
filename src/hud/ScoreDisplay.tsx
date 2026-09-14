@@ -4,7 +4,7 @@
 // hidden sentence from `announcements.ts`.
 
 import { scoreSentence } from "../board/announcements";
-import { chargedNodesHeldBy } from "../rules/energy";
+import { chargedNodesHeldBy, energyForNodesHeld } from "../rules/energy";
 import type { Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
 import "./ScoreDisplay.css";
@@ -50,16 +50,29 @@ export function ScoreDisplay({
         {displayedTotal.toString().padStart(SCORE_DIGITS, "0")}
       </span>
       <span className="score-display__pips" aria-hidden="true">
-        {Array.from({ length: pipCount }, (_, index) => (
-          <span
-            key={index}
-            className={
-              index < nodesHeld
-                ? "score-display__pip score-display__pip--lit"
-                : "score-display__pip"
-            }
-          />
-        ))}
+        {Array.from({ length: pipCount }, (_, index) => {
+          const count = index + 1;
+          return (
+            <span key={index} className="score-display__pip-column">
+              <span
+                className={
+                  index < nodesHeld
+                    ? "score-display__pip score-display__pip--lit"
+                    : "score-display__pip"
+                }
+              />
+              <span
+                className={
+                  count === nodesHeld
+                    ? `score-display__pip-value score-display__pip-value--${side}`
+                    : "score-display__pip-value"
+                }
+              >
+                {energyForNodesHeld(count, state.scoring)}
+              </span>
+            </span>
+          );
+        })}
       </span>
       <span className="visually-hidden">{scoreSentence(state, side)}</span>
     </div>

@@ -185,6 +185,34 @@ describe("App", () => {
     expect(shipCells()).toHaveLength(12);
   });
 
+  it("pressing PLAY with the defaults starts a game whose pips pay the simple rate", async () => {
+    const { container } = render(<App />);
+
+    await pressPlay();
+
+    const greenCell = container.querySelector(".score-display--green");
+    const numbers = Array.from(
+      greenCell?.querySelectorAll(".score-display__pip-value") ?? [],
+    ).map((node) => node.textContent);
+    expect(numbers).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  it("choosing BONUS before PLAY starts a game whose pips pay the bonus rate", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await user.click(
+      within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    const greenCell = container.querySelector(".score-display--green");
+    const numbers = Array.from(
+      greenCell?.querySelectorAll(".score-display__pip-value") ?? [],
+    ).map((node) => node.textContent);
+    expect(numbers).toEqual(["1", "3", "6", "10", "15"]);
+  });
+
   it("pressing PLAY after choosing 5 ships deals a five-a-side game", async () => {
     const user = userEvent.setup();
     render(<App />);

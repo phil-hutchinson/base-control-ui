@@ -1077,7 +1077,43 @@ green — they simply cannot be the evidence for this step.
 
 ### Step 9 — The numbers under the pips
 
-Status: pending
+Status: committed
+
+Notes: `ScoreDisplay.tsx`'s pip row now wraps each pip in a
+`.score-display__pip-column`, holding the pip above a
+`.score-display__pip-value` showing `energyForNodesHeld(count, state.scoring)`
+for that pip's one-based count; the number at the count currently held gets a
+`--green`/`--red` modifier class, every other number stays the base
+`--color-text-dim`, and a side holding nothing gets no modifier at all.
+`ScoreDisplay.css` gives the column a fixed `0.66em` `min-width` (in the pip
+row's own `em`, so it scales with the existing landscape font-size rule
+exactly as the pip and the gap already do) and a `0.1em` in-column gap, and
+sizes the number at **`0.55em`** of the row's font-size — the fraction D7
+suggested. Arithmetic (unchanged from D7, since the pip's `0.6em` diameter,
+the row's `0.35em` gap and the `0.175 × --region-extent` landscape font-size
+are all untouched): a five-column row is `5 × 0.66em + 4 × 0.35em = 4.7em`,
+which at the landscape font-size is `4.7 × 0.175P ≈ 0.82P` — under the
+`0.85P` ceiling and comfortably inside the fixed-width info column. This
+could not be measured in a running browser (no headless browser in this
+environment, as Step 8 also found); it rests on the arithmetic above, which
+is the same reasoning D7 itself used to arrive at `0.55em`. No attribute was
+added for decoration: `aria-hidden` on `.score-display__pips` already covers
+the new spans (D7, S12). `--region-extent` in `App.css` was not touched, per
+the step's own instruction — that is Step 10's job. Added the accepted
+accessibility cost as a new "From story 85" section in
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md`, in the file's
+existing shape. Added the planned cases to `ScoreDisplay.test.tsx` (the
+`1 2 3 4 5` / `1 3 6 10 15` rows at six ships and five nodes, truncation to
+three pips, exactly one number marked at the count held under both settings,
+none marked at zero) and to `App.test.tsx` (PLAY with the defaults reads
+`1 2 3 4 5` under green's pips; choosing BONUS first reads `1 3 6 10 15`),
+using the `scoring` knob and `ScoringSetting` import Step 4 already added to
+`ScoreDisplay.test.tsx`. `npm run typecheck` and `npm run lint` clean;
+`npm test` green at 66 files, 1273 tests (up from 66/1264 — 7 new
+`ScoreDisplay.test.tsx` cases and 2 new `App.test.tsx` cases); `npm run
+format:check` reports only the two pre-existing warnings
+(`doc/plan/00000069-retire-actions/story.md` and `src/board/planetArt.ts`).
+No deviation from the plan.
 
 **`src/hud/ScoreDisplay.tsx`:** the pip row gains **a number under each pip** —
 what a turn pays when that many nodes are held, from
