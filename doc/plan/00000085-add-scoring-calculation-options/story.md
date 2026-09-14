@@ -230,7 +230,11 @@ center` does not reach it — and the plan should confirm in the running app
   option. The **NODE LIFECYCLE** paragraph's "gains 6 points if it stays on
   the node until it becomes depleted" quotes a figure that only holds under
   simple and only while nothing else is held; it is restated without the
-  figure. The guide's diagrams are untouched.
+  figure. **The guide's scoring diagram is corrected too**: it draws a `+3`
+  note beside three held nodes, which is the simple rate, and a picture
+  contradicting the paragraph above it is not residue worth keeping. What it
+  should show instead is the owner's call, taken when the work reaches it. The
+  guide's other four diagrams are untouched.
 - **`README.md`** describes scoring as a choice in the player's words: the
   rules-summary sentence currently states the flat rate as the only rate.
   Run `/update-readme` for the rest of the diff.
