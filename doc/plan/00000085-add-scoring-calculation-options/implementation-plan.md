@@ -1364,8 +1364,59 @@ of them as though it were the only one. `story.md` originally chose to leave
 the diagrams alone and record the mismatch; the owner reversed that — a
 diagram contradicting its own caption is not acceptable residue.
 
-**What to implement.** _To be supplied by the owner when this step is
-reached._
+**What to implement** (settled with the owner when the step was reached).
+
+Replace the diagram's contents with **a grid showing the full scoring
+breakdown — one through five nodes held, under both methods**. The `+3`
+problem then disappears outright rather than being patched: the diagram no
+longer asserts one rate, it states the whole table.
+
+The shape, six columns by three rows:
+
+```
+           1     2     3     4     5
+ SIMPLE    1     2     3     4     5
+ BONUS     1     3     6    10    15
+```
+
+- The **header row** is the number of charged nodes a player's spaceships
+  are standing on. Its first cell is empty.
+- The **two value rows** are what a whole turn pays at that count. Take the
+  figures from `energyForNodesHeld` (Step 3) rather than hard-coding them,
+  so the grid cannot drift from the rules.
+- Five columns of values, because five is the largest charged-node count the
+  board offers. The grid does not vary with the game's settings — the guide
+  is read before a game exists.
+
+**`GuideDiagram` has to grow for this, and that is the step's real work.**
+Its current cell kinds are `square`, `number`, `note`, `arrow` and `empty`;
+`note` is the board's green settlement look (`40cqw`, glowing, the "+N"
+treatment) and every cell is forced square by
+`.guide-diagram__cell`'s `aspect-ratio: 1`. Neither suits a row label or a
+table of small figures. Add what this diagram needs — at minimum a quiet
+text/label cell that is **not** the settlement green and **not** forced
+square, and a first column that can size to its content so `SIMPLE` and
+`BONUS` fit without cramping.
+
+**The other four diagrams must render exactly as they do now.** Movement,
+refuelling, node lifecycle and node selection all share this component;
+whatever you add is opt-in, so their `columns`/`cells` calls and their
+appearance are untouched. `guideDiagrams.test.tsx` and
+`GuideDiagram.test.tsx` both assert against the current behaviour — if an
+existing assertion has to change, that is a signal the change was not
+opt-in, so stop and report rather than editing the assertion.
+
+**Vocabulary and tone.** The guide says **points**, **fuel**, **spaceship**
+(`guideCopy.ts`'s header explains why). SIMPLE and BONUS are the start
+screen's words for the two methods and are the right words here too. Keep
+the grid wordless beyond those two labels — the intro paragraph above it
+already carries the explanation, and the guide is a first read, not a rules
+reference.
+
+**Step 11's copy is already committed** and is not reopened: the intro
+paragraph now reads "…gain points for the charged nodes your spaceships are
+on — one each under simple scoring, or more for each extra node under bonus
+scoring." The grid must read as that sentence's illustration.
 
 **What is known now**, for whoever fills that in:
 
@@ -1386,13 +1437,16 @@ reached._
 Depends on: Step 11 (the copy this diagram sits beside) and Step 3 (the
 arithmetic, if the diagram ends up showing a bonus figure).
 
-Verification: **to be decided with the step's content.** If the diagram's
-change is structural — different cells, a different column count — it is
-**manual**: the owner opens the Quick Guide (`npm run dev`, then the Quick
-Guide button on the start screen) and confirms the diagram reads correctly
-beside its paragraph at both orientations. If it is only a change of note
-text, the updated `guideDiagrams.test.tsx` case is enough and it is
-**automated**.
+Verification (**manual** — the change is structural, so the owner's eye
+decides): `npm run typecheck`, `npm run lint`, `npm test` and
+`npm run format:check` all clean, with `guideDiagrams.test.tsx` covering the
+grid's contents and the other four diagrams' existing assertions **passing
+unchanged**. Then the owner opens the Quick Guide (`npm run dev`, then the
+Quick Guide button on the start screen) and confirms: the grid reads as a
+table of both methods' rates, `SIMPLE` and `BONUS` are legible and not
+cramped, the figures are right (`1 2 3 4 5` and `1 3 6 10 15`), it sits
+sensibly under the intro paragraph, the other four diagrams look exactly as
+they did, and none of it overflows on a narrow window or in landscape.
 
 ---
 
