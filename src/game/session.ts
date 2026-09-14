@@ -10,6 +10,7 @@ import { type AttackRefusalReason, legalTargets } from "../rules/combat";
 import type { FleetSize, Side, ShipId } from "../rules/fleet";
 import type { ChargedNodeCount } from "../rules/nodes";
 import type { PowerLevel } from "../rules/power";
+import type { ScoringSetting } from "../rules/scoring";
 import {
   type GameState,
   markOutOfTime,
@@ -104,11 +105,12 @@ export type SessionEvent =
  * An intent a player's input turns into: activate a square, dismiss a
  * selection, start a new game, report a clock running out, or pass a turn
  * for time. `new-game` carries the seed, the length in rounds, the fleet
- * size, the charged-node count and whether combat is enabled the new game
- * starts from — the reducer uses what it is handed and never draws a seed
- * or reaches for a default itself. `clock-expired` and `pass-out-of-time`
- * are dispatched by the app's own clock (rules.md §10); the rules layer
- * never reads a clock itself (`markOutOfTime`, `applyOutOfTimePass`).
+ * size, the charged-node count, whether combat is enabled and the scoring
+ * setting the new game starts from — the reducer uses what it is handed and
+ * never draws a seed or reaches for a default itself. `clock-expired` and
+ * `pass-out-of-time` are dispatched by the app's own clock (rules.md §10);
+ * the rules layer never reads a clock itself (`markOutOfTime`,
+ * `applyOutOfTimePass`).
  */
 export type SessionIntent =
   | { readonly type: "activate"; readonly square: Square }
@@ -120,6 +122,7 @@ export type SessionIntent =
       readonly fleetSize: FleetSize;
       readonly chargedNodeCount: ChargedNodeCount;
       readonly combatEnabled: boolean;
+      readonly scoring: ScoringSetting;
     }
   | { readonly type: "clock-expired"; readonly side: Side }
   | { readonly type: "pass-out-of-time" };
@@ -278,6 +281,7 @@ export function sessionReducer(
         fleetSize: intent.fleetSize,
         chargedNodeCount: intent.chargedNodeCount,
         combatEnabled: intent.combatEnabled,
+        scoring: intent.scoring,
       }),
     );
   }

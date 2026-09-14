@@ -842,7 +842,27 @@ moves, stop and escalate (D12).
 
 ### Step 6 — The choice reaches a new game, and the app holds it
 
-Status: pending
+Status: committed
+
+Notes: `SessionIntent`'s `new-game` variant gained a required
+`scoring: ScoringSetting`, `sessionReducer` passes `intent.scoring` straight
+into `startingGameState`'s options, and the intent's doc comment now lists
+scoring among what `new-game` carries. `useAppScreen`'s `AppScreen` gained
+`scoring` and `setScoring`, initialised from `DEFAULT_SCORING` and dispatched
+in `handlePlay`, with the module header and hook doc comment updated from
+"five options"/"four options" to six. Added the nine `new-game` intent
+literals in `session.test.ts` a `scoring: "simple"` field (found by
+`typecheck`, matching the plan's count) and two new tests asserting a
+`new-game` dispatch with `scoring: "bonus"` and `scoring: "simple"` each
+produce a state carrying that setting. Added a `scoring` assertion to
+`useAppScreen.test.tsx`'s default-options test and its PLAY-dispatch test,
+plus a new test mirroring the existing combat-setting one: setting bonus,
+dispatching PLAY, returning to start, and dispatching PLAY again all carry
+bonus. `npm run typecheck` and `npm run lint` clean; `npm test` green at 66
+files, 1260 tests (up from 66/1257 — three new cases); `npm run format:check`
+reports only the two pre-existing warnings
+(`doc/plan/00000069-retire-actions/story.md` and `src/board/planetArt.ts`).
+No deviation from the plan.
 
 **`src/game/session.ts`:** the `new-game` intent gains a **required**
 `scoring: ScoringSetting`, alongside the seed, the length, the fleet size, the
