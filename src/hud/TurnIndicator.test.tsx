@@ -22,6 +22,7 @@ function finishedState(): GameState {
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     combatEnabled: true,
+    scoring: "simple",
   };
 }
 

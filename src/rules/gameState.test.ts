@@ -22,6 +22,7 @@ import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 import { legalDestinations } from "./movement";
 import { MAX_POWER } from "./power";
 import { applyMove } from "./ply";
+import { DEFAULT_SCORING, SCORING_SETTINGS } from "./scoring";
 
 const SEED = 12345;
 const STARTING_FLEET = startingFleet(DEFAULT_FLEET_SIZE);
@@ -350,6 +351,57 @@ describe("startingGameState", () => {
     }
     expect(result.state.combatEnabled).toBe(true);
   });
+
+  it("defaults to simple scoring, the app's default, when none is given", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.scoring).toBe("simple");
+    expect(state.scoring).toBe(DEFAULT_SCORING);
+  });
+
+  it("takes a given scoring setting, changing nothing else about the state", () => {
+    const defaultScoring = startingGameState(SEED);
+    const bonusScoring = startingGameState(SEED, { scoring: "bonus" });
+
+    expect(bonusScoring.scoring).toBe("bonus");
+    expect({
+      ...bonusScoring,
+      scoring: defaultScoring.scoring,
+    }).toEqual(defaultScoring);
+  });
+
+  it("is one of the offered scoring settings, exactly the one given", () => {
+    const state = startingGameState(SEED, { scoring: "bonus" });
+
+    expect(SCORING_SETTINGS).toContain(state.scoring);
+    expect(state.scoring).toBe("bonus");
+  });
+
+  it("carries scoring unchanged through a move, for the game's lifetime", () => {
+    const state = startingGameState(SEED, { scoring: "bonus" });
+    const ship = state.ships.find(
+      (candidate) => legalDestinations(state, candidate.id).length > 0,
+    );
+    if (ship === undefined) {
+      throw new Error("expected at least one ship with a legal move");
+    }
+    const [destination] = legalDestinations(state, ship.id);
+
+    const result = applyMove(state, ship.id, destination);
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.scoring).toBe("bonus");
+  });
+
+  it.each(["SIMPLE", "flat", "triangular", ""])(
+    "throws a RangeError for a scoring setting of %j",
+    (scoring) => {
+      expect(() => startingGameState(SEED, { scoring })).toThrow(RangeError);
+    },
+  );
 });
 
 describe("markOutOfTime", () => {

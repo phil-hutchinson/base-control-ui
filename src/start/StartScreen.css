@@ -80,11 +80,22 @@
   align-items: center;
   gap: 0.75rem;
   margin: 0;
-  padding: 0;
+  /* The block-start padding is the gap between the legend and the row of
+     choices. It cannot come from `gap` above: the legend is not a flex item
+     (see `.start-screen__legend`), so the choices row is this fieldset's
+     only one and the gap never applies to it. Padding is what actually
+     separates a rendered legend from the fieldset's content. */
+  padding: 0.5rem 0 0;
   border: 0;
 }
 
 .start-screen__legend {
+  /* A rendered <legend> is not an ordinary flex item of its <fieldset>: the
+     browser lays it out as its own box at the fieldset's block-start edge,
+     so `.start-screen__options`'s `align-items: center` never reaches it.
+     It is already sized to fit its content rather than stretched to the
+     fieldset's width, so an inline auto margin has room to centre it. */
+  margin-inline: auto;
   padding: 0;
   font-family: var(--font-arcade);
   font-size: clamp(0.75rem, 1.5vw, 1rem);

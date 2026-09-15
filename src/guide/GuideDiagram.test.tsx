@@ -53,6 +53,53 @@ describe("GuideDiagram", () => {
     expect(container.querySelector(".board-square")).toBeNull();
   });
 
+  it("renders a quiet label with no square under it and no settlement glow", () => {
+    const cells: readonly GuideDiagramCell[] = [
+      { kind: "label", text: "SIMPLE" },
+    ];
+    const { container, getByText } = render(
+      <GuideDiagram columns={1} cells={cells} />,
+    );
+
+    expect(getByText("SIMPLE")).toHaveClass("guide-diagram__label");
+    expect(container.querySelector(".board-square")).toBeNull();
+    expect(container.querySelector(".guide-diagram__note")).toBeNull();
+  });
+
+  it("does not force a label cell square, unlike every other cell kind", () => {
+    const cells: readonly GuideDiagramCell[] = [
+      { kind: "label", text: "BONUS" },
+    ];
+    const { container } = render(<GuideDiagram columns={1} cells={cells} />);
+
+    expect(container.querySelector(".guide-diagram__cell")).toHaveClass(
+      "guide-diagram__cell--label",
+    );
+  });
+
+  it("sizes a label-column diagram's first column to its content, opt-in", () => {
+    const cells: readonly GuideDiagramCell[] = [
+      { kind: "label", text: "SIMPLE" },
+      { kind: "label", text: "1" },
+    ];
+    const { container } = render(
+      <GuideDiagram columns={2} cells={cells} labelColumn />,
+    );
+
+    expect(container.querySelector(".guide-diagram")).toHaveClass(
+      "guide-diagram--label-column",
+    );
+  });
+
+  it("renders an ordinary diagram with no label-column class when not opted in", () => {
+    const cells: readonly GuideDiagramCell[] = [{ kind: "empty" }];
+    const { container } = render(<GuideDiagram columns={1} cells={cells} />);
+
+    expect(container.querySelector(".guide-diagram")).not.toHaveClass(
+      "guide-diagram--label-column",
+    );
+  });
+
   it("renders an arrow cell", () => {
     const cells: readonly GuideDiagramCell[] = [{ kind: "arrow" }];
     const { container } = render(<GuideDiagram columns={1} cells={cells} />);

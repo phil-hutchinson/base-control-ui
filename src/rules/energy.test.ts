@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ALL_SQUARES, squareFromName } from "./board";
-import { chargedNodesHeldBy } from "./energy";
+import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
 import type { ShipId } from "./fleet";
 import type { GameState, Ship, NodeStatus } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
@@ -41,6 +41,7 @@ function buildState(config: {
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     combatEnabled: true,
+    scoring: "simple",
   };
 }
 
@@ -108,5 +109,30 @@ describe("chargedNodesHeldBy", () => {
     });
 
     expect(chargedNodesHeldBy(state, "green")).toEqual([]);
+  });
+});
+
+describe("energyForNodesHeld", () => {
+  it("returns the count itself under simple, for zero through five", () => {
+    for (let nodesHeld = 0; nodesHeld <= 5; nodesHeld++) {
+      expect(energyForNodesHeld(nodesHeld, "simple")).toBe(nodesHeld);
+    }
+  });
+
+  it("returns the triangular total under bonus, for zero through five", () => {
+    const expected = [0, 1, 3, 6, 10, 15];
+    expected.forEach((amount, nodesHeld) => {
+      expect(energyForNodesHeld(nodesHeld, "bonus")).toBe(amount);
+    });
+  });
+
+  it("pays zero for zero nodes at both settings", () => {
+    expect(energyForNodesHeld(0, "simple")).toBe(0);
+    expect(energyForNodesHeld(0, "bonus")).toBe(0);
+  });
+
+  it("is a formula rather than a capped table", () => {
+    expect(energyForNodesHeld(6, "bonus")).toBe(21);
+    expect(energyForNodesHeld(7, "bonus")).toBe(28);
   });
 });

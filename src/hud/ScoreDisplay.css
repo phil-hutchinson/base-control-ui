@@ -1,5 +1,5 @@
-/* This cell's portrait size — name, digits and pip row — feeds the
-   `--region-extent` derivation in `App.css`. */
+/* This cell's portrait size — name, digits, pip row and number row —
+   feeds the `--region-extent` derivation in `App.css`. */
 .score-display {
   display: flex;
   flex-direction: column;
@@ -60,6 +60,42 @@
 .score-display__pip--lit {
   background-color: var(--color-node-charged);
   box-shadow: 0 0 0.4em var(--color-node-charged);
+}
+
+/* Each pip sits in its own column, above the number it goes with, so the
+   number is centred under its pip by construction and the two never drift
+   apart at any fleet size, charged-node count or orientation. The
+   column's width is fixed in `em` — the row's own font-size — so it scales
+   with the landscape rule below exactly as the pip and the gap already do. */
+.score-display__pip-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1em;
+  min-width: 0.66em;
+}
+
+/* The number is sized well below the row's own `1em`: two arcade digits at
+   `1em` would make a five-column row wider than the fixed-width info column
+   itself (see `App.css`), so it is pinned to a fraction of the row's `em`
+   instead. */
+.score-display__pip-value {
+  font-family: var(--font-arcade);
+  font-size: 0.55em;
+  /* Dimmer than `--color-text-dim`, which at this size reads as white
+     rather than grey. Mixed towards the ground rather than given a token of
+     its own: only this row wants it, and it has to stay a step below the
+     dim text everywhere else in the cell so the one number in the side's
+     colour is unmistakably the lit one. */
+  color: color-mix(in srgb, var(--color-text-dim) 55%, var(--color-space));
+}
+
+.score-display__pip-value--green {
+  color: var(--color-green);
+}
+
+.score-display__pip-value--red {
+  color: var(--color-red);
 }
 
 /* Landscape: the name and the digits are both sized from the window's

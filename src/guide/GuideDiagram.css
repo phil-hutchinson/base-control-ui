@@ -20,6 +20,18 @@
   margin: 1rem auto;
 }
 
+/* Opt-in (`labelColumn`): the first column is a row heading rather than a
+   board square, so it sizes to its own text — SIMPLE and BONUS — instead of
+   sharing `--guide-square` with the columns of figures beside it. Higher
+   specificity than `.guide-diagram` above so it wins regardless of
+   stylesheet order. */
+.guide-diagram.guide-diagram--label-column {
+  grid-template-columns: max-content repeat(
+      var(--guide-diagram-data-columns),
+      minmax(0, var(--guide-square))
+    );
+}
+
 /* Fills its column's resolved width and derives its height from it, rather
    than both axes reading the same fixed token, so a cell that has been
    shrunk to fit stays square instead of merely losing width. Establishes a
@@ -29,6 +41,26 @@
   container-type: inline-size;
   width: 100%;
   aspect-ratio: 1;
+}
+
+/* A label cell's height follows its text instead of being forced square —
+   a row of SIMPLE/BONUS and single- or two-digit figures has no reason to
+   be as tall as it is wide. */
+/* `container-type: normal` is the load-bearing line. The base rule above
+   makes every cell an inline-size container, which implies
+   `contain: inline-size` — the cell's width may then not depend on its
+   contents. The label column is sized `max-content`, which asks exactly
+   that question, so under containment it resolves to nothing but this
+   cell's own padding and the label overflows to both sides of it. Labels
+   are the one cell kind whose width has to be measured from its text, so
+   they opt out of being a container; nothing inside them wants `cqw`. */
+.guide-diagram__cell--label {
+  container-type: normal;
+  aspect-ratio: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
 }
 
 /* A single-cell grid, the same idiom `BoardSquare.css` uses for its own
@@ -67,6 +99,41 @@
   font-weight: 700;
   color: var(--color-green);
   text-shadow: 0 0 0.4em currentcolor;
+}
+
+/* A rule cell carries no square and no text: it spans every column so a
+   table's heading row is separated from its figures by one continuous
+   line, rather than by a border on each cell that the grid's 2px gap would
+   break into dashes. */
+.guide-diagram__cell--rule {
+  grid-column: 1 / -1;
+  aspect-ratio: auto;
+  height: auto;
+  container-type: normal;
+}
+
+.guide-diagram__rule {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background-color: var(--color-text-bright);
+}
+
+/* A quiet label — a row heading or a plain figure — in the guide's ordinary
+   arcade chrome (`GuideScreen.css`'s heading and Back button), with no
+   glow: unlike `.guide-diagram__note` this never asserts a rate of its
+   own, so it reads as a neutral figure rather than a collection. */
+.guide-diagram__label {
+  font-family: var(--font-arcade);
+  /* Sized from the window, not from `cqw`: a label cell is deliberately not
+     a query container (see above), so container units have nothing to
+     resolve against here. */
+  font-size: clamp(0.85rem, 2vw, 1.25rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-bright);
+  white-space: nowrap;
 }
 
 .guide-diagram__arrow {

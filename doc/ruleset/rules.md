@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.34**
+**Rules version: 0.35**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -581,11 +581,12 @@ the node does not revert to waiting for the next visitor — it is over. You
 cannot hand a node back: a holder's choice is between staying and being
 trapped, or leaving and losing the node entirely, with no third option of
 stepping away and coming back later. Nor can the opponent inherit it — a
-node you leave is not there to be taken. Leaving also forfeits that turn's
-energy from it, since energy counts the nodes a player is standing on when
-their turn ends. The shortfall this creates is filled at the **end of the
-turn**, exactly like any other shortfall against the chosen number of
-charged nodes (section 8.2) — nothing charges in the middle of a turn.
+node you leave is not there to be taken. Leaving also drops that turn's
+collection to whatever the remaining nodes pay, since a turn's energy is
+priced by the nodes a player is standing on when their turn ends (section
+8.4). The shortfall this creates is filled at the **end of the turn**,
+exactly like any other shortfall against the chosen number of charged nodes
+(section 8.2) — nothing charges in the middle of a turn.
 
 A depleted node comes in two lengths, depending on how it was created:
 
@@ -621,10 +622,17 @@ they leave the board and nothing appears in their place.
 
 ### 8.4 Energy
 
-At the end of each player's turn, that player collects **one energy for
-each charged node they are standing on** — hold three, collect three. A node
-counts only if one of that player's ships is on it at that moment — flying
-across a charged node and moving on collects nothing. The board never
+Scoring is **simple or bonus**, the same for both players, chosen before
+play begins and fixed for the game's lifetime.
+
+- **Simple** — a player collects one energy for each charged node they are
+  standing on at the end of their turn: hold three, collect three.
+- **Bonus** — each node held is worth one more than the node before it, so a
+  turn's whole collection pays **1, 3, 6, 10 or 15** for one through five
+  nodes held.
+
+A node counts only if one of that player's ships is on it at that moment —
+flying across a charged node and moving on collects nothing. The board never
 charges more than the chosen number of nodes at once (sections 8.1, 8.2),
 but that is a fact about the board, not a cap on what collecting can pay.
 
@@ -751,8 +759,9 @@ energy is a draw.
 ## 10. The clock
 
 Alongside the fleet size, the number of rounds, the charged-node count
-(section 8.1) and whether combat is on or off (section 7), a player chooses a
-**clock** before play begins: no clock, or 6, 4 or 2 seconds a turn.
+(section 8.1), whether combat is on or off (section 7) and how scoring is
+priced (section 8.4), a player chooses a **clock** before play begins: no
+clock, or 6, 4 or 2 seconds a turn.
 
 Each player's clock starts with a budget: their seconds a turn multiplied by
 the number of turns the chosen length gives them. The whole game is

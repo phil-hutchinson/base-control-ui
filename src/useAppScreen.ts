@@ -1,4 +1,4 @@
-// The app's front door: which screen is showing, the five options chosen on
+// The app's front door: which screen is showing, the six options chosen on
 // the start screen, and the two actions that move between screens. Lives
 // outside App.tsx so PLAY's wiring and the return to start are a real unit,
 // exercised on their own rather than only through the whole app.
@@ -14,6 +14,7 @@ import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
 } from "./rules/nodes";
+import { DEFAULT_SCORING, type ScoringSetting } from "./rules/scoring";
 
 /**
  * Which screen is on top: the start screen, a game in progress, or the
@@ -27,11 +28,13 @@ export interface AppScreen {
   readonly fleetSize: FleetSize;
   readonly chargedNodeCount: ChargedNodeCount;
   readonly combatEnabled: boolean;
+  readonly scoring: ScoringSetting;
   readonly lengthInRounds: number;
   readonly clockSetting: ClockSetting;
   readonly setFleetSize: (fleetSize: FleetSize) => void;
   readonly setChargedNodeCount: (chargedNodeCount: ChargedNodeCount) => void;
   readonly setCombatEnabled: (combatEnabled: boolean) => void;
+  readonly setScoring: (scoring: ScoringSetting) => void;
   readonly setLengthInRounds: (lengthInRounds: number) => void;
   readonly setClockSetting: (clockSetting: ClockSetting) => void;
   readonly handlePlay: () => void;
@@ -40,12 +43,12 @@ export interface AppScreen {
 }
 
 /**
- * Holds which screen is showing and the five options chosen on the start
+ * Holds which screen is showing and the six options chosen on the start
  * screen, so a finished game returns to the start screen with the options
  * it was played with still set. `handlePlay` dispatches `new-game` with a
- * fresh seed and the fleet size, charged-node count, combat setting and
- * length through `dispatch`, then switches to the game screen;
- * `handleReturnToStart` switches back to the start screen and changes
+ * fresh seed and the fleet size, charged-node count, combat setting,
+ * scoring setting and length through `dispatch`, then switches to the game
+ * screen; `handleReturnToStart` switches back to the start screen and changes
  * nothing else. The clock setting is not part of `new-game` — the rules
  * layer knows nothing about time — so it is held here purely for the game
  * screen to read. `handleOpenGuide` switches to the quick guide and changes
@@ -62,6 +65,7 @@ export function useAppScreen(
     DEFAULT_CHARGED_NODE_COUNT,
   );
   const [combatEnabled, setCombatEnabled] = useState(DEFAULT_COMBAT_ENABLED);
+  const [scoring, setScoring] = useState<ScoringSetting>(DEFAULT_SCORING);
   const [lengthInRounds, setLengthInRounds] = useState(
     DEFAULT_GAME_LENGTH_ROUNDS,
   );
@@ -77,6 +81,7 @@ export function useAppScreen(
       fleetSize,
       chargedNodeCount,
       combatEnabled,
+      scoring,
     });
     setScreen("game");
   }
@@ -94,11 +99,13 @@ export function useAppScreen(
     fleetSize,
     chargedNodeCount,
     combatEnabled,
+    scoring,
     lengthInRounds,
     clockSetting,
     setFleetSize,
     setChargedNodeCount,
     setCombatEnabled,
+    setScoring,
     setLengthInRounds,
     setClockSetting,
     handlePlay,

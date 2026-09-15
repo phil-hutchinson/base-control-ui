@@ -32,6 +32,7 @@ import {
   type ChargedNodeCount,
   type NodeState,
 } from "./nodes";
+import type { ScoringSetting } from "./scoring";
 
 function ship(
   id: ShipId,
@@ -60,6 +61,7 @@ function buildState(config: {
   plyNumber?: number;
   randomSeed?: number;
   chargedNodeCount?: ChargedNodeCount;
+  scoring?: ScoringSetting;
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -73,6 +75,7 @@ function buildState(config: {
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     combatEnabled: true,
+    scoring: config.scoring ?? "simple",
   };
 }
 
@@ -1094,9 +1097,52 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
   });
 
+  it("emits no effect and leaves both totals unchanged when nothing is held, under bonus too", () => {
+    const state = buildState({
+      sideToMove: "green",
+      scoring: "bonus",
+      nodes: {
+        H8: ["depleted", 0],
+        K5: ["depleted", 0],
+        C3: ["charged", 0],
+        E3: ["charged", 0],
+        G3: ["charged", 0],
+        I3: ["charged", 0],
+      },
+      ships: [ship("green-1", "green", "D2")],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(
+      result.effects.filter((effect) => effect.type !== "node-retired"),
+    ).toEqual([]);
+    expect(result.state.energy).toEqual({ green: 0, red: 0 });
+  });
+
   it("pays the side that just played and leaves the other side's total untouched", () => {
     const state = buildState({
       sideToMove: "green",
+      nodes: { H8: ["charged", 5] },
+      ships: [ship("green-1", "green", "H8", 0)],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-collected",
+      side: "green",
+      amount: 1,
+      newTotal: 1,
+      squares: [squareFromName("H8")],
+    });
+    expect(result.state.energy).toEqual({ green: 1, red: 0 });
+  });
+
+  it("pays 1 for a single held node under bonus too — the two settings agree at one", () => {
+    const state = buildState({
+      sideToMove: "green",
+      scoring: "bonus",
       nodes: { H8: ["charged", 5] },
       ships: [ship("green-1", "green", "H8", 0)],
     });
@@ -1142,6 +1188,38 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ],
     });
     expect(result.state.energy).toEqual({ green: 3, red: 0 });
+  });
+
+  it("pays the triangular bonus rate for three held nodes, with the same squares as under simple", () => {
+    const state = buildState({
+      sideToMove: "green",
+      scoring: "bonus",
+      nodes: {
+        H8: ["charged", 5],
+        K5: ["charged", 5],
+        L8: ["charged", 5],
+      },
+      ships: [
+        ship("green-1", "green", "H8", 0),
+        ship("green-2", "green", "K5", 0),
+        ship("green-3", "green", "L8", 0),
+      ],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects).toContainEqual({
+      type: "energy-collected",
+      side: "green",
+      amount: 6,
+      newTotal: 6,
+      squares: [
+        squareFromName("K5"),
+        squareFromName("H8"),
+        squareFromName("L8"),
+      ],
+    });
+    expect(result.state.energy).toEqual({ green: 6, red: 0 });
   });
 
   it("pays for four held nodes, with no cap in the arithmetic", () => {

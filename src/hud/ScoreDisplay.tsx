@@ -4,15 +4,16 @@
 // hidden sentence from `announcements.ts`.
 
 import { scoreSentence } from "../board/announcements";
-import { chargedNodesHeldBy } from "../rules/energy";
+import { chargedNodesHeldBy, energyForNodesHeld } from "../rules/energy";
 import type { Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
 import "./ScoreDisplay.css";
 
-/** A turn pays at most the chosen number of charged nodes the board holds
- * (§8.1, §8.2, §8.4), so the longest game tops out in the hundreds. Four
- * digits stays anyway, so the arcade readout's fixed width never reflows as
- * the total grows. */
+/** The most a turn can pay is whatever the chosen setting pays for the
+ * board's charged-node count (§8.4) — 15 at bonus with five nodes held. Over
+ * the longest offered game, 90 rounds, that reaches roughly 1,350, so four
+ * digits still comfortably covers it and the arcade readout's fixed width
+ * never reflows as the total grows. */
 const SCORE_DIGITS = 4;
 
 const SIDE_NAME: Readonly<Record<Side, string>> = {
@@ -50,16 +51,29 @@ export function ScoreDisplay({
         {displayedTotal.toString().padStart(SCORE_DIGITS, "0")}
       </span>
       <span className="score-display__pips" aria-hidden="true">
-        {Array.from({ length: pipCount }, (_, index) => (
-          <span
-            key={index}
-            className={
-              index < nodesHeld
-                ? "score-display__pip score-display__pip--lit"
-                : "score-display__pip"
-            }
-          />
-        ))}
+        {Array.from({ length: pipCount }, (_, index) => {
+          const count = index + 1;
+          return (
+            <span key={index} className="score-display__pip-column">
+              <span
+                className={
+                  index < nodesHeld
+                    ? "score-display__pip score-display__pip--lit"
+                    : "score-display__pip"
+                }
+              />
+              <span
+                className={
+                  count === nodesHeld
+                    ? `score-display__pip-value score-display__pip-value--${side}`
+                    : "score-display__pip-value"
+                }
+              >
+                {energyForNodesHeld(count, state.scoring)}
+              </span>
+            </span>
+          );
+        })}
       </span>
       <span className="visually-hidden">{scoreSentence(state, side)}</span>
     </div>

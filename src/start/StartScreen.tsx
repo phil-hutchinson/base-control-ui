@@ -1,5 +1,5 @@
 // The start screen: the app's front door. Carries the game's on-screen
-// name, the five options a player sets before a game begins, and the PLAY
+// name, the six options a player sets before a game begins, and the PLAY
 // button. Rendered by `App` in place of the game whenever there is no game
 // in progress.
 
@@ -10,6 +10,7 @@ import { COMBAT_SETTINGS } from "../rules/combatSetting";
 import { type FleetSize, FLEET_SIZES } from "../rules/fleet";
 import { GAME_LENGTH_OPTIONS_ROUNDS } from "../rules/gameLength";
 import { type ChargedNodeCount, CHARGED_NODE_COUNTS } from "../rules/nodes";
+import { type ScoringSetting, SCORING_SETTINGS } from "../rules/scoring";
 import "./StartScreen.css";
 
 /** The Clock group's labels — start-screen chrome, not a rules concern. */
@@ -26,6 +27,12 @@ const COMBAT_SETTING_LABELS: Record<"off" | "on", string> = {
   on: "ON",
 };
 
+/** The Scoring group's labels — start-screen chrome, not a rules concern. */
+const SCORING_SETTING_LABELS: Record<ScoringSetting, string> = {
+  simple: "SIMPLE",
+  bonus: "BONUS",
+};
+
 /** The Combat group's radio `value` attributes, one per offered setting. */
 function combatSettingValue(combatEnabled: boolean): "off" | "on" {
   return combatEnabled ? "on" : "off";
@@ -40,6 +47,8 @@ interface StartScreenProps {
   ) => void;
   readonly combatEnabled: boolean;
   readonly onCombatEnabledChange: (combatEnabled: boolean) => void;
+  readonly scoring: ScoringSetting;
+  readonly onScoringChange: (scoring: ScoringSetting) => void;
   readonly lengthInRounds: number;
   readonly onLengthInRoundsChange: (lengthInRounds: number) => void;
   readonly clockSetting: ClockSetting;
@@ -49,7 +58,7 @@ interface StartScreenProps {
 }
 
 /**
- * Controlled: the five options are held by the caller and mean nothing
+ * Controlled: the six options are held by the caller and mean nothing
  * until PLAY is pressed. This component holds no state of its own beyond
  * the ids it generates for its radio groups, and changing an option only
  * calls the matching handler — it dispatches nothing and starts no game.
@@ -61,6 +70,8 @@ export function StartScreen({
   onChargedNodeCountChange,
   combatEnabled,
   onCombatEnabledChange,
+  scoring,
+  onScoringChange,
   lengthInRounds,
   onLengthInRoundsChange,
   clockSetting,
@@ -70,6 +81,7 @@ export function StartScreen({
 }: StartScreenProps) {
   const fleetSizeGroupName = useId();
   const chargedNodeCountGroupName = useId();
+  const scoringGroupName = useId();
   const combatEnabledGroupName = useId();
   const lengthGroupName = useId();
   const clockSettingGroupName = useId();
@@ -110,6 +122,21 @@ export function StartScreen({
               label={String(value)}
               checked={value === chargedNodeCount}
               onChange={() => onChargedNodeCountChange(value)}
+            />
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="start-screen__options">
+        <legend className="start-screen__legend">Scoring</legend>
+        <div className="start-screen__choices">
+          {SCORING_SETTINGS.map((value) => (
+            <OptionChoice
+              key={value}
+              name={scoringGroupName}
+              value={value}
+              label={SCORING_SETTING_LABELS[value]}
+              checked={value === scoring}
+              onChange={() => onScoringChange(value)}
             />
           ))}
         </div>

@@ -39,6 +39,10 @@ function combatGroup() {
   return screen.getByRole("group", { name: "Combat" });
 }
 
+function scoringGroup() {
+  return screen.getByRole("group", { name: "Scoring" });
+}
+
 function clockGroup() {
   return screen.getByRole("group", { name: "Clock (time per move)" });
 }
@@ -49,7 +53,7 @@ async function pressPlay() {
 }
 
 describe("App", () => {
-  it("opens on the start screen: the name, all five option groups at their defaults, and PLAY — no board, no HUD", () => {
+  it("opens on the start screen: the name, all six option groups at their defaults, and PLAY — no board, no HUD", () => {
     render(<App />);
 
     expect(
@@ -65,6 +69,9 @@ describe("App", () => {
         "radio",
         { name: "5" },
       ),
+    ).toBeChecked();
+    expect(
+      within(scoringGroup()).getByRole("radio", { name: "SIMPLE" }),
     ).toBeChecked();
     expect(
       within(combatGroup()).getByRole("radio", { name: "OFF" }),
@@ -176,6 +183,34 @@ describe("App", () => {
     expect(screen.getByText("1/30")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(shipCells()).toHaveLength(12);
+  });
+
+  it("pressing PLAY with the defaults starts a game whose pips pay the simple rate", async () => {
+    const { container } = render(<App />);
+
+    await pressPlay();
+
+    const greenCell = container.querySelector(".score-display--green");
+    const numbers = Array.from(
+      greenCell?.querySelectorAll(".score-display__pip-value") ?? [],
+    ).map((node) => node.textContent);
+    expect(numbers).toEqual(["1", "2", "3", "4", "5"]);
+  });
+
+  it("choosing BONUS before PLAY starts a game whose pips pay the bonus rate", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await user.click(
+      within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    const greenCell = container.querySelector(".score-display--green");
+    const numbers = Array.from(
+      greenCell?.querySelectorAll(".score-display__pip-value") ?? [],
+    ).map((node) => node.textContent);
+    expect(numbers).toEqual(["1", "3", "6", "10", "15"]);
   });
 
   it("pressing PLAY after choosing 5 ships deals a five-a-side game", async () => {
@@ -338,6 +373,9 @@ describe("App", () => {
     await user.click(within(shipsGroup).getByRole("radio", { name: "5" }));
     await user.click(within(roundsGroup()).getByRole("radio", { name: "45" }));
     await user.click(within(combatGroup()).getByRole("radio", { name: "ON" }));
+    await user.click(
+      within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
+    );
     await user.click(screen.getByRole("button", { name: "Quick Guide" }));
 
     expect(
@@ -365,6 +403,9 @@ describe("App", () => {
     ).toBeChecked();
     expect(
       within(combatGroup()).getByRole("radio", { name: "ON" }),
+    ).toBeChecked();
+    expect(
+      within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
     ).toBeChecked();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(vi.mocked(Board).mock.calls.length).toBe(renderCountBefore);

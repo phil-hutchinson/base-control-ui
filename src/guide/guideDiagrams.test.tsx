@@ -19,24 +19,56 @@ function litGaugeSlotCounts(container: HTMLElement, selector: string) {
 }
 
 describe("ScoringDiagram", () => {
-  it("shows three charged nodes, three ships at different fuel levels, an arrow, and +3", () => {
-    const { container, getByText } = render(<ScoringDiagram />);
+  it("draws a six-column, three-row table: node counts, then simple's and bonus's payouts", () => {
+    const { container } = render(<ScoringDiagram />);
 
-    expect(container.querySelectorAll(".node-marker--charged")).toHaveLength(3);
-    expect(
-      Array.from(container.querySelectorAll(".node-countdown")).map(
-        (node) => node.textContent,
-      ),
-    ).toEqual(["3", "1", "2"]);
+    // Eighteen table cells plus the legend line spanning them.
+    const cells = container.querySelectorAll(".guide-diagram__cell");
+    expect(cells).toHaveLength(19);
 
-    const greenShips = container.querySelectorAll(".ship-model--green");
-    expect(greenShips).toHaveLength(3);
-    const litCounts = litGaugeSlotCounts(container, ".ship-model--green");
-    expect(new Set(litCounts).size).toBe(3);
+    const labels = Array.from(
+      container.querySelectorAll(".guide-diagram__label"),
+    ).map((label) => label.textContent);
+    expect(labels).toEqual([
+      "NODES",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "SIMPLE",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "BONUS",
+      "1",
+      "3",
+      "6",
+      "10",
+      "15",
+    ]);
 
-    expect(container.querySelectorAll(".guide-diagram__arrow")).toHaveLength(1);
-    expect(getByText("+3")).toBeInTheDocument();
-    expect(container.querySelectorAll(".ship-model--red")).toHaveLength(0);
+    expect(container.querySelector(".board-square")).toBeNull();
+    expect(container.querySelectorAll(".guide-diagram__arrow")).toHaveLength(0);
+    expect(container.querySelectorAll(".guide-diagram__note")).toHaveLength(0);
+  });
+
+  it("separates the heading row from the figures with one line spanning every column", () => {
+    const { container } = render(<ScoringDiagram />);
+
+    expect(container.querySelectorAll(".guide-diagram__rule")).toHaveLength(1);
+
+    // The line follows the six heading cells, so it sits between the node
+    // counts and SIMPLE's row rather than anywhere else in the table.
+    const cells = Array.from(
+      container.querySelectorAll(".guide-diagram__cell"),
+    );
+    const ruleIndex = cells.findIndex((cell) =>
+      cell.classList.contains("guide-diagram__cell--rule"),
+    );
+    expect(ruleIndex).toBe(6);
   });
 });
 

@@ -31,6 +31,7 @@ function finishedState(overrides: Partial<GameState> = {}): GameState {
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     combatEnabled: true,
+    scoring: "simple",
     ...overrides,
   };
 }
@@ -189,6 +190,7 @@ describe("GameOverPanel", () => {
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
         combatEnabled: true,
+        scoring: "simple",
       };
     }
 
@@ -221,6 +223,7 @@ describe("GameOverPanel", () => {
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
         combatEnabled: true,
+        scoring: "simple",
       };
     }
 

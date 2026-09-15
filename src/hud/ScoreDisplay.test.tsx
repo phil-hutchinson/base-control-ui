@@ -15,6 +15,7 @@ import type {
 import type { PowerLevel } from "../rules/power";
 import type { ChargedNodeCount, NodeState } from "../rules/nodes";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
+import type { ScoringSetting } from "../rules/scoring";
 import { ScoreDisplay } from "./ScoreDisplay";
 
 afterEach(cleanup);
@@ -50,6 +51,7 @@ function buildState(config: {
   ships?: readonly Ship[];
   nodes?: Readonly<Record<string, NodeState>>;
   chargedNodeCount?: ChargedNodeCount;
+  scoring?: ScoringSetting;
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -63,6 +65,7 @@ function buildState(config: {
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: { green: false, red: false },
     combatEnabled: true,
+    scoring: config.scoring ?? "simple",
   };
 }
 
@@ -171,6 +174,91 @@ describe("ScoreDisplay", () => {
     expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
       0,
     );
+  });
+
+  it.each([
+    { scoring: "simple" as const, values: ["1", "2", "3", "4", "5"] },
+    { scoring: "bonus" as const, values: ["1", "3", "6", "10", "15"] },
+  ])(
+    "draws what a turn pays under each pip's count under $scoring scoring",
+    ({ scoring, values }) => {
+      const state = buildState({
+        ships: shipsFor("green", 6),
+        chargedNodeCount: 5,
+        scoring,
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+      );
+
+      const numbers = Array.from(
+        container.querySelectorAll(".score-display__pip-value"),
+      ).map((node) => node.textContent);
+      expect(numbers).toEqual(values);
+    },
+  );
+
+  it.each([
+    { scoring: "simple" as const, values: ["1", "2", "3"] },
+    { scoring: "bonus" as const, values: ["1", "3", "6"] },
+  ])(
+    "truncates the number row with the pips under $scoring scoring",
+    ({ scoring, values }) => {
+      const state = buildState({
+        ships: shipsFor("green", 3),
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+        scoring,
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+      );
+
+      const numbers = Array.from(
+        container.querySelectorAll(".score-display__pip-value"),
+      ).map((node) => node.textContent);
+      expect(numbers).toEqual(values);
+    },
+  );
+
+  it.each(["simple" as const, "bonus" as const])(
+    "marks exactly the number at the count held, in the side's colour, under %s scoring",
+    (scoring) => {
+      const state = buildState({
+        nodes: { H8: "charged", E5: "charged", K5: "inactive" },
+        ships: [
+          ship("green-1", "green", "H8"),
+          ship("green-2", "green", "E5"),
+          ship("red-1", "red", "K5"),
+        ],
+        scoring,
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+      );
+
+      const marked = container.querySelectorAll(
+        ".score-display__pip-value--green",
+      );
+      expect(marked).toHaveLength(1);
+      expect(marked[0]).toHaveTextContent(scoring === "simple" ? "2" : "3");
+    },
+  );
+
+  it("marks no number when the side holds no charged nodes", () => {
+    const state = buildState({ ships: shipsFor("green", 3) });
+
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
+
+    expect(
+      container.querySelectorAll(
+        ".score-display__pip-value--green, .score-display__pip-value--red",
+      ),
+    ).toHaveLength(0);
   });
 
   it("has no static accessibility violations", async () => {

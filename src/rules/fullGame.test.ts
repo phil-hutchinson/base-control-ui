@@ -31,6 +31,7 @@ import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
 } from "./nodes";
+import type { ScoringSetting } from "./scoring";
 import {
   type AttackEffect,
   type MoveEffect,
@@ -171,8 +172,9 @@ interface PlayedGame {
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
  * above, dealt with `fleetSize` ships a side (the app's default six),
- * `chargedNodeCount` charged nodes (the app's default five) and combat on
- * unless `combatEnabled` says otherwise.
+ * `chargedNodeCount` charged nodes (the app's default five), combat on
+ * unless `combatEnabled` says otherwise, and simple scoring unless
+ * `scoring` says otherwise.
  */
 function playFullGame(
   seed: number,
@@ -180,12 +182,14 @@ function playFullGame(
   fleetSize: FleetSize = DEFAULT_FLEET_SIZE,
   chargedNodeCount: ChargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
   combatEnabled = true,
+  scoring: ScoringSetting = "simple",
 ): PlayedGame {
   let state = startingGameState(seed, {
     lengthInRounds,
     fleetSize,
     chargedNodeCount,
     combatEnabled,
+    scoring,
   });
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
@@ -435,6 +439,50 @@ describe.each(CHARGED_NODE_COUNTS)(
   },
 );
 
+describe("a full game, end to end, at bonus scoring (§8.4)", () => {
+  it("collects at least as much as the same game at simple, and both sides' totals only ever rise, at either setting", () => {
+    const seed = 20260819;
+    const lengthInRounds = 100;
+
+    const simpleGame = playFullGame(
+      seed,
+      lengthInRounds,
+      DEFAULT_FLEET_SIZE,
+      DEFAULT_CHARGED_NODE_COUNT,
+      true,
+      "simple",
+    );
+    const bonusGame = playFullGame(
+      seed,
+      lengthInRounds,
+      DEFAULT_FLEET_SIZE,
+      DEFAULT_CHARGED_NODE_COUNT,
+      true,
+      "bonus",
+    );
+
+    expect(bonusGame.finalState.energy.green).toBeGreaterThanOrEqual(
+      simpleGame.finalState.energy.green,
+    );
+    expect(bonusGame.finalState.energy.red).toBeGreaterThanOrEqual(
+      simpleGame.finalState.energy.red,
+    );
+
+    for (const game of [simpleGame, bonusGame]) {
+      let greenRunningTotal = 0;
+      let redRunningTotal = 0;
+      for (const collected of game.greenCollected) {
+        expect(collected.newTotal).toBeGreaterThan(greenRunningTotal);
+        greenRunningTotal = collected.newTotal;
+      }
+      for (const collected of game.redCollected) {
+        expect(collected.newTotal).toBeGreaterThan(redRunningTotal);
+        redRunningTotal = collected.newTotal;
+      }
+    }
+  });
+});
+
 describe("a full game, end to end", () => {
   it("refuses an attack, not only a move and a pass, once the game is over", () => {
     // Built rather than played out, so the attack refusal does not depend
@@ -466,6 +514,7 @@ describe("a full game, end to end", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
       combatEnabled: true,
+      scoring: "simple",
     };
 
     expect(isGameOver(state)).toBe(true);
@@ -646,6 +695,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
       combatEnabled: true,
+      scoring: "simple",
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -696,6 +746,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
       combatEnabled: true,
+      scoring: "simple",
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -745,6 +796,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
       combatEnabled: true,
+      scoring: "simple",
     };
 
     expect(() => runEndOfTurn(state)).not.toThrow();

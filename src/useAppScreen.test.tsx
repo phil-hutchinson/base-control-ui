@@ -14,6 +14,7 @@ describe("useAppScreen", () => {
     expect(result.current.fleetSize).toBe(6);
     expect(result.current.chargedNodeCount).toBe(5);
     expect(result.current.combatEnabled).toBe(false);
+    expect(result.current.scoring).toBe("simple");
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
   });
@@ -44,6 +45,7 @@ describe("useAppScreen", () => {
         fleetSize: 5,
         chargedNodeCount: 4,
         combatEnabled: false,
+        scoring: "simple",
         lengthInRounds: 45,
       }),
     );
@@ -78,6 +80,37 @@ describe("useAppScreen", () => {
 
     expect(dispatch).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ type: "new-game", combatEnabled: true }),
+    );
+  });
+
+  it("carries a chosen scoring setting of bonus into the new-game intent, and keeps it on returning to start", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch));
+
+    act(() => {
+      result.current.setScoring("bonus");
+    });
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", scoring: "bonus" }),
+    );
+
+    act(() => {
+      result.current.handleReturnToStart();
+    });
+
+    expect(result.current.scoring).toBe("bonus");
+
+    dispatch.mockClear();
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", scoring: "bonus" }),
     );
   });
 

@@ -70,6 +70,7 @@ function buildState(config: {
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: config.outOfTime ?? { green: false, red: false },
     combatEnabled: config.combatEnabled ?? true,
+    scoring: "simple",
   };
 }
 

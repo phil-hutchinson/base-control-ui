@@ -3,8 +3,8 @@
 Base Control is a game for two players. Each of you commands a fleet of
 three, four, five or six ships — you choose the size before play begins — on
 a 15 x 15 board, competing for the handful of contested nodes that light up
-across it. Hold a node and it pays you energy every turn. The player with the
-most energy at the end wins.
+across it. Hold a node and it pays you energy every turn, at a rate you choose
+before play begins. The player with the most energy at the end wins.
 
 Each ship carries power, a reserve it spends on every move, and on every attack
 in a game with combat turned on. A single step up, down, left or right is free;
@@ -54,14 +54,16 @@ install, no account, no server.
 > opening position to the final score. Opening it shows a start screen, not the
 > board: the game's name, a choice of how many ships a side (six, five, four or
 > three, six to start), a choice of how many nodes are lit at once (five, four
-> or three, five to start), a choice of whether combat is on or off (off to
-> start), a choice of how many rounds the game lasts (thirty, forty-five, sixty
-> or ninety, thirty to start), a choice of a clock (unlimited, or six, four or
-> two seconds a turn, unlimited to start) and a PLAY button. The start screen
-> also offers a quick guide — a first read for someone who has never played, not
-> a full rules reference — explaining scoring, movement, refuelling and how
-> nodes come and go, with a back button that returns you to the start screen
-> with the five choices exactly as you left them. Changing any of the five
+> or three, five to start), a choice of how scoring works (simple, one energy
+> for each node held, or bonus, where each extra node held at once is worth
+> more than the last, simple to start), a choice of whether combat is on or off
+> (off to start), a choice of how many rounds the game lasts (thirty, forty-five,
+> sixty or ninety, thirty to start), a choice of a clock (unlimited, or six,
+> four or two seconds a turn, unlimited to start) and a PLAY button. The start
+> screen also offers a quick guide — a first read for someone who has never
+> played, not a full rules reference — explaining scoring, movement, refuelling
+> and how nodes come and go, with a back button that returns you to the start
+> screen with the six choices exactly as you left them. Changing any of the six
 > choices starts nothing — the board only appears once PLAY is pressed, dealt
 > with the choices you made. A clock is each player's own time for the whole
 > game, not per turn — a thirty-round game at six seconds a turn gives each of
@@ -128,13 +130,16 @@ install, no account, no server.
 > full six — a ship already full doesn't count towards that. A ship attacks
 > exactly as far as it moves, and a ship holding a node can neither attack nor
 > be attacked while it stands there. A node also pays energy at the end of each
-> turn to the player sitting on it: one energy for each lit node held, so a
-> player standing on several at once collects that many. The app keeps score and
-> shows it, along with how many nodes each player holds and which round the game
-> is in. Once the game reaches the number of rounds you chose, it ends: the
-> player with the most energy wins, an equal score is a draw, and the "New Game"
-> button returns you to the start screen with the same choices still set, ready
-> to play again. There is still no way to save or record a game and no computer
+> turn to the player sitting on it, at a rate you choose before play begins.
+> Simple scoring pays one energy for each lit node held, so a player standing
+> on several at once collects that many. Bonus scoring makes each extra node
+> held at once worth more than the last, so a turn pays 1, 3, 6, 10 or 15. The
+> app keeps score and shows it, along with how many nodes each player holds,
+> what the turn is paying them, and which round the game is in. Once the game
+> reaches the number of rounds you chose, it ends: the player with the most
+> energy wins, an equal score is a draw, and the "New Game" button returns
+> you to the start screen with the same choices still set, ready to play
+> again. There is still no way to save or record a game and no computer
 > opponent to play against. The project is being built up story by story.
 
 ## The rules

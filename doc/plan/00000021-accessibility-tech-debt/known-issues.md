@@ -316,3 +316,22 @@ user cannot tell the two apart by name — only by where each sits on the
 page.
 
 Where: `src/guide/GuideScreen.tsx`.
+
+## From story 85 — simple or bonus scoring
+
+Source: `doc/plan/00000085-add-scoring-calculation-options/implementation-plan.md`
+decision D11, Step 9.
+
+### 1. The hidden score sentence no longer states what a turn pays under bonus
+
+The score cell's visually hidden sentence stays "Green: 24 energy, 3 nodes
+held.", unchanged by this story. Under simple scoring that sentence's node
+count already let a listener work out the turn's rate; under bonus it no
+longer does, since a turn's payout is the triangular total of the nodes held,
+not the count itself. The new number row under each pip carries that rate,
+but it is decorative (`aria-hidden`, like the pips it sits beneath), so a
+screen-reader user does not receive it. The sentence remains accurate — it
+states the true total and the true count — it is simply no longer the whole
+of what the cell shows to a sighted player.
+
+Where: `src/hud/ScoreDisplay.tsx`, `src/board/announcements.ts`.
