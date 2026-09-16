@@ -346,7 +346,24 @@ today's disc and ring, which is a deliberately verifiable halfway point.
 
 ### Step 1 — The rules layer hands over the cost
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as specified — `legalMoves` and `legalAttacks`
+were built by moving the bodies of `legalDestinations` and `legalTargets`
+into the new functions unchanged (returning `ReachEntry[]` instead of
+`Square[]`), and the old names became one-line `.map(entry => entry.destination)`
+projections. `reachFrom`, `allShapesFrom`, `shapeReaching`, `attackReach`,
+`moveRefusalReason` and `attackRefusalReason` were untouched. Added the
+specified tests to `movement.test.ts` (a `legalMoves` describe block pricing
+every §6 shape, agreement with `legalDestinations` in a rich position and two
+empty ones, and a 2-power ship never offering a cost-3 entry; an
+`allShapesFrom` describe block pinning "one shape per square") and to
+`combat.test.ts` (a `legalAttacks` describe block pricing an orthogonal
+neighbour at 0 and an L-square enemy at 2, and agreement with `legalTargets`
+in the same position) — no existing test expectation in `src/rules/` or
+`src/game/` was edited, only new `it` blocks added. `npm run typecheck`,
+`npm run lint` and `npm test` are all green (66 files, 1284 tests, up from
+1278 by exactly the 6 new cases added). No deviation from the plan.
 
 Add `legalMoves(state, shipId)` to `src/rules/movement.ts` and
 `legalAttacks(state, shipId)` to `src/rules/combat.ts`, each returning the

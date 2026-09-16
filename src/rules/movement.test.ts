@@ -14,6 +14,7 @@ import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
   allShapesFrom,
   legalDestinations,
+  legalMoves,
   type MoveRefusalReason,
   moveRefusalReason,
   reachFrom,
@@ -919,6 +920,112 @@ describe("legalDestinations and moveRefusalReason", () => {
         reason,
       );
     }
+  });
+});
+
+describe("legalMoves", () => {
+  it("prices every §6 shape from an unobstructed centre square, for a full-power ship", () => {
+    const state = buildState({ ships: [ship("green-1", "green", "H8", 6)] });
+
+    const costByDestination = new Map(
+      legalMoves(state, "green-1").map((entry) => [
+        squareName(entry.destination),
+        entry.cost,
+      ]),
+    );
+
+    // one square orthogonally
+    expect(costByDestination.get("G8")).toBe(0);
+    expect(costByDestination.get("I8")).toBe(0);
+    expect(costByDestination.get("H7")).toBe(0);
+    expect(costByDestination.get("H9")).toBe(0);
+    // one square diagonally
+    expect(costByDestination.get("G7")).toBe(1);
+    expect(costByDestination.get("G9")).toBe(1);
+    expect(costByDestination.get("I7")).toBe(1);
+    expect(costByDestination.get("I9")).toBe(1);
+    // two squares orthogonally
+    expect(costByDestination.get("F8")).toBe(2);
+    expect(costByDestination.get("J8")).toBe(2);
+    expect(costByDestination.get("H6")).toBe(2);
+    expect(costByDestination.get("H10")).toBe(2);
+    // the L
+    expect(costByDestination.get("J9")).toBe(2);
+    expect(costByDestination.get("J7")).toBe(2);
+    expect(costByDestination.get("F9")).toBe(2);
+    expect(costByDestination.get("F7")).toBe(2);
+    expect(costByDestination.get("I10")).toBe(2);
+    expect(costByDestination.get("I6")).toBe(2);
+    expect(costByDestination.get("G10")).toBe(2);
+    expect(costByDestination.get("G6")).toBe(2);
+    // three squares orthogonally
+    expect(costByDestination.get("K8")).toBe(3);
+    expect(costByDestination.get("E8")).toBe(3);
+    expect(costByDestination.get("H11")).toBe(3);
+    expect(costByDestination.get("H5")).toBe(3);
+    // two squares diagonally
+    expect(costByDestination.get("J10")).toBe(3);
+    expect(costByDestination.get("J6")).toBe(3);
+    expect(costByDestination.get("F10")).toBe(3);
+    expect(costByDestination.get("F6")).toBe(3);
+    // the long knight
+    expect(costByDestination.get("K9")).toBe(3);
+    expect(costByDestination.get("K7")).toBe(3);
+    expect(costByDestination.get("E9")).toBe(3);
+    expect(costByDestination.get("E7")).toBe(3);
+    expect(costByDestination.get("I11")).toBe(3);
+    expect(costByDestination.get("I5")).toBe(3);
+    expect(costByDestination.get("G11")).toBe(3);
+    expect(costByDestination.get("G5")).toBe(3);
+  });
+
+  it("agrees with legalDestinations on which squares are legal, in a rich position and in two empty ones", () => {
+    const richPosition = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "H9")],
+    });
+
+    expect(
+      legalMoves(richPosition, "green-1").map((entry) =>
+        squareName(entry.destination),
+      ),
+    ).toEqual(legalDestinations(richPosition, "green-1").map(squareName));
+    expect(legalDestinations(richPosition, "green-1").length).toBeGreaterThan(
+      0,
+    );
+
+    const notYourTurn = buildState({
+      ships: [ship("green-1", "green", "H8")],
+      sideToMove: "red",
+    });
+    expect(legalMoves(notYourTurn, "green-1")).toEqual([]);
+    expect(legalDestinations(notYourTurn, "green-1")).toEqual([]);
+
+    const trapped = buildState({
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { E7: "depleted" },
+    });
+    expect(legalMoves(trapped, "green-1")).toEqual([]);
+    expect(legalDestinations(trapped, "green-1")).toEqual([]);
+  });
+
+  it("never offers a move costing more than the ship's own power", () => {
+    const state = buildState({ ships: [ship("green-1", "green", "H8", 2)] });
+
+    const entries = legalMoves(state, "green-1");
+
+    expect(entries.length).toBeGreaterThan(0);
+    expect(entries.some((entry) => entry.cost === 3)).toBe(false);
+  });
+});
+
+describe("allShapesFrom", () => {
+  it("gives every reachable square exactly one price — §6's thirty-six shapes never overlap", () => {
+    const entries = allShapesFrom(squareFromName("H8"));
+    const destinationNames = entries.map((entry) =>
+      squareName(entry.destination),
+    );
+
+    expect(new Set(destinationNames).size).toBe(destinationNames.length);
   });
 });
 
