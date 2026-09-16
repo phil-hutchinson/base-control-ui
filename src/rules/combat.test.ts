@@ -12,6 +12,7 @@ import {
   attackReach,
   attackRefusalReason,
   drawReturnPlanet,
+  legalAttacks,
   legalTargets,
 } from "./combat";
 import { applyAttack } from "./ply";
@@ -415,6 +416,45 @@ describe("attackRefusalReason / legalTargets", () => {
         power === 0 ? 4 : power === 1 ? 8 : power === 2 ? 20 : 36,
       );
     }
+  });
+});
+
+describe("legalAttacks", () => {
+  it("prices an enemy one orthogonal step away at 0, and an enemy an L away at 2", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 4),
+        ship("red-orthogonal", "red", "H9", 4),
+        ship("red-l", "red", "J9", 4),
+      ],
+    });
+
+    const costByDestination = new Map(
+      legalAttacks(state, "green-1").map((entry) => [
+        squareName(entry.destination),
+        entry.cost,
+      ]),
+    );
+
+    expect(costByDestination.get("H9")).toBe(0);
+    expect(costByDestination.get("J9")).toBe(2);
+  });
+
+  it("agrees with legalTargets on which squares are legal, in the same position", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 4),
+        ship("red-orthogonal", "red", "H9", 4),
+        ship("red-l", "red", "J9", 4),
+      ],
+    });
+
+    expect(
+      legalAttacks(state, "green-1").map((entry) =>
+        squareName(entry.destination),
+      ),
+    ).toEqual(legalTargets(state, "green-1").map(squareName));
+    expect(legalTargets(state, "green-1").length).toBeGreaterThan(0);
   });
 });
 

@@ -95,7 +95,7 @@ describe("squareLabel", () => {
         square: squareAt("G", 7),
         isPlanet: false,
         occupant: { side: "green", power: 0 },
-        mark: "selected",
+        mark: { kind: "selected" },
       }),
     ).toBe("G7, green ship, power 0 of 6, selected");
   });
@@ -118,54 +118,64 @@ describe("squareLabel", () => {
         isPlanet: false,
         occupant: { side: "green", power: 4 },
         condition: "cannot-move-or-attack",
-        mark: "selected",
+        mark: { kind: "selected" },
       }),
     ).toBe(
       "M10, green ship, power 4 of 6, cannot move or attack this turn, selected",
     );
   });
 
-  it("adds 'can move here' last, on an empty node square", () => {
+  it("adds 'can move here, costs N power' last, on an empty node square", () => {
     expect(
       squareLabel({
         square: squareAt("H", 8),
         isPlanet: false,
         nodeState: "charged",
-        mark: "destination",
+        mark: { kind: "destination", cost: 1 },
       }),
-    ).toBe("H8, charged node, can move here");
+    ).toBe("H8, charged node, can move here, costs 1 power");
   });
 
-  it("adds 'can move here' last, on a plain empty square", () => {
+  it("adds 'can move here, costs N power' last, on a plain empty square", () => {
     expect(
       squareLabel({
         square: squareAt("G", 7),
         isPlanet: false,
-        mark: "destination",
+        mark: { kind: "destination", cost: 2 },
       }),
-    ).toBe("G7, can move here");
+    ).toBe("G7, can move here, costs 2 power");
   });
 
-  it("adds 'can move here' last, on an empty planet", () => {
+  it("adds 'can move here, costs N power' last, on an empty planet", () => {
     expect(
       squareLabel({
         square: squareAt("D", 15),
         isPlanet: true,
-        mark: "destination",
+        mark: { kind: "destination", cost: 3 },
       }),
-    ).toBe("D15, planet, can move here");
+    ).toBe("D15, planet, can move here, costs 3 power");
   });
 
-  it("names the one target outcome, last, after the power level", () => {
+  it("states the cost even when a move is free", () => {
+    expect(
+      squareLabel({
+        square: squareAt("G", 7),
+        isPlanet: false,
+        mark: { kind: "destination", cost: 0 },
+      }),
+    ).toBe("G7, can move here, costs 0 power");
+  });
+
+  it("names the one target outcome, last, after the power level, with the cost ahead of it", () => {
     expect(
       squareLabel({
         square: squareAt("H", 9),
         isPlanet: false,
         occupant: { side: "red", power: 1 },
-        mark: "target",
+        mark: { kind: "target", cost: 2 },
       }),
     ).toBe(
-      "H9, red ship, power 1 of 6, can attack here, both ships would return to planets",
+      "H9, red ship, power 1 of 6, can attack here, costs 2 power, both ships would return to planets",
     );
   });
 
@@ -175,10 +185,23 @@ describe("squareLabel", () => {
         square: squareAt("H", 9),
         isPlanet: false,
         occupant: { side: "red", power: 4 },
-        mark: "target",
+        mark: { kind: "target", cost: 3 },
       }),
     ).toBe(
-      "H9, red ship, power 4 of 6, can attack here, both ships would return to planets",
+      "H9, red ship, power 4 of 6, can attack here, costs 3 power, both ships would return to planets",
+    );
+  });
+
+  it("states the cost even when a shot is free", () => {
+    expect(
+      squareLabel({
+        square: squareAt("H", 9),
+        isPlanet: false,
+        occupant: { side: "red", power: 4 },
+        mark: { kind: "target", cost: 0 },
+      }),
+    ).toBe(
+      "H9, red ship, power 4 of 6, can attack here, costs 0 power, both ships would return to planets",
     );
   });
 

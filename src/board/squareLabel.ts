@@ -15,7 +15,11 @@
 //
 // A fight has one outcome (rules.md §7), so a target square's mark is a
 // fixed phrase saying what attacking there does, the same as the selected
-// and destination marks.
+// and destination marks. A destination or a target also carries the cost of
+// the move or the shot that reaches it (rules.md §6's price for the shape,
+// §7's charge for the shot), and that cost is stated even when it is zero,
+// for the same reason the power level is: a listener hearing no cost clause
+// could not otherwise tell a free move from an app that never prices one.
 
 import { squareName, type Square } from "../rules/board";
 import type { Side } from "../rules/fleet";
@@ -33,16 +37,27 @@ export interface SquareOccupant {
  * square, a square the selected ship may legally move to, or a square it may
  * legally attack. One exclusive slot, because the three cannot co-occur: the
  * selected ship's own square is neither a destination nor a target, a
- * destination must be empty, and a target must hold an enemy ship.
+ * destination must be empty, and a target must hold an enemy ship. A
+ * destination or a target carries the `cost` (rules.md §6's price for the
+ * shape that reaches it, §7's charge for the shot) that the rules layer
+ * already computed when it decided the square was legal at all.
  */
-export type SquareMark = "selected" | "destination" | "target";
+export type SquareMark =
+  | { readonly kind: "selected" }
+  | { readonly kind: "destination"; readonly cost: PowerLevel }
+  | { readonly kind: "target"; readonly cost: PowerLevel };
 
-/** How each mark reads in a square's accessible name. */
-const MARK_WORDING: Record<SquareMark, string> = {
-  selected: "selected",
-  destination: "can move here",
-  target: "can attack here, both ships would return to planets",
-};
+/** How a mark reads in a square's accessible name. */
+function markWording(mark: SquareMark): string {
+  switch (mark.kind) {
+    case "selected":
+      return "selected";
+    case "destination":
+      return `can move here, costs ${mark.cost} power`;
+    case "target":
+      return `can attack here, costs ${mark.cost} power, both ships would return to planets`;
+  }
+}
 
 /**
  * A ship's own condition, independent of the current selection: it can
@@ -88,7 +103,7 @@ export function squareLabel({
     segments.push(CONDITION_WORDING[condition]);
   }
   if (mark) {
-    segments.push(MARK_WORDING[mark]);
+    segments.push(markWording(mark));
   }
   return segments.join(", ");
 }

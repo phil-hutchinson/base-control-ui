@@ -312,7 +312,7 @@ describe("App", () => {
 
     expect(
       screen.getByRole("gridcell", {
-        name: "O2, red ship, power 6 of 6, can attack here, both ships would return to planets",
+        name: "O2, red ship, power 6 of 6, can attack here, costs 3 power, both ships would return to planets",
       }),
     ).toBeInTheDocument();
   });

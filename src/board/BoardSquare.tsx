@@ -1,12 +1,17 @@
 // One square's stacked contents: a planet's drawing beneath everything else,
 // then the node marker beneath any ship standing on it, then the node's
 // countdown number (rules.md §8.3) above the ship, then, during ship
-// selection, one of three selection markings — a legal destination, a legal
-// attack target, or the selected ship's own square — all sharing the square
-// in a single-cell grid rather than absolute positioning (see
-// BoardSquare.css). A fight has one outcome, so the target ring is a plain
-// cue rather than a prediction; what attacking here does is spoken in the
-// square's accessible name, not drawn.
+// selection, a legal destination or a legal attack target's marking, sharing
+// the square in a single-cell grid rather than absolute positioning (see
+// BoardSquare.css). The selected ship's own square carries no drawing at
+// all - only its accessible name says "selected". A destination's mark
+// draws a free move's disc or, when the move costs power, that many fuel
+// bars in its place; a target's mark always draws its ring, because the
+// ring is what tells an attack from a move, and adds the same bars inside
+// it when the shot costs power. The bars are the same mark a ship's own
+// power gauge draws on its hull (rules.md §6, §7), in the interaction
+// accent rather than a side's colour, because they belong to the "you are
+// choosing a move" layer, not to whichever ship stands on the square.
 //
 // A planet's drawing is drawn whether or not the square is occupied - there
 // is no occupancy condition anywhere below. A ship simply draws over it, as
@@ -21,7 +26,14 @@ import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
+import type { PowerLevel } from "../rules/power";
 import { ShipModel } from "../ships/ShipModel";
+import {
+  GAUGE_BAR_LENGTH,
+  GAUGE_BAR_STROKE_WIDTH,
+  GAUGE_BAR_UNDERLAY_STROKE_WIDTH,
+  GAUGE_UNDERLAY_COLOR,
+} from "../ships/shipArt";
 import { Planet } from "./Planet";
 import type { PlanetArt } from "./planetArt";
 import { NodeMarker } from "./NodeMarker";
@@ -54,61 +66,88 @@ export interface BoardSquareProps {
 const DESTINATION_DISC_RADIUS = 9;
 const TARGET_RING_RADIUS = 32;
 const TARGET_RING_STROKE_WIDTH = 6;
-const SELECTED_BRACKET_INSET = 9;
-const SELECTED_BRACKET_LENGTH = 20;
-const SELECTED_STROKE_WIDTH = 6;
 const CONDITION_BAR_WIDTH = 30;
 const CONDITION_BAR_HEIGHT = 5;
 const CONDITION_BAR_BOTTOM_INSET = 8;
 const CONDITION_BAR_STROKE_WIDTH = 2;
 const DAMPENED_OPACITY = 0.45;
 
-interface BracketCorner {
-  readonly x: number;
-  readonly y: number;
-  readonly armX: 1 | -1;
-  readonly armY: 1 | -1;
+// The vertical gap between stacked fuel bars: the hull gauge's own row
+// spacing, GAUGE_SLOT_POSITIONS' two rows sitting at y 10 and y 26 (16
+// apart) - so a stack of bars reads as rows of the same gauge, not a new
+// spacing invented for the board.
+const COST_BAR_ROW_SPACING = 16;
+
+/**
+ * The y position of each bar in a stack of `count` bars, centred on the
+ * square's centre (50) in the 0-100 viewBox: one bar sits at 50; more bars
+ * spread outward from there, `COST_BAR_ROW_SPACING` apart.
+ */
+function costBarPositions(count: number): readonly number[] {
+  const offset = (count - 1) / 2;
+  return Array.from(
+    { length: count },
+    (_, index) => 50 + (index - offset) * COST_BAR_ROW_SPACING,
+  );
 }
 
-/** The four corners the selected-ship marking's brackets sit at, inset from the square's edges. */
-const BRACKET_CORNERS: readonly BracketCorner[] = [
-  { x: SELECTED_BRACKET_INSET, y: SELECTED_BRACKET_INSET, armX: 1, armY: 1 },
-  {
-    x: 100 - SELECTED_BRACKET_INSET,
-    y: SELECTED_BRACKET_INSET,
-    armX: -1,
-    armY: 1,
-  },
-  {
-    x: 100 - SELECTED_BRACKET_INSET,
-    y: 100 - SELECTED_BRACKET_INSET,
-    armX: -1,
-    armY: -1,
-  },
-  {
-    x: SELECTED_BRACKET_INSET,
-    y: 100 - SELECTED_BRACKET_INSET,
-    armX: 1,
-    armY: -1,
-  },
-];
-
-/** One corner bracket's path: two short arms meeting at the corner point. */
-function bracketPath({ x, y, armX, armY }: BracketCorner): string {
-  const horizontal = x + armX * SELECTED_BRACKET_LENGTH;
-  const vertical = y + armY * SELECTED_BRACKET_LENGTH;
-  return `M ${horizontal} ${y} L ${x} ${y} L ${x} ${vertical}`;
+/**
+ * A move or attack's price, drawn as that many of the hull gauge's own bar
+ * (rules.md §6, §7) - the same double stroke, a dark underlay then the
+ * interaction accent on top, round-capped, so the mark reads as the same
+ * object as the gauge rather than a second notation for the same thing.
+ * The accent is `currentColor`, never a side's colour, because the bar says
+ * what the move costs, not whose ship is moving.
+ */
+function CostBarStack({ cost }: { readonly cost: number }) {
+  return (
+    <g strokeLinecap="round">
+      {costBarPositions(cost).map((y, index) => (
+        <g key={index} data-cost-bar={index}>
+          <line
+            x1={50 - GAUGE_BAR_LENGTH / 2}
+            y1={y}
+            x2={50 + GAUGE_BAR_LENGTH / 2}
+            y2={y}
+            stroke={GAUGE_UNDERLAY_COLOR}
+            strokeWidth={GAUGE_BAR_UNDERLAY_STROKE_WIDTH}
+          />
+          <line
+            x1={50 - GAUGE_BAR_LENGTH / 2}
+            y1={y}
+            x2={50 + GAUGE_BAR_LENGTH / 2}
+            y2={y}
+            stroke="currentColor"
+            strokeWidth={GAUGE_BAR_STROKE_WIDTH}
+          />
+        </g>
+      ))}
+    </g>
+  );
 }
 
-/** A small solid disc marking a square the selected ship may legally move to. */
-function DestinationMark() {
+/**
+ * A free destination's small solid disc, or, when the move costs power, that
+ * many fuel bars in its place - the same bar the ship's own power gauge
+ * draws on its hull.
+ */
+function DestinationMark({ cost }: { readonly cost: PowerLevel }) {
   return (
     <svg
       className="board-square__mark board-square__mark--destination"
       viewBox="0 0 100 100"
       aria-hidden="true"
     >
-      <circle cx={50} cy={50} r={DESTINATION_DISC_RADIUS} fill="currentColor" />
+      {cost === 0 ? (
+        <circle
+          cx={50}
+          cy={50}
+          r={DESTINATION_DISC_RADIUS}
+          fill="currentColor"
+        />
+      ) : (
+        <CostBarStack cost={cost} />
+      )}
     </svg>
   );
 }
@@ -117,9 +156,12 @@ function DestinationMark() {
  * A large hollow ring marking a square the selected ship may legally
  * attack, centred on the square so it reads around an enemy ship icon
  * rather than under one. Distinct from the destination's small solid disc
- * by both shape and size, so the two survive greyscale.
+ * by both shape and size, so the two survive greyscale. The ring is always
+ * drawn, even when the shot is free, because the ring is what tells an
+ * attack from a move; when the shot costs power, the same fuel bars a
+ * destination shows are drawn inside it, over the enemy ship.
  */
-function TargetMark() {
+function TargetMark({ cost }: { readonly cost: PowerLevel }) {
   return (
     <svg
       className="board-square__mark board-square__mark--target"
@@ -134,28 +176,7 @@ function TargetMark() {
         stroke="currentColor"
         strokeWidth={TARGET_RING_STROKE_WIDTH}
       />
-    </svg>
-  );
-}
-
-/** Four inset corner brackets marking the selected ship's own square. */
-function SelectedMark() {
-  return (
-    <svg
-      className="board-square__mark board-square__mark--selected"
-      viewBox="0 0 100 100"
-      aria-hidden="true"
-    >
-      {BRACKET_CORNERS.map((corner) => (
-        <path
-          key={`${corner.armX}-${corner.armY}`}
-          d={bracketPath(corner)}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={SELECTED_STROKE_WIDTH}
-          strokeLinecap="round"
-        />
-      ))}
+      {cost > 0 && <CostBarStack cost={cost} />}
     </svg>
   );
 }
@@ -229,9 +250,8 @@ export function BoardSquare({
           color={nodeState === "depleted" ? "white" : "black"}
         />
       )}
-      {mark === "destination" && <DestinationMark />}
-      {mark === "selected" && <SelectedMark />}
-      {mark === "target" && <TargetMark />}
+      {mark?.kind === "destination" && <DestinationMark cost={mark.cost} />}
+      {mark?.kind === "target" && <TargetMark cost={mark.cost} />}
       {condition === "cannot-move-or-attack" && <CannotMoveOrAttackMark />}
     </div>
   );

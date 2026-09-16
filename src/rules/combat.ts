@@ -152,21 +152,25 @@ export function attackRefusalReason(
 }
 
 /**
- * Every square `shipId` may legally attack in the given state: every square
- * within the affordable subset of its §6 movement reach holding an enemy
- * ship — only an enemy ship on a passed-over square blocks the shot — with
- * §9's game-over check applied first. Empty once the game is over, once
- * combat is off for this game (rules.md §7), once the attacker is trapped on
- * a depleted node, or once the attacker holds a charged node. A ship trapped
- * on a depleted node is never offered as a target, exactly as a ship on a
- * charged node never is. There is no separate combat-off check here: the
- * final filter already keeps only squares `attackRefusalReason` approves,
- * and that function refuses every square once combat is off.
+ * Every square `shipId` may legally attack in the given state, each still
+ * carrying its full `ReachEntry` — destination, passed-over squares and the
+ * shot's cost (rules.md §6, §7): every square within the affordable subset
+ * of its §6 movement reach holding an enemy ship — only an enemy ship on a
+ * passed-over square blocks the shot — with §9's game-over check applied
+ * first. The field is called `destination` here too, even though it names
+ * the square holding the ship being shot at, exactly as `attackReach` above
+ * already returns it. Empty once the game is over, once combat is off for
+ * this game (rules.md §7), once the attacker is trapped on a depleted node,
+ * or once the attacker holds a charged node. A ship trapped on a depleted
+ * node is never offered as a target, exactly as a ship on a charged node
+ * never is. There is no separate combat-off check here: the final filter
+ * already keeps only squares `attackRefusalReason` approves, and that
+ * function refuses every square once combat is off.
  */
-export function legalTargets(
+export function legalAttacks(
   state: GameState,
   shipId: ShipId,
-): readonly Square[] {
+): readonly ReachEntry[] {
   if (isGameOver(state)) {
     return [];
   }
@@ -181,11 +185,22 @@ export function legalTargets(
     return [];
   }
 
-  return reachFrom(attacker.square, attacker.power)
-    .map((entry) => entry.destination)
-    .filter(
-      (square) => attackRefusalReason(state, shipId, square) === undefined,
-    );
+  return reachFrom(attacker.square, attacker.power).filter(
+    (entry) =>
+      attackRefusalReason(state, shipId, entry.destination) === undefined,
+  );
+}
+
+/**
+ * Every square `shipId` may legally attack in the given state: the
+ * square-only projection of `legalAttacks`, for the many callers that need
+ * only the target square and not its cost.
+ */
+export function legalTargets(
+  state: GameState,
+  shipId: ShipId,
+): readonly Square[] {
+  return legalAttacks(state, shipId).map((entry) => entry.destination);
 }
 
 /**

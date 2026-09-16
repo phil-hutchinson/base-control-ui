@@ -470,18 +470,19 @@ export function moveRefusalReason(
 }
 
 /**
- * Every square `shipId` may legally move to in the given state: the
- * affordable subset of its §6 reach, filtered by path and destination
- * occupancy - only an enemy ship on a passed-over square blocks. Empty once
- * the game is over, when the ship does not belong to the side to move, or
- * when the ship is trapped (rules.md §8.5). An uncharged destination needs no
- * filter of its own here — `moveRefusalReason` already excludes it below —
- * flying over one is still free, only landing is barred.
+ * Every square `shipId` may legally move to in the given state, each still
+ * carrying its full `ReachEntry` — destination, passed-over squares and cost
+ * (rules.md §6): the affordable subset of its §6 reach, filtered by path and
+ * destination occupancy - only an enemy ship on a passed-over square blocks.
+ * Empty once the game is over, when the ship does not belong to the side to
+ * move, or when the ship is trapped (rules.md §8.5). An uncharged destination
+ * needs no filter of its own here — `moveRefusalReason` already excludes it
+ * below — flying over one is still free, only landing is barred.
  */
-export function legalDestinations(
+export function legalMoves(
   state: GameState,
   shipId: ShipId,
-): readonly Square[] {
+): readonly ReachEntry[] {
   if (isGameOver(state)) {
     return [];
   }
@@ -491,12 +492,22 @@ export function legalDestinations(
     return [];
   }
 
-  return reachFrom(ship.square, ship.power)
-    .map((entry) => entry.destination)
-    .filter(
-      (destination) =>
-        moveRefusalReason(state, shipId, destination) === undefined,
-    );
+  return reachFrom(ship.square, ship.power).filter(
+    (entry) =>
+      moveRefusalReason(state, shipId, entry.destination) === undefined,
+  );
+}
+
+/**
+ * Every square `shipId` may legally move to in the given state: the
+ * square-only projection of `legalMoves`, for the many callers that need
+ * only the destination and not its cost.
+ */
+export function legalDestinations(
+  state: GameState,
+  shipId: ShipId,
+): readonly Square[] {
+  return legalMoves(state, shipId).map((entry) => entry.destination);
 }
 
 /**

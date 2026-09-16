@@ -84,10 +84,15 @@ install, no account, no server.
 > player's ships still topping up power on a planet, up to a full six. A ship
 > already full doesn't count towards that. Green goes first, and each player
 > moves one ship — or attacks with one, when combat is on — by mouse or by
-> keyboard. Every game deals a different opening board: it opens with as many
-> lit nodes as you chose and three still waiting — eight nodes in all at five,
-> seven at four, six at three. The lit ones are chosen at random too, but none
-> of them carries a countdown yet, so at the start of the game they are all
+> keyboard. Picking a ship shows you where it can go and what each move would
+> cost: a dot on every square it can reach for free, and elsewhere the same
+> small bars the ship's own power gauge shows — one bar for one point of power,
+> two for two, three for three. With combat on, a ship it can strike is ringed,
+> with the same bars inside the ring when the shot costs power, and a bare ring
+> when it is free. Every game deals a different opening board: it opens with as
+> many lit nodes as you chose and three still waiting — eight nodes in all at
+> five, seven at four, six at three. The lit ones are chosen at random too, but
+> none of them carries a countdown yet, so at the start of the game they are all
 > exactly as fresh as each other — a lit node only starts running down once a
 > ship lands on it. Each waiting node carries one, two or three rings, and the
 > one with three rings is the one that lights next. A ship can fly straight over

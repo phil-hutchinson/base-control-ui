@@ -6,6 +6,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { ShipCondition } from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
 import { PLANET_ART } from "./planetArt";
+import {
+  GAUGE_BAR_LENGTH,
+  GAUGE_BAR_STROKE_WIDTH,
+  GAUGE_BAR_UNDERLAY_STROKE_WIDTH,
+  GAUGE_UNDERLAY_COLOR,
+} from "../ships/shipArt";
 
 const SAMPLE_PLANET = PLANET_ART[0];
 
@@ -164,7 +170,11 @@ describe("BoardSquare", () => {
 
   it("renders the destination mark when marked as a legal destination, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="destination" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "destination", cost: 0 }}
+      />,
     );
     const { container: unmarked } = render(
       <BoardSquare isPlanet={false} squareName="H8" />,
@@ -178,23 +188,25 @@ describe("BoardSquare", () => {
     ).toBeNull();
   });
 
-  it("renders the selected mark when marked as selected, and not otherwise", () => {
-    const { container: marked } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="selected" />,
-    );
-    const { container: unmarked } = render(
-      <BoardSquare isPlanet={false} squareName="H8" />,
+  it("renders no mark at all when marked as selected", () => {
+    const { container } = render(
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "selected" }}
+      />,
     );
 
-    expect(
-      marked.querySelector(".board-square__mark--selected"),
-    ).toBeInTheDocument();
-    expect(unmarked.querySelector(".board-square__mark--selected")).toBeNull();
+    expect(container.querySelectorAll(".board-square__mark")).toHaveLength(0);
   });
 
   it("renders the target ring when marked as a legal attack target, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="target" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "target", cost: 0 }}
+      />,
     );
     const { container: unmarked } = render(
       <BoardSquare isPlanet={false} squareName="H8" />,
@@ -208,10 +220,18 @@ describe("BoardSquare", () => {
 
   it("draws the target ring hollow and distinct from the destination's solid disc", () => {
     const { container: target } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="target" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "target", cost: 0 }}
+      />,
     );
     const { container: destination } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="destination" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "destination", cost: 0 }}
+      />,
     );
 
     const ring = target.querySelector(".board-square__mark--target circle");
@@ -225,16 +245,19 @@ describe("BoardSquare", () => {
     );
   });
 
-  it("renders exactly one mark for the target square, never alongside destination or selected", () => {
+  it("renders exactly one mark for the target square, never alongside destination", () => {
     const { container } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="target" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "target", cost: 0 }}
+      />,
     );
 
     expect(container.querySelectorAll(".board-square__mark")).toHaveLength(1);
     expect(
       container.querySelector(".board-square__mark--destination"),
     ).toBeNull();
-    expect(container.querySelector(".board-square__mark--selected")).toBeNull();
   });
 
   it("renders the hollow bar and the dampened class for cannot-move-or-attack", () => {
@@ -260,23 +283,21 @@ describe("BoardSquare", () => {
     expect(bar).toHaveAttribute("fill", "none");
   });
 
-  it("renders a condition mark and a selection mark together", () => {
+  it("renders a condition mark and nothing else for a pinned, selected square", () => {
     const { container } = render(
       <BoardSquare
         isPlanet={false}
         squareName="H8"
         occupant={{ side: "green", power: 0 }}
         condition="cannot-move-or-attack"
-        mark="selected"
+        mark={{ kind: "selected" }}
       />,
     );
 
     expect(
       container.querySelector(".board-square__mark--cannot-move-or-attack"),
     ).toBeInTheDocument();
-    expect(
-      container.querySelector(".board-square__mark--selected"),
-    ).toBeInTheDocument();
+    expect(container.querySelectorAll(".board-square__mark")).toHaveLength(1);
   });
 
   it("renders exactly what it rendered before condition existed, when no condition is given", () => {
@@ -286,7 +307,7 @@ describe("BoardSquare", () => {
         squareName="H8"
         nodeState="inactive"
         occupant={{ side: "red", power: 3 }}
-        mark="destination"
+        mark={{ kind: "destination", cost: 0 }}
       />,
     );
 
@@ -295,6 +316,129 @@ describe("BoardSquare", () => {
     expect(
       container.querySelector(".board-square__mark--destination"),
     ).toBeInTheDocument();
+  });
+
+  it("draws the destination's disc only when free, and that many fuel bars otherwise", () => {
+    const { container: free } = render(
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "destination", cost: 0 }}
+      />,
+    );
+    expect(
+      free.querySelector(".board-square__mark--destination circle"),
+    ).toBeInTheDocument();
+    expect(free.querySelectorAll("[data-cost-bar]")).toHaveLength(0);
+
+    for (const cost of [1, 2, 3] as const) {
+      const { container } = render(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          mark={{ kind: "destination", cost }}
+        />,
+      );
+      expect(
+        container.querySelector(".board-square__mark--destination circle"),
+      ).toBeNull();
+      expect(container.querySelectorAll("[data-cost-bar]")).toHaveLength(cost);
+    }
+  });
+
+  it("draws the target's ring at every cost, adding that many fuel bars alongside it", () => {
+    for (const cost of [0, 1, 2, 3] as const) {
+      const { container } = render(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          mark={{ kind: "target", cost }}
+        />,
+      );
+      expect(
+        container.querySelector(".board-square__mark--target circle"),
+      ).toBeInTheDocument();
+      expect(container.querySelectorAll("[data-cost-bar]")).toHaveLength(cost);
+    }
+  });
+
+  it("draws each fuel bar as the gauge's own double stroke", () => {
+    const { container } = render(
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "destination", cost: 1 }}
+      />,
+    );
+
+    const lines = container.querySelectorAll("[data-cost-bar] line");
+    expect(lines).toHaveLength(2);
+    const [underlay, top] = Array.from(lines);
+    expect(underlay).toHaveAttribute("stroke", GAUGE_UNDERLAY_COLOR);
+    expect(underlay).toHaveAttribute(
+      "stroke-width",
+      String(GAUGE_BAR_UNDERLAY_STROKE_WIDTH),
+    );
+    expect(top).toHaveAttribute("stroke", "currentColor");
+    expect(top).toHaveAttribute("stroke-width", String(GAUGE_BAR_STROKE_WIDTH));
+    for (const line of [underlay, top]) {
+      expect(line).toHaveAttribute("x1", String(50 - GAUGE_BAR_LENGTH / 2));
+      expect(line).toHaveAttribute("x2", String(50 + GAUGE_BAR_LENGTH / 2));
+    }
+    expect(
+      container.querySelector("[data-cost-bar]")?.parentElement,
+    ).toHaveAttribute("stroke-linecap", "round");
+  });
+
+  it("centres and spreads a fuel bar stack symmetrically, keeping the three-bar stack inside the target ring", () => {
+    for (const cost of [1, 2, 3] as const) {
+      const { container } = render(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          mark={{ kind: "target", cost }}
+        />,
+      );
+
+      const bars = Array.from(container.querySelectorAll("[data-cost-bar]"));
+      const ys = bars.map((bar) => {
+        const line = bar.querySelector("line");
+        return Number(line?.getAttribute("y1"));
+      });
+      const average = ys.reduce((sum, y) => sum + y, 0) / ys.length;
+      expect(average).toBeCloseTo(50);
+
+      const ring = container.querySelector(
+        ".board-square__mark--target circle",
+      );
+      const ringInnerEdge =
+        Number(ring?.getAttribute("r")) -
+        Number(ring?.getAttribute("stroke-width")) / 2;
+
+      const topLine = bars[0].querySelector("line");
+      const x1 = Number(topLine?.getAttribute("x1"));
+      const y1 = Number(topLine?.getAttribute("y1"));
+      const halfLength = 50 - x1;
+      const outermostReach =
+        Math.hypot(halfLength, Math.abs(y1 - 50)) +
+        GAUGE_BAR_UNDERLAY_STROKE_WIDTH / 2;
+
+      if (cost === 3) {
+        expect(outermostReach).toBeLessThan(ringInnerEdge);
+      }
+    }
+  });
+
+  it("draws as many bars as the cost says, with no built-in ceiling", () => {
+    const { container } = render(
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "destination", cost: 4 }}
+      />,
+    );
+
+    expect(container.querySelectorAll("[data-cost-bar]")).toHaveLength(4);
   });
 
   it("reports no axe violations for any condition, and keeps every mark out of the accessibility tree", async () => {
@@ -309,7 +453,7 @@ describe("BoardSquare", () => {
           squareName="H8"
           occupant={{ side: "green", power: 1 }}
           condition={condition}
-          mark="selected"
+          mark={{ kind: "selected" }}
         />,
       );
 
