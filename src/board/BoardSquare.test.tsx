@@ -178,18 +178,12 @@ describe("BoardSquare", () => {
     ).toBeNull();
   });
 
-  it("renders the selected mark when marked as selected, and not otherwise", () => {
-    const { container: marked } = render(
+  it("renders no mark at all when marked as selected", () => {
+    const { container } = render(
       <BoardSquare isPlanet={false} squareName="H8" mark="selected" />,
     );
-    const { container: unmarked } = render(
-      <BoardSquare isPlanet={false} squareName="H8" />,
-    );
 
-    expect(
-      marked.querySelector(".board-square__mark--selected"),
-    ).toBeInTheDocument();
-    expect(unmarked.querySelector(".board-square__mark--selected")).toBeNull();
+    expect(container.querySelectorAll(".board-square__mark")).toHaveLength(0);
   });
 
   it("renders the target ring when marked as a legal attack target, and not otherwise", () => {
@@ -260,7 +254,7 @@ describe("BoardSquare", () => {
     expect(bar).toHaveAttribute("fill", "none");
   });
 
-  it("renders a condition mark and a selection mark together", () => {
+  it("renders a condition mark and nothing else for a pinned, selected square", () => {
     const { container } = render(
       <BoardSquare
         isPlanet={false}
@@ -274,9 +268,7 @@ describe("BoardSquare", () => {
     expect(
       container.querySelector(".board-square__mark--cannot-move-or-attack"),
     ).toBeInTheDocument();
-    expect(
-      container.querySelector(".board-square__mark--selected"),
-    ).toBeInTheDocument();
+    expect(container.querySelectorAll(".board-square__mark")).toHaveLength(1);
   });
 
   it("renders exactly what it rendered before condition existed, when no condition is given", () => {

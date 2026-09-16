@@ -1,12 +1,12 @@
 // One square's stacked contents: a planet's drawing beneath everything else,
 // then the node marker beneath any ship standing on it, then the node's
 // countdown number (rules.md §8.3) above the ship, then, during ship
-// selection, one of three selection markings — a legal destination, a legal
-// attack target, or the selected ship's own square — all sharing the square
-// in a single-cell grid rather than absolute positioning (see
-// BoardSquare.css). A fight has one outcome, so the target ring is a plain
-// cue rather than a prediction; what attacking here does is spoken in the
-// square's accessible name, not drawn.
+// selection, a legal destination or a legal attack target's marking, sharing
+// the square in a single-cell grid rather than absolute positioning (see
+// BoardSquare.css). The selected ship's own square carries no drawing at
+// all - only its accessible name says "selected". A fight has one outcome,
+// so the target ring is a plain cue rather than a prediction; what attacking
+// here does is spoken in the square's accessible name, not drawn.
 //
 // A planet's drawing is drawn whether or not the square is occupied - there
 // is no occupancy condition anywhere below. A ship simply draws over it, as
@@ -54,51 +54,11 @@ export interface BoardSquareProps {
 const DESTINATION_DISC_RADIUS = 9;
 const TARGET_RING_RADIUS = 32;
 const TARGET_RING_STROKE_WIDTH = 6;
-const SELECTED_BRACKET_INSET = 9;
-const SELECTED_BRACKET_LENGTH = 20;
-const SELECTED_STROKE_WIDTH = 6;
 const CONDITION_BAR_WIDTH = 30;
 const CONDITION_BAR_HEIGHT = 5;
 const CONDITION_BAR_BOTTOM_INSET = 8;
 const CONDITION_BAR_STROKE_WIDTH = 2;
 const DAMPENED_OPACITY = 0.45;
-
-interface BracketCorner {
-  readonly x: number;
-  readonly y: number;
-  readonly armX: 1 | -1;
-  readonly armY: 1 | -1;
-}
-
-/** The four corners the selected-ship marking's brackets sit at, inset from the square's edges. */
-const BRACKET_CORNERS: readonly BracketCorner[] = [
-  { x: SELECTED_BRACKET_INSET, y: SELECTED_BRACKET_INSET, armX: 1, armY: 1 },
-  {
-    x: 100 - SELECTED_BRACKET_INSET,
-    y: SELECTED_BRACKET_INSET,
-    armX: -1,
-    armY: 1,
-  },
-  {
-    x: 100 - SELECTED_BRACKET_INSET,
-    y: 100 - SELECTED_BRACKET_INSET,
-    armX: -1,
-    armY: -1,
-  },
-  {
-    x: SELECTED_BRACKET_INSET,
-    y: 100 - SELECTED_BRACKET_INSET,
-    armX: 1,
-    armY: -1,
-  },
-];
-
-/** One corner bracket's path: two short arms meeting at the corner point. */
-function bracketPath({ x, y, armX, armY }: BracketCorner): string {
-  const horizontal = x + armX * SELECTED_BRACKET_LENGTH;
-  const vertical = y + armY * SELECTED_BRACKET_LENGTH;
-  return `M ${horizontal} ${y} L ${x} ${y} L ${x} ${vertical}`;
-}
 
 /** A small solid disc marking a square the selected ship may legally move to. */
 function DestinationMark() {
@@ -134,28 +94,6 @@ function TargetMark() {
         stroke="currentColor"
         strokeWidth={TARGET_RING_STROKE_WIDTH}
       />
-    </svg>
-  );
-}
-
-/** Four inset corner brackets marking the selected ship's own square. */
-function SelectedMark() {
-  return (
-    <svg
-      className="board-square__mark board-square__mark--selected"
-      viewBox="0 0 100 100"
-      aria-hidden="true"
-    >
-      {BRACKET_CORNERS.map((corner) => (
-        <path
-          key={`${corner.armX}-${corner.armY}`}
-          d={bracketPath(corner)}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={SELECTED_STROKE_WIDTH}
-          strokeLinecap="round"
-        />
-      ))}
     </svg>
   );
 }
@@ -230,7 +168,6 @@ export function BoardSquare({
         />
       )}
       {mark === "destination" && <DestinationMark />}
-      {mark === "selected" && <SelectedMark />}
       {mark === "target" && <TargetMark />}
       {condition === "cannot-move-or-attack" && <CannotMoveOrAttackMark />}
     </div>

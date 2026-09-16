@@ -14,7 +14,7 @@
   grid-area: 1 / 1;
 }
 
-/* The interaction markings (destination, selected, and the ship condition)
+/* The interaction markings (destination, target, and the ship condition)
    share one accent, kept distinct from the side colors, the node marker's
    gold and grey/white artwork and the focus-ring amber, so they read as one
    "you are choosing a move" layer rather than game-state artwork. They

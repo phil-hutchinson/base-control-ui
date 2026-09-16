@@ -335,3 +335,24 @@ states the true total and the true count — it is simply no longer the whole
 of what the cell shows to a sighted player.
 
 Where: `src/hud/ScoreDisplay.tsx`, `src/board/announcements.ts`.
+
+## From story 82 — the board prices the move
+
+Source: `doc/plan/00000082-movement-hints/implementation-plan.md` decision D8,
+Step 2.
+
+### 1. Selecting a pinned ship now produces no visible change at all
+
+This story removes the four corner brackets that used to mark a selected
+ship's own square, since the destination and target marks around it already
+say the board has a selection (S3). For a **pinned** ship — one that can
+neither move nor attack — there are no destinations and no targets to draw, so
+the brackets were the only marking that square ever carried. Selecting it now
+changes nothing a sighted player can see: the ship's dampened hull and
+bottom-edge bar mean _pinned_, not _selected_, and were already there before
+the selection.
+
+A screen-reader user is unaffected, because the square still reads `…,
+selected` regardless of what is drawn.
+
+Where: `src/board/BoardSquare.tsx`, `src/board/Board.tsx`.

@@ -419,7 +419,23 @@ not behaviour-preserving, and that must be recorded in `Notes:` and escalated.
 
 ### Step 2 — The selected ship's square loses its brackets
 
-Status: pending
+Status: committed
+
+Notes: Deleted `SelectedMark`, `bracketPath`, `BracketCorner`,
+`BRACKET_CORNERS`, `SELECTED_BRACKET_INSET`, `SELECTED_BRACKET_LENGTH`,
+`SELECTED_STROKE_WIDTH` and the `mark === "selected"` render branch from
+`BoardSquare.tsx`; corrected its header comment and `BoardSquare.css`'s
+comment above `.board-square__mark` per D7. `SquareMark` and `MARK_WORDING`
+were left untouched (S3). Reworked the two `BoardSquare.test.tsx` cases as
+specified: "renders no mark at all when marked as selected" replaces the old
+selected-mark assertion, and the condition-plus-selection case now asserts a
+pinned, selected square renders the condition mark and exactly one mark
+overall. Added the "From story 82" section to
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md` recording the
+pinned-ship accepted cost (D8). `npm run typecheck`, `npm run lint` and
+`npm test` are all green (66 files, 1284 tests — unchanged from Step 1, since
+this step reworks two existing cases rather than adding new ones), and
+`grep -ri bracket src/` returns nothing. No deviation from the plan.
 
 Remove the corner-bracket drawing and its whole apparatus from
 `src/board/BoardSquare.tsx` (D7): the `SelectedMark` component, the
