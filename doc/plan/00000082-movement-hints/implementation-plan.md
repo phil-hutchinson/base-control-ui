@@ -655,7 +655,13 @@ green, with the new drawing cases present.
 
 ### Step 5 — The owner looks at the board
 
-Status: pending
+Status: committed
+
+Notes: The owner ran the app with combat on and confirmed the check list —
+"that is looking good". The fan's four cost tiers, the unobstructed selected
+ship, the 2-power and 0-power ships, and the target ring with bars inside it
+at the board's smallest square size all read as intended. No defects found and
+nothing accepted as a cost, so no follow-up step was added.
 
 No code. The owner runs the app and checks the story's "done when" list by eye.
 
