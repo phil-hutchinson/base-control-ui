@@ -571,7 +571,32 @@ D3 wording.
 
 ### Step 4 — A priced mark draws fuel bars
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as specified. `BoardSquare.tsx` imports
+`GAUGE_BAR_LENGTH`, `GAUGE_BAR_STROKE_WIDTH`, `GAUGE_BAR_UNDERLAY_STROKE_WIDTH`
+and `GAUGE_UNDERLAY_COLOR` from `shipArt.ts` (unedited), adds the named
+`COST_BAR_ROW_SPACING = 16` constant with a comment citing
+`GAUGE_SLOT_POSITIONS`' two rows, and a `costBarPositions(count)` helper
+generating y positions centred on 50 for any count (S6). A new
+`CostBarStack` component draws each bar as a `<g data-cost-bar={index}>`
+holding the gauge's double stroke (dark underlay, then `currentColor` on
+top, both round-capped via a wrapping `strokeLinecap="round"` group).
+`DestinationMark` now takes `cost: PowerLevel` and draws the disc at cost 0
+or the stack otherwise; `TargetMark` takes the same prop, always draws the
+ring, and adds the stack inside it when cost is non-zero. Both remain a
+single `.board-square__mark` SVG per square (D4), and `BoardSquare.tsx`'s
+render call sites and header comment were updated accordingly.
+`BoardSquare.css` needed no change — `currentColor` already resolves
+through the existing `.board-square__mark` rule's `color:
+var(--interaction-accent)`. Added the five specified test cases to
+`BoardSquare.test.tsx` (disc-vs-bars by cost, ring-plus-bars at every cost,
+the bar's two-stroke geometry asserted against the imported gauge
+constants, centring/symmetry with the three-bar stack's outermost reach
+kept inside the target ring's inner edge, and an uncapped four-bar case
+built directly). `npm run typecheck`, `npm run lint` and `npm test` are all
+green (66 files, 1293 tests, up from 1288 by exactly the 5 new cases). No
+deviation from the plan.
 
 Draw the stack of fuel bars in `src/board/BoardSquare.tsx` (D4, D5, D6):
 
