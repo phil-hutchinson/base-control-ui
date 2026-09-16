@@ -48,19 +48,19 @@ picture, not the mark.
 **The accepted edge case.** A ship with no legal destination and no legal
 target — a pinned ship — will, when selected, look exactly as it did before
 it was selected. That ship already draws dampened with a hollow bar at the
-bottom edge, but that bar means *pinned*, not *selected*, so for that one
+bottom edge, but that bar means _pinned_, not _selected_, so for that one
 ship the selection becomes invisible. This is knowingly accepted: it is the
 one ship on the board for which selecting is pointless, and every other
 selection lights up squares in a fan around exactly one origin.
 
 ### A destination square draws its price
 
-| Cost | What the square draws                     |
-| ---- | ----------------------------------------- |
-| 0    | the small solid disc, unchanged           |
-| 1    | one fuel bar                              |
-| 2    | two fuel bars, stacked                    |
-| 3    | three fuel bars, stacked                  |
+| Cost | What the square draws           |
+| ---- | ------------------------------- |
+| 0    | the small solid disc, unchanged |
+| 1    | one fuel bar                    |
+| 2    | two fuel bars, stacked          |
+| 3    | three fuel bars, stacked        |
 
 The bars are the **same mark the power gauge draws on a ship's hull** — the
 same bar geometry, the same dark underlay beneath it — so a player who has
@@ -69,7 +69,7 @@ notation for the same substance.
 
 They are drawn in the **interaction accent**, the blue the disc and the ring
 are already drawn in, not in the side's colour. The selection markings are
-one layer — *you are choosing a move* — kept deliberately clear of the side
+one layer — _you are choosing a move_ — kept deliberately clear of the side
 colours, the node marker's gold and the focus ring's amber, and the fuel bar
 joins that layer rather than breaking it. The shape does the recognising;
 the colour says which layer it belongs to.
