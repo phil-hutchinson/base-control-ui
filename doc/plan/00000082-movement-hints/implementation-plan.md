@@ -710,7 +710,27 @@ the owner decides to accept is recorded in `Notes:` as accepted.
 
 ### Step 6 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: **Deviation from the plan's expectation.** Planning guessed the likely
+outcome was "no change"; the README was updated instead, with three sentences
+added to the status paragraph. The reason: that paragraph is already detailed
+about what the app puts on screen — the countdown number appearing on a held
+node, the one, two or three rings on a waiting node, what the HUD shows — and a
+board that prices every move a selected ship can make is a player-visible
+capability of exactly that kind, not an implementation detail. The new text sits
+straight after "…by mouse or by keyboard", which is where the README describes
+picking a ship up.
+
+Second deviation, smaller: the plan said an update should say **fuel**, the
+player's word. The text says **power**, because `README.md` says "power"
+everywhere else — "a point of power", "up to a full six" — and introducing a
+second word for the same substance inside one paragraph would read worse than
+either word alone. This is the same reasoning D3 used to choose "power" for the
+accessible names, applied to a different document's established vocabulary.
+
+Re-wrapped four following lines of the same paragraph that the insertion pushed
+over the file's column width; no wording in them changed.
 
 Check `README.md` against what this story changed, and update it only if it
 describes something that is now wrong. The `/update-readme` command does this
