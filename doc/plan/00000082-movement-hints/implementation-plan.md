@@ -485,7 +485,32 @@ green, with `grep -ri bracket src/` returning nothing.
 
 ### Step 3 — The mark carries its cost, and the names say it
 
-Status: pending
+Status: committed
+
+Notes: Implemented exactly as specified. `SquareMark` in `squareLabel.ts`
+became the discriminated union from D2, `MARK_WORDING`'s `Record` became the
+`markWording` function producing exactly D3's wording (cost stated even at
+zero, ahead of the target's outcome clause, in "power"), and the module's
+header comment and the type's doc comment were updated to explain why.
+`Board.tsx` was reworked per D9: `destinationCosts` and `targetCosts` are now
+`Map<string, PowerLevel>`s built from `legalMoves` and `legalAttacks`, read
+with `.get(name)!` when building the mark object (the same non-null-assertion
+style already used elsewhere in the codebase, e.g. `trap.ts`), with precedence,
+`useMemo` and the target's `&& ship` guard all unchanged. `BoardSquare.tsx`'s
+two render branches switched from `mark === "destination"` to
+`mark?.kind === "destination"` (and likewise for `"target"`); nothing else in
+that file changed, so the board still draws today's disc and ring regardless
+of cost, as the step requires. Updated existing expectations in
+`squareLabel.test.ts`, `Board.test.tsx`, `App.test.tsx`,
+`GameOverPanel.test.tsx` and `BoardSquare.test.tsx` to the object form and the
+new wording (working out each scenario's real §6 cost from its squares rather
+than guessing), and added the specified new cases: two zero-cost cases in
+`squareLabel.test.ts` (a free destination and a free target), and two new
+cases in `Board.test.tsx` — a full-power ship's four shape tiers (orthogonal
+0, diagonal 1, L 2, long knight 3) and an L-away target's cost sitting ahead
+of the "both ships would return to planets" clause. `npm run typecheck`,
+`npm run lint` and `npm test` are all green (66 files, 1288 tests, up from
+1284 by the 4 new cases). No deviation from the plan.
 
 Change `SquareMark` in `src/board/squareLabel.ts` into the cost-carrying
 discriminated union (D2): a `kind` of `"selected"`, `"destination"` or

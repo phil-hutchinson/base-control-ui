@@ -8,9 +8,10 @@ import { GAME_NAME } from "../gameName";
 import { BOARD_SIZE, squareName } from "../rules/board";
 import { isPlanet } from "../rules/planets";
 import { shipCanMoveOrAttack } from "../rules/canMoveOrAttack";
-import { legalTargets } from "../rules/combat";
+import { legalAttacks } from "../rules/combat";
 import { shipsBySquare, nodeStatusAt, type Ship } from "../rules/gameState";
-import { legalDestinations } from "../rules/movement";
+import { legalMoves } from "../rules/movement";
+import type { PowerLevel } from "../rules/power";
 import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import { inactivePriority } from "../rules/nodeQueue";
 import type { Session, SessionIntent } from "../game/session";
@@ -71,14 +72,20 @@ export function Board({ session, onIntent }: BoardProps) {
         : session.state.ships.find(
             (ship) => ship.id === session.selectedShipId,
           );
-    const destinationSquareNames = new Set(
+    const destinationCosts = new Map<string, PowerLevel>(
       selectedShip
-        ? legalDestinations(session.state, selectedShip.id).map(squareName)
+        ? legalMoves(session.state, selectedShip.id).map((entry) => [
+            squareName(entry.destination),
+            entry.cost,
+          ])
         : [],
     );
-    const targetSquareNames = new Set(
+    const targetCosts = new Map<string, PowerLevel>(
       selectedShip
-        ? legalTargets(session.state, selectedShip.id).map(squareName)
+        ? legalAttacks(session.state, selectedShip.id).map((entry) => [
+            squareName(entry.destination),
+            entry.cost,
+          ])
         : [],
     );
     // A ship's condition, for the side to move only: an opponent's ship
@@ -133,11 +140,11 @@ export function Board({ session, onIntent }: BoardProps) {
 
         let mark: SquareMark | undefined;
         if (selectedShip && squareName(selectedShip.square) === name) {
-          mark = "selected";
-        } else if (destinationSquareNames.has(name)) {
-          mark = "destination";
-        } else if (selectedShip && targetSquareNames.has(name) && ship) {
-          mark = "target";
+          mark = { kind: "selected" };
+        } else if (destinationCosts.has(name)) {
+          mark = { kind: "destination", cost: destinationCosts.get(name)! };
+        } else if (selectedShip && targetCosts.has(name) && ship) {
+          mark = { kind: "target", cost: targetCosts.get(name)! };
         }
 
         return {

@@ -235,7 +235,9 @@ describe("GameOverPanel", () => {
 
       await user.click(screen.getByRole("gridcell", { name: /^H8,/ }));
       await user.click(
-        screen.getByRole("gridcell", { name: /^H9,.*can move here$/ }),
+        screen.getByRole("gridcell", {
+          name: /^H9,.*can move here, costs \d+ power$/,
+        }),
       );
 
       expect(
@@ -252,7 +254,9 @@ describe("GameOverPanel", () => {
 
       await user.click(screen.getByRole("gridcell", { name: /^G1,/ }));
       await user.click(
-        screen.getByRole("gridcell", { name: /^G2,.*can move here$/ }),
+        screen.getByRole("gridcell", {
+          name: /^G2,.*can move here, costs \d+ power$/,
+        }),
       );
 
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -289,7 +293,9 @@ describe("GameOverPanel", () => {
 
       await user.click(screen.getByRole("gridcell", { name: /^H8,/ }));
       await user.click(
-        screen.getByRole("gridcell", { name: /^H9,.*can move here$/ }),
+        screen.getByRole("gridcell", {
+          name: /^H9,.*can move here, costs \d+ power$/,
+        }),
       );
       await user.click(screen.getByRole("button", { name: "New Game" }));
 

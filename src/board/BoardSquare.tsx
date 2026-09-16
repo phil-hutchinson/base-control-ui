@@ -167,8 +167,8 @@ export function BoardSquare({
           color={nodeState === "depleted" ? "white" : "black"}
         />
       )}
-      {mark === "destination" && <DestinationMark />}
-      {mark === "target" && <TargetMark />}
+      {mark?.kind === "destination" && <DestinationMark />}
+      {mark?.kind === "target" && <TargetMark />}
       {condition === "cannot-move-or-attack" && <CannotMoveOrAttackMark />}
     </div>
   );

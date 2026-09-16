@@ -21,7 +21,7 @@ import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { legalDestinations } from "../rules/movement";
 import { legalTargets } from "../rules/combat";
-import type { PowerLevel } from "../rules/power";
+import { MAX_POWER, type PowerLevel } from "../rules/power";
 import {
   createSession,
   sessionReducer,
@@ -669,12 +669,16 @@ describe("Board", () => {
       for (const destination of destinations) {
         expect(
           screen.getByRole("gridcell", {
-            name: new RegExp(`^${squareName(destination)},.*can move here$`),
+            name: new RegExp(
+              `^${squareName(destination)},.*can move here, costs \\d+ power$`,
+            ),
           }),
         ).toBeInTheDocument();
       }
       expect(
-        screen.getAllByRole("gridcell", { name: /can move here$/ }),
+        screen.getAllByRole("gridcell", {
+          name: /can move here, costs \d+ power$/,
+        }),
       ).toHaveLength(destinations.length);
     });
 
@@ -683,9 +687,64 @@ describe("Board", () => {
 
       expect(
         screen.queryByRole("gridcell", {
-          name: /, selected$|can move here$|can attack here/,
+          name: /, selected$|can move here, costs \d+ power$|can attack here/,
         }),
       ).not.toBeInTheDocument();
+    });
+
+    it("prices a full-power ship's destinations by shape (rules.md §6)", () => {
+      const fullPowerState: GameState = {
+        ships: [
+          {
+            id: "green-1",
+            side: "green",
+            square: squareAt("H", 8),
+            power: MAX_POWER,
+          },
+        ],
+        nodes: {},
+        sideToMove: "green",
+        plyNumber: 1,
+        randomSeed: 1,
+        openingSeed: 1,
+        energy: { green: 0, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+        outOfTime: { green: false, red: false },
+        combatEnabled: true,
+        scoring: "simple",
+      };
+      const fullPowerSession: Session = {
+        state: fullPowerState,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={fullPowerSession} onIntent={noop} />);
+
+      // An orthogonal single step: free.
+      expect(
+        screen.getByRole("gridcell", {
+          name: "H9, can move here, costs 0 power",
+        }),
+      ).toBeInTheDocument();
+      // A diagonal single step: 1.
+      expect(
+        screen.getByRole("gridcell", {
+          name: "I9, can move here, costs 1 power",
+        }),
+      ).toBeInTheDocument();
+      // An L (one orthogonal, one diagonal step): 2.
+      expect(
+        screen.getByRole("gridcell", {
+          name: "J9, can move here, costs 2 power",
+        }),
+      ).toBeInTheDocument();
+      // A long knight (three orthogonal, one to the side): 3.
+      expect(
+        screen.getByRole("gridcell", {
+          name: "K9, can move here, costs 3 power",
+        }),
+      ).toBeInTheDocument();
     });
 
     it("has no static accessibility violations mid-selection", async () => {
@@ -749,7 +808,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H9, red ship, power 4 of 6, can attack here, both ships would return to planets",
+          name: "H9, red ship, power 4 of 6, can attack here, costs 0 power, both ships would return to planets",
         }),
       ).toBeInTheDocument();
 
@@ -758,14 +817,16 @@ describe("Board", () => {
       for (const destination of destinations) {
         expect(
           screen.getByRole("gridcell", {
-            name: new RegExp(`^${squareName(destination)},.*can move here$`),
+            name: new RegExp(
+              `^${squareName(destination)},.*can move here, costs \\d+ power$`,
+            ),
           }),
         ).toBeInTheDocument();
       }
       // The target square never also carries the destination wording.
       expect(
         screen.queryByRole("gridcell", {
-          name: /^H9,.*can move here$/,
+          name: /^H9,.*can move here, costs \d+ power$/,
         }),
       ).not.toBeInTheDocument();
     });
@@ -810,7 +871,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H9, red ship, power 4 of 6, can attack here, both ships would return to planets",
+          name: "H9, red ship, power 4 of 6, can attack here, costs 0 power, both ships would return to planets",
         }),
       ).toBeInTheDocument();
     });
@@ -829,7 +890,7 @@ describe("Board", () => {
 
           expect(
             screen.getByRole("gridcell", {
-              name: `H9, red ship, power ${defenderPower} of 6, can attack here, both ships would return to planets`,
+              name: `H9, red ship, power ${defenderPower} of 6, can attack here, costs 0 power, both ships would return to planets`,
             }),
           ).toBeInTheDocument();
 
@@ -931,7 +992,28 @@ describe("Board", () => {
       // within a 3-power ship's true reach (rules.md §6, §7).
       expect(
         screen.getByRole("gridcell", {
-          name: "H10, red ship, power 4 of 6, can attack here, both ships would return to planets",
+          name: "H10, red ship, power 4 of 6, can attack here, costs 2 power, both ships would return to planets",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("puts the target's cost ahead of the 'both ships would return to planets' clause, for an enemy an L away", () => {
+      const state = rangeState({
+        attackerSquare: squareAt("H", 8),
+        attackerPower: 3,
+        defenderSquare: squareAt("J", 9),
+        defenderPower: 4,
+      });
+      const session: Session = {
+        state,
+        selectedShipId: "green-1",
+        lastEvent: undefined,
+      };
+      render(<Board session={session} onIntent={noop} />);
+
+      expect(
+        screen.getByRole("gridcell", {
+          name: "J9, red ship, power 4 of 6, can attack here, costs 2 power, both ships would return to planets",
         }),
       ).toBeInTheDocument();
     });
@@ -997,7 +1079,7 @@ describe("Board", () => {
 
       expect(
         screen.getByRole("gridcell", {
-          name: "H10, red ship, power 4 of 6, can attack here, both ships would return to planets",
+          name: "H10, red ship, power 4 of 6, can attack here, costs 2 power, both ships would return to planets",
         }),
       ).toBeInTheDocument();
     });
@@ -1328,11 +1410,17 @@ describe("Board", () => {
         expect(destinations.length).toBeGreaterThan(0);
         for (const destination of destinations) {
           expect(
-            cell(new RegExp(`^${squareName(destination)},.*can move here$`)),
+            cell(
+              new RegExp(
+                `^${squareName(destination)},.*can move here, costs \\d+ power$`,
+              ),
+            ),
           ).toBeInTheDocument();
         }
         expect(
-          screen.getAllByRole("gridcell", { name: /can move here$/ }),
+          screen.getAllByRole("gridcell", {
+            name: /can move here, costs \d+ power$/,
+          }),
         ).toHaveLength(destinations.length);
         expect(liveRegion()).toHaveTextContent(
           new RegExp(
@@ -1350,7 +1438,9 @@ describe("Board", () => {
 
         expect(cell(/^H8,/)).not.toHaveAccessibleName(/selected$/);
         expect(
-          screen.queryByRole("gridcell", { name: /can move here$/ }),
+          screen.queryByRole("gridcell", {
+            name: /can move here, costs \d+ power$/,
+          }),
         ).not.toBeInTheDocument();
         expect(liveRegion()).toHaveTextContent("Selection cleared.");
       });
@@ -1384,7 +1474,7 @@ describe("Board", () => {
         const destinationName = squareName(destination);
 
         const destinationCell = cell(
-          new RegExp(`^${destinationName},.*can move here$`),
+          new RegExp(`^${destinationName},.*can move here, costs \\d+ power$`),
         );
         await activate(user, mode, destinationCell);
 
@@ -1486,7 +1576,9 @@ describe("Board", () => {
 
       expect(cell(/^H8,/)).not.toHaveAccessibleName(/selected$/);
       expect(
-        screen.queryByRole("gridcell", { name: /can move here$/ }),
+        screen.queryByRole("gridcell", {
+          name: /can move here, costs \d+ power$/,
+        }),
       ).not.toBeInTheDocument();
       expect(liveRegion()).toHaveTextContent("Selection cleared.");
     });

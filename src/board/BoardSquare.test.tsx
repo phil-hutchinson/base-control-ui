@@ -164,7 +164,11 @@ describe("BoardSquare", () => {
 
   it("renders the destination mark when marked as a legal destination, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="destination" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "destination", cost: 0 }}
+      />,
     );
     const { container: unmarked } = render(
       <BoardSquare isPlanet={false} squareName="H8" />,
@@ -180,7 +184,11 @@ describe("BoardSquare", () => {
 
   it("renders no mark at all when marked as selected", () => {
     const { container } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="selected" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "selected" }}
+      />,
     );
 
     expect(container.querySelectorAll(".board-square__mark")).toHaveLength(0);
@@ -188,7 +196,11 @@ describe("BoardSquare", () => {
 
   it("renders the target ring when marked as a legal attack target, and not otherwise", () => {
     const { container: marked } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="target" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "target", cost: 0 }}
+      />,
     );
     const { container: unmarked } = render(
       <BoardSquare isPlanet={false} squareName="H8" />,
@@ -202,10 +214,18 @@ describe("BoardSquare", () => {
 
   it("draws the target ring hollow and distinct from the destination's solid disc", () => {
     const { container: target } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="target" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "target", cost: 0 }}
+      />,
     );
     const { container: destination } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="destination" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "destination", cost: 0 }}
+      />,
     );
 
     const ring = target.querySelector(".board-square__mark--target circle");
@@ -221,7 +241,11 @@ describe("BoardSquare", () => {
 
   it("renders exactly one mark for the target square, never alongside destination or selected", () => {
     const { container } = render(
-      <BoardSquare isPlanet={false} squareName="H8" mark="target" />,
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        mark={{ kind: "target", cost: 0 }}
+      />,
     );
 
     expect(container.querySelectorAll(".board-square__mark")).toHaveLength(1);
@@ -261,7 +285,7 @@ describe("BoardSquare", () => {
         squareName="H8"
         occupant={{ side: "green", power: 0 }}
         condition="cannot-move-or-attack"
-        mark="selected"
+        mark={{ kind: "selected" }}
       />,
     );
 
@@ -278,7 +302,7 @@ describe("BoardSquare", () => {
         squareName="H8"
         nodeState="inactive"
         occupant={{ side: "red", power: 3 }}
-        mark="destination"
+        mark={{ kind: "destination", cost: 0 }}
       />,
     );
 
@@ -301,7 +325,7 @@ describe("BoardSquare", () => {
           squareName="H8"
           occupant={{ side: "green", power: 1 }}
           condition={condition}
-          mark="selected"
+          mark={{ kind: "selected" }}
         />,
       );
 
