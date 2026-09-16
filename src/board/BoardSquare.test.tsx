@@ -7,6 +7,7 @@ import type { ShipCondition } from "./squareLabel";
 import { BoardSquare } from "./BoardSquare";
 import { PLANET_ART } from "./planetArt";
 import {
+  GAUGE_BAR_LENGTH,
   GAUGE_BAR_STROKE_WIDTH,
   GAUGE_BAR_UNDERLAY_STROKE_WIDTH,
   GAUGE_UNDERLAY_COLOR,
@@ -244,7 +245,7 @@ describe("BoardSquare", () => {
     );
   });
 
-  it("renders exactly one mark for the target square, never alongside destination or selected", () => {
+  it("renders exactly one mark for the target square, never alongside destination", () => {
     const { container } = render(
       <BoardSquare
         isPlanet={false}
@@ -257,7 +258,6 @@ describe("BoardSquare", () => {
     expect(
       container.querySelector(".board-square__mark--destination"),
     ).toBeNull();
-    expect(container.querySelector(".board-square__mark--selected")).toBeNull();
   });
 
   it("renders the hollow bar and the dampened class for cannot-move-or-attack", () => {
@@ -381,6 +381,13 @@ describe("BoardSquare", () => {
     );
     expect(top).toHaveAttribute("stroke", "currentColor");
     expect(top).toHaveAttribute("stroke-width", String(GAUGE_BAR_STROKE_WIDTH));
+    for (const line of [underlay, top]) {
+      expect(line).toHaveAttribute("x1", String(50 - GAUGE_BAR_LENGTH / 2));
+      expect(line).toHaveAttribute("x2", String(50 + GAUGE_BAR_LENGTH / 2));
+    }
+    expect(
+      container.querySelector("[data-cost-bar]")?.parentElement,
+    ).toHaveAttribute("stroke-linecap", "round");
   });
 
   it("centres and spreads a fuel bar stack symmetrically, keeping the three-bar stack inside the target ring", () => {

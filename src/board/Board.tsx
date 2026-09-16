@@ -138,13 +138,16 @@ export function Board({ session, onIntent }: BoardProps) {
         const occupant = ship && { side: ship.side, power: ship.power };
         const condition = ship && shipCondition(ship);
 
+        const destinationCost = destinationCosts.get(name);
+        const targetCost = targetCosts.get(name);
+
         let mark: SquareMark | undefined;
         if (selectedShip && squareName(selectedShip.square) === name) {
           mark = { kind: "selected" };
-        } else if (destinationCosts.has(name)) {
-          mark = { kind: "destination", cost: destinationCosts.get(name)! };
-        } else if (selectedShip && targetCosts.has(name) && ship) {
-          mark = { kind: "target", cost: targetCosts.get(name)! };
+        } else if (destinationCost !== undefined) {
+          mark = { kind: "destination", cost: destinationCost };
+        } else if (selectedShip && targetCost !== undefined && ship) {
+          mark = { kind: "target", cost: targetCost };
         }
 
         return {
