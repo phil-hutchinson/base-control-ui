@@ -785,7 +785,35 @@ which tests needed a `waitFor` and which needed a `confirm` stub.
 
 ### Step 4 — The story's flows, proved through the whole app
 
-Status: pending
+Status: committed
+
+Notes: Added seven `App.test.tsx` cases covering the "Done when" list: PLAY
+addresses the game at `#game`; the guide's address plus simulated browser
+Back and Forward moving between it and the menu; a cold load of
+`#how-to-play` opening the guide; a cold load of `#game` showing the menu
+with the address corrected; Back during a game in progress prompting, with
+cancelling leaving the turn, the round and the clock's advanced reading
+untouched and the hash back at `#game`; confirming abandoning the game with
+a following Forward neither resuming it nor asking again; and the
+close/reload guard being armed only while a game is in progress, not on the
+menu or the guide. The decline-path clock assertion was mutation-checked by
+temporarily removing the guard's restoring `pushHash` call — the test then
+fails (both on the earlier "Green to play" text and, isolated on its own, on
+the clock reading alone) — confirming it is load-bearing, then reverted with
+no diff against the pre-mutation file. Every pre-existing `App.test.tsx`
+expectation is unchanged. Per the step's own instruction, game-over-panel
+silence is covered at two levels rather than one: `useAppScreen.test.tsx`
+(Step 3) and `useScreenAddress.test.tsx` (Step 2) already exercise it with
+`gameOver: true`/the hook directly; this step only adds the app-level
+close/reload assertions for the menu, the guide and a game in progress,
+since driving a real game to its end through the full app is a 30+-ply
+affair the plan explicitly leaves to Step 5's manual pass rather than a
+component test. Added the accessibility ledger note as a new "From story
+88" section in `known-issues.md`, naming `src/nav/useScreenAddress.ts` and
+`src/App.tsx`. Suite: 70 files / 1331 tests (was 70 / 1324), typecheck,
+lint and `npx prettier --check` on both touched files clean;
+`npm run format:check` shows only the two pre-existing baseline warnings. No
+deviations from the plan.
 
 Depends on: Step 3 (the app is wired).
 

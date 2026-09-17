@@ -356,3 +356,19 @@ A screen-reader user is unaffected, because the square still reads `…,
 selected` regardless of what is drawn.
 
 Where: `src/board/BoardSquare.tsx`, `src/board/Board.tsx`.
+
+## From story 88 — Back goes back
+
+Source: `doc/plan/00000088-add-browser-navigation/implementation-plan.md`
+decision S11, Step 4.
+
+### 1. A Back/Forward-driven screen change moves focus nowhere and announces nothing
+
+This story hands three screen swaps over to the browser's own Back and
+Forward, and the app's own Back buttons now go through the same mechanism.
+None of these moves focus or announces anything: a keyboard or
+screen-reader user lands wherever focus already was, exactly the gap story
+35 recorded for PLAY and the game-over button — now reachable by two more
+routes into it.
+
+Where: `src/nav/useScreenAddress.ts`, `src/App.tsx`.
