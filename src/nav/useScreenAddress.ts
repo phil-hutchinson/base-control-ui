@@ -72,13 +72,10 @@ export function useScreenAddress(gameOver: boolean): ScreenAddress {
       return;
     }
     // The address has already changed by the time this runs, so the guard
-    // asks and then puts it back. It is registered as a guard rather than as
-    // a listener of its own so that it runs before anything reacts to the
-    // change: this hook's own subscription would otherwise re-render first,
-    // and the effect cleanup that followed would unregister the guard before
-    // the browser ever reached it. Declining puts the address back
-    // synchronously, so no render ever shows the menu and the game screen —
-    // with the clocks and the board's selection inside it — never unmounts.
+    // asks and then puts it back. It runs inside the address change, before
+    // anything can react to it, and declining puts the address back
+    // synchronously — so no render ever shows the menu, and the game screen,
+    // with the clocks and the board's selection inside it, never unmounts.
     return registerAddressGuard(() => {
       if (currentHash() === GAME_HASH) {
         return;

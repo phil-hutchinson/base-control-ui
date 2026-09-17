@@ -13,6 +13,9 @@ export function useLeaveConfirmation(enabled: boolean): void {
     }
     function confirmLeaving(event: BeforeUnloadEvent) {
       event.preventDefault();
+      // Engines that predate `preventDefault()` being the way to ask show
+      // the prompt only when this is set as well.
+      event.returnValue = "";
     }
     window.addEventListener("beforeunload", confirmLeaving);
     return () => {

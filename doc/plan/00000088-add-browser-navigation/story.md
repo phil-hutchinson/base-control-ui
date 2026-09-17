@@ -72,12 +72,24 @@ the browser's.
 
 **Back** during a game asks the player to confirm, and only then shows the
 main menu. Cancel and the game is still there, on the same turn, with
-nothing moved and the clock where it was.
+nothing moved and nothing selected that was not selected before.
+
+**The clock keeps running while the question is on screen.** The time a
+player spends deciding is spent from their own clock, exactly as if they had
+been thinking about their move — and if it runs out while they deliberate,
+their clock has run out, with whatever that costs them. Backing out is a way
+to leave a game, not a way to buy thinking time, and a player who could stop
+their clock by reaching for Back would have found a free pause button.
 
 Confirming **abandons the game**. There is no second copy of it and no route
 back into it: pressing **Forward** returns the player to the main menu they
 are already looking at, and the only way back into play is PLAY, which starts
-a new game. This is the same rule that covers a reload — `#game` shows a game
+a new game. A player who does press Forward that way spends one Back press
+getting out again — the abandoned game's history entry becomes a second main
+menu, so the first Back after it appears to do nothing. History entries
+cannot be removed once made, so this is the cost of the rule below rather
+than something to be fixed, and it is only reachable by pressing Forward into
+a game that is gone. This is the same rule that covers a reload — `#game` shows a game
 only while there is a game to show, and otherwise quietly means the main
 menu, correcting the address bar on its way.
 

@@ -33,7 +33,7 @@ afterEach(resetAddress);
 
 // A Back or Forward press, without waiting on the browser: moves the address
 // and dispatches the event a real traversal would fire. `history.back()` is
-// asynchronous (measured during planning), so tests that are not about
+// asynchronous, so tests that are not about
 // history's own shape use this instead, matching `useScreenAddress.test.tsx`.
 function traverseTo(hash: string) {
   act(() => {
@@ -509,6 +509,13 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
+    // A non-default choice, so that finding it still set after the traversal
+    // says the options survived rather than that they were reset to these.
+    await user.click(
+      within(screen.getByRole("group", { name: "Ships" })).getByRole("radio", {
+        name: "4",
+      }),
+    );
     await user.click(screen.getByRole("button", { name: "Quick Guide" }));
     expect(window.location.hash).toBe("#how-to-play");
 
@@ -519,7 +526,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       within(screen.getByRole("group", { name: "Ships" })).getByRole("radio", {
-        name: "6",
+        name: "4",
       }),
     ).toBeChecked();
 
@@ -540,6 +547,7 @@ describe("App", () => {
   });
 
   it("shows the menu, and corrects the address, on a cold load of #game", async () => {
+    const confirm = stubConfirm(true);
     window.history.replaceState(null, "", "/#game");
     render(<App />);
 
@@ -551,6 +559,9 @@ describe("App", () => {
     await waitFor(() => {
       expect(window.location.hash).toBe("");
     });
+    // Neither prompt: there was never a game here to leave.
+    expect(confirm).not.toHaveBeenCalled();
+    expect(dispatchBeforeUnload()).toBe(true);
   });
 
   it("prompts before Back leaves a game in progress, and cancelling leaves it on the same turn with the clock where it was", async () => {

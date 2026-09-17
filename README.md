@@ -65,7 +65,7 @@ install, no account, no server.
 > and how nodes come and go, with a back button that returns you to the start
 > screen with the six choices exactly as you left them. Your browser's own
 > back and forward buttons move between the screens too, and the address bar
-> says which screen you are on, so a link to the quick guide can be shared.
+> says which screen you are on.
 > Changing any of the six choices starts nothing — the board only appears
 > once PLAY is pressed, dealt with the choices you made. A clock is each
 > player's own time for the whole

@@ -83,10 +83,9 @@ export function subscribeToAddress(listener: AddressListener): () => void {
 
 /**
  * Registers a guard, run before the subscribers on a change the browser made,
- * and returns the function that removes it. A guard is called directly by this
- * module rather than being its own window listener, so that reacting to the
- * change cannot unregister the guard before the browser has reached it — a DOM
- * listener removed while an event is being dispatched is never invoked.
+ * and returns the function that removes it. This module calls its guards
+ * directly, so a guard runs to completion before anything can react to the
+ * change — including react to it by removing the guard.
  */
 export function registerAddressGuard(guard: AddressGuard): () => void {
   attachWindowListeners();

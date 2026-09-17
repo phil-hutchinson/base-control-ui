@@ -1,8 +1,23 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { registerAddressGuard } from "./browserAddress";
 import { LEAVE_GAME_PROMPT } from "./screenAddress";
 import { useScreenAddress } from "./useScreenAddress";
+
+// Wraps the real `registerAddressGuard`, forwarding every call, so one test
+// below can assert the hook arms its prompt through the address wrapper. The
+// wrapper is what makes the prompt survive a traversal: a guard of the hook's
+// own would be unregistered by the re-render before the browser reached it,
+// and every traversal in this file is dispatched inside `act()`, which hides
+// exactly that.
+vi.mock("./browserAddress", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./browserAddress")>();
+  return {
+    ...actual,
+    registerAddressGuard: vi.fn(actual.registerAddressGuard),
+  };
+});
 
 // Vitest's globals are off (see vite.config.ts), so Testing Library's
 // automatic cleanup never registers itself.
@@ -257,5 +272,25 @@ describe("the close/reload guard", () => {
     });
 
     expect(dispatchBeforeUnload()).toBe(true);
+  });
+});
+
+describe("how the prompt is armed", () => {
+  it("registers its guard through the address wrapper, not as a listener of its own", () => {
+    const registerGuard = vi.mocked(registerAddressGuard);
+    registerGuard.mockClear();
+    const addListener = vi.spyOn(window, "addEventListener");
+    const { result } = renderAt("");
+
+    act(() => {
+      result.current.showGame();
+    });
+
+    expect(registerGuard).toHaveBeenCalledOnce();
+    expect(addListener).not.toHaveBeenCalledWith(
+      "popstate",
+      expect.anything(),
+      expect.anything(),
+    );
   });
 });
