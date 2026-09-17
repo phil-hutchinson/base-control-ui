@@ -561,7 +561,18 @@ Then `npm test`, `npm run typecheck` and `npm run lint` clean.
 
 ### Step 2 — `src/nav/useScreenAddress.ts`: the screen follows the address, and backing out asks first
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator. Built as one hook, 2a then 2b, as the
+merged step says. Two corrections made while implementing: the 2a spec still
+described D8's rejected marker branch (a leftover from before the owner's
+plan-gate decision) and was corrected to a plain `goBack()`; and the declined
+traversal's first test passed for the wrong reason — it waited on the hash
+already being `#game`, so `history.back()`'s asynchrony meant the traversal had
+not happened when the assertions ran. It now waits on the guard being asked,
+and was mutation-checked: with the decline's `pushHash` removed, that test is
+the one that fails. 12 new tests, suite at 69 files / 1318 tests, typecheck and
+lint clean.
 
 Depends on: Step 1 (the mapping and the wrapper).
 
@@ -588,8 +599,8 @@ Behaviour to implement, all of it already argued in D3, D4 and D8:
   (It does **not** dispatch `new-game` — that stays in `useAppScreen`, which
   owns the options and the session dispatch.)
 - an action for "open the guide": pushes `#how-to-play`;
-- an action for "leave this screen for the menu": D8 — go back when the current
-  entry was created by the app, otherwise replace the address with the menu's;
+- an action for "leave this screen for the menu": a plain `goBack()`, with no
+  branch and no inspection of `history.state` (D8, as the owner settled it);
 - one effect doing D4's two idempotent reconciliations: clear `hasGame` when the
   derived screen is no longer `"game"`, and **replace** the address whenever it
   does not name the screen showing. Replaces only — never a push in an effect
@@ -622,9 +633,11 @@ Cover:
   Forward-after-leaving case of S4. When part 2b adds the prompt, this case will
   need `gameOver` true or an accepting `confirm` stub, so write it in a shape
   that is cheap to adjust;
-- leaving from an app-created entry goes back (`await waitFor`), and leaving
-  from a cold-loaded `#how-to-play` replaces instead: the screen becomes
-  `"start"`, the hash is empty, and `history.length` did not change.
+- leaving the guide goes back: from a menu-then-guide history, the screen
+  becomes `"start"` and the hash is empty (`await waitFor`, per D13.1). There is
+  deliberately no cold-loaded-guide case to cover — D8 records that its Back
+  button does nothing, which is the owner's accepted consequence, not behaviour
+  to test for.
 
 Then `npm test`, `npm run typecheck`, `npm run lint` clean.
 
