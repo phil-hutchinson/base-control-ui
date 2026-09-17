@@ -978,7 +978,15 @@ test.
 
 ### Step 6 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Two edits, both in the Status block. The quick-guide sentence gains the
+browser's back and forward buttons, the address bar naming the screen, and the
+shareable guide link; the closing paragraph gains what happens when you leave a
+game before it ends — it asks first, and nothing is saved. No mention of
+hashes, history entries or routing: none of that is a player's vocabulary.
+`/update-readme` reviewed the branch diff and found nothing further — the rest
+of the story is internal.
 
 Depends on: Steps 1 to 5 (the README describes finished behaviour).
 
