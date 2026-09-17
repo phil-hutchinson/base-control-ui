@@ -472,7 +472,13 @@ manual gate is untouched: merging steps never merges a gate.
 
 ### Step 1 — `src/nav/`: the address vocabulary and the History API wrapper
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator rather than dispatched, per the owner's
+direction that not every step needs an agent. Both modules and both test files
+landed as specified. `Screen` moved out of `useAppScreen.ts` with no
+re-export — nothing else imported it. 13 new tests; the suite went from 66
+files / 1293 tests to 68 / 1306, typecheck and lint clean.
 
 Depends on: nothing.
 

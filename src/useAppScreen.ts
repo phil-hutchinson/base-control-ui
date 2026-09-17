@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { freshSeed } from "./game/seed";
 import type { SessionIntent } from "./game/session";
+import type { Screen } from "./nav/screenAddress";
 import { type ClockSetting, DEFAULT_CLOCK_SETTING } from "./rules/clock";
 import { DEFAULT_COMBAT_ENABLED } from "./rules/combatSetting";
 import { DEFAULT_FLEET_SIZE, type FleetSize } from "./rules/fleet";
@@ -15,12 +16,6 @@ import {
   type ChargedNodeCount,
 } from "./rules/nodes";
 import { DEFAULT_SCORING, type ScoringSetting } from "./rules/scoring";
-
-/**
- * Which screen is on top: the start screen, a game in progress, or the
- * quick guide.
- */
-export type Screen = "start" | "game" | "guide";
 
 /** The app's current screen and options, plus the actions that change either. */
 export interface AppScreen {
