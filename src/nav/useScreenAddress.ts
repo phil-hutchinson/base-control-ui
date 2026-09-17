@@ -16,6 +16,7 @@ import {
   currentHash,
   goBack,
   pushHash,
+  registerAddressGuard,
   replaceHash,
   subscribeToAddress,
 } from "./browserAddress";
@@ -71,23 +72,21 @@ export function useScreenAddress(gameOver: boolean): ScreenAddress {
       return;
     }
     // The address has already changed by the time this runs, so the guard
-    // asks and then puts it back. Everything here stays synchronous: React
-    // cannot render in the middle of an event, so a declined traversal never
-    // unmounts the game screen, and the clocks and the selection survive.
-    function guardAgainstLeaving() {
+    // asks and then puts it back. It is registered as a guard rather than as
+    // a listener of its own so that it runs before anything reacts to the
+    // change: this hook's own subscription would otherwise re-render first,
+    // and the effect cleanup that followed would unregister the guard before
+    // the browser ever reached it. Declining puts the address back
+    // synchronously, so no render ever shows the menu and the game screen —
+    // with the clocks and the board's selection inside it — never unmounts.
+    return registerAddressGuard(() => {
       if (currentHash() === GAME_HASH) {
         return;
       }
       if (!window.confirm(LEAVE_GAME_PROMPT)) {
         pushHash(GAME_HASH);
       }
-    }
-    window.addEventListener("popstate", guardAgainstLeaving);
-    window.addEventListener("hashchange", guardAgainstLeaving);
-    return () => {
-      window.removeEventListener("popstate", guardAgainstLeaving);
-      window.removeEventListener("hashchange", guardAgainstLeaving);
-    };
+    });
   }, [gameInProgress]);
 
   const showGame = useCallback(() => {

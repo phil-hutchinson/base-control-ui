@@ -875,7 +875,39 @@ risen, and every pre-existing `App.test.tsx` expectation intact;
 
 ### Step 5 — The owner drives it
 
-Status: pending
+Status: in progress
+
+Notes: The owner's pass found two real defects, both invisible to the automated
+suite and both fixed inline before the rest of the pass continued.
+
+1. **The prompt never appeared on Back** (every browser). The guard was its own
+   `popstate` listener, registered after the address subscription's. On a
+   traversal the subscription ran first, React re-rendered to the menu, and the
+   effect cleanup unregistered the guard — all before the browser reached it,
+   and a DOM listener removed mid-dispatch is never invoked. Diagnosed from the
+   owner's console: `REGISTERED`, then `REMOVED` on the Back press, and `FIRED`
+   never. **Fix:** guards are no longer DOM listeners. `browserAddress` owns one
+   window handler that runs registered guards first, synchronously, and notifies
+   subscribers second, so nothing can react — or unregister anything — before
+   the guard has run. D5's "the guard must run before React sees the change" is
+   now structural rather than dependent on listener registration order.
+2. **Firefox asked twice per Back press.** One traversal fires both `popstate`
+   and `hashchange`; Chrome's ordering happened to short-circuit the second,
+   Firefox's did not. **Fix:** the wrapper records the address it last ran the
+   guards for and runs them once per actual move, so event order and count stop
+   mattering.
+
+**What this says about the suite.** Defect 1 passed every test in Steps 2 and 4,
+including the end-to-end ones, because `act()` defers React's effect flush until
+after the event — exactly the interleaving the bug lived in — and jsdom did not
+reproduce it even with the traversal dispatched outside `act()`. The regression
+is therefore pinned at the wrapper, where it is deterministic: guards run before
+subscribers, and **a subscriber that unregisters the guard mid-event cannot stop
+it running** — React's teardown written down literally. Both that and the
+de-duplication were mutation-checked: each fails against the code it fixes.
+Making those tests faithful (moving the address before dispatching, as a real
+traversal does) also exposed a leak where a failed assertion left module state
+behind for the next test.
 
 Depends on: every previous step.
 

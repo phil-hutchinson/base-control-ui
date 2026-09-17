@@ -5,6 +5,7 @@ import {
   currentHash,
   goBack,
   pushHash,
+  registerAddressGuard,
   replaceHash,
   subscribeToAddress,
 } from "./browserAddress";
@@ -17,6 +18,12 @@ function resetAddress() {
 
 beforeEach(resetAddress);
 afterEach(resetAddress);
+
+/** A traversal as the browser performs one: the address moves, then the event. */
+function traverseTo(hash: string) {
+  window.history.replaceState(null, "", `/${hash}`);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
 
 describe("pushHash", () => {
   it("shows the fragment, adds an entry, and tells every subscriber", () => {
@@ -112,6 +119,106 @@ describe("goBack", () => {
       expect(currentHash()).toBe("");
     });
     expect(listener).toHaveBeenCalled();
+
+    unsubscribe();
+  });
+});
+
+describe("registerAddressGuard", () => {
+  it("runs a guard before any subscriber hears about a change", () => {
+    const order: string[] = [];
+    const unregister = registerAddressGuard(() => order.push("guard"));
+    const unsubscribe = subscribeToAddress(() => order.push("subscriber"));
+
+    try {
+      traverseTo("#game");
+
+      expect(order).toEqual(["guard", "subscriber"]);
+    } finally {
+      unregister();
+      unsubscribe();
+    }
+  });
+
+  it("runs a guard even when reacting to the change unregisters it", () => {
+    // What React does on a traversal: the subscription re-renders, and the
+    // effect cleanup that follows tears the guard down. A guard that was its
+    // own DOM listener would be skipped for this very event, because a
+    // listener removed mid-dispatch is never invoked.
+    const guard = vi.fn();
+    const unregister = registerAddressGuard(guard);
+    const unsubscribe = subscribeToAddress(() => unregister());
+
+    try {
+      traverseTo("#game");
+
+      expect(guard).toHaveBeenCalledOnce();
+    } finally {
+      unregister();
+      unsubscribe();
+    }
+  });
+
+  it("is not run by the app's own pushes and replaces", () => {
+    const guard = vi.fn();
+    const unregister = registerAddressGuard(guard);
+
+    try {
+      pushHash("#game");
+      replaceHash("");
+
+      expect(guard).not.toHaveBeenCalled();
+    } finally {
+      unregister();
+    }
+  });
+
+  it("stops running once unregistered", () => {
+    const guard = vi.fn();
+    const unregister = registerAddressGuard(guard);
+
+    unregister();
+    traverseTo("#game");
+
+    expect(guard).not.toHaveBeenCalled();
+  });
+});
+
+describe("one change, one guard run", () => {
+  it("asks once when a traversal fires both popstate and hashchange", () => {
+    // Firefox fires both for one Back press, and the two arrive in a
+    // different order than in Chrome. Either way the guard sees one change.
+    const guard = vi.fn();
+    const unregister = registerAddressGuard(guard);
+
+    traverseTo("#game");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+
+    expect(guard).toHaveBeenCalledOnce();
+
+    unregister();
+  });
+
+  it("asks again the next time the address really moves", () => {
+    const guard = vi.fn();
+    const unregister = registerAddressGuard(guard);
+
+    traverseTo("#game");
+    traverseTo("");
+
+    expect(guard).toHaveBeenCalledTimes(2);
+
+    unregister();
+  });
+
+  it("still tells subscribers about every event, whether or not it guarded", () => {
+    const listener = vi.fn();
+    const unsubscribe = subscribeToAddress(listener);
+
+    traverseTo("#game");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+
+    expect(listener).toHaveBeenCalledTimes(2);
 
     unsubscribe();
   });
