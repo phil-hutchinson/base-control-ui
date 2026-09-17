@@ -45,11 +45,11 @@ Facts established while writing this story, so they are not rediscovered:
 
 ### Each screen gets an address
 
-| Screen         | URL                     |
-| -------------- | ----------------------- |
-| Main menu      | the page's own URL       |
-| Quick Guide    | that URL + `#how-to-play` |
-| Game in progress | that URL + `#game`     |
+| Screen           | URL                       |
+| ---------------- | ------------------------- |
+| Main menu        | the page's own URL        |
+| Quick Guide      | that URL + `#how-to-play` |
+| Game in progress | that URL + `#game`        |
 
 The hash is the **one** answer to what is on screen: the screen shown is
 whatever the hash asks for, not a second copy of that decision kept
