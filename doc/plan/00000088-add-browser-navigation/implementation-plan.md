@@ -875,7 +875,7 @@ risen, and every pre-existing `App.test.tsx` expectation intact;
 
 ### Step 5 — The owner drives it
 
-Status: in progress
+Status: committed
 
 Notes: The owner's pass found two real defects, both invisible to the automated
 suite and both fixed inline before the rest of the pass continued.
@@ -908,6 +908,15 @@ de-duplication were mutation-checked: each fails against the code it fixes.
 Making those tests faithful (moving the address before dispatching, as a real
 traversal does) also exposed a leak where a failed assertion left module state
 behind for the next test.
+
+With both fixed, the owner confirmed the whole pass: the guide's Back and
+Forward, the prompt on Back with cancel leaving the game on the same turn and
+the clock where it was, confirming to the menu with Forward not resuming it,
+the mid-game reload, the close/reload prompt appearing only during a game in
+progress, the game-over panel's silence and its own button, and the prompt's
+wording as it reads in a real dialog. The subfolder build was served from
+`/builds/v1/` and both reload cases kept the prefix — `#game` fell back to the
+menu with the address corrected and `/builds/v1/` intact.
 
 Depends on: every previous step.
 
