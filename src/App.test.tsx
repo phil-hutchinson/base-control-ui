@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { Board } from "./board/Board";
 import { GAME_NAME } from "./gameName";
@@ -12,6 +19,16 @@ import { GAME_NAME } from "./gameName";
 // automatic afterEach cleanup never registers itself; without this, each
 // test's render stays mounted and pollutes the next.
 afterEach(cleanup);
+
+// jsdom keeps one location for the whole file; without this, a test that
+// left a fragment behind (opening the guide, say) would decide which screen
+// the next test mounts on.
+function resetAddress() {
+  window.history.replaceState(null, "", "/");
+}
+
+beforeEach(resetAddress);
+afterEach(resetAddress);
 
 // Wraps the real Board in a spy, forwarding every call to the actual
 // implementation, so a single test, below, can count its renders without
@@ -390,9 +407,13 @@ describe("App", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Back" })[0]);
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
-    ).toBeInTheDocument();
+    // The guide's own Back button is the browser's Back (`useScreenAddress`),
+    // and `history.back()` resolves asynchronously.
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+      ).toBeInTheDocument();
+    });
     expect(
       within(screen.getByRole("group", { name: "Ships" })).getByRole("radio", {
         name: "5",

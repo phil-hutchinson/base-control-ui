@@ -680,7 +680,27 @@ Then `npm test`, `npm run typecheck`, `npm run lint` clean.
 
 ### Step 3 — The close/reload guard, and the app handed over to the browser
 
-Status: pending
+Status: committed
+
+Notes: Built as specified, 3a then 3b. `useLeaveConfirmation` is called from
+`useScreenAddress` with the same `gameInProgress` condition as the abandon
+guard. `useAppScreen` now takes `gameOver` and delegates `screen` and the
+three navigation actions to `useScreenAddress`; `App.tsx`'s hooks were
+reordered so `gameOver` exists before `useAppScreen` is called. Tests needing
+`await waitFor(...)` for `history.back()`'s asynchrony (D13.1):
+`useAppScreen.test.tsx`'s five tests that call `handleReturnToStart` after
+`handlePlay` or `handleOpenGuide`, and `App.test.tsx`'s guide round-trip test
+after clicking Back. Tests needing a `confirm` stub: none in this step — the
+`useAppScreen.test.tsx` cases that reach `handleReturnToStart` from a game use
+`gameOver: true` instead (the game-over panel's own route out, which needs no
+prompt), as the plan allowed; `App.test.tsx`'s guide round-trip never touches
+a game. `App.test.tsx` and `useAppScreen.test.tsx` also gained the address
+reset of D13.6. Every pre-existing assertion in both files is unchanged in
+value, only additionally awaited where a real traversal is now involved. No
+deviations from the plan. Suite: 70 files / 1324 tests (was 69 / 1318),
+typecheck, lint and `npx prettier --check` on every touched file all clean;
+`npm run format:check` shows only the two pre-existing warnings from the
+baseline.
 
 Depends on: Step 2 (the hook, complete).
 

@@ -1,12 +1,16 @@
 // The app's front door: which screen is showing, the six options chosen on
 // the start screen, and the two actions that move between screens. Lives
 // outside App.tsx so PLAY's wiring and the return to start are a real unit,
-// exercised on their own rather than only through the whole app.
+// exercised on their own rather than only through the whole app. Which
+// screen is showing is decided by the browser's address, not by state kept
+// here (`useScreenAddress`); this module only owns the options and dispatches
+// the session intent PLAY needs.
 
 import { useState } from "react";
 import { freshSeed } from "./game/seed";
 import type { SessionIntent } from "./game/session";
 import type { Screen } from "./nav/screenAddress";
+import { useScreenAddress } from "./nav/useScreenAddress";
 import { type ClockSetting, DEFAULT_CLOCK_SETTING } from "./rules/clock";
 import { DEFAULT_COMBAT_ENABLED } from "./rules/combatSetting";
 import { DEFAULT_FLEET_SIZE, type FleetSize } from "./rules/fleet";
@@ -38,23 +42,26 @@ export interface AppScreen {
 }
 
 /**
- * Holds which screen is showing and the six options chosen on the start
- * screen, so a finished game returns to the start screen with the options
- * it was played with still set. `handlePlay` dispatches `new-game` with a
- * fresh seed and the fleet size, charged-node count, combat setting,
- * scoring setting and length through `dispatch`, then switches to the game
- * screen; `handleReturnToStart` switches back to the start screen and changes
- * nothing else. The clock setting is not part of `new-game` — the rules
- * layer knows nothing about time — so it is held here purely for the game
- * screen to read. `handleOpenGuide` switches to the quick guide and changes
+ * Holds the six options chosen on the start screen, so a finished game
+ * returns to the start screen with the options it was played with still set,
+ * and delegates which screen is showing to `useScreenAddress`, which reads it
+ * from the browser's address. `handlePlay` dispatches `new-game` with a fresh
+ * seed and the fleet size, charged-node count, combat setting, scoring
+ * setting and length through `dispatch`, then hands the game its address;
+ * `handleReturnToStart` moves the browser back, the same as its own Back
+ * button. The clock setting is not part of `new-game` — the rules layer knows
+ * nothing about time — so it is held here purely for the game screen to read.
+ * `handleOpenGuide` opens the quick guide at its own address and changes
  * nothing else; there is no matching close action, because
- * `handleReturnToStart` already means "show the start screen and change
- * nothing else", which is exactly what leaving the guide does.
+ * `handleReturnToStart` already means "leave for the start screen", which is
+ * exactly what leaving the guide does.
  */
 export function useAppScreen(
   dispatch: (intent: SessionIntent) => void,
+  gameOver: boolean,
 ): AppScreen {
-  const [screen, setScreen] = useState<Screen>("start");
+  const { screen, showGame, showGuide, leaveToStart } =
+    useScreenAddress(gameOver);
   const [fleetSize, setFleetSize] = useState<FleetSize>(DEFAULT_FLEET_SIZE);
   const [chargedNodeCount, setChargedNodeCount] = useState<ChargedNodeCount>(
     DEFAULT_CHARGED_NODE_COUNT,
@@ -78,15 +85,15 @@ export function useAppScreen(
       combatEnabled,
       scoring,
     });
-    setScreen("game");
+    showGame();
   }
 
   function handleReturnToStart() {
-    setScreen("start");
+    leaveToStart();
   }
 
   function handleOpenGuide() {
-    setScreen("guide");
+    showGuide();
   }
 
   return {

@@ -7,7 +7,9 @@
 // reload, a cold link, or Forward after leaving one — it quietly means the
 // main menu, and the address is corrected to say so. Backing out of a game in
 // progress asks first, from inside the event that performed it, because a
-// traversal cannot be cancelled once the browser has done it.
+// traversal cannot be cancelled once the browser has done it. Closing or
+// reloading the tab is guarded the same way, through the browser's own
+// prompt (`useLeaveConfirmation`).
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
@@ -25,6 +27,7 @@ import {
   hashForScreen,
   screenFromHash,
 } from "./screenAddress";
+import { useLeaveConfirmation } from "./useLeaveConfirmation";
 
 /** The screen showing, and the three actions that change it. */
 export interface ScreenAddress {
@@ -49,6 +52,8 @@ export function useScreenAddress(gameOver: boolean): ScreenAddress {
   // A game in progress is one that is showing and has not finished. It is
   // what both guards are armed by, so they cover exactly the same window.
   const gameInProgress = screen === "game" && !gameOver;
+
+  useLeaveConfirmation(gameInProgress);
 
   useEffect(() => {
     if (hasGame && screen !== "game") {

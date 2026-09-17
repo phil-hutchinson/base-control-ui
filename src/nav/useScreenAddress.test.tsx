@@ -45,6 +45,11 @@ function stubConfirm(answer: boolean) {
   return vi.spyOn(window, "confirm").mockReturnValue(answer);
 }
 
+/** Dispatches a cancelable `beforeunload` and reports whether it was cancelled. */
+function dispatchBeforeUnload() {
+  return window.dispatchEvent(new Event("beforeunload", { cancelable: true }));
+}
+
 describe("the screen the address names", () => {
   it("reads the menu, the guide and an address it never issued", () => {
     expect(renderAt("").result.current.screen).toBe("start");
@@ -220,5 +225,37 @@ describe("backing out of a game in progress", () => {
     traverseTo("");
 
     expect(confirm).not.toHaveBeenCalled();
+  });
+});
+
+describe("the close/reload guard", () => {
+  it("cancels beforeunload while a game is in progress", () => {
+    const { result } = renderAt("");
+    act(() => {
+      result.current.showGame();
+    });
+
+    expect(dispatchBeforeUnload()).toBe(false);
+  });
+
+  it("does not cancel beforeunload on the menu or the guide", () => {
+    const { result } = renderAt("");
+
+    expect(dispatchBeforeUnload()).toBe(true);
+
+    act(() => {
+      result.current.showGuide();
+    });
+
+    expect(dispatchBeforeUnload()).toBe(true);
+  });
+
+  it("does not cancel beforeunload once the game is over", () => {
+    const { result } = renderAt("", true);
+    act(() => {
+      result.current.showGame();
+    });
+
+    expect(dispatchBeforeUnload()).toBe(true);
   });
 });
