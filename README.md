@@ -63,9 +63,12 @@ install, no account, no server.
 > screen also offers a quick guide — a first read for someone who has never
 > played, not a full rules reference — explaining scoring, movement, refuelling
 > and how nodes come and go, with a back button that returns you to the start
-> screen with the six choices exactly as you left them. Changing any of the six
-> choices starts nothing — the board only appears once PLAY is pressed, dealt
-> with the choices you made. A clock is each player's own time for the whole
+> screen with the six choices exactly as you left them. Your browser's own
+> back and forward buttons move between the screens too, and the address bar
+> says which screen you are on.
+> Changing any of the six choices starts nothing — the board only appears
+> once PLAY is pressed, dealt with the choices you made. A clock is each
+> player's own time for the whole
 > game, not per turn — a thirty-round game at six seconds a turn gives each of
 > you three minutes to spend however you like across your turns. A player who
 > runs out passes every turn from then on, and once both players have run out
@@ -144,8 +147,12 @@ install, no account, no server.
 > reaches the number of rounds you chose, it ends: the player with the most
 > energy wins, an equal score is a draw, and the "New Game" button returns
 > you to the start screen with the same choices still set, ready to play
-> again. There is still no way to save or record a game and no computer
-> opponent to play against. The project is being built up story by story.
+> again. Leaving a game before it ends — with your browser's back button, or
+> by closing or reloading the page — asks you to confirm first, because
+> nothing is saved: a game you leave is gone, and reloading starts you back
+> at the start screen. There is still no way to save or record a game and no
+> computer opponent to play against. The project is being built up story by
+> story.
 
 ## The rules
 

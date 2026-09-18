@@ -1,14 +1,23 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, renderHook } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAppScreen } from "./useAppScreen";
 
 afterEach(cleanup);
 
+// jsdom keeps one location for the whole file; without this a test that left
+// a fragment behind would decide which screen the next test mounts on.
+function resetAddress() {
+  window.history.replaceState(null, "", "/");
+}
+
+beforeEach(resetAddress);
+afterEach(resetAddress);
+
 describe("useAppScreen", () => {
   it("opens on the start screen with the default options", () => {
-    const { result } = renderHook(() => useAppScreen(vi.fn()));
+    const { result } = renderHook(() => useAppScreen(vi.fn(), false));
 
     expect(result.current.screen).toBe("start");
     expect(result.current.fleetSize).toBe(6);
@@ -21,7 +30,7 @@ describe("useAppScreen", () => {
 
   it("PLAY dispatches the selected options as a new game and moves to the game screen", () => {
     const dispatch = vi.fn();
-    const { result } = renderHook(() => useAppScreen(dispatch));
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
 
     act(() => {
       result.current.setFleetSize(5);
@@ -52,9 +61,12 @@ describe("useAppScreen", () => {
     expect(result.current.screen).toBe("game");
   });
 
-  it("carries a chosen combat setting of on into the new-game intent, and keeps it on returning to start", () => {
+  it("carries a chosen combat setting of on into the new-game intent, and keeps it on returning to start", async () => {
     const dispatch = vi.fn();
-    const { result } = renderHook(() => useAppScreen(dispatch));
+    // gameOver: true — handleReturnToStart is reached from a game in progress
+    // only through the game-over panel's button, so this is the flow that
+    // actually crosses the guard without a confirmation prompt.
+    const { result } = renderHook(() => useAppScreen(dispatch, true));
 
     act(() => {
       result.current.setCombatEnabled(true);
@@ -71,6 +83,9 @@ describe("useAppScreen", () => {
       result.current.handleReturnToStart();
     });
 
+    await waitFor(() => {
+      expect(result.current.screen).toBe("start");
+    });
     expect(result.current.combatEnabled).toBe(true);
 
     dispatch.mockClear();
@@ -83,9 +98,9 @@ describe("useAppScreen", () => {
     );
   });
 
-  it("carries a chosen scoring setting of bonus into the new-game intent, and keeps it on returning to start", () => {
+  it("carries a chosen scoring setting of bonus into the new-game intent, and keeps it on returning to start", async () => {
     const dispatch = vi.fn();
-    const { result } = renderHook(() => useAppScreen(dispatch));
+    const { result } = renderHook(() => useAppScreen(dispatch, true));
 
     act(() => {
       result.current.setScoring("bonus");
@@ -102,6 +117,9 @@ describe("useAppScreen", () => {
       result.current.handleReturnToStart();
     });
 
+    await waitFor(() => {
+      expect(result.current.screen).toBe("start");
+    });
     expect(result.current.scoring).toBe("bonus");
 
     dispatch.mockClear();
@@ -114,9 +132,9 @@ describe("useAppScreen", () => {
     );
   });
 
-  it("carries a chosen charged-node count of three into the new-game intent, and keeps it on returning to start", () => {
+  it("carries a chosen charged-node count of three into the new-game intent, and keeps it on returning to start", async () => {
     const dispatch = vi.fn();
-    const { result } = renderHook(() => useAppScreen(dispatch));
+    const { result } = renderHook(() => useAppScreen(dispatch, true));
 
     act(() => {
       result.current.setChargedNodeCount(3);
@@ -133,12 +151,15 @@ describe("useAppScreen", () => {
       result.current.handleReturnToStart();
     });
 
+    await waitFor(() => {
+      expect(result.current.screen).toBe("start");
+    });
     expect(result.current.chargedNodeCount).toBe(3);
   });
 
-  it("returning to start moves to the start screen and changes none of the options", () => {
+  it("returning to start moves to the start screen and changes none of the options", async () => {
     const dispatch = vi.fn();
-    const { result } = renderHook(() => useAppScreen(dispatch));
+    const { result } = renderHook(() => useAppScreen(dispatch, true));
 
     act(() => {
       result.current.setFleetSize(6);
@@ -161,7 +182,9 @@ describe("useAppScreen", () => {
       result.current.handleReturnToStart();
     });
 
-    expect(result.current.screen).toBe("start");
+    await waitFor(() => {
+      expect(result.current.screen).toBe("start");
+    });
     expect(result.current.fleetSize).toBe(6);
     expect(result.current.chargedNodeCount).toBe(4);
     expect(result.current.lengthInRounds).toBe(60);
@@ -171,7 +194,7 @@ describe("useAppScreen", () => {
 
   it("opening the guide moves to the guide screen and changes nothing else", () => {
     const dispatch = vi.fn();
-    const { result } = renderHook(() => useAppScreen(dispatch));
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
 
     act(() => {
       result.current.handleOpenGuide();
@@ -184,9 +207,9 @@ describe("useAppScreen", () => {
     expect(dispatch).not.toHaveBeenCalled();
   });
 
-  it("options set before opening the guide survive opening it and returning to start", () => {
+  it("options set before opening the guide survive opening it and returning to start", async () => {
     const dispatch = vi.fn();
-    const { result } = renderHook(() => useAppScreen(dispatch));
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
 
     act(() => {
       result.current.setFleetSize(5);
@@ -204,7 +227,9 @@ describe("useAppScreen", () => {
       result.current.handleReturnToStart();
     });
 
-    expect(result.current.screen).toBe("start");
+    await waitFor(() => {
+      expect(result.current.screen).toBe("start");
+    });
     expect(result.current.fleetSize).toBe(5);
     expect(result.current.lengthInRounds).toBe(45);
     expect(result.current.clockSetting).toBe(6);

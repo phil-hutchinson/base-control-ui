@@ -2,8 +2,8 @@
 // reference (story.md). Assembles the guide's copy with its diagrams into
 // one scrollable page, with a Back button at the top and a second one after
 // the last diagram. Purely presentational — no session, no state, and
-// nothing dispatched — reachable only from, and returning only to, the start
-// screen (`App.tsx`, `useAppScreen`).
+// nothing dispatched. Reachable from the start screen or from its own
+// address, and both Back buttons move the browser back (`src/nav`).
 
 import type { ComponentType } from "react";
 import { PlanetDefs } from "../board/PlanetDefs";

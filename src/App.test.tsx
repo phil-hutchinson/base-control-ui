@@ -1,17 +1,71 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { Board } from "./board/Board";
 import { GAME_NAME } from "./gameName";
+import { LEAVE_GAME_PROMPT } from "./nav/screenAddress";
 
 // Vitest's globals are off (see vite.config.ts), so Testing Library's
 // automatic afterEach cleanup never registers itself; without this, each
 // test's render stays mounted and pollutes the next.
 afterEach(cleanup);
+
+// jsdom keeps one location for the whole file; without this, a test that
+// left a fragment behind (opening the guide, say) would decide which screen
+// the next test mounts on.
+function resetAddress() {
+  window.history.replaceState(null, "", "/");
+}
+
+beforeEach(resetAddress);
+afterEach(resetAddress);
+
+// A Back or Forward press, without waiting on the browser: moves the address
+// and dispatches the event a real traversal would fire. `history.back()` is
+// asynchronous, so tests that are not about
+// history's own shape use this instead, matching `useScreenAddress.test.tsx`.
+function traverseTo(hash: string) {
+  act(() => {
+    window.history.replaceState(null, "", `/${hash}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+}
+
+// jsdom does not implement window.confirm; this stubs it for the one test
+// file where the abandon guard is actually crossed by a whole app. Restored
+// after every test so a call count from one test can never leak into the
+// next, and so the confirm stub never outlives the render it belongs to.
+function spyOnConfirm() {
+  return vi.spyOn(window, "confirm");
+}
+
+let confirmSpy: ReturnType<typeof spyOnConfirm> | undefined;
+
+function stubConfirm(answer: boolean) {
+  confirmSpy = spyOnConfirm().mockReturnValue(answer);
+  return confirmSpy;
+}
+
+afterEach(() => {
+  confirmSpy?.mockRestore();
+  confirmSpy = undefined;
+});
+
+/** Dispatches a cancelable `beforeunload` and reports whether it was cancelled. */
+function dispatchBeforeUnload() {
+  return window.dispatchEvent(new Event("beforeunload", { cancelable: true }));
+}
 
 // Wraps the real Board in a spy, forwarding every call to the actual
 // implementation, so a single test, below, can count its renders without
@@ -390,9 +444,13 @@ describe("App", () => {
 
     await user.click(screen.getAllByRole("button", { name: "Back" })[0]);
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
-    ).toBeInTheDocument();
+    // The guide's own Back button is the browser's Back (`useScreenAddress`),
+    // and `history.back()` resolves asynchronously.
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+      ).toBeInTheDocument();
+    });
     expect(
       within(screen.getByRole("group", { name: "Ships" })).getByRole("radio", {
         name: "5",
@@ -436,5 +494,149 @@ describe("App", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("addresses a game in progress at #game", async () => {
+    render(<App />);
+
+    await pressPlay();
+
+    expect(window.location.hash).toBe("#game");
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+  });
+
+  it("addresses the quick guide, and browser Back and Forward move between it and the menu", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    // A non-default choice, so that finding it still set after the traversal
+    // says the options survived rather than that they were reset to these.
+    await user.click(
+      within(screen.getByRole("group", { name: "Ships" })).getByRole("radio", {
+        name: "4",
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: "Quick Guide" }));
+    expect(window.location.hash).toBe("#how-to-play");
+
+    traverseTo("");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("group", { name: "Ships" })).getByRole("radio", {
+        name: "4",
+      }),
+    ).toBeChecked();
+
+    traverseTo("#how-to-play");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "QUICK GUIDE" }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the guide when the page loads at #how-to-play", () => {
+    window.history.replaceState(null, "", "/#how-to-play");
+    render(<App />);
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "QUICK GUIDE" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the menu, and corrects the address, on a cold load of #game", async () => {
+    const confirm = stubConfirm(true);
+    window.history.replaceState(null, "", "/#game");
+    render(<App />);
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    expect(screen.queryByRole("grid")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(window.location.hash).toBe("");
+    });
+    // Neither prompt: there was never a game here to leave.
+    expect(confirm).not.toHaveBeenCalled();
+    expect(dispatchBeforeUnload()).toBe(true);
+  });
+
+  it("prompts before Back leaves a game in progress, and cancelling leaves it on the same turn with the clock where it was", async () => {
+    // `shouldAdvanceTime` lets user-event's own scheduling keep resolving
+    // while the fake clock is otherwise driven explicitly below, the same
+    // pattern the file's other clock test uses.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ delay: null });
+      render(<App />);
+
+      await user.click(within(clockGroup()).getByRole("radio", { name: "6s" }));
+      await user.click(screen.getByRole("button", { name: "Play" }));
+
+      expect(screen.getAllByText("3:00").length).toBeGreaterThan(0);
+
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(screen.getAllByText("2:57").length).toBeGreaterThan(0);
+
+      const confirm = stubConfirm(false);
+      traverseTo("");
+
+      expect(confirm).toHaveBeenCalledWith(LEAVE_GAME_PROMPT);
+      expect(screen.getByText("Green to play")).toBeInTheDocument();
+      expect(screen.getByText("1/30")).toBeInTheDocument();
+      expect(window.location.hash).toBe("#game");
+      // The reading proves the game screen never unmounted: `useGameClock`
+      // keeps spent time in refs, so an unmount would silently reset it to
+      // the full budget instead of leaving it advanced.
+      expect(screen.getAllByText("2:57").length).toBeGreaterThan(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("abandons the game once Back is confirmed, and Forward does not resume it or ask again", async () => {
+    render(<App />);
+    const confirm = stubConfirm(true);
+
+    await pressPlay();
+    traverseTo("");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+
+    traverseTo("#game");
+
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(window.location.hash).toBe("");
+    });
+    expect(confirm).toHaveBeenCalledOnce();
+  });
+
+  it("cancels the tab's close/reload while a game is in progress, and not on the menu or the guide", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(dispatchBeforeUnload()).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: "Quick Guide" }));
+    expect(dispatchBeforeUnload()).toBe(true);
+
+    await user.click(screen.getAllByRole("button", { name: "Back" })[0]);
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+      ).toBeInTheDocument();
+    });
+
+    await pressPlay();
+    expect(dispatchBeforeUnload()).toBe(false);
   });
 });

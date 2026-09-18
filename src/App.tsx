@@ -37,6 +37,15 @@ export function App() {
     undefined,
     createStartingSession,
   );
+  const { displayed: displayedEnergy, settled } = useDisplayedEnergy(
+    session.state.energy,
+  );
+
+  // The panel takes over the whole cabinet once the game has ended and the
+  // last turn's score roll has settled — until then the game stays on
+  // screen and the HUD keeps counting up.
+  const gameOver = isGameOver(session.state) && settled;
+
   const {
     screen,
     fleetSize,
@@ -54,15 +63,7 @@ export function App() {
     handlePlay,
     handleReturnToStart,
     handleOpenGuide,
-  } = useAppScreen(dispatch);
-  const { displayed: displayedEnergy, settled } = useDisplayedEnergy(
-    session.state.energy,
-  );
-
-  // The panel takes over the whole cabinet once the game has ended and the
-  // last turn's score roll has settled — until then the game stays on
-  // screen and the HUD keeps counting up.
-  const gameOver = isGameOver(session.state) && settled;
+  } = useAppScreen(dispatch, gameOver);
 
   return (
     <main className="app">
