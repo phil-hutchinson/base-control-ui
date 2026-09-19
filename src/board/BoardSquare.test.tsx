@@ -27,6 +27,38 @@ describe("BoardSquare", () => {
     expect(container.querySelector(".ship-model")).toBeNull();
   });
 
+  it("renders no rotator mark on a plain empty square", () => {
+    const { container } = render(
+      <BoardSquare isPlanet={false} squareName="H8" />,
+    );
+
+    expect(container.querySelector(".rotator-marker")).toBeNull();
+  });
+
+  it("renders the rotator mark, aria-hidden, when the square holds a rotator", () => {
+    const { container } = render(
+      <BoardSquare isPlanet={false} squareName="H8" hasRotator={true} />,
+    );
+
+    const marker = container.querySelector(".rotator-marker");
+    expect(marker).toBeInTheDocument();
+    expect(marker).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("renders no rotator mark on a node square", () => {
+    const { container } = render(
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        nodeState="inactive"
+        priority={1}
+      />,
+    );
+
+    expect(container.querySelector(".rotator-marker")).toBeNull();
+    expect(container.querySelector(".node-marker")).toBeInTheDocument();
+  });
+
   it("draws the planet modifier class only when the square is a planet", () => {
     const { container: planet } = render(
       <BoardSquare isPlanet={true} squareName="C7" />,

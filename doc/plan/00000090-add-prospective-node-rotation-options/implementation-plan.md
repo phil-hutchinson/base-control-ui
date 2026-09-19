@@ -133,7 +133,7 @@ inconvenient escalates to the owner rather than re-deciding.
   styling. If seven groups do not fit a short landscape window, that is a
   **finding for the owner**, not a layout pass this story takes on.
 - **S14. The Quick Guide's copy and diagram for NEW CHARGED NODE SELECTION are
-  the owner's** and arrive when Step 11 is reached. The step is a deliberate
+  the owner's** and arrive when Step 13 is reached. The step is a deliberate
   placeholder. The guide's other sections and diagrams are untouched.
 - **S15. No backwards compatibility** for games recorded under 0.35
   (`CLAUDE.md`).
@@ -542,11 +542,22 @@ Per `CLAUDE.md` and the owner's standing preference, live-region wording is
 8. The start screen's seventh group. **Manual** (the layout risk).
 9. The board shows a rotator, and the accessibility note. **Manual** (new
    artwork).
-10. The live region says the queue moved on. _Automated._
-11. The Quick Guide's NEW CHARGED NODE SELECTION section and its diagram.
+10. A quieter rotator: silver, shorter arcs, wider arrowheads. **Manual**
+    (artwork again).
+11. Six rotators, not nine: the four corner sections always, plus two drawn
+    from the other five. A rules change, folded into 0.36. **Manual.**
+12. The live region says the queue moved on. _Automated._
+13. The Quick Guide's NEW CHARGED NODE SELECTION section and its diagram.
     **Manual — owner-supplied copy.**
-12. `README.md`. _Automated._
-13. The owner plays all three settings. **Manual.**
+14. `README.md`. _Automated._
+15. The owner plays all three settings. **Manual.**
+
+Steps 10 and 11 were added after Step 9's manual gate, where the owner found
+the board too noisy and asked for a quieter, sparser rotator (see those steps
+for the feedback in full). They are inserted here, rather than appended after
+the steps that were already written, because that is the order they are
+worked in: the guide (13), the README (14) and the owner's play-through (15)
+all describe the rotator as it finally is, not as Step 9 first drew it.
 
 ---
 
@@ -924,7 +935,7 @@ dedicated replacing the whole rotator set clear of the new nodes and the
 ships (and different from the list before); and a refill under continuous
 or planet leaving both `state.rotators` and `newRotators` empty. Also had
 to add `newRotators: []` to three pre-existing `queue-refilled` object
-literals in `src/board/announcements.test.ts` (Step 10's file, not this
+literals in `src/board/announcements.test.ts` (Step 12's file, not this
 step's) purely to satisfy the new required field — the same kind of
 mechanical fallout the plan's D11 already anticipated for `GameState`
 literals, just one field short of the full sweep since only `endOfTurn.ts`'s
@@ -1305,7 +1316,49 @@ takes on (S13).
 
 ### Step 9 — The board shows a rotator
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/nodeArt.ts` holding `INACTIVE_RING_COLOR`, moved out
+of `NodeMarker.tsx` (which now imports it; only the colour moved, per D12).
+Added `src/board/RotatorMarker.tsx` (+ `RotatorMarker.css`, following
+`NodeMarker.css`'s shape): a stateless component drawing three ~90-degree
+arcs with three equal ~30-degree gaps (90+90+90 arc plus 30+30+30 gap sums
+to 360, computed from `ARC_SPAN_DEGREES`/`ARC_COUNT` rather than hard-coded
+so the "about 90, gaps equal" relationship is visible in the constants), each
+arc ending in a small triangular arrowhead computed from the arc's own
+tangent direction at its clockwise (leading) end, in `INACTIVE_RING_COLOR`,
+in the same `0 0 100 100` viewBox, `aria-hidden`. `BoardSquare` gained the
+optional independent `hasRotator` boolean, drawn via `<RotatorMarker />` in
+the same stacking slot `NodeMarker` occupies (beneath any ship), and its
+header comment now notes a square is at most one of a planet, a node and a
+rotator. `Board.tsx` builds a `Set` of rotator square names from
+`state.rotators` once per render (beside the ship index) and passes
+`hasRotator` down to both `BoardSquare` and `squareLabel`. `squareLabel.ts`
+names a rotator in the shared planet-or-node slot (`"F7, rotator"`), with an
+`else if` after the node-state check so the three stay mutually exclusive in
+the reader's eye even though nothing enforces it at the type level; its
+header comment was updated accordingly. Extended `BoardSquare.test.tsx` (a
+rotator square draws the mark aria-hidden; a bare square draws neither it nor
+a node marker; a node square draws no rotator mark), `squareLabel.test.ts`
+(the rotator wording, its absence when `hasRotator` is false or omitted, and
+that a node state takes precedence over a rotator flag in a hand-built
+state that puts both) and `Board.test.tsx` (a new `stateWithRotators` helper
+and a "rotators the board is told to draw" describe block: the mark appears
+on exactly the squares `state.rotators` names and nowhere else, and none at
+all when the list is empty). Added the accessibility note to
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md` under a new "From
+story 90" heading (appended at the end of the file, matching its established
+chronological-by-edit rather than numeric ordering), recording that a
+rotator reads as a bare noun with no explanation of what it does and that
+there is no summary of where the board's rotators are for a screen-reader
+user (D14, S12). No deviation from the plan. `npm test` went from 72 files /
+1396 tests to 72 files / 1404 tests (8 new, all passing, no existing
+expectation changed); `npm run typecheck` and `npm run lint` are clean;
+`npm run format:check` shows only the three pre-existing baseline warnings
+after a `prettier --write` pass on the two files this step's own formatting
+touched (`RotatorMarker.tsx`, `BoardSquare.test.tsx`). The artwork itself —
+legibility, the turning read, sizing in both orientations, and that the
+board is not visibly smaller — is the owner's manual check, not run here.
 
 - **`src/board/nodeArt.ts`** (new): holds `INACTIVE_RING_COLOR` (`#DAA520`),
   moved out of `NodeMarker.tsx`, which now imports it. Only the colour moves
@@ -1341,6 +1394,12 @@ screen-reader user gets no summary of where the nine of them are (D14, S12).
 Depends on: Step 3 (`state.rotators` exists) and Step 8 (a dedicated game can
 be started from the UI, which is what makes the manual check possible).
 
+Gate outcome: the owner confirmed the functionality works, and asked for a
+quieter board — silver rather than gold, shorter arcs, wider arrowheads, and
+six rotators rather than nine. Those became Steps 10 and 11. Step 10 rewrote
+this step's own new files before this step had been committed, so the two
+were committed together; Step 11's rules change is its own commit.
+
 Verification (**manual** — new artwork, which only an eye can settle): with
 `npm test`, `npm run typecheck` and `npm run lint` green first, the owner runs
 `npm run dev`, starts a **DEDICATED** game, and confirms that the rotator mark
@@ -1351,7 +1410,122 @@ Also that a **CONTINUOUS** game draws no rotator anywhere.
 
 ---
 
-### Step 10 — The live region says the queue moved on
+### Step 10 — A quieter rotator: silver, shorter arcs, wider arrowheads
+
+Status: committed
+
+Notes: Done inline by the orchestrator rather than dispatched, being three
+constants and their comments. `nodeArt.ts` gained `ROTATOR_COLOR` (`#C0C0C0`)
+alongside `INACTIVE_RING_COLOR`, and its header comment now records why the
+two are no longer the same colour; `RotatorMarker.tsx` imports the new
+constant, drops `ARC_SPAN_DEGREES` from 90 to 68 (a quarter off each arc,
+so the three gaps grow from 30 degrees to 52), and widens the arrowhead by
+half. The arrowhead's width constant was renamed `ARROWHEAD_BASE_WIDTH`,
+because `ARROWHEAD_HALF_WIDTH` was halved again at both use sites and so had
+never held the half-width its name claimed; 9 to 13.5 is the +50% against
+the width actually drawn. No test asserted the mark's colour or geometry, so
+none needed changing.
+
+What to implement: the owner's Step 9 gate feedback was that the mark works
+but the board reads as "a lot noisier". Three changes, all in the artwork and
+none in the rules: draw the mark in **silver** rather than the inactive
+rings' gold, shorten **each arc by about a quarter** so the gaps between them
+grow, and widen the **arrowheads by half** so the mark still reads as turning
+at the board's square size once its arcs are shorter.
+
+This retires half of D12's reasoning: the mark was drawn in
+`INACTIVE_RING_COLOR` so it would read as "this moves the rings" by being the
+rings' own colour, and nine gold marks on a board that already carries gold
+rings is exactly the noise the owner saw. The colour is still shared **from**
+`nodeArt.ts` — the file stays the one place a square-level drawing's colour
+lives — but the rotator now has its own entry there, and the header comment
+says why.
+
+Why it comes here: it is the smallest of the two changes the gate raised and
+touches nothing the other does, so it lands first and is judged on its own;
+Step 11's larger change then has a settled mark to draw fewer of.
+
+Verification (**manual** — artwork, which only an eye can settle): with
+`npm test`, `npm run typecheck` and `npm run lint` green, the owner runs
+`npm run dev`, starts a **DEDICATED** game and confirms the marks are silver,
+still read as turning at the board's square size in both orientations, and
+that the board as a whole is quieter than it was. Worth an eye in particular:
+silver sits nearer the **depleted** node's grey (`#808080`) than gold did, so
+the two must still be tellable apart at a glance.
+
+Gate outcome: the owner confirmed the quieter mark reads correctly.
+
+---
+
+### Step 11 — Six rotators, not nine: the corners always, then two more
+
+Status: pending
+
+What to implement: the board carries **six** rotators rather than nine. The
+four **corner** sections — the section holding A1, the one holding K1, the one
+holding A11 and the one holding K11, in `ROTATOR_SECTIONS` order — always
+carry one. The remaining **two** are drawn from the other five sections
+(the four edge sections and the middle one), each section carrying at most
+one. A chosen section with no free square simply carries no rotator, exactly
+as today: the draw does **not** fall through to another section to make the
+count up, so a board can still hold fewer than six.
+
+This is a **rules change**, so it changes `doc/ruleset/rules.md` §3.3 and
+anything else in the document that says "nine" of rotators (§2's Rotator
+entry, if it counts them). Per the project's one-bump-per-branch rule, it
+**folds into the existing 0.36 bump**: do not bump the version again and do
+not add a second changelog entry — rewrite the 0.36 entry so it describes
+six rotators as if that is what 0.36 always said, since 0.36 has never been
+on `main`.
+
+In `src/rules/rotators.ts`:
+
+- `ROTATOR_SECTIONS` keeps its nine sections and its fixed order, which must
+  still never change — it is the seed's order. Name the four corner sections
+  and the five others off that array rather than rebuilding the geometry.
+- `placeRotators` draws in a **fixed, documented order**: the four corner
+  sections first, in `ROTATOR_SECTIONS` order, one square drawn uniformly
+  from each section's free squares; then the **two extra sections**, drawn
+  from the five remaining by index, without replacement (draw one of five,
+  then one of the four left); then one square from each of those, in
+  `ROTATOR_SECTIONS` order, so the order squares are drawn in does not depend
+  on which sections came out. Say in the doc comment that this order fixes
+  the seed and must not change.
+- A section with no free square consumes **no** seed step for its square (as
+  today) — but note the two section draws themselves always happen, and always
+  consume their step, whether or not the sections they pick turn out to be
+  full. Write that down: it is what keeps the stream predictable.
+- The return stays board-ordered, and the "at most nine seed steps" note
+  becomes at most eight (two section draws plus at most six square draws).
+
+Everything else that counts rotators aloud follows: the module header, the
+`RotatorMarker` doc comment ("nine of these may be on the board"), Step 9's
+note in `doc/plan/00000021-accessibility-tech-debt/known-issues.md` ("all
+nine (or fewer)"), and `story.md`, which describes nine and must be corrected
+in place to six — the project's rule is that a story says what was built, not
+what was first asked for.
+
+Tests: `src/rules/rotators.test.ts` needs its existing count expectations
+moved to six, plus new cases — every corner section always carries one; only
+two of the other five do; two full boards drawn from the same seed agree; a
+board whose corner section is full carries five rather than backfilling.
+`gameState.test.ts`, `endOfTurn.test.ts` and `fullGame.test.ts` assert
+rotator counts or invariants and will need the same move.
+
+Why it comes here: it changes the ruleset and the draw, so it must land
+before the guide (13) and the README (14) describe the board, and before the
+owner's play-through (15). It comes after Step 10 so that the mark being
+judged is the final one.
+
+Verification (**manual**, with the automated suite behind it): `npm test`,
+`npm run typecheck` and `npm run lint` green, with the new placement tests
+among them; then the owner runs `npm run dev`, starts a **DEDICATED** game
+and confirms the board carries six rotators, one in each corner section and
+two elsewhere, and that the board now reads as quiet enough.
+
+---
+
+### Step 12 — The live region says the queue moved on
 
 Status: pending
 
@@ -1380,7 +1554,7 @@ manually verified (S12).
 
 ---
 
-### Step 11 — The Quick Guide's NEW CHARGED NODE SELECTION section
+### Step 13 — The Quick Guide's NEW CHARGED NODE SELECTION section
 
 Status: pending
 
@@ -1427,7 +1601,7 @@ to say.
 
 ---
 
-### Step 12 — `README.md`
+### Step 14 — `README.md`
 
 Status: pending
 
@@ -1459,7 +1633,7 @@ no default as a rule.
 
 ---
 
-### Step 13 — The owner plays all three settings
+### Step 15 — The owner plays all three settings
 
 Status: pending
 

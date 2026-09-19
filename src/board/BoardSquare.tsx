@@ -1,10 +1,11 @@
 // One square's stacked contents: a planet's drawing beneath everything else,
-// then the node marker beneath any ship standing on it, then the node's
-// countdown number (rules.md §8.3) above the ship, then, during ship
-// selection, a legal destination or a legal attack target's marking, sharing
-// the square in a single-cell grid rather than absolute positioning (see
-// BoardSquare.css). The selected ship's own square carries no drawing at
-// all - only its accessible name says "selected". A destination's mark
+// then the node marker or the rotator mark beneath any ship standing on it
+// (a square carries at most one of the three - rules.md §3.2, §3.3), then
+// the node's countdown number (rules.md §8.3) above the ship, then, during
+// ship selection, a legal destination or a legal attack target's marking,
+// sharing the square in a single-cell grid rather than absolute positioning
+// (see BoardSquare.css). The selected ship's own square carries no drawing
+// at all - only its accessible name says "selected". A destination's mark
 // draws a free move's disc or, when the move costs power, that many fuel
 // bars in its place; a target's mark always draws its ring, because the
 // ring is what tells an attack from a move, and adds the same bars inside
@@ -37,6 +38,7 @@ import {
 import { Planet } from "./Planet";
 import type { PlanetArt } from "./planetArt";
 import { NodeMarker } from "./NodeMarker";
+import { RotatorMarker } from "./RotatorMarker";
 import { NodeCountdown } from "./NodeCountdown";
 import "./BoardSquare.css";
 
@@ -48,6 +50,12 @@ export interface BoardSquareProps {
   readonly nodeState?: NodeState;
   readonly cyclePosition?: number;
   readonly priority?: NodePriority;
+  /**
+   * Whether the square holds a rotator (rules.md §3.3), independent of
+   * `nodeState` and `isPlanet` — a square is at most one of the three, but
+   * that is a fact about the board, not something this component enforces.
+   */
+  readonly hasRotator?: boolean;
   /**
    * The countdown number a charged or trapped node shows (rules.md §8.3, see
    * `../rules/countdown`'s `countdownNumber`), or `undefined` when the node
@@ -210,6 +218,7 @@ export function BoardSquare({
   nodeState,
   cyclePosition,
   priority,
+  hasRotator,
   countdownNumber,
   occupant,
   condition,
@@ -243,6 +252,7 @@ export function BoardSquare({
           priority={priority}
         />
       )}
+      {hasRotator && <RotatorMarker />}
       {occupant && <ShipModel side={occupant.side} power={occupant.power} />}
       {countdownNumber !== undefined && (
         <NodeCountdown

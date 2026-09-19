@@ -79,6 +79,37 @@ describe("squareLabel", () => {
     ).toBe("H4, depleted node");
   });
 
+  it("names a rotator, in the same slot a planet or a node occupies", () => {
+    expect(
+      squareLabel({
+        square: squareAt("F", 7),
+        isPlanet: false,
+        hasRotator: true,
+      }),
+    ).toBe("F7, rotator");
+  });
+
+  it("says nothing about a rotator when the square does not hold one", () => {
+    expect(
+      squareLabel({
+        square: squareAt("F", 7),
+        isPlanet: false,
+        hasRotator: false,
+      }),
+    ).toBe("F7");
+  });
+
+  it("prefers a node state over a rotator flag, since a square is never both", () => {
+    expect(
+      squareLabel({
+        square: squareAt("F", 7),
+        isPlanet: false,
+        nodeState: "inactive",
+        hasRotator: true,
+      }),
+    ).toBe("F7, inactive node");
+  });
+
   it("names an unmarked square exactly as before, when no mark is given", () => {
     expect(
       squareLabel({
