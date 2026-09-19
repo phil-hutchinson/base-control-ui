@@ -1103,7 +1103,33 @@ no thrown `RangeError` from a legal attack under the planet setting;
 
 ### Step 6 — Whole games at all three settings, and the seeded stream proved unchanged
 
-Status: pending
+Status: committed
+
+Notes: `playFullGame` in `fullGame.test.ts` gained two optional trailing
+parameters — `nodeRotation` (defaulting to continuous) and `onPly`, a
+callback invoked with the state after the opening deal and again after every
+ply — so the existing greedy policy could be reused unchanged. Added
+`assertQueueInvariant` (exactly three inactive nodes holding 1, 2 and 3, no
+repeat) and `assertRotatorsAreFree` (no rotator square carries a node, a
+planet or a ship; a no-op under continuous/planet, since `state.rotators` is
+empty there) as new helpers, and a `describe.each(NODE_ROTATION_SETTINGS)`
+block that plays the file's existing three-round game at each of the three
+settings with both assertions wired through `onPly`, plus a final check
+against the finished state. In `seededReplay.test.ts`, added a new describe
+block with two deal-level cases (not whole games, since the point is the
+opening deal specifically): continuous and planet deal the identical opening
+board and leave the identical `randomSeed` behind (rotators empty at both),
+while dedicated deals the identical board but leaves a different
+`randomSeed` and a non-empty rotator list — proving D10's claim directly
+rather than by assumption. Extended the file's header comment with a
+paragraph on 0.36. No recorded figure in `seededReplay.test.ts` needed to
+change — all pre-existing expectations passed unmodified, confirming the
+seeded stream is untouched at continuous. No deviation from the plan. `npm
+test` went from 72 files / 1383 tests to 72 files / 1388 tests (5 new: 3 in
+`fullGame.test.ts`, 2 in `seededReplay.test.ts`, no existing expectation
+changed); `npm run typecheck` and `npm run lint` are clean; `npm run
+format:check` needed one `prettier --write` pass on `fullGame.test.ts` and
+otherwise shows only the three pre-existing baseline warnings.
 
 Test-only, and deliberately so: everything the rules layer owes this story is
 now in place, and this step proves it holds over whole games rather than
