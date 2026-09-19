@@ -168,7 +168,7 @@ export interface QueueRefilledEffect {
   readonly type: "queue-refilled";
   readonly discardedSquares: readonly Square[];
   readonly newNodes: readonly InactiveNodeDraw[];
-  /** For a future listener; the board itself reads `state.rotators` directly and has no listener on this effect yet. */
+  /** The squares the fresh rotator set was placed on; nothing listens for it yet. */
   readonly newRotators: readonly Square[];
 }
 
