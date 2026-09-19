@@ -1641,46 +1641,83 @@ manually verified (S12).
 
 Status: pending
 
-**Deliberate placeholder — the copy is the owner's and arrives when this step
-is reached** (S14). Do not invent it, and do not paraphrase `rules.md` into the
-guide's voice without asking.
+The owner supplied the copy at this step, as S14 said they would, and it is
+reproduced below **verbatim**. It is not to be reworded, re-punctuated or
+re-ordered: where it differs from `rules.md`'s own phrasing, the copy wins,
+because the guide is the player's voice and the rules document is not.
 
-The section's paragraph in `src/guide/guideCopy.ts` today reads:
+The section's paragraph becomes:
 
-> "Three indicators appear on the board, with one, two, and three rings,
-> rotating at the end of each turn. When a new charged node is needed, it
-> appears at the three-ring indicator — and all three indicators are then
-> replaced by a fresh set elsewhere."
+> "Three indicators appear on the board, with one, two, and three rings.
+> When a new charged node is needed, it appears at the three-ring indicator —
+> and all three indicators are then replaced by a fresh set elsewhere. The
+> rings rotate, depending on the Inactive Node Rotation selected."
 
-It states automatic rotation as the only rotation, so it is wrong under two of
-the three settings. The owner supplies the replacement, which is expected to
-describe the rotation first and then each of the three settings.
+Then the **existing** `NodeSelectionDiagram`, unchanged — the owner's call at
+the gate was that it stays, because the rotation it pictures is common to all
+three settings and only the trigger differs.
 
-The section's diagram, `NodeSelectionDiagram` in
-`src/guide/guideDiagrams.tsx`, today shows one indicator rotating three → one →
-two → three, which is a picture of the continuous setting. Whether it changes,
-and to what, is the **owner's call at this same moment**.
+Then three **setting lines**, each an emphasised label and a sentence:
 
-When the copy arrives:
+> _Continuous_: The nodes rotate at the end of each player's turn.
+>
+> _Planet_: The nodes rotate each time a ship arrives at a planet (including
+> post-combat, if combat is enabled).
+>
+> _Dedicated_: There are dedicated rotators that appear on squares. Landing
+> on one of these triggers the rotation.
 
-- update `GUIDE_SECTIONS`' `nodeSelection` entry in `src/guide/guideCopy.ts`;
-- update the verbatim assertion in `src/guide/guideCopy.test.ts` (it compares
-  the whole paragraph string), and keep the file's vocabulary-exception test
-  passing: the guide says **points** and **fuel**, and must contain neither
-  "energy" nor "power" — check the new copy against that before committing,
-  since "power" is easy to slip into a sentence about rotators;
-- if the diagram changes, update `NodeSelectionDiagram` and its case in
-  `src/guide/guideDiagrams.test.tsx`.
+Then a **second diagram**: a single board square holding a rotator, drawn in
+the style of the guide's other diagrams and using the same `RotatorMarker`
+the board uses, so the player sees the mark they will be looking for. Nothing
+else in it — no ship, no node, no rings.
 
-The guide's other sections and diagrams are untouched.
+**The shape this needs.** The guide's copy model is one heading, one
+paragraph and one diagram per section (`GuideSection` in
+`src/guide/guideCopy.ts`, `SECTION_DIAGRAMS` in `src/guide/GuideScreen.tsx`,
+which is a total `Record<GuideSectionId, ComponentType>` so that a section
+without a diagram fails to compile). This section now needs two diagrams with
+copy between them, and it stays **one section** — the owner chose an extra
+diagram inside NEW CHARGED NODE SELECTION, not a new headed section. So:
 
-Depends on: Step 1 (the rules the copy describes). Independent of Steps 9–10.
+- `GuideSection` gains an **optional** `settingLines` — an ordered list of
+  `{ label, text }` pairs — rendered between the section's diagram and its
+  second one. Only `nodeSelection` carries it; the other three sections are
+  untouched and keep their present shape.
+- `GuideScreen.tsx` gains a second, **partial** map from section id to a
+  trailing diagram, rendered after the setting lines. Partial, not total:
+  three of the four sections have no trailing diagram, and that is the normal
+  case rather than an omission to catch.
+- The label is emphasised the way the owner's asterisks ask for — an `<em>`,
+  styled in `GuideScreen.css` alongside the existing paragraph styles. No
+  other restyling of the guide.
+- The new diagram, `RotatorSquareDiagram`, lives in
+  `src/guide/guideDiagrams.tsx` beside the others and follows their
+  conventions exactly (same wrapper, same sizing approach, same
+  accessibility treatment as its neighbours — whatever they do, it does).
 
-Verification (**manual — owner-supplied**): the owner supplies the copy (and
-the diagram's fate) at this step; once it is in, `npm test` green with the
-updated `guideCopy` / `guideDiagrams` expectations, and the owner reads the
-Quick Guide in the running app and confirms the section says what they meant it
-to say.
+**The vocabulary trap.** `src/guide/guideCopy.test.ts` asserts the guide says
+**points** and **fuel** and contains neither "energy" nor "power". Check that
+the assertion actually sweeps the new `settingLines` strings too, not just
+the paragraphs — if it walks `GUIDE_SECTIONS` looking only at `paragraph`,
+widen it, or the new copy escapes the check that exists to catch exactly this.
+The supplied copy is clean as written; the point is that the test must be able
+to say so.
+
+Tests to update: `guideCopy.test.ts`'s verbatim paragraph assertion for
+`nodeSelection`, plus verbatim assertions for the three setting lines;
+`guideDiagrams.test.tsx` gains a case for `RotatorSquareDiagram`; any
+`GuideScreen` test that counts sections, paragraphs or diagrams will need the
+new elements. `NodeSelectionDiagram` itself does **not** change.
+
+Depends on: Step 1 (the rules the copy describes) and Step 11 (the rotator the
+second diagram draws). The guide's other sections and diagrams are untouched.
+
+Verification (**manual**): `npm test`, `npm run typecheck` and `npm run lint`
+green with the updated expectations, then the owner opens the Quick Guide in
+the running app and confirms the section reads in the intended order —
+paragraph, rotation diagram, the three setting lines, the rotator square —
+and that the copy is theirs, word for word.
 
 ---
 
