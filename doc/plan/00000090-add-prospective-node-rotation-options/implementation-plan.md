@@ -723,7 +723,26 @@ rotation.
 
 ### Step 2 — Two new leaf modules: the setting, and where rotators fall
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/nodeRotation.ts` (the `NodeRotationSetting` union,
+`NODE_ROTATION_SETTINGS` continuous-first, `DEFAULT_NODE_ROTATION`, and
+`isNodeRotationSetting`) in the shape `scoring.ts` uses, and
+`src/rules/rotators.ts` (`ROTATOR_SECTIONS`, the nine 5 x 5 sections derived
+from `BOARD_SIZE` in the fixed row-band/column-band order, and
+`placeRotators`, which draws one square uniformly per section's free
+squares, skips a section with none without spending a seed step, and returns
+the drawn squares in board order). Neither module imports from `gameState.ts`
+or is imported by anything yet, per the step's "scaffolding separate from
+behaviour" note. Added `src/rules/nodeRotation.test.ts` and
+`src/rules/rotators.test.ts` covering the step's list, including the
+no-seed-step-for-an-empty-section case verified by replaying the first eight
+sections' draws by hand and comparing seeds. No deviation from the plan.
+`npm test` went from 70 files / 1339 tests to 72 files / 1351 tests (12 new,
+all passing); `npm run typecheck` and `npm run lint` are clean;
+`npm run format:check` shows only the three pre-existing baseline warnings
+(the two new files needed one `prettier --write` pass each before the check
+was clean).
 
 Add **`src/rules/nodeRotation.ts`** holding the pre-play choice as pure data
 (D2), in the shape `clock.ts`, `combatSetting.ts`, `fleet.ts`, `nodes.ts` and
