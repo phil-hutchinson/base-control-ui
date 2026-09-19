@@ -33,6 +33,14 @@
 // node's own square (`node-retired`) is recorded alongside it, though
 // retirement itself draws nothing — nothing appears in a retiring node's
 // place any more.
+//
+// 0.36 added node rotation as a pre-play choice (§8.2). At the app's
+// default (continuous) and at planet nothing new is drawn from the stream —
+// rotation itself has never consumed a seed step, and `placeRotators` is
+// only ever called under dedicated — so every recorded figure below stands
+// exactly as it did before 0.36. Only dedicated adds steps, up to eight at
+// the opening deal and up to eight after every queue refill, which is
+// asserted directly below rather than assumed.
 
 import { describe, expect, it } from "vitest";
 import { type Square, squareName } from "./board";
@@ -347,5 +355,58 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     expect(second.planetReturns).not.toEqual(first.planetReturns);
     expect(second.chargedNodes).not.toEqual(first.chargedNodes);
     expect(second.queueRefills).not.toEqual(first.queueRefills);
+  });
+});
+
+describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream untouched at continuous", () => {
+  it("deals the same opening board and leaves the same randomSeed behind, at continuous and at planet", () => {
+    const seed = 20260819;
+    const continuousState = startingGameState(seed, {
+      lengthInRounds: 40,
+      combatEnabled: true,
+    });
+    const explicitContinuousState = startingGameState(seed, {
+      lengthInRounds: 40,
+      combatEnabled: true,
+      nodeRotation: "continuous",
+    });
+    const planetState = startingGameState(seed, {
+      lengthInRounds: 40,
+      combatEnabled: true,
+      nodeRotation: "planet",
+    });
+
+    // The default is continuous, so naming it explicitly changes nothing.
+    expect(explicitContinuousState).toEqual(continuousState);
+
+    // Planet deals the identical board and consumes the identical seed —
+    // only a landing rotates the queue under planet, and the deal itself
+    // never lands a ship anywhere.
+    expect(planetState.nodes).toEqual(continuousState.nodes);
+    expect(planetState.ships).toEqual(continuousState.ships);
+    expect(planetState.randomSeed).toBe(continuousState.randomSeed);
+    expect(planetState.rotators).toEqual([]);
+    expect(continuousState.rotators).toEqual([]);
+  });
+
+  it("deals the same board but spends more of the seed under dedicated, placing rotators no continuous or planet game carries", () => {
+    const seed = 20260819;
+    const continuousState = startingGameState(seed, {
+      lengthInRounds: 40,
+      combatEnabled: true,
+    });
+    const dedicatedState = startingGameState(seed, {
+      lengthInRounds: 40,
+      combatEnabled: true,
+      nodeRotation: "dedicated",
+    });
+
+    // The board itself — nodes and ships — is dealt identically; only the
+    // rotators are drawn afterwards (rules.md §3.3), so only the seed the
+    // deal leaves behind differs.
+    expect(dedicatedState.nodes).toEqual(continuousState.nodes);
+    expect(dedicatedState.ships).toEqual(continuousState.ships);
+    expect(dedicatedState.randomSeed).not.toBe(continuousState.randomSeed);
+    expect(dedicatedState.rotators.length).toBeGreaterThan(0);
   });
 });

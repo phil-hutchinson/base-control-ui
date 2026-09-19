@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PLANETS, isPlanet } from "./planets";
-import { squareFromName, squareName } from "./board";
+import { type Square, squareFromName, squareName } from "./board";
 import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import {
@@ -19,12 +19,16 @@ import {
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
 import { drawIndex } from "./random";
-import { TOP_NODE_PRIORITY, rotatePriority } from "./nodeQueue";
+import { TOP_NODE_PRIORITY, rotatePriority, rotateQueue } from "./nodeQueue";
 import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
   type NodeState,
 } from "./nodes";
+import {
+  DEFAULT_NODE_ROTATION,
+  type NodeRotationSetting,
+} from "./nodeRotation";
 import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
 
 function ship(
@@ -57,6 +61,8 @@ function buildState(config: {
   energy?: { green: number; red: number };
   outOfTime?: { green: boolean; red: boolean };
   combatEnabled?: boolean;
+  nodeRotation?: NodeRotationSetting;
+  rotators?: readonly Square[];
 }): GameState {
   return {
     ships: config.ships,
@@ -65,6 +71,8 @@ function buildState(config: {
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
+    nodeRotation: config.nodeRotation ?? DEFAULT_NODE_ROTATION,
+    rotators: config.rotators ?? [],
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
@@ -1214,6 +1222,64 @@ describe("assertFightInvariants (rules.md §7)", () => {
       assertFightInvariants(before, after, "green-1", 0, new Set(["red-1"])),
     ).toThrow(RangeError);
   });
+
+  it("throws when a node present before the fight is missing after it", () => {
+    const before = buildState({
+      ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
+      nodes: { A2: ["charged", 0] },
+    });
+    const after: GameState = { ...before, nodes: {} };
+
+    expect(() =>
+      assertFightInvariants(before, after, "green-1", 0, new Set(["red-1"])),
+    ).toThrow(RangeError);
+  });
+
+  it("still throws when a charged node's level changes even though its state does not — a fight must not touch a node's life (rules.md §8.6)", () => {
+    const before = buildState({
+      ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
+      nodes: { H8: ["charged", 10] },
+    });
+    const after: GameState = {
+      ...before,
+      nodes: { ...before.nodes, H8: { state: "charged", level: 5 } },
+    };
+
+    expect(() =>
+      assertFightInvariants(before, after, "green-1", 0, new Set(["red-1"])),
+    ).toThrow(RangeError);
+  });
+
+  it("does not throw when only the inactive nodes' priorities differ, as a fight's landings rotate the queue under the planet setting (rules.md §8.2, §7)", () => {
+    const before = buildState({
+      ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
+      nodes: { A2: ["inactive", 1], A3: ["inactive", 2], A4: ["inactive", 3] },
+    });
+    const after: GameState = {
+      ...before,
+      ships: before.ships.map((s) => {
+        if (s.id === "green-1") {
+          return { ...s, square: squareFromName("D6") };
+        }
+        if (s.id === "red-1") {
+          return { ...s, square: squareFromName("K6") };
+        }
+        return s;
+      }),
+      // A fight under planet rotates the queue twice, attacker then defender.
+      nodes: rotateQueue(rotateQueue(before.nodes)),
+    };
+
+    expect(() =>
+      assertFightInvariants(
+        before,
+        after,
+        "green-1",
+        0,
+        new Set(["green-1", "red-1"]),
+      ),
+    ).not.toThrow();
+  });
 });
 
 describe("applyPassGuard", () => {
@@ -1761,5 +1827,348 @@ describe("a ship leaving a charged node depletes it at once (rules.md §8.3)", (
     expect(plyEnded.endOfTurn).not.toContainEqual(
       expect.objectContaining({ type: "energy-collected" }),
     );
+  });
+});
+
+describe("a landing rotates the queue (rules.md §8.2)", () => {
+  // A fixed board shape reused across these cases: four charged nodes
+  // exactly matching chargedNodeCount, so nothing charges this turn and the
+  // three inactive nodes at H1, H2 and H3 (priorities 1, 2 and 3) are free
+  // to show only what this test is about — the landing itself.
+  const steadyCharged = {
+    C3: "charged",
+    F3: "charged",
+    C9: "charged",
+    F9: "charged",
+  } as const;
+  const threeInactive = {
+    H1: ["inactive", 1],
+    H2: ["inactive", 2],
+    H3: ["inactive", 3],
+  } as const;
+
+  it("landing on a planet rotates the queue once under planet, and raises queue-rotated", () => {
+    const state = buildState({
+      nodeRotation: "planet",
+      chargedNodeCount: 4,
+      ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
+      nodes: { ...steadyCharged, ...threeInactive },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("D6"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.nodes.H1).toEqual({ state: "inactive", level: 2 });
+    expect(result.state.nodes.H2).toEqual({ state: "inactive", level: 3 });
+    expect(result.state.nodes.H3).toEqual({ state: "inactive", level: 1 });
+    expect(result.effects).toContainEqual({
+      type: "queue-rotated",
+      square: squareFromName("D6"),
+      trigger: "planet",
+    });
+  });
+
+  it("does not raise queue-rotated for the same landing under continuous — the queue still rotates, but silently, through the ordinary end-of-turn step", () => {
+    const state = buildState({
+      nodeRotation: "continuous",
+      chargedNodeCount: 4,
+      ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
+      nodes: { ...steadyCharged, ...threeInactive },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("D6"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "queue-rotated" }),
+    );
+    // Nothing charged this turn, so continuous's own end-of-turn rotation
+    // still ran — it just never raised an effect for it.
+    expect(result.state.nodes.H1).toEqual({ state: "inactive", level: 2 });
+  });
+
+  it("does not rotate at all under dedicated when the destination is a planet, not a rotator", () => {
+    const state = buildState({
+      nodeRotation: "dedicated",
+      chargedNodeCount: 4,
+      rotators: [],
+      ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
+      nodes: { ...steadyCharged, ...threeInactive },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("D6"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "queue-rotated" }),
+    );
+    expect(result.state.nodes.H1).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.H2).toEqual({ state: "inactive", level: 2 });
+    expect(result.state.nodes.H3).toEqual({ state: "inactive", level: 3 });
+  });
+
+  it("landing on a rotator rotates the queue once under dedicated, spends the rotator, and raises queue-rotated", () => {
+    const state = buildState({
+      nodeRotation: "dedicated",
+      chargedNodeCount: 4,
+      rotators: [squareFromName("H9"), squareFromName("A1")],
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "O15")],
+      nodes: { ...steadyCharged, ...threeInactive },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.rotators).toEqual([squareFromName("A1")]);
+    expect(result.state.nodes.H1).toEqual({ state: "inactive", level: 2 });
+    expect(result.state.nodes.H2).toEqual({ state: "inactive", level: 3 });
+    expect(result.state.nodes.H3).toEqual({ state: "inactive", level: 1 });
+    expect(result.effects).toContainEqual({
+      type: "queue-rotated",
+      square: squareFromName("H9"),
+      trigger: "rotator",
+    });
+  });
+
+  it("flying over a planet without landing on it spends and rotates nothing, under planet", () => {
+    const state = buildState({
+      nodeRotation: "planet",
+      chargedNodeCount: 4,
+      ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
+      nodes: { ...steadyCharged, ...threeInactive },
+    });
+
+    // C6 to E6 is a two-square orthogonal move that turns through the D6
+    // planet without stopping there (rules.md §6).
+    const result = applyMove(state, "green-1", squareFromName("E6"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "queue-rotated" }),
+    );
+    expect(result.state.nodes.H1).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.H2).toEqual({ state: "inactive", level: 2 });
+    expect(result.state.nodes.H3).toEqual({ state: "inactive", level: 3 });
+  });
+
+  it("flying over a rotator without landing on it spends and rotates nothing, under dedicated", () => {
+    const state = buildState({
+      nodeRotation: "dedicated",
+      chargedNodeCount: 4,
+      rotators: [squareFromName("H8")],
+      ships: [ship("green-1", "green", "H7", 4), ship("red-1", "red", "O15")],
+      nodes: { ...steadyCharged, ...threeInactive },
+    });
+
+    // H7 to H9 is a two-square orthogonal move turning through H8, which
+    // holds the rotator, without stopping there.
+    const result = applyMove(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.rotators).toEqual([squareFromName("H8")]);
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "queue-rotated" }),
+    );
+    expect(result.state.nodes.H1).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.H2).toEqual({ state: "inactive", level: 2 });
+    expect(result.state.nodes.H3).toEqual({ state: "inactive", level: 3 });
+  });
+
+  it("leaving a planet, or merely standing on one all turn, rotates nothing under planet", () => {
+    // green-1 leaves the G4 planet; green-2 sits on the D6 planet
+    // throughout, moving nowhere this ply. Neither is a landing.
+    const state = buildState({
+      nodeRotation: "planet",
+      chargedNodeCount: 4,
+      ships: [
+        ship("green-1", "green", "G4", 4),
+        ship("green-2", "green", "D6", 4),
+        ship("red-1", "red", "O15"),
+      ],
+      nodes: { ...steadyCharged, ...threeInactive },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("G5"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "queue-rotated" }),
+    );
+    expect(result.state.nodes.H1).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.H2).toEqual({ state: "inactive", level: 2 });
+    expect(result.state.nodes.H3).toEqual({ state: "inactive", level: 3 });
+    const stillOnPlanet = result.state.ships.find((s) => s.id === "green-2");
+    expect(stillOnPlanet?.square).toEqual(squareFromName("D6"));
+  });
+
+  it("a fight rotates the queue twice under planet, attacker's landing then the defender's", () => {
+    const state = buildState({
+      nodeRotation: "planet",
+      chargedNodeCount: 4,
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
+      nodes: { ...steadyCharged, ...threeInactive },
+    });
+
+    const [attackerIndex, seedAfterAttackerDraw] = drawIndex(
+      state.randomSeed,
+      PLANETS.length,
+    );
+    const attackerPlanetName = squareName(PLANETS[attackerIndex]);
+    const defenderPool = PLANETS.filter(
+      (square) => squareName(square) !== attackerPlanetName,
+    );
+    const [defenderIndex] = drawIndex(
+      seedAfterAttackerDraw,
+      defenderPool.length,
+    );
+    const defenderPlanetName = squareName(defenderPool[defenderIndex]);
+
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(result.effects[0].type).toBe("fight-resolved");
+    expect(result.effects[1]).toEqual({
+      type: "queue-rotated",
+      square: squareFromName(attackerPlanetName),
+      trigger: "planet",
+    });
+    expect(result.effects[2]).toEqual({
+      type: "queue-rotated",
+      square: squareFromName(defenderPlanetName),
+      trigger: "planet",
+    });
+    // Two rotations: 1→3, 2→1, 3→2.
+    expect(result.state.nodes.H1).toEqual({ state: "inactive", level: 3 });
+    expect(result.state.nodes.H2).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.H3).toEqual({ state: "inactive", level: 2 });
+  });
+
+  it("a fight rotates nothing at all under dedicated — every return lands on a planet, and a rotator never stands on one", () => {
+    const state = buildState({
+      nodeRotation: "dedicated",
+      chargedNodeCount: 4,
+      rotators: [],
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
+      nodes: { ...steadyCharged, ...threeInactive },
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "queue-rotated" }),
+    );
+    expect(result.state.rotators).toEqual([]);
+    expect(result.state.nodes.H1).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.H2).toEqual({ state: "inactive", level: 2 });
+    expect(result.state.nodes.H3).toEqual({ state: "inactive", level: 3 });
+  });
+
+  it("a ship leaving a charged node for a planet charges the node that held priority 2 under planet, and the one that held priority 3 under continuous", () => {
+    // F3 and I3 are two charged nodes that never move, matching
+    // chargedNodeCount together with C6 before the move; leaving C6 opens a
+    // shortfall of exactly one, filled from the three inactive nodes at the
+    // end of this same turn — after the landing on D6 has already rotated
+    // the queue, under planet.
+    const sharedConfig = {
+      chargedNodeCount: 3 as const,
+      ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
+      nodes: {
+        C6: ["charged", CHARGED_COUNTDOWN_PLIES] as const,
+        F3: "charged" as const,
+        I3: "charged" as const,
+        ...threeInactive,
+      },
+    };
+
+    // A charge sweeps the queue (rules.md §8.2, §8.6 step 5): whichever
+    // inactive nodes did not charge are discarded and three fresh ones are
+    // drawn elsewhere, so only the square that actually charged is asserted
+    // — H1 and H3 (or H1 and H2) no longer name anything in particular
+    // afterwards.
+    const underPlanet = buildState({ ...sharedConfig, nodeRotation: "planet" });
+    const planetResult = applyMove(
+      underPlanet,
+      "green-1",
+      squareFromName("D6"),
+    );
+    expect(planetResult.outcome).toBe("applied");
+    if (planetResult.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    // The rotation left H2 holding priority 3, so H2 is the one that charges.
+    expect(planetResult.state.nodes.H2).toEqual({ state: "charged", level: 0 });
+
+    const underContinuous = buildState({
+      ...sharedConfig,
+      nodeRotation: "continuous",
+    });
+    const continuousResult = applyMove(
+      underContinuous,
+      "green-1",
+      squareFromName("D6"),
+    );
+    expect(continuousResult.outcome).toBe("applied");
+    if (continuousResult.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    // No landing-triggered rotation under continuous, so H3 — already
+    // holding priority 3 — is the one that charges.
+    expect(continuousResult.state.nodes.H3).toEqual({
+      state: "charged",
+      level: 0,
+    });
+  });
+
+  it("orders queue-rotated after node-spent and before the ply-ending effect, within one move", () => {
+    const state = buildState({
+      nodeRotation: "planet",
+      ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
+      nodes: { C6: ["charged", CHARGED_COUNTDOWN_PLIES] },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("D6"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.effects[0]).toEqual({
+      type: "node-spent",
+      square: squareFromName("C6"),
+    });
+    expect(result.effects[1]).toEqual({
+      type: "queue-rotated",
+      square: squareFromName("D6"),
+      trigger: "planet",
+    });
+    expect(result.effects[2]?.type).toBe("ply-ended");
   });
 });

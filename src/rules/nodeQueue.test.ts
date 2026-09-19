@@ -20,6 +20,7 @@ import {
   orderByPriorityDescending,
   refillQueue,
   rotatePriority,
+  rotateQueue,
 } from "./nodeQueue";
 
 /** A fixed four-charged board, spread well apart from the board's edges and from each other, for the refill tests to draw a fresh trio against. */
@@ -266,6 +267,41 @@ describe("rotatePriority", () => {
     expect(priority).toBe(3);
     priority = rotatePriority(priority);
     expect(priority).toBe(1);
+  });
+});
+
+describe("rotateQueue", () => {
+  it("moves every inactive node one step and wraps 3 to 1", () => {
+    const nodes = rotateQueue({
+      F2: { state: "inactive", level: 1 },
+      N4: { state: "inactive", level: 2 },
+      H8: { state: "inactive", level: 3 },
+    });
+
+    expect(nodes.F2).toEqual({ state: "inactive", level: 2 });
+    expect(nodes.N4).toEqual({ state: "inactive", level: 3 });
+    expect(nodes.H8).toEqual({ state: "inactive", level: 1 });
+  });
+
+  it("leaves charged and depleted entries untouched — state and level", () => {
+    const nodes = rotateQueue({
+      D4: { state: "charged", level: 5 },
+      D12: { state: "depleted", level: 2 },
+      F2: { state: "inactive", level: 1 },
+    });
+
+    expect(nodes.D4).toEqual({ state: "charged", level: 5 });
+    expect(nodes.D12).toEqual({ state: "depleted", level: 2 });
+    expect(nodes.F2).toEqual({ state: "inactive", level: 2 });
+  });
+
+  it("leaves a map with no inactive nodes unchanged", () => {
+    const nodes = {
+      D4: { state: "charged" as const, level: 5 },
+      D12: { state: "depleted" as const, level: 2 },
+    };
+
+    expect(rotateQueue(nodes)).toEqual(nodes);
   });
 });
 

@@ -171,6 +171,8 @@ describe.each(CHARGED_NODE_COUNTS)(
           plyNumber: 1,
           randomSeed: seed,
           openingSeed: seed,
+          nodeRotation: "continuous",
+          rotators: [],
           energy: { green: 0, red: 0 },
           lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
           chargedNodeCount,

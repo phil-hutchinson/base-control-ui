@@ -18,6 +18,7 @@ import {
   NodeLifecycleDiagram,
   NodeSelectionDiagram,
   RefuellingDiagram,
+  RotatorSquareDiagram,
   ScoringDiagram,
 } from "./guideDiagrams";
 import "./GuideScreen.css";
@@ -34,15 +35,26 @@ const SECTION_DIAGRAMS: Record<GuideSectionId, ComponentType> = {
   nodeSelection: NodeSelectionDiagram,
 };
 
+/**
+ * A trailing second diagram for a section, keyed by section id and
+ * deliberately partial: only NEW CHARGED NODE SELECTION has one, and a
+ * section with none is the normal case rather than an omission to catch.
+ * Rendered after that section's setting lines.
+ */
+const TRAILING_DIAGRAMS: Partial<Record<GuideSectionId, ComponentType>> = {
+  nodeSelection: RotatorSquareDiagram,
+};
+
 interface GuideScreenProps {
   readonly onBack: () => void;
 }
 
 /**
  * The Quick Guide: the intro paragraph and scoring diagram, then the four
- * headed sections, each a heading, its paragraph and its diagram. `onBack`
- * is called by either Back button and otherwise means nothing to this
- * component — it holds no state of its own.
+ * headed sections, each a heading, its paragraph and its diagram — NEW
+ * CHARGED NODE SELECTION also carries the three rotation setting lines and a
+ * second, trailing diagram. `onBack` is called by either Back button and
+ * otherwise means nothing to this component — it holds no state of its own.
  */
 export function GuideScreen({ onBack }: GuideScreenProps) {
   return (
@@ -55,11 +67,18 @@ export function GuideScreen({ onBack }: GuideScreenProps) {
       <ScoringDiagram />
       {GUIDE_SECTIONS.map((section) => {
         const Diagram = SECTION_DIAGRAMS[section.id];
+        const TrailingDiagram = TRAILING_DIAGRAMS[section.id];
         return (
           <section key={section.heading} className="guide-screen__section">
             <h2 className="guide-screen__heading">{section.heading}</h2>
             <p className="guide-screen__paragraph">{section.paragraph}</p>
             <Diagram />
+            {section.settingLines?.map((line) => (
+              <p key={line.label} className="guide-screen__paragraph">
+                <em>{line.label}</em>: {line.text}
+              </p>
+            ))}
+            {TrailingDiagram && <TrailingDiagram />}
           </section>
         );
       })}

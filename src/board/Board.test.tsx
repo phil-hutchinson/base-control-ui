@@ -115,6 +115,30 @@ function stateWithNode(
     plyNumber: 1,
     randomSeed: 1,
     openingSeed: 1,
+    nodeRotation: "continuous",
+    rotators: [],
+    energy: { green: 0, red: 0 },
+    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+    outOfTime: { green: false, red: false },
+    combatEnabled: true,
+    scoring: "simple",
+  };
+}
+
+/** A minimal hand-built state carrying only the given rotator squares
+ * (rules.md §3.3), isolating the wiring from `state.rotators` through
+ * `Board.tsx` to the mark and the square's accessible name. */
+function stateWithRotators(squares: readonly Square[]): GameState {
+  return {
+    ships: [],
+    nodes: {},
+    sideToMove: "green",
+    plyNumber: 1,
+    randomSeed: 1,
+    openingSeed: 1,
+    nodeRotation: "dedicated",
+    rotators: squares,
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -431,6 +455,40 @@ describe("Board", () => {
     });
   });
 
+  describe("rotators the board is told to draw", () => {
+    const ROTATOR_SQUARES = [squareAt("C", 3), squareAt("N", 12)];
+
+    it("draws the rotator mark on exactly the squares state.rotators names, and nowhere else", () => {
+      const { container } = render(
+        <Board
+          session={createSession(stateWithRotators(ROTATOR_SQUARES))}
+          onIntent={noop}
+        />,
+      );
+
+      expect(container.querySelectorAll(".rotator-marker")).toHaveLength(
+        ROTATOR_SQUARES.length,
+      );
+      for (const square of ROTATOR_SQUARES) {
+        const cell = screen.getByRole("gridcell", {
+          name: `${squareName(square)}, rotator`,
+        });
+        expect(cell.querySelector(".rotator-marker")).toBeInTheDocument();
+      }
+    });
+
+    it("draws no rotator mark anywhere when state.rotators is empty", () => {
+      const { container } = render(
+        <Board
+          session={createSession(stateWithRotators([]))}
+          onIntent={noop}
+        />,
+      );
+
+      expect(container.querySelectorAll(".rotator-marker")).toHaveLength(0);
+    });
+  });
+
   it("has no static accessibility violations", async () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,
@@ -610,6 +668,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
+        nodeRotation: "continuous",
+        rotators: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -707,6 +767,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
+        nodeRotation: "continuous",
+        rotators: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -788,6 +850,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
+        nodeRotation: "continuous",
+        rotators: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -965,6 +1029,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
+        nodeRotation: "continuous",
+        rotators: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1162,6 +1228,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
+        nodeRotation: "continuous",
+        rotators: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1272,6 +1340,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
+        nodeRotation: "continuous",
+        rotators: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1316,6 +1386,8 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
+        nodeRotation: "continuous",
+        rotators: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

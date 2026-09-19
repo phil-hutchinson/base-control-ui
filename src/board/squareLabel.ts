@@ -1,17 +1,18 @@
 // The wording of a square's accessible name: comma-separated segments, the
-// square name first, then "planet" or "<state> node" if the square is one of
-// those, then which side's ship (if any) stands there, then that ship's
-// power level, then its condition (cannot move or attack), then last of all
-// a mark saying that the square is selected, a legal destination, or a legal
-// attack target. A square is never both a planet and a node — the node draw
-// excludes planets (rules.md §3.2) — so the two share one slot. The
-// condition and the mark are two separately optional fields, each computed
-// on its own: the mark reflects the current selection or highlight
-// independently of the condition. `ShipCondition` currently has a single
-// member, and `CONDITION_WORDING` is where its wording lives. Ordinary empty
-// squares are named by their square name alone. The power level is stated
-// even when it is zero, so a listener hearing one square at a time can tell
-// a drained ship apart from an app that never reports power at all.
+// square name first, then "planet", "<state> node" or "rotator" if the
+// square is one of those, then which side's ship (if any) stands there, then
+// that ship's power level, then its condition (cannot move or attack), then
+// last of all a mark saying that the square is selected, a legal
+// destination, or a legal attack target. A square is at most one of a
+// planet, a node and a rotator — a rotator stands only on a square holding
+// neither (rules.md §3.3) — so the three share one slot. The condition and
+// the mark are two separately optional fields, each computed on its own: the
+// mark reflects the current selection or highlight independently of the
+// condition. `ShipCondition` currently has a single member, and
+// `CONDITION_WORDING` is where its wording lives. Ordinary empty squares are
+// named by their square name alone. The power level is stated even when it
+// is zero, so a listener hearing one square at a time can tell a drained
+// ship apart from an app that never reports power at all.
 //
 // A fight has one outcome (rules.md §7), so a target square's mark is a
 // fixed phrase saying what attacking there does, the same as the selected
@@ -75,16 +76,19 @@ export interface SquareLabelDescriptor {
   readonly square: Square;
   readonly isPlanet: boolean;
   readonly nodeState?: NodeState;
+  /** Whether the square holds a rotator (rules.md §3.3). Never true alongside `isPlanet` or `nodeState`. */
+  readonly hasRotator?: boolean;
   readonly occupant?: SquareOccupant;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
 }
 
-/** Builds a square's accessible name from its name, planet/node status, occupant, condition and mark. */
+/** Builds a square's accessible name from its name, planet/node/rotator status, occupant, condition and mark. */
 export function squareLabel({
   square,
   isPlanet,
   nodeState,
+  hasRotator,
   occupant,
   condition,
   mark,
@@ -94,6 +98,8 @@ export function squareLabel({
     segments.push("planet");
   } else if (nodeState) {
     segments.push(`${nodeState} node`);
+  } else if (hasRotator) {
+    segments.push("rotator");
   }
   if (occupant) {
     segments.push(`${occupant.side} ship`);

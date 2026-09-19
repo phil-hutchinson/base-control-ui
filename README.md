@@ -56,79 +56,89 @@ install, no account, no server.
 > three, six to start), a choice of how many nodes are lit at once (five, four
 > or three, five to start), a choice of how scoring works (simple, one energy
 > for each node held, or bonus, where each extra node held at once is worth
-> more than the last, simple to start), a choice of whether combat is on or off
-> (off to start), a choice of how many rounds the game lasts (thirty, forty-five,
-> sixty or ninety, thirty to start), a choice of a clock (unlimited, or six,
-> four or two seconds a turn, unlimited to start) and a PLAY button. The start
-> screen also offers a quick guide — a first read for someone who has never
-> played, not a full rules reference — explaining scoring, movement, refuelling
-> and how nodes come and go, with a back button that returns you to the start
-> screen with the six choices exactly as you left them. Your browser's own
-> back and forward buttons move between the screens too, and the address bar
-> says which screen you are on.
-> Changing any of the six choices starts nothing — the board only appears
+> more than the last, simple to start), a choice of how the waiting nodes'
+> rings move (continuous, planet or dedicated, continuous to start), a choice
+> of whether combat is on or off (off to start), a choice of how many rounds
+> the game lasts (thirty, forty-five, sixty or ninety, thirty to start), a
+> choice of a clock (unlimited, or six, four or two seconds a turn, unlimited
+> to start) and a PLAY button. The start screen also offers a quick guide — a
+> first read for someone who has never played, not a full rules reference —
+> explaining scoring, movement, refuelling and how nodes come and go, with a
+> back button that returns you to the start screen with the seven choices
+> exactly as you left them. Your browser's own back and forward buttons move
+> between the screens too, and the address bar says which screen you are on.
+> Changing any of the seven choices starts nothing — the board only appears
 > once PLAY is pressed, dealt with the choices you made. A clock is each
-> player's own time for the whole
-> game, not per turn — a thirty-round game at six seconds a turn gives each of
-> you three minutes to spend however you like across your turns. A player who
-> runs out passes every turn from then on, and once both players have run out
-> the game ends there and then; running out is not a loss, since energy still
-> decides who wins. A smaller fleet starts from fewer of the board's eighteen
-> starting squares, leaving the rest empty; every starting square is an ordinary
-> square, whether or not a ship stands there — it gives a ship nothing and
-> protects it from nothing, so in a game with combat on ships are attackable
-> from the very first turn. Twelve planets sit inside the board instead, at
-> fixed squares, none of them on the outer edge, each showing one of twelve
-> different drawings. Which drawing sits on which planet is dealt out afresh at
-> the start of every game, so no two games look alike, but the twelve squares
-> the planets occupy never change. A planet is not just scenery: a ship standing
-> on one cannot attack and cannot be attacked, and gains back a point of power
-> at the end of each of its owner's turns, or two if it is the only one of that
-> player's ships still topping up power on a planet, up to a full six. A ship
-> already full doesn't count towards that. Green goes first, and each player
-> moves one ship — or attacks with one, when combat is on — by mouse or by
-> keyboard. Picking a ship shows you where it can go and what each move would
-> cost: a dot on every square it can reach for free, and elsewhere the same
-> small bars the ship's own power gauge shows — one bar for one point of power,
-> two for two, three for three. With combat on, a ship it can strike is ringed,
-> with the same bars inside the ring when the shot costs power, and a bare ring
-> when it is free. Every game deals a different opening board: it opens with as
-> many lit nodes as you chose and three still waiting — eight nodes in all at
-> five, seven at four, six at three. The lit ones are chosen at random too, but
-> none of them carries a countdown yet, so at the start of the game they are all
-> exactly as fresh as each other — a lit node only starts running down once a
-> ship lands on it. Each waiting node carries one, two or three rings, and the
-> one with three rings is the one that lights next. A ship can fly straight over
-> a waiting node, but landing on one has to wait until it lights. On a turn when
-> nothing lights, the rings shift round — the single becomes a double, the
-> double becomes a triple, and the triple drops back to a single — so you can
-> read not just what lights next but what lights the turn after that. Whatever
-> runs out during a turn is made up at the end of it by lighting from the
-> waiting three, highest rings first, so the board is always brought back to
-> whichever count you chose by the time your turn begins. Land a ship on a lit
-> node and a black number appears in its middle: six, counting down by one at
-> the end of each of your own turns while the ball itself grows steadily larger,
-> until it runs out on your sixth turn there and traps you. Leave a node you are
-> holding instead and it ends immediately, right there in the middle of your
-> turn — you cannot hand it back, and your opponent cannot pick it up after you
-> — though it stays on the board, dim, for a couple more turns before it
-> disappears for good. A ship can fly over any node that isn't lit; it simply
-> cannot land on one, so the only way to end up trapped is to have been standing
-> on a node when it ran out, never by choosing to land there. A ship caught this
-> way is trapped for five more of its own turns, counted down by a white number
-> the same way, and is freed just before its own next turn, ready to move right
-> away. If every one of a player's ships is ever trapped at once, the game will
-> not leave them stuck passing turn after turn: it ends the depleted node with
-> the least life left among those that would set a ship free to move again,
-> right away. A node that finishes its countdown, or is freed this way, simply
-> leaves the board for good — nothing appears where it stood, and any ship that
-> was trapped there is free again, keeping whatever power it had. New nodes only
-> appear when a node lights: the whole waiting trio is swept away at once and
-> three fresh ones appear elsewhere, spread apart from the lit nodes and from
-> each other, so the map itself keeps reshaping as the game runs and you will
-> not know where the next three will appear until they do. A node is never drawn
-> on a planet, and all but never right next to one. With combat on, a fight has
-> no winner: both ships involved — the attacker and the ship it attacked — are
+> player's own time for the whole game, not per turn — a thirty-round game at
+> six seconds a turn gives each of you three minutes to spend however you like
+> across your turns. A player who runs out passes every turn from then on, and
+> once both players have run out the game ends there and then; running out is
+> not a loss, since energy still decides who wins. A smaller fleet starts from
+> fewer of the board's eighteen starting squares, leaving the rest empty; every
+> starting square is an ordinary square, whether or not a ship stands there —
+> it gives a ship nothing and protects it from nothing, so in a game with
+> combat on ships are attackable from the very first turn. Twelve planets sit
+> inside the board instead, at fixed squares, none of them on the outer edge,
+> each showing one of twelve different drawings. Which drawing sits on which
+> planet is dealt out afresh at the start of every game, so no two games look
+> alike, but the twelve squares the planets occupy never change. A planet is
+> not just scenery: a ship standing on one cannot attack and cannot be
+> attacked, and gains back a point of power at the end of each of its owner's
+> turns, or two if it is the only one of that player's ships still topping up
+> power on a planet, up to a full six. A ship already full doesn't count
+> towards that. Green goes first, and each player moves one ship — or attacks
+> with one, when combat is on — by mouse or by keyboard. Picking a ship shows
+> you where it can go and what each move would cost: a dot on every square it
+> can reach for free, and elsewhere the same small bars the ship's own power
+> gauge shows — one bar for one point of power, two for two, three for three.
+> With combat on, a ship it can strike is ringed, with the same bars inside the
+> ring when the shot costs power, and a bare ring when it is free. Every game
+> deals a different opening board: it opens with as many lit nodes as you chose
+> and three still waiting — eight nodes in all at five, seven at four, six at
+> three. The lit ones are chosen at random too, but none of them carries a
+> countdown yet, so at the start of the game they are all exactly as fresh as
+> each other — a lit node only starts running down once a ship lands on it.
+> Each waiting node carries one, two or three rings, and the one with three
+> rings is the one that lights next. A ship can fly straight over a waiting
+> node, but landing on one has to wait until it lights. How the rings move is a
+> choice too. Continuous is today's game and the one the app starts on: on a
+> turn when nothing lights, the rings shift round — the single becomes a
+> double, the double becomes a triple, and the triple drops back to a single —
+> so you can read not just what lights next but what lights the turn after
+> that. Planet stops that automatic shift: the rings sit still until a ship
+> lands on a planet, which shifts them one step right in the middle of that
+> player's turn — so refuelling and choosing what lights next become the same
+> thing, and a fight under combat sends both ships to planets at once and
+> shifts the rings two steps. Dedicated shifts the rings the same way but off a
+> different trigger: up to six extra squares scattered around the board, spent
+> the moment a ship lands on one, with a fresh six appearing wherever room
+> allows each time a waiting node lights. Whatever runs out during a turn is
+> made up at the end of it by lighting from the waiting three, highest rings
+> first, so the board is always brought back to whichever count you chose by
+> the time your turn begins. Land a ship on a lit node and a black number
+> appears in its middle: six, counting down by one at the end of each of your
+> own turns while the ball itself grows steadily larger, until it runs out on
+> your sixth turn there and traps you. Leave a node you are holding instead and
+> it ends immediately, right there in the middle of your turn — you cannot hand
+> it back, and your opponent cannot pick it up after you — though it stays on
+> the board, dim, for a couple more turns before it disappears for good. A ship
+> can fly over any node that isn't lit; it simply cannot land on one, so the
+> only way to end up trapped is to have been standing on a node when it ran
+> out, never by choosing to land there. A ship caught this way is trapped for
+> five more of its own turns, counted down by a white number the same way, and
+> is freed just before its own next turn, ready to move right away. If every
+> one of a player's ships is ever trapped at once, the game will not leave them
+> stuck passing turn after turn: it ends the depleted node with the least life
+> left among those that would set a ship free to move again, right away. A node
+> that finishes its countdown, or is freed this way, simply leaves the board
+> for good — nothing appears where it stood, and any ship that was trapped
+> there is free again, keeping whatever power it had. New nodes only appear
+> when a node lights: the whole waiting trio is swept away at once and three
+> fresh ones appear elsewhere, spread apart from the lit nodes and from each
+> other, so the map itself keeps reshaping as the game runs and you will not
+> know where the next three will appear until they do. A node is never drawn on
+> a planet, and all but never right next to one. With combat on, a fight has no
+> winner: both ships involved — the attacker and the ship it attacked — are
 > sent to planets chosen at random from whichever planets are standing empty;
 > the ship that was attacked keeps whatever power it carried, and the attacker
 > arrives having already paid for its shot, so neither of you can know in
@@ -145,14 +155,13 @@ install, no account, no server.
 > app keeps score and shows it, along with how many nodes each player holds,
 > what the turn is paying them, and which round the game is in. Once the game
 > reaches the number of rounds you chose, it ends: the player with the most
-> energy wins, an equal score is a draw, and the "New Game" button returns
-> you to the start screen with the same choices still set, ready to play
-> again. Leaving a game before it ends — with your browser's back button, or
-> by closing or reloading the page — asks you to confirm first, because
-> nothing is saved: a game you leave is gone, and reloading starts you back
-> at the start screen. There is still no way to save or record a game and no
-> computer opponent to play against. The project is being built up story by
-> story.
+> energy wins, an equal score is a draw, and the "New Game" button returns you
+> to the start screen with the same choices still set, ready to play again.
+> Leaving a game before it ends — with your browser's back button, or by
+> closing or reloading the page — asks you to confirm first, because nothing is
+> saved: a game you leave is gone, and reloading starts you back at the start
+> screen. There is still no way to save or record a game and no computer
+> opponent to play against. The project is being built up story by story.
 
 ## The rules
 

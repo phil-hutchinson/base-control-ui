@@ -55,6 +55,8 @@ function buildState(config: {
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
+    nodeRotation: "continuous",
+    rotators: [],
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -581,6 +583,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
+      nodeRotation: "continuous",
     });
 
     expect(result.selectedShipId).toBeUndefined();
@@ -611,6 +614,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
+      nodeRotation: "continuous",
     });
 
     expect(result.state.lengthInRounds).toBe(3);
@@ -627,6 +631,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
+      nodeRotation: "continuous",
     });
     const second = sessionReducer(session, {
       type: "new-game",
@@ -636,6 +641,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
+      nodeRotation: "continuous",
     });
 
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
@@ -654,6 +660,7 @@ describe("sessionReducer — new-game", () => {
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         combatEnabled: true,
         scoring: "simple",
+        nodeRotation: "continuous",
       });
 
       const expectedFleet = startingFleet(fleetSize);
@@ -694,6 +701,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: 3,
       combatEnabled: true,
       scoring: "simple",
+      nodeRotation: "continuous",
     });
 
     expect(result.state.chargedNodeCount).toBe(3);
@@ -715,6 +723,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: 4,
       combatEnabled: true,
       scoring: "simple",
+      nodeRotation: "continuous",
     });
 
     expect(result.state.chargedNodeCount).toBe(4);
@@ -736,6 +745,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: false,
       scoring: "simple",
+      nodeRotation: "continuous",
     });
 
     expect(result.state.combatEnabled).toBe(false);
@@ -752,6 +762,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
+      nodeRotation: "continuous",
     });
 
     expect(result.state.combatEnabled).toBe(true);
@@ -768,6 +779,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
+      nodeRotation: "continuous",
     });
 
     expect(result.state.scoring).toBe("simple");
@@ -784,9 +796,46 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "bonus",
+      nodeRotation: "continuous",
     });
 
     expect(result.state.scoring).toBe("bonus");
+  });
+
+  it("honours a chosen node rotation setting of continuous, dealing a state with no rotators", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 9,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
+      scoring: "simple",
+      nodeRotation: "continuous",
+    });
+
+    expect(result.state.nodeRotation).toBe("continuous");
+    expect(result.state.rotators).toEqual([]);
+  });
+
+  it("honours a chosen node rotation setting of dedicated, dealing a state with rotators on the board", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 9,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
+      scoring: "simple",
+      nodeRotation: "dedicated",
+    });
+
+    expect(result.state.nodeRotation).toBe("dedicated");
+    expect(result.state.rotators.length).toBeGreaterThan(0);
   });
 });
 

@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.35**
+**Rules version: 0.36**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -31,13 +31,17 @@ waiting is swept away and a fresh set drawn elsewhere, so the map itself
 redraws as the game runs, and the squares worth racing for change over the
 course of a game, not just which of them are lit. That redrawing happens
 only because the players use the nodes on the board — a node nobody stands
-on never changes at all (section 8.3).
+on never changes at all (section 8.3). Under two of the three ways the
+waiting nodes can rotate (section 8.2), part of that redrawing is a step a
+player takes, not one the clock takes for them.
 
 The game has three random elements — the opening board itself, where the
 three new nodes appear when the waiting set is refilled and which of them
 gets which priority, and, when combat is on, which planet the two ships in
-a fight are pushed back to. No two games start on the same board, and
-neither player has seen this one before.
+a fight are pushed back to. Under the dedicated rotation setting (section
+8.2) there is a fourth: where the board's rotators fall each time they are
+drawn. No two games start on the same board, and neither player has seen
+this one before.
 
 ---
 
@@ -65,6 +69,10 @@ at the time.
 **Priority** — a number, 1, 2 or 3, carried by each of the three inactive
 nodes at once, one each, never a repeat. The inactive node with the highest
 priority is the one that charges next (section 8.2).
+
+**Rotator** — under the dedicated rotation setting only, a square of
+temporary board furniture that rotates the priorities the moment a ship
+lands on it, and is spent by that same landing (section 3.3).
 
 **Countdown** — how many turns of life a charged or depleted node has left,
 spent one at the end of every turn, either player's. A charged node carries
@@ -199,6 +207,32 @@ square and its neighbours through constraint 5. The leading 1 is a
 positivity guarantee, not a fairness floor: it keeps the total weight
 positive and makes the draw uniform on the rare board with no charged nodes
 at all, but it buys a poorly placed square no meaningful chance otherwise.
+
+### 3.3 Rotators
+
+Rotators exist only under the **dedicated** rotation setting (section 8.2).
+
+The board is divided into **nine 5 x 5 sections** — columns A–E, F–J, K–O;
+rows 1–5, 6–10, 11–15 — of which **six** carry a rotator: the four
+**corner** sections, always, and two more, drawn from the remaining five. A
+section that carries a rotator carries exactly **one**, on a square that
+holds no planet, no ship and no node in any state. If a section has no such
+square, that section simply carries none, so the board can hold fewer than
+six at once.
+
+The whole set is **replaced** — every rotator removed and a fresh set
+drawn — immediately after each refill of the three inactive nodes (section
+8.6 step 5), and at the opening deal.
+
+A rotator is **spent** by the ship that lands on it, and leaves the board
+at once.
+
+Section 3.2's constraints do not apply to a rotator: it may stand on the
+outer edge, and it may stand beside a planet or a node. A rotator is an
+ordinary square in every other way — a ship may land on it, fly over it
+(which spends nothing) and stand on it. It is **not a node**: it has no
+state, no countdown and no priority, and it is never counted among the
+board's nodes.
 
 ---
 
@@ -397,7 +431,9 @@ until the node retires (section 8.5).
 **There is no winner.** Both ships — the attacker and the ship it attacked —
 are returned to planets (section 7.1), and both squares are left empty. The
 defender arrives carrying the power it had; the attacker arrives having
-already paid the cost of the shot.
+already paid the cost of the shot. With the **planet** rotation setting
+chosen (section 8.2), each of those two landings is its own trigger, so a
+fight rotates the priorities **twice**.
 
 An attack is a **trade**: a player spends their own ship's position **and**
 the power the shot cost, to take away their opponent's position. It is worth
@@ -486,6 +522,8 @@ five charged, **seven** at four, **six** at three:
   that fills the queue during play (section 8.2), and dealt priorities 1, 2
   and 3 at random.
 - **Nothing is depleted at the start.**
+- **Under the dedicated rotation setting** (section 8.2), the opening deal
+  also lays down the board's first set of rotators (section 3.3).
 
 ### 8.2 Charging a node
 
@@ -506,10 +544,30 @@ cover the largest shortfall a single turn can produce, which is two, whether
 the board is filling towards five charged, towards four or towards three
 (see the [development notes](tech-notes.md)).
 
-**Priorities rotate at the end of every turn on which nothing charged**: 1
-becomes 2, 2 becomes 3, and 3 becomes 1. The nodes themselves do not move —
-only their priorities change — so over three such turns each of the three
-takes its turn at the front.
+**How the priorities rotate is chosen before play begins**: continuous,
+planet or dedicated, the same for both players and fixed for the game's
+lifetime.
+
+- **Continuous** — the priorities rotate at the end of every turn on which
+  nothing charged: 1 becomes 2, 2 becomes 3, and 3 becomes 1. The nodes
+  themselves do not move — only their priorities change — so over three
+  such turns each of the three takes its turn at the front.
+- **Planet** — the priorities do not rotate at the end of a turn at all.
+  They rotate one step, in the same direction, each time a ship **lands on
+  a planet** (section 3.1) — the moment it lands, in the middle of that
+  player's turn. Leaving a planet does nothing; standing on one does
+  nothing; flying over one does nothing.
+- **Dedicated** — the same as planet, except that the trigger is a
+  **rotator** (section 3.3) rather than a planet, and the rotator is
+  **spent** by the landing.
+
+A rotation triggered by a landing is complete before the end-of-turn
+sequence begins (section 8.6), so step 4 charges from the priorities **as
+the rotation left them**. Two landings in one turn rotate the priorities
+two steps. The node showing **two** rings during a turn with one landing is
+the node that charges at the end of it; the node showing **one** ring is
+the one that charges when there were two landings — or the second of two
+nodes charging after one landing.
 
 **Any turn on which one or more nodes charge, the three inactive nodes are
 replaced together.** Whichever of the three did not charge are discarded —
@@ -679,9 +737,13 @@ Everything that happens at the end of a turn happens in this order:
    filled from the three inactive nodes, highest priority first.
 5. If step 4 charged anything, the three inactive nodes are replaced
    together: whichever did not charge are discarded, and three new ones are
-   drawn and dealt priorities 1, 2 and 3 at random (section 8.2). Otherwise,
-   the three inactive nodes' priorities rotate: 1 becomes 2, 2 becomes 3, and
-   3 becomes 1.
+   drawn and dealt priorities 1, 2 and 3 at random (section 8.2) — and,
+   under the **dedicated** rotation setting, the board's rotators are
+   replaced immediately afterwards (section 3.3). Otherwise, **only under
+   the continuous rotation setting**, the three inactive nodes' priorities
+   rotate: 1 becomes 2, 2 becomes 3, and 3 becomes 1; under the planet and
+   dedicated settings, nothing happens here — the priorities stay exactly
+   as the turn left them.
 6. Every node **that was already depleted when this sequence began** — which
    includes a node depleted this turn by its holder walking off, and
    excludes a node only just depleted by step 3 above — spends one turn of
@@ -715,7 +777,11 @@ Charging in step 4 from the priorities already on the board, rather than
 from a fresh draw, is what makes the queue worth reading: the arrangement of
 priorities a player looks at while taking their turn is exactly the
 arrangement that governs the charge at the end of it, and the rotation or
-refill in step 5 that follows is the next player's to plan against.
+refill in step 5 that follows is the next player's to plan against. Under
+two of the three rotation settings (section 8.2), the arrangement a player
+reads is also an arrangement that player can change before the turn ends,
+by landing on a planet or a rotator — which is the point of those settings,
+not a wrinkle in this one.
 
 Step 2 sits **before** step 3 **deliberately**: energy is collected, then
 depletion is checked, which is why a node held to the very end of its
@@ -740,9 +806,13 @@ spends its first turn on the very turn it was created — exactly what section
 A node's state changes only in this sequence, and never as part of resolving
 a move or an attack — **except** that a charged node depletes the instant its
 holder leaves it (section 8.3), which is why such a node is already depleted
-by the time this sequence begins and is caught by step 6 rather than step 3.
-A node's ending, and any refill that follows it, are otherwise both part of
-this sequence, never part of resolving a move or an attack.
+by the time this sequence begins and is caught by step 6 rather than step 3
+— and **except** that, under the planet and dedicated rotation settings, a
+landing rotates the priorities the instant it happens (section 8.2), which
+is why step 4 charges from the priorities as that rotation left them rather
+than as the turn began. A node's ending, and any refill that follows it, are
+otherwise both part of this sequence, never part of resolving a move or an
+attack.
 
 ---
 
@@ -759,9 +829,10 @@ energy is a draw.
 ## 10. The clock
 
 Alongside the fleet size, the number of rounds, the charged-node count
-(section 8.1), whether combat is on or off (section 7) and how scoring is
-priced (section 8.4), a player chooses a **clock** before play begins: no
-clock, or 6, 4 or 2 seconds a turn.
+(section 8.1), whether combat is on or off (section 7), how scoring is
+priced (section 8.4) and how the priorities rotate (section 8.2), a player
+chooses a **clock** before play begins: no clock, or 6, 4 or 2 seconds a
+turn.
 
 Each player's clock starts with a budget: their seconds a turn multiplied by
 the number of turns the chosen length gives them. The whole game is

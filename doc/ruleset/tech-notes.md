@@ -42,13 +42,17 @@ every **2.78** at four and every **3.70** at three — turnover slows as the
 charged count drops, because there are fewer charged nodes for the
 stand-in driver described below to keep counting down.
 
-**An inactive node never waits more than three turns to reach the front of
-the queue.** Rotation alone carries a node from priority 1 to priority 3 in
-two turns, and it is swept before it can wait any longer than that: a queue
-that goes unrotated for a whole cycle without a charge has, by definition,
-had its 3 sitting at the front the entire time, available to charge every
-turn. There is no version of this rule under which a node waits
-unboundedly.
+**Under the continuous rotation setting, an inactive node never waits more
+than three turns to reach the front of the queue.** Rotation alone carries a
+node from priority 1 to priority 3 in two turns, and it is swept before it
+can wait any longer than that: a queue that goes unrotated for a whole cycle
+without a charge has, by definition, had its 3 sitting at the front the
+entire time, available to charge every turn. There is no version of
+continuous rotation under which a node waits unboundedly. This bound is a
+property of rotation happening automatically, though: under the planet and
+dedicated settings (rules.md section 8.2) the priorities only move when a
+player triggers it, so a node can in principle wait indefinitely if neither
+player ever lands on what would rotate it.
 
 **The board is never short of the chosen number of charged nodes.** Because
 a turn is one move or one attack, **at most one countdown can start per

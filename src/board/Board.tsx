@@ -66,6 +66,9 @@ export function Board({ session, onIntent }: BoardProps) {
 
   const rows: GridCellDescriptor[][] = useMemo(() => {
     const ships = shipsBySquare(session.state);
+    const rotatorSquareNames = new Set(
+      session.state.rotators.map((square) => squareName(square)),
+    );
     const selectedShip =
       session.selectedShipId === undefined
         ? undefined
@@ -137,6 +140,7 @@ export function Board({ session, onIntent }: BoardProps) {
             : undefined;
         const occupant = ship && { side: ship.side, power: ship.power };
         const condition = ship && shipCondition(ship);
+        const hasRotator = rotatorSquareNames.has(name);
 
         const destinationCost = destinationCosts.get(name);
         const targetCost = targetCosts.get(name);
@@ -159,6 +163,7 @@ export function Board({ session, onIntent }: BoardProps) {
               nodeState={nodeState}
               cyclePosition={cyclePosition}
               priority={priority}
+              hasRotator={hasRotator}
               countdownNumber={countdown}
               occupant={occupant}
               condition={condition}
@@ -169,6 +174,7 @@ export function Board({ session, onIntent }: BoardProps) {
             square,
             isPlanet: planetSquare,
             nodeState,
+            hasRotator,
             occupant,
             condition,
             mark,

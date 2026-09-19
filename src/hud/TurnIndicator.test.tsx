@@ -17,6 +17,8 @@ function finishedState(): GameState {
     plyNumber: 3,
     randomSeed: 1,
     openingSeed: 1,
+    nodeRotation: "continuous",
+    rotators: [],
     energy: { green: 4, red: 7 },
     lengthInRounds: 1,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

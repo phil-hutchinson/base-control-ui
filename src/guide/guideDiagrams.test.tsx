@@ -7,6 +7,7 @@ import {
   NodeLifecycleDiagram,
   NodeSelectionDiagram,
   RefuellingDiagram,
+  RotatorSquareDiagram,
   ScoringDiagram,
 } from "./guideDiagrams";
 
@@ -164,5 +165,17 @@ describe("NodeSelectionDiagram", () => {
 
     expect(container.querySelectorAll(".guide-diagram__arrow")).toHaveLength(3);
     expect(container.querySelectorAll(".ship-model--red")).toHaveLength(0);
+  });
+});
+
+describe("RotatorSquareDiagram", () => {
+  it("shows a single square holding only a rotator", () => {
+    const { container } = render(<RotatorSquareDiagram />);
+
+    expect(container.querySelectorAll(".guide-diagram__cell")).toHaveLength(1);
+    expect(container.querySelectorAll(".board-square")).toHaveLength(1);
+    expect(container.querySelectorAll(".rotator-marker")).toHaveLength(1);
+    expect(container.querySelector(".node-marker")).toBeNull();
+    expect(container.querySelector(".ship-model")).toBeNull();
   });
 });

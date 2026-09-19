@@ -15,6 +15,7 @@ import type {
   NodeSpentEffect,
   PassEffect,
   PlyEndedEffect,
+  QueueRotatedEffect,
 } from "../rules/ply";
 import type { Session, SessionEvent } from "../game/session";
 import { centroidPercentPosition } from "./boardView";
@@ -45,12 +46,16 @@ function settlementsIn(effects: readonly EndOfTurnEffect[]): Settlement[] {
  * attack's effect list. Takes the two effect lists' common shape rather than
  * either one by name, since a move's effects and an attack's effects are
  * otherwise different types (a move's can also carry a `NodeSpentEffect` and
- * an attack's a `FightResolvedEffect`, neither of which carries a settlement
- * of its own).
+ * an attack's a `FightResolvedEffect`, and either can carry a
+ * `QueueRotatedEffect`, none of which carries a settlement of its own).
  */
 function endOfPlySettlements(
   effects: readonly (
-    PassEffect | PlyEndedEffect | FightResolvedEffect | NodeSpentEffect
+    | PassEffect
+    | PlyEndedEffect
+    | FightResolvedEffect
+    | NodeSpentEffect
+    | QueueRotatedEffect
   )[],
 ): Settlement[] {
   const plyEnded = effects.find(

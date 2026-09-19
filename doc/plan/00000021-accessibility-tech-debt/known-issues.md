@@ -372,3 +372,21 @@ screen-reader user lands wherever focus already was, exactly the gap story
 routes into it.
 
 Where: `src/nav/useScreenAddress.ts`, `src/App.tsx`.
+
+## From story 90 — prospective node rotation options
+
+Source: `doc/plan/00000090-add-prospective-node-rotation-options/implementation-plan.md`
+decision D14, Step 9.
+
+### 1. A rotator reads as a bare noun, with nothing saying what it does or where the others are
+
+Under the dedicated setting a square holding a rotator (rules.md §3.3) reads
+in its accessible name as `"F7, rotator"` — the same "state noun" pattern a
+node's `"charged node"` already uses, but with no explanation attached: a
+screen-reader user is told a square is a rotator without being told that
+landing on it moves the waiting nodes on a step. Nor is there any summary of
+where the board's rotators currently are; a screen-reader user has to walk
+the whole grid, square by square, to find them, where a sighted player sees
+all six (or fewer) marks on the board at a glance.
+
+Where: `src/board/squareLabel.ts`, `src/board/RotatorMarker.tsx`.

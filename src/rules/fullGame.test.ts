@@ -12,7 +12,7 @@ import {
   squareFromName,
   squareName,
 } from "./board";
-import { PLANETS } from "./planets";
+import { PLANETS, isPlanet } from "./planets";
 import { legalTargets } from "./combat";
 import { DEFAULT_FLEET_SIZE, type FleetSize, type ShipId } from "./fleet";
 import { gameResult, isGameOver, pliesForGameLength } from "./gameLength";
@@ -31,6 +31,10 @@ import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
 } from "./nodes";
+import {
+  NODE_ROTATION_SETTINGS,
+  type NodeRotationSetting,
+} from "./nodeRotation";
 import type { ScoringSetting } from "./scoring";
 import {
   type AttackEffect,
@@ -169,20 +173,39 @@ interface PlayedGame {
   readonly attacksApplied: number;
 }
 
+interface PlayFullGameOptions {
+  readonly fleetSize?: FleetSize;
+  readonly chargedNodeCount?: ChargedNodeCount;
+  readonly combatEnabled?: boolean;
+  readonly scoring?: ScoringSetting;
+  readonly nodeRotation?: NodeRotationSetting;
+  /**
+   * Called with the state after the opening deal and again after every ply,
+   * so a caller can check an invariant throughout a game rather than only
+   * at its end — the queue invariant (rules.md §8.2), for instance.
+   */
+  readonly onPly?: (state: GameState) => void;
+}
+
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
  * above, dealt with `fleetSize` ships a side (the app's default six),
  * `chargedNodeCount` charged nodes (the app's default five), combat on
- * unless `combatEnabled` says otherwise, and simple scoring unless
- * `scoring` says otherwise.
+ * unless `combatEnabled` says otherwise, simple scoring unless `scoring`
+ * says otherwise, and continuous node rotation unless `nodeRotation` says
+ * otherwise.
  */
 function playFullGame(
   seed: number,
   lengthInRounds: number,
-  fleetSize: FleetSize = DEFAULT_FLEET_SIZE,
-  chargedNodeCount: ChargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
-  combatEnabled = true,
-  scoring: ScoringSetting = "simple",
+  {
+    fleetSize = DEFAULT_FLEET_SIZE,
+    chargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
+    combatEnabled = true,
+    scoring = "simple",
+    nodeRotation = "continuous",
+    onPly,
+  }: PlayFullGameOptions = {},
 ): PlayedGame {
   let state = startingGameState(seed, {
     lengthInRounds,
@@ -190,7 +213,9 @@ function playFullGame(
     chargedNodeCount,
     combatEnabled,
     scoring,
+    nodeRotation,
   });
+  onPly?.(state);
   const greenCollected: EnergyCollectedEffect[] = [];
   const redCollected: EnergyCollectedEffect[] = [];
   let attacksApplied = 0;
@@ -231,6 +256,8 @@ function playFullGame(
       effects = result.effects;
       attacksApplied += 1;
     }
+
+    onPly?.(state);
 
     for (const collected of energyCollectedEffects(effects)) {
       (collected.side === "green" ? greenCollected : redCollected).push(
@@ -334,6 +361,35 @@ function sumAmounts(effects: readonly EnergyCollectedEffect[]): number {
   return effects.reduce((total, effect) => total + effect.amount, 0);
 }
 
+/**
+ * The queue invariant (rules.md §8.2), unaffected by which node rotation
+ * setting is chosen: the board always carries exactly three inactive nodes,
+ * holding priorities 1, 2 and 3 with no repeat.
+ */
+function assertQueueInvariant(state: GameState): void {
+  const inactivePriorities = Object.values(state.nodes)
+    .filter((status) => status.state === "inactive")
+    .map((status) => status.level)
+    .sort();
+  expect(inactivePriorities).toEqual([1, 2, 3]);
+}
+
+/**
+ * A rotator never stands on a square that also carries a node, a planet or
+ * a ship (rules.md §3.3). Harmless to call at any setting — `state.rotators`
+ * is empty under continuous and planet, so the loop below never runs.
+ */
+function assertRotatorsAreFree(state: GameState): void {
+  const shipSquareNames = new Set(
+    state.ships.map((ship) => squareName(ship.square)),
+  );
+  for (const rotator of state.rotators) {
+    expect(isPlanet(rotator)).toBe(false);
+    expect(state.nodes[squareName(rotator)]).toBeUndefined();
+    expect(shipSquareNames.has(squareName(rotator))).toBe(false);
+  }
+}
+
 /** One ship, for building a state by hand rather than dealing it. */
 function ship(id: ShipId, side: "green" | "red", square: string): Ship {
   return { id, side, square: squareFromName(square), power: 4 };
@@ -362,8 +418,7 @@ describe.each(CHARGED_NODE_COUNTS)(
       const { finalState, greenCollected, redCollected } = playFullGame(
         seed,
         100,
-        DEFAULT_FLEET_SIZE,
-        chargedNodeCount,
+        { chargedNodeCount },
       );
 
       expect(finalState.plyNumber).toBe(pliesForGameLength(100) + 1);
@@ -410,8 +465,7 @@ describe.each(CHARGED_NODE_COUNTS)(
       const { finalState, greenCollected, redCollected } = playFullGame(
         seed,
         3,
-        DEFAULT_FLEET_SIZE,
-        chargedNodeCount,
+        { chargedNodeCount },
       );
 
       expect(finalState.plyNumber).toBe(pliesForGameLength(3) + 1);
@@ -444,22 +498,12 @@ describe("a full game, end to end, at bonus scoring (§8.4)", () => {
     const seed = 20260819;
     const lengthInRounds = 100;
 
-    const simpleGame = playFullGame(
-      seed,
-      lengthInRounds,
-      DEFAULT_FLEET_SIZE,
-      DEFAULT_CHARGED_NODE_COUNT,
-      true,
-      "simple",
-    );
-    const bonusGame = playFullGame(
-      seed,
-      lengthInRounds,
-      DEFAULT_FLEET_SIZE,
-      DEFAULT_CHARGED_NODE_COUNT,
-      true,
-      "bonus",
-    );
+    const simpleGame = playFullGame(seed, lengthInRounds, {
+      scoring: "simple",
+    });
+    const bonusGame = playFullGame(seed, lengthInRounds, {
+      scoring: "bonus",
+    });
 
     expect(bonusGame.finalState.energy.green).toBeGreaterThanOrEqual(
       simpleGame.finalState.energy.green,
@@ -482,6 +526,28 @@ describe("a full game, end to end, at bonus scoring (§8.4)", () => {
     }
   });
 });
+
+describe.each(NODE_ROTATION_SETTINGS)(
+  "a full game, end to end, under %s node rotation (rules.md §8.2)",
+  (nodeRotation) => {
+    it("plays a three-round game to its end, with the queue invariant intact throughout", () => {
+      const seed = 20260819;
+      const { finalState } = playFullGame(seed, 3, {
+        nodeRotation,
+        onPly: (state) => {
+          assertQueueInvariant(state);
+          assertRotatorsAreFree(state);
+        },
+      });
+
+      expect(finalState.nodeRotation).toBe(nodeRotation);
+      expect(finalState.plyNumber).toBe(pliesForGameLength(3) + 1);
+      expect(isGameOver(finalState)).toBe(true);
+      assertQueueInvariant(finalState);
+      assertRotatorsAreFree(finalState);
+    });
+  },
+);
 
 describe("a full game, end to end", () => {
   it("refuses an attack, not only a move and a pass, once the game is over", () => {
@@ -509,6 +575,8 @@ describe("a full game, end to end", () => {
       plyNumber: pliesForGameLength(1) + 1,
       randomSeed: 1,
       openingSeed: 1,
+      nodeRotation: "continuous",
+      rotators: [],
       energy: { green: 0, red: 0 },
       lengthInRounds: 1,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -523,13 +591,9 @@ describe("a full game, end to end", () => {
 
   it("plays to its last round on moves alone when combat is off, and never deadlocks", () => {
     const seed = 20260819;
-    const { finalState, attacksApplied } = playFullGame(
-      seed,
-      100,
-      DEFAULT_FLEET_SIZE,
-      DEFAULT_CHARGED_NODE_COUNT,
-      false,
-    );
+    const { finalState, attacksApplied } = playFullGame(seed, 100, {
+      combatEnabled: false,
+    });
 
     // Reaching this point at all is most of the proof: `playFullGame` throws
     // if the policy ever runs out of legal plies before the game ends
@@ -550,8 +614,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
         const { finalState, greenCollected, redCollected } = playFullGame(
           seed,
           30,
-          5,
-          chargedNodeCount,
+          { fleetSize: 5, chargedNodeCount },
         );
 
         expect(finalState.ships).toHaveLength(10);
@@ -567,8 +630,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
         const { finalState, greenCollected, redCollected } = playFullGame(
           seed,
           30,
-          6,
-          chargedNodeCount,
+          { fleetSize: 6, chargedNodeCount },
         );
 
         expect(finalState.ships).toHaveLength(12);
@@ -584,8 +646,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
         const { finalState, greenCollected, redCollected } = playFullGame(
           seed,
           30,
-          3,
-          chargedNodeCount,
+          { fleetSize: 3, chargedNodeCount },
         );
 
         expect(finalState.ships).toHaveLength(6);
@@ -601,8 +662,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
         const { finalState, greenCollected, redCollected } = playFullGame(
           seed,
           30,
-          4,
-          chargedNodeCount,
+          { fleetSize: 4, chargedNodeCount },
         );
 
         expect(finalState.ships).toHaveLength(8);
@@ -690,6 +750,8 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
+      nodeRotation: "continuous",
+      rotators: [],
       energy: { green: 0, red: 0 },
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -741,6 +803,8 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
+      nodeRotation: "continuous",
+      rotators: [],
       energy: { green: 0, red: 0 },
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -791,6 +855,8 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
+      nodeRotation: "continuous",
+      rotators: [],
       energy: { green: 50, red: 0 },
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

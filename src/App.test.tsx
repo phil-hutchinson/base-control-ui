@@ -97,6 +97,10 @@ function scoringGroup() {
   return screen.getByRole("group", { name: "Scoring" });
 }
 
+function nodeRotationGroup() {
+  return screen.getByRole("group", { name: "Inactive node rotation" });
+}
+
 function clockGroup() {
   return screen.getByRole("group", { name: "Clock (time per move)" });
 }
@@ -107,7 +111,7 @@ async function pressPlay() {
 }
 
 describe("App", () => {
-  it("opens on the start screen: the name, all six option groups at their defaults, and PLAY — no board, no HUD", () => {
+  it("opens on the start screen: the name, all seven option groups at their defaults, and PLAY — no board, no HUD", () => {
     render(<App />);
 
     expect(
@@ -128,6 +132,9 @@ describe("App", () => {
       within(scoringGroup()).getByRole("radio", { name: "SIMPLE" }),
     ).toBeChecked();
     expect(
+      within(nodeRotationGroup()).getByRole("radio", { name: "CONTINUOUS" }),
+    ).toBeChecked();
+    expect(
       within(combatGroup()).getByRole("radio", { name: "OFF" }),
     ).toBeChecked();
     expect(
@@ -141,6 +148,23 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
+  });
+
+  it("renders the seven option groups in order: Ships, Charged nodes, Scoring, Inactive node rotation, Combat, Rounds, Clock", () => {
+    render(<App />);
+
+    const groups = screen.getAllByRole("group");
+    expect(
+      groups.map((group) => group.querySelector("legend")?.textContent ?? ""),
+    ).toEqual([
+      "Ships",
+      "Charged nodes",
+      "Scoring",
+      "Inactive node rotation",
+      "Combat",
+      "Rounds",
+      "Clock (time per move)",
+    ]);
   });
 
   it("mounts exactly one hidden ship sprite, on the start screen and once a game is in progress", async () => {
@@ -430,6 +454,9 @@ describe("App", () => {
     await user.click(
       within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
     );
+    await user.click(
+      within(nodeRotationGroup()).getByRole("radio", { name: "DEDICATED" }),
+    );
     await user.click(screen.getByRole("button", { name: "Quick Guide" }));
 
     expect(
@@ -465,8 +492,33 @@ describe("App", () => {
     expect(
       within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
     ).toBeChecked();
+    expect(
+      within(nodeRotationGroup()).getByRole("radio", { name: "DEDICATED" }),
+    ).toBeChecked();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(vi.mocked(Board).mock.calls.length).toBe(renderCountBefore);
+  });
+
+  it("choosing DEDICATED before PLAY starts a game, and returning to start still shows it chosen", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    stubConfirm(true);
+
+    await user.click(
+      within(nodeRotationGroup()).getByRole("radio", { name: "DEDICATED" }),
+    );
+    await pressPlay();
+
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+
+    traverseTo("");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+    ).toBeInTheDocument();
+    expect(
+      within(nodeRotationGroup()).getByRole("radio", { name: "DEDICATED" }),
+    ).toBeChecked();
   });
 
   it("does not repaint the board on a clock tick", async () => {

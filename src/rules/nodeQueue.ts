@@ -1,10 +1,11 @@
 // The three inactive nodes' queue (rules.md §8.2): the priority each one
 // carries, the refill that replaces all three at once when a charge sweeps
-// them, and the rotation that shifts them one step on a turn that charges
-// nothing. A pure leaf module — it knows nothing about `GameState`, only
-// squares, priorities and the seeded stream — so it can be shared by the
-// opening deal (`nodes.ts`) and end-of-turn charging (`charging.ts`,
-// `endOfTurn.ts`) without either importing the other.
+// them, and the rotation that shifts them one step — at the end of a turn
+// that charges nothing under the continuous setting, and as a ship lands
+// under the other two (`endOfTurn.ts`, `ply.ts`). A pure leaf module — it
+// borrows `GameState`'s `NodeStatus` type and nothing else, so it can be
+// shared by the opening deal (`nodes.ts`) and end-of-turn charging
+// (`charging.ts`, `endOfTurn.ts`) without either importing the other.
 //
 // A refill's four seed steps, in this fixed order, so a recorded game
 // replays exactly:
@@ -21,6 +22,7 @@
 //    they were drawn.
 
 import type { Square } from "./board";
+import type { NodeStatus } from "./gameState";
 import { drawWeightedNodeSquare, legalNodePool } from "./nodePlacement";
 import { drawIndex } from "./random";
 
@@ -151,6 +153,29 @@ export function rotatePriority(priority: NodePriority): NodePriority {
     return 3;
   }
   return 1;
+}
+
+/**
+ * Rotates every inactive node in a node map one step (rules.md §8.2),
+ * leaving charged and depleted entries untouched. The one place in the app
+ * that knows what "the priorities move one step" means — `endOfTurn.ts`
+ * step 5's continuous branch and `ply.ts`'s landing trigger both go through
+ * this rather than each looping over the map themselves.
+ */
+export function rotateQueue(
+  nodes: Readonly<Record<string, NodeStatus>>,
+): Readonly<Record<string, NodeStatus>> {
+  const rotated: Record<string, NodeStatus> = { ...nodes };
+  for (const [name, status] of Object.entries(nodes)) {
+    if (status.state !== "inactive") {
+      continue;
+    }
+    rotated[name] = {
+      state: "inactive",
+      level: rotatePriority(inactivePriority(status)),
+    };
+  }
+  return rotated;
 }
 
 /**

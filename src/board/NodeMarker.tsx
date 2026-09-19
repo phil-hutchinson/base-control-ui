@@ -12,6 +12,7 @@
 
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
+import { INACTIVE_RING_COLOR } from "./squareArt";
 import "./NodeMarker.css";
 
 interface NodeMarkerProps {
@@ -74,7 +75,6 @@ function middleStopOffsetPercent(
 // owner's eye, not a measured result.
 const INACTIVE_RING_RADII: readonly number[] = [18, 28, 38];
 const INACTIVE_RING_STROKE_WIDTH = 5;
-const INACTIVE_RING_COLOR = "#DAA520";
 
 /** Radii, gradient stops, colours and opacities for the two clocked states, taken from
  * doc/plan/00000023-update-node-visual/node-artwork.md exactly as specified

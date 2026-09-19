@@ -35,10 +35,44 @@ describe("GuideScreen", () => {
     }
   });
 
-  it("renders five diagrams, one under each section", () => {
+  it("renders six diagrams: one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
     const { container } = render(<GuideScreen onBack={vi.fn()} />);
 
-    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(5);
+    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(6);
+  });
+
+  it("renders the node rotation setting lines and the rotator square after them, in order", () => {
+    const { container } = render(<GuideScreen onBack={vi.fn()} />);
+
+    const nodeSelectionSection = GUIDE_SECTIONS.find(
+      (section) => section.id === "nodeSelection",
+    );
+    const settingLines = nodeSelectionSection?.settingLines ?? [];
+    expect(settingLines.length).toBeGreaterThan(0);
+
+    let previousLabel: HTMLElement | null = null;
+    for (const line of settingLines) {
+      const label = screen.getByText(line.label, { selector: "em" });
+      expect(label.parentElement?.textContent).toBe(
+        `${line.label}: ${line.text}`,
+      );
+      if (previousLabel) {
+        expect(
+          previousLabel.compareDocumentPosition(label) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+      }
+      previousLabel = label;
+    }
+
+    const rotatorMark = container.querySelector(".rotator-marker");
+    expect(rotatorMark).toBeInTheDocument();
+    expect(
+      previousLabel &&
+        rotatorMark &&
+        previousLabel.compareDocumentPosition(rotatorMark) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("renders two Back buttons, one before the title and one after the last diagram, each calling the callback once", async () => {

@@ -19,9 +19,12 @@ import {
   dealOpeningBoard,
 } from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
+import { DEFAULT_NODE_ROTATION, NODE_ROTATION_SETTINGS } from "./nodeRotation";
 import { legalDestinations } from "./movement";
+import { isPlanet } from "./planets";
 import { MAX_POWER } from "./power";
 import { applyMove } from "./ply";
+import { ROTATOR_SECTIONS } from "./rotators";
 import { DEFAULT_SCORING, SCORING_SETTINGS } from "./scoring";
 
 const SEED = 12345;
@@ -402,6 +405,105 @@ describe("startingGameState", () => {
       expect(() => startingGameState(SEED, { scoring })).toThrow(RangeError);
     },
   );
+
+  it("defaults to continuous node rotation, the app's default, with an empty rotator list, when none is given", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.nodeRotation).toBe("continuous");
+    expect(state.nodeRotation).toBe(DEFAULT_NODE_ROTATION);
+    expect(state.rotators).toEqual([]);
+  });
+
+  it("takes a given node rotation setting, changing nothing else about the state", () => {
+    const defaultRotation = startingGameState(SEED);
+    const planetRotation = startingGameState(SEED, { nodeRotation: "planet" });
+
+    expect(planetRotation.nodeRotation).toBe("planet");
+    expect(planetRotation.rotators).toEqual([]);
+    expect({
+      ...planetRotation,
+      nodeRotation: defaultRotation.nodeRotation,
+    }).toEqual(defaultRotation);
+  });
+
+  it("is one of the offered node rotation settings, exactly the one given", () => {
+    const state = startingGameState(SEED, { nodeRotation: "dedicated" });
+
+    expect(NODE_ROTATION_SETTINGS).toContain(state.nodeRotation);
+    expect(state.nodeRotation).toBe("dedicated");
+  });
+
+  it("carries nodeRotation unchanged through a move, for the game's lifetime", () => {
+    const state = startingGameState(SEED, { nodeRotation: "planet" });
+    const ship = state.ships.find(
+      (candidate) => legalDestinations(state, candidate.id).length > 0,
+    );
+    if (ship === undefined) {
+      throw new Error("expected at least one ship with a legal move");
+    }
+    const [destination] = legalDestinations(state, ship.id);
+
+    const result = applyMove(state, ship.id, destination);
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.state.nodeRotation).toBe("planet");
+  });
+
+  it.each(["CONTINUOUS", "planets", "rotator", ""])(
+    "throws a RangeError for a node rotation setting of %j",
+    (nodeRotation) => {
+      expect(() => startingGameState(SEED, { nodeRotation })).toThrow(
+        RangeError,
+      );
+    },
+  );
+
+  it("leaves the rotator list empty at continuous and planet, whatever the seed", () => {
+    for (const nodeRotation of ["continuous", "planet"] as const) {
+      const state = startingGameState(SEED, { nodeRotation });
+      expect(state.rotators).toEqual([]);
+    }
+  });
+
+  it("places up to six rotators under dedicated, at most one per section, none on a planet, a ship or a node", () => {
+    const state = startingGameState(SEED, { nodeRotation: "dedicated" });
+
+    expect(state.rotators.length).toBeGreaterThan(0);
+    expect(state.rotators.length).toBeLessThanOrEqual(6);
+
+    const shipNames = new Set(
+      state.ships.map((ship) => squareName(ship.square)),
+    );
+    const nodeNames = new Set(Object.keys(state.nodes));
+
+    for (const square of state.rotators) {
+      const name = squareName(square);
+      expect(isPlanet(square)).toBe(false);
+      expect(shipNames.has(name)).toBe(false);
+      expect(nodeNames.has(name)).toBe(false);
+    }
+
+    const sectionsHit = new Set(
+      state.rotators.map((square) =>
+        ROTATOR_SECTIONS.findIndex((section) =>
+          section.squares.some((s) => squareName(s) === squareName(square)),
+        ),
+      ),
+    );
+    expect(sectionsHit.size).toBe(state.rotators.length);
+  });
+
+  it("leaves randomSeed unaffected by node rotation at continuous and planet, but advanced further at dedicated", () => {
+    const continuous = startingGameState(SEED, { nodeRotation: "continuous" });
+    const planet = startingGameState(SEED, { nodeRotation: "planet" });
+    const dedicated = startingGameState(SEED, { nodeRotation: "dedicated" });
+
+    expect(planet.randomSeed).toBe(continuous.randomSeed);
+    expect(dedicated.randomSeed).not.toBe(continuous.randomSeed);
+  });
 });
 
 describe("markOutOfTime", () => {
