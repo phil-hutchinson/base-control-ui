@@ -24,6 +24,13 @@ import {
   type NodeState,
 } from "./nodes";
 import {
+  DEFAULT_NODE_ROTATION,
+  isNodeRotationSetting,
+  NODE_ROTATION_SETTINGS,
+  type NodeRotationSetting,
+} from "./nodeRotation";
+import { placeRotators } from "./rotators";
+import {
   DEFAULT_SCORING,
   isScoringSetting,
   SCORING_SETTINGS,
@@ -133,6 +140,26 @@ export interface GameState {
    * paid, and a total of 6 is three turns at simple or one at bonus.
    */
   readonly scoring: ScoringSetting;
+  /**
+   * How the three inactive nodes' priorities rotate (rules.md §8.2), fixed
+   * for the game's lifetime once set by `startingGameState`. Every place
+   * that rotates the queue — `endOfTurn.ts` step 5, and a landing in
+   * `ply.ts` — reads it from here rather than from an app default. It
+   * cannot be derived from a board: a board that has not rotated for ten
+   * turns is indistinguishable from one whose players simply have not
+   * landed anywhere.
+   */
+  readonly nodeRotation: NodeRotationSetting;
+  /**
+   * Every square currently holding a rotator (rules.md §3.3), in board
+   * order, fixed only at the moment it is set — the opening deal, and every
+   * refill under the dedicated setting (`endOfTurn.ts` step 5). Always empty
+   * under continuous and planet. Deliberately not part of `state.nodes`: a
+   * rotator has no state, no countdown and no priority, and it cannot be
+   * derived from the board either — a free square and a free square holding
+   * a rotator look identical.
+   */
+  readonly rotators: readonly Square[];
 }
 
 /**
@@ -181,6 +208,16 @@ export interface StartingGameStateOptions {
    * throws a `RangeError`.
    */
   readonly scoring?: string;
+  /**
+   * How the three inactive nodes' priorities rotate (rules.md §8.2).
+   * Defaults to `DEFAULT_NODE_ROTATION` (continuous). Deliberately typed
+   * `string`, not `NodeRotationSetting`, for the same reason `scoring` is: a
+   * setting arriving from outside the type system can be any string. Must be
+   * one of `nodeRotation.ts`'s offered settings, or this throws a
+   * `RangeError`. `rotators` is not an option — it is produced by the deal,
+   * never supplied.
+   */
+  readonly nodeRotation?: string;
 }
 
 /**
@@ -199,8 +236,10 @@ export interface StartingGameStateOptions {
  * The seed argument is the seed the **deal** starts from, not the seed the
  * game's first turn draws from: dealing the board consumes `chargedNodeCount
  * + 4` steps of the stream before play begins — nine at five charged, eight
- * at four, seven at three — and the resulting state's `randomSeed` is the
- * seed the deal left behind. That argument is also recorded verbatim as
+ * at four, seven at three — plus, under the dedicated node rotation setting
+ * only, up to nine more for the opening rotator set (rules.md §3.3). The
+ * resulting state's `randomSeed` is the seed the deal (and, under dedicated,
+ * the rotator draw) left behind. That argument is also recorded verbatim as
  * `openingSeed`, so the state remembers where its deal started even once
  * `randomSeed` has moved on. See `src/game/seed.ts` for where the app's
  * opening seed comes from. Every test passes one explicitly, so a game's
@@ -220,6 +259,7 @@ export function startingGameState(
     chargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
     combatEnabled = DEFAULT_COMBAT_ENABLED,
     scoring = DEFAULT_SCORING,
+    nodeRotation = DEFAULT_NODE_ROTATION,
   } = options;
 
   if (!isGameLengthRounds(lengthInRounds)) {
@@ -242,6 +282,11 @@ export function startingGameState(
       `startingGameState: scoring must be one of ${SCORING_SETTINGS.join(", ")}, got ${scoring}`,
     );
   }
+  if (!isNodeRotationSetting(nodeRotation)) {
+    throw new RangeError(
+      `startingGameState: nodeRotation must be one of ${NODE_ROTATION_SETTINGS.join(", ")}, got ${nodeRotation}`,
+    );
+  }
 
   const ships = startingFleet(fleetSize).map((entry) => ({
     id: entry.id,
@@ -250,11 +295,20 @@ export function startingGameState(
     power: entry.power,
   }));
 
-  const [nodes, nextSeed] = dealOpeningBoard(
-    ships.map((ship) => ship.square),
+  const shipSquares = ships.map((ship) => ship.square);
+  const [nodes, dealtSeed] = dealOpeningBoard(
+    shipSquares,
     chargedNodeCount,
     randomSeed,
   );
+
+  const dealtNodeSquares = ALL_SQUARES.filter(
+    (square) => nodes[squareName(square)] !== undefined,
+  );
+  const [rotators, nextSeed] =
+    nodeRotation === "dedicated"
+      ? placeRotators(dealtNodeSquares, shipSquares, dealtSeed)
+      : [[], dealtSeed];
 
   return {
     ships,
@@ -269,6 +323,8 @@ export function startingGameState(
     outOfTime: { green: false, red: false },
     combatEnabled,
     scoring,
+    nodeRotation,
+    rotators,
   };
 }
 

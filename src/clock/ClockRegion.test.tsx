@@ -15,6 +15,8 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     plyNumber: 1,
     randomSeed: 1,
     openingSeed: 1,
+    nodeRotation: "continuous",
+    rotators: [],
     energy: { green: 0, red: 0 },
     lengthInRounds: 30,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

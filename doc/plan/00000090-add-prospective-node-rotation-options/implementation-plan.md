@@ -816,7 +816,38 @@ showing only the baseline's three warnings.
 
 ### Step 3 — `nodeRotation` and `rotators` become part of the game state
 
-Status: pending
+Status: committed
+
+Notes: `GameState` gained `nodeRotation: NodeRotationSetting` and
+`rotators: readonly Square[]`, each with a doc comment in the style of
+`chargedNodeCount`/`combatEnabled`/`scoring`. `StartingGameStateOptions`
+gained `nodeRotation?: string`, defaulting to `DEFAULT_NODE_ROTATION` and
+validated with `isNodeRotationSetting`, throwing a `RangeError` naming the
+offered settings exactly as `scoring` does. In `startingGameState`, after
+`dealOpeningBoard` returns, `placeRotators` is called under dedicated only
+(against the dealt node squares and the fleet's squares), storing the
+result on `state.rotators` and the returned seed on `state.randomSeed`;
+under continuous and planet `state.rotators` is `[]` and the seed is left
+exactly where the deal left it (no call, no seed step). The doc comments
+for `randomSeed`/the seed argument were updated to note the extra up-to-nine
+steps under dedicated. Did the one-pass test sweep (D11) over the 22 test
+files `npm run typecheck` found, adding `nodeRotation: "continuous",` and
+`rotators: [],` right after each state literal's `openingSeed:` line via a
+scripted per-file Perl pass (mechanical, no existing expectation touched).
+Extended `src/rules/gameState.test.ts` with the cases the step calls for:
+both fields defaulting to continuous/`[]`; a given setting changing nothing
+else; the setting surviving a move; a `RangeError` for an off-list setting;
+an empty rotator list at continuous and planet; rotators placed under
+dedicated — one per section with room, none on a planet, a ship or a node,
+each drawn square attributed to a distinct section; and the seed
+consequence (continuous and planet leave the same `randomSeed` from the
+same opening seed, dedicated leaves a different one). No deviation from the
+plan. `npm test` went from 72 files / 1351 tests to 72 files / 1362 tests
+(11 new, all passing, no existing expectation changed); `npm run typecheck`
+(which is what proves the sweep is complete) and `npm run lint` are clean;
+`npm run format:check` needed one `prettier --write` pass on the newly
+edited `gameState.test.ts` and otherwise shows only the three pre-existing
+baseline warnings.
 
 Add both fields to `GameState` (D1), with doc comments in the style of
 `chargedNodeCount`, `combatEnabled` and `scoring` — each saying it is fixed for

@@ -45,6 +45,8 @@ function buildState(config: {
     plyNumber: config.plyNumber ?? 5,
     randomSeed: config.randomSeed ?? 1,
     openingSeed: config.randomSeed ?? 1,
+    nodeRotation: "continuous",
+    rotators: [],
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
