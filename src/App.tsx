@@ -56,6 +56,8 @@ export function App() {
     setCombatEnabled,
     scoring,
     setScoring,
+    nodeRotation,
+    setNodeRotation,
     lengthInRounds,
     setLengthInRounds,
     clockSetting,
@@ -79,6 +81,8 @@ export function App() {
             onCombatEnabledChange={setCombatEnabled}
             scoring={scoring}
             onScoringChange={setScoring}
+            nodeRotation={nodeRotation}
+            onNodeRotationChange={setNodeRotation}
             lengthInRounds={lengthInRounds}
             onLengthInRoundsChange={setLengthInRounds}
             clockSetting={clockSetting}

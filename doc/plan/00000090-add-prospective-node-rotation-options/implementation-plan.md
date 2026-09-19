@@ -1228,7 +1228,36 @@ Verification (automated): `npm test` green with the new cases;
 
 ### Step 8 — The start screen's seventh group
 
-Status: pending
+Status: committed
+
+Notes: Added the `Inactive node rotation` fieldset to `StartScreen.tsx`
+between Scoring and Combat, rendered by the existing `OptionChoice` from
+`NODE_ROTATION_SETTINGS` with the label table `continuous` → CONTINUOUS,
+`planet` → PLANET, `dedicated` → DEDICATED; the component stays controlled
+(`nodeRotation` prop, `onNodeRotationChange` handler), and its header comment
+now says "the seven options". `App.tsx` was untouched by Step 7, so this step
+destructures `nodeRotation`/`setNodeRotation` from `useAppScreen` and passes
+them through to `StartScreen`. Extended `StartScreen.test.tsx`: the seven-group
+order assertion, a test that the new group offers all three labels with the
+given one checked, a default-CONTINUOUS-with-order test, and a handler test
+that clicking DEDICATED calls only `onNodeRotationChange`. Extended
+`App.test.tsx`: the start screen's default-options test now also asserts
+CONTINUOUS is checked in the new group; added a seven-group order test in the
+real app; extended the existing "returns to start screen with options
+untouched" test to also choose and check DEDICATED; and added a new test that
+choosing DEDICATED starts a game and, on returning to the start screen (via
+`traverseTo` with `confirm` stubbed true), still shows DEDICATED checked —
+per the plan's allowance, this proves the option round-trips through a real
+game rather than asserting rotators are drawn on the board, since
+`RotatorMarker` does not exist until Step 9. No other deviation from the
+plan. `npm test` went from 72 files / 1391 tests to 72 files / 1396 tests (5
+new, all passing, no existing expectation changed); `npm run typecheck` and
+`npm run lint` are clean; `npm run format:check` shows only the three
+pre-existing baseline warnings. The layout verification (seven groups fitting
+a short landscape window) is manual and left to the owner, per S13 and the
+step's own instruction. Owner verified: the seven groups show in the stated
+order with CONTINUOUS checked and nothing clips; continuous and planet play
+out correctly, and dedicated behaves as expected ahead of Step 9.
 
 Add the seventh option group to `src/start/StartScreen.tsx`, **between Scoring
 and Combat**, so the screen reads: **Ships, Charged nodes, Scoring, Inactive
