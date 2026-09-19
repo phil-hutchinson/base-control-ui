@@ -7,6 +7,60 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.36 — inactive node rotation becomes a choice, and rotators arrive
+
+This is a gameplay change — the same board now charges a different node —
+and so would be a tag candidate; tagging stays on hold until the game plays
+(see the project's contribution notes).
+
+- **Section 8.2 now opens by stating how the priorities rotate as a
+  choice**: continuous, planet or dedicated, the same for both players,
+  chosen before play begins and fixed for the game's lifetime, naming no
+  default.
+  - **Continuous** is today's rule, unchanged: the priorities rotate at the
+    end of every turn on which nothing charged.
+  - **Planet** stops the priorities rotating at a turn's end at all; they
+    rotate one step each time a ship lands on a planet, the moment it
+    lands.
+  - **Dedicated** does the same, except the trigger is a **rotator**
+    (section 3.3) rather than a planet, and the rotator is spent by the
+    landing.
+  - **Timing is stated explicitly**: a rotation triggered by a landing is
+    complete before the end-of-turn sequence begins, so step 4 charges from
+    the priorities as the rotation left them. Two landings in one turn
+    rotate two steps.
+- **A new section 3.3, Rotators**, describes the new piece of temporary
+  board furniture that exists only under the dedicated setting: nine
+  squares, one per 5 x 5 section of the board, redrawn from scratch at the
+  opening deal and every time the queue is refilled, and each consumed by
+  the ship that lands on it. Section 3.2's placement constraints do not
+  apply to it.
+- **Section 2 gains a Rotator entry.**
+- **Section 8.6 step 5** now rotates the priorities only under the
+  continuous setting, and replaces the board's rotators, under the
+  dedicated setting only, immediately after a refill.
+- **Section 8.6's closing notes** gain a second knowing exception to "a
+  node's state changes only in the end-of-turn sequence": a landing rotates
+  the priorities the instant it happens, under the planet and dedicated
+  settings, alongside the existing exception for a charged node depleting
+  the instant its holder leaves it.
+- **Section 7** notes that, with combat on and the planet setting chosen, a
+  fight returns two ships to planets and so rotates the priorities twice.
+- **Section 1's overview** notes that, under two of the three settings,
+  part of the board's redrawing is a step a player takes rather than one
+  the clock takes for them, and that the dedicated setting adds a fourth
+  random element — where the rotators fall.
+- **Section 8.1's opening-deal bullets** note that, under the dedicated
+  setting, the opening deal also lays down the board's first set of
+  rotators.
+- **Section 10's opening sentence** adds rotation to the list of what is
+  chosen alongside the fleet size, the number of rounds, the charged-node
+  count, combat and scoring.
+- Nothing else changes: what the priorities mean and what they look like,
+  the direction of a rotation, the rest of section 8.6's order, what
+  charges and how many, and where a node may appear (section 3.2) are all
+  unchanged — only what makes the priorities move, and when, does.
+
 ## 0.35 — scoring becomes a choice
 
 This is a gameplay change — the same board can now pay two different

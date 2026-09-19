@@ -552,7 +552,42 @@ Per `CLAUDE.md` and the owner's standing preference, live-region wording is
 
 ### Step 1 — `rules.md` 0.35 → 0.36: rotation becomes a choice, and rotators arrive
 
-Status: pending
+Status: committed
+
+Notes: Bumped `rules.md` to 0.36 and `RULES_VERSION` to match, and added the
+0.36 changelog entry (one entry, gameplay change, no tag per S11). §8.2 now
+opens with the pre-play choice (continuous/planet/dedicated) followed by the
+three settings and the timing/rings paragraph, replacing the old
+"priorities rotate at the end of every turn..." paragraph; the existing
+"freshly refilled trio is never rotated" sentence was checked and needed no
+change (it still holds unqualified under all three settings, since a landing
+that rotates the queue always precedes that turn's refill in step 5). Added
+new §3.3 "Rotators" after §3.2. Added a Rotator entry to §2, placed after
+Priority (checked: the existing Priority entry's "highest priority charges
+next" sentence needed no change). Restated §8.6 step 5 (rotate only under
+continuous; regenerate rotators only under dedicated, right after a refill).
+§8.6's closing notes gained the second knowing exception (a landing rotates
+the priorities under planet/dedicated) and the "charging reads from the
+priorities already on the board" paragraph gained the sentence about the
+arrangement being changeable under two of the three settings. §7 gained one
+sentence: a fight under the planet setting rotates the priorities twice.
+§1's overview gained a sentence in the board-redrawing paragraph and a
+sentence in the random-elements paragraph (a fourth random element under
+dedicated: where the rotators fall). §8.1's opening-deal bullets gained a
+cross-reference to §3.3 for the dedicated setting. §10's opening sentence
+now lists rotation alongside the other five choices it already named.
+Checked §6 (nothing to change: landing on a rotator is refused by nothing,
+and the list of refusal reasons is unaffected) and §9 (it does not enumerate
+the pre-play choices at all — only rounds — so nothing to change there
+either). Checked `doc/ruleset/tech-notes.md`: its "an inactive node never
+waits more than three turns" argument assumes automatic (continuous)
+rotation and would be false under planet/dedicated, where a node can wait
+indefinitely if nobody triggers a rotation; added a qualifying sentence
+there rather than leaving a false claim standing, since the plan's "check,
+do not rewrite" instruction allowed a word where one was needed and this
+one was. No code changed in this step; `npm test` stayed at 70 files / 1339
+tests, `npm run typecheck` and `npm run lint` are clean, and
+`npm run format:check` shows only the three pre-existing baseline warnings.
 
 Update `doc/ruleset/rules.md` so that no section states end-of-turn rotation as
 the only rotation, bump the document to **0.36**, bump `RULES_VERSION` in
