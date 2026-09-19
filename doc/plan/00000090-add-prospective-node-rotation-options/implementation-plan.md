@@ -1834,10 +1834,11 @@ Verification (manual): the owner runs `npm run dev` and confirms:
   through a turn;
 - in a **PLANET** game with **combat on**, an attack moves the rings **two**
   steps;
-- in a **DEDICATED** game, nine rotators are on the board at the start, one in
-  each 5 × 5 section, none on a planet, a ship or a node; landing on one
-  removes it and moves the rings one step; landing on a planet moves nothing;
-  and a fresh nine appear the moment something charges;
+- in a **DEDICATED** game, six rotators are on the board at the start — one in
+  each of the four corner 5 × 5 sections and two more elsewhere, none on a
+  planet, a ship or a node (Step 11); landing on one removes it and moves the
+  rings one step; landing on a planet moves nothing; and a fresh six appear
+  the moment something charges;
 - **the ordering clarification, by hand**: with a ship holding a charged node,
   note which node shows **two** rings, move that ship onto a planet (PLANET) or
   a rotator (DEDICATED), and confirm the node that charges at the end of that
@@ -1852,6 +1853,6 @@ Verification (manual): the owner runs `npm run dev` and confirms:
 - the Quick Guide describes the rotation and its three settings.
 
 Two further observations the owner wants from play, recorded in `Notes:` rather
-than acted on in this story: whether **nine** rotators is generous or tight in
+than acted on in this story: whether **six** rotators is generous or tight in
 a DEDICATED game played until they run low, and whether the double rotation an
 attack buys under PLANET with combat on is too strong a reason to attack.
