@@ -1762,7 +1762,27 @@ Gate outcome: the owner read the section in the running app and accepted it.
 
 ### Step 14 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Rewrote the rings paragraph to state rotation as a choice: continuous
+kept as today's sentence, then planet (a ship landing on a planet shifts the
+rings one step, mid-turn, tying it to refuelling, and a combat fight shifts
+them twice) and dedicated (up to six extra squares, spent on landing, a fresh
+six after each node lights), all in the README's existing "lights"/"lit"
+vocabulary rather than the rules' "charge". Added the seventh choice to the
+status paragraph's list, between scoring and combat, in the same
+`(continuous, planet or dedicated, continuous to start)` shape the other
+choices use, and updated both "six choices" references to "seven choices".
+Ran the equivalent of `/update-readme` by hand (the slash command isn't a
+callable tool in this session): reviewed the branch's rules and UI changes
+against the rest of the README and found nothing else it describes that this
+story moved — the start screen's option list is the only thing it names, and
+that's the paragraph already rewritten; the Quick Guide's own wording is not
+restated in the README and needed no change. No deviation beyond that
+substitution. `npm test` unaffected at 72 files / 1414 tests (README is not
+code); `npm run typecheck` and `npm run lint` clean; `npm run format:check`
+shows only the three pre-existing baseline warnings, none of them
+`README.md`.
 
 `README.md`'s rules-summary paragraph currently states today's rotation as the
 only rotation, in the player's words:
