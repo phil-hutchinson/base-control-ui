@@ -13,10 +13,13 @@
 // node's state — a node's state changes only in the end-of-turn sequence
 // (rules.md §8.6) — but a move is the one knowing exception: leaving a
 // charged node depletes it on the spot, as the move resolves, and stepping
-// onto one with no countdown starts one (§8.3, `applyMove` below). A turn is
-// one move or one attack (§5), so every move and every attack ends the ply:
-// play always passes to the other side. The pass guard covers the case §5
-// sets out for when the side to move can neither move nor attack at all.
+// onto one with no countdown starts one (§8.3, `applyMove` below). A landing
+// is the second: under the planet and dedicated settings, a ship landing on
+// a planet or a rotator rotates the queue on the spot, before the end-of-turn
+// sequence ever runs (§8.2). A turn is one move or one attack (§5), so every
+// move and every attack ends the ply: play always passes to the other side.
+// The pass guard covers the case §5 sets out for when the side to move can
+// neither move nor attack at all.
 
 import { sideToMoveCanMoveOrAttack } from "./canMoveOrAttack";
 import { type Square, squareName } from "./board";
@@ -38,6 +41,7 @@ import {
   moveRefusalReason,
   shapeReaching,
 } from "./movement";
+import { rotateQueue } from "./nodeQueue";
 import { type PowerLevel, spendPower } from "./power";
 
 function otherSide(side: Side): Side {
@@ -84,8 +88,25 @@ export interface NodeSpentEffect {
   readonly square: Square;
 }
 
+/**
+ * A ship's landing rotated the queue one step (rules.md §8.2): under the
+ * planet setting, `square` is the planet it landed on; under dedicated, the
+ * rotator it landed on and spent. Never raised under continuous, where
+ * nothing a ply does ever rotates the queue directly. One effect per
+ * rotation — a fight under planet returns both ships to planets and so
+ * raises two, attacker's landing first — and each sits after any
+ * `NodeSpentEffect` and before the `EndOfPlyEffect` that closes the ply out,
+ * so a listener hears the node spent, then the rotation, then how the turn
+ * ended.
+ */
+export interface QueueRotatedEffect {
+  readonly type: "queue-rotated";
+  readonly square: Square;
+  readonly trigger: "planet" | "rotator";
+}
+
 /** Something that happened as a result of applying a move, beyond the move itself. */
-export type MoveEffect = NodeSpentEffect | EndOfPlyEffect;
+export type MoveEffect = NodeSpentEffect | QueueRotatedEffect | EndOfPlyEffect;
 
 /**
  * A move applied successfully, with the resulting state and what happened.
@@ -147,7 +168,8 @@ export interface FightResolvedEffect {
  * Something that happened as a result of applying an attack, beyond the
  * fight itself.
  */
-export type AttackEffect = FightResolvedEffect | EndOfPlyEffect;
+export type AttackEffect =
+  FightResolvedEffect | QueueRotatedEffect | EndOfPlyEffect;
 
 /** An attack applied successfully, with the resulting state and what happened. */
 export interface AppliedAttack {
@@ -296,6 +318,57 @@ function endPly(
 }
 
 /**
+ * Rotates the queue once if `destination` triggers it under `state`'s
+ * chosen setting (rules.md §8.2): a planet, under planet, or a rotator —
+ * consumed as it lands — under dedicated. Under continuous, and under
+ * planet or dedicated when `destination` is neither, nothing happens and
+ * `state` is returned unchanged. Shared by `applyMove`, which calls this
+ * once, and `applyAttack`, which calls it twice — attacker's return square
+ * first, then the defender's — threading the state returned by the first
+ * call into the second, so two rotations in the same fight compose.
+ */
+function rotateForLanding(
+  state: GameState,
+  destination: Square,
+): {
+  readonly state: GameState;
+  readonly effect: QueueRotatedEffect | undefined;
+} {
+  if (state.nodeRotation === "planet") {
+    if (!isPlanet(destination)) {
+      return { state, effect: undefined };
+    }
+    return {
+      state: { ...state, nodes: rotateQueue(state.nodes) },
+      effect: { type: "queue-rotated", square: destination, trigger: "planet" },
+    };
+  }
+
+  if (state.nodeRotation === "dedicated") {
+    const destinationSquareName = squareName(destination);
+    const rotatorIndex = state.rotators.findIndex(
+      (square) => squareName(square) === destinationSquareName,
+    );
+    if (rotatorIndex === -1) {
+      return { state, effect: undefined };
+    }
+    const rotators = state.rotators.filter(
+      (_, index) => index !== rotatorIndex,
+    );
+    return {
+      state: { ...state, nodes: rotateQueue(state.nodes), rotators },
+      effect: {
+        type: "queue-rotated",
+        square: destination,
+        trigger: "rotator",
+      },
+    };
+  }
+
+  return { state, effect: undefined };
+}
+
+/**
  * Applies a move of `shipId` to `destination` in `state`, or refuses it. A
  * legal move never mutates `state`: it returns a new state in which the ship
  * stands on `destination` having paid the shape's cost (rules.md §6) out of
@@ -304,16 +377,21 @@ function endPly(
  * anything on arrival — it recovers a point at a time, through the
  * end-of-turn sequence (rules.md §3.1, §4.1), like any other planet stay.
  *
- * Two node changes happen as the move resolves — the one knowing exception
- * to a node's state changing only in the end-of-turn sequence (rules.md
- * §8.3, §8.6). If the square the ship left carries a charged node, it
- * depletes on the spot, carrying `EXIT_COUNTDOWN_PLIES`, and a
- * `NodeSpentEffect` is raised for it: leaving a node spends it, it is never
- * handed back, and the opponent cannot inherit it. If the square the ship
- * arrives on carries a charged node with no countdown, its countdown is set
- * to `CHARGED_COUNTDOWN_PLIES`; one that already carries a countdown is left
- * alone, which can only happen if this move somehow lands on an occupied
- * square, since a countdown's own holder is standing there.
+ * Three node changes can happen as the move resolves — two knowing
+ * exceptions to a node's state changing only in the end-of-turn sequence,
+ * and the queue's rotation besides (rules.md §8.3, §8.6). If the square the
+ * ship left carries a charged node, it depletes on the spot, carrying
+ * `EXIT_COUNTDOWN_PLIES`, and a `NodeSpentEffect` is raised for it: leaving a
+ * node spends it, it is never handed back, and the opponent cannot inherit
+ * it. If the square the ship arrives on carries a charged node with no
+ * countdown, its countdown is set to `CHARGED_COUNTDOWN_PLIES`; one that
+ * already carries a countdown is left alone, which can only happen if this
+ * move somehow lands on an occupied square, since a countdown's own holder
+ * is standing there. Finally, `rotateForLanding` rotates the queue once if
+ * `destination` is a planet under the planet setting, or a rotator under
+ * dedicated — spending the rotator as it lands — raising a
+ * `QueueRotatedEffect` after any `NodeSpentEffect`; under continuous, or
+ * when the destination triggers neither, nothing happens here.
  *
  * A move ends the ply (rules.md §5): play passes to the other side. The
  * result then passes through `applyPassGuard`, so a move that leaves the
@@ -376,7 +454,14 @@ export function applyMove(
   }
 
   const afterMove: GameState = { ...state, ships, nodes };
-  const settled = endPly(afterMove, effects);
+  const { state: rotatedState, effect: rotationEffect } = rotateForLanding(
+    afterMove,
+    destination,
+  );
+  if (rotationEffect !== undefined) {
+    effects.push(rotationEffect);
+  }
+  const settled = endPly(rotatedState, effects);
 
   return {
     outcome: "applied",
@@ -418,13 +503,15 @@ function placeOnPlanet(
  * fight, which can only ever change who holds a square, never how many
  * ships either side has.
  *
- * The node-state check is a plain identity comparison: no node's state or
- * `level` may differ between `before` and `after` at all. An attack never
- * changes a node's state — a node's state changes only in the end-of-turn
- * sequence (rules.md §8.6), or in the middle of a **move** (§8.3, `applyMove`
- * above) — and neither combatant in a fight can be standing on a charged
- * node (§7 keeps a node's holder and a trapped ship out of combat in both
- * directions), so an attack cannot touch one either way.
+ * The node-state check is narrowed to what an attack must actually leave
+ * alone: every node present in `before` is present in `after` and vice
+ * versa, every node's `state` is identical, and a **charged** or
+ * **depleted** node's `level` is identical too — a fight must not touch a
+ * node's life, which is what this check exists to guard (rules.md §8.6). An
+ * **inactive** node's `level` — its priority — is exempt: under the planet
+ * setting a fight returns both ships to planets, and each landing rotates
+ * the queue (§8.2, §7), so a fight's own two node changes are the inactive
+ * priorities moving, not the charged or depleted states this check protects.
  *
  * The returned-ship checks pin what §7.1's random draw guarantees: each of
  * the two returned ships ends on a planet, they do not share a planet, and
@@ -516,14 +603,26 @@ export function assertFightInvariants(
   for (const name of nodeNames) {
     const beforeStatus = before.nodes[name];
     const afterStatus = after.nodes[name];
-    const unchanged =
-      beforeStatus !== undefined &&
-      afterStatus !== undefined &&
-      beforeStatus.state === afterStatus.state &&
-      beforeStatus.level === afterStatus.level;
-    if (!unchanged) {
+    if (beforeStatus === undefined || afterStatus === undefined) {
       throw new RangeError(
-        `node "${name}" changed from "${beforeStatus?.state}" to "${afterStatus?.state}": an attack never changes a node's state, rules.md §8.6 says a node's state changes only in the end-of-turn sequence, or mid-move`,
+        `node "${name}" ${beforeStatus === undefined ? "appeared" : "disappeared"} during a fight: rules.md §7 never creates, charges or retires a node`,
+      );
+    }
+    if (beforeStatus.state !== afterStatus.state) {
+      throw new RangeError(
+        `node "${name}" changed from "${beforeStatus.state}" to "${afterStatus.state}": an attack never changes a node's state, rules.md §8.6 says a node's state changes only in the end-of-turn sequence, or mid-move`,
+      );
+    }
+    // A charged or depleted node's level must not move — a fight must not
+    // touch a node's life. An inactive node's level (its priority) is
+    // exempt: under the planet setting a fight's two landings rotate the
+    // queue (rules.md §8.2, §7).
+    if (
+      beforeStatus.state !== "inactive" &&
+      beforeStatus.level !== afterStatus.level
+    ) {
+      throw new RangeError(
+        `node "${name}" changed level from ${beforeStatus.level} to ${afterStatus.level} while ${beforeStatus.state}: rules.md §8.6 says a node's state changes only in the end-of-turn sequence, or mid-move, and a fight must not touch a node's life`,
       );
     }
   }
@@ -540,9 +639,13 @@ export function assertFightInvariants(
  * planets still empty afterwards, advancing `randomSeed` once per ship. Both
  * squares the ships fought from are left empty; there is no winner and no
  * advance. Neither square's node changes state: leaving a node does not end
- * it (rules.md §8.3). An attack ends the ply (rules.md §5), just as a move
- * does: play passes to the other side, and the result then passes through
- * `applyPassGuard`.
+ * it (rules.md §8.3). Both returned ships land on planets (§7), so under the
+ * planet setting each landing rotates the queue in turn — attacker's return
+ * first, then the defender's — through `rotateForLanding`, before
+ * `assertFightInvariants` runs; under dedicated a fight never rotates
+ * anything, since a rotator never stands on a planet. An attack ends the ply
+ * (rules.md §5), just as a move does: play passes to the other side, and the
+ * result then passes through `applyPassGuard`.
  */
 export function applyAttack(
   state: GameState,
@@ -609,9 +712,20 @@ export function applyAttack(
     },
   ];
 
+  // Both returned ships have just landed on a planet (§7), attacker first —
+  // rotateForLanding is a no-op under continuous and under dedicated, since
+  // a rotator never stands on a planet, so a fight only ever rotates
+  // anything under the planet setting, and then twice.
+  const afterAttackerRotation = rotateForLanding(nextState, attackerTo);
+  const afterDefenderRotation = rotateForLanding(
+    afterAttackerRotation.state,
+    defenderTo,
+  );
+  const rotatedState = afterDefenderRotation.state;
+
   assertFightInvariants(
     state,
-    nextState,
+    rotatedState,
     attackerShip.id,
     cost,
     new Set(returns.map((entry) => entry.shipId)),
@@ -626,8 +740,14 @@ export function applyAttack(
       returns,
     },
   ];
+  if (afterAttackerRotation.effect !== undefined) {
+    effects.push(afterAttackerRotation.effect);
+  }
+  if (afterDefenderRotation.effect !== undefined) {
+    effects.push(afterDefenderRotation.effect);
+  }
 
-  const settled = endPly(nextState, effects);
+  const settled = endPly(rotatedState, effects);
 
   return { outcome: "applied", state: settled, effects };
 }

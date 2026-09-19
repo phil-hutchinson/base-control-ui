@@ -983,7 +983,55 @@ Verification (automated): `npm test` green with the new cases;
 
 ### Step 5 — A landing rotates: `ply.ts`, the `queue-rotated` effect, and the fight invariants
 
-Status: pending
+Status: committed
+
+Notes: Added `QueueRotatedEffect` (`type: "queue-rotated"`, `square`,
+`trigger: "planet" | "rotator"`) to `ply.ts` beside `NodeSpentEffect` and
+into both the `MoveEffect` and `AttackEffect` unions. Added a shared
+`rotateForLanding(state, destination)` helper (not named in the plan, which
+only implied the logic inline) that rotates the queue once and returns the
+`QueueRotatedEffect` when `destination` is a planet under planet or holds a
+rotator under dedicated (removing it from `state.rotators`), and is a no-op
+under continuous or when the destination triggers neither. `applyMove` calls
+it once after the ship is placed and the two existing node changes are
+applied, pushing the effect after any `node-spent` and before `endPly`
+appends the `EndOfPlyEffect`. `applyAttack` calls it twice — attacker's
+return square first, then the defender's, threading the state through —
+before `assertFightInvariants` runs, and pushes both effects (if raised)
+after `fight-resolved`. Narrowed `assertFightInvariants`'s node check to
+D9's contract: presence unchanged, `state` unchanged, and a charged or
+depleted node's `level` unchanged, with an inactive node's `level` (its
+priority) now exempt, with a comment explaining why. Updated `applyMove`'s
+and `applyAttack`'s doc comments to describe the third node change and the
+fight's rotation respectively. One knock-on fix outside the plan's own file
+list: `src/board/EnergyOverlay.tsx`'s `endOfPlySettlements` took a closed
+union of a move's and an attack's effect types by hand (not `MoveEffect` /
+`AttackEffect` themselves) to find the `ply-ended` / `ply-passed` pair, and
+that union needed `QueueRotatedEffect` added alongside the others once the
+two effect types grew it — a one-line type and one doc-comment fix, not a
+behaviour change, so not treated as a plan deviation worth escalating.
+Extended `src/rules/ply.test.ts`'s `buildState` with optional `nodeRotation`
+(defaulting to `DEFAULT_NODE_ROTATION`, i.e. continuous — previously
+hard-coded) and `rotators` (defaulting to `[]`, as before), and added a new
+`describe("a landing rotates the queue (rules.md §8.2)")` block plus four
+new `assertFightInvariants` cases covering the story's full list: landing on
+a planet/rotator rotates under the matching setting and not the others;
+flying over either spends and rotates nothing; leaving a planet or standing
+on one all turn rotates nothing; a fight rotates twice under planet
+(attacker then defender) and not at all under dedicated; the ordering
+clarification (leaving a charged node for a planet charges the node that
+held priority 2 under planet, versus priority 3 under continuous — written
+against which square ends up charged, since a charge sweeps and replaces the
+surviving inactive trio elsewhere, so the pre-existing squares' identities
+past that point aren't assumed); the node-spent/queue-rotated/ply-ended
+effect order; and, for `assertFightInvariants`, that a rotation-only
+before/after pair does not throw while a node appearing/disappearing or a
+charged node's level changing still does. `npm test` went from 72 files /
+1369 tests to 72 files / 1383 tests (14 new, all passing, no existing
+expectation changed); `npm run typecheck` and `npm run lint` are clean;
+`npm run format:check` shows only the three pre-existing baseline warnings
+after running `prettier --write` on the three files this step touched. No
+other deviation from the plan.
 
 This is the heart of the story. In `src/rules/ply.ts` (D8):
 
