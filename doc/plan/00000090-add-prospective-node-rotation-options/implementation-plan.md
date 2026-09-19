@@ -1814,7 +1814,13 @@ no default as a rule.
 
 ### Step 15 — The owner plays all three settings
 
-Status: pending
+Status: committed
+
+Notes: The owner ran the full checklist in the running app and reported it
+working well. The two play observations the step asks to record — whether six
+rotators is generous or tight in a DEDICATED game, and whether the double
+rotation an attack buys under PLANET with combat on is too strong a reason to
+attack — were not raised in the runthrough; neither is acted on in this story.
 
 No code. The story's own verification list, run by the owner in the running
 app, and the pipeline's final gate before peer review.
