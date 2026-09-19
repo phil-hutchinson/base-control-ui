@@ -12,7 +12,7 @@
 
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
-import { INACTIVE_RING_COLOR } from "./nodeArt";
+import { INACTIVE_RING_COLOR } from "./squareArt";
 import "./NodeMarker.css";
 
 interface NodeMarkerProps {

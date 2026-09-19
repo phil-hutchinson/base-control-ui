@@ -340,14 +340,14 @@ expectations exactly as recorded. Only dedicated adds steps.
 - **The rotator's artwork**, a new `RotatorMarker` beside `NodeMarker`, drawn
   in the same 0–100 viewBox, beneath a ship the way a node marker is, and
   `aria-hidden` like every other piece of board art:
-  - A round recycling mark: **three arcs of about 90 degrees each**, with the
+  - A round recycling mark: **three arcs of about 70 degrees each**, with the
     **three gaps between them equal**, and an **arrowhead at the leading end
     of each arc** so the mark reads as turning. Exact angles, stroke width
-    and arrowhead shape are the drawing's business, not a rule — "about 90"
+    and arrowhead shape are the drawing's business, not a rule — "about 70"
     is the instruction, not a measurement to hit.
-  - **The rings' colour**, `INACTIVE_RING_COLOR` (`#DAA520`), which moves out
-    of `NodeMarker.tsx` to wherever both can read it, so the two never drift
-    apart: the mark says "this moves the rings" by being the rings' colour.
+  - **Its own colour**, `ROTATOR_COLOR` (`#C0C0C0`, silver), declared beside
+    `INACTIVE_RING_COLOR` rather than sharing it, so a rotator reads as board
+    furniture rather than as part of the queue it moves.
   - A rotator and a ship never share a square in a settled position — the
     landing spends it — so the marker is never drawn under a ship in play.
     It is drawn beneath one regardless, because that is what every other

@@ -16,9 +16,9 @@ and the clock already are:
 - **PLANET** — the priorities never rotate at the end of a turn. They rotate
   one step each time a ship **lands on a planet**, the moment it lands.
 - **DEDICATED** — the same, except the trigger is a **rotator**: a new piece
-  of temporary board furniture, up to nine at a time (one per 5 × 5 section),
-  each spent by the ship that lands on it, the whole set redrawn every time
-  the three inactive nodes are refilled.
+  of temporary board furniture, six at a time (one per 5 × 5 section), each
+  spent by the ship that lands on it, the whole set redrawn every time the
+  three inactive nodes are refilled.
 
 The app preselects **CONTINUOUS**, so the game a player gets without touching
 anything is the game they get today. `rules.md` names no default, exactly as

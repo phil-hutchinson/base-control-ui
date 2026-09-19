@@ -1,11 +1,10 @@
 // The Quick Guide's page title and section copy, verbatim from story.md
 // (doc/plan/00000050-how-to-play-instructions/story.md). The node selection
 // section's paragraph and its three setting lines were rewritten verbatim by
-// the owner for story 90's inactive node rotation options
-// (doc/plan/00000090-add-prospective-node-rotation-options/
-// implementation-plan.md, Step 13). `GuideScreen` renders these in order and
-// pairs each with its diagram; this module knows nothing about React or
-// layout.
+// the owner for the inactive node rotation options
+// (doc/plan/00000090-add-prospective-node-rotation-options/story.md).
+// `GuideScreen` renders these in order and pairs each with its diagram; this
+// module knows nothing about React or layout.
 //
 // The copy deliberately says "points" and "fuel" rather than "energy" and
 // "power", which is what the rest of the app calls the same things. That is

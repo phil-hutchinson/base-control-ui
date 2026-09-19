@@ -158,7 +158,7 @@ export interface NodeReliefEffect {
  *
  * `newRotators` is the fresh rotator set the same step drew immediately
  * afterwards under the dedicated setting (§3.3) — empty under continuous and
- * planet, since a rotator set is never drawn under either (S8). It is a
+ * planet, since a rotator set is never drawn under either. It is a
  * field on this effect rather than a second effect beside it: the sweep and
  * the regeneration are one event at one instant, and a listener that hears
  * the queue was refilled should hear what the board looks like afterwards
@@ -168,6 +168,7 @@ export interface QueueRefilledEffect {
   readonly type: "queue-refilled";
   readonly discardedSquares: readonly Square[];
   readonly newNodes: readonly InactiveNodeDraw[];
+  /** For a future listener; the board itself reads `state.rotators` directly and has no listener on this effect yet. */
   readonly newRotators: readonly Square[];
 }
 

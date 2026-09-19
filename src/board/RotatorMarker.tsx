@@ -1,7 +1,6 @@
 // The rotator's artwork (rules.md §3.3): a round recycling mark, drawn in
 // the same square-level slot a node marker occupies (beneath any ship) and
-// in its own silver (D12, nodeArt.ts) — the rings' gold was tried first and
-// made a board carrying several rotators too busy to read. Purely decorative — a square's
+// in its own colour, ROTATOR_COLOR. Purely decorative — a square's
 // accessible name already says "rotator" (squareLabel.ts) — so, like every
 // other piece of board art, it carries no title or description and is
 // hidden from the accessibility tree.
@@ -13,7 +12,7 @@
 // arrowhead shape are this drawing's business, not a rule; "about 70" is the
 // instruction, not a measurement to hit.
 
-import { ROTATOR_COLOR } from "./nodeArt";
+import { ROTATOR_COLOR } from "./squareArt";
 import "./RotatorMarker.css";
 
 const CENTER = 50;
