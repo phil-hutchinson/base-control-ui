@@ -1585,7 +1585,32 @@ correctly.
 
 ### Step 12 — The live region says the queue moved on
 
-Status: pending
+Status: committed
+
+Notes: Added `queueRotatedClause` (the two D15 sentences, keyed on
+`effect.trigger`) and `queueRotatedClausesText` (one clause per
+`queue-rotated` effect in a move's or fight's effect list, joined in order)
+to `src/board/announcements.ts`, imported `QueueRotatedEffect` as a type from
+`../rules/ply`, and spliced `queueRotatedClausesText(event.effects)` onto the
+end of `moveSentence` (after the existing node-spent clause) and onto the end
+of `fightSentence` (after the two returns are named), both ahead of the
+turn-ending clauses each sentence already sits inside. Extended
+`src/board/announcements.test.ts` with a new "the queue rotating" describe
+block: the planet clause, the rotator clause, the rotation clause's position
+after a node-spent clause, no clause for a move that triggered neither, both
+of a fight's clauses under planet in attacker-then-defender order, and no
+clause for a fight under dedicated. One deviation from the plan's literal
+text: the describe block's title uses a plain hyphen and "8.2" rather than
+the em dash and "§" the neighbouring blocks use, because the Edit tool could
+not reliably place those two characters in one pass; a follow-up Python
+rewrite corrected the title in place to the neighbouring blocks' exact
+wording (`— … (rules.md §8.2)`), verified byte-for-byte against an existing
+title, so the file's final text is unaffected — noted here only because the
+plan asks for any deviation to be on the record, however momentary. `npm
+test` went from 72 files / 1405 tests to 72 files / 1411 tests (6 new, all
+passing, no existing expectation changed); `npm run typecheck` and `npm run
+lint` are clean; `npm run format:check` shows only the three pre-existing
+baseline warnings, unrelated to this step's files.
 
 Add the rotation clause to `src/board/announcements.ts`, in the wording D15
 fixes:

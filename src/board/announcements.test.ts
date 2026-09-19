@@ -926,6 +926,192 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
   });
 });
 
+describe("announcementFor — the queue rotating (rules.md §8.2)", () => {
+  it("announces a landing on a planet rotating the queue, between the move cost and the turn-ending clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 6),
+      to: squareAt("D", 6),
+      effects: [
+        { type: "queue-rotated", square: squareAt("D", 6), trigger: "planet" },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C6 onto the D6 planet. The move was free; it still has 6 power. " +
+        "Landing on the D6 planet moved the waiting nodes on a step. Red's turn.",
+    );
+  });
+
+  it("announces a landing on a rotator rotating the queue and spending it", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("G", 7),
+      to: squareAt("H", 8),
+      effects: [
+        { type: "queue-rotated", square: squareAt("H", 8), trigger: "rotator" },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from G7 to H8. The move cost 1 power, leaving 5. " +
+        "The rotator at H8 was spent, moving the waiting nodes on a step. Red's turn.",
+    );
+  });
+
+  it("puts the rotation clause after a node spent by leaving it", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("G", 7),
+      to: squareAt("H", 8),
+      effects: [
+        { type: "node-spent", square: squareAt("G", 7) },
+        { type: "queue-rotated", square: squareAt("H", 8), trigger: "rotator" },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from G7 to H8. The move cost 1 power, leaving 5. " +
+        "The node at G7 ended when the ship left it. " +
+        "The rotator at H8 was spent, moving the waiting nodes on a step. Red's turn.",
+    );
+  });
+
+  it("announces no rotation clause for a move that did not trigger one", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("G", 7),
+      to: squareAt("H", 8),
+      effects: [
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from G7 to H8. The move cost 1 power, leaving 5. Red's turn.",
+    );
+  });
+
+  it("announces both of a fight's rotations under the planet setting, attacker's first, after the returns", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("J", 4),
+        power: 3,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("K", 5),
+        power: 4,
+      },
+      cost: 1,
+      returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("J", 4),
+          to: squareAt("A", 6),
+        },
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("K", 5),
+          to: squareAt("D", 1),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("J", 4),
+      target: squareAt("K", 5),
+      effects: [
+        fight,
+        { type: "queue-rotated", square: squareAt("A", 6), trigger: "planet" },
+        { type: "queue-rotated", square: squareAt("D", 1), trigger: "planet" },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
+        "The attack cost the attacker 1 power, leaving 2. The defender kept the power it was carrying. " +
+        "The attacker returned to the A6 planet and the defender to the D1 planet. " +
+        "Landing on the A6 planet moved the waiting nodes on a step. " +
+        "Landing on the D1 planet moved the waiting nodes on a step. " +
+        "Red's turn.",
+    );
+  });
+
+  it("announces no rotation clause for a fight under dedicated, which never rotates", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("J", 4),
+        power: 3,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("K", 5),
+        power: 4,
+      },
+      cost: 1,
+      returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("J", 4),
+          to: squareAt("A", 6),
+        },
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("K", 5),
+          to: squareAt("D", 1),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("J", 4),
+      target: squareAt("K", 5),
+      effects: [
+        fight,
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
+        "The attack cost the attacker 1 power, leaving 2. The defender kept the power it was carrying. " +
+        "The attacker returned to the A6 planet and the defender to the D1 planet. " +
+        "Red's turn.",
+    );
+  });
+});
+
 describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
   it("announces one node held", () => {
     const event: MovedEvent = {
