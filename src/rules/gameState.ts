@@ -237,7 +237,7 @@ export interface StartingGameStateOptions {
  * game's first turn draws from: dealing the board consumes `chargedNodeCount
  * + 4` steps of the stream before play begins — nine at five charged, eight
  * at four, seven at three — plus, under the dedicated node rotation setting
- * only, up to nine more for the opening rotator set (rules.md §3.3). The
+ * only, up to eight more for the opening rotator set (rules.md §3.3). The
  * resulting state's `randomSeed` is the seed the deal (and, under dedicated,
  * the rotator draw) left behind. That argument is also recorded verbatim as
  * `openingSeed`, so the state remembers where its deal started even once

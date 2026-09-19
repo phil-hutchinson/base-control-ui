@@ -468,11 +468,11 @@ describe("startingGameState", () => {
     }
   });
 
-  it("places rotators under dedicated: one per section that has room, none on a planet, a ship or a node", () => {
+  it("places up to six rotators under dedicated, at most one per section, none on a planet, a ship or a node", () => {
     const state = startingGameState(SEED, { nodeRotation: "dedicated" });
 
     expect(state.rotators.length).toBeGreaterThan(0);
-    expect(state.rotators.length).toBeLessThanOrEqual(ROTATOR_SECTIONS.length);
+    expect(state.rotators.length).toBeLessThanOrEqual(6);
 
     const shipNames = new Set(
       state.ships.map((ship) => squareName(ship.square)),

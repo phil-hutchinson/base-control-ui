@@ -1,12 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { ALL_SQUARES, type Square, squareAt, squareName } from "./board";
-import { PLANETS } from "./planets";
+import { isPlanet, PLANETS } from "./planets";
 import { drawIndex } from "./random";
 import { placeRotators, ROTATOR_SECTIONS } from "./rotators";
 
 function names(squares: readonly Square[]): string[] {
   return squares.map(squareName);
 }
+
+function sectionIndexFor(square: Square): number {
+  return ROTATOR_SECTIONS.findIndex((section) =>
+    section.squares.some(
+      (candidate) => squareName(candidate) === squareName(square),
+    ),
+  );
+}
+
+// The four corner sections (rules.md §3.3): the ones holding A1, K1, A11
+// and K11. Derived independently of `rotators.ts`'s own internals, off the
+// same public `ROTATOR_SECTIONS`, so the test exercises the rule rather than
+// the implementation.
+const CORNER_SECTION_INDEXES = [
+  squareAt("A", 1),
+  squareAt("K", 1),
+  squareAt("A", 11),
+  squareAt("K", 11),
+]
+  .map(sectionIndexFor)
+  .sort((a, b) => a - b);
+
+const OTHER_SECTION_INDEXES = ROTATOR_SECTIONS.map((_, index) => index).filter(
+  (index) => !CORNER_SECTION_INDEXES.includes(index),
+);
 
 describe("the board's nine 5 x 5 sections (rules.md §3.3)", () => {
   it("has nine sections", () => {
@@ -28,22 +53,39 @@ describe("the board's nine 5 x 5 sections (rules.md §3.3)", () => {
       expect(seen.has(squareName(square))).toBe(true);
     }
   });
+
+  it("has four corner sections, one holding each of A1, K1, A11 and K11", () => {
+    expect(CORNER_SECTION_INDEXES).toHaveLength(4);
+    expect(new Set(CORNER_SECTION_INDEXES).size).toBe(4);
+  });
 });
 
 describe("placeRotators (rules.md §3.3)", () => {
-  it("draws one rotator per section, each inside its own section, on an empty board", () => {
-    const [rotators] = placeRotators([], [], 1);
-    expect(rotators).toHaveLength(9);
+  it("draws six rotators: one in each corner section, and one in two more of the remaining five, on an empty board", () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const [rotators] = placeRotators([], [], seed);
+      expect(rotators).toHaveLength(6);
 
-    const rotatorNames = new Set(names(rotators));
-    for (const section of ROTATOR_SECTIONS) {
-      const sectionNames = new Set(names(section.squares));
-      const inSection = rotators.filter((square) =>
-        sectionNames.has(squareName(square)),
+      const sectionCounts = new Map<number, number>();
+      for (const square of rotators) {
+        const index = sectionIndexFor(square);
+        sectionCounts.set(index, (sectionCounts.get(index) ?? 0) + 1);
+      }
+
+      for (const cornerIndex of CORNER_SECTION_INDEXES) {
+        expect(sectionCounts.get(cornerIndex)).toBe(1);
+      }
+
+      const otherSectionsHit = [...sectionCounts.keys()].filter((index) =>
+        OTHER_SECTION_INDEXES.includes(index),
       );
-      expect(inSection).toHaveLength(1);
+      expect(otherSectionsHit).toHaveLength(2);
+      for (const index of otherSectionsHit) {
+        expect(sectionCounts.get(index)).toBe(1);
+      }
+
+      expect(sectionCounts.size).toBe(6);
     }
-    expect(rotatorNames.size).toBe(9);
   });
 
   it("never falls on a planet, a ship or a node of any state", () => {
@@ -63,26 +105,71 @@ describe("placeRotators (rules.md §3.3)", () => {
     }
   });
 
-  it("skips a section with no free square, and costs no seed step for it", () => {
-    const lastSection = ROTATOR_SECTIONS[ROTATOR_SECTIONS.length - 1];
-    const shipSquares = lastSection.squares;
+  it("skips a full corner section without costing it a seed step, and does not backfill to six", () => {
+    const blockedIndex =
+      CORNER_SECTION_INDEXES[CORNER_SECTION_INDEXES.length - 1];
+    const blockedSection = ROTATOR_SECTIONS[blockedIndex];
 
-    const [rotators, finalSeed] = placeRotators([], shipSquares, 42);
-    expect(rotators).toHaveLength(8);
+    const seed = 42;
+    const [rotators, finalSeed] = placeRotators(
+      [],
+      blockedSection.squares,
+      seed,
+    );
 
-    const lastSectionNames = new Set(names(lastSection.squares));
+    expect(rotators).toHaveLength(5);
+    const blockedNames = new Set(names(blockedSection.squares));
     for (const rotator of rotators) {
-      expect(lastSectionNames.has(squareName(rotator))).toBe(false);
+      expect(blockedNames.has(squareName(rotator))).toBe(false);
+    }
+    for (const cornerIndex of CORNER_SECTION_INDEXES.filter(
+      (index) => index !== blockedIndex,
+    )) {
+      const cornerNames = new Set(names(ROTATOR_SECTIONS[cornerIndex].squares));
+      expect(
+        rotators.filter((s) => cornerNames.has(squareName(s))),
+      ).toHaveLength(1);
     }
 
-    // Replay the first eight sections' draws by hand: the seed after the
-    // ninth (blocked) section must equal the seed after the eighth draw.
-    let workingSeed = 42;
-    for (let index = 0; index < ROTATOR_SECTIONS.length - 1; index++) {
-      const section = ROTATOR_SECTIONS[index];
-      const [, nextSeed] = drawIndex(workingSeed, section.squares.length);
+    // Replay by hand: the three unblocked corners draw in section order,
+    // each from that section's free squares (no planet); the blocked corner
+    // costs nothing; then the two section-index draws (one of five, then
+    // one of the remaining four) always happen; then a square is drawn from
+    // each of those two sections' free squares, in section order.
+    function freeCount(sectionIndex: number): number {
+      return ROTATOR_SECTIONS[sectionIndex].squares.filter(
+        (square) => !isPlanet(square),
+      ).length;
+    }
+
+    let workingSeed = seed;
+    for (const cornerIndex of CORNER_SECTION_INDEXES.filter(
+      (index) => index !== blockedIndex,
+    )) {
+      const [, nextSeed] = drawIndex(workingSeed, freeCount(cornerIndex));
       workingSeed = nextSeed;
     }
+
+    const [firstPick, seedAfterFirstPick] = drawIndex(
+      workingSeed,
+      OTHER_SECTION_INDEXES.length,
+    );
+    const remaining = [...OTHER_SECTION_INDEXES];
+    const firstChosen = remaining.splice(firstPick, 1)[0];
+    workingSeed = seedAfterFirstPick;
+
+    const [secondPick, seedAfterSecondPick] = drawIndex(
+      workingSeed,
+      remaining.length,
+    );
+    const secondChosen = remaining[secondPick];
+    workingSeed = seedAfterSecondPick;
+
+    for (const index of [firstChosen, secondChosen].sort((a, b) => a - b)) {
+      const [, nextSeed] = drawIndex(workingSeed, freeCount(index));
+      workingSeed = nextSeed;
+    }
+
     expect(finalSeed).toBe(workingSeed);
   });
 

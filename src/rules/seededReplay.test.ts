@@ -38,8 +38,8 @@
 // default (continuous) and at planet nothing new is drawn from the stream —
 // rotation itself has never consumed a seed step, and `placeRotators` is
 // only ever called under dedicated — so every recorded figure below stands
-// exactly as it did before 0.36. Only dedicated adds steps, up to nine at
-// the opening deal and up to nine after every queue refill, which is
+// exactly as it did before 0.36. Only dedicated adds steps, up to eight at
+// the opening deal and up to eight after every queue refill, which is
 // asserted directly below rather than assumed.
 
 import { describe, expect, it } from "vitest";

@@ -30,11 +30,12 @@ and so would be a tag candidate; tagging stays on hold until the game plays
     the priorities as the rotation left them. Two landings in one turn
     rotate two steps.
 - **A new section 3.3, Rotators**, describes the new piece of temporary
-  board furniture that exists only under the dedicated setting: nine
-  squares, one per 5 x 5 section of the board, redrawn from scratch at the
-  opening deal and every time the queue is refilled, and each consumed by
-  the ship that lands on it. Section 3.2's placement constraints do not
-  apply to it.
+  board furniture that exists only under the dedicated setting: the board
+  is divided into nine 5 x 5 sections, of which six carry one rotator each
+  — the four corner sections, always, and two more drawn from the remaining
+  five — redrawn from scratch at the opening deal and every time the queue
+  is refilled, and each consumed by the ship that lands on it. Section
+  3.2's placement constraints do not apply to it.
 - **Section 2 gains a Rotator entry.**
 - **Section 8.6 step 5** now rotates the priorities only under the
   continuous setting, and replaces the board's rotators, under the

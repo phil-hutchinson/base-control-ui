@@ -1459,7 +1459,62 @@ Gate outcome: the owner confirmed the quieter mark reads correctly.
 
 ### Step 11 — Six rotators, not nine: the corners always, then two more
 
-Status: pending
+Status: committed
+
+Notes: `src/rules/rotators.ts`'s `placeRotators` now draws a rotator in the
+four corner sections (the ones holding A1, K1, A11 and K11, identified off
+`ROTATOR_SECTIONS` itself rather than hardcoded) always, then draws two more
+sections without replacement from the remaining five (one of five, then one
+of the remaining four — always consuming a seed step for each pick,
+whatever that section turns out to hold) and draws one square from each of
+those two, in `ROTATOR_SECTIONS` order throughout. A section with no free
+square still costs no seed step for its own square draw. The module's
+header comment, `ROTATOR_SECTIONS`'s own comment and `placeRotators`'s doc
+comment were rewritten to describe the new order and the "at most eight
+seed steps" figure (two section draws plus at most six square draws).
+`rules.md` §3.3 and the 0.36 changelog entry were rewritten in place — per
+the one-bump-per-branch rule, 0.36 now reads as if it always described six
+rotators (four corners always, two more from the remaining five); no
+version bump, no second changelog entry. `story.md`'s "nine" statements
+about rotator counts were corrected to six throughout (the bullets under
+"What changes" and "Effect on the game", the §3.3 in-scope description, the
+`placeRotators` in-scope description and its seed-step count, the
+verification list's DEDICATED-game bullet, and the closing manual-check
+note); its two mentions of the board's nine _sections_ (a geometric fact
+unchanged by this step) were left alone, as were the "nine sections"
+mentions in `rotators.test.ts` and `rotators.ts` describing the section
+count rather than the rotator count. `RotatorMarker.tsx`'s doc comment
+("nine of these may be on the board") and the accessibility known-issues
+note ("all nine (or fewer) marks") were corrected to six. Two more spots
+outside the step's own list, found by grepping for stray seed-count
+mentions once the code changed: `gameState.ts`'s `startingGameState` doc
+comment and `seededReplay.test.ts`'s header comment both said "up to nine
+more" / "up to nine at the opening deal and up to nine after every queue
+refill" for the rotator seed steps; corrected to eight in both, since
+leaving them would have been the same kind of stale claim the step exists
+to fix elsewhere. `src/rules/rotators.test.ts` was substantially rewritten:
+the old 9-count "one rotator per section" case became a 6-count case
+asserting one rotator in each corner section and exactly two more among the
+other five; a new case confirms the four corner sections are distinct; the
+seed-consumption case now blocks a full corner section (rather than the
+last of nine) and replays the new draw order by hand (unblocked corners,
+then the two section-index picks, then the two extra squares) to confirm
+the blocked corner costs no step and the result does not backfill past
+five. `gameState.test.ts`'s dedicated-deal test had its loose upper bound
+tightened from `ROTATOR_SECTIONS.length` (9) to 6 and its title/description
+updated to say "up to six". `endOfTurn.test.ts` and `fullGame.test.ts` were
+checked per the step's list and needed no change: neither hardcodes a
+rotator count anywhere. No deviation from the plan beyond the two
+additional stray-comment fixes noted above, which the step's own "anything
+else that counts rotators aloud follows" instruction covers in spirit.
+`npm test` went from 72 files / 1404 tests to 72 files / 1405 tests (one
+new case net, after the count-9 case was replaced and a corner-count case
+added); `npm run typecheck` and `npm run lint` are clean; `npm run
+format:check` shows only the three pre-existing baseline warnings after a
+`prettier --write` pass on the rewritten `rotators.test.ts`. The board
+manual check (six rotators, one per corner and two elsewhere, quiet enough)
+is the owner's and was not run here, per the step's instruction not to sign
+off the manual part.
 
 What to implement: the board carries **six** rotators rather than nine. The
 four **corner** sections — the section holding A1, the one holding K1, the one
@@ -1522,6 +1577,9 @@ Verification (**manual**, with the automated suite behind it): `npm test`,
 among them; then the owner runs `npm run dev`, starts a **DEDICATED** game
 and confirms the board carries six rotators, one in each corner section and
 two elsewhere, and that the board now reads as quiet enough.
+
+Gate outcome: the owner confirmed the six-rotator board plays and reads
+correctly.
 
 ---
 

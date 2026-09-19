@@ -387,6 +387,6 @@ screen-reader user is told a square is a rotator without being told that
 landing on it moves the waiting nodes on a step. Nor is there any summary of
 where the board's rotators currently are; a screen-reader user has to walk
 the whole grid, square by square, to find them, where a sighted player sees
-all nine (or fewer) marks on the board at a glance.
+all six (or fewer) marks on the board at a glance.
 
 Where: `src/board/squareLabel.ts`, `src/board/RotatorMarker.tsx`.

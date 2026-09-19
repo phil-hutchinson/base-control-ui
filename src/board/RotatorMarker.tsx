@@ -85,7 +85,7 @@ const ARC_START_ANGLES: readonly number[] = Array.from(
   (_, index) => index * SLOT_DEGREES,
 );
 
-/** The rotator's mark: nine of these may be on the board at once under the dedicated setting (rules.md §3.3). */
+/** The rotator's mark: six of these may be on the board at once under the dedicated setting (rules.md §3.3). */
 export function RotatorMarker() {
   return (
     <svg className="rotator-marker" viewBox="0 0 100 100" aria-hidden="true">

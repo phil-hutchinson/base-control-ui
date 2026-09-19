@@ -22,7 +22,7 @@ them:
   step each time a ship **lands on a planet**.
 - **DEDICATED** — the priorities never rotate by themselves. They rotate one
   step each time a ship lands on a **rotator**: a new piece of temporary
-  board furniture, nine of them at a time, each **consumed** by the ship that
+  board furniture, six of them at a time, each **consumed** by the ship that
   uses it.
 
 As with every other choice, `rules.md` names no default; the app preselects
@@ -60,9 +60,10 @@ rings while they were moving is the node that charges.
   fight returns **both** ships to planets (section 7), so an attack rotates
   the priorities two steps: the node that showed **one** ring is the one that
   charges if the board needs a node that turn.
-- **The board gains rotators** under DEDICATED: nine squares, one per 5 × 5
-  section of the board, redrawn from scratch every time the queue is
-  refilled, and each one consumed by the ship that lands on it.
+- **The board gains rotators** under DEDICATED: six squares, one per 5 × 5
+  section — the four corner sections always, plus two more drawn from the
+  remaining five — redrawn from scratch every time the queue is refilled,
+  and each one consumed by the ship that lands on it.
 - **The start screen gains a seventh group**, `Inactive node rotation`,
   between Scoring and Combat.
 
@@ -121,8 +122,9 @@ gives the attack a second reason to exist on a board where nobody is in
 immediate danger.
 
 **DEDICATED** separates the two ideas. Refuelling stops moving the rings, and
-the board instead carries nine squares whose only purpose is to move them.
-They are spread one to a 5 × 5 section, so there is always one somewhere near,
+the board instead carries six squares whose only purpose is to move them.
+They are spread one to a 5 × 5 section — always the four corner sections,
+plus two more — so there is nearly always one somewhere near,
 but each is spent once and the set only comes back when something charges —
 so a stretch of play with no charges is a stretch in which the rotators run
 down and rotation gets harder to buy. That is the setting's whole character:
@@ -182,17 +184,19 @@ tagging stays on hold (`CLAUDE.md`).
   fact about the board and section 3 is where the board's furniture is
   described. It states: rotators exist only under the dedicated setting; the
   board is divided into nine 5 × 5 sections (A–E, F–J, K–O by columns; 1–5,
-  6–10, 11–15 by rows) and each section carries **one** rotator; a rotator
-  stands only on a square that holds no planet, no ship and no node in any
-  state; if a section has no such square, that section simply has none, so
-  the board can carry fewer than nine; the whole set is **replaced** — every
-  rotator removed and a fresh set drawn — immediately after each refill of
-  the three inactive nodes (section 8.6 step 5), and at the opening deal; and
-  a rotator is **spent** by the ship that lands on it and leaves the board at
-  once. Section 3.2's constraints do not apply to a rotator: it may sit on
-  the outer edge, and it may sit beside a planet or a node. A rotator is an
-  ordinary square in every other way — a ship may land on it, fly over it
-  (which spends nothing) and stand on it.
+  6–10, 11–15 by rows), of which **six** carry a rotator — the four corner
+  sections, always, and two more drawn from the remaining five; a section
+  that carries a rotator carries **one**, on a square that holds no planet,
+  no ship and no node in any state; if a section has no such square, that
+  section simply has none, so the board can carry fewer than six; the whole
+  set is **replaced** — every rotator removed and a fresh set drawn —
+  immediately after each refill of the three inactive nodes (section 8.6
+  step 5), and at the opening deal; and a rotator is **spent** by the ship
+  that lands on it and leaves the board at once. Section 3.2's constraints
+  do not apply to a rotator: it may sit on the outer edge, and it may sit
+  beside a planet or a node. A rotator is an ordinary square in every other
+  way — a ship may land on it, fly over it (which spends nothing) and stand
+  on it.
 - **Section 2 gains a Rotator entry** and its Priority entry is checked: the
   sentence "The inactive node with the highest priority is the one that
   charges next" is true at all three settings and needs no change.
@@ -253,12 +257,15 @@ A new leaf module `src/rules/rotators.ts` owns section 3.3:
 - **The nine sections**, derived from `BOARD_SIZE` rather than written out,
   in a fixed order — board order, the same order `ALL_SQUARES` walks — so a
   recorded game replays exactly.
-- **`placeRotators(nodeSquares, shipSquares, seed)`**, which walks the
-  sections in that fixed order and draws **one square uniformly** from each
-  section's free squares (no planet, no ship, no node in any state), skipping
-  a section with none and **consuming no seed step for it**. Returns the
-  squares in board order and the seed it left behind. Up to nine seed steps;
-  exactly zero under continuous and planet, because it is never called.
+- **`placeRotators(nodeSquares, shipSquares, seed)`**, which draws one
+  rotator in each of the four corner sections, then draws two more of the
+  remaining five sections and one rotator in each of those, drawing **one
+  square uniformly** from a chosen section's free squares (no planet, no
+  ship, no node in any state), skipping a section with none and **consuming
+  no seed step for it**. Returns the squares in board order and the seed it
+  left behind. Up to eight seed steps — two section draws plus at most six
+  square draws; exactly zero under continuous and planet, because it is
+  never called.
 - **It is called in exactly two places**: at the end of the opening deal, and
   in `endOfTurn.ts` step 5's refill branch, immediately after `refillQueue`
   has placed the new trio — so the rotators see the new nodes and avoid them.
@@ -430,7 +437,7 @@ automated tests are updated where the path is straightforward.
 
 Anything knowingly given up on the accessibility side — most likely that a
 rotator is announced as a bare noun with nothing saying what it does, and
-that a screen-reader user gets no summary of where the nine of them are —
+that a screen-reader user gets no summary of where the six of them are —
 goes in `doc/plan/00000021-accessibility-tech-debt/known-issues.md`.
 
 ## Out of scope
@@ -479,10 +486,11 @@ goes in `doc/plan/00000021-accessibility-tech-debt/known-issues.md`.
   they do not move when a ship leaves one, flies over one, or stands on one
   through a turn.
 - In a PLANET game with combat on, an attack moves the rings **two** steps.
-- In a DEDICATED game, nine rotators are on the board at the start, one in
-  each 5 × 5 section, none on a planet, a ship or a node; landing on one
-  removes it and moves the rings one step; landing on a planet moves nothing;
-  and a fresh nine appear the moment something charges.
+- In a DEDICATED game, six rotators are on the board at the start, one in
+  each corner 5 × 5 section and two more elsewhere, none on a planet, a ship
+  or a node; landing on one removes it and moves the rings one step; landing
+  on a planet moves nothing; and a fresh six appear the moment something
+  charges.
 - **The ordering clarification, checked by hand**: with a ship holding a
   charged node, note which node shows two rings, move that ship onto a planet
   (PLANET) or a rotator (DEDICATED), and confirm the node that charges at the
@@ -515,6 +523,6 @@ goes in `doc/plan/00000021-accessibility-tech-debt/known-issues.md`.
 - The Quick Guide copy and its diagram are the owner's and arrive at that
   step; the plan carries the step with the words left open.
 - Manual checks worth making once it runs: a DEDICATED game played until the
-  rotators run low, to see whether nine is generous or tight; and a PLANET
+  rotators run low, to see whether six is generous or tight; and a PLANET
   game with combat on, to see whether the double rotation an attack buys is
   too strong a reason to attack.

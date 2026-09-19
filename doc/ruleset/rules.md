@@ -213,10 +213,12 @@ at all, but it buys a poorly placed square no meaningful chance otherwise.
 Rotators exist only under the **dedicated** rotation setting (section 8.2).
 
 The board is divided into **nine 5 x 5 sections** — columns A–E, F–J, K–O;
-rows 1–5, 6–10, 11–15 — and each section carries **one** rotator, on a
-square that holds no planet, no ship and no node in any state. If a
-section has no such square, that section simply carries none, so the board
-can hold fewer than nine at once.
+rows 1–5, 6–10, 11–15 — of which **six** carry a rotator: the four
+**corner** sections, always, and two more, drawn from the remaining five. A
+section that carries a rotator carries exactly **one**, on a square that
+holds no planet, no ship and no node in any state. If a section has no such
+square, that section simply carries none, so the board can hold fewer than
+six at once.
 
 The whole set is **replaced** — every rotator removed and a fresh set
 drawn — immediately after each refill of the three inactive nodes (section
