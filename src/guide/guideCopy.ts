@@ -1,7 +1,11 @@
 // The Quick Guide's page title and section copy, verbatim from story.md
-// (doc/plan/00000050-how-to-play-instructions/story.md). `GuideScreen`
-// renders these in order and pairs each with its diagram; this module knows
-// nothing about React or layout.
+// (doc/plan/00000050-how-to-play-instructions/story.md). The node selection
+// section's paragraph and its three setting lines were rewritten verbatim by
+// the owner for story 90's inactive node rotation options
+// (doc/plan/00000090-add-prospective-node-rotation-options/
+// implementation-plan.md, Step 13). `GuideScreen` renders these in order and
+// pairs each with its diagram; this module knows nothing about React or
+// layout.
 //
 // The copy deliberately says "points" and "fuel" rather than "energy" and
 // "power", which is what the rest of the app calls the same things. That is
@@ -26,11 +30,26 @@ export const GUIDE_INTRO_PARAGRAPH =
 export type GuideSectionId =
   "movement" | "refuelling" | "nodeLifecycle" | "nodeSelection";
 
-/** One of the guide's four headed sections: a heading and its paragraph. */
+/**
+ * One emphasised label and its sentence, under NEW CHARGED NODE SELECTION —
+ * one per inactive node rotation setting (rules.md §8.2).
+ */
+export interface GuideSettingLine {
+  readonly label: string;
+  readonly text: string;
+}
+
+/**
+ * One of the guide's four headed sections: a heading and its paragraph.
+ * `settingLines` is optional and, at present, carried by nodeSelection
+ * alone: an ordered list of setting lines rendered between the section's
+ * diagram and its second one.
+ */
 export interface GuideSection {
   readonly id: GuideSectionId;
   readonly heading: string;
   readonly paragraph: string;
+  readonly settingLines?: readonly GuideSettingLine[];
 }
 
 /**
@@ -71,8 +90,27 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
     heading: "NEW CHARGED NODE SELECTION",
     paragraph:
       "Three indicators appear on the board, with one, two, and three " +
-      "rings, rotating at the end of each turn. When a new charged node " +
-      "is needed, it appears at the three-ring indicator — and all three " +
-      "indicators are then replaced by a fresh set elsewhere.",
+      "rings. When a new charged node is needed, it appears at the " +
+      "three-ring indicator — and all three indicators are then replaced " +
+      "by a fresh set elsewhere. The rings rotate, depending on the " +
+      "Inactive node rotation selected.",
+    settingLines: [
+      {
+        label: "Continuous",
+        text: "The rings rotate at the end of each player's turn.",
+      },
+      {
+        label: "Planet",
+        text:
+          "The rings rotate each time a ship arrives at a planet " +
+          "(including post-combat, if combat is enabled).",
+      },
+      {
+        label: "Dedicated",
+        text:
+          "There are dedicated rotators that appear on squares. Landing " +
+          "on one of these triggers the rotation.",
+      },
+    ],
   },
 ];

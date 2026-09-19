@@ -50,6 +50,13 @@
   line-height: 1.5;
 }
 
+/* The setting lines' labels under NEW CHARGED NODE SELECTION, the owner's
+   asterisks rendered as emphasis rather than a new class of its own. */
+.guide-screen__paragraph em {
+  font-style: italic;
+  color: var(--color-text-bright);
+}
+
 /* Built from `.game-over-panel__button`'s quiet idiom, through its own
    class — a component's stylesheet owns its own classes. */
 .guide-screen__back {

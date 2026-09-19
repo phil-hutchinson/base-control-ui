@@ -1,9 +1,11 @@
-// The guide's five diagrams: each a thin component handing `GuideDiagram` a
+// The guide's diagrams: each a thin component handing `GuideDiagram` a
 // fixed list of cells built from real `BoardSquare`s, so a future restyle of
 // ship or node art redraws these for free. Every ship is green; no square
 // carries a selection mark or a condition bar. Countdown numbers and cycle
 // positions are derived from `../rules/countdown`, exactly as `Board` derives
-// them, rather than typed in by hand.
+// them, rather than typed in by hand. NEW CHARGED NODE SELECTION carries two
+// of these — the rotation diagram every setting shares, and a second, a bare
+// square holding a rotator, for the dedicated setting alone.
 
 import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import { energyForNodesHeld } from "../rules/energy";
@@ -213,4 +215,23 @@ export function NodeSelectionDiagram() {
     inactiveNodeCell("guide-selection-4", 3),
   ];
   return <GuideDiagram columns={7} cells={cells} />;
+}
+
+/**
+ * Diagram 6: a single square holding a rotator, with nothing else on it —
+ * no ship, no node, no rings — so the player sees the mark the dedicated
+ * setting scatters across the board (rules.md §3.3) in isolation.
+ */
+export function RotatorSquareDiagram() {
+  const cells: readonly GuideDiagramCell[] = [
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-rotator",
+        hasRotator: true,
+      },
+    },
+  ];
+  return <GuideDiagram columns={1} cells={cells} />;
 }

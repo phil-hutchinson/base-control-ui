@@ -1639,10 +1639,47 @@ manually verified (S12).
 
 ### Step 13 — The Quick Guide's NEW CHARGED NODE SELECTION section
 
-Status: pending
+Status: committed
+
+Notes: `GuideSection` gained an optional `settingLines?: readonly
+GuideSettingLine[]` (a new `{ label, text }` interface) alongside the
+existing shape; only `nodeSelection`'s entry in `GUIDE_SECTIONS` carries it.
+The paragraph and the three setting lines were reproduced verbatim from the
+step (the wrapping quote marks around the paragraph in the step's own text
+were read as the plan author's quoting convention, not literal characters —
+the same convention story 50's `story.md` used for this section's original
+paragraph, which also carries no literal quotes in `guideCopy.ts`).
+`GuideScreen.tsx` gained a second, partial `TRAILING_DIAGRAMS` map
+(`Partial<Record<GuideSectionId, ComponentType>>`, `nodeSelection` only) and
+renders each section's `settingLines` (each an `<em>{label}</em>: {text}`
+paragraph) between the section's diagram and its trailing diagram. Added
+`.guide-screen__paragraph em` to `GuideScreen.css` (italic,
+`--color-text-bright`) — no other restyling. Added `RotatorSquareDiagram` to
+`guideDiagrams.tsx`: a single `GuideDiagram` cell, one `BoardSquare` with
+`hasRotator: true` and nothing else (no ship, no node), following the other
+diagrams' conventions exactly (same wrapper, same `aria-hidden` grid,
+built from a real `BoardSquare`). `NodeSelectionDiagram` itself is
+unchanged. Updated `guideCopy.test.ts` (the new paragraph verbatim, a new
+case for the three setting lines verbatim, and widened the vocabulary sweep
+to flatten `settingLines`' labels and text into the swept string — the
+"vocabulary trap" the step called out), `guideDiagrams.test.tsx` (a new
+`RotatorSquareDiagram` case), and `GuideScreen.test.tsx` (the diagram count
+moved from five to six, and a new case asserting the setting lines render as
+`<em>label</em>: text` in order and that the rotator mark follows the last
+one). No deviation from the plan's structural decisions. This step's
+verification is manual (the owner reading the guide in the running app);
+that was not attempted here. `npm test` went from 72 files / 1411 tests to
+72 files / 1414 tests (3 new, all passing, no existing expectation broken);
+`npm run typecheck` and `npm run lint` are clean; `npm run format:check`
+shows only the three pre-existing baseline warnings after a `prettier
+--write` pass on `guideDiagrams.test.tsx` (line-wrap only).
 
 The owner supplied the copy at this step, as S14 said they would, and it is
-reproduced below **verbatim**. It is not to be reworded, re-punctuated or
+reproduced below **verbatim** — with two wording fixes the owner approved
+after reading it back: the three setting lines say "The rings rotate", to
+match the lead-in sentence rather than switching to "nodes" halfway, and the
+option is named "Inactive node rotation", exactly as the start screen's group
+is labelled. It is not to be reworded, re-punctuated or
 re-ordered: where it differs from `rules.md`'s own phrasing, the copy wins,
 because the guide is the player's voice and the rules document is not.
 
@@ -1651,7 +1688,7 @@ The section's paragraph becomes:
 > "Three indicators appear on the board, with one, two, and three rings.
 > When a new charged node is needed, it appears at the three-ring indicator —
 > and all three indicators are then replaced by a fresh set elsewhere. The
-> rings rotate, depending on the Inactive Node Rotation selected."
+> rings rotate, depending on the Inactive node rotation selected."
 
 Then the **existing** `NodeSelectionDiagram`, unchanged — the owner's call at
 the gate was that it stays, because the rotation it pictures is common to all
@@ -1659,9 +1696,9 @@ three settings and only the trigger differs.
 
 Then three **setting lines**, each an emphasised label and a sentence:
 
-> _Continuous_: The nodes rotate at the end of each player's turn.
+> _Continuous_: The rings rotate at the end of each player's turn.
 >
-> _Planet_: The nodes rotate each time a ship arrives at a planet (including
+> _Planet_: The rings rotate each time a ship arrives at a planet (including
 > post-combat, if combat is enabled).
 >
 > _Dedicated_: There are dedicated rotators that appear on squares. Landing
@@ -1718,6 +1755,8 @@ green with the updated expectations, then the owner opens the Quick Guide in
 the running app and confirms the section reads in the intended order —
 paragraph, rotation diagram, the three setting lines, the rotator square —
 and that the copy is theirs, word for word.
+
+Gate outcome: the owner read the section in the running app and accepted it.
 
 ---
 

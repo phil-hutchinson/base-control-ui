@@ -57,13 +57,35 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the new charged node selection paragraph", () => {
+  it("has the new charged node selection paragraph, stating rotation as a choice", () => {
     expect(GUIDE_SECTIONS[3].paragraph).toBe(
       "Three indicators appear on the board, with one, two, and three " +
-        "rings, rotating at the end of each turn. When a new charged node " +
-        "is needed, it appears at the three-ring indicator — and all " +
-        "three indicators are then replaced by a fresh set elsewhere.",
+        "rings. When a new charged node is needed, it appears at the " +
+        "three-ring indicator — and all three indicators are then " +
+        "replaced by a fresh set elsewhere. The rings rotate, depending " +
+        "on the Inactive node rotation selected.",
     );
+  });
+
+  it("has the three inactive node rotation setting lines, verbatim", () => {
+    expect(GUIDE_SECTIONS[3].settingLines).toEqual([
+      {
+        label: "Continuous",
+        text: "The rings rotate at the end of each player's turn.",
+      },
+      {
+        label: "Planet",
+        text:
+          "The rings rotate each time a ship arrives at a planet " +
+          "(including post-combat, if combat is enabled).",
+      },
+      {
+        label: "Dedicated",
+        text:
+          "There are dedicated rotators that appear on squares. Landing " +
+          "on one of these triggers the rotation.",
+      },
+    ]);
   });
 
   it("keeps the guide's vocabulary exception: points and fuel, never energy or power", () => {
@@ -73,6 +95,10 @@ describe("guideCopy", () => {
       ...GUIDE_SECTIONS.flatMap((section) => [
         section.heading,
         section.paragraph,
+        ...(section.settingLines ?? []).flatMap((line) => [
+          line.label,
+          line.text,
+        ]),
       ]),
     ]
       .join(" ")
