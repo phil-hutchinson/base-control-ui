@@ -24,6 +24,7 @@ describe("useAppScreen", () => {
     expect(result.current.chargedNodeCount).toBe(5);
     expect(result.current.combatEnabled).toBe(false);
     expect(result.current.scoring).toBe("simple");
+    expect(result.current.nodeRotation).toBe("continuous");
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
   });
@@ -129,6 +130,40 @@ describe("useAppScreen", () => {
 
     expect(dispatch).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ type: "new-game", scoring: "bonus" }),
+    );
+  });
+
+  it("carries a chosen node rotation setting of dedicated into the new-game intent, and keeps it on returning to start", async () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, true));
+
+    act(() => {
+      result.current.setNodeRotation("dedicated");
+    });
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", nodeRotation: "dedicated" }),
+    );
+
+    act(() => {
+      result.current.handleReturnToStart();
+    });
+
+    await waitFor(() => {
+      expect(result.current.screen).toBe("start");
+    });
+    expect(result.current.nodeRotation).toBe("dedicated");
+
+    dispatch.mockClear();
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", nodeRotation: "dedicated" }),
     );
   });
 

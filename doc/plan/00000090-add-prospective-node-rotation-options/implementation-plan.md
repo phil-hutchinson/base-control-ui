@@ -1167,7 +1167,34 @@ clean.
 
 ### Step 7 — The choice reaches a new game: the intent, the hook and `App`
 
-Status: pending
+Status: committed
+
+Notes: `SessionIntent`'s `new-game` variant gained a required
+`nodeRotation: NodeRotationSetting` field, and `sessionReducer` passes it
+straight through to `startingGameState` alongside the other options; the
+type-only import of `NodeRotationSetting` mirrors the existing `FleetSize`,
+`ChargedNodeCount` and `ScoringSetting` imports. `useAppScreen` gained a
+`nodeRotation` state field (initialised to `DEFAULT_NODE_ROTATION`) and a
+`setNodeRotation` setter, both exposed on `AppScreen` and included in
+`handlePlay`'s `new-game` dispatch, so a finished game returns to the start
+screen with the setting it was played with still chosen; the hook's doc
+comment now says "the seven options". `App.tsx` was left untouched, taking
+the plan's preferred option — `StartScreen` does not accept the new props
+yet, and wiring them there is Step 8's job, so touching `App.tsx` here would
+only be reverted or duplicated next step. Extended `src/game/session.test.ts`
+with the mechanical sweep of `nodeRotation: "continuous"` onto all eleven
+existing `new-game` intent literals (the `buildState` helper already carried
+the field from Step 3) plus two new cases: a continuous game deals no
+rotators, a dedicated game deals at least one. Extended
+`src/useAppScreen.test.tsx`: the default-options case now also asserts
+`nodeRotation` is `"continuous"`, and a new case mirrors the existing
+combat/scoring "carries a chosen … setting into the new-game intent, and
+keeps it on returning to start" tests for a chosen setting of dedicated. No
+deviation from the plan beyond the documented "leave `App` untouched" choice
+the step itself offered. `npm test` went from 72 files / 1388 tests to 72
+files / 1391 tests (3 new, all passing, no existing expectation changed);
+`npm run typecheck` and `npm run lint` are clean; `npm run format:check`
+shows only the three pre-existing baseline warnings.
 
 - **`src/game/session.ts`**: the `new-game` intent carries `nodeRotation`
   alongside the other six options, as a **required** field, and the reducer

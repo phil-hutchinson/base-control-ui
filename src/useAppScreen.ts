@@ -1,4 +1,4 @@
-// The app's front door: which screen is showing, the six options chosen on
+// The app's front door: which screen is showing, the seven options chosen on
 // the start screen, and the two actions that move between screens. Lives
 // outside App.tsx so PLAY's wiring and the return to start are a real unit,
 // exercised on their own rather than only through the whole app. Which
@@ -16,6 +16,10 @@ import { DEFAULT_COMBAT_ENABLED } from "./rules/combatSetting";
 import { DEFAULT_FLEET_SIZE, type FleetSize } from "./rules/fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./rules/gameLength";
 import {
+  DEFAULT_NODE_ROTATION,
+  type NodeRotationSetting,
+} from "./rules/nodeRotation";
+import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
 } from "./rules/nodes";
@@ -28,12 +32,14 @@ export interface AppScreen {
   readonly chargedNodeCount: ChargedNodeCount;
   readonly combatEnabled: boolean;
   readonly scoring: ScoringSetting;
+  readonly nodeRotation: NodeRotationSetting;
   readonly lengthInRounds: number;
   readonly clockSetting: ClockSetting;
   readonly setFleetSize: (fleetSize: FleetSize) => void;
   readonly setChargedNodeCount: (chargedNodeCount: ChargedNodeCount) => void;
   readonly setCombatEnabled: (combatEnabled: boolean) => void;
   readonly setScoring: (scoring: ScoringSetting) => void;
+  readonly setNodeRotation: (nodeRotation: NodeRotationSetting) => void;
   readonly setLengthInRounds: (lengthInRounds: number) => void;
   readonly setClockSetting: (clockSetting: ClockSetting) => void;
   readonly handlePlay: () => void;
@@ -42,19 +48,19 @@ export interface AppScreen {
 }
 
 /**
- * Holds the six options chosen on the start screen, so a finished game
+ * Holds the seven options chosen on the start screen, so a finished game
  * returns to the start screen with the options it was played with still set,
  * and delegates which screen is showing to `useScreenAddress`, which reads it
  * from the browser's address. `handlePlay` dispatches `new-game` with a fresh
  * seed and the fleet size, charged-node count, combat setting, scoring
- * setting and length through `dispatch`, then hands the game its address;
- * `handleReturnToStart` moves the browser back, the same as its own Back
- * button. The clock setting is not part of `new-game` — the rules layer knows
- * nothing about time — so it is held here purely for the game screen to read.
- * `handleOpenGuide` opens the quick guide at its own address and changes
- * nothing else; there is no matching close action, because
- * `handleReturnToStart` already means "leave for the start screen", which is
- * exactly what leaving the guide does.
+ * setting, node rotation setting and length through `dispatch`, then hands
+ * the game its address; `handleReturnToStart` moves the browser back, the
+ * same as its own Back button. The clock setting is not part of `new-game` —
+ * the rules layer knows nothing about time — so it is held here purely for
+ * the game screen to read. `handleOpenGuide` opens the quick guide at its own
+ * address and changes nothing else; there is no matching close action,
+ * because `handleReturnToStart` already means "leave for the start screen",
+ * which is exactly what leaving the guide does.
  */
 export function useAppScreen(
   dispatch: (intent: SessionIntent) => void,
@@ -68,6 +74,9 @@ export function useAppScreen(
   );
   const [combatEnabled, setCombatEnabled] = useState(DEFAULT_COMBAT_ENABLED);
   const [scoring, setScoring] = useState<ScoringSetting>(DEFAULT_SCORING);
+  const [nodeRotation, setNodeRotation] = useState<NodeRotationSetting>(
+    DEFAULT_NODE_ROTATION,
+  );
   const [lengthInRounds, setLengthInRounds] = useState(
     DEFAULT_GAME_LENGTH_ROUNDS,
   );
@@ -84,6 +93,7 @@ export function useAppScreen(
       chargedNodeCount,
       combatEnabled,
       scoring,
+      nodeRotation,
     });
     showGame();
   }
@@ -102,12 +112,14 @@ export function useAppScreen(
     chargedNodeCount,
     combatEnabled,
     scoring,
+    nodeRotation,
     lengthInRounds,
     clockSetting,
     setFleetSize,
     setChargedNodeCount,
     setCombatEnabled,
     setScoring,
+    setNodeRotation,
     setLengthInRounds,
     setClockSetting,
     handlePlay,
