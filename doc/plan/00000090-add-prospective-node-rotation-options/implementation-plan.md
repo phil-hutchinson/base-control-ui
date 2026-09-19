@@ -900,7 +900,39 @@ cases; `npm run typecheck` (which is what proves the sweep is complete) and
 
 ### Step 4 — One rotation, and `endOfTurn.ts` step 5's two conditions
 
-Status: pending
+Status: committed
+
+Notes: Added `rotateQueue` to `src/rules/nodeQueue.ts` (a type-only import
+of `NodeStatus` from `gameState.ts`, applying `rotatePriority` to every
+inactive entry of a node map and leaving charged/depleted entries alone),
+and updated the module's header comment to say it borrows that type and
+nothing else. `endOfTurn.ts` step 5 now: (refill branch) calls
+`placeRotators` immediately after `refillQueue` under dedicated only,
+against the board as the refill leaves it, replacing `state.rotators`
+wholesale and advancing the seed, and reports the result on
+`QueueRefilledEffect`'s new required `newRotators` field (empty under
+continuous and planet); (rotation branch) rotates through `rotateQueue`
+only when `state.nodeRotation === "continuous"`, doing nothing at all under
+planet and dedicated. Updated the module's header and step-5 comments
+accordingly. Extended `nodeQueue.test.ts` with a `rotateQueue` describe
+block (moves every inactive node one step and wraps 3→1; leaves
+charged/depleted state and level untouched; leaves a map with no inactive
+nodes unchanged) and `endOfTurn.test.ts` with four new step-5 cases: no
+rotation on a turn that charges nothing under planet; the same under
+dedicated, with the existing rotator list left untouched; a refill under
+dedicated replacing the whole rotator set clear of the new nodes and the
+ships (and different from the list before); and a refill under continuous
+or planet leaving both `state.rotators` and `newRotators` empty. Also had
+to add `newRotators: []` to three pre-existing `queue-refilled` object
+literals in `src/board/announcements.test.ts` (Step 10's file, not this
+step's) purely to satisfy the new required field — the same kind of
+mechanical fallout the plan's D11 already anticipated for `GameState`
+literals, just one field short of the full sweep since only `endOfTurn.ts`'s
+own effect type changed here; no expectation in that file was altered.
+`npm test` went from 72 files / 1362 tests to 72 files / 1369 tests (7 new,
+all passing, no existing expectation changed); `npm run typecheck` and
+`npm run lint` are clean; `npm run format:check` shows only the three
+pre-existing baseline warnings. No other deviation from the plan.
 
 Add **`rotateQueue`** to `src/rules/nodeQueue.ts` (D6): a state's node map in,
 a new map out, with `rotatePriority` applied to every **inactive** entry and

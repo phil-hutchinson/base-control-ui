@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { squareFromName, squareName } from "./board";
+import { squareAt, type Square, squareFromName, squareName } from "./board";
 import {
   runEndOfTurn,
   type NodeReliefEffect,
@@ -27,6 +27,7 @@ import {
   TOP_NODE_PRIORITY,
   rotatePriority,
 } from "./nodeQueue";
+import type { NodeRotationSetting } from "./nodeRotation";
 import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
@@ -62,6 +63,8 @@ function buildState(config: {
   randomSeed?: number;
   chargedNodeCount?: ChargedNodeCount;
   scoring?: ScoringSetting;
+  nodeRotation?: NodeRotationSetting;
+  rotators?: readonly Square[];
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -70,8 +73,8 @@ function buildState(config: {
     plyNumber: config.plyNumber ?? 1,
     randomSeed: config.randomSeed ?? 1,
     openingSeed: config.randomSeed ?? 1,
-    nodeRotation: "continuous",
-    rotators: [],
+    nodeRotation: config.nodeRotation ?? "continuous",
+    rotators: config.rotators ?? [],
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
@@ -1069,6 +1072,128 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
     );
     expect(refills).toHaveLength(1);
     expect(refills[0].newNodes).toHaveLength(INACTIVE_NODE_COUNT);
+  });
+
+  it("does not rotate on a turn that charges nothing under planet", () => {
+    const state = buildState({
+      nodeRotation: "planet",
+      chargedNodeCount: 4,
+      nodes: {
+        D4: ["charged", 0],
+        L4: ["charged", 0],
+        D12: ["charged", 0],
+        L12: ["charged", 0],
+        F2: ["inactive", 1],
+        N4: ["inactive", 2],
+        H8: ["inactive", 3],
+      },
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.nodes.F2).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.N4).toEqual({ state: "inactive", level: 2 });
+    expect(result.state.nodes.H8).toEqual({ state: "inactive", level: 3 });
+    expect(
+      result.effects.some((effect) => effect.type === "queue-refilled"),
+    ).toBe(false);
+  });
+
+  it("does not rotate on a turn that charges nothing under dedicated, and leaves the rotator set untouched", () => {
+    const rotators = [squareAt("C", 3), squareAt("K", 13)];
+    const state = buildState({
+      nodeRotation: "dedicated",
+      rotators,
+      chargedNodeCount: 4,
+      nodes: {
+        D4: ["charged", 0],
+        L4: ["charged", 0],
+        D12: ["charged", 0],
+        L12: ["charged", 0],
+        F2: ["inactive", 1],
+        N4: ["inactive", 2],
+        H8: ["inactive", 3],
+      },
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(result.state.nodes.F2).toEqual({ state: "inactive", level: 1 });
+    expect(result.state.nodes.N4).toEqual({ state: "inactive", level: 2 });
+    expect(result.state.nodes.H8).toEqual({ state: "inactive", level: 3 });
+    expect(result.state.rotators).toEqual(rotators);
+  });
+
+  it("refills the queue and, under dedicated, replaces the whole rotator set clear of the new nodes and the ships", () => {
+    const oldRotators = [squareAt("C", 3), squareAt("K", 13)];
+    const state = buildState({
+      nodeRotation: "dedicated",
+      rotators: oldRotators,
+      chargedNodeCount: 4,
+      nodes: {
+        D4: ["charged", 0],
+        L4: ["charged", 0],
+        D12: ["charged", 0],
+        F2: ["inactive", 1],
+        N4: ["inactive", 2],
+        H8: ["inactive", TOP_NODE_PRIORITY],
+      },
+      ships: [ship("green-1", "green", "C3")],
+      randomSeed: 20260906,
+    });
+
+    const result = runEndOfTurn(state);
+
+    const refills = result.effects.filter(
+      (effect): effect is QueueRefilledEffect =>
+        effect.type === "queue-refilled",
+    );
+    expect(refills).toHaveLength(1);
+
+    const newNodeNames = new Set(
+      nodeSquares(result.state)
+        .filter((square) => nodeStateAt(result.state, square) === "inactive")
+        .map(squareName),
+    );
+    const shipNames = new Set(
+      result.state.ships.map((s) => squareName(s.square)),
+    );
+
+    expect(refills[0].newRotators.length).toBeGreaterThan(0);
+    for (const square of refills[0].newRotators) {
+      expect(newNodeNames.has(squareName(square))).toBe(false);
+      expect(shipNames.has(squareName(square))).toBe(false);
+    }
+    expect(result.state.rotators).toEqual(refills[0].newRotators);
+    expect(result.state.rotators).not.toEqual(oldRotators);
+  });
+
+  it("leaves the rotator list empty, and reports no new rotators, when a refill happens under continuous or planet", () => {
+    for (const nodeRotation of ["continuous", "planet"] as const) {
+      const state = buildState({
+        nodeRotation,
+        chargedNodeCount: 4,
+        nodes: {
+          D4: ["charged", 0],
+          L4: ["charged", 0],
+          D12: ["charged", 0],
+          F2: ["inactive", 1],
+          N4: ["inactive", 2],
+          H8: ["inactive", TOP_NODE_PRIORITY],
+        },
+        randomSeed: 20260906,
+      });
+
+      const result = runEndOfTurn(state);
+
+      const refills = result.effects.filter(
+        (effect): effect is QueueRefilledEffect =>
+          effect.type === "queue-refilled",
+      );
+      expect(refills).toHaveLength(1);
+      expect(refills[0].newRotators).toEqual([]);
+      expect(result.state.rotators).toEqual([]);
+    }
   });
 });
 

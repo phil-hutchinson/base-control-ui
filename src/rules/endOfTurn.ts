@@ -2,13 +2,15 @@
 // in the document's order. Reads `state.sideToMove` as the player who just
 // moved and `state.plyNumber` as the ply just played, so `ply.ts` must call
 // this before either changes. Two ordering choices matter and both are
-// deliberate (§8.6). The queue's refill or rotation (step 5) runs after
-// charging (step 4), not before, so the arrangement of priorities a player
-// looks at while taking their turn is exactly the arrangement that governed
-// the charge at the end of it (§8.2). Retirement (step 6) runs after both
-// of those, deliberately: a node a refill places is inactive for the whole
-// of the next turn and can first be charged at the end of it, never inside
-// the same sequence that placed it.
+// deliberate (§8.6). The queue's refill, or its rotation under the
+// continuous setting only (§8.2 — a landing rotates it under the other two,
+// in `ply.ts`, before this sequence ever runs), runs after charging (step
+// 4), not before, so the arrangement of priorities a player looks at while
+// taking their turn is exactly the arrangement that governed the charge at
+// the end of it. Retirement (step 6) runs after both of those, deliberately:
+// a node a refill places is inactive for the whole of the next turn and can
+// first be charged at the end of it, never inside the same sequence that
+// placed it.
 //
 // Step 3 spends one ply off every charged node that carries a countdown
 // (rules.md §8.3). A node charging fresh out of the queue in step 4 carries
@@ -56,15 +58,11 @@ import {
   shipsBySquare,
   nodeStateAt,
 } from "./gameState";
-import {
-  type InactiveNodeDraw,
-  inactivePriority,
-  refillQueue,
-  rotatePriority,
-} from "./nodeQueue";
+import { type InactiveNodeDraw, refillQueue, rotateQueue } from "./nodeQueue";
 import { gainPower, MAX_POWER, type PowerLevel } from "./power";
 import { spendPly, TRAP_COUNTDOWN_PLIES } from "./countdown";
 import { reliefSquare } from "./relief";
+import { placeRotators } from "./rotators";
 
 function otherSide(side: Side): Side {
   return side === "green" ? "red" : "green";
@@ -157,11 +155,20 @@ export interface NodeReliefEffect {
  * priorities 1, 2 and 3 at random (§8.2, §8.6 step 5). One effect for the
  * whole sweep, rather than one per node, because the queue a player was
  * reading is gone and a new one has replaced it as a single event.
+ *
+ * `newRotators` is the fresh rotator set the same step drew immediately
+ * afterwards under the dedicated setting (§3.3) — empty under continuous and
+ * planet, since a rotator set is never drawn under either (S8). It is a
+ * field on this effect rather than a second effect beside it: the sweep and
+ * the regeneration are one event at one instant, and a listener that hears
+ * the queue was refilled should hear what the board looks like afterwards
+ * in the same breath.
  */
 export interface QueueRefilledEffect {
   readonly type: "queue-refilled";
   readonly discardedSquares: readonly Square[];
   readonly newNodes: readonly InactiveNodeDraw[];
+  readonly newRotators: readonly Square[];
 }
 
 /** Everything the end-of-turn sequence can report, in the order its steps run. */
@@ -331,14 +338,23 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   workingState = charging.state;
   effects.push(...charging.effects);
 
-  // Step 5: refill or rotate (§8.2, §8.6 step 5). If step 4 charged
-  // anything, the queue is swept: whichever inactive nodes did not charge
-  // are discarded, and three new ones are drawn by one refill, spread apart
-  // from the charged nodes and from each other and dealt priorities 1, 2
-  // and 3 at random — reported as one `queue-refilled` effect. Otherwise
-  // nothing charged, so every surviving inactive node's priority rotates
-  // one step (1→2, 2→3, 3→1), silently and without moving the seed at all
-  // — a freshly refilled trio is never rotated in the turn it was dealt.
+  // Step 5: refill, or (under continuous only) rotate (§8.2, §8.6 step 5).
+  // If step 4 charged anything, the queue is swept: whichever inactive nodes
+  // did not charge are discarded, and three new ones are drawn by one
+  // refill, spread apart from the charged nodes and from each other and
+  // dealt priorities 1, 2 and 3 at random. Under the dedicated setting only,
+  // the board's whole rotator set is then replaced — drawn fresh against the
+  // board as the refill leaves it, so the new rotators see the new nodes and
+  // avoid them (§3.3). Both are reported as one `queue-refilled` effect,
+  // since the sweep and the regeneration are one event at one instant.
+  // Otherwise nothing charged: under the continuous setting every surviving
+  // inactive node's priority rotates one step (1→2, 2→3, 3→1) through
+  // `rotateQueue`, silently and without moving the seed at all — a freshly
+  // refilled trio is never rotated in the turn it was dealt. Under planet
+  // and dedicated this branch does nothing at all: the priorities and the
+  // rotator set stay exactly as the turn left them, since rotation under
+  // those two settings has already happened, if it happened, as a landing
+  // resolved (`ply.ts`), never here.
   if (charging.effects.length > 0) {
     const discardedSquares = nodeSquares(workingState).filter(
       (square) => nodeStateAt(workingState, square) === "inactive",
@@ -368,26 +384,33 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
       nodes: refilledNodes,
       randomSeed: seedAfterRefill,
     };
-    effects.push({ type: "queue-refilled", discardedSquares, newNodes });
-  } else {
-    const survivingInactiveSquares = nodeSquares(workingState);
-    for (const square of survivingInactiveSquares) {
-      const name = squareName(square);
-      const status = workingState.nodes[name];
-      if (status === undefined || status.state !== "inactive") {
-        continue;
-      }
+
+    let newRotators: readonly Square[] = [];
+    if (workingState.nodeRotation === "dedicated") {
+      const [rotators, seedAfterRotators] = placeRotators(
+        nodeSquares(workingState),
+        workingState.ships.map((ship) => ship.square),
+        workingState.randomSeed,
+      );
+      newRotators = rotators;
       workingState = {
         ...workingState,
-        nodes: {
-          ...workingState.nodes,
-          [name]: {
-            state: "inactive",
-            level: rotatePriority(inactivePriority(status)),
-          },
-        },
+        rotators,
+        randomSeed: seedAfterRotators,
       };
     }
+
+    effects.push({
+      type: "queue-refilled",
+      discardedSquares,
+      newNodes,
+      newRotators,
+    });
+  } else if (workingState.nodeRotation === "continuous") {
+    workingState = {
+      ...workingState,
+      nodes: rotateQueue(workingState.nodes),
+    };
   }
 
   // Step 6: every node that was depleted before this ply began (the
