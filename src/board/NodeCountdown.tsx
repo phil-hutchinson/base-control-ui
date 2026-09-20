@@ -27,6 +27,12 @@ interface NodeCountdownProps {
    * the colour the number is travelling from, on its way to `color`.
    */
   readonly burnoutFrom?: "black" | "white";
+  /**
+   * The burnout animation's `runId`, present alongside `burnoutFrom`. Used
+   * as the animated text's key, so a later burnout on the same square
+   * restarts the colour travel rather than continuing it.
+   */
+  readonly runId?: number;
 }
 
 // Starting values for the owner's eye, not a measured result. The ship art
@@ -38,6 +44,7 @@ export function NodeCountdown({
   number,
   color,
   burnoutFrom,
+  runId,
 }: NodeCountdownProps) {
   return (
     <svg className="node-countdown" viewBox="0 0 100 100" aria-hidden="true">
@@ -47,7 +54,10 @@ export function NodeCountdown({
         // its props onto the same node - the only way to guarantee no
         // leftover attribute (an empty `style`, in particular) survives
         // the switch (see BoardSquare.test.tsx's end-state assertion).
-        key={burnoutFrom ? "burning-out" : undefined}
+        // Keyed on the animation's own runId, as NodeMarker and
+        // RotatorMarker are, so a later burnout on the same square restarts
+        // rather than continuing.
+        key={burnoutFrom ? runId : undefined}
         x={50}
         y={50}
         fontSize={FONT_SIZE}

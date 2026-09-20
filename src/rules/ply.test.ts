@@ -1942,6 +1942,39 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
     });
   });
 
+  it("reports a node's priority from before the landing's own mid-ply rotation, when the same ply also charges it", () => {
+    const state = buildState({
+      nodeRotation: "dedicated",
+      chargedNodeCount: 5,
+      rotators: [squareFromName("H9"), squareFromName("A1")],
+      ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "O15")],
+      nodes: { ...steadyCharged, ...threeInactive },
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    // Landing on H9 rotates H1/H2/H3 from priorities 1/2/3 to 2/3/1 before
+    // charging runs, so H2 — priority 2 a moment ago — is now the top
+    // priority and charges. The effect must still name 2, the priority a
+    // player last saw it holding, not the 3 the rotation left it at.
+    const plyEnded = result.effects.find(
+      (effect) => effect.type === "ply-ended",
+    );
+    expect(plyEnded).toBeDefined();
+    if (plyEnded?.type !== "ply-ended") {
+      throw new Error("expected a ply-ended effect");
+    }
+    expect(plyEnded.endOfTurn).toContainEqual({
+      type: "node-charged",
+      square: squareFromName("H2"),
+      priority: 2,
+    });
+  });
+
   it("flying over a planet without landing on it spends and rotates nothing, under planet", () => {
     const state = buildState({
       nodeRotation: "planet",

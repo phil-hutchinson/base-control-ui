@@ -8,11 +8,11 @@
   width: 100%;
   height: 100%;
 
-  /* The inactive-to-charged animation's single duration (story.md, "A node
-     lights up"), split between its two phases in the keyframe percentages
-     below: the first 60% cross-fades the outgoing rings into the masked
-     artwork, the last 40% grows the mask to reveal all of it. A starting
-     value for the owner's eye, not a measured result. */
+  /* The inactive-to-charged animation's single duration, split between its
+     two phases in the keyframe percentages below: the first 60% cross-fades
+     the outgoing rings into the masked artwork, the last 40% grows the mask
+     to reveal all of it. A starting value for the owner's eye, not a
+     measured result. */
   --node-charge-duration: 750ms;
 }
 
@@ -32,11 +32,8 @@
   animation: node-charge-reveal var(--node-charge-duration) ease-out;
 }
 
-/* The origin is stated in the marker's own 0-100 user space rather than as
-   `center` of a reference box: a shape inside a <mask> does not resolve a
-   `fill-box` origin consistently across browsers, which throws the growing
-   ball off the square's centre. The viewBox is 0 0 100 100, so 50px 50px is
-   the centre the ball must grow from. */
+/* The viewBox is 0 0 100 100, so the ball grows from 50px 50px, the
+   marker's own centre. */
 .node-marker__charge-mask-circle {
   transform: scale(1);
   transform-box: view-box;

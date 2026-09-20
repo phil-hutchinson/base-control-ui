@@ -9,10 +9,10 @@
   border: 1px solid var(--color-space);
   --interaction-accent: #6fa8ff;
 
-  /* The burnout animation's single duration (story.md, "A node burns out"),
-     shared by NodeMarker's gradient stops and NodeCountdown's number, which
-     meet here as siblings of this square. A starting value for the owner's
-     eye, not a measured result. */
+  /* The burnout animation's single duration, shared by NodeMarker's
+     gradient stops and NodeCountdown's number, which meet here as siblings
+     of this square. A starting value for the owner's eye, not a measured
+     result. */
   --node-burnout-duration: 900ms;
 }
 

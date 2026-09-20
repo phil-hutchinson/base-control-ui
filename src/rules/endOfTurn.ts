@@ -58,7 +58,12 @@ import {
   shipsBySquare,
   nodeStateAt,
 } from "./gameState";
-import { type InactiveNodeDraw, refillQueue, rotateQueue } from "./nodeQueue";
+import {
+  type InactiveNodeDraw,
+  type NodePriority,
+  refillQueue,
+  rotateQueue,
+} from "./nodeQueue";
 import { gainPower, MAX_POWER, type PowerLevel } from "./power";
 import { spendPly, TRAP_COUNTDOWN_PLIES } from "./countdown";
 import { reliefSquare } from "./relief";
@@ -208,8 +213,15 @@ export interface EndOfTurnResult {
  * 3 below depletes into a trap is excluded and first spends a ply at the end
  * of the next turn instead. It is a snapshot, not a live walk, so that a
  * node written mid-sequence is never visited a second time.
+ *
+ * `reportedPriorities`, if given, is passed straight through to step 4's
+ * `runCharging` — see its doc comment for what it changes and what it does
+ * not.
  */
-export function runEndOfTurn(state: GameState): EndOfTurnResult {
+export function runEndOfTurn(
+  state: GameState,
+  reportedPriorities?: Readonly<Record<string, NodePriority>>,
+): EndOfTurnResult {
   const depletedBeforePly = nodeSquares(state).filter(
     (square) => nodeStateAt(state, square) === "depleted",
   );
@@ -335,7 +347,7 @@ export function runEndOfTurn(state: GameState): EndOfTurnResult {
   // from the three inactive nodes, top-down by priority (§8.2, §8.6 step
   // 4) — no draw, no weighting, no seed movement. The shortfall never
   // exceeds two (§8.3), so the three-node queue always covers it.
-  const charging = runCharging(workingState);
+  const charging = runCharging(workingState, reportedPriorities);
   workingState = charging.state;
   effects.push(...charging.effects);
 

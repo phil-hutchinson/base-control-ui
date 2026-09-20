@@ -150,6 +150,21 @@ Why, and what was rejected:
   `RULES_VERSION` does not move. There is no game-record format to keep stable
   — nothing in the repository serialises effects today.
 
+**Correction, found at peer review:** "the priority the node held" is not,
+as first written, the priority `runCharging` reads off `state` at the point
+it charges the node — under the planet or dedicated settings a landing can
+rotate the queue mid-ply, before charging ever runs (`ply.ts`'s
+`rotateForLanding`), so by charging time every inactive node's priority may
+already have shifted one step from what the board last drew. `runCharging`
+now takes an optional map of priorities to report instead of the ones it
+reads off `state`, and `ply.ts` snapshots the priorities before calling
+`rotateForLanding` and threads that snapshot through `endPly` and
+`runEndOfTurn` down to it. This changes only what a `node-charged` effect
+_reports_; it decides neither which node charges nor in what order, both of
+which are still read from `state` as it stands at charging time. Under
+continuous nothing rotates mid-ply, so the snapshot and the state always
+agree there and behaviour is unchanged.
+
 ### D2. Animations are derived from `session.lastEvent`, exactly as `EnergyOverlay` derives settlements
 
 `EnergyOverlay.tsx` is this codebase's precedent for a transient,
@@ -260,31 +275,43 @@ a browser, set that property in the stylesheet or in the element's `style`
 instead of as an attribute; do not switch the animation's direction to
 compensate, because that would break guarantee 1.
 
-### D6. The burnout travels colours only, and the offset snap costs nothing
+### D6. The burnout travels colours only; the offset snap is visible on one of the two roads, and is knowingly accepted
 
 **What travels:** the inner colour (gold `#DAA520` → grey `#808080`), the
 outer colour (wheat `#F5DEB3` → white `#FFFFFF`), and the countdown number's
 colour (black → white) where a number is drawn on both sides of the change.
 
-**What snaps:** the middle gradient stop's offset — and at this transition it
-snaps between two identical values, so nothing is visible. The proof, which
-the implementer should not have to re-derive:
+**What snaps:** the middle gradient stop's offset — CSS has no way to
+animate an SVG gradient stop's offset (it is not a CSS property), so it
+jumps straight to the depleted node's own value rather than travelling.
+Whether that jump is visible depends on which of the two roads into
+depleted produced it (`story.md` §2):
 
-- A charged node's countdown only ever runs out by spending its last ply.
+- **`node-ran-out`, the countdown running out beneath a ship.** A charged
+  node's countdown only ever runs out by spending its last ply —
   `endOfTurn.ts` step 3 skips any charged node whose `level <= 0`
   (`continue`), so a charged node carrying **no** countdown can never raise
-  `node-ran-out`.
-- Therefore the node was at `level` 1 the instant before, which
+  this effect. The node was therefore at `level` 1 the instant before, which
   `nodeCyclePosition` puts at cycle position 1 — the **end** of the charged
-  cycle, middle stop at 50%.
-- The depleted node it becomes is a trap starting its own cycle at position 0
-  — middle stop at 50% as well.
+  cycle, middle stop at 50%. The depleted trap it becomes starts its own
+  cycle at position 0, middle stop at 50% as well: the jump is between two
+  identical values, so nothing is visible.
+- **`node-spent`, a ship walking off a charged node (added by Step 7,
+  rules.md §8.3) — the more common road.** A node can be spent at any point
+  in its cycle, not only at the end of a countdown, so its offset is
+  generally `25 + 25 × cyclePosition`, somewhere in `[25, 50]`, while the
+  exit node it becomes starts its own cycle at position 0, middle stop at
+  50%. The jump is visible whenever the node was spent before its countdown
+  neared zero. **This is knowingly accepted**, not a gap: the colours travel
+  over the same instant the offset jumps, which is what carries the eye
+  through the change, so the jump reads as part of the colour shift rather
+  than as a separate snap. Making the offset travel too would mean
+  redrawing the square from JavaScript every frame — the approach D4
+  rejected in favour of CSS-only animation.
 
 The stop opacities (1, 0.7, 1) and the radius (70) are the same on both sides
-too, so the colours really are the whole of the difference. Should the two
-artworks ever come to differ in offset, radius or opacity, that difference
-will snap rather than travel; making it travel is a later story's problem, and
-`story.md` §2 says so explicitly.
+regardless of which road produced the change, so the colours are the whole
+of what has to travel either way.
 
 **Where the "from" colours come from:** they are the charged artwork's own
 stop colours, which `NodeMarker.tsx` already computes from its artwork table —
@@ -840,17 +867,19 @@ Verification (manual): run `npm run dev` and, from the start screen:
 2. Let a charged node run out. The gold travels to grey rather than being
    swapped for it, and the countdown number, where there is one on both sides,
    travels with it.
-3. Start a game with **dedicated** rotation and land a ship on a rotator. The
+3. Move a ship **off** a charged node, spending it. The same travel happens,
+   without a countdown number on the depleted side.
+4. Start a game with **dedicated** rotation and land a ship on a rotator. The
    spent rotator goes; every other rotator turns a third of a circle clockwise
    and ends up looking exactly as it started.
-4. Do the same on a board where the spent rotator is the only one left:
+5. Do the same on a board where the spent rotator is the only one left:
    nothing turns, nothing flickers.
-5. Turn on the system's reduce-motion setting and repeat 1–3: each change
+6. Turn on the system's reduce-motion setting and repeat 1–4: each change
    happens instantly, and the board is correct afterwards.
-6. Watch a turn in which a ship lands on a rotator **and** the rotator set is
+7. Watch a turn in which a ship lands on a rotator **and** the rotator set is
    replaced. Nothing turns, the fresh set appears still, and nothing is left
    drawn mid-animation (D9).
-7. Interrupt an animation — let a node charge, then immediately click a ship —
+8. Interrupt an animation — let a node charge, then immediately click a ship —
    and confirm the board is left in the correct end state. This is the one
    that matters (S7): an animation may be cut short, but what it was
    travelling towards must always be what is standing there afterwards.
@@ -861,8 +890,11 @@ The four numbers to adjust, if any of them feels wrong, are in D11's table:
 `--rotator-turn-duration` (`RotatorMarker.css`). Record in this step's Notes
 what was changed and to what.
 
-Notes: the owner watched all seven checks. Three findings, all fixed before
-this gate closed:
+Notes: the owner watched all seven checks in the list as it stood at the
+time (this step's list has since been corrected at peer review to add item
+3, the node-spent road, matching `story.md`'s own verification list — the
+owner already re-confirmed that check once it existed, per Step 7's Notes
+below). Three findings, all fixed before this gate closed:
 
 1. The growing ball was off-centre in Firefox (correct in Chrome): the mask
    circle scaled about a `fill-box` origin, which a shape inside a `<mask>`
@@ -904,6 +936,13 @@ typecheck`, `npm run lint`, `npm test` (73 files, 1452 tests, up 2 from the
 baseline warnings — `doc/plan/00000069-retire-actions/story.md`,
 `doc/plan/00000090-add-prospective-node-rotation-options/story.md` and
 `src/board/planetArt.ts`) all green. No deviation from the plan.
+
+This step also invalidated part of D6: D6's proof that the middle gradient
+stop's offset always snaps between two identical values held only for
+`node-ran-out`, the road covered by Step 4. The `node-spent` road this step
+adds can snap the offset between two different values, which is visible.
+Found at peer review and corrected in D6 and in `story.md` §2, rather than
+fixed here — no code changed.
 
 Implement the burnout animation for the **second** way a node reaches
 depleted: a ship leaving a charged node, which spends it the instant the

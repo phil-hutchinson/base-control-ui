@@ -92,13 +92,20 @@ becoming the other. The colours that travel are:
 
 **The middle gradient stop's offset does not travel — it snaps.** An SVG
 gradient stop's offset is not a CSS property, so travelling it would mean
-redrawing the square on every frame from JavaScript, and it buys nothing:
-a charged node with no countdown can never run out (only a running countdown
-reaches zero), so at this transition the charged node's offset and the
-depleted node's starting offset always agree, and the snap is a snap between
-two identical values. Should the two artworks ever come to differ in offset,
-radius or opacity, that difference will snap rather than travel, and making
-it travel is a later story's problem, not a gap this one is leaving.
+redrawing the square on every frame from JavaScript. The two roads differ
+here: a countdown running out happens only beneath a ship, at the end of the
+charged cycle, so the charged node's offset and the depleted node's starting
+offset agree and the snap is between two identical values. A node a ship
+walks off, the more common road, can be spent at any point in its cycle, so
+its offset generally differs from the depleted node's starting offset, and
+the snap is a visible jump in the middle stop's position. **That jump is
+knowingly accepted:** the colours are travelling at the same instant, which
+is what carries the eye through the change, so the offset jumping underneath
+that travel reads as part of the colour shift rather than as a separate
+snap. Making it travel too would mean the JavaScript redraw above — the
+approach this story's plan considered and rejected in favour of animating in
+CSS alone. That remains a later story's problem, not a gap this one is
+leaving.
 
 Where a component exists on only one side of the change — the countdown
 number appearing or disappearing outright, because a node ran out with no

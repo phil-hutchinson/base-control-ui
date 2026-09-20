@@ -275,6 +275,7 @@ export function BoardSquare({
           number={countdownNumber}
           color={nodeState === "depleted" ? "white" : "black"}
           burnoutFrom={burnoutAnimation ? "black" : undefined}
+          runId={burnoutAnimation?.runId}
         />
       )}
       {mark?.kind === "destination" && <DestinationMark cost={mark.cost} />}

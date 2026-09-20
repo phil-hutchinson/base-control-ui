@@ -140,6 +140,26 @@ export function inactivePriority(status: {
 }
 
 /**
+ * Every inactive node's current priority, keyed by square name (rules.md
+ * §8.2). Lets a caller remember the priorities a moment in time held after
+ * the state has since moved on — `ply.ts` takes one before a landing rotates
+ * the queue mid-ply, so a node that charges later in the same ply can be
+ * reported at the priority it was last drawn with rather than the one the
+ * rotation left it holding.
+ */
+export function snapshotInactivePriorities(
+  nodes: Readonly<Record<string, NodeStatus>>,
+): Readonly<Record<string, NodePriority>> {
+  const snapshot: Record<string, NodePriority> = {};
+  for (const [name, status] of Object.entries(nodes)) {
+    if (status.state === "inactive") {
+      snapshot[name] = inactivePriority(status);
+    }
+  }
+  return snapshot;
+}
+
+/**
  * Rotates one inactive node's priority one step (rules.md §8.2): 1→2, 2→3,
  * 3→1. Applied to every surviving inactive node at the end of a turn on
  * which nothing charged (§8.6 step 5); a freshly refilled trio is never
