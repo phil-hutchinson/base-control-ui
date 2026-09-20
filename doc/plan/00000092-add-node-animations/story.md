@@ -73,30 +73,30 @@ gold core.
 Today a charged node whose countdown runs out (the `node-ran-out` effect,
 `src/rules/endOfTurn.ts`) is replaced by the depleted artwork in one frame.
 
-Instead the marker **slides** from one to the other: every component that
-differs between the two pictures travels smoothly from its charged value to
-its depleted value over a single duration. No masking, no fading, no two
-phases — just the one picture becoming the other. As of today those
-components are:
+Instead the marker **slides** from one to the other: the colours travel
+smoothly from their charged values to their depleted values over a single
+duration. No masking, no fading, no two phases — just the one picture
+becoming the other. The colours that travel are:
 
 - **The inner colour**, gold `#DAA520` → grey `#808080`.
 - **The outer colour**, wheat `#F5DEB3` → white `#FFFFFF`.
-- **The middle gradient stop's offset**, from wherever the charged node's
-  cycle had carried it to wherever the depleted node's cycle starts. These
-  happen to agree in the common case and to differ when the charged node
-  carried no countdown, so it is a real component, not a no-op.
 - **The countdown number's colour**, black on charged → white on depleted,
   where a number is drawn on both sides of the change.
 
-That list is the current artwork, not a specification to freeze: the
-principle is **every component that differs travels**, so if the two
-pictures later come to differ in radius, opacity or anything else, that
-difference travels too rather than being left behind as a snap. Where a
-component exists on only one side of the change — the countdown number
-appearing or disappearing outright, because a charged node without a
-countdown became a trap, or a node ran out with no ship on it — it is not a
-component that can travel, and it may simply appear or disappear as it does
-today.
+**The middle gradient stop's offset does not travel — it snaps.** An SVG
+gradient stop's offset is not a CSS property, so travelling it would mean
+redrawing the square on every frame from JavaScript, and it buys nothing:
+a charged node with no countdown can never run out (only a running countdown
+reaches zero), so at this transition the charged node's offset and the
+depleted node's starting offset always agree, and the snap is a snap between
+two identical values. Should the two artworks ever come to differ in offset,
+radius or opacity, that difference will snap rather than travel, and making
+it travel is a later story's problem, not a gap this one is leaving.
+
+Where a component exists on only one side of the change — the countdown
+number appearing or disappearing outright, because a node ran out with no
+ship on it — it is not a component that can travel, and it may simply appear
+or disappear as it does today.
 
 ### 3. The rotators turn: a spent rotator turns the rest
 
@@ -168,11 +168,13 @@ The 120° clockwise turn of every remaining rotator, playing whenever a
 
 Note the interaction with the refill: the rotation happens the moment the
 ship lands, mid-turn, while the whole rotator set is replaced later, after
-the end-of-turn refill of the inactive nodes. If both happen on the same
-turn, the remaining rotators turn, and then a fresh set is dealt and
-appears — unturned and still — as it does today. That is correct and needs
-no special handling beyond making sure the turn on an outgoing set cannot
-leave a fresh rotator drawn mid-spin.
+the end-of-turn refill of the inactive nodes. **When both happen on the same
+turn, nothing turns.** The board draws once, after the whole turn has
+resolved, so by the time anything reaches the screen the marks standing there
+are the fresh set — and spinning those would be spinning marks that were
+never part of the rotation, for no reason a player could read. The fresh set
+simply appears, still, as it does today. This is uncommon: it needs a ship to
+land on a rotator on a turn that also ends with something charging.
 
 ### 4. Durations
 
@@ -185,7 +187,18 @@ three-quarters of a second for the charge, half a second for the burnout,
 and half a second for the rotator turn — all of them to be moved if they
 feel wrong on the board.
 
-### 5. Reduced motion
+### 5. An interrupted animation still lands correctly
+
+An animation is driven by the session's last event, the same way the
+settlement overlay already is, which means the next event replaces it: a node
+charges, the other player clicks a ship, and the charge animation stops part
+way through. **That is accepted.** What is not accepted is the board being
+left wrong because of it. Whatever an animation was travelling towards must
+be exactly what is standing on the board once it is over, however it ended —
+cut short, never started, or run to completion. The end state is the
+requirement; the motion is the decoration on top of it.
+
+### 6. Reduced motion
 
 Each animation gets a `prefers-reduced-motion: reduce` branch, following the
 precedent `EnergyOverlay.css` and `ClockRegion.css` already set: with reduced
@@ -194,7 +207,7 @@ depleted node, the rotators as they were — with no travel, no growing mask
 and no turn. Nothing in this story is the only channel for any information,
 so removing the motion removes nothing but the motion.
 
-### 6. The tests
+### 7. The tests
 
 The automated suite should cover what is worth asserting and no more.
 Animations are a poor fit for assertions about appearance over time, and
@@ -208,6 +221,10 @@ this story does not ask for any. What it does ask for:
   spent square.
 - Whatever mechanism carries the outgoing ring count into the charge
   animation reports the priority the node actually held.
+- The rotator turn does **not** run on a turn that also replaced the rotator
+  set.
+- The board's end state is correct regardless of whether an animation ran,
+  was interrupted, or never started — the property scope item 5 asks for.
 
 Existing tests over `NodeMarker`, `RotatorMarker`, `BoardSquare` and `Board`
 must keep passing; where an animation's plumbing makes one of them
@@ -251,8 +268,13 @@ to look at:
    nothing turns, nothing flickers.
 5. Turn on the system's reduce-motion setting and repeat 1–3: each change
    happens instantly, and the board is correct afterwards.
-6. Watch a whole turn in which a node charges and the rotator set is
-   replaced, and confirm nothing is left drawn mid-animation.
+6. Watch a turn in which a ship lands on a rotator **and** the rotator set
+   is replaced. Nothing turns, the fresh set appears still, and nothing is
+   left drawn mid-animation.
+7. Interrupt an animation — let a node charge, then immediately click a ship
+   — and confirm the board is left in the correct end state. This is the one
+   that matters: an animation may be cut short, but what it was travelling
+   towards must always be what is standing there afterwards.
 
 Plus the usual `npm run typecheck`, `npm run lint` and `npm test`.
 
