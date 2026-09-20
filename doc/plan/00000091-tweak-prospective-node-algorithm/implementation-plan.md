@@ -675,7 +675,101 @@ and the test count no lower than 1453. Specifically confirm:
 
 ## Step 3 — Re-measure, and rewrite `tech-notes.md`'s figures
 
-Status: pending
+Status: committed
+
+Notes: Measured by temporarily adding a `console.log`-reporting `it()` inside
+each `describe.each(CHARGED_NODE_COUNTS)` block of `src/rules/nodePool.test.ts`
+(reusing `runEconomy`, `legalNodePool`, `drawUniformSquare` and
+`smallestPairwiseGap` exactly as the file's existing tests do, so no new
+driver was written), ran `npx vitest run src/rules/nodePool.test.ts`, read
+every figure below off that one run, then removed the block entirely before
+finishing (`grep -n "console" src/rules/nodePool.test.ts` finds nothing). All
+102 tests (99 existing + 3 temporary, now back to 99) were green during
+measurement; the file is otherwise unchanged from Step 2's version.
+
+Figures measured, all from that one run:
+
+- **Per-draw pool-size means** (all three charged counts): five charged —
+  first 19.97, second 16.38, third 50.16; four charged — first 23.94, second
+  20.21, third 56.20; three charged — first 29.06, second 25.11, third 64.56.
+  Rounded to the nearest square, written into `tech-notes.md` as 20/16/50,
+  24/20/56 and 29/25/65. Min/max, kept only in these Notes per D4: five —
+  7–38 / 4–35 / 39–70; four — 11–40 / 7–35 / 45–75; three — 16–47 / 13–43 /
+  55–79.
+- **Total node count** (all three counts): five — min 8, max 13, mean 12.88;
+  four — min 7, max 11, mean 10.91; three — min 6, max 9, mean 8.93. These
+  are numerically identical to the figures already in the document, because
+  the node-count and refill-cadence economy is driven by countdown timing,
+  not by which squares a refill draws — re-measuring confirmed rather than
+  moved them, so `tech-notes.md`'s existing sentences for this figure were
+  left as they were rather than rewritten to say the same thing differently.
+- **Mean plies between refills** (all three counts): 2.22 at five, 2.78 at
+  four, 3.70 at three — again numerically unchanged from before, for the
+  same reason.
+- **Mean smallest pairwise gap, weighted vs. unweighted, and the advantage**
+  (all three counts): five — 4.71 weighted vs. 3.73 unweighted, advantage
+  0.98; four — 4.85 vs. 3.82, advantage 1.03; three — 4.79 vs. 3.61,
+  advantage 1.18. These did move from the pre-Step-2 figures (4.88/3.72/1.15,
+  4.79/3.71/1.08, 4.88/3.71/1.18), as expected since which squares get drawn
+  changed.
+- **Edge / one-ring-in / corner per-trio counts, at four charged only**,
+  against the owner's corner definition (the 3×3 block at each corner —
+  A1–C3, M1–O3, A13–C15, M13–O15, 36 squares): weighted — edge 0.61, one
+  ring in 0.26, corner 0.36; unweighted — edge 0.39, one ring in 0.32, corner
+  0.21. Not presented as a before/after against the document's old 0.14
+  corner figure, per D4, because that figure's region was never recorded;
+  `tech-notes.md` says so in a clause beside the new figures. The corner
+  count exceeds the one-ring count for both draws because the corner block's
+  own interior cell (e.g. C3) sits two rings in — inside the strict pool's
+  reach — so even the first and second draws can occasionally land in it,
+  which the one-ring figure by definition cannot capture.
+
+`tech-notes.md` rewritten: the empty-board pool-size sentence (51/117, was
+51/79); the per-draw pool-size paragraph and its narrative (the second draw
+is now smaller than the first, not larger, since both come from the same
+strict pool; the third jumps once it drops both edge constraints); the
+weighting paragraph's weighted/unweighted gaps and advantages at all three
+counts; the edge/one-ring/corner paragraph at four charged, rewritten to say
+the weighting pulls the third draw *toward* the rim rather than away from it
+(measured, not inferred — the plan flagged this as likely and the numbers
+confirm it) and to state the corner-region definition; the fallback
+paragraph, re-checked against the new minimum pool size (4, the second
+draw's, at five charged) and still true; "What the app guards" gains the
+opening deal's strict-pool guarantee and the third-draw-reaches-the-edge
+guard; the closing paragraph now says "edge, one-ring and corner" rather
+than "edge and corner". `rules.md`'s 51/117 already agreed with the
+measurement, so it needed no correction and was not touched.
+
+`src/rules/nodePool.test.ts`'s tuned-constant doc comments updated to the new
+figures: `MINIMUM_MEAN_REFILL_GAP`'s comment now quotes 4.71/4.85/4.79 (was
+4.88/4.79/4.88) and its cross-reference to `nodeQueue.test.ts`'s idealised
+figure now says ~4.24 (was ~5.1, per that file's own Step 2 note);
+`MINIMUM_SPREAD_ADVANTAGE`'s comment now quotes 0.98/1.03/1.18 against the
+new weighted/unweighted pairs. Neither bound was retuned: `MINIMUM_MEAN_REFILL_GAP`
+(4) clears the new smallest figure (4.71) with a margin (0.71) comparable to
+its old margin (0.79 below the old smallest, 4.79); `MINIMUM_SPREAD_ADVANTAGE`
+(0.5) clears the new smallest figure (0.98) with a margin (0.48) comparable
+to its old margin (0.58 below the old smallest, 1.08). `MINIMUM_MEAN_PLIES_BETWEEN_REFILLS`,
+`MAXIMUM_MEAN_PLIES_BETWEEN_REFILLS` and `MAXIMUM_TOTAL_NODES`'s comments
+already stated the exact figures this run measured (node count and cadence
+are unaffected by the pool-width change, as above), so neither the bounds
+nor their comments needed editing.
+
+No deviation from the plan beyond what is recorded above. Not committed —
+left for the orchestrator per the agent instructions.
+
+Verification: `npm run typecheck`, `npm run lint`, `npm run format:check` —
+all clean (one `npx prettier --write doc/ruleset/tech-notes.md` pass needed
+after the prose edits, then clean). `npm test` — 73 files, 1454 tests, all
+green (unchanged from Step 2's count, as expected since no test was added or
+removed — the instrumentation was temporary and is gone).
+`grep -n "console" src/rules/nodePool.test.ts` — nothing.
+`grep -n "79" doc/ruleset/tech-notes.md` — only matches embedded in the new
+"4.79" figure, not the old widened-pool size. `grep -n "1.11\|0.14\|0.83\|0.07" doc/ruleset/tech-notes.md`
+— only matches the deliberately-retained "0.14" inside the clause explaining
+why the old corner figure is not compared against the new one (D4 requires
+stating that clause); no figure is left claiming the old numbers as current.
+`grep -c "^## 0.37" doc/ruleset/changelog.md` — still 1.
 
 `doc/ruleset/tech-notes.md`'s "Sizing the queue" section quotes measured
 figures that come from the long-run runs in `src/rules/nodePool.test.ts`.

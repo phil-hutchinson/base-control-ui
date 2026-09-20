@@ -81,16 +81,17 @@ function drawUniformSquare(
 
 /**
  * The lowest a freshly refilled trio's mean smallest pairwise Chebyshev gap
- * is allowed to fall to, pooled across `SEEDS`. Measured at **4.88 at five
- * charged, 4.79 at four and 4.88 at three**, over an actually-played economy
- * at each count — lower than `nodeQueue.test.ts`'s idealised empty-board
- * figure of roughly 5.1, because a played board's charged nodes, ships and
- * surviving depleted nodes crowd the pool the weighting draws from. The
- * three figures sit within a narrow band rather than trending with the
- * count: the pools widen as the count drops, but the weighting is already
- * spreading the trio across most of the board at every count, so a wider
- * pool buys little further separation. This single bound leaves comfortable
- * margin below all three figures.
+ * is allowed to fall to, pooled across `SEEDS`. Measured at **4.71 at five
+ * charged, 4.85 at four and 4.79 at three** after story 91 moved the
+ * widening to the third draw alone, over an actually-played economy at each
+ * count — lower than `nodeQueue.test.ts`'s idealised empty-board figure of
+ * roughly 4.24, because a played board's charged nodes, ships and surviving
+ * depleted nodes crowd the pool the weighting draws from. The three figures
+ * sit within a narrow band rather than trending with the count: the pools
+ * widen as the count drops, but the weighting is already spreading the trio
+ * across most of the board at every count, so a wider pool buys little
+ * further separation. This single bound leaves comfortable margin below all
+ * three figures.
  */
 const MINIMUM_MEAN_REFILL_GAP = 4;
 
@@ -98,10 +99,11 @@ const MINIMUM_MEAN_REFILL_GAP = 4;
  * How much further, on average, the weighted mean gap above must clear the
  * mean gap an unweighted draw from the very same pools produces (computed
  * in this file, from the very same occupied squares, so the comparison is
- * self-contained). Measured at a difference of **1.15 at five charged, 1.08
- * at four and 1.18 at three** (4.88 weighted against 3.72 unweighted at
- * five; 4.79 against 3.71 at four; 4.88 against 3.71 at three); this single
- * bound leaves margin below all three.
+ * self-contained). Measured at a difference of **0.98 at five charged, 1.03
+ * at four and 1.18 at three** after story 91 moved the widening to the third
+ * draw alone (4.71 weighted against 3.73 unweighted at five; 4.85 against
+ * 3.82 at four; 4.79 against 3.61 at three); this single bound leaves margin
+ * below all three.
  */
 const MINIMUM_SPREAD_ADVANTAGE = 0.5;
 
