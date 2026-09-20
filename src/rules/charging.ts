@@ -16,12 +16,22 @@ import {
   nodeStateAt,
   nodeStatusAt,
 } from "./gameState";
-import { inactivePriority, orderByPriorityDescending } from "./nodeQueue";
+import {
+  inactivePriority,
+  orderByPriorityDescending,
+  type NodePriority,
+} from "./nodeQueue";
 
-/** A node went from inactive to charged because it was at the front of the queue (rules.md §8.2). */
+/**
+ * A node went from inactive to charged because it was at the front of the
+ * queue (rules.md §8.2). `priority` reports the priority the node held the
+ * instant before it charged — a fact the state no longer carries once the
+ * node is charged, since its status becomes `{ state: "charged", level: 0 }`.
+ */
 export interface NodeChargedEffect {
   readonly type: "node-charged";
   readonly square: Square;
+  readonly priority: NodePriority;
 }
 
 /** The state resulting from charging, and the effects it produced. */
@@ -60,7 +70,7 @@ export function runCharging(state: GameState): ChargingResult {
   let workingState = state;
   const effects: NodeChargedEffect[] = [];
 
-  for (const { square } of toCharge) {
+  for (const { square, priority } of toCharge) {
     const name = squareName(square);
     workingState = {
       ...workingState,
@@ -69,7 +79,7 @@ export function runCharging(state: GameState): ChargingResult {
         [name]: { state: "charged", level: 0 },
       },
     };
-    effects.push({ type: "node-charged", square });
+    effects.push({ type: "node-charged", square, priority });
   }
 
   return { state: workingState, effects };

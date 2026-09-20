@@ -422,7 +422,23 @@ story 92" heading rather than repairing it — and say so in that step's Notes.
 
 ### Step 1 — `node-charged` carries the priority the node held
 
-Status: pending
+Status: committed
+
+Notes: Added `priority: NodePriority` to `NodeChargedEffect`
+(`src/rules/charging.ts`), filled from `toCharge`'s own `priority` field
+(already produced by `orderByPriorityDescending`), and updated the doc
+comment to explain what it reports. `endOfTurn.ts` and `announcements.ts`
+needed no change — confirmed both only forward or read `.square`. Updated
+every test asserting a whole `node-charged` effect object across
+`src/rules/charging.test.ts`, `src/rules/camping.test.ts`,
+`src/rules/endOfTurn.test.ts`, `src/rules/openingBoard.test.ts` and
+`src/board/announcements.test.ts` (the last two were not named in the plan
+but turned up on a suite-wide search, as the step asked). Added a dedicated
+test to `charging.test.ts` asserting the reported priority matches the
+priority the node actually held (priority 3 then 2, on a shortfall of two),
+per `story.md` test list item 4. `npm run typecheck`, `npm run lint` and
+`npm test` all green — 72 files, 1415 tests (up one from the 1414
+baseline).
 
 Add a `priority` field to `NodeChargedEffect` in `src/rules/charging.ts`,
 typed `NodePriority` (from `src/rules/nodeQueue.ts`), carrying the priority

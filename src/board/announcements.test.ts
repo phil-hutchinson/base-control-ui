@@ -470,7 +470,9 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           type: "ply-ended",
           side: "green",
           sideToMove: "red",
-          endOfTurn: [{ type: "node-charged", square: squareAt("D", 8) }],
+          endOfTurn: [
+            { type: "node-charged", square: squareAt("D", 8), priority: 1 },
+          ],
         },
       ],
       cost: 0,
@@ -566,7 +568,7 @@ describe("announcementFor — the node cycle (rules.md §8)", () => {
           side: "green",
           sideToMove: "red",
           endOfTurn: [
-            { type: "node-charged", square: squareAt("D", 8) },
+            { type: "node-charged", square: squareAt("D", 8), priority: 1 },
             {
               type: "queue-refilled",
               discardedSquares: [squareAt("H", 12)],
