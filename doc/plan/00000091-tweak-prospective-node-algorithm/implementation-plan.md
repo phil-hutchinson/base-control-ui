@@ -875,7 +875,12 @@ measurement genuinely produced the same number. Confirm
 
 ## Step 4 — The owner plays it
 
-Status: pending
+Status: committed
+
+Notes: The owner played the branch against the five checks above and
+passed it — "that looks good to me - I say it's a go". No separate
+impression was recorded for check 5 (whether a rim node is worth the
+fuel to reach); the next story on this area starts without one.
 
 The pipeline pauses here for the owner. This is the question the story exists
 to ask, and no automated test can answer it.
