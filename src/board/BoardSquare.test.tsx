@@ -4,6 +4,7 @@ import { cleanup, render } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ShipCondition } from "./squareLabel";
+import type { NodeBurnoutAnimation } from "./boardAnimations";
 import { BoardSquare } from "./BoardSquare";
 import { PLANET_ART } from "./planetArt";
 import {
@@ -471,6 +472,90 @@ describe("BoardSquare", () => {
     );
 
     expect(container.querySelectorAll("[data-cost-bar]")).toHaveLength(4);
+  });
+
+  describe("the burnout animation", () => {
+    const BURNOUT_ANIMATION: NodeBurnoutAnimation = {
+      type: "node-burnout",
+      runId: 4,
+    };
+
+    it("carries the marker's burnout class, still draws its depleted countdown number, and passes the countdown its travel colour", () => {
+      const { container } = render(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          nodeState="depleted"
+          countdownNumber={5}
+          occupant={{ side: "green", power: 4 }}
+          animation={BURNOUT_ANIMATION}
+        />,
+      );
+
+      expect(
+        container.querySelector(".node-marker--burning-out"),
+      ).toBeInTheDocument();
+      const countdown = container.querySelector(".node-countdown text");
+      expect(countdown).toHaveTextContent("5");
+      expect(countdown).toHaveClass("node-countdown__number--burning-out");
+      expect(
+        (countdown as unknown as HTMLElement).style.getPropertyValue(
+          "--node-countdown-burnout-from",
+        ),
+      ).toBe("black");
+    });
+
+    it("renders exactly as it does today when given none", () => {
+      const { container } = render(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          nodeState="depleted"
+          countdownNumber={5}
+          occupant={{ side: "green", power: 4 }}
+        />,
+      );
+
+      expect(container.querySelector(".node-marker--burning-out")).toBeNull();
+      const countdown = container.querySelector(".node-countdown text");
+      expect(countdown).not.toHaveClass("node-countdown__number--burning-out");
+      expect(countdown).toHaveAttribute("fill", "white");
+    });
+
+    it("leaves a burning-out square's end state exactly as if it never animated", () => {
+      const { container, rerender } = render(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          nodeState="depleted"
+          countdownNumber={5}
+          occupant={{ side: "green", power: 4 }}
+          animation={BURNOUT_ANIMATION}
+        />,
+      );
+
+      rerender(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          nodeState="depleted"
+          countdownNumber={5}
+          occupant={{ side: "green", power: 4 }}
+        />,
+      );
+
+      const plain = render(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          nodeState="depleted"
+          countdownNumber={5}
+          occupant={{ side: "green", power: 4 }}
+        />,
+      );
+
+      expect(container.innerHTML).toBe(plain.container.innerHTML);
+    });
   });
 
   it("reports no axe violations for any condition, and keeps every mark out of the accessibility tree", async () => {

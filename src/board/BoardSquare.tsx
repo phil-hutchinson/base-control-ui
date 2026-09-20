@@ -234,6 +234,8 @@ export function BoardSquare({
 }: BoardSquareProps) {
   const chargeAnimation =
     animation?.type === "node-charge" ? animation : undefined;
+  const burnoutAnimation =
+    animation?.type === "node-burnout" ? animation : undefined;
   const classNames = ["board-square"];
   if (isPlanet) {
     // No stylesheet rule reads this - it exists only as a query hook for
@@ -261,6 +263,7 @@ export function BoardSquare({
           cyclePosition={cyclePosition}
           priority={priority}
           chargeAnimation={chargeAnimation}
+          burnoutAnimation={burnoutAnimation}
         />
       )}
       {hasRotator && <RotatorMarker />}
@@ -269,6 +272,7 @@ export function BoardSquare({
         <NodeCountdown
           number={countdownNumber}
           color={nodeState === "depleted" ? "white" : "black"}
+          burnoutFrom={burnoutAnimation ? "black" : undefined}
         />
       )}
       {mark?.kind === "destination" && <DestinationMark cost={mark.cost} />}

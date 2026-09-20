@@ -663,7 +663,44 @@ green. How it actually looks is Step 6's business, not this step's.
 
 ### Step 4 — The burnout animation
 
-Status: pending
+Status: committed
+
+Notes: `NodeMarker`'s depleted branch, when given a `burnoutAnimation`, draws
+the ordinary depleted artwork plus a `node-marker--burning-out` modifier
+class, and gives each of its three gradient stops the depleted colour as its
+own `style.stopColor` (moved off the `stop-color` attribute per D5's
+implementation note, since an attribute-set presentation value does not give
+the animation a base value to resolve back to) and a `--node-burnout-from`
+custom property holding the charged artwork's own colour at that same stop
+index (via `nodeArtwork("charged", undefined)`, never re-typed as a
+literal). `NodeCountdown` gained an optional `burnoutFrom` prop (D7): when
+given, the `<text>`'s `fill` moves the same way, from `style` rather than
+the `fill` attribute. `BoardSquare` routes `animation.type === "node-burnout"`
+to both children, passing the countdown a fixed `"black"` (the only colour a
+burnout can start from, since only a charged node's countdown - always
+black - can run out) and adds `--node-burnout-duration: 500ms` (D11) to
+`.board-square` in `BoardSquare.css`, the one place the two children meet
+(D7). One deviation from the step text, found during testing: the animated
+`<text>` needed an explicit `key` distinguishing it from the plain,
+unanimated one (`"burning-out"` vs. the default), because without it React
+diffs the same host node's `style` prop from an object to `undefined` and
+leaves a stray empty `style=""` attribute behind rather than removing it -
+which broke the D5 end-state assertion (interrupting the animation left the
+square's markup one attribute different from a square that never animated).
+`NodeMarker`'s own burnout branch already carried an equivalent
+`key={burnoutAnimation.runId}` for the same reason (inherited from Step 3's
+charge branch), so this only needed adding to `NodeCountdown`. Extended
+`NodeMarker.test.tsx` (the burning-out class and artwork; each stop's own
+base colour and travel-from custom property; no burnout markup without the
+animation; the D5 end-state re-render equality), `NodeCountdown.test.tsx`
+(the burning-out class, its `style`-set `fill` and custom property; the
+unanimated case unchanged), `BoardSquare.test.tsx` (the marker's burnout
+class alongside the countdown's travel colour; unchanged without one; the
+D5 end-state re-render equality) and `Board.test.tsx` (a `node-ran-out`
+effect's square gets the burning-out class and no other square does).
+`npm run typecheck`, `npm run lint`, `npm test` (73 files, 1445 tests, up 10
+from the 1435 baseline) and `npm run format:check` (only the three
+pre-existing baseline warnings) all green.
 
 All CSS (D4). When a square carries a burnout animation:
 

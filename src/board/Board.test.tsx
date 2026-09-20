@@ -1754,6 +1754,54 @@ describe("the charge animation", () => {
   });
 });
 
+describe("the burnout animation", () => {
+  it("marks the square a node-ran-out effect names as burning out, and no other", () => {
+    const state: GameState = {
+      ...statedOpeningState(),
+      nodes: {
+        ...STATED_NODE_STATES,
+        H8: { state: "depleted", level: 1 },
+      },
+    };
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [{ type: "node-ran-out", square: squareAt("H", 8) }],
+        },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+
+    render(<Board session={session} onIntent={noop} />);
+
+    const burningCell = screen.getByRole("gridcell", { name: /^H8,/ });
+    expect(
+      burningCell.querySelector(".node-marker--burning-out"),
+    ).toBeInTheDocument();
+
+    // No other square picked up the animation - E5 is charged at baseline
+    // and is not this event's square.
+    const otherCell = screen.getByRole("gridcell", { name: /^E5,/ });
+    expect(
+      otherCell.querySelector(".node-marker--burning-out"),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe("energy overlay composition", () => {
   it("draws it as a sibling of the grid, hidden from the accessibility tree", () => {
     const state: GameState = {

@@ -16,11 +16,22 @@
 // mask that then grows to reveal the whole thing. It is drawn only while
 // `chargeAnimation` is given; without it, a charged node's markup is
 // unchanged from the plain artwork below.
+//
+// A charged node running out plays a burnout animation instead of the
+// ordinary depleted artwork: each gradient stop's colour travels from its
+// charged value to its own depleted value over one duration (shared with
+// NodeCountdown - see BoardSquare.css). Offsets, opacities and the radius
+// do not animate, since they already agree at this transition. It is drawn
+// only while `burnoutAnimation` is given; without it, a depleted node's
+// markup is unchanged from the plain artwork below.
 
 import type { CSSProperties } from "react";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
-import type { NodeChargeAnimation } from "./boardAnimations";
+import type {
+  NodeBurnoutAnimation,
+  NodeChargeAnimation,
+} from "./boardAnimations";
 import { INACTIVE_RING_COLOR } from "./squareArt";
 import "./NodeMarker.css";
 
@@ -45,6 +56,12 @@ interface NodeMarkerProps {
    * animation (`boardAnimations.ts`). Ignored unless `state` is `"charged"`.
    */
   readonly chargeAnimation?: NodeChargeAnimation;
+  /**
+   * Present while this square's node is playing its charged-to-depleted
+   * burnout animation (`boardAnimations.ts`). Ignored unless `state` is
+   * `"depleted"`.
+   */
+  readonly burnoutAnimation?: NodeBurnoutAnimation;
 }
 
 interface GradientStop {
@@ -149,6 +166,7 @@ export function NodeMarker({
   cyclePosition,
   priority,
   chargeAnimation,
+  burnoutAnimation,
 }: NodeMarkerProps) {
   if (state === "inactive") {
     // A priority is always given for a real inactive node (Board.tsx reads
@@ -245,6 +263,43 @@ export function NodeMarker({
         <g className="node-marker__charge-reveal" mask={`url(#${maskId})`}>
           <circle cx={50} cy={50} r={radius} fill={`url(#${gradientId})`} />
         </g>
+      </svg>
+    );
+  }
+
+  if (state === "depleted" && burnoutAnimation) {
+    // Each stop's "from" colour is the charged artwork's own colour at the
+    // same position - never re-typed as a literal - letting the implicit
+    // end keyframe resolve to this stop's ordinary depleted colour, set
+    // here in `style` rather than as a `stop-color` attribute so the
+    // animation has a base value to return to (D5).
+    const chargedStops = nodeArtwork("charged", undefined).stops;
+    return (
+      <svg
+        key={burnoutAnimation.runId}
+        className={`node-marker node-marker--${state} node-marker--burning-out`}
+        viewBox="0 0 100 100"
+        aria-hidden="true"
+      >
+        <defs>
+          <radialGradient id={gradientId} cx="50%" cy="50%" r="60%">
+            {stops.map((stop, index) => (
+              <stop
+                key={stop.offsetPercent}
+                offset={`${stop.offsetPercent}%`}
+                stopOpacity={stop.opacity}
+                className="node-marker__burnout-stop"
+                style={
+                  {
+                    stopColor: stop.color,
+                    "--node-burnout-from": chargedStops[index].color,
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </radialGradient>
+        </defs>
+        <circle cx={50} cy={50} r={radius} fill={`url(#${gradientId})`} />
       </svg>
     );
   }

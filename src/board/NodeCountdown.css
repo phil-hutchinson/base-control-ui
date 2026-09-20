@@ -8,3 +8,26 @@
   height: 100%;
   pointer-events: none;
 }
+
+/* A burning-out number's fill is only ever set in `style` while the burnout
+   animation is playing (NodeCountdown.tsx), so its base value there is
+   already the finished colour; the keyframe below supplies only the
+   starting, charged colour and lets the implicit end keyframe resolve to
+   it. --node-burnout-duration is declared once, on .board-square
+   (BoardSquare.css), shared with NodeMarker's own gradient-stop
+   animation. */
+.node-countdown__number--burning-out {
+  animation: node-countdown-burnout-fill var(--node-burnout-duration) ease-out;
+}
+
+@keyframes node-countdown-burnout-fill {
+  from {
+    fill: var(--node-countdown-burnout-from);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node-countdown__number--burning-out {
+    animation: none;
+  }
+}

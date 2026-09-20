@@ -40,6 +40,34 @@ describe("NodeCountdown", () => {
     expect(svg?.querySelector("title, desc")).toBeNull();
   });
 
+  describe("burning out", () => {
+    it("carries the burning-out class and travels from the given colour to its own", () => {
+      const { container } = render(
+        <NodeCountdown number={5} color="white" burnoutFrom="black" />,
+      );
+
+      const text = container.querySelector("text");
+      expect(text).toHaveClass("node-countdown__number--burning-out");
+      expect(text).not.toHaveAttribute("fill");
+      expect(
+        (text as unknown as HTMLElement).style.getPropertyValue("fill"),
+      ).toBe("white");
+      expect(
+        (text as unknown as HTMLElement).style.getPropertyValue(
+          "--node-countdown-burnout-from",
+        ),
+      ).toBe("black");
+    });
+
+    it("carries no burning-out class or style without burnoutFrom", () => {
+      const { container } = render(<NodeCountdown number={5} color="white" />);
+
+      const text = container.querySelector("text");
+      expect(text).not.toHaveClass("node-countdown__number--burning-out");
+      expect(text).toHaveAttribute("fill", "white");
+    });
+  });
+
   it("reports no axe violations", async () => {
     const { container } = render(<NodeCountdown number={3} color="black" />);
 
