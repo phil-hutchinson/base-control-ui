@@ -216,9 +216,8 @@ this story does not ask for any. What it does ask for:
 - The charge animation runs when a node charges during play and does **not**
   run at the opening deal.
 - The burnout animation runs when a node runs out.
-- The rotator turn runs on a `queue-rotated` effect with `trigger:
-  "rotator"`, applies to the remaining rotators, and does not apply to the
-  spent square.
+- The rotator turn runs on a rotator-triggered `queue-rotated` effect,
+  applies to the remaining rotators, and does not apply to the spent square.
 - Whatever mechanism carries the outgoing ring count into the charge
   animation reports the priority the node actually held.
 - The rotator turn does **not** run on a turn that also replaced the rotator

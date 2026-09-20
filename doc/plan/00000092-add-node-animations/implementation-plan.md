@@ -476,7 +476,34 @@ weakened.
 
 ### Step 2 — `boardAnimations.ts`: one pure function from a session to what is animating
 
-Status: pending
+Status: committed
+
+Notes: Added `src/board/boardAnimations.ts` exporting `SquareAnimation` (a
+`node-charge` | `node-burnout` | `rotator-turn` union, each carrying
+`runId: session.state.plyNumber`) and `boardAnimations(session)`, returning a
+`ReadonlyMap<string, SquareAnimation>` keyed by `squareName()`. It walks the
+event structure exactly as `EnergyOverlay.tsx`'s
+`endOfPlySettlements`/`settlementsForEvent` does, gathering every reachable
+`EndOfTurnEffect` list (a `moved`/`attacked` event's nested `ply-ended` and
+`ply-passed`, or a top-level `ply-passed`'s own), turning `node-charged` and
+`node-ran-out` entries into charge/burnout animations, and separately reading
+the event's own top-level `queue-rotated` (`trigger: "rotator"`) to turn
+every square in `session.state.rotators` except the effect's own square
+(D10, asserted directly rather than relying on `ply.ts` having already
+removed it). Per D9, a `queue-refilled` effect with a non-empty `newRotators`
+found in any of the walked end-of-turn lists suppresses the rotator turn for
+that event; node charges/burnouts in the same event are unaffected. Added
+`src/board/boardAnimations.test.ts` (default `node` environment, no jsdom
+needed) covering every bullet in the step: a single charge with its
+priority, two charges in one event, a burnout, both together, the rotator
+turn naming exactly the remaining rotators and never the spent square, a
+`planet`-triggered `queue-rotated` producing nothing, the D9 suppression, an
+empty map for `selected`/`rejected` events and for no last event, a top-level
+`ply-passed` with nothing to report and one that does carry a charge, and S6's
+empty map for a freshly `createSession`-opened starting game state. No
+deviation from the plan's shape. `npm run typecheck`, `npm run lint`,
+`npx prettier --check` and `npm test` all green — 73 files, 1428 tests (up 13
+from the 1415 count after Step 1).
 
 Add `src/board/boardAnimations.ts`, a pure module with no React in it,
 exporting:
