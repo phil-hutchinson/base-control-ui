@@ -16,6 +16,7 @@ import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import { inactivePriority } from "../rules/nodeQueue";
 import type { Session, SessionIntent } from "../game/session";
 import { announcementForSession } from "./announcements";
+import { boardAnimations } from "./boardAnimations";
 import { squareForGridPosition } from "./boardView";
 import {
   squareLabel,
@@ -66,6 +67,7 @@ export function Board({ session, onIntent }: BoardProps) {
 
   const rows: GridCellDescriptor[][] = useMemo(() => {
     const ships = shipsBySquare(session.state);
+    const animations = boardAnimations(session);
     const rotatorSquareNames = new Set(
       session.state.rotators.map((square) => squareName(square)),
     );
@@ -168,6 +170,7 @@ export function Board({ session, onIntent }: BoardProps) {
               occupant={occupant}
               condition={condition}
               mark={mark}
+              animation={animations.get(name)}
             />
           ),
           label: squareLabel({

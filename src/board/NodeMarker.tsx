@@ -9,9 +9,18 @@
 // occupying square's accessible name (see squareLabel.ts), so the SVG
 // carries no title or description and is hidden from the accessibility
 // tree.
+//
+// A node going inactive -> charged plays a charge animation instead of the
+// ordinary charged artwork (see `boardAnimations.ts`): the outgoing rings
+// cross-fade into the charged artwork, seen at first through a small round
+// mask that then grows to reveal the whole thing. It is drawn only while
+// `chargeAnimation` is given; without it, a charged node's markup is
+// unchanged from the plain artwork below.
 
+import type { CSSProperties } from "react";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
+import type { NodeChargeAnimation } from "./boardAnimations";
 import { INACTIVE_RING_COLOR } from "./squareArt";
 import "./NodeMarker.css";
 
@@ -31,6 +40,11 @@ interface NodeMarkerProps {
    * that many concentric rings. Ignored for a charged or depleted node.
    */
   readonly priority?: NodePriority;
+  /**
+   * Present while this square's node is playing its inactive-to-charged
+   * animation (`boardAnimations.ts`). Ignored unless `state` is `"charged"`.
+   */
+  readonly chargeAnimation?: NodeChargeAnimation;
 }
 
 interface GradientStop {
@@ -75,6 +89,11 @@ function middleStopOffsetPercent(
 // owner's eye, not a measured result.
 const INACTIVE_RING_RADII: readonly number[] = [18, 28, 38];
 const INACTIVE_RING_STROKE_WIDTH = 5;
+
+// The charge animation's round mask, at its smallest, in the marker's own
+// 0-100 units - about the size of the charged gradient's gold core. A
+// starting value for the owner's eye, not a measured result.
+const CHARGE_MASK_START_RADIUS = 20;
 
 /** Radii, gradient stops, colours and opacities for the two clocked states, taken from
  * doc/plan/00000023-update-node-visual/node-artwork.md exactly as specified
@@ -129,6 +148,7 @@ export function NodeMarker({
   squareName,
   cyclePosition,
   priority,
+  chargeAnimation,
 }: NodeMarkerProps) {
   if (state === "inactive") {
     // A priority is always given for a real inactive node (Board.tsx reads
@@ -160,6 +180,74 @@ export function NodeMarker({
   // SVG ids are document-global, and several node markers are drawn into
   // one document at once, so the gradient id carries the square's own name.
   const gradientId = `node-${squareName}-fill`;
+
+  if (state === "charged" && chargeAnimation) {
+    // Both the mask id and the mask's starting scale are document- or
+    // marker-specific, so they are computed here rather than in CSS: ids for
+    // the same reason as the gradient's, the scale because it depends on
+    // this artwork's own radius (TS's, per NodeMarker.tsx's own numbers).
+    const maskId = `node-${squareName}-charge-mask`;
+    const maskStartScale = CHARGE_MASK_START_RADIUS / radius;
+    return (
+      <svg
+        key={chargeAnimation.runId}
+        className={`node-marker node-marker--${state} node-marker--charging`}
+        viewBox="0 0 100 100"
+        aria-hidden="true"
+      >
+        <defs>
+          <radialGradient id={gradientId} cx="50%" cy="50%" r="60%">
+            {stops.map((stop) => (
+              <stop
+                key={stop.offsetPercent}
+                offset={`${stop.offsetPercent}%`}
+                stopColor={stop.color}
+                stopOpacity={stop.opacity}
+              />
+            ))}
+          </radialGradient>
+          <mask
+            id={maskId}
+            maskUnits="userSpaceOnUse"
+            x={0}
+            y={0}
+            width={100}
+            height={100}
+          >
+            <circle
+              className="node-marker__charge-mask-circle"
+              cx={50}
+              cy={50}
+              r={radius}
+              fill="white"
+              style={
+                {
+                  "--node-charge-mask-start-scale": maskStartScale,
+                } as CSSProperties
+              }
+            />
+          </mask>
+        </defs>
+        {INACTIVE_RING_RADII.slice(0, chargeAnimation.priority).map(
+          (ringRadius) => (
+            <circle
+              key={ringRadius}
+              className="node-marker__outgoing-ring"
+              cx={50}
+              cy={50}
+              r={ringRadius}
+              fill="none"
+              stroke={INACTIVE_RING_COLOR}
+              strokeWidth={INACTIVE_RING_STROKE_WIDTH}
+            />
+          ),
+        )}
+        <g className="node-marker__charge-reveal" mask={`url(#${maskId})`}>
+          <circle cx={50} cy={50} r={radius} fill={`url(#${gradientId})`} />
+        </g>
+      </svg>
+    );
+  }
 
   return (
     <svg

@@ -5,6 +5,7 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
+import type { NodeChargeAnimation } from "./boardAnimations";
 import { NodeMarker } from "./NodeMarker";
 
 afterEach(cleanup);
@@ -252,6 +253,85 @@ describe("NodeMarker", () => {
       const circles = container.querySelectorAll("circle");
       expect(circles).toHaveLength(1);
       expect(circles[0]).toHaveAttribute("r", INACTIVE_RING_RADII[0]);
+    });
+  });
+
+  describe("the charge animation", () => {
+    function chargeAnimation(priority: NodePriority): NodeChargeAnimation {
+      return { type: "node-charge", priority, runId: 7 };
+    }
+
+    it.each([
+      {
+        priority: 1 as NodePriority,
+        expectedRadii: INACTIVE_RING_RADII.slice(0, 1),
+      },
+      {
+        priority: 2 as NodePriority,
+        expectedRadii: INACTIVE_RING_RADII.slice(0, 2),
+      },
+      {
+        priority: 3 as NodePriority,
+        expectedRadii: INACTIVE_RING_RADII.slice(0, 3),
+      },
+    ])(
+      "draws $priority outgoing ring(s) at the stated radii for priority $priority, alongside the gradient and its mask",
+      ({ priority, expectedRadii }) => {
+        const { container } = render(
+          <NodeMarker
+            state="charged"
+            squareName={SQUARE_NAME}
+            chargeAnimation={chargeAnimation(priority)}
+          />,
+        );
+
+        const rings = container.querySelectorAll(".node-marker__outgoing-ring");
+        expect(Array.from(rings, (ring) => ring.getAttribute("r"))).toEqual(
+          expectedRadii,
+        );
+
+        expect(container.querySelector("radialGradient")).toHaveAttribute(
+          "id",
+          `node-${SQUARE_NAME}-fill`,
+        );
+        const mask = container.querySelector("mask");
+        expect(mask).toBeInTheDocument();
+        expect(
+          container.querySelector(".node-marker__charge-reveal"),
+        ).toHaveAttribute("mask", `url(#${mask?.getAttribute("id")})`);
+      },
+    );
+
+    it("draws no rings, mask or reveal group without a charge animation", () => {
+      const { container } = render(
+        <NodeMarker state="charged" squareName={SQUARE_NAME} />,
+      );
+
+      expect(
+        container.querySelector(".node-marker__outgoing-ring"),
+      ).not.toBeInTheDocument();
+      expect(container.querySelector("mask")).not.toBeInTheDocument();
+      expect(
+        container.querySelector(".node-marker__charge-reveal"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("leaves a charged marker's end state exactly as if it never animated", () => {
+      const { container, rerender } = render(
+        <NodeMarker
+          state="charged"
+          squareName={SQUARE_NAME}
+          chargeAnimation={chargeAnimation(2)}
+        />,
+      );
+
+      rerender(<NodeMarker state="charged" squareName={SQUARE_NAME} />);
+
+      const plain = render(
+        <NodeMarker state="charged" squareName={SQUARE_NAME} />,
+      );
+
+      expect(container.innerHTML).toBe(plain.container.innerHTML);
     });
   });
 

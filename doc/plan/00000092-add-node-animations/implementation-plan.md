@@ -559,7 +559,39 @@ green, with the new test file covering each bullet above.
 
 ### Step 3 — The charge animation, and the prop that carries every animation down to a square
 
-Status: pending
+Status: committed
+
+Notes: Added `boardAnimations(session)` to `Board.tsx`'s existing per-render
+`useMemo` and an optional `animation?: SquareAnimation` prop on
+`BoardSquare`, which narrows it to a `NodeChargeAnimation` and passes it to
+`NodeMarker` as `chargeAnimation` (updated both components' header comments
+per the plan). `NodeMarker` draws the two-phase charge animation — the
+outgoing rings at the animation's own priority, and the ordinary charged
+artwork wrapped in a `<mask>` — only while `chargeAnimation` is given;
+without it a charged node's markup is byte-for-byte what it always was, so
+the interruption/end-state guarantee holds by construction (a square whose
+animation entry disappears from the map re-renders through the unchanged
+branch) as well as by the CSS `from`-only keyframes (D5) for the case where
+the prop is still present after the animation has finished. Durations
+(`--node-charge-duration: 750ms` on `.node-marker`) and the mask's starting
+radius (`CHARGE_MASK_START_RADIUS = 20` in `NodeMarker.tsx`) are the D11
+starting values. `node-marker--charging` is added purely as a test hook, per
+the plan's note, and read by no stylesheet rule. One deviation from the step
+text: rather than a single keyframe block per property gated by a modifier
+class, each animated piece (`.node-marker__outgoing-ring`,
+`.node-marker__charge-reveal`, `.node-marker__charge-mask-circle`) carries
+its `animation` directly and unconditionally in `NodeMarker.css`, since React
+only ever renders those elements while actually charging — this reads more
+simply than gating the same rule behind `.node-marker--charging` for no
+behavioural difference. Extended `NodeMarker.test.tsx` (rings at priority 2
+and 3 alongside the gradient and its mask; no rings/mask/reveal without an
+animation; the D5 end-state property comparing a de-animated re-render
+against a marker that never animated) and `Board.test.tsx` (a `node-charged`
+effect's square gets the charging markup and no other square does; an
+opening session has none anywhere, per S6). `npm run typecheck`, `npm run
+lint`, `npm test` (73 files, 1435 tests, up 7 from the 1428 baseline) and
+`npm run format:check` (only the three pre-existing baseline warnings) all
+green.
 
 This step introduces the plumbing all three animations use, and the first
 animation to travel it.
