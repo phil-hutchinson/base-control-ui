@@ -13,7 +13,7 @@
      shared by NodeMarker's gradient stops and NodeCountdown's number, which
      meet here as siblings of this square. A starting value for the owner's
      eye, not a measured result. */
-  --node-burnout-duration: 500ms;
+  --node-burnout-duration: 900ms;
 }
 
 .board-square > * {

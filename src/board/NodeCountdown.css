@@ -17,7 +17,7 @@
    (BoardSquare.css), shared with NodeMarker's own gradient-stop
    animation. */
 .node-countdown__number--burning-out {
-  animation: node-countdown-burnout-fill var(--node-burnout-duration) ease-out;
+  animation: node-countdown-burnout-fill var(--node-burnout-duration) linear;
 }
 
 @keyframes node-countdown-burnout-fill {

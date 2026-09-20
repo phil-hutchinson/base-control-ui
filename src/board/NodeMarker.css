@@ -32,10 +32,15 @@
   animation: node-charge-reveal var(--node-charge-duration) ease-out;
 }
 
+/* The origin is stated in the marker's own 0-100 user space rather than as
+   `center` of a reference box: a shape inside a <mask> does not resolve a
+   `fill-box` origin consistently across browsers, which throws the growing
+   ball off the square's centre. The viewBox is 0 0 100 100, so 50px 50px is
+   the centre the ball must grow from. */
 .node-marker__charge-mask-circle {
   transform: scale(1);
-  transform-box: fill-box;
-  transform-origin: center;
+  transform-box: view-box;
+  transform-origin: 50px 50px;
   animation: node-charge-mask var(--node-charge-duration) ease-out;
 }
 
@@ -77,7 +82,7 @@
    is declared once, on .board-square (BoardSquare.css), since it is shared
    with NodeCountdown's own fill animation. */
 .node-marker__burnout-stop {
-  animation: node-burnout-stop-color var(--node-burnout-duration) ease-out;
+  animation: node-burnout-stop-color var(--node-burnout-duration) linear;
 }
 
 @keyframes node-burnout-stop-color {

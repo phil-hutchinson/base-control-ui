@@ -813,8 +813,14 @@ rotator entries in the map).
 Verification (automated): `npm test`, `npm run typecheck`, `npm run lint` all
 green.
 
-
-Orchestrator correction before commit: the turn start angle was positive, which swept the mark anticlockwise from +120 to its unturned base. story.md asks for clockwise, so the constant is now `TURN_START_ANGLE_DEGREES = -360 / ARC_COUNT` and the mark travels from -120 up to 0. The three-fold symmetry means the finished picture is identical either way, so only the direction assertion in `BoardSquare.test.tsx` pins it. Also removed a `(D5)` plan-decision citation from a `NodeMarker.tsx` comment, which CONTRIBUTING.md's comment convention forbids.
+Orchestrator correction before commit: the turn start angle was positive,
+which swept the mark anticlockwise from +120 to its unturned base. story.md
+asks for clockwise, so the constant is now `TURN_START_ANGLE_DEGREES = -360 /
+ARC_COUNT` and the mark travels from -120 up to 0. The three-fold symmetry
+means the finished picture is identical either way, so only the direction
+assertion in `BoardSquare.test.tsx` pins it. Also removed a `(D5)`
+plan-decision citation from a `NodeMarker.tsx` comment, which
+CONTRIBUTING.md's comment convention forbids.
 
 ### Step 6 — The owner watches all three, and tunes the four numbers
 
