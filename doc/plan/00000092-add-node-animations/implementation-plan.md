@@ -416,7 +416,8 @@ story 92" heading rather than repairing it — and say so in that step's Notes.
 4. The burnout animation. _Automated._
 5. The rotator turn. _Automated._
 6. The owner watches all three and tunes the four numbers. **Manual.**
-7. `README.md`, and a final check that no rules artefact moved. _Automated._
+7. The burnout animates on both roads into depleted. _Automated._
+8. `README.md`, and a final check that no rules artefact moved. _Automated._
 
 ---
 
@@ -862,7 +863,67 @@ what was changed and to what.
 
 Depends on: Steps 3, 4 and 5 (all three animations).
 
-### Step 7 — `README.md`, and a final check that no rules artefact moved
+### Step 7 — The burnout animates on both roads into depleted
+
+Status: committed
+
+Notes: Added `nodeSpentIn(event)` to `src/board/boardAnimations.ts`, mirroring
+`rotatorTriggerIn`'s shape but narrower: only a `moved` event carries a
+`NodeSpentEffect` (an attack never raises one), so it checks `event.type !==
+"moved"` rather than the rotator helper's two-type check. `boardAnimations`
+now also sets a `node-burnout` entry for the square the top-level effect
+names, identical in shape to the one `node-ran-out` produces, and widened
+`NodeBurnoutAnimation`'s doc comment to say it covers both roads. No
+component or stylesheet changed, as expected. Added a pure test to
+`boardAnimations.test.ts` (a `moved` event carrying a top-level `node-spent`
+effect produces a burnout on that square) and an end-to-end test to
+`Board.test.tsx` (the same event marks that square `.node-marker--burning-out`
+and no other), both alongside their `node-ran-out` counterparts. `npm run
+typecheck`, `npm run lint`, `npm test` (73 files, 1452 tests, up 2 from the
+1450 baseline) and `npm run format:check` (only the three pre-existing
+baseline warnings — `doc/plan/00000069-retire-actions/story.md`,
+`doc/plan/00000090-add-prospective-node-rotation-options/story.md` and
+`src/board/planetArt.ts`) all green. No deviation from the plan.
+
+Implement the burnout animation for the **second** way a node reaches
+depleted: a ship leaving a charged node, which spends it the instant the
+holder departs (rules.md §8.3). Steps 2 and 4 covered only the first way —
+the countdown running out beneath a ship (`node-ran-out`) — so today a node a
+player walks off snaps from gold to grey with no travel at all.
+
+The gap is in `boardAnimations.ts`, not in the artwork. `NodeSpentEffect` is
+a `MoveEffect` carried at the **top level** of a `moved` event's effect list,
+alongside `QueueRotatedEffect`, rather than nested inside the end-of-turn
+lists the module currently walks for `node-charged` and `node-ran-out`. Only
+a move can raise it; an attack cannot. Read it the way the module already
+reads the rotator trigger, and emit the same `node-burnout` entry
+`node-ran-out` produces — the two are one event as far as a player is
+concerned, and must be indistinguishable on screen.
+
+Nothing in `NodeMarker`, `NodeCountdown`, `BoardSquare` or any stylesheet
+needs to change: they animate whatever burnout entry the map carries. Note
+that a spent node becomes an **exit** node, which draws no countdown number,
+so only the gradient stops travel — the number is a component that exists on
+one side of the change only, which `story.md` already covers.
+
+This step is new work, added after the owner's manual check at Step 6 found
+the omission. It is recorded here rather than folded silently into Step 4
+because the plan is the story's design record.
+
+Depends on: Step 2 (the module this changes) and Step 4 (the artwork and
+stylesheets it reuses unchanged).
+
+Verification (automated): `npm test`, `npm run typecheck`, `npm run lint` and
+`npm run format:check` all green. New pure assertions in
+`boardAnimations.test.ts` that a `moved` event carrying a `node-spent` effect
+produces a burnout on that square, and an end-to-end assertion in
+`Board.test.tsx` that the square renders as burning out. Note that
+`doc/plan/00000069-retire-actions/story.md`,
+`doc/plan/00000090-add-prospective-node-rotation-options/story.md` and
+`src/board/planetArt.ts` already fail `format:check` on this branch and are
+not this step's to fix.
+
+### Step 8 — `README.md`, and a final check that no rules artefact moved
 
 Status: pending
 

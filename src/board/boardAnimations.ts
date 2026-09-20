@@ -10,6 +10,7 @@ import type { NodePriority } from "../rules/nodeQueue";
 import type {
   AttackEffect,
   MoveEffect,
+  NodeSpentEffect,
   PassEffect,
   PlyEndedEffect,
   QueueRotatedEffect,
@@ -28,7 +29,13 @@ export interface NodeChargeAnimation {
   readonly runId: number;
 }
 
-/** A charged node's colours travelling to their depleted values (`node-ran-out`). */
+/**
+ * A charged node's colours travelling to their depleted values, however it
+ * reached depleted: its countdown ran out beneath a ship (`node-ran-out`) or
+ * its holder left it, spending it on the way out (`node-spent`). The two are
+ * one change as far as a player is concerned, so both roads produce this
+ * same entry.
+ */
 export interface NodeBurnoutAnimation {
   readonly type: "node-burnout";
   readonly runId: number;
@@ -89,6 +96,22 @@ function endOfTurnListsForEvent(
 }
 
 /**
+ * The event's own top-level `node-spent` effect, if it carries one. Only a
+ * `moved` event can carry it - leaving a charged node is what spends it
+ * (rules.md §8.3), and an attack never moves a ship off one.
+ */
+function nodeSpentIn(
+  event: SessionEvent | undefined,
+): NodeSpentEffect | undefined {
+  if (event === undefined || event.type !== "moved") {
+    return undefined;
+  }
+  return event.effects.find(
+    (effect): effect is NodeSpentEffect => effect.type === "node-spent",
+  );
+}
+
+/**
  * The event's own top-level `queue-rotated` effect with `trigger:
  * "rotator"`, if it carries one. Only a `moved` or an `attacked` event can
  * carry a landing's rotation; `trigger: "planet"` is not this animation's
@@ -143,6 +166,14 @@ export function boardAnimations(
         rotatorSetReplaced = true;
       }
     }
+  }
+
+  const nodeSpent = nodeSpentIn(session.lastEvent);
+  if (nodeSpent !== undefined) {
+    animations.set(squareName(nodeSpent.square), {
+      type: "node-burnout",
+      runId,
+    });
   }
 
   // When the same ply also refilled the rotator set, the marks standing on

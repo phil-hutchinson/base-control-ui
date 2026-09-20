@@ -12,7 +12,11 @@ import type {
   SelectedEvent,
   Session,
 } from "../game/session";
-import type { PassEffect, QueueRotatedEffect } from "../rules/ply";
+import type {
+  NodeSpentEffect,
+  PassEffect,
+  QueueRotatedEffect,
+} from "../rules/ply";
 import { boardAnimations } from "./boardAnimations";
 
 function buildState(overrides: Partial<GameState> = {}): GameState {
@@ -138,6 +142,31 @@ describe("boardAnimations", () => {
       runId: 3,
     });
     expect(animations.size).toBe(2);
+  });
+
+  it("returns a burnout animation for a node a ship left and spent", () => {
+    const nodeSpent: NodeSpentEffect = {
+      type: "node-spent",
+      square: squareAt("H", 8),
+    };
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("H", 8),
+      to: squareAt("H", 7),
+      effects: [
+        nodeSpent,
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+
+    const animations = boardAnimations(sessionWithEvent(event));
+
+    expect(animations.get("H8")).toEqual({ type: "node-burnout", runId: 3 });
+    expect(animations.size).toBe(1);
   });
 
   it("turns every rotator still on the board, and never the spent square", () => {

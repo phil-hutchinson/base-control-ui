@@ -70,8 +70,15 @@ gold core.
 
 ### 2. A node burns out: charged → depleted
 
-Today a charged node whose countdown runs out (the `node-ran-out` effect,
-`src/rules/endOfTurn.ts`) is replaced by the depleted artwork in one frame.
+A node reaches depleted by **two** roads, and both of them snap today:
+
+- Its countdown runs out under the ship holding it, and that ship is trapped
+  there (the `node-ran-out` effect, `src/rules/endOfTurn.ts`).
+- Its holder **leaves**, which spends it the instant the ship departs
+  (rules.md §8.3, the `node-spent` effect, `src/rules/ply.ts`).
+
+They are one change as far as a player is concerned — a gold node becoming a
+grey one — so both animate, identically.
 
 Instead the marker **slides** from one to the other: the colours travel
 smoothly from their charged values to their depleted values over a single
@@ -158,8 +165,11 @@ node the player has been watching wait.
 
 ### 2. A node burns out
 
-The straight slide from charged to depleted described above, playing whenever
-a charged node runs out.
+The straight slide from charged to depleted described above, playing on
+**both** roads into depleted: the countdown running out beneath a ship
+(`node-ran-out`), and a ship leaving the node and spending it (`node-spent`).
+The second is the more common of the two in play, since a player who does not
+want to be trapped moves off before the countdown reaches zero.
 
 ### 3. The rotators turn
 
@@ -215,7 +225,8 @@ this story does not ask for any. What it does ask for:
 
 - The charge animation runs when a node charges during play and does **not**
   run at the opening deal.
-- The burnout animation runs when a node runs out.
+- The burnout animation runs when a node runs out beneath a ship, **and**
+  when a ship leaves a charged node and spends it.
 - The rotator turn runs on a rotator-triggered `queue-rotated` effect,
   applies to the remaining rotators, and does not apply to the spent square.
 - Whatever mechanism carries the outgoing ring count into the charge
@@ -257,20 +268,22 @@ to look at:
    into a small bright ball, and the ball opens out into the charged node.
    Watch it happen for nodes holding one, two and three rings — the rings
    that fade are the ones that were there.
-2. Let a charged node run out. The gold travels to grey rather than being
-   swapped for it, and the countdown number, where there is one on both
-   sides, travels with it.
-3. Start a game with **dedicated** rotation and land a ship on a rotator.
+2. Let a charged node run out beneath a ship. The gold travels to grey
+   rather than being swapped for it, and the countdown number, where there
+   is one on both sides, travels with it.
+3. Move a ship **off** a charged node, spending it. The same travel happens,
+   without a countdown number on the depleted side.
+4. Start a game with **dedicated** rotation and land a ship on a rotator.
    The spent rotator goes; every other rotator turns a third of a circle
    clockwise and ends up looking exactly as it started.
-4. Do the same on a board where the spent rotator is the only one left:
+5. Do the same on a board where the spent rotator is the only one left:
    nothing turns, nothing flickers.
-5. Turn on the system's reduce-motion setting and repeat 1–3: each change
+6. Turn on the system's reduce-motion setting and repeat 1–4: each change
    happens instantly, and the board is correct afterwards.
-6. Watch a turn in which a ship lands on a rotator **and** the rotator set
+7. Watch a turn in which a ship lands on a rotator **and** the rotator set
    is replaced. Nothing turns, the fresh set appears still, and nothing is
    left drawn mid-animation.
-7. Interrupt an animation — let a node charge, then immediately click a ship
+8. Interrupt an animation — let a node charge, then immediately click a ship
    — and confirm the board is left in the correct end state. This is the one
    that matters: an animation may be cut short, but what it was travelling
    towards must always be what is standing there afterwards.
