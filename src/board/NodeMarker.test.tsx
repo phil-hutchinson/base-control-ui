@@ -5,6 +5,10 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
+import type {
+  NodeBurnoutAnimation,
+  NodeChargeAnimation,
+} from "./boardAnimations";
 import { NodeMarker } from "./NodeMarker";
 
 afterEach(cleanup);
@@ -18,6 +22,15 @@ const STATES: readonly NodeState[] = ["inactive", "charged", "depleted"];
 const CLOCKED_STATES = ["charged", "depleted"] as const;
 
 const SQUARE_NAME = "H8";
+
+/** A `#rrggbb` colour as jsdom's CSSOM reports it back from an inline style, for comparing against a colour set via `style` rather than an attribute. */
+function hexToRgb(hex: string): string {
+  const value = Number.parseInt(hex.slice(1), 16);
+  const r = (value >> 16) & 0xff;
+  const g = (value >> 8) & 0xff;
+  const b = value & 0xff;
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 interface ExpectedStop {
   readonly offset: string;
@@ -252,6 +265,174 @@ describe("NodeMarker", () => {
       const circles = container.querySelectorAll("circle");
       expect(circles).toHaveLength(1);
       expect(circles[0]).toHaveAttribute("r", INACTIVE_RING_RADII[0]);
+    });
+  });
+
+  describe("the charge animation", () => {
+    function chargeAnimation(priority: NodePriority): NodeChargeAnimation {
+      return { type: "node-charge", priority, runId: 7 };
+    }
+
+    it.each([
+      {
+        priority: 1 as NodePriority,
+        expectedRadii: INACTIVE_RING_RADII.slice(0, 1),
+      },
+      {
+        priority: 2 as NodePriority,
+        expectedRadii: INACTIVE_RING_RADII.slice(0, 2),
+      },
+      {
+        priority: 3 as NodePriority,
+        expectedRadii: INACTIVE_RING_RADII.slice(0, 3),
+      },
+    ])(
+      "draws $priority outgoing ring(s) at the stated radii for priority $priority, alongside the gradient and its mask",
+      ({ priority, expectedRadii }) => {
+        const { container } = render(
+          <NodeMarker
+            state="charged"
+            squareName={SQUARE_NAME}
+            chargeAnimation={chargeAnimation(priority)}
+          />,
+        );
+
+        const rings = container.querySelectorAll(".node-marker__outgoing-ring");
+        expect(Array.from(rings, (ring) => ring.getAttribute("r"))).toEqual(
+          expectedRadii,
+        );
+
+        expect(container.querySelector("radialGradient")).toHaveAttribute(
+          "id",
+          `node-${SQUARE_NAME}-fill`,
+        );
+        const mask = container.querySelector("mask");
+        expect(mask).toBeInTheDocument();
+        expect(
+          container.querySelector(".node-marker__charge-reveal"),
+        ).toHaveAttribute("mask", `url(#${mask?.getAttribute("id")})`);
+      },
+    );
+
+    it("draws no rings, mask or reveal group without a charge animation", () => {
+      const { container } = render(
+        <NodeMarker state="charged" squareName={SQUARE_NAME} />,
+      );
+
+      expect(
+        container.querySelector(".node-marker__outgoing-ring"),
+      ).not.toBeInTheDocument();
+      expect(container.querySelector("mask")).not.toBeInTheDocument();
+      expect(
+        container.querySelector(".node-marker__charge-reveal"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("leaves a charged marker's end state exactly as if it never animated", () => {
+      const { container, rerender } = render(
+        <NodeMarker
+          state="charged"
+          squareName={SQUARE_NAME}
+          chargeAnimation={chargeAnimation(2)}
+        />,
+      );
+
+      rerender(<NodeMarker state="charged" squareName={SQUARE_NAME} />);
+
+      const plain = render(
+        <NodeMarker state="charged" squareName={SQUARE_NAME} />,
+      );
+
+      expect(container.innerHTML).toBe(plain.container.innerHTML);
+    });
+  });
+
+  describe("the burnout animation", () => {
+    const BURNOUT_ANIMATION: NodeBurnoutAnimation = {
+      type: "node-burnout",
+      runId: 3,
+    };
+
+    it("draws the ordinary depleted artwork plus the burning-out modifier class", () => {
+      const { container } = render(
+        <NodeMarker
+          state="depleted"
+          squareName={SQUARE_NAME}
+          burnoutAnimation={BURNOUT_ANIMATION}
+        />,
+      );
+
+      const svg = container.querySelector("svg");
+      expect(svg).toHaveClass("node-marker", "node-marker--depleted");
+      expect(svg).toHaveClass("node-marker--burning-out");
+
+      const circle = container.querySelector("circle");
+      expect(circle).toHaveAttribute("r", EXPECTED_ARTWORK.depleted.radius);
+      const stops = container.querySelectorAll("stop");
+      expect(stops).toHaveLength(EXPECTED_ARTWORK.depleted.stops.length);
+      EXPECTED_ARTWORK.depleted.stops.forEach((expectedStop, index) => {
+        expect(stops[index]).toHaveAttribute("offset", expectedStop.offset);
+        expect(stops[index]).toHaveAttribute(
+          "stop-opacity",
+          expectedStop.opacity,
+        );
+      });
+    });
+
+    it("gives each stop the depleted colour as its own base value and the charged colour at that same position as its travel-from custom property", () => {
+      const { container } = render(
+        <NodeMarker
+          state="depleted"
+          squareName={SQUARE_NAME}
+          burnoutAnimation={BURNOUT_ANIMATION}
+        />,
+      );
+
+      const stops = Array.from(container.querySelectorAll("stop"));
+      expect(stops).toHaveLength(3);
+      stops.forEach((stop, index) => {
+        expect(stop).toHaveClass("node-marker__burnout-stop");
+        expect(
+          (stop as unknown as HTMLElement).style.getPropertyValue("stop-color"),
+        ).toBe(hexToRgb(EXPECTED_ARTWORK.depleted.stops[index].color));
+        expect(
+          (stop as unknown as HTMLElement).style.getPropertyValue(
+            "--node-burnout-from",
+          ),
+        ).toBe(EXPECTED_ARTWORK.charged.stops[index].color);
+        expect(stop).not.toHaveAttribute("stop-color");
+      });
+    });
+
+    it("draws no burning-out class or per-stop style without a burnout animation", () => {
+      const { container } = render(
+        <NodeMarker state="depleted" squareName={SQUARE_NAME} />,
+      );
+
+      expect(container.querySelector("svg")).not.toHaveClass(
+        "node-marker--burning-out",
+      );
+      expect(
+        container.querySelector(".node-marker__burnout-stop"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("leaves a depleted marker's end state exactly as if it never animated", () => {
+      const { container, rerender } = render(
+        <NodeMarker
+          state="depleted"
+          squareName={SQUARE_NAME}
+          burnoutAnimation={BURNOUT_ANIMATION}
+        />,
+      );
+
+      rerender(<NodeMarker state="depleted" squareName={SQUARE_NAME} />);
+
+      const plain = render(
+        <NodeMarker state="depleted" squareName={SQUARE_NAME} />,
+      );
+
+      expect(container.innerHTML).toBe(plain.container.innerHTML);
     });
   });
 

@@ -10,3 +10,12 @@ package-lock.json
 # Source artwork, kept byte-identical to what was drawn so the ported SVGs can
 # be checked against it. Reformatting it would defeat that.
 doc/plan/00000013-spaceship-bay-visual/eg_planets.html
+
+# Story documents. Once a story's story.md, implementation-plan.md and
+# peer-review.md are committed they are a dated record of what was decided
+# and why, which CONTRIBUTING.md ("Historical planning documents are not
+# rewritten") says later work does not edit. Reformatting them would be
+# exactly that, so they are not checked: a document written under one
+# version of prettier's defaults should not oblige a later story to rewrite
+# a record it had no part in.
+doc/plan/

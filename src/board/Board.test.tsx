@@ -22,6 +22,8 @@ import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { legalDestinations } from "../rules/movement";
 import { legalTargets } from "../rules/combat";
 import { MAX_POWER, type PowerLevel } from "../rules/power";
+import type { QueueRefilledEffect } from "../rules/endOfTurn";
+import type { QueueRotatedEffect } from "../rules/ply";
 import {
   createSession,
   sessionReducer,
@@ -1681,6 +1683,257 @@ describe("Board", () => {
 
       expect(results.violations).toEqual([]);
     });
+  });
+});
+
+describe("the charge animation", () => {
+  it("puts the charging markup on the square a node-charged effect names, and nowhere else", () => {
+    const state: GameState = {
+      ...statedOpeningState(),
+      nodes: {
+        ...STATED_NODE_STATES,
+        F2: { state: "charged", level: 0 },
+      },
+    };
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [
+            {
+              type: "node-charged",
+              square: squareAt("F", 2),
+              priority: 2,
+            },
+          ],
+        },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+
+    render(<Board session={session} onIntent={noop} />);
+
+    const chargingCell = screen.getByRole("gridcell", {
+      name: /^F2,/,
+    });
+    expect(
+      chargingCell.querySelectorAll(".node-marker__outgoing-ring"),
+    ).toHaveLength(2);
+    expect(chargingCell.querySelector("mask")).toBeInTheDocument();
+
+    // No other square picked up the animation - H8 is charged at baseline
+    // and is not this event's square.
+    const otherChargedCell = screen.getByRole("gridcell", { name: /^H8,/ });
+    expect(
+      otherChargedCell.querySelector(".node-marker__outgoing-ring"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("plays no charge animation for the nodes charged at the opening deal", () => {
+    const { container } = render(
+      <Board session={startingSession} onIntent={noop} />,
+    );
+
+    expect(
+      container.querySelectorAll(".node-marker__outgoing-ring"),
+    ).toHaveLength(0);
+    expect(container.querySelectorAll(".node-marker--charging")).toHaveLength(
+      0,
+    );
+  });
+});
+
+describe("the burnout animation", () => {
+  it("marks the square a node-ran-out effect names as burning out, and no other", () => {
+    const state: GameState = {
+      ...statedOpeningState(),
+      nodes: {
+        ...STATED_NODE_STATES,
+        H8: { state: "depleted", level: 1 },
+      },
+    };
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [{ type: "node-ran-out", square: squareAt("H", 8) }],
+        },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+
+    render(<Board session={session} onIntent={noop} />);
+
+    const burningCell = screen.getByRole("gridcell", { name: /^H8,/ });
+    expect(
+      burningCell.querySelector(".node-marker--burning-out"),
+    ).toBeInTheDocument();
+
+    // No other square picked up the animation - E5 is charged at baseline
+    // and is not this event's square.
+    const otherCell = screen.getByRole("gridcell", { name: /^E5,/ });
+    expect(
+      otherCell.querySelector(".node-marker--burning-out"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("marks the square a node-spent effect names as burning out, and no other", () => {
+    const state: GameState = {
+      ...statedOpeningState(),
+      nodes: {
+        ...STATED_NODE_STATES,
+        H8: { state: "depleted", level: 1 },
+      },
+    };
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("H", 8),
+      to: squareAt("H", 7),
+      effects: [
+        { type: "node-spent", square: squareAt("H", 8) },
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [],
+        },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+
+    render(<Board session={session} onIntent={noop} />);
+
+    const burningCell = screen.getByRole("gridcell", { name: /^H8,/ });
+    expect(
+      burningCell.querySelector(".node-marker--burning-out"),
+    ).toBeInTheDocument();
+
+    // No other square picked up the animation - E5 is charged at baseline
+    // and is not this event's square.
+    const otherCell = screen.getByRole("gridcell", { name: /^E5,/ });
+    expect(
+      otherCell.querySelector(".node-marker--burning-out"),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("the rotator turn animation", () => {
+  const SPENT_SQUARE = squareAt("E", 5);
+  const REMAINING_SQUARES = [squareAt("F", 6), squareAt("G", 9)];
+
+  const ROTATOR_TRIGGER: QueueRotatedEffect = {
+    type: "queue-rotated",
+    square: SPENT_SQUARE,
+    trigger: "rotator",
+  };
+
+  it("turns every rotator still on the board, and never the spent square", () => {
+    const state = stateWithRotators([SPENT_SQUARE, ...REMAINING_SQUARES]);
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: SPENT_SQUARE,
+      effects: [
+        ROTATOR_TRIGGER,
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+
+    render(<Board session={session} onIntent={noop} />);
+
+    for (const square of REMAINING_SQUARES) {
+      const cell = screen.getByRole("gridcell", {
+        name: new RegExp(`^${squareName(square)},`),
+      });
+      expect(
+        cell.querySelector(".rotator-marker--turning"),
+      ).toBeInTheDocument();
+    }
+  });
+
+  it("turns none when the same turn also refilled the rotator set", () => {
+    const refilled: QueueRefilledEffect = {
+      type: "queue-refilled",
+      discardedSquares: [],
+      newNodes: [],
+      newRotators: REMAINING_SQUARES,
+    };
+    const state = stateWithRotators(REMAINING_SQUARES);
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: SPENT_SQUARE,
+      effects: [
+        ROTATOR_TRIGGER,
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [refilled],
+        },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+
+    const { container } = render(<Board session={session} onIntent={noop} />);
+
+    expect(container.querySelectorAll(".rotator-marker--turning")).toHaveLength(
+      0,
+    );
+    expect(container.querySelectorAll(".rotator-marker")).toHaveLength(
+      REMAINING_SQUARES.length,
+    );
   });
 });
 

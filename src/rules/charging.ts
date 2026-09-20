@@ -16,12 +16,28 @@ import {
   nodeStateAt,
   nodeStatusAt,
 } from "./gameState";
-import { inactivePriority, orderByPriorityDescending } from "./nodeQueue";
+import {
+  inactivePriority,
+  orderByPriorityDescending,
+  type NodePriority,
+} from "./nodeQueue";
 
-/** A node went from inactive to charged because it was at the front of the queue (rules.md §8.2). */
+/**
+ * A node went from inactive to charged because it was at the front of the
+ * queue (rules.md §8.2). `priority` reports the priority the node was last
+ * drawn with — the priority a player last saw it holding on the board — a
+ * fact the state no longer carries once the node is charged, since its
+ * status becomes `{ state: "charged", level: 0 }`. Under the planet or
+ * dedicated settings a landing can rotate the queue mid-ply, before this
+ * node ever charges (`ply.ts`'s `rotateForLanding`); this is the priority
+ * from before that rotation, not the one the node holds by the time it
+ * charges. Under continuous nothing rotates mid-ply, so the two always
+ * agree.
+ */
 export interface NodeChargedEffect {
   readonly type: "node-charged";
   readonly square: Square;
+  readonly priority: NodePriority;
 }
 
 /** The state resulting from charging, and the effects it produced. */
@@ -38,8 +54,18 @@ export interface ChargingResult {
  * ever appears under one. The queue order is decided entirely by
  * `orderByPriorityDescending` and consumes no randomness at all.
  * `state.randomSeed` is never touched here.
+ *
+ * `reportedPriorities`, if given, overrides only what a charging node's
+ * effect *reports* as its priority, keyed by square name — never which node
+ * charges or in what order, which are always decided from `state` itself.
+ * It exists so a caller can pass in the priorities from before a mid-ply
+ * rotation (`ply.ts`'s `rotateForLanding`), so the effect names the priority
+ * a player last saw rather than the one the rotation left behind.
  */
-export function runCharging(state: GameState): ChargingResult {
+export function runCharging(
+  state: GameState,
+  reportedPriorities?: Readonly<Record<string, NodePriority>>,
+): ChargingResult {
   const squares = nodeSquares(state);
   const chargedCount = squares.filter(
     (square) => nodeStateAt(state, square) === "charged",
@@ -60,7 +86,7 @@ export function runCharging(state: GameState): ChargingResult {
   let workingState = state;
   const effects: NodeChargedEffect[] = [];
 
-  for (const { square } of toCharge) {
+  for (const { square, priority } of toCharge) {
     const name = squareName(square);
     workingState = {
       ...workingState,
@@ -69,7 +95,8 @@ export function runCharging(state: GameState): ChargingResult {
         [name]: { state: "charged", level: 0 },
       },
     };
-    effects.push({ type: "node-charged", square });
+    const reportedPriority = reportedPriorities?.[name] ?? priority;
+    effects.push({ type: "node-charged", square, priority: reportedPriority });
   }
 
   return { state: workingState, effects };

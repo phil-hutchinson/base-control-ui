@@ -10,12 +10,29 @@
 // not carry the countdown (doc/plan/00000021-accessibility-tech-debt/known-issues.md,
 // "From story 60"), so this SVG carries no title or description and is
 // hidden from the accessibility tree.
+//
+// A number drawn on both sides of a node's burnout (see NodeMarker.tsx and
+// boardAnimations.ts) has its colour travel from `burnoutFrom` to `color`
+// over the same duration the gradient's stops use, rather than switching
+// outright.
 
+import type { CSSProperties } from "react";
 import "./NodeCountdown.css";
 
 interface NodeCountdownProps {
   readonly number: number;
   readonly color: "black" | "white";
+  /**
+   * Present while this number's node is burning out (`boardAnimations.ts`):
+   * the colour the number is travelling from, on its way to `color`.
+   */
+  readonly burnoutFrom?: "black" | "white";
+  /**
+   * The burnout animation's `runId`, present alongside `burnoutFrom`. Used
+   * as the animated text's key, so a later burnout on the same square
+   * restarts the colour travel rather than continuing it.
+   */
+  readonly runId?: number;
 }
 
 // Starting values for the owner's eye, not a measured result. The ship art
@@ -23,17 +40,42 @@ interface NodeCountdownProps {
 // to read through.
 const FONT_SIZE = 44;
 
-export function NodeCountdown({ number, color }: NodeCountdownProps) {
+export function NodeCountdown({
+  number,
+  color,
+  burnoutFrom,
+  runId,
+}: NodeCountdownProps) {
   return (
     <svg className="node-countdown" viewBox="0 0 100 100" aria-hidden="true">
       <text
+        // Keyed distinctly from the plain, unanimated text below so that
+        // ending the animation unmounts this element rather than diffing
+        // its props onto the same node - the only way to guarantee no
+        // leftover attribute (an empty `style`, in particular) survives
+        // the switch (see BoardSquare.test.tsx's end-state assertion).
+        // Keyed on the animation's own runId, as NodeMarker and
+        // RotatorMarker are, so a later burnout on the same square restarts
+        // rather than continuing.
+        key={burnoutFrom ? runId : undefined}
         x={50}
         y={50}
         fontSize={FONT_SIZE}
         fontWeight="bold"
         textAnchor="middle"
         dominantBaseline="central"
-        fill={color}
+        className={
+          burnoutFrom ? "node-countdown__number--burning-out" : undefined
+        }
+        style={
+          burnoutFrom
+            ? ({
+                fill: color,
+                "--node-countdown-burnout-from": burnoutFrom,
+              } as CSSProperties)
+            : undefined
+        }
+        fill={burnoutFrom ? undefined : color}
       >
         {number}
       </text>

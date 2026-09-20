@@ -22,12 +22,17 @@
 // optional fields, so a square can carry either, both, or neither. The only
 // condition is a ship that can neither move nor attack — a pinned ship — and
 // it is drawn dampened, with a hollow bar at the square's bottom edge.
+//
+// A square also carries at most one `animation` (`boardAnimations.ts`),
+// routed here to whichever of the node marker, the countdown or the rotator
+// mark it belongs to.
 
 import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
 import type { PowerLevel } from "../rules/power";
+import type { SquareAnimation } from "./boardAnimations";
 import { ShipModel } from "../ships/ShipModel";
 import {
   GAUGE_BAR_LENGTH,
@@ -67,6 +72,8 @@ export interface BoardSquareProps {
   readonly occupant?: SquareOccupant;
   readonly condition?: ShipCondition;
   readonly mark?: SquareMark;
+  /** The animation, if any, currently playing on this square's node or rotator. */
+  readonly animation?: SquareAnimation;
 }
 
 // Geometry for the markings, in the same 0-100 viewBox ShipModel and
@@ -223,7 +230,14 @@ export function BoardSquare({
   occupant,
   condition,
   mark,
+  animation,
 }: BoardSquareProps) {
+  const chargeAnimation =
+    animation?.type === "node-charge" ? animation : undefined;
+  const burnoutAnimation =
+    animation?.type === "node-burnout" ? animation : undefined;
+  const rotatorTurnAnimation =
+    animation?.type === "rotator-turn" ? animation : undefined;
   const classNames = ["board-square"];
   if (isPlanet) {
     // No stylesheet rule reads this - it exists only as a query hook for
@@ -250,14 +264,18 @@ export function BoardSquare({
           squareName={squareName}
           cyclePosition={cyclePosition}
           priority={priority}
+          chargeAnimation={chargeAnimation}
+          burnoutAnimation={burnoutAnimation}
         />
       )}
-      {hasRotator && <RotatorMarker />}
+      {hasRotator && <RotatorMarker turnAnimation={rotatorTurnAnimation} />}
       {occupant && <ShipModel side={occupant.side} power={occupant.power} />}
       {countdownNumber !== undefined && (
         <NodeCountdown
           number={countdownNumber}
           color={nodeState === "depleted" ? "white" : "black"}
+          burnoutFrom={burnoutAnimation ? "black" : undefined}
+          runId={burnoutAnimation?.runId}
         />
       )}
       {mark?.kind === "destination" && <DestinationMark cost={mark.cost} />}

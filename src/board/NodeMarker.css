@@ -7,4 +7,92 @@
   display: block;
   width: 100%;
   height: 100%;
+
+  /* The inactive-to-charged animation's single duration, split between its
+     two phases in the keyframe percentages below: the first 60% cross-fades
+     the outgoing rings into the masked artwork, the last 40% grows the mask
+     to reveal all of it. A starting value for the owner's eye, not a
+     measured result. */
+  --node-charge-duration: 750ms;
+}
+
+/* The outgoing rings and the masked reveal are only ever drawn while the
+   charge animation is playing (NodeMarker.tsx), so their base styles are
+   already the finished picture: the rings gone, the reveal at full opacity
+   and its mask fully grown. The keyframes below supply only the starting
+   picture and let the implicit end keyframe resolve to these base values,
+   so however the animation ends the marker is left correct. */
+.node-marker__outgoing-ring {
+  opacity: 0;
+  animation: node-charge-outgoing-ring var(--node-charge-duration) ease-out;
+}
+
+.node-marker__charge-reveal {
+  opacity: 1;
+  animation: node-charge-reveal var(--node-charge-duration) ease-out;
+}
+
+/* The viewBox is 0 0 100 100, so the ball grows from 50px 50px, the
+   marker's own centre. */
+.node-marker__charge-mask-circle {
+  transform: scale(1);
+  transform-box: view-box;
+  transform-origin: 50px 50px;
+  animation: node-charge-mask var(--node-charge-duration) ease-out;
+}
+
+@keyframes node-charge-outgoing-ring {
+  from {
+    opacity: 1;
+  }
+
+  60% {
+    opacity: 0;
+  }
+}
+
+@keyframes node-charge-reveal {
+  from {
+    opacity: 0;
+  }
+
+  60% {
+    opacity: 1;
+  }
+}
+
+@keyframes node-charge-mask {
+  from {
+    transform: scale(var(--node-charge-mask-start-scale));
+  }
+
+  60% {
+    transform: scale(var(--node-charge-mask-start-scale));
+  }
+}
+
+/* A burning-out gradient stop's colour is only ever drawn while the burnout
+   animation is playing (NodeMarker.tsx), and its base `stop-color`, set in
+   `style` rather than as an attribute, is already the finished depleted
+   colour, so the keyframe below supplies only the starting, charged colour
+   and lets the implicit end keyframe resolve to it. --node-burnout-duration
+   is declared once, on .board-square (BoardSquare.css), since it is shared
+   with NodeCountdown's own fill animation. */
+.node-marker__burnout-stop {
+  animation: node-burnout-stop-color var(--node-burnout-duration) linear;
+}
+
+@keyframes node-burnout-stop-color {
+  from {
+    stop-color: var(--node-burnout-from);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node-marker__outgoing-ring,
+  .node-marker__charge-reveal,
+  .node-marker__charge-mask-circle,
+  .node-marker__burnout-stop {
+    animation: none;
+  }
 }

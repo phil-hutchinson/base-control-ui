@@ -184,7 +184,11 @@ describe.each(CHARGED_NODE_COUNTS)(
         const { effects } = runCharging(state);
 
         expect(effects).toEqual([
-          { type: "node-charged", square: squareFromName(priorityThreeName) },
+          {
+            type: "node-charged",
+            square: squareFromName(priorityThreeName),
+            priority: TOP_NODE_PRIORITY,
+          },
         ]);
       }
     });

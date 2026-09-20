@@ -307,6 +307,7 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
     expect(result.effects).toContainEqual({
       type: "node-charged",
       square: squareFromName("K5"),
+      priority: 1,
     });
   });
 
@@ -993,6 +994,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
     expect(result.effects).toContainEqual({
       type: "node-charged",
       square: squareFromName("H8"),
+      priority: TOP_NODE_PRIORITY,
     });
     const refills = result.effects.filter(
       (effect): effect is QueueRefilledEffect =>

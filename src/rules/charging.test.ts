@@ -73,7 +73,7 @@ describe("runCharging — the shortfall (§8.2, §8.6 step 4)", () => {
     const result = runCharging(state);
 
     expect(result.effects).toEqual([
-      { type: "node-charged", square: squareFromName("N4") },
+      { type: "node-charged", square: squareFromName("N4"), priority: 3 },
     ]);
     expect(result.state.nodes.N4).toEqual({ state: "charged", level: 0 });
     expect(result.state.nodes.D8).toEqual({ state: "inactive", level: 1 });
@@ -95,10 +95,34 @@ describe("runCharging — the shortfall (§8.2, §8.6 step 4)", () => {
     const result = runCharging(state);
 
     expect(result.effects).toEqual([
-      { type: "node-charged", square: squareFromName("N4") },
-      { type: "node-charged", square: squareFromName("H8") },
+      { type: "node-charged", square: squareFromName("N4"), priority: 3 },
+      { type: "node-charged", square: squareFromName("H8"), priority: 2 },
     ]);
     expect(result.state.nodes.D8).toEqual({ state: "inactive", level: 1 });
+  });
+
+  it("reports the priority each charged node actually held, not just the order it charged in", () => {
+    const state = buildState({
+      chargedNodeCount: 4,
+      nodes: {
+        F2: ["charged", 0],
+        J2: ["charged", 0],
+        N4: ["inactive", 3],
+        D8: ["inactive", 1],
+        H8: ["inactive", 2],
+      },
+    });
+
+    const result = runCharging(state);
+
+    const reported = result.effects.map((effect) => ({
+      square: effect.square,
+      priority: effect.priority,
+    }));
+    expect(reported).toEqual([
+      { square: squareFromName("N4"), priority: 3 },
+      { square: squareFromName("H8"), priority: 2 },
+    ]);
   });
 
   it("charges all three inactive nodes, highest priority first, when the shortfall is three", () => {
@@ -115,9 +139,9 @@ describe("runCharging — the shortfall (§8.2, §8.6 step 4)", () => {
     const result = runCharging(state);
 
     expect(result.effects).toEqual([
-      { type: "node-charged", square: squareFromName("N4") },
-      { type: "node-charged", square: squareFromName("H8") },
-      { type: "node-charged", square: squareFromName("D8") },
+      { type: "node-charged", square: squareFromName("N4"), priority: 3 },
+      { type: "node-charged", square: squareFromName("H8"), priority: 2 },
+      { type: "node-charged", square: squareFromName("D8"), priority: 1 },
     ]);
   });
 
@@ -190,7 +214,7 @@ describe("runCharging — the shortfall (§8.2, §8.6 step 4)", () => {
     const result = runCharging(state);
 
     expect(result.effects).toEqual([
-      { type: "node-charged", square: squareFromName("N4") },
+      { type: "node-charged", square: squareFromName("N4"), priority: 3 },
     ]);
     expect(result.state.nodes.D8).toEqual({ state: "inactive", level: 1 });
     expect(result.state.nodes.H8).toEqual({ state: "inactive", level: 2 });
@@ -213,7 +237,7 @@ describe("runCharging — the shortfall (§8.2, §8.6 step 4)", () => {
     const result = runCharging(state);
 
     expect(result.effects).toEqual([
-      { type: "node-charged", square: squareFromName("N4") },
+      { type: "node-charged", square: squareFromName("N4"), priority: 3 },
     ]);
     expect(result.state.nodes.D8).toEqual({ state: "inactive", level: 1 });
     expect(result.state.nodes.H8).toEqual({ state: "inactive", level: 2 });
@@ -238,9 +262,9 @@ describe("runCharging — the shortfall (§8.2, §8.6 step 4)", () => {
     const result = runCharging(state);
 
     expect(result.effects).toEqual([
-      { type: "node-charged", square: squareFromName("N4") },
-      { type: "node-charged", square: squareFromName("H8") },
-      { type: "node-charged", square: squareFromName("D8") },
+      { type: "node-charged", square: squareFromName("N4"), priority: 3 },
+      { type: "node-charged", square: squareFromName("H8"), priority: 2 },
+      { type: "node-charged", square: squareFromName("D8"), priority: 1 },
     ]);
     const chargedCount = Object.values(result.state.nodes).filter(
       (status) => status.state === "charged",
@@ -307,7 +331,7 @@ describe("runCharging — the pool", () => {
     const result = runCharging(state);
 
     expect(result.effects).toEqual([
-      { type: "node-charged", square: squareFromName("F2") },
+      { type: "node-charged", square: squareFromName("F2"), priority: 3 },
     ]);
     expect(result.state.nodes.F2).toEqual({ state: "charged", level: 0 });
     const occupant = result.state.ships.find((s) => s.id === "green-1");

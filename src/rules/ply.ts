@@ -41,7 +41,11 @@ import {
   moveRefusalReason,
   shapeReaching,
 } from "./movement";
-import { rotateQueue } from "./nodeQueue";
+import {
+  type NodePriority,
+  rotateQueue,
+  snapshotInactivePriorities,
+} from "./nodeQueue";
 import { type PowerLevel, spendPower } from "./power";
 
 function otherSide(side: Side): Side {
@@ -289,14 +293,19 @@ export function applyOutOfTimePass(state: GameState): {
  * follows it, and returns the resulting state. `effects` is typed to accept
  * either caller's effect list, since both `MoveEffect` and `AttackEffect`
  * include `EndOfPlyEffect` as one of their members.
+ *
+ * `reportedPriorities`, if given, is passed straight through to
+ * `runEndOfTurn` — the priorities a landing rotated away from before this
+ * ply's own move or attack got here (`rotateForLanding`, below).
  */
 function endPly(
   state: GameState,
   effects: (MoveEffect | AttackEffect)[],
+  reportedPriorities?: Readonly<Record<string, NodePriority>>,
 ): GameState {
   const side = state.sideToMove;
   const sideToMove = otherSide(side);
-  const endOfTurn = runEndOfTurn(state);
+  const endOfTurn = runEndOfTurn(state, reportedPriorities);
   const next: GameState = {
     ...endOfTurn.state,
     plyNumber: endOfTurn.state.plyNumber + 1,
@@ -454,6 +463,10 @@ export function applyMove(
   }
 
   const afterMove: GameState = { ...state, ships, nodes };
+  // Captured before rotateForLanding, so a node that charges later in this
+  // same ply is reported at the priority a player last saw it holding, not
+  // the one a landing under planet or dedicated rotates it to.
+  const priorityBeforeLanding = snapshotInactivePriorities(afterMove.nodes);
   const { state: rotatedState, effect: rotationEffect } = rotateForLanding(
     afterMove,
     destination,
@@ -461,7 +474,7 @@ export function applyMove(
   if (rotationEffect !== undefined) {
     effects.push(rotationEffect);
   }
-  const settled = endPly(rotatedState, effects);
+  const settled = endPly(rotatedState, effects, priorityBeforeLanding);
 
   return {
     outcome: "applied",
@@ -715,7 +728,10 @@ export function applyAttack(
   // Both returned ships have just landed on a planet (§7), attacker first —
   // rotateForLanding is a no-op under continuous and under dedicated, since
   // a rotator never stands on a planet, so a fight only ever rotates
-  // anything under the planet setting, and then twice.
+  // anything under the planet setting, and then twice. Captured before
+  // either rotation, so a node that charges later in this same ply is
+  // reported at the priority a player last saw it holding.
+  const priorityBeforeLanding = snapshotInactivePriorities(nextState.nodes);
   const afterAttackerRotation = rotateForLanding(nextState, attackerTo);
   const afterDefenderRotation = rotateForLanding(
     afterAttackerRotation.state,
@@ -747,7 +763,7 @@ export function applyAttack(
     effects.push(afterDefenderRotation.effect);
   }
 
-  const settled = endPly(rotatedState, effects);
+  const settled = endPly(rotatedState, effects, priorityBeforeLanding);
 
   return { outcome: "applied", state: settled, effects };
 }

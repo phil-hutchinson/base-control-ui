@@ -571,6 +571,7 @@ describe("camping — leaving a charged node ends it at once (rules.md §8.3)", 
     expect(departureTurnEffects).toContainEqual({
       type: "node-charged",
       square: squareFromName("M5"),
+      priority: TOP_NODE_PRIORITY,
     });
     expect(afterDeparture.state.nodes.M5).toEqual({
       state: "charged",
