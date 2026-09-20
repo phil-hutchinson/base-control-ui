@@ -748,7 +748,37 @@ unchanged.
 
 ### Step 5 — The rotator turn
 
-Status: pending
+Status: committed
+
+Notes: `RotatorMarker` gained an optional `turnAnimation?: RotatorTurnAnimation`
+prop; while present it adds a `rotator-marker--turning` class, threads
+`TURN_ANGLE_DEGREES = 360 / ARC_COUNT` in as `--rotator-turn-angle` via
+`style`, and keys the root `<svg>` on `turnAnimation.runId` (absent
+otherwise), following the key-forces-remount fix Step 4 already needed for
+the same D5 guarantee. `RotatorMarker.css` gained
+`--rotator-turn-duration: 500ms` (D11) on `.rotator-marker`, and
+`.rotator-marker--turning` carries an explicit `transform: rotate(0deg)` base
+(the unturned end state) with a `from`-only `rotator-turn` keyframe starting
+at `var(--rotator-turn-angle)`, plus the `prefers-reduced-motion: reduce`
+branch turning the animation off. No `transform-box`/`transform-origin`
+override was needed: the root `<svg>` is a normal sized replaced element, so
+its default transform origin (its own box centre) already rotates it about
+the square's own centre, unlike NodeMarker's mask circle which needed
+`fill-box` because it is SVG geometry. `BoardSquare` narrows `animation` to
+a `RotatorTurnAnimation` and passes it to `RotatorMarker` as
+`turnAnimation`. Extended `BoardSquare.test.tsx` (the turning class and a
+120° `--rotator-turn-angle`; neither without the animation; the D5 end-state
+re-render equality) and `Board.test.tsx` (a dedicated-setting session whose
+`lastEvent` carries a rotator-triggered `queue-rotated` turns every
+remaining rotator and never the spent square; the same event also carrying a
+non-empty `queue-refilled` turns none, per D9). One deviation from the step
+text: rather than gating rings/arcs on a modifier class, the `key` and
+`style` (not just the class) are also conditional on `turnAnimation`, needed
+so an interrupted turn's re-render drops the custom property cleanly rather
+than leaving a stray empty `style=""` — the same lesson Step 4 recorded,
+applied here up front. `npm run typecheck`, `npm run lint`, `npm test` (73
+files, 1450 tests, up 5 from the 1445 baseline) and `npm run format:check`
+(only the three pre-existing baseline warnings) all green.
 
 `RotatorMarker.tsx` gains one optional prop saying it is turning.
 `RotatorMarker.css` gains the keyframes: a clockwise rotation of
@@ -782,6 +812,9 @@ rotator entries in the map).
 
 Verification (automated): `npm test`, `npm run typecheck`, `npm run lint` all
 green.
+
+
+Orchestrator correction before commit: the turn start angle was positive, which swept the mark anticlockwise from +120 to its unturned base. story.md asks for clockwise, so the constant is now `TURN_START_ANGLE_DEGREES = -360 / ARC_COUNT` and the mark travels from -120 up to 0. The three-fold symmetry means the finished picture is identical either way, so only the direction assertion in `BoardSquare.test.tsx` pins it. Also removed a `(D5)` plan-decision citation from a `NodeMarker.tsx` comment, which CONTRIBUTING.md's comment convention forbids.
 
 ### Step 6 — The owner watches all three, and tunes the four numbers
 

@@ -7,4 +7,30 @@
   display: block;
   width: 100%;
   height: 100%;
+
+  /* The rotator turn's single duration (story.md, "The rotators turn"). A
+     starting value for the owner's eye, not a measured result. */
+  --rotator-turn-duration: 500ms;
+}
+
+/* The mark is only ever drawn with this class while the turn animation is
+   playing (RotatorMarker.tsx), so its base value, unturned, is already the
+   finished picture; the keyframe below supplies only the starting angle and
+   lets the implicit end keyframe resolve to it, so however the turn ends the
+   mark is left standing exactly where it started. */
+.rotator-marker--turning {
+  transform: rotate(0deg);
+  animation: rotator-turn var(--rotator-turn-duration) ease-out;
+}
+
+@keyframes rotator-turn {
+  from {
+    transform: rotate(var(--rotator-turn-angle));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotator-marker--turning {
+    animation: none;
+  }
 }

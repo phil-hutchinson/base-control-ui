@@ -236,6 +236,8 @@ export function BoardSquare({
     animation?.type === "node-charge" ? animation : undefined;
   const burnoutAnimation =
     animation?.type === "node-burnout" ? animation : undefined;
+  const rotatorTurnAnimation =
+    animation?.type === "rotator-turn" ? animation : undefined;
   const classNames = ["board-square"];
   if (isPlanet) {
     // No stylesheet rule reads this - it exists only as a query hook for
@@ -266,7 +268,7 @@ export function BoardSquare({
           burnoutAnimation={burnoutAnimation}
         />
       )}
-      {hasRotator && <RotatorMarker />}
+      {hasRotator && <RotatorMarker turnAnimation={rotatorTurnAnimation} />}
       {occupant && <ShipModel side={occupant.side} power={occupant.power} />}
       {countdownNumber !== undefined && (
         <NodeCountdown

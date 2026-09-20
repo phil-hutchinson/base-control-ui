@@ -272,7 +272,7 @@ export function NodeMarker({
     // same position - never re-typed as a literal - letting the implicit
     // end keyframe resolve to this stop's ordinary depleted colour, set
     // here in `style` rather than as a `stop-color` attribute so the
-    // animation has a base value to return to (D5).
+    // animation has a base value to return to.
     const chargedStops = nodeArtwork("charged", undefined).stops;
     return (
       <svg

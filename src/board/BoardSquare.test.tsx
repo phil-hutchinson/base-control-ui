@@ -4,7 +4,10 @@ import { cleanup, render } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ShipCondition } from "./squareLabel";
-import type { NodeBurnoutAnimation } from "./boardAnimations";
+import type {
+  NodeBurnoutAnimation,
+  RotatorTurnAnimation,
+} from "./boardAnimations";
 import { BoardSquare } from "./BoardSquare";
 import { PLANET_ART } from "./planetArt";
 import {
@@ -552,6 +555,71 @@ describe("BoardSquare", () => {
           countdownNumber={5}
           occupant={{ side: "green", power: 4 }}
         />,
+      );
+
+      expect(container.innerHTML).toBe(plain.container.innerHTML);
+    });
+  });
+
+  describe("the rotator turn animation", () => {
+    const TURN_ANIMATION: RotatorTurnAnimation = {
+      type: "rotator-turn",
+      runId: 7,
+    };
+
+    it("carries the turning class and a turn angle of a third of a circle", () => {
+      const { container } = render(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          hasRotator={true}
+          animation={TURN_ANIMATION}
+        />,
+      );
+
+      const marker = container.querySelector(".rotator-marker--turning");
+      expect(marker).toBeInTheDocument();
+      // Negative: the mark finishes unturned and the keyframe supplies only
+      // the start, so travelling from -120 up to 0 sweeps clockwise.
+      expect(
+        (marker as unknown as HTMLElement).style.getPropertyValue(
+          "--rotator-turn-angle",
+        ),
+      ).toBe("-120deg");
+    });
+
+    it("carries neither the turning class nor a turn angle when given none", () => {
+      const { container } = render(
+        <BoardSquare isPlanet={false} squareName="H8" hasRotator={true} />,
+      );
+
+      expect(
+        container.querySelector(".rotator-marker--turning"),
+      ).not.toBeInTheDocument();
+      const marker = container.querySelector(".rotator-marker");
+      expect(
+        (marker as unknown as HTMLElement).style.getPropertyValue(
+          "--rotator-turn-angle",
+        ),
+      ).toBe("");
+    });
+
+    it("leaves a turning rotator's end state exactly as if it never turned", () => {
+      const { container, rerender } = render(
+        <BoardSquare
+          isPlanet={false}
+          squareName="H8"
+          hasRotator={true}
+          animation={TURN_ANIMATION}
+        />,
+      );
+
+      rerender(
+        <BoardSquare isPlanet={false} squareName="H8" hasRotator={true} />,
+      );
+
+      const plain = render(
+        <BoardSquare isPlanet={false} squareName="H8" hasRotator={true} />,
       );
 
       expect(container.innerHTML).toBe(plain.container.innerHTML);

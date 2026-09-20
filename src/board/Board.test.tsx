@@ -22,6 +22,8 @@ import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { legalDestinations } from "../rules/movement";
 import { legalTargets } from "../rules/combat";
 import { MAX_POWER, type PowerLevel } from "../rules/power";
+import type { QueueRefilledEffect } from "../rules/endOfTurn";
+import type { QueueRotatedEffect } from "../rules/ply";
 import {
   createSession,
   sessionReducer,
@@ -1799,6 +1801,92 @@ describe("the burnout animation", () => {
     expect(
       otherCell.querySelector(".node-marker--burning-out"),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("the rotator turn animation", () => {
+  const SPENT_SQUARE = squareAt("E", 5);
+  const REMAINING_SQUARES = [squareAt("F", 6), squareAt("G", 9)];
+
+  const ROTATOR_TRIGGER: QueueRotatedEffect = {
+    type: "queue-rotated",
+    square: SPENT_SQUARE,
+    trigger: "rotator",
+  };
+
+  it("turns every rotator still on the board, and never the spent square", () => {
+    const state = stateWithRotators([SPENT_SQUARE, ...REMAINING_SQUARES]);
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: SPENT_SQUARE,
+      effects: [
+        ROTATOR_TRIGGER,
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+
+    render(<Board session={session} onIntent={noop} />);
+
+    for (const square of REMAINING_SQUARES) {
+      const cell = screen.getByRole("gridcell", {
+        name: new RegExp(`^${squareName(square)},`),
+      });
+      expect(
+        cell.querySelector(".rotator-marker--turning"),
+      ).toBeInTheDocument();
+    }
+  });
+
+  it("turns none when the same turn also refilled the rotator set", () => {
+    const refilled: QueueRefilledEffect = {
+      type: "queue-refilled",
+      discardedSquares: [],
+      newNodes: [],
+      newRotators: REMAINING_SQUARES,
+    };
+    const state = stateWithRotators(REMAINING_SQUARES);
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 7),
+      to: SPENT_SQUARE,
+      effects: [
+        ROTATOR_TRIGGER,
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [refilled],
+        },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    const session: Session = {
+      state,
+      selectedShipId: undefined,
+      lastEvent: event,
+    };
+
+    const { container } = render(<Board session={session} onIntent={noop} />);
+
+    expect(container.querySelectorAll(".rotator-marker--turning")).toHaveLength(
+      0,
+    );
+    expect(container.querySelectorAll(".rotator-marker")).toHaveLength(
+      REMAINING_SQUARES.length,
+    );
   });
 });
 
