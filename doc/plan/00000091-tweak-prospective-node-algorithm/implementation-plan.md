@@ -923,7 +923,38 @@ review fixture or debug affordance is to be added to make it easier (S7).
 
 ## Step 5 — `README.md`, the document sweep, and the story's own record
 
-Status: pending
+Status: committed
+
+Notes: Followed `.claude/commands/update-readme.md`'s guidance directly
+rather than invoking the slash command, per the step's own instruction.
+Added one clause to the Status section's node-refill sentence — "Two of the
+three land further in, but the third can turn up anywhere at all, right out
+to the board's very edge and even in a corner." — judged worth a player
+knowing, keeping the paragraph's voice and the word "turn"; the shorter
+mention earlier in the README (outside the Status section) was left alone,
+as the plan's quoted sentences both come from the Status paragraph.
+Confirmed `src/guide/guideCopy.ts` needs no change — it covers the three ring
+indicators and rotation only, nothing about where a node may land.
+Corrected `story.md`'s *What does not change* bullet in place per D6: split
+it into the charged-squares bullet (unchanged) and a new bullet stating the
+owner's decision that the inactive trio now draws strict/strict/strict, so
+the board a given seed deals differs from before (tightened inward from
+strict/one-ring/one-ring, not held constant). Corrected the matching
+*Verification* bullet the same way, and added a bullet to *In scope* section
+1 naming §8.1's exception as a second rules change folded into the same 0.37
+bump. No accessibility note needed — no UI code changed in this story (S8).
+Confirmed rules artefacts: `rules.md` at 0.37, `RULES_VERSION` at `"0.37"`,
+exactly one `## 0.37` changelog entry, `git tag --list "rules-*"` shows
+nothing (S2). No deviation from the plan.
+
+Verification: `npm run typecheck`, `npm run lint`, `npm run format:check` —
+all clean. `npm test` — 73 files, 1454 tests, all green (unchanged from Step
+3, as expected — no test touched). `grep -n "Rules version" doc/ruleset/rules.md`
+reads `**Rules version: 0.37**`; `grep -n "RULES_VERSION" src/rules/rulesVersion.ts`
+reads `"0.37"`; `grep -c "^## 0.37" doc/ruleset/changelog.md` is 1;
+`git tag --list "rules-*"` is empty. Left uncommitted for the orchestrator
+per the agent instructions, so `git status` is not clean at hand-off — that
+is expected; it is the orchestrator's commit that clears it.
 
 The wrap-up step.
 

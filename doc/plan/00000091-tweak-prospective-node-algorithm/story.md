@@ -49,9 +49,18 @@ anywhere, including A1.
 
 - **The six constraints themselves**, their wording, or the strict pool
   they define. 51 legal squares on an empty board, exactly as now.
-- **The opening deal.** It draws its charged nodes from the strict pool,
-  uniformly, and never touches the widened one, so the board a given seed
-  deals is the board it dealt before.
+- **The opening deal's charged squares.** They are drawn from the strict pool,
+  uniformly, exactly as before, and are unchanged for a given seed.
+- **Owner decision at the plan gate: the opening deal's inactive trio now
+  draws strict / strict / strict too**, a deliberate exception in section 8.1
+  rather than a side effect of this story's change to the refill procedure —
+  so the opening board stays entirely inside the interior C3–M13 and a game
+  never opens with a node on the rim. The trio a given seed deals therefore
+  does differ from before: the previous rules drew that trio strict /
+  one-ring / one-ring, because the old widening came after the first draw, so
+  going to all-strict tightens the second and third squares inward rather
+  than loosening them. The opening board changes for a given seed; it does
+  not stay put.
 - **The seed.** A refill still consumes exactly four steps in the same
   order — three squares then the priority permutation — so no game gets
   longer or shorter in seed terms and `seededReplay.test.ts`'s
@@ -106,6 +115,13 @@ tagging stays on hold (`CLAUDE.md`).
   is now wrong.
 - **§8.2, the refill procedure paragraph** names which pool each draw uses
   and must be corrected to the new split.
+- **§8.1's opening deal** carries a second rules change, owner decision at
+  the plan gate: its inactive trio draws strict / strict / strict, not the
+  strict / strict / widened split the refill procedure now uses during play,
+  so the board a game opens on stays entirely inside the interior C3–M13 and
+  never carries a rim node before the first turn. This folds into the same
+  0.37 bump and the same changelog entry as the rest of the rules edit — it
+  is not a second version.
 - **§3.3** says section 3.2's constraints do not apply to a rotator, which
   is still true; check the surrounding contrast still reads correctly now
   that a node can share the edge with one.
@@ -203,9 +219,11 @@ knowingly lost goes in
 - Over a long run at every charged count, a refill's first two squares are
   legal under all six constraints, the third is legal under the four that
   remain, and the fallback never fires.
-- A refill still consumes exactly four seed steps, and the same seed still
-  deals the same opening board and the same game as it did before this
-  change.
+- A refill still consumes exactly four seed steps. A given seed's opening
+  board keeps the same charged squares as before this change, but its
+  inactive trio now differs, drawn strict / strict / strict instead of
+  strict / one-ring / one-ring, so that every square the board opens on —
+  charged and inactive alike — lies inside the interior.
 - No figure in `tech-notes.md` states a number the board no longer
   produces, and each figure says which charged count it was measured at.
 - Playing a game, a node appears on the outer edge often enough to notice
