@@ -301,7 +301,28 @@ Confirmed against this branch while planning:
 
 ## Step 1 — Rules 0.37: the widening moves one draw later and opens the edge
 
-Status: pending
+Status: committed
+
+Notes: Rewrote §3.2's widening paragraph (widens after the second draw, not
+the first; lifts constraints 3 and 4 together; 51/117 empty-board sizes, 38
+of the 117 on the outer edge; the "never lifted" sentence deleted); corrected
+§8.2's refill-procedure paragraph to strict/strict/widened and added a
+sentence naming the opening deal as the one exception; rewrote §8.1's
+opening-deal bullets so the charged squares are named as drawn from the
+strict pool and the inactive trio is now strict/strict/strict, explicitly
+kept clear of the outer edge. §3.3's rotator paragraph needed no change — it
+never claimed the edge belonged to rotators alone. No other sentence in the
+document claimed a node can't reach the edge. Added one `## 0.37` changelog
+entry covering both rules changes. Bumped `RULES_VERSION` to `"0.37"`. No
+code in `src/` touched other than `rulesVersion.ts`.
+Verification: `npm test` — 73 files, 1453 tests, all green (unchanged count,
+as expected since no code changed); `rulesVersion.test.ts` passes;
+`grep -n "never lifted" doc/ruleset/rules.md` finds nothing;
+`grep -c "^## 0.37" doc/ruleset/changelog.md` is 1;
+`grep -n "117" doc/ruleset/rules.md` finds the new widened-pool size;
+`grep -n "79" doc/ruleset/rules.md` finds nothing; `npm run typecheck`,
+`npm run lint` and `npm run format:check` all clean. Not committed — left for
+the orchestrator per the agent instructions.
 
 Edit `doc/ruleset/rules.md` from version **0.36** to **0.37**, update the
 `RULES_VERSION` constant in `src/rules/rulesVersion.ts` to match, and add one
