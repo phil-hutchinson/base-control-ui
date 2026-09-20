@@ -12,18 +12,26 @@
 //
 // 1. The first square, drawn by `drawWeightedNodeSquare` over the strict
 //    pool (`legalNodePool`'s default) — all six of §3.2's constraints.
-// 2. The second square, drawn the same way over the widened pool
-//    (constraint 4 lifted), computed against a board that already includes
-//    the first square, so both the adjacency constraint and the weighting
-//    see it.
-// 3. The third square, the same again, seeing the first two.
+// 2. The second square, drawn the same way over the strict pool again,
+//    computed against a board that already includes the first square, so
+//    both the adjacency constraint and the weighting see it.
+// 3. The third square, drawn over the widened pool (constraints 3 and 4
+//    lifted together), computed against a board that already includes the
+//    first two — the one draw of the three that may land on the outer edge.
+//    The opening deal (`nodes.ts`) is an exception: it holds this draw to
+//    the strict pool too (rules.md §8.1), so a game never opens with a node
+//    on the rim.
 // 4. The priorities: one `drawIndex` over the six entries of
 //    `PRIORITY_PERMUTATIONS`, applied to the three squares in the order
 //    they were drawn.
 
 import type { Square } from "./board";
 import type { NodeStatus } from "./gameState";
-import { drawWeightedNodeSquare, legalNodePool } from "./nodePlacement";
+import {
+  type NodePoolWidth,
+  drawWeightedNodeSquare,
+  legalNodePool,
+} from "./nodePlacement";
 import { drawIndex } from "./random";
 
 /**
@@ -62,11 +70,12 @@ export interface InactiveNodeDraw {
 
 /**
  * Draws a fresh trio of inactive nodes (rules.md §8.2): three squares, one
- * at a time from a pool that widens after the first, spread apart from the
- * squares already holding a charged node and from each other by
- * `drawWeightedNodeSquare`'s weighting, then dealt priorities 1, 2 and 3 in
- * a random order. Consumes exactly four seed steps, in the order stated in
- * this module's header comment, and advances the seed no further.
+ * at a time — the first two from the strict pool, the third from the
+ * widened one, which is where a node can reach the outer edge — spread
+ * apart from the squares already holding a charged node and from each other
+ * by `drawWeightedNodeSquare`'s weighting, then dealt priorities 1, 2 and 3
+ * in a random order. Consumes exactly four seed steps, in the order stated
+ * in this module's header comment, and advances the seed no further.
  *
  * `occupiedNodeSquares` is every square that already holds a node. The
  * caller is expected to have swept the surviving inactive nodes out of it
@@ -75,12 +84,20 @@ export interface InactiveNodeDraw {
  * which is what the weighting spreads the new trio away from — a depleted
  * node contributes no weight, only the adjacency constraint `legalNodePool`
  * already applies to it.
+ *
+ * `thirdSquarePoolWidth` defaults to `"widened"`, the play behaviour §8.2
+ * describes. The opening deal (`nodes.ts`) passes `"strict"` instead — its
+ * own §8.1 exception — so that every square it deals, charged and inactive
+ * alike, stays inside the interior and a game never opens with a node on
+ * the outer edge. The parameter changes only which pool the third draw
+ * uses; it never changes how many draws happen or how the seed advances.
  */
 export function refillQueue(
   occupiedNodeSquares: readonly Square[],
   chargedNodeSquares: readonly Square[],
   shipSquares: readonly Square[],
   seed: number,
+  thirdSquarePoolWidth: NodePoolWidth = "widened",
 ): [nodes: readonly InactiveNodeDraw[], nextSeed: number] {
   const drawnSquares: Square[] = [];
   let workingSeed = seed;
@@ -95,21 +112,32 @@ export function refillQueue(
   drawnSquares.push(firstSquare);
   workingSeed = seedAfterFirst;
 
-  for (let draw = 0; draw < 2; draw++) {
-    const widenedPool = legalNodePool(
-      [...occupiedNodeSquares, ...drawnSquares],
-      shipSquares,
-      "widened",
-    );
-    const [square, nextSeed] = drawWeightedNodeSquare(
-      widenedPool,
-      chargedNodeSquares,
-      drawnSquares,
-      workingSeed,
-    );
-    drawnSquares.push(square);
-    workingSeed = nextSeed;
-  }
+  const strictPoolAfterFirst = legalNodePool(
+    [...occupiedNodeSquares, ...drawnSquares],
+    shipSquares,
+  );
+  const [secondSquare, seedAfterSecond] = drawWeightedNodeSquare(
+    strictPoolAfterFirst,
+    chargedNodeSquares,
+    drawnSquares,
+    workingSeed,
+  );
+  drawnSquares.push(secondSquare);
+  workingSeed = seedAfterSecond;
+
+  const thirdPool = legalNodePool(
+    [...occupiedNodeSquares, ...drawnSquares],
+    shipSquares,
+    thirdSquarePoolWidth,
+  );
+  const [thirdSquare, seedAfterThird] = drawWeightedNodeSquare(
+    thirdPool,
+    chargedNodeSquares,
+    drawnSquares,
+    workingSeed,
+  );
+  drawnSquares.push(thirdSquare);
+  workingSeed = seedAfterThird;
 
   const [permutationIndex, seedAfterPermutation] = drawIndex(
     workingSeed,

@@ -35,7 +35,7 @@ function isAdjacent(a: Square, b: Square): boolean {
   return chebyshevDistance(a, b) <= 1;
 }
 
-/** Whether a square sits exactly one ring in from the nearest edge — the ring the widened pool opens up that the strict pool keeps closed. */
+/** Whether a square sits exactly one ring in from the nearest edge — inside the widened pool, but excluded from the strict one. */
 function isOneRingFromEdge(square: Square): boolean {
   const columnIndex = COLUMN_LETTERS.indexOf(square.column);
   const columnDistance = Math.min(
@@ -44,6 +44,16 @@ function isOneRingFromEdge(square: Square): boolean {
   );
   const rowDistance = Math.min(square.row - 1, BOARD_SIZE - square.row);
   return Math.min(columnDistance, rowDistance) === 1;
+}
+
+/** Whether a square sits on the outer edge itself — legal only in the widened pool, the third draw's pool. */
+function isOnOuterEdge(square: Square): boolean {
+  return (
+    square.row === 1 ||
+    square.row === BOARD_SIZE ||
+    square.column === "A" ||
+    square.column === "O"
+  );
 }
 
 describe("constants", () => {
@@ -65,7 +75,7 @@ describe("constants", () => {
 });
 
 describe("refillQueue", () => {
-  it("deals three distinct squares, none adjacent to each other, to a charged node or to a planet, and none on the outer edge, over many seeds", () => {
+  it("deals three distinct squares, none adjacent to each other, to a charged node or to a planet, with the first two off the outer edge, over many seeds", () => {
     for (let seed = 0; seed < 200; seed++) {
       const [nodes] = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], seed);
 
@@ -73,11 +83,14 @@ describe("refillQueue", () => {
       const names = nodes.map((node) => squareName(node.square));
       expect(new Set(names).size).toBe(3);
 
-      for (const node of nodes) {
+      for (const node of [nodes[0], nodes[1]]) {
         expect(node.square.row).not.toBe(1);
         expect(node.square.row).not.toBe(BOARD_SIZE);
         expect(node.square.column).not.toBe("A");
         expect(node.square.column).not.toBe("O");
+      }
+
+      for (const node of nodes) {
         expect(isPlanet(node.square)).toBe(false);
         for (const planet of PLANETS) {
           expect(isAdjacent(node.square, planet)).toBe(false);
@@ -108,19 +121,18 @@ describe("refillQueue", () => {
     }
   });
 
-  it("draws the first square from the strict pool, and the second and third from the widened pool computed against the squares drawn so far", () => {
+  it("draws the first two squares from the strict pool, and the third from the widened pool computed against the squares drawn so far", () => {
     for (let seed = 0; seed < 100; seed++) {
       const [nodes] = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], seed);
 
       const strictPool = legalNodePool(CHARGED_SQUARES, []);
       expect(strictPool.map(squareName)).toContain(squareName(nodes[0].square));
 
-      const widenedPoolAfterFirst = legalNodePool(
+      const strictPoolAfterFirst = legalNodePool(
         [...CHARGED_SQUARES, nodes[0].square],
         [],
-        "widened",
       );
-      expect(widenedPoolAfterFirst.map(squareName)).toContain(
+      expect(strictPoolAfterFirst.map(squareName)).toContain(
         squareName(nodes[1].square),
       );
 
@@ -135,16 +147,25 @@ describe("refillQueue", () => {
     }
   });
 
-  it("lands the second or third square one ring in from the edge at least once over several thousand seeds — the point of widening the pool", () => {
+  it("lands the third square on the outer edge at least once over several thousand seeds, and one ring in at least once too — the point of widening the pool", () => {
+    let sawOuterEdgeSquare = false;
     let sawRingOneSquare = false;
 
-    for (let seed = 0; seed < 3000 && !sawRingOneSquare; seed++) {
+    for (
+      let seed = 0;
+      seed < 3000 && !(sawOuterEdgeSquare && sawRingOneSquare);
+      seed++
+    ) {
       const [nodes] = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], seed);
-      sawRingOneSquare =
-        isOneRingFromEdge(nodes[1].square) ||
-        isOneRingFromEdge(nodes[2].square);
+      if (isOnOuterEdge(nodes[2].square)) {
+        sawOuterEdgeSquare = true;
+      }
+      if (isOneRingFromEdge(nodes[2].square)) {
+        sawRingOneSquare = true;
+      }
     }
 
+    expect(sawOuterEdgeSquare).toBe(true);
     expect(sawRingOneSquare).toBe(true);
   });
 
@@ -212,10 +233,12 @@ describe("refillQueue", () => {
     expect(first).toEqual(second);
   });
 
-  it("spreads a freshly dealt trio measurably apart: mean smallest pairwise gap above 4.5 over several thousand refills", () => {
-    // story.md measured 5.08 for the weighted draw against 3.98 unweighted,
-    // over the same pools; this leaves comfortable margin below the
-    // weighted figure alone.
+  it("spreads a freshly dealt trio measurably apart: mean smallest pairwise gap above 3.75 over several thousand refills", () => {
+    // Measured 4.24 for this seed and trial count after story 91 moved the
+    // widening to the third draw alone (was 4.5 before, against a measured
+    // 5.08, when both the second and third draw were widened) — a smaller
+    // pool for the second draw leaves less room to spread it from the
+    // first. The floor keeps a comparable margin below the new figure.
     const trials = 4000;
     let seed = 900001;
     let totalMinimumGap = 0;
@@ -241,7 +264,7 @@ describe("refillQueue", () => {
       totalMinimumGap += minimumGap;
     }
 
-    expect(totalMinimumGap / trials).toBeGreaterThan(4.5);
+    expect(totalMinimumGap / trials).toBeGreaterThan(3.75);
   });
 });
 

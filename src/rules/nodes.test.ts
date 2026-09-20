@@ -151,7 +151,7 @@ describe.each(CHARGED_NODE_COUNTS)(
       }
     });
 
-    it("deals every square legal under §3.2 — the charged squares inside C3-M13, none on the outer edge, off any ship, no two dealt squares adjacent — over many seeds", () => {
+    it("deals every square, charged and inactive alike, inside C3-M13 — off any ship, no two dealt squares adjacent — over many seeds", () => {
       const fleetNames = new Set(FLEET_SQUARES.map(squareName));
       let seed = 1;
       for (let i = 0; i < 500; i++) {
@@ -165,16 +165,14 @@ describe.each(CHARGED_NODE_COUNTS)(
         const names = Object.keys(nodes);
         const dealtSquares = names.map(squareFromName);
 
-        // The charged squares are always drawn from the strict pool
-        // (rules.md §3.2), so they stay inside the 11 x 11 interior; the
-        // inactive trio's second and third squares are drawn from the
-        // widened pool (§8.2's refill procedure), which may land one ring in
-        // from the edge — outside the interior, but never on the outer edge
-        // itself.
+        // The deal draws every one of its squares — charged and inactive
+        // alike — from the strict pool (rules.md §8.1's exception to §8.2's
+        // refill procedure), so the whole opening board lies inside the 11 x
+        // 11 interior C3-M13 and never on the outer edge. A refill during
+        // play is not held to this: its third square may reach the edge
+        // (§8.2), but the deal never does.
         for (const name of names) {
-          if (nodes[name].state === "charged") {
-            expect(INTERIOR_NAMES.has(name)).toBe(true);
-          }
+          expect(INTERIOR_NAMES.has(name)).toBe(true);
           expect(fleetNames.has(name)).toBe(false);
         }
         for (const square of dealtSquares) {

@@ -52,7 +52,11 @@ export function isChargedNodeCount(value: number): value is ChargedNodeCount {
  *    against the board as the charged squares leave it — the same
  *    procedure a later charge's refill uses, so the trio is spread apart
  *    from the charged nodes and from each other and dealt priorities 1, 2
- *    and 3 at random.
+ *    and 3 at random. Unlike a refill during play, the deal holds all
+ *    three draws to the strict pool (§8.1's exception to §8.2), so every
+ *    square it deals — charged and inactive alike — lies inside the
+ *    interior C3-M13 and the opening board never carries a node on the
+ *    outer edge.
  *
  * That is `chargedNodeCount + 4` seed steps before green's first turn —
  * nine at five charged, eight at four, seven at three. Nothing is dealt
@@ -97,6 +101,7 @@ export function dealOpeningBoard(
     chargedSquares,
     shipSquares,
     workingSeed,
+    "strict",
   );
   for (const { square, priority } of inactiveNodes) {
     nodes[squareName(square)] = { state: "inactive", level: priority };

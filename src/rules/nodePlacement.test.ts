@@ -53,6 +53,26 @@ function isAdjacent(a: Square, b: Square): boolean {
   return Math.abs(columnDelta) <= 1 && Math.abs(a.row - b.row) <= 1;
 }
 
+/**
+ * The squares that satisfy the widened pool's four remaining constraints on
+ * an empty board with no ships: every square, minus the twelve planets and
+ * every square orthogonally or diagonally adjacent to one. Derived from
+ * `PLANETS` rather than typed out, so the set follows the geometry — this
+ * restates §3.2's rule for the widened pool, not `legalNodePool`'s
+ * implementation of it.
+ */
+const WIDENED_LEGAL_SQUARES_ON_EMPTY_BOARD: readonly Square[] =
+  ALL_SQUARES.filter(
+    (square) =>
+      !PLANETS.some(
+        (planet) =>
+          Math.abs(
+            COLUMN_LETTERS.indexOf(planet.column) -
+              COLUMN_LETTERS.indexOf(square.column),
+          ) <= 1 && Math.abs(planet.row - square.row) <= 1,
+      ),
+  );
+
 describe("legalNodePool", () => {
   it("is exactly the 51 legal squares on an empty board", () => {
     const pool = legalNodePool([], []);
@@ -213,12 +233,15 @@ describe("legalNodePool", () => {
 });
 
 describe("legalNodePool with the widened pool", () => {
-  it("is 79 squares on an empty board, a strict superset of the 51-square strict pool", () => {
+  it("is 117 squares on an empty board, a strict superset of the 51-square strict pool", () => {
     const strict = legalNodePool([], []);
     const widened = legalNodePool([], [], "widened");
 
     expect(strict).toHaveLength(51);
-    expect(widened).toHaveLength(79);
+    expect(widened).toHaveLength(117);
+    expect(widened.map(squareName).sort()).toEqual(
+      WIDENED_LEGAL_SQUARES_ON_EMPTY_BOARD.map(squareName).sort(),
+    );
 
     const strictNames = new Set(strict.map(squareName));
     const widenedNames = new Set(widened.map(squareName));
@@ -237,17 +260,28 @@ describe("legalNodePool with the widened pool", () => {
     expect(widened.map(squareName)).toContain(squareName(target));
   });
 
-  it("never includes a square on the outer edge, in either pool", () => {
+  it("contains an outer-edge square, and a corner, that the strict pool excludes", () => {
+    // A8 is on the outer edge, clear of every planet; A1 is a corner, also
+    // clear of every planet.
+    const edgeTarget = squareAt("A", 8);
+    const cornerTarget = squareAt("A", 1);
     const strict = legalNodePool([], []);
     const widened = legalNodePool([], [], "widened");
 
-    for (const pool of [strict, widened]) {
-      for (const square of pool) {
-        expect(square.row).not.toBe(1);
-        expect(square.row).not.toBe(15);
-        expect(square.column).not.toBe("A");
-        expect(square.column).not.toBe("O");
-      }
+    for (const target of [edgeTarget, cornerTarget]) {
+      expect(strict.map(squareName)).not.toContain(squareName(target));
+      expect(widened.map(squareName)).toContain(squareName(target));
+    }
+  });
+
+  it("excludes the outer edge from the strict pool", () => {
+    const strict = legalNodePool([], []);
+
+    for (const square of strict) {
+      expect(square.row).not.toBe(1);
+      expect(square.row).not.toBe(15);
+      expect(square.column).not.toBe("A");
+      expect(square.column).not.toBe("O");
     }
   });
 });

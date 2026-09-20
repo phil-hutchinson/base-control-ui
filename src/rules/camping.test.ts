@@ -584,9 +584,11 @@ describe("camping — leaving a charged node ends it at once (rules.md §8.3)", 
     ).toBe("destination-uncharged-node");
 
     // Red's turn passes; the exit's second and last ply is spent at the end
-    // of it, and it retires without a trace.
+    // of it, and it retires without a trace. D4, not D3: the shortfall
+    // M5's charge opens also triggers a refill, which can draw D3 for one
+    // of the fresh inactive nodes.
     const afterRedTurn = appliedOrThrow(
-      applyMove(afterDeparture.state, "red-1", squareFromName("D3")),
+      applyMove(afterDeparture.state, "red-1", squareFromName("D4")),
     );
     const redTurnEffects = endOfTurnEffects(afterRedTurn.effects);
     expect(redTurnEffects).toContainEqual({

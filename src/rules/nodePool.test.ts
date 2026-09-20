@@ -308,7 +308,7 @@ function satisfiesOrdinaryPoolConstraints(
   shipSquares: readonly Square[],
   poolWidth: NodePoolWidth,
 ): boolean {
-  const requiredRings = poolWidth === "widened" ? 1 : 2;
+  const requiredRings = poolWidth === "widened" ? 0 : 2;
   const name = squareName(square);
 
   if (occupiedSquares.some((occupied) => squareName(occupied) === name)) {
@@ -459,18 +459,17 @@ describe.each(CHARGED_NODE_COUNTS)(
             const others = allNodeSquares.filter(
               (candidate) => squareName(candidate) !== squareName(square),
             );
-            // The draw order within the dealt trio is not recoverable from the
-            // finished state, so this checks the constraint every one of the
-            // three draws shares — the widened pool — rather than singling out
-            // the strict first draw from the widened second and third.
-            // `nodeQueue.test.ts` already checks that distinction directly
-            // against `refillQueue` in isolation.
+            // The opening deal holds all three of its inactive draws to the
+            // strict pool (rules.md §8.1's exception to §8.2), so draw order
+            // no longer matters here: every dealt square, inactive ones
+            // included, satisfies every one of the six ordinary constraints,
+            // not merely the widened pool's four.
             expect(
               satisfiesOrdinaryPoolConstraints(
                 square,
                 others,
                 shipSquares,
-                "widened",
+                "strict",
               ),
             ).toBe(true);
           }
@@ -478,10 +477,12 @@ describe.each(CHARGED_NODE_COUNTS)(
       );
 
       it.each(SEEDS)(
-        "draws every refill's three squares from the right pool, never the outer edge, and never the fallback (seed %d)",
+        "draws every refill's first two squares from the strict pool and the third from the widened one, the third often reaching the outer edge, and never the fallback (seed %d)",
         (seed) => {
           const run = runEconomy(seed, PLIES_TO_RUN, chargedNodeCount);
           expect(run.refills.length).toBeGreaterThan(10);
+
+          let thirdSquaresOnOuterEdge = 0;
 
           for (const refill of run.refills) {
             const [first, second, third] = refill.newNodes;
@@ -499,7 +500,7 @@ describe.each(CHARGED_NODE_COUNTS)(
                 second.square,
                 [...refill.occupiedBeforeRefill, first.square],
                 run.shipSquares,
-                "widened",
+                "strict",
               ),
             ).toBe(true);
             expect(
@@ -511,7 +512,7 @@ describe.each(CHARGED_NODE_COUNTS)(
               ),
             ).toBe(true);
 
-            for (const { square } of refill.newNodes) {
+            for (const { square } of [first, second]) {
               expect(square.row).not.toBe(1);
               expect(square.row).not.toBe(BOARD_SIZE);
               expect(square.column).not.toBe(COLUMN_LETTERS[0]);
@@ -519,7 +520,18 @@ describe.each(CHARGED_NODE_COUNTS)(
                 COLUMN_LETTERS[COLUMN_LETTERS.length - 1],
               );
             }
+
+            if (
+              third.square.row === 1 ||
+              third.square.row === BOARD_SIZE ||
+              third.square.column === COLUMN_LETTERS[0] ||
+              third.square.column === COLUMN_LETTERS[COLUMN_LETTERS.length - 1]
+            ) {
+              thirdSquaresOnOuterEdge++;
+            }
           }
+
+          expect(thirdSquaresOnOuterEdge).toBeGreaterThan(0);
         },
       );
     });
@@ -550,13 +562,12 @@ describe.each(CHARGED_NODE_COUNTS)(
               strictPool,
               comparisonSeed,
             );
-            const widenedPoolAfterFirst = legalNodePool(
+            const strictPoolAfterFirst = legalNodePool(
               [...refill.occupiedBeforeRefill, firstSquare],
               run.shipSquares,
-              "widened",
             );
             const [secondSquare, seedAfterSecond] = drawUniformSquare(
-              widenedPoolAfterFirst,
+              strictPoolAfterFirst,
               seedAfterFirst,
             );
             const widenedPoolAfterSecond = legalNodePool(

@@ -420,7 +420,79 @@ so the count should stay at 1453). Then confirm by search:
 
 ## Step 2 — The pool, the draw, and every test that asserted the old split
 
-Status: pending
+Status: committed
+
+Notes: `WIDENED_EXCLUDED_EDGE_RINGS` set to 0 and its doc comment, `NodePoolWidth`'s
+and `legalNodePool`'s doc comments rewritten in `nodePlacement.ts` (S4: no
+behaviour change there beyond the constant). `refillQueue` (`nodeQueue.ts`)
+rewritten so the first two draws use the strict pool (the second recomputed
+against the board plus the first square) and only the third uses the pool
+`thirdSquarePoolWidth` names, defaulting to `"widened"` so `endOfTurn.ts`'s
+call site is untouched; the module header's four-step list and the
+function's own doc comment corrected to match, with the new parameter
+documented with its §8.1 reason. `dealOpeningBoard` (`nodes.ts`) passes
+`"strict"` for that parameter (D6) and its doc comment says so. Updated all
+four named test files per the plan: `nodePlacement.test.ts`'s widened pool
+now asserts 117 (derived from `PLANETS` geometry, not a bare length), gains
+the A1/A8-vs-corner companion case, and the old "never on the outer edge, in
+either pool" case is now "excludes the outer edge from the strict pool"
+alone; `nodeQueue.test.ts`'s edge assertion is split to the first two
+squares, the pool-provenance test now checks strict/strict/widened, and the
+"lands one ring in" test is retargeted at the third draw and made positive
+about the outer edge too; `nodePool.test.ts`'s `requiredRings` for
+`"widened"` is 0, the "never the outer edge" test is renamed and rewritten
+to strict/strict/widened with a new outer-edge-reached counter asserted
+`>0`, and the opening-deal legality check is tightened from `"widened"` to
+`"strict"` per D6 with the comment rewritten to give the §8.1 reason instead
+of the old "draw order isn't recoverable" one; `nodes.test.ts`'s dealt-board
+test now asserts `INTERIOR_NAMES.has(name)` for every dealt square
+(charged and inactive alike), renamed, with its explanatory comment
+corrected to say the deal holds all three draws strict while a refill
+during play does not.
+
+Two deviations beyond the plan's explicit checklist, both needed to land
+this step green (D3's "single green step" rule):
+
+- `nodePool.test.ts`'s "spread the weighting buys" test builds its own
+  unweighted comparison draw by re-deriving the same three pools a real
+  refill sees; that reconstruction still drew its second square from the
+  widened pool. Corrected it to strict, alongside the renamed test, so the
+  comparison actually mirrors what `refillQueue` now does — not called out
+  by name in the plan's `nodePool.test.ts` bullets, but the same test the
+  bullets do cover.
+- `nodeQueue.test.ts`'s `MINIMUM_SPREAD_ADVANTAGE`-style floor (the mean
+  smallest pairwise gap, previously bounded at 4.5) measured 4.23775 for its
+  fixed seed and trial count after the change — expected, since the second
+  draw no longer has the widened pool's extra room to spread from the
+  first. Per the step's closing rule, lowered the bound to 3.75, a margin
+  below the new figure comparable to the old bound's margin below its
+  original 5.08, and recorded the new figure in the comment. This is a
+  finding for Step 3, which re-measures the tech-notes.md figures properly.
+- `camping.test.ts` (outside the plan's four named test files) had one test
+  hard-code a fixed-seed board where a mid-game refill (triggered when its
+  manually-built queue's sole inactive node charges) draws a fresh trio.
+  With the pool split changed, that refill's third draw landed on D3 for
+  this seed, where the test had a later move go — collateral from a literal
+  square baked into a fixed-seed scenario, not a rule assertion about pool
+  width. Retargeted that move to D4 (already used by the following, unaffected
+  test) with a one-line comment explaining why. Not named in the plan, but
+  the same D3 (this plan's, not the square's) reasoning applies: the step
+  must land green as a whole.
+
+Verification: `npm run typecheck`, `npm run lint`, `npm run format:check` —
+all clean. `npm test` — 73 files, **1454** tests, all green (baseline 1453,
+risen by one as the plan expects). `nodePlacement.test.ts` (26 tests): widened
+pool 117, contains A1 and A8, strict pool still 51 and a subset.
+`nodeQueue.test.ts` (19 tests): third square reaches the outer edge over the
+seed sweep; still exactly four seed steps per refill. `nodePool.test.ts` (99
+tests): passes at all three charged counts, first two squares of every refill
+legal under all six constraints, third legal under the remaining four, at
+least one third square on the outer edge across the run, fallback never
+fires. `nodes.test.ts` (34 tests): every dealt square, inactive included,
+inside C3-M13 at all three charged counts. `seededReplay.test.ts` (5 tests):
+passed **unchanged**, no edit needed (D7). No test outside `src/rules/`
+needed an edit (D8) — confirmed by `git status --short` showing only
+`src/rules/` files touched.
 
 Implement rules 0.37 in `src/rules/`. Both source edits and all four test
 files land together, for the reason D3 gives.
