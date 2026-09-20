@@ -825,7 +825,7 @@ CONTRIBUTING.md's comment convention forbids.
 
 ### Step 6 — The owner watches all three, and tunes the four numbers
 
-Status: pending
+Status: committed
 
 No code is written before this gate; the work here is watching, then adjusting
 the S4 starting values if they feel wrong, and re-running the checks after any
@@ -860,6 +860,26 @@ The four numbers to adjust, if any of them feels wrong, are in D11's table:
 `NodeMarker.tsx`), `--node-burnout-duration` (`BoardSquare.css`) and
 `--rotator-turn-duration` (`RotatorMarker.css`). Record in this step's Notes
 what was changed and to what.
+
+Notes: the owner watched all seven checks. Three findings, all fixed before
+this gate closed:
+
+1. The growing ball was off-centre in Firefox (correct in Chrome): the mask
+   circle scaled about a `fill-box` origin, which a shape inside a `<mask>`
+   does not resolve consistently across engines. The origin is now stated in
+   the marker's own user space, `50px 50px` against the `view-box`.
+2. The burnout read as a snap. `ease-out` spends most of a colour change in
+   its first third, so both the gradient stops and the countdown number now
+   travel `linear` — story.md calls it a straight slide — and
+   `--node-burnout-duration` went from 500ms to **900ms**.
+3. A node a ship _walked off_ did not animate at all, only a node that ran
+   out beneath one. That is a second road into depleted the story had missed
+   entirely, and it became Step 7.
+
+The other three numbers were left at their starting values:
+`--node-charge-duration` 750ms, `CHARGE_MASK_START_RADIUS` 20,
+`--rotator-turn-duration` 500ms. The owner confirmed all checks passing after
+Step 7.
 
 Depends on: Steps 3, 4 and 5 (all three animations).
 
@@ -925,7 +945,7 @@ not this step's to fix.
 
 ### Step 8 — `README.md`, and a final check that no rules artefact moved
 
-Status: pending
+Status: committed
 
 Run `/update-readme`, which reviews the branch diff and updates `README.md` if
 warranted. `README.md` is player-facing and describes how the game is played;
@@ -942,6 +962,24 @@ anywhere in the diff (S5, D12); and `src/hud/useCountUp.ts` untouched. Confirm
 too that no accessible behaviour was traded away, so
 `doc/plan/00000021-accessibility-tech-debt/known-issues.md` needs no "From
 story 92" entry (D13); if an earlier step did record one, say so here instead.
+
+Notes: `README.md` needs no change, and none was made. It describes what the
+game is and how it is played — the rules, the pre-play options and how to read
+the board. This story adds no capability, changes no rule or option, alters no
+setup step, and introduces nothing a player must understand in order to play.
+It never described how a state change renders, so there is nothing in it to
+correct.
+
+The diff against `main` confirms the story's guarantees. No change to
+`doc/ruleset/rules.md`, `doc/ruleset/changelog.md` or `src/rules/rulesVersion.ts`.
+Inside `src/rules/`, only `charging.ts` changed, and only to add the `priority`
+field and its doc comment; the other rules-layer files in the diff are tests
+updated to construct the widened effect. No `requestAnimationFrame`, animation
+hook or `src/motion/` folder appears anywhere under `src/`, and
+`src/hud/useCountUp.ts` is untouched. The accessibility ledger needs no "From
+story 92" entry and has none: every animation carries a
+`prefers-reduced-motion: reduce` branch, and no animation is the only channel
+for anything a player needs.
 
 Depends on: every previous step.
 
