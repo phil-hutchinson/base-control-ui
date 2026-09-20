@@ -87,14 +87,7 @@ export const PLANET_ART: readonly PlanetArt[] = [
     number: 2,
     name: "Peru-and-purple planet with four small, separately coloured moons",
     surface: "plain",
-    ids: idsFor(2, [
-      "body",
-      "surface",
-      "moon-1",
-      "moon-2",
-      "moon-3",
-      "moon-4",
-    ]),
+    ids: idsFor(2, ["body", "surface", "moon-1", "moon-2", "moon-3", "moon-4"]),
   },
   {
     number: 3,
