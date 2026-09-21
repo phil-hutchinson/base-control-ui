@@ -1281,7 +1281,14 @@ the section-to-diagram pairing; extend it rather than working around it.
 
 ### Step 11 — The owner plays it
 
-Status: pending
+Status: committed
+
+Notes: The owner played the finished app and signed off. Two changes came
+out of the manual gates along the way and are already in: at Step 7, the
+panel's rows gained GREEN BONUS / RED BONUS headings and the settled
+checkmark grew (70% of its cell, stroke width 4.5); after Step 9, the
+REFUELING sentence was reverted and the bonus given its own PLANET BONUS
+section at the foot of the Quick Guide, which became Step 10.
 
 Nothing to implement. The owner runs the finished app and confirms the story's
 own verification list, plus the two checks `story.md` calls out as worth making
