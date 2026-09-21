@@ -1,0 +1,97 @@
+/* Sits above `.clock-region` inside `.app__clocks` (App.css), sharing its
+   `--region-extent` box with the clocks rather than measuring itself from
+   the window: `--region-extent` is a height budget in portrait and a width
+   budget in landscape, and every size below is a fraction of it so the
+   panel scales down with the box itself instead of overflowing it. If the
+   box is too small for both the panel and the clocks, this is what shrinks
+   — `--region-extent` and the board never do (App.css). */
+.planet-bonus-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--region-extent) * 0.035);
+  width: 100%;
+}
+
+/* One side's heading and its three planets, as a unit. */
+.planet-bonus-panel__side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--region-extent) * 0.02);
+}
+
+/* The row's heading, in that side's colour and the arcade face the clocks'
+   own side names use — sentence case in the markup, uppercased here. */
+.planet-bonus-panel__label {
+  font-family: var(--font-arcade);
+  font-size: calc(var(--region-extent) * 0.06);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.planet-bonus-panel__label--green {
+  color: var(--color-green);
+}
+
+.planet-bonus-panel__label--red {
+  color: var(--color-red);
+}
+
+.planet-bonus-panel__row {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--region-extent) * 0.035);
+}
+
+.planet-bonus-panel__cell {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(var(--region-extent) * 0.15);
+  height: calc(var(--region-extent) * 0.15);
+}
+
+.planet-bonus-panel__badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-arcade);
+  font-weight: 700;
+  text-shadow: 0 0 0.4em currentcolor;
+}
+
+.planet-bonus-panel__badge--green {
+  color: var(--color-green);
+}
+
+.planet-bonus-panel__badge--red {
+  color: var(--color-red);
+}
+
+.planet-bonus-panel__badge--amount {
+  font-size: calc(var(--region-extent) * 0.075);
+  animation: planet-bonus-panel-badge-fade-in 0.6s ease-out;
+}
+
+.planet-bonus-panel__checkmark {
+  width: 70%;
+  height: 70%;
+}
+
+@keyframes planet-bonus-panel-badge-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planet-bonus-panel__badge--amount {
+    animation: none;
+  }
+}

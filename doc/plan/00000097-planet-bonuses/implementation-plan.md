@@ -912,7 +912,59 @@ planet square's `<use>` reference cover that).
 
 ### Step 7 — The panel above the clocks
 
-Status: pending
+Status: committed
+
+Notes: Added `src/bonus/bonusBadge.ts` (pure `bonusBadgeState(claimedOnPly,
+plyNumber)`, the `plyNumber - claimedOnPly <= 1` window from D12) and its
+test. Added `src/bonus/PlanetBonusPanel.tsx` and `PlanetBonusPanel.css`: two
+rows (green above red, D15's shared-planet drawn twice), each cell the
+`Planet` component fed from `planetArrangement(state.openingSeed)` memoised
+with `useMemo` (D16), a badge only when `bonusBadgeState` is not `"none"` —
+`+N` text for `"amount"`, an inline SVG checkmark for `"claimed"` — coloured
+by side via `--color-green`/`--color-red`, and `null` returned outright when
+`state.planetBonus` is `"off"` (S11: no wrapper element at all). The whole
+panel is `aria-hidden` (D13). Every panel size is `calc(var(--region-extent)
+* fraction)`, never `vw` (D11), so it scales with the same box the clocks
+scale with in both orientations. Mounted `<PlanetBonusPanel state=
+{session.state} />` in `App.tsx` inside `.app__clocks`, above `<ClockRegion>`;
+`.app__clocks` gained `flex-direction: column` and a
+`calc(var(--region-extent) * 0.05)` gap (D11), with its `flex: 0 0
+var(--region-extent)` (portrait) / `width: var(--region-extent)` (landscape)
+left untouched, so the box's own extent — and the board's size — do not
+change. Recorded D13's accessibility gap in
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md` under a new
+"From story 97" section, in the shape the existing entries use, naming
+`PlanetBonusPanel.tsx` and noting the live region (Step 8, not yet
+implemented at this step, but described here as the plan's own text asks)
+mitigates the claim event even though the standing picture is lost.
+
+Tests: `src/bonus/bonusBadge.test.ts` (four cases: unclaimed, the claiming
+ply, the ply after, and two-or-more plies after). `src/bonus/
+PlanetBonusPanel.test.tsx` (off renders nothing; two rows of three, green
+first; each drawing matches `planetArrangement`'s `<use>` reference for that
+square; the three badge states at the right ply numbers, including the
+badge's amount text and colour class; a forced shared-planet scenario drawn
+in both rows with independent badges — proved directly by overriding a
+dealt state's `bonusPlanets`, having first checked with a throwaway script
+that the forced square did not collide with an already-dealt entry on the
+other side; `aria-hidden` on the wrapper). Added two cases to `App.test.tsx`:
+with the default OFF, `.app__clocks` holds only `.clock-region`, no
+`.planet-bonus-panel`; choosing 3 POINTS before PLAY puts `.planet-bonus-panel`
+before `.clock-region` in DOM order inside `.app__clocks`, with six cells
+across the two rows. `npm test` rose to 78 files / 1513 tests, all green (up
+from 76/1500); `npm run typecheck`, `npm run lint` and `npm run format:check`
+all clean (prettier reformatted the three new/touched files, run via `npx
+prettier --write`); `npm run build` also verified clean. No deviation from
+the step as written. The panel's sizing (fractions of `--region-extent`:
+`0.15` per cell, `0.035` between cells/rows, `0.05` between the panel and
+the clock region) was chosen conservatively against the clock region's own
+measured portrait height so the two are expected to fit inside
+`--region-extent`'s clamp at both ends without shrinking the extent itself,
+but this was reasoned from the existing CSS rather than confirmed with a
+running browser — **the owner's manual check should look specifically at the
+short end of the portrait clamp** (a narrow, tall window) to confirm the
+panel and the clocks both fit legibly, per the step's own instruction to
+report rather than grow the extent if they do not.
 
 Build the panel (D10, D11, D12, D13, D15, D16). This is the story's one
 visible piece, and its verification is **manual**.
@@ -999,6 +1051,18 @@ Verification (**manual**, with the automated suite behind it): `npm test`,
    panel.
 
 ---
+
+Owner's manual check (the step's gate): functionality confirmed correct, with
+two presentation changes asked for and made on the spot. Each row is now
+headed GREEN BONUS or RED BONUS in that side's colour — the badges say
+nothing about whose row it is until something has been claimed, so the
+heading carries it — with the label's own text in sentence case and
+uppercased in the stylesheet, exactly as `clock-display__name` does it. The
+settled checkmark went from 45% to 70% of its cell and from stroke width 3 to
+4.5. `story.md`'s panel paragraph was corrected to describe the headings, so
+it records what was actually built. The headings cost a little vertical room
+in portrait, which is the orientation this step already flagged as the tight
+one; Step 10's play-through is where that gets looked at again.
 
 ### Step 8 — The live region says a bonus was claimed
 

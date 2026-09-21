@@ -209,13 +209,15 @@ hold (`CLAUDE.md`).
   set when a finished game returns to the start screen.
 - **The panel sits in the clock region, above the clocks** — the right-hand
   column in landscape, the bottom band in portrait. Green's row above red's,
-  matching the clocks' own order. Each row is that side's three planets in
-  board order, drawn with **the same artwork the board draws on those
-  squares**, from the arrangement `planetPlacement.ts` already deals from
-  the opening seed, so a player matches the panel to the board by sight.
-  **The drawing alone identifies a planet** — no square name, no label:
-  nothing else in the app names an individual planet, and this story is not
-  the place to start.
+  matching the clocks' own order, **each row headed GREEN BONUS or RED
+  BONUS** in that side's colour — the badges say nothing about whose row it
+  is until something has been claimed, so the heading carries it. Each row
+  is that side's three planets in board order, drawn with **the same artwork
+  the board draws on those squares**, from the arrangement
+  `planetPlacement.ts` already deals from the opening seed, so a player
+  matches the panel to the board by sight. **The drawing alone identifies an
+  individual planet** — no square name, no per-planet caption: nothing else
+  in the app names one planet, and this story is not the place to start.
 - **The badge over each drawing has three states.** Unclaimed: nothing at
   all. Just claimed: a player-coloured `+2` or `+3` fading in, from the
   instant of the landing through to the end of the **next** ply — so a claim

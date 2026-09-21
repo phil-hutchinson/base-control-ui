@@ -178,13 +178,20 @@
 }
 
 .app__clocks {
-  /* Both players' clocks (`ClockRegion.tsx`). Mirrors `.app__info`'s extent
-     exactly, which is what keeps the board centred: this box must never
-     size itself from its contents, and the clock component owns everything
-     inside it and its own stylesheet, exactly as `.app__info` owns `Hud`. */
+  /* Both players' clocks (`ClockRegion.tsx`) and, when the planet bonus
+     setting is on, the bonus panel (`PlanetBonusPanel.tsx`) above them.
+     Mirrors `.app__info`'s extent exactly, which is what keeps the board
+     centred: this box must never size itself from its contents. A column in
+     both orientations, so the panel stacks above the clocks rather than
+     beside them; each of the two owns everything inside itself and its own
+     stylesheet, exactly as `.app__info` owns `Hud`. With the panel off
+     (`PlanetBonusPanel` renders nothing) this box holds only the clock
+     region, exactly as it always has. */
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: calc(var(--region-extent) * 0.05);
   flex: 0 0 var(--region-extent);
   width: 100%;
 }

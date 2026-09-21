@@ -273,6 +273,32 @@ describe("App", () => {
     }
   });
 
+  it("with the default OFF, the clock region holds only the clocks — no bonus panel", async () => {
+    const { container } = render(<App />);
+    await pressPlay();
+
+    const clocks = container.querySelector(".app__clocks")!;
+    expect(clocks.querySelector(".planet-bonus-panel")).not.toBeInTheDocument();
+    expect(clocks.querySelector(":scope > .clock-region")).toBeInTheDocument();
+  });
+
+  it("choosing 3 POINTS puts the bonus panel inside the clock region, before the clocks", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await user.click(
+      within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
+    );
+    await pressPlay();
+
+    const clocks = container.querySelector(".app__clocks")!;
+    const children = Array.from(clocks.children).map((el) => el.className);
+    expect(children).toEqual(["planet-bonus-panel", "clock-region"]);
+    expect(clocks.querySelectorAll(".planet-bonus-panel__cell")).toHaveLength(
+      6,
+    );
+  });
+
   it("pressing PLAY with the defaults deals a six-a-side, thirty-round game", async () => {
     render(<App />);
 
