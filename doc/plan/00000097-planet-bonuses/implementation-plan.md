@@ -845,7 +845,31 @@ an ON game now deals bonus planets and pays them.
 
 ### Step 6 — The planet sprite moves up to `App`
 
-Status: pending
+Status: committed
+
+Notes: Mounted `<PlanetDefs />` in `src/App.tsx` beside `<ShipDefs />`, above
+the cabinet (import placed in path-alphabetical order among the existing
+imports, before `ClockRegion`). Removed `Board`'s own `<PlanetDefs />` mount
+and import from `src/board/Board.tsx`, and `GuideScreen`'s own mount and
+import from `src/guide/GuideScreen.tsx`. Corrected `PlanetDefs.tsx`'s header
+to say it is mounted once at the app root, above every screen, because the
+board and the bonus panel both draw planets, in the shape `ShipDefs.tsx`'s
+header already uses. Updated `Board.test.tsx`'s "draws no row or column
+labels" test: `.board-frame` now asserts two children (grid, energy overlay)
+and asserts `.planet-defs` is absent, since the sprite no longer mounts with
+the board in isolation. Added a test to `App.test.tsx` mirroring the existing
+"mounts exactly one hidden ship sprite" test, checking `.planet-defs` appears
+exactly once, aria-hidden, on the start screen, on the guide screen (opened
+via Quick Guide) and once a game is in progress. Checked
+`GuideScreen.test.tsx` and `GuideDiagram.test.tsx` for any dependency on the
+guide mounting its own sprite: neither references `PlanetDefs` or
+`.planet-defs`, so nothing needed changing there, confirming the plan's own
+expectation. No deviations from the step as written. `npm test` now at 76
+test files / 1500 tests, all green (up from 76/1499 — one test added, none
+removed); the board's planets are still drawn per the existing board tests
+that assert a planet square's `<use>` reference, which stayed untouched and
+green. `npm run typecheck`, `npm run lint` and `npm run format:check` all
+clean.
 
 Move `PlanetDefs` from the board to the app root (D14), so the board and the
 panel reference one sprite.

@@ -328,11 +328,12 @@ describe("Board", () => {
       <Board session={startingSession} onIntent={noop} />,
     );
 
-    // `.board-frame` holds nothing but the planet sprite, the grid and the
-    // energy overlay - neither label element is in the DOM at all any more.
+    // `.board-frame` holds nothing but the grid and the energy overlay -
+    // neither label element is in the DOM at all any more. The planet sprite
+    // is mounted once at the app root (`App.tsx`), not here.
     const frame = container.querySelector(".board-frame");
-    expect(frame?.children).toHaveLength(3);
-    expect(frame?.querySelector(".planet-defs")).toBeInTheDocument();
+    expect(frame?.children).toHaveLength(2);
+    expect(frame?.querySelector(".planet-defs")).not.toBeInTheDocument();
     expect(frame?.querySelector(".board")).toBeInTheDocument();
     expect(frame?.querySelector(".energy-overlay")).toBeInTheDocument();
 

@@ -20,10 +20,12 @@
 // planet - are dropped from the catalogue and are not declared here; the
 // remaining numbers keep their gaps rather than being renumbered.
 //
-// Mounted once, on the board, since planets appear only there. It draws
-// nothing itself - everything lives inside `<defs>`, which is never rendered
-// directly but is always referenceable - and is hidden from layout and from
-// the accessibility tree: hidden by zero size, not by `display`, in
+// Mounted once, at the app root, above every screen - the board and the
+// bonus panel both draw planets, so both reference this one sprite rather
+// than each carrying its own copy of the same ids. It draws nothing itself -
+// everything lives inside `<defs>`, which is never rendered directly but is
+// always referenceable - and is hidden from layout and from the
+// accessibility tree: hidden by zero size, not by `display`, in
 // PlanetDefs.css, so a `<use>` reference into it still resolves.
 
 import { PLANET_ART, type PlanetArt } from "./planetArt";

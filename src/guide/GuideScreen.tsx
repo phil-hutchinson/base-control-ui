@@ -6,7 +6,6 @@
 // address, and both Back buttons move the browser back (`src/nav`).
 
 import type { ComponentType } from "react";
-import { PlanetDefs } from "../board/PlanetDefs";
 import type { GuideSectionId } from "./guideCopy";
 import {
   GUIDE_INTRO_PARAGRAPH,
@@ -85,7 +84,6 @@ export function GuideScreen({ onBack }: GuideScreenProps) {
       <button type="button" className="guide-screen__back" onClick={onBack}>
         Back
       </button>
-      <PlanetDefs />
     </div>
   );
 }

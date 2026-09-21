@@ -189,6 +189,28 @@ describe("App", () => {
     expect(afterPlay[0]).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("mounts exactly one hidden planet sprite, on the start screen, the guide screen and once a game is in progress", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    const onStart = container.querySelectorAll(".planet-defs");
+    expect(onStart).toHaveLength(1);
+    expect(onStart[0]).toHaveAttribute("aria-hidden", "true");
+
+    await user.click(screen.getByRole("button", { name: "Quick Guide" }));
+
+    const onGuide = container.querySelectorAll(".planet-defs");
+    expect(onGuide).toHaveLength(1);
+    expect(onGuide[0]).toHaveAttribute("aria-hidden", "true");
+
+    await user.click(screen.getAllByRole("button", { name: "Back" })[0]);
+    await pressPlay();
+
+    const inGame = container.querySelectorAll(".planet-defs");
+    expect(inGame).toHaveLength(1);
+    expect(inGame[0]).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("has no static accessibility violations on the start screen", async () => {
     const { container } = render(<App />);
 

@@ -1,5 +1,6 @@
 import { useReducer } from "react";
 import { Board } from "./board/Board";
+import { PlanetDefs } from "./board/PlanetDefs";
 import { ClockRegion } from "./clock/ClockRegion";
 import { freshSeed } from "./game/seed";
 import { createSession, sessionReducer } from "./game/session";
@@ -72,6 +73,7 @@ export function App() {
   return (
     <main className="app">
       <ShipDefs />
+      <PlanetDefs />
       <div className="app__cabinet">
         {screen === "start" ? (
           <StartScreen
