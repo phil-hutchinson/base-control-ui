@@ -180,8 +180,9 @@ always succeeds than as something a player should expect to see.
 (section 8.2). A refill draws three squares, one at a time: the first and
 second use all six constraints above; the third lifts constraints 3 and 4
 together — "not on the outer edge" and "not one square in from the outer
-edge" — so it is drawn from the whole board, less only the planet and
-adjacency constraints that remain. A new node can therefore appear on the
+edge" — so it is drawn from the whole board, less only the squares ruled out
+by constraints 1, 2, 5 and 6: nodes, ships, node neighbours, planets and
+planet neighbours. A new node can therefore appear on the
 outer edge, corners included: A1, A15, O1 and O15 are all legal squares for
 a third draw. On an empty board the strict pool holds the 51 squares above,
 and the widened pool holds **117**, of which **38** lie on the outer edge

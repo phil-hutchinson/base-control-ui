@@ -102,15 +102,22 @@ the same pools. (The corner region is the 3 × 3 block at each of the
 board's four corners — A1–C3, M1–O3, A13–C15 and M13–O15, 36 squares in
 all. This document's earlier corner figure, 0.14, came from a simulation
 whose corner definition was never recorded, so it is not compared against
-here.) The weighting does **not** keep the third draw off the rim: an edge
+here. The three categories overlap rather than partition a trio: a square
+inside the corner region may also be on the outer edge, one ring in, or two
+rings in from it — the corner block's own innermost square, such as C3,
+sits two rings in — so the three counts do not sum to the trio's size, and
+the corner figure can exceed the one-ring figure.) The weighting does
+**not** keep the third draw off the rim: an edge
 square is farther from everything else on the board than an interior one
 is, so the formula favours it, and a freshly refilled trio lands on the
 outer edge, and in a corner, _more_ often under the weighting than an
 unweighted draw from the same pools would — only the one-ring-in figure
 moves the other way. These figures are measured **at four charged only**
-and have not been re-measured at the other counts; since the pools move
-only slightly either way, the figures are expected to move only slightly
-too, so they are left as measured rather than guessed at.
+and have not been re-measured at the other counts; the third draw's pool is
+the one that moves most with the charged count — the pool-size paragraph
+above puts it at **50** squares at five charged and **65** at three — so
+these figures may move more than the others do, and are left as measured
+rather than guessed at.
 
 `rules.md` section 3.2's fallback, which places a node without regard to
 spacing, remains unlikely to fire: the third draw's pool is now the whole

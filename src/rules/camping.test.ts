@@ -19,7 +19,7 @@
 // would.
 
 import { describe, expect, it } from "vitest";
-import { squareFromName } from "./board";
+import { squareFromName, squareName } from "./board";
 import { CHARGED_COUNTDOWN_PLIES, TRAP_COUNTDOWN_PLIES } from "./countdown";
 import { attackRefusalReason, legalTargets } from "./combat";
 import type { EndOfTurnEffect, NodeRetiredEffect } from "./endOfTurn";
@@ -584,11 +584,21 @@ describe("camping — leaving a charged node ends it at once (rules.md §8.3)", 
     ).toBe("destination-uncharged-node");
 
     // Red's turn passes; the exit's second and last ply is spent at the end
-    // of it, and it retires without a trace. D4, not D3: the shortfall
-    // M5's charge opens also triggers a refill, which can draw D3 for one
-    // of the fresh inactive nodes.
+    // of it, and it retires without a trace. The destination is chosen at
+    // runtime as the first legal square holding no node, since the shortfall
+    // M5's charge opens also triggers a refill that could otherwise draw a
+    // fresh inactive node onto a hardcoded square.
+    const redDestination = legalDestinations(
+      afterDeparture.state,
+      "red-1",
+    ).find((square) => !(squareName(square) in afterDeparture.state.nodes));
+    if (!redDestination) {
+      throw new Error(
+        "expected red-1 to have a legal move onto a node-free square",
+      );
+    }
     const afterRedTurn = appliedOrThrow(
-      applyMove(afterDeparture.state, "red-1", squareFromName("D4")),
+      applyMove(afterDeparture.state, "red-1", redDestination),
     );
     const redTurnEffects = endOfTurnEffects(afterRedTurn.effects);
     expect(redTurnEffects).toContainEqual({

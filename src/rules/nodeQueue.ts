@@ -102,42 +102,26 @@ export function refillQueue(
   const drawnSquares: Square[] = [];
   let workingSeed = seed;
 
-  const strictPool = legalNodePool(occupiedNodeSquares, shipSquares);
-  const [firstSquare, seedAfterFirst] = drawWeightedNodeSquare(
-    strictPool,
-    chargedNodeSquares,
-    [],
-    workingSeed,
-  );
-  drawnSquares.push(firstSquare);
-  workingSeed = seedAfterFirst;
-
-  const strictPoolAfterFirst = legalNodePool(
-    [...occupiedNodeSquares, ...drawnSquares],
-    shipSquares,
-  );
-  const [secondSquare, seedAfterSecond] = drawWeightedNodeSquare(
-    strictPoolAfterFirst,
-    chargedNodeSquares,
-    drawnSquares,
-    workingSeed,
-  );
-  drawnSquares.push(secondSquare);
-  workingSeed = seedAfterSecond;
-
-  const thirdPool = legalNodePool(
-    [...occupiedNodeSquares, ...drawnSquares],
-    shipSquares,
+  const poolWidths: readonly NodePoolWidth[] = [
+    "strict",
+    "strict",
     thirdSquarePoolWidth,
-  );
-  const [thirdSquare, seedAfterThird] = drawWeightedNodeSquare(
-    thirdPool,
-    chargedNodeSquares,
-    drawnSquares,
-    workingSeed,
-  );
-  drawnSquares.push(thirdSquare);
-  workingSeed = seedAfterThird;
+  ];
+  for (const poolWidth of poolWidths) {
+    const pool = legalNodePool(
+      [...occupiedNodeSquares, ...drawnSquares],
+      shipSquares,
+      poolWidth,
+    );
+    const [square, nextSeed] = drawWeightedNodeSquare(
+      pool,
+      chargedNodeSquares,
+      drawnSquares,
+      workingSeed,
+    );
+    drawnSquares.push(square);
+    workingSeed = nextSeed;
+  }
 
   const [permutationIndex, seedAfterPermutation] = drawIndex(
     workingSeed,

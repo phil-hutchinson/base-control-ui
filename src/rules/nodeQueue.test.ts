@@ -122,6 +122,14 @@ describe("refillQueue", () => {
   });
 
   it("draws the first two squares from the strict pool, and the third from the widened pool computed against the squares drawn so far", () => {
+    // The third square's membership in the widened pool is a strict superset
+    // check, so it holds regardless of pool width and cannot alone prove the
+    // third draw used the wider pool; the sweep below also tracks whether at
+    // least one seed's third square actually needed the widened pool — i.e.
+    // fell outside the strict pool computed the same way — which is the
+    // guard that a narrower pool would fail.
+    let sawSquareOutsideStrictPool = false;
+
     for (let seed = 0; seed < 100; seed++) {
       const [nodes] = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], seed);
 
@@ -136,6 +144,10 @@ describe("refillQueue", () => {
         squareName(nodes[1].square),
       );
 
+      const strictPoolAfterSecond = legalNodePool(
+        [...CHARGED_SQUARES, nodes[0].square, nodes[1].square],
+        [],
+      );
       const widenedPoolAfterSecond = legalNodePool(
         [...CHARGED_SQUARES, nodes[0].square, nodes[1].square],
         [],
@@ -144,6 +156,38 @@ describe("refillQueue", () => {
       expect(widenedPoolAfterSecond.map(squareName)).toContain(
         squareName(nodes[2].square),
       );
+      if (
+        !strictPoolAfterSecond
+          .map(squareName)
+          .includes(squareName(nodes[2].square))
+      ) {
+        sawSquareOutsideStrictPool = true;
+      }
+    }
+
+    expect(sawSquareOutsideStrictPool).toBe(true);
+  });
+
+  it('holds every draw to the strict pool, inside C3-M13, when passed "strict" for the third square, and advances the seed by the same four steps as the default call', () => {
+    for (let seed = 0; seed < 200; seed++) {
+      const [nodes, nextSeed] = refillQueue(
+        CHARGED_SQUARES,
+        CHARGED_SQUARES,
+        [],
+        seed,
+        "strict",
+      );
+
+      for (const node of nodes) {
+        expect(isOnOuterEdge(node.square)).toBe(false);
+        expect(isOneRingFromEdge(node.square)).toBe(false);
+      }
+
+      let expectedSeed = seed;
+      for (let step = 0; step < 4; step++) {
+        [, expectedSeed] = mulberry32(expectedSeed);
+      }
+      expect(nextSeed).toBe(expectedSeed);
     }
   });
 
@@ -234,8 +278,8 @@ describe("refillQueue", () => {
   });
 
   it("spreads a freshly dealt trio measurably apart: mean smallest pairwise gap above 3.75 over several thousand refills", () => {
-    // Measured 4.24 for this seed and trial count after story 91 moved the
-    // widening to the third draw alone (was 4.5 before, against a measured
+    // Measured 4.24 for this seed and trial count, over the current
+    // strict/strict/widened pool split (was 4.5 before, against a measured
     // 5.08, when both the second and third draw were widened) — a smaller
     // pool for the second draw leaves less room to spread it from the
     // first. The floor keeps a comparable margin below the new figure.
