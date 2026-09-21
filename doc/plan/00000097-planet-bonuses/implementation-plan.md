@@ -1118,7 +1118,35 @@ gate for it.
 
 ### Step 9 — The Quick Guide and `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Added a sentence to the REFUELING paragraph in
+`src/guide/guideCopy.ts`: "When the planet bonus option is on, three planets
+for each player also pay a one-time bonus of points, the first time one of
+that player's spaceships lands there." — in the guide's own points/fuel
+vocabulary, holding for a reader whose game may have the option off by
+describing only what it does when on, matching how the section already
+handles the other refuelling detail. Updated the matching exact-string
+expectation in `src/guide/guideCopy.test.ts`. In `README.md`, inserted a
+clause into the pre-play choices list, between scoring and the waiting
+nodes' rings (the start screen's own order): "a choice of whether planets pay
+a one-time bonus (off, two points or three points, off to start)", using the
+phrasing given in the plan; changed both "seven choices" to "eight choices".
+Also added two sentences to the paragraph describing what planets do (the
+first mention, introducing the twelve planets), which read as complete
+without the bonus: "With the planet bonus option on, three planets are also
+dealt to each player at the start of the game, drawn at random and
+independently for each side, so the two players' sets can share a planet or
+not at all. The first time one of a player's ships lands on one of that
+player's own three, it pays that player energy once — two or three, whichever
+was chosen — and never again for that planet, however often ships return to
+it." — using "energy" rather than "points" since this paragraph is ordinary
+README prose, not the guide's vocabulary exception; the "points" wording is
+used only where it echoes the start screen's own chrome labels (2 POINTS/3
+POINTS) in the choices list. No deviation from the step as written. `npm
+test` stayed at 78 files / 1519 tests, all green (no new tests, only updated
+prose/expectations, as the step implies). `npm run typecheck`, `npm run
+lint` and `npm run format:check` all clean.
 
 Bring the two pieces of player-facing prose up to date.
 

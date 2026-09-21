@@ -56,18 +56,20 @@ install, no account, no server.
 > three, six to start), a choice of how many nodes are lit at once (five, four
 > or three, five to start), a choice of how scoring works (simple, one energy
 > for each node held, or bonus, where each extra node held at once is worth
-> more than the last, simple to start), a choice of how the waiting nodes'
-> rings move (continuous, planet or dedicated, continuous to start), a choice
-> of whether combat is on or off (off to start), a choice of how many rounds
-> the game lasts (thirty, forty-five, sixty or ninety, thirty to start), a
-> choice of a clock (unlimited, or six, four or two seconds a turn, unlimited
-> to start) and a PLAY button. The start screen also offers a quick guide — a
-> first read for someone who has never played, not a full rules reference —
-> explaining scoring, movement, refuelling and how nodes come and go, with a
-> back button that returns you to the start screen with the seven choices
-> exactly as you left them. Your browser's own back and forward buttons move
-> between the screens too, and the address bar says which screen you are on.
-> Changing any of the seven choices starts nothing — the board only appears
+> more than the last, simple to start), a choice of whether planets pay a
+> one-time bonus (off, two points or three points, off to start), a choice of
+> how the waiting nodes' rings move (continuous, planet or dedicated,
+> continuous to start), a choice of whether combat is on or off (off to
+> start), a choice of how many rounds the game lasts (thirty, forty-five,
+> sixty or ninety, thirty to start), a choice of a clock (unlimited, or six,
+> four or two seconds a turn, unlimited to start) and a PLAY button. The start
+> screen also offers a quick guide — a first read for someone who has never
+> played, not a full rules reference — explaining scoring, movement,
+> refuelling and how nodes come and go, with a back button that returns you to
+> the start screen with the eight choices exactly as you left them. Your
+> browser's own back and forward buttons move between the screens too, and the
+> address bar says which screen you are on. Changing any of the eight choices
+> starts nothing — the board only appears
 > once PLAY is pressed, dealt with the choices you made. A clock is each
 > player's own time for the whole game, not per turn — a thirty-round game at
 > six seconds a turn gives each of you three minutes to spend however you like
@@ -86,7 +88,13 @@ install, no account, no server.
 > attacked, and gains back a point of power at the end of each of its owner's
 > turns, or two if it is the only one of that player's ships still topping up
 > power on a planet, up to a full six. A ship already full doesn't count
-> towards that. Green goes first, and each player moves one ship — or attacks
+> towards that. With the planet bonus option on, three planets are also dealt
+> to each player at the start of the game, drawn at random and independently
+> for each side, so the two sets may share any number of planets, or none.
+> The first time one of a player's ships lands on one of that player's own
+> three, it pays that player energy once — two or three, whichever was chosen
+> — and never again for that planet, however often ships return to it. Green
+> goes first, and each player moves one ship — or attacks
 > with one, when combat is on — by mouse or by keyboard. Picking a ship shows
 > you where it can go and what each move would cost: a dot on every square it
 > can reach for free, and elsewhere the same small bars the ship's own power

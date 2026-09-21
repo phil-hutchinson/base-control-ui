@@ -69,7 +69,10 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
     paragraph:
       "Spaceships can hold up to six fuel. At the end of a player's turn, " +
       "spaceships sitting on planets regain one fuel. If a player has " +
-      "only one spaceship gaining fuel and it has room, it gains two fuel.",
+      "only one spaceship gaining fuel and it has room, it gains two fuel. " +
+      "When the planet bonus option is on, each player is given three " +
+      "planets that also pay them points — two or three, whichever was " +
+      "chosen — the first time one of their spaceships lands there.",
   },
   {
     id: "nodeLifecycle",
