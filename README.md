@@ -53,13 +53,13 @@ install, no account, no server.
 > **Status:** early development. The app now plays a whole game, from the
 > opening position to the final score. Opening it shows a start screen, not the
 > board: the game's name, a choice of how many ships a side (six, five, four or
-> three, six to start), a choice of how many nodes are lit at once (five, four
-> or three, five to start), a choice of how scoring works (simple, one energy
+> three, five to start), a choice of how many nodes are lit at once (five, four
+> or three, four to start), a choice of how scoring works (simple, one energy
 > for each node held, or bonus, where each extra node held at once is worth
-> more than the last, simple to start), a choice of whether planets pay a
+> more than the last, bonus to start), a choice of whether planets pay a
 > one-time bonus (off, two points or three points, off to start), a choice of
 > how the waiting nodes' rings move (continuous, planet or dedicated,
-> continuous to start), a choice of whether combat is on or off (off to
+> planet to start), a choice of whether combat is on or off (off to
 > start), a choice of how many rounds the game lasts (thirty, forty-five,
 > sixty or ninety, thirty to start), a choice of a clock (unlimited, or six,
 > four or two seconds a turn, unlimited to start) and a PLAY button. The start
@@ -79,8 +79,7 @@ install, no account, no server.
 > not a loss, since energy still decides who wins. A smaller fleet starts from
 > fewer of the board's eighteen starting squares, leaving the rest empty; every
 > starting square is an ordinary square, whether or not a ship stands there —
-> it gives a ship nothing and protects it from nothing, so in a game with
-> combat on ships are attackable from the very first turn. Twelve planets sit
+> it gives a ship nothing and protects it from nothing. Twelve planets sit
 > inside the board instead, at fixed squares, none of them on the outer edge,
 > each showing one of twelve different drawings. Which drawing sits on which
 > planet is dealt out afresh at the start of every game, so no two games look
@@ -110,11 +109,11 @@ install, no account, no server.
 > Each waiting node carries one, two or three rings, and the one with three
 > rings is the one that lights next. A ship can fly straight over a waiting
 > node, but landing on one has to wait until it lights. How the rings move is a
-> choice too. Continuous is today's game and the one the app starts on: on a
-> turn when nothing lights, the rings shift round — the single becomes a
-> double, the double becomes a triple, and the triple drops back to a single —
-> so you can read not just what lights next but what lights the turn after
-> that. Planet stops that automatic shift: the rings sit still until a ship
+> choice too. Continuous is the simplest: on a turn when nothing lights, the
+> rings shift round — the single becomes a double, the double becomes a
+> triple, and the triple drops back to a single — so you can read not just
+> what lights next but what lights the turn after that. Planet, the one the
+> app starts on, stops that automatic shift: the rings sit still until a ship
 > lands on a planet, which shifts them one step right in the middle of that
 > player's turn — so refuelling and choosing what lights next become the same
 > thing, and a fight under combat sends both ships to planets at once and

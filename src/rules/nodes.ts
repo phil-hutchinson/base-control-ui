@@ -18,12 +18,13 @@ export type ChargedNodeCount = 3 | 4 | 5;
 
 /**
  * The offered charged-node counts, in the order the start screen renders
- * them: largest first, so the leftmost choice is the default game.
+ * them: largest first. The render order is independent of which one the app
+ * preselects — see `DEFAULT_CHARGED_NODE_COUNT`.
  */
 export const CHARGED_NODE_COUNTS: readonly ChargedNodeCount[] = [5, 4, 3];
 
-/** The app's default: five charged nodes. */
-export const DEFAULT_CHARGED_NODE_COUNT: ChargedNodeCount = 5;
+/** The app's default: four charged nodes. */
+export const DEFAULT_CHARGED_NODE_COUNT: ChargedNodeCount = 4;
 
 /** Whether a value is one of the offered charged-node counts. */
 export function isChargedNodeCount(value: number): value is ChargedNodeCount {

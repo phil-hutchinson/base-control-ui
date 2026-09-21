@@ -25,10 +25,7 @@ import {
   type ChargedNodeCount,
   type NodeState,
 } from "./nodes";
-import {
-  DEFAULT_NODE_ROTATION,
-  type NodeRotationSetting,
-} from "./nodeRotation";
+import { type NodeRotationSetting } from "./nodeRotation";
 import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
 
 function ship(
@@ -71,7 +68,11 @@ function buildState(config: {
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
-    nodeRotation: config.nodeRotation ?? DEFAULT_NODE_ROTATION,
+    // Pinned to continuous, not left to the app's default: this is a
+    // rules-level harness, and a case that names no rotation should keep
+    // exercising the same setting regardless of which one the start screen
+    // preselects.
+    nodeRotation: config.nodeRotation ?? "continuous",
     rotators: config.rotators ?? [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
@@ -144,6 +145,10 @@ describe("applyMove", () => {
     // whatever the shortfall, and the end-of-turn effects stay just the
     // power gain.
     const endsOnPlanet = buildState({
+      // Pinned to continuous: under the app's default, planet rotation, the
+      // landing would also turn the queue and raise a `queue-rotated` effect,
+      // which is exactly what this test is asserting the move does not do.
+      nodeRotation: "continuous",
       ships: [ship("green-1", "green", "C6", 2), ship("red-1", "red", "O15")],
       nodes: {
         C3: ["charged", 0],
@@ -249,6 +254,10 @@ describe("applyMove", () => {
     // ship far away, with a legal move of its own, keeps red from
     // auto-passing and running a second end-of-turn sequence of its own.
     const state = buildState({
+      // Pinned to continuous: the rotation this test expects at the end of
+      // the turn is the continuous setting's, and under the app's default,
+      // planet rotation, a move that ends nowhere near a planet turns nothing.
+      nodeRotation: "continuous",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O15")],
       nodes: {

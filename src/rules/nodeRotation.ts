@@ -17,7 +17,8 @@ export type NodeRotationSetting = "continuous" | "planet" | "dedicated";
 
 /**
  * The offered node rotation settings, in the order the start screen renders
- * them: leftmost is what the app preselects.
+ * them: simplest first. Which one the app preselects is independent of the
+ * render order — see `DEFAULT_NODE_ROTATION`.
  */
 export const NODE_ROTATION_SETTINGS: readonly NodeRotationSetting[] = [
   "continuous",
@@ -25,8 +26,8 @@ export const NODE_ROTATION_SETTINGS: readonly NodeRotationSetting[] = [
   "dedicated",
 ];
 
-/** The app's default: continuous rotation, today's rule unchanged. */
-export const DEFAULT_NODE_ROTATION: NodeRotationSetting = "continuous";
+/** The app's default: planet rotation. */
+export const DEFAULT_NODE_ROTATION: NodeRotationSetting = "planet";
 
 /**
  * Whether a value is one of the offered node rotation settings. Unlike

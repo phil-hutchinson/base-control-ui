@@ -196,11 +196,11 @@ describe("StartScreen", () => {
     }
   });
 
-  it("renders the charged nodes group with 5 checked by default", () => {
+  it("renders the charged nodes group with 4 checked by default", () => {
     renderStartScreen();
 
     const group = screen.getByRole("group", { name: "Charged nodes" });
-    expect(within(group).getByRole("radio", { name: "5" })).toBeChecked();
+    expect(within(group).getByRole("radio", { name: "4" })).toBeChecked();
   });
 
   it("renders the charged nodes group's values in order, largest first", () => {
@@ -248,11 +248,11 @@ describe("StartScreen", () => {
     }
   });
 
-  it("checks SIMPLE by default, with the radios in order SIMPLE then BONUS", () => {
+  it("checks BONUS by default, with the radios in order SIMPLE then BONUS", () => {
     renderStartScreen();
 
     const group = screen.getByRole("group", { name: "Scoring" });
-    expect(within(group).getByRole("radio", { name: "SIMPLE" })).toBeChecked();
+    expect(within(group).getByRole("radio", { name: "BONUS" })).toBeChecked();
     expect(
       within(group)
         .getAllByRole("radio")
@@ -368,15 +368,13 @@ describe("StartScreen", () => {
     }
   });
 
-  it("checks CONTINUOUS by default, with the radios in order CONTINUOUS, PLANET, DEDICATED", () => {
+  it("checks PLANET by default, with the radios in order CONTINUOUS, PLANET, DEDICATED", () => {
     renderStartScreen();
 
     const group = screen.getByRole("group", {
       name: "Inactive node rotation",
     });
-    expect(
-      within(group).getByRole("radio", { name: "CONTINUOUS" }),
-    ).toBeChecked();
+    expect(within(group).getByRole("radio", { name: "PLANET" })).toBeChecked();
     expect(
       within(group)
         .getAllByRole("radio")

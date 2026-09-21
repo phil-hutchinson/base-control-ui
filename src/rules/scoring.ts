@@ -13,12 +13,13 @@ export type ScoringSetting = "simple" | "bonus";
 
 /**
  * The offered scoring settings, in the order the start screen renders them:
- * leftmost is what the app preselects.
+ * simplest first. Which one the app preselects is independent of the render
+ * order — see `DEFAULT_SCORING`.
  */
 export const SCORING_SETTINGS: readonly ScoringSetting[] = ["simple", "bonus"];
 
-/** The app's default: simple scoring. */
-export const DEFAULT_SCORING: ScoringSetting = "simple";
+/** The app's default: bonus scoring. */
+export const DEFAULT_SCORING: ScoringSetting = "bonus";
 
 /**
  * Whether a value is one of the offered scoring settings. Unlike

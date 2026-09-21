@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { COLUMN_LETTERS, squareAt, squareName, type Square } from "./board";
 import {
+  DEFAULT_FLEET_SIZE,
   FLEET_SIZES,
   MAX_SHIPS_PER_SIDE,
   startingFleet,
@@ -137,12 +138,17 @@ function entryBySquare(
 }
 
 describe("FLEET_SIZES", () => {
-  it("is largest first, so the leftmost start-screen choice is the default game", () => {
+  it("is largest first, the order the start screen renders them", () => {
     expect(FLEET_SIZES).toEqual([6, 5, 4, 3]);
   });
 
   it("puts the largest fleet size in MAX_SHIPS_PER_SIDE regardless of list order", () => {
     expect(MAX_SHIPS_PER_SIDE).toBe(6);
+  });
+
+  it("defaults to five ships a side", () => {
+    expect(DEFAULT_FLEET_SIZE).toBe(5);
+    expect(FLEET_SIZES).toContain(DEFAULT_FLEET_SIZE);
   });
 });
 

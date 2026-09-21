@@ -70,12 +70,12 @@ const LEGAL_SQUARE_NAMES: readonly string[] = ALL_SQUARES.filter((square) => {
 }).map(squareName);
 
 describe("the offered charged-node counts (rules.md §8.1)", () => {
-  it("is largest first, so the leftmost start-screen choice is the default game", () => {
+  it("is largest first, the order the start screen renders them", () => {
     expect(CHARGED_NODE_COUNTS).toEqual([5, 4, 3]);
   });
 
-  it("defaults to five, the app's default", () => {
-    expect(DEFAULT_CHARGED_NODE_COUNT).toBe(5);
+  it("defaults to four, the app's default", () => {
+    expect(DEFAULT_CHARGED_NODE_COUNT).toBe(4);
     expect(CHARGED_NODE_COUNTS).toContain(DEFAULT_CHARGED_NODE_COUNT);
   });
 

@@ -216,7 +216,18 @@ interface PlayedGame {
  * (§3.2, §8.2).
  */
 function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
-  let state = startingGameState(seed, { lengthInRounds, combatEnabled: true });
+  let state = startingGameState(seed, {
+    lengthInRounds,
+    combatEnabled: true,
+    // Pinned, not left to the app's default: every figure this file checks
+    // — fight counts, planet returns, queue refills — was measured under
+    // six a side, five charged nodes, simple scoring and continuous
+    // rotation, and the comments above record them as such.
+    fleetSize: 6,
+    chargedNodeCount: 5,
+    scoring: "simple",
+    nodeRotation: "continuous",
+  });
   const openingBoard = state.nodes;
   const planetReturns: string[] = [];
   const chargedNodes: string[] = [];
@@ -316,19 +327,17 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     // first turn — a ship only becomes unattackable by flying onto a
     // planet, away from the board's outer edge — so this attack-first
     // policy keeps finding fights across the run rather than stalling
-    // early. Re-measured at the wider reach of 0.33: 5 fights (10 planet
-    // returns) for this seed over forty rounds, whose second preference
-    // (moving onto a charged node) competes with attacking for a ship's
-    // ply; the earlier figure, measured before 0.33, was 4 fights (8
-    // planet returns); the floors below leave margin below the new one.
+    // early, even though its second preference, moving onto a charged
+    // node, competes with attacking for a ship's ply. This seed over
+    // forty rounds measures 11 fights and the 22 planet returns they
+    // send ships back on. The floors below sit well beneath that: the
+    // figures are this run's own, and any rule that changes the course
+    // of a ply moves them.
     expect(fightCount).toBeGreaterThanOrEqual(1);
     expect(planetReturns.length).toBeGreaterThanOrEqual(2);
-    // Re-measured at the wider reach of 0.33: 21 charges, 20 retirements
-    // and 20 refills for this seed over forty rounds. The earlier figures,
-    // measured before 0.33, were 18 charges, 17 retirements and 16
-    // refills; the wider reach changes the course of every ply, so these
-    // are simply this run's own numbers, re-measured; the floors below
-    // leave margin below the new ones.
+    // The same run measures 22 charges, 19 retirements and 19 refills.
+    // These are this run's own numbers and move with any rule that
+    // changes the course of a ply, so the floors below leave margin.
     expect(chargedNodes.length).toBeGreaterThanOrEqual(4);
     expect(retiredNodes.length).toBeGreaterThanOrEqual(4);
     expect(queueRefills.length).toBeGreaterThanOrEqual(4);
@@ -368,11 +377,11 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
 describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream untouched at continuous", () => {
   it("deals the same opening board and leaves the same randomSeed behind, at continuous and at planet", () => {
     const seed = 20260819;
-    const continuousState = startingGameState(seed, {
+    const unnamedState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
     });
-    const explicitContinuousState = startingGameState(seed, {
+    const continuousState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
       nodeRotation: "continuous",
@@ -383,8 +392,8 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
       nodeRotation: "planet",
     });
 
-    // The default is continuous, so naming it explicitly changes nothing.
-    expect(explicitContinuousState).toEqual(continuousState);
+    // The default is planet, so naming it explicitly changes nothing.
+    expect(planetState).toEqual(unnamedState);
 
     // Planet deals the identical board and consumes the identical seed —
     // only a landing rotates the queue under planet, and the deal itself
@@ -401,6 +410,7 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
     const continuousState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
+      nodeRotation: "continuous",
     });
     const dedicatedState = startingGameState(seed, {
       lengthInRounds: 40,
