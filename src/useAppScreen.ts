@@ -1,4 +1,4 @@
-// The app's front door: which screen is showing, the seven options chosen on
+// The app's front door: which screen is showing, the eight options chosen on
 // the start screen, and the two actions that move between screens. Lives
 // outside App.tsx so PLAY's wiring and the return to start are a real unit,
 // exercised on their own rather than only through the whole app. Which
@@ -23,6 +23,10 @@ import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
 } from "./rules/nodes";
+import {
+  DEFAULT_PLANET_BONUS,
+  type PlanetBonusSetting,
+} from "./rules/planetBonus";
 import { DEFAULT_SCORING, type ScoringSetting } from "./rules/scoring";
 
 /** The app's current screen and options, plus the actions that change either. */
@@ -33,6 +37,7 @@ export interface AppScreen {
   readonly combatEnabled: boolean;
   readonly scoring: ScoringSetting;
   readonly nodeRotation: NodeRotationSetting;
+  readonly planetBonus: PlanetBonusSetting;
   readonly lengthInRounds: number;
   readonly clockSetting: ClockSetting;
   readonly setFleetSize: (fleetSize: FleetSize) => void;
@@ -40,6 +45,7 @@ export interface AppScreen {
   readonly setCombatEnabled: (combatEnabled: boolean) => void;
   readonly setScoring: (scoring: ScoringSetting) => void;
   readonly setNodeRotation: (nodeRotation: NodeRotationSetting) => void;
+  readonly setPlanetBonus: (planetBonus: PlanetBonusSetting) => void;
   readonly setLengthInRounds: (lengthInRounds: number) => void;
   readonly setClockSetting: (clockSetting: ClockSetting) => void;
   readonly handlePlay: () => void;
@@ -48,19 +54,19 @@ export interface AppScreen {
 }
 
 /**
- * Holds the seven options chosen on the start screen, so a finished game
+ * Holds the eight options chosen on the start screen, so a finished game
  * returns to the start screen with the options it was played with still set,
  * and delegates which screen is showing to `useScreenAddress`, which reads it
  * from the browser's address. `handlePlay` dispatches `new-game` with a fresh
  * seed and the fleet size, charged-node count, combat setting, scoring
- * setting, node rotation setting and length through `dispatch`, then hands
- * the game its address; `handleReturnToStart` moves the browser back, the
- * same as its own Back button. The clock setting is not part of `new-game` —
- * the rules layer knows nothing about time — so it is held here purely for
- * the game screen to read. `handleOpenGuide` opens the quick guide at its own
- * address and changes nothing else; there is no matching close action,
- * because `handleReturnToStart` already means "leave for the start screen",
- * which is exactly what leaving the guide does.
+ * setting, node rotation setting, planet bonus setting and length through
+ * `dispatch`, then hands the game its address; `handleReturnToStart` moves
+ * the browser back, the same as its own Back button. The clock setting is not
+ * part of `new-game` — the rules layer knows nothing about time — so it is
+ * held here purely for the game screen to read. `handleOpenGuide` opens the
+ * quick guide at its own address and changes nothing else; there is no
+ * matching close action, because `handleReturnToStart` already means "leave
+ * for the start screen", which is exactly what leaving the guide does.
  */
 export function useAppScreen(
   dispatch: (intent: SessionIntent) => void,
@@ -77,6 +83,8 @@ export function useAppScreen(
   const [nodeRotation, setNodeRotation] = useState<NodeRotationSetting>(
     DEFAULT_NODE_ROTATION,
   );
+  const [planetBonus, setPlanetBonus] =
+    useState<PlanetBonusSetting>(DEFAULT_PLANET_BONUS);
   const [lengthInRounds, setLengthInRounds] = useState(
     DEFAULT_GAME_LENGTH_ROUNDS,
   );
@@ -94,6 +102,7 @@ export function useAppScreen(
       combatEnabled,
       scoring,
       nodeRotation,
+      planetBonus,
     });
     showGame();
   }
@@ -113,6 +122,7 @@ export function useAppScreen(
     combatEnabled,
     scoring,
     nodeRotation,
+    planetBonus,
     lengthInRounds,
     clockSetting,
     setFleetSize,
@@ -120,6 +130,7 @@ export function useAppScreen(
     setCombatEnabled,
     setScoring,
     setNodeRotation,
+    setPlanetBonus,
     setLengthInRounds,
     setClockSetting,
     handlePlay,

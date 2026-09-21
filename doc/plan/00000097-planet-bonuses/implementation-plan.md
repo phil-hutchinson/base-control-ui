@@ -749,7 +749,46 @@ Verification (automated): `npm test` green with the new cases, and with
 
 ### Step 5 — The eighth option reaches a new game
 
-Status: pending
+Status: committed
+
+Notes: Added `planetBonus` to the `new-game` intent in `src/game/session.ts`
+(required, typed `PlanetBonusSetting`, threaded straight into
+`startingGameState`), updated its doc comment, and added `planetBonus: "off"`
+to all thirteen `new-game` object literals in `src/game/session.test.ts`
+(the fourteenth, `buildState`, already carried the state-shape fields from
+Step 3). Added `planetBonus`/`setPlanetBonus` to `useAppScreen.ts` exactly
+per the other six options (state at `DEFAULT_PLANET_BONUS`, exposed on
+`AppScreen`, included in the `new-game` dispatch), and updated its module and
+hook doc comments from "seven" to "eight". `App.tsx` takes the new value and
+setter off the hook and passes them to `StartScreen`, placed next to the
+`scoring` props (visual order) rather than at the end of the prop list.
+`StartScreen.tsx` gained the eighth `fieldset`, legend `Planet bonus`, after
+Scoring and before Inactive node rotation, with the local
+`off → "OFF"`/`two → "2 POINTS"`/`three → "3 POINTS"` label map, its own
+`useId` group name, and OFF checked by default via `PLANET_BONUS_SETTINGS`
+through the existing `OptionChoice`; its module and component doc comments
+also went from "seven" to "eight". No new styling. Updated
+`StartScreen.test.tsx`'s group-order test to eight groups and added three new
+tests for the Planet bonus group (all three labels with the given one
+checked; OFF checked by default with the radios in order OFF, 2 POINTS,
+3 POINTS; the change handler called with "three" and no other handler
+called). Added a `planetBonus` default check to `useAppScreen.test.tsx`'s
+opening test and a new test mirroring the existing node-rotation/scoring
+"carries a chosen ... setting" test, for planet bonus set to "three". Added
+two tests to `session.test.ts`'s `new-game` describe block: setting "three"
+deals three bonus planets a side, and setting "off" leaves both lists empty.
+Updated `App.test.tsx`'s two seven-groups tests to eight (with a
+`planetBonusGroup()` helper and an OFF-checked assertion) and added a test
+mirroring the DEDICATED "choosing before PLAY starts a game, and returning
+to start still shows it chosen" test for 3 POINTS. No deviations from the
+step as written. `npm test` now at 76 files / 1499 tests, all green (up from
+76/1492); `npm run typecheck`, `npm run lint` and `npm run format:check` all
+clean (prettier reformatted the `useState<PlanetBonusSetting>` declaration in
+`useAppScreen.ts` onto two lines, run via `npx prettier --write`, consistent
+with the plan's own formatting note). The app is still visually driven by the
+same start screen shown before this step in every other respect — the panel
+(Step 7) is what a player would need to see the setting reflected once a game
+starts.
 
 Carry the choice from the start screen to `startingGameState`, through the
 same plumbing the other seven ride (D9).

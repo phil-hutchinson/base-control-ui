@@ -56,6 +56,8 @@ export function App() {
     setCombatEnabled,
     scoring,
     setScoring,
+    planetBonus,
+    setPlanetBonus,
     nodeRotation,
     setNodeRotation,
     lengthInRounds,
@@ -81,6 +83,8 @@ export function App() {
             onCombatEnabledChange={setCombatEnabled}
             scoring={scoring}
             onScoringChange={setScoring}
+            planetBonus={planetBonus}
+            onPlanetBonusChange={setPlanetBonus}
             nodeRotation={nodeRotation}
             onNodeRotationChange={setNodeRotation}
             lengthInRounds={lengthInRounds}

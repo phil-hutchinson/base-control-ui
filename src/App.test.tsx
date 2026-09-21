@@ -101,6 +101,10 @@ function nodeRotationGroup() {
   return screen.getByRole("group", { name: "Inactive node rotation" });
 }
 
+function planetBonusGroup() {
+  return screen.getByRole("group", { name: "Planet bonus" });
+}
+
 function clockGroup() {
   return screen.getByRole("group", { name: "Clock (time per move)" });
 }
@@ -111,7 +115,7 @@ async function pressPlay() {
 }
 
 describe("App", () => {
-  it("opens on the start screen: the name, all seven option groups at their defaults, and PLAY — no board, no HUD", () => {
+  it("opens on the start screen: the name, all eight option groups at their defaults, and PLAY — no board, no HUD", () => {
     render(<App />);
 
     expect(
@@ -132,6 +136,9 @@ describe("App", () => {
       within(scoringGroup()).getByRole("radio", { name: "SIMPLE" }),
     ).toBeChecked();
     expect(
+      within(planetBonusGroup()).getByRole("radio", { name: "OFF" }),
+    ).toBeChecked();
+    expect(
       within(nodeRotationGroup()).getByRole("radio", { name: "CONTINUOUS" }),
     ).toBeChecked();
     expect(
@@ -150,7 +157,7 @@ describe("App", () => {
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
   });
 
-  it("renders the seven option groups in order: Ships, Charged nodes, Scoring, Inactive node rotation, Combat, Rounds, Clock", () => {
+  it("renders the eight option groups in order: Ships, Charged nodes, Scoring, Planet bonus, Inactive node rotation, Combat, Rounds, Clock", () => {
     render(<App />);
 
     const groups = screen.getAllByRole("group");
@@ -160,6 +167,7 @@ describe("App", () => {
       "Ships",
       "Charged nodes",
       "Scoring",
+      "Planet bonus",
       "Inactive node rotation",
       "Combat",
       "Rounds",
@@ -518,6 +526,28 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       within(nodeRotationGroup()).getByRole("radio", { name: "DEDICATED" }),
+    ).toBeChecked();
+  });
+
+  it("choosing 3 POINTS before PLAY starts a game, and returning to start still shows it chosen", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    stubConfirm(true);
+
+    await user.click(
+      within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
+    );
+    await pressPlay();
+
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+
+    traverseTo("");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+    ).toBeInTheDocument();
+    expect(
+      within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
     ).toBeChecked();
   });
 
