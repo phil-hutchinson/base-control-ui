@@ -16,10 +16,13 @@
 // onto one with no countdown starts one (§8.3, `applyMove` below). A landing
 // is the second: under the planet and dedicated settings, a ship landing on
 // a planet or a rotator rotates the queue on the spot, before the end-of-turn
-// sequence ever runs (§8.2). A turn is one move or one attack (§5), so every
-// move and every attack ends the ply: play always passes to the other side.
-// The pass guard covers the case §5 sets out for when the side to move can
-// neither move nor attack at all.
+// sequence ever runs (§8.2). A landing on a planet may also pay a planet
+// bonus, immediately, if the setting is on and the planet is one of the
+// landing side's unclaimed three (§3.4); a fight's two landings are each
+// checked in turn, attacker's first. A turn is one move or one attack (§5),
+// so every move and every attack ends the ply: play always passes to the
+// other side. The pass guard covers the case §5 sets out for when the side
+// to move can neither move nor attack at all.
 
 import { sideToMoveCanMoveOrAttack } from "./canMoveOrAttack";
 import { type Square, squareName } from "./board";
@@ -31,6 +34,7 @@ import {
   drawReturnPlanet,
 } from "./combat";
 import { isPlanet } from "./planets";
+import { planetBonusPoints } from "./planetBonus";
 import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
 import type { Side, ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
@@ -109,8 +113,30 @@ export interface QueueRotatedEffect {
   readonly trigger: "planet" | "rotator";
 }
 
+/**
+ * A ship's landing paid a planet bonus (rules.md §3.4): `side` is the side
+ * paid, `square` the planet landed on, and `amount` what was paid — nothing
+ * else, in particular no running total, since the payment is raised mid-turn
+ * and the end-of-turn collection lands on top of it moments later. Sits
+ * after any `NodeSpentEffect` and before the `QueueRotatedEffect` the same
+ * landing may also raise: the payment is part of the arrival, and the
+ * rotation is that arrival's consequence for the board. A fight raises the
+ * attacker's claim (if any) before the defender's, matching the placement
+ * order rules.md §7.1 fixes.
+ */
+export interface PlanetBonusClaimedEffect {
+  readonly type: "planet-bonus-claimed";
+  readonly side: Side;
+  readonly square: Square;
+  readonly amount: number;
+}
+
 /** Something that happened as a result of applying a move, beyond the move itself. */
-export type MoveEffect = NodeSpentEffect | QueueRotatedEffect | EndOfPlyEffect;
+export type MoveEffect =
+  | NodeSpentEffect
+  | PlanetBonusClaimedEffect
+  | QueueRotatedEffect
+  | EndOfPlyEffect;
 
 /**
  * A move applied successfully, with the resulting state and what happened.
@@ -173,7 +199,10 @@ export interface FightResolvedEffect {
  * fight itself.
  */
 export type AttackEffect =
-  FightResolvedEffect | QueueRotatedEffect | EndOfPlyEffect;
+  | FightResolvedEffect
+  | PlanetBonusClaimedEffect
+  | QueueRotatedEffect
+  | EndOfPlyEffect;
 
 /** An attack applied successfully, with the resulting state and what happened. */
 export interface AppliedAttack {
@@ -378,13 +407,65 @@ function rotateForLanding(
 }
 
 /**
+ * Pays a planet bonus if `square` triggers one for `side` landing there
+ * (rules.md §3.4), modelled on `rotateForLanding` above: does nothing at
+ * all — returning `state` unchanged — when the planet bonus setting is off,
+ * when `square` is not one of `side`'s three dealt planets, or when `side`
+ * has already claimed it. Otherwise it does two things at once: `side`'s
+ * energy rises by `planetBonusPoints(state.planetBonus)`, and that planet's
+ * entry in `state.bonusPlanets` records `state.plyNumber` — the ply the
+ * landing happened on, since `endPly` has not yet advanced it. Shared by
+ * `applyMove`, which calls this once, and `applyAttack`, which calls it
+ * twice — the attacker's return planet first, then the defender's —
+ * threading the state returned by the first call into the second, so two
+ * claims in the same fight compose exactly as two rotations already do.
+ */
+function claimPlanetBonus(
+  state: GameState,
+  side: Side,
+  square: Square,
+): {
+  readonly state: GameState;
+  readonly effect: PlanetBonusClaimedEffect | undefined;
+} {
+  if (state.planetBonus === "off") {
+    return { state, effect: undefined };
+  }
+
+  const landedSquareName = squareName(square);
+  const entries = state.bonusPlanets[side];
+  const entryIndex = entries.findIndex(
+    (entry) => squareName(entry.square) === landedSquareName,
+  );
+  if (entryIndex === -1 || entries[entryIndex].claimedOnPly !== undefined) {
+    return { state, effect: undefined };
+  }
+
+  const amount = planetBonusPoints(state.planetBonus);
+  const updatedEntries = entries.map((entry, index) =>
+    index === entryIndex ? { ...entry, claimedOnPly: state.plyNumber } : entry,
+  );
+
+  return {
+    state: {
+      ...state,
+      energy: { ...state.energy, [side]: state.energy[side] + amount },
+      bonusPlanets: { ...state.bonusPlanets, [side]: updatedEntries },
+    },
+    effect: { type: "planet-bonus-claimed", side, square, amount },
+  };
+}
+
+/**
  * Applies a move of `shipId` to `destination` in `state`, or refuses it. A
  * legal move never mutates `state`: it returns a new state in which the ship
  * stands on `destination` having paid the shape's cost (rules.md §6) out of
  * its own power. An orthogonal step costs nothing, so the ship's power is
  * untouched by it. A ship that ends the move on a planet does not gain
- * anything on arrival — it recovers a point at a time, through the
- * end-of-turn sequence (rules.md §3.1, §4.1), like any other planet stay.
+ * power on arrival — it recovers a point at a time, through the end-of-turn
+ * sequence (rules.md §3.1, §4.1), like any other planet stay — but it may
+ * gain energy on arrival, if `destination` is one of the moving side's
+ * unclaimed bonus planets (rules.md §3.4, `claimPlanetBonus` below).
  *
  * Three node changes can happen as the move resolves — two knowing
  * exceptions to a node's state changing only in the end-of-turn sequence,
@@ -396,11 +477,13 @@ function rotateForLanding(
  * countdown, its countdown is set to `CHARGED_COUNTDOWN_PLIES`; one that
  * already carries a countdown is left alone, which can only happen if this
  * move somehow lands on an occupied square, since a countdown's own holder
- * is standing there. Finally, `rotateForLanding` rotates the queue once if
- * `destination` is a planet under the planet setting, or a rotator under
- * dedicated — spending the rotator as it lands — raising a
- * `QueueRotatedEffect` after any `NodeSpentEffect`; under continuous, or
- * when the destination triggers neither, nothing happens here.
+ * is standing there. Then `claimPlanetBonus` pays a bonus if `destination`
+ * earns one, raising a `PlanetBonusClaimedEffect`. Finally, `rotateForLanding`
+ * rotates the queue once if `destination` is a planet under the planet
+ * setting, or a rotator under dedicated — spending the rotator as it lands —
+ * raising a `QueueRotatedEffect` after any `NodeSpentEffect` and any
+ * `PlanetBonusClaimedEffect`; under continuous, or when the destination
+ * triggers neither, nothing happens here.
  *
  * A move ends the ply (rules.md §5): play passes to the other side. The
  * result then passes through `applyPassGuard`, so a move that leaves the
@@ -463,12 +546,20 @@ export function applyMove(
   }
 
   const afterMove: GameState = { ...state, ships, nodes };
+  const { state: claimedState, effect: claimEffect } = claimPlanetBonus(
+    afterMove,
+    ship.side,
+    destination,
+  );
+  if (claimEffect !== undefined) {
+    effects.push(claimEffect);
+  }
   // Captured before rotateForLanding, so a node that charges later in this
   // same ply is reported at the priority a player last saw it holding, not
   // the one a landing under planet or dedicated rotates it to.
-  const priorityBeforeLanding = snapshotInactivePriorities(afterMove.nodes);
+  const priorityBeforeLanding = snapshotInactivePriorities(claimedState.nodes);
   const { state: rotatedState, effect: rotationEffect } = rotateForLanding(
-    afterMove,
+    claimedState,
     destination,
   );
   if (rotationEffect !== undefined) {
@@ -652,8 +743,10 @@ export function assertFightInvariants(
  * planets still empty afterwards, advancing `randomSeed` once per ship. Both
  * squares the ships fought from are left empty; there is no winner and no
  * advance. Neither square's node changes state: leaving a node does not end
- * it (rules.md §8.3). Both returned ships land on planets (§7), so under the
- * planet setting each landing rotates the queue in turn — attacker's return
+ * it (rules.md §8.3). Both returned ships land on planets (§7), so each may
+ * claim a planet bonus for its own side, attacker's return first, then the
+ * defender's, through `claimPlanetBonus` (§3.4); under the planet setting
+ * each landing also rotates the queue in the same order — attacker's return
  * first, then the defender's — through `rotateForLanding`, before
  * `assertFightInvariants` runs; under dedicated a fight never rotates
  * anything, since a rotator never stands on a planet. An attack ends the ply
@@ -725,16 +818,31 @@ export function applyAttack(
     },
   ];
 
-  // Both returned ships have just landed on a planet (§7), attacker first —
-  // rotateForLanding is a no-op under continuous and under dedicated, since
-  // a rotator never stands on a planet, so a fight only ever rotates
-  // anything under the planet setting, and then twice. Captured before
-  // either rotation, so a node that charges later in this same ply is
-  // reported at the priority a player last saw it holding.
+  // Both returned ships have just landed on a planet (§7), attacker first,
+  // and each may claim a planet bonus for its own side before its own
+  // landing rotates the queue (§3.4, §8.2): rotateForLanding is a no-op
+  // under continuous and under dedicated, since a rotator never stands on a
+  // planet, so a fight only ever rotates anything under the planet setting,
+  // and then twice. Captured before either rotation, so a node that charges
+  // later in this same ply is reported at the priority a player last saw it
+  // holding.
   const priorityBeforeLanding = snapshotInactivePriorities(nextState.nodes);
-  const afterAttackerRotation = rotateForLanding(nextState, attackerTo);
-  const afterDefenderRotation = rotateForLanding(
+  const attackerClaim = claimPlanetBonus(
+    nextState,
+    attackerShip.side,
+    attackerTo,
+  );
+  const afterAttackerRotation = rotateForLanding(
+    attackerClaim.state,
+    attackerTo,
+  );
+  const defenderClaim = claimPlanetBonus(
     afterAttackerRotation.state,
+    defenderShip.side,
+    defenderTo,
+  );
+  const afterDefenderRotation = rotateForLanding(
+    defenderClaim.state,
     defenderTo,
   );
   const rotatedState = afterDefenderRotation.state;
@@ -756,8 +864,14 @@ export function applyAttack(
       returns,
     },
   ];
+  if (attackerClaim.effect !== undefined) {
+    effects.push(attackerClaim.effect);
+  }
   if (afterAttackerRotation.effect !== undefined) {
     effects.push(afterAttackerRotation.effect);
+  }
+  if (defenderClaim.effect !== undefined) {
+    effects.push(defenderClaim.effect);
   }
   if (afterDefenderRotation.effect !== undefined) {
     effects.push(afterDefenderRotation.effect);

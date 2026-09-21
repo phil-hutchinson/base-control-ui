@@ -634,7 +634,51 @@ pass untouched in their assertions. `npm run typecheck`, `npm run lint` and
 
 ### Step 4 — Landing pays: the claim in `ply.ts` and its effect
 
-Status: pending
+Status: committed
+
+Notes: Added `PlanetBonusClaimedEffect` (side, square, amount — nothing else,
+per D8) to `src/rules/ply.ts` as a member of both `MoveEffect` and
+`AttackEffect`. Added the private `claimPlanetBonus` helper, modelled on
+`rotateForLanding`: a no-op when the setting is off, the square is not one of
+the landing side's three, or that side has already claimed it; otherwise it
+raises the side's energy by `planetBonusPoints(state.planetBonus)` and
+records `state.plyNumber` on that planet's entry, returning the new state and
+the effect. `applyMove` calls it once, on the destination, after the node
+bookkeeping and before `rotateForLanding`, pushing its effect ahead of any
+`QueueRotatedEffect` (D7). `applyAttack` calls it twice, threading state
+through all four calls in the order fight-resolved, attacker's claim,
+attacker's rotation, defender's claim, defender's rotation (D7), each pushed
+to the effects list only when raised. Updated both functions' doc comments
+and the module's header comment to describe the claim. `assertFightInvariants`
+needed no change, confirmed directly: it inspects `ships`, fleet counts and
+`nodes` only, none of which `claimPlanetBonus` touches (energy and
+`bonusPlanets` are outside its checks). `src/board/EnergyOverlay.tsx`'s
+`endOfPlySettlements` helper takes the two effect lists' common shape by
+listing each member type explicitly; `PlanetBonusClaimedEffect` is now one of
+those members (it carries no settlement, so the function's own logic needed
+no change, only its type union and doc comment). Tests went into a new
+sibling file, `src/rules/planetBonusClaim.test.ts`, rather than the existing
+2200-line `src/rules/ply.test.ts`, covering every case the step lists: a move
+paid on landing with the right energy, entry and effect; the claim ordered
+before `ply-ended`; no payment for the other side's planet; no repeat payment
+for the same ship or a different ship of the same side; a shared planet paid
+to each side independently, tested with green claiming first and with red
+claiming first; nothing paid off; the amount tracking the setting; a fight
+paying the attacker, the defender, and both (attacker's claim before the
+defender's, using the same seed-pinning technique `ply.test.ts`'s own fight
+tests use to fix the two return planets); nothing paid on a fight when off;
+and exactly one rotation under the planet setting, sitting after the claim.
+One deviation from the step's own list: the "shared planet, in either order"
+requirement is covered by two separate scenarios (green claiming first;
+red claiming first), each also asserting the other side's entry is left
+untouched, rather than one scenario walking both claims through a full
+back-and-forth move sequence — the latter added real-move reachability
+complexity (ships can only reach a planet by an actual shape in
+`movement.ts`) without adding coverage beyond what the two scenarios already
+give. `npm test` now at 76 files / 1492 tests, all green (up from 75/1478);
+`src/rules/fullGame.test.ts` and `src/rules/seededReplay.test.ts` pass
+unchanged, both running at the default off setting where this step is inert.
+`npm run typecheck`, `npm run lint` and `npm run format:check` all clean.
 
 Add the claim to `src/rules/ply.ts` (D6, D7, D8). Nothing in
 `src/rules/endOfTurn.ts` changes (S6).
