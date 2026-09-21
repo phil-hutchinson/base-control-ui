@@ -29,6 +29,7 @@ import type {
   MoveEffect,
   NodeSpentEffect,
   PassEffect,
+  PlanetBonusClaimedEffect,
   PlyEndedEffect,
   QueueRotatedEffect,
 } from "../rules/ply";
@@ -308,6 +309,32 @@ function queueRotatedClause(effect: QueueRotatedEffect): string {
 }
 
 /**
+ * A landing claiming a planet bonus (rules.md §3.4): who was paid, the planet
+ * and the amount — no running total, since the payment is raised mid-turn and
+ * the turn's own collection lands on top of it moments later (D8).
+ */
+function planetBonusClaimedClause(effect: PlanetBonusClaimedEffect): string {
+  return `${capitalize(effect.side)} claimed a ${effect.amount}-energy bonus at the ${squareName(effect.square)} planet.`;
+}
+
+/**
+ * Every `planet-bonus-claimed` effect in a move's or a fight's effect list,
+ * as one clause each, in the order they occurred — a fight raises the
+ * attacker's claim (if any) before the defender's (rules.md §3.4, §7.1).
+ */
+function planetBonusClaimedClausesText(
+  effects: readonly (MoveEffect | AttackEffect)[],
+): string {
+  const claims = effects.filter(
+    (effect): effect is PlanetBonusClaimedEffect =>
+      effect.type === "planet-bonus-claimed",
+  );
+  return claims
+    .map((effect) => ` ${planetBonusClaimedClause(effect)}`)
+    .join("");
+}
+
+/**
  * Every `queue-rotated` effect in a move's or a fight's effect list, as one
  * clause each, in the order they occurred — a fight under the planet setting
  * carries two, the attacker's landing first (rules.md §7, §8.2).
@@ -324,9 +351,10 @@ function queueRotatedClausesText(
 /**
  * "What the move was": the ship's journey, whether it ended on a planet, what
  * the move cost (rules.md §6), and — between those and the turn-ending
- * clauses — whether it spent a charged node by leaving it (§8.3) and whether
- * the landing rotated the waiting nodes (§8.2). Either side's ship reads the
- * same way; the side is already named at the start of the sentence.
+ * clauses — whether it spent a charged node by leaving it (§8.3), whether the
+ * landing claimed a planet bonus (§3.4) and whether the landing rotated the
+ * waiting nodes (§8.2). Either side's ship reads the same way; the side is
+ * already named at the start of the sentence.
  */
 function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);
@@ -341,7 +369,7 @@ function moveSentence(event: MovedEvent): string {
   const nodeSpentClauseText =
     nodeSpent !== undefined ? ` ${nodeSpentClause(nodeSpent.square)}` : "";
 
-  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}${nodeSpentClauseText}${queueRotatedClausesText(event.effects)}`;
+  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}${nodeSpentClauseText}${planetBonusClaimedClausesText(event.effects)}${queueRotatedClausesText(event.effects)}`;
 }
 
 /**
@@ -395,8 +423,11 @@ function turnEndingClause(
  * what the attack cost the attacker and what it has left, that the defender
  * kept the power it was carrying, and the two planets they landed on. There
  * is no winner and no advance to report — every fight has the same outcome.
- * Under the planet setting both landings rotate the waiting nodes (§8.2), so
- * a `queue-rotated` clause for each follows the returns, attacker's first.
+ * Either return may also claim a planet bonus (§3.4); a `planet-bonus-claimed`
+ * clause for each follows the returns, attacker's before the defender's,
+ * matching the placement order §7.1 fixes. Under the planet setting both
+ * landings rotate the waiting nodes (§8.2), so a `queue-rotated` clause for
+ * each follows those, attacker's first.
  */
 function fightSentence(event: AttackedEvent): string {
   const fight = event.effects.find(
@@ -423,7 +454,7 @@ function fightSentence(event: AttackedEvent): string {
     throw new RangeError("a fight-resolved effect always carries two returns");
   }
   const [attackerReturn, defenderReturn] = fight.returns;
-  return `${opening} and both were beaten. ${attackCostClause} The defender kept the power it was carrying. The attacker returned to the ${squareName(attackerReturn.to)} planet and the defender to the ${squareName(defenderReturn.to)} planet.${queueRotatedClausesText(event.effects)}`;
+  return `${opening} and both were beaten. ${attackCostClause} The defender kept the power it was carrying. The attacker returned to the ${squareName(attackerReturn.to)} planet and the defender to the ${squareName(defenderReturn.to)} planet.${planetBonusClaimedClausesText(event.effects)}${queueRotatedClausesText(event.effects)}`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {

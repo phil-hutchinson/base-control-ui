@@ -1066,7 +1066,26 @@ one; Step 10's play-through is where that gets looked at again.
 
 ### Step 8 — The live region says a bonus was claimed
 
-Status: pending
+Status: committed
+
+Notes: Added `planetBonusClaimedClause` and `planetBonusClaimedClausesText` to
+`src/board/announcements.ts`, following `queueRotatedClause`/
+`queueRotatedClausesText`'s own shape: one clause per `planet-bonus-claimed`
+effect, reading "Green claimed a 3-energy bonus at the D6 planet." (side,
+amount, square, no running total, per D8). Wired into `moveSentence` after
+the node-spent clause and before the rotation clauses, and into
+`fightSentence` after the two returns and before the rotation clauses,
+matching effect order (attacker's claim before the defender's, per D7/§7.1).
+Updated the `moveSentence` and `fightSentence` doc comments to describe the
+new clause and its position. Added a new describe block,
+`announcementFor — a planet bonus claimed (rules.md §3.4)`, to
+`announcements.test.ts` with six cases: a move's claim; a move that claims
+nothing (unchanged wording); a move's claim sitting after a node-spent clause
+and before a rotation it also triggered; a fight's claim for one side; and a
+fight's claims for both sides, attacker's first, ahead of both rotations. No
+deviation from the step as written. `npm test` rose to 78 files / 1519 tests,
+all green (up from 78/1513). `npm run typecheck`, `npm run lint` and
+`npm run format:check` all clean.
 
 Give the claim a sentence in `src/board/announcements.ts`, in the players'
 vocabulary ("turn", "energy", never "ply"), keeping wording out of components
