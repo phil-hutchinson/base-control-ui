@@ -49,6 +49,14 @@ Four of the eight move; four are already where this story wants them.
   `startingGameState`'s parameter defaults all read from them, so there is no
   second place to change.
 
+- **The comments that named the old values.** Each constant's own doc comment
+  states its value in words, and two of `startingGameState`'s option comments
+  name theirs in parentheses. Separately, all four groups' ordering comments
+  claim the leftmost rendered choice is the one the app preselects — true of
+  every group before this story and of none of the four afterwards, since the
+  render order does not move. Those four say what the order is and point at
+  the `DEFAULT_` constant for the preselection instead.
+
 - **The tests that lean on a default instead of pinning what they mean.**
   Changing the four constants fails 26 tests across 11 files. Every one of
   them is an assertion about the old value, not a rule that broke — the
@@ -74,7 +82,25 @@ Four of the eight move; four are already where this story wants them.
     continuous", whose comment reads "The default is continuous, so naming it
     explicitly changes nothing". Its point — that naming a rotation
     explicitly consumes the same seeded stream as leaving it unnamed — still
-    holds, but it must now be written against planet as the unnamed one.
+    holds, but it must now be written against planet as the unnamed one. Its
+    sibling test names a variable `continuousState` while building it from the
+    default; both now name the setting they mean, so neither depends on which
+    setting happens to be preselected.
+
+  Two further kinds surfaced only once the constants moved, neither of them a
+  failure:
+
+  - **Tests that chose the value that is now the default**, and so no longer
+    prove the setter did anything: `useAppScreen`'s PLAY test, which set 5
+    ships and 4 charged nodes, and `App`'s "after choosing 5 ships deals a
+    five-a-side game". Both now choose a non-default value.
+
+  - **`App`'s combat test**, which selects green's L1 ship and expects red's
+    O2 to be marked attackable. The five-a-side layout starts no two opposing
+    ships within attack range of each other, so at the new default fleet size
+    there is no opening attack to select at all. The test is about the combat
+    setting reaching the game, not about the fleet, so it now chooses six
+    ships explicitly — the conditions it always ran under.
 
 - **`README.md`'s status blurb**, which states all eight preselected options
   in prose ("six to start", "five to start", "simple to start", "continuous
