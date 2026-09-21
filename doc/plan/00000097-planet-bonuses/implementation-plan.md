@@ -533,7 +533,36 @@ clean.
 
 ### Step 3 — The state carries the setting and the deal
 
-Status: pending
+Status: committed
+
+Notes: Added `planetBonus: PlanetBonusSetting` and
+`bonusPlanets: Readonly<Record<Side, readonly BonusPlanetEntry[]>>` to
+`GameState`, and the new `BonusPlanetEntry` interface (square plus optional
+`claimedOnPly`), exported alongside `Ship` and `NodeStatus` exactly per D5.
+Added `planetBonus?: string` to `StartingGameStateOptions`, validated with
+`isPlanetBonusSetting` and throwing a `RangeError` naming
+`PLANET_BONUS_SETTINGS` on a miss. In `startingGameState`, the bonus deal now
+runs last — after the opening board deal and the rotator draw — and only
+when the setting is not `"off"`; an OFF game's `bonusPlanets` is
+`{ green: [], red: [] }` and consumes no extra seed step, matching D4. Worked
+through the typechecker's list of about two dozen hand-built `GameState`
+literals across the test suite (found via the `rotators:` field already
+required in each) and added `planetBonus: "off"` and
+`bonusPlanets: { green: [], red: [] }` to each, mechanically, changing no
+existing assertion. Added six tests to `gameState.test.ts` covering the
+default (off, empty lists, no extra seed step), the on-game's deal (three
+distinct board-order planets a side, none claimed, exactly six
+`mulberry32` steps beyond the off game's seed), that the amount setting does
+not change the draw, the `RangeError` on an invalid string, that the setting
+is exactly the one given, and that the deal runs after the rotator draw
+(same `rotators` under dedicated whether the bonus is on or off). Added a
+short paragraph to `seededReplay.test.ts`'s header, in the voice of the
+existing version paragraphs, noting 0.38 and that an OFF game (the app's
+default) draws nothing new. No deviation from the step as written. `npm
+test` now at 75 files / 1478 tests, all green (up from 75/1469); in
+particular `seededReplay.test.ts` and `fullGame.test.ts` passed with every
+existing assertion untouched. `npm run typecheck`, `npm run lint` and
+`npm run format:check` all clean.
 
 Wire both new modules into `src/rules/gameState.ts` (D4, D5).
 

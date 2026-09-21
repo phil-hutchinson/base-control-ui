@@ -21,9 +21,11 @@ import {
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 import { DEFAULT_NODE_ROTATION, NODE_ROTATION_SETTINGS } from "./nodeRotation";
 import { legalDestinations } from "./movement";
+import { PLANET_BONUS_SETTINGS } from "./planetBonus";
 import { isPlanet } from "./planets";
 import { MAX_POWER } from "./power";
 import { applyMove } from "./ply";
+import { mulberry32 } from "./random";
 import { ROTATOR_SECTIONS } from "./rotators";
 import { DEFAULT_SCORING, SCORING_SETTINGS } from "./scoring";
 
@@ -503,6 +505,74 @@ describe("startingGameState", () => {
 
     expect(planet.randomSeed).toBe(continuous.randomSeed);
     expect(dedicated.randomSeed).not.toBe(continuous.randomSeed);
+  });
+
+  it("defaults to off, with both sides' bonus lists empty and no seed spent on a deal", () => {
+    const implicit = startingGameState(SEED);
+    const explicit = startingGameState(SEED, { planetBonus: "off" });
+
+    expect(implicit.planetBonus).toBe("off");
+    expect(implicit.bonusPlanets).toEqual({ green: [], red: [] });
+    expect(implicit).toEqual(explicit);
+  });
+
+  it("deals each side three distinct planets in board order, none claimed, spending six seed steps beyond the off game", () => {
+    const off = startingGameState(SEED, { planetBonus: "off" });
+    const on = startingGameState(SEED, { planetBonus: "three" });
+
+    expect(on.planetBonus).toBe("three");
+    for (const side of ["green", "red"] as const) {
+      const entries = on.bonusPlanets[side];
+      expect(entries).toHaveLength(3);
+      const names = entries.map((entry) => squareName(entry.square));
+      expect(new Set(names).size).toBe(3);
+      names.forEach((name) =>
+        expect(isPlanet(squareFromName(name))).toBe(true),
+      );
+      entries.forEach((entry) => expect(entry.claimedOnPly).toBeUndefined());
+    }
+
+    let expectedSeed = off.randomSeed;
+    for (let step = 0; step < 6; step++) {
+      [, expectedSeed] = mulberry32(expectedSeed);
+    }
+    expect(on.randomSeed).toBe(expectedSeed);
+  });
+
+  it("deals the same six planets whatever the amount, since the amount does not affect the draw", () => {
+    const two = startingGameState(SEED, { planetBonus: "two" });
+    const three = startingGameState(SEED, { planetBonus: "three" });
+
+    expect({ ...two, planetBonus: three.planetBonus }).toEqual(three);
+  });
+
+  it.each(["TWO", "on", "3", ""])(
+    "throws a RangeError for a planet bonus setting of %j",
+    (planetBonus) => {
+      expect(() => startingGameState(SEED, { planetBonus })).toThrow(
+        RangeError,
+      );
+    },
+  );
+
+  it("is one of the offered planet bonus settings, exactly the one given", () => {
+    const state = startingGameState(SEED, { planetBonus: "two" });
+
+    expect(PLANET_BONUS_SETTINGS).toContain(state.planetBonus);
+    expect(state.planetBonus).toBe("two");
+  });
+
+  it("deals bonus planets after the rotator draw, leaving the rotator set unaffected by the setting", () => {
+    const bonusOff = startingGameState(SEED, {
+      nodeRotation: "dedicated",
+      planetBonus: "off",
+    });
+    const bonusOn = startingGameState(SEED, {
+      nodeRotation: "dedicated",
+      planetBonus: "three",
+    });
+
+    expect(bonusOn.rotators).toEqual(bonusOff.rotators);
   });
 });
 

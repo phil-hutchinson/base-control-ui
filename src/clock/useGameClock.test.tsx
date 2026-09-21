@@ -18,6 +18,8 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     openingSeed: 1,
     nodeRotation: "continuous",
     rotators: [],
+    planetBonus: "off",
+    bonusPlanets: { green: [], red: [] },
     energy: { green: 0, red: 0 },
     lengthInRounds: 30,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

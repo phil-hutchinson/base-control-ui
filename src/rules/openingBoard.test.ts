@@ -173,6 +173,8 @@ describe.each(CHARGED_NODE_COUNTS)(
           openingSeed: seed,
           nodeRotation: "continuous",
           rotators: [],
+          planetBonus: "off",
+          bonusPlanets: { green: [], red: [] },
           energy: { green: 0, red: 0 },
           lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
           chargedNodeCount,

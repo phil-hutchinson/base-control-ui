@@ -29,6 +29,13 @@ import {
   NODE_ROTATION_SETTINGS,
   type NodeRotationSetting,
 } from "./nodeRotation";
+import { dealBonusPlanets } from "./bonusPlanets";
+import {
+  DEFAULT_PLANET_BONUS,
+  isPlanetBonusSetting,
+  PLANET_BONUS_SETTINGS,
+  type PlanetBonusSetting,
+} from "./planetBonus";
 import { placeRotators } from "./rotators";
 import {
   DEFAULT_SCORING,
@@ -70,6 +77,19 @@ export interface NodeStatus {
 
 /** Each side's running energy total (rules.md §8.4). */
 export type EnergyTotals = Readonly<Record<Side, number>>;
+
+/**
+ * One planet in a side's dealt bonus set (rules.md §3.4): the square, and,
+ * once that side's ships have landed there, the ply the claim happened on.
+ * `claimedOnPly` is undefined until claimed, and is a ply number rather than
+ * a boolean so that whether to still show the amount or the settled
+ * checkmark can be read straight off the state, with no timer and no
+ * component state needed to remember when a claim happened.
+ */
+export interface BonusPlanetEntry {
+  readonly square: Square;
+  readonly claimedOnPly?: number;
+}
 
 /** The state of a game in progress. */
 export interface GameState {
@@ -160,6 +180,22 @@ export interface GameState {
    * a rotator look identical.
    */
   readonly rotators: readonly Square[];
+  /**
+   * The planet bonus setting (rules.md §3.4), fixed for the game's lifetime
+   * once set by `startingGameState`. Every place that decides whether a
+   * landing pays reads it from here rather than from an app default. It
+   * cannot be derived from a board or from `bonusPlanets` below: an off game
+   * and an on game that happens to have claimed nothing yet look identical
+   * on the board.
+   */
+  readonly planetBonus: PlanetBonusSetting;
+  /**
+   * Each side's three dealt bonus planets (rules.md §3.4), fixed for the
+   * game's lifetime once dealt by `startingGameState`. Both sides' lists are
+   * empty when `planetBonus` is off. See `BonusPlanetEntry` for why an
+   * entry's claim is recorded as a ply number rather than a boolean.
+   */
+  readonly bonusPlanets: Readonly<Record<Side, readonly BonusPlanetEntry[]>>;
 }
 
 /**
@@ -218,6 +254,16 @@ export interface StartingGameStateOptions {
    * never supplied.
    */
   readonly nodeRotation?: string;
+  /**
+   * The planet bonus setting (rules.md §3.4). Defaults to
+   * `DEFAULT_PLANET_BONUS` (off). Deliberately typed `string`, not
+   * `PlanetBonusSetting`, for the same reason `scoring` and `nodeRotation`
+   * are: a setting arriving from outside the type system can be any string.
+   * Must be one of `planetBonus.ts`'s offered settings, or this throws a
+   * `RangeError`. `bonusPlanets` is not an option — it is produced by the
+   * deal, never supplied.
+   */
+  readonly planetBonus?: string;
 }
 
 /**
@@ -237,13 +283,15 @@ export interface StartingGameStateOptions {
  * game's first turn draws from: dealing the board consumes `chargedNodeCount
  * + 4` steps of the stream before play begins — nine at five charged, eight
  * at four, seven at three — plus, under the dedicated node rotation setting
- * only, up to eight more for the opening rotator set (rules.md §3.3). The
- * resulting state's `randomSeed` is the seed the deal (and, under dedicated,
- * the rotator draw) left behind. That argument is also recorded verbatim as
- * `openingSeed`, so the state remembers where its deal started even once
- * `randomSeed` has moved on. See `src/game/seed.ts` for where the app's
- * opening seed comes from. Every test passes one explicitly, so a game's
- * opening position is always reproducible.
+ * only, up to eight more for the opening rotator set (rules.md §3.3), plus,
+ * when the planet bonus is on, exactly six more for the bonus planet deal
+ * (rules.md §3.4), drawn last so an off game spends nothing extra. The
+ * resulting state's `randomSeed` is the seed all of that left behind. That
+ * argument is also recorded verbatim as `openingSeed`, so the state
+ * remembers where its deal started even once `randomSeed` has moved on. See
+ * `src/game/seed.ts` for where the app's opening seed comes from. Every test
+ * passes one explicitly, so a game's opening position is always
+ * reproducible.
  *
  * `options` carries everything else, each optional and documented on
  * `StartingGameStateOptions` — see there for the fields and their defaults
@@ -260,6 +308,7 @@ export function startingGameState(
     combatEnabled = DEFAULT_COMBAT_ENABLED,
     scoring = DEFAULT_SCORING,
     nodeRotation = DEFAULT_NODE_ROTATION,
+    planetBonus = DEFAULT_PLANET_BONUS,
   } = options;
 
   if (!isGameLengthRounds(lengthInRounds)) {
@@ -287,6 +336,11 @@ export function startingGameState(
       `startingGameState: nodeRotation must be one of ${NODE_ROTATION_SETTINGS.join(", ")}, got ${nodeRotation}`,
     );
   }
+  if (!isPlanetBonusSetting(planetBonus)) {
+    throw new RangeError(
+      `startingGameState: planetBonus must be one of ${PLANET_BONUS_SETTINGS.join(", ")}, got ${planetBonus}`,
+    );
+  }
 
   const ships = startingFleet(fleetSize).map((entry) => ({
     id: entry.id,
@@ -305,10 +359,27 @@ export function startingGameState(
   const dealtNodeSquares = ALL_SQUARES.filter(
     (square) => nodes[squareName(square)] !== undefined,
   );
-  const [rotators, nextSeed] =
+  const [rotators, seedAfterRotators] =
     nodeRotation === "dedicated"
       ? placeRotators(dealtNodeSquares, shipSquares, dealtSeed)
       : [[], dealtSeed];
+
+  const [bonusPlanets, nextSeed]: [
+    Readonly<Record<Side, readonly BonusPlanetEntry[]>>,
+    number,
+  ] =
+    planetBonus === "off"
+      ? [{ green: [], red: [] }, seedAfterRotators]
+      : ((): [Readonly<Record<Side, readonly BonusPlanetEntry[]>>, number] => {
+          const [dealt, seedAfterDeal] = dealBonusPlanets(seedAfterRotators);
+          return [
+            {
+              green: dealt.green.map((square) => ({ square })),
+              red: dealt.red.map((square) => ({ square })),
+            },
+            seedAfterDeal,
+          ];
+        })();
 
   return {
     ships,
@@ -325,6 +396,8 @@ export function startingGameState(
     scoring,
     nodeRotation,
     rotators,
+    planetBonus,
+    bonusPlanets,
   };
 }
 
