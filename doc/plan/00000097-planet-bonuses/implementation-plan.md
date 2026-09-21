@@ -331,7 +331,30 @@ opening seed, as `Board` already does.
 
 ### Step 1 — `rules.md` 0.37 → 0.38: planet bonuses become a rule
 
-Status: pending
+Status: committed
+
+Notes: Added section 3.4 (Planet bonuses) after 3.3 Rotators, defining the
+whole rule; added one sentence each to 3.1 (pointing at 3.4, "Planets are
+not owned" left untouched), 7.1 (a placed ship may claim a bonus), 8.4
+(node collection is not the only source of energy), 8.6 (a bonus is paid at
+landing and takes no step in this order), and the overview in section 1
+(energy also comes from bonuses; the deal is a further random element).
+Section 10's opening sentence gained the planet bonus alongside the other
+choices. Checked section 9: it names only the rounds and does not enumerate
+the other pre-play choices, so it is unchanged — nothing to add without
+inventing a list. Checked section 2: there is no existing `Planet` entry to
+point at 3.4 (the story's step text assumed one existed), so none was
+added — this is a discrepancy from the plan's assumption, recorded here per
+its own "say either way" hedge rather than reopened with the owner, since
+the step already allowed for this outcome. Checked
+`doc/ruleset/tech-notes.md`: its queue-sizing argument concerns node timing,
+not energy amounts, so a second source of energy does not falsify anything
+there and it was left unchanged. `RULES_VERSION` bumped to 0.38 in
+`src/rules/rulesVersion.ts`, and one changelog entry added, newest first, in
+the shape the 0.34/0.35/0.36/0.37 entries use, stating this is a gameplay
+change and a tag candidate with tagging on hold. No tag was created. `npm
+test` stayed at 73 files / 1455 tests, all green (no behaviour changed yet);
+`npm run typecheck`, `npm run lint` and `npm run format:check` all clean.
 
 Update `doc/ruleset/rules.md`, bump the document to **0.38**, bump
 `RULES_VERSION` in `src/rules/rulesVersion.ts` to match, and add **one**
