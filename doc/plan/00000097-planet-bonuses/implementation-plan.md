@@ -325,7 +325,8 @@ opening seed, as `Board` already does.
 | 7   | The panel above the clocks                                       | **manual**   |
 | 8   | The live region says a bonus was claimed                         | automated    |
 | 9   | The Quick Guide and `README.md`                                  | automated    |
-| 10  | The owner plays it                                               | **manual**   |
+| 10  | The planet bonus gets its own Quick Guide section                | automated    |
+| 11  | The owner plays it                                               | **manual**   |
 
 ---
 
@@ -1180,7 +1181,59 @@ where a player would look for it and that no count ("seven") is left stale.
 
 ---
 
-### Step 10 — The owner plays it
+### Step 10 — The planet bonus gets its own Quick Guide section
+
+Status: pending
+
+Owner's decision at Step 7's gate and after reading Step 9's copy: the
+bonus does not belong tacked onto REFUELING. Undo that sentence and give the
+bonus a headed section of its own at the **bottom** of the guide, with a
+diagram.
+
+**Revert the REFUELING paragraph** in `src/guide/guideCopy.ts` to exactly the
+text it had before Step 9 — "Spaceships can hold up to six fuel. At the end
+of a player's turn, spaceships sitting on planets regain one fuel. If a
+player has only one spaceship gaining fuel and it has room, it gains two
+fuel." — and restore the matching exact-string expectation in
+`src/guide/guideCopy.test.ts`. Step 9's `README.md` changes are **not**
+reverted; they stand as they are.
+
+**Add a fifth headed section, last in `GUIDE_SECTIONS`**, after NEW CHARGED
+NODE SELECTION: a new `GuideSectionId` member, the heading **PLANET BONUS**,
+and a paragraph saying what the option does when it is on — each player is
+given three planets, which pay them points the first time one of their
+spaceships lands there, once per planet and never again. The guide is static
+and does not know a game's settings, so the paragraph says what happens when
+the option is on, exactly as Step 9's sentence did. Guide vocabulary
+throughout: **points**, not energy; **fuel**, not power. No `settingLines` —
+those belong to node selection alone. The doc comments naming "four headed
+sections" (the module header, the `GuideSectionId` docstring, the
+`GUIDE_SECTIONS` docstring, `GuideScreen.tsx`'s own comments) become five.
+
+**Add its diagram**, wired into `SECTION_DIAGRAMS` in `GuideScreen.tsx` by
+section id: **green's bonus row alone** — three planets, one of them carrying
+the settled checkmark, the other two bare. Not red's row, and no `+N` badge:
+one row, one claimed planet, which is what the owner asked for.
+
+The diagram must not become a second, drifting copy of the panel. Prefer
+extracting the panel's cell — the planet drawing plus its badge overlay, and
+the `ClaimedMark` checkmark itself — so `PlanetBonusPanel` and the guide draw
+from one source; a new `GuideDiagramCell` kind is a reasonable way to seat it
+in the guide's grid if that fits more cleanly than a standalone diagram
+component. Either way the checkmark a reader sees in the guide is the
+checkmark the panel draws, at the size and weight Step 7's gate settled (70%
+of the cell, stroke width 4.5).
+
+Depends on: Steps 7 and 9.
+
+Verification (automated): `npm run typecheck`, `npm run lint`, `npm test`,
+`npm run format:check`. The guide's copy tests assert exact strings, so they
+carry the revert and the new section's text. Add a test that the guide has
+five sections ending in PLANET BONUS, and that its diagram draws three
+planets with exactly one checkmark. `GuideScreen.test.tsx` already asserts
+the section-to-diagram pairing; extend it rather than working around it.
+
+### Step 11 — The owner plays it
 
 Status: pending
 
