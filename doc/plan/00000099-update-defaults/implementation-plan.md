@@ -68,9 +68,12 @@ remaining statement of a default.
 since the start screen still renders it leftmost; only the "starts on" half
 moves to planet.
 
-The sweep left one sentence deliberately unchanged: "every starting square is
+The sweep left one sentence unchanged at the time: "every starting square is
 an ordinary square … so in a game with combat on ships are attackable from the
-very first turn." It is a claim about starting squares granting no immunity,
-which holds at every fleet size, not a claim that an attack is in range on
-turn one — which, as Step 1 found, is no longer true at the default fleet.
-Flagged to the owner rather than reworded.
+very first turn." The "attackable from the very first turn" half is not a
+claim about starting squares granting no immunity — that half holds at every
+fleet size — but a claim that an attack is in range on turn one, which, as
+Step 1 found, is no longer true at the default fleet. Flagged to the owner
+rather than reworded at the time; peer review confirmed the sentence needed
+fixing, and the "very first turn" clause was dropped, leaving only the claim
+that holds at every fleet size.

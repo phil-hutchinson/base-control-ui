@@ -109,6 +109,12 @@ Four of the eight move; four are already where this story wants them.
   planet preselected that sentence's two claims come apart, and the
   "starts on" half moves to planet.
 
+- **`README.md`'s starting-squares passage.** "Ships are attackable from the
+  very first turn" held at six a side but not at five, four or three, and five
+  is now what PLAY deals without the fleet-size choice touched. The claim that
+  actually holds — a starting square gives a ship nothing and protects it from
+  nothing — stays; the "very first turn" clause is dropped.
+
 ## What does not change
 
 - **`doc/ruleset/rules.md`.** The ruleset names no default and calls no

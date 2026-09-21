@@ -25,10 +25,7 @@ import {
   type ChargedNodeCount,
   type NodeState,
 } from "./nodes";
-import {
-  DEFAULT_NODE_ROTATION,
-  type NodeRotationSetting,
-} from "./nodeRotation";
+import { type NodeRotationSetting } from "./nodeRotation";
 import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
 
 function ship(
@@ -71,7 +68,11 @@ function buildState(config: {
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
-    nodeRotation: config.nodeRotation ?? DEFAULT_NODE_ROTATION,
+    // Pinned to continuous, not left to the app's default: this is a
+    // rules-level harness, and a case that names no rotation should keep
+    // exercising the same setting regardless of which one the start screen
+    // preselects.
+    nodeRotation: config.nodeRotation ?? "continuous",
     rotators: config.rotators ?? [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },

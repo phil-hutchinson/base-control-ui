@@ -79,8 +79,7 @@ install, no account, no server.
 > not a loss, since energy still decides who wins. A smaller fleet starts from
 > fewer of the board's eighteen starting squares, leaving the rest empty; every
 > starting square is an ordinary square, whether or not a ship stands there —
-> it gives a ship nothing and protects it from nothing, so in a game with
-> combat on ships are attackable from the very first turn. Twelve planets sit
+> it gives a ship nothing and protects it from nothing. Twelve planets sit
 > inside the board instead, at fixed squares, none of them on the outer edge,
 > each showing one of twelve different drawings. Which drawing sits on which
 > planet is dealt out afresh at the start of every game, so no two games look

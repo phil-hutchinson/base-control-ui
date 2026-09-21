@@ -216,7 +216,18 @@ interface PlayedGame {
  * (§3.2, §8.2).
  */
 function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
-  let state = startingGameState(seed, { lengthInRounds, combatEnabled: true });
+  let state = startingGameState(seed, {
+    lengthInRounds,
+    combatEnabled: true,
+    // Pinned, not left to the app's default: every figure this file checks
+    // — fight counts, planet returns, queue refills — was measured under
+    // six a side, five charged nodes, simple scoring and continuous
+    // rotation, and the comments above record them as such.
+    fleetSize: 6,
+    chargedNodeCount: 5,
+    scoring: "simple",
+    nodeRotation: "continuous",
+  });
   const openingBoard = state.nodes;
   const planetReturns: string[] = [];
   const chargedNodes: string[] = [];
