@@ -441,7 +441,28 @@ source of energy.
 
 ### Step 2 — Two rules-layer modules: the setting, and the deal
 
-Status: pending
+Status: committed
+
+Notes: Added `src/rules/planetBonus.ts` exactly per D1 — `PlanetBonusSetting`,
+`PLANET_BONUS_SETTINGS` (off first), `DEFAULT_PLANET_BONUS`,
+`isPlanetBonusSetting` (doc comment names `startingGameState` as its real
+caller, per the pattern `scoring.ts`/`nodeRotation.ts` use rather than the
+"nothing calls this yet" note on `isClockSetting`/`isCombatSetting`), and
+`planetBonusPoints`. Added `src/rules/bonusPlanets.ts` exactly per D2/D3 —
+`dealBonusPlanets(seed)` draws green's three then red's three, each side's
+draw uniform without replacement over the twelve via `drawIndex`, sorts each
+side's three into board order after the draw, and returns both sides' lists
+plus the seed after exactly six `mulberry32` steps; it imports only
+`board.ts`, `fleet.ts` (for the `Side` type), `planets.ts` and `random.ts`,
+and does not import `gameState.ts` or know about the setting. Neither module
+is consumed anywhere yet (deliberate, per the step). Added
+`src/rules/planetBonus.test.ts` and `src/rules/bonusPlanets.test.ts` covering
+everything the step lists, including the independence check (scanning 50
+seeds for at least one overlapping and one disjoint pair of sets) and the
+six-seed-step check (compared against six direct `mulberry32` calls). No
+deviations from the step as written. `npm test` now at 75 files / 1469 tests,
+all green (up from 73/1455). `npm run typecheck`, `npm run lint` and
+`npm run format:check` all clean.
 
 Add **`src/rules/planetBonus.ts`** (D1), in the shape `scoring.ts`,
 `nodeRotation.ts`, `combatSetting.ts` and `clock.ts` use:
