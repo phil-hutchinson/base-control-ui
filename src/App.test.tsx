@@ -123,23 +123,23 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       within(screen.getByRole("group", { name: "Ships" })).getByRole("radio", {
-        name: "6",
+        name: "5",
       }),
     ).toBeChecked();
     expect(
       within(screen.getByRole("group", { name: "Charged nodes" })).getByRole(
         "radio",
-        { name: "5" },
+        { name: "4" },
       ),
     ).toBeChecked();
     expect(
-      within(scoringGroup()).getByRole("radio", { name: "SIMPLE" }),
+      within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
     ).toBeChecked();
     expect(
       within(planetBonusGroup()).getByRole("radio", { name: "OFF" }),
     ).toBeChecked();
     expect(
-      within(nodeRotationGroup()).getByRole("radio", { name: "CONTINUOUS" }),
+      within(nodeRotationGroup()).getByRole("radio", { name: "PLANET" }),
     ).toBeChecked();
     expect(
       within(combatGroup()).getByRole("radio", { name: "OFF" }),
@@ -299,7 +299,7 @@ describe("App", () => {
     );
   });
 
-  it("pressing PLAY with the defaults deals a six-a-side, thirty-round game", async () => {
+  it("pressing PLAY with the defaults deals a five-a-side, thirty-round game", async () => {
     render(<App />);
 
     await pressPlay();
@@ -316,27 +316,30 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("1/30")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(shipCells()).toHaveLength(12);
+    expect(shipCells()).toHaveLength(10);
   });
 
-  it("pressing PLAY with the defaults starts a game whose pips pay the simple rate", async () => {
+  it("pressing PLAY with the defaults starts a game whose pips pay the bonus rate", async () => {
     const { container } = render(<App />);
 
     await pressPlay();
 
+    // Four pips, not five: a row is as long as the fewer of the fleet size
+    // and the charged-node count, and the defaults deal five ships against
+    // four charged nodes.
     const greenCell = container.querySelector(".score-display--green");
     const numbers = Array.from(
       greenCell?.querySelectorAll(".score-display__pip-value") ?? [],
     ).map((node) => node.textContent);
-    expect(numbers).toEqual(["1", "2", "3", "4", "5"]);
+    expect(numbers).toEqual(["1", "3", "6", "10"]);
   });
 
-  it("choosing BONUS before PLAY starts a game whose pips pay the bonus rate", async () => {
+  it("choosing SIMPLE before PLAY starts a game whose pips pay the simple rate", async () => {
     const user = userEvent.setup();
     const { container } = render(<App />);
 
     await user.click(
-      within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
+      within(scoringGroup()).getByRole("radio", { name: "SIMPLE" }),
     );
     await user.click(screen.getByRole("button", { name: "Play" }));
 
@@ -344,18 +347,18 @@ describe("App", () => {
     const numbers = Array.from(
       greenCell?.querySelectorAll(".score-display__pip-value") ?? [],
     ).map((node) => node.textContent);
-    expect(numbers).toEqual(["1", "3", "6", "10", "15"]);
+    expect(numbers).toEqual(["1", "2", "3", "4"]);
   });
 
-  it("pressing PLAY after choosing 5 ships deals a five-a-side game", async () => {
+  it("pressing PLAY after choosing 6 ships deals a six-a-side game", async () => {
     const user = userEvent.setup();
     render(<App />);
 
     const shipsGroup = screen.getByRole("group", { name: "Ships" });
-    await user.click(within(shipsGroup).getByRole("radio", { name: "5" }));
+    await user.click(within(shipsGroup).getByRole("radio", { name: "6" }));
     await user.click(screen.getByRole("button", { name: "Play" }));
 
-    expect(shipCells()).toHaveLength(10);
+    expect(shipCells()).toHaveLength(12);
   });
 
   it("pressing PLAY after choosing 3 ships deals a three-a-side game", async () => {
@@ -436,11 +439,19 @@ describe("App", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("choosing ON before PLAY starts a game in which selecting green's L1 ship marks red's O2 as a target", async () => {
+  it("choosing ON and 6 ships before PLAY starts a game in which selecting green's L1 ship marks red's O2 as a target", async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.click(within(combatGroup()).getByRole("radio", { name: "ON" }));
+    // Six a side, not the default five: the five-a-side layout starts no two
+    // opposing ships within attack range of each other, so there is no
+    // opening attack to select at the default fleet size.
+    await user.click(
+      within(screen.getByRole("group", { name: "Ships" })).getByRole("radio", {
+        name: "6",
+      }),
+    );
     await user.click(screen.getByRole("button", { name: "Play" }));
     await user.click(screen.getByRole("gridcell", { name: /^L1,/ }));
 
@@ -479,12 +490,12 @@ describe("App", () => {
     assertNoDuplicateIds(container);
   });
 
-  it("never repeats an id in the rendered document, with a full twelve-ship board on screen", async () => {
+  it("never repeats an id in the rendered document, with a full ten-ship board on screen", async () => {
     const { container } = render(<App />);
 
     await pressPlay();
 
-    expect(shipCells()).toHaveLength(12);
+    expect(shipCells()).toHaveLength(10);
 
     assertNoDuplicateIds(container);
   });

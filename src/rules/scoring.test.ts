@@ -6,8 +6,8 @@ describe("the offered scoring settings (rules.md §8.4)", () => {
     expect(SCORING_SETTINGS).toEqual(["simple", "bonus"]);
   });
 
-  it("defaults to simple scoring", () => {
-    expect(DEFAULT_SCORING).toBe("simple");
+  it("defaults to bonus scoring", () => {
+    expect(DEFAULT_SCORING).toBe("bonus");
     expect(SCORING_SETTINGS).toContain(DEFAULT_SCORING);
   });
 

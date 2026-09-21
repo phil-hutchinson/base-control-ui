@@ -74,8 +74,8 @@ describe("the offered charged-node counts (rules.md §8.1)", () => {
     expect(CHARGED_NODE_COUNTS).toEqual([5, 4, 3]);
   });
 
-  it("defaults to five, the app's default", () => {
-    expect(DEFAULT_CHARGED_NODE_COUNT).toBe(5);
+  it("defaults to four, the app's default", () => {
+    expect(DEFAULT_CHARGED_NODE_COUNT).toBe(4);
     expect(CHARGED_NODE_COUNTS).toContain(DEFAULT_CHARGED_NODE_COUNT);
   });
 

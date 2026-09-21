@@ -34,10 +34,10 @@ const STARTING_FLEET = startingFleet(DEFAULT_FLEET_SIZE);
 const STARTING_FLEET_SQUARES = STARTING_FLEET.map((entry) => entry.square);
 
 describe("startingGameState", () => {
-  it("has twelve ships matching STARTING_FLEET entry for entry", () => {
+  it("has ten ships matching STARTING_FLEET entry for entry", () => {
     const state = startingGameState(SEED);
 
-    expect(state.ships).toHaveLength(12);
+    expect(state.ships).toHaveLength(10);
     state.ships.forEach((ship, index) => {
       const entry = STARTING_FLEET[index];
       expect(ship.id).toBe(entry.id);
@@ -189,11 +189,11 @@ describe("startingGameState", () => {
     );
   });
 
-  it("defaults to a six-a-side fleet when none is given", () => {
+  it("defaults to a five-a-side fleet when none is given", () => {
     const state = startingGameState(SEED);
     const expected = startingFleet(DEFAULT_FLEET_SIZE);
 
-    expect(state.ships).toHaveLength(12);
+    expect(state.ships).toHaveLength(10);
     state.ships.forEach((ship, index) => {
       expect(ship.id).toBe(expected[index].id);
       expect(ship.side).toBe(expected[index].side);
@@ -357,10 +357,10 @@ describe("startingGameState", () => {
     expect(result.state.combatEnabled).toBe(true);
   });
 
-  it("defaults to simple scoring, the app's default, when none is given", () => {
+  it("defaults to bonus scoring, the app's default, when none is given", () => {
     const state = startingGameState(SEED);
 
-    expect(state.scoring).toBe("simple");
+    expect(state.scoring).toBe("bonus");
     expect(state.scoring).toBe(DEFAULT_SCORING);
   });
 
@@ -408,10 +408,10 @@ describe("startingGameState", () => {
     },
   );
 
-  it("defaults to continuous node rotation, the app's default, with an empty rotator list, when none is given", () => {
+  it("defaults to planet node rotation, the app's default, with an empty rotator list, when none is given", () => {
     const state = startingGameState(SEED);
 
-    expect(state.nodeRotation).toBe("continuous");
+    expect(state.nodeRotation).toBe("planet");
     expect(state.nodeRotation).toBe(DEFAULT_NODE_ROTATION);
     expect(state.rotators).toEqual([]);
   });

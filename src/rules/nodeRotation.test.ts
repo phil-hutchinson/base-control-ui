@@ -14,8 +14,8 @@ describe("the offered node rotation settings (rules.md §8.2)", () => {
     ]);
   });
 
-  it("defaults to continuous rotation", () => {
-    expect(DEFAULT_NODE_ROTATION).toBe("continuous");
+  it("defaults to planet rotation", () => {
+    expect(DEFAULT_NODE_ROTATION).toBe("planet");
     expect(NODE_ROTATION_SETTINGS).toContain(DEFAULT_NODE_ROTATION);
   });
 

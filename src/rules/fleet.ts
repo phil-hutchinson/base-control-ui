@@ -24,12 +24,13 @@ export type FleetSize = 3 | 4 | 5 | 6;
 
 /**
  * The valid fleet sizes, in the order the start screen renders them: largest
- * first, so the leftmost choice is the simplest, default game.
+ * first. The render order is independent of which one the app preselects —
+ * see `DEFAULT_FLEET_SIZE`.
  */
 export const FLEET_SIZES: readonly FleetSize[] = [6, 5, 4, 3];
 
-/** The app's default: six ships a side. */
-export const DEFAULT_FLEET_SIZE: FleetSize = 6;
+/** The app's default: five ships a side. */
+export const DEFAULT_FLEET_SIZE: FleetSize = 5;
 
 /** Whether a value is one of the valid fleet sizes. */
 export function isFleetSize(value: number): value is FleetSize {

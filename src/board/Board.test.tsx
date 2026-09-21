@@ -529,8 +529,8 @@ describe("Board", () => {
     expect(cell).toBeInTheDocument();
     expect(cell.querySelector(".ship-model--green")).toBeInTheDocument();
     // The starting square green-1 began on is empty now, and ordinary.
-    expect(screen.getByRole("gridcell", { name: "O14" })).toBeInTheDocument();
-    expect(container.querySelectorAll(".ship-model--green")).toHaveLength(6);
+    expect(screen.getByRole("gridcell", { name: "H15" })).toBeInTheDocument();
+    expect(container.querySelectorAll(".ship-model--green")).toHaveLength(5);
   });
 
   describe("the node countdown reaching the marker", () => {

@@ -239,7 +239,7 @@ export interface StartingGameStateOptions {
   readonly combatEnabled?: boolean;
   /**
    * The scoring setting (rules.md §8.4). Defaults to `DEFAULT_SCORING`
-   * (simple). Deliberately typed `string`, not `ScoringSetting`: a setting
+   * (bonus). Deliberately typed `string`, not `ScoringSetting`: a setting
    * arriving from outside the type system — a saved options blob, a game
    * record, a URL — can be any string, unlike `combatEnabled`'s boolean,
    * which admits only the two settings the game offers and so has nothing
@@ -249,7 +249,7 @@ export interface StartingGameStateOptions {
   readonly scoring?: string;
   /**
    * How the three inactive nodes' priorities rotate (rules.md §8.2).
-   * Defaults to `DEFAULT_NODE_ROTATION` (continuous). Deliberately typed
+   * Defaults to `DEFAULT_NODE_ROTATION` (planet). Deliberately typed
    * `string`, not `NodeRotationSetting`, for the same reason `scoring` is: a
    * setting arriving from outside the type system can be any string. Must be
    * one of `nodeRotation.ts`'s offered settings, or this throws a

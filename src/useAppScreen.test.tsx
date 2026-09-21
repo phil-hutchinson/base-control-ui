@@ -20,11 +20,11 @@ describe("useAppScreen", () => {
     const { result } = renderHook(() => useAppScreen(vi.fn(), false));
 
     expect(result.current.screen).toBe("start");
-    expect(result.current.fleetSize).toBe(6);
-    expect(result.current.chargedNodeCount).toBe(5);
+    expect(result.current.fleetSize).toBe(5);
+    expect(result.current.chargedNodeCount).toBe(4);
     expect(result.current.combatEnabled).toBe(false);
-    expect(result.current.scoring).toBe("simple");
-    expect(result.current.nodeRotation).toBe("continuous");
+    expect(result.current.scoring).toBe("bonus");
+    expect(result.current.nodeRotation).toBe("planet");
     expect(result.current.planetBonus).toBe("off");
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
@@ -35,10 +35,10 @@ describe("useAppScreen", () => {
     const { result } = renderHook(() => useAppScreen(dispatch, false));
 
     act(() => {
-      result.current.setFleetSize(5);
+      result.current.setFleetSize(6);
     });
     act(() => {
-      result.current.setChargedNodeCount(4);
+      result.current.setChargedNodeCount(5);
     });
     act(() => {
       result.current.setLengthInRounds(45);
@@ -53,10 +53,10 @@ describe("useAppScreen", () => {
     expect(dispatch).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         type: "new-game",
-        fleetSize: 5,
-        chargedNodeCount: 4,
+        fleetSize: 6,
+        chargedNodeCount: 5,
         combatEnabled: false,
-        scoring: "simple",
+        scoring: "bonus",
         lengthInRounds: 45,
       }),
     );
@@ -271,7 +271,7 @@ describe("useAppScreen", () => {
     });
 
     expect(result.current.screen).toBe("guide");
-    expect(result.current.fleetSize).toBe(6);
+    expect(result.current.fleetSize).toBe(5);
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
     expect(dispatch).not.toHaveBeenCalled();

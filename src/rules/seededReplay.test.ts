@@ -368,11 +368,11 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
 describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream untouched at continuous", () => {
   it("deals the same opening board and leaves the same randomSeed behind, at continuous and at planet", () => {
     const seed = 20260819;
-    const continuousState = startingGameState(seed, {
+    const unnamedState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
     });
-    const explicitContinuousState = startingGameState(seed, {
+    const continuousState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
       nodeRotation: "continuous",
@@ -383,8 +383,8 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
       nodeRotation: "planet",
     });
 
-    // The default is continuous, so naming it explicitly changes nothing.
-    expect(explicitContinuousState).toEqual(continuousState);
+    // The default is planet, so naming it explicitly changes nothing.
+    expect(planetState).toEqual(unnamedState);
 
     // Planet deals the identical board and consumes the identical seed —
     // only a landing rotates the queue under planet, and the deal itself
@@ -401,6 +401,7 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
     const continuousState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
+      nodeRotation: "continuous",
     });
     const dedicatedState = startingGameState(seed, {
       lengthInRounds: 40,

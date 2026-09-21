@@ -218,6 +218,11 @@ function runEconomy(
     lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
     chargedNodeCount,
     combatEnabled: true,
+    // Pinned, not left to the app's default: every figure this file checks
+    // was measured under continuous rotation, and tech-notes.md states them
+    // as such. Under planet rotation the queue only turns over when a ship
+    // lands on a planet, so the same seeds would measure a different economy.
+    nodeRotation: "continuous",
   });
   const shipSquares = state.ships.map((ship) => ship.square);
   const samples: EconomySample[] = [];
