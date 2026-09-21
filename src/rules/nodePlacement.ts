@@ -18,9 +18,8 @@ import { drawIndex, drawWeightedIndex } from "./random";
 /**
  * Which pool `legalNodePool` draws from (rules.md §3.2): the ordinary,
  * `"strict"` pool excludes the outer edge and the ring one square in from
- * it; the `"widened"` pool, used for the second and third square of a
- * refill (section 8.2), lifts the inner ring but never the outer edge
- * itself.
+ * it; the `"widened"` pool, used for the third square of a refill (section
+ * 8.2), excludes neither — constraints 3 and 4 are both lifted together.
  */
 export type NodePoolWidth = "strict" | "widened";
 
@@ -33,10 +32,11 @@ export type NodePoolWidth = "strict" | "widened";
 const EXCLUDED_EDGE_RINGS = 2;
 
 /**
- * How many rings the `"widened"` pool excludes (rules.md §3.2): constraint
- * 4 is lifted, so only the outer edge itself (constraint 3) stays closed.
+ * How many rings the `"widened"` pool excludes (rules.md §3.2): constraints
+ * 3 and 4 are both lifted together, so no ring around the edge is excluded
+ * at all — the outer edge itself is open.
  */
-const WIDENED_EXCLUDED_EDGE_RINGS = 1;
+const WIDENED_EXCLUDED_EDGE_RINGS = 0;
 
 function columnIndex(square: Square): number {
   return COLUMN_LETTERS.indexOf(square.column);
@@ -87,9 +87,10 @@ function isAdjacentToAnyPlanet(square: Square): boolean {
  *
  * 1. it holds no node already;
  * 2. no ship stands on it;
- * 3. it is not on the outer edge;
+ * 3. it is not on the outer edge — dropped, together with constraint 4, for
+ *    the `"widened"` pool (`poolWidth`), which a refill's third draw uses;
  * 4. it is not one square in from the edge — dropped for the `"widened"`
- *    pool (`poolWidth`), which a refill's second and third draw use;
+ *    pool along with constraint 3;
  * 5. it is not orthogonally or diagonally adjacent to a square that holds a
  *    node;
  * 6. it is not a planet, and is not orthogonally or diagonally adjacent to
@@ -100,12 +101,14 @@ function isAdjacentToAnyPlanet(square: Square): boolean {
  * constraint dropped at a time. The fallback is the same regardless of
  * `poolWidth`: it is already the whole spacing relaxation at once, so there
  * is nothing left for `poolWidth` to widen. The fallback keeps a node off a
- * planet and off a ship, but, unlike the ordinary pool, does **not** keep it
- * off a planet's neighbours or the board's edge: it may legitimately hand
- * back a square adjacent to a planet. Between constraint 2 and this, a node
- * can never appear beneath a ship. If even the fallback is empty, throws a
- * `RangeError` naming the situation, rather than returning an empty pool for
- * `drawNodeSquare` to fail on with a generic message.
+ * planet and off a ship, but, unlike the **strict** pool, does **not** keep
+ * it off a planet's neighbours or the board's edge — the widened pool
+ * already permits the edge, so the contrast is with the strict pool alone:
+ * the fallback may legitimately hand back a square adjacent to a planet.
+ * Between constraint 2 and this, a node can never appear beneath a ship. If
+ * even the fallback is empty, throws a `RangeError` naming the situation,
+ * rather than returning an empty pool for `drawNodeSquare` to fail on with a
+ * generic message.
  */
 export function legalNodePool(
   occupiedNodeSquares: readonly Square[],

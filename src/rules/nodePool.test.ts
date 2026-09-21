@@ -81,16 +81,13 @@ function drawUniformSquare(
 
 /**
  * The lowest a freshly refilled trio's mean smallest pairwise Chebyshev gap
- * is allowed to fall to, pooled across `SEEDS`. Measured at **4.88 at five
- * charged, 4.79 at four and 4.88 at three**, over an actually-played economy
- * at each count — lower than `nodeQueue.test.ts`'s idealised empty-board
- * figure of roughly 5.1, because a played board's charged nodes, ships and
- * surviving depleted nodes crowd the pool the weighting draws from. The
- * three figures sit within a narrow band rather than trending with the
- * count: the pools widen as the count drops, but the weighting is already
- * spreading the trio across most of the board at every count, so a wider
- * pool buys little further separation. This single bound leaves comfortable
- * margin below all three figures.
+ * is allowed to fall to, pooled across `SEEDS`. Measured at **4.71 at five
+ * charged, 4.85 at four and 4.79 at three**, over an actually-played economy
+ * at each count. The three figures sit within a narrow band rather than
+ * trending with the count: the pools widen as the count drops, but the
+ * weighting is already spreading the trio across most of the board at every
+ * count, so a wider pool buys little further separation. This single bound
+ * leaves comfortable margin below all three figures.
  */
 const MINIMUM_MEAN_REFILL_GAP = 4;
 
@@ -98,9 +95,9 @@ const MINIMUM_MEAN_REFILL_GAP = 4;
  * How much further, on average, the weighted mean gap above must clear the
  * mean gap an unweighted draw from the very same pools produces (computed
  * in this file, from the very same occupied squares, so the comparison is
- * self-contained). Measured at a difference of **1.15 at five charged, 1.08
- * at four and 1.18 at three** (4.88 weighted against 3.72 unweighted at
- * five; 4.79 against 3.71 at four; 4.88 against 3.71 at three); this single
+ * self-contained). Measured at a difference of **0.98 at five charged, 1.03
+ * at four and 1.18 at three** (4.71 weighted against 3.73 unweighted at
+ * five; 4.85 against 3.82 at four; 4.79 against 3.61 at three); this single
  * bound leaves margin below all three.
  */
 const MINIMUM_SPREAD_ADVANTAGE = 0.5;
@@ -308,7 +305,7 @@ function satisfiesOrdinaryPoolConstraints(
   shipSquares: readonly Square[],
   poolWidth: NodePoolWidth,
 ): boolean {
-  const requiredRings = poolWidth === "widened" ? 1 : 2;
+  const requiredRings = poolWidth === "widened" ? 0 : 2;
   const name = squareName(square);
 
   if (occupiedSquares.some((occupied) => squareName(occupied) === name)) {
@@ -459,18 +456,17 @@ describe.each(CHARGED_NODE_COUNTS)(
             const others = allNodeSquares.filter(
               (candidate) => squareName(candidate) !== squareName(square),
             );
-            // The draw order within the dealt trio is not recoverable from the
-            // finished state, so this checks the constraint every one of the
-            // three draws shares — the widened pool — rather than singling out
-            // the strict first draw from the widened second and third.
-            // `nodeQueue.test.ts` already checks that distinction directly
-            // against `refillQueue` in isolation.
+            // The opening deal holds all three of its inactive draws to the
+            // strict pool (rules.md §8.1's exception to §8.2), so draw order
+            // no longer matters here: every dealt square, inactive ones
+            // included, satisfies every one of the six ordinary constraints,
+            // not merely the widened pool's four.
             expect(
               satisfiesOrdinaryPoolConstraints(
                 square,
                 others,
                 shipSquares,
-                "widened",
+                "strict",
               ),
             ).toBe(true);
           }
@@ -478,10 +474,12 @@ describe.each(CHARGED_NODE_COUNTS)(
       );
 
       it.each(SEEDS)(
-        "draws every refill's three squares from the right pool, never the outer edge, and never the fallback (seed %d)",
+        "draws every refill's first two squares from the strict pool and the third from the widened one, the third often reaching the outer edge, and never the fallback (seed %d)",
         (seed) => {
           const run = runEconomy(seed, PLIES_TO_RUN, chargedNodeCount);
           expect(run.refills.length).toBeGreaterThan(10);
+
+          let thirdSquaresOnOuterEdge = 0;
 
           for (const refill of run.refills) {
             const [first, second, third] = refill.newNodes;
@@ -499,7 +497,7 @@ describe.each(CHARGED_NODE_COUNTS)(
                 second.square,
                 [...refill.occupiedBeforeRefill, first.square],
                 run.shipSquares,
-                "widened",
+                "strict",
               ),
             ).toBe(true);
             expect(
@@ -511,7 +509,7 @@ describe.each(CHARGED_NODE_COUNTS)(
               ),
             ).toBe(true);
 
-            for (const { square } of refill.newNodes) {
+            for (const { square } of [first, second]) {
               expect(square.row).not.toBe(1);
               expect(square.row).not.toBe(BOARD_SIZE);
               expect(square.column).not.toBe(COLUMN_LETTERS[0]);
@@ -519,7 +517,18 @@ describe.each(CHARGED_NODE_COUNTS)(
                 COLUMN_LETTERS[COLUMN_LETTERS.length - 1],
               );
             }
+
+            if (
+              third.square.row === 1 ||
+              third.square.row === BOARD_SIZE ||
+              third.square.column === COLUMN_LETTERS[0] ||
+              third.square.column === COLUMN_LETTERS[COLUMN_LETTERS.length - 1]
+            ) {
+              thirdSquaresOnOuterEdge++;
+            }
           }
+
+          expect(thirdSquaresOnOuterEdge).toBeGreaterThan(0);
         },
       );
     });
@@ -550,13 +559,12 @@ describe.each(CHARGED_NODE_COUNTS)(
               strictPool,
               comparisonSeed,
             );
-            const widenedPoolAfterFirst = legalNodePool(
+            const strictPoolAfterFirst = legalNodePool(
               [...refill.occupiedBeforeRefill, firstSquare],
               run.shipSquares,
-              "widened",
             );
             const [secondSquare, seedAfterSecond] = drawUniformSquare(
-              widenedPoolAfterFirst,
+              strictPoolAfterFirst,
               seedAfterFirst,
             );
             const widenedPoolAfterSecond = legalNodePool(

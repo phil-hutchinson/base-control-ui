@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.36**
+**Rules version: 0.37**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -177,12 +177,16 @@ mid-game refill — so it is better read as the guarantee that placement
 always succeeds than as something a player should expect to see.
 
 **Refilling the three inactive nodes draws from a pool that widens once**
-(section 8.2). A refill draws three squares, one at a time: the first uses
-all six constraints above; the second and third lift constraint 4 only —
-"not one square in from the outer edge" — and nothing else. Constraint 3 is
-never lifted for these ordinary draws: the outer edge itself stays closed to
-a new node however far the pool widens. On an empty board the strict pool
-holds the 51 squares above, and the widened pool holds **79**.
+(section 8.2). A refill draws three squares, one at a time: the first and
+second use all six constraints above; the third lifts constraints 3 and 4
+together — "not on the outer edge" and "not one square in from the outer
+edge" — so it is drawn from the whole board, less only the squares ruled out
+by constraints 1, 2, 5 and 6: nodes, ships, node neighbours, planets and
+planet neighbours. A new node can therefore appear on the
+outer edge, corners included: A1, A15, O1 and O15 are all legal squares for
+a third draw. On an empty board the strict pool holds the 51 squares above,
+and the widened pool holds **117**, of which **38** lie on the outer edge
+itself.
 
 **The draw is weighted, not uniform.** For a candidate square `s`, with `C`
 the squares holding **charged** nodes and `N` the squares already chosen for
@@ -511,16 +515,20 @@ board is never left short of the chosen number of charged nodes (see the
 **The opening board is dealt.** The game opens with **eight** nodes at
 five charged, **seven** at four, **six** at three:
 
-- **The chosen number are charged**, at squares drawn under section 3.2, at
-  random, with every legal square equally likely and no two the same. No
-  square is privileged; the centre is not guaranteed.
+- **The chosen number are charged**, at squares drawn from the **strict**
+  pool of section 3.2, at random, with every legal square equally likely and
+  no two the same. No square is privileged; the centre is not guaranteed.
 - **Each of them starts at baseline**, with no countdown, exactly like
   any node charged during play — nothing about a freshly charged node is
   random, and it will sit there for the rest of the game if no ship reaches
   it.
 - **The other three start inactive**, placed by the same refill procedure
-  that fills the queue during play (section 8.2), and dealt priorities 1, 2
-  and 3 at random.
+  that fills the queue during play (section 8.2), but with a deliberate
+  exception: **all three of the deal's inactive squares are drawn from the
+  strict pool**, not just the first two. A game never opens with a node out
+  on the rim — every node on the opening board, charged and inactive alike,
+  lies inside the interior C3–M13. They are dealt priorities 1, 2 and 3 at
+  random.
 - **Nothing is depleted at the start.**
 - **Under the dedicated rotation setting** (section 8.2), the opening deal
   also lays down the board's first set of rotators (section 3.3).
@@ -578,13 +586,17 @@ the same turn it was dealt; rotation only happens to a trio that survives a
 turn untouched.
 
 **The refill procedure** draws three squares one at a time, from the pool
-that widens once (section 3.2): the first square is drawn from the strict
-pool, and the second and third from the widened pool, each draw seeing the
+that widens once (section 3.2): the first and second squares are drawn from
+the strict pool, and the third from the widened pool, each draw seeing the
 squares already chosen so that the three new nodes are never adjacent to
 each other. Each square is drawn by the weighted formula in section 3.2,
 which favours squares far from the charged nodes and from the other new
 nodes as they are placed. The three priorities 1, 2 and 3 are then dealt to
 the three squares in random order.
+
+The opening deal (section 8.1) is the one exception: it uses this same
+procedure but holds all three draws to the strict pool, so the board a game
+opens on never carries a node on the outer edge.
 
 A depleted node's own countdown, and when it retires, is section 8.3's
 business.

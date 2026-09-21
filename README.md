@@ -136,8 +136,10 @@ install, no account, no server.
 > when a node lights: the whole waiting trio is swept away at once and three
 > fresh ones appear elsewhere, spread apart from the lit nodes and from each
 > other, so the map itself keeps reshaping as the game runs and you will not
-> know where the next three will appear until they do. A node is never drawn on
-> a planet, and all but never right next to one. With combat on, a fight has no
+> know where the next three will appear until they do. Two of the three land
+> further in, but the third can turn up anywhere at all, right out to the
+> board's very edge and even in a corner. A node is never drawn on a planet,
+> and all but never right next to one. With combat on, a fight has no
 > winner: both ships involved — the attacker and the ship it attacked — are
 > sent to planets chosen at random from whichever planets are standing empty;
 > the ship that was attacked keeps whatever power it carried, and the attacker

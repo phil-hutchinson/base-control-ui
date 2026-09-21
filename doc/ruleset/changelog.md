@@ -7,6 +7,41 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.37 — a refill can place a node on the outer edge, and the opening deal stays clear of it
+
+This is a gameplay change — a square that could not hold a node now can —
+and so would be a tag candidate; tagging stays on hold until the game plays
+(see the project's contribution notes).
+
+- **Section 3.2's widening paragraph is rewritten.** The pool a refill draws
+  from now widens after the **second** square, not the first, and the
+  widening lifts constraints 3 and 4 — "not on the outer edge" and "not one
+  square in from the outer edge" — **together**, rather than constraint 4
+  alone. The first and second squares of a refill use all six constraints;
+  the third comes from the whole board, less only the planet and adjacency
+  constraints. The claim that the outer edge stays closed to a new node
+  however far the pool widens is removed, because it is no longer true: a
+  third square can now land anywhere on the board, corners included (A1,
+  A15, O1 and O15 are all legal). On an empty board the widened pool grows
+  from 79 squares to **117**, of which **38** lie on the outer edge itself;
+  the strict pool is unchanged at 51.
+- **Section 8.2's refill-procedure paragraph** is corrected to match: the
+  first and second squares are drawn from the strict pool, and only the
+  third from the widened one.
+- **Section 8.1's opening-deal bullets carry a second change.** The board a
+  game opens on stays clear of the outer edge: the deal's charged squares are
+  drawn from the strict pool as before, and its three inactive squares are
+  now **all** drawn from the strict pool too, rather than through the same
+  strict/strict/widened split a mid-game refill now uses. Every node on the
+  opening board, charged and inactive alike, therefore lies inside the
+  interior C3–M13. Section 8.2 now states this exception explicitly, so the
+  two sections cannot be read as contradicting each other.
+- Nothing else changes: the six constraints themselves and their wording,
+  the 11 × 11 interior arithmetic, the fallback, the weighting formula, the
+  priority draw, the queue's size, rotation, charging, countdowns and energy
+  are all unchanged — only which pool each of a refill's three draws uses
+  does.
+
 ## 0.36 — inactive node rotation becomes a choice, and rotators arrive
 
 This is a gameplay change — the same board now charges a different node —
