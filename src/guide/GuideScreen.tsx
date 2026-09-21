@@ -16,6 +16,7 @@ import {
   MovementDiagram,
   NodeLifecycleDiagram,
   NodeSelectionDiagram,
+  PlanetBonusDiagram,
   RefuellingDiagram,
   RotatorSquareDiagram,
   ScoringDiagram,
@@ -23,7 +24,7 @@ import {
 import "./GuideScreen.css";
 
 /**
- * The remaining four sections' diagrams, keyed by section id rather than
+ * The remaining five sections' diagrams, keyed by section id rather than
  * array position, so a section added to `GUIDE_SECTIONS` without a matching
  * entry here fails to compile instead of rendering `undefined`.
  */
@@ -32,6 +33,7 @@ const SECTION_DIAGRAMS: Record<GuideSectionId, ComponentType> = {
   refuelling: RefuellingDiagram,
   nodeLifecycle: NodeLifecycleDiagram,
   nodeSelection: NodeSelectionDiagram,
+  planetBonus: PlanetBonusDiagram,
 };
 
 /**
@@ -49,7 +51,7 @@ interface GuideScreenProps {
 }
 
 /**
- * The Quick Guide: the intro paragraph and scoring diagram, then the four
+ * The Quick Guide: the intro paragraph and scoring diagram, then the five
  * headed sections, each a heading, its paragraph and its diagram — NEW
  * CHARGED NODE SELECTION also carries the three rotation setting lines and a
  * second, trailing diagram. `onBack` is called by either Back button and

@@ -23,11 +23,11 @@ export const GUIDE_INTRO_PARAGRAPH =
   "extra node under bonus scoring.";
 
 /**
- * Identifies one of the guide's four headed sections, so a caller can pair
+ * Identifies one of the guide's five headed sections, so a caller can pair
  * a section with its diagram without relying on array position.
  */
 export type GuideSectionId =
-  "movement" | "refuelling" | "nodeLifecycle" | "nodeSelection";
+  "movement" | "refuelling" | "nodeLifecycle" | "nodeSelection" | "planetBonus";
 
 /**
  * One emphasised label and its sentence, under NEW CHARGED NODE SELECTION —
@@ -39,7 +39,7 @@ export interface GuideSettingLine {
 }
 
 /**
- * One of the guide's four headed sections: a heading and its paragraph.
+ * One of the guide's five headed sections: a heading and its paragraph.
  * `settingLines` is optional and, at present, carried by nodeSelection
  * alone: an ordered list of setting lines rendered between the section's
  * diagram and its second one.
@@ -52,8 +52,9 @@ export interface GuideSection {
 }
 
 /**
- * The four headed sections, in the order the guide reads: movement,
- * refuelling, the node lifecycle, and new charged node selection.
+ * The five headed sections, in the order the guide reads: movement,
+ * refuelling, the node lifecycle, new charged node selection, and the
+ * planet bonus.
  */
 export const GUIDE_SECTIONS: readonly GuideSection[] = [
   {
@@ -69,10 +70,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
     paragraph:
       "Spaceships can hold up to six fuel. At the end of a player's turn, " +
       "spaceships sitting on planets regain one fuel. If a player has " +
-      "only one spaceship gaining fuel and it has room, it gains two fuel. " +
-      "When the planet bonus option is on, each player is given three " +
-      "planets that also pay them points — two or three, whichever was " +
-      "chosen — the first time one of their spaceships lands there.",
+      "only one spaceship gaining fuel and it has room, it gains two fuel.",
   },
   {
     id: "nodeLifecycle",
@@ -114,5 +112,15 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
           "on one of these triggers the rotation.",
       },
     ],
+  },
+  {
+    id: "planetBonus",
+    heading: "PLANET BONUS",
+    paragraph:
+      "When the planet bonus option is on, each player is given three " +
+      "planets that also pay them points — two or three, whichever was " +
+      "chosen — the first time one of their spaceships lands there. Each " +
+      "planet only pays a player once, however often their spaceships " +
+      "return to it.",
   },
 ];

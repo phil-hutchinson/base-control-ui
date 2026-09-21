@@ -45,53 +45,11 @@
   gap: calc(var(--region-extent) * 0.035);
 }
 
+/* Sized here; `PlanetBonusCell` (its own stylesheet) fills this box and
+   owns the drawing and the badge, so the panel and the Quick Guide's PLANET
+   BONUS diagram draw from the one component. */
 .planet-bonus-panel__cell {
-  position: relative;
   flex: 0 0 auto;
   width: calc(var(--region-extent) * 0.15);
   height: calc(var(--region-extent) * 0.15);
-}
-
-.planet-bonus-panel__badge {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-arcade);
-  font-weight: 700;
-  text-shadow: 0 0 0.4em currentcolor;
-}
-
-.planet-bonus-panel__badge--green {
-  color: var(--color-green);
-}
-
-.planet-bonus-panel__badge--red {
-  color: var(--color-red);
-}
-
-.planet-bonus-panel__badge--amount {
-  font-size: calc(var(--region-extent) * 0.075);
-  animation: planet-bonus-panel-badge-fade-in 0.6s ease-out;
-}
-
-.planet-bonus-panel__checkmark {
-  width: 70%;
-  height: 70%;
-}
-
-@keyframes planet-bonus-panel-badge-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .planet-bonus-panel__badge--amount {
-    animation: none;
-  }
 }

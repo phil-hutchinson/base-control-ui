@@ -3,17 +3,19 @@
 // it has been claimed. Renders nothing at all when the setting is off — not
 // an empty row, not a hidden one — and decorative throughout: a claim reaches
 // a screen-reader user through the live region's sentence
-// (`board/announcements.ts`), not through this panel.
+// (`board/announcements.ts`), not through this panel. Each cell's drawing and
+// badge are `PlanetBonusCell`, shared with the Quick Guide's PLANET BONUS
+// diagram.
 
 import { useMemo } from "react";
 import type { PlanetArt } from "../board/planetArt";
 import { planetArrangement, planetForSquare } from "../board/planetPlacement";
-import { Planet } from "../board/Planet";
 import { squareName } from "../rules/board";
 import type { Side } from "../rules/fleet";
 import type { BonusPlanetEntry, GameState } from "../rules/gameState";
 import { planetBonusPoints } from "../rules/planetBonus";
 import { bonusBadgeState } from "./bonusBadge";
+import { PlanetBonusCell } from "./PlanetBonusCell";
 import "./PlanetBonusPanel.css";
 
 /** Green above red, matching the clocks' own order in both orientations. */
@@ -29,22 +31,6 @@ const SIDE_LABEL: Readonly<Record<Side, string>> = {
   green: "Green bonus",
   red: "Red bonus",
 };
-
-/** The settled checkmark, drawn as inline SVG so it never depends on a font. */
-function ClaimedMark() {
-  return (
-    <svg viewBox="0 0 24 24" className="planet-bonus-panel__checkmark">
-      <path
-        d="M4 13 L10 19 L20 6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 interface BonusCellProps {
   readonly side: Side;
@@ -71,14 +57,7 @@ function BonusCell({
 
   return (
     <div className="planet-bonus-panel__cell">
-      <Planet planet={art} />
-      {badge !== "none" && (
-        <span
-          className={`planet-bonus-panel__badge planet-bonus-panel__badge--${side} planet-bonus-panel__badge--${badge}`}
-        >
-          {badge === "amount" ? `+${amount}` : <ClaimedMark />}
-        </span>
-      )}
+      <PlanetBonusCell side={side} art={art} badge={badge} amount={amount} />
     </div>
   );
 }

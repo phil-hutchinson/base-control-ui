@@ -19,12 +19,13 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the four headed sections in the story's order", () => {
+  it("has the five headed sections in the story's order", () => {
     expect(GUIDE_SECTIONS.map((section) => section.heading)).toEqual([
       "MOVEMENT",
       "REFUELING",
       "NODE LIFECYCLE",
       "NEW CHARGED NODE SELECTION",
+      "PLANET BONUS",
     ]);
   });
 
@@ -40,10 +41,7 @@ describe("guideCopy", () => {
       "Spaceships can hold up to six fuel. At the end of a player's turn, " +
         "spaceships sitting on planets regain one fuel. If a player has " +
         "only one spaceship gaining fuel and it has room, it gains two " +
-        "fuel. When the planet bonus option is on, each player is given " +
-        "three planets that also pay them points — two or three, " +
-        "whichever was chosen — the first time one of their spaceships " +
-        "lands there.",
+        "fuel.",
     );
   });
 
@@ -67,6 +65,16 @@ describe("guideCopy", () => {
         "three-ring indicator — and all three indicators are then " +
         "replaced by a fresh set elsewhere. The rings rotate, depending " +
         "on the Inactive node rotation selected.",
+    );
+  });
+
+  it("has the planet bonus paragraph, last in the story's order", () => {
+    expect(GUIDE_SECTIONS[4].paragraph).toBe(
+      "When the planet bonus option is on, each player is given three " +
+        "planets that also pay them points — two or three, whichever was " +
+        "chosen — the first time one of their spaceships lands there. " +
+        "Each planet only pays a player once, however often their " +
+        "spaceships return to it.",
     );
   });
 

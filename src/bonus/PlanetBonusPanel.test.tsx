@@ -102,7 +102,7 @@ describe("PlanetBonusPanel", () => {
       <PlanetBonusPanel state={unclaimed} />,
     );
     expect(
-      unclaimedContainer.querySelector(".planet-bonus-panel__badge"),
+      unclaimedContainer.querySelector(".planet-bonus-cell__badge"),
     ).not.toBeInTheDocument();
     cleanup();
 
@@ -118,10 +118,10 @@ describe("PlanetBonusPanel", () => {
       <PlanetBonusPanel state={claimingPly} />,
     );
     const amountBadge = amountContainer.querySelector(
-      ".planet-bonus-panel__badge--amount",
+      ".planet-bonus-cell__badge--amount",
     );
     expect(amountBadge).toHaveTextContent("+3");
-    expect(amountBadge).toHaveClass("planet-bonus-panel__badge--green");
+    expect(amountBadge).toHaveClass("planet-bonus-cell__badge--green");
     cleanup();
 
     const replyPly: typeof base = { ...claimingPly, plyNumber: 6 };
@@ -129,7 +129,7 @@ describe("PlanetBonusPanel", () => {
       <PlanetBonusPanel state={replyPly} />,
     );
     expect(
-      replyContainer.querySelector(".planet-bonus-panel__badge--amount"),
+      replyContainer.querySelector(".planet-bonus-cell__badge--amount"),
     ).toHaveTextContent("+3");
     cleanup();
 
@@ -138,10 +138,10 @@ describe("PlanetBonusPanel", () => {
       <PlanetBonusPanel state={settledPly} />,
     );
     expect(
-      settledContainer.querySelector(".planet-bonus-panel__badge--claimed"),
+      settledContainer.querySelector(".planet-bonus-cell__badge--claimed"),
     ).toBeInTheDocument();
     expect(
-      settledContainer.querySelector(".planet-bonus-panel__badge--amount"),
+      settledContainer.querySelector(".planet-bonus-cell__badge--amount"),
     ).not.toBeInTheDocument();
   });
 
@@ -159,8 +159,8 @@ describe("PlanetBonusPanel", () => {
 
     const { container } = render(<PlanetBonusPanel state={state} />);
 
-    const badge = container.querySelector(".planet-bonus-panel__badge");
-    expect(badge).toHaveClass("planet-bonus-panel__badge--red");
+    const badge = container.querySelector(".planet-bonus-cell__badge");
+    expect(badge).toHaveClass("planet-bonus-cell__badge--red");
     expect(badge).toHaveTextContent("+2");
   });
 
@@ -190,10 +190,10 @@ describe("PlanetBonusPanel", () => {
       rowUseHrefs(container, "planet-bonus-panel__row--red")[0],
     );
     expect(
-      greenRow.querySelector(".planet-bonus-panel__badge--amount"),
+      greenRow.querySelector(".planet-bonus-cell__badge--amount"),
     ).toBeInTheDocument();
     expect(
-      redRow.querySelector(".planet-bonus-panel__badge"),
+      redRow.querySelector(".planet-bonus-cell__badge"),
     ).not.toBeInTheDocument();
   });
 

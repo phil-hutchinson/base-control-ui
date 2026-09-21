@@ -13,7 +13,7 @@ import { GuideScreen } from "./GuideScreen";
 afterEach(cleanup);
 
 describe("GuideScreen", () => {
-  it("shows the title and the four headings in the story's order", () => {
+  it("shows the title and the five headings in the story's order", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     expect(
@@ -26,7 +26,7 @@ describe("GuideScreen", () => {
     );
   });
 
-  it("renders all five paragraphs from the copy module", () => {
+  it("renders all six paragraphs from the copy module", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     expect(screen.getByText(GUIDE_INTRO_PARAGRAPH)).toBeInTheDocument();
@@ -35,10 +35,10 @@ describe("GuideScreen", () => {
     }
   });
 
-  it("renders six diagrams: one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
+  it("renders seven diagrams: the scoring diagram, one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
     const { container } = render(<GuideScreen onBack={vi.fn()} />);
 
-    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(6);
+    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(7);
   });
 
   it("renders the node rotation setting lines and the rotator square after them, in order", () => {
@@ -73,6 +73,27 @@ describe("GuideScreen", () => {
         previousLabel.compareDocumentPosition(rotatorMark) &
           Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("pairs PLANET BONUS, last in the story's order, with a diagram of three planets and one checkmark", () => {
+    render(<GuideScreen onBack={vi.fn()} />);
+
+    const heading = screen.getByRole("heading", {
+      level: 2,
+      name: "PLANET BONUS",
+    });
+    expect(GUIDE_SECTIONS[GUIDE_SECTIONS.length - 1].heading).toBe(
+      "PLANET BONUS",
+    );
+    const section = heading.closest("section");
+    expect(section).not.toBeNull();
+    expect(section?.querySelectorAll(".planet")).toHaveLength(3);
+    expect(
+      section?.querySelectorAll(".planet-bonus-cell__checkmark"),
+    ).toHaveLength(1);
+    expect(
+      section?.querySelectorAll(".planet-bonus-cell__badge--amount"),
+    ).toHaveLength(0);
   });
 
   it("renders two Back buttons, one before the title and one after the last diagram, each calling the callback once", async () => {

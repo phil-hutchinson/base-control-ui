@@ -1183,7 +1183,53 @@ where a player would look for it and that no count ("seven") is left stale.
 
 ### Step 10 — The planet bonus gets its own Quick Guide section
 
-Status: pending
+Status: committed
+
+Notes: Reverted the REFUELING paragraph in `src/guide/guideCopy.ts` to its
+exact pre-Step-9 text and restored the matching exact-string expectation in
+`guideCopy.test.ts`; `README.md` untouched, per the step. Added a fifth
+`GuideSectionId` member `planetBonus`, and a fifth, last `GUIDE_SECTIONS`
+entry headed PLANET BONUS, whose paragraph states the option's effect when on
+(three planets a side, points paid on first landing, once per planet and
+never again), in the guide's points/fuel vocabulary and with no
+`settingLines`. Updated the four "four headed sections" doc comments (the
+module header, the `GuideSectionId` docstring, the `GUIDE_SECTIONS`
+docstring, and `GuideScreen.tsx`'s own `SECTION_DIAGRAMS` and `GuideScreen`
+docstrings) to five. Extracted the panel's cell into a new shared component,
+`src/bonus/PlanetBonusCell.tsx` (plus `PlanetBonusCell.css`), carrying the
+`ClaimedMark` checkmark and the planet-plus-badge rendering that
+`PlanetBonusPanel`'s `BonusCell` used to own inline; it is self-contained
+(its own `position: relative` box, `width`/`height` 100%), so either caller
+only has to size the box it sits in. `PlanetBonusPanel.tsx` now renders
+`PlanetBonusCell` inside its own sizing div, and `PlanetBonusPanel.css` lost
+the badge/checkmark/keyframe rules that moved to `PlanetBonusCell.css`; the
+checkmark's settled size and stroke width (70% of the cell, 4.5) carried over
+unchanged. Added a `bonusPlanet` member to `GuideDiagramCell` in
+`GuideDiagram.tsx`, rendered as `PlanetBonusCell`, and a seventh diagram
+function, `PlanetBonusDiagram`, in `guideDiagrams.tsx`: green's row alone,
+three planets from `PLANET_ART`, the first `"claimed"` and the other two
+`"none"` — no red row, no `+N` badge. Wired into `GuideScreen.tsx`'s
+`SECTION_DIAGRAMS` by section id. One deviation from a literal reading of the
+plan: the badge/checkmark CSS classes were renamed from
+`planet-bonus-panel__badge`/`__checkmark` to `planet-bonus-cell__badge`/
+`__checkmark` to match the component that now owns them (rather than
+reusing the panel's own class names inside the guide), which required
+updating the class-name assertions already in `PlanetBonusPanel.test.tsx`
+(committed at Step 7) — no assertion's meaning changed, only the selector
+string; `App.test.tsx`'s one reference to `.planet-bonus-panel__cell` (the
+outer sizing div, unmoved) needed no change. Tests added: a `guideCopy.test.ts`
+case for the new paragraph; a `guideCopy.test.ts` "five headed sections"
+case (updated from four, PLANET BONUS last); a `GuideScreen.test.tsx` case
+pairing the PLANET BONUS heading with a diagram of three planets and exactly
+one checkmark and no `+N` badge; a `guideDiagrams.test.tsx` `PlanetBonusDiagram`
+describe block asserting three planets, one checkmark, one green badge, zero
+red badges, zero amount badges and no arrows; `GuideScreen.test.tsx`'s
+existing paragraph-count and diagram-count assertions updated to six and
+seven respectively. `npm test` rose to 78 files / 1522 tests, all green (up
+from 78/1519); `npm run typecheck`, `npm run lint` and `npm run build` all
+clean; `npm run format:check` needed one `prettier --write` pass over the
+three files this step touched most (`guideCopy.ts`, `guideDiagrams.tsx`,
+`guideDiagrams.test.tsx`), then was clean.
 
 Owner's decision at Step 7's gate and after reading Step 9's copy: the
 bonus does not belong tacked onto REFUELING. Undo that sentence and give the
