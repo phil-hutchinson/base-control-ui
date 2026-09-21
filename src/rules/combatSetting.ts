@@ -5,9 +5,10 @@
 
 /**
  * The offered combat settings, in the order the start screen renders them:
- * leftmost is what the app preselects. `false` is combat off — no attack is
- * legal for either player (rules.md §7) — and `true` is the game §7
- * describes.
+ * off first. `false` is combat off — no attack is legal for either player
+ * (rules.md §7) — and `true` is the game §7 describes. Which one the app
+ * preselects is independent of the render order — see
+ * `DEFAULT_COMBAT_ENABLED`.
  */
 export const COMBAT_SETTINGS: readonly boolean[] = [false, true];
 

@@ -14,7 +14,8 @@ export type ClockSetting = "none" | 6 | 4 | 2;
 
 /**
  * The offered clock settings, in the order the start screen renders them:
- * leftmost is the app's default.
+ * unlimited first, then longest to shortest. Which one the app preselects is
+ * independent of the render order — see `DEFAULT_CLOCK_SETTING`.
  */
 export const CLOCK_SETTINGS: readonly ClockSetting[] = ["none", 6, 4, 2];
 

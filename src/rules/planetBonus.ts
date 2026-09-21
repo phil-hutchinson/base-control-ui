@@ -15,7 +15,9 @@ export type PlanetBonusSetting = "off" | "two" | "three";
 
 /**
  * The offered planet bonus settings, in the order the start screen renders
- * them: leftmost is what the app preselects.
+ * them: off first, then smallest payment to largest. Which one the app
+ * preselects is independent of the render order — see
+ * `DEFAULT_PLANET_BONUS`.
  */
 export const PLANET_BONUS_SETTINGS: readonly PlanetBonusSetting[] = [
   "off",
@@ -23,7 +25,7 @@ export const PLANET_BONUS_SETTINGS: readonly PlanetBonusSetting[] = [
   "three",
 ];
 
-/** The app's default: no planet bonus, today's rule unchanged. */
+/** The app's default: no planet bonus. */
 export const DEFAULT_PLANET_BONUS: PlanetBonusSetting = "off";
 
 /**
