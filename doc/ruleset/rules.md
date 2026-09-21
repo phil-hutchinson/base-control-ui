@@ -252,9 +252,9 @@ With it off, nothing in this section applies. With it on:
 - **Each player is dealt three planets at random from the twelve**, three
   distinct planets a side. The two sets are drawn independently, so they
   may overlap in any number from none to all three.
-- **A player is paid the chosen amount the first time one of their ships
-  lands on one of their three planets.** Each planet pays each player **at
-  most once**, however often that player's ships return to it.
+- **A player is paid the chosen amount of energy the first time one of their
+  ships lands on one of their three planets.** Each planet pays each player
+  **at most once**, however often that player's ships return to it.
 - **A shared planet pays both players, independently, in either order.**
   Neither player's claim takes anything from the other, and there is
   nothing to race for and nothing to deny.

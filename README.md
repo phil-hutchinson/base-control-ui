@@ -65,8 +65,9 @@ install, no account, no server.
 > four or two seconds a turn, unlimited to start) and a PLAY button. The start
 > screen also offers a quick guide — a first read for someone who has never
 > played, not a full rules reference — explaining scoring, movement,
-> refuelling and how nodes come and go, with a back button that returns you to
-> the start screen with the eight choices exactly as you left them. Your
+> refuelling, how nodes come and go and the planet bonus, with a back button
+> that returns you to the start screen with the eight choices exactly as you
+> left them. Your
 > browser's own back and forward buttons move between the screens too, and the
 > address bar says which screen you are on. Changing any of the eight choices
 > starts nothing — the board only appears

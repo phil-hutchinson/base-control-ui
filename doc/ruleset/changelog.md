@@ -18,9 +18,9 @@ project's contribution notes).
   for the game's lifetime. When it is on, each player is dealt three
   distinct planets at random from the twelve, the two sets drawn
   independently so they may overlap in any number from none to all three. A
-  player is paid the chosen amount the first time one of their ships lands
-  on one of their three; each planet pays each player at most once; a
-  shared planet pays both players independently, in either order, with
+  player is paid the chosen amount of energy the first time one of their
+  ships lands on one of their three; each planet pays each player at most
+  once; a shared planet pays both players independently, in either order, with
   nothing to race for and nothing to deny. Landing includes a ship returned
   to a planet by a fight (section 7.1) and a deliberate return (section
   7.2), not flying over or merely being near. The payment is made the

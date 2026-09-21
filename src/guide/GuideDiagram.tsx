@@ -32,7 +32,8 @@ export type GuideDiagramCell =
       readonly kind: "bonusPlanet";
       readonly side: Side;
       readonly art: PlanetArt;
-      readonly badge: BonusBadgeState;
+      /** Never `"amount"`: no diagram has a payment ply to show it fading in from. */
+      readonly badge: Exclude<BonusBadgeState, "amount">;
     };
 
 export interface GuideDiagramProps {

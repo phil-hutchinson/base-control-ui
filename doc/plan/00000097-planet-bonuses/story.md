@@ -19,10 +19,11 @@ begins** — **OFF**, **2 POINTS** or **3 POINTS** — the same for both players
 and fixed for that game's lifetime. The app preselects OFF, so the game a
 player gets without touching anything is the game they get today.
 
-The payment is made **immediately**, the instant the ship arrives, not at
-the end of the turn with the node collection. A player who lands on one of
-their bonus planets watches their score climb in the middle of their own
-turn.
+The payment is made **immediately**, the instant the ship arrives, ahead of
+the end of the turn's node collection rather than folded into it. A move
+resolves to the screen in one update, so a player who lands on one of their
+bonus planets sees the bonus and that turn's own collection arrive together,
+not the bonus first.
 
 Both players' sets are **visible to both players**, in a new panel above the
 clocks: three planet drawings a side, each showing whether it has been
@@ -238,10 +239,10 @@ hold (`CLAUDE.md`).
 - **The live region gets a sentence** for a claim, in `announcements.ts`,
   in the players' vocabulary — the panel itself is decorative and hidden
   from the accessibility tree, exactly as the clocks are.
-- **The quick guide and `README.md`** gain the option: the guide's planet
-  copy notes that planets may carry a one-time bonus when the option is on,
-  and the README's list of pre-play choices gains it alongside the other
-  seven.
+- **The quick guide and `README.md`** gain the option: the guide gains its
+  own PLANET BONUS section at the foot of the Quick Guide, with a diagram of
+  green's row and one planet already checked off, and the README's list of
+  pre-play choices gains it alongside the other seven.
 
 ### 5. The tests
 

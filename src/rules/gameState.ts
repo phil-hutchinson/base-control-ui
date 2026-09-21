@@ -91,6 +91,9 @@ export interface BonusPlanetEntry {
   readonly claimedOnPly?: number;
 }
 
+/** Both sides' dealt bonus planets, keyed by side. */
+type BonusPlanetsBySide = Readonly<Record<Side, readonly BonusPlanetEntry[]>>;
+
 /** The state of a game in progress. */
 export interface GameState {
   /** Every ship, in the starting fleet's clockwise order (`startingFleet`, rules.md §4). */
@@ -195,7 +198,7 @@ export interface GameState {
    * empty when `planetBonus` is off. See `BonusPlanetEntry` for why an
    * entry's claim is recorded as a ply number rather than a boolean.
    */
-  readonly bonusPlanets: Readonly<Record<Side, readonly BonusPlanetEntry[]>>;
+  readonly bonusPlanets: BonusPlanetsBySide;
 }
 
 /**
@@ -297,6 +300,19 @@ export interface StartingGameStateOptions {
  * `StartingGameStateOptions` — see there for the fields and their defaults
  * and validation.
  */
+
+/** Both sides' three planets, dealt from `seed`, none yet claimed. */
+function dealBonusPlanetEntries(seed: number): [BonusPlanetsBySide, number] {
+  const [dealt, nextSeed] = dealBonusPlanets(seed);
+  return [
+    {
+      green: dealt.green.map((square) => ({ square })),
+      red: dealt.red.map((square) => ({ square })),
+    },
+    nextSeed,
+  ];
+}
+
 export function startingGameState(
   randomSeed: number,
   options: StartingGameStateOptions = {},
@@ -364,22 +380,10 @@ export function startingGameState(
       ? placeRotators(dealtNodeSquares, shipSquares, dealtSeed)
       : [[], dealtSeed];
 
-  const [bonusPlanets, nextSeed]: [
-    Readonly<Record<Side, readonly BonusPlanetEntry[]>>,
-    number,
-  ] =
+  const [bonusPlanets, nextSeed]: [BonusPlanetsBySide, number] =
     planetBonus === "off"
       ? [{ green: [], red: [] }, seedAfterRotators]
-      : ((): [Readonly<Record<Side, readonly BonusPlanetEntry[]>>, number] => {
-          const [dealt, seedAfterDeal] = dealBonusPlanets(seedAfterRotators);
-          return [
-            {
-              green: dealt.green.map((square) => ({ square })),
-              red: dealt.red.map((square) => ({ square })),
-            },
-            seedAfterDeal,
-          ];
-        })();
+      : dealBonusPlanetEntries(seedAfterRotators);
 
   return {
     ships,

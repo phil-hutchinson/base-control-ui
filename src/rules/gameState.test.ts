@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { squareFromName, squareName } from "./board";
+import { ALL_SQUARES, squareFromName, squareName } from "./board";
 import { DEFAULT_COMBAT_ENABLED } from "./combatSetting";
 import { DEFAULT_FLEET_SIZE, FLEET_SIZES, startingFleet } from "./fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
@@ -530,6 +530,12 @@ describe("startingGameState", () => {
         expect(isPlanet(squareFromName(name))).toBe(true),
       );
       entries.forEach((entry) => expect(entry.claimedOnPly).toBeUndefined());
+      const indexes = entries.map((entry) =>
+        ALL_SQUARES.findIndex(
+          (square) => squareName(square) === squareName(entry.square),
+        ),
+      );
+      expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
     }
 
     let expectedSeed = off.randomSeed;

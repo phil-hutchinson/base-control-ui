@@ -311,7 +311,7 @@ function queueRotatedClause(effect: QueueRotatedEffect): string {
 /**
  * A landing claiming a planet bonus (rules.md §3.4): who was paid, the planet
  * and the amount — no running total, since the payment is raised mid-turn and
- * the turn's own collection lands on top of it moments later (D8).
+ * the turn's own collection lands on top of it moments later.
  */
 function planetBonusClaimedClause(effect: PlanetBonusClaimedEffect): string {
   return `${capitalize(effect.side)} claimed a ${effect.amount}-energy bonus at the ${squareName(effect.square)} planet.`;

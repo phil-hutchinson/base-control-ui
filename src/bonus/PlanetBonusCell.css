@@ -1,9 +1,12 @@
 /* Fills whatever box its caller sizes — `PlanetBonusPanel`'s own explicit
    `--region-extent` cell, or the Quick Guide diagram's grid cell — so the
    two callers draw the same cell at two different scales instead of two
-   copies that could drift apart. */
+   copies that could drift apart. A sizing container of its own (the same
+   idiom `.guide-diagram__cell` uses), so the badge below scales from the
+   cell's own resolved width rather than from either caller's tokens. */
 .planet-bonus-cell {
   position: relative;
+  container-type: inline-size;
   width: 100%;
   height: 100%;
 }
@@ -28,7 +31,9 @@
 }
 
 .planet-bonus-cell__badge--amount {
-  font-size: calc(var(--region-extent) * 0.075);
+  /* Half the cell's own width, matching the `region-extent` fraction this
+     replaced at the sizes `PlanetBonusPanel` renders at today. */
+  font-size: 50cqw;
   animation: planet-bonus-cell-badge-fade-in 0.6s ease-out;
 }
 

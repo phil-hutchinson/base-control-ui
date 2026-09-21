@@ -57,7 +57,11 @@ function BonusCell({
 
   return (
     <div className="planet-bonus-panel__cell">
-      <PlanetBonusCell side={side} art={art} badge={badge} amount={amount} />
+      {badge === "amount" ? (
+        <PlanetBonusCell side={side} art={art} badge="amount" amount={amount} />
+      ) : (
+        <PlanetBonusCell side={side} art={art} badge={badge} />
+      )}
     </div>
   );
 }

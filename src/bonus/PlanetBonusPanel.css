@@ -4,13 +4,21 @@
    budget in landscape, and every size below is a fraction of it so the
    panel scales down with the box itself instead of overflowing it. If the
    box is too small for both the panel and the clocks, this is what shrinks
-   — `--region-extent` and the board never do (App.css). */
+   — `--region-extent` and the board never do (App.css): `min-height: 0`
+   lets this flex item's used height fall below its own content's height,
+   and `overflow: hidden` clips what no longer fits instead of letting it
+   spill into `.clock-region` below (`ClockRegion.css` holds that box to its
+   natural size, so it is never the one that gives). At the sizes this
+   panel already renders at, its content fits and neither rule does
+   anything. */
 .planet-bonus-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: calc(var(--region-extent) * 0.035);
   width: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* One side's heading and its three planets, as a unit. */

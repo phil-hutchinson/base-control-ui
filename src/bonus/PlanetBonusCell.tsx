@@ -27,25 +27,21 @@ export function ClaimedMark() {
   );
 }
 
-export interface PlanetBonusCellProps {
+export type PlanetBonusCellProps = {
   readonly side: Side;
   readonly art: PlanetArt;
-  readonly badge: BonusBadgeState;
-  /** Read only when `badge` is `"amount"`. */
-  readonly amount?: number;
-}
+} & (
+  | { readonly badge: Exclude<BonusBadgeState, "amount"> }
+  | { readonly badge: "amount"; readonly amount: number }
+);
 
 /**
  * A planet's drawing, filling whatever box its caller sizes, with a badge
  * over it in the given side's colour: nothing when unclaimed, the amount
  * just paid, or the settled checkmark.
  */
-export function PlanetBonusCell({
-  side,
-  art,
-  badge,
-  amount,
-}: PlanetBonusCellProps) {
+export function PlanetBonusCell(props: PlanetBonusCellProps) {
+  const { side, art, badge } = props;
   return (
     <div className="planet-bonus-cell">
       <Planet planet={art} />
@@ -53,7 +49,7 @@ export function PlanetBonusCell({
         <span
           className={`planet-bonus-cell__badge planet-bonus-cell__badge--${side} planet-bonus-cell__badge--${badge}`}
         >
-          {badge === "amount" ? `+${amount}` : <ClaimedMark />}
+          {badge === "amount" ? `+${props.amount}` : <ClaimedMark />}
         </span>
       )}
     </div>

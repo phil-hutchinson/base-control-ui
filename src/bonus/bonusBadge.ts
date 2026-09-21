@@ -19,7 +19,10 @@ export type BonusBadgeState = "none" | "amount" | "claimed";
  * on. Known and accepted: if the pass guard advances the ply number twice in
  * one event, the amount window can be skipped over entirely; that is a pure
  * consequence of reading the state, not a bug, and is a reply the opponent
- * never got to make.
+ * never got to make. Likewise, a bonus claimed on the game's last ply never
+ * settles: the ply number stops advancing once the game is over, so the
+ * amount stays on screen behind the game-over panel for the rest of the
+ * session — also seen and accepted.
  */
 export function bonusBadgeState(
   claimedOnPly: number | undefined,
