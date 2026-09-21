@@ -1,5 +1,5 @@
 // The start screen: the app's front door. Carries the game's on-screen
-// name, the seven options a player sets before a game begins, and the PLAY
+// name, the eight options a player sets before a game begins, and the PLAY
 // button. Rendered by `App` in place of the game whenever there is no game
 // in progress.
 
@@ -14,6 +14,10 @@ import {
   NODE_ROTATION_SETTINGS,
 } from "../rules/nodeRotation";
 import { type ChargedNodeCount, CHARGED_NODE_COUNTS } from "../rules/nodes";
+import {
+  type PlanetBonusSetting,
+  PLANET_BONUS_SETTINGS,
+} from "../rules/planetBonus";
 import { type ScoringSetting, SCORING_SETTINGS } from "../rules/scoring";
 import "./StartScreen.css";
 
@@ -35,6 +39,13 @@ const COMBAT_SETTING_LABELS: Record<"off" | "on", string> = {
 const SCORING_SETTING_LABELS: Record<ScoringSetting, string> = {
   simple: "SIMPLE",
   bonus: "BONUS",
+};
+
+/** The Planet bonus group's labels — start-screen chrome, not a rules concern. */
+const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
+  off: "OFF",
+  two: "2 POINTS",
+  three: "3 POINTS",
 };
 
 /**
@@ -63,6 +74,8 @@ interface StartScreenProps {
   readonly onCombatEnabledChange: (combatEnabled: boolean) => void;
   readonly scoring: ScoringSetting;
   readonly onScoringChange: (scoring: ScoringSetting) => void;
+  readonly planetBonus: PlanetBonusSetting;
+  readonly onPlanetBonusChange: (planetBonus: PlanetBonusSetting) => void;
   readonly nodeRotation: NodeRotationSetting;
   readonly onNodeRotationChange: (nodeRotation: NodeRotationSetting) => void;
   readonly lengthInRounds: number;
@@ -74,7 +87,7 @@ interface StartScreenProps {
 }
 
 /**
- * Controlled: the seven options are held by the caller and mean nothing
+ * Controlled: the eight options are held by the caller and mean nothing
  * until PLAY is pressed. This component holds no state of its own beyond
  * the ids it generates for its radio groups, and changing an option only
  * calls the matching handler — it dispatches nothing and starts no game.
@@ -88,6 +101,8 @@ export function StartScreen({
   onCombatEnabledChange,
   scoring,
   onScoringChange,
+  planetBonus,
+  onPlanetBonusChange,
   nodeRotation,
   onNodeRotationChange,
   lengthInRounds,
@@ -100,6 +115,7 @@ export function StartScreen({
   const fleetSizeGroupName = useId();
   const chargedNodeCountGroupName = useId();
   const scoringGroupName = useId();
+  const planetBonusGroupName = useId();
   const nodeRotationGroupName = useId();
   const combatEnabledGroupName = useId();
   const lengthGroupName = useId();
@@ -156,6 +172,21 @@ export function StartScreen({
               label={SCORING_SETTING_LABELS[value]}
               checked={value === scoring}
               onChange={() => onScoringChange(value)}
+            />
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="start-screen__options">
+        <legend className="start-screen__legend">Planet bonus</legend>
+        <div className="start-screen__choices">
+          {PLANET_BONUS_SETTINGS.map((value) => (
+            <OptionChoice
+              key={value}
+              name={planetBonusGroupName}
+              value={value}
+              label={PLANET_BONUS_SETTING_LABELS[value]}
+              checked={value === planetBonus}
+              onChange={() => onPlanetBonusChange(value)}
             />
           ))}
         </div>

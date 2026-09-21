@@ -33,6 +33,11 @@ import {
   type ChargedNodeCount,
 } from "../rules/nodes";
 import {
+  DEFAULT_PLANET_BONUS,
+  PLANET_BONUS_SETTINGS,
+  type PlanetBonusSetting,
+} from "../rules/planetBonus";
+import {
   DEFAULT_SCORING,
   SCORING_SETTINGS,
   type ScoringSetting,
@@ -68,11 +73,19 @@ const NODE_ROTATION_SETTING_LABELS: Record<NodeRotationSetting, string> = {
   dedicated: "DEDICATED",
 };
 
+/** The Planet bonus group's labels, mirroring `StartScreen`'s own map. */
+const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
+  off: "OFF",
+  two: "2 POINTS",
+  three: "3 POINTS",
+};
+
 interface RenderOverrides {
   readonly fleetSize?: FleetSize;
   readonly chargedNodeCount?: ChargedNodeCount;
   readonly combatEnabled?: boolean;
   readonly scoring?: ScoringSetting;
+  readonly planetBonus?: PlanetBonusSetting;
   readonly nodeRotation?: NodeRotationSetting;
   readonly lengthInRounds?: number;
   readonly clockSetting?: ClockSetting;
@@ -82,6 +95,7 @@ interface RenderOverrides {
   ) => void;
   readonly onCombatEnabledChange?: (combatEnabled: boolean) => void;
   readonly onScoringChange?: (scoring: ScoringSetting) => void;
+  readonly onPlanetBonusChange?: (planetBonus: PlanetBonusSetting) => void;
   readonly onNodeRotationChange?: (nodeRotation: NodeRotationSetting) => void;
   readonly onLengthInRoundsChange?: (lengthInRounds: number) => void;
   readonly onClockSettingChange?: (clockSetting: ClockSetting) => void;
@@ -95,6 +109,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
     overrides.onChargedNodeCountChange ?? vi.fn();
   const onCombatEnabledChange = overrides.onCombatEnabledChange ?? vi.fn();
   const onScoringChange = overrides.onScoringChange ?? vi.fn();
+  const onPlanetBonusChange = overrides.onPlanetBonusChange ?? vi.fn();
   const onNodeRotationChange = overrides.onNodeRotationChange ?? vi.fn();
   const onLengthInRoundsChange = overrides.onLengthInRoundsChange ?? vi.fn();
   const onClockSettingChange = overrides.onClockSettingChange ?? vi.fn();
@@ -112,6 +127,8 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
       onCombatEnabledChange={onCombatEnabledChange}
       scoring={overrides.scoring ?? DEFAULT_SCORING}
       onScoringChange={onScoringChange}
+      planetBonus={overrides.planetBonus ?? DEFAULT_PLANET_BONUS}
+      onPlanetBonusChange={onPlanetBonusChange}
       nodeRotation={overrides.nodeRotation ?? DEFAULT_NODE_ROTATION}
       onNodeRotationChange={onNodeRotationChange}
       lengthInRounds={overrides.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS}
@@ -127,6 +144,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
     onChargedNodeCountChange,
     onCombatEnabledChange,
     onScoringChange,
+    onPlanetBonusChange,
     onNodeRotationChange,
     onLengthInRoundsChange,
     onClockSettingChange,
@@ -196,7 +214,7 @@ describe("StartScreen", () => {
     ).toEqual(["5", "4", "3"]);
   });
 
-  it("renders the seven option groups in order: Ships, Charged nodes, Scoring, Inactive node rotation, Combat, Rounds, Clock", () => {
+  it("renders the eight option groups in order: Ships, Charged nodes, Scoring, Planet bonus, Inactive node rotation, Combat, Rounds, Clock", () => {
     renderStartScreen();
 
     const groups = screen.getAllByRole("group");
@@ -206,6 +224,7 @@ describe("StartScreen", () => {
       "Ships",
       "Charged nodes",
       "Scoring",
+      "Planet bonus",
       "Inactive node rotation",
       "Combat",
       "Rounds",
@@ -273,6 +292,62 @@ describe("StartScreen", () => {
     await user.click(within(group).getByRole("radio", { name: "SIMPLE" }));
 
     expect(onScoringChange).toHaveBeenCalledExactlyOnceWith("simple");
+  });
+
+  it("renders the planet bonus group with all three labels and the given one checked", () => {
+    renderStartScreen({ planetBonus: "three" });
+
+    const group = screen.getByRole("group", { name: "Planet bonus" });
+    for (const value of PLANET_BONUS_SETTINGS) {
+      const radio = within(group).getByRole("radio", {
+        name: PLANET_BONUS_SETTING_LABELS[value],
+      });
+      if (value === "three") {
+        expect(radio).toBeChecked();
+      } else {
+        expect(radio).not.toBeChecked();
+      }
+    }
+  });
+
+  it("checks OFF by default, with the planet bonus radios in order OFF, 2 POINTS, 3 POINTS", () => {
+    renderStartScreen();
+
+    const group = screen.getByRole("group", { name: "Planet bonus" });
+    expect(within(group).getByRole("radio", { name: "OFF" })).toBeChecked();
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual(["off", "two", "three"]);
+  });
+
+  it("calls the planet bonus change handler with three when 3 POINTS is chosen, and not the others", async () => {
+    const user = userEvent.setup();
+    const {
+      onFleetSizeChange,
+      onChargedNodeCountChange,
+      onScoringChange,
+      onPlanetBonusChange,
+      onCombatEnabledChange,
+      onNodeRotationChange,
+      onLengthInRoundsChange,
+      onClockSettingChange,
+      onPlay,
+    } = renderStartScreen({ planetBonus: "off" });
+
+    const group = screen.getByRole("group", { name: "Planet bonus" });
+    await user.click(within(group).getByRole("radio", { name: "3 POINTS" }));
+
+    expect(onPlanetBonusChange).toHaveBeenCalledExactlyOnceWith("three");
+    expect(onFleetSizeChange).not.toHaveBeenCalled();
+    expect(onChargedNodeCountChange).not.toHaveBeenCalled();
+    expect(onScoringChange).not.toHaveBeenCalled();
+    expect(onNodeRotationChange).not.toHaveBeenCalled();
+    expect(onCombatEnabledChange).not.toHaveBeenCalled();
+    expect(onLengthInRoundsChange).not.toHaveBeenCalled();
+    expect(onClockSettingChange).not.toHaveBeenCalled();
+    expect(onPlay).not.toHaveBeenCalled();
   });
 
   it("renders the inactive node rotation group with all three labels and the given one checked", () => {

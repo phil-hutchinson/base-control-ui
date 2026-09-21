@@ -7,6 +7,57 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.38 — planet bonuses become a choice
+
+This is a gameplay change — a new way to earn energy — and so would be a
+tag candidate; tagging stays on hold until the game plays (see the
+project's contribution notes).
+
+- **A new section 3.4, Planet bonuses**, states the choice: off, 2 points or
+  3 points, the same for both players, chosen before play begins and fixed
+  for the game's lifetime. When it is on, each player is dealt three
+  distinct planets at random from the twelve, the two sets drawn
+  independently so they may overlap in any number from none to all three. A
+  player is paid the chosen amount of energy the first time one of their
+  ships lands on one of their three; each planet pays each player at most
+  once; a shared planet pays both players independently, in either order, with
+  nothing to race for and nothing to deny. Landing includes a ship returned
+  to a planet by a fight (section 7.1) and a deliberate return (section
+  7.2), not flying over or merely being near. The payment is made the
+  instant the ship arrives, not at the end of the turn, and both players'
+  three planets are known to both from the start of the game. A bonus
+  planet is otherwise an ordinary planet: not owned, and unchanged in what
+  section 3.1 already says about it.
+- **Section 3.1** gains one sentence pointing at section 3.4; "Planets are
+  not owned" is untouched, because it is still true — a bonus is a payment
+  to one player, not a claim on a square.
+- **Section 7.1** gains a sentence: a ship placed there may claim a bonus on
+  arrival, for its own side.
+- **Section 8.4** gains a sentence stating that node collection is not the
+  only source of energy; the "nothing subtracts energy" paragraph stands
+  unchanged.
+- **Section 8.6** gains a sentence stating that a planet bonus is paid at
+  the instant a ship lands and takes no step in the end-of-turn order.
+- **Section 1's overview** notes that energy also comes from landing on the
+  right planet under this setting, and adds another random element — which
+  three planets each player is dealt — alongside the opening board, the
+  refill, and, when the relevant settings are on, which planet a fight
+  returns a ship to and where the rotators fall.
+- **Section 10's opening sentence** adds the planet bonus to the list of
+  what is chosen alongside the fleet size, the number of rounds, the
+  charged-node count, combat, scoring and rotation. Section 9 mentions only
+  the rounds and does not enumerate the other choices, so it is unchanged.
+- Section 2 carries no `Planet` entry to point at section 3.4, so none is
+  added. `doc/ruleset/tech-notes.md`'s queue-sizing argument is about node
+  timing, not energy, so a second source of energy does not falsify it and
+  it is unchanged.
+- Nothing else changes: what a planet does otherwise (recovery at the
+  section 3.1 rate, the protection from attack, planets not being owned),
+  which twelve squares are planets, section 3.2's placement constraints,
+  the end-of-turn order's own steps, node collection and the scoring
+  setting, and combat's own rules are all unchanged — only that a landing
+  can now also pay.
+
 ## 0.37 — a refill can place a node on the outer edge, and the opening deal stays clear of it
 
 This is a gameplay change — a square that could not hold a node now can —

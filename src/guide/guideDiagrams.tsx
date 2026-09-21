@@ -5,7 +5,10 @@
 // positions are derived from `../rules/countdown`, exactly as `Board` derives
 // them, rather than typed in by hand. NEW CHARGED NODE SELECTION carries two
 // of these — the rotation diagram every setting shares, and a second, a bare
-// square holding a rotator, for the dedicated setting alone.
+// square holding a rotator, for the dedicated setting alone. PLANET BONUS's
+// diagram is the one exception to "built from `BoardSquare`s": its cells are
+// `PlanetBonusCell`, the same cell `PlanetBonusPanel` draws, so the guide's
+// checkmark can never drift from the panel's own.
 
 import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import { energyForNodesHeld } from "../rules/energy";
@@ -234,4 +237,24 @@ export function RotatorSquareDiagram() {
     },
   ];
   return <GuideDiagram columns={1} cells={cells} />;
+}
+
+/**
+ * Diagram 7: green's bonus row alone — three planets, one already carrying
+ * the settled checkmark, the other two unclaimed. Red's row and the `+N`
+ * badge are both left out; one row and one claim is what the section's
+ * paragraph needs shown.
+ */
+export function PlanetBonusDiagram() {
+  const cells: readonly GuideDiagramCell[] = [
+    {
+      kind: "bonusPlanet",
+      side: "green",
+      art: PLANET_ART[0],
+      badge: "claimed",
+    },
+    { kind: "bonusPlanet", side: "green", art: PLANET_ART[1], badge: "none" },
+    { kind: "bonusPlanet", side: "green", art: PLANET_ART[2], badge: "none" },
+  ];
+  return <GuideDiagram columns={3} cells={cells} />;
 }

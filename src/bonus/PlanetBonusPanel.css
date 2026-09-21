@@ -1,0 +1,63 @@
+/* Sits above `.clock-region` inside `.app__clocks` (App.css), sharing its
+   `--region-extent` box with the clocks rather than measuring itself from
+   the window: `--region-extent` is a height budget in portrait and a width
+   budget in landscape, and every size below is a fraction of it so the
+   panel scales down with the box itself instead of overflowing it. If the
+   box is too small for both the panel and the clocks, this is what shrinks
+   — `--region-extent` and the board never do (App.css): `min-height: 0`
+   lets this flex item's used height fall below its own content's height,
+   and `overflow: hidden` clips what no longer fits instead of letting it
+   spill into `.clock-region` below (`ClockRegion.css` holds that box to its
+   natural size, so it is never the one that gives). At the sizes this
+   panel already renders at, its content fits and neither rule does
+   anything. */
+.planet-bonus-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--region-extent) * 0.035);
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* One side's heading and its three planets, as a unit. */
+.planet-bonus-panel__side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--region-extent) * 0.02);
+}
+
+/* The row's heading, in that side's colour and the arcade face the clocks'
+   own side names use — sentence case in the markup, uppercased here. */
+.planet-bonus-panel__label {
+  font-family: var(--font-arcade);
+  font-size: calc(var(--region-extent) * 0.06);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.planet-bonus-panel__label--green {
+  color: var(--color-green);
+}
+
+.planet-bonus-panel__label--red {
+  color: var(--color-red);
+}
+
+.planet-bonus-panel__row {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--region-extent) * 0.035);
+}
+
+/* Sized here; `PlanetBonusCell` (its own stylesheet) fills this box and
+   owns the drawing and the badge, so the panel and the Quick Guide's PLANET
+   BONUS diagram draw from the one component. */
+.planet-bonus-panel__cell {
+  flex: 0 0 auto;
+  width: calc(var(--region-extent) * 0.15);
+  height: calc(var(--region-extent) * 0.15);
+}

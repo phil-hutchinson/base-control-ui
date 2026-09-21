@@ -57,6 +57,8 @@ function buildState(config: {
     openingSeed: 1,
     nodeRotation: "continuous",
     rotators: [],
+    planetBonus: "off",
+    bonusPlanets: { green: [], red: [] },
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -584,6 +586,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
 
     expect(result.selectedShipId).toBeUndefined();
@@ -615,6 +618,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
 
     expect(result.state.lengthInRounds).toBe(3);
@@ -632,6 +636,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
     const second = sessionReducer(session, {
       type: "new-game",
@@ -642,6 +647,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
 
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
@@ -661,6 +667,7 @@ describe("sessionReducer — new-game", () => {
         combatEnabled: true,
         scoring: "simple",
         nodeRotation: "continuous",
+        planetBonus: "off",
       });
 
       const expectedFleet = startingFleet(fleetSize);
@@ -702,6 +709,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
 
     expect(result.state.chargedNodeCount).toBe(3);
@@ -724,6 +732,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
 
     expect(result.state.chargedNodeCount).toBe(4);
@@ -746,6 +755,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: false,
       scoring: "simple",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
 
     expect(result.state.combatEnabled).toBe(false);
@@ -763,6 +773,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
 
     expect(result.state.combatEnabled).toBe(true);
@@ -780,6 +791,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
 
     expect(result.state.scoring).toBe("simple");
@@ -797,6 +809,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "bonus",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
 
     expect(result.state.scoring).toBe("bonus");
@@ -814,6 +827,7 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodeRotation: "continuous",
+      planetBonus: "off",
     });
 
     expect(result.state.nodeRotation).toBe("continuous");
@@ -832,10 +846,50 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodeRotation: "dedicated",
+      planetBonus: "off",
     });
 
     expect(result.state.nodeRotation).toBe("dedicated");
     expect(result.state.rotators.length).toBeGreaterThan(0);
+  });
+
+  it("honours a chosen planet bonus setting of three, dealing a state with three bonus planets a side", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 9,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
+      scoring: "simple",
+      nodeRotation: "continuous",
+      planetBonus: "three",
+    });
+
+    expect(result.state.planetBonus).toBe("three");
+    expect(result.state.bonusPlanets.green).toHaveLength(3);
+    expect(result.state.bonusPlanets.red).toHaveLength(3);
+  });
+
+  it("honours a chosen planet bonus setting of off, dealing a state with no bonus planets", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 9,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
+      scoring: "simple",
+      nodeRotation: "continuous",
+      planetBonus: "off",
+    });
+
+    expect(result.state.planetBonus).toBe("off");
+    expect(result.state.bonusPlanets).toEqual({ green: [], red: [] });
   });
 });
 

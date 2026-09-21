@@ -101,6 +101,10 @@ function nodeRotationGroup() {
   return screen.getByRole("group", { name: "Inactive node rotation" });
 }
 
+function planetBonusGroup() {
+  return screen.getByRole("group", { name: "Planet bonus" });
+}
+
 function clockGroup() {
   return screen.getByRole("group", { name: "Clock (time per move)" });
 }
@@ -111,7 +115,7 @@ async function pressPlay() {
 }
 
 describe("App", () => {
-  it("opens on the start screen: the name, all seven option groups at their defaults, and PLAY — no board, no HUD", () => {
+  it("opens on the start screen: the name, all eight option groups at their defaults, and PLAY — no board, no HUD", () => {
     render(<App />);
 
     expect(
@@ -132,6 +136,9 @@ describe("App", () => {
       within(scoringGroup()).getByRole("radio", { name: "SIMPLE" }),
     ).toBeChecked();
     expect(
+      within(planetBonusGroup()).getByRole("radio", { name: "OFF" }),
+    ).toBeChecked();
+    expect(
       within(nodeRotationGroup()).getByRole("radio", { name: "CONTINUOUS" }),
     ).toBeChecked();
     expect(
@@ -150,7 +157,7 @@ describe("App", () => {
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
   });
 
-  it("renders the seven option groups in order: Ships, Charged nodes, Scoring, Inactive node rotation, Combat, Rounds, Clock", () => {
+  it("renders the eight option groups in order: Ships, Charged nodes, Scoring, Planet bonus, Inactive node rotation, Combat, Rounds, Clock", () => {
     render(<App />);
 
     const groups = screen.getAllByRole("group");
@@ -160,6 +167,7 @@ describe("App", () => {
       "Ships",
       "Charged nodes",
       "Scoring",
+      "Planet bonus",
       "Inactive node rotation",
       "Combat",
       "Rounds",
@@ -179,6 +187,28 @@ describe("App", () => {
     const afterPlay = container.querySelectorAll(".ship-defs");
     expect(afterPlay).toHaveLength(1);
     expect(afterPlay[0]).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("mounts exactly one hidden planet sprite, on the start screen, the guide screen and once a game is in progress", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    const onStart = container.querySelectorAll(".planet-defs");
+    expect(onStart).toHaveLength(1);
+    expect(onStart[0]).toHaveAttribute("aria-hidden", "true");
+
+    await user.click(screen.getByRole("button", { name: "Quick Guide" }));
+
+    const onGuide = container.querySelectorAll(".planet-defs");
+    expect(onGuide).toHaveLength(1);
+    expect(onGuide[0]).toHaveAttribute("aria-hidden", "true");
+
+    await user.click(screen.getAllByRole("button", { name: "Back" })[0]);
+    await pressPlay();
+
+    const inGame = container.querySelectorAll(".planet-defs");
+    expect(inGame).toHaveLength(1);
+    expect(inGame[0]).toHaveAttribute("aria-hidden", "true");
   });
 
   it("has no static accessibility violations on the start screen", async () => {
@@ -241,6 +271,32 @@ describe("App", () => {
     for (const reading of clocks.querySelectorAll(".clock-display__reading")) {
       expect(reading.textContent).toBe("INF");
     }
+  });
+
+  it("with the default OFF, the clock region holds only the clocks — no bonus panel", async () => {
+    const { container } = render(<App />);
+    await pressPlay();
+
+    const clocks = container.querySelector(".app__clocks")!;
+    expect(clocks.querySelector(".planet-bonus-panel")).not.toBeInTheDocument();
+    expect(clocks.querySelector(":scope > .clock-region")).toBeInTheDocument();
+  });
+
+  it("choosing 3 POINTS puts the bonus panel inside the clock region, before the clocks", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await user.click(
+      within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
+    );
+    await pressPlay();
+
+    const clocks = container.querySelector(".app__clocks")!;
+    const children = Array.from(clocks.children).map((el) => el.className);
+    expect(children).toEqual(["planet-bonus-panel", "clock-region"]);
+    expect(clocks.querySelectorAll(".planet-bonus-panel__cell")).toHaveLength(
+      6,
+    );
   });
 
   it("pressing PLAY with the defaults deals a six-a-side, thirty-round game", async () => {
@@ -518,6 +574,28 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       within(nodeRotationGroup()).getByRole("radio", { name: "DEDICATED" }),
+    ).toBeChecked();
+  });
+
+  it("choosing 3 POINTS before PLAY starts a game, and returning to start still shows it chosen", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    stubConfirm(true);
+
+    await user.click(
+      within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
+    );
+    await pressPlay();
+
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+
+    traverseTo("");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+    ).toBeInTheDocument();
+    expect(
+      within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
     ).toBeChecked();
   });
 

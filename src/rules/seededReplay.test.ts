@@ -41,6 +41,13 @@
 // exactly as it did before 0.36. Only dedicated adds steps, up to eight at
 // the opening deal and up to eight after every queue refill, which is
 // asserted directly below rather than assumed.
+//
+// 0.38 added planet bonuses (§3.4). At the app's default (off) nothing new
+// is drawn — the bonus deal only runs when the setting is on, and it runs
+// last, after the opening deal and the rotator draw — so every recorded
+// figure below stands exactly as it did before 0.38. Only an ON game adds
+// steps, exactly six at the opening deal, which `gameState.test.ts` asserts
+// directly.
 
 import { describe, expect, it } from "vitest";
 import { type Square, squareName } from "./board";

@@ -119,6 +119,8 @@ function stateWithNode(
     openingSeed: 1,
     nodeRotation: "continuous",
     rotators: [],
+    planetBonus: "off",
+    bonusPlanets: { green: [], red: [] },
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -141,6 +143,8 @@ function stateWithRotators(squares: readonly Square[]): GameState {
     openingSeed: 1,
     nodeRotation: "dedicated",
     rotators: squares,
+    planetBonus: "off",
+    bonusPlanets: { green: [], red: [] },
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -324,11 +328,12 @@ describe("Board", () => {
       <Board session={startingSession} onIntent={noop} />,
     );
 
-    // `.board-frame` holds nothing but the planet sprite, the grid and the
-    // energy overlay - neither label element is in the DOM at all any more.
+    // `.board-frame` holds nothing but the grid and the energy overlay -
+    // neither label element is in the DOM at all any more. The planet sprite
+    // is mounted once at the app root (`App.tsx`), not here.
     const frame = container.querySelector(".board-frame");
-    expect(frame?.children).toHaveLength(3);
-    expect(frame?.querySelector(".planet-defs")).toBeInTheDocument();
+    expect(frame?.children).toHaveLength(2);
+    expect(frame?.querySelector(".planet-defs")).not.toBeInTheDocument();
     expect(frame?.querySelector(".board")).toBeInTheDocument();
     expect(frame?.querySelector(".energy-overlay")).toBeInTheDocument();
 
@@ -672,6 +677,8 @@ describe("Board", () => {
         openingSeed: 1,
         nodeRotation: "continuous",
         rotators: [],
+        planetBonus: "off",
+        bonusPlanets: { green: [], red: [] },
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -771,6 +778,8 @@ describe("Board", () => {
         openingSeed: 1,
         nodeRotation: "continuous",
         rotators: [],
+        planetBonus: "off",
+        bonusPlanets: { green: [], red: [] },
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -854,6 +863,8 @@ describe("Board", () => {
         openingSeed: 1,
         nodeRotation: "continuous",
         rotators: [],
+        planetBonus: "off",
+        bonusPlanets: { green: [], red: [] },
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1033,6 +1044,8 @@ describe("Board", () => {
         openingSeed: 1,
         nodeRotation: "continuous",
         rotators: [],
+        planetBonus: "off",
+        bonusPlanets: { green: [], red: [] },
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1232,6 +1245,8 @@ describe("Board", () => {
         openingSeed: 1,
         nodeRotation: "continuous",
         rotators: [],
+        planetBonus: "off",
+        bonusPlanets: { green: [], red: [] },
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1344,6 +1359,8 @@ describe("Board", () => {
         openingSeed: 1,
         nodeRotation: "continuous",
         rotators: [],
+        planetBonus: "off",
+        bonusPlanets: { green: [], red: [] },
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1390,6 +1407,8 @@ describe("Board", () => {
         openingSeed: 1,
         nodeRotation: "continuous",
         rotators: [],
+        planetBonus: "off",
+        bonusPlanets: { green: [], red: [] },
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

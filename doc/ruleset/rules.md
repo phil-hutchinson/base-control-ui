@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.37**
+**Rules version: 0.38**
 
 This document is the single source of truth for how Base Control is played.
 The app implements what is written here; where the two disagree, this document
@@ -12,8 +12,9 @@ is right and the app has a bug.
 
 Base Control is a two-player game played on a square board. Each player
 commands a fleet of three to six ships and competes to occupy the board's
-contested nodes, collecting **energy** for every turn they hold one. The
-player with the most energy when the game ends is the winner.
+contested nodes, collecting **energy** for every turn they hold one — and,
+under the planet bonus setting (section 3.4), for landing on the right
+planet. The player with the most energy when the game ends is the winner.
 
 Combat is a choice made before play begins (section 7). When it is on,
 ships are never destroyed: a fight has no winner — both ships involved are
@@ -40,8 +41,9 @@ three new nodes appear when the waiting set is refilled and which of them
 gets which priority, and, when combat is on, which planet the two ships in
 a fight are pushed back to. Under the dedicated rotation setting (section
 8.2) there is a fourth: where the board's rotators fall each time they are
-drawn. No two games start on the same board, and neither player has seen
-this one before.
+drawn. Under the planet bonus setting (section 3.4) there is another: which
+three planets each player is dealt. No two games start on the same board,
+and neither player has seen this one before.
 
 ---
 
@@ -111,7 +113,9 @@ A planet is an ordinary square in every way except two:
   point comes at the end of that turn like any other. A planet is where a
   ship goes to recover.
 
-Planets are not owned. Either player's ships may use any planet.
+Planets are not owned. Either player's ships may use any planet. Under the
+planet bonus setting, landing on the right planet also pays a one-time
+bonus (section 3.4).
 
 This diagram shows the board's fixed squares: the twelve planets, and the
 eighteen starting squares (section 4) where ships begin — fleet size decides
@@ -237,6 +241,37 @@ ordinary square in every other way — a ship may land on it, fly over it
 (which spends nothing) and stand on it. It is **not a node**: it has no
 state, no countdown and no priority, and it is never counted among the
 board's nodes.
+
+### 3.4 Planet bonuses
+
+The planet bonus is **off, 2 points or 3 points**, the same for both
+players, chosen before play begins and fixed for the game's lifetime.
+
+With it off, nothing in this section applies. With it on:
+
+- **Each player is dealt three planets at random from the twelve**, three
+  distinct planets a side. The two sets are drawn independently, so they
+  may overlap in any number from none to all three.
+- **A player is paid the chosen amount of energy the first time one of their
+  ships lands on one of their three planets.** Each planet pays each player
+  **at most once**, however often that player's ships return to it.
+- **A shared planet pays both players, independently, in either order.**
+  Neither player's claim takes anything from the other, and there is
+  nothing to race for and nothing to deny.
+- **Landing** includes a ship returned to a planet by a fight (section 7.1)
+  and a deliberate return (section 7.2), as well as an ordinary move that
+  ends there. Flying over a planet is not landing, and a ship merely near
+  one claims nothing.
+- **The payment is made the instant the ship arrives**, before anything
+  else in that turn happens — it is not part of the end-of-turn order
+  (section 8.6).
+- **Both players' three planets are known to both players from the start of
+  the game.**
+
+A bonus planet is an ordinary planet that also pays once: it is not owned,
+and everything section 3.1 says about a planet — the protection from
+attack, and the power a ship recovers there — still applies to it exactly
+as it does to any other planet.
 
 ---
 
@@ -462,7 +497,9 @@ A returning ship is placed **immediately**, as part of resolving the fight,
 before anything else happens. Every fight returns two ships: the attacker is
 placed first, and the defender's planet is then drawn from the planets still
 empty. Which ship is placed first makes no difference to the odds, but
-fixing the order is what lets a recorded game replay exactly.
+fixing the order is what lets a recorded game replay exactly. Under the
+planet bonus setting, a ship placed here may claim a bonus on arrival, for
+its own side (section 3.4).
 
 There is always somewhere to go: with at most twelve ships and twelve
 planets, the two ships in a fight were by definition not on planets, so at
@@ -706,6 +743,9 @@ flying across a charged node and moving on collects nothing. The board never
 charges more than the chosen number of nodes at once (sections 8.1, 8.2),
 but that is a fact about the board, not a cap on what collecting can pay.
 
+Node collection is not the only source of energy: under the planet bonus
+setting, landing on the right planet also pays (section 3.4).
+
 Nothing in the game subtracts energy. A player's total only ever rises.
 
 ### 8.5 Standing on a depleted node
@@ -770,6 +810,9 @@ Everything that happens at the end of a turn happens in this order:
    retires a node, with nothing appearing in its place — and its ship is
    freed. If no depleted node under that player's ships qualifies, nothing
    happens, and that player's turn passes under section 5.
+
+Under the planet bonus setting, a bonus (section 3.4) is paid at the
+instant a ship lands and takes no step in this order.
 
 A turn that passes because the player could neither move nor attack
 (section 5) is still a turn: this sequence runs for it in full, just as it
@@ -842,9 +885,9 @@ energy is a draw.
 
 Alongside the fleet size, the number of rounds, the charged-node count
 (section 8.1), whether combat is on or off (section 7), how scoring is
-priced (section 8.4) and how the priorities rotate (section 8.2), a player
-chooses a **clock** before play begins: no clock, or 6, 4 or 2 seconds a
-turn.
+priced (section 8.4), how the priorities rotate (section 8.2) and the
+planet bonus (section 3.4), a player chooses a **clock** before play
+begins: no clock, or 6, 4 or 2 seconds a turn.
 
 Each player's clock starts with a budget: their seconds a turn multiplied by
 the number of turns the chosen length gives them. The whole game is

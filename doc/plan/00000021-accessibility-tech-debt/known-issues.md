@@ -390,3 +390,24 @@ the whole grid, square by square, to find them, where a sighted player sees
 all six (or fewer) marks on the board at a glance.
 
 Where: `src/board/squareLabel.ts`, `src/board/RotatorMarker.tsx`.
+
+## From story 97 — planet bonuses
+
+Source: `doc/plan/00000097-planet-bonuses/implementation-plan.md` decision
+D13, Step 7.
+
+### 1. Neither player's bonus planets, nor their claims, reach a screen-reader user as a standing picture
+
+The new panel above the clocks — each side's three dealt bonus planets, and a
+badge over each once it has been claimed (rules.md §3.4) — is `aria-hidden`,
+exactly as the clocks it sits beside already are. A screen-reader user is
+never told which three planets are their own, nor which of the six shown are
+still unclaimed, at any point they choose to ask; a sighted player reads all
+of that at a glance.
+
+It is mitigated but not resolved: a claim itself is announced through the
+live region's sentence (`src/board/announcements.ts`) as it happens, so the
+event is not silently lost — what is missing is the standing state between
+events, which nothing but the panel carries.
+
+Where: `src/bonus/PlanetBonusPanel.tsx`.

@@ -6,6 +6,7 @@ import {
   MovementDiagram,
   NodeLifecycleDiagram,
   NodeSelectionDiagram,
+  PlanetBonusDiagram,
   RefuellingDiagram,
   RotatorSquareDiagram,
   ScoringDiagram,
@@ -177,5 +178,27 @@ describe("RotatorSquareDiagram", () => {
     expect(container.querySelectorAll(".rotator-marker")).toHaveLength(1);
     expect(container.querySelector(".node-marker")).toBeNull();
     expect(container.querySelector(".ship-model")).toBeNull();
+  });
+});
+
+describe("PlanetBonusDiagram", () => {
+  it("shows green's row alone — three planets, one already claimed", () => {
+    const { container } = render(<PlanetBonusDiagram />);
+
+    expect(container.querySelectorAll(".guide-diagram__cell")).toHaveLength(3);
+    expect(container.querySelectorAll(".planet")).toHaveLength(3);
+    expect(
+      container.querySelectorAll(".planet-bonus-cell__checkmark"),
+    ).toHaveLength(1);
+    expect(
+      container.querySelectorAll(".planet-bonus-cell__badge--green"),
+    ).toHaveLength(1);
+    expect(
+      container.querySelectorAll(".planet-bonus-cell__badge--red"),
+    ).toHaveLength(0);
+    expect(
+      container.querySelectorAll(".planet-bonus-cell__badge--amount"),
+    ).toHaveLength(0);
+    expect(container.querySelectorAll(".guide-diagram__arrow")).toHaveLength(0);
   });
 });

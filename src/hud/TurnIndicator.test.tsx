@@ -19,6 +19,8 @@ function finishedState(): GameState {
     openingSeed: 1,
     nodeRotation: "continuous",
     rotators: [],
+    planetBonus: "off",
+    bonusPlanets: { green: [], red: [] },
     energy: { green: 4, red: 7 },
     lengthInRounds: 1,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

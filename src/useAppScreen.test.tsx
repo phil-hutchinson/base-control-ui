@@ -25,6 +25,7 @@ describe("useAppScreen", () => {
     expect(result.current.combatEnabled).toBe(false);
     expect(result.current.scoring).toBe("simple");
     expect(result.current.nodeRotation).toBe("continuous");
+    expect(result.current.planetBonus).toBe("off");
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
   });
@@ -164,6 +165,40 @@ describe("useAppScreen", () => {
 
     expect(dispatch).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ type: "new-game", nodeRotation: "dedicated" }),
+    );
+  });
+
+  it("carries a chosen planet bonus setting of three into the new-game intent, and keeps it on returning to start", async () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, true));
+
+    act(() => {
+      result.current.setPlanetBonus("three");
+    });
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", planetBonus: "three" }),
+    );
+
+    act(() => {
+      result.current.handleReturnToStart();
+    });
+
+    await waitFor(() => {
+      expect(result.current.screen).toBe("start");
+    });
+    expect(result.current.planetBonus).toBe("three");
+
+    dispatch.mockClear();
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", planetBonus: "three" }),
     );
   });
 

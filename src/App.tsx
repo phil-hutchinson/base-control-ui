@@ -1,5 +1,7 @@
 import { useReducer } from "react";
 import { Board } from "./board/Board";
+import { PlanetDefs } from "./board/PlanetDefs";
+import { PlanetBonusPanel } from "./bonus/PlanetBonusPanel";
 import { ClockRegion } from "./clock/ClockRegion";
 import { freshSeed } from "./game/seed";
 import { createSession, sessionReducer } from "./game/session";
@@ -56,6 +58,8 @@ export function App() {
     setCombatEnabled,
     scoring,
     setScoring,
+    planetBonus,
+    setPlanetBonus,
     nodeRotation,
     setNodeRotation,
     lengthInRounds,
@@ -70,6 +74,7 @@ export function App() {
   return (
     <main className="app">
       <ShipDefs />
+      <PlanetDefs />
       <div className="app__cabinet">
         {screen === "start" ? (
           <StartScreen
@@ -81,6 +86,8 @@ export function App() {
             onCombatEnabledChange={setCombatEnabled}
             scoring={scoring}
             onScoringChange={setScoring}
+            planetBonus={planetBonus}
+            onPlanetBonusChange={setPlanetBonus}
             nodeRotation={nodeRotation}
             onNodeRotationChange={setNodeRotation}
             lengthInRounds={lengthInRounds}
@@ -107,6 +114,7 @@ export function App() {
               <Board session={session} onIntent={dispatch} />
             </div>
             <div className="app__clocks">
+              <PlanetBonusPanel state={session.state} />
               <ClockRegion
                 state={session.state}
                 clockSetting={clockSetting}

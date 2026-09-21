@@ -1,7 +1,8 @@
 // The one grid every guide diagram is drawn on (see story.md, "The
 // diagrams"): a caller-given number of columns holding a fixed list of
 // cells, each a real `BoardSquare`, a numeral drawn over one, a standalone
-// note, a quiet label, a full-width rule, an arrow, or nothing. Purely
+// note, a quiet label, a full-width rule, an arrow, a bonus planet cell
+// (`PlanetBonusCell`, shared with `PlanetBonusPanel`), or nothing. Purely
 // presentational — no session, no state, no event handlers — and hidden
 // from the accessibility tree, since the paragraph above each diagram
 // already carries its meaning in words.
@@ -9,6 +10,10 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { BoardSquareProps } from "../board/BoardSquare";
 import { BoardSquare } from "../board/BoardSquare";
+import type { PlanetArt } from "../board/planetArt";
+import type { BonusBadgeState } from "../bonus/bonusBadge";
+import { PlanetBonusCell } from "../bonus/PlanetBonusCell";
+import type { Side } from "../rules/fleet";
 import "./GuideDiagram.css";
 
 export type GuideDiagramCell =
@@ -22,7 +27,14 @@ export type GuideDiagramCell =
   | { readonly kind: "label"; readonly text: string }
   | { readonly kind: "rule" }
   | { readonly kind: "arrow" }
-  | { readonly kind: "empty" };
+  | { readonly kind: "empty" }
+  | {
+      readonly kind: "bonusPlanet";
+      readonly side: Side;
+      readonly art: PlanetArt;
+      /** Never `"amount"`: no diagram has a payment ply to show it fading in from. */
+      readonly badge: Exclude<BonusBadgeState, "amount">;
+    };
 
 export interface GuideDiagramProps {
   readonly columns: number;
@@ -94,6 +106,10 @@ function renderCell(cell: GuideDiagramCell): ReactNode {
       return <GuideDiagramArrow />;
     case "empty":
       return null;
+    case "bonusPlanet":
+      return (
+        <PlanetBonusCell side={cell.side} art={cell.art} badge={cell.badge} />
+      );
   }
 }
 
