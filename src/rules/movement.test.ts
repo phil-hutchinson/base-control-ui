@@ -797,6 +797,30 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(legalDestinations(state, "green-1").map(squareName)).toContain("G7");
   });
 
+  it("flies over a prospective node freely and lands beyond it on an empty ordinary square", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { F7: "prospective" },
+    });
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("G7")),
+    ).toBeUndefined();
+    expect(legalDestinations(state, "green-1").map(squareName)).toContain("G7");
+  });
+
+  it("refuses landing on a prospective node with destination-uncharged-node", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { F7: "prospective" },
+    });
+    expect(moveRefusalReason(state, "green-1", squareFromName("F7"))).toBe(
+      "destination-uncharged-node",
+    );
+    expect(legalDestinations(state, "green-1").map(squareName)).not.toContain(
+      "F7",
+    );
+  });
+
   it("refuses an uncharged destination that also holds a ship with destination-occupied, not destination-uncharged-node", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7"), ship("red-1", "red", "C7", 0)],

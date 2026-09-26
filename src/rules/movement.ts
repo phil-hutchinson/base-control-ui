@@ -461,7 +461,8 @@ export function moveRefusalReason(
   const destinationNodeState = nodeStateAt(state, destination);
   if (
     destinationNodeState === "depleted" ||
-    destinationNodeState === "inactive"
+    destinationNodeState === "inactive" ||
+    destinationNodeState === "prospective"
   ) {
     return "destination-uncharged-node";
   }

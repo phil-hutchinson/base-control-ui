@@ -13,7 +13,12 @@ import { NodeMarker } from "./NodeMarker";
 
 afterEach(cleanup);
 
-const STATES: readonly NodeState[] = ["inactive", "charged", "depleted"];
+const STATES: readonly NodeState[] = [
+  "inactive",
+  "charged",
+  "depleted",
+  "prospective",
+];
 
 // The two clocked states, whose artwork is a single gradient-filled circle
 // that travels through a cycle position. Inactive is drawn differently (a
@@ -265,6 +270,32 @@ describe("NodeMarker", () => {
       const circles = container.querySelectorAll("circle");
       expect(circles).toHaveLength(1);
       expect(circles[0]).toHaveAttribute("r", INACTIVE_RING_RADII[0]);
+    });
+  });
+
+  describe("a prospective node's rings (steal.md §2)", () => {
+    it("always draws all three rings, with no priority given", () => {
+      const { container } = render(
+        <NodeMarker state="prospective" squareName={SQUARE_NAME} />,
+      );
+
+      const circles = container.querySelectorAll("circle");
+      expect(Array.from(circles, (circle) => circle.getAttribute("r"))).toEqual(
+        INACTIVE_RING_RADII,
+      );
+      for (const circle of circles) {
+        expect(circle).toHaveAttribute("fill", "none");
+        expect(circle).toHaveAttribute("stroke", INACTIVE_RING_COLOR);
+      }
+    });
+
+    it("draws no gradient at all, unlike the charged and depleted artwork", () => {
+      const { container } = render(
+        <NodeMarker state="prospective" squareName={SQUARE_NAME} />,
+      );
+
+      expect(container.querySelector("radialGradient")).not.toBeInTheDocument();
+      expect(container.querySelector("defs")).not.toBeInTheDocument();
     });
   });
 

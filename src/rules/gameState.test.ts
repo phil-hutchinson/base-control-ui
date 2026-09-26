@@ -20,6 +20,7 @@ import {
 } from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 import { DEFAULT_NODE_PLAYSTYLE, NODE_PLAYSTYLES } from "./nodePlaystyle";
+import { dealStealOpeningBoard } from "./steal";
 import { legalDestinations } from "./movement";
 import { PLANET_BONUS_SETTINGS } from "./planetBonus";
 import { isPlanet } from "./planets";
@@ -581,6 +582,72 @@ describe("startingGameState", () => {
     });
 
     expect(bonusOn.rotators).toEqual(bonusOff.rotators);
+  });
+});
+
+describe("startingGameState under steal (steal.md §7)", () => {
+  it("deals the board dealStealOpeningBoard deals for the same seed: 2N prospective squares, no charged, inactive or depleted square, and no rotators", () => {
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+    });
+    const [dealt] = dealStealOpeningBoard(STARTING_FLEET_SQUARES, 4, SEED);
+
+    expect(state.nodes).toEqual(dealt);
+    expect(Object.values(state.nodes)).toHaveLength(8);
+    for (const status of Object.values(state.nodes)) {
+      expect(status.state).toBe("prospective");
+      expect(status.level).toBe(0);
+    }
+    expect(state.rotators).toEqual([]);
+  });
+
+  it.each(CHARGED_NODE_COUNTS)(
+    "opens with exactly 2 x %d prospective squares and no charged square anywhere",
+    (chargedNodeCount) => {
+      const state = startingGameState(SEED, {
+        nodePlaystyle: "steal",
+        chargedNodeCount,
+      });
+
+      const statuses = Object.values(state.nodes);
+      expect(statuses).toHaveLength(chargedNodeCount * 2);
+      expect(statuses.every((status) => status.state === "prospective")).toBe(
+        true,
+      );
+    },
+  );
+
+  it("deals the same steal board for the same seed, and a different one for a different seed", () => {
+    const first = startingGameState(SEED, { nodePlaystyle: "steal" });
+    const second = startingGameState(SEED, { nodePlaystyle: "steal" });
+    const third = startingGameState(SEED + 1, { nodePlaystyle: "steal" });
+
+    expect(second.nodes).toEqual(first.nodes);
+    expect(third.nodes).not.toEqual(first.nodes);
+  });
+
+  it("consumes exactly 2N seed steps for the deal, leaving the bonus deal to run afterwards unchanged", () => {
+    const withoutBonus = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+      planetBonus: "off",
+    });
+    const [, seedAfterDeal] = dealStealOpeningBoard(
+      STARTING_FLEET_SQUARES,
+      4,
+      SEED,
+    );
+    expect(withoutBonus.randomSeed).toBe(seedAfterDeal);
+
+    const withBonus = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+      planetBonus: "two",
+    });
+    expect(withBonus.bonusPlanets.green).toHaveLength(3);
+    expect(withBonus.bonusPlanets.red).toHaveLength(3);
+    expect(withBonus.randomSeed).not.toBe(seedAfterDeal);
   });
 });
 

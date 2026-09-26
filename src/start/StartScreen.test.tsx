@@ -71,6 +71,7 @@ const NODE_PLAYSTYLE_LABELS: Record<NodePlaystyle, string> = {
   continuous: "CONTINUOUS",
   planet: "PLANET",
   dedicated: "DEDICATED",
+  steal: "STEAL",
 };
 
 /** The Planet bonus group's labels, mirroring `StartScreen`'s own map. */
@@ -350,7 +351,7 @@ describe("StartScreen", () => {
     expect(onPlay).not.toHaveBeenCalled();
   });
 
-  it("renders the node playstyle group with all three labels and the given one checked", () => {
+  it("renders the node playstyle group with all four labels and the given one checked", () => {
     renderStartScreen({ nodePlaystyle: "dedicated" });
 
     const group = screen.getByRole("group", {
@@ -368,7 +369,7 @@ describe("StartScreen", () => {
     }
   });
 
-  it("checks PLANET by default, with the radios in order CONTINUOUS, PLANET, DEDICATED", () => {
+  it("checks PLANET by default, with the radios in order CONTINUOUS, PLANET, DEDICATED, STEAL", () => {
     renderStartScreen();
 
     const group = screen.getByRole("group", {
@@ -379,7 +380,7 @@ describe("StartScreen", () => {
       within(group)
         .getAllByRole("radio")
         .map((radio) => radio.getAttribute("value")),
-    ).toEqual(["continuous", "planet", "dedicated"]);
+    ).toEqual(["continuous", "planet", "dedicated", "steal"]);
   });
 
   it("calls the node playstyle change handler with dedicated when DEDICATED is chosen, and not the others", async () => {

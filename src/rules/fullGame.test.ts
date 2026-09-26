@@ -372,6 +372,19 @@ function assertQueueInvariant(state: GameState): void {
 }
 
 /**
+ * Under steal, a node is never inactive or depleted (steal.md §8) — the only
+ * invariant a game can prove before claiming and abandoning exist: landing
+ * on a prospective square is refused for now, so a steal game here plays to
+ * its end on ordinary squares, collecting nothing.
+ */
+function assertNoInactiveOrDepletedNodes(state: GameState): void {
+  for (const status of Object.values(state.nodes)) {
+    expect(status.state).not.toBe("inactive");
+    expect(status.state).not.toBe("depleted");
+  }
+}
+
+/**
  * A rotator never stands on a square that also carries a node, a planet or
  * a ship (rules.md §3.3). Harmless to call at any setting — `state.rotators`
  * is empty under continuous and planet, so the loop below never runs.
@@ -532,7 +545,11 @@ describe.each(NODE_PLAYSTYLES)(
       const { finalState } = playFullGame(seed, 3, {
         nodePlaystyle,
         onPly: (state) => {
-          assertQueueInvariant(state);
+          if (nodePlaystyle === "steal") {
+            assertNoInactiveOrDepletedNodes(state);
+          } else {
+            assertQueueInvariant(state);
+          }
           assertRotatorsAreFree(state);
         },
       });
@@ -540,7 +557,11 @@ describe.each(NODE_PLAYSTYLES)(
       expect(finalState.nodePlaystyle).toBe(nodePlaystyle);
       expect(finalState.plyNumber).toBe(pliesForGameLength(3) + 1);
       expect(isGameOver(finalState)).toBe(true);
-      assertQueueInvariant(finalState);
+      if (nodePlaystyle === "steal") {
+        assertNoInactiveOrDepletedNodes(finalState);
+      } else {
+        assertQueueInvariant(finalState);
+      }
       assertRotatorsAreFree(finalState);
     });
   },

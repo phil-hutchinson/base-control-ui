@@ -779,7 +779,46 @@ Verification (automated): the full suite is green, with the new cases in
 
 ### Step 4 — The STEAL setting, node signals and the opening deal
 
-Status: pending
+Status: committed
+
+Notes: Added `"steal"` to `NodePlaystyle`/`NODE_PLAYSTYLES` (last, PLANET
+still default) and `"prospective"` to `NodeState`; added the optional
+`signal` field (new type `NodeSignal`, defined in the new `src/rules/steal.ts`
+per D5) to `NodeStatus`, with a doc-table row and a note that only steal
+carries it. `steal.ts` holds `NodeSignal`/`NODE_SIGNALS`, the pure helpers
+`squaresForSignal`/`isNodeHeld`/`nodeAnchor`, and `dealStealOpeningBoard`
+(steal.md §7: N first squares from the strict pool, then N second squares by
+Step 3's weighted draw, 2N seed steps, verified against `mulberry32` directly
+as `nodeQueue.test.ts` does for its own refill). `startingGameState` branches
+to it under `"steal"` (rotators stay empty automatically, since
+`placeRotators` already only runs under `"dedicated"`); `runEndOfTurn` returns
+right after step 2 (power, energy) for a steal state. `movement.ts` refuses a
+`"prospective"` destination with `destination-uncharged-node`, matching
+inactive and depleted, to be lifted in Step 5. `NodeMarker.tsx` draws a
+prospective square as three rings in `INACTIVE_RING_COLOR` (steal.md: always
+three, no priority) so the widened `NodeState` type-checks through
+`BoardSquare`/`Board.tsx` unchanged. `StartScreen.tsx` gained the STEAL radio
+last. Test updates: `nodePlaystyle.test.ts`, `StartScreen.test.tsx` (four
+radios, STEAL label) and one new `App.test.tsx` case (choosing STEAL starts a
+game and survives a return to start) cover the setting; new
+`src/rules/steal.test.ts` covers the helpers and the deal directly; new cases
+in `gameState.test.ts` cover the deal through `startingGameState` (shape, seed
+count, determinism, the bonus deal still running after); one new
+`endOfTurn.test.ts` case covers the steal early-return; two new
+`movement.test.ts` cases cover flying over versus landing on a prospective
+square; `NodeMarker.test.tsx` gained `"prospective"` to its shared `STATES`
+list plus a dedicated "always three rings" case; `fullGame.test.ts`'s
+`describe.each(NODE_PLAYSTYLES)` now branches its per-ply assertion, since the
+existing queue invariant (exactly priorities {1,2,3}) is meaningless for
+steal — a `assertNoInactiveOrDepletedNodes` check stands in for it, matching
+the plan's instruction to scope queue/inactive-node assertions to the other
+three playstyles. No claim or abandon exists yet, so a steal game in that test
+still plays to its end on ordinary squares only, collecting nothing, exactly
+as the step describes. No deviation from the plan otherwise. `npm run
+typecheck`, `npm run lint`, `npm run format:check` (after `prettier --write`
+on the two new/touched test files it flagged) and the full `npm test` (79
+files, 1558 tests, up from the 1528-test baseline by 30) are all green; the
+other three playstyles' pre-existing tests pass unmodified.
 
 Make STEAL a real, selectable playstyle that deals its opening board and
 runs a STEAL end of turn. Landing on a prospective square is **refused**

@@ -588,6 +588,28 @@ describe("App", () => {
     ).toBeChecked();
   });
 
+  it("choosing STEAL before PLAY starts a game, and returning to start still shows it chosen", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    stubConfirm(true);
+
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+    );
+    await pressPlay();
+
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+
+    traverseTo("");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+    ).toBeInTheDocument();
+    expect(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+    ).toBeChecked();
+  });
+
   it("choosing 3 POINTS before PLAY starts a game, and returning to start still shows it chosen", async () => {
     const user = userEvent.setup();
     render(<App />);

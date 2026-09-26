@@ -1617,3 +1617,50 @@ describe("runEndOfTurn — a quiet board does nothing at all (§8.1, §8.3)", ()
     }
   });
 });
+
+describe("runEndOfTurn — steal runs only power and energy (steal.md §8)", () => {
+  it("pays power and energy exactly as usual, raises no other effect, and leaves nodes, rotators and the seed untouched", () => {
+    const planetSquare = squareName(PLANETS[0]);
+    const chargedSquare = squareFromName("H8");
+    const prospectiveSquare = squareFromName("C3");
+    const state: GameState = {
+      ships: [
+        ship("green-1", "green", squareName(chargedSquare), 4),
+        ship("green-2", "green", planetSquare, 3),
+      ],
+      nodes: {
+        [squareName(chargedSquare)]: { state: "charged", level: 0, signal: 0 },
+        [squareName(prospectiveSquare)]: {
+          state: "prospective",
+          level: 0,
+          signal: 0,
+        },
+      },
+      sideToMove: "green",
+      plyNumber: 1,
+      randomSeed: 4242,
+      openingSeed: 4242,
+      nodePlaystyle: "steal",
+      rotators: [],
+      planetBonus: "off",
+      bonusPlanets: { green: [], red: [] },
+      energy: { green: 0, red: 0 },
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      chargedNodeCount: 4,
+      outOfTime: { green: false, red: false },
+      combatEnabled: true,
+      scoring: "simple",
+    };
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects.map((effect) => effect.type)).toEqual([
+      "power-gained",
+      "energy-collected",
+    ]);
+    expect(result.state.nodes).toEqual(state.nodes);
+    expect(result.state.rotators).toEqual([]);
+    expect(result.state.randomSeed).toBe(state.randomSeed);
+    expect(result.state.energy.green).toBe(1);
+  });
+});

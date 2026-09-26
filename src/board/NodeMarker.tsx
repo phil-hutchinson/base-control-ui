@@ -194,6 +194,32 @@ export function NodeMarker({
     );
   }
 
+  if (state === "prospective") {
+    // A prospective node (steal.md §2) always shows all three rings — there
+    // are no priorities under steal to distinguish. Drawn in the same
+    // colour as today's inactive node for now; steal.md's signals are shown
+    // as colours of their own elsewhere in the board view.
+    return (
+      <svg
+        className={`node-marker node-marker--${state}`}
+        viewBox="0 0 100 100"
+        aria-hidden="true"
+      >
+        {INACTIVE_RING_RADII.map((radius) => (
+          <circle
+            key={radius}
+            cx={50}
+            cy={50}
+            r={radius}
+            fill="none"
+            stroke={INACTIVE_RING_COLOR}
+            strokeWidth={INACTIVE_RING_STROKE_WIDTH}
+          />
+        ))}
+      </svg>
+    );
+  }
+
   const { radius, stops } = nodeArtwork(state, cyclePosition);
   // SVG ids are document-global, and several node markers are drawn into
   // one document at once, so the gradient id carries the square's own name.

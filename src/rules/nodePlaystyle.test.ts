@@ -6,8 +6,13 @@ import {
 } from "./nodePlaystyle";
 
 describe("the offered node playstyles (rules.md §8.2)", () => {
-  it("offers continuous, planet and dedicated, continuous first", () => {
-    expect(NODE_PLAYSTYLES).toEqual(["continuous", "planet", "dedicated"]);
+  it("offers continuous, planet, dedicated and steal, steal last", () => {
+    expect(NODE_PLAYSTYLES).toEqual([
+      "continuous",
+      "planet",
+      "dedicated",
+      "steal",
+    ]);
   });
 
   it("defaults to planet rotation", () => {
@@ -15,7 +20,7 @@ describe("the offered node playstyles (rules.md §8.2)", () => {
     expect(NODE_PLAYSTYLES).toContain(DEFAULT_NODE_PLAYSTYLE);
   });
 
-  it("accepts all three offered settings", () => {
+  it("accepts all four offered settings", () => {
     for (const setting of NODE_PLAYSTYLES) {
       expect(isNodePlaystyle(setting)).toBe(true);
     }

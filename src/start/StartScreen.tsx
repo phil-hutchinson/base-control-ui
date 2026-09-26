@@ -53,6 +53,7 @@ const NODE_PLAYSTYLE_LABELS: Record<NodePlaystyle, string> = {
   continuous: "CONTINUOUS",
   planet: "PLANET",
   dedicated: "DEDICATED",
+  steal: "STEAL",
 };
 
 /** The Combat group's radio `value` attributes, one per offered setting. */

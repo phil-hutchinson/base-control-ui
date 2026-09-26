@@ -29,6 +29,7 @@ import {
   NODE_PLAYSTYLES,
   type NodePlaystyle,
 } from "./nodePlaystyle";
+import { dealStealOpeningBoard, type NodeSignal } from "./steal";
 import { dealBonusPlanets } from "./bonusPlanets";
 import {
   DEFAULT_PLANET_BONUS,
@@ -56,11 +57,12 @@ export interface Ship {
  * A node's current state, plus its `level` — a single number whose meaning
  * depends on the state it is attached to (rules.md §8.1–§8.3):
  *
- * | State    | `level` is           | Set to                                                | At the end of a ply             | Changes state at |
- * | -------- | --------------------- | ------------------------------------------------------ | -------------------------------- | ------------------ |
- * | Inactive | priority (1, 2 or 3)  | dealt at random by a refill                             | rotates 1→2, 2→3, 3→1, or swept  | charged (§8.2)      |
- * | Charged  | plies remaining        | **0** on charging or dealing; 11 when a ship steps on   | −1, but only if above 0          | depleted at 0       |
- * | Depleted | plies remaining        | 11 (trap) or 2 (exit)                                   | −1                                | retires at 0        |
+ * | State        | `level` is           | Set to                                                | At the end of a ply             | Changes state at |
+ * | ------------ | --------------------- | ------------------------------------------------------ | -------------------------------- | ------------------ |
+ * | Inactive     | priority (1, 2 or 3)  | dealt at random by a refill                             | rotates 1→2, 2→3, 3→1, or swept  | charged (§8.2)      |
+ * | Charged      | plies remaining        | **0** on charging or dealing; 11 when a ship steps on   | −1, but only if above 0          | depleted at 0       |
+ * | Depleted     | plies remaining        | 11 (trap) or 2 (exit)                                   | −1                                | retires at 0        |
+ * | Prospective  | always 0               | always 0                                                | never changes on its own          | charged on landing  |
  *
  * `level === 0` on a charged node means "no countdown" — a charged node
  * nobody has stepped on sits there indefinitely (rules.md §8.3). This is
@@ -69,10 +71,16 @@ export interface Ship {
  * countdown that has simply run out. `countdown.ts` owns the arithmetic on
  * this field for the charged and depleted states; `nodeQueue.ts` owns the
  * type (`NodePriority`) for the inactive state.
+ *
+ * The `"prospective"` state, and the `signal` field, exist only under steal
+ * (steal.md §2): every node square of a steal game carries a `signal`, and
+ * carries `level` 0 always — steal has no countdown of any kind. No node
+ * square of any other playstyle ever carries `signal`.
  */
 export interface NodeStatus {
   readonly state: NodeState;
   readonly level: number;
+  readonly signal?: NodeSignal;
 }
 
 /** Each side's running energy total (rules.md §8.4). */
@@ -133,6 +141,11 @@ export interface GameState {
    * from `state.nodes` the way a fleet size is derived from `state.ships`:
    * a board that is legitimately one node short of it, mid-sequence, would
    * have the count derived wrong.
+   *
+   * Under steal (steal.md §1) this is how many **nodes** the game has, not
+   * how many are charged at any one moment — that number rises and falls as
+   * the two players take and lose them, and may legitimately be zero, as it
+   * is on a steal game's opening board.
    */
   readonly chargedNodeCount: ChargedNodeCount;
   /**
@@ -288,7 +301,10 @@ export interface StartingGameStateOptions {
  * at four, seven at three — plus, under the dedicated playstyle only, up to
  * eight more for the opening rotator set (rules.md §3.3), plus,
  * when the planet bonus is on, exactly six more for the bonus planet deal
- * (rules.md §3.4), drawn last so an off game spends nothing extra. The
+ * (rules.md §3.4), drawn last so an off game spends nothing extra. Under
+ * steal instead, the deal consumes exactly `2 * chargedNodeCount` steps
+ * (`dealStealOpeningBoard`, steal.md §7) — no rotator set is ever drawn — and
+ * the bonus planet deal, if any, still runs last. The
  * resulting state's `randomSeed` is the seed all of that left behind. That
  * argument is also recorded verbatim as `openingSeed`, so the state
  * remembers where its deal started even once `randomSeed` has moved on. See
@@ -366,11 +382,10 @@ export function startingGameState(
   }));
 
   const shipSquares = ships.map((ship) => ship.square);
-  const [nodes, dealtSeed] = dealOpeningBoard(
-    shipSquares,
-    chargedNodeCount,
-    randomSeed,
-  );
+  const [nodes, dealtSeed]: [Readonly<Record<string, NodeStatus>>, number] =
+    nodePlaystyle === "steal"
+      ? dealStealOpeningBoard(shipSquares, chargedNodeCount, randomSeed)
+      : dealOpeningBoard(shipSquares, chargedNodeCount, randomSeed);
 
   const dealtNodeSquares = ALL_SQUARES.filter(
     (square) => nodes[squareName(square)] !== undefined,
