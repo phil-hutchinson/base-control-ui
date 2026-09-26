@@ -88,7 +88,9 @@ constraints 3 and 4 both lifted — the same widened pool the third square of
 a rules.md §8.2 refill draws from today, fallback included. A prospective
 square may therefore appear anywhere that holds no node, holds no ship, is
 not adjacent to a node, and is not a planet or beside one — the outer edge
-and the corners included.
+and the corners included. The one exception is the opening deal's second
+square, which section 7 draws from the **strict** pool instead, wherever the
+board leaves room.
 
 The draw is weighted. For a candidate square `s`, with `a` the node's
 **anchor** — its charged square when it has one, and its remaining
@@ -121,8 +123,16 @@ deals the opening board's charged squares — uniformly at random from rules.md
 §3.2's **strict** pool, one node at a time, every legal square equally
 likely, each draw seeing the squares already placed. Once every node's first
 square is down, each node's **second** prospective square is drawn by
-section 6's weighted rule, anchored on that node's first square, in the same
-node order. No rotators are laid down under steal.
+section 6's weighted rule — the same anchor, the same nudge away from every
+other node — but over rules.md §3.2's **strict** pool instead of section 6's
+widened one: this is the one exception to section 6, and it keeps the
+opening deal's prospective squares off the board's two outermost rows and
+columns wherever the board leaves room. Only when the strict pool is empty does the second square fall
+back to section 6's widened pool, and only when that too is empty to §3.2's
+own fallback, exactly as section 6 already provides. Every draw made once
+play is under way — a claim's or an abandon's fresh square — is unaffected,
+and keeps drawing from section 6's widened pool. No rotators are laid down
+under steal.
 
 ## 8. What rules.md section 8 does not do under steal
 

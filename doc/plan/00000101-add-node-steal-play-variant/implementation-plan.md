@@ -459,7 +459,8 @@ edited by this plan.
 | 9    | The live region says a node was taken or given up                  | automated    |
 | 10   | The Quick Guide's STEALING NODES section                           | manual       |
 | 11   | `README.md`                                                        | automated    |
-| 12   | The owner plays STEAL                                              | manual       |
+| 12   | The opening deal keeps second squares off the outer two rings      | automated    |
+| 13   | The owner plays STEAL                                              | manual       |
 
 ---
 
@@ -1619,7 +1620,158 @@ as node playstyle with steal among its settings, and
 
 ---
 
-### Step 12 — The owner plays STEAL
+### Step 12 — The opening deal keeps second squares off the outer two rings
+
+Status: committed
+
+Notes: `steal.md` §7 now says the opening deal's second square is drawn by
+§6's weighted rule over rules.md §3.2's **strict** pool, falling back to §6's
+widened pool (and from there to §3.2's own fallback) only where the board
+leaves no strict square; §6 gained a one-line pointer to this exception. No
+new version: folded into the existing 0.39 `changelog.md` entry's `steal.md`
+summary bullet, per the one-bump-per-branch rule; `RULES_VERSION` and
+`rulesVersion.test.ts` untouched. Code: `nodePlacement.ts`'s `legalNodePool`
+was split into two private helpers, `constrainedNodePool` (the six-constraint
+filter at a given ring exclusion, no fallback) and `universalFallbackPool`
+(§3.2's own fallback), which `legalNodePool` now composes exactly as before —
+no behaviour change to any existing caller. A new
+`drawStealOpeningProspectiveSquare` tries `constrainedNodePool` at the strict
+exclusion first and only calls `legalNodePool(..., "widened")` (which itself
+falls to the universal fallback) when that is empty, weighting either pool by
+the unchanged `stealProspectiveWeight`; `steal.ts`'s `dealStealOpeningBoard`
+calls it in place of `drawStealProspectiveSquare` for every signal's second
+square, leaving the first-square draw, `claimNode` and `abandonNode`
+untouched (they keep drawing from the widened pool, unaffected). Re-measured
+against the real code (an improvised, uncommitted script in the scratchpad,
+20,000 deals per node count at the default fleet, plus 20,000 more at the
+largest fleet and five nodes for the worst case, plus ten seeded games up to
+2,000 plies each for the mid-game figures): the opening deal's mean distance
+between a node's two squares is now 5.47 / 5.52 / 5.53 at three, four and
+five nodes (down from 6.73 / 6.82 / 6.91 when the second square drew from the
+widened pool), the second square never once landed in the outer two rings at
+any node count or fleet size — including the worst case — and mid-game draws
+(a claim's or an abandon's fresh square, still widened-pool, still
+edge-halved) average a distance of 7.88 from their anchor with 27% landing on
+the outer edge. Recorded in `doc/ruleset/tech-notes.md`'s "Placing
+prospective nodes under steal" section, split into an opening-deal table and
+a new mid-game table, and `story.md`'s placement-figures table and opening
+deal prose corrected in place to the same figures, with a short note on why
+the change was made (rings on the rim while the middle sat empty).
+`stealPlacement.test.ts` was restructured to match: the per-node-count
+distance-band test now checks only the opening deal's mean distance (the
+edge-share figure it used to check no longer means anything once it is zero
+by construction) and asserts both opening squares sit in the strict interior
+at the default fleet; a new `describe.each` block asserts no opening square,
+first or second, ever lands in the outer two rings, at every node count
+**and every fleet size** (3–6 a side, not just the default and the largest,
+since the check is cheap) over 300 deals per combination; a new "claim and
+abandon draws' placement figures" block measures the mid-game distance and
+edge-share bands directly, reusing the existing greedy policy; the two
+existing worst-case "fallback never fires" blocks are untouched and still
+pass. `nodePlacement.test.ts` gained five cases for
+`drawStealOpeningProspectiveSquare`: draws from the strict pool and never the
+outer two rings when it has room; falls back to the widened pool when the
+entire strict pool is occupied (forced by occupying all 51 strict-pool
+squares as nodes, since `legalNodePool`'s own automatic fallback makes
+`shipSquares` alone unable to demonstrate an empty strict tier from outside
+the module — recorded here as the reason the test occupies nodes rather than
+ships); seed-step count; determinism; and an exact weight-formula match over
+the strict pool with four seeds, mirroring the widened draw's own test. No
+existing opening-deal test was pinned to an exact square for a seed, so
+nothing needed to move; the full suite's other steal tests (`steal.test.ts`,
+`gameState.test.ts`, `fullGame.test.ts`, `seededReplay.test.ts`) passed
+unmodified since none of them asserted exact squares either — a deviation
+from the plan's expectation that pinned tests would need updating, recorded
+because the plan called it out explicitly. No other deviation.
+`npm run typecheck`, `npm run lint`, `npm run format:check` (after
+`prettier --write` on `tech-notes.md`, which it flagged) and the full
+`npm test` (80 files, 1646 tests, up from the 1628-test Step 11 baseline by
+18: 5 in `nodePlacement.test.ts`, 13 in `stealPlacement.test.ts`) are all
+green.
+
+Added at Step 12's original play-through gate (now Step 13), from the
+owner's own play: in a STEAL opening, rings turned up out on the board's
+edge and corners even while plenty of the middle stood empty. Each node's
+**first** opening square is already drawn from rules.md §3.2's strict pool
+(steal.md §7), so the stray rings are the **second** squares, which §7
+draws by §6's weighted rule over §6's widened pool — constraints 3 and 4
+lifted, the outer edge and the ring one in from it both allowed. The owner
+wants the opening deal's rings kept out of the outer two rings (rows 1, 2,
+14, 15 and columns A, B, N, O) except as a last resort.
+
+The decision (owner's): **only the opening deal changes.** A node's second
+opening square is drawn by §6's weighted rule — the same two-term weight,
+the same anchor, the same other-node term — but over rules.md §3.2's
+**strict** pool (all six constraints). Only when the strict pool is empty
+does it fall back to §6's widened pool, weighted exactly as today (outer
+edge halved), and only when that too is empty to §3.2's own fallback, as
+§6 already provides. Every prospective square drawn **during play** — the
+fresh square of a claim, the second square of an abandon — is unchanged:
+widened pool, edge halved. The edge halving therefore never matters in the
+opening deal except in the fallback; say nothing more about it.
+
+**Rejected:** applying the strict pool to every prospective draw. The owner
+asked about the opening only, and the mid-game widened pool is what lets a
+stolen node relocate a long way — §6's first term needs room to act.
+
+- **Ruleset.** `doc/ruleset/steal.md` §7: the second opening square is
+  drawn by §6's weighted rule over rules.md §3.2's strict pool, falling back
+  to §6's widened pool (and from there §3.2's fallback) only when no strict
+  square is legal. If §6's opening sentence reads as covering every draw,
+  make it clear the opening deal's second square is §7's exception. This
+  branch already bumped the ruleset to 0.39 (Step 1), and the project's rule
+  is one version bump per branch: **no new version**, no `RULES_VERSION`
+  change — fold the change into `changelog.md`'s existing 0.39 entry, in
+  its `steal.md` summary bullet, as though it had always been so.
+- **Code.** The steal opening deal (Step 4's work; find it from the
+  prospective draw introduced in Step 3 and the opening deal in Step 4 —
+  `src/rules/steal*.ts`) draws each node's second square from the strict
+  pool first, weighted by the existing §6 weight, with the fallbacks above.
+  Keep every draw on the game's seeded generator, and keep the draw order
+  (every first square, then every second square, in node order). Reuse the
+  existing strict-pool and weighting functions rather than duplicating
+  them. Comments cite steal.md §7, and say nothing about how the rule came
+  about.
+- **Tests.** An opening-deal test at every node count and fleet size that
+  no opening prospective square (first or second) lies in the outer two
+  rings, across a batch of seeds; a unit test that, with the strict pool
+  forced empty, the second square still falls back to the widened pool.
+  Existing opening-deal tests pinned to exact squares for a seed will move
+  (the draw now sees a different pool) — update them to the new squares;
+  that is expected, not a regression. Replay tests must stay green.
+- **Placement figures.** `doc/ruleset/tech-notes.md`'s "Placing prospective
+  nodes under steal" section measures the second square's distance and
+  outer-edge share **over opening deals**, which now puts the edge share at
+  (or near) zero by construction. Re-measure with an improvised script over
+  simulated opening deals as before (not committed): the mean distance
+  between a node's two opening squares, and how often the strict pool was
+  empty for a second square (expected: never, at the largest fleet and
+  five nodes). Then measure the outer-edge share and mean distance of the
+  **mid-game** draws — every claim's and abandon's fresh square across a
+  batch of whole games at the default fleet — since that is now where the
+  widened pool and the edge halving actually act. Rewrite the section's
+  table and prose to those figures, keeping it in the same voice; drop the
+  claim that the opening second square lands on the rim about a quarter of
+  the time. Update `src/rules/stealPlacement.test.ts`'s guarded bands to
+  match (opening: distance band, and no square in the outer two rings;
+  mid-game: distance and edge-share bands), keeping the fallback checks.
+- **`story.md`.** Correct its description of the opening deal and its
+  placement-figures table in place to what is now built.
+
+Record the new figures and any pinned squares that moved in Notes.
+
+Depends on: Steps 3–6 (the draw, the opening deal, the placement figures
+and their tests) — everything this step changes.
+
+Verification (automated): `npm run typecheck`, `npm run lint`,
+`npm run format:check` and the full `npm test` green, including the new
+outer-two-rings opening test at every node count and fleet size, and the
+rules-version test unchanged at 0.39. The owner sees the result on the
+board at Step 13.
+
+---
+
+### Step 13 — The owner plays STEAL
 
 Status: pending
 

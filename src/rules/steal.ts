@@ -14,9 +14,11 @@
 //    drawn uniformly from the strict pool by `drawNodeSquare`, each seeing
 //    the squares already placed. N seed steps.
 // 2. Each node's second prospective square, signal 0 through N-1 in turn,
-//    drawn by `drawStealProspectiveSquare`, anchored on that signal's first
-//    square, weighted against every other signal's square placed so far. N
-//    more seed steps.
+//    drawn by `drawStealOpeningProspectiveSquare`, anchored on that signal's
+//    first square, weighted against every other signal's square placed so
+//    far, over rules.md §3.2's strict pool where the board leaves room (only
+//    falling back to the widened pool, or from there to §3.2's own fallback,
+//    when it does not — steal.md §7). N more seed steps.
 //
 // 2N seed steps in total, nothing else.
 //
@@ -30,7 +32,11 @@
 import { ALL_SQUARES, type Square, squareName } from "./board";
 import type { NodeStatus } from "./gameState";
 import type { ChargedNodeCount } from "./nodes";
-import { drawNodeSquare, drawStealProspectiveSquare } from "./nodePlacement";
+import {
+  drawNodeSquare,
+  drawStealOpeningProspectiveSquare,
+  drawStealProspectiveSquare,
+} from "./nodePlacement";
 
 /** A node's identity under steal (steal.md §2): one per node, 0 to 4. */
 export type NodeSignal = 0 | 1 | 2 | 3 | 4;
@@ -234,8 +240,10 @@ export function abandonNode(
  * charged square anywhere. Each signal's first prospective square is drawn
  * uniformly from the strict pool, one at a time, signal 0 through
  * `nodeCount - 1`; then each signal's second is drawn by
- * `drawStealProspectiveSquare`, anchored on the first, weighted against
- * every other signal's square placed so far, in the same order. Exactly
+ * `drawStealOpeningProspectiveSquare`, anchored on the first, weighted
+ * against every other signal's square placed so far, in the same order —
+ * from the strict pool where the board leaves room, keeping the opening
+ * deal's rings off the outer two rings except as a last resort. Exactly
  * `2 * nodeCount` seed steps.
  */
 export function dealStealOpeningBoard(
@@ -267,7 +275,7 @@ export function dealStealOpeningBoard(
     const otherNodeSquares = occupiedNodeSquares.filter(
       (square) => nodes[squareName(square)]?.signal !== signal,
     );
-    const [square, nextSeed] = drawStealProspectiveSquare(
+    const [square, nextSeed] = drawStealOpeningProspectiveSquare(
       occupiedNodeSquares,
       anchor,
       otherNodeSquares,

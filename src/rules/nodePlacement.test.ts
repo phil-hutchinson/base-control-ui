@@ -10,6 +10,7 @@ import {
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import {
   drawNodeSquare,
+  drawStealOpeningProspectiveSquare,
   drawStealProspectiveSquare,
   drawWeightedNodeSquare,
   legalNodePool,
@@ -555,6 +556,134 @@ describe("drawStealProspectiveSquare", () => {
         expectedWeights,
       );
       const [square, nextSeed] = drawStealProspectiveSquare(
+        occupied,
+        anchor,
+        [other],
+        ships,
+        seed,
+      );
+
+      expect(squareName(square)).toBe(squareName(pool[expectedIndex]));
+      expect(nextSeed).toBe(expectedNextSeed);
+    }
+  });
+});
+
+describe("drawStealOpeningProspectiveSquare", () => {
+  it("draws from the strict pool when it is non-empty, never the outer two rings", () => {
+    const anchor = squareAt("H", 8);
+    const strict = legalNodePool([anchor], []);
+
+    let seed = 7;
+    for (let i = 0; i < 200; i++) {
+      const [square, nextSeed] = drawStealOpeningProspectiveSquare(
+        [anchor],
+        anchor,
+        [],
+        [],
+        seed,
+      );
+      seed = nextSeed;
+      expect(strict.map(squareName)).toContain(squareName(square));
+      expect(square.row).not.toBe(1);
+      expect(square.row).not.toBe(15);
+      expect(square.column).not.toBe("A");
+      expect(square.column).not.toBe("O");
+    }
+  });
+
+  it("falls back to the widened pool when the strict pool is empty", () => {
+    // Every strict-pool square held by another node leaves nothing for the
+    // strict interior, so the draw must fall to the widened tier — which
+    // still enforces node and planet adjacency, unlike §3.2's own universal
+    // fallback (`legalNodePool`'s `"strict"` call below shows the
+    // difference: it masks the empty strict tier with that wider, 162-square
+    // fallback, which the draw must not reach here).
+    const anchor = squareAt("H", 8);
+    const occupied = legalNodePool([], []); // the entire 51-square strict pool, anchor included
+    const universalFallback = legalNodePool(occupied, []);
+    const widened = legalNodePool(occupied, [], "widened");
+    expect(widened.length).toBeLessThan(universalFallback.length);
+
+    const [square] = drawStealOpeningProspectiveSquare(
+      occupied,
+      anchor,
+      [],
+      [],
+      13,
+    );
+
+    expect(widened.map(squareName)).toContain(squareName(square));
+  });
+
+  it("advances the seed exactly once", () => {
+    const anchor = squareAt("H", 8);
+    const [, expectedNextSeed] = mulberry32(321);
+    const [, nextSeed] = drawStealOpeningProspectiveSquare(
+      [anchor],
+      anchor,
+      [],
+      [],
+      321,
+    );
+
+    expect(nextSeed).toBe(expectedNextSeed);
+  });
+
+  it("returns the same square and seed for the same inputs", () => {
+    const anchor = squareAt("H", 8);
+    const other = squareAt("C", 3);
+    const occupied = [anchor, other];
+    const others = [other];
+
+    const first = drawStealOpeningProspectiveSquare(
+      occupied,
+      anchor,
+      others,
+      [],
+      55,
+    );
+    const second = drawStealOpeningProspectiveSquare(
+      occupied,
+      anchor,
+      others,
+      [],
+      55,
+    );
+
+    expect(first).toEqual(second);
+  });
+
+  it("weights candidates over the strict pool by the same formula as the widened draw", () => {
+    const anchor = squareAt("H", 8);
+    const other = squareAt("C", 3);
+    // Both candidates sit in the strict pool (two rings in from the edge),
+    // so no halving applies to either.
+    const near = squareAt("F", 6); // d(anchor) = 2, d(other) = 3, weight 5
+    const far = squareAt("J", 4); // d(anchor) = 4, d(other) = 7, weight 11
+    const keep = [near, far];
+    const keepNames = new Set(keep.map(squareName));
+    const occupied = [anchor, other];
+    const ships = legalNodePool(occupied, []).filter(
+      (square) => !keepNames.has(squareName(square)),
+    );
+    const weightBySquare = new Map([
+      [squareName(near), 5],
+      [squareName(far), 11],
+    ]);
+
+    const pool = legalNodePool(occupied, ships);
+    expect(pool.map(squareName).sort()).toEqual(keep.map(squareName).sort());
+    const expectedWeights = pool.map((square) =>
+      weightBySquare.get(squareName(square))!,
+    );
+
+    for (const seed of [999, 12345, 0, 42]) {
+      const [expectedIndex, expectedNextSeed] = drawWeightedIndex(
+        seed,
+        expectedWeights,
+      );
+      const [square, nextSeed] = drawStealOpeningProspectiveSquare(
         occupied,
         anchor,
         [other],

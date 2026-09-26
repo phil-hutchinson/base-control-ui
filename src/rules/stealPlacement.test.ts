@@ -1,18 +1,23 @@
 // A long-run measurement test for steal's prospective-square draw (steal.md
-// §6), in the style of `nodePool.test.ts`: it re-measures story.md's
-// placement figures at the app's default fleet of five a side, and proves
-// separately that rules.md §3.2's fallback never fires even at the largest
-// fleet and five nodes — the worst case for available squares, since that
+// §6, §7), in the style of `nodePool.test.ts`: it re-measures story.md's
+// placement figures, split into the opening deal — which now draws its
+// second square from the strict pool first (steal.md §7) — and mid-game
+// draws, a claim's or an abandon's fresh square, which are the ones the
+// widened pool and the outer-edge halving actually shape. It also proves
+// that rules.md §3.2's own fallback never fires even at the largest fleet
+// and five nodes — the worst case for available squares, since that
 // combination blocks the most of the board.
 //
-// The re-measured figures below (mean distance between a node's two
-// squares, and the share of second squares landing on the outer edge, at
-// three, four and five nodes) come from an improvised 20,000-deal-per-count
-// script run against this code, at the default fleet of five a side, not
-// committed here (doc/plan/00000101-add-node-steal-play-variant,
-// implementation-plan.md, Step 6). They replace story.md's own figures,
-// which were measured before the draw existed; both are recorded in
-// doc/ruleset/tech-notes.md, "Placing prospective nodes under steal".
+// The re-measured figures below come from an improvised measurement script
+// run against this code, at the default fleet of five a side, not committed
+// here (doc/plan/00000101-add-node-steal-play-variant,
+// implementation-plan.md, Step 12). Step 6's original figures, measured
+// before the opening deal preferred the strict pool for its second square,
+// are superseded: the opening deal's edge share was never really the
+// interesting number once the second square stopped landing on the rim by
+// construction, so it is dropped in favour of the mid-game figures, which
+// are new here. Both sets are recorded in doc/ruleset/tech-notes.md,
+// "Placing prospective nodes under steal".
 
 import { describe, expect, it } from "vitest";
 import {
@@ -23,7 +28,7 @@ import {
   squareFromName,
   squareName,
 } from "./board";
-import { DEFAULT_FLEET_SIZE, type ShipId } from "./fleet";
+import { DEFAULT_FLEET_SIZE, FLEET_SIZES, type ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type GameState, startingGameState } from "./gameState";
 import { legalDestinations } from "./movement";
@@ -33,29 +38,35 @@ import { NODE_SIGNALS, type NodeSignal, squaresForSignal } from "./steal";
 import { applyAttack, applyMove, applyPassGuard } from "./ply";
 import { CHARGED_NODE_COUNTS } from "./nodes";
 
-/** How many opening deals the typical-figures measurement draws per node count — enough to be stable, quick enough to stay well under ten seconds. */
+/** How many opening deals the distance-band measurement draws per node count — enough to be stable, quick enough to stay well under ten seconds. */
 const TYPICAL_DEALS = 2_000;
 
+/** How many opening deals the outer-two-rings check draws per node count and fleet size. */
+const OUTER_RINGS_DEALS = 300;
+
 /**
- * The mean distance between a node's two squares, and the share of second
- * squares on the outer edge, at each node count, re-measured over 20,000
- * deals per count at the app's default fleet of five a side (see this
- * file's header). The bands below leave generous margin either side, since
- * this file samples far fewer deals than the script that measured them.
+ * The mean distance between a node's two opening squares, at each node
+ * count, re-measured at the app's default fleet of five a side (see this
+ * file's header). The band below leaves generous margin either side, since
+ * this file samples far fewer deals than the script that measured it.
  */
-const RE_MEASURED_FIGURES: Readonly<
-  Record<
-    3 | 4 | 5,
-    { readonly meanDistance: number; readonly edgeShare: number }
-  >
-> = {
-  3: { meanDistance: 6.73, edgeShare: 0.235 },
-  4: { meanDistance: 6.82, edgeShare: 0.249 },
-  5: { meanDistance: 6.91, edgeShare: 0.263 },
+const OPENING_FIGURES: Readonly<Record<3 | 4 | 5, number>> = {
+  3: 5.47,
+  4: 5.52,
+  5: 5.53,
 };
 
-const DISTANCE_TOLERANCE = 1.2;
-const EDGE_SHARE_TOLERANCE = 0.1;
+const OPENING_DISTANCE_TOLERANCE = 1.0;
+
+/**
+ * The mean distance, and the outer-edge share, of every claim's and
+ * abandon's fresh prospective square during play — the widened pool and the
+ * outer-edge halving's own draw, unaffected by Step 12 — re-measured at five
+ * nodes, the app's default fleet.
+ */
+const MID_GAME_FIGURES = { meanDistance: 7.88, edgeShare: 0.27 };
+const MID_GAME_DISTANCE_TOLERANCE = 1.5;
+const MID_GAME_EDGE_SHARE_TOLERANCE = 0.12;
 
 function columnIndex(square: Square): number {
   return COLUMN_LETTERS.indexOf(square.column);
@@ -79,6 +90,11 @@ function isOuterEdge(square: Square): boolean {
 /** The strict pool's interior — two rings in from the edge or deeper (rules.md §3.2's constraints 3 and 4). */
 function isStrictInterior(square: Square): boolean {
   return distanceFromEdge(square) >= 2;
+}
+
+/** The outer two rings the strict pool excludes (rows 1, 2, 14, 15 and columns A, B, N, O) — the opening deal's second square keeps off these except as a last resort (steal.md §7). */
+function isOuterTwoRings(square: Square): boolean {
+  return !isStrictInterior(square);
 }
 
 function isAdjacent(a: Square, b: Square): boolean {
@@ -131,11 +147,9 @@ function satisfiesOrdinaryPoolConstraints(
 describe.each(CHARGED_NODE_COUNTS)(
   "the steal opening deal's placement figures at %d nodes, the app's default fleet (steal.md §6, §7)",
   (chargedNodeCount) => {
-    it("keeps the mean distance between a node's two squares, and the share landing on the outer edge, within a band around the re-measured figures, with every node's other square inside the strict interior", () => {
-      const figures = RE_MEASURED_FIGURES[chargedNodeCount as 3 | 4 | 5];
+    it("keeps the mean distance between a node's two opening squares within a band around the re-measured figure, with both squares inside the strict interior", () => {
+      const figure = OPENING_FIGURES[chargedNodeCount as 3 | 4 | 5];
       const distances: number[] = [];
-      let onEdgeCount = 0;
-      let pairs = 0;
 
       for (let i = 0; i < TYPICAL_DEALS; i++) {
         const seed = 30_000_000 + chargedNodeCount * 1_000_000 + i;
@@ -155,30 +169,46 @@ describe.each(CHARGED_NODE_COUNTS)(
           const [a, b] = squares;
 
           distances.push(chebyshevDistance(a, b));
-          pairs += 1;
-          if (isOuterEdge(a) || isOuterEdge(b)) {
-            onEdgeCount += 1;
-          }
-          // The first square dealt for every signal is always drawn from
-          // the strict pool (steal.md §7): whichever of the two squares
-          // this is, at least one must sit in the strict interior.
-          expect(isStrictInterior(a) || isStrictInterior(b)).toBe(true);
+          // Both the first square (always drawn from the strict pool) and
+          // the second (steal.md §7's own strict-first draw) sit in the
+          // strict interior at the default fleet — the outer-two-rings
+          // block below checks this holds at every fleet size too.
+          expect(isStrictInterior(a)).toBe(true);
+          expect(isStrictInterior(b)).toBe(true);
         }
       }
 
       const meanDistance = average(distances);
-      const edgeShare = onEdgeCount / pairs;
 
-      expect(meanDistance).toBeGreaterThan(
-        figures.meanDistance - DISTANCE_TOLERANCE,
-      );
-      expect(meanDistance).toBeLessThan(
-        figures.meanDistance + DISTANCE_TOLERANCE,
-      );
-      expect(edgeShare).toBeGreaterThan(
-        figures.edgeShare - EDGE_SHARE_TOLERANCE,
-      );
-      expect(edgeShare).toBeLessThan(figures.edgeShare + EDGE_SHARE_TOLERANCE);
+      expect(meanDistance).toBeGreaterThan(figure - OPENING_DISTANCE_TOLERANCE);
+      expect(meanDistance).toBeLessThan(figure + OPENING_DISTANCE_TOLERANCE);
+    });
+  },
+);
+
+describe.each(CHARGED_NODE_COUNTS)(
+  "the steal opening deal never lands a square in the outer two rings, at %d nodes (steal.md §7)",
+  (chargedNodeCount) => {
+    it.each(FLEET_SIZES)("at fleet size %d a side", (fleetSize) => {
+      for (let i = 0; i < OUTER_RINGS_DEALS; i++) {
+        const seed =
+          60_000_000 + chargedNodeCount * 4_000_000 + fleetSize * 100_000 + i;
+        const state = startingGameState(seed, {
+          chargedNodeCount,
+          fleetSize,
+          nodePlaystyle: "steal",
+          lengthInRounds: 40,
+        });
+
+        for (const signal of NODE_SIGNALS.slice(
+          0,
+          chargedNodeCount,
+        ) as readonly NodeSignal[]) {
+          const [a, b] = squaresForSignal(state.nodes, signal);
+          expect(isOuterTwoRings(a)).toBe(false);
+          expect(isOuterTwoRings(b)).toBe(false);
+        }
+      }
     });
   },
 );
@@ -292,6 +322,97 @@ function chooseStealPlacementPly(
     ? undefined
     : { kind: "move", shipId: best.shipId, destination: best.destination };
 }
+
+describe("the steal claim and abandon draws' placement figures, at 5 nodes, the app's default fleet (steal.md §6)", () => {
+  const MID_GAME_MAX_PLIES = 2_000;
+  const MID_GAME_SEEDS = [
+    70260819, 70260820, 70260821, 70260822, 70260823, 70260824, 70260825,
+    70260826, 70260827, 70260828,
+  ];
+
+  it("keeps the mean distance and the outer-edge share of every claim's and abandon's fresh square within a band around the re-measured figures", () => {
+    const distances: number[] = [];
+    let onEdgeCount = 0;
+    let total = 0;
+
+    for (const seed of MID_GAME_SEEDS) {
+      let state = startingGameState(seed, {
+        chargedNodeCount: 5,
+        fleetSize: DEFAULT_FLEET_SIZE,
+        nodePlaystyle: "steal",
+        lengthInRounds: 90,
+      });
+
+      let pliesApplied = 0;
+      while (!isGameOver(state) && pliesApplied < MID_GAME_MAX_PLIES) {
+        pliesApplied += 1;
+        const choice = chooseStealPlacementPly(state);
+
+        if (choice === undefined) {
+          const { state: nextState } = applyPassGuard(state);
+          state = nextState;
+          continue;
+        }
+
+        const result =
+          choice.kind === "attack"
+            ? applyAttack(state, choice.shipId, choice.target)
+            : applyMove(state, choice.shipId, choice.destination);
+
+        if (result.outcome !== "applied") {
+          throw new Error(
+            `policy chose an illegal ${choice.kind}: ${result.reason}`,
+          );
+        }
+        state = result.state;
+
+        for (const effect of result.effects) {
+          if (
+            effect.type !== "node-claimed" &&
+            effect.type !== "node-abandoned"
+          ) {
+            continue;
+          }
+          total += 1;
+          if (isOuterEdge(effect.newProspective)) {
+            onEdgeCount += 1;
+          }
+          // A claim's anchor is the square just charged; an abandon's is
+          // the node's one remaining square (steal.md §6).
+          const anchorSquare =
+            effect.type === "node-claimed"
+              ? effect.square
+              : squaresForSignal(state.nodes, effect.signal).find(
+                  (square) =>
+                    squareName(square) !== squareName(effect.newProspective),
+                );
+          if (anchorSquare !== undefined) {
+            distances.push(
+              chebyshevDistance(anchorSquare, effect.newProspective),
+            );
+          }
+        }
+      }
+    }
+
+    expect(total).toBeGreaterThan(50);
+    const meanDistance = average(distances);
+    const edgeShare = onEdgeCount / total;
+
+    expect(meanDistance).toBeGreaterThan(
+      MID_GAME_FIGURES.meanDistance - MID_GAME_DISTANCE_TOLERANCE,
+    );
+    expect(meanDistance).toBeLessThan(
+      MID_GAME_FIGURES.meanDistance + MID_GAME_DISTANCE_TOLERANCE,
+    );
+    expect(edgeShare).toBeGreaterThan(
+      MID_GAME_FIGURES.edgeShare - MID_GAME_EDGE_SHARE_TOLERANCE,
+    );
+    expect(edgeShare).toBeLessThan(
+      MID_GAME_FIGURES.edgeShare + MID_GAME_EDGE_SHARE_TOLERANCE,
+    );
+  });
+});
 
 describe("the fallback never fires during play either, at the largest fleet and five nodes", () => {
   const MAX_PLIES = 2_000;

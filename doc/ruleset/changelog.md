@@ -29,10 +29,14 @@ the project's contribution notes).
   node draws a second prospective square. When one move does both, leaving
   comes first. A prospective square is drawn from the same widened pool a
   refill's third square uses today, weighted by distance from the node's own
-  anchor and from every other node, with the outer edge's weight halved.
-  There is no countdown, no depletion, no trap, no priority, no rotation, no
-  queue, no refill and no rotator under steal; of the end-of-turn order, only
-  power and energy run.
+  anchor and from every other node, with the outer edge's weight halved — the
+  opening deal's second square is the one exception, drawn by the same
+  weighted rule but over the **strict** pool instead, only falling back to
+  the widened pool (and, from there, to §3.2's own fallback) where the board
+  leaves no strict square, so an opening deal keeps its rings off the outer
+  two rings except as a last resort. There is no countdown, no depletion, no
+  trap, no priority, no rotation, no queue, no refill and no rotator under
+  steal; of the end-of-turn order, only power and energy run.
 - **Section 8** gains an opening sentence: it describes the continuous,
   planet and dedicated playstyles, and under steal a node's rules are
   `steal.md`'s instead.

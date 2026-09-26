@@ -111,7 +111,8 @@ Legality is rules.md §3.2's, with constraints 3 and 4 **both lifted** — the
 same widened pool the third square of a refill uses today. A prospective
 node may therefore appear anywhere that holds no node, holds no ship, is not
 adjacent to a node and is not a planet or beside one, the outer edge and the
-corners included.
+corners included. The opening deal's second square is the one exception —
+see below.
 
 The draw is weighted. For a candidate square `s`, with `a` the node's
 **anchor** — its charged node when it has one, and its remaining prospective
@@ -138,24 +139,33 @@ empty region, and is expected to be irrelevant most of the time.
 today's deal places a charged node: drawn uniformly from the **strict**
 pool, one at a time, each seeing the squares already placed. Once all of
 them are down, each node's second prospective is drawn by the weighted rule
-above. The order is fixed and must not change, because a recorded game
-replays by replaying the seed.
+above — but over the **strict** pool too, the one exception to "where a
+prospective node is drawn" above, falling back to the widened pool (and from
+there to §3.2's own fallback) only where the board leaves no strict square.
+This was added after the first version of this story played: with the second
+square drawn from the widened pool, rings kept turning up out on the board's
+edge and corners while plenty of the middle stood empty, which read as
+wrong at the board. The order is fixed and must not change, because a
+recorded game replays by replaying the seed.
 
 Measured over 20,000 simulated deals against the real board — twelve
-planets, their neighbours, and ships in the way, re-measured against the
-app's default fleet of five a side once the draw was implemented (the
-figures below are the re-measured ones; see `doc/ruleset/tech-notes.md`,
-"Placing prospective nodes under steal"):
+planets, their neighbours, and ships in the way, at the app's default fleet
+of five a side (see `doc/ruleset/tech-notes.md`, "Placing prospective nodes
+under steal"):
 
 | | 3 nodes | 4 nodes | 5 nodes |
 | --- | --- | --- | --- |
-| Deals needing §3.2's spacing fallback | 0 | 0 | 0 |
-| Mean distance between a node's two squares | 6.73 | 6.82 | 6.91 |
-| Second square on the outer edge | 23.5% | 24.9% | 26.3% |
+| Deals needing the strict pool's fallback | 0 | 0 | 0 |
+| Mean distance between a node's two squares | 5.47 | 5.52 | 5.53 |
+| Second square in the outer two rows/columns | 0% | 0% | 0% |
 
-Without the outer-edge halving those last figures are 37.6%, 39.7% and
-41.1%, so the penalty is doing real work: the rim stays available, and stops
-being the likeliest place for a node to end up.
+The outer-edge halving described above therefore has nothing to do during
+the opening deal except in that rare fallback case — it is mid-game draws,
+a claim's or an abandon's fresh square, that it actually shapes: measured at
+five nodes and the default fleet, those average a distance of 7.88 from
+their anchor, with 27% landing on the outer edge — without the halving that
+edge share would be expected to roughly double, as it did when the opening
+deal drew from the widened pool.
 
 ### Signals, and the five colours
 

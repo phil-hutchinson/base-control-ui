@@ -153,55 +153,79 @@ measured at the other counts.
 
 ## Placing prospective nodes under steal
 
-Steal (0.39, [steal.md](steal.md) §6) draws every prospective square's
-partner from the same widened pool a refill's third square uses —
-constraints 3 and 4 both lifted — weighted by distance from the node's own
-anchor plus a small nudge away from every other node, and halves that
-weight on the outer edge. `story.md`'s own table quoted figures measured
-before the draw existed, over an idealised board; the table below replaces
-it, measured over **20,000 simulated opening deals per node count**, at the
-app's default fleet of **five ships a side**, run against the real code (an
+Steal (0.39, [steal.md](steal.md) §6, §7) weights every prospective square's
+partner by distance from the node's own anchor plus a small nudge away from
+every other node, and halves that weight on the outer edge. Every draw made
+once play is under way — a claim's or an abandon's fresh square — comes from
+the same widened pool a refill's third square uses, constraints 3 and 4 both
+lifted. The opening deal's second square is the one exception (added at Step
+12, from the owner's own play, after rings kept turning up on the board's
+edge and corners while the middle sat empty): it is drawn by the same
+weighted rule, but over the **strict** pool first, falling back to the
+widened pool — and, from there, to §3.2's own fallback — only where the
+board leaves no strict square. `story.md`'s own table quoted figures measured
+before the draw existed, over an idealised board, and then again once the
+opening deal drew its second square from the widened pool; both are
+superseded by the tables below, measured against the real code (an
 improvised script, not committed — see
 `doc/plan/00000101-add-node-steal-play-variant`, implementation-plan.md,
-Step 6):
+Steps 6 and 12).
 
-|                                            | 3 nodes | 4 nodes | 5 nodes |
-| ------------------------------------------ | ------- | ------- | ------- |
-| Deals needing §3.2's fallback              | 0       | 0       | 0       |
-| Mean distance between a node's two squares | 6.73    | 6.82    | 6.91    |
-| Second square on the outer edge            | 23.5%   | 24.9%   | 26.3%   |
+**The opening deal**, over **20,000 simulated deals per node count**, at the
+app's default fleet of **five ships a side**:
 
-Without the outer-edge halving — the same script, with the halving switched
-off locally — the outer-edge share rises to **37.6%**, **39.7%** and
-**41.1%** respectively: the halving roughly halves the rim's share at every
-count, exactly as intended, without eliminating it. The mean distance moves
-only slightly without the halving (6.99, 7.11, 7.18), since the halving only
-discounts a square that would otherwise already tend to win on distance
-alone.
+|                                             | 3 nodes | 4 nodes | 5 nodes |
+| ------------------------------------------- | ------- | ------- | ------- |
+| Deals needing the strict pool's fallback    | 0       | 0       | 0       |
+| Mean distance between a node's two squares  | 5.47    | 5.52    | 5.53    |
+| Second square in the outer two rows/columns | 0%      | 0%      | 0%      |
 
-These figures sit close to `story.md`'s original estimate on distance
-(6.8–7.0) but visibly lower on the edge share (which the story quoted at
-29–33%, and 43–45% unhalved): the story's figures were measured before the
-draw existed, over an idealised board rather than the real one, including
-the app's own fleet of five ships in the way, which blocks some of the rim.
-`story.md`'s table has been corrected in place to the figures above, per
-this project's rule that the story records what was actually built.
+The outer-two-rings share is zero by construction wherever the strict pool
+has room, which the fallback count shows is everywhere this script tried,
+including the worst case for available squares — the largest fleet, six
+ships a side, and the most nodes, five, checked the same way over a further
+20,000 deals: the strict pool was never once empty for a second square
+there either. The mean distance moves only slightly from Step 6's own
+widened-pool figures (6.73, 6.82, 6.91), since the strict pool is a large
+majority of the widened one and the weighting formula is unchanged — the
+distance the opening deal produces was never really about which pool it
+drew from, only the outer-edge share was, and that share is now zero at the
+opening rather than roughly a quarter.
 
-**The fallback never fires.** Across every one of the 20,000 deals per
-count above, and separately confirmed by re-implementing §3.2's ordinary
-constraints independently of `legalNodePool` (so a bug in that function
-could not hide a fallback firing from the count), no square anywhere needed
-the fallback. The worst case for available squares — the largest fleet, six
-ships a side, and the most nodes, five — was checked the same way over a
-further 2,000 opening deals, and separately across a handful of whole
-games played at that fleet size and node count: every claim's and every
-abandon's fresh prospective square, across every claim and abandon those
-games produced, also cleared the ordinary constraints. The fallback firing
-mid-game was never observed either.
+**Mid-game draws** — every claim's and every abandon's fresh square, which
+still draw from the widened pool exactly as before — over ten seeded
+40-round-plus games at five nodes, the default fleet:
 
-**What the app guards:** `src/rules/stealPlacement.test.ts` re-measures the
-mean distance and the outer-edge share at all three node counts, at the
-default fleet, and keeps them within a generous band around the figures
-above; separately, at the largest fleet and five nodes, it confirms the
-fallback never fires, both across a batch of opening deals and across a
-batch of whole games' worth of claims and abandons.
+|                                | Figure |
+| ------------------------------ | ------ |
+| Mean distance from the anchor  | 7.88   |
+| Fresh square on the outer edge | 27%    |
+
+This is close to Step 6's own combined figure (mean distance around 6.9,
+edge share around a quarter) but a little higher on both: a mid-game draw's
+occupied board — nodes and ships scattered from a live game rather than an
+empty one — pushes candidates further out on average than an opening deal
+does. Without the outer-edge halving the edge share would be expected to
+roughly double, as Step 6 found; this run does not re-check that, since the
+halving itself is unchanged from Step 6's measurement.
+
+`story.md`'s placement table has been corrected in place to the figures
+above, per this project's rule that the story records what was actually
+built.
+
+**The fallback never fires.** Across every deal and every game these scripts
+ran, and separately confirmed by re-implementing §3.2's ordinary constraints
+independently of `legalNodePool` (so a bug in that function could not hide a
+fallback firing from the count), no square anywhere needed §3.2's own
+fallback — at the opening or mid-game, at the default fleet or the largest
+one. The fallback firing mid-game was never observed either.
+
+**What the app guards:** `src/rules/stealPlacement.test.ts` keeps the
+opening deal's mean distance within a generous band around the re-measured
+figure at all three node counts, at the default fleet, and separately
+proves that no opening square, first or second, ever lands in the outer two
+rings, at every node count and every fleet size; it keeps the mid-game
+draws' mean distance and outer-edge share within a band around their own
+re-measured figures; and, at the largest fleet and five nodes, it confirms
+§3.2's own fallback never fires, both across a batch of opening deals and
+across a batch of whole games' worth of claims and abandons.
