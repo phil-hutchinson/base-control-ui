@@ -1064,7 +1064,53 @@ Verification (automated): the full suite is green with the new cases.
 
 ### Step 6 — Whole STEAL games, replay, and the placement figures
 
-Status: pending
+Status: committed
+
+Notes: `fullGame.test.ts` — extended `choosePly`'s node-seeking step and
+`distanceToNearestChargedOrInactive` to treat a `"prospective"` square as a
+landable/target node (harmless to the other three playstyles, since that
+state only ever appears under steal); added an `onEffects` hook to
+`PlayFullGameOptions`; added `assertStealNodeInvariants` (each of the game's
+signals always has exactly two squares, charged+prospective or two
+prospective, level always 0, no rotator ever laid down) and a new
+`describe.each(CHARGED_NODE_COUNTS)` × `it.each([true, false])` block playing
+hundred-round steal games at both combat settings, proving the invariant
+holds at every ply, at least one claim and one steal happened (not vacuous),
+no `ship-trapped` effect was ever raised, and each side's energy total only
+ever rose. Reworded `assertNoInactiveOrDepletedNodes`'s comment, stale since
+Step 5 (it still said claiming was refused). `seededReplay.test.ts` — added
+the 0.39 seed-stream paragraph; a local `chooseStealPly` (attack first, then
+the nearest prospective square) and `playSeededStealGame`, recording the
+opening board and the ordered sequence of `node-claimed`/`node-abandoned`
+events; a new describe block proving a forty-round steal game is not vacuous
+(≥10 claims, ≥5 steals, ≥5 abandons, ≥1 fight, this run's own measured
+40/22/15/8), replays identically from the same seed and diverges from a
+different one. `stealPlacement.test.ts` (new) re-measures the mean distance
+between a node's two squares and the outer-edge share at each node count
+over 2,000 deals a count at the default fleet (five a side), banded around
+figures re-measured by an improvised, uncommitted 20,000-deals-per-count
+script in the scratchpad; separately proves the fallback never fires at the
+worst case (six a side, five nodes) — 2,000 opening deals, and a handful of
+whole games (3 seeds, up to 2,000 plies each) checking every claim's and
+abandon's fresh prospective square, 287 events checked, fallback never
+fired — using an ordinary-constraint check reimplemented independently of
+`legalNodePool`, mirroring `nodePool.test.ts`'s own argument. The typical and
+worst-case sections use many independently seeded single-shot deals rather
+than `nodePool.test.ts`'s small fixed `SEEDS` array run long — a deliberate
+difference, not an oversight: steal's opening-deal geometry has no long-run
+economy to drive, so many independent deals are the natural way to get a
+stable mean, where the queue's figures need sustained play instead. The
+re-measured figures differ from `story.md`'s pre-implementation estimates by
+more than rounding, especially the edge-share figures (off by 5–7 points,
+since the story's idealised measurement did not account for the app's own
+five-ship fleet blocking part of the rim): `story.md`'s table is corrected in
+place to the re-measured figures, and both the story's and code's numbers,
+plus the argument and the worst-case finding, are recorded in
+`doc/ruleset/tech-notes.md`'s new "Placing prospective nodes under steal"
+section. No other deviation from the plan. `npm run typecheck`,
+`npm run lint`, `npm run format:check` and the full `npm test` (80 files,
+1590 tests, up from the 1576-test baseline by 14: 6 in `fullGame.test.ts`, 3
+in `seededReplay.test.ts`, 5 in `stealPlacement.test.ts`) are all green.
 
 Prove STEAL end to end at the rules level and record the placement figures.
 

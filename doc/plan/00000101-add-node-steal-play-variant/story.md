@@ -142,19 +142,20 @@ above. The order is fixed and must not change, because a recorded game
 replays by replaying the seed.
 
 Measured over 20,000 simulated deals against the real board — twelve
-planets, their neighbours, and ships in the way (the figures are re-measured
-against the app's default fleet of five a side once the draw is implemented,
-and the re-measured figures are the ones recorded):
+planets, their neighbours, and ships in the way, re-measured against the
+app's default fleet of five a side once the draw was implemented (the
+figures below are the re-measured ones; see `doc/ruleset/tech-notes.md`,
+"Placing prospective nodes under steal"):
 
 | | 3 nodes | 4 nodes | 5 nodes |
 | --- | --- | --- | --- |
 | Deals needing §3.2's spacing fallback | 0 | 0 | 0 |
-| Mean distance between a node's two squares | 6.8 | 6.9 | 7.0 |
-| Second square on the outer edge | 29% | 31% | 33% |
+| Mean distance between a node's two squares | 6.73 | 6.82 | 6.91 |
+| Second square on the outer edge | 23.5% | 24.9% | 26.3% |
 
-Without the outer-edge halving those last figures are 43%, 44% and 45%, so
-the penalty is doing real work: the rim stays available, and stops being the
-likeliest place for a node to end up.
+Without the outer-edge halving those last figures are 37.6%, 39.7% and
+41.1%, so the penalty is doing real work: the rim stays available, and stops
+being the likeliest place for a node to end up.
 
 ### Signals, and the five colours
 

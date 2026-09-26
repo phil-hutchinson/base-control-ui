@@ -148,3 +148,60 @@ other number in the rules, and are now measured at all three charged
 counts. The edge, one-ring and corner figures remain measured at four
 charged only, and are expected to move only slightly once they are
 measured at the other counts.
+
+---
+
+## Placing prospective nodes under steal
+
+Steal (0.39, [steal.md](steal.md) §6) draws every prospective square's
+partner from the same widened pool a refill's third square uses —
+constraints 3 and 4 both lifted — weighted by distance from the node's own
+anchor plus a small nudge away from every other node, and halves that
+weight on the outer edge. `story.md`'s own table quoted figures measured
+before the draw existed, over an idealised board; the table below replaces
+it, measured over **20,000 simulated opening deals per node count**, at the
+app's default fleet of **five ships a side**, run against the real code (an
+improvised script, not committed — see
+`doc/plan/00000101-add-node-steal-play-variant`, implementation-plan.md,
+Step 6):
+
+|                                            | 3 nodes | 4 nodes | 5 nodes |
+| ------------------------------------------ | ------- | ------- | ------- |
+| Deals needing §3.2's fallback              | 0       | 0       | 0       |
+| Mean distance between a node's two squares | 6.73    | 6.82    | 6.91    |
+| Second square on the outer edge            | 23.5%   | 24.9%   | 26.3%   |
+
+Without the outer-edge halving — the same script, with the halving switched
+off locally — the outer-edge share rises to **37.6%**, **39.7%** and
+**41.1%** respectively: the halving roughly halves the rim's share at every
+count, exactly as intended, without eliminating it. The mean distance moves
+only slightly without the halving (6.99, 7.11, 7.18), since the halving only
+discounts a square that would otherwise already tend to win on distance
+alone.
+
+These figures sit close to `story.md`'s original estimate on distance
+(6.8–7.0) but visibly lower on the edge share (which the story quoted at
+29–33%, and 43–45% unhalved): the story's figures were measured before the
+draw existed, over an idealised board rather than the real one, including
+the app's own fleet of five ships in the way, which blocks some of the rim.
+`story.md`'s table has been corrected in place to the figures above, per
+this project's rule that the story records what was actually built.
+
+**The fallback never fires.** Across every one of the 20,000 deals per
+count above, and separately confirmed by re-implementing §3.2's ordinary
+constraints independently of `legalNodePool` (so a bug in that function
+could not hide a fallback firing from the count), no square anywhere needed
+the fallback. The worst case for available squares — the largest fleet, six
+ships a side, and the most nodes, five — was checked the same way over a
+further 2,000 opening deals, and separately across a handful of whole
+games played at that fleet size and node count: every claim's and every
+abandon's fresh prospective square, across every claim and abandon those
+games produced, also cleared the ordinary constraints. The fallback firing
+mid-game was never observed either.
+
+**What the app guards:** `src/rules/stealPlacement.test.ts` re-measures the
+mean distance and the outer-edge share at all three node counts, at the
+default fleet, and keeps them within a generous band around the figures
+above; separately, at the largest fleet and five nodes, it confirms the
+fallback never fires, both across a batch of opening deals and across a
+batch of whole games' worth of claims and abandons.
