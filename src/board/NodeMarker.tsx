@@ -28,11 +28,12 @@
 import type { CSSProperties } from "react";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
+import type { NodeSignal } from "../rules/steal";
 import type {
   NodeBurnoutAnimation,
   NodeChargeAnimation,
 } from "./boardAnimations";
-import { INACTIVE_RING_COLOR } from "./squareArt";
+import { INACTIVE_RING_COLOR, SIGNAL_COLORS } from "./squareArt";
 import "./NodeMarker.css";
 
 interface NodeMarkerProps {
@@ -51,6 +52,15 @@ interface NodeMarkerProps {
    * that many concentric rings. Ignored for a charged or depleted node.
    */
   readonly priority?: NodePriority;
+  /**
+   * The signal a steal node carries (steal.md §2), present only under steal.
+   * A prospective marker always has one, drawn as its rings' colour; a
+   * charged marker with one draws the smaller steal ball in its colours
+   * instead of today's gold artwork. Ignored for an inactive or depleted
+   * marker, and for a prospective marker falls back to the ordinary ring
+   * colour when absent.
+   */
+  readonly signal?: NodeSignal;
   /**
    * Present while this square's node is playing its inactive-to-charged
    * animation (`boardAnimations.ts`). Ignored unless `state` is `"charged"`.
@@ -107,6 +117,12 @@ function middleStopOffsetPercent(
 const INACTIVE_RING_RADII: readonly number[] = [18, 28, 38];
 const INACTIVE_RING_STROKE_WIDTH = 5;
 
+// A steal node's charged ball is smaller than the other playstyles' (steal.md
+// §2), so that several coloured balls on one board read as marks rather than
+// a wash of colour. A starting value for the owner's eye, not a measured
+// result.
+const STEAL_CHARGED_BALL_RADIUS = 48;
+
 // The charge animation's round mask, at its smallest, in the marker's own
 // 0-100 units - about the size of the charged gradient's gold core. A
 // starting value for the owner's eye, not a measured result.
@@ -114,14 +130,36 @@ const CHARGE_MASK_START_RADIUS = 20;
 
 /** Radii, gradient stops, colours and opacities for the two clocked states, taken from
  * doc/plan/00000023-update-node-visual/node-artwork.md exactly as specified
- * there. One artwork per clocked state; the exhaustive switch has no
- * default, so a new clocked state is a compile error rather than a silent
- * gap. Inactive is drawn separately, as rings, by `NodeMarker` itself.
+ * there, except that a charged node carrying a steal signal (steal.md §2)
+ * draws the smaller steal ball in its signal's colours instead. One artwork
+ * per clocked state; the exhaustive switch has no default, so a new clocked
+ * state is a compile error rather than a silent gap. Inactive and
+ * prospective are drawn separately, as rings, by `NodeMarker` itself.
  */
 function nodeArtwork(
   state: "charged" | "depleted",
   cyclePosition: number | undefined,
+  signal?: NodeSignal,
 ): NodeStateArtwork {
+  if (state === "charged" && signal !== undefined) {
+    const { core, rim } = SIGNAL_COLORS[signal];
+    return {
+      radius: STEAL_CHARGED_BALL_RADIUS,
+      stops: [
+        { offsetPercent: 0, color: core, opacity: 1 },
+        {
+          offsetPercent: middleStopOffsetPercent(
+            CHARGED_START_OFFSET_PERCENT,
+            CHARGED_END_OFFSET_PERCENT,
+            cyclePosition,
+          ),
+          color: core,
+          opacity: 0.7,
+        },
+        { offsetPercent: 100, color: rim, opacity: 1 },
+      ],
+    };
+  }
   switch (state) {
     case "charged":
       return {
@@ -165,6 +203,7 @@ export function NodeMarker({
   squareName,
   cyclePosition,
   priority,
+  signal,
   chargeAnimation,
   burnoutAnimation,
 }: NodeMarkerProps) {
@@ -196,9 +235,12 @@ export function NodeMarker({
 
   if (state === "prospective") {
     // A prospective node (steal.md §2) always shows all three rings — there
-    // are no priorities under steal to distinguish. Drawn in the same
-    // colour as today's inactive node for now; steal.md's signals are shown
-    // as colours of their own elsewhere in the board view.
+    // are no priorities under steal to distinguish — in its signal's colour.
+    // A marker rendered without one (no real prospective node lacks a
+    // signal) falls back to the ordinary ring colour rather than drawing
+    // nothing.
+    const ringColor =
+      signal === undefined ? INACTIVE_RING_COLOR : SIGNAL_COLORS[signal].core;
     return (
       <svg
         className={`node-marker node-marker--${state}`}
@@ -212,7 +254,7 @@ export function NodeMarker({
             cy={50}
             r={radius}
             fill="none"
-            stroke={INACTIVE_RING_COLOR}
+            stroke={ringColor}
             strokeWidth={INACTIVE_RING_STROKE_WIDTH}
           />
         ))}
@@ -220,7 +262,7 @@ export function NodeMarker({
     );
   }
 
-  const { radius, stops } = nodeArtwork(state, cyclePosition);
+  const { radius, stops } = nodeArtwork(state, cyclePosition, signal);
   // SVG ids are document-global, and several node markers are drawn into
   // one document at once, so the gradient id carries the square's own name.
   const gradientId = `node-${squareName}-fill`;

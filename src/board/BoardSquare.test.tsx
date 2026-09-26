@@ -10,6 +10,7 @@ import type {
 } from "./boardAnimations";
 import { BoardSquare } from "./BoardSquare";
 import { PLANET_ART } from "./planetArt";
+import { SIGNAL_COLORS } from "./squareArt";
 import {
   GAUGE_BAR_LENGTH,
   GAUGE_BAR_STROKE_WIDTH,
@@ -98,6 +99,23 @@ describe("BoardSquare", () => {
     expect(markerIndex).toBeGreaterThanOrEqual(0);
     expect(shipIndex).toBeGreaterThanOrEqual(0);
     expect(markerIndex).toBeLessThan(shipIndex);
+  });
+
+  it("passes a steal node's signal through to its marker (steal.md §2)", () => {
+    const { container } = render(
+      <BoardSquare
+        isPlanet={false}
+        squareName="H8"
+        nodeState="prospective"
+        signal={2}
+      />,
+    );
+
+    const circles = container.querySelectorAll(".node-marker circle");
+    expect(circles.length).toBeGreaterThan(0);
+    for (const circle of circles) {
+      expect(circle).toHaveAttribute("stroke", SIGNAL_COLORS[2].core);
+    }
   });
 
   it("draws the countdown number after the ship, in black on a charged node", () => {

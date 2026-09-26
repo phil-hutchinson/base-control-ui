@@ -5,11 +5,13 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
+import { NODE_SIGNALS } from "../rules/steal";
 import type {
   NodeBurnoutAnimation,
   NodeChargeAnimation,
 } from "./boardAnimations";
 import { NodeMarker } from "./NodeMarker";
+import { SIGNAL_COLORS } from "./squareArt";
 
 afterEach(cleanup);
 
@@ -296,6 +298,59 @@ describe("NodeMarker", () => {
 
       expect(container.querySelector("radialGradient")).not.toBeInTheDocument();
       expect(container.querySelector("defs")).not.toBeInTheDocument();
+    });
+
+    it.each(NODE_SIGNALS)("draws its rings in signal %s's colour", (signal) => {
+      const { container } = render(
+        <NodeMarker
+          state="prospective"
+          squareName={SQUARE_NAME}
+          signal={signal}
+        />,
+      );
+
+      const circles = container.querySelectorAll("circle");
+      expect(circles).toHaveLength(INACTIVE_RING_RADII.length);
+      for (const circle of circles) {
+        expect(circle).toHaveAttribute("stroke", SIGNAL_COLORS[signal].core);
+      }
+    });
+  });
+
+  describe("a charged node's steal ball (steal.md §2)", () => {
+    it.each(NODE_SIGNALS)(
+      "draws signal %s's ball at the smaller steal radius, with its gradient stops",
+      (signal) => {
+        const { container } = render(
+          <NodeMarker
+            state="charged"
+            squareName={SQUARE_NAME}
+            signal={signal}
+          />,
+        );
+
+        const circle = container.querySelector("circle");
+        expect(circle).toHaveAttribute("r", "48");
+
+        const { core, rim } = SIGNAL_COLORS[signal];
+        const stops = container.querySelectorAll("stop");
+        expect(stops).toHaveLength(3);
+        expect(stops[0]).toHaveAttribute("stop-color", core);
+        expect(stops[0]).toHaveAttribute("stop-opacity", "1");
+        expect(stops[1]).toHaveAttribute("stop-color", core);
+        expect(stops[1]).toHaveAttribute("stop-opacity", "0.7");
+        expect(stops[2]).toHaveAttribute("stop-color", rim);
+        expect(stops[2]).toHaveAttribute("stop-opacity", "1");
+      },
+    );
+
+    it("draws today's radius and colours exactly when no signal is given", () => {
+      const { container } = render(
+        <NodeMarker state="charged" squareName={SQUARE_NAME} />,
+      );
+
+      const circle = container.querySelector("circle");
+      expect(circle).toHaveAttribute("r", EXPECTED_ARTWORK.charged.radius);
     });
   });
 

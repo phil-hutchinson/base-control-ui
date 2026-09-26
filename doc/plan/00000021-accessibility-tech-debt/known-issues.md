@@ -411,3 +411,23 @@ event is not silently lost — what is missing is the standing state between
 events, which nothing but the panel carries.
 
 Where: `src/bonus/PlanetBonusPanel.tsx`.
+
+## From story 101 — Steal: a fourth node playstyle
+
+Source: `doc/plan/00000101-add-node-steal-play-variant/implementation-plan.md`
+decision D9, Step 7.
+
+### 1. A signal is told apart by colour alone
+
+Under the steal playstyle, a node is a signal shown as a colour (steal.md
+§2), and which prospective square belongs to which node is carried by that
+colour alone: there is no shape, number or letter distinguishing one signal
+from another, and no highlight pairing a prospective square with the node it
+threatens. The accessible grid's square labels do not help either — a square
+reads only "prospective node" or "charged node", with nothing saying which
+node. A screen-reader user, or a player who cannot separate the five colours,
+has no way to tell which of the board's prospective squares threatens which
+held node.
+
+Where: `src/board/NodeMarker.tsx`, `src/board/squareArt.ts`,
+`src/board/squareLabel.ts`.

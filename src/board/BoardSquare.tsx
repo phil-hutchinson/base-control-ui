@@ -31,6 +31,7 @@ import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
+import type { NodeSignal } from "../rules/steal";
 import type { PowerLevel } from "../rules/power";
 import type { SquareAnimation } from "./boardAnimations";
 import { ShipModel } from "../ships/ShipModel";
@@ -55,6 +56,8 @@ export interface BoardSquareProps {
   readonly nodeState?: NodeState;
   readonly cyclePosition?: number;
   readonly priority?: NodePriority;
+  /** The signal a steal node carries (steal.md §2), present only under steal. */
+  readonly signal?: NodeSignal;
   /**
    * Whether the square holds a rotator (rules.md §3.3), independent of
    * `nodeState` and `isPlanet` — a square is at most one of the three, but
@@ -225,6 +228,7 @@ export function BoardSquare({
   nodeState,
   cyclePosition,
   priority,
+  signal,
   hasRotator,
   countdownNumber,
   occupant,
@@ -264,6 +268,7 @@ export function BoardSquare({
           squareName={squareName}
           cyclePosition={cyclePosition}
           priority={priority}
+          signal={signal}
           chargeAnimation={chargeAnimation}
           burnoutAnimation={burnoutAnimation}
         />

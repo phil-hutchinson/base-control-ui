@@ -1178,7 +1178,46 @@ step's Notes.
 
 ### Step 7 — The board presents signals as colours
 
-Status: pending
+Status: committed
+
+Notes: Added `SignalColors` (`core`/`rim`) and the ordered `SIGNAL_COLORS`
+palette (gold, silver, mid blue, purple, off white, at the plan's starting
+values) plus a `signalColors` accessor to `src/board/squareArt.ts`.
+`NodeMarker.tsx` gained an optional `signal` prop: a prospective marker draws
+its three rings in the signal's core colour when given one, falling back to
+`INACTIVE_RING_COLOR` when not (so the pre-existing state-iteration tests that
+render a prospective marker with no signal stay green unmodified); `charged`
+now resolves through `nodeArtwork`'s widened signature (state, cyclePosition,
+optional signal), which special-cases a charged square carrying a signal to
+the new `STEAL_CHARGED_BALL_RADIUS` (48) and the signal's core/rim gradient
+stops before falling through to today's gold artwork when no signal is given
+— today's charged/depleted rendering is provably untouched, since neither
+gains a code path that can run without a `NodeSignal` being passed in, and no
+existing caller passes one. `BoardSquareProps` gained the same optional
+`signal`, threaded straight to `NodeMarker`; `Board.tsx` reads
+`nodeStatus?.signal` and passes it down alongside the existing `nodeState` and
+`priority`, the same way `priority` is already read from the square's
+`NodeStatus`. Added a "From story 101" section to
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md` (appended after
+the story-97 section, matching the file's append-in-implementation-order
+convention rather than numeric story order) recording the colour-alone gap
+per D9/S12. Test additions: `NodeMarker.test.tsx` gained a per-signal
+prospective-ring-colour case and a per-signal charged-ball case (radius 48,
+core/rim stops) plus one case confirming a signal-less charged marker still
+draws today's radius; `BoardSquare.test.tsx` gained one case that a signal
+passed to `BoardSquare` reaches its marker's rings; `Board.test.tsx` gained a
+`stateWithStealNodes` helper (mirroring the existing `stateWithNode` /
+`stateWithRotators` pattern) and a new describe block covering a prospective
+node's per-signal ring colour, a charged steal node's radius-48 ball with no
+countdown number rendered, and that a steal square's accessible name states
+only "prospective node" / "charged node" with no colour or signal in words.
+No deviation from the plan. `npm run typecheck`, `npm run lint`,
+`npm run format:check` (after `prettier --write` on the two touched test
+files it flagged) and the full `npm test` (80 files, 1609 tests, up from the
+1590-test baseline by 19: 11 in `NodeMarker.test.tsx`, 1 in
+`BoardSquare.test.tsx`, 7 in `Board.test.tsx`) are all green; every
+pre-existing `NodeMarker` / `BoardSquare` / `Board` expectation for the other
+three playstyles passed unmodified.
 
 Give STEAL its look, using starting values that Step 8 settles with the
 owner. The other three playstyles' markup must not change (D8).

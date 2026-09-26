@@ -139,6 +139,7 @@ export function Board({ session, onIntent }: BoardProps) {
           nodeStatus && nodeStatus.state === "inactive"
             ? inactivePriority(nodeStatus)
             : undefined;
+        const signal = nodeStatus?.signal;
         const occupant = ship && { side: ship.side, power: ship.power };
         const condition = ship && shipCondition(ship);
         const hasRotator = rotatorSquareNames.has(name);
@@ -164,6 +165,7 @@ export function Board({ session, onIntent }: BoardProps) {
               nodeState={nodeState}
               cyclePosition={cyclePosition}
               priority={priority}
+              signal={signal}
               hasRotator={hasRotator}
               countdownNumber={countdown}
               occupant={occupant}
