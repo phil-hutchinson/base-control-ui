@@ -162,8 +162,10 @@ Vite replaces it at build time with the base-prefixed, hashed asset tags, so
 it must be left root-absolute.
 
 The ruleset lives in this repository at
-[`doc/ruleset/rules.md`](doc/ruleset/rules.md) and is the single source of
-truth. Rule logic in `src/` implements it and never restates or extends it.
+[`doc/ruleset/rules.md`](doc/ruleset/rules.md), together with companion files
+beside it (for example [`doc/ruleset/steal.md`](doc/ruleset/steal.md)), and
+is the single source of truth. Rule logic in `src/` implements it and never
+restates or extends it.
 
 Rules are versioned by a single number, not by parallel folders: a rules change
 rewrites the rule logic in place and bumps `rules.md`'s version and the

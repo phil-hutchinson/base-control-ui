@@ -446,7 +446,30 @@ edited by this plan.
 
 ### Step 1 — The ruleset goes to 0.39: node playstyle, and `steal.md`
 
-Status: pending
+Status: committed
+
+Notes: Wrote `doc/ruleset/steal.md` with its eight numbered sections and the
+"versioned by rules.md" header line; bumped `rules.md`'s version line and
+`RULES_VERSION` to 0.39; renamed section 8.2's choice to "the node
+playstyle" (continuous, planet, dedicated or steal), keeping the three
+existing bullets word for word; added the "except under steal" pointers to
+§1 (both paragraphs), §2 (new Prospective node and Signal entries, plus
+notes on Node, Priority, Rotator, Countdown and Trapped), §3.2, §3.3, §4.1,
+§5, §6, §7, §8.4 and §8.6, and an opening paragraph on §8 itself; renamed
+every "the dedicated/planet/continuous rotation setting" phrase to "the …
+playstyle" throughout, including in §8.6's prose paragraphs; updated §10's
+list. Added one 0.39 changelog entry covering both files, and brought
+`CONTRIBUTING.md`'s ruleset paragraph in line with the companion-file
+wording `CLAUDE.md` already uses. Read-through checks all pass: `steal.md`
+has all eight sections and the header line; every named `rules.md` section
+carries its pointer; `grep -n "rotation setting" doc/ruleset/rules.md` finds
+nothing; `grep -n -i "default\|standard"` finds nothing new in either file;
+`grep -n -i "gold\|silver\|blue\|purple\|white\|colour" doc/ruleset/steal.md`
+finds only the two colour-presentation notes; `steal.md`'s claim and leaving
+rules match `story.md`'s. No deviation from the plan. `npm run typecheck`,
+`npm run lint`, `npm run format:check` (after `prettier --write` reflowed
+`steal.md`'s prose) and the full `npm test` (78 files, 1523 tests) are all
+green, matching the baseline exactly since this step touches no code.
 
 Write the new companion file `doc/ruleset/steal.md`, edit
 `doc/ruleset/rules.md` to point to it, bump `rules.md`'s version line to
