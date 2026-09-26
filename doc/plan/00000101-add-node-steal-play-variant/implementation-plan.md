@@ -1422,7 +1422,31 @@ Node playstyle STEAL and **Charged nodes 5**, and confirms:
 
 ### Step 9 — The live region says a node was taken or given up
 
-Status: pending
+Status: committed
+
+Notes: Added `nodeAbandonedClause` and `nodeClaimedClause` to
+`src/board/announcements.ts`, plus their `…ClauseText` wrappers that pull the
+effect (if any) out of a move's effect list, and wired both into
+`moveSentence` between the existing `node-spent` clause and the planet-bonus
+clause — abandon before claim, matching D6's effect order (they never
+co-occur with `node-spent`, since that effect never fires under steal). The
+claim clause reads its shape off which optional fields the effect carries:
+no `releasedSquare` (an Open node) says only the square taken; a
+`releasedSquare` with no `strandedShip` (a holder relocating its own node,
+the only way a released square ends up empty) says "moves its node from …
+to …"; a `releasedSquare` with a `strandedShip` names the square as no
+longer a node and the stranded side's ship left standing there, adding
+"from {side}" only when the stranded side differs from the claiming side —
+covering the friendly-ship-stranding case Step 5 introduced, which the
+story's own four suggested shapes did not name a wording for. No colour or
+signal is named anywhere, per D9. Six new cases added to
+`announcements.test.ts` matching the four suggested shapes (unheld claim,
+steal, relocation, abandon) plus the combined abandon-then-claim move and the
+same-side strand naming the right side; all pre-existing announcement tests
+for the other three playstyles pass unmodified. No deviation from the plan.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and the full
+`npm test` (80 files, 1625 tests, up from the 1619-test baseline by 6) are
+all green.
 
 Give `node-claimed` and `node-abandoned` player-facing sentences in
 `src/board/announcements.ts`, spoken as part of the move's announcement in
