@@ -23,15 +23,15 @@ export interface SignalColors {
 
 /**
  * How the board presents each steal signal (steal.md §2), indexed by
- * `NodeSignal`: gold, silver, mid blue, purple, off white, in the order a
- * game of N nodes uses its first N signals.
+ * `NodeSignal`: gold, silver, mid blue, purple, brown, in the order a game
+ * of N nodes uses its first N signals.
  */
 export const SIGNAL_COLORS: readonly SignalColors[] = [
   { core: "#DAA520", rim: "#F5DEB3" }, // gold
-  { core: "#D8DCE3", rim: "#FFFFFF" }, // silver
+  { core: "#A9B0BB", rim: "#E4E8EE" }, // silver
   { core: "#3F7FE0", rim: "#B5CFF5" }, // mid blue
   { core: "#8E55D6", rim: "#D6C2F2" }, // purple
-  { core: "#EEE8D0", rim: "#FFFFFF" }, // off white
+  { core: "#94602F", rim: "#D0A77C" }, // brown
 ];
 
 /** The colours signal `s` draws in, for anywhere the board needs both. */

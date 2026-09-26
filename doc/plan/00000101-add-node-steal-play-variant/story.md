@@ -169,20 +169,20 @@ squares share a colour, because that is what the player sees. The game needs fiv
 small, side by side, on a dark board:
 
 **gold**, **silver** — bright and polished, not the dark grey the depleted
-artwork uses today — **mid blue**, **purple**, and **off white**.
+artwork uses today — **mid blue**, **purple**, and **brown**.
 
 The list is ordered, so a four-node game takes the first four and a
-three-node game the first three. Silver and off white are the pair most at
-risk of reading alike, and the exact values are settled by looking at them
-on the board rather than by choosing them here: the implementation carries a
-step whose whole purpose is that back-and-forth with the owner.
+three-node game the first three. Silver is the colour most at risk of
+reading like the other playstyles' depleted grey, and the exact values are
+settled by looking at them on the board rather than by choosing them here:
+the implementation carries a step whose whole purpose is that back-and-forth
+with the owner.
 
-Under STEAL the charged node's ball is also **smaller** than it is today —
-mid-range and leaning small, about 48 against today's 70 in the marker's own
-100-unit square — so that five coloured balls on one board read as marks
-rather than as a wash of colour. That figure is a starting value for the
-owner's eye and is settled in the same step as the colours. The other three
-playstyles keep today's ball exactly.
+Under STEAL the charged node's ball is the **same starting ball** every
+playstyle's freshly charged node uses — the same size, overflowing and
+cropped to the square — in the node's signal's colours instead of gold, and
+it never grows: a steal node has no countdown for it to travel towards. The
+other three playstyles keep today's ball exactly, unaffected by a signal.
 
 ### What STEAL switches off
 
@@ -327,7 +327,12 @@ end of turn that does nothing but pay power and energy.
   square labels, not in the live region.
 - **Prospective nodes always show three rings**; there are no priorities to
   distinguish.
-- **A smaller charged ball** under STEAL, and today's ball everywhere else.
+- **The charged ball**, at the same size every playstyle's own freshly
+  charged node uses, drawn in the node's signal's colours under STEAL and
+  today's colours everywhere else.
+- **Claiming a node plays the same charge animation** a node charging under
+  the other three playstyles already plays: the prospective node's three
+  rings, in the signal's colour, dissolving into the charged ball.
 - **The board**, the accessible grid's square labels, and the live region
   carry the steal: a sentence naming the square taken, the square given up
   and, where there was one, the ship left standing.
@@ -340,10 +345,10 @@ end of turn that does nothing but pay power and energy.
 
 ### 5. The colour and size gate
 
-One step exists purely to settle the palette and the ball size with the
-owner, looking at a running board rather than at a document. It is expected
-to take more than one pass, and it is where silver against off white is
-judged.
+One step exists purely to settle the palette with the owner, looking at a
+running board rather than at a document. It is expected to take more than
+one pass, and it is where silver against the other playstyles' depleted grey
+is judged.
 
 ### 6. The accessibility note
 

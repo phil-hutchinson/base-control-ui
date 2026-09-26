@@ -523,7 +523,7 @@ describe("Board", () => {
       },
     );
 
-    it("draws a charged node's ball at the smaller steal radius, in its signal's colour, with no countdown number", () => {
+    it("draws a charged node's ball at today's starting radius, in its signal's colour, with no countdown number", () => {
       const square = squareAt("H", 8);
       render(
         <Board
@@ -541,7 +541,10 @@ describe("Board", () => {
 
       const cell = screen.getByRole("gridcell", { name: /^H8, charged node/ });
       const circle = cell.querySelector(".node-marker circle");
-      expect(circle).toHaveAttribute("r", "48");
+      expect(circle).toHaveAttribute("r", "70");
+      const stops = cell.querySelectorAll(".node-marker stop");
+      expect(stops[0]).toHaveAttribute("stop-color", SIGNAL_COLORS[3].core);
+      expect(stops[2]).toHaveAttribute("stop-color", SIGNAL_COLORS[3].rim);
       expect(cell.querySelector(".node-countdown")).toBeNull();
     });
 

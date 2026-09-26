@@ -39,10 +39,14 @@ nodes, and its node rules live in a **new companion ruleset file,
 say signal. The app **presents** a signal as a **colour**: a palette mapping
 signal to colour lives in the board view. On the board a prospective square
 is drawn as three rings in its signal's colour, and a charged square under
-STEAL is a **smaller** ball (radius about 48 in the marker's 100-unit box,
-against today's 70) in its signal's colour. No words — ruleset, labels, live
-region — ever name a colour. The other three playstyles look exactly as they
-do today.
+STEAL is today's own starting ball — the same size, radius 70 in the
+marker's 100-unit box — in its signal's colour rather than gold (settled at
+Step 8, superseding an earlier smaller radius-48 ball; see Step 8's Notes).
+Claiming a node plays the same charge animation a node charging under the
+other three playstyles already plays, with the outgoing rings in the
+signal's colour (also Step 8). No words — ruleset, labels, live region —
+ever name a colour. The other three playstyles look exactly as they do
+today.
 
 `story.md` in this folder is the owner's full statement of the change and
 the source of every number in this plan. This plan does not restate its
@@ -195,8 +199,11 @@ it.
   typical figures, and the **largest or smallest fleet** where a worst case
   is being checked (for example the largest fleet, six a side, when checking
   that enough legal squares always exist to place every node).
-- **S16.** No STEAL animations in this story (D7). The start-screen group
-  "Charged nodes" and the `chargedNodeCount` field keep their names (D3).
+- **S16.** No STEAL animations in this story (D7) — **superseded at Step 8**:
+  the owner asked for the existing charge animation to play on a claim once
+  the palette was in front of them; see D7 for what changed. The
+  start-screen group "Charged nodes" and the `chargedNodeCount` field keep
+  their names (D3).
 
 ## Decisions this plan makes
 
@@ -353,23 +360,35 @@ depleting; a queue node charging at the end of a turn) is wrong for STEAL,
 and every listener of them — announcements, animations — would need to
 branch on the playstyle to read them correctly.
 
-### D7. No animations under STEAL in this story
+### D7. STEAL plays the existing charge animation on a claim
 
-The existing charge and burnout animations (`boardAnimations.ts`) are keyed
-to `node-charged`, `node-ran-out` and `node-spent`, none of which a STEAL
-game raises, so a STEAL board simply redraws on each claim and abandon. The
-story does not ask for STEAL animations, and designing them before the
-colours are settled would be wasted work. `boardAnimations.ts` must not
-throw or misbehave on the new effect types; nothing more. (Accepted by the
-owner; a possible follow-up story.)
+**Superseded at Step 8.** As first implemented (Steps 5–7), the existing
+charge and burnout animations (`boardAnimations.ts`) were keyed to
+`node-charged`, `node-ran-out` and `node-spent`, none of which a STEAL game
+raises, so a STEAL board simply redrew on each claim and abandon; the plan
+reasoned that designing STEAL animations before the colours were settled
+would be wasted work. At Step 8, once the palette was in front of the owner,
+the owner asked for the existing charge ("explosion") animation to play on
+`node-claimed` too: `NodeChargeAnimation` (`boardAnimations.ts`) gained an
+optional `signal`, alongside its existing optional `priority`, exactly one of
+which is ever given; `boardAnimations` now also raises one for the square a
+`node-claimed` effect names, carrying that node's `signal`; and
+`NodeMarker`'s charging branch draws its outgoing rings as the prospective
+node's own three, in the signal's colour, when `chargeAnimation.signal` is
+given, instead of `chargeAnimation.priority`'s ring count in gold — revealing
+the signal-coloured charged artwork beneath exactly as the existing animation
+already did for the other three playstyles. Nothing is raised for
+`node-abandoned` or for the square a claim released. No animation is retired
+or changed for continuous, planet or dedicated.
 
 ### D8. How the board knows a charged square is a STEAL one
 
 `Board` looks up the square's `signal` and, when there is one, passes the
 **presentation** down: `BoardSquare` and `NodeMarker` receive the signal,
 and `NodeMarker` resolves it to colours through the board view's palette.
-A charged marker **with** a signal draws the STEAL ball (smaller, palette
-gradient); a charged marker **without** one draws today's artwork byte for
+A charged marker **with** a signal draws today's starting charged shape
+(Step 8: radius 70, fixed at its start-of-cycle offset) in the signal's
+colours; a charged marker **without** one draws today's artwork byte for
 byte. A prospective marker always has a signal. This keeps the other three
 playstyles' markup provably unchanged: nothing they render passes a signal.
 
@@ -1288,7 +1307,80 @@ the other three playstyles passes unmodified.
 
 ### Step 8 — The colour and size gate
 
-Status: pending
+Status: committed
+
+Notes: **Pass 1**, in response to the owner's feedback on Step 7's starting
+artwork. Three changes in kind, all accepted from the owner rather than
+re-decided here:
+
+1. **The charged ball's size is dropped from this gate.** The owner rejected
+   Step 7's smaller radius-48 ball outright: a steal charged node now draws
+   **exactly** the other three playstyles' own starting charged shape —
+   radius 70, overflowing and cropped to the square, its middle gradient
+   stop fixed at `CHARGED_START_OFFSET_PERCENT` (25) — in the signal's core
+   and rim colours, and it never travels with `cyclePosition`, since a steal
+   node has no countdown to travel towards. `STEAL_CHARGED_BALL_RADIUS` is
+   gone. `NodeMarker.tsx`'s `nodeArtwork` now builds both the gold shape and
+   a signal's shape through one shared `chargedShape(core, rim,
+   middleOffsetPercent)` helper, so the two are one shape with different
+   colours and offsets rather than two typed-out balls. `story.md`'s "about
+   48" ball-size passages are corrected in place to say a steal charged node
+   uses the same starting ball as the other three playstyles, in the
+   signal's colours, and never grows.
+2. **A steal claim now plays the existing charge ("explosion") animation**
+   (superseding D7 — see D7, corrected above with what the owner asked for
+   at this step). `NodeChargeAnimation` (`boardAnimations.ts`) gained an
+   optional `signal` alongside its existing optional `priority`; a
+   `node-claimed` effect now produces one for the claimed square, carrying
+   the node's signal; `NodeMarker`'s charging branch draws all three
+   outgoing rings in the signal's colour when given one, instead of
+   `priority`'s ring count in gold, revealing the signal-coloured charged
+   artwork beneath. Nothing is raised for `node-abandoned` or for the
+   square a claim released, as the owner asked. `story.md` carried no "no
+   animations under steal" statement to correct — that reasoning lived only
+   in the plan's D7.
+3. **The palette.** Off white is replaced by a tan-coloured brown (core
+   `#A87A4C`, rim `#DEC4A0`), clearly distinct from gold; silver is darkened
+   from a near-white `#D8DCE3` core / `#FFFFFF` rim to `#A9B0BB` core /
+   `#E4E8EE` rim, so it no longer reads as white. `squareArt.ts`'s palette
+   comment now lists gold, silver, mid blue, purple, brown.
+   `story.md`'s colour list is corrected in place from "off white" to
+   "brown", and its "Silver and off white are the pair most at risk of
+   reading alike" sentence — which no longer names a real pair now that off
+   white is gone — is corrected to name silver against the other
+   playstyles' depleted grey instead, matching this step's own verification.
+
+Rejected in this pass: the radius-48 ball (too small, per point 1 above);
+off white `#EEE8D0` core / `#FFFFFF` rim (too close to white); silver
+`#D8DCE3` core / `#FFFFFF` rim (also read as white). The owner asked for all
+three changes above by direct instruction rather than by approving a
+document first, so there is no separate "what the owner said" to quote
+beyond the changes themselves.
+
+Pass 2: the owner judged the pass-1 brown (core `#A87A4C`, rim `#DEC4A0`)
+too close to gold, and asked for it a little darker while still showing up
+well against the board's dark background. Brown is now core `#94602F`, rim
+`#D0A77C`; the other four colours, the ball and the animation were
+accepted.
+
+Step 7's tests are updated to the new values throughout (`NodeMarker.test.tsx`,
+`boardAnimations.test.ts`, `Board.test.tsx`): the steal-ball cases now assert
+radius 70 and a fixed middle-stop offset, with a new case proving
+`cyclePosition` never moves it; a new `boardAnimations.test.ts` case proves a
+`node-claimed` effect produces a `node-charge` animation carrying the
+signal, and a companion case proves `node-abandoned` produces none; a new
+`NodeMarker.test.tsx` case proves the charging branch draws all three
+outgoing rings in the signal's colour and reveals that signal's charged
+artwork. `SIGNAL_COLORS` itself is imported by the colour-bearing tests
+rather than pinned as literals, so the palette edit needed no further test
+changes beyond the ball-size and animation cases above. Every pre-existing
+test for the other three playstyles passes unmodified. `npm run typecheck`,
+`npm run lint`, `npm run format:check` and the full `npm test` (80 files,
+1619 tests, up from the 1609-test baseline by 10) are all green.
+
+Not yet done: the owner's own visual re-check of this pass, which is why
+this step's Status is `implemented` and not `committed` — a further pass may
+follow if the re-check finds something to change.
 
 Settle the five colours and the steal ball's radius with the owner, looking
 at a running board (S11). Expect more than one pass. Only the palette
@@ -1309,17 +1401,22 @@ Depends on: Step 7 (the artwork to tune).
 Verification (manual): the owner runs `npm run dev`, starts a game with
 Node playstyle STEAL and **Charged nodes 5**, and confirms:
 
-- all five colours can be told apart at board scale — silver against off
-  white judged specifically, and silver against the other playstyles'
-  depleted grey (start a PLANET game in another tab to compare);
+- all five colours can be told apart at board scale — silver against the
+  other playstyles' depleted grey judged specifically (start a PLANET game
+  in another tab to compare);
 - a prospective square is tellable from a charged one at a glance, for
   every colour;
-- the smaller charged ball reads as a mark rather than a wash of colour
-  when several are held, and a ship on it remains clearly visible;
+- the charged ball, at the same size the other three playstyles use, reads
+  clearly in each signal's colour, and a ship on it remains clearly
+  visible;
+- claiming a node plays the charge animation — the outgoing rings dissolve
+  in the signal's colour into the charged ball — and nothing animates on
+  the square a claim released or an abandon vacated;
 - at four and three nodes, the first four and first three colours are
   used;
 - a CONTINUOUS, PLANET or DEDICATED game looks exactly as it does on
-  `main` (gold ball, gold rings, grey depleted, countdown numbers).
+  `main` (gold ball, gold rings, grey depleted, countdown numbers, the
+  existing charge animation only on a queue node charging).
 
 ---
 

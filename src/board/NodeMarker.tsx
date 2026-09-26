@@ -15,7 +15,11 @@
 // cross-fade into the charged artwork, seen at first through a small round
 // mask that then grows to reveal the whole thing. It is drawn only while
 // `chargeAnimation` is given; without it, a charged node's markup is
-// unchanged from the plain artwork below.
+// unchanged from the plain artwork below. A steal claim (steal.md §3) plays
+// the same animation: the outgoing rings are the prospective node's own
+// three rings, in its signal's colour, revealing the signal-coloured charged
+// artwork beneath — `chargeAnimation.signal` selects this instead of
+// `chargeAnimation.priority`'s ring count and gold.
 //
 // A charged node running out plays a burnout animation instead of the
 // ordinary depleted artwork: each gradient stop's colour travels from its
@@ -55,8 +59,10 @@ interface NodeMarkerProps {
   /**
    * The signal a steal node carries (steal.md §2), present only under steal.
    * A prospective marker always has one, drawn as its rings' colour; a
-   * charged marker with one draws the smaller steal ball in its colours
-   * instead of today's gold artwork. Ignored for an inactive or depleted
+   * charged marker with one draws the same starting ball the other three
+   * playstyles use for a freshly charged node, in its signal's colours
+   * instead of gold, and never travels with `cyclePosition` — a steal node
+   * has no countdown to travel towards. Ignored for an inactive or depleted
    * marker, and for a prospective marker falls back to the ordinary ring
    * colour when absent.
    */
@@ -117,21 +123,39 @@ function middleStopOffsetPercent(
 const INACTIVE_RING_RADII: readonly number[] = [18, 28, 38];
 const INACTIVE_RING_STROKE_WIDTH = 5;
 
-// A steal node's charged ball is smaller than the other playstyles' (steal.md
-// §2), so that several coloured balls on one board read as marks rather than
-// a wash of colour. A starting value for the owner's eye, not a measured
-// result.
-const STEAL_CHARGED_BALL_RADIUS = 48;
-
 // The charge animation's round mask, at its smallest, in the marker's own
 // 0-100 units - about the size of the charged gradient's gold core. A
 // starting value for the owner's eye, not a measured result.
 const CHARGE_MASK_START_RADIUS = 20;
 
+/**
+ * The charged shape every charged node shares - a radius-70 ball with a core
+ * colour, the same core faded at the middle stop, and a rim colour - so a
+ * steal charged node (fixed at its start-of-cycle offset) and today's gold
+ * one (travelling with `cyclePosition`) are one shape with different colours
+ * and a different offset, never two separately typed-out balls.
+ */
+function chargedShape(
+  core: string,
+  rim: string,
+  middleOffsetPercent: number,
+): NodeStateArtwork {
+  return {
+    radius: 70,
+    stops: [
+      { offsetPercent: 0, color: core, opacity: 1 },
+      { offsetPercent: middleOffsetPercent, color: core, opacity: 0.7 },
+      { offsetPercent: 100, color: rim, opacity: 1 },
+    ],
+  };
+}
+
 /** Radii, gradient stops, colours and opacities for the two clocked states, taken from
  * doc/plan/00000023-update-node-visual/node-artwork.md exactly as specified
  * there, except that a charged node carrying a steal signal (steal.md §2)
- * draws the smaller steal ball in its signal's colours instead. One artwork
+ * draws the same shape in its signal's colours instead of gold, fixed at its
+ * start-of-cycle offset regardless of `cyclePosition` — a steal node has no
+ * countdown for a middle stop to travel towards (steal.md §2). One artwork
  * per clocked state; the exhaustive switch has no default, so a new clocked
  * state is a compile error rather than a silent gap. Inactive and
  * prospective are drawn separately, as rings, by `NodeMarker` itself.
@@ -143,41 +167,19 @@ function nodeArtwork(
 ): NodeStateArtwork {
   if (state === "charged" && signal !== undefined) {
     const { core, rim } = SIGNAL_COLORS[signal];
-    return {
-      radius: STEAL_CHARGED_BALL_RADIUS,
-      stops: [
-        { offsetPercent: 0, color: core, opacity: 1 },
-        {
-          offsetPercent: middleStopOffsetPercent(
-            CHARGED_START_OFFSET_PERCENT,
-            CHARGED_END_OFFSET_PERCENT,
-            cyclePosition,
-          ),
-          color: core,
-          opacity: 0.7,
-        },
-        { offsetPercent: 100, color: rim, opacity: 1 },
-      ],
-    };
+    return chargedShape(core, rim, CHARGED_START_OFFSET_PERCENT);
   }
   switch (state) {
     case "charged":
-      return {
-        radius: 70,
-        stops: [
-          { offsetPercent: 0, color: "#DAA520", opacity: 1 },
-          {
-            offsetPercent: middleStopOffsetPercent(
-              CHARGED_START_OFFSET_PERCENT,
-              CHARGED_END_OFFSET_PERCENT,
-              cyclePosition,
-            ),
-            color: "#DAA520",
-            opacity: 0.7,
-          },
-          { offsetPercent: 100, color: "#F5DEB3", opacity: 1 },
-        ],
-      };
+      return chargedShape(
+        "#DAA520",
+        "#F5DEB3",
+        middleStopOffsetPercent(
+          CHARGED_START_OFFSET_PERCENT,
+          CHARGED_END_OFFSET_PERCENT,
+          cyclePosition,
+        ),
+      );
     case "depleted":
       return {
         radius: 70,
@@ -274,6 +276,17 @@ export function NodeMarker({
     // this artwork's own radius (TS's, per NodeMarker.tsx's own numbers).
     const maskId = `node-${squareName}-charge-mask`;
     const maskStartScale = CHARGE_MASK_START_RADIUS / radius;
+    // A steal claim's outgoing rings are the prospective node's own three,
+    // in its signal's colour (steal.md §3); the other three playstyles'
+    // outgoing rings are the inactive node's own priority count, in gold.
+    const outgoingRingRadii =
+      chargeAnimation.signal === undefined
+        ? INACTIVE_RING_RADII.slice(0, chargeAnimation.priority)
+        : INACTIVE_RING_RADII;
+    const outgoingRingColor =
+      chargeAnimation.signal === undefined
+        ? INACTIVE_RING_COLOR
+        : SIGNAL_COLORS[chargeAnimation.signal].core;
     return (
       <svg
         key={chargeAnimation.runId}
@@ -314,20 +327,18 @@ export function NodeMarker({
             />
           </mask>
         </defs>
-        {INACTIVE_RING_RADII.slice(0, chargeAnimation.priority).map(
-          (ringRadius) => (
-            <circle
-              key={ringRadius}
-              className="node-marker__outgoing-ring"
-              cx={50}
-              cy={50}
-              r={ringRadius}
-              fill="none"
-              stroke={INACTIVE_RING_COLOR}
-              strokeWidth={INACTIVE_RING_STROKE_WIDTH}
-            />
-          ),
-        )}
+        {outgoingRingRadii.map((ringRadius) => (
+          <circle
+            key={ringRadius}
+            className="node-marker__outgoing-ring"
+            cx={50}
+            cy={50}
+            r={ringRadius}
+            fill="none"
+            stroke={outgoingRingColor}
+            strokeWidth={INACTIVE_RING_STROKE_WIDTH}
+          />
+        ))}
         <g className="node-marker__charge-reveal" mask={`url(#${maskId})`}>
           <circle cx={50} cy={50} r={radius} fill={`url(#${gradientId})`} />
         </g>
