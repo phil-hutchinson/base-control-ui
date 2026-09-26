@@ -399,7 +399,7 @@ export function runEndOfTurn(
     };
 
     let newRotators: readonly Square[] = [];
-    if (workingState.nodeRotation === "dedicated") {
+    if (workingState.nodePlaystyle === "dedicated") {
       const [rotators, seedAfterRotators] = placeRotators(
         nodeSquares(workingState),
         workingState.ships.map((ship) => ship.square),
@@ -419,7 +419,7 @@ export function runEndOfTurn(
       newNodes,
       newRotators,
     });
-  } else if (workingState.nodeRotation === "continuous") {
+  } else if (workingState.nodePlaystyle === "continuous") {
     workingState = {
       ...workingState,
       nodes: rotateQueue(workingState.nodes),

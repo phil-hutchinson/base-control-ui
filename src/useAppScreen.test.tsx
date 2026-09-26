@@ -24,7 +24,7 @@ describe("useAppScreen", () => {
     expect(result.current.chargedNodeCount).toBe(4);
     expect(result.current.combatEnabled).toBe(false);
     expect(result.current.scoring).toBe("bonus");
-    expect(result.current.nodeRotation).toBe("planet");
+    expect(result.current.nodePlaystyle).toBe("planet");
     expect(result.current.planetBonus).toBe("off");
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
@@ -134,19 +134,19 @@ describe("useAppScreen", () => {
     );
   });
 
-  it("carries a chosen node rotation setting of dedicated into the new-game intent, and keeps it on returning to start", async () => {
+  it("carries a chosen node playstyle of dedicated into the new-game intent, and keeps it on returning to start", async () => {
     const dispatch = vi.fn();
     const { result } = renderHook(() => useAppScreen(dispatch, true));
 
     act(() => {
-      result.current.setNodeRotation("dedicated");
+      result.current.setNodePlaystyle("dedicated");
     });
     act(() => {
       result.current.handlePlay();
     });
 
     expect(dispatch).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ type: "new-game", nodeRotation: "dedicated" }),
+      expect.objectContaining({ type: "new-game", nodePlaystyle: "dedicated" }),
     );
 
     act(() => {
@@ -156,7 +156,7 @@ describe("useAppScreen", () => {
     await waitFor(() => {
       expect(result.current.screen).toBe("start");
     });
-    expect(result.current.nodeRotation).toBe("dedicated");
+    expect(result.current.nodePlaystyle).toBe("dedicated");
 
     dispatch.mockClear();
     act(() => {
@@ -164,7 +164,7 @@ describe("useAppScreen", () => {
     });
 
     expect(dispatch).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ type: "new-game", nodeRotation: "dedicated" }),
+      expect.objectContaining({ type: "new-game", nodePlaystyle: "dedicated" }),
     );
   });
 

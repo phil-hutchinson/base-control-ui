@@ -25,7 +25,7 @@ import {
   type ChargedNodeCount,
   type NodeState,
 } from "./nodes";
-import { type NodeRotationSetting } from "./nodeRotation";
+import { type NodePlaystyle } from "./nodePlaystyle";
 import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
 
 function ship(
@@ -58,7 +58,7 @@ function buildState(config: {
   energy?: { green: number; red: number };
   outOfTime?: { green: boolean; red: boolean };
   combatEnabled?: boolean;
-  nodeRotation?: NodeRotationSetting;
+  nodePlaystyle?: NodePlaystyle;
   rotators?: readonly Square[];
 }): GameState {
   return {
@@ -72,7 +72,7 @@ function buildState(config: {
     // rules-level harness, and a case that names no rotation should keep
     // exercising the same setting regardless of which one the start screen
     // preselects.
-    nodeRotation: config.nodeRotation ?? "continuous",
+    nodePlaystyle: config.nodePlaystyle ?? "continuous",
     rotators: config.rotators ?? [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
@@ -148,7 +148,7 @@ describe("applyMove", () => {
       // Pinned to continuous: under the app's default, planet rotation, the
       // landing would also turn the queue and raise a `queue-rotated` effect,
       // which is exactly what this test is asserting the move does not do.
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       ships: [ship("green-1", "green", "C6", 2), ship("red-1", "red", "O15")],
       nodes: {
         C3: ["charged", 0],
@@ -257,7 +257,7 @@ describe("applyMove", () => {
       // Pinned to continuous: the rotation this test expects at the end of
       // the turn is the continuous setting's, and under the app's default,
       // planet rotation, a move that ends nowhere near a planet turns nothing.
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O15")],
       nodes: {
@@ -1860,7 +1860,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("landing on a planet rotates the queue once under planet, and raises queue-rotated", () => {
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
       nodes: { ...steadyCharged, ...threeInactive },
@@ -1884,7 +1884,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("does not raise queue-rotated for the same landing under continuous — the queue still rotates, but silently, through the ordinary end-of-turn step", () => {
     const state = buildState({
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
       nodes: { ...steadyCharged, ...threeInactive },
@@ -1906,7 +1906,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("does not rotate at all under dedicated when the destination is a planet, not a rotator", () => {
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       chargedNodeCount: 4,
       rotators: [],
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
@@ -1929,7 +1929,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("landing on a rotator rotates the queue once under dedicated, spends the rotator, and raises queue-rotated", () => {
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       chargedNodeCount: 4,
       rotators: [squareFromName("H9"), squareFromName("A1")],
       ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "O15")],
@@ -1955,7 +1955,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("reports a node's priority from before the landing's own mid-ply rotation, when the same ply also charges it", () => {
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       chargedNodeCount: 5,
       rotators: [squareFromName("H9"), squareFromName("A1")],
       ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "O15")],
@@ -1988,7 +1988,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("flying over a planet without landing on it spends and rotates nothing, under planet", () => {
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
       nodes: { ...steadyCharged, ...threeInactive },
@@ -2012,7 +2012,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("flying over a rotator without landing on it spends and rotates nothing, under dedicated", () => {
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       chargedNodeCount: 4,
       rotators: [squareFromName("H8")],
       ships: [ship("green-1", "green", "H7", 4), ship("red-1", "red", "O15")],
@@ -2040,7 +2040,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
     // green-1 leaves the G4 planet; green-2 sits on the D6 planet
     // throughout, moving nowhere this ply. Neither is a landing.
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       chargedNodeCount: 4,
       ships: [
         ship("green-1", "green", "G4", 4),
@@ -2068,7 +2068,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("a fight rotates the queue twice under planet, attacker's landing then the defender's", () => {
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
       nodes: { ...steadyCharged, ...threeInactive },
@@ -2113,7 +2113,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("a fight rotates nothing at all under dedicated — every return lands on a planet, and a rotator never stands on one", () => {
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       chargedNodeCount: 4,
       rotators: [],
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
@@ -2157,7 +2157,10 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
     // drawn elsewhere, so only the square that actually charged is asserted
     // — H1 and H3 (or H1 and H2) no longer name anything in particular
     // afterwards.
-    const underPlanet = buildState({ ...sharedConfig, nodeRotation: "planet" });
+    const underPlanet = buildState({
+      ...sharedConfig,
+      nodePlaystyle: "planet",
+    });
     const planetResult = applyMove(
       underPlanet,
       "green-1",
@@ -2172,7 +2175,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
     const underContinuous = buildState({
       ...sharedConfig,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
     });
     const continuousResult = applyMove(
       underContinuous,
@@ -2193,7 +2196,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("orders queue-rotated after node-spent and before the ply-ending effect, within one move", () => {
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
       nodes: { C6: ["charged", CHARGED_COUNTDOWN_PLIES] },
     });

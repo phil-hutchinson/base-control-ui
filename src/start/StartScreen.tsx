@@ -9,10 +9,7 @@ import { type ClockSetting, CLOCK_SETTINGS } from "../rules/clock";
 import { COMBAT_SETTINGS } from "../rules/combatSetting";
 import { type FleetSize, FLEET_SIZES } from "../rules/fleet";
 import { GAME_LENGTH_OPTIONS_ROUNDS } from "../rules/gameLength";
-import {
-  type NodeRotationSetting,
-  NODE_ROTATION_SETTINGS,
-} from "../rules/nodeRotation";
+import { type NodePlaystyle, NODE_PLAYSTYLES } from "../rules/nodePlaystyle";
 import { type ChargedNodeCount, CHARGED_NODE_COUNTS } from "../rules/nodes";
 import {
   type PlanetBonusSetting,
@@ -49,10 +46,10 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
 };
 
 /**
- * The Inactive node rotation group's labels — start-screen chrome, not a
+ * The Node playstyle group's labels — start-screen chrome, not a
  * rules concern.
  */
-const NODE_ROTATION_SETTING_LABELS: Record<NodeRotationSetting, string> = {
+const NODE_PLAYSTYLE_LABELS: Record<NodePlaystyle, string> = {
   continuous: "CONTINUOUS",
   planet: "PLANET",
   dedicated: "DEDICATED",
@@ -76,8 +73,8 @@ interface StartScreenProps {
   readonly onScoringChange: (scoring: ScoringSetting) => void;
   readonly planetBonus: PlanetBonusSetting;
   readonly onPlanetBonusChange: (planetBonus: PlanetBonusSetting) => void;
-  readonly nodeRotation: NodeRotationSetting;
-  readonly onNodeRotationChange: (nodeRotation: NodeRotationSetting) => void;
+  readonly nodePlaystyle: NodePlaystyle;
+  readonly onNodePlaystyleChange: (nodePlaystyle: NodePlaystyle) => void;
   readonly lengthInRounds: number;
   readonly onLengthInRoundsChange: (lengthInRounds: number) => void;
   readonly clockSetting: ClockSetting;
@@ -103,8 +100,8 @@ export function StartScreen({
   onScoringChange,
   planetBonus,
   onPlanetBonusChange,
-  nodeRotation,
-  onNodeRotationChange,
+  nodePlaystyle,
+  onNodePlaystyleChange,
   lengthInRounds,
   onLengthInRoundsChange,
   clockSetting,
@@ -116,7 +113,7 @@ export function StartScreen({
   const chargedNodeCountGroupName = useId();
   const scoringGroupName = useId();
   const planetBonusGroupName = useId();
-  const nodeRotationGroupName = useId();
+  const nodePlaystyleGroupName = useId();
   const combatEnabledGroupName = useId();
   const lengthGroupName = useId();
   const clockSettingGroupName = useId();
@@ -192,16 +189,16 @@ export function StartScreen({
         </div>
       </fieldset>
       <fieldset className="start-screen__options">
-        <legend className="start-screen__legend">Inactive node rotation</legend>
+        <legend className="start-screen__legend">Node playstyle</legend>
         <div className="start-screen__choices">
-          {NODE_ROTATION_SETTINGS.map((value) => (
+          {NODE_PLAYSTYLES.map((value) => (
             <OptionChoice
               key={value}
-              name={nodeRotationGroupName}
+              name={nodePlaystyleGroupName}
               value={value}
-              label={NODE_ROTATION_SETTING_LABELS[value]}
-              checked={value === nodeRotation}
-              onChange={() => onNodeRotationChange(value)}
+              label={NODE_PLAYSTYLE_LABELS[value]}
+              checked={value === nodePlaystyle}
+              onChange={() => onNodePlaystyleChange(value)}
             />
           ))}
         </div>

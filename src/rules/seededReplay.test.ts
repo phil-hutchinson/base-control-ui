@@ -226,7 +226,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     fleetSize: 6,
     chargedNodeCount: 5,
     scoring: "simple",
-    nodeRotation: "continuous",
+    nodePlaystyle: "continuous",
   });
   const openingBoard = state.nodes;
   const planetReturns: string[] = [];
@@ -384,12 +384,12 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
     const continuousState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
     });
     const planetState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
     });
 
     // The default is planet, so naming it explicitly changes nothing.
@@ -410,12 +410,12 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
     const continuousState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
     });
     const dedicatedState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
     });
 
     // The board itself — nodes and ships — is dealt identically; only the

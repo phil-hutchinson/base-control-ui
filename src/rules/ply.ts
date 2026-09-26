@@ -372,7 +372,7 @@ function rotateForLanding(
   readonly state: GameState;
   readonly effect: QueueRotatedEffect | undefined;
 } {
-  if (state.nodeRotation === "planet") {
+  if (state.nodePlaystyle === "planet") {
     if (!isPlanet(destination)) {
       return { state, effect: undefined };
     }
@@ -382,7 +382,7 @@ function rotateForLanding(
     };
   }
 
-  if (state.nodeRotation === "dedicated") {
+  if (state.nodePlaystyle === "dedicated") {
     const destinationSquareName = squareName(destination);
     const rotatorIndex = state.rotators.findIndex(
       (square) => squareName(square) === destinationSquareName,

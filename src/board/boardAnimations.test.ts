@@ -27,7 +27,7 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     plyNumber: 3,
     randomSeed: 1,
     openingSeed: 1,
-    nodeRotation: "continuous",
+    nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
@@ -193,7 +193,7 @@ describe("boardAnimations", () => {
 
     const animations = boardAnimations(
       sessionWithEvent(event, {
-        nodeRotation: "dedicated",
+        nodePlaystyle: "dedicated",
         rotators: [squareAt("E", 5), squareAt("F", 6), squareAt("G", 9)],
       }),
     );
@@ -226,7 +226,7 @@ describe("boardAnimations", () => {
 
     const animations = boardAnimations(
       sessionWithEvent(event, {
-        nodeRotation: "planet",
+        nodePlaystyle: "planet",
         rotators: [],
       }),
     );
@@ -267,7 +267,7 @@ describe("boardAnimations", () => {
 
     const animations = boardAnimations(
       sessionWithEvent(event, {
-        nodeRotation: "dedicated",
+        nodePlaystyle: "dedicated",
         rotators: [squareAt("F", 6), squareAt("G", 9), squareAt("H", 3)],
       }),
     );

@@ -171,7 +171,7 @@ describe.each(CHARGED_NODE_COUNTS)(
           plyNumber: 1,
           randomSeed: seed,
           openingSeed: seed,
-          nodeRotation: "continuous",
+          nodePlaystyle: "continuous",
           rotators: [],
           planetBonus: "off",
           bonusPlanets: { green: [], red: [] },

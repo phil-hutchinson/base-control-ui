@@ -31,7 +31,7 @@ export type GuideSectionId =
 
 /**
  * One emphasised label and its sentence, under NEW CHARGED NODE SELECTION —
- * one per inactive node rotation setting (rules.md §8.2).
+ * one per node playstyle (rules.md §8.2).
  */
 export interface GuideSettingLine {
   readonly label: string;
@@ -93,7 +93,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
       "rings. When a new charged node is needed, it appears at the " +
       "three-ring indicator — and all three indicators are then replaced " +
       "by a fresh set elsewhere. The rings rotate, depending on the " +
-      "Inactive node rotation selected.",
+      "Node playstyle selected.",
     settingLines: [
       {
         label: "Continuous",

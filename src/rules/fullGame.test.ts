@@ -31,10 +31,7 @@ import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
 } from "./nodes";
-import {
-  NODE_ROTATION_SETTINGS,
-  type NodeRotationSetting,
-} from "./nodeRotation";
+import { NODE_PLAYSTYLES, type NodePlaystyle } from "./nodePlaystyle";
 import type { ScoringSetting } from "./scoring";
 import {
   type AttackEffect,
@@ -178,7 +175,7 @@ interface PlayFullGameOptions {
   readonly chargedNodeCount?: ChargedNodeCount;
   readonly combatEnabled?: boolean;
   readonly scoring?: ScoringSetting;
-  readonly nodeRotation?: NodeRotationSetting;
+  readonly nodePlaystyle?: NodePlaystyle;
   /**
    * Called with the state after the opening deal and again after every ply,
    * so a caller can check an invariant throughout a game rather than only
@@ -192,7 +189,7 @@ interface PlayFullGameOptions {
  * above, dealt with `fleetSize` ships a side (the app's default six),
  * `chargedNodeCount` charged nodes (the app's default five), combat on
  * unless `combatEnabled` says otherwise, simple scoring unless `scoring`
- * says otherwise, and continuous node rotation unless `nodeRotation` says
+ * says otherwise, and the continuous playstyle unless `nodePlaystyle` says
  * otherwise.
  */
 function playFullGame(
@@ -203,7 +200,7 @@ function playFullGame(
     chargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
     combatEnabled = true,
     scoring = "simple",
-    nodeRotation = "continuous",
+    nodePlaystyle = "continuous",
     onPly,
   }: PlayFullGameOptions = {},
 ): PlayedGame {
@@ -213,7 +210,7 @@ function playFullGame(
     chargedNodeCount,
     combatEnabled,
     scoring,
-    nodeRotation,
+    nodePlaystyle,
   });
   onPly?.(state);
   const greenCollected: EnergyCollectedEffect[] = [];
@@ -362,9 +359,9 @@ function sumAmounts(effects: readonly EnergyCollectedEffect[]): number {
 }
 
 /**
- * The queue invariant (rules.md §8.2), unaffected by which node rotation
- * setting is chosen: the board always carries exactly three inactive nodes,
- * holding priorities 1, 2 and 3 with no repeat.
+ * The queue invariant (rules.md §8.2), unaffected by which node playstyle is
+ * chosen: the board always carries exactly three inactive nodes, holding
+ * priorities 1, 2 and 3 with no repeat.
  */
 function assertQueueInvariant(state: GameState): void {
   const inactivePriorities = Object.values(state.nodes)
@@ -527,20 +524,20 @@ describe("a full game, end to end, at bonus scoring (§8.4)", () => {
   });
 });
 
-describe.each(NODE_ROTATION_SETTINGS)(
-  "a full game, end to end, under %s node rotation (rules.md §8.2)",
-  (nodeRotation) => {
+describe.each(NODE_PLAYSTYLES)(
+  "a full game, end to end, under %s (rules.md §8.2)",
+  (nodePlaystyle) => {
     it("plays a three-round game to its end, with the queue invariant intact throughout", () => {
       const seed = 20260819;
       const { finalState } = playFullGame(seed, 3, {
-        nodeRotation,
+        nodePlaystyle,
         onPly: (state) => {
           assertQueueInvariant(state);
           assertRotatorsAreFree(state);
         },
       });
 
-      expect(finalState.nodeRotation).toBe(nodeRotation);
+      expect(finalState.nodePlaystyle).toBe(nodePlaystyle);
       expect(finalState.plyNumber).toBe(pliesForGameLength(3) + 1);
       expect(isGameOver(finalState)).toBe(true);
       assertQueueInvariant(finalState);
@@ -575,7 +572,7 @@ describe("a full game, end to end", () => {
       plyNumber: pliesForGameLength(1) + 1,
       randomSeed: 1,
       openingSeed: 1,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
@@ -752,7 +749,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
@@ -807,7 +804,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
@@ -861,7 +858,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },

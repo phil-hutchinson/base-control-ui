@@ -23,10 +23,10 @@ import {
   GAME_LENGTH_OPTIONS_ROUNDS,
 } from "../rules/gameLength";
 import {
-  DEFAULT_NODE_ROTATION,
-  NODE_ROTATION_SETTINGS,
-  type NodeRotationSetting,
-} from "../rules/nodeRotation";
+  DEFAULT_NODE_PLAYSTYLE,
+  NODE_PLAYSTYLES,
+  type NodePlaystyle,
+} from "../rules/nodePlaystyle";
 import {
   CHARGED_NODE_COUNTS,
   DEFAULT_CHARGED_NODE_COUNT,
@@ -66,8 +66,8 @@ const SCORING_SETTING_LABELS: Record<ScoringSetting, string> = {
   bonus: "BONUS",
 };
 
-/** The Inactive node rotation group's labels, mirroring `StartScreen`'s own map. */
-const NODE_ROTATION_SETTING_LABELS: Record<NodeRotationSetting, string> = {
+/** The Node playstyle group's labels, mirroring `StartScreen`'s own map. */
+const NODE_PLAYSTYLE_LABELS: Record<NodePlaystyle, string> = {
   continuous: "CONTINUOUS",
   planet: "PLANET",
   dedicated: "DEDICATED",
@@ -86,7 +86,7 @@ interface RenderOverrides {
   readonly combatEnabled?: boolean;
   readonly scoring?: ScoringSetting;
   readonly planetBonus?: PlanetBonusSetting;
-  readonly nodeRotation?: NodeRotationSetting;
+  readonly nodePlaystyle?: NodePlaystyle;
   readonly lengthInRounds?: number;
   readonly clockSetting?: ClockSetting;
   readonly onFleetSizeChange?: (fleetSize: FleetSize) => void;
@@ -96,7 +96,7 @@ interface RenderOverrides {
   readonly onCombatEnabledChange?: (combatEnabled: boolean) => void;
   readonly onScoringChange?: (scoring: ScoringSetting) => void;
   readonly onPlanetBonusChange?: (planetBonus: PlanetBonusSetting) => void;
-  readonly onNodeRotationChange?: (nodeRotation: NodeRotationSetting) => void;
+  readonly onNodePlaystyleChange?: (nodePlaystyle: NodePlaystyle) => void;
   readonly onLengthInRoundsChange?: (lengthInRounds: number) => void;
   readonly onClockSettingChange?: (clockSetting: ClockSetting) => void;
   readonly onPlay?: () => void;
@@ -110,7 +110,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   const onCombatEnabledChange = overrides.onCombatEnabledChange ?? vi.fn();
   const onScoringChange = overrides.onScoringChange ?? vi.fn();
   const onPlanetBonusChange = overrides.onPlanetBonusChange ?? vi.fn();
-  const onNodeRotationChange = overrides.onNodeRotationChange ?? vi.fn();
+  const onNodePlaystyleChange = overrides.onNodePlaystyleChange ?? vi.fn();
   const onLengthInRoundsChange = overrides.onLengthInRoundsChange ?? vi.fn();
   const onClockSettingChange = overrides.onClockSettingChange ?? vi.fn();
   const onPlay = overrides.onPlay ?? vi.fn();
@@ -129,8 +129,8 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
       onScoringChange={onScoringChange}
       planetBonus={overrides.planetBonus ?? DEFAULT_PLANET_BONUS}
       onPlanetBonusChange={onPlanetBonusChange}
-      nodeRotation={overrides.nodeRotation ?? DEFAULT_NODE_ROTATION}
-      onNodeRotationChange={onNodeRotationChange}
+      nodePlaystyle={overrides.nodePlaystyle ?? DEFAULT_NODE_PLAYSTYLE}
+      onNodePlaystyleChange={onNodePlaystyleChange}
       lengthInRounds={overrides.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS}
       onLengthInRoundsChange={onLengthInRoundsChange}
       clockSetting={overrides.clockSetting ?? DEFAULT_CLOCK_SETTING}
@@ -145,7 +145,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
     onCombatEnabledChange,
     onScoringChange,
     onPlanetBonusChange,
-    onNodeRotationChange,
+    onNodePlaystyleChange,
     onLengthInRoundsChange,
     onClockSettingChange,
     onPlay,
@@ -214,7 +214,7 @@ describe("StartScreen", () => {
     ).toEqual(["5", "4", "3"]);
   });
 
-  it("renders the eight option groups in order: Ships, Charged nodes, Scoring, Planet bonus, Inactive node rotation, Combat, Rounds, Clock", () => {
+  it("renders the eight option groups in order: Ships, Charged nodes, Scoring, Planet bonus, Node playstyle, Combat, Rounds, Clock", () => {
     renderStartScreen();
 
     const groups = screen.getAllByRole("group");
@@ -225,7 +225,7 @@ describe("StartScreen", () => {
       "Charged nodes",
       "Scoring",
       "Planet bonus",
-      "Inactive node rotation",
+      "Node playstyle",
       "Combat",
       "Rounds",
       "Clock (time per move)",
@@ -330,7 +330,7 @@ describe("StartScreen", () => {
       onScoringChange,
       onPlanetBonusChange,
       onCombatEnabledChange,
-      onNodeRotationChange,
+      onNodePlaystyleChange,
       onLengthInRoundsChange,
       onClockSettingChange,
       onPlay,
@@ -343,22 +343,22 @@ describe("StartScreen", () => {
     expect(onFleetSizeChange).not.toHaveBeenCalled();
     expect(onChargedNodeCountChange).not.toHaveBeenCalled();
     expect(onScoringChange).not.toHaveBeenCalled();
-    expect(onNodeRotationChange).not.toHaveBeenCalled();
+    expect(onNodePlaystyleChange).not.toHaveBeenCalled();
     expect(onCombatEnabledChange).not.toHaveBeenCalled();
     expect(onLengthInRoundsChange).not.toHaveBeenCalled();
     expect(onClockSettingChange).not.toHaveBeenCalled();
     expect(onPlay).not.toHaveBeenCalled();
   });
 
-  it("renders the inactive node rotation group with all three labels and the given one checked", () => {
-    renderStartScreen({ nodeRotation: "dedicated" });
+  it("renders the node playstyle group with all three labels and the given one checked", () => {
+    renderStartScreen({ nodePlaystyle: "dedicated" });
 
     const group = screen.getByRole("group", {
-      name: "Inactive node rotation",
+      name: "Node playstyle",
     });
-    for (const value of NODE_ROTATION_SETTINGS) {
+    for (const value of NODE_PLAYSTYLES) {
       const radio = within(group).getByRole("radio", {
-        name: NODE_ROTATION_SETTING_LABELS[value],
+        name: NODE_PLAYSTYLE_LABELS[value],
       });
       if (value === "dedicated") {
         expect(radio).toBeChecked();
@@ -372,7 +372,7 @@ describe("StartScreen", () => {
     renderStartScreen();
 
     const group = screen.getByRole("group", {
-      name: "Inactive node rotation",
+      name: "Node playstyle",
     });
     expect(within(group).getByRole("radio", { name: "PLANET" })).toBeChecked();
     expect(
@@ -382,25 +382,25 @@ describe("StartScreen", () => {
     ).toEqual(["continuous", "planet", "dedicated"]);
   });
 
-  it("calls the node rotation change handler with dedicated when DEDICATED is chosen, and not the others", async () => {
+  it("calls the node playstyle change handler with dedicated when DEDICATED is chosen, and not the others", async () => {
     const user = userEvent.setup();
     const {
       onFleetSizeChange,
       onChargedNodeCountChange,
       onScoringChange,
       onCombatEnabledChange,
-      onNodeRotationChange,
+      onNodePlaystyleChange,
       onLengthInRoundsChange,
       onClockSettingChange,
       onPlay,
-    } = renderStartScreen({ nodeRotation: "continuous" });
+    } = renderStartScreen({ nodePlaystyle: "continuous" });
 
     const group = screen.getByRole("group", {
-      name: "Inactive node rotation",
+      name: "Node playstyle",
     });
     await user.click(within(group).getByRole("radio", { name: "DEDICATED" }));
 
-    expect(onNodeRotationChange).toHaveBeenCalledExactlyOnceWith("dedicated");
+    expect(onNodePlaystyleChange).toHaveBeenCalledExactlyOnceWith("dedicated");
     expect(onFleetSizeChange).not.toHaveBeenCalled();
     expect(onChargedNodeCountChange).not.toHaveBeenCalled();
     expect(onScoringChange).not.toHaveBeenCalled();

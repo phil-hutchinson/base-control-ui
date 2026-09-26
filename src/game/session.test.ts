@@ -55,7 +55,7 @@ function buildState(config: {
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
-    nodeRotation: "continuous",
+    nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
@@ -585,7 +585,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 
@@ -617,7 +617,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 
@@ -635,7 +635,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
     const second = sessionReducer(session, {
@@ -646,7 +646,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 
@@ -666,7 +666,7 @@ describe("sessionReducer — new-game", () => {
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         combatEnabled: true,
         scoring: "simple",
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         planetBonus: "off",
       });
 
@@ -708,7 +708,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: 3,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 
@@ -731,7 +731,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: 4,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 
@@ -754,7 +754,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: false,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 
@@ -772,7 +772,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 
@@ -790,7 +790,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 
@@ -808,14 +808,14 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "bonus",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 
     expect(result.state.scoring).toBe("bonus");
   });
 
-  it("honours a chosen node rotation setting of continuous, dealing a state with no rotators", () => {
+  it("honours a chosen node playstyle of continuous, dealing a state with no rotators", () => {
     const session = sessionFor(buildState({ ships: [] }));
 
     const result = sessionReducer(session, {
@@ -826,15 +826,15 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 
-    expect(result.state.nodeRotation).toBe("continuous");
+    expect(result.state.nodePlaystyle).toBe("continuous");
     expect(result.state.rotators).toEqual([]);
   });
 
-  it("honours a chosen node rotation setting of dedicated, dealing a state with rotators on the board", () => {
+  it("honours a chosen node playstyle of dedicated, dealing a state with rotators on the board", () => {
     const session = sessionFor(buildState({ ships: [] }));
 
     const result = sessionReducer(session, {
@@ -845,11 +845,11 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       planetBonus: "off",
     });
 
-    expect(result.state.nodeRotation).toBe("dedicated");
+    expect(result.state.nodePlaystyle).toBe("dedicated");
     expect(result.state.rotators.length).toBeGreaterThan(0);
   });
 
@@ -864,7 +864,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "three",
     });
 
@@ -884,7 +884,7 @@ describe("sessionReducer — new-game", () => {
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
       combatEnabled: true,
       scoring: "simple",
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       planetBonus: "off",
     });
 

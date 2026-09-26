@@ -24,11 +24,11 @@ import {
   type NodeState,
 } from "./nodes";
 import {
-  DEFAULT_NODE_ROTATION,
-  isNodeRotationSetting,
-  NODE_ROTATION_SETTINGS,
-  type NodeRotationSetting,
-} from "./nodeRotation";
+  DEFAULT_NODE_PLAYSTYLE,
+  isNodePlaystyle,
+  NODE_PLAYSTYLES,
+  type NodePlaystyle,
+} from "./nodePlaystyle";
 import { dealBonusPlanets } from "./bonusPlanets";
 import {
   DEFAULT_PLANET_BONUS,
@@ -172,7 +172,7 @@ export interface GameState {
    * turns is indistinguishable from one whose players simply have not
    * landed anywhere.
    */
-  readonly nodeRotation: NodeRotationSetting;
+  readonly nodePlaystyle: NodePlaystyle;
   /**
    * Every square currently holding a rotator (rules.md §3.3), in board
    * order, fixed only at the moment it is set — the opening deal, and every
@@ -249,18 +249,18 @@ export interface StartingGameStateOptions {
   readonly scoring?: string;
   /**
    * How the three inactive nodes' priorities rotate (rules.md §8.2).
-   * Defaults to `DEFAULT_NODE_ROTATION` (planet). Deliberately typed
-   * `string`, not `NodeRotationSetting`, for the same reason `scoring` is: a
+   * Defaults to `DEFAULT_NODE_PLAYSTYLE` (planet). Deliberately typed
+   * `string`, not `NodePlaystyle`, for the same reason `scoring` is: a
    * setting arriving from outside the type system can be any string. Must be
-   * one of `nodeRotation.ts`'s offered settings, or this throws a
+   * one of `nodePlaystyle.ts`'s offered settings, or this throws a
    * `RangeError`. `rotators` is not an option — it is produced by the deal,
    * never supplied.
    */
-  readonly nodeRotation?: string;
+  readonly nodePlaystyle?: string;
   /**
    * The planet bonus setting (rules.md §3.4). Defaults to
    * `DEFAULT_PLANET_BONUS` (off). Deliberately typed `string`, not
-   * `PlanetBonusSetting`, for the same reason `scoring` and `nodeRotation`
+   * `PlanetBonusSetting`, for the same reason `scoring` and `nodePlaystyle`
    * are: a setting arriving from outside the type system can be any string.
    * Must be one of `planetBonus.ts`'s offered settings, or this throws a
    * `RangeError`. `bonusPlanets` is not an option — it is produced by the
@@ -285,8 +285,8 @@ export interface StartingGameStateOptions {
  * The seed argument is the seed the **deal** starts from, not the seed the
  * game's first turn draws from: dealing the board consumes `chargedNodeCount
  * + 4` steps of the stream before play begins — nine at five charged, eight
- * at four, seven at three — plus, under the dedicated node rotation setting
- * only, up to eight more for the opening rotator set (rules.md §3.3), plus,
+ * at four, seven at three — plus, under the dedicated playstyle only, up to
+ * eight more for the opening rotator set (rules.md §3.3), plus,
  * when the planet bonus is on, exactly six more for the bonus planet deal
  * (rules.md §3.4), drawn last so an off game spends nothing extra. The
  * resulting state's `randomSeed` is the seed all of that left behind. That
@@ -323,7 +323,7 @@ export function startingGameState(
     chargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
     combatEnabled = DEFAULT_COMBAT_ENABLED,
     scoring = DEFAULT_SCORING,
-    nodeRotation = DEFAULT_NODE_ROTATION,
+    nodePlaystyle = DEFAULT_NODE_PLAYSTYLE,
     planetBonus = DEFAULT_PLANET_BONUS,
   } = options;
 
@@ -347,9 +347,9 @@ export function startingGameState(
       `startingGameState: scoring must be one of ${SCORING_SETTINGS.join(", ")}, got ${scoring}`,
     );
   }
-  if (!isNodeRotationSetting(nodeRotation)) {
+  if (!isNodePlaystyle(nodePlaystyle)) {
     throw new RangeError(
-      `startingGameState: nodeRotation must be one of ${NODE_ROTATION_SETTINGS.join(", ")}, got ${nodeRotation}`,
+      `startingGameState: nodePlaystyle must be one of ${NODE_PLAYSTYLES.join(", ")}, got ${nodePlaystyle}`,
     );
   }
   if (!isPlanetBonusSetting(planetBonus)) {
@@ -376,7 +376,7 @@ export function startingGameState(
     (square) => nodes[squareName(square)] !== undefined,
   );
   const [rotators, seedAfterRotators] =
-    nodeRotation === "dedicated"
+    nodePlaystyle === "dedicated"
       ? placeRotators(dealtNodeSquares, shipSquares, dealtSeed)
       : [[], dealtSeed];
 
@@ -398,7 +398,7 @@ export function startingGameState(
     outOfTime: { green: false, red: false },
     combatEnabled,
     scoring,
-    nodeRotation,
+    nodePlaystyle,
     rotators,
     planetBonus,
     bonusPlanets,

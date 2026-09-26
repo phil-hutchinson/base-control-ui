@@ -97,8 +97,8 @@ function scoringGroup() {
   return screen.getByRole("group", { name: "Scoring" });
 }
 
-function nodeRotationGroup() {
-  return screen.getByRole("group", { name: "Inactive node rotation" });
+function nodePlaystyleGroup() {
+  return screen.getByRole("group", { name: "Node playstyle" });
 }
 
 function planetBonusGroup() {
@@ -139,7 +139,7 @@ describe("App", () => {
       within(planetBonusGroup()).getByRole("radio", { name: "OFF" }),
     ).toBeChecked();
     expect(
-      within(nodeRotationGroup()).getByRole("radio", { name: "PLANET" }),
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
     ).toBeChecked();
     expect(
       within(combatGroup()).getByRole("radio", { name: "OFF" }),
@@ -157,7 +157,7 @@ describe("App", () => {
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
   });
 
-  it("renders the eight option groups in order: Ships, Charged nodes, Scoring, Planet bonus, Inactive node rotation, Combat, Rounds, Clock", () => {
+  it("renders the eight option groups in order: Ships, Charged nodes, Scoring, Planet bonus, Node playstyle, Combat, Rounds, Clock", () => {
     render(<App />);
 
     const groups = screen.getAllByRole("group");
@@ -168,7 +168,7 @@ describe("App", () => {
       "Charged nodes",
       "Scoring",
       "Planet bonus",
-      "Inactive node rotation",
+      "Node playstyle",
       "Combat",
       "Rounds",
       "Clock (time per move)",
@@ -522,7 +522,7 @@ describe("App", () => {
       within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
     );
     await user.click(
-      within(nodeRotationGroup()).getByRole("radio", { name: "DEDICATED" }),
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "DEDICATED" }),
     );
     await user.click(screen.getByRole("button", { name: "Quick Guide" }));
 
@@ -560,7 +560,7 @@ describe("App", () => {
       within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
     ).toBeChecked();
     expect(
-      within(nodeRotationGroup()).getByRole("radio", { name: "DEDICATED" }),
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "DEDICATED" }),
     ).toBeChecked();
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(vi.mocked(Board).mock.calls.length).toBe(renderCountBefore);
@@ -572,7 +572,7 @@ describe("App", () => {
     stubConfirm(true);
 
     await user.click(
-      within(nodeRotationGroup()).getByRole("radio", { name: "DEDICATED" }),
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "DEDICATED" }),
     );
     await pressPlay();
 
@@ -584,7 +584,7 @@ describe("App", () => {
       screen.getByRole("heading", { level: 1, name: GAME_NAME }),
     ).toBeInTheDocument();
     expect(
-      within(nodeRotationGroup()).getByRole("radio", { name: "DEDICATED" }),
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "DEDICATED" }),
     ).toBeChecked();
   });
 

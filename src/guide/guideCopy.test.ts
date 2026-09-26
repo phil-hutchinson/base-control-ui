@@ -64,7 +64,7 @@ describe("guideCopy", () => {
         "rings. When a new charged node is needed, it appears at the " +
         "three-ring indicator — and all three indicators are then " +
         "replaced by a fresh set elsewhere. The rings rotate, depending " +
-        "on the Inactive node rotation selected.",
+        "on the Node playstyle selected.",
     );
   });
 
@@ -78,7 +78,7 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the three inactive node rotation setting lines, verbatim", () => {
+  it("has the three node playstyle setting lines, verbatim", () => {
     expect(GUIDE_SECTIONS[3].settingLines).toEqual([
       {
         label: "Continuous",

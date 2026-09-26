@@ -623,7 +623,38 @@ colours; steal.md's claim and leaving rules match `story.md`'s.
 
 ### Step 2 — Rename node rotation to node playstyle (no behaviour change)
 
-Status: pending
+Status: committed
+
+Notes: Renamed `src/rules/nodeRotation.ts`/`.test.ts` to
+`nodePlaystyle.ts`/`.test.ts` via `git mv`, applied the D2 identifier renames
+(`NodeRotationSetting`→`NodePlaystyle`, `NODE_ROTATION_SETTINGS`→
+`NODE_PLAYSTYLES`, `DEFAULT_NODE_ROTATION`→`DEFAULT_NODE_PLAYSTYLE`,
+`isNodeRotationSetting`→`isNodePlaystyle`, the `nodeRotation` field/prop/state
+→ `nodePlaystyle` throughout) across every importer
+(`gameState.ts`, `ply.ts`, `endOfTurn.ts`, `planetBonus.ts`, `session.ts`,
+`useAppScreen.ts`, `App.tsx`, `StartScreen.tsx`) and every test file the
+initial grep found. Reworded the start screen's legend and label map to
+"Node playstyle"/`NODE_PLAYSTYLE_LABELS`, `guideCopy.ts`'s NEW CHARGED NODE
+SELECTION closing sentence to "the Node playstyle selected" (leaving its
+header's historical reference to "the inactive node rotation options" alone,
+as the plan allows), and every live doc comment/test description that named
+"node rotation" as the choice (`guideCopy.ts`'s `GuideSettingLine` comment,
+`GuideScreen.test.tsx`, `gameState.ts`'s seed-accounting comment, and several
+test titles in `gameState.test.ts`, `fullGame.test.ts`, `session.test.ts`,
+`useAppScreen.test.tsx`, `App.test.tsx`). Left two comments in
+`seededReplay.test.ts` (lines narrating "0.36 added node rotation as a
+pre-play choice") untouched: they document what rules.md 0.36 literally
+introduced under that name at the time (confirmed against
+`changelog.md`'s "0.36 — inactive node rotation becomes a choice" heading),
+so renaming them would misstate history rather than rename a live concept —
+this is a judgment call the plan didn't spell out, flagged here rather than
+silently made. No fourth setting was added and no behaviour changed.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and the full
+`npm test` (78 files, 1523 tests — the same count as the Step 1 baseline)
+are all green; `grep -rn "nodeRotation\|NodeRotation\|NODE_ROTATION\|Inactive
+node rotation" src` returns nothing, and `StartScreen.test.tsx` finds the
+group as "Node playstyle" with CONTINUOUS/PLANET/DEDICATED and PLANET
+checked.
 
 Rename every code and test name that says node rotation to say node
 playstyle, per D2. This step adds no fourth setting and changes no

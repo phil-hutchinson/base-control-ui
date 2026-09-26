@@ -41,7 +41,7 @@ describe("GuideScreen", () => {
     expect(container.querySelectorAll(".guide-diagram")).toHaveLength(7);
   });
 
-  it("renders the node rotation setting lines and the rotator square after them, in order", () => {
+  it("renders the node playstyle setting lines and the rotator square after them, in order", () => {
     const { container } = render(<GuideScreen onBack={vi.fn()} />);
 
     const nodeSelectionSection = GUIDE_SECTIONS.find(
