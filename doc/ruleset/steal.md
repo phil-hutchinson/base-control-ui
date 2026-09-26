@@ -43,8 +43,8 @@ square at all: nobody scores until a ship reaches one.
 
 A ship **lands on a prospective square** — of any node, whether that node is
 unheld, held by the opponent, or held by the landing ship's own side. This
-is the only way into a node: a charged node is never adjacent to a legal
-landing.
+is the only way into a node: a charged square always has its holder standing
+on it, so it can never be landed on.
 
 1. That square becomes the node's **charged** square, with the landing ship
    on it.
@@ -103,9 +103,10 @@ where `d` is Chebyshev distance, as rules.md §3.2 defines it. When `S` is
 empty — only the very first node of the opening deal — the second term is 0.
 
 **A square on the outer edge has its weight halved** — row 1 or 15, column A
-or O. `d(s, a)` is never below 2, because an adjacent square is illegal, so
-`w` is always positive without needing a positivity floor of the kind
-rules.md §3.2's own formula carries.
+or O. `d(s, a)` is never below 2 in the ordinary pool, because an adjacent
+square is illegal there, and never below 1 even in rules.md §3.2's own
+fallback, so `w` is always positive without needing a positivity floor of
+the kind that formula carries.
 
 The first term is the control, and it can range up to 14: it pushes a
 node's new prospective square a long way from the node itself, so a steal

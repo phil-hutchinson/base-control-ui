@@ -27,7 +27,8 @@ happens.
 
 A ship carries **power**, a reserve it spends to move and refills only on
 planets. A ship holding a node cannot be attacked while it holds it. A node
-that has burned out traps the ship standing on it until it retires.
+that has burned out traps the ship standing on it until it retires (never
+under the steal playstyle — see steal.md).
 
 The board is not a fixed map with lights moving across it: nodes are born,
 run out and leave, and whenever one charges the whole set of nodes still

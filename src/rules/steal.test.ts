@@ -9,7 +9,6 @@ import {
   abandonNode,
   claimNode,
   dealStealOpeningBoard,
-  isNodeHeld,
   nodeAnchor,
   NODE_SIGNALS,
   squaresForSignal,
@@ -57,24 +56,6 @@ describe("squaresForSignal", () => {
     expect(squaresForSignal(map, 0).map(squareName)).toEqual(["B4", "L8"]);
     expect(squaresForSignal(map, 1).map(squareName)).toEqual(["H8"]);
     expect(squaresForSignal(map, 2)).toEqual([]);
-  });
-});
-
-describe("isNodeHeld", () => {
-  it("is true when one of a signal's squares is charged", () => {
-    const map = nodes({
-      B4: { state: "charged", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0 },
-    });
-    expect(isNodeHeld(map, 0)).toBe(true);
-  });
-
-  it("is false when both of a signal's squares are prospective", () => {
-    const map = nodes({
-      B4: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0 },
-    });
-    expect(isNodeHeld(map, 0)).toBe(false);
   });
 });
 

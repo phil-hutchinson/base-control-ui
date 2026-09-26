@@ -29,10 +29,11 @@ and `implementation-plan.md` for context.
 4. Do **not** commit. Do not touch git beyond read-only inspection.
 
 Follow repository conventions: the ruleset in `doc/ruleset/` (`rules.md` and
-its companion files) is the single source of truth for game behaviour; code, tests and plans say "ply" while player-facing
-text says "turn", and "move" means the movement action specifically; comments
-say what the code does and never carry story numbers, plan references, or
-rejected approaches. Match the style of surrounding code.
+its companion files) is the single source of truth for game behaviour; code,
+tests and plans say "ply" while player-facing text says "turn", and "move"
+means the movement action specifically; comments say what the code does and
+never carry story numbers, plan references, or rejected approaches. Match
+the style of surrounding code.
 
 ## Report
 

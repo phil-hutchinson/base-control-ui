@@ -177,13 +177,13 @@ export interface GameState {
    */
   readonly scoring: ScoringSetting;
   /**
-   * How the three inactive nodes' priorities rotate (rules.md §8.2), fixed
-   * for the game's lifetime once set by `startingGameState`. Every place
-   * that rotates the queue — `endOfTurn.ts` step 5, and a landing in
-   * `ply.ts` — reads it from here rather than from an app default. It
-   * cannot be derived from a board: a board that has not rotated for ten
-   * turns is indistinguishable from one whose players simply have not
-   * landed anywhere.
+   * The node playstyle (rules.md §8.2): continuous, planet, dedicated or
+   * steal (steal.md), fixed for the game's lifetime once set by
+   * `startingGameState`. Every place that rotates the queue —
+   * `endOfTurn.ts` step 5, and a landing in `ply.ts` — reads it from here
+   * rather than from an app default. It cannot be derived from a board: a
+   * board that has not rotated for ten turns is indistinguishable from one
+   * whose players simply have not landed anywhere.
    */
   readonly nodePlaystyle: NodePlaystyle;
   /**
@@ -261,13 +261,13 @@ export interface StartingGameStateOptions {
    */
   readonly scoring?: string;
   /**
-   * How the three inactive nodes' priorities rotate (rules.md §8.2).
-   * Defaults to `DEFAULT_NODE_PLAYSTYLE` (planet). Deliberately typed
-   * `string`, not `NodePlaystyle`, for the same reason `scoring` is: a
-   * setting arriving from outside the type system can be any string. Must be
-   * one of `nodePlaystyle.ts`'s offered settings, or this throws a
-   * `RangeError`. `rotators` is not an option — it is produced by the deal,
-   * never supplied.
+   * The node playstyle (rules.md §8.2): continuous, planet, dedicated or
+   * steal (steal.md). Defaults to `DEFAULT_NODE_PLAYSTYLE` (planet).
+   * Deliberately typed `string`, not `NodePlaystyle`, for the same reason
+   * `scoring` is: a setting arriving from outside the type system can be
+   * any string. Must be one of `nodePlaystyle.ts`'s offered settings, or
+   * this throws a `RangeError`. `rotators` is not an option — it is
+   * produced by the deal, never supplied.
    */
   readonly nodePlaystyle?: string;
   /**

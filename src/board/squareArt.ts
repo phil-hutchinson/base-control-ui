@@ -2,8 +2,6 @@
 // (NodeMarker.tsx), a rotator's mark (RotatorMarker.tsx) and, under steal, a
 // node's signal (steal.md §2), each drawn in its own colour.
 
-import type { NodeSignal } from "../rules/steal";
-
 /** The colour an inactive node's priority rings are drawn in (rules.md §8.2). */
 export const INACTIVE_RING_COLOR = "#DAA520";
 
@@ -33,8 +31,3 @@ export const SIGNAL_COLORS: readonly SignalColors[] = [
   { core: "#8E55D6", rim: "#D6C2F2" }, // purple
   { core: "#94602F", rim: "#D0A77C" }, // brown
 ];
-
-/** The colours signal `s` draws in, for anywhere the board needs both. */
-export function signalColors(signal: NodeSignal): SignalColors {
-  return SIGNAL_COLORS[signal];
-}

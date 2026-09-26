@@ -71,16 +71,6 @@ export function squaresForSignal(
   );
 }
 
-/** Whether a signal's node is Held (one charged, one prospective) rather than Open (steal.md §2). */
-export function isNodeHeld(
-  nodes: Readonly<Record<string, NodeStatus>>,
-  signal: NodeSignal,
-): boolean {
-  return squaresForSignal(nodes, signal).some(
-    (square) => nodes[squareName(square)]?.state === "charged",
-  );
-}
-
 /**
  * A signal's anchor for the weighted draw (steal.md §6): its charged square
  * if it is Held, otherwise its one remaining square — meaningful only

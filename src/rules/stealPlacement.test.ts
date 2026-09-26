@@ -1,23 +1,17 @@
 // A long-run measurement test for steal's prospective-square draw (steal.md
-// §6, §7), in the style of `nodePool.test.ts`: it re-measures story.md's
-// placement figures, split into the opening deal — which now draws its
-// second square from the strict pool first (steal.md §7) — and mid-game
-// draws, a claim's or an abandon's fresh square, which are the ones the
-// widened pool and the outer-edge halving actually shape. It also proves
-// that rules.md §3.2's own fallback never fires even at the largest fleet
-// and five nodes — the worst case for available squares, since that
-// combination blocks the most of the board.
+// §6, §7), in the style of `nodePool.test.ts`: it re-measures the placement
+// figures, split into the opening deal — which now draws its second square
+// from the strict pool first (steal.md §7) — and mid-game draws, a claim's
+// or an abandon's fresh square, which are the ones the widened pool and the
+// outer-edge halving actually shape. It also proves that rules.md §3.2's own
+// fallback never fires even at the largest fleet and five nodes — the worst
+// case for available squares, since that combination blocks the most of the
+// board.
 //
 // The re-measured figures below come from an improvised measurement script
 // run against this code, at the default fleet of five a side, not committed
-// here (doc/plan/00000101-add-node-steal-play-variant,
-// implementation-plan.md, Step 12). Step 6's original figures, measured
-// before the opening deal preferred the strict pool for its second square,
-// are superseded: the opening deal's edge share was never really the
-// interesting number once the second square stopped landing on the rim by
-// construction, so it is dropped in favour of the mid-game figures, which
-// are new here. Both sets are recorded in doc/ruleset/tech-notes.md,
-// "Placing prospective nodes under steal".
+// here. Both sets are recorded in doc/ruleset/tech-notes.md, "Placing
+// prospective nodes under steal".
 
 import { describe, expect, it } from "vitest";
 import {
@@ -61,8 +55,9 @@ const OPENING_DISTANCE_TOLERANCE = 1.0;
 /**
  * The mean distance, and the outer-edge share, of every claim's and
  * abandon's fresh prospective square during play — the widened pool and the
- * outer-edge halving's own draw, unaffected by Step 12 — re-measured at five
- * nodes, the app's default fleet.
+ * outer-edge halving's own draw — re-measured at five nodes, the app's
+ * default fleet. See doc/ruleset/tech-notes.md, "Placing prospective nodes
+ * under steal".
  */
 const MID_GAME_FIGURES = { meanDistance: 7.88, edgeShare: 0.27 };
 const MID_GAME_DISTANCE_TOLERANCE = 1.5;
@@ -182,34 +177,38 @@ describe.each(CHARGED_NODE_COUNTS)(
 
       expect(meanDistance).toBeGreaterThan(figure - OPENING_DISTANCE_TOLERANCE);
       expect(meanDistance).toBeLessThan(figure + OPENING_DISTANCE_TOLERANCE);
-    });
+    }, 30_000);
   },
 );
 
 describe.each(CHARGED_NODE_COUNTS)(
   "the steal opening deal never lands a square in the outer two rings, at %d nodes (steal.md §7)",
   (chargedNodeCount) => {
-    it.each(FLEET_SIZES)("at fleet size %d a side", (fleetSize) => {
-      for (let i = 0; i < OUTER_RINGS_DEALS; i++) {
-        const seed =
-          60_000_000 + chargedNodeCount * 4_000_000 + fleetSize * 100_000 + i;
-        const state = startingGameState(seed, {
-          chargedNodeCount,
-          fleetSize,
-          nodePlaystyle: "steal",
-          lengthInRounds: 40,
-        });
+    it.each(FLEET_SIZES)(
+      "at fleet size %d a side",
+      (fleetSize) => {
+        for (let i = 0; i < OUTER_RINGS_DEALS; i++) {
+          const seed =
+            60_000_000 + chargedNodeCount * 4_000_000 + fleetSize * 100_000 + i;
+          const state = startingGameState(seed, {
+            chargedNodeCount,
+            fleetSize,
+            nodePlaystyle: "steal",
+            lengthInRounds: 40,
+          });
 
-        for (const signal of NODE_SIGNALS.slice(
-          0,
-          chargedNodeCount,
-        ) as readonly NodeSignal[]) {
-          const [a, b] = squaresForSignal(state.nodes, signal);
-          expect(isOuterTwoRings(a)).toBe(false);
-          expect(isOuterTwoRings(b)).toBe(false);
+          for (const signal of NODE_SIGNALS.slice(
+            0,
+            chargedNodeCount,
+          ) as readonly NodeSignal[]) {
+            const [a, b] = squaresForSignal(state.nodes, signal);
+            expect(isOuterTwoRings(a)).toBe(false);
+            expect(isOuterTwoRings(b)).toBe(false);
+          }
         }
-      }
-    });
+      },
+      30_000,
+    );
   },
 );
 
@@ -250,7 +249,7 @@ describe("the fallback never fires, at the largest fleet and five nodes — the 
         }
       }
     }
-  });
+  }, 30_000);
 });
 
 /** One ship's identity and side, for the local greedy policy below. */
@@ -411,7 +410,7 @@ describe("the steal claim and abandon draws' placement figures, at 5 nodes, the 
     expect(edgeShare).toBeLessThan(
       MID_GAME_FIGURES.edgeShare + MID_GAME_EDGE_SHARE_TOLERANCE,
     );
-  });
+  }, 30_000);
 });
 
 describe("the fallback never fires during play either, at the largest fleet and five nodes", () => {
@@ -492,5 +491,5 @@ describe("the fallback never fires during play either, at the largest fleet and 
     // stays false) — the same finding `tech-notes.md`'s new section states.
     expect(eventsChecked).toBeGreaterThan(20);
     expect(fallbackWouldHaveFired).toBe(false);
-  });
+  }, 30_000);
 });

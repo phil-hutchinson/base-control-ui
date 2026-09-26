@@ -3,10 +3,8 @@
 // section's paragraph and its three setting lines were rewritten verbatim by
 // the owner for the inactive node rotation options
 // (doc/plan/00000090-add-prospective-node-rotation-options/implementation-plan.md).
-// The STEALING NODES section's paragraph was drafted for the steal
-// playstyle and settled with the owner
-// (doc/plan/00000101-add-node-steal-play-variant/implementation-plan.md,
-// step 10).
+// The STEALING NODES section's paragraph describes the steal playstyle
+// (steal.md).
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //

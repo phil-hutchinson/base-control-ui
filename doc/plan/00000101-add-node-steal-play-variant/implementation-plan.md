@@ -61,7 +61,15 @@ planning (`story.md` already committed in `ea99b18`). During planning the
 orchestrator updated `CLAUDE.md` (the ruleset as `rules.md` plus companion
 files; the words **prospective node** and **signal**) and this plan
 corrected `story.md` in place to the owner's decisions; both are
-uncommitted and are committed ahead of Step 1 by the orchestrator.
+uncommitted and are committed ahead of Step 1 by the orchestrator. The same
+commit also updates five pipeline agent definitions and one command file to
+name "the ruleset in `doc/ruleset/` (`rules.md` and its companion files)" in
+place of `rules.md` alone: `.claude/agents/create-implementation-plan.md`,
+`.claude/agents/implement-step.md`, `.claude/agents/peer-review.md`,
+`.claude/agents/process-peer-review-fix.md`,
+`.claude/agents/process-peer-review-triage.md`, and
+`.claude/commands/update-readme.md` — wording only, no change to what any
+of them does (see D12).
 
 - `npm test` — **78 test files, 1523 tests, all green**.
 - `npm run typecheck`, `npm run lint` and `npm run format:check` — all
@@ -176,11 +184,12 @@ it.
   ruleset says so, with a short note that the app shows signals as colours.
   The board view maps signal to colour through an ordered five-colour
   palette — gold, silver (bright and polished, not the depleted grey), mid
-  blue, purple, off white — the first N used for N nodes. No colour, and no
-  signal, is named in any words: ruleset, square labels, live region. Exact
-  colour values, and the charged ball's size under STEAL (starting at about
-  48 against today's 70), are settled with the owner looking at a running
-  board, in their own step.
+  blue, purple, brown — the first N used for N nodes. No colour, and no
+  signal, is named in any words: ruleset, square labels, live region. The
+  charged ball under STEAL is the same starting ball every playstyle's
+  freshly charged node uses (radius 70), in the signal's colours. **Settled
+  at Step 8** — see that step's Notes for the final colour values and what
+  was rejected along the way.
 - **S12.** Signals are presented by colour alone: no shapes, numbers or
   letters, no pairing highlight. This is recorded as accessibility debt in
   `doc/plan/00000021-accessibility-tech-debt/known-issues.md`.
@@ -439,10 +448,11 @@ companion `steal.md`. The only player-facing link to the rulebook is
 too; the app and the Quick Guide link to no ruleset file. `CONTRIBUTING.md`'s
 "Architecture constraints" paragraph that names `rules.md` as the ruleset is
 a developer document and is brought in line in Step 1, alongside the
-`CLAUDE.md` wording the orchestrator already changed. The pipeline's own
-command files under `.claude/commands/` also name `rules.md` (for example
-`update-readme.md`); they are process files owned by the owner and are not
-edited by this plan.
+`CLAUDE.md` wording the orchestrator already changed. **Correction:** the
+pipeline's own agent and command files also named `rules.md` alone (for
+example `update-readme.md`); the owner edited five of them — the plan's
+Baseline records which — to name "the ruleset in `doc/ruleset/`" instead, in
+the same commit as the `CLAUDE.md` and `story.md` changes above.
 
 ## Step sequence at a glance
 
@@ -1379,9 +1389,7 @@ test for the other three playstyles passes unmodified. `npm run typecheck`,
 `npm run lint`, `npm run format:check` and the full `npm test` (80 files,
 1619 tests, up from the 1609-test baseline by 10) are all green.
 
-Not yet done: the owner's own visual re-check of this pass, which is why
-this step's Status is `implemented` and not `committed` — a further pass may
-follow if the re-check finds something to change.
+The owner accepted Pass 2, closing this step's gate.
 
 Settle the five colours and the steal ball's radius with the owner, looking
 at a running board (S11). Expect more than one pass. Only the palette

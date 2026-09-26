@@ -158,18 +158,16 @@ partner by distance from the node's own anchor plus a small nudge away from
 every other node, and halves that weight on the outer edge. Every draw made
 once play is under way — a claim's or an abandon's fresh square — comes from
 the same widened pool a refill's third square uses, constraints 3 and 4 both
-lifted. The opening deal's second square is the one exception (added at Step
-12, from the owner's own play, after rings kept turning up on the board's
-edge and corners while the middle sat empty): it is drawn by the same
-weighted rule, but over the **strict** pool first, falling back to the
-widened pool — and, from there, to §3.2's own fallback — only where the
-board leaves no strict square. `story.md`'s own table quoted figures measured
-before the draw existed, over an idealised board, and then again once the
-opening deal drew its second square from the widened pool; both are
-superseded by the tables below, measured against the real code (an
-improvised script, not committed — see
-`doc/plan/00000101-add-node-steal-play-variant`, implementation-plan.md,
-Steps 6 and 12).
+lifted. The opening deal's second square is the one exception, added after
+the owner's own play, when rings kept turning up on the board's edge and
+corners while the middle sat empty: it is drawn by the same weighted rule,
+but over the **strict** pool first, falling back to the widened pool — and,
+from there, to §3.2's own fallback — only where the board leaves no strict
+square. `story.md`'s own table quoted figures measured before the draw
+existed, over an idealised board, and then again once the opening deal drew
+its second square from the widened pool; both are superseded by the tables
+below, measured against the real code (an improvised script, not
+committed).
 
 **The opening deal**, over **20,000 simulated deals per node count**, at the
 app's default fleet of **five ships a side**:
@@ -185,12 +183,10 @@ has room, which the fallback count shows is everywhere this script tried,
 including the worst case for available squares — the largest fleet, six
 ships a side, and the most nodes, five, checked the same way over a further
 20,000 deals: the strict pool was never once empty for a second square
-there either. The mean distance moves only slightly from Step 6's own
-widened-pool figures (6.73, 6.82, 6.91), since the strict pool is a large
-majority of the widened one and the weighting formula is unchanged — the
-distance the opening deal produces was never really about which pool it
-drew from, only the outer-edge share was, and that share is now zero at the
-opening rather than roughly a quarter.
+there either. The mean distance drops from the figures measured when the
+second opening square drew from the widened pool (6.73, 6.82, 6.91) by
+about 1.3, roughly 20% — the outer-edge share is the one that falls
+furthest, from roughly a quarter to zero at the opening.
 
 **Mid-game draws** — every claim's and every abandon's fresh square, which
 still draw from the widened pool exactly as before — over ten seeded
@@ -201,13 +197,11 @@ still draw from the widened pool exactly as before — over ten seeded
 | Mean distance from the anchor  | 7.88   |
 | Fresh square on the outer edge | 27%    |
 
-This is close to Step 6's own combined figure (mean distance around 6.9,
-edge share around a quarter) but a little higher on both: a mid-game draw's
-occupied board — nodes and ships scattered from a live game rather than an
-empty one — pushes candidates further out on average than an opening deal
-does. Without the outer-edge halving the edge share would be expected to
-roughly double, as Step 6 found; this run does not re-check that, since the
-halving itself is unchanged from Step 6's measurement.
+This is close to the combined figure recorded before the opening deal split
+from mid-game draws (mean distance around 6.9, edge share around a quarter)
+but a little higher on both: a mid-game draw's occupied board — nodes and
+ships scattered from a live game rather than an empty one — pushes
+candidates further out on average than an opening deal does.
 
 `story.md`'s placement table has been corrected in place to the figures
 above, per this project's rule that the story records what was actually

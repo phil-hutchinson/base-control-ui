@@ -45,10 +45,11 @@ the project's contribution notes).
   planet and dedicated — the three existing bullets are unchanged. A
   sentence notes that steal is not a way of rotating anything, but a
   different game of nodes.
-- **Section 1's overview** notes, in two places, that its description of
-  nodes being born, redrawn and refilled, and its list of random elements,
-  do not hold under steal, whose own random element is where each
-  prospective square is drawn.
+- **Section 1's overview** notes, in three places, that its description of
+  nodes being born, redrawn and refilled, its statement that a burned-out
+  node traps the ship standing on it, and its list of random elements, do
+  not hold under steal, whose own random element is where each prospective
+  square is drawn.
 - **Section 2's words** gains entries for **prospective node** and
   **signal**, both steal-only, and notes that **node**, **priority**,
   **rotator**, **countdown** and **trapped** each work differently, or not
