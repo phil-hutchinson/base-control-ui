@@ -48,9 +48,24 @@
 // figure below stands exactly as it did before 0.38. Only an ON game adds
 // steps, exactly six at the opening deal, which `gameState.test.ts` asserts
 // directly.
+//
+// 0.39 added steal, a fourth node playstyle with node rules of its own
+// (steal.md) and a seed usage that has nothing to do with the queue above:
+// the opening deal draws `2 * chargedNodeCount` steps, one per prospective
+// square (steal.md §7); every claim and every abandon a game plays draws
+// exactly one more, for its fresh prospective square (steal.md §§3, 4, 6);
+// and the end of a turn draws nothing at all, since only power and energy
+// run (steal.md §8). The sequence of `node-claimed` and `node-abandoned`
+// effects a steal game produces is recorded and compared below, the same
+// way the queue's refills are above.
 
 import { describe, expect, it } from "vitest";
-import { type Square, squareName } from "./board";
+import {
+  chebyshevDistance,
+  type Square,
+  squareFromName,
+  squareName,
+} from "./board";
 import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
@@ -226,7 +241,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     fleetSize: 6,
     chargedNodeCount: 5,
     scoring: "simple",
-    nodeRotation: "continuous",
+    nodePlaystyle: "continuous",
   });
   const openingBoard = state.nodes;
   const planetReturns: string[] = [];
@@ -384,12 +399,12 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
     const continuousState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
     });
     const planetState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
     });
 
     // The default is planet, so naming it explicitly changes nothing.
@@ -410,12 +425,12 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
     const continuousState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
     });
     const dedicatedState = startingGameState(seed, {
       lengthInRounds: 40,
       combatEnabled: true,
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
     });
 
     // The board itself — nodes and ships — is dealt identically; only the
@@ -425,5 +440,249 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
     expect(dedicatedState.ships).toEqual(continuousState.ships);
     expect(dedicatedState.randomSeed).not.toBe(continuousState.randomSeed);
     expect(dedicatedState.rotators.length).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The Chebyshev distance from `square` to the nearest prospective node right
+ * now — under steal a prospective node is the only landable node square
+ * (steal.md §2), so this is what a ship heads for once no attack and no
+ * direct landing is available.
+ */
+function distanceToNearestProspective(
+  state: GameState,
+  square: Square,
+): number {
+  let nearest = Infinity;
+  for (const [name, status] of Object.entries(state.nodes)) {
+    if (status.state !== "prospective") {
+      continue;
+    }
+    const distance = chebyshevDistance(square, squareFromName(name));
+    if (distance < nearest) {
+      nearest = distance;
+    }
+  }
+  return nearest;
+}
+
+/**
+ * An attack-first policy for a steal game: the first ship, in fleet order,
+ * with a legal attack takes it; failing that, the first ship, in
+ * fleet-then-destination order, with a legal move onto a prospective node
+ * takes it — claiming or stealing it (steal.md §3) is the only way onto a
+ * steal node at all; failing that, the move that most closes the distance to
+ * the nearest prospective node; failing that, the first ship with any legal
+ * move; failing that, there is nothing to do and the pass guard handles it.
+ */
+function chooseStealPly(state: GameState): PlyChoice | undefined {
+  for (const ship of state.ships) {
+    const targets = legalTargets(state, ship.id);
+    if (targets.length > 0) {
+      return { kind: "attack", shipId: ship.id, target: targets[0] };
+    }
+  }
+
+  for (const ship of state.ships) {
+    for (const destination of legalDestinations(state, ship.id)) {
+      if (nodeStateAt(state, destination) === "prospective") {
+        return { kind: "move", shipId: ship.id, destination };
+      }
+    }
+  }
+
+  let best:
+    { shipId: ShipId; destination: Square; improvement: number } | undefined;
+  for (const ship of state.ships) {
+    const destinations = legalDestinations(state, ship.id);
+    if (destinations.length === 0) {
+      continue;
+    }
+    const fromDistance = distanceToNearestProspective(state, ship.square);
+    for (const destination of destinations) {
+      const toDistance = distanceToNearestProspective(state, destination);
+      const improvement = fromDistance - toDistance;
+      if (best === undefined || improvement > best.improvement) {
+        best = { shipId: ship.id, destination, improvement };
+      }
+    }
+  }
+  if (best !== undefined) {
+    return { kind: "move", shipId: best.shipId, destination: best.destination };
+  }
+
+  for (const ship of state.ships) {
+    const destinations = legalDestinations(state, ship.id);
+    if (destinations.length > 0) {
+      return { kind: "move", shipId: ship.id, destination: destinations[0] };
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * One `node-claimed` or `node-abandoned` effect, reduced to the fields worth
+ * comparing across a replay: the signal, the square the event happened at,
+ * whether a claim released a square (a steal, or a relocation), and the
+ * fresh prospective square drawn.
+ */
+type StealNodeEvent =
+  | {
+      readonly kind: "claimed";
+      readonly signal: number;
+      readonly square: string;
+      readonly releasedSquare: string | undefined;
+      readonly newProspective: string;
+    }
+  | {
+      readonly kind: "abandoned";
+      readonly signal: number;
+      readonly square: string;
+      readonly newProspective: string;
+    };
+
+/** Every steal node event nested inside a ply's own effects, in order (steal.md §§3-5). */
+function stealNodeEvents(
+  effects: readonly (MoveEffect | AttackEffect)[],
+): readonly StealNodeEvent[] {
+  const events: StealNodeEvent[] = [];
+  for (const effect of effects) {
+    if (effect.type === "node-abandoned") {
+      events.push({
+        kind: "abandoned",
+        signal: effect.signal,
+        square: squareName(effect.square),
+        newProspective: squareName(effect.newProspective),
+      });
+    } else if (effect.type === "node-claimed") {
+      events.push({
+        kind: "claimed",
+        signal: effect.signal,
+        square: squareName(effect.square),
+        releasedSquare:
+          effect.releasedSquare === undefined
+            ? undefined
+            : squareName(effect.releasedSquare),
+        newProspective: squareName(effect.newProspective),
+      });
+    }
+  }
+  return events;
+}
+
+interface PlayedStealGame {
+  readonly finalState: GameState;
+  readonly openingBoard: Readonly<Record<string, GameState["nodes"][string]>>;
+  readonly events: readonly StealNodeEvent[];
+  readonly fightCount: number;
+}
+
+/**
+ * Plays a whole steal game from `seed` at `lengthInRounds` using
+ * `chooseStealPly`, and records the opening board the seed dealt (steal.md
+ * §7) before play began, every `node-claimed` and `node-abandoned` event the
+ * game raised, in order, and how many fights happened.
+ */
+function playSeededStealGame(
+  seed: number,
+  lengthInRounds: number,
+): PlayedStealGame {
+  let state = startingGameState(seed, {
+    lengthInRounds,
+    combatEnabled: true,
+    fleetSize: 6,
+    chargedNodeCount: 5,
+    scoring: "simple",
+    nodePlaystyle: "steal",
+  });
+  const openingBoard = state.nodes;
+  const events: StealNodeEvent[] = [];
+  let fightCount = 0;
+
+  let pliesApplied = 0;
+  while (!isGameOver(state)) {
+    if (pliesApplied >= MAX_PLIES) {
+      throw new Error(
+        `seeded steal replay game exceeded ${MAX_PLIES} plies without ending — likely a regression`,
+      );
+    }
+    pliesApplied += 1;
+
+    const choice = chooseStealPly(state);
+
+    if (choice === undefined) {
+      const { state: nextState } = applyPassGuard(state);
+      state = nextState;
+      continue;
+    }
+
+    if (choice.kind === "attack") {
+      const result = applyAttack(state, choice.shipId, choice.target);
+      if (result.outcome !== "applied") {
+        throw new Error(
+          `policy chose an illegal attack: ${result.reason} for ${choice.shipId} on ${squareName(choice.target)}`,
+        );
+      }
+      state = result.state;
+      for (const effect of result.effects) {
+        if (effect.type === "fight-resolved") {
+          fightCount += 1;
+        }
+      }
+      events.push(...stealNodeEvents(result.effects));
+    } else {
+      const result = applyMove(state, choice.shipId, choice.destination);
+      if (result.outcome !== "applied") {
+        throw new Error(
+          `policy chose an illegal move: ${result.reason} for ${choice.shipId} to ${squareName(choice.destination)}`,
+        );
+      }
+      state = result.state;
+      events.push(...stealNodeEvents(result.effects));
+    }
+  }
+
+  return { finalState: state, openingBoard, events, fightCount };
+}
+
+describe("a seeded steal game replays its opening board and its claim and abandon sequence exactly (steal.md)", () => {
+  it("produces plenty of claims, steals and abandons over a forty-round game — the run is not vacuous", () => {
+    const { events, fightCount } = playSeededStealGame(20260819, 40);
+
+    const claimed = events.filter((event) => event.kind === "claimed");
+    const stolen = claimed.filter(
+      (event) => event.releasedSquare !== undefined,
+    );
+    const abandoned = events.filter((event) => event.kind === "abandoned");
+
+    // This seed over forty rounds measures 40 claims, 22 of them steals, 15
+    // abandons and 8 fights. These are this run's own numbers and move with
+    // any rule that changes the course of a ply, so the floors below leave
+    // margin.
+    expect(claimed.length).toBeGreaterThanOrEqual(10);
+    expect(stolen.length).toBeGreaterThanOrEqual(5);
+    expect(abandoned.length).toBeGreaterThanOrEqual(5);
+    expect(fightCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it("replays the same opening board, the same claim-and-abandon sequence and the same final state from the same seed", () => {
+    const first = playSeededStealGame(20260819, 40);
+    const second = playSeededStealGame(20260819, 40);
+
+    expect(second.openingBoard).toEqual(first.openingBoard);
+    expect(second.events).toEqual(first.events);
+    expect(second.finalState).toEqual(first.finalState);
+  });
+
+  it("deals a different opening board and produces a different claim-and-abandon sequence from a different seed", () => {
+    // Any pair of distinct seeds is expected to diverge; this pair is
+    // confirmed to by running this test. If a future change to the game
+    // happens to make it coincide, pick another pair.
+    const first = playSeededStealGame(20260819, 40);
+    const second = playSeededStealGame(20260820, 40);
+
+    expect(second.openingBoard).not.toEqual(first.openingBoard);
+    expect(second.events).not.toEqual(first.events);
   });
 });

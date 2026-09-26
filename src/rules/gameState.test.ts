@@ -19,7 +19,8 @@ import {
   dealOpeningBoard,
 } from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
-import { DEFAULT_NODE_ROTATION, NODE_ROTATION_SETTINGS } from "./nodeRotation";
+import { DEFAULT_NODE_PLAYSTYLE, NODE_PLAYSTYLES } from "./nodePlaystyle";
+import { dealStealOpeningBoard } from "./steal";
 import { legalDestinations } from "./movement";
 import { PLANET_BONUS_SETTINGS } from "./planetBonus";
 import { isPlanet } from "./planets";
@@ -408,35 +409,37 @@ describe("startingGameState", () => {
     },
   );
 
-  it("defaults to planet node rotation, the app's default, with an empty rotator list, when none is given", () => {
+  it("defaults to the planet playstyle, the app's default, with an empty rotator list, when none is given", () => {
     const state = startingGameState(SEED);
 
-    expect(state.nodeRotation).toBe("planet");
-    expect(state.nodeRotation).toBe(DEFAULT_NODE_ROTATION);
+    expect(state.nodePlaystyle).toBe("planet");
+    expect(state.nodePlaystyle).toBe(DEFAULT_NODE_PLAYSTYLE);
     expect(state.rotators).toEqual([]);
   });
 
-  it("takes a given node rotation setting, changing nothing else about the state", () => {
-    const defaultRotation = startingGameState(SEED);
-    const planetRotation = startingGameState(SEED, { nodeRotation: "planet" });
+  it("takes a given node playstyle, changing nothing else about the state", () => {
+    const defaultPlaystyle = startingGameState(SEED);
+    const planetPlaystyle = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+    });
 
-    expect(planetRotation.nodeRotation).toBe("planet");
-    expect(planetRotation.rotators).toEqual([]);
+    expect(planetPlaystyle.nodePlaystyle).toBe("planet");
+    expect(planetPlaystyle.rotators).toEqual([]);
     expect({
-      ...planetRotation,
-      nodeRotation: defaultRotation.nodeRotation,
-    }).toEqual(defaultRotation);
+      ...planetPlaystyle,
+      nodePlaystyle: defaultPlaystyle.nodePlaystyle,
+    }).toEqual(defaultPlaystyle);
   });
 
-  it("is one of the offered node rotation settings, exactly the one given", () => {
-    const state = startingGameState(SEED, { nodeRotation: "dedicated" });
+  it("is one of the offered node playstyles, exactly the one given", () => {
+    const state = startingGameState(SEED, { nodePlaystyle: "dedicated" });
 
-    expect(NODE_ROTATION_SETTINGS).toContain(state.nodeRotation);
-    expect(state.nodeRotation).toBe("dedicated");
+    expect(NODE_PLAYSTYLES).toContain(state.nodePlaystyle);
+    expect(state.nodePlaystyle).toBe("dedicated");
   });
 
-  it("carries nodeRotation unchanged through a move, for the game's lifetime", () => {
-    const state = startingGameState(SEED, { nodeRotation: "planet" });
+  it("carries nodePlaystyle unchanged through a move, for the game's lifetime", () => {
+    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
     const ship = state.ships.find(
       (candidate) => legalDestinations(state, candidate.id).length > 0,
     );
@@ -451,27 +454,27 @@ describe("startingGameState", () => {
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(result.state.nodeRotation).toBe("planet");
+    expect(result.state.nodePlaystyle).toBe("planet");
   });
 
   it.each(["CONTINUOUS", "planets", "rotator", ""])(
-    "throws a RangeError for a node rotation setting of %j",
-    (nodeRotation) => {
-      expect(() => startingGameState(SEED, { nodeRotation })).toThrow(
+    "throws a RangeError for a node playstyle of %j",
+    (nodePlaystyle) => {
+      expect(() => startingGameState(SEED, { nodePlaystyle })).toThrow(
         RangeError,
       );
     },
   );
 
   it("leaves the rotator list empty at continuous and planet, whatever the seed", () => {
-    for (const nodeRotation of ["continuous", "planet"] as const) {
-      const state = startingGameState(SEED, { nodeRotation });
+    for (const nodePlaystyle of ["continuous", "planet"] as const) {
+      const state = startingGameState(SEED, { nodePlaystyle });
       expect(state.rotators).toEqual([]);
     }
   });
 
   it("places up to six rotators under dedicated, at most one per section, none on a planet, a ship or a node", () => {
-    const state = startingGameState(SEED, { nodeRotation: "dedicated" });
+    const state = startingGameState(SEED, { nodePlaystyle: "dedicated" });
 
     expect(state.rotators.length).toBeGreaterThan(0);
     expect(state.rotators.length).toBeLessThanOrEqual(6);
@@ -498,10 +501,10 @@ describe("startingGameState", () => {
     expect(sectionsHit.size).toBe(state.rotators.length);
   });
 
-  it("leaves randomSeed unaffected by node rotation at continuous and planet, but advanced further at dedicated", () => {
-    const continuous = startingGameState(SEED, { nodeRotation: "continuous" });
-    const planet = startingGameState(SEED, { nodeRotation: "planet" });
-    const dedicated = startingGameState(SEED, { nodeRotation: "dedicated" });
+  it("leaves randomSeed unaffected by node playstyle at continuous and planet, but advanced further at dedicated", () => {
+    const continuous = startingGameState(SEED, { nodePlaystyle: "continuous" });
+    const planet = startingGameState(SEED, { nodePlaystyle: "planet" });
+    const dedicated = startingGameState(SEED, { nodePlaystyle: "dedicated" });
 
     expect(planet.randomSeed).toBe(continuous.randomSeed);
     expect(dedicated.randomSeed).not.toBe(continuous.randomSeed);
@@ -570,15 +573,81 @@ describe("startingGameState", () => {
 
   it("deals bonus planets after the rotator draw, leaving the rotator set unaffected by the setting", () => {
     const bonusOff = startingGameState(SEED, {
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       planetBonus: "off",
     });
     const bonusOn = startingGameState(SEED, {
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       planetBonus: "three",
     });
 
     expect(bonusOn.rotators).toEqual(bonusOff.rotators);
+  });
+});
+
+describe("startingGameState under steal (steal.md §7)", () => {
+  it("deals the board dealStealOpeningBoard deals for the same seed: 2N prospective squares, no charged, inactive or depleted square, and no rotators", () => {
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+    });
+    const [dealt] = dealStealOpeningBoard(STARTING_FLEET_SQUARES, 4, SEED);
+
+    expect(state.nodes).toEqual(dealt);
+    expect(Object.values(state.nodes)).toHaveLength(8);
+    for (const status of Object.values(state.nodes)) {
+      expect(status.state).toBe("prospective");
+      expect(status.level).toBe(0);
+    }
+    expect(state.rotators).toEqual([]);
+  });
+
+  it.each(CHARGED_NODE_COUNTS)(
+    "opens with exactly 2 x %d prospective squares and no charged square anywhere",
+    (chargedNodeCount) => {
+      const state = startingGameState(SEED, {
+        nodePlaystyle: "steal",
+        chargedNodeCount,
+      });
+
+      const statuses = Object.values(state.nodes);
+      expect(statuses).toHaveLength(chargedNodeCount * 2);
+      expect(statuses.every((status) => status.state === "prospective")).toBe(
+        true,
+      );
+    },
+  );
+
+  it("deals the same steal board for the same seed, and a different one for a different seed", () => {
+    const first = startingGameState(SEED, { nodePlaystyle: "steal" });
+    const second = startingGameState(SEED, { nodePlaystyle: "steal" });
+    const third = startingGameState(SEED + 1, { nodePlaystyle: "steal" });
+
+    expect(second.nodes).toEqual(first.nodes);
+    expect(third.nodes).not.toEqual(first.nodes);
+  });
+
+  it("consumes exactly 2N seed steps for the deal, leaving the bonus deal to run afterwards unchanged", () => {
+    const withoutBonus = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+      planetBonus: "off",
+    });
+    const [, seedAfterDeal] = dealStealOpeningBoard(
+      STARTING_FLEET_SQUARES,
+      4,
+      SEED,
+    );
+    expect(withoutBonus.randomSeed).toBe(seedAfterDeal);
+
+    const withBonus = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+      planetBonus: "two",
+    });
+    expect(withBonus.bonusPlanets.green).toHaveLength(3);
+    expect(withBonus.bonusPlanets.red).toHaveLength(3);
+    expect(withBonus.randomSeed).not.toBe(seedAfterDeal);
   });
 });
 

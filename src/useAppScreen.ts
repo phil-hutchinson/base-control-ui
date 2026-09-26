@@ -16,9 +16,9 @@ import { DEFAULT_COMBAT_ENABLED } from "./rules/combatSetting";
 import { DEFAULT_FLEET_SIZE, type FleetSize } from "./rules/fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./rules/gameLength";
 import {
-  DEFAULT_NODE_ROTATION,
-  type NodeRotationSetting,
-} from "./rules/nodeRotation";
+  DEFAULT_NODE_PLAYSTYLE,
+  type NodePlaystyle,
+} from "./rules/nodePlaystyle";
 import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
@@ -36,7 +36,7 @@ export interface AppScreen {
   readonly chargedNodeCount: ChargedNodeCount;
   readonly combatEnabled: boolean;
   readonly scoring: ScoringSetting;
-  readonly nodeRotation: NodeRotationSetting;
+  readonly nodePlaystyle: NodePlaystyle;
   readonly planetBonus: PlanetBonusSetting;
   readonly lengthInRounds: number;
   readonly clockSetting: ClockSetting;
@@ -44,7 +44,7 @@ export interface AppScreen {
   readonly setChargedNodeCount: (chargedNodeCount: ChargedNodeCount) => void;
   readonly setCombatEnabled: (combatEnabled: boolean) => void;
   readonly setScoring: (scoring: ScoringSetting) => void;
-  readonly setNodeRotation: (nodeRotation: NodeRotationSetting) => void;
+  readonly setNodePlaystyle: (nodePlaystyle: NodePlaystyle) => void;
   readonly setPlanetBonus: (planetBonus: PlanetBonusSetting) => void;
   readonly setLengthInRounds: (lengthInRounds: number) => void;
   readonly setClockSetting: (clockSetting: ClockSetting) => void;
@@ -59,7 +59,7 @@ export interface AppScreen {
  * and delegates which screen is showing to `useScreenAddress`, which reads it
  * from the browser's address. `handlePlay` dispatches `new-game` with a fresh
  * seed and the fleet size, charged-node count, combat setting, scoring
- * setting, node rotation setting, planet bonus setting and length through
+ * setting, node playstyle, planet bonus setting and length through
  * `dispatch`, then hands the game its address; `handleReturnToStart` moves
  * the browser back, the same as its own Back button. The clock setting is not
  * part of `new-game` — the rules layer knows nothing about time — so it is
@@ -80,8 +80,8 @@ export function useAppScreen(
   );
   const [combatEnabled, setCombatEnabled] = useState(DEFAULT_COMBAT_ENABLED);
   const [scoring, setScoring] = useState<ScoringSetting>(DEFAULT_SCORING);
-  const [nodeRotation, setNodeRotation] = useState<NodeRotationSetting>(
-    DEFAULT_NODE_ROTATION,
+  const [nodePlaystyle, setNodePlaystyle] = useState<NodePlaystyle>(
+    DEFAULT_NODE_PLAYSTYLE,
   );
   const [planetBonus, setPlanetBonus] =
     useState<PlanetBonusSetting>(DEFAULT_PLANET_BONUS);
@@ -101,7 +101,7 @@ export function useAppScreen(
       chargedNodeCount,
       combatEnabled,
       scoring,
-      nodeRotation,
+      nodePlaystyle,
       planetBonus,
     });
     showGame();
@@ -121,7 +121,7 @@ export function useAppScreen(
     chargedNodeCount,
     combatEnabled,
     scoring,
-    nodeRotation,
+    nodePlaystyle,
     planetBonus,
     lengthInRounds,
     clockSetting,
@@ -129,7 +129,7 @@ export function useAppScreen(
     setChargedNodeCount,
     setCombatEnabled,
     setScoring,
-    setNodeRotation,
+    setNodePlaystyle,
     setPlanetBonus,
     setLengthInRounds,
     setClockSetting,

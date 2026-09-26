@@ -7,6 +7,73 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.39 — steal, a fourth node playstyle
+
+This is a gameplay change — a fourth way to play the game's nodes — and so
+would be a tag candidate; tagging stays on hold until the game plays (see
+the project's contribution notes).
+
+- **The ruleset gains a companion file, [steal.md](steal.md)**, holding the
+  node rules of the new **steal** playstyle. It is versioned by this
+  document — the version number at the top of `rules.md` covers both files,
+  and `steal.md` carries no version number of its own.
+- **`steal.md` in summary**: under steal, a node is a **signal** with
+  exactly two squares — one **charged** and one **prospective** when the
+  node is held, or two **prospective** when it is not. Every node is dealt
+  unheld. Landing on a prospective square claims the node — whether it was
+  unheld, the opponent's, or the landing player's own — charging that square,
+  clearing whatever the node's charged square was before (leaving any ship
+  standing there on an ordinary square), and drawing the node one fresh
+  prospective square. Moving off a charged square without landing on that
+  node's own prospective gives the node up: the square goes ordinary and the
+  node draws a second prospective square. When one move does both, leaving
+  comes first. A prospective square is drawn from the same widened pool a
+  refill's third square uses today, weighted by distance from the node's own
+  anchor and from every other node, with the outer edge's weight halved — the
+  opening deal's second square is the one exception, drawn by the same
+  weighted rule but over the **strict** pool instead, only falling back to
+  the widened pool (and, from there, to §3.2's own fallback) where the board
+  leaves no strict square, so an opening deal keeps its rings off the outer
+  two rings except as a last resort. There is no countdown, no depletion, no
+  trap, no priority, no rotation, no queue, no refill and no rotator under
+  steal; of the end-of-turn order, only power and energy run.
+- **Section 8** gains an opening sentence: it describes the continuous,
+  planet and dedicated playstyles, and under steal a node's rules are
+  `steal.md`'s instead.
+- **Section 8.2** renames its choice from "how the priorities rotate" to the
+  **node playstyle**, and adds steal as a fourth option alongside continuous,
+  planet and dedicated — the three existing bullets are unchanged. A
+  sentence notes that steal is not a way of rotating anything, but a
+  different game of nodes.
+- **Section 1's overview** notes, in three places, that its description of
+  nodes being born, redrawn and refilled, its statement that a burned-out
+  node traps the ship standing on it, and its list of random elements, do
+  not hold under steal, whose own random element is where each prospective
+  square is drawn.
+- **Section 2's words** gains entries for **prospective node** and
+  **signal**, both steal-only, and notes that **node**, **priority**,
+  **rotator**, **countdown** and **trapped** each work differently, or not
+  at all, under steal.
+- **Sections 3.2, 3.3, 4.1, 5, 6 and 7** each gain a sentence noting where
+  steal departs from what the section otherwise states: the prospective
+  draw is `steal.md`'s own; no rotators are laid down; a prospective node
+  does nothing to power; no node square is ever closed and no ship is ever
+  trapped; landing on a prospective node is legal and is how a node is
+  claimed; and a holder can be driven off its node, and a holder who leaves
+  does not give the node up still lit.
+- **Section 8.4** gains a sentence that energy works the same way under
+  steal. **Section 8.6** gains a sentence that under steal only steps 1
+  and 2 of the end-of-turn order run.
+- **Section 10's opening sentence** now names "the node playstyle" rather
+  than "how the priorities rotate", matching section 8.2's renamed choice.
+- **Nothing else changes.** The continuous, planet and dedicated playstyles
+  play and look exactly as they did in version 0.38 — rotators, countdowns,
+  depletion and all. Movement, combat (including that a ship on a charged
+  node can neither attack nor be attacked), planets, the planet bonus,
+  energy's pricing, rounds, the clock and seeded replay are all unchanged;
+  the only movement change is that a prospective node becomes a legal place
+  to land, under steal only.
+
 ## 0.38 — planet bonuses become a choice
 
 This is a gameplay change — a new way to earn energy — and so would be a

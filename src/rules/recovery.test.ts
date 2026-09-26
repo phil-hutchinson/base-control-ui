@@ -51,7 +51,7 @@ function buildState(config: {
     plyNumber: 1,
     randomSeed: 1,
     openingSeed: 1,
-    nodeRotation: "continuous",
+    nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },

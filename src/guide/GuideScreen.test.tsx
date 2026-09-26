@@ -13,7 +13,7 @@ import { GuideScreen } from "./GuideScreen";
 afterEach(cleanup);
 
 describe("GuideScreen", () => {
-  it("shows the title and the five headings in the story's order", () => {
+  it("shows the title and the six headings in the story's order", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     expect(
@@ -26,7 +26,7 @@ describe("GuideScreen", () => {
     );
   });
 
-  it("renders all six paragraphs from the copy module", () => {
+  it("renders all seven paragraphs from the copy module", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     expect(screen.getByText(GUIDE_INTRO_PARAGRAPH)).toBeInTheDocument();
@@ -35,13 +35,13 @@ describe("GuideScreen", () => {
     }
   });
 
-  it("renders seven diagrams: the scoring diagram, one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
+  it("renders eight diagrams: the scoring diagram, one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
     const { container } = render(<GuideScreen onBack={vi.fn()} />);
 
-    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(7);
+    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(8);
   });
 
-  it("renders the node rotation setting lines and the rotator square after them, in order", () => {
+  it("renders the node playstyle setting lines and the rotator square after them, in order", () => {
     const { container } = render(<GuideScreen onBack={vi.fn()} />);
 
     const nodeSelectionSection = GUIDE_SECTIONS.find(
@@ -73,6 +73,32 @@ describe("GuideScreen", () => {
         previousLabel.compareDocumentPosition(rotatorMark) &
           Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+
+  it("pairs STEALING NODES, after NEW CHARGED NODE SELECTION, with a diagram showing a red ship", () => {
+    render(<GuideScreen onBack={vi.fn()} />);
+
+    const headings = screen
+      .getAllByRole("heading", { level: 2 })
+      .map((heading) => heading.textContent);
+    const nodeSelectionIndex = headings.indexOf("NEW CHARGED NODE SELECTION");
+    const stealingNodesIndex = headings.indexOf("STEALING NODES");
+    const planetBonusIndex = headings.indexOf("PLANET BONUS");
+    expect(stealingNodesIndex).toBe(nodeSelectionIndex + 1);
+    expect(planetBonusIndex).toBe(stealingNodesIndex + 1);
+
+    const heading = screen.getByRole("heading", {
+      level: 2,
+      name: "STEALING NODES",
+    });
+    const section = heading.closest("section");
+    expect(section).not.toBeNull();
+    expect(section?.querySelectorAll(".node-marker--prospective")).toHaveLength(
+      1,
+    );
+    expect(section?.querySelectorAll(".node-marker--charged")).toHaveLength(2);
+    expect(section?.querySelectorAll(".ship-model--red")).toHaveLength(2);
+    expect(section?.querySelectorAll(".ship-model--green")).toHaveLength(2);
   });
 
   it("pairs PLANET BONUS, last in the story's order, with a diagram of three planets and one checkmark", () => {

@@ -16,10 +16,11 @@ produce lives in `doc/plan/<story-folder>/`.
 2. Read `doc/guidelines/implementation-plan-guide.md` and follow it exactly,
    including its per-step Status field, automated/manual verification
    labeling, and cold-reader standard.
-3. Read `doc/ruleset/rules.md` if the story touches how the game is played.
-   It is the single source of truth; the plan must implement it, never
-   reinterpret it. If the story requires a rules change, the plan's first
-   substantive step updates the rules document and its version.
+3. Read the ruleset in `doc/ruleset/` (`rules.md` and its companion files)
+   if the story touches how the game is played. It is the single source of
+   truth; the plan must implement it, never reinterpret it. If the story
+   requires a rules change, the plan's first substantive step updates the
+   ruleset and its version.
 4. Explore the codebase as needed to ground the plan in what actually exists
    (current modules, tests, npm scripts).
 5. Write `doc/plan/<story-folder>/implementation-plan.md`. If one already

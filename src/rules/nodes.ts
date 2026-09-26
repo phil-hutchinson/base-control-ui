@@ -1,17 +1,24 @@
-// The three states a node can be in (rules.md §8.1), the offered
-// charged-node counts (rules.md §8.1), and the opening deal (rules.md §8.1):
-// it draws the charged squares, deals each at baseline (no countdown), and
-// places the three inactive nodes by the same refill procedure a later
-// charge uses. An inactive node's `level` carries its priority instead
-// (`nodeQueue.ts` owns everything about that); a charged or depleted node's
-// `level` is plies remaining in its countdown, owned by `countdown.ts`.
+// The states a node can be in (rules.md §8.1), the offered charged-node
+// counts (rules.md §8.1), and the opening deal (rules.md §8.1): it draws the
+// charged squares, deals each at baseline (no countdown), and places the
+// three inactive nodes by the same refill procedure a later charge uses. An
+// inactive node's `level` carries its priority instead (`nodeQueue.ts` owns
+// everything about that); a charged or depleted node's `level` is plies
+// remaining in its countdown, owned by `countdown.ts`. This deal is the
+// continuous, planet and dedicated playstyles' own; under steal, `steal.ts`
+// deals the opening board instead (steal.md §7).
 
 import { ALL_SQUARES, type Square, squareName } from "./board";
 import { drawNodeSquare } from "./nodePlacement";
 import { refillQueue } from "./nodeQueue";
 
-/** The three states a node can be in (rules.md §8.1). */
-export type NodeState = "inactive" | "charged" | "depleted";
+/**
+ * The states a node can be in: `"inactive"`, `"charged"` and `"depleted"`
+ * under the continuous, planet and dedicated playstyles (rules.md §8.1);
+ * `"prospective"` under steal only (steal.md §2), where a node never goes
+ * inactive or depleted at all.
+ */
+export type NodeState = "inactive" | "charged" | "depleted" | "prospective";
 
 /** How many nodes the board keeps charged, chosen before play (rules.md §8.1). */
 export type ChargedNodeCount = 3 | 4 | 5;

@@ -2,7 +2,7 @@
 // app's default, the guard over them and the payout each carries. Pure data
 // about a choice, with no knowledge of a game state or of which planets are
 // dealt to which side, leaving this a leaf module the way `clock.ts`,
-// `combatSetting.ts`, `nodeRotation.ts` and `scoring.ts` already are.
+// `combatSetting.ts`, `nodePlaystyle.ts` and `scoring.ts` already are.
 
 /**
  * A planet bonus setting: `"off"` pays nothing, `"two"` and `"three"` pay

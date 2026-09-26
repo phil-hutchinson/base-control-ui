@@ -1,10 +1,12 @@
 // The guide's diagrams: each a thin component handing `GuideDiagram` a
 // fixed list of cells built from real `BoardSquare`s, so a future restyle of
-// ship or node art redraws these for free. Every ship is green; no square
-// carries a selection mark or a condition bar. Countdown numbers and cycle
-// positions are derived from `../rules/countdown`, exactly as `Board` derives
-// them, rather than typed in by hand. NEW CHARGED NODE SELECTION carries two
-// of these — the rotation diagram every setting shares, and a second, a bare
+// ship or node art redraws these for free. Every ship is green, except
+// STEALING NODES's diagram — the one exception — which shows a red ship
+// too, since a steal needs both sides to make sense. No square carries a
+// selection mark or a condition bar. Countdown numbers and cycle positions
+// are derived from `../rules/countdown`, exactly as `Board` derives them,
+// rather than typed in by hand. NEW CHARGED NODE SELECTION carries two of
+// these — the rotation diagram every setting shares, and a second, a bare
 // square holding a rotator, for the dedicated setting alone. PLANET BONUS's
 // diagram is the one exception to "built from `BoardSquare`s": its cells are
 // `PlanetBonusCell`, the same cell `PlanetBonusPanel` draws, so the guide's
@@ -16,6 +18,7 @@ import type { NodePriority } from "../rules/nodeQueue";
 import type { PowerLevel } from "../rules/power";
 import { MAX_POWER } from "../rules/power";
 import type { ScoringSetting } from "../rules/scoring";
+import type { NodeSignal } from "../rules/steal";
 import { PLANET_ART } from "../board/planetArt";
 import type { GuideDiagramCell } from "./GuideDiagram";
 import { GuideDiagram } from "./GuideDiagram";
@@ -239,8 +242,74 @@ export function RotatorSquareDiagram() {
   return <GuideDiagram columns={1} cells={cells} />;
 }
 
+// The signal STEALING NODES's diagram draws with — the palette's first, so
+// the diagram shows in the same colour every steal game's first node does.
+const STEALING_DIAGRAM_SIGNAL: NodeSignal = 0;
+const STEALING_DIAGRAM_POWER = 4;
+
 /**
- * Diagram 7: green's bonus row alone — three planets, one already carrying
+ * Diagram 7: a steal (steal.md §§3-4) at a glance. Before: green holds a
+ * node (its charged square), the node's prospective square sits beside it,
+ * and red's ship waits next to that. After: red has landed on the
+ * prospective square, taking the node — it is now the charged square, in
+ * the same signal's colour, with red's ship on it — and green's ship is
+ * left standing on the square that just became ordinary board. The one
+ * diagram with a red ship (see this module's header).
+ */
+export function StealingNodesDiagram() {
+  const cells: readonly GuideDiagramCell[] = [
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-steal-1",
+        nodeState: "charged",
+        signal: STEALING_DIAGRAM_SIGNAL,
+        occupant: { side: "green", power: STEALING_DIAGRAM_POWER },
+      },
+    },
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-steal-2",
+        nodeState: "prospective",
+        signal: STEALING_DIAGRAM_SIGNAL,
+      },
+    },
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-steal-3",
+        occupant: { side: "red", power: STEALING_DIAGRAM_POWER },
+      },
+    },
+    { kind: "arrow" },
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-steal-4",
+        occupant: { side: "green", power: STEALING_DIAGRAM_POWER },
+      },
+    },
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-steal-5",
+        nodeState: "charged",
+        signal: STEALING_DIAGRAM_SIGNAL,
+        occupant: { side: "red", power: STEALING_DIAGRAM_POWER },
+      },
+    },
+  ];
+  return <GuideDiagram columns={6} cells={cells} />;
+}
+
+/**
+ * Diagram 8: green's bonus row alone — three planets, one already carrying
  * the settled checkmark, the other two unclaimed. Red's row and the `+N`
  * badge are both left out; one row and one claim is what the section's
  * paragraph needs shown.

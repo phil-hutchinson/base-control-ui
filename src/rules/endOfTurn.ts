@@ -43,6 +43,10 @@
 // except step 5's refill: a tie on remaining life can no longer arise
 // (rules.md §8.3, §8.6 step 7), so the relief's choice is fully
 // deterministic.
+//
+// Under steal (steal.md §8) none of steps 3 to 7 apply at all — there is no
+// countdown, no queue, no rotator set and no trap — so this sequence returns
+// straight after step 2 for a steal game, having run only power and energy.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
@@ -292,6 +296,13 @@ export function runEndOfTurn(
     });
   }
 
+  // Under steal (steal.md §8), only power and energy run: there is no
+  // countdown to spend, no queue to refill or rotate, no rotator set and
+  // nothing to retire or relieve.
+  if (workingState.nodePlaystyle === "steal") {
+    return { state: workingState, effects };
+  }
+
   // Step 3: every charged node carrying a countdown (`level` above 0, per
   // `gameState.ts`'s `NodeStatus` doc comment) spends one ply of it (rules.md
   // §8.3); a node at 0 carries none and is untouched. One that reaches zero
@@ -399,7 +410,7 @@ export function runEndOfTurn(
     };
 
     let newRotators: readonly Square[] = [];
-    if (workingState.nodeRotation === "dedicated") {
+    if (workingState.nodePlaystyle === "dedicated") {
       const [rotators, seedAfterRotators] = placeRotators(
         nodeSquares(workingState),
         workingState.ships.map((ship) => ship.square),
@@ -419,7 +430,7 @@ export function runEndOfTurn(
       newNodes,
       newRotators,
     });
-  } else if (workingState.nodeRotation === "continuous") {
+  } else if (workingState.nodePlaystyle === "continuous") {
     workingState = {
       ...workingState,
       nodes: rotateQueue(workingState.nodes),

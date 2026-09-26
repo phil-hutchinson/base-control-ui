@@ -153,6 +153,173 @@ describe("announcementFor", () => {
     );
   });
 
+  it("announces claiming a node nobody held", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("F", 5),
+      to: squareAt("F", 9),
+      effects: [
+        {
+          type: "node-claimed",
+          shipId: "green-1",
+          side: "green",
+          signal: 0,
+          square: squareAt("F", 9),
+          discardedSquare: squareAt("B", 3),
+          newProspective: squareAt("H", 12),
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 2,
+      powerAfter: 4,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from F5 to F9. The move cost 2 power, leaving 4. Green takes the node at F9. Red's turn.",
+    );
+  });
+
+  it("announces stealing an opponent's node, naming the ship left standing", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "red-1",
+      side: "red",
+      from: squareAt("K", 2),
+      to: squareAt("F", 9),
+      effects: [
+        {
+          type: "node-claimed",
+          shipId: "red-1",
+          side: "red",
+          signal: 0,
+          square: squareAt("F", 9),
+          releasedSquare: squareAt("F", 4),
+          strandedShip: { shipId: "green-2", side: "green" },
+          newProspective: squareAt("H", 12),
+        },
+        { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Red ship moved from K2 to F9. The move cost 1 power, leaving 5. Red takes the node at F9 from green. F4 is no longer a node; green's ship there is on an ordinary square. Green's turn.",
+    );
+  });
+
+  it("announces a holder relocating its own node", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("F", 4),
+      to: squareAt("K", 11),
+      effects: [
+        {
+          type: "node-claimed",
+          shipId: "green-1",
+          side: "green",
+          signal: 0,
+          square: squareAt("K", 11),
+          releasedSquare: squareAt("F", 4),
+          newProspective: squareAt("H", 12),
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from F4 to K11. The move cost 1 power, leaving 5. Green moves its node from F4 to K11. Red's turn.",
+    );
+  });
+
+  it("announces walking a holder off its node", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("F", 4),
+      to: squareAt("G", 5),
+      effects: [
+        {
+          type: "node-abandoned",
+          signal: 0,
+          square: squareAt("F", 4),
+          newProspective: squareAt("H", 12),
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from F4 to G5. The move cost 1 power, leaving 5. Green gives up the node at F4. Red's turn.",
+    );
+  });
+
+  it("announces a move that both gives up one node and claims another, in that order", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("F", 4),
+      to: squareAt("J", 9),
+      effects: [
+        {
+          type: "node-abandoned",
+          signal: 0,
+          square: squareAt("F", 4),
+          newProspective: squareAt("C", 2),
+        },
+        {
+          type: "node-claimed",
+          shipId: "green-1",
+          side: "green",
+          signal: 1,
+          square: squareAt("J", 9),
+          discardedSquare: squareAt("D", 5),
+          newProspective: squareAt("H", 12),
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from F4 to J9. The move cost 1 power, leaving 5. Green gives up the node at F4. Green takes the node at J9. Red's turn.",
+    );
+  });
+
+  it("announces claiming a node one's own side already holds, stranding a friendly ship", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("K", 2),
+      to: squareAt("K", 3),
+      effects: [
+        {
+          type: "node-claimed",
+          shipId: "green-1",
+          side: "green",
+          signal: 0,
+          square: squareAt("K", 3),
+          releasedSquare: squareAt("F", 4),
+          strandedShip: { shipId: "green-2", side: "green" },
+          newProspective: squareAt("H", 12),
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from K2 to K3. The move cost 1 power, leaving 5. Green takes the node at K3. F4 is no longer a node; green's ship there is on an ordinary square. Red's turn.",
+    );
+  });
+
   it("announces a move that both ends on a planet and ends the ply", () => {
     const event: MovedEvent = {
       type: "moved",
@@ -1496,7 +1663,7 @@ describe("announcementForSession", () => {
       plyNumber: config.plyNumber,
       randomSeed: 1,
       openingSeed: 1,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
@@ -1886,7 +2053,7 @@ describe("turnIndicatorText", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
@@ -1909,7 +2076,7 @@ describe("turnIndicatorText", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
@@ -1932,7 +2099,7 @@ describe("turnIndicatorText", () => {
         plyNumber: 7,
         randomSeed: 1,
         openingSeed: 1,
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
@@ -1971,7 +2138,7 @@ describe("HUD wording", () => {
       plyNumber: config.plyNumber,
       randomSeed: 1,
       openingSeed: 1,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },

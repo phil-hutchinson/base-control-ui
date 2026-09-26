@@ -13,7 +13,7 @@ tweaks, or implementation details that don't change what a player or reader
 sees. The README should grow slowly and deliberately — no change is a perfectly
 valid outcome. Keep its tone accessible to a non-technical reader; technical
 detail belongs in CONTRIBUTING.md, and the rules themselves belong in
-`doc/ruleset/rules.md` — the README links to them and never restates them.
+the ruleset in `doc/ruleset/` — the README links to them and never restates them.
 
 Player-facing text says "turn", never "ply", and uses "move" only for the
 movement action.

@@ -60,8 +60,8 @@ export function App() {
     setScoring,
     planetBonus,
     setPlanetBonus,
-    nodeRotation,
-    setNodeRotation,
+    nodePlaystyle,
+    setNodePlaystyle,
     lengthInRounds,
     setLengthInRounds,
     clockSetting,
@@ -88,8 +88,8 @@ export function App() {
             onScoringChange={setScoring}
             planetBonus={planetBonus}
             onPlanetBonusChange={setPlanetBonus}
-            nodeRotation={nodeRotation}
-            onNodeRotationChange={setNodeRotation}
+            nodePlaystyle={nodePlaystyle}
+            onNodePlaystyleChange={setNodePlaystyle}
             lengthInRounds={lengthInRounds}
             onLengthInRoundsChange={setLengthInRounds}
             clockSetting={clockSetting}

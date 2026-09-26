@@ -463,7 +463,7 @@ function buildState(config: {
     plyNumber: config.plyNumber ?? 1,
     randomSeed: 1,
     openingSeed: 1,
-    nodeRotation: "continuous",
+    nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
@@ -795,6 +795,28 @@ describe("legalDestinations and moveRefusalReason", () => {
       moveRefusalReason(state, "green-1", squareFromName("G7")),
     ).toBeUndefined();
     expect(legalDestinations(state, "green-1").map(squareName)).toContain("G7");
+  });
+
+  it("flies over a prospective node freely and lands beyond it on an empty ordinary square", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { F7: "prospective" },
+    });
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("G7")),
+    ).toBeUndefined();
+    expect(legalDestinations(state, "green-1").map(squareName)).toContain("G7");
+  });
+
+  it("permits landing on a prospective node, which claims it under steal (steal.md §3)", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "E7")],
+      nodes: { F7: "prospective" },
+    });
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("F7")),
+    ).toBeUndefined();
+    expect(legalDestinations(state, "green-1").map(squareName)).toContain("F7");
   });
 
   it("refuses an uncharged destination that also holds a ship with destination-occupied, not destination-uncharged-node", () => {

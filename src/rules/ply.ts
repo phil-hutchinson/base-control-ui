@@ -51,6 +51,7 @@ import {
   snapshotInactivePriorities,
 } from "./nodeQueue";
 import { type PowerLevel, spendPower } from "./power";
+import { abandonNode, claimNode, type NodeSignal } from "./steal";
 
 function otherSide(side: Side): Side {
   return side === "green" ? "red" : "green";
@@ -96,6 +97,57 @@ export interface NodeSpentEffect {
   readonly square: Square;
 }
 
+/** One ship's identity and side, naming the ship a claim left stranded (steal.md §3). */
+export interface StrandedShip {
+  readonly shipId: ShipId;
+  readonly side: Side;
+}
+
+/**
+ * A ship claimed a node under steal by landing on one of its prospective
+ * squares (steal.md §3): `square` is the square just charged, with the
+ * claiming ship (`shipId`, `side`) aboard. `releasedSquare` is the node's
+ * previous charged square, present only when the node was Held — whether the
+ * claim takes the node from an opponent or relocates the claiming side's own
+ * one — and, if a ship of either side is still standing there once the move
+ * has resolved, `strandedShip` names it: that ship is left on an ordinary
+ * square, free to move next turn. `discardedSquare` is the node's other
+ * prospective square, present only when the node was Open. `newProspective`
+ * is the fresh prospective square drawn for the node's signal (steal.md §6).
+ * Always after any `NodeAbandonedEffect` the same move also raises — leaving
+ * comes before claiming when one move does both (steal.md §5) — and before
+ * any `PlanetBonusClaimedEffect`, since a prospective square is never a
+ * planet and the two never fire on the same landing.
+ */
+export interface NodeClaimedEffect {
+  readonly type: "node-claimed";
+  readonly shipId: ShipId;
+  readonly side: Side;
+  readonly signal: NodeSignal;
+  readonly square: Square;
+  readonly releasedSquare?: Square;
+  readonly strandedShip?: StrandedShip;
+  readonly discardedSquare?: Square;
+  readonly newProspective: Square;
+}
+
+/**
+ * A ship moved off a node's charged square under steal, without landing on
+ * that node's own prospective square (steal.md §4): `square` is the vacated
+ * square, now ordinary board, and `newProspective` is the second prospective
+ * square drawn for the node's signal, anchored on the one it already has
+ * (steal.md §6). The node is Open afterwards. Raised ahead of any
+ * `NodeClaimedEffect` the same move also raises — leaving comes first
+ * (steal.md §5) — and never raised for a ship relocating onto its own node's
+ * prospective square, where the claim rule alone applies.
+ */
+export interface NodeAbandonedEffect {
+  readonly type: "node-abandoned";
+  readonly signal: NodeSignal;
+  readonly square: Square;
+  readonly newProspective: Square;
+}
+
 /**
  * A ship's landing rotated the queue one step (rules.md §8.2): under the
  * planet setting, `square` is the planet it landed on; under dedicated, the
@@ -134,6 +186,8 @@ export interface PlanetBonusClaimedEffect {
 /** Something that happened as a result of applying a move, beyond the move itself. */
 export type MoveEffect =
   | NodeSpentEffect
+  | NodeAbandonedEffect
+  | NodeClaimedEffect
   | PlanetBonusClaimedEffect
   | QueueRotatedEffect
   | EndOfPlyEffect;
@@ -372,7 +426,7 @@ function rotateForLanding(
   readonly state: GameState;
   readonly effect: QueueRotatedEffect | undefined;
 } {
-  if (state.nodeRotation === "planet") {
+  if (state.nodePlaystyle === "planet") {
     if (!isPlanet(destination)) {
       return { state, effect: undefined };
     }
@@ -382,7 +436,7 @@ function rotateForLanding(
     };
   }
 
-  if (state.nodeRotation === "dedicated") {
+  if (state.nodePlaystyle === "dedicated") {
     const destinationSquareName = squareName(destination);
     const rotatorIndex = state.rotators.findIndex(
       (square) => squareName(square) === destinationSquareName,
@@ -467,23 +521,36 @@ function claimPlanetBonus(
  * gain energy on arrival, if `destination` is one of the moving side's
  * unclaimed bonus planets (rules.md §3.4, `claimPlanetBonus` below).
  *
- * Three node changes can happen as the move resolves — two knowing
- * exceptions to a node's state changing only in the end-of-turn sequence,
- * and the queue's rotation besides (rules.md §8.3, §8.6). If the square the
- * ship left carries a charged node, it depletes on the spot, carrying
- * `EXIT_COUNTDOWN_PLIES`, and a `NodeSpentEffect` is raised for it: leaving a
- * node spends it, it is never handed back, and the opponent cannot inherit
- * it. If the square the ship arrives on carries a charged node with no
- * countdown, its countdown is set to `CHARGED_COUNTDOWN_PLIES`; one that
- * already carries a countdown is left alone, which can only happen if this
- * move somehow lands on an occupied square, since a countdown's own holder
- * is standing there. Then `claimPlanetBonus` pays a bonus if `destination`
- * earns one, raising a `PlanetBonusClaimedEffect`. Finally, `rotateForLanding`
- * rotates the queue once if `destination` is a planet under the planet
- * setting, or a rotator under dedicated — spending the rotator as it lands —
- * raising a `QueueRotatedEffect` after any `NodeSpentEffect` and any
- * `PlanetBonusClaimedEffect`; under continuous, or when the destination
- * triggers neither, nothing happens here.
+ * Under the continuous, planet and dedicated playstyles, up to two node
+ * changes can happen as the move resolves — two knowing exceptions to a
+ * node's state changing only in the end-of-turn sequence, and the queue's
+ * rotation besides (rules.md §8.3, §8.6). If the square the ship left carries
+ * a charged node, it depletes on the spot, carrying `EXIT_COUNTDOWN_PLIES`,
+ * and a `NodeSpentEffect` is raised for it: leaving a node spends it, it is
+ * never handed back, and the opponent cannot inherit it. If the square the
+ * ship arrives on carries a charged node with no countdown, its countdown is
+ * set to `CHARGED_COUNTDOWN_PLIES`; one that already carries a countdown is
+ * left alone, which can only happen if this move somehow lands on an
+ * occupied square, since a countdown's own holder is standing there.
+ *
+ * Under steal instead (steal.md §§3-5), those two checks are replaced by its
+ * own two events. If the ship left a charged node and the destination is not
+ * that same node's own prospective square, the node is abandoned
+ * (`abandonNode`), raising a `NodeAbandonedEffect`. If the destination is a
+ * prospective square, of any node, its node is then claimed (`claimNode`),
+ * raising a `NodeClaimedEffect` — after any `NodeAbandonedEffect`, since
+ * leaving comes first when one move does both. A ship relocating onto its
+ * own node's prospective square only claims: the abandon condition excludes
+ * it. Both draws thread `state.randomSeed` in turn, so `afterMove` below
+ * carries the seed either has left behind.
+ *
+ * Then `claimPlanetBonus` pays a bonus if `destination` earns one, raising a
+ * `PlanetBonusClaimedEffect`. Finally, `rotateForLanding` rotates the queue
+ * once if `destination` is a planet under the planet setting, or a rotator
+ * under dedicated — spending the rotator as it lands — raising a
+ * `QueueRotatedEffect` after any node effect and any `PlanetBonusClaimedEffect`;
+ * under continuous, under steal, or when the destination triggers neither,
+ * nothing happens here.
  *
  * A move ends the ply (rules.md §5): play passes to the other side. The
  * result then passes through `applyPassGuard`, so a move that leaves the
@@ -520,32 +587,109 @@ export function applyMove(
   const leftSquareName = squareName(ship.square);
   const destinationSquareName = squareName(destination);
   let nodes = state.nodes;
+  let randomSeed = state.randomSeed;
 
-  const leftStatus = state.nodes[leftSquareName];
-  if (leftStatus !== undefined && leftStatus.state === "charged") {
-    nodes = {
-      ...nodes,
-      [leftSquareName]: { state: "depleted", level: EXIT_COUNTDOWN_PLIES },
-    };
-    effects.push({ type: "node-spent", square: ship.square });
+  if (state.nodePlaystyle === "steal") {
+    const leftStatus = state.nodes[leftSquareName];
+    const destinationStatus = state.nodes[destinationSquareName];
+    const destinationSignal =
+      destinationStatus?.state === "prospective"
+        ? destinationStatus.signal
+        : undefined;
+    const shipSquares = ships.map((candidate) => candidate.square);
+
+    if (
+      leftStatus?.state === "charged" &&
+      leftStatus.signal !== undefined &&
+      leftStatus.signal !== destinationSignal
+    ) {
+      const abandoned = abandonNode(
+        nodes,
+        leftStatus.signal,
+        ship.square,
+        shipSquares,
+        randomSeed,
+      );
+      nodes = abandoned.nodes;
+      randomSeed = abandoned.nextSeed;
+      effects.push({
+        type: "node-abandoned",
+        signal: leftStatus.signal,
+        square: ship.square,
+        newProspective: abandoned.newProspective,
+      });
+    }
+
+    if (destinationSignal !== undefined) {
+      const claimed = claimNode(
+        nodes,
+        destinationSignal,
+        destination,
+        shipSquares,
+        randomSeed,
+      );
+      nodes = claimed.nodes;
+      randomSeed = claimed.nextSeed;
+
+      const releasedSquare = claimed.releasedSquare;
+      const strandedShip =
+        releasedSquare !== undefined
+          ? ships.find(
+              (candidate) =>
+                squareName(candidate.square) === squareName(releasedSquare),
+            )
+          : undefined;
+
+      effects.push({
+        type: "node-claimed",
+        shipId: ship.id,
+        side: ship.side,
+        signal: destinationSignal,
+        square: destination,
+        ...(claimed.releasedSquare !== undefined
+          ? { releasedSquare: claimed.releasedSquare }
+          : {}),
+        ...(strandedShip !== undefined
+          ? {
+              strandedShip: {
+                shipId: strandedShip.id,
+                side: strandedShip.side,
+              },
+            }
+          : {}),
+        ...(claimed.discardedSquare !== undefined
+          ? { discardedSquare: claimed.discardedSquare }
+          : {}),
+        newProspective: claimed.newProspective,
+      });
+    }
+  } else {
+    const leftStatus = state.nodes[leftSquareName];
+    if (leftStatus !== undefined && leftStatus.state === "charged") {
+      nodes = {
+        ...nodes,
+        [leftSquareName]: { state: "depleted", level: EXIT_COUNTDOWN_PLIES },
+      };
+      effects.push({ type: "node-spent", square: ship.square });
+    }
+
+    const destinationStatus = state.nodes[destinationSquareName];
+    if (
+      destinationStatus !== undefined &&
+      destinationStatus.state === "charged" &&
+      destinationStatus.level === 0
+    ) {
+      nodes = {
+        ...nodes,
+        [destinationSquareName]: {
+          state: "charged",
+          level: CHARGED_COUNTDOWN_PLIES,
+        },
+      };
+    }
   }
 
-  const destinationStatus = state.nodes[destinationSquareName];
-  if (
-    destinationStatus !== undefined &&
-    destinationStatus.state === "charged" &&
-    destinationStatus.level === 0
-  ) {
-    nodes = {
-      ...nodes,
-      [destinationSquareName]: {
-        state: "charged",
-        level: CHARGED_COUNTDOWN_PLIES,
-      },
-    };
-  }
-
-  const afterMove: GameState = { ...state, ships, nodes };
+  const afterMove: GameState = { ...state, ships, nodes, randomSeed };
   const { state: claimedState, effect: claimEffect } = claimPlanetBonus(
     afterMove,
     ship.side,
@@ -715,6 +859,11 @@ export function assertFightInvariants(
     if (beforeStatus.state !== afterStatus.state) {
       throw new RangeError(
         `node "${name}" changed from "${beforeStatus.state}" to "${afterStatus.state}": an attack never changes a node's state, rules.md §8.6 says a node's state changes only in the end-of-turn sequence, or mid-move`,
+      );
+    }
+    if (beforeStatus.signal !== afterStatus.signal) {
+      throw new RangeError(
+        `node "${name}" changed signal from ${beforeStatus.signal} to ${afterStatus.signal} during a fight: an attack can neither vacate a charged node nor land on a prospective one under steal, so a fight must never claim or abandon a node (steal.md §§3-5)`,
       );
     }
     // A charged or depleted node's level must not move — a fight must not

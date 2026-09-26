@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PLANETS, isPlanet } from "./planets";
 import { type Square, squareFromName, squareName } from "./board";
-import { legalTargets } from "./combat";
+import { attackRefusalReason, legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import {
   type GameState,
@@ -16,6 +16,8 @@ import {
   applyOutOfTimePass,
   applyPassGuard,
   assertFightInvariants,
+  type NodeAbandonedEffect,
+  type NodeClaimedEffect,
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
 import { drawIndex } from "./random";
@@ -25,8 +27,10 @@ import {
   type ChargedNodeCount,
   type NodeState,
 } from "./nodes";
-import { type NodeRotationSetting } from "./nodeRotation";
+import { type NodePlaystyle } from "./nodePlaystyle";
 import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
+import { abandonNode, claimNode } from "./steal";
+import { legalMoves } from "./movement";
 
 function ship(
   id: ShipId,
@@ -52,27 +56,34 @@ function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
   nodes?: Readonly<Record<string, NodeState | readonly [NodeState, number]>>;
+  /**
+   * A node map given already in `NodeStatus` shape, for steal's cases: it
+   * carries a `signal`, which `nodes` above has no way to express. Overrides
+   * `nodes` entirely when given.
+   */
+  rawNodes?: Readonly<Record<string, NodeStatus>>;
   plyNumber?: number;
   lengthInRounds?: number;
   chargedNodeCount?: ChargedNodeCount;
   energy?: { green: number; red: number };
   outOfTime?: { green: boolean; red: boolean };
   combatEnabled?: boolean;
-  nodeRotation?: NodeRotationSetting;
+  nodePlaystyle?: NodePlaystyle;
   rotators?: readonly Square[];
+  randomSeed?: number;
 }): GameState {
   return {
     ships: config.ships,
-    nodes: nodeStatuses(config.nodes ?? {}),
+    nodes: config.rawNodes ?? nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     plyNumber: config.plyNumber ?? 1,
-    randomSeed: 1,
+    randomSeed: config.randomSeed ?? 1,
     openingSeed: 1,
     // Pinned to continuous, not left to the app's default: this is a
     // rules-level harness, and a case that names no rotation should keep
     // exercising the same setting regardless of which one the start screen
     // preselects.
-    nodeRotation: config.nodeRotation ?? "continuous",
+    nodePlaystyle: config.nodePlaystyle ?? "continuous",
     rotators: config.rotators ?? [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
@@ -148,7 +159,7 @@ describe("applyMove", () => {
       // Pinned to continuous: under the app's default, planet rotation, the
       // landing would also turn the queue and raise a `queue-rotated` effect,
       // which is exactly what this test is asserting the move does not do.
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       ships: [ship("green-1", "green", "C6", 2), ship("red-1", "red", "O15")],
       nodes: {
         C3: ["charged", 0],
@@ -257,7 +268,7 @@ describe("applyMove", () => {
       // Pinned to continuous: the rotation this test expects at the end of
       // the turn is the continuous setting's, and under the app's default,
       // planet rotation, a move that ends nowhere near a planet turns nothing.
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O15")],
       nodes: {
@@ -1089,6 +1100,413 @@ describe("a move or an attack that never lands on or leaves a charged node touch
   });
 });
 
+describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
+  it("claims an Open node: the landed square charges, the other prospective is discarded, and a fresh one is drawn", () => {
+    const seed = 12345;
+    const state = buildState({
+      ships: [ship("green-1", "green", "G8"), ship("red-1", "red", "A1")],
+      rawNodes: {
+        H8: { state: "prospective", level: 0, signal: 0 },
+        L8: { state: "prospective", level: 0, signal: 0 },
+      },
+      nodePlaystyle: "steal",
+      randomSeed: seed,
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H8"));
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    const [expectedNewProspective, expectedSeed] = (() => {
+      const claimed = claimNode(
+        state.nodes,
+        0,
+        squareFromName("H8"),
+        [squareFromName("H8"), squareFromName("A1")],
+        seed,
+      );
+      return [claimed.newProspective, claimed.nextSeed] as const;
+    })();
+
+    expect(result.state.nodes.H8).toEqual({
+      state: "charged",
+      level: 0,
+      signal: 0,
+    });
+    expect(result.state.nodes.L8).toBeUndefined();
+    expect(Object.keys(result.state.nodes).sort()).toEqual(
+      ["H8", squareName(expectedNewProspective)].sort(),
+    );
+    expect(result.state.nodes[squareName(expectedNewProspective)]).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 0,
+    });
+    expect(result.state.randomSeed).toBe(expectedSeed);
+
+    const claimEffect = result.effects.find(
+      (effect): effect is NodeClaimedEffect => effect.type === "node-claimed",
+    );
+    expect(claimEffect).toEqual({
+      type: "node-claimed",
+      shipId: "green-1",
+      side: "green",
+      signal: 0,
+      square: squareFromName("H8"),
+      discardedSquare: squareFromName("L8"),
+      newProspective: expectedNewProspective,
+    });
+  });
+
+  it("steals a Held node from its holder, leaving that ship standing on an ordinary square, free to move next turn", () => {
+    const seed = 999;
+    const state = buildState({
+      ships: [ship("green-1", "green", "G8"), ship("red-1", "red", "H9")],
+      rawNodes: {
+        G8: { state: "charged", level: 0, signal: 0 },
+        H8: { state: "prospective", level: 0, signal: 0 },
+      },
+      sideToMove: "red",
+      nodePlaystyle: "steal",
+      randomSeed: seed,
+    });
+
+    const result = applyMove(state, "red-1", squareFromName("H8"));
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    expect(result.state.nodes.G8).toBeUndefined();
+    expect(result.state.nodes.H8).toEqual({
+      state: "charged",
+      level: 0,
+      signal: 0,
+    });
+
+    const greenShip = result.state.ships.find((s) => s.id === "green-1");
+    expect(squareName(greenShip!.square)).toBe("G8");
+
+    const claimEffect = result.effects.find(
+      (effect): effect is NodeClaimedEffect => effect.type === "node-claimed",
+    );
+    expect(claimEffect?.releasedSquare).toEqual(squareFromName("G8"));
+    expect(claimEffect?.strandedShip).toEqual({
+      shipId: "green-1",
+      side: "green",
+    });
+    expect(claimEffect?.discardedSquare).toBeUndefined();
+
+    // Green's ship is not trapped: it is standing on an ordinary square,
+    // free to move on its next ply, exactly like any other ship.
+    expect(result.state.sideToMove).toBe("green");
+    expect(legalMoves(result.state, "green-1").length).toBeGreaterThan(0);
+  });
+
+  it("relocates a holder's own node onto its own prospective: one draw, no abandon, still Held", () => {
+    const seed = 555;
+    const state = buildState({
+      ships: [ship("green-1", "green", "G8"), ship("red-1", "red", "A1")],
+      rawNodes: {
+        G8: { state: "charged", level: 0, signal: 0 },
+        H8: { state: "prospective", level: 0, signal: 0 },
+      },
+      nodePlaystyle: "steal",
+      randomSeed: seed,
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H8"));
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    expect(result.state.nodes.G8).toBeUndefined();
+    expect(result.state.nodes.H8).toEqual({
+      state: "charged",
+      level: 0,
+      signal: 0,
+    });
+    expect(Object.keys(result.state.nodes)).toHaveLength(2);
+
+    expect(
+      result.effects.some((effect) => effect.type === "node-abandoned"),
+    ).toBe(false);
+    const claimEffect = result.effects.find(
+      (effect): effect is NodeClaimedEffect => effect.type === "node-claimed",
+    );
+    expect(claimEffect?.releasedSquare).toEqual(squareFromName("G8"));
+    expect(claimEffect?.strandedShip).toBeUndefined();
+  });
+
+  it("abandons a node when its holder walks off without landing on its own prospective: the node returns to Open", () => {
+    const seed = 2468;
+    const state = buildState({
+      ships: [ship("green-1", "green", "G8"), ship("red-1", "red", "A1")],
+      rawNodes: {
+        G8: { state: "charged", level: 0, signal: 0 },
+        H8: { state: "prospective", level: 0, signal: 0 },
+      },
+      nodePlaystyle: "steal",
+      randomSeed: seed,
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("F8"));
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    const abandoned = abandonNode(
+      state.nodes,
+      0,
+      squareFromName("G8"),
+      [squareFromName("F8"), squareFromName("A1")],
+      seed,
+    );
+
+    expect(result.state.nodes.G8).toBeUndefined();
+    expect(result.state.nodes.H8).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 0,
+    });
+    expect(result.state.nodes[squareName(abandoned.newProspective)]).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 0,
+    });
+    expect(result.state.randomSeed).toBe(abandoned.nextSeed);
+
+    expect(
+      result.effects.some((effect) => effect.type === "node-claimed"),
+    ).toBe(false);
+    const abandonEffect = result.effects.find(
+      (effect): effect is NodeAbandonedEffect =>
+        effect.type === "node-abandoned",
+    );
+    expect(abandonEffect).toEqual({
+      type: "node-abandoned",
+      signal: 0,
+      square: squareFromName("G8"),
+      newProspective: abandoned.newProspective,
+    });
+  });
+
+  it("abandons the first node and claims the second when one move does both, leaving first (steal.md §5, D4)", () => {
+    const seed = 777;
+    const nodesBefore: Record<string, NodeStatus> = {
+      G8: { state: "charged", level: 0, signal: 0 },
+      C3: { state: "prospective", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 1 },
+      M13: { state: "prospective", level: 0, signal: 1 },
+    };
+    const state = buildState({
+      ships: [ship("green-1", "green", "G8"), ship("red-1", "red", "A1")],
+      rawNodes: nodesBefore,
+      nodePlaystyle: "steal",
+      randomSeed: seed,
+    });
+
+    const result = applyMove(state, "green-1", squareFromName("H8"));
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    const movedShipSquares = [squareFromName("H8"), squareFromName("A1")];
+    const abandoned = abandonNode(
+      nodesBefore,
+      0,
+      squareFromName("G8"),
+      movedShipSquares,
+      seed,
+    );
+    const claimed = claimNode(
+      abandoned.nodes,
+      1,
+      squareFromName("H8"),
+      movedShipSquares,
+      abandoned.nextSeed,
+    );
+
+    expect(result.state.nodes).toEqual(claimed.nodes);
+    expect(result.state.randomSeed).toBe(claimed.nextSeed);
+    expect(squareName(abandoned.newProspective)).not.toBe("H8");
+
+    const abandonEffect = result.effects.find(
+      (effect): effect is NodeAbandonedEffect =>
+        effect.type === "node-abandoned",
+    );
+    const claimEffect = result.effects.find(
+      (effect): effect is NodeClaimedEffect => effect.type === "node-claimed",
+    );
+    expect(abandonEffect).toEqual({
+      type: "node-abandoned",
+      signal: 0,
+      square: squareFromName("G8"),
+      newProspective: abandoned.newProspective,
+    });
+    expect(claimEffect).toEqual({
+      type: "node-claimed",
+      shipId: "green-1",
+      side: "green",
+      signal: 1,
+      square: squareFromName("H8"),
+      discardedSquare: squareFromName("M13"),
+      newProspective: claimed.newProspective,
+    });
+    expect(result.effects.indexOf(abandonEffect!)).toBeLessThan(
+      result.effects.indexOf(claimEffect!),
+    );
+  });
+
+  it("strands a ship of the claiming side's own colour when a different friendly ship claims the node it holds", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "G8"),
+        ship("green-2", "green", "H9"),
+        ship("red-1", "red", "A1"),
+      ],
+      rawNodes: {
+        G8: { state: "charged", level: 0, signal: 0 },
+        H8: { state: "prospective", level: 0, signal: 0 },
+      },
+      nodePlaystyle: "steal",
+    });
+
+    const result = applyMove(state, "green-2", squareFromName("H8"));
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    const claimEffect = result.effects.find(
+      (effect): effect is NodeClaimedEffect => effect.type === "node-claimed",
+    );
+    expect(claimEffect?.strandedShip).toEqual({
+      shipId: "green-1",
+      side: "green",
+    });
+  });
+
+  it("never lets a Held node's charged square carry a countdown: its holder collects every turn, over many plies", () => {
+    let state = buildState({
+      ships: [
+        ship("green-1", "green", "G8"),
+        ship("green-2", "green", "A5"),
+        ship("red-1", "red", "O5"),
+      ],
+      rawNodes: {
+        G8: { state: "charged", level: 0, signal: 0 },
+        H8: { state: "prospective", level: 0, signal: 0 },
+      },
+      nodePlaystyle: "steal",
+    });
+
+    for (let round = 0; round < 20; round++) {
+      const toggle = round % 2 === 1;
+      const greenTo = toggle ? "A5" : "A6";
+      const redTo = toggle ? "O5" : "O6";
+
+      const greenResult = applyMove(state, "green-2", squareFromName(greenTo));
+      expect(greenResult.outcome).toBe("applied");
+      if (greenResult.outcome !== "applied") {
+        throw new Error("expected green's shuttle move to be applied");
+      }
+      state = greenResult.state;
+      expect(state.nodes.G8).toEqual({ state: "charged", level: 0, signal: 0 });
+
+      const redResult = applyMove(state, "red-1", squareFromName(redTo));
+      expect(redResult.outcome).toBe("applied");
+      if (redResult.outcome !== "applied") {
+        throw new Error("expected red's shuttle move to be applied");
+      }
+      state = redResult.state;
+      expect(state.nodes.G8).toEqual({ state: "charged", level: 0, signal: 0 });
+    }
+
+    expect(state.energy.green).toBe(20);
+  });
+
+  it("raises none of the other three playstyles' node effects, and landing on a planet rotates nothing (steal.md §8)", () => {
+    const forbidden = new Set([
+      "node-spent",
+      "node-ran-out",
+      "node-charged",
+      "queue-refilled",
+      "queue-rotated",
+      "node-retired",
+      "ship-trapped",
+      "node-relief",
+    ]);
+    const state = buildState({
+      ships: [ship("green-1", "green", "C6", 2), ship("red-1", "red", "O15")],
+      rawNodes: {
+        H8: { state: "prospective", level: 0, signal: 0 },
+        L8: { state: "prospective", level: 0, signal: 0 },
+      },
+      nodePlaystyle: "steal",
+    });
+
+    // D6 is a planet (as in the continuous-playstyle test above): landing on
+    // it under steal must not rotate anything, since there is no queue to
+    // rotate at all.
+    const result = applyMove(state, "green-1", squareFromName("D6"));
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    for (const effect of result.effects) {
+      expect(forbidden.has(effect.type)).toBe(false);
+      if ("endOfTurn" in effect) {
+        for (const nested of effect.endOfTurn) {
+          expect(forbidden.has(nested.type)).toBe(false);
+        }
+      }
+    }
+    expect(result.state.rotators).toEqual([]);
+  });
+
+  it("neither vacates a charged node nor lands on a prospective one, so a fight changes no steal node's signal (rules.md §7, steal.md §§3-5)", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 3), ship("red-1", "red", "H9", 3)],
+      rawNodes: {
+        L8: { state: "prospective", level: 0, signal: 0 },
+        M13: { state: "prospective", level: 0, signal: 0 },
+      },
+      nodePlaystyle: "steal",
+      combatEnabled: true,
+    });
+
+    const result = applyAttack(state, "green-1", squareFromName("H9"));
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(result.state.nodes).toEqual(state.nodes);
+  });
+
+  it("refuses to attack from, or attack, a steal charged node, exactly as under the other playstyles", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "G8", 3), ship("red-1", "red", "H9", 3)],
+      rawNodes: {
+        G8: { state: "charged", level: 0, signal: 0 },
+        H8: { state: "prospective", level: 0, signal: 0 },
+      },
+      nodePlaystyle: "steal",
+      combatEnabled: true,
+    });
+
+    expect(attackRefusalReason(state, "green-1", squareFromName("H9"))).toBe(
+      "attacker-on-charged-node",
+    );
+  });
+});
+
 describe("assertFightInvariants (rules.md §7)", () => {
   it("throws when an uninvolved ship's square changed", () => {
     const before = buildState({
@@ -1860,7 +2278,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("landing on a planet rotates the queue once under planet, and raises queue-rotated", () => {
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
       nodes: { ...steadyCharged, ...threeInactive },
@@ -1884,7 +2302,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("does not raise queue-rotated for the same landing under continuous — the queue still rotates, but silently, through the ordinary end-of-turn step", () => {
     const state = buildState({
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
       nodes: { ...steadyCharged, ...threeInactive },
@@ -1906,7 +2324,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("does not rotate at all under dedicated when the destination is a planet, not a rotator", () => {
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       chargedNodeCount: 4,
       rotators: [],
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
@@ -1929,7 +2347,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("landing on a rotator rotates the queue once under dedicated, spends the rotator, and raises queue-rotated", () => {
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       chargedNodeCount: 4,
       rotators: [squareFromName("H9"), squareFromName("A1")],
       ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "O15")],
@@ -1955,7 +2373,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("reports a node's priority from before the landing's own mid-ply rotation, when the same ply also charges it", () => {
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       chargedNodeCount: 5,
       rotators: [squareFromName("H9"), squareFromName("A1")],
       ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "O15")],
@@ -1988,7 +2406,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("flying over a planet without landing on it spends and rotates nothing, under planet", () => {
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
       nodes: { ...steadyCharged, ...threeInactive },
@@ -2012,7 +2430,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("flying over a rotator without landing on it spends and rotates nothing, under dedicated", () => {
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       chargedNodeCount: 4,
       rotators: [squareFromName("H8")],
       ships: [ship("green-1", "green", "H7", 4), ship("red-1", "red", "O15")],
@@ -2040,7 +2458,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
     // green-1 leaves the G4 planet; green-2 sits on the D6 planet
     // throughout, moving nowhere this ply. Neither is a landing.
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       chargedNodeCount: 4,
       ships: [
         ship("green-1", "green", "G4", 4),
@@ -2068,7 +2486,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("a fight rotates the queue twice under planet, attacker's landing then the defender's", () => {
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       chargedNodeCount: 4,
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
       nodes: { ...steadyCharged, ...threeInactive },
@@ -2113,7 +2531,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("a fight rotates nothing at all under dedicated — every return lands on a planet, and a rotator never stands on one", () => {
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       chargedNodeCount: 4,
       rotators: [],
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
@@ -2157,7 +2575,10 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
     // drawn elsewhere, so only the square that actually charged is asserted
     // — H1 and H3 (or H1 and H2) no longer name anything in particular
     // afterwards.
-    const underPlanet = buildState({ ...sharedConfig, nodeRotation: "planet" });
+    const underPlanet = buildState({
+      ...sharedConfig,
+      nodePlaystyle: "planet",
+    });
     const planetResult = applyMove(
       underPlanet,
       "green-1",
@@ -2172,7 +2593,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
     const underContinuous = buildState({
       ...sharedConfig,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
     });
     const continuousResult = applyMove(
       underContinuous,
@@ -2193,7 +2614,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
   it("orders queue-rotated after node-spent and before the ply-ending effect, within one move", () => {
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       ships: [ship("green-1", "green", "C6", 4), ship("red-1", "red", "O15")],
       nodes: { C6: ["charged", CHARGED_COUNTDOWN_PLIES] },
     });

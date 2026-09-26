@@ -2,6 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { SIGNAL_COLORS } from "../board/squareArt";
 import {
   MovementDiagram,
   NodeLifecycleDiagram,
@@ -10,6 +11,7 @@ import {
   RefuellingDiagram,
   RotatorSquareDiagram,
   ScoringDiagram,
+  StealingNodesDiagram,
 } from "./guideDiagrams";
 
 afterEach(cleanup);
@@ -178,6 +180,39 @@ describe("RotatorSquareDiagram", () => {
     expect(container.querySelectorAll(".rotator-marker")).toHaveLength(1);
     expect(container.querySelector(".node-marker")).toBeNull();
     expect(container.querySelector(".ship-model")).toBeNull();
+  });
+});
+
+describe("StealingNodesDiagram", () => {
+  it("shows red taking green's held node, before and after an arrow", () => {
+    const { container } = render(<StealingNodesDiagram />);
+
+    const chargedMarkers = container.querySelectorAll(".node-marker--charged");
+    expect(chargedMarkers).toHaveLength(2);
+    const prospectiveMarkers = container.querySelectorAll(
+      ".node-marker--prospective",
+    );
+    expect(prospectiveMarkers).toHaveLength(1);
+
+    const ring = prospectiveMarkers[0].querySelector("circle");
+    expect(ring).toHaveAttribute("stroke", SIGNAL_COLORS[0].core);
+
+    for (const marker of chargedMarkers) {
+      const stops = marker.querySelectorAll("stop");
+      expect(stops[0]).toHaveAttribute("stop-color", SIGNAL_COLORS[0].core);
+      expect(stops[2]).toHaveAttribute("stop-color", SIGNAL_COLORS[0].rim);
+    }
+
+    expect(container.querySelectorAll(".guide-diagram__arrow")).toHaveLength(1);
+    expect(container.querySelectorAll(".ship-model--green")).toHaveLength(2);
+    expect(container.querySelectorAll(".ship-model--red")).toHaveLength(2);
+
+    const beforeCharged = chargedMarkers[0].closest(".board-square");
+    expect(
+      beforeCharged?.querySelector(".ship-model--green"),
+    ).toBeInTheDocument();
+    const afterCharged = chargedMarkers[1].closest(".board-square");
+    expect(afterCharged?.querySelector(".ship-model--red")).toBeInTheDocument();
   });
 });
 

@@ -419,7 +419,10 @@ export function findShip(state: GameState, shipId: ShipId): Ship {
  * because the two can co-occur — a trapped enemy ship stands on a depleted
  * node — and occupancy is the more immediate fact. Inactive and depleted
  * destinations are refused the same way, since §6 states both in one sentence
- * and a ship may occupy only a charged node.
+ * and a ship may occupy only a charged node. A prospective destination,
+ * which exists only under steal, is never refused this way: landing on one
+ * is the only way to claim a node (steal.md §3), so it is a legal
+ * destination like any ordinary square.
  */
 export function moveRefusalReason(
   state: GameState,

@@ -10,22 +10,31 @@ import type { NodePriority } from "../rules/nodeQueue";
 import type {
   AttackEffect,
   MoveEffect,
+  NodeClaimedEffect,
   NodeSpentEffect,
   PassEffect,
   PlyEndedEffect,
   QueueRotatedEffect,
 } from "../rules/ply";
+import type { NodeSignal } from "../rules/steal";
 import type { Session, SessionEvent } from "../game/session";
 
 /**
- * A node's waiting rings dissolving into its newly charged artwork
- * (`node-charged`). `priority` is the priority the node held - one, two or
- * three rings - the instant before it charged, exactly what the effect
- * reports; it is not re-derived from the state, which no longer carries it.
+ * A node's waiting rings dissolving into its newly charged artwork. Under
+ * the continuous, planet and dedicated playstyles this is `node-charged`,
+ * and `priority` is the priority the node held - one, two or three rings -
+ * the instant before it charged, exactly what the effect reports; it is not
+ * re-derived from the state, which no longer carries it. Under steal
+ * (steal.md §3) this is a claim, `node-claimed`, and `signal` is the node's
+ * signal instead: the outgoing rings are the prospective node's own three
+ * — there is no priority under steal — in this signal's colour, revealing
+ * the signal-coloured charged artwork beneath. Exactly one of `priority` and
+ * `signal` is ever given.
  */
 export interface NodeChargeAnimation {
   readonly type: "node-charge";
-  readonly priority: NodePriority;
+  readonly priority?: NodePriority;
+  readonly signal?: NodeSignal;
   readonly runId: number;
 }
 
@@ -112,6 +121,23 @@ function nodeSpentIn(
 }
 
 /**
+ * The event's own top-level `node-claimed` effect, if it carries one
+ * (steal.md §3). Only a `moved` event can carry it - claiming a node is
+ * something only landing on its prospective square does, and an attack can
+ * never land on one (`ply.ts`).
+ */
+function nodeClaimedIn(
+  event: SessionEvent | undefined,
+): NodeClaimedEffect | undefined {
+  if (event === undefined || event.type !== "moved") {
+    return undefined;
+  }
+  return event.effects.find(
+    (effect): effect is NodeClaimedEffect => effect.type === "node-claimed",
+  );
+}
+
+/**
  * The event's own top-level `queue-rotated` effect with `trigger:
  * "rotator"`, if it carries one. Only a `moved` or an `attacked` event can
  * carry a landing's rotation; `trigger: "planet"` is not this animation's
@@ -172,6 +198,15 @@ export function boardAnimations(
   if (nodeSpent !== undefined) {
     animations.set(squareName(nodeSpent.square), {
       type: "node-burnout",
+      runId,
+    });
+  }
+
+  const nodeClaimed = nodeClaimedIn(session.lastEvent);
+  if (nodeClaimed !== undefined) {
+    animations.set(squareName(nodeClaimed.square), {
+      type: "node-charge",
+      signal: nodeClaimed.signal,
       runId,
     });
   }

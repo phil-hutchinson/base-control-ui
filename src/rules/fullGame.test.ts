@@ -22,6 +22,7 @@ import {
   type NodeStatus,
   nodeSquares,
   nodeStateAt,
+  nodeStatusAt,
   startingGameState,
 } from "./gameState";
 import { type EnergyCollectedEffect, runEndOfTurn } from "./endOfTurn";
@@ -31,11 +32,9 @@ import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
 } from "./nodes";
-import {
-  NODE_ROTATION_SETTINGS,
-  type NodeRotationSetting,
-} from "./nodeRotation";
+import { NODE_PLAYSTYLES, type NodePlaystyle } from "./nodePlaystyle";
 import type { ScoringSetting } from "./scoring";
+import { NODE_SIGNALS, type NodeSignal, squaresForSignal } from "./steal";
 import {
   type AttackEffect,
   type MoveEffect,
@@ -68,12 +67,15 @@ function chebyshevDistance(a: Square, b: Square): number {
 
 /**
  * The distance from `square` to the nearest charged or inactive node right
- * now. Inactive means eligible to charge next (rules.md §8.1, §8.2), so
- * this heads for either a node a ship can land on today or one that might
- * become landable soon — never to land on the inactive node itself, which
- * a move may not do (rules.md §6), only to be nearby when it charges.
- * Heading for a depleted node would be pointless, since it cannot be
- * charged next.
+ * now, or, under steal, a prospective node too. Inactive means eligible to
+ * charge next (rules.md §8.1, §8.2), so this heads for either a node a ship
+ * can land on today or one that might become landable soon — never to land
+ * on the inactive node itself, which a move may not do (rules.md §6), only
+ * to be nearby when it charges. A prospective node (steal.md §2) is itself a
+ * legal landing, and landing on one is the only way to claim or steal it, so
+ * it is a target in its own right, not merely a place to be nearby. Heading
+ * for a depleted node would be pointless, since it cannot be charged next;
+ * under steal there is no depleted state at all.
  */
 function distanceToNearestChargedOrInactive(
   state: GameState,
@@ -82,7 +84,11 @@ function distanceToNearestChargedOrInactive(
   let nearest = Infinity;
   for (const node of nodeSquares(state)) {
     const nodeState = nodeStateAt(state, node);
-    if (nodeState !== "charged" && nodeState !== "inactive") {
+    if (
+      nodeState !== "charged" &&
+      nodeState !== "inactive" &&
+      nodeState !== "prospective"
+    ) {
       continue;
     }
     const distance = chebyshevDistance(square, node);
@@ -94,18 +100,24 @@ function distanceToNearestChargedOrInactive(
 }
 
 /**
- * A deterministic greedy policy: head for a charged node first, otherwise
- * close the distance to the nearest charged-or-eligible-to-be-charged node,
+ * A deterministic greedy policy: head for a charged node first — or, under
+ * steal, a prospective node, since landing on one is the only way to claim
+ * or steal it (steal.md §3) — otherwise close the distance to the nearest
+ * charged-or-eligible-to-be-charged (or, under steal, prospective) node,
  * otherwise attack, otherwise pass. Evaluated fresh for every ply.
  */
 function choosePly(state: GameState): PlyChoice | undefined {
   const ships = state.ships;
 
   // 1. The first destination, in fleet-then-destination order, that is
-  // itself a charged node.
+  // itself a charged node, or, under steal, a prospective one.
   for (const ship of ships) {
     for (const destination of legalDestinations(state, ship.id)) {
-      if (nodeStateAt(state, destination) === "charged") {
+      const destinationState = nodeStateAt(state, destination);
+      if (
+        destinationState === "charged" ||
+        destinationState === "prospective"
+      ) {
         return { kind: "move", shipId: ship.id, destination };
       }
     }
@@ -178,13 +190,22 @@ interface PlayFullGameOptions {
   readonly chargedNodeCount?: ChargedNodeCount;
   readonly combatEnabled?: boolean;
   readonly scoring?: ScoringSetting;
-  readonly nodeRotation?: NodeRotationSetting;
+  readonly nodePlaystyle?: NodePlaystyle;
   /**
    * Called with the state after the opening deal and again after every ply,
    * so a caller can check an invariant throughout a game rather than only
    * at its end — the queue invariant (rules.md §8.2), for instance.
    */
   readonly onPly?: (state: GameState) => void;
+  /**
+   * Called with each ply's own effects (never the opening deal, which has
+   * none), so a caller can tally what a game actually did — under steal, how
+   * many `node-claimed` and `node-abandoned` effects it raised, for
+   * instance.
+   */
+  readonly onEffects?: (
+    effects: readonly (MoveEffect | AttackEffect)[],
+  ) => void;
 }
 
 /**
@@ -192,7 +213,7 @@ interface PlayFullGameOptions {
  * above, dealt with `fleetSize` ships a side (the app's default six),
  * `chargedNodeCount` charged nodes (the app's default five), combat on
  * unless `combatEnabled` says otherwise, simple scoring unless `scoring`
- * says otherwise, and continuous node rotation unless `nodeRotation` says
+ * says otherwise, and the continuous playstyle unless `nodePlaystyle` says
  * otherwise.
  */
 function playFullGame(
@@ -203,8 +224,9 @@ function playFullGame(
     chargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
     combatEnabled = true,
     scoring = "simple",
-    nodeRotation = "continuous",
+    nodePlaystyle = "continuous",
     onPly,
+    onEffects,
   }: PlayFullGameOptions = {},
 ): PlayedGame {
   let state = startingGameState(seed, {
@@ -213,7 +235,7 @@ function playFullGame(
     chargedNodeCount,
     combatEnabled,
     scoring,
-    nodeRotation,
+    nodePlaystyle,
   });
   onPly?.(state);
   const greenCollected: EnergyCollectedEffect[] = [];
@@ -258,6 +280,7 @@ function playFullGame(
     }
 
     onPly?.(state);
+    onEffects?.(effects);
 
     for (const collected of energyCollectedEffects(effects)) {
       (collected.side === "green" ? greenCollected : redCollected).push(
@@ -362,9 +385,9 @@ function sumAmounts(effects: readonly EnergyCollectedEffect[]): number {
 }
 
 /**
- * The queue invariant (rules.md §8.2), unaffected by which node rotation
- * setting is chosen: the board always carries exactly three inactive nodes,
- * holding priorities 1, 2 and 3 with no repeat.
+ * The queue invariant (rules.md §8.2), unaffected by which node playstyle is
+ * chosen: the board always carries exactly three inactive nodes, holding
+ * priorities 1, 2 and 3 with no repeat.
  */
 function assertQueueInvariant(state: GameState): void {
   const inactivePriorities = Object.values(state.nodes)
@@ -372,6 +395,54 @@ function assertQueueInvariant(state: GameState): void {
     .map((status) => status.level)
     .sort();
   expect(inactivePriorities).toEqual([1, 2, 3]);
+}
+
+/**
+ * Under steal, a node is never inactive or depleted (steal.md §8): neither
+ * state ever arises, whether or not a game's ships ever claim or abandon a
+ * node.
+ */
+function assertNoInactiveOrDepletedNodes(state: GameState): void {
+  for (const status of Object.values(state.nodes)) {
+    expect(status.state).not.toBe("inactive");
+    expect(status.state).not.toBe("depleted");
+  }
+}
+
+/**
+ * Every steal node invariant that must hold at any ply (steal.md §§2, 8):
+ * each of the game's `chargedNodeCount` signals has exactly two squares,
+ * charged and prospective or two prospective, never depleted or inactive; a
+ * charged square never carries a countdown; and no rotator is ever laid
+ * down.
+ */
+function assertStealNodeInvariants(
+  state: GameState,
+  chargedNodeCount: ChargedNodeCount,
+): void {
+  assertNoInactiveOrDepletedNodes(state);
+  assertRotatorsAreFree(state);
+
+  for (const signal of NODE_SIGNALS.slice(
+    0,
+    chargedNodeCount,
+  ) as readonly NodeSignal[]) {
+    const squares = squaresForSignal(state.nodes, signal);
+    expect(squares).toHaveLength(2);
+
+    const statuses = squares.map((square) => nodeStatusAt(state, square));
+    const chargedCount = statuses.filter(
+      (status) => status?.state === "charged",
+    ).length;
+    expect(chargedCount).toBeLessThanOrEqual(1);
+
+    for (const status of statuses) {
+      expect(
+        status?.state === "charged" || status?.state === "prospective",
+      ).toBe(true);
+      expect(status?.level).toBe(0);
+    }
+  }
 }
 
 /**
@@ -527,25 +598,103 @@ describe("a full game, end to end, at bonus scoring (§8.4)", () => {
   });
 });
 
-describe.each(NODE_ROTATION_SETTINGS)(
-  "a full game, end to end, under %s node rotation (rules.md §8.2)",
-  (nodeRotation) => {
+describe.each(NODE_PLAYSTYLES)(
+  "a full game, end to end, under %s (rules.md §8.2)",
+  (nodePlaystyle) => {
     it("plays a three-round game to its end, with the queue invariant intact throughout", () => {
       const seed = 20260819;
       const { finalState } = playFullGame(seed, 3, {
-        nodeRotation,
+        nodePlaystyle,
         onPly: (state) => {
-          assertQueueInvariant(state);
+          if (nodePlaystyle === "steal") {
+            assertNoInactiveOrDepletedNodes(state);
+          } else {
+            assertQueueInvariant(state);
+          }
           assertRotatorsAreFree(state);
         },
       });
 
-      expect(finalState.nodeRotation).toBe(nodeRotation);
+      expect(finalState.nodePlaystyle).toBe(nodePlaystyle);
       expect(finalState.plyNumber).toBe(pliesForGameLength(3) + 1);
       expect(isGameOver(finalState)).toBe(true);
-      assertQueueInvariant(finalState);
+      if (nodePlaystyle === "steal") {
+        assertNoInactiveOrDepletedNodes(finalState);
+      } else {
+        assertQueueInvariant(finalState);
+      }
       assertRotatorsAreFree(finalState);
     });
+  },
+);
+
+describe.each(CHARGED_NODE_COUNTS)(
+  "a full steal game, end to end, at %d nodes (steal.md)",
+  (chargedNodeCount) => {
+    it.each([true, false])(
+      "plays a hundred-round game to its end with combat enabled=%s, taking and losing nodes throughout",
+      (combatEnabled) => {
+        const seed = 20260819;
+        let claims = 0;
+        let steals = 0;
+        let shipsTrapped = 0;
+
+        const { finalState, greenCollected, redCollected } = playFullGame(
+          seed,
+          100,
+          {
+            chargedNodeCount,
+            combatEnabled,
+            nodePlaystyle: "steal",
+            onPly: (state) =>
+              assertStealNodeInvariants(state, chargedNodeCount),
+            onEffects: (effects) => {
+              for (const effect of effects) {
+                if (effect.type === "node-claimed") {
+                  claims += 1;
+                  if (effect.releasedSquare !== undefined) {
+                    steals += 1;
+                  }
+                } else if (
+                  effect.type === "ply-ended" ||
+                  effect.type === "ply-passed"
+                ) {
+                  shipsTrapped += effect.endOfTurn.filter(
+                    (sub) => sub.type === "ship-trapped",
+                  ).length;
+                }
+              }
+            },
+          },
+        );
+
+        expect(finalState.plyNumber).toBe(pliesForGameLength(100) + 1);
+        expect(isGameOver(finalState)).toBe(true);
+        assertStealNodeInvariants(finalState, chargedNodeCount);
+
+        // Not vacuous: over a hundred rounds the greedy policy (which heads
+        // for a prospective node whenever one is reachable) actually claims
+        // and steals nodes, and no depleted state means no ship is ever
+        // trapped (steal.md §8).
+        expect(claims).toBeGreaterThan(0);
+        expect(steals).toBeGreaterThan(0);
+        expect(shipsTrapped).toBe(0);
+
+        // A held node collects every turn and never depletes (steal.md §2),
+        // so, exactly as at the other playstyles, each side's running total
+        // only ever rises.
+        let greenRunningTotal = 0;
+        for (const collected of greenCollected) {
+          expect(collected.newTotal).toBeGreaterThan(greenRunningTotal);
+          greenRunningTotal = collected.newTotal;
+        }
+        let redRunningTotal = 0;
+        for (const collected of redCollected) {
+          expect(collected.newTotal).toBeGreaterThan(redRunningTotal);
+          redRunningTotal = collected.newTotal;
+        }
+      },
+    );
   },
 );
 
@@ -575,7 +724,7 @@ describe("a full game, end to end", () => {
       plyNumber: pliesForGameLength(1) + 1,
       randomSeed: 1,
       openingSeed: 1,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
@@ -752,7 +901,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
@@ -807,7 +956,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
@@ -861,7 +1010,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       plyNumber: 1,
       randomSeed: 1,
       openingSeed: 1,
-      nodeRotation: "continuous",
+      nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },

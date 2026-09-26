@@ -24,11 +24,12 @@ import {
   type NodeState,
 } from "./nodes";
 import {
-  DEFAULT_NODE_ROTATION,
-  isNodeRotationSetting,
-  NODE_ROTATION_SETTINGS,
-  type NodeRotationSetting,
-} from "./nodeRotation";
+  DEFAULT_NODE_PLAYSTYLE,
+  isNodePlaystyle,
+  NODE_PLAYSTYLES,
+  type NodePlaystyle,
+} from "./nodePlaystyle";
+import { dealStealOpeningBoard, type NodeSignal } from "./steal";
 import { dealBonusPlanets } from "./bonusPlanets";
 import {
   DEFAULT_PLANET_BONUS,
@@ -56,11 +57,12 @@ export interface Ship {
  * A node's current state, plus its `level` — a single number whose meaning
  * depends on the state it is attached to (rules.md §8.1–§8.3):
  *
- * | State    | `level` is           | Set to                                                | At the end of a ply             | Changes state at |
- * | -------- | --------------------- | ------------------------------------------------------ | -------------------------------- | ------------------ |
- * | Inactive | priority (1, 2 or 3)  | dealt at random by a refill                             | rotates 1→2, 2→3, 3→1, or swept  | charged (§8.2)      |
- * | Charged  | plies remaining        | **0** on charging or dealing; 11 when a ship steps on   | −1, but only if above 0          | depleted at 0       |
- * | Depleted | plies remaining        | 11 (trap) or 2 (exit)                                   | −1                                | retires at 0        |
+ * | State        | `level` is           | Set to                                                | At the end of a ply             | Changes state at |
+ * | ------------ | --------------------- | ------------------------------------------------------ | -------------------------------- | ------------------ |
+ * | Inactive     | priority (1, 2 or 3)  | dealt at random by a refill                             | rotates 1→2, 2→3, 3→1, or swept  | charged (§8.2)      |
+ * | Charged      | plies remaining        | **0** on charging or dealing; 11 when a ship steps on   | −1, but only if above 0          | depleted at 0       |
+ * | Depleted     | plies remaining        | 11 (trap) or 2 (exit)                                   | −1                                | retires at 0        |
+ * | Prospective  | always 0               | always 0                                                | never changes on its own          | charged on landing  |
  *
  * `level === 0` on a charged node means "no countdown" — a charged node
  * nobody has stepped on sits there indefinitely (rules.md §8.3). This is
@@ -69,10 +71,16 @@ export interface Ship {
  * countdown that has simply run out. `countdown.ts` owns the arithmetic on
  * this field for the charged and depleted states; `nodeQueue.ts` owns the
  * type (`NodePriority`) for the inactive state.
+ *
+ * The `"prospective"` state, and the `signal` field, exist only under steal
+ * (steal.md §2): every node square of a steal game carries a `signal`, and
+ * carries `level` 0 always — steal has no countdown of any kind. No node
+ * square of any other playstyle ever carries `signal`.
  */
 export interface NodeStatus {
   readonly state: NodeState;
   readonly level: number;
+  readonly signal?: NodeSignal;
 }
 
 /** Each side's running energy total (rules.md §8.4). */
@@ -133,6 +141,11 @@ export interface GameState {
    * from `state.nodes` the way a fleet size is derived from `state.ships`:
    * a board that is legitimately one node short of it, mid-sequence, would
    * have the count derived wrong.
+   *
+   * Under steal (steal.md §1) this is how many **nodes** the game has, not
+   * how many are charged at any one moment — that number rises and falls as
+   * the two players take and lose them, and may legitimately be zero, as it
+   * is on a steal game's opening board.
    */
   readonly chargedNodeCount: ChargedNodeCount;
   /**
@@ -164,15 +177,15 @@ export interface GameState {
    */
   readonly scoring: ScoringSetting;
   /**
-   * How the three inactive nodes' priorities rotate (rules.md §8.2), fixed
-   * for the game's lifetime once set by `startingGameState`. Every place
-   * that rotates the queue — `endOfTurn.ts` step 5, and a landing in
-   * `ply.ts` — reads it from here rather than from an app default. It
-   * cannot be derived from a board: a board that has not rotated for ten
-   * turns is indistinguishable from one whose players simply have not
-   * landed anywhere.
+   * The node playstyle (rules.md §8.2): continuous, planet, dedicated or
+   * steal (steal.md), fixed for the game's lifetime once set by
+   * `startingGameState`. Every place that rotates the queue —
+   * `endOfTurn.ts` step 5, and a landing in `ply.ts` — reads it from here
+   * rather than from an app default. It cannot be derived from a board: a
+   * board that has not rotated for ten turns is indistinguishable from one
+   * whose players simply have not landed anywhere.
    */
-  readonly nodeRotation: NodeRotationSetting;
+  readonly nodePlaystyle: NodePlaystyle;
   /**
    * Every square currently holding a rotator (rules.md §3.3), in board
    * order, fixed only at the moment it is set — the opening deal, and every
@@ -248,19 +261,19 @@ export interface StartingGameStateOptions {
    */
   readonly scoring?: string;
   /**
-   * How the three inactive nodes' priorities rotate (rules.md §8.2).
-   * Defaults to `DEFAULT_NODE_ROTATION` (planet). Deliberately typed
-   * `string`, not `NodeRotationSetting`, for the same reason `scoring` is: a
-   * setting arriving from outside the type system can be any string. Must be
-   * one of `nodeRotation.ts`'s offered settings, or this throws a
-   * `RangeError`. `rotators` is not an option — it is produced by the deal,
-   * never supplied.
+   * The node playstyle (rules.md §8.2): continuous, planet, dedicated or
+   * steal (steal.md). Defaults to `DEFAULT_NODE_PLAYSTYLE` (planet).
+   * Deliberately typed `string`, not `NodePlaystyle`, for the same reason
+   * `scoring` is: a setting arriving from outside the type system can be
+   * any string. Must be one of `nodePlaystyle.ts`'s offered settings, or
+   * this throws a `RangeError`. `rotators` is not an option — it is
+   * produced by the deal, never supplied.
    */
-  readonly nodeRotation?: string;
+  readonly nodePlaystyle?: string;
   /**
    * The planet bonus setting (rules.md §3.4). Defaults to
    * `DEFAULT_PLANET_BONUS` (off). Deliberately typed `string`, not
-   * `PlanetBonusSetting`, for the same reason `scoring` and `nodeRotation`
+   * `PlanetBonusSetting`, for the same reason `scoring` and `nodePlaystyle`
    * are: a setting arriving from outside the type system can be any string.
    * Must be one of `planetBonus.ts`'s offered settings, or this throws a
    * `RangeError`. `bonusPlanets` is not an option — it is produced by the
@@ -285,10 +298,13 @@ export interface StartingGameStateOptions {
  * The seed argument is the seed the **deal** starts from, not the seed the
  * game's first turn draws from: dealing the board consumes `chargedNodeCount
  * + 4` steps of the stream before play begins — nine at five charged, eight
- * at four, seven at three — plus, under the dedicated node rotation setting
- * only, up to eight more for the opening rotator set (rules.md §3.3), plus,
+ * at four, seven at three — plus, under the dedicated playstyle only, up to
+ * eight more for the opening rotator set (rules.md §3.3), plus,
  * when the planet bonus is on, exactly six more for the bonus planet deal
- * (rules.md §3.4), drawn last so an off game spends nothing extra. The
+ * (rules.md §3.4), drawn last so an off game spends nothing extra. Under
+ * steal instead, the deal consumes exactly `2 * chargedNodeCount` steps
+ * (`dealStealOpeningBoard`, steal.md §7) — no rotator set is ever drawn — and
+ * the bonus planet deal, if any, still runs last. The
  * resulting state's `randomSeed` is the seed all of that left behind. That
  * argument is also recorded verbatim as `openingSeed`, so the state
  * remembers where its deal started even once `randomSeed` has moved on. See
@@ -323,7 +339,7 @@ export function startingGameState(
     chargedNodeCount = DEFAULT_CHARGED_NODE_COUNT,
     combatEnabled = DEFAULT_COMBAT_ENABLED,
     scoring = DEFAULT_SCORING,
-    nodeRotation = DEFAULT_NODE_ROTATION,
+    nodePlaystyle = DEFAULT_NODE_PLAYSTYLE,
     planetBonus = DEFAULT_PLANET_BONUS,
   } = options;
 
@@ -347,9 +363,9 @@ export function startingGameState(
       `startingGameState: scoring must be one of ${SCORING_SETTINGS.join(", ")}, got ${scoring}`,
     );
   }
-  if (!isNodeRotationSetting(nodeRotation)) {
+  if (!isNodePlaystyle(nodePlaystyle)) {
     throw new RangeError(
-      `startingGameState: nodeRotation must be one of ${NODE_ROTATION_SETTINGS.join(", ")}, got ${nodeRotation}`,
+      `startingGameState: nodePlaystyle must be one of ${NODE_PLAYSTYLES.join(", ")}, got ${nodePlaystyle}`,
     );
   }
   if (!isPlanetBonusSetting(planetBonus)) {
@@ -366,17 +382,16 @@ export function startingGameState(
   }));
 
   const shipSquares = ships.map((ship) => ship.square);
-  const [nodes, dealtSeed] = dealOpeningBoard(
-    shipSquares,
-    chargedNodeCount,
-    randomSeed,
-  );
+  const [nodes, dealtSeed]: [Readonly<Record<string, NodeStatus>>, number] =
+    nodePlaystyle === "steal"
+      ? dealStealOpeningBoard(shipSquares, chargedNodeCount, randomSeed)
+      : dealOpeningBoard(shipSquares, chargedNodeCount, randomSeed);
 
   const dealtNodeSquares = ALL_SQUARES.filter(
     (square) => nodes[squareName(square)] !== undefined,
   );
   const [rotators, seedAfterRotators] =
-    nodeRotation === "dedicated"
+    nodePlaystyle === "dedicated"
       ? placeRotators(dealtNodeSquares, shipSquares, dealtSeed)
       : [[], dealtSeed];
 
@@ -398,7 +413,7 @@ export function startingGameState(
     outOfTime: { green: false, red: false },
     combatEnabled,
     scoring,
-    nodeRotation,
+    nodePlaystyle,
     rotators,
     planetBonus,
     bonusPlanets,

@@ -27,7 +27,7 @@ import {
   TOP_NODE_PRIORITY,
   rotatePriority,
 } from "./nodeQueue";
-import type { NodeRotationSetting } from "./nodeRotation";
+import type { NodePlaystyle } from "./nodePlaystyle";
 import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
@@ -63,7 +63,7 @@ function buildState(config: {
   randomSeed?: number;
   chargedNodeCount?: ChargedNodeCount;
   scoring?: ScoringSetting;
-  nodeRotation?: NodeRotationSetting;
+  nodePlaystyle?: NodePlaystyle;
   rotators?: readonly Square[];
 }): GameState {
   return {
@@ -73,7 +73,7 @@ function buildState(config: {
     plyNumber: config.plyNumber ?? 1,
     randomSeed: config.randomSeed ?? 1,
     openingSeed: config.randomSeed ?? 1,
-    nodeRotation: config.nodeRotation ?? "continuous",
+    nodePlaystyle: config.nodePlaystyle ?? "continuous",
     rotators: config.rotators ?? [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
@@ -1080,7 +1080,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
 
   it("does not rotate on a turn that charges nothing under planet", () => {
     const state = buildState({
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       chargedNodeCount: 4,
       nodes: {
         D4: ["charged", 0],
@@ -1106,7 +1106,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
   it("does not rotate on a turn that charges nothing under dedicated, and leaves the rotator set untouched", () => {
     const rotators = [squareAt("C", 3), squareAt("K", 13)];
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       rotators,
       chargedNodeCount: 4,
       nodes: {
@@ -1131,7 +1131,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
   it("refills the queue and, under dedicated, replaces the whole rotator set clear of the new nodes and the ships", () => {
     const oldRotators = [squareAt("C", 3), squareAt("K", 13)];
     const state = buildState({
-      nodeRotation: "dedicated",
+      nodePlaystyle: "dedicated",
       rotators: oldRotators,
       chargedNodeCount: 4,
       nodes: {
@@ -1173,9 +1173,9 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
   });
 
   it("leaves the rotator list empty, and reports no new rotators, when a refill happens under continuous or planet", () => {
-    for (const nodeRotation of ["continuous", "planet"] as const) {
+    for (const nodePlaystyle of ["continuous", "planet"] as const) {
       const state = buildState({
-        nodeRotation,
+        nodePlaystyle,
         chargedNodeCount: 4,
         nodes: {
           D4: ["charged", 0],
@@ -1615,5 +1615,52 @@ describe("runEndOfTurn — a quiet board does nothing at all (§8.1, §8.3)", ()
         state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
       }
     }
+  });
+});
+
+describe("runEndOfTurn — steal runs only power and energy (steal.md §8)", () => {
+  it("pays power and energy exactly as usual, raises no other effect, and leaves nodes, rotators and the seed untouched", () => {
+    const planetSquare = squareName(PLANETS[0]);
+    const chargedSquare = squareFromName("H8");
+    const prospectiveSquare = squareFromName("C3");
+    const state: GameState = {
+      ships: [
+        ship("green-1", "green", squareName(chargedSquare), 4),
+        ship("green-2", "green", planetSquare, 3),
+      ],
+      nodes: {
+        [squareName(chargedSquare)]: { state: "charged", level: 0, signal: 0 },
+        [squareName(prospectiveSquare)]: {
+          state: "prospective",
+          level: 0,
+          signal: 0,
+        },
+      },
+      sideToMove: "green",
+      plyNumber: 1,
+      randomSeed: 4242,
+      openingSeed: 4242,
+      nodePlaystyle: "steal",
+      rotators: [],
+      planetBonus: "off",
+      bonusPlanets: { green: [], red: [] },
+      energy: { green: 0, red: 0 },
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      chargedNodeCount: 4,
+      outOfTime: { green: false, red: false },
+      combatEnabled: true,
+      scoring: "simple",
+    };
+
+    const result = runEndOfTurn(state);
+
+    expect(result.effects.map((effect) => effect.type)).toEqual([
+      "power-gained",
+      "energy-collected",
+    ]);
+    expect(result.state.nodes).toEqual(state.nodes);
+    expect(result.state.rotators).toEqual([]);
+    expect(result.state.randomSeed).toBe(state.randomSeed);
+    expect(result.state.energy.green).toBe(1);
   });
 });

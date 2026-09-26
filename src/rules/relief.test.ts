@@ -33,7 +33,7 @@ function buildState(config: {
     plyNumber: 1,
     randomSeed: config.randomSeed ?? 1,
     openingSeed: config.randomSeed ?? 1,
-    nodeRotation: "continuous",
+    nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },

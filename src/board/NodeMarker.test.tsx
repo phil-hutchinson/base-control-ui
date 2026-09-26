@@ -5,15 +5,22 @@ import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
+import { NODE_SIGNALS } from "../rules/steal";
 import type {
   NodeBurnoutAnimation,
   NodeChargeAnimation,
 } from "./boardAnimations";
 import { NodeMarker } from "./NodeMarker";
+import { SIGNAL_COLORS } from "./squareArt";
 
 afterEach(cleanup);
 
-const STATES: readonly NodeState[] = ["inactive", "charged", "depleted"];
+const STATES: readonly NodeState[] = [
+  "inactive",
+  "charged",
+  "depleted",
+  "prospective",
+];
 
 // The two clocked states, whose artwork is a single gradient-filled circle
 // that travels through a cycle position. Inactive is drawn differently (a
@@ -268,6 +275,109 @@ describe("NodeMarker", () => {
     });
   });
 
+  describe("a prospective node's rings (steal.md §2)", () => {
+    it("always draws all three rings, with no priority given", () => {
+      const { container } = render(
+        <NodeMarker state="prospective" squareName={SQUARE_NAME} />,
+      );
+
+      const circles = container.querySelectorAll("circle");
+      expect(Array.from(circles, (circle) => circle.getAttribute("r"))).toEqual(
+        INACTIVE_RING_RADII,
+      );
+      for (const circle of circles) {
+        expect(circle).toHaveAttribute("fill", "none");
+        expect(circle).toHaveAttribute("stroke", INACTIVE_RING_COLOR);
+      }
+    });
+
+    it("draws no gradient at all, unlike the charged and depleted artwork", () => {
+      const { container } = render(
+        <NodeMarker state="prospective" squareName={SQUARE_NAME} />,
+      );
+
+      expect(container.querySelector("radialGradient")).not.toBeInTheDocument();
+      expect(container.querySelector("defs")).not.toBeInTheDocument();
+    });
+
+    it.each(NODE_SIGNALS)("draws its rings in signal %s's colour", (signal) => {
+      const { container } = render(
+        <NodeMarker
+          state="prospective"
+          squareName={SQUARE_NAME}
+          signal={signal}
+        />,
+      );
+
+      const circles = container.querySelectorAll("circle");
+      expect(circles).toHaveLength(INACTIVE_RING_RADII.length);
+      for (const circle of circles) {
+        expect(circle).toHaveAttribute("stroke", SIGNAL_COLORS[signal].core);
+      }
+    });
+  });
+
+  describe("a charged node's steal ball (steal.md §2)", () => {
+    it.each(NODE_SIGNALS)(
+      "draws signal %s's ball at today's starting radius, with its gradient stops fixed at the start-of-cycle offset",
+      (signal) => {
+        const { container } = render(
+          <NodeMarker
+            state="charged"
+            squareName={SQUARE_NAME}
+            signal={signal}
+          />,
+        );
+
+        const circle = container.querySelector("circle");
+        expect(circle).toHaveAttribute("r", EXPECTED_ARTWORK.charged.radius);
+
+        const { core, rim } = SIGNAL_COLORS[signal];
+        const stops = container.querySelectorAll("stop");
+        expect(stops).toHaveLength(3);
+        expect(stops[0]).toHaveAttribute("stop-color", core);
+        expect(stops[0]).toHaveAttribute("stop-opacity", "1");
+        expect(stops[1]).toHaveAttribute("stop-color", core);
+        expect(stops[1]).toHaveAttribute(
+          "offset",
+          EXPECTED_ARTWORK.charged.stops[1].offset,
+        );
+        expect(stops[1]).toHaveAttribute("stop-opacity", "0.7");
+        expect(stops[2]).toHaveAttribute("stop-color", rim);
+        expect(stops[2]).toHaveAttribute("stop-opacity", "1");
+      },
+    );
+
+    it.each([0, 0.5, 1])(
+      "never moves its middle stop's offset with cyclePosition %s",
+      (cyclePosition) => {
+        const { container } = render(
+          <NodeMarker
+            state="charged"
+            squareName={SQUARE_NAME}
+            signal={0}
+            cyclePosition={cyclePosition}
+          />,
+        );
+
+        const stops = container.querySelectorAll("stop");
+        expect(stops[1]).toHaveAttribute(
+          "offset",
+          EXPECTED_ARTWORK.charged.stops[1].offset,
+        );
+      },
+    );
+
+    it("draws today's radius and colours exactly when no signal is given", () => {
+      const { container } = render(
+        <NodeMarker state="charged" squareName={SQUARE_NAME} />,
+      );
+
+      const circle = container.querySelector("circle");
+      expect(circle).toHaveAttribute("r", EXPECTED_ARTWORK.charged.radius);
+    });
+  });
+
   describe("the charge animation", () => {
     function chargeAnimation(priority: NodePriority): NodeChargeAnimation {
       return { type: "node-charge", priority, runId: 7 };
@@ -306,6 +416,44 @@ describe("NodeMarker", () => {
           "id",
           `node-${SQUARE_NAME}-fill`,
         );
+        const mask = container.querySelector("mask");
+        expect(mask).toBeInTheDocument();
+        expect(
+          container.querySelector(".node-marker__charge-reveal"),
+        ).toHaveAttribute("mask", `url(#${mask?.getAttribute("id")})`);
+      },
+    );
+
+    it.each(NODE_SIGNALS)(
+      "draws all three outgoing rings in signal %s's colour for a steal claim, revealing that signal's charged artwork",
+      (signal) => {
+        const { container } = render(
+          <NodeMarker
+            state="charged"
+            squareName={SQUARE_NAME}
+            signal={signal}
+            chargeAnimation={{ type: "node-charge", signal, runId: 7 }}
+          />,
+        );
+
+        const rings = container.querySelectorAll(".node-marker__outgoing-ring");
+        expect(Array.from(rings, (ring) => ring.getAttribute("r"))).toEqual(
+          INACTIVE_RING_RADII,
+        );
+        for (const ring of rings) {
+          expect(ring).toHaveAttribute("stroke", SIGNAL_COLORS[signal].core);
+        }
+
+        const stops = container.querySelectorAll("stop");
+        expect(stops[0]).toHaveAttribute(
+          "stop-color",
+          SIGNAL_COLORS[signal].core,
+        );
+        expect(stops[2]).toHaveAttribute(
+          "stop-color",
+          SIGNAL_COLORS[signal].rim,
+        );
+
         const mask = container.querySelector("mask");
         expect(mask).toBeInTheDocument();
         expect(

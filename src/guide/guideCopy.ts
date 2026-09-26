@@ -3,6 +3,8 @@
 // section's paragraph and its three setting lines were rewritten verbatim by
 // the owner for the inactive node rotation options
 // (doc/plan/00000090-add-prospective-node-rotation-options/implementation-plan.md).
+// The STEALING NODES section's paragraph describes the steal playstyle
+// (steal.md).
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //
@@ -23,15 +25,20 @@ export const GUIDE_INTRO_PARAGRAPH =
   "extra node under bonus scoring.";
 
 /**
- * Identifies one of the guide's five headed sections, so a caller can pair
+ * Identifies one of the guide's six headed sections, so a caller can pair
  * a section with its diagram without relying on array position.
  */
 export type GuideSectionId =
-  "movement" | "refuelling" | "nodeLifecycle" | "nodeSelection" | "planetBonus";
+  | "movement"
+  | "refuelling"
+  | "nodeLifecycle"
+  | "nodeSelection"
+  | "stealingNodes"
+  | "planetBonus";
 
 /**
  * One emphasised label and its sentence, under NEW CHARGED NODE SELECTION —
- * one per inactive node rotation setting (rules.md §8.2).
+ * one per node playstyle (rules.md §8.2).
  */
 export interface GuideSettingLine {
   readonly label: string;
@@ -52,9 +59,9 @@ export interface GuideSection {
 }
 
 /**
- * The five headed sections, in the order the guide reads: movement,
- * refuelling, the node lifecycle, new charged node selection, and the
- * planet bonus.
+ * The six headed sections, in the order the guide reads: movement,
+ * refuelling, the node lifecycle, new charged node selection, stealing
+ * nodes, and the planet bonus.
  */
 export const GUIDE_SECTIONS: readonly GuideSection[] = [
   {
@@ -76,24 +83,26 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
     id: "nodeLifecycle",
     heading: "NODE LIFECYCLE",
     paragraph:
-      "The board always has the number of charged nodes chosen at the " +
-      "start: five, four or three. When a spaceship enters a " +
-      "charged node, a countdown begins before it is depleted. The " +
-      "spaceship gains points every turn it stays on the node, until it " +
-      "becomes depleted. A charged node also becomes depleted if the " +
-      "spaceship leaves it. When the node becomes depleted, a new charged " +
-      "node is created. If a node depletes with a spaceship still inside " +
-      "it, the spaceship is trapped for 5 turns.",
+      "Under the Continuous, Planet and Dedicated playstyles, the board " +
+      "always has the number of charged nodes chosen at the start: five, " +
+      "four or three. When a spaceship enters a charged node, a countdown " +
+      "begins before it is depleted. The spaceship gains points every " +
+      "turn it stays on the node, until it becomes depleted. A charged " +
+      "node also becomes depleted if the spaceship leaves it. When the " +
+      "node becomes depleted, a new charged node is created. If a node " +
+      "depletes with a spaceship still inside it, the spaceship is " +
+      "trapped for 5 turns.",
   },
   {
     id: "nodeSelection",
     heading: "NEW CHARGED NODE SELECTION",
     paragraph:
-      "Three indicators appear on the board, with one, two, and three " +
-      "rings. When a new charged node is needed, it appears at the " +
-      "three-ring indicator — and all three indicators are then replaced " +
-      "by a fresh set elsewhere. The rings rotate, depending on the " +
-      "Inactive node rotation selected.",
+      "Under the Continuous, Planet and Dedicated playstyles, three " +
+      "indicators appear on the board, with one, two, and three rings. " +
+      "When a new charged node is needed, it appears at the three-ring " +
+      "indicator — and all three indicators are then replaced by a fresh " +
+      "set elsewhere. The rings rotate, depending on the Node playstyle " +
+      "selected.",
     settingLines: [
       {
         label: "Continuous",
@@ -112,6 +121,20 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
           "on one of these triggers the rotation.",
       },
     ],
+  },
+  {
+    id: "stealingNodes",
+    heading: "STEALING NODES",
+    paragraph:
+      "Under the Steal playstyle, every node always shows two squares, " +
+      "and a node's two squares are the same colour. A node nobody holds " +
+      "shows two sets of rings. Land a spaceship on either set to charge " +
+      "the node there: the other set disappears, and a new set appears " +
+      "elsewhere on the board. You gain points every turn you stay, and " +
+      "the node never runs out. But your opponent can take it by landing " +
+      "on its rings — your spaceship is left on an ordinary square. If " +
+      "you leave the node yourself, it goes back to two sets of rings, " +
+      "for whoever reaches one first.",
   },
   {
     id: "planetBonus",

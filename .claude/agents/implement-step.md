@@ -34,10 +34,10 @@ story folder name (under `doc/plan/`) and a step number.
 
 ## Constraints
 
-- `doc/ruleset/rules.md` is the single source of truth for how the game is
-  played. Implement it exactly; never infer a rule it does not state. If the
-  step seems to require a rule the document does not cover, stop and report
-  it rather than inventing one.
+- The ruleset in `doc/ruleset/` (`rules.md` and its companion files) is the
+  single source of truth for how the game is played. Implement it exactly;
+  never infer a rule it does not state. If the step seems to require a rule
+  the document does not cover, stop and report it rather than inventing one.
 - Follow the vocabulary in CLAUDE.md: code, tests and plans say "ply";
   player-facing text says "turn". "Move" means the movement action
   specifically and is never a synonym for a ply or a turn.

@@ -23,7 +23,7 @@ import {
   type ChargedNodeCount,
   type NodeState,
 } from "./nodes";
-import { type NodeRotationSetting } from "./nodeRotation";
+import { type NodePlaystyle } from "./nodePlaystyle";
 import { DEFAULT_PLANET_BONUS, type PlanetBonusSetting } from "./planetBonus";
 
 function ship(
@@ -67,7 +67,7 @@ function buildState(config: {
   plyNumber?: number;
   chargedNodeCount?: ChargedNodeCount;
   energy?: { green: number; red: number };
-  nodeRotation?: NodeRotationSetting;
+  nodePlaystyle?: NodePlaystyle;
   planetBonus?: PlanetBonusSetting;
   bonusPlanets?: Readonly<Record<"green" | "red", readonly BonusPlanetEntry[]>>;
 }): GameState {
@@ -82,7 +82,7 @@ function buildState(config: {
     // rules-level harness, and a case that names no rotation should keep
     // exercising the same setting regardless of which one the start screen
     // preselects.
-    nodeRotation: config.nodeRotation ?? "continuous",
+    nodePlaystyle: config.nodePlaystyle ?? "continuous",
     rotators: [],
     planetBonus: config.planetBonus ?? DEFAULT_PLANET_BONUS,
     bonusPlanets: config.bonusPlanets ?? { green: [], red: [] },
@@ -348,7 +348,7 @@ describe("a move that lands on a bonus planet", () => {
         ship("green-1", "green", belowSquare(planet)),
         ship("red-1", "red", "A1"),
       ],
-      nodeRotation: "planet",
+      nodePlaystyle: "planet",
       planetBonus: "three",
       bonusPlanets: { green: [entry(planet)], red: [] },
     });

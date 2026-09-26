@@ -12,6 +12,8 @@ import type {
 } from "../rules/endOfTurn";
 import type {
   FightResolvedEffect,
+  NodeAbandonedEffect,
+  NodeClaimedEffect,
   NodeSpentEffect,
   PassEffect,
   PlanetBonusClaimedEffect,
@@ -46,8 +48,9 @@ function settlementsIn(effects: readonly EndOfTurnEffect[]): Settlement[] {
  * The `ply-ended` and `ply-passed` settlements out of a move's or an
  * attack's effect list. Takes the two effect lists' common shape rather than
  * either one by name, since a move's effects and an attack's effects are
- * otherwise different types (a move's can also carry a `NodeSpentEffect` and
- * an attack's a `FightResolvedEffect`, and either can carry a
+ * otherwise different types (a move's can also carry a `NodeSpentEffect` or,
+ * under steal, a `NodeAbandonedEffect` and a `NodeClaimedEffect`, and an
+ * attack's a `FightResolvedEffect`, and either can carry a
  * `QueueRotatedEffect` or a `PlanetBonusClaimedEffect`, none of which carries
  * a settlement of its own).
  */
@@ -57,6 +60,8 @@ function endOfPlySettlements(
     | PlyEndedEffect
     | FightResolvedEffect
     | NodeSpentEffect
+    | NodeAbandonedEffect
+    | NodeClaimedEffect
     | PlanetBonusClaimedEffect
     | QueueRotatedEffect
   )[],

@@ -27,6 +27,8 @@ import type {
   AttackEffect,
   FightResolvedEffect,
   MoveEffect,
+  NodeAbandonedEffect,
+  NodeClaimedEffect,
   NodeSpentEffect,
   PassEffect,
   PlanetBonusClaimedEffect,
@@ -297,6 +299,49 @@ function nodeSpentClause(square: Square): string {
 }
 
 /**
+ * A ship leaving a node's charged square under steal (steal.md §4): naming
+ * the side that gave it up and the square vacated. `side` is the moving
+ * side, not carried by the effect itself, since it is always the ship that
+ * just left. No colour and no signal is named (steal.md §2).
+ */
+function nodeAbandonedClause(effect: NodeAbandonedEffect, side: Side): string {
+  return `${capitalize(side)} gives up the node at ${squareName(effect.square)}.`;
+}
+
+/**
+ * A ship claiming a node under steal (steal.md §3), worded for whichever of
+ * the three shapes a claim can take: an unheld node, taking one from another
+ * ship — of either side — left standing on the square that just went
+ * ordinary, or a holder relocating its own node. `releasedSquare`'s absence
+ * means the node was Open, so there is nothing more to say than the square
+ * taken; its presence with no `strandedShip` means the claiming ship itself
+ * just vacated it, a relocation; its presence with a `strandedShip` names
+ * whichever side was left standing there, naming the other side only when it
+ * differs from the claimant's own. No colour and no signal is named
+ * (steal.md §2).
+ */
+function nodeClaimedClause(effect: NodeClaimedEffect): string {
+  const side = capitalize(effect.side);
+  const to = squareName(effect.square);
+
+  if (effect.releasedSquare === undefined) {
+    return `${side} takes the node at ${to}.`;
+  }
+  const from = squareName(effect.releasedSquare);
+
+  if (effect.strandedShip === undefined) {
+    return `${side} moves its node from ${from} to ${to}.`;
+  }
+
+  const strandedSide = effect.strandedShip.side;
+  const takenClause =
+    strandedSide === effect.side
+      ? `${side} takes the node at ${to}.`
+      : `${side} takes the node at ${to} from ${strandedSide}.`;
+  return `${takenClause} ${from} is no longer a node; ${strandedSide}'s ship there is on an ordinary square.`;
+}
+
+/**
  * A landing rotating the waiting nodes one step (rules.md §8.2): what
  * triggered it — a planet or a rotator — named alongside the square it
  * happened on.
@@ -349,12 +394,41 @@ function queueRotatedClausesText(
 }
 
 /**
+ * Every `node-abandoned` effect a move carries, as one clause (steal.md §4)
+ * — at most one, since a move can leave only the node its own ship stood on.
+ */
+function nodeAbandonedClauseText(
+  effects: readonly MoveEffect[],
+  side: Side,
+): string {
+  const abandonment = effects.find(
+    (effect): effect is NodeAbandonedEffect => effect.type === "node-abandoned",
+  );
+  return abandonment !== undefined
+    ? ` ${nodeAbandonedClause(abandonment, side)}`
+    : "";
+}
+
+/**
+ * Every `node-claimed` effect a move carries, as one clause (steal.md §3) —
+ * at most one, since a move can land on only one prospective square.
+ */
+function nodeClaimedClauseText(effects: readonly MoveEffect[]): string {
+  const claim = effects.find(
+    (effect): effect is NodeClaimedEffect => effect.type === "node-claimed",
+  );
+  return claim !== undefined ? ` ${nodeClaimedClause(claim)}` : "";
+}
+
+/**
  * "What the move was": the ship's journey, whether it ended on a planet, what
  * the move cost (rules.md §6), and — between those and the turn-ending
- * clauses — whether it spent a charged node by leaving it (§8.3), whether the
- * landing claimed a planet bonus (§3.4) and whether the landing rotated the
- * waiting nodes (§8.2). Either side's ship reads the same way; the side is
- * already named at the start of the sentence.
+ * clauses — whether it spent a charged node by leaving it (§8.3) or, under
+ * steal, gave one up or claimed one (steal.md §§3–5, in that order when one
+ * move does both), whether the landing claimed a planet bonus (§3.4) and
+ * whether the landing rotated the waiting nodes (§8.2). Either side's ship
+ * reads the same way; the side is already named at the start of the
+ * sentence.
  */
 function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);
@@ -369,7 +443,7 @@ function moveSentence(event: MovedEvent): string {
   const nodeSpentClauseText =
     nodeSpent !== undefined ? ` ${nodeSpentClause(nodeSpent.square)}` : "";
 
-  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}${nodeSpentClauseText}${planetBonusClaimedClausesText(event.effects)}${queueRotatedClausesText(event.effects)}`;
+  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}${nodeSpentClauseText}${nodeAbandonedClauseText(event.effects, event.side)}${nodeClaimedClauseText(event.effects)}${planetBonusClaimedClausesText(event.effects)}${queueRotatedClausesText(event.effects)}`;
 }
 
 /**

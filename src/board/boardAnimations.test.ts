@@ -13,6 +13,7 @@ import type {
   Session,
 } from "../game/session";
 import type {
+  NodeClaimedEffect,
   NodeSpentEffect,
   PassEffect,
   QueueRotatedEffect,
@@ -27,7 +28,7 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     plyNumber: 3,
     randomSeed: 1,
     openingSeed: 1,
-    nodeRotation: "continuous",
+    nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
@@ -171,6 +172,63 @@ describe("boardAnimations", () => {
     expect(animations.size).toBe(1);
   });
 
+  it("returns a charge animation carrying the signal for a steal claim (steal.md §3)", () => {
+    const nodeClaimed: NodeClaimedEffect = {
+      type: "node-claimed",
+      shipId: "green-1",
+      side: "green",
+      signal: 2,
+      square: squareAt("K", 11),
+      newProspective: squareAt("D", 4),
+    };
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("K", 12),
+      to: squareAt("K", 11),
+      effects: [
+        nodeClaimed,
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+
+    const animations = boardAnimations(sessionWithEvent(event));
+
+    expect(animations.get("K11")).toEqual({
+      type: "node-charge",
+      signal: 2,
+      runId: 3,
+    });
+    expect(animations.size).toBe(1);
+  });
+
+  it("returns no animation for the square a steal abandon released", () => {
+    const nodeAbandoned = {
+      type: "node-abandoned" as const,
+      signal: 1 as const,
+      square: squareAt("D", 4),
+      newProspective: squareAt("K", 11),
+    };
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("D", 4),
+      to: squareAt("D", 5),
+      effects: [
+        nodeAbandoned,
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+
+    expect(boardAnimations(sessionWithEvent(event)).size).toBe(0);
+  });
+
   it("turns every rotator still on the board, and never the spent square", () => {
     const rotatorTrigger: QueueRotatedEffect = {
       type: "queue-rotated",
@@ -193,7 +251,7 @@ describe("boardAnimations", () => {
 
     const animations = boardAnimations(
       sessionWithEvent(event, {
-        nodeRotation: "dedicated",
+        nodePlaystyle: "dedicated",
         rotators: [squareAt("E", 5), squareAt("F", 6), squareAt("G", 9)],
       }),
     );
@@ -226,7 +284,7 @@ describe("boardAnimations", () => {
 
     const animations = boardAnimations(
       sessionWithEvent(event, {
-        nodeRotation: "planet",
+        nodePlaystyle: "planet",
         rotators: [],
       }),
     );
@@ -267,7 +325,7 @@ describe("boardAnimations", () => {
 
     const animations = boardAnimations(
       sessionWithEvent(event, {
-        nodeRotation: "dedicated",
+        nodePlaystyle: "dedicated",
         rotators: [squareAt("F", 6), squareAt("G", 9), squareAt("H", 3)],
       }),
     );

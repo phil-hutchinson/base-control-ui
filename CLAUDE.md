@@ -13,24 +13,26 @@ backend API; it must be deployable from a static file host.
 
 ## The rules live here
 
-`doc/ruleset/rules.md` is the single source of truth for how the game is
-played, and `doc/ruleset/changelog.md` records every change to it. Unlike a
-project whose rules come from elsewhere, **this repository owns the ruleset**:
-the app is where new rules get tried first, and the document is expected to
-change often. `doc/ruleset/tech-notes.md` holds development notes — measured
+The ruleset in `doc/ruleset/` is the single source of truth for how the game
+is played: `rules.md` holds everything the playstyles share, and a playstyle
+different enough to need its own node rules keeps them in a companion file
+beside it (`steal.md`), which `rules.md` points to. `doc/ruleset/changelog.md`
+records every change to any of them. Unlike a project whose rules come from
+elsewhere, **this repository owns the ruleset**: the app is where new rules
+get tried first, and the documents are expected to change often. `doc/ruleset/tech-notes.md` holds development notes — measured
 figures and the reasoning behind them — and is not part of the ruleset a
 player reads.
 
-Rule logic in `src/` implements that document. It never redefines the rules,
-and it never carries a rule the document does not state. When the two disagree,
-the document is right.
+Rule logic in `src/` implements the ruleset. It never redefines the rules,
+and it never carries a rule the ruleset does not state. When the two disagree,
+the ruleset is right.
 
 ### Rules versioning
 
-`rules.md` carries a version number, mirrored by a single `RULES_VERSION`
-constant in the code, with a test asserting the two agree so they cannot
-drift. A rules change bumps both in its own commit, together with a
-`changelog.md` entry.
+`rules.md` carries a version number for the whole ruleset, companion files
+included, mirrored by a single `RULES_VERSION` constant in the code, with a
+test asserting the two agree so they cannot drift. A change to any ruleset
+file bumps both in its own commit, together with a `changelog.md` entry.
 
 **Tagging is on hold until the game plays.** Once a ruleset commit is on
 `main` it may be tagged `rules-<version>` (the `/tag-rules` command does
@@ -135,14 +137,25 @@ must not be used loosely.
 
 **Node** — a position on the board that runs `inactive` → `charged` →
 `depleted` and then ends, at which point a new inactive node appears
-somewhere else. The same word everywhere: code, tests and player-facing text.
-This replaces an older split, where "hub" was the code word for a charged
-site and "site" named a fixed position a hub could appear at — a board with
-no fixed positions has no honest use for either word, so this is a knowing
+somewhere else. Under the Steal playstyle a node instead never ends: it is
+two squares — `charged` and `prospective`, or two `prospective` — and moves
+when a ship claims or leaves it. The same word everywhere: code, tests and
+player-facing text. This replaces an older split, where "hub" was the code
+word for a charged site and "site" named a fixed position a hub could appear
+at — a board with no fixed positions has no honest use for either word, so this is a knowing
 trade, not an oversight. The split existed to keep the code word clear of the
 search-tree "node" that arrives with any future engine work — a collision
 that would be genuinely confusing in a codebase holding both — and whatever
 disambiguates the two will have to be chosen then.
+
+**Prospective node** — under Steal, a square a node waits on; landing there
+claims the node. A rules word, distinct from an **inactive** node, which
+keeps its meaning under the other playstyles.
+
+**Signal** — under Steal, what ties a node's squares together and tells one
+node from another. The internal name, used in code, tests and planning
+documents; the app shows a signal as a colour, and player-facing wording is
+free to present it differently without a code change.
 
 ## Story Documentation
 

@@ -1,8 +1,9 @@
 // Where a new node may appear (rules.md §3.2), and how one is drawn there.
 // A pure function of the nodes placed so far and the squares ships occupy —
-// used by the opening deal, before a `GameState` exists, and by the refill
-// procedure in `nodeQueue.ts`, whose caller reads those two things off its
-// state itself.
+// used by the opening deal, before a `GameState` exists, by the refill
+// procedure in `nodeQueue.ts`, and, under steal, by `steal.ts`'s opening
+// deal and its claim and abandon events, all of which read those inputs off
+// their own state.
 
 import {
   ALL_SQUARES,
@@ -79,6 +80,55 @@ function isAdjacentToAnyPlanet(square: Square): boolean {
 }
 
 /**
+ * The squares meeting every one of §3.2's spacing and edge constraints (3
+ * through 6) at the given `excludedEdgeRings`, without the universal
+ * fallback: constraints 1 and 2 (no node, no ship) plus constraint 5 (no
+ * node adjacency) and constraint 6 (no planet, no planet adjacency) always
+ * apply; constraints 3 and 4 (off the outer two rings) apply only down to
+ * `excludedEdgeRings`. Used by `legalNodePool` and, under steal, to try the
+ * strict pool before the widened one (steal.md §7).
+ */
+function constrainedNodePool(
+  occupiedNodeSquares: readonly Square[],
+  shipSquares: readonly Square[],
+  excludedEdgeRings: number,
+): readonly Square[] {
+  const nodeNames = new Set(occupiedNodeSquares.map(squareName));
+  const shipNames = new Set(shipSquares.map(squareName));
+
+  return ALL_SQUARES.filter((square) => {
+    const name = squareName(square);
+    return (
+      !nodeNames.has(name) &&
+      !shipNames.has(name) &&
+      distanceFromEdge(square) >= excludedEdgeRings &&
+      !isAdjacentToAnyNode(square, occupiedNodeSquares) &&
+      !isPlanet(square) &&
+      !isAdjacentToAnyPlanet(square)
+    );
+  });
+}
+
+/**
+ * Every square that holds no node, holds no ship and is not a planet —
+ * §3.2's universal fallback, which relaxes spacing entirely rather than
+ * dropping one constraint at a time. It keeps a node off a planet and off a
+ * ship, but, unlike either ordinary pool, does **not** keep it off a
+ * planet's neighbours or the board's edge.
+ */
+function universalFallbackPool(
+  occupiedNodeSquares: readonly Square[],
+  shipSquares: readonly Square[],
+): readonly Square[] {
+  const nodeNames = new Set(occupiedNodeSquares.map(squareName));
+  const shipNames = new Set(shipSquares.map(squareName));
+  return ALL_SQUARES.filter((square) => {
+    const name = squareName(square);
+    return !nodeNames.has(name) && !shipNames.has(name) && !isPlanet(square);
+  });
+}
+
+/**
  * The squares a new node may legally occupy (rules.md §3.2), given the
  * squares that already hold a node and the squares ships occupy, in board
  * order.
@@ -115,31 +165,19 @@ export function legalNodePool(
   shipSquares: readonly Square[],
   poolWidth: NodePoolWidth = "strict",
 ): readonly Square[] {
-  const nodeNames = new Set(occupiedNodeSquares.map(squareName));
-  const shipNames = new Set(shipSquares.map(squareName));
   const excludedEdgeRings =
     poolWidth === "widened" ? WIDENED_EXCLUDED_EDGE_RINGS : EXCLUDED_EDGE_RINGS;
-
-  const pool = ALL_SQUARES.filter((square) => {
-    const name = squareName(square);
-    return (
-      !nodeNames.has(name) &&
-      !shipNames.has(name) &&
-      distanceFromEdge(square) >= excludedEdgeRings &&
-      !isAdjacentToAnyNode(square, occupiedNodeSquares) &&
-      !isPlanet(square) &&
-      !isAdjacentToAnyPlanet(square)
-    );
-  });
+  const pool = constrainedNodePool(
+    occupiedNodeSquares,
+    shipSquares,
+    excludedEdgeRings,
+  );
 
   if (pool.length > 0) {
     return pool;
   }
 
-  const fallback = ALL_SQUARES.filter((square) => {
-    const name = squareName(square);
-    return !nodeNames.has(name) && !shipNames.has(name) && !isPlanet(square);
-  });
+  const fallback = universalFallbackPool(occupiedNodeSquares, shipSquares);
 
   if (fallback.length === 0) {
     throw new RangeError(
@@ -214,6 +252,105 @@ export function drawWeightedNodeSquare(
 ): [square: Square, nextSeed: number] {
   const weights = pool.map((square) =>
     nodeSquareWeight(square, chargedNodeSquares, placedSquares),
+  );
+  const [index, nextSeed] = drawWeightedIndex(seed, weights);
+  return [pool[index], nextSeed];
+}
+
+/**
+ * Steal's node-spread weight for a candidate square `s` (steal.md §6):
+ *
+ *     w(s) = d(s, a) + min over x in S of d(s, x)
+ *
+ * `a` is the node's anchor — its charged square when it has one, and its
+ * remaining prospective square when it does not — and `S` is every square
+ * belonging to any other node, charged or prospective alike; `d` is
+ * Chebyshev distance. The first term dominates and can range up to 14: it
+ * pushes a node's new prospective square a long way from the node itself, so
+ * a steal is a real relocation rather than a shuffle. The second term, about
+ * 2 to 5, is a prop-up for a square in an otherwise empty region and is
+ * deliberately the smaller of the two. It is 0 when `S` is empty, which only
+ * happens for the very first node of the opening deal.
+ *
+ * A square on the outer edge has its weight halved, so the rim stays
+ * available without becoming the likeliest place for a node to end up.
+ * `d(s, a)` is never below 2 in the ordinary pool (adjacency is illegal) and
+ * never below 1 in the fallback, so the halved weight is always positive and
+ * needs no positivity floor of the kind `nodeSquareWeight` carries.
+ */
+function stealProspectiveWeight(
+  square: Square,
+  anchor: Square,
+  otherNodeSquares: readonly Square[],
+): number {
+  const distanceFromAnchor = chebyshevDistance(square, anchor);
+  const distanceFromOthers =
+    otherNodeSquares.length === 0
+      ? 0
+      : Math.min(
+          ...otherNodeSquares.map((other) => chebyshevDistance(square, other)),
+        );
+  const weight = distanceFromAnchor + distanceFromOthers;
+  return distanceFromEdge(square) === 0 ? weight / 2 : weight;
+}
+
+/**
+ * Draws one square for a node's fresh prospective square under steal
+ * (steal.md §6), from the widened pool (constraints 3 and 4 lifted,
+ * fallback included), weighted by `stealProspectiveWeight`. `occupiedNodeSquares`
+ * is every square belonging to any node, the drawing node's own included;
+ * `anchor` is the drawing node's charged square if it has one, otherwise its
+ * remaining prospective square; `otherNodeSquares` is every square belonging
+ * to any other node. Advances the seed exactly once, via `drawWeightedIndex`,
+ * so a recorded game replays exactly.
+ */
+export function drawStealProspectiveSquare(
+  occupiedNodeSquares: readonly Square[],
+  anchor: Square,
+  otherNodeSquares: readonly Square[],
+  shipSquares: readonly Square[],
+  seed: number,
+): [square: Square, nextSeed: number] {
+  const pool = legalNodePool(occupiedNodeSquares, shipSquares, "widened");
+  const weights = pool.map((square) =>
+    stealProspectiveWeight(square, anchor, otherNodeSquares),
+  );
+  const [index, nextSeed] = drawWeightedIndex(seed, weights);
+  return [pool[index], nextSeed];
+}
+
+/**
+ * Draws a node's **second opening** prospective square (steal.md §7), the
+ * one exception to section 6's widened pool: it tries rules.md §3.2's
+ * **strict** pool first (`constrainedNodePool` with `EXCLUDED_EDGE_RINGS`),
+ * so an opening deal keeps its second squares off the outer two rings
+ * wherever the board leaves room, and only when the strict pool is empty
+ * falls back to `drawStealProspectiveSquare`'s own widened pool — and, from
+ * there, to §3.2's universal fallback, exactly as `legalNodePool` already
+ * provides. Every draw made after the opening — a claim's or an abandon's
+ * fresh square — is unaffected and keeps using the widened pool. Weighted
+ * by the same `stealProspectiveWeight` either way, so the edge halving only
+ * ever matters here in the fallback case. Advances the seed exactly once,
+ * via `drawWeightedIndex`.
+ */
+export function drawStealOpeningProspectiveSquare(
+  occupiedNodeSquares: readonly Square[],
+  anchor: Square,
+  otherNodeSquares: readonly Square[],
+  shipSquares: readonly Square[],
+  seed: number,
+): [square: Square, nextSeed: number] {
+  const strictPool = constrainedNodePool(
+    occupiedNodeSquares,
+    shipSquares,
+    EXCLUDED_EDGE_RINGS,
+  );
+  const pool =
+    strictPool.length > 0
+      ? strictPool
+      : legalNodePool(occupiedNodeSquares, shipSquares, "widened");
+  const weights = pool.map((square) =>
+    stealProspectiveWeight(square, anchor, otherNodeSquares),
   );
   const [index, nextSeed] = drawWeightedIndex(seed, weights);
   return [pool[index], nextSeed];

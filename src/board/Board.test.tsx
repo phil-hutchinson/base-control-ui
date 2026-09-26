@@ -19,6 +19,7 @@ import {
 } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
+import { NODE_SIGNALS } from "../rules/steal";
 import { legalDestinations } from "../rules/movement";
 import { legalTargets } from "../rules/combat";
 import { MAX_POWER, type PowerLevel } from "../rules/power";
@@ -33,6 +34,7 @@ import {
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
 import { planetArrangement } from "./planetPlacement";
+import { SIGNAL_COLORS } from "./squareArt";
 
 afterEach(cleanup);
 
@@ -117,7 +119,34 @@ function stateWithNode(
     plyNumber: 1,
     randomSeed: 1,
     openingSeed: 1,
-    nodeRotation: "continuous",
+    nodePlaystyle: "continuous",
+    rotators: [],
+    planetBonus: "off",
+    bonusPlanets: { green: [], red: [] },
+    energy: { green: 0, red: 0 },
+    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+    outOfTime: { green: false, red: false },
+    combatEnabled: true,
+    scoring: "simple",
+  };
+}
+
+/** A minimal hand-built steal state (steal.md §2) carrying the given node
+ * squares, isolating the wiring from Board.tsx's `signal` lookup through to
+ * the marker's colours and the square's accessible name. */
+function stateWithStealNodes(
+  nodes: Readonly<Record<string, NodeStatus>>,
+  ships: GameState["ships"] = [],
+): GameState {
+  return {
+    ships,
+    nodes,
+    sideToMove: "green",
+    plyNumber: 1,
+    randomSeed: 1,
+    openingSeed: 1,
+    nodePlaystyle: "steal",
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
@@ -141,7 +170,7 @@ function stateWithRotators(squares: readonly Square[]): GameState {
     plyNumber: 1,
     randomSeed: 1,
     openingSeed: 1,
-    nodeRotation: "dedicated",
+    nodePlaystyle: "dedicated",
     rotators: squares,
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
@@ -462,6 +491,86 @@ describe("Board", () => {
     });
   });
 
+  describe("a steal node's signal reaching the board (steal.md §2)", () => {
+    it.each(NODE_SIGNALS)(
+      "draws a prospective node's rings in signal %s's colour",
+      (signal) => {
+        const square = squareAt("H", 8);
+        const { container } = render(
+          <Board
+            session={createSession(
+              stateWithStealNodes({
+                [squareName(square)]: {
+                  state: "prospective",
+                  level: 0,
+                  signal,
+                },
+              }),
+            )}
+            onIntent={noop}
+          />,
+        );
+
+        const cell = screen.getByRole("gridcell", {
+          name: "H8, prospective node",
+        });
+        const circles = cell.querySelectorAll(".node-marker circle");
+        expect(circles.length).toBeGreaterThan(0);
+        for (const circle of circles) {
+          expect(circle).toHaveAttribute("stroke", SIGNAL_COLORS[signal].core);
+        }
+        expect(container.querySelector(".node-countdown")).toBeNull();
+      },
+    );
+
+    it("draws a charged node's ball at today's starting radius, in its signal's colour, with no countdown number", () => {
+      const square = squareAt("H", 8);
+      render(
+        <Board
+          session={createSession(
+            stateWithStealNodes(
+              {
+                [squareName(square)]: { state: "charged", level: 0, signal: 3 },
+              },
+              [{ id: "green-1", side: "green", square, power: 4 }],
+            ),
+          )}
+          onIntent={noop}
+        />,
+      );
+
+      const cell = screen.getByRole("gridcell", { name: /^H8, charged node/ });
+      const circle = cell.querySelector(".node-marker circle");
+      expect(circle).toHaveAttribute("r", "70");
+      const stops = cell.querySelectorAll(".node-marker stop");
+      expect(stops[0]).toHaveAttribute("stop-color", SIGNAL_COLORS[3].core);
+      expect(stops[2]).toHaveAttribute("stop-color", SIGNAL_COLORS[3].rim);
+      expect(cell.querySelector(".node-countdown")).toBeNull();
+    });
+
+    it("names a steal node's square by state alone, with no colour or signal in words", () => {
+      const square = squareAt("H", 8);
+      render(
+        <Board
+          session={createSession(
+            stateWithStealNodes({
+              [squareName(square)]: {
+                state: "prospective",
+                level: 0,
+                signal: 1,
+              },
+            }),
+          )}
+          onIntent={noop}
+        />,
+      );
+
+      expect(
+        screen.getByRole("gridcell", { name: "H8, prospective node" }),
+      ).toBeInTheDocument();
+    });
+  });
+
   describe("rotators the board is told to draw", () => {
     const ROTATOR_SQUARES = [squareAt("C", 3), squareAt("N", 12)];
 
@@ -675,7 +784,7 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
@@ -776,7 +885,7 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
@@ -861,7 +970,7 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
@@ -1042,7 +1151,7 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
@@ -1243,7 +1352,7 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
@@ -1357,7 +1466,7 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
@@ -1405,7 +1514,7 @@ describe("Board", () => {
         plyNumber: 1,
         randomSeed: 1,
         openingSeed: 1,
-        nodeRotation: "continuous",
+        nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },

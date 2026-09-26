@@ -1,10 +1,13 @@
 # Base Control — Rules
 
-**Rules version: 0.38**
+**Rules version: 0.39**
 
-This document is the single source of truth for how Base Control is played.
-The app implements what is written here; where the two disagree, this document
-is right and the app has a bug.
+This document is the single source of truth for how Base Control is played,
+together with its companion [steal.md](steal.md), which holds the node rules
+of the steal playstyle (section 8.2) — everything else is here. One version
+number, at the top of this document, covers both files. The app implements
+what is written here; where the two disagree, the ruleset is right and the
+app has a bug.
 
 ---
 
@@ -24,7 +27,8 @@ happens.
 
 A ship carries **power**, a reserve it spends to move and refills only on
 planets. A ship holding a node cannot be attacked while it holds it. A node
-that has burned out traps the ship standing on it until it retires.
+that has burned out traps the ship standing on it until it retires (never
+under the steal playstyle — see steal.md).
 
 The board is not a fixed map with lights moving across it: nodes are born,
 run out and leave, and whenever one charges the whole set of nodes still
@@ -34,16 +38,19 @@ course of a game, not just which of them are lit. That redrawing happens
 only because the players use the nodes on the board — a node nobody stands
 on never changes at all (section 8.3). Under two of the three ways the
 waiting nodes can rotate (section 8.2), part of that redrawing is a step a
-player takes, not one the clock takes for them.
+player takes, not one the clock takes for them. Under the steal playstyle
+(section 8.2) none of this paragraph is true — see steal.md.
 
 The game has three random elements — the opening board itself, where the
 three new nodes appear when the waiting set is refilled and which of them
 gets which priority, and, when combat is on, which planet the two ships in
-a fight are pushed back to. Under the dedicated rotation setting (section
+a fight are pushed back to. Under the dedicated playstyle (section
 8.2) there is a fourth: where the board's rotators fall each time they are
 drawn. Under the planet bonus setting (section 3.4) there is another: which
-three planets each player is dealt. No two games start on the same board,
-and neither player has seen this one before.
+three planets each player is dealt. Under the steal playstyle (section 8.2)
+the random element is different again — where each new prospective node is
+drawn, in place of the refill and the priority deal (steal.md). No two games
+start on the same board, and neither player has seen this one before.
 
 ---
 
@@ -59,26 +66,40 @@ rounds chosen before play begins — 30, 45, 60 or 90 (section 9).
 refilled only on planets.
 
 **Trapped** — a ship on a depleted node, which cannot move and cannot attack
-until the node under it retires.
+until the node under it retires. This never happens under the steal
+playstyle (section 8.2): no ship is ever trapped there.
 
 **Node** — a position on the board that comes into being, runs through three
 states — **inactive**, **charged** and **depleted** — and then ends and
 simply leaves the board. The board always carries the **chosen number** of
 charged nodes — five, four or three, chosen before play begins (section
 8.1) — and **three** inactive ones, plus however many happen to be depleted
-at the time.
+at the time. Under the steal playstyle (section 8.2) a node works
+differently: it is a **signal** with two squares, and it never ends —
+see steal.md.
+
+**Prospective node** — under the steal playstyle only (section 8.2), one of
+a node's two waiting squares. Landing on one claims the node (steal.md).
+This is not the same word as an **inactive** node, which belongs to the
+other three playstyles.
+
+**Signal** — under the steal playstyle only (section 8.2), what tells one
+node from another. The app shows a signal as a colour (steal.md).
 
 **Priority** — a number, 1, 2 or 3, carried by each of the three inactive
 nodes at once, one each, never a repeat. The inactive node with the highest
-priority is the one that charges next (section 8.2).
+priority is the one that charges next (section 8.2). There is no priority
+under the steal playstyle.
 
-**Rotator** — under the dedicated rotation setting only, a square of
+**Rotator** — under the dedicated playstyle only, a square of
 temporary board furniture that rotates the priorities the moment a ship
-lands on it, and is spent by that same landing (section 3.3).
+lands on it, and is spent by that same landing (section 3.3). No rotator is
+ever laid down under the steal playstyle.
 
 **Countdown** — how many turns of life a charged or depleted node has left,
 spent one at the end of every turn, either player's. A charged node carries
-a countdown only while a ship stands on it (section 8.3).
+a countdown only while a ship stands on it (section 8.3). A node held under
+the steal playstyle never carries a countdown.
 
 ---
 
@@ -216,9 +237,14 @@ positivity guarantee, not a fairness floor: it keeps the total weight
 positive and makes the draw uniform on the rare board with no charged nodes
 at all, but it buys a poorly placed square no meaningful chance otherwise.
 
+Under the steal playstyle (section 8.2), a node's two squares are placed by
+steal.md's own rule instead, which borrows this section's constraints but
+weights and draws them differently.
+
 ### 3.3 Rotators
 
-Rotators exist only under the **dedicated** rotation setting (section 8.2).
+Rotators exist only under the **dedicated** playstyle (section 8.2). No
+rotator is ever laid down under the steal playstyle.
 
 The board is divided into **nine 5 x 5 sections** — columns A–E, F–J, K–O;
 rows 1–5, 6–10, 11–15 — of which **six** carry a rotator: the four
@@ -346,9 +372,10 @@ A ship **gains power** at the end of its owner's turn standing on a
 charging (section 3.1) — up to the maximum of 6. Nothing else changes a
 ship's power: a **charged** node does not reduce it, a **depleted** node does
 not refill it, an **inactive** node does neither, and a fight leaves the
-defender's power alone (section 7). A ship at 0 power is not destroyed and is
-not stuck: the one-square orthogonal move is free, and a planet will refill
-it.
+defender's power alone (section 7). Under the steal playstyle (section 8.2)
+a **prospective** node does nothing to it either. A ship at 0 power is not
+destroyed and is not stuck: the one-square orthogonal move is free, and a
+planet will refill it.
 
 ---
 
@@ -368,7 +395,9 @@ with nothing it can reach and afford, and a **trapped** ship (section 8.5)
 can do nothing at all whatever stands around it. A player whose ships are
 all trapped would otherwise pass every turn; section 8.6 step 7 exists to
 prevent that. The rule is here so the game can never deadlock, whether
-combat is on or off.
+combat is on or off. Under the steal playstyle (section 8.2) no node square
+is ever closed and no ship is ever trapped, so only other ships can hem one
+in.
 
 A turn also passes when the player to move is out of time (section 10). That
 is the second, and only other, reason a turn can pass.
@@ -410,8 +439,10 @@ it land on a node that is not **charged** — an **inactive** node and a
 **depleted** node are both closed to landing, and read identically here:
 flying **over** either is still free, exactly like flying over any other
 square, but a move may not end on one. Only a charged node is a square a
-ship may occupy. The L
-passes over two squares, its two corners: the one it turns through
+ship may occupy. Under the steal playstyle (section 8.2) a **prospective**
+node is also a legal place to land, and landing on one is how a node is
+claimed (steal.md); no node square is ever closed to landing under steal.
+The L passes over two squares, its two corners: the one it turns through
 orthogonally and the one it turns through diagonally — for example, the L
 from H8 to J9 turns through I8 (the orthogonal corner) and I9 (the diagonal
 corner). An enemy ship on **either** corner blocks the L; only one of the two
@@ -470,7 +501,7 @@ until the node retires (section 8.5).
 **There is no winner.** Both ships — the attacker and the ship it attacked —
 are returned to planets (section 7.1), and both squares are left empty. The
 defender arrives carrying the power it had; the attacker arrives having
-already paid the cost of the shot. With the **planet** rotation setting
+already paid the cost of the shot. With the **planet** playstyle
 chosen (section 8.2), each of those two landings is its own trigger, so a
 fight rotates the priorities **twice**.
 
@@ -483,7 +514,12 @@ otherwise.
 Two things follow about nodes. A ship that reaches a node first cannot be
 driven off it, so nodes are contested by arriving rather than by force. And a
 holder who chooses to leave gives the node up **still lit** (section 8.3), so
-the square it vacates is worth racing for.
+the square it vacates is worth racing for. Under the steal playstyle
+(section 8.2) neither is true: a holder **can** be driven off its node by an
+opponent landing on its prospective square, and a holder who leaves does not
+give the node up still lit — it returns to two prospective squares instead
+(steal.md). The protection itself — a ship on a charged node can neither
+attack nor be attacked — is unchanged.
 
 ### 7.1 Returning to a planet
 
@@ -521,6 +557,10 @@ one power a turn, or two if it is the only one of its owner's ships charging
 ---
 
 ## 8. Nodes
+
+This section describes the node rules of the continuous, planet and
+dedicated playstyles (section 8.2). Under the steal playstyle, a node's
+rules are [steal.md](steal.md)'s instead.
 
 ### 8.1 The three states of a node
 
@@ -567,7 +607,7 @@ five charged, **seven** at four, **six** at three:
   lies inside the interior C3–M13. They are dealt priorities 1, 2 and 3 at
   random.
 - **Nothing is depleted at the start.**
-- **Under the dedicated rotation setting** (section 8.2), the opening deal
+- **Under the dedicated playstyle** (section 8.2), the opening deal
   also lays down the board's first set of rotators (section 3.3).
 
 ### 8.2 Charging a node
@@ -589,8 +629,8 @@ cover the largest shortfall a single turn can produce, which is two, whether
 the board is filling towards five charged, towards four or towards three
 (see the [development notes](tech-notes.md)).
 
-**How the priorities rotate is chosen before play begins**: continuous,
-planet or dedicated, the same for both players and fixed for the game's
+**The node playstyle is chosen before play begins**: continuous, planet,
+dedicated or steal, the same for both players and fixed for the game's
 lifetime.
 
 - **Continuous** — the priorities rotate at the end of every turn on which
@@ -605,6 +645,9 @@ lifetime.
 - **Dedicated** — the same as planet, except that the trigger is a
   **rotator** (section 3.3) rather than a planet, and the rotator is
   **spent** by the landing.
+
+**Steal** is not a fourth way of rotating anything — it is a different game
+of nodes altogether, set out in full in [steal.md](steal.md).
 
 A rotation triggered by a landing is complete before the end-of-turn
 sequence begins (section 8.6), so step 4 charges from the priorities **as
@@ -746,6 +789,10 @@ but that is a fact about the board, not a cap on what collecting can pay.
 Node collection is not the only source of energy: under the planet bonus
 setting, landing on the right planet also pays (section 3.4).
 
+This section applies under the steal playstyle too: a player is paid exactly
+the same way for the charged nodes they hold when their turn ends
+(section 8.2, steal.md).
+
 Nothing in the game subtracts energy. A player's total only ever rises.
 
 ### 8.5 Standing on a depleted node
@@ -790,11 +837,11 @@ Everything that happens at the end of a turn happens in this order:
 5. If step 4 charged anything, the three inactive nodes are replaced
    together: whichever did not charge are discarded, and three new ones are
    drawn and dealt priorities 1, 2 and 3 at random (section 8.2) — and,
-   under the **dedicated** rotation setting, the board's rotators are
+   under the **dedicated** playstyle, the board's rotators are
    replaced immediately afterwards (section 3.3). Otherwise, **only under
-   the continuous rotation setting**, the three inactive nodes' priorities
+   the continuous playstyle**, the three inactive nodes' priorities
    rotate: 1 becomes 2, 2 becomes 3, and 3 becomes 1; under the planet and
-   dedicated settings, nothing happens here — the priorities stay exactly
+   dedicated playstyles, nothing happens here — the priorities stay exactly
    as the turn left them.
 6. Every node **that was already depleted when this sequence began** — which
    includes a node depleted this turn by its holder walking off, and
@@ -813,6 +860,9 @@ Everything that happens at the end of a turn happens in this order:
 
 Under the planet bonus setting, a bonus (section 3.4) is paid at the
 instant a ship lands and takes no step in this order.
+
+Under the steal playstyle (section 8.2), only steps 1 and 2 of this order
+run; steps 3 through 7 do not apply — see steal.md.
 
 A turn that passes because the player could neither move nor attack
 (section 5) is still a turn: this sequence runs for it in full, just as it
@@ -833,10 +883,10 @@ from a fresh draw, is what makes the queue worth reading: the arrangement of
 priorities a player looks at while taking their turn is exactly the
 arrangement that governs the charge at the end of it, and the rotation or
 refill in step 5 that follows is the next player's to plan against. Under
-two of the three rotation settings (section 8.2), the arrangement a player
-reads is also an arrangement that player can change before the turn ends,
-by landing on a planet or a rotator — which is the point of those settings,
-not a wrinkle in this one.
+two of the three playstyles that rotate priorities (section 8.2), the
+arrangement a player reads is also an arrangement that player can change
+before the turn ends, by landing on a planet or a rotator — which is the
+point of those playstyles, not a wrinkle in this one.
 
 Step 2 sits **before** step 3 **deliberately**: energy is collected, then
 depletion is checked, which is why a node held to the very end of its
@@ -862,7 +912,7 @@ A node's state changes only in this sequence, and never as part of resolving
 a move or an attack — **except** that a charged node depletes the instant its
 holder leaves it (section 8.3), which is why such a node is already depleted
 by the time this sequence begins and is caught by step 6 rather than step 3
-— and **except** that, under the planet and dedicated rotation settings, a
+— and **except** that, under the planet and dedicated playstyles, a
 landing rotates the priorities the instant it happens (section 8.2), which
 is why step 4 charges from the priorities as that rotation left them rather
 than as the turn began. A node's ending, and any refill that follows it, are
@@ -885,7 +935,7 @@ energy is a draw.
 
 Alongside the fleet size, the number of rounds, the charged-node count
 (section 8.1), whether combat is on or off (section 7), how scoring is
-priced (section 8.4), how the priorities rotate (section 8.2) and the
+priced (section 8.4), the node playstyle (section 8.2) and the
 planet bonus (section 3.4), a player chooses a **clock** before play
 begins: no clock, or 6, 4 or 2 seconds a turn.
 
