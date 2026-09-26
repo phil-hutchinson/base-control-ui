@@ -1480,7 +1480,42 @@ announcements by hand.)
 
 ### Step 10 — The Quick Guide's STEALING NODES section
 
-Status: pending
+Status: committed
+
+Notes: Added `"stealingNodes"` to `GuideSectionId`, inserted the section into
+`GUIDE_SECTIONS` between NEW CHARGED NODE SELECTION and PLANET BONUS with the
+draft paragraph from this step verbatim, and gave NODE LIFECYCLE and NEW
+CHARGED NODE SELECTION's paragraphs an opening "Under the Continuous, Planet
+and Dedicated playstyles, …" clause (folded into each paragraph's first
+sentence rather than a separate sentence). Updated the module's doc comments
+and provenance line ("five" → "six" sections; a line noting STEALING NODES's
+paragraph was drafted for story 101, step 10). Added `StealingNodesDiagram`
+to `guideDiagrams.tsx`, built from `BoardSquare` cells exactly as its
+neighbours are: signal 0 throughout (steal.md's first signal) — a charged
+square holding green's ship, that node's prospective square, and an ordinary
+square holding red's ship poised beside it; an arrow; then green's ship left
+on the now-ordinary square and red's ship on the newly charged square, in
+the same signal's colours (radius 70, per Step 8's settled artwork, since
+Step 8 dropped the smaller radius-48 ball this task's briefing anticipated
+correcting for). Updated the module header to name this diagram as the one
+exception showing a red ship. Wired `stealingNodes: StealingNodesDiagram`
+into `GuideScreen.tsx`'s `SECTION_DIAGRAMS` and updated its "five" → "six"
+doc comments. Updated existing tests for the new section/paragraph counts
+(`guideCopy.test.ts`: six headings, the two clauses reworded, a new case for
+the stealing-nodes paragraph verbatim with no "signal" in it; `GuideScreen.test.tsx`:
+six headings, seven paragraphs, eight diagrams, a new case placing STEALING
+NODES right after NEW CHARGED NODE SELECTION and asserting its diagram's
+marker/ship counts; `guideDiagrams.test.tsx`: a new case asserting the
+diagram's two charged balls and one prospective ring draw in signal 0's
+palette colours, drawing directly on `SIGNAL_COLORS` rather than a literal,
+and that the before/after ships sit on the right squares). No deviation from
+the plan otherwise. `npm run typecheck`, `npm run lint`, `npm run format:check`
+(after `prettier --write` on `guideDiagrams.test.tsx`, which it flagged) and
+the full `npm test` (80 files, 1628 tests, up from the 1625-test Step 9
+baseline by 3: one each in `guideCopy.test.ts`, `GuideScreen.test.tsx` and
+`guideDiagrams.test.tsx`) are all green. This step's verification is manual
+(the owner reviewing the draft paragraph and diagram); that gate is the
+orchestrator's to arrange, not this task's.
 
 Add a sixth headed section, **STEALING NODES**, with its own diagram, and
 the two clauses on the existing node sections (S14, D11).
@@ -1539,6 +1574,11 @@ provenance in Notes); the diagram reads as a steal at a glance; NODE
 LIFECYCLE and NEW CHARGED NODE SELECTION each say they describe the other
 three playstyles; NEW CHARGED NODE SELECTION ends "depending on the Node
 playstyle selected".
+
+
+Owner's gate: approved the draft paragraph as written, and the diagram —
+judged a little confusing, but accepted for want of a clearer way to show a
+steal.
 
 ---
 

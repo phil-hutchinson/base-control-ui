@@ -19,12 +19,13 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the five headed sections in the story's order", () => {
+  it("has the six headed sections in the story's order", () => {
     expect(GUIDE_SECTIONS.map((section) => section.heading)).toEqual([
       "MOVEMENT",
       "REFUELING",
       "NODE LIFECYCLE",
       "NEW CHARGED NODE SELECTION",
+      "STEALING NODES",
       "PLANET BONUS",
     ]);
   });
@@ -45,31 +46,49 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the node lifecycle paragraph, without a points figure", () => {
+  it("has the node lifecycle paragraph, scoped to the other three playstyles", () => {
     expect(GUIDE_SECTIONS[2].paragraph).toBe(
-      "The board always has the number of charged nodes chosen at the " +
-        "start: five, four or three. When a spaceship enters a " +
-        "charged node, a countdown begins before it is depleted. The " +
-        "spaceship gains points every turn it stays on the node, until it " +
-        "becomes depleted. A charged node also becomes depleted if the " +
-        "spaceship leaves it. When the node becomes depleted, a new " +
-        "charged node is created. If a node depletes with a spaceship " +
-        "still inside it, the spaceship is trapped for 5 turns.",
+      "Under the Continuous, Planet and Dedicated playstyles, the board " +
+        "always has the number of charged nodes chosen at the start: " +
+        "five, four or three. When a spaceship enters a charged node, a " +
+        "countdown begins before it is depleted. The spaceship gains " +
+        "points every turn it stays on the node, until it becomes " +
+        "depleted. A charged node also becomes depleted if the spaceship " +
+        "leaves it. When the node becomes depleted, a new charged node " +
+        "is created. If a node depletes with a spaceship still inside " +
+        "it, the spaceship is trapped for 5 turns.",
     );
   });
 
-  it("has the new charged node selection paragraph, stating rotation as a choice", () => {
+  it("has the new charged node selection paragraph, scoped to the other three playstyles", () => {
     expect(GUIDE_SECTIONS[3].paragraph).toBe(
-      "Three indicators appear on the board, with one, two, and three " +
-        "rings. When a new charged node is needed, it appears at the " +
-        "three-ring indicator — and all three indicators are then " +
-        "replaced by a fresh set elsewhere. The rings rotate, depending " +
-        "on the Node playstyle selected.",
+      "Under the Continuous, Planet and Dedicated playstyles, three " +
+        "indicators appear on the board, with one, two, and three rings. " +
+        "When a new charged node is needed, it appears at the three-ring " +
+        "indicator — and all three indicators are then replaced by a " +
+        "fresh set elsewhere. The rings rotate, depending on the Node " +
+        "playstyle selected.",
     );
+  });
+
+  it("has the stealing nodes paragraph, naming no colour or signal", () => {
+    expect(GUIDE_SECTIONS[4].heading).toBe("STEALING NODES");
+    expect(GUIDE_SECTIONS[4].paragraph).toBe(
+      "Under the Steal playstyle, every node always shows two squares, " +
+        "and a node's two squares are the same colour. A node nobody " +
+        "holds shows two sets of rings. Land a spaceship on either set " +
+        "to charge the node there: the other set disappears, and a new " +
+        "set appears elsewhere on the board. You gain points every turn " +
+        "you stay, and the node never runs out. But your opponent can " +
+        "take it by landing on its rings — your spaceship is left on an " +
+        "ordinary square. If you leave the node yourself, it goes back " +
+        "to two sets of rings, for whoever reaches one first.",
+    );
+    expect(GUIDE_SECTIONS[4].paragraph.toLowerCase()).not.toContain("signal");
   });
 
   it("has the planet bonus paragraph, last in the story's order", () => {
-    expect(GUIDE_SECTIONS[4].paragraph).toBe(
+    expect(GUIDE_SECTIONS[5].paragraph).toBe(
       "When the planet bonus option is on, each player is given three " +
         "planets that also pay them points — two or three, whichever was " +
         "chosen — the first time one of their spaceships lands there. " +
