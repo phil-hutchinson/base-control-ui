@@ -808,17 +808,15 @@ describe("legalDestinations and moveRefusalReason", () => {
     expect(legalDestinations(state, "green-1").map(squareName)).toContain("G7");
   });
 
-  it("refuses landing on a prospective node with destination-uncharged-node", () => {
+  it("permits landing on a prospective node, which claims it under steal (steal.md §3)", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "E7")],
       nodes: { F7: "prospective" },
     });
-    expect(moveRefusalReason(state, "green-1", squareFromName("F7"))).toBe(
-      "destination-uncharged-node",
-    );
-    expect(legalDestinations(state, "green-1").map(squareName)).not.toContain(
-      "F7",
-    );
+    expect(
+      moveRefusalReason(state, "green-1", squareFromName("F7")),
+    ).toBeUndefined();
+    expect(legalDestinations(state, "green-1").map(squareName)).toContain("F7");
   });
 
   it("refuses an uncharged destination that also holds a ship with destination-occupied, not destination-uncharged-node", () => {

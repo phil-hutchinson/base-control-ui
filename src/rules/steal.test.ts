@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import { COLUMN_LETTERS, type Square, squareAt, squareName } from "./board";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import type { NodeStatus } from "./gameState";
+import { drawStealProspectiveSquare, legalNodePool } from "./nodePlacement";
 import { CHARGED_NODE_COUNTS } from "./nodes";
 import { mulberry32 } from "./random";
 import {
+  abandonNode,
+  claimNode,
   dealStealOpeningBoard,
   isNodeHeld,
   nodeAnchor,
@@ -178,5 +181,160 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
 
       expect(nextSeed).toBe(expectedSeed);
     }
+  });
+});
+
+describe("claimNode (steal.md §3)", () => {
+  it("claims an Open node: charges the landed square, discards the other, and draws one fresh prospective", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0 },
+    };
+    const claimedSquare = squareAt("H", 8);
+    const shipSquares = [claimedSquare];
+
+    const result = claimNode(before, 0, claimedSquare, shipSquares, 4242);
+
+    expect(result.releasedSquare).toBeUndefined();
+    expect(result.discardedSquare).toEqual(squareAt("L", 8));
+    expect(result.nodes.H8).toEqual({ state: "charged", level: 0, signal: 0 });
+    expect(result.nodes.L8).toBeUndefined();
+    expect(Object.keys(result.nodes).sort()).toEqual(
+      ["H8", squareName(result.newProspective)].sort(),
+    );
+    expect(result.nodes[squareName(result.newProspective)]).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 0,
+    });
+
+    const pool = legalNodePool([claimedSquare], shipSquares, "widened");
+    expect(pool.map(squareName)).toContain(squareName(result.newProspective));
+  });
+
+  it("claims a Held node: releases the previous charged square, with no square discarded", () => {
+    const before: Record<string, NodeStatus> = {
+      G8: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+    };
+    const claimedSquare = squareAt("H", 8);
+
+    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 17);
+
+    expect(result.releasedSquare).toEqual(squareAt("G", 8));
+    expect(result.discardedSquare).toBeUndefined();
+    expect(result.nodes.G8).toBeUndefined();
+    expect(result.nodes.H8).toEqual({ state: "charged", level: 0, signal: 0 });
+  });
+
+  it("draws its fresh prospective against every other node's squares, leaving them untouched", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0 },
+      C3: { state: "prospective", level: 0, signal: 1 },
+      D4: { state: "prospective", level: 0, signal: 1 },
+    };
+    const claimedSquare = squareAt("H", 8);
+
+    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 8);
+
+    expect(result.nodes.C3).toEqual(before.C3);
+    expect(result.nodes.D4).toEqual(before.D4);
+
+    const expected = drawStealProspectiveSquare(
+      [claimedSquare, squareAt("C", 3), squareAt("D", 4)],
+      claimedSquare,
+      [squareAt("C", 3), squareAt("D", 4)],
+      [claimedSquare],
+      8,
+    );
+    expect(squareName(result.newProspective)).toBe(squareName(expected[0]));
+    expect(result.nextSeed).toBe(expected[1]);
+  });
+
+  it("advances the seed by exactly one mulberry32 step", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0 },
+    };
+    const claimedSquare = squareAt("H", 8);
+    const seed = 321;
+
+    const [, expectedSeed] = mulberry32(seed);
+    const result = claimNode(before, 0, claimedSquare, [claimedSquare], seed);
+
+    expect(result.nextSeed).toBe(expectedSeed);
+  });
+
+  it("deals the same result for the same seed, and a different one for a different seed", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0 },
+    };
+    const claimedSquare = squareAt("H", 8);
+
+    const first = claimNode(before, 0, claimedSquare, [claimedSquare], 9);
+    const second = claimNode(before, 0, claimedSquare, [claimedSquare], 9);
+    const third = claimNode(before, 0, claimedSquare, [claimedSquare], 10);
+
+    expect(second).toEqual(first);
+    expect(third).not.toEqual(first);
+  });
+});
+
+describe("abandonNode (steal.md §4)", () => {
+  it("vacates the charged square and draws a second prospective anchored on the survivor", () => {
+    const before: Record<string, NodeStatus> = {
+      G8: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+    };
+    const vacatedSquare = squareAt("G", 8);
+
+    const result = abandonNode(before, 0, vacatedSquare, [], 654);
+
+    expect(result.nodes.G8).toBeUndefined();
+    expect(result.nodes.H8).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 0,
+    });
+    expect(Object.keys(result.nodes).sort()).toEqual(
+      ["H8", squareName(result.newProspective)].sort(),
+    );
+    expect(result.nodes[squareName(result.newProspective)]).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 0,
+    });
+
+    const pool = legalNodePool([vacatedSquare], [], "widened");
+    expect(pool.map(squareName)).toContain(squareName(result.newProspective));
+  });
+
+  it("advances the seed by exactly one mulberry32 step", () => {
+    const before: Record<string, NodeStatus> = {
+      G8: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+    };
+    const seed = 111;
+
+    const [, expectedSeed] = mulberry32(seed);
+    const result = abandonNode(before, 0, squareAt("G", 8), [], seed);
+
+    expect(result.nextSeed).toBe(expectedSeed);
+  });
+
+  it("deals the same result for the same seed, and a different one for a different seed", () => {
+    const before: Record<string, NodeStatus> = {
+      G8: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+    };
+
+    const first = abandonNode(before, 0, squareAt("G", 8), [], 2);
+    const second = abandonNode(before, 0, squareAt("G", 8), [], 2);
+    const third = abandonNode(before, 0, squareAt("G", 8), [], 3);
+
+    expect(second).toEqual(first);
+    expect(third).not.toEqual(first);
   });
 });

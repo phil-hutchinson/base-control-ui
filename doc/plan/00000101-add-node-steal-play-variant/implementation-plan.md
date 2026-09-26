@@ -923,7 +923,52 @@ unmodified except where it enumerates the playstyles.
 
 ### Step 5 — Claiming and abandoning a node
 
-Status: pending
+Status: committed
+
+Notes: `steal.ts` gained `claimNode` and `abandonNode` (steal.md §§3-4), each
+pure, taking the node map as it stood immediately before the event, the
+signal, the square claimed or vacated, the board's ship squares once the move
+has resolved, and a seed; each returns the updated node map, the next seed
+and the squares the event changed (`releasedSquare`/`discardedSquare` for a
+claim, nothing extra for an abandon beyond `newProspective`) — one
+`drawStealProspectiveSquare` call each, so one seed step. `ply.ts`'s
+`applyMove` branches on `state.nodePlaystyle === "steal"` in place of the
+exit-depletion/countdown-start block: it abandons the left node when the
+ship left a charged square and the destination is not that same node's own
+prospective, then claims the destination's node when it is a prospective
+square of any signal — abandon first, per D4 — threading `randomSeed`
+through both and building the `NodeClaimedEffect` (`shipId`, `side`,
+`signal`, `square`, `releasedSquare`?, `strandedShip`?, `discardedSquare`?,
+`newProspective`) and `NodeAbandonedEffect` (`signal`, `square`,
+`newProspective`) added to `MoveEffect` in `ply.ts`, with `strandedShip`
+computed from the post-move ship list rather than by `steal.ts`, which knows
+nothing about ships beyond their squares. `assertFightInvariants` now also
+throws if a node's `signal` changes across a fight. `movement.ts` no longer
+refuses a `"prospective"` destination; its doc comment says why. Everything
+that switches on `MoveEffect` does so by `.find`/`.filter`, not an exhaustive
+switch, so `boardAnimations.ts` and `announcements.ts` needed no change;
+`EnergyOverlay.tsx`'s one explicit effect union did, and gained the two new
+members. Tests: ten new cases in `ply.test.ts` (a new describe block) cover
+claiming Open and Held nodes, relocating a holder's own node, abandoning,
+the combined abandon-then-claim ordering (recomputed independently against
+`steal.ts`'s own functions, per the step's own suggested approach), a
+friendly ship stranding a different friendly ship, a Held node never
+carrying a countdown over 20 rounds of a shuttling holder, that none of the
+other three playstyles' node effects are ever raised and a planet landing
+rotates nothing, that a fight changes no node's signal, and that a ship on a
+steal charged square is refused an attack exactly as under the other
+playstyles; `buildState` gained an optional `rawNodes` escape hatch since its
+existing `nodes` config has no way to carry a `signal`. Eight new cases in
+`steal.test.ts` test `claimNode` and `abandonNode` directly (Open vs Held,
+the weighted draw's own inputs, seed-step count, determinism), mirroring how
+`nodePlacement.test.ts` tests the draw itself. One pre-existing
+`movement.test.ts` case ("refuses landing on a prospective node") was
+rewritten to "permits landing on a prospective node, which claims it under
+steal" now that Step 5 opens that destination — this is exactly the update
+Step 4's plan text flagged as its own to make. No other deviation from the
+plan. `npm run typecheck`, `npm run lint`, `npm run format:check` and the
+full `npm test` (79 files, 1576 tests, up from the 1558-test baseline by 18)
+are all green.
 
 Implement STEAL's two events as a move resolves (steal.md sections 3–5;
 S7, D4, D6), and open prospective squares to landing.
