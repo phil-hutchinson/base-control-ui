@@ -9,26 +9,27 @@ what the group is about to hold.
 
 This story renames the group to **Node playstyle** and adds a fourth
 setting, **STEAL**, which is not a fourth way to rotate anything. It is a
-different game of nodes, and it replaces most of section 8:
+different game of nodes, with node rules of its own, kept in a companion
+rules file beside `rules.md`:
 
-- **A node is a colour, and it moves rather than ends.** Each node carries
-  exactly **two squares** — either one **charged** node and one
-  **prospective** node, or, when nobody holds it, two prospective nodes. A
-  prospective node is drawn in its node's colour and always shows three
-  rings.
+- **A node is a signal, and it moves rather than ends.** Each node carries
+  its own **signal** and exactly **two squares** — either one **charged**
+  node and one **prospective** node, or, when nobody holds it, two
+  prospective nodes. A prospective node shows its node's signal — the app
+  presents a signal as a colour — and always shows three rings.
 - **A ship claims a node by landing on one of its prospective nodes.** That
   square becomes the charged node with the ship aboard; whatever square the
   node occupied before simply vanishes; and a fresh prospective node is
-  drawn for the colour. Landing on a prospective node is the only way into a
+  drawn for the signal. Landing on a prospective node is the only way into a
   node — and it works whether the node is unheld, held by the opponent, or
   held by you.
 - **A node can be held for as long as its holder can keep it.** No
   countdown, no depletion beneath its holder, no trap. The pressure comes
   entirely from the opponent walking to a prospective square, which both
-  players can see, in the node's own colour, for the whole time it sits
+  players can see, in the node's own signal, for the whole time it sits
   there.
 - **Walking off a node gives it up.** The square becomes ordinary board
-  again on the spot, and the colour draws a second prospective node — so an
+  again on the spot, and the node draws a second prospective node — so an
   abandoned node returns to the two-prospective state it started in, waiting
   for whoever reaches it first.
 - **There are no depleted nodes at all.** Under steal a node is charged or
@@ -50,13 +51,13 @@ today.
 the start screen's order, with a fourth choice **STEAL** rightmost. The three
 existing choices keep their labels and their behaviour exactly.
 
-### Under STEAL, a node is a colour with two squares
+### Under STEAL, a node is a signal with two squares
 
 The **Charged nodes** choice — five, four or three — still sets how many
 nodes the game has; under STEAL it no longer describes how many are charged
 at any moment, because that number rises and falls as players take and lose
-them. Each node is dealt a colour of its own, and its prospective nodes are
-drawn in that colour, which is the only thing tying a prospective square to
+them. Each node is dealt a signal of its own, and its prospective nodes
+carry that signal, which is the only thing tying a prospective square to
 the node it belongs to.
 
 A node is always in exactly one of two configurations:
@@ -97,6 +98,13 @@ prospective:
 The node is now Open, and the next ship to reach either prospective square
 takes it.
 
+**When one move does both** — a ship leaves one node's charged square and
+lands on a different node's prospective square — leaving comes first: the
+node left behind draws its second prospective, and then the node landed on
+is claimed and draws its fresh one. That is two draws. A holder landing on
+its **own** node's prospective is a relocation, not a leaving: the claim
+rule alone applies, with one draw.
+
 ### Where a prospective node is drawn
 
 Legality is rules.md §3.2's, with constraints 3 and 4 **both lifted** — the
@@ -134,7 +142,9 @@ above. The order is fixed and must not change, because a recorded game
 replays by replaying the seed.
 
 Measured over 20,000 simulated deals against the real board — twelve
-planets, their neighbours, and seven ships in the way:
+planets, their neighbours, and ships in the way (the figures are re-measured
+against the app's default fleet of five a side once the draw is implemented,
+and the re-measured figures are the ones recorded):
 
 | | 3 nodes | 4 nodes | 5 nodes |
 | --- | --- | --- | --- |
@@ -146,10 +156,16 @@ Without the outer-edge halving those last figures are 43%, 44% and 45%, so
 the penalty is doing real work: the rim stays available, and stops being the
 likeliest place for a node to end up.
 
-### The five colours
+### Signals, and the five colours
 
-Nodes are told apart by colour and by nothing else, so the game needs five
-that survive being small, side by side, on a dark board:
+Nodes are told apart by their **signal** and by nothing else. The signal is
+what the rules and the code know; how a signal is presented is the app's
+business, and the app presents it as a **colour** — a mapping from signal to
+colour that lives in the board's view, not in the rules. Player-facing words
+never name a particular colour, so the presentation can change without
+touching the ruleset or the wording; the Quick Guide may say that a node's
+squares share a colour, because that is what the player sees. The game needs five colours that survive being
+small, side by side, on a dark board:
 
 **gold**, **silver** — bright and polished, not the dark grey the depleted
 artwork uses today — **mid blue**, **purple**, and **off white**.
@@ -240,48 +256,53 @@ whatever position you had, seven squares away on average. Whether that trade
 is ever worth taking is exactly the kind of thing that wants playing rather
 than reasoning about.
 
-**Colour is load-bearing.** With four nodes there are eight coloured squares
-on the board and the only thing saying which prospective threatens which
-node is that they match. This is knowingly accepted and recorded as
+**Signal is load-bearing, and it is shown by colour alone.** With four
+nodes there are eight coloured squares on the board and the only thing
+saying which prospective threatens which node is that they match. This is knowingly accepted and recorded as
 accessibility debt (`CLAUDE.md`, Accessibility during pre-release).
 
 ## In scope
 
 ### 1. The rules edit, first and on its own
 
-`doc/ruleset/rules.md` goes from **0.38** to **0.39**, with a changelog
-entry, in its own commit ahead of the code. This is a gameplay change and
-would be a tag candidate; tagging stays on hold (`CLAUDE.md`).
+The ruleset goes from **0.38** to **0.39**, with one changelog entry, in
+its own commit ahead of the code. This is a gameplay change and would be a
+tag candidate; tagging stays on hold (`CLAUDE.md`).
 
+Steal's node rules live in a **new companion file, `doc/ruleset/steal.md`**,
+not in `rules.md`. `rules.md` keeps everything the playstyles share; putting
+Steal in a file of its own, rather than threading conditions through a
+dozen sections, keeps the other three playstyles' text readable. The one
+version number stays in `rules.md` and covers both files; `steal.md` carries
+a header line saying it is part of the ruleset versioned by `rules.md`.
+
+- **`steal.md`** holds the whole variant: the node as a signal with two
+  squares (with a short note that the app shows signals as colours), Open
+  and Held, the claim rule, the exit rule, the order when one move does
+  both, where a prospective node is drawn — the widened pool, the anchored
+  two-term weight and the outer-edge halving — the opening deal, and an
+  explicit list of what `rules.md` section 8 does not do under steal.
+- **Section 8** of `rules.md` says up front that it describes the
+  continuous, planet and dedicated playstyles, and that under steal a
+  node's rules are `steal.md`'s.
 - **Section 8.2's choice is renamed and widened.** "How the priorities
   rotate is chosen before play begins" becomes the **node playstyle**:
   continuous, planet, dedicated or steal. The three rotation settings keep
   their text word for word; a sentence says that steal is a different game
-  of nodes and points at the new section 8.7.
-- **A new section 8.7, `Steal`**, after 8.6, holds the whole variant: the
-  node as a colour with two squares, Open and Held, the claim rule, the exit
-  rule, the anchored weighted draw with its outer-edge halving, the opening
-  deal, and an explicit list of what 8.1–8.6 no longer apply. Putting it in
-  one section rather than threading conditions through six keeps the other
-  three playstyles' text readable, the way section 3.3 keeps rotators out of
-  section 3.1.
-- **Sections 8.1, 8.2, 8.3, 8.5 and 8.6** each gain a pointer saying which
-  of their contents section 8.7 replaces. Section 8.1's "three states"
-  becomes two under steal; section 8.6 gains the statement that under steal
-  only steps 1 and 2 run.
-- **Section 3.2** gains a paragraph for the steal draw, alongside the
-  existing refill draw: the widened pool, the two-term weight and the
-  outer-edge halving.
-- **Section 3.3** says rotators do not exist under steal.
-- **Section 6** says that under steal a **prospective** node is a legal
-  place to land and that landing on one is the claim, and that no other
-  square on the board is closed, there being no depleted node to close one.
-- **Section 2** gains **prospective node** as a word, defined as the steal
-  variant's waiting square — distinct from an **inactive node**, which keeps
-  its meaning under the other three playstyles.
-- **Sections 9 and 10**, and section 1's overview, are checked: the list of
-  what is chosen before play says node playstyle, and the overview no longer
-  implies a node always ends.
+  of nodes and points at `steal.md`.
+- **Shared sections that would be false under steal** each gain a one-line
+  "except under steal — see `steal.md`" pointer: section 1's overview (a
+  node always ends; the random elements), section 2's words (node, and
+  prospective node as a new word distinct from an inactive node), section
+  3.2 (the steal draw is `steal.md`'s), section 3.3 (no rotators), sections
+  4.1 and 5 (no closed squares, no trapped ship), section 6 (a prospective
+  node is a legal place to land, and landing on one is the claim), and
+  section 7 (a holder *can* be driven off, and one who leaves does not give
+  the node up still lit).
+- **Section 10**'s list of what is chosen before play says node playstyle;
+  section 9 is checked.
+- **The rulebook's pointers** — `rules.md`'s own opening, and anywhere a
+  player is sent to the rulebook (`README.md`) — name `steal.md` too.
 
 ### 2. The rename, on its own and with no behaviour change
 
@@ -299,8 +320,10 @@ end of turn that does nothing but pay power and energy.
 
 ### 4. What the player sees
 
-- **Colour**, as set out above: the five, in order, a node's charged ball
-  and its prospective rings in the same one.
+- **Colour**, as set out above: each signal shown as one of the five
+  colours, in order, a node's charged ball and its prospective rings in the
+  same one. No colour — and no signal — is named in any words: not in the
+  square labels, not in the live region.
 - **Prospective nodes always show three rings**; there are no priorities to
   distinguish.
 - **A smaller charged ball** under STEAL, and today's ball everywhere else.
@@ -324,15 +347,16 @@ judged.
 ### 6. The accessibility note
 
 `doc/plan/00000021-accessibility-tech-debt/known-issues.md` gains an entry
-for story 101: which prospective square belongs to which node is carried by
-colour alone, with no non-colour distinction on the board and nothing in the
-accessible grid's labels tying a prospective square to its node.
+for story 101: signals are presented by colour alone, so which prospective
+square belongs to which node is carried by colour alone, with no non-colour
+distinction on the board and nothing in the accessible grid's labels tying
+a prospective square to its node.
 
 ## Out of scope
 
-- **Any non-colour distinction between nodes** — no shapes, no numbers, no
-  letters on a prospective square. Colour is the whole of it, and the
-  accessibility note records what that costs.
+- **Any presentation of a signal other than colour** — no shapes, no
+  numbers, no letters on a prospective square. Colour is the whole of it,
+  and the accessibility note records what that costs.
 - **A highlight that pairs a prospective with its node** on hover or on
   selection. A later story may want one; this one does not build it.
 - **Changing the other three playstyles** in any way, including their
@@ -350,8 +374,9 @@ accessible grid's labels tying a prospective square to its node.
 
 ## Verification
 
-- `RULES_VERSION` agrees with `rules.md` at **0.39**, and the changelog has
-  one entry for it.
+- `RULES_VERSION` agrees with `rules.md` at **0.39**, the changelog has
+  one entry for it, and `doc/ruleset/steal.md` exists, saying it is part of
+  the ruleset versioned by `rules.md`.
 - The start screen's fifth group reads **Node playstyle** and offers
   CONTINUOUS, PLANET, DEDICATED, STEAL, with PLANET checked.
 - A game started on CONTINUOUS, PLANET or DEDICATED plays and looks exactly
@@ -371,6 +396,9 @@ accessible grid's labels tying a prospective square to its node.
   prospective of that colour on the board.
 - Moving a holder onto its own node's prospective relocates the node, and
   the node is still Held afterwards.
+- Moving a holder off its node straight onto another node's prospective
+  gives up the first node — which returns to two prospective squares — and
+  then takes the second.
 - No node is ever depleted in a STEAL game, no ship is ever trapped, and no
   countdown number is ever drawn.
 - No rotators appear in a STEAL game, and landing on a planet rotates
@@ -387,16 +415,21 @@ accessible grid's labels tying a prospective square to its node.
 - Planning documents say **ply** for the rules' and the UI's **turn**
   (`CLAUDE.md`, Vocabulary). They also say **node** for a position on the
   board; **prospective node** is new in this story and is a rules word, not
-  a planning-only one.
+  a planning-only one. **Signal** is what tells one steal node from another,
+  in the rules, the code and planning documents alike; **colour** is only
+  how the app presents a signal.
 - The rules edit is one commit, ahead of the code, and there is **one**
   version bump on this branch however many later rules edits it needs.
 - The rename in section 2 is its own commit and touches a lot of files for
   no behaviour change; keeping it separate is what makes the steal commits
   readable.
 - The placement figures above were measured over 20,000 simulated deals
-  against the real board geometry. They belong in
-  `doc/ruleset/tech-notes.md` once the draw is implemented, alongside the
-  existing refill figures.
+  against the real board geometry. Once the draw is implemented they are
+  re-measured against the default fleet of five a side and recorded in
+  `doc/ruleset/tech-notes.md`, alongside the existing refill figures. Where
+  a measurement checks a worst case rather than a typical game — for
+  example, that there are always enough legal squares to place every node —
+  it uses the largest fleet (or the smallest, whichever is the worse case).
 - Manual checks worth making once it runs: whether a held node paying
   indefinitely makes a 90-round STEAL game a foregone conclusion by round
   20, and whether the opening land grab leaves a fleet that refuels first

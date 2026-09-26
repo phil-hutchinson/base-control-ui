@@ -33,10 +33,11 @@ identify discrepancies between the story and the implementation plan.
 Additionally check:
 
 - **Against the rules.** Where the diff implements game behaviour, check it
-  against `doc/ruleset/rules.md`. Rule logic that contradicts the document, or
-  that implements a rule the document does not state, is a Critical finding.
-  If the story changed the rules, check that the document, its version, the
-  `RULES_VERSION` constant and the changelog entry all moved together.
+  against the ruleset in `doc/ruleset/` (`rules.md` and its companion files).
+  Rule logic that contradicts the ruleset, or that implements a rule it does
+  not state, is a Critical finding. If the story changed the rules, check that
+  the ruleset files, the version, the `RULES_VERSION` constant and the
+  changelog entry all moved together.
 - **Comment convention.** Comments should say what the code does. Story
   numbers, plan-step citations, and narration of rejected approaches in source
   files are Minor findings — that material belongs in `doc/plan/`.
@@ -84,7 +85,7 @@ Use this structure for the document:
 **Severity definitions:**
 
 - **Critical** — correctness bugs, data loss, security issues, broken
-  contracts, rule logic contradicting `rules.md`
+  contracts, rule logic contradicting the ruleset
 - **Major** — logic errors, missing edge cases, significant design problems
 - **Minor** — naming, style, small inefficiencies, comment-convention breaches
 

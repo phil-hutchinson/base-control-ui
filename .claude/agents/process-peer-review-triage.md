@@ -24,7 +24,7 @@ For **every comment with Status `Open`**, decide:
   that conflict with the story or plan.
 
 Anything that would change how the game is played is **always** an owner
-decision, never auto-fixable — `doc/ruleset/rules.md` is the owner's document.
+decision, never auto-fixable — the ruleset in `doc/ruleset/` is the owner's.
 
 When in doubt, classify as needs-owner-decision — a wasted question is
 cheaper than a wrong autonomous fix.
