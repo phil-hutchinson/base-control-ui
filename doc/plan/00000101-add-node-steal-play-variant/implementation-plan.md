@@ -1773,7 +1773,10 @@ board at Step 13.
 
 ### Step 13 — The owner plays STEAL
 
-Status: pending
+Status: committed
+
+Notes: the owner played STEAL and signed the step off; no bugs were found,
+so no code changed. No impressions on the open questions were recorded.
 
 No code, unless the play-through finds a bug — in which case fix it, add a
 test that would have caught it, and record it in Notes.
