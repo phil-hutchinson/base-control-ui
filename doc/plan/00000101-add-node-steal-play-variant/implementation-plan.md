@@ -1584,7 +1584,13 @@ steal.
 
 ### Step 11 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator through `/update-readme`. The
+start-screen list names the node playstyle with steal among its four
+settings; the opening node paragraph and the status block's playstyle
+passage each gain a short steal description (no colour named); the rules
+section links `doc/ruleset/steal.md`.
 
 Run the `/update-readme` command, which reviews the branch diff and updates
 `README.md` if warranted. Expected at minimum:

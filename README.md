@@ -45,7 +45,10 @@ runs out stays stuck — it can neither move nor attack, and cannot be attacked
 ready to move right away. A node left behind by a ship walking off blocks its
 square for two turns and then it too is gone. A ship can fly over a waiting
 or a depleted node, but cannot land on either; the only place a ship's power
-comes back is a planet.
+comes back is a planet. All of this is how nodes work under three of the
+four node playstyles; the fourth, steal, plays them differently — a node never
+runs out, it is yours for as long as you can keep it, and your opponent takes
+it from you by landing on its rings.
 
 This is the game's web app. It runs entirely in your browser — nothing to
 install, no account, no server.
@@ -58,8 +61,8 @@ install, no account, no server.
 > for each node held, or bonus, where each extra node held at once is worth
 > more than the last, bonus to start), a choice of whether planets pay a
 > one-time bonus (off, two points or three points, off to start), a choice of
-> how the waiting nodes' rings move (continuous, planet or dedicated,
-> planet to start), a choice of whether combat is on or off (off to
+> node playstyle (continuous, planet, dedicated or steal, planet to
+> start), a choice of whether combat is on or off (off to
 > start), a choice of how many rounds the game lasts (thirty, forty-five,
 > sixty or ninety, thirty to start), a choice of a clock (unlimited, or six,
 > four or two seconds a turn, unlimited to start) and a PLAY button. The start
@@ -120,8 +123,11 @@ install, no account, no server.
 > shifts the rings two steps. Dedicated shifts the rings the same way but off a
 > different trigger: up to six extra squares scattered around the board, spent
 > the moment a ship lands on one, with a fresh six appearing wherever room
-> allows each time a waiting node lights. Whatever runs out during a turn is
-> made up at the end of it by lighting from the waiting three, highest rings
+> allows each time a waiting node lights. Steal sets all of that aside:
+> every node shows two squares in a colour of its own, a ship landing on one
+> takes the node for its player, and it keeps paying until someone lands on
+> its other square and takes it away. Under the other three, whatever runs
+> out during a turn is made up at the end of it by lighting from the waiting three, highest rings
 > first, so the board is always brought back to whichever count you chose by
 > the time your turn begins. Land a ship on a lit node and a black number
 > appears in its middle: six, counting down by one at the end of each of your
@@ -177,7 +183,9 @@ install, no account, no server.
 
 The full rulebook is [doc/ruleset/rules.md](doc/ruleset/rules.md), with a
 [change log](doc/ruleset/changelog.md) recording how it has changed, and
-[development notes](doc/ruleset/tech-notes.md) behind some of its numbers. The
+[development notes](doc/ruleset/tech-notes.md) behind some of its numbers.
+The steal playstyle's node rules have a document of their own,
+[doc/ruleset/steal.md](doc/ruleset/steal.md). The
 game is in active pre-release development and the rules are still moving, so
 it is worth a fresh look now and again.
 
