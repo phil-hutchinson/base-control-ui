@@ -706,7 +706,25 @@ and PLANET checked.
 
 ### Step 3 — The prospective-square draw
 
-Status: pending
+Status: committed
+
+Notes: Added `drawStealProspectiveSquare` and its private weight function
+`stealProspectiveWeight` to `src/rules/nodePlacement.ts`, drawing from
+`legalNodePool(..., "widened")` and weighting each candidate
+`d(s, anchor) + min over x in S of d(s, x)` (0 when `S` is empty), halved on
+the outer edge via the module's existing `distanceFromEdge`, drawn with
+`drawWeightedIndex` for exactly one seed step. Doc comment cites steal.md §6
+and mirrors the module's existing two draws' style; the module header now
+also names `steal.ts` as a caller. Added five tests to
+`nodePlacement.test.ts`: pool-membership plus an observed outer-edge draw
+over 500 seeds; single seed-step advancement; determinism; two exact
+formula-match tests (one with `S` empty proving edge halving and the
+anchor-only term, one with `S` non-empty proving the added
+nearest-other-node term), each checked against `drawWeightedIndex` directly
+computed weights across four seeds; nothing calls the function yet, per the
+step. No deviation from the plan. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and the full `npm test` (78 files, 1528 tests, up
+from the 1523-test baseline by exactly the 5 new tests) are all green.
 
 Add STEAL's weighted draw (steal.md section 6) to
 `src/rules/nodePlacement.ts` as a pure function, with unit tests. Nothing

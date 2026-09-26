@@ -1,8 +1,9 @@
 // Where a new node may appear (rules.md §3.2), and how one is drawn there.
 // A pure function of the nodes placed so far and the squares ships occupy —
-// used by the opening deal, before a `GameState` exists, and by the refill
-// procedure in `nodeQueue.ts`, whose caller reads those two things off its
-// state itself.
+// used by the opening deal, before a `GameState` exists, by the refill
+// procedure in `nodeQueue.ts`, and, under steal, by `steal.ts`'s opening
+// deal and its claim and abandon events, all of which read those inputs off
+// their own state.
 
 import {
   ALL_SQUARES,
@@ -214,6 +215,68 @@ export function drawWeightedNodeSquare(
 ): [square: Square, nextSeed: number] {
   const weights = pool.map((square) =>
     nodeSquareWeight(square, chargedNodeSquares, placedSquares),
+  );
+  const [index, nextSeed] = drawWeightedIndex(seed, weights);
+  return [pool[index], nextSeed];
+}
+
+/**
+ * Steal's node-spread weight for a candidate square `s` (steal.md §6):
+ *
+ *     w(s) = d(s, a) + min over x in S of d(s, x)
+ *
+ * `a` is the node's anchor — its charged square when it has one, and its
+ * remaining prospective square when it does not — and `S` is every square
+ * belonging to any other node, charged or prospective alike; `d` is
+ * Chebyshev distance. The first term dominates and can range up to 14: it
+ * pushes a node's new prospective square a long way from the node itself, so
+ * a steal is a real relocation rather than a shuffle. The second term, about
+ * 2 to 5, is a prop-up for a square in an otherwise empty region and is
+ * deliberately the smaller of the two. It is 0 when `S` is empty, which only
+ * happens for the very first node of the opening deal.
+ *
+ * A square on the outer edge has its weight halved, so the rim stays
+ * available without becoming the likeliest place for a node to end up.
+ * `d(s, a)` is never below 2 in the ordinary pool (adjacency is illegal) and
+ * never below 1 in the fallback, so the halved weight is always positive and
+ * needs no positivity floor of the kind `nodeSquareWeight` carries.
+ */
+function stealProspectiveWeight(
+  square: Square,
+  anchor: Square,
+  otherNodeSquares: readonly Square[],
+): number {
+  const distanceFromAnchor = chebyshevDistance(square, anchor);
+  const distanceFromOthers =
+    otherNodeSquares.length === 0
+      ? 0
+      : Math.min(
+          ...otherNodeSquares.map((other) => chebyshevDistance(square, other)),
+        );
+  const weight = distanceFromAnchor + distanceFromOthers;
+  return distanceFromEdge(square) === 0 ? weight / 2 : weight;
+}
+
+/**
+ * Draws one square for a node's fresh prospective square under steal
+ * (steal.md §6), from the widened pool (constraints 3 and 4 lifted,
+ * fallback included), weighted by `stealProspectiveWeight`. `occupiedNodeSquares`
+ * is every square belonging to any node, the drawing node's own included;
+ * `anchor` is the drawing node's charged square if it has one, otherwise its
+ * remaining prospective square; `otherNodeSquares` is every square belonging
+ * to any other node. Advances the seed exactly once, via `drawWeightedIndex`,
+ * so a recorded game replays exactly.
+ */
+export function drawStealProspectiveSquare(
+  occupiedNodeSquares: readonly Square[],
+  anchor: Square,
+  otherNodeSquares: readonly Square[],
+  shipSquares: readonly Square[],
+  seed: number,
+): [square: Square, nextSeed: number] {
+  const pool = legalNodePool(occupiedNodeSquares, shipSquares, "widened");
+  const weights = pool.map((square) =>
+    stealProspectiveWeight(square, anchor, otherNodeSquares),
   );
   const [index, nextSeed] = drawWeightedIndex(seed, weights);
   return [pool[index], nextSeed];

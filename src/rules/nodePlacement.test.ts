@@ -10,6 +10,7 @@ import {
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import {
   drawNodeSquare,
+  drawStealProspectiveSquare,
   drawWeightedNodeSquare,
   legalNodePool,
 } from "./nodePlacement";
@@ -398,6 +399,166 @@ describe("drawWeightedNodeSquare", () => {
         pool,
         charged,
         placed,
+        seed,
+      );
+
+      expect(squareName(square)).toBe(squareName(pool[expectedIndex]));
+      expect(nextSeed).toBe(expectedNextSeed);
+    }
+  });
+});
+
+describe("drawStealProspectiveSquare", () => {
+  it("draws only squares in the widened pool, and can draw an outer-edge square", () => {
+    const anchor = squareAt("H", 8);
+    const other = squareAt("C", 3);
+    const occupied = [anchor, other];
+    const others = [other];
+    const ships = startingFleet(DEFAULT_FLEET_SIZE).map(
+      (entry) => entry.square,
+    );
+    const widened = legalNodePool(occupied, ships, "widened");
+
+    let seed = 11;
+    let sawEdgeSquare = false;
+    for (let i = 0; i < 500; i++) {
+      const [square, nextSeed] = drawStealProspectiveSquare(
+        occupied,
+        anchor,
+        others,
+        ships,
+        seed,
+      );
+      seed = nextSeed;
+      expect(widened.map(squareName)).toContain(squareName(square));
+      if (
+        square.row === 1 ||
+        square.row === 15 ||
+        square.column === "A" ||
+        square.column === "O"
+      ) {
+        sawEdgeSquare = true;
+      }
+    }
+    expect(sawEdgeSquare).toBe(true);
+  });
+
+  it("advances the seed exactly once", () => {
+    const anchor = squareAt("H", 8);
+    const [, expectedNextSeed] = mulberry32(123);
+    const [, nextSeed] = drawStealProspectiveSquare(
+      [anchor],
+      anchor,
+      [],
+      [],
+      123,
+    );
+
+    expect(nextSeed).toBe(expectedNextSeed);
+  });
+
+  it("returns the same square and seed for the same inputs", () => {
+    const anchor = squareAt("H", 8);
+    const other = squareAt("C", 3);
+    const occupied = [anchor, other];
+    const others = [other];
+    const ships = [squareAt("D", 4)];
+
+    const first = drawStealProspectiveSquare(
+      occupied,
+      anchor,
+      others,
+      ships,
+      55,
+    );
+    const second = drawStealProspectiveSquare(
+      occupied,
+      anchor,
+      others,
+      ships,
+      55,
+    );
+
+    expect(first).toEqual(second);
+  });
+
+  it("weights candidates by distance from the anchor, halved on the outer edge, matching the formula exactly, with S empty", () => {
+    const anchor = squareAt("H", 8);
+    const near = squareAt("H", 10); // d(anchor) = 2, S empty, weight 2
+    const far = squareAt("L", 3); // d(anchor) = 5, S empty, weight 5
+    const edge = squareAt("A", 1); // d(anchor) = 7, S empty, halved to 3.5
+    const keep = [near, far, edge];
+    const keepNames = new Set(keep.map(squareName));
+    const ships = ALL_SQUARES.filter(
+      (square) =>
+        !keepNames.has(squareName(square)) &&
+        squareName(square) !== squareName(anchor),
+    );
+    const weightBySquare = new Map([
+      [squareName(near), 2],
+      [squareName(far), 5],
+      [squareName(edge), 3.5],
+    ]);
+
+    const pool = legalNodePool([anchor], ships, "widened");
+    expect(pool.map(squareName).sort()).toEqual(keep.map(squareName).sort());
+    const expectedWeights = pool.map((square) =>
+      weightBySquare.get(squareName(square))!,
+    );
+
+    for (const seed of [999, 12345, 0, 42]) {
+      const [expectedIndex, expectedNextSeed] = drawWeightedIndex(
+        seed,
+        expectedWeights,
+      );
+      const [square, nextSeed] = drawStealProspectiveSquare(
+        [anchor],
+        anchor,
+        [],
+        ships,
+        seed,
+      );
+
+      expect(squareName(square)).toBe(squareName(pool[expectedIndex]));
+      expect(nextSeed).toBe(expectedNextSeed);
+    }
+  });
+
+  it("adds the distance to the nearest other node's square onto the distance from the anchor, matching the formula exactly", () => {
+    const anchor = squareAt("H", 8);
+    const other = squareAt("B", 8);
+    const near = squareAt("K", 4); // d(anchor) = 4, d(other) = 9, weight 13
+    const far = squareAt("M", 6); // d(anchor) = 5, d(other) = 11, weight 16
+    const keep = [near, far];
+    const keepNames = new Set(keep.map(squareName));
+    const occupied = [anchor, other];
+    const ships = ALL_SQUARES.filter(
+      (square) =>
+        !keepNames.has(squareName(square)) &&
+        squareName(square) !== squareName(anchor) &&
+        squareName(square) !== squareName(other),
+    );
+    const weightBySquare = new Map([
+      [squareName(near), 13],
+      [squareName(far), 16],
+    ]);
+
+    const pool = legalNodePool(occupied, ships, "widened");
+    expect(pool.map(squareName).sort()).toEqual(keep.map(squareName).sort());
+    const expectedWeights = pool.map((square) =>
+      weightBySquare.get(squareName(square))!,
+    );
+
+    for (const seed of [999, 12345, 0, 42]) {
+      const [expectedIndex, expectedNextSeed] = drawWeightedIndex(
+        seed,
+        expectedWeights,
+      );
+      const [square, nextSeed] = drawStealProspectiveSquare(
+        occupied,
+        anchor,
+        [other],
+        ships,
         seed,
       );
 
