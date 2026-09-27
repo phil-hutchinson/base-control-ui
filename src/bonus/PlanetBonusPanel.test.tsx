@@ -290,7 +290,46 @@ describe("PlanetBonusPanel", () => {
       );
     });
 
-    it("draws Fuel as a gauge, Additional nodes as three coloured rings and Node scramble as a three-coloured rotation mark", () => {
+    it("captions every points size BONUS, and Fuel, Additional nodes and Node scramble their own word", () => {
+      const points = withAdvancedBonuses(
+        [PLANETS[0], "medium-points"],
+        [PLANETS[1], "small-points"],
+      );
+      const { container } = render(<PlanetBonusPanel state={points} />);
+      const captions = Array.from(
+        container.querySelectorAll(".advanced-bonus-cell__caption"),
+        (caption) => caption.textContent,
+      );
+      expect(captions).toEqual(["BONUS", "BONUS"]);
+      cleanup();
+
+      const rest = withAdvancedBonuses(
+        [PLANETS[0], "fuel"],
+        [PLANETS[1], "additional-nodes"],
+      );
+      const { container: restContainer } = render(
+        <PlanetBonusPanel state={rest} />,
+      );
+      const restCaptions = Array.from(
+        restContainer.querySelectorAll(".advanced-bonus-cell__caption"),
+        (caption) => caption.textContent,
+      );
+      expect(restCaptions).toEqual(["FUEL", "ADD NODES"]);
+      cleanup();
+
+      const scramble = withAdvancedBonuses(
+        [PLANETS[0], "node-scramble"],
+        [PLANETS[1], "large-points"],
+      );
+      const { container: scrambleContainer } = render(
+        <PlanetBonusPanel state={scramble} />,
+      );
+      expect(
+        scrambleContainer.querySelector(".advanced-bonus-cell__caption"),
+      ).toHaveTextContent("SCRAMBLE");
+    });
+
+    it("draws Fuel as a single bar, Additional nodes as three coloured rings and Node scramble as a three-coloured rotation mark", () => {
       const fuel = withAdvancedBonuses(
         [PLANETS[0], "fuel"],
         [PLANETS[1], "small-points"],

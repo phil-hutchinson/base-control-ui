@@ -1,26 +1,52 @@
-/* Fills whatever box its caller sizes — `PlanetBonusPanel`'s own explicit
-   cell, or the Quick Guide diagram's grid cell — so the two callers draw
-   the same cell at two different scales, the same idiom `PlanetBonusCell`
-   uses. Stacks the planet above its symbol rather than overlaying one on
-   the other, since an advanced bonus carries a symbol instead of a
-   claimed-by badge. */
+/* Fills whatever width its caller gives it and takes its own height from
+   its content — a planet square, a symbol beneath it and a caption beneath
+   that, stacked, rather than the single square `PlanetBonusCell.css`
+   fills — so callers that force a square box on every cell (the Quick
+   Guide's grid, `GuideDiagram.css`'s `.guide-diagram__cell--advanced-bonus`)
+   must opt out of that for this one. `container-type: inline-size` lets the
+   caption's own font-size scale from this box's width (`cqw`), the same
+   idiom `PointsSymbol.css` uses, so it stays legible at whatever width the
+   caller gives the cell. */
 .advanced-bonus-cell {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  height: 100%;
-  gap: 4%;
+  gap: 3cqw;
 }
 
+/* At least `--board-square-size` (`App.css`) — a planet on the board's own
+   size — and never less: this box's width already comes from the caller at
+   or above that size (`PlanetBonusPanel.css`), and `aspect-ratio: 1` keeps
+   its height in step, rather than the old `flex: 1` share of whatever
+   height the row happened to have, which could draw the planet smaller
+   than the board's own. */
 .advanced-bonus-cell__planet {
   width: 100%;
-  flex: 1 1 auto;
-  min-height: 0;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
 }
 
+/* Most of the planet's own width, so the symbol reads at a glance — bigger
+   than the badge-sized amount a classic `PlanetBonusCell` draws, since this
+   symbol is the only thing beneath the planet telling the two bonuses
+   apart. */
 .advanced-bonus-cell__symbol {
-  width: 55%;
-  flex: 0 0 auto;
+  width: 78%;
   aspect-ratio: 1;
+  flex: 0 0 auto;
+}
+
+/* One word, in the same arcade chrome `.planet-bonus-panel__label` uses for
+   the classic panel's side headings. */
+.advanced-bonus-cell__caption {
+  flex: 0 0 auto;
+  font-family: var(--font-arcade);
+  font-weight: 700;
+  font-size: 15cqw;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-bright);
+  white-space: nowrap;
 }

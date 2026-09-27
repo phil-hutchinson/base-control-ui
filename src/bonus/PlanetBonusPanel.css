@@ -8,9 +8,12 @@
    lets this flex item's used height fall below its own content's height,
    and `overflow: hidden` clips what no longer fits instead of letting it
    spill into `.clock-region` below (`ClockRegion.css` holds that box to its
-   natural size, so it is never the one that gives). At the sizes this
-   panel already renders at, its content fits and neither rule does
-   anything. */
+   natural size, so it is never the one that gives). The classic rows fit
+   comfortably at every size this panel renders at, so neither rule does
+   anything there; under advanced, a board-sized pair of cells (below) can
+   be taller than `--region-extent` at the window's smallest sizes, and
+   this box's own height is deliberately what gives when that happens,
+   rather than `--region-extent` or the board shrinking to make room. */
 .planet-bonus-panel {
   display: flex;
   flex-direction: column;
@@ -63,16 +66,30 @@
 }
 
 /* Under advanced (steal.md §10) there is one row of two bonuses rather than
-   two sides' rows of three, so each cell can afford to be bigger, and
-   taller than it is wide to leave room for the symbol under the planet. */
+   two sides' rows of three, each drawn at least as large as a planet on the
+   board (`--board-square-size`, `App.css`) and taller than it is wide to
+   leave room for the symbol and caption under the planet. `flex-wrap` is
+   the CSS-only switch between the two layouts the story asks for: the pair
+   sits side by side whenever this row has room for two board-sized cells
+   plus the gap between them, and drops to one cell per line — stacked —
+   the moment it does not, in landscape (where this row's own width is
+   `--region-extent`) and portrait (where it is nearly the whole window)
+   alike. `align-items: flex-start` keeps a shorter symbol/caption stack
+   from being stretched to match a taller one when a claim's redraw changes
+   which kind either slot shows. */
 .planet-bonus-panel__advanced-row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  align-items: flex-start;
   gap: calc(var(--region-extent) * 0.08);
 }
 
+/* At least a board-sized planet's width; free to grow a little past it with
+   `--region-extent` when the panel has the room, the way the classic row's
+   own cells already do. Height is left to the cell's own content
+   (`AdvancedBonusCell.css`), not fixed here. */
 .planet-bonus-panel__advanced-cell {
   flex: 0 0 auto;
-  width: calc(var(--region-extent) * 0.22);
-  height: calc(var(--region-extent) * 0.3);
+  width: max(var(--board-square-size), calc(var(--region-extent) * 0.3));
 }

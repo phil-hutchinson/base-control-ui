@@ -62,6 +62,20 @@
       )
     )
   );
+
+  /* The size a planet actually draws at on the board: one board square,
+     `--square` in Board.css. `.app__play`'s own definite size is always
+     exactly `--play-size` (its `width`/`height` below), so a board square's
+     size can be derived straight from that token here — the same formula
+     Board.css used to reach via a container query on `.app__play` — rather
+     than measuring it a second way. `PlanetBonusPanel.css` reads this token
+     so its own planets stay at least as large as the board's, in step with
+     it as the window changes, without a second copy of the board-floor
+     arithmetic. */
+  --board-square-size: max(
+    var(--board-square-floor),
+    calc(var(--play-size) / 15)
+  );
 }
 
 .app {
@@ -159,16 +173,17 @@
 }
 
 .app__play {
-  /* A size container so `.board-frame` can measure its square size against
-     the room this element actually has. `--play-size` gives it an explicit,
-     definite width and height computed directly from the window (see the
-     `:root` token above), rather than one inherited down a flex chain, so
-     `flex: 0 0 auto` — it neither grows into nor shrinks out of the size
-     already computed for it. The board is always exactly this container's
-     size, so `justify-content: center` and `align-items: flex-start` have
-     nothing left to do; they stay as belt-and-braces against a container
-     that can no longer be undersized. */
-  container-type: size;
+  /* `--play-size` gives this an explicit, definite width and height
+     computed directly from the window (see the `:root` token above),
+     rather than one inherited down a flex chain, so `flex: 0 0 auto` — it
+     neither grows into nor shrinks out of the size already computed for
+     it. `.board-frame`'s own square size (`--board-square-size`, `App.css`
+     `:root`) is derived from that same `--play-size` token directly rather
+     than by measuring this box, since the two are already defined to be
+     identical. The board is always exactly this container's size, so
+     `justify-content: center` and `align-items: flex-start` have nothing
+     left to do; they stay as belt-and-braces against a container that can
+     no longer be undersized. */
   display: flex;
   flex: 0 0 auto;
   width: var(--play-size);

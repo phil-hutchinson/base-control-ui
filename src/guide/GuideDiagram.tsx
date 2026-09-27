@@ -158,7 +158,9 @@ export function GuideDiagram({
             ? "guide-diagram__cell guide-diagram__cell--label"
             : cell.kind === "rule"
               ? "guide-diagram__cell guide-diagram__cell--rule"
-              : "guide-diagram__cell";
+              : cell.kind === "advancedBonus"
+                ? "guide-diagram__cell guide-diagram__cell--advanced-bonus"
+                : "guide-diagram__cell";
         return (
           <div className={cellClassName} key={index}>
             {renderCell(cell)}

@@ -119,6 +119,18 @@
   background-color: var(--color-text-bright);
 }
 
+/* An advanced bonus cell (`AdvancedBonusCell`) stacks a planet above its
+   symbol and caption, so it needs more height than width; this drops the
+   grid's usual forced square and lets the cell's height follow that stack's
+   own content instead, the same escape `.guide-diagram__cell--rule` takes
+   for its own different reason. Still an inline-size container (the base
+   rule above), so the cell's caption keeps scaling from its resolved
+   column width. */
+.guide-diagram__cell--advanced-bonus {
+  aspect-ratio: auto;
+  height: auto;
+}
+
 /* A quiet label — a row heading or a plain figure — in the guide's ordinary
    arcade chrome (`GuideScreen.css`'s heading and Back button), with no
    glow: unlike `.guide-diagram__note` this never asserts a rate of its
