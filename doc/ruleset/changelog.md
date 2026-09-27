@@ -7,6 +7,62 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.41 — advanced planet bonuses, and fleets retire the six-a-side layout
+
+This is a gameplay change — planet bonuses become a race under steal, and
+the largest fleet shrinks by one — and so would be a tag candidate; tagging
+stays on hold until the game plays (see the project's contribution notes).
+
+- **A fourth planet bonus value, offered only under the steal playstyle**:
+  **advanced** (rules.md §3.4). Off, 2 points and 3 points are unchanged, at
+  every node playstyle.
+- **Under advanced there are no per-player planets.** The board always
+  carries exactly **two bonuses**, on two different planets, always of two
+  different kinds, each on an empty planet. Either player claims a bonus by
+  landing a ship on it — a move that ends there, a deliberate return, or a
+  ship placed there by a fight — flying over does not count.
+- **Six kinds, dealt by weight**: Small, Medium and Large points, Fuel,
+  Additional nodes and Node scramble. See steal.md §10 for the weights and
+  the point amounts, which depend on the game's node count, scoring and
+  player-matching setting.
+- **A claim resolves at once, in order**: the bonus takes effect for the
+  claiming side; the other bonus stays on its planet but is redrawn to a
+  different kind; a new bonus appears on another empty planet. In a fight,
+  the attacker's claim resolves in full before the defender's planet is
+  drawn from the planets still empty, and the defender may claim either
+  bonus, including one that has only just appeared.
+- **Two of the six kinds change the board rather than the score.**
+  Additional nodes gives every node lacking one an extra prospective
+  square, up to one per node; Node scramble redraws every node's ordinary
+  prospective squares, leaving charged squares and extras untouched.
+  steal.md §10 states how a node with an extra is claimed and left, and
+  settles the anchor its weighted draw uses when it has more than one other
+  square.
+- **Every draw for this setting — the opening deal, every redraw on a
+  claim, and the squares Additional nodes or Node scramble place — uses the
+  game's seeded stream**, so a recorded game replays exactly.
+- **Fleets retire the six-a-side layout, under every playstyle.** A player
+  now chooses **three, four or five** ships a side, not up to six. The four
+  starting squares only the six-a-side layout used — A2, A14, O2 and
+  O14 — are no longer starting squares; the board now has fourteen, not
+  eighteen. This guarantees a bonus planet is always free under advanced:
+  with at most ten ships on twelve planets, a claim and the other standing
+  bonus occupy at most two, leaving room for the new one every time
+  (steal.md §10, "Why five is the limit").
+- **`steal.md` gains a new section 10, Advanced planet bonuses**, stating
+  the setting in full, including the point amounts table (see the section
+  itself, not repeated here). Sections 2, 3, 4, 6 and 9 each gain a pointer
+  to it.
+- **`rules.md` §1, §3.1, §3.4, §4, §4.1 and §7.1** are updated to match:
+  three to five ships, fourteen starting squares, the new planet bonus
+  value, the Fuel exception to "nothing else changes a ship's power", and
+  the fight-order argument restated for at most ten ships.
+- **Nothing else changes.** Off, 2 points and 3 points play and look
+  exactly as they did in version 0.40, at every node playstyle; the
+  continuous, planet and dedicated playstyles are unaffected; movement,
+  combat, the clock, the game length and the other node rules of steal are
+  unchanged.
+
 ## 0.40 — player-matching nodes, under steal
 
 This is a gameplay change — a turn's node energy can now depend on whether a
