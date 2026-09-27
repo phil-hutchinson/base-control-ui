@@ -565,7 +565,50 @@ anchor rule, D9 and D10.
 
 ### Step 2 — Retire the six-a-side fleet
 
-Status: pending
+Status: committed
+
+Notes: `FleetSize` is now `3 | 4 | 5`, `FLEET_SIZES` is `[5, 4, 3]`,
+`MAX_SHIPS_PER_SIDE` follows as 5, and the six-a-side layout and its module
+comments (eighteen starting squares, O14/O2/A14/A2) are gone from
+`src/rules/fleet.ts`. Updated every test that pinned or exercised six ships:
+`fleet.test.ts` (dropped the six-a-side table, shrank the starting-square
+list to fourteen, updated the empty-square lists, `FLEET_SIZES`/
+`MAX_SHIPS_PER_SIDE` expectations and the alternation comments);
+`seededReplay.test.ts` (both harnesses now pin `fleetSize: 5`; re-measured
+and updated the recorded figures — continuous: 3 fights/6 planet returns/19
+charges/17 retirements/19 refills, was 11/22/22/19/19 at six a side; steal:
+53 claims/31 steals/18 abandons/5 fights, was 40/22/15/8 — all comfortably
+above the existing floors, so no floor was lowered); `fullGame.test.ts`
+(removed the six-a-side and six-ship-relocation cases, reworded the
+surviving five-ship "empty starting squares" case to say "ordinary squares"
+rather than "ordinary starting squares", removed the six-ship tightest-
+arithmetic fight case now that ten ships is the most the rules allow, and
+reworded the surviving five-ship case's comment to state it directly as the
+tightest §7.1 ever gets); `gameState.test.ts` (the fleet-size-dealing test
+now compares five and four, not five and six); `App.test.tsx` and
+`useAppScreen.test.tsx` (dropped the "6 ships" PLAY case and the ON+6-ships
+attack-target case, for which no five-a-side equivalent exists — the
+five-a-side layout starts no two opposing ships in range, confirmed by
+inspection — noting the underlying attack-target behaviour stays covered by
+`Board.test.tsx` and `squareLabel.test.ts`; retargeted the remaining
+`setFleetSize(6)` calls at 4); `StartScreen.test.tsx` (retargeted the
+`fleetSize: 6` fixtures at 4, and added a dedicated assertion that the Ships
+group offers exactly 5, 4, 3 with 5 preselected); `stealPlacement.test.ts`
+(the two "largest fleet" worst-case scenarios now use `fleetSize: 5`);
+`planets.test.ts` (its starting-square check now iterates `FLEET_SIZES`
+instead of hardcoding `startingFleet(6)`, which no longer typechecks). Also
+reworded `doc/ruleset/tech-notes.md`'s "largest fleet, six ships a side"
+sentence to say the measurement was made before six a side was retired and
+that five is now an easier case, without re-measuring. `announcements.test.ts`
+was left untouched — its use of A2 doesn't assume a starting ship there.
+`session.test.ts` needed no change: it iterates `FLEET_SIZES` directly. No
+deviations from the plan.
+
+Full `npm test` — **81 test files, 1701 tests, all green** (down from 1719,
+as the plan anticipated for the removed six-a-side cases); `npm run
+typecheck`, `npm run lint` and `npm run format:check` all pass (prettier
+reformatted `StartScreen.test.tsx` after the new assertion was added).
+`grep -rn "fleetSize: 6\|SIX_A_SIDE" src` finds nothing.
 
 In `src/rules/fleet.ts`: `FleetSize` becomes `3 | 4 | 5`; `FLEET_SIZES`
 becomes `[5, 4, 3]` (still largest first, which is the start screen's

@@ -210,7 +210,7 @@ interface PlayFullGameOptions {
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
- * above, dealt with `fleetSize` ships a side (the app's default six),
+ * above, dealt with `fleetSize` ships a side (the app's default five),
  * `chargedNodeCount` charged nodes (the app's default five), combat on
  * unless `combatEnabled` says otherwise, simple scoring unless `scoring`
  * says otherwise, and the continuous playstyle unless `nodePlaystyle` says
@@ -777,22 +777,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
         expect(finalState.energy.red).toBe(sumAmounts(redCollected));
       });
 
-      it("plays a six-a-side game to its end, with totals consistent throughout", () => {
-        const seed = 20260819;
-        const { finalState, greenCollected, redCollected } = playFullGame(
-          seed,
-          30,
-          { fleetSize: 6, chargedNodeCount },
-        );
-
-        expect(finalState.ships).toHaveLength(12);
-        expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
-        expect(isGameOver(finalState)).toBe(true);
-
-        expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
-        expect(finalState.energy.red).toBe(sumAmounts(redCollected));
-      });
-
       it("plays a three-a-side game to its end, with totals consistent throughout", () => {
         const seed = 20260819;
         const { finalState, greenCollected, redCollected } = playFullGame(
@@ -827,7 +811,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     },
   );
 
-  it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
+  it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, as ordinary squares, and lets a ship move into one of them", () => {
     const state = startingGameState(20260819, {
       lengthInRounds: 30,
       fleetSize: 5,
@@ -843,8 +827,8 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     }
 
     // green-1 (H15 at the start of a five-ship game) relocated within reach
-    // of O14, one of the starting squares that began empty: it is an
-    // ordinary destination like any other, since a starting square carries
+    // of O14, no longer a starting square under any fleet size: it is an
+    // ordinary destination like any other, since a board square carries
     // none of a planet's properties (rules.md §4).
     const nearO14: GameState = {
       ...state,
@@ -857,39 +841,11 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     );
   });
 
-  it("starts a six-ship game with L15 occupied and H15, H1 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
-    const state = startingGameState(20260819, {
-      lengthInRounds: 30,
-      fleetSize: 6,
-      combatEnabled: true,
-    });
-    const shipSquareNames = new Set(
-      state.ships.map((s) => squareName(s.square)),
-    );
-
-    expect(shipSquareNames.has("L15")).toBe(true);
-    for (const emptySquare of ["H15", "H1"]) {
-      expect(shipSquareNames.has(emptySquare)).toBe(false);
-    }
-
-    // green-1 (O14 at the start of a six-ship game) relocated within reach
-    // of H15, one of the two starting squares that began empty.
-    const nearH15: GameState = {
-      ...state,
-      ships: state.ships.map((s) =>
-        s.id === "green-1" ? { ...s, square: squareFromName("H13") } : s,
-      ),
-    };
-    expect(legalDestinations(nearH15, "green-1")).toContainEqual(
-      squareFromName("H15"),
-    );
-  });
-
   it("draws both fighting ships' returns only from the planets left empty, tight to a five-ship game's own arithmetic", () => {
-    // A five-ship game has ten ships in all; with the fight's own two
-    // excluded, at most eight other ships can occupy a planet, so at least
-    // four of the twelve are free — the tightest a five-ship game's own
-    // §7.1 arithmetic ever gets.
+    // A five-ship game has ten ships in all — the largest fleet the rules
+    // allow (rules.md §4) — so with the fight's own two excluded, at most
+    // eight other ships can occupy a planet, and at least four of the
+    // twelve are free: the tightest §7.1's arithmetic ever gets.
     const emptyPlanetNames = PLANETS.slice(0, 4).map(squareName);
     const state: GameState = {
       ships: [
@@ -940,58 +896,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       expect(emptyPlanetNames).toContain(planetName);
     }
     expect(new Set(returnedPlanetNames).size).toBe(2);
-  });
-
-  it("draws both fighting ships' returns only from the planets left empty, tight to a six-ship game's own arithmetic", () => {
-    // A six-ship game has twelve ships in all; with the fight's own two
-    // excluded, at most ten other ships can occupy a planet, so exactly two
-    // of the twelve are free — the tightest §7.1's arithmetic ever gets.
-    const emptyPlanetNames = PLANETS.slice(0, 2).map(squareName);
-    const state: GameState = {
-      ships: [
-        ...shipsFillingPlanetsExcept(emptyPlanetNames),
-        ship("green-1", "green", "H8"),
-        ship("red-1", "red", "H9"),
-      ],
-      nodes: {},
-      sideToMove: "green",
-      plyNumber: 1,
-      randomSeed: 1,
-      openingSeed: 1,
-      nodePlaystyle: "continuous",
-      rotators: [],
-      planetBonus: "off",
-      bonusPlanets: { green: [], red: [] },
-      energy: { green: 0, red: 0 },
-      lengthInRounds: 30,
-      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
-      outOfTime: { green: false, red: false },
-      combatEnabled: true,
-      scoring: "simple",
-      playerMatching: "off",
-    };
-
-    const result = applyAttack(state, "green-1", squareFromName("H9"));
-    expect(result.outcome).toBe("applied");
-    if (result.outcome !== "applied") {
-      throw new Error("expected the attack to be applied");
-    }
-    const fightResolved = result.effects.find(
-      (effect) => effect.type === "fight-resolved",
-    );
-    if (
-      fightResolved === undefined ||
-      fightResolved.type !== "fight-resolved"
-    ) {
-      throw new Error("expected a fight-resolved effect");
-    }
-    // Exactly two planets are free, and this fight's two ships must fill
-    // both.
-    expect(fightResolved.returns).toHaveLength(2);
-    const returnedPlanetNames = fightResolved.returns.map((entry) =>
-      squareName(entry.to),
-    );
-    expect(new Set(returnedPlanetNames)).toEqual(new Set(emptyPlanetNames));
   });
 
   it("settles a five-ship game with no throw when a side occupies five depleted nodes", () => {

@@ -180,13 +180,14 @@ app's default fleet of **five ships a side**:
 
 The outer-two-rings share is zero by construction wherever the strict pool
 has room, which the fallback count shows is everywhere this script tried,
-including the worst case for available squares — the largest fleet, six
-ships a side, and the most nodes, five, checked the same way over a further
-20,000 deals: the strict pool was never once empty for a second square
-there either. The mean distance drops from the figures measured when the
-second opening square drew from the widened pool (6.73, 6.82, 6.91) by
-about 1.3, roughly 20% — the outer-edge share is the one that falls
-furthest, from roughly a quarter to zero at the opening.
+including the worst case for available squares — the largest fleet at the
+time of measurement, six ships a side (since retired; the largest fleet is
+now five, an easier case), and the most nodes, five, checked the same way
+over a further 20,000 deals: the strict pool was never once empty for a
+second square there either. The mean distance drops from the figures
+measured when the second opening square drew from the widened pool (6.73,
+6.82, 6.91) by about 1.3, roughly 20% — the outer-edge share is the one that
+falls furthest, from roughly a quarter to zero at the opening.
 
 **Mid-game draws** — every claim's and every abandon's fresh square, which
 still draw from the widened pool exactly as before — over ten seeded

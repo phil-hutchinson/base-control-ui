@@ -236,9 +236,9 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     combatEnabled: true,
     // Pinned, not left to the app's default: every figure this file checks
     // — fight counts, planet returns, queue refills — was measured under
-    // six a side, five charged nodes, simple scoring and continuous
+    // five a side, five charged nodes, simple scoring and continuous
     // rotation, and the comments above record them as such.
-    fleetSize: 6,
+    fleetSize: 5,
     chargedNodeCount: 5,
     scoring: "simple",
     nodePlaystyle: "continuous",
@@ -343,14 +343,14 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     // planet, away from the board's outer edge — so this attack-first
     // policy keeps finding fights across the run rather than stalling
     // early, even though its second preference, moving onto a charged
-    // node, competes with attacking for a ship's ply. This seed over
-    // forty rounds measures 11 fights and the 22 planet returns they
+    // node, competes with attacking for a ship's ply. At five a side this
+    // seed over forty rounds measures 3 fights and the 6 planet returns they
     // send ships back on. The floors below sit well beneath that: the
     // figures are this run's own, and any rule that changes the course
     // of a ply moves them.
     expect(fightCount).toBeGreaterThanOrEqual(1);
     expect(planetReturns.length).toBeGreaterThanOrEqual(2);
-    // The same run measures 22 charges, 19 retirements and 19 refills.
+    // The same run measures 19 charges, 17 retirements and 19 refills.
     // These are this run's own numbers and move with any rule that
     // changes the course of a ply, so the floors below leave margin.
     expect(chargedNodes.length).toBeGreaterThanOrEqual(4);
@@ -591,7 +591,7 @@ function playSeededStealGame(
   let state = startingGameState(seed, {
     lengthInRounds,
     combatEnabled: true,
-    fleetSize: 6,
+    fleetSize: 5,
     chargedNodeCount: 5,
     scoring: "simple",
     nodePlaystyle: "steal",
@@ -656,10 +656,10 @@ describe("a seeded steal game replays its opening board and its claim and abando
     );
     const abandoned = events.filter((event) => event.kind === "abandoned");
 
-    // This seed over forty rounds measures 40 claims, 22 of them steals, 15
-    // abandons and 8 fights. These are this run's own numbers and move with
-    // any rule that changes the course of a ply, so the floors below leave
-    // margin.
+    // At five a side this seed over forty rounds measures 53 claims, 31 of
+    // them steals, 18 abandons and 5 fights. These are this run's own
+    // numbers and move with any rule that changes the course of a ply, so
+    // the floors below leave margin.
     expect(claimed.length).toBeGreaterThanOrEqual(10);
     expect(stolen.length).toBeGreaterThanOrEqual(5);
     expect(abandoned.length).toBeGreaterThanOrEqual(5);

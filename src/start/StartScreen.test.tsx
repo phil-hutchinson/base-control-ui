@@ -184,7 +184,7 @@ describe("StartScreen", () => {
   });
 
   it("renders the ships group with its values and the selected one checked", () => {
-    renderStartScreen({ fleetSize: 6 });
+    renderStartScreen({ fleetSize: 4 });
 
     const group = screen.getByRole("group", { name: "Ships" });
     for (const value of FLEET_SIZES) {
@@ -192,12 +192,24 @@ describe("StartScreen", () => {
         name: String(value),
       });
       expect(radio).toHaveAttribute("value", String(value));
-      if (value === 6) {
+      if (value === 4) {
         expect(radio).toBeChecked();
       } else {
         expect(radio).not.toBeChecked();
       }
     }
+  });
+
+  it("offers exactly 5, 4 and 3 ships, with 5 preselected", () => {
+    renderStartScreen();
+
+    const group = screen.getByRole("group", { name: "Ships" });
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual(["5", "4", "3"]);
+    expect(within(group).getByRole("radio", { name: "5" })).toBeChecked();
   });
 
   it("renders the charged nodes group with its values and the selected one checked", () => {
@@ -594,7 +606,7 @@ describe("StartScreen", () => {
       onLengthInRoundsChange,
       onClockSettingChange,
       onPlay,
-    } = renderStartScreen({ fleetSize: 6 });
+    } = renderStartScreen({ fleetSize: 4 });
 
     const group = screen.getByRole("group", { name: "Ships" });
     await user.click(within(group).getByRole("radio", { name: "5" }));
@@ -654,7 +666,7 @@ describe("StartScreen", () => {
       onLengthInRoundsChange,
       onClockSettingChange,
       onPlay,
-    } = renderStartScreen({ fleetSize: 6 });
+    } = renderStartScreen({ fleetSize: 4 });
 
     const shipsGroup = screen.getByRole("group", { name: "Ships" });
     await user.click(within(shipsGroup).getByRole("radio", { name: "3" }));

@@ -36,7 +36,7 @@ describe("useAppScreen", () => {
     const { result } = renderHook(() => useAppScreen(dispatch, false));
 
     act(() => {
-      result.current.setFleetSize(6);
+      result.current.setFleetSize(4);
     });
     act(() => {
       result.current.setChargedNodeCount(5);
@@ -54,7 +54,7 @@ describe("useAppScreen", () => {
     expect(dispatch).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         type: "new-game",
-        fleetSize: 6,
+        fleetSize: 4,
         chargedNodeCount: 5,
         combatEnabled: false,
         scoring: "bonus",
@@ -276,7 +276,7 @@ describe("useAppScreen", () => {
     const { result } = renderHook(() => useAppScreen(dispatch, true));
 
     act(() => {
-      result.current.setFleetSize(6);
+      result.current.setFleetSize(4);
     });
     act(() => {
       result.current.setChargedNodeCount(4);
@@ -299,7 +299,7 @@ describe("useAppScreen", () => {
     await waitFor(() => {
       expect(result.current.screen).toBe("start");
     });
-    expect(result.current.fleetSize).toBe(6);
+    expect(result.current.fleetSize).toBe(4);
     expect(result.current.chargedNodeCount).toBe(4);
     expect(result.current.lengthInRounds).toBe(60);
     expect(result.current.clockSetting).toBe(4);

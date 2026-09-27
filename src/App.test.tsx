@@ -354,17 +354,6 @@ describe("App", () => {
     expect(numbers).toEqual(["1", "2", "3", "4"]);
   });
 
-  it("pressing PLAY after choosing 6 ships deals a six-a-side game", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    const shipsGroup = screen.getByRole("group", { name: "Ships" });
-    await user.click(within(shipsGroup).getByRole("radio", { name: "6" }));
-    await user.click(screen.getByRole("button", { name: "Play" }));
-
-    expect(shipCells()).toHaveLength(12);
-  });
-
   it("pressing PLAY after choosing 3 ships deals a three-a-side game", async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -441,29 +430,6 @@ describe("App", () => {
     expect(
       screen.queryByRole("gridcell", { name: /can attack here/ }),
     ).not.toBeInTheDocument();
-  });
-
-  it("choosing ON and 6 ships before PLAY starts a game in which selecting green's L1 ship marks red's O2 as a target", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(within(combatGroup()).getByRole("radio", { name: "ON" }));
-    // Six a side, not the default five: the five-a-side layout starts no two
-    // opposing ships within attack range of each other, so there is no
-    // opening attack to select at the default fleet size.
-    await user.click(
-      within(screen.getByRole("group", { name: "Ships" })).getByRole("radio", {
-        name: "6",
-      }),
-    );
-    await user.click(screen.getByRole("button", { name: "Play" }));
-    await user.click(screen.getByRole("gridcell", { name: /^L1,/ }));
-
-    expect(
-      screen.getByRole("gridcell", {
-        name: "O2, red ship, power 6 of 6, can attack here, costs 3 power, both ships would return to planets",
-      }),
-    ).toBeInTheDocument();
   });
 
   it("has no static accessibility violations once a game is in progress", async () => {

@@ -211,9 +211,9 @@ describe("startingGameState", () => {
       lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       fleetSize: 5,
     });
-    const sixASide = startingGameState(SEED, {
+    const fourASide = startingGameState(SEED, {
       lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
-      fleetSize: 6,
+      fleetSize: 4,
     });
 
     const expectedFive = startingFleet(5);
@@ -225,10 +225,10 @@ describe("startingGameState", () => {
       expect(ship.square).toEqual(entry.square);
     });
 
-    const expectedSix = startingFleet(6);
-    expect(sixASide.ships).toHaveLength(12);
-    sixASide.ships.forEach((ship, index) => {
-      const entry = expectedSix[index];
+    const expectedFour = startingFleet(4);
+    expect(fourASide.ships).toHaveLength(8);
+    fourASide.ships.forEach((ship, index) => {
+      const entry = expectedFour[index];
       expect(ship.id).toBe(entry.id);
       expect(ship.side).toBe(entry.side);
       expect(ship.square).toEqual(entry.square);

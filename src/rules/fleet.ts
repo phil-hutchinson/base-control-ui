@@ -1,5 +1,5 @@
-// The two sides and the starting fleet (rules.md §4): three, four, five or
-// six ships a side, chosen before play begins, one per occupied starting
+// The two sides and the starting fleet (rules.md §4): three, four or five
+// ships a side, chosen before play begins, one per occupied starting
 // square.
 
 import { type Square, squareAt } from "./board";
@@ -24,15 +24,15 @@ export interface FleetEntry {
   readonly power: PowerLevel;
 }
 
-/** How many ships one side has (rules.md §4): three, four, five or six. */
-export type FleetSize = 3 | 4 | 5 | 6;
+/** How many ships one side has (rules.md §4): three, four or five. */
+export type FleetSize = 3 | 4 | 5;
 
 /**
  * The valid fleet sizes, in the order the start screen renders them: largest
  * first. The render order is independent of which one the app preselects —
  * see `DEFAULT_FLEET_SIZE`.
  */
-export const FLEET_SIZES: readonly FleetSize[] = [6, 5, 4, 3];
+export const FLEET_SIZES: readonly FleetSize[] = [5, 4, 3];
 
 /** The app's default: five ships a side. */
 export const DEFAULT_FLEET_SIZE: FleetSize = 5;
@@ -59,29 +59,8 @@ interface LayoutEntry {
 }
 
 /**
- * The six-a-side layout (rules.md §4): twelve of the eighteen starting
- * squares are occupied, H15 and H1 left empty. Listed clockwise starting
- * from L15.
- */
-const SIX_A_SIDE_LAYOUT: readonly LayoutEntry[] = [
-  { square: squareAt("L", 15), side: "red" },
-  { square: squareAt("O", 14), side: "green" },
-  { square: squareAt("O", 10), side: "red" },
-  { square: squareAt("O", 6), side: "green" },
-  { square: squareAt("O", 2), side: "red" },
-  { square: squareAt("L", 1), side: "green" },
-  { square: squareAt("D", 1), side: "green" },
-  { square: squareAt("A", 2), side: "red" },
-  { square: squareAt("A", 6), side: "green" },
-  { square: squareAt("A", 10), side: "red" },
-  { square: squareAt("A", 14), side: "green" },
-  { square: squareAt("D", 15), side: "red" },
-];
-
-/**
- * The five-a-side layout (rules.md §4): ten of the eighteen starting
- * squares are occupied, O14, O2, A14 and A2 left empty. Listed clockwise
- * from H15.
+ * The five-a-side layout (rules.md §4): ten of the fourteen starting
+ * squares are occupied. Listed clockwise from H15.
  */
 const FIVE_A_SIDE_LAYOUT: readonly LayoutEntry[] = [
   { square: squareAt("H", 15), side: "green" },
@@ -97,7 +76,7 @@ const FIVE_A_SIDE_LAYOUT: readonly LayoutEntry[] = [
 ];
 
 /**
- * The four-a-side layout (rules.md §4): eight of the eighteen starting
+ * The four-a-side layout (rules.md §4): eight of the fourteen starting
  * squares are occupied. H15 and H1 are empty, so the list starts from M15,
  * the first occupied starting square clockwise from H15.
  */
@@ -113,7 +92,7 @@ const FOUR_A_SIDE_LAYOUT: readonly LayoutEntry[] = [
 ];
 
 /**
- * The three-a-side layout (rules.md §4): six of the eighteen starting
+ * The three-a-side layout (rules.md §4): six of the fourteen starting
  * squares are occupied. H15 is occupied, so the list starts there.
  */
 const THREE_A_SIDE_LAYOUT: readonly LayoutEntry[] = [
@@ -131,7 +110,6 @@ const LAYOUTS_BY_FLEET_SIZE: Readonly<
   3: THREE_A_SIDE_LAYOUT,
   4: FOUR_A_SIDE_LAYOUT,
   5: FIVE_A_SIDE_LAYOUT,
-  6: SIX_A_SIDE_LAYOUT,
 };
 
 /**
