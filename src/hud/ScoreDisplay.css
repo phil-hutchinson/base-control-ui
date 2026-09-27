@@ -62,6 +62,45 @@
   box-shadow: 0 0 0.4em var(--color-node-charged);
 }
 
+/* REQUIRED (steal.md §9) withholds a turn's collection while the side holds
+   a node but not its own: each held node's pip stays unlit and is crossed
+   through instead, two diagonals in the side's own colour — the same line
+   as its border — cutting the circle into four quarters. The pip keeps its
+   size; the crossing is background, clipped to the circle by its radius. */
+.score-display__pip--x {
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent calc(50% - 0.5px),
+      var(--pip-x-line) calc(50% - 0.5px),
+      var(--pip-x-line) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      -45deg,
+      transparent calc(50% - 0.5px),
+      var(--pip-x-line) calc(50% - 0.5px),
+      var(--pip-x-line) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
+    );
+}
+
+.score-display--green .score-display__pip--x {
+  --pip-x-line: var(--color-green);
+}
+
+.score-display--red .score-display__pip--x {
+  --pip-x-line: var(--color-red);
+}
+
+/* DOUBLE (steal.md §9) can lengthen the row to six pips — one more than the
+   five-pip row the layout (App.css) was sized for — so a row this long
+   shrinks by a fixed factor, keeping it no wider than the five-pip row
+   already was, rather than widening the column. */
+.score-display__pips--long {
+  font-size: calc(1em * 0.823);
+}
+
 /* Each pip sits in its own column, above the number it goes with, so the
    number is centred under its pip by construction and the two never drift
    apart at any fleet size, charged-node count or orientation. The
@@ -119,5 +158,11 @@
      widest thing in the column). */
   .score-display__pips {
     font-size: calc(var(--region-extent) * 0.175);
+  }
+
+  /* The same shrink as the base rule above, applied against the
+     landscape row's own font-size rather than the inherited one. */
+  .score-display__pips--long {
+    font-size: calc(var(--region-extent) * 0.175 * 0.823);
   }
 }

@@ -7,7 +7,7 @@
 
 import { isPlanet } from "../rules/planets";
 import { type Square, squareName } from "../rules/board";
-import { chargedNodesHeldBy } from "../rules/energy";
+import { turnCollection } from "../rules/energy";
 import type {
   EndOfTurnEffect,
   EnergyCollectedEffect,
@@ -146,16 +146,29 @@ function powerGainedClause(effects: readonly PowerGainedEffect[]): string {
  * A single turn's collection (rules.md §8.4): one node names itself, several
  * name their count and squares. There is at most one of these per sequence —
  * a turn's whole collection is announced as a single amount, however many
- * nodes it came from.
+ * nodes it came from. Under the player-matching nodes setting DOUBLE
+ * (steal.md §9), `ownNodeSquare` names the side's own node when it counted
+ * twice toward `amount`: alone, it is named as "its own node"; alongside
+ * others, the squares are named as usual and a trailing clause says which one
+ * counted twice.
  */
 function energyCollectedClause(effect: EnergyCollectedEffect): string {
   const side = capitalize(effect.side);
   const squares = effect.squares.map((square) => squareName(square));
-  const source =
-    squares.length === 1
+  const ownNodeAlone =
+    effect.ownNodeSquare !== undefined && squares.length === 1;
+  const source = ownNodeAlone
+    ? `its own node at ${squares[0]}`
+    : squares.length === 1
       ? `the node at ${squares[0]}`
       : `${squares.length} nodes at ${joinWithAnd(squares)}`;
-  return `${side} collected ${effect.amount} energy from ${source}, and now has ${effect.newTotal}.`;
+  const ownNodeClause =
+    effect.ownNodeSquare === undefined
+      ? ""
+      : ownNodeAlone
+        ? ", counted twice"
+        : ", its own node counting twice";
+  return `${side} collected ${effect.amount} energy from ${source}${ownNodeClause}, and now has ${effect.newTotal}.`;
 }
 
 /**
@@ -682,10 +695,24 @@ export function announcementForSession(session: Session): string {
   }
 }
 
-/** "Green: 24 energy, 3 nodes held." — the HUD score cell's hidden text. */
+/**
+ * "Green: 24 energy, 3 nodes held." — the HUD score cell's hidden text.
+ * Under the player-matching nodes setting DOUBLE (steal.md §9), standing on
+ * the side's own node adds "counting as <n>", the count DOUBLE actually
+ * prices. Under REQUIRED, a turn withheld for want of the side's own node
+ * adds "none paying without its own node". Every other case, including
+ * REQUIRED once the own node is held, reads exactly as it does under OFF.
+ */
 export function scoreSentence(state: GameState, side: Side): string {
-  const nodesHeld = chargedNodesHeldBy(state, side).length;
-  return `${capitalize(side)}: ${state.energy[side]} energy, ${nodesHeldPhrase(nodesHeld)}.`;
+  const collection = turnCollection(state, side);
+  const heldPhrase = nodesHeldPhrase(collection.heldSquares.length);
+  const matchingClause =
+    state.playerMatching === "double" && collection.standingOnOwnNode
+      ? `, counting as ${collection.countedNodes}`
+      : collection.withheld
+        ? ", none paying without its own node"
+        : "";
+  return `${capitalize(side)}: ${state.energy[side]} energy, ${heldPhrase}${matchingClause}.`;
 }
 
 /** "35/100" — the HUD round counter's visible text, clamped at game over. */

@@ -13,7 +13,7 @@ import { GuideScreen } from "./GuideScreen";
 afterEach(cleanup);
 
 describe("GuideScreen", () => {
-  it("shows the title and the six headings in the story's order", () => {
+  it("shows the title and the seven headings in the story's order", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     expect(
@@ -35,10 +35,10 @@ describe("GuideScreen", () => {
     }
   });
 
-  it("renders eight diagrams: the scoring diagram, one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
+  it("renders nine diagrams: the scoring diagram, one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
     const { container } = render(<GuideScreen onBack={vi.fn()} />);
 
-    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(8);
+    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(9);
   });
 
   it("renders the node playstyle setting lines and the rotator square after them, in order", () => {
@@ -83,9 +83,11 @@ describe("GuideScreen", () => {
       .map((heading) => heading.textContent);
     const nodeSelectionIndex = headings.indexOf("NEW CHARGED NODE SELECTION");
     const stealingNodesIndex = headings.indexOf("STEALING NODES");
+    const playerMatchingIndex = headings.indexOf("PLAYER-MATCHING NODES");
     const planetBonusIndex = headings.indexOf("PLANET BONUS");
     expect(stealingNodesIndex).toBe(nodeSelectionIndex + 1);
-    expect(planetBonusIndex).toBe(stealingNodesIndex + 1);
+    expect(playerMatchingIndex).toBe(stealingNodesIndex + 1);
+    expect(planetBonusIndex).toBe(playerMatchingIndex + 1);
 
     const heading = screen.getByRole("heading", {
       level: 2,
@@ -99,6 +101,23 @@ describe("GuideScreen", () => {
     expect(section?.querySelectorAll(".node-marker--charged")).toHaveLength(2);
     expect(section?.querySelectorAll(".ship-model--red")).toHaveLength(2);
     expect(section?.querySelectorAll(".ship-model--green")).toHaveLength(2);
+  });
+
+  it("pairs PLAYER-MATCHING NODES, after STEALING NODES, with a diagram showing green's node in green and red's in red", () => {
+    render(<GuideScreen onBack={vi.fn()} />);
+
+    const heading = screen.getByRole("heading", {
+      level: 2,
+      name: "PLAYER-MATCHING NODES",
+    });
+    const section = heading.closest("section");
+    expect(section).not.toBeNull();
+    expect(section?.querySelectorAll(".node-marker--charged")).toHaveLength(1);
+    expect(section?.querySelectorAll(".node-marker--prospective")).toHaveLength(
+      1,
+    );
+    expect(section?.querySelectorAll(".ship-model--green")).toHaveLength(1);
+    expect(section?.querySelectorAll(".ship-model--red")).toHaveLength(0);
   });
 
   it("pairs PLANET BONUS, last in the story's order, with a diagram of three planets and one checkmark", () => {

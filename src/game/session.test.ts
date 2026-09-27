@@ -65,6 +65,7 @@ function buildState(config: {
     outOfTime: config.outOfTime ?? { green: false, red: false },
     combatEnabled: config.combatEnabled ?? true,
     scoring: "simple",
+    playerMatching: "off",
   };
 }
 
@@ -587,6 +588,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.selectedShipId).toBeUndefined();
@@ -619,6 +621,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.state.lengthInRounds).toBe(3);
@@ -637,6 +640,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
     const second = sessionReducer(session, {
       type: "new-game",
@@ -648,6 +652,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
@@ -668,6 +673,7 @@ describe("sessionReducer — new-game", () => {
         scoring: "simple",
         nodePlaystyle: "continuous",
         planetBonus: "off",
+        playerMatching: "off",
       });
 
       const expectedFleet = startingFleet(fleetSize);
@@ -710,6 +716,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.state.chargedNodeCount).toBe(3);
@@ -733,6 +740,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.state.chargedNodeCount).toBe(4);
@@ -756,6 +764,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.state.combatEnabled).toBe(false);
@@ -774,6 +783,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.state.combatEnabled).toBe(true);
@@ -792,6 +802,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.state.scoring).toBe("simple");
@@ -810,6 +821,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "bonus",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.state.scoring).toBe("bonus");
@@ -828,6 +840,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.state.nodePlaystyle).toBe("continuous");
@@ -847,6 +860,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "dedicated",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.state.nodePlaystyle).toBe("dedicated");
@@ -866,6 +880,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "three",
+      playerMatching: "off",
     });
 
     expect(result.state.planetBonus).toBe("three");
@@ -886,6 +901,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      playerMatching: "off",
     });
 
     expect(result.state.planetBonus).toBe("off");

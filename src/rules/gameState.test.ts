@@ -23,6 +23,10 @@ import { DEFAULT_NODE_PLAYSTYLE, NODE_PLAYSTYLES } from "./nodePlaystyle";
 import { dealStealOpeningBoard } from "./steal";
 import { legalDestinations } from "./movement";
 import { PLANET_BONUS_SETTINGS } from "./planetBonus";
+import {
+  DEFAULT_PLAYER_MATCHING,
+  PLAYER_MATCHING_SETTINGS,
+} from "./playerMatching";
 import { isPlanet } from "./planets";
 import { MAX_POWER } from "./power";
 import { applyMove } from "./ply";
@@ -649,6 +653,84 @@ describe("startingGameState under steal (steal.md §7)", () => {
     expect(withBonus.bonusPlanets.red).toHaveLength(3);
     expect(withBonus.randomSeed).not.toBe(seedAfterDeal);
   });
+});
+
+describe("startingGameState's playerMatching field (steal.md §9)", () => {
+  it("defaults to off, the app's default, when none is given", () => {
+    const state = startingGameState(SEED, { nodePlaystyle: "steal" });
+
+    expect(state.playerMatching).toBe("off");
+    expect(state.playerMatching).toBe(DEFAULT_PLAYER_MATCHING);
+  });
+
+  it.each(PLAYER_MATCHING_SETTINGS)(
+    "stores a given setting of %j under steal",
+    (playerMatching) => {
+      const state = startingGameState(SEED, {
+        nodePlaystyle: "steal",
+        playerMatching,
+      });
+
+      expect(state.playerMatching).toBe(playerMatching);
+    },
+  );
+
+  it.each(["OFF", "doubled", "require", ""])(
+    "throws a RangeError for a playerMatching setting of %j",
+    (playerMatching) => {
+      expect(() =>
+        startingGameState(SEED, { nodePlaystyle: "steal", playerMatching }),
+      ).toThrow(RangeError);
+    },
+  );
+
+  it.each(["continuous", "planet", "dedicated"] as const)(
+    "throws a RangeError for double or required paired with the %s node playstyle",
+    (nodePlaystyle) => {
+      expect(() =>
+        startingGameState(SEED, { nodePlaystyle, playerMatching: "double" }),
+      ).toThrow(RangeError);
+      expect(() =>
+        startingGameState(SEED, {
+          nodePlaystyle,
+          playerMatching: "required",
+        }),
+      ).toThrow(RangeError);
+    },
+  );
+
+  it.each(["continuous", "planet", "dedicated"] as const)(
+    "does not throw for off paired with the %s node playstyle",
+    (nodePlaystyle) => {
+      expect(() =>
+        startingGameState(SEED, { nodePlaystyle, playerMatching: "off" }),
+      ).not.toThrow();
+    },
+  );
+
+  it.each([SEED, SEED + 1, SEED + 2])(
+    "deals exactly the board an off game deals from seed %d, for double and required, at every node count (D2 — no seed steps)",
+    (seed) => {
+      for (const chargedNodeCount of CHARGED_NODE_COUNTS) {
+        const off = startingGameState(seed, {
+          nodePlaystyle: "steal",
+          chargedNodeCount,
+          playerMatching: "off",
+        });
+
+        for (const playerMatching of ["double", "required"] as const) {
+          const matched = startingGameState(seed, {
+            nodePlaystyle: "steal",
+            chargedNodeCount,
+            playerMatching,
+          });
+
+          expect(matched.nodes).toEqual(off.nodes);
+          expect(matched.randomSeed).toBe(off.randomSeed);
+        }
+      }
+    },
+  );
 });
 
 describe("markOutOfTime", () => {

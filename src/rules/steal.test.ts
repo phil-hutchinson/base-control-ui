@@ -9,8 +9,10 @@ import {
   abandonNode,
   claimNode,
   dealStealOpeningBoard,
+  matchedSignalForSide,
   nodeAnchor,
   NODE_SIGNALS,
+  sideMatchedToSignal,
   squaresForSignal,
 } from "./steal";
 
@@ -44,6 +46,44 @@ function nodes(
 ): Readonly<Record<string, NodeStatus>> {
   return entries;
 }
+
+describe("matchedSignalForSide and sideMatchedToSignal (steal.md §9)", () => {
+  it("matches red to the second-to-last signal and green to the last", () => {
+    expect(matchedSignalForSide("red", 5)).toBe(3);
+    expect(matchedSignalForSide("green", 5)).toBe(4);
+    expect(matchedSignalForSide("red", 4)).toBe(2);
+    expect(matchedSignalForSide("green", 4)).toBe(3);
+    expect(matchedSignalForSide("red", 3)).toBe(1);
+    expect(matchedSignalForSide("green", 3)).toBe(2);
+  });
+
+  it("is the inverse of sideMatchedToSignal for every node count", () => {
+    for (const nodeCount of CHARGED_NODE_COUNTS) {
+      expect(
+        sideMatchedToSignal(matchedSignalForSide("red", nodeCount), nodeCount),
+      ).toBe("red");
+      expect(
+        sideMatchedToSignal(
+          matchedSignalForSide("green", nodeCount),
+          nodeCount,
+        ),
+      ).toBe("green");
+    }
+  });
+
+  it("maps every other signal to no side", () => {
+    for (const nodeCount of CHARGED_NODE_COUNTS) {
+      for (const signal of NODE_SIGNALS.slice(0, nodeCount)) {
+        if (
+          signal !== matchedSignalForSide("red", nodeCount) &&
+          signal !== matchedSignalForSide("green", nodeCount)
+        ) {
+          expect(sideMatchedToSignal(signal, nodeCount)).toBeUndefined();
+        }
+      }
+    }
+  });
+});
 
 describe("squaresForSignal", () => {
   it("returns a signal's squares in board order, regardless of insertion order", () => {

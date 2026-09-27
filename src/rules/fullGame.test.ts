@@ -734,6 +734,7 @@ describe("a full game, end to end", () => {
       outOfTime: { green: false, red: false },
       combatEnabled: true,
       scoring: "simple",
+      playerMatching: "off",
     };
 
     expect(isGameOver(state)).toBe(true);
@@ -911,6 +912,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       outOfTime: { green: false, red: false },
       combatEnabled: true,
       scoring: "simple",
+      playerMatching: "off",
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -966,6 +968,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       outOfTime: { green: false, red: false },
       combatEnabled: true,
       scoring: "simple",
+      playerMatching: "off",
     };
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -1020,6 +1023,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       outOfTime: { green: false, red: false },
       combatEnabled: true,
       scoring: "simple",
+      playerMatching: "off",
     };
 
     expect(() => runEndOfTurn(state)).not.toThrow();

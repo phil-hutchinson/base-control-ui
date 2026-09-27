@@ -1,5 +1,7 @@
-// The app's front door: which screen is showing, the eight options chosen on
-// the start screen, and the two actions that move between screens. Lives
+// The app's front door: which screen is showing, the options chosen on the
+// start screen — eight of them, nine under the steal playstyle, which alone
+// offers player-matching nodes — and the two actions that move between
+// screens. Lives
 // outside App.tsx so PLAY's wiring and the return to start are a real unit,
 // exercised on their own rather than only through the whole app. Which
 // screen is showing is decided by the browser's address, not by state kept
@@ -27,6 +29,11 @@ import {
   DEFAULT_PLANET_BONUS,
   type PlanetBonusSetting,
 } from "./rules/planetBonus";
+import {
+  DEFAULT_PLAYER_MATCHING,
+  resolvePlayerMatching,
+  type PlayerMatchingSetting,
+} from "./rules/playerMatching";
 import { DEFAULT_SCORING, type ScoringSetting } from "./rules/scoring";
 
 /** The app's current screen and options, plus the actions that change either. */
@@ -38,6 +45,7 @@ export interface AppScreen {
   readonly scoring: ScoringSetting;
   readonly nodePlaystyle: NodePlaystyle;
   readonly planetBonus: PlanetBonusSetting;
+  readonly playerMatching: PlayerMatchingSetting;
   readonly lengthInRounds: number;
   readonly clockSetting: ClockSetting;
   readonly setFleetSize: (fleetSize: FleetSize) => void;
@@ -46,6 +54,7 @@ export interface AppScreen {
   readonly setScoring: (scoring: ScoringSetting) => void;
   readonly setNodePlaystyle: (nodePlaystyle: NodePlaystyle) => void;
   readonly setPlanetBonus: (planetBonus: PlanetBonusSetting) => void;
+  readonly setPlayerMatching: (playerMatching: PlayerMatchingSetting) => void;
   readonly setLengthInRounds: (lengthInRounds: number) => void;
   readonly setClockSetting: (clockSetting: ClockSetting) => void;
   readonly handlePlay: () => void;
@@ -54,14 +63,16 @@ export interface AppScreen {
 }
 
 /**
- * Holds the eight options chosen on the start screen, so a finished game
- * returns to the start screen with the options it was played with still set,
- * and delegates which screen is showing to `useScreenAddress`, which reads it
+ * Holds the options chosen on the start screen, so a finished game returns to
+ * the start screen with the options it was played with still set, and
+ * delegates which screen is showing to `useScreenAddress`, which reads it
  * from the browser's address. `handlePlay` dispatches `new-game` with a fresh
  * seed and the fleet size, charged-node count, combat setting, scoring
- * setting, node playstyle, planet bonus setting and length through
- * `dispatch`, then hands the game its address; `handleReturnToStart` moves
- * the browser back, the same as its own Back button. The clock setting is not
+ * setting, node playstyle, planet bonus setting, player-matching setting
+ * (resolved for the node playstyle actually chosen, `resolvePlayerMatching`)
+ * and length through `dispatch`, then hands the game its address;
+ * `handleReturnToStart` moves the browser back, the same as its own Back
+ * button. The clock setting is not
  * part of `new-game` — the rules layer knows nothing about time — so it is
  * held here purely for the game screen to read. `handleOpenGuide` opens the
  * quick guide at its own address and changes nothing else; there is no
@@ -85,6 +96,9 @@ export function useAppScreen(
   );
   const [planetBonus, setPlanetBonus] =
     useState<PlanetBonusSetting>(DEFAULT_PLANET_BONUS);
+  const [playerMatching, setPlayerMatching] = useState<PlayerMatchingSetting>(
+    DEFAULT_PLAYER_MATCHING,
+  );
   const [lengthInRounds, setLengthInRounds] = useState(
     DEFAULT_GAME_LENGTH_ROUNDS,
   );
@@ -103,6 +117,7 @@ export function useAppScreen(
       scoring,
       nodePlaystyle,
       planetBonus,
+      playerMatching: resolvePlayerMatching(nodePlaystyle, playerMatching),
     });
     showGame();
   }
@@ -123,6 +138,7 @@ export function useAppScreen(
     scoring,
     nodePlaystyle,
     planetBonus,
+    playerMatching,
     lengthInRounds,
     clockSetting,
     setFleetSize,
@@ -131,6 +147,7 @@ export function useAppScreen(
     setScoring,
     setNodePlaystyle,
     setPlanetBonus,
+    setPlayerMatching,
     setLengthInRounds,
     setClockSetting,
     handlePlay,

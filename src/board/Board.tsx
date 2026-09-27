@@ -11,6 +11,7 @@ import { shipCanMoveOrAttack } from "../rules/canMoveOrAttack";
 import { legalAttacks } from "../rules/combat";
 import { shipsBySquare, nodeStatusAt, type Ship } from "../rules/gameState";
 import { legalMoves } from "../rules/movement";
+import { sideMatchedToSignal } from "../rules/steal";
 import type { PowerLevel } from "../rules/power";
 import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import { inactivePriority } from "../rules/nodeQueue";
@@ -140,6 +141,10 @@ export function Board({ session, onIntent }: BoardProps) {
             ? inactivePriority(nodeStatus)
             : undefined;
         const signal = nodeStatus?.signal;
+        const matchedSide =
+          signal !== undefined && session.state.playerMatching !== "off"
+            ? sideMatchedToSignal(signal, session.state.chargedNodeCount)
+            : undefined;
         const occupant = ship && { side: ship.side, power: ship.power };
         const condition = ship && shipCondition(ship);
         const hasRotator = rotatorSquareNames.has(name);
@@ -166,6 +171,7 @@ export function Board({ session, onIntent }: BoardProps) {
               cyclePosition={cyclePosition}
               priority={priority}
               signal={signal}
+              matchedSide={matchedSide}
               hasRotator={hasRotator}
               countdownNumber={countdown}
               occupant={occupant}

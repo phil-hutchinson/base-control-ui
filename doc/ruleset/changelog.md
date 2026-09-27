@@ -7,6 +7,48 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.40 — player-matching nodes, under steal
+
+This is a gameplay change — a turn's node energy can now depend on whether a
+player holds a node of their own — and so would be a tag candidate; tagging
+stays on hold until the game plays (see the project's contribution notes).
+
+- **A new choice, offered only under the steal playstyle**: player-matching
+  nodes, **off, double or required**, the same for both players, chosen
+  before play begins and fixed for the game's lifetime. This document names
+  no default.
+- **With double or required, two of the game's nodes are matched to the
+  players, one each, for the whole game**: of the nodes the opening deal
+  deals, the second-to-last is red's and the last is green's. The match is
+  fixed — it does not follow whoever holds the node — and a matched node is
+  claimed, left, stolen, relocated and dealt exactly as any other node
+  (steal.md §§3–7). Either player may take either matched node.
+- **Double**: at the end of a player's turn, their own node, if one of their
+  ships stands on it, counts as **two** nodes held; the opponent's matched
+  node counts as one, like any other. The turn is then priced by the chosen
+  scoring (rules.md §8.4) on that count — red holding its own node and one
+  other counts three nodes held and collects **6** under bonus scoring,
+  **3** under simple.
+- **Required**: at the end of a player's turn, if none of their ships
+  stands on their own node, they collect **no** node energy that turn,
+  however many other nodes they hold; if one does, they collect exactly what
+  rules.md §8.4 gives, their own node counting once.
+- **Planet bonuses are unaffected** (rules.md §3.4): required withholds node
+  energy only, and a bonus planet still pays on landing regardless. Nothing
+  here subtracts energy; required withholds, and never takes any away.
+- **The app shows the two matched nodes in the players' own colours**, in
+  the same manner steal.md §2 already notes for a signal; no palette is
+  named.
+- **`steal.md` gains a new section 9**, "Player-matching nodes", stating all
+  of the above. Its section 8's closing paragraph now says energy is
+  unchanged under steal "except as section 9 provides".
+- **`rules.md` §8.4**'s paragraph on energy under steal gains a pointer to
+  steal.md §9. **`rules.md` §10**'s opening list of pre-play choices gains
+  the player-matching nodes setting, under steal.
+- **Nothing else changes.** Off plays and looks exactly as the game did in
+  version 0.39, and so do the continuous, planet and dedicated playstyles,
+  which offer no such setting and match no node.
+
 ## 0.39 — steal, a fourth node playstyle
 
 This is a gameplay change — a fourth way to play the game's nodes — and so

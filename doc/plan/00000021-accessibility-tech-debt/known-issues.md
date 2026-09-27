@@ -431,3 +431,36 @@ held node.
 
 Where: `src/board/NodeMarker.tsx`, `src/board/squareArt.ts`,
 `src/board/squareLabel.ts`.
+
+## From story 103 — Player-matching nodes
+
+Source: `doc/plan/00000103-player-matching-nodes/implementation-plan.md`
+decision D11, Step 5.
+
+### 1. Which node is a player's own is carried by colour alone
+
+With player-matching nodes on (steal.md §9), a matched node is drawn in its
+player's own colour instead of its signal's — the only place that fact
+appears. A square's accessible name still reads only "charged node" or
+"prospective node", with nothing saying whose node it is, so a screen-reader
+user, or a player who cannot tell red from green, has no way to tell a
+player's own node apart from any other. A red node under a red ship (or
+green under green) is by design, so a sighted player who can see colour
+reads the pairing at a glance; the gap falls on whoever cannot.
+
+Where: `src/board/NodeMarker.tsx`, `src/board/squareArt.ts`,
+`src/board/squareLabel.ts`.
+
+### 2. The REQUIRED X pips are decorative, and a withheld turn is announced with silence
+
+The score cell's pip row marks each held node with an X under REQUIRED while
+the side's own node is not held, but the whole row is `aria-hidden`, like
+every pip before it. The standing fact — nodes held, none of them paying —
+reaches assistive technology only through the HUD's hidden score sentence.
+And because a turn that collects nothing raises no `energy-collected` effect
+(exactly as a zero payout does today), nothing is spoken in the live region
+on a turn whose collection REQUIRED withholds — a screen-reader user hears
+nothing where a sighted player sees the X's appear.
+
+Where: `src/hud/ScoreDisplay.tsx`, `src/board/announcements.ts`,
+`src/rules/endOfTurn.ts`.

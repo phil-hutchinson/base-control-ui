@@ -32,6 +32,7 @@ import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
 import type { NodeSignal } from "../rules/steal";
+import type { Side } from "../rules/fleet";
 import type { PowerLevel } from "../rules/power";
 import type { SquareAnimation } from "./boardAnimations";
 import { ShipModel } from "../ships/ShipModel";
@@ -58,6 +59,11 @@ export interface BoardSquareProps {
   readonly priority?: NodePriority;
   /** The signal a steal node carries (steal.md §2), present only under steal. */
   readonly signal?: NodeSignal;
+  /**
+   * The side `signal` is matched to under player-matching nodes (steal.md
+   * §9), if any — see `NodeMarker`'s prop of the same name.
+   */
+  readonly matchedSide?: Side;
   /**
    * Whether the square holds a rotator (rules.md §3.3), independent of
    * `nodeState` and `isPlanet` — a square is at most one of the three, but
@@ -229,6 +235,7 @@ export function BoardSquare({
   cyclePosition,
   priority,
   signal,
+  matchedSide,
   hasRotator,
   countdownNumber,
   occupant,
@@ -269,6 +276,7 @@ export function BoardSquare({
           cyclePosition={cyclePosition}
           priority={priority}
           signal={signal}
+          matchedSide={matchedSide}
           chargeAnimation={chargeAnimation}
           burnoutAnimation={burnoutAnimation}
         />

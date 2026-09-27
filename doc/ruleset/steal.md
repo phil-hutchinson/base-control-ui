@@ -155,5 +155,42 @@ Under steal, none of the following happen:
 
 Of the end-of-turn order (rules.md §8.6), only **step 1 (power)** and
 **step 2 (energy)** run. Energy (rules.md §8.4) is unchanged under steal,
-and is still priced by the charged nodes a player is standing on when their
-turn ends. Nothing else in rules.md changes.
+except as section 9 provides, and is still priced by the charged nodes a
+player is standing on when their turn ends. Nothing else in rules.md
+changes.
+
+## 9. Player-matching nodes
+
+Before play begins, a choice is made, the same for both players and fixed
+for the game's lifetime: **off, double or required**. This document names
+no default.
+
+With **double** or **required**, two of the game's nodes are matched to the
+players, one each, for the whole game: of the nodes the opening deal deals
+(section 7), the second-to-last is red's and the last is green's. The match
+is fixed: it does not follow whoever holds the node. A matched node is
+claimed, left, stolen, relocated and dealt exactly as any other node
+(sections 3–7) — either player may take either matched node, and taking the
+opponent's is a legitimate way to deny it to them.
+
+**Double.** At the end of a player's turn, their own node, if one of their
+ships stands on it, counts as **two** nodes held. The opponent's matched
+node counts as one, like any other. The turn is then priced by the chosen
+scoring (rules.md §8.4) on that count — for example, red holding its own
+node and one other counts three nodes held, and collects **6** under bonus
+scoring, **3** under simple.
+
+**Required.** At the end of a player's turn, if none of their ships stands
+on their own node, they collect **no** node energy that turn, however many
+other nodes they hold. If one does, they collect exactly what rules.md
+§8.4 gives, their own node counting once, like any other.
+
+**Planet bonuses** (rules.md §3.4) are unaffected by either setting:
+required withholds node energy only, and a bonus planet pays on landing
+whether or not a player holds their own node. Nothing here ever subtracts
+energy; required withholds a turn's node energy, and never takes any away.
+
+The app shows the two matched nodes in the players' own colours, in the
+same manner that section 2 already notes for a signal.
+
+With **off**, none of this section applies, and no node is matched.

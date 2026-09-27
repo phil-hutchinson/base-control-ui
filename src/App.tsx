@@ -62,6 +62,8 @@ export function App() {
     setPlanetBonus,
     nodePlaystyle,
     setNodePlaystyle,
+    playerMatching,
+    setPlayerMatching,
     lengthInRounds,
     setLengthInRounds,
     clockSetting,
@@ -90,6 +92,8 @@ export function App() {
             onPlanetBonusChange={setPlanetBonus}
             nodePlaystyle={nodePlaystyle}
             onNodePlaystyleChange={setNodePlaystyle}
+            playerMatching={playerMatching}
+            onPlayerMatchingChange={setPlayerMatching}
             lengthInRounds={lengthInRounds}
             onLengthInRoundsChange={setLengthInRounds}
             clockSetting={clockSetting}

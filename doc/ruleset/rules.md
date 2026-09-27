@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.39**
+**Rules version: 0.40**
 
 This document is the single source of truth for how Base Control is played,
 together with its companion [steal.md](steal.md), which holds the node rules
@@ -791,7 +791,8 @@ setting, landing on the right planet also pays (section 3.4).
 
 This section applies under the steal playstyle too: a player is paid exactly
 the same way for the charged nodes they hold when their turn ends
-(section 8.2, steal.md).
+(section 8.2, steal.md) — except that, under steal, the player-matching
+nodes setting can change what a turn pays (steal.md §9).
 
 Nothing in the game subtracts energy. A player's total only ever rises.
 
@@ -935,9 +936,10 @@ energy is a draw.
 
 Alongside the fleet size, the number of rounds, the charged-node count
 (section 8.1), whether combat is on or off (section 7), how scoring is
-priced (section 8.4), the node playstyle (section 8.2) and the
-planet bonus (section 3.4), a player chooses a **clock** before play
-begins: no clock, or 6, 4 or 2 seconds a turn.
+priced (section 8.4), the node playstyle (section 8.2), the
+planet bonus (section 3.4) and, under the steal playstyle, the
+player-matching nodes setting (steal.md §9), a player chooses a **clock**
+before play begins: no clock, or 6, 4 or 2 seconds a turn.
 
 Each player's clock starts with a budget: their seconds a turn multiplied by
 the number of turns the chosen length gives them. The whole game is

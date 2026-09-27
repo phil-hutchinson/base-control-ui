@@ -16,6 +16,8 @@ import type { PowerLevel } from "../rules/power";
 import type { ChargedNodeCount, NodeState } from "../rules/nodes";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import type { ScoringSetting } from "../rules/scoring";
+import type { NodeSignal } from "../rules/steal";
+import type { PlayerMatchingSetting } from "../rules/playerMatching";
 import { ScoreDisplay } from "./ScoreDisplay";
 
 afterEach(cleanup);
@@ -70,6 +72,48 @@ function buildState(config: {
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: config.scoring ?? "simple",
+    playerMatching: "off",
+  };
+}
+
+/** A five-node steal state (steal.md §2), with red's own node at signal 3
+ * and green's at signal 4 — `matchedSignalForSide`'s own mapping for a
+ * five-node board — for the player-matching pip tests below. */
+function stealNodeStatuses(
+  signalBySquare: Readonly<Record<string, NodeSignal>>,
+): Record<string, NodeStatus> {
+  return Object.fromEntries(
+    Object.entries(signalBySquare).map(([name, signal]) => [
+      name,
+      { state: "charged" as const, level: 0, signal },
+    ]),
+  );
+}
+
+function buildStealState(config: {
+  ships?: readonly Ship[];
+  signalBySquare?: Readonly<Record<string, NodeSignal>>;
+  scoring?: ScoringSetting;
+  playerMatching: PlayerMatchingSetting;
+}): GameState {
+  return {
+    ships: config.ships ?? [],
+    nodes: stealNodeStatuses(config.signalBySquare ?? {}),
+    sideToMove: "green",
+    plyNumber: 1,
+    randomSeed: 1,
+    openingSeed: 1,
+    nodePlaystyle: "steal",
+    rotators: [],
+    planetBonus: "off",
+    bonusPlanets: { green: [], red: [] },
+    energy: { green: 0, red: 0 },
+    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: 5,
+    outOfTime: { green: false, red: false },
+    combatEnabled: true,
+    scoring: config.scoring ?? "bonus",
+    playerMatching: config.playerMatching,
   };
 }
 
@@ -297,5 +341,106 @@ describe("ScoreDisplay", () => {
     expect(
       screen.getByText("Green: 6 energy, no nodes held."),
     ).toBeInTheDocument();
+  });
+
+  describe("player-matching nodes (steal.md §9)", () => {
+    it("lengthens the row by one under DOUBLE, lighting two pips for the own node and one more for another, with the doubled amount highlighted", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("red", 4),
+          ship("red-own", "red", "E11"),
+          ship("red-other", "red", "H8"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "double",
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="red" displayedTotal={0} />,
+      );
+
+      expect(container.querySelectorAll(".score-display__pip")).toHaveLength(6);
+      expect(
+        container.querySelectorAll(".score-display__pip--lit"),
+      ).toHaveLength(3);
+      const marked = container.querySelectorAll(
+        ".score-display__pip-value--red",
+      );
+      expect(marked).toHaveLength(1);
+      expect(marked[0]).toHaveTextContent("6");
+    });
+
+    it("still draws the lengthened row, with nothing lit, when DOUBLE holds nothing", () => {
+      const state = buildStealState({
+        ships: shipsFor("red", 6),
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "double",
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="red" displayedTotal={0} />,
+      );
+
+      expect(container.querySelectorAll(".score-display__pip")).toHaveLength(6);
+      expect(
+        container.querySelectorAll(".score-display__pip--lit"),
+      ).toHaveLength(0);
+    });
+
+    it("marks an X for each held node under REQUIRED while the own node is not held, lighting none and highlighting no value", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("red", 3),
+          ship("red-a", "red", "H8"),
+          ship("red-b", "red", "K5"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "required",
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="red" displayedTotal={0} />,
+      );
+
+      expect(container.querySelectorAll(".score-display__pip")).toHaveLength(5);
+      expect(container.querySelectorAll(".score-display__pip--x")).toHaveLength(
+        2,
+      );
+      expect(
+        container.querySelectorAll(".score-display__pip--lit"),
+      ).toHaveLength(0);
+      expect(
+        container.querySelectorAll(".score-display__pip-value--red"),
+      ).toHaveLength(0);
+    });
+
+    it("lights the pips and highlights the amount as usual under REQUIRED once the own node is held", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("red", 3),
+          ship("red-own", "red", "E11"),
+          ship("red-other", "red", "H8"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "required",
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="red" displayedTotal={0} />,
+      );
+
+      expect(container.querySelectorAll(".score-display__pip")).toHaveLength(5);
+      expect(container.querySelectorAll(".score-display__pip--x")).toHaveLength(
+        0,
+      );
+      expect(
+        container.querySelectorAll(".score-display__pip--lit"),
+      ).toHaveLength(2);
+      const marked = container.querySelectorAll(
+        ".score-display__pip-value--red",
+      );
+      expect(marked).toHaveLength(1);
+      expect(marked[0]).toHaveTextContent("3");
+    });
   });
 });

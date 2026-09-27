@@ -26,6 +26,7 @@ describe("useAppScreen", () => {
     expect(result.current.scoring).toBe("bonus");
     expect(result.current.nodePlaystyle).toBe("planet");
     expect(result.current.planetBonus).toBe("off");
+    expect(result.current.playerMatching).toBe("off");
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
   });
@@ -199,6 +200,49 @@ describe("useAppScreen", () => {
 
     expect(dispatch).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ type: "new-game", planetBonus: "three" }),
+    );
+  });
+
+  it("dispatches the player-matching setting only while the node playstyle is steal, and remembers it switching back", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
+
+    act(() => {
+      result.current.setNodePlaystyle("steal");
+    });
+    act(() => {
+      result.current.setPlayerMatching("double");
+    });
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", playerMatching: "double" }),
+    );
+
+    dispatch.mockClear();
+    act(() => {
+      result.current.setNodePlaystyle("planet");
+    });
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", playerMatching: "off" }),
+    );
+
+    dispatch.mockClear();
+    act(() => {
+      result.current.setNodePlaystyle("steal");
+    });
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ type: "new-game", playerMatching: "double" }),
     );
   });
 

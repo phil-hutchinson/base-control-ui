@@ -4,6 +4,10 @@ import type { GameState } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import type { GameResult } from "../rules/gameLength";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
+import type { ChargedNodeCount } from "../rules/nodes";
+import type { NodeSignal } from "../rules/steal";
+import type { ScoringSetting } from "../rules/scoring";
+import type { PlayerMatchingSetting } from "../rules/playerMatching";
 import type { EnergyCollectedEffect } from "../rules/endOfTurn";
 import type {
   AttackedEvent,
@@ -1599,6 +1603,72 @@ describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
     );
   });
 
+  it("names DOUBLE's own node counting twice alongside others", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "red-1",
+      side: "red",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "red",
+          sideToMove: "green",
+          endOfTurn: [
+            {
+              type: "energy-collected",
+              side: "red",
+              amount: 6,
+              newTotal: 30,
+              squares: [squareAt("D", 4), squareAt("K", 11)],
+              ownNodeSquare: squareAt("D", 4),
+            },
+          ],
+        },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Red ship moved from C7 to C6. The move was free; it still has 6 power. " +
+        "Red collected 6 energy from 2 nodes at D4 and K11, its own node counting twice, and now has 30. Green's turn.",
+    );
+  });
+
+  it("names DOUBLE's own node alone as counted twice", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "red-1",
+      side: "red",
+      from: squareAt("C", 7),
+      to: squareAt("C", 6),
+      effects: [
+        {
+          type: "ply-ended",
+          side: "red",
+          sideToMove: "green",
+          endOfTurn: [
+            {
+              type: "energy-collected",
+              side: "red",
+              amount: 3,
+              newTotal: 27,
+              squares: [squareAt("D", 4)],
+              ownNodeSquare: squareAt("D", 4),
+            },
+          ],
+        },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Red ship moved from C7 to C6. The move was free; it still has 6 power. " +
+        "Red collected 3 energy from its own node at D4, counted twice, and now has 27. Green's turn.",
+    );
+  });
+
   it("a passed turn still carries its own collection clause", () => {
     const collected: EnergyCollectedEffect = {
       type: "energy-collected",
@@ -1673,6 +1743,7 @@ describe("announcementForSession", () => {
       outOfTime: config.outOfTime ?? { green: false, red: false },
       combatEnabled: true,
       scoring: "simple",
+      playerMatching: "off",
     };
   }
 
@@ -2063,6 +2134,7 @@ describe("turnIndicatorText", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       }),
     ).toBe("Green to play");
   });
@@ -2086,6 +2158,7 @@ describe("turnIndicatorText", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       }),
     ).toBe("Red to play");
   });
@@ -2109,6 +2182,7 @@ describe("turnIndicatorText", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       }),
     ).toBe("Game over");
   });
@@ -2126,10 +2200,23 @@ describe("HUD wording", () => {
       power: 0 | 1 | 2 | 3 | 4;
     }[];
     charged?: readonly string[];
+    chargedSignals?: Readonly<Record<string, NodeSignal>>;
+    nodePlaystyle?: "continuous" | "steal";
+    chargedNodeCount?: ChargedNodeCount;
+    scoring?: ScoringSetting;
+    playerMatching?: PlayerMatchingSetting;
   }): GameState {
-    const nodes: Record<string, { state: "charged"; level: number }> = {};
+    const nodes: Record<
+      string,
+      { state: "charged"; level: number; signal?: NodeSignal }
+    > = {};
     for (const square of config.charged ?? []) {
       nodes[square] = { state: "charged", level: 1 };
+    }
+    for (const [square, signal] of Object.entries(
+      config.chargedSignals ?? {},
+    )) {
+      nodes[square] = { state: "charged", level: 1, signal };
     }
     return {
       ships: config.ships ?? [],
@@ -2138,16 +2225,17 @@ describe("HUD wording", () => {
       plyNumber: config.plyNumber,
       randomSeed: 1,
       openingSeed: 1,
-      nodePlaystyle: "continuous",
+      nodePlaystyle: config.nodePlaystyle ?? "continuous",
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
-      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
       outOfTime: { green: false, red: false },
       combatEnabled: true,
-      scoring: "simple",
+      scoring: config.scoring ?? "simple",
+      playerMatching: config.playerMatching ?? "off",
     };
   }
 
@@ -2226,6 +2314,81 @@ describe("HUD wording", () => {
         charged: ["K5", "H8"],
       });
       expect(scoreSentence(state, "red")).toBe("Red: 1 energy, 1 node held.");
+    });
+
+    it("adds 'counting as' under DOUBLE when standing on its own node", () => {
+      const state = stateWith({
+        energy: { green: 24, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 3,
+        nodePlaystyle: "steal",
+        chargedNodeCount: 5,
+        playerMatching: "double",
+        ships: [
+          { id: "green-1", side: "green", square: squareAt("H", 8), power: 4 },
+          { id: "green-2", side: "green", square: squareAt("E", 5), power: 4 },
+        ],
+        chargedSignals: { H8: 1, E5: 4 },
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 24 energy, 2 nodes held, counting as 3.",
+      );
+    });
+
+    it("leaves DOUBLE unchanged when the own node is not held", () => {
+      const state = stateWith({
+        energy: { green: 3, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 3,
+        nodePlaystyle: "steal",
+        chargedNodeCount: 5,
+        playerMatching: "double",
+        ships: [
+          { id: "green-1", side: "green", square: squareAt("H", 8), power: 4 },
+        ],
+        chargedSignals: { H8: 1 },
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 3 energy, 1 node held.",
+      );
+    });
+
+    it("adds a withheld clause under REQUIRED when holding nodes but not its own", () => {
+      const state = stateWith({
+        energy: { green: 24, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 3,
+        nodePlaystyle: "steal",
+        chargedNodeCount: 5,
+        playerMatching: "required",
+        ships: [
+          { id: "green-1", side: "green", square: squareAt("H", 8), power: 4 },
+          { id: "green-2", side: "green", square: squareAt("E", 5), power: 4 },
+        ],
+        chargedSignals: { H8: 1, E5: 2 },
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 24 energy, 2 nodes held, none paying without its own node.",
+      );
+    });
+
+    it("reads as usual under REQUIRED once its own node is held", () => {
+      const state = stateWith({
+        energy: { green: 27, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 3,
+        nodePlaystyle: "steal",
+        chargedNodeCount: 5,
+        playerMatching: "required",
+        ships: [
+          { id: "green-1", side: "green", square: squareAt("H", 8), power: 4 },
+          { id: "green-2", side: "green", square: squareAt("E", 5), power: 4 },
+        ],
+        chargedSignals: { H8: 1, E5: 4 },
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 27 energy, 2 nodes held.",
+      );
     });
   });
 

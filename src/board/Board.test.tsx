@@ -19,7 +19,7 @@ import {
 } from "../rules/gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
-import { NODE_SIGNALS } from "../rules/steal";
+import { NODE_SIGNALS, type NodeSignal } from "../rules/steal";
 import { legalDestinations } from "../rules/movement";
 import { legalTargets } from "../rules/combat";
 import { MAX_POWER, type PowerLevel } from "../rules/power";
@@ -34,7 +34,7 @@ import {
 import { Board } from "./Board";
 import { squareLabel } from "./squareLabel";
 import { planetArrangement } from "./planetPlacement";
-import { SIGNAL_COLORS } from "./squareArt";
+import { PLAYER_NODE_COLORS, SIGNAL_COLORS } from "./squareArt";
 
 afterEach(cleanup);
 
@@ -129,6 +129,7 @@ function stateWithNode(
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
+    playerMatching: "off",
   };
 }
 
@@ -156,6 +157,7 @@ function stateWithStealNodes(
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
+    playerMatching: "off",
   };
 }
 
@@ -180,6 +182,7 @@ function stateWithRotators(squares: readonly Square[]): GameState {
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
+    playerMatching: "off",
   };
 }
 
@@ -571,6 +574,106 @@ describe("Board", () => {
     });
   });
 
+  describe("player-matching nodes' colours (steal.md §9)", () => {
+    // Five squares this file already uses for a five-node board (see
+    // STATED_NODE_STATES); signal 0 uses the first, and so on, so the same
+    // squares serve a three-, four- or five-node board by taking a prefix.
+    const NODE_SIGNAL_SQUARES = ["E5", "H8", "K5", "E11", "K11"];
+
+    function stealNodesForSignals(
+      signals: readonly NodeSignal[],
+    ): Record<string, NodeStatus> {
+      return Object.fromEntries(
+        signals.map((signal) => [
+          NODE_SIGNAL_SQUARES[signal],
+          { state: "charged" as const, level: 0, signal },
+        ]),
+      );
+    }
+
+    function coloursAt(squareNameStr: string) {
+      const cell = screen.getByRole("gridcell", {
+        name: new RegExp(`^${squareNameStr}, charged node`),
+      });
+      const stops = cell.querySelectorAll(".node-marker stop");
+      return {
+        core: stops[0].getAttribute("stop-color"),
+        rim: stops[2].getAttribute("stop-color"),
+      };
+    }
+
+    it.each([
+      {
+        nodeCount: 5 as const,
+        expected: [
+          SIGNAL_COLORS[0],
+          SIGNAL_COLORS[1],
+          SIGNAL_COLORS[2],
+          PLAYER_NODE_COLORS.red,
+          PLAYER_NODE_COLORS.green,
+        ],
+      },
+      {
+        nodeCount: 4 as const,
+        expected: [
+          SIGNAL_COLORS[0],
+          SIGNAL_COLORS[1],
+          PLAYER_NODE_COLORS.red,
+          PLAYER_NODE_COLORS.green,
+        ],
+      },
+      {
+        nodeCount: 3 as const,
+        expected: [
+          SIGNAL_COLORS[0],
+          PLAYER_NODE_COLORS.red,
+          PLAYER_NODE_COLORS.green,
+        ],
+      },
+    ])(
+      "draws a $nodeCount-node DOUBLE game's last two nodes in red and green, the rest as usual",
+      ({ nodeCount, expected }) => {
+        const signals = NODE_SIGNALS.slice(0, nodeCount);
+        render(
+          <Board
+            session={createSession({
+              ...stateWithStealNodes(stealNodesForSignals(signals)),
+              chargedNodeCount: nodeCount,
+              playerMatching: "double",
+            })}
+            onIntent={noop}
+          />,
+        );
+
+        signals.forEach((signal, index) => {
+          const { core, rim } = coloursAt(NODE_SIGNAL_SQUARES[signal]);
+          expect(core).toBe(expected[index].core);
+          expect(rim).toBe(expected[index].rim);
+        });
+      },
+    );
+
+    it("draws today's five colours exactly, with OFF, even on the same board", () => {
+      const signals = NODE_SIGNALS.slice(0, 5);
+      render(
+        <Board
+          session={createSession({
+            ...stateWithStealNodes(stealNodesForSignals(signals)),
+            chargedNodeCount: 5,
+            playerMatching: "off",
+          })}
+          onIntent={noop}
+        />,
+      );
+
+      signals.forEach((signal) => {
+        const { core, rim } = coloursAt(NODE_SIGNAL_SQUARES[signal]);
+        expect(core).toBe(SIGNAL_COLORS[signal].core);
+        expect(rim).toBe(SIGNAL_COLORS[signal].rim);
+      });
+    });
+  });
+
   describe("rotators the board is told to draw", () => {
     const ROTATOR_SQUARES = [squareAt("C", 3), squareAt("N", 12)];
 
@@ -794,6 +897,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       };
       const session: Session = {
         state,
@@ -895,6 +999,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       };
       const fullPowerSession: Session = {
         state: fullPowerState,
@@ -980,6 +1085,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: overrides?.combatEnabled ?? true,
         scoring: "simple",
+        playerMatching: "off",
       };
     }
 
@@ -1161,6 +1267,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: config.combatEnabled ?? true,
         scoring: "simple",
+        playerMatching: "off",
       };
     }
 
@@ -1362,6 +1469,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       };
     }
 
@@ -1476,6 +1584,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       };
       const session: Session = {
         state,
@@ -1523,6 +1632,7 @@ describe("Board", () => {
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
         scoring: "simple",
+        playerMatching: "off",
       };
 
       const off: Session = {

@@ -26,6 +26,7 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
+    playerMatching: "off",
     ...overrides,
   };
 }

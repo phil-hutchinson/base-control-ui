@@ -30,6 +30,7 @@
 // order.
 
 import { ALL_SQUARES, type Square, squareName } from "./board";
+import type { Side } from "./fleet";
 import type { NodeStatus } from "./gameState";
 import type { ChargedNodeCount } from "./nodes";
 import {
@@ -46,6 +47,39 @@ export type NodeSignal = 0 | 1 | 2 | 3 | 4;
  * three-node game uses the first three, and so on.
  */
 export const NODE_SIGNALS: readonly NodeSignal[] = [0, 1, 2, 3, 4];
+
+/**
+ * The signal matched to `side` under player-matching nodes (steal.md §9), in
+ * a game of `nodeCount` nodes: red is matched to the second-to-last signal,
+ * green to the last — the two signals whose colours the app replaces with
+ * the players' own. Neither this nor `sideMatchedToSignal` consults the
+ * player-matching setting; callers check `state.playerMatching !== "off"`
+ * first.
+ */
+export function matchedSignalForSide(
+  side: Side,
+  nodeCount: ChargedNodeCount,
+): NodeSignal {
+  return (side === "red" ? nodeCount - 2 : nodeCount - 1) as NodeSignal;
+}
+
+/**
+ * The side `signal` is matched to under player-matching nodes (steal.md §9),
+ * in a game of `nodeCount` nodes, or `undefined` if it is matched to
+ * neither. The inverse of `matchedSignalForSide`.
+ */
+export function sideMatchedToSignal(
+  signal: NodeSignal,
+  nodeCount: ChargedNodeCount,
+): Side | undefined {
+  if (signal === nodeCount - 2) {
+    return "red";
+  }
+  if (signal === nodeCount - 1) {
+    return "green";
+  }
+  return undefined;
+}
 
 /** One node's status under steal: always level 0, always carrying its signal. */
 export interface StealNodeStatus {
