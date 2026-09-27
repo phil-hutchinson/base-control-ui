@@ -82,11 +82,18 @@ export interface Ship {
  * (steal.md §2): every node square of a steal game carries a `signal`, and
  * carries `level` 0 always — steal has no countdown of any kind. No node
  * square of any other playstyle ever carries `signal`.
+ *
+ * `extra` exists only under the advanced planet bonus setting (steal.md
+ * §10): a prospective square an Additional nodes bonus gave its node, on top
+ * of the two every node ordinarily carries. Only a prospective square ever
+ * carries it, a signal carries at most one such square, and it is never
+ * `true` outside an advanced steal game.
  */
 export interface NodeStatus {
   readonly state: NodeState;
   readonly level: number;
   readonly signal?: NodeSignal;
+  readonly extra?: boolean;
 }
 
 /** Each side's running energy total (rules.md §8.4). */

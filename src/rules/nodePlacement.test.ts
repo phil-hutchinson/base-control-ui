@@ -425,7 +425,7 @@ describe("drawStealProspectiveSquare", () => {
     for (let i = 0; i < 500; i++) {
       const [square, nextSeed] = drawStealProspectiveSquare(
         occupied,
-        anchor,
+        [anchor],
         others,
         ships,
         seed,
@@ -449,7 +449,7 @@ describe("drawStealProspectiveSquare", () => {
     const [, expectedNextSeed] = mulberry32(123);
     const [, nextSeed] = drawStealProspectiveSquare(
       [anchor],
-      anchor,
+      [anchor],
       [],
       [],
       123,
@@ -467,14 +467,14 @@ describe("drawStealProspectiveSquare", () => {
 
     const first = drawStealProspectiveSquare(
       occupied,
-      anchor,
+      [anchor],
       others,
       ships,
       55,
     );
     const second = drawStealProspectiveSquare(
       occupied,
-      anchor,
+      [anchor],
       others,
       ships,
       55,
@@ -514,7 +514,7 @@ describe("drawStealProspectiveSquare", () => {
       );
       const [square, nextSeed] = drawStealProspectiveSquare(
         [anchor],
-        anchor,
+        [anchor],
         [],
         ships,
         seed,
@@ -557,7 +557,7 @@ describe("drawStealProspectiveSquare", () => {
       );
       const [square, nextSeed] = drawStealProspectiveSquare(
         occupied,
-        anchor,
+        [anchor],
         [other],
         ships,
         seed,
@@ -578,7 +578,7 @@ describe("drawStealOpeningProspectiveSquare", () => {
     for (let i = 0; i < 200; i++) {
       const [square, nextSeed] = drawStealOpeningProspectiveSquare(
         [anchor],
-        anchor,
+        [anchor],
         [],
         [],
         seed,
@@ -607,7 +607,7 @@ describe("drawStealOpeningProspectiveSquare", () => {
 
     const [square] = drawStealOpeningProspectiveSquare(
       occupied,
-      anchor,
+      [anchor],
       [],
       [],
       13,
@@ -621,7 +621,7 @@ describe("drawStealOpeningProspectiveSquare", () => {
     const [, expectedNextSeed] = mulberry32(321);
     const [, nextSeed] = drawStealOpeningProspectiveSquare(
       [anchor],
-      anchor,
+      [anchor],
       [],
       [],
       321,
@@ -638,14 +638,14 @@ describe("drawStealOpeningProspectiveSquare", () => {
 
     const first = drawStealOpeningProspectiveSquare(
       occupied,
-      anchor,
+      [anchor],
       others,
       [],
       55,
     );
     const second = drawStealOpeningProspectiveSquare(
       occupied,
-      anchor,
+      [anchor],
       others,
       [],
       55,
@@ -685,7 +685,7 @@ describe("drawStealOpeningProspectiveSquare", () => {
       );
       const [square, nextSeed] = drawStealOpeningProspectiveSquare(
         occupied,
-        anchor,
+        [anchor],
         [other],
         ships,
         seed,

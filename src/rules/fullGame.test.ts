@@ -428,9 +428,17 @@ function assertStealNodeInvariants(
     chargedNodeCount,
   ) as readonly NodeSignal[]) {
     const squares = squaresForSignal(state.nodes, signal);
-    expect(squares).toHaveLength(2);
-
     const statuses = squares.map((square) => nodeStatusAt(state, square));
+    const extraCount = statuses.filter(
+      (status) => status?.extra === true,
+    ).length;
+    // Two squares ordinarily; three when Additional nodes has given this
+    // signal an extra (steal.md §10) — nothing produces one in this file's
+    // games yet, so `extraCount` is always 0 here, but the check is written
+    // to hold once it isn't.
+    expect(squares).toHaveLength(extraCount === 1 ? 3 : 2);
+    expect(extraCount).toBeLessThanOrEqual(1);
+
     const chargedCount = statuses.filter(
       (status) => status?.state === "charged",
     ).length;
@@ -441,6 +449,9 @@ function assertStealNodeInvariants(
         status?.state === "charged" || status?.state === "prospective",
       ).toBe(true);
       expect(status?.level).toBe(0);
+      if (status?.extra === true) {
+        expect(status.state).toBe("prospective");
+      }
     }
   }
 }

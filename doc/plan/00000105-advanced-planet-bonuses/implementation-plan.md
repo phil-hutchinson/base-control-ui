@@ -674,7 +674,62 @@ figures re-measured at five a side.
 
 ### Step 3 — Extra prospective squares, Additional nodes and Node scramble in steal
 
-Status: pending
+Status: committed
+
+Notes: `NodeStatus` gained the optional `extra?: boolean` flag (`gameState.ts`).
+`nodeAnchor` (`steal.ts`) now returns `readonly Square[]` per D8: `[charged]`
+if Held, else `[extra]` if the node has one, else its remaining ordinary
+prospective square(s) (one normally, two for the Additional-nodes-on-an-Open-
+node case) — it no longer throws on two unheld squares, only on zero.
+`stealProspectiveWeight`, `drawStealProspectiveSquare` and
+`drawStealOpeningProspectiveSquare` (`nodePlacement.ts`) take `anchors:
+readonly Square[]` and weight by the *minimum* distance to any anchor,
+identical to before for a single anchor; every existing call site was updated
+to pass an array. `claimNode`'s `ClaimNodeResult.discardedSquares` replaces
+the old single optional `discardedSquare` (`ply.ts`'s
+`NodeClaimedEffect.discardedSquares` follows, now a required — possibly
+empty — list): it discards every one of the node's other squares (extra
+included) besides the claimed and released ones. `abandonNode` anchors its
+second draw on the node's extra when it has one (via the new `nodeAnchor`),
+so the extra survives leaving and the node ends Open with three prospective
+squares. Two new pure functions in `steal.ts`: `addExtraProspectiveSquares`
+(Additional nodes — one square per signal lacking an extra, skipping
+signals that already have one, one seed step each) and
+`scrambleProspectiveSquares` (Node scramble — clears every ordinary
+prospective square, keeping charged squares and extras in place, then
+redraws one-at-a-time in signal order: 1 draw anchored on the charged square
+or the extra, or 2 draws — first uniform over the widened pool, second
+weighted — for an Open node left with nothing). A small helper
+`everyNodeHasExtra` answers Step 4's availability check. `ply.ts`'s
+`applyMove` construction of `node-claimed` now always sets
+`discardedSquares` (no conditional spread).
+
+Updated every reader of the renamed/changed fields:
+`src/rules/steal.test.ts` (rewrote the `nodeAnchor` describe block for the
+array return and the new two-anchor and extra-anchor cases; renamed
+`discardedSquare` assertions to `discardedSquares`; added new cases for
+claiming and leaving a node with an extra, `everyNodeHasExtra`,
+`addExtraProspectiveSquares` and `scrambleProspectiveSquares`, including
+determinism, one-seed-step-per-square and "no more than one extra per node"
+checks); `src/rules/nodePlacement.test.ts` (every bare `anchor,` call
+argument to `drawStealProspectiveSquare`/`drawStealOpeningProspectiveSquare`
+wrapped as `[anchor],`, mechanically, no behaviour change since a
+single-element array weights identically to before); `src/rules/ply.test.ts`
+and `src/board/announcements.test.ts` and `src/board/boardAnimations.test.ts`
+(literal `node-claimed` effect fixtures updated to the new field name and
+shape, adding `discardedSquares: []` where nothing was discarded, since the
+field is no longer optional); `src/rules/fullGame.test.ts`'s
+`assertStealNodeInvariants` relaxed per the plan (two squares, or three with
+exactly one extra; at most one charged; at most one extra; an extra is
+always prospective) — nothing in play yet produces an extra, so it still
+sees two squares everywhere, unchanged behaviour.
+
+No deviations from the plan.
+
+Full `npm test` — **81 test files, 1721 tests, all green** (up from 1701,
+the 20 new cases the plan's test list asked for); `npm run typecheck`, `npm
+run lint` and `npm run format:check` all pass (prettier reformatted
+`steal.test.ts` after the new cases were added).
 
 Teach steal's node model (`src/rules/steal.ts`, `src/rules/gameState.ts`,
 `src/rules/nodePlacement.ts`, `src/rules/ply.ts` for the effect's field) about

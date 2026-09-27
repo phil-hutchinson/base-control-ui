@@ -1156,7 +1156,7 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       side: "green",
       signal: 0,
       square: squareFromName("H8"),
-      discardedSquare: squareFromName("L8"),
+      discardedSquares: [squareFromName("L8")],
       newProspective: expectedNewProspective,
     });
   });
@@ -1198,7 +1198,7 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       shipId: "green-1",
       side: "green",
     });
-    expect(claimEffect?.discardedSquare).toBeUndefined();
+    expect(claimEffect?.discardedSquares).toEqual([]);
 
     // Green's ship is not trapped: it is standing on an ordinary square,
     // free to move on its next ply, exactly like any other ship.
@@ -1356,7 +1356,7 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       side: "green",
       signal: 1,
       square: squareFromName("H8"),
-      discardedSquare: squareFromName("M13"),
+      discardedSquares: [squareFromName("M13")],
       newProspective: claimed.newProspective,
     });
     expect(result.effects.indexOf(abandonEffect!)).toBeLessThan(

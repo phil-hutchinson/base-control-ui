@@ -107,13 +107,15 @@ export interface StrandedShip {
  * claim takes the node from an opponent or relocates the claiming side's own
  * one — and, if a ship of either side is still standing there once the move
  * has resolved, `strandedShip` names it: that ship is left on an ordinary
- * square, free to move next turn. `discardedSquare` is the node's other
- * prospective square, present only when the node was Open. `newProspective`
- * is the fresh prospective square drawn for the node's signal (steal.md §6).
- * Always after any `NodeAbandonedEffect` the same move also raises — leaving
- * comes before claiming when one move does both (steal.md §5) — and before
- * any `PlanetBonusClaimedEffect`, since a prospective square is never a
- * planet and the two never fire on the same landing.
+ * square, free to move next turn. `discardedSquares` is every other
+ * prospective square the node had — empty for a Held node with no extra, one
+ * square for an Open node with no extra or a Held node with one, two squares
+ * for an Open node with an extra (steal.md §10). `newProspective` is the
+ * fresh prospective square drawn for the node's signal (steal.md §6). Always
+ * after any `NodeAbandonedEffect` the same move also raises — leaving comes
+ * before claiming when one move does both (steal.md §5) — and before any
+ * `PlanetBonusClaimedEffect`, since a prospective square is never a planet
+ * and the two never fire on the same landing.
  */
 export interface NodeClaimedEffect {
   readonly type: "node-claimed";
@@ -123,7 +125,7 @@ export interface NodeClaimedEffect {
   readonly square: Square;
   readonly releasedSquare?: Square;
   readonly strandedShip?: StrandedShip;
-  readonly discardedSquare?: Square;
+  readonly discardedSquares: readonly Square[];
   readonly newProspective: Square;
 }
 
@@ -653,9 +655,7 @@ export function applyMove(
               },
             }
           : {}),
-        ...(claimed.discardedSquare !== undefined
-          ? { discardedSquare: claimed.discardedSquare }
-          : {}),
+        discardedSquares: claimed.discardedSquares,
         newProspective: claimed.newProspective,
       });
     }

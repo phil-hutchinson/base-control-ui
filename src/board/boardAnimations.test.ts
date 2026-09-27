@@ -180,6 +180,7 @@ describe("boardAnimations", () => {
       side: "green",
       signal: 2,
       square: squareAt("K", 11),
+      discardedSquares: [],
       newProspective: squareAt("D", 4),
     };
     const event: MovedEvent = {
