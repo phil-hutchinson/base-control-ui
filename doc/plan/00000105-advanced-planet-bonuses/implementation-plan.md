@@ -1809,7 +1809,7 @@ green. The owner checks the look in Step 15.
 
 ### Step 15 — The owner re-checks
 
-Status: pending
+Status: committed
 
 Notes: At the first check, the owner asked for about 15% more space between
 the cell's sections and 2.5 times the gap before the clocks. Done inline:
