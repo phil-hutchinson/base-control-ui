@@ -31,7 +31,7 @@
 
 import { ALL_SQUARES, type Square, squareName } from "./board";
 import type { Side } from "./fleet";
-import type { NodeStatus } from "./gameState";
+import type { GameState, NodeStatus } from "./gameState";
 import type { ChargedNodeCount } from "./nodes";
 import {
   drawNodeSquare,
@@ -79,6 +79,21 @@ export function sideMatchedToSignal(
     return "green";
   }
   return undefined;
+}
+
+/**
+ * The side `signal` is matched to in `state`'s game, or `undefined` when
+ * player-matching nodes (steal.md §9) is off or the signal is matched to
+ * neither — the one place that decides whether a node is drawn in a
+ * player's colour, so the board and the score pips cannot disagree.
+ */
+export function matchedSideForSignal(
+  state: Pick<GameState, "playerMatching" | "chargedNodeCount">,
+  signal: NodeSignal,
+): Side | undefined {
+  return state.playerMatching === "off"
+    ? undefined
+    : sideMatchedToSignal(signal, state.chargedNodeCount);
 }
 
 /** One node's status under steal: always level 0, always carrying its signal. */

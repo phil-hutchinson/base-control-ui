@@ -510,6 +510,27 @@ describe("ScoreDisplay", () => {
       ]);
     });
 
+    it("leads DOUBLE's row with the opponent's node when the own node is not held", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("red", 3),
+          ship("red-other", "red", "E5"),
+          ship("red-theirs", "red", "K11"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "double",
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="red" displayedTotal={0} />,
+      );
+
+      expect(litFills(container)).toEqual([
+        PLAYER_NODE_COLORS.green.core,
+        SIGNAL_COLORS[0].core,
+      ]);
+    });
+
     it("orders REQUIRED's pips own node once, then the opponent's, then the rest", () => {
       const state = buildStealState({
         ships: [

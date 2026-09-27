@@ -8,6 +8,11 @@ import { MAX_POWER, type PowerLevel } from "./power";
 /** The two sides (rules.md §4). */
 export type Side = "green" | "red";
 
+/** The side opposing `side`. */
+export function otherSide(side: Side): Side {
+  return side === "green" ? "red" : "green";
+}
+
 /** A ship's stable identity, distinct from the square it currently occupies. */
 export type ShipId = string;
 

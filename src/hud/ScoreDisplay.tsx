@@ -12,9 +12,9 @@ import {
   energyForNodesHeld,
   turnCollection,
 } from "../rules/energy";
-import type { Side } from "../rules/fleet";
+import { otherSide, type Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
-import { matchedSignalForSide, sideMatchedToSignal } from "../rules/steal";
+import { matchedSideForSignal, matchedSignalForSide } from "../rules/steal";
 import "./ScoreDisplay.css";
 
 /** The most a turn can pay is whatever the chosen setting pays for the
@@ -29,8 +29,6 @@ const SIDE_NAME: Readonly<Record<Side, string>> = {
   green: "Green",
   red: "Red",
 };
-
-const OPPONENT: Readonly<Record<Side, Side>> = { green: "red", red: "green" };
 
 /**
  * The colour each lit pip is filled with, in row order: the board colour of
@@ -49,17 +47,13 @@ function pipFills(
     if (signal === undefined) {
       return undefined;
     }
-    const matchedSide =
-      state.playerMatching === "off"
-        ? undefined
-        : sideMatchedToSignal(signal, state.chargedNodeCount);
-    return colorsForSignal(signal, matchedSide).core;
+    return colorsForSignal(signal, matchedSideForSignal(state, signal)).core;
   };
   if (state.playerMatching === "off") {
     return collection.heldSquares.map(fillFor);
   }
   const opponentSignal = matchedSignalForSide(
-    OPPONENT[side],
+    otherSide(side),
     state.chargedNodeCount,
   );
   const opponentSquare = collection.heldSquares.find(
