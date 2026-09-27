@@ -19,7 +19,7 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the seven headed sections in the story's order", () => {
+  it("has the eight headed sections in the story's order", () => {
     expect(GUIDE_SECTIONS.map((section) => section.heading)).toEqual([
       "MOVEMENT",
       "REFUELING",
@@ -28,6 +28,7 @@ describe("guideCopy", () => {
       "STEALING NODES",
       "PLAYER-MATCHING NODES",
       "PLANET BONUS",
+      "ADVANCED PLANET BONUSES",
     ]);
   });
 
@@ -101,7 +102,7 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the planet bonus paragraph, last in the story's order", () => {
+  it("has the planet bonus paragraph, before advanced planet bonuses", () => {
     expect(GUIDE_SECTIONS[6].paragraph).toBe(
       "When the planet bonus option is on, each player is given three " +
         "planets that also pay them points — two or three, whichever was " +
@@ -109,6 +110,21 @@ describe("guideCopy", () => {
         "Each planet only pays a player once, however often their " +
         "spaceships return to it.",
     );
+  });
+
+  it("has the advanced planet bonuses paragraph, last in the story's order, scoped to Steal", () => {
+    expect(GUIDE_SECTIONS[7].heading).toBe("ADVANCED PLANET BONUSES");
+    expect(GUIDE_SECTIONS[7].paragraph).toBe(
+      "Under the Steal playstyle, you can choose Advanced planet bonuses " +
+        "instead. Two bonuses always stand on two planets, shown above " +
+        "the clocks, and either player can claim one by landing a " +
+        "spaceship there. Taking a bonus removes it at once: the bonus " +
+        "left standing changes into something else, and a new bonus " +
+        "appears on another planet. A bonus can be points in three " +
+        "sizes, fuel for every one of your spaceships, an extra waiting " +
+        "square for every node, or every node's waiting squares redrawn.",
+    );
+    expect(GUIDE_SECTIONS[7].paragraph).toContain("Steal");
   });
 
   it("has the three node playstyle setting lines, verbatim", () => {

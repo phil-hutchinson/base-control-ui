@@ -1211,7 +1211,46 @@ owner in Step 10, not here.
 
 ### Step 7 — The Quick Guide's ADVANCED PLANET BONUSES section
 
-Status: pending
+Status: committed
+
+Notes: Added `"advancedPlanetBonus"` to `GuideSectionId` and a `GUIDE_SECTIONS`
+entry in `src/guide/guideCopy.ts`, immediately after `planetBonus`, with a
+drafted paragraph (guide vocabulary — points, fuel, spaceships) covering: only
+under Steal; two bonuses always on two planets shown above the clocks; either
+player claims one by landing there; the survivor changes kind and a new bonus
+appears; the four effects in one sentence each. The module header notes the
+paragraph was drafted for story 105 and awaits the owner's review (Step 10).
+Added `AdvancedPlanetBonusDiagram` to `src/guide/guideDiagrams.tsx`: two
+`"advancedBonus"` `GuideDiagramCell`s — a new cell kind added to
+`GuideDiagram.tsx`, dispatching to the existing `AdvancedBonusCell` (D13, built
+in Step 6 with this reuse already in mind, per its own header comment) — a
+Large points bonus beside a Node scramble bonus, at the app's own default
+settings (`DEFAULT_CHARGED_NODE_COUNT`, `DEFAULT_PLAYER_MATCHING`,
+`DEFAULT_SCORING`) so the `+N` amount comes from the point lookup rather than
+being typed in, and so gold/silver/blue since player-matching is off by
+default. Registered the diagram in `GuideScreen.tsx`'s `SECTION_DIAGRAMS`.
+Updated every "seven headed/sections" comment (`guideCopy.ts`, `GuideScreen.tsx`)
+to "eight". Left the STEALING NODES paragraph's "always shows two squares"
+untouched, as the plan directs, for the owner's Step 10 attention.
+
+Updated tests: `guideCopy.test.ts` (the eight-heading list; the advanced
+section's paragraph verbatim, checked to contain "Steal"); `GuideScreen.test.tsx`
+(eight headings/paragraphs wording; ten diagrams, not nine; PLANET BONUS's
+"last in the story's order" assertion moved to the new section, which also
+checks it immediately follows PLANET BONUS and renders two
+`.advanced-bonus-cell`s, one `.points-symbol` and one `.node-scramble-symbol`);
+`guideDiagrams.test.tsx` (a new `AdvancedPlanetBonusDiagram` describe block
+checking cell count, the `+N` text against `advancedBonusPoints` and the
+scramble symbol's three stroke colours against `SIGNAL_COLORS`). No changes
+were needed to `GuideDiagram.test.tsx`, `guideCopy.ts`'s "seven"→"eight" in
+`GuideSectionId`'s doc comments, or `App.test.tsx` (it counts option groups on
+the start screen, not guide sections). No deviations from the plan.
+
+Full `npm test` — **84 test files, 1796 tests, all green** (up from 1793,
+Step 6's count: one new case each in `guideCopy.test.ts`, `GuideScreen.test.tsx`
+and `guideDiagrams.test.tsx`); `npm run typecheck`, `npm run lint` and `npm run
+format:check` all pass (prettier reformatted `guideDiagrams.test.tsx` and
+`GuideScreen.test.tsx` after the new cases were added).
 
 Add a new headed section, **ADVANCED PLANET BONUSES**, to the Quick Guide,
 immediately after PLANET BONUS: a `GuideSectionId`, a `GUIDE_SECTIONS`

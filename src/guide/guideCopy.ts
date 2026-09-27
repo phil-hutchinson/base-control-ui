@@ -6,7 +6,9 @@
 // The STEALING NODES section's paragraph describes the steal playstyle
 // (steal.md). The PLAYER-MATCHING NODES section's paragraph describes the
 // player-matching nodes setting (steal.md §9), approved as drafted by the
-// owner.
+// owner. The ADVANCED PLANET BONUSES section's paragraph describes the
+// advanced planet bonus setting (steal.md §10); it was drafted for story 105
+// (doc/plan/00000105-advanced-planet-bonuses) and awaits the owner's review.
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //
@@ -27,7 +29,7 @@ export const GUIDE_INTRO_PARAGRAPH =
   "extra node under bonus scoring.";
 
 /**
- * Identifies one of the guide's seven headed sections, so a caller can pair
+ * Identifies one of the guide's eight headed sections, so a caller can pair
  * a section with its diagram without relying on array position.
  */
 export type GuideSectionId =
@@ -37,7 +39,8 @@ export type GuideSectionId =
   | "nodeSelection"
   | "stealingNodes"
   | "playerMatchingNodes"
-  | "planetBonus";
+  | "planetBonus"
+  | "advancedPlanetBonus";
 
 /**
  * One emphasised label and its sentence, under NEW CHARGED NODE SELECTION —
@@ -49,7 +52,7 @@ export interface GuideSettingLine {
 }
 
 /**
- * One of the guide's seven headed sections: a heading and its paragraph.
+ * One of the guide's eight headed sections: a heading and its paragraph.
  * `settingLines` is optional and, at present, carried by nodeSelection
  * alone: an ordered list of setting lines rendered between the section's
  * diagram and its second one.
@@ -62,9 +65,10 @@ export interface GuideSection {
 }
 
 /**
- * The seven headed sections, in the order the guide reads: movement,
+ * The eight headed sections, in the order the guide reads: movement,
  * refuelling, the node lifecycle, new charged node selection, stealing
- * nodes, player-matching nodes, and the planet bonus.
+ * nodes, player-matching nodes, the planet bonus, and advanced planet
+ * bonuses.
  */
 export const GUIDE_SECTIONS: readonly GuideSection[] = [
   {
@@ -160,5 +164,18 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
       "chosen — the first time one of their spaceships lands there. Each " +
       "planet only pays a player once, however often their spaceships " +
       "return to it.",
+  },
+  {
+    id: "advancedPlanetBonus",
+    heading: "ADVANCED PLANET BONUSES",
+    paragraph:
+      "Under the Steal playstyle, you can choose Advanced planet bonuses " +
+      "instead. Two bonuses always stand on two planets, shown above the " +
+      "clocks, and either player can claim one by landing a spaceship " +
+      "there. Taking a bonus removes it at once: the bonus left standing " +
+      "changes into something else, and a new bonus appears on another " +
+      "planet. A bonus can be points in three sizes, fuel for every one " +
+      "of your spaceships, an extra waiting square for every node, or " +
+      "every node's waiting squares redrawn.",
   },
 ];

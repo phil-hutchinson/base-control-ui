@@ -13,7 +13,7 @@ import { GuideScreen } from "./GuideScreen";
 afterEach(cleanup);
 
 describe("GuideScreen", () => {
-  it("shows the title and the seven headings in the story's order", () => {
+  it("shows the title and the eight headings in the story's order", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     expect(
@@ -26,7 +26,7 @@ describe("GuideScreen", () => {
     );
   });
 
-  it("renders all seven paragraphs from the copy module", () => {
+  it("renders all eight paragraphs from the copy module", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     expect(screen.getByText(GUIDE_INTRO_PARAGRAPH)).toBeInTheDocument();
@@ -35,10 +35,10 @@ describe("GuideScreen", () => {
     }
   });
 
-  it("renders nine diagrams: the scoring diagram, one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
+  it("renders ten diagrams: the scoring diagram, one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
     const { container } = render(<GuideScreen onBack={vi.fn()} />);
 
-    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(9);
+    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(10);
   });
 
   it("renders the node playstyle setting lines and the rotator square after them, in order", () => {
@@ -120,16 +120,13 @@ describe("GuideScreen", () => {
     expect(section?.querySelectorAll(".ship-model--red")).toHaveLength(0);
   });
 
-  it("pairs PLANET BONUS, last in the story's order, with a diagram of three planets and one checkmark", () => {
+  it("pairs PLANET BONUS, after PLAYER-MATCHING NODES, with a diagram of three planets and one checkmark", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     const heading = screen.getByRole("heading", {
       level: 2,
       name: "PLANET BONUS",
     });
-    expect(GUIDE_SECTIONS[GUIDE_SECTIONS.length - 1].heading).toBe(
-      "PLANET BONUS",
-    );
     const section = heading.closest("section");
     expect(section).not.toBeNull();
     expect(section?.querySelectorAll(".planet")).toHaveLength(3);
@@ -139,6 +136,30 @@ describe("GuideScreen", () => {
     expect(
       section?.querySelectorAll(".planet-bonus-cell__badge--amount"),
     ).toHaveLength(0);
+  });
+
+  it("pairs ADVANCED PLANET BONUSES, last in the story's order, with a diagram of two bonuses", () => {
+    render(<GuideScreen onBack={vi.fn()} />);
+
+    const headings = screen
+      .getAllByRole("heading", { level: 2 })
+      .map((heading) => heading.textContent);
+    const planetBonusIndex = headings.indexOf("PLANET BONUS");
+    const advancedIndex = headings.indexOf("ADVANCED PLANET BONUSES");
+    expect(advancedIndex).toBe(planetBonusIndex + 1);
+    expect(GUIDE_SECTIONS[GUIDE_SECTIONS.length - 1].heading).toBe(
+      "ADVANCED PLANET BONUSES",
+    );
+
+    const heading = screen.getByRole("heading", {
+      level: 2,
+      name: "ADVANCED PLANET BONUSES",
+    });
+    const section = heading.closest("section");
+    expect(section).not.toBeNull();
+    expect(section?.querySelectorAll(".advanced-bonus-cell")).toHaveLength(2);
+    expect(section?.querySelectorAll(".points-symbol")).toHaveLength(1);
+    expect(section?.querySelectorAll(".node-scramble-symbol")).toHaveLength(1);
   });
 
   it("renders two Back buttons, one before the title and one after the last diagram, each calling the callback once", async () => {
