@@ -209,8 +209,11 @@
    the window's long axis a second `P + g`, so an unbounded `P` would push
    the board under `--board-floor` on an ordinary window as it grew with the
    type it carries. A pip row can now be as long as five (a six-ship fleet
-   against a five-node board); each pip now sits in a column over its own
-   number (`ScoreDisplay.css`), and five of those columns draw
+   against a five-node board) — six under DOUBLE (steal.md §9), whose own
+   node counts twice, but that row shrinks to fit no wider than the five-pip
+   row already did (`ScoreDisplay.css`), so it never grows the column below.
+   Each pip sits in a column over its own number (`ScoreDisplay.css`), and
+   five of those columns draw
    `5 x 0.66em + 4 x 0.35em = 4.7em ≈ 0.82P` across — wider than the title or
    the turn indicator's longest wording, at roughly `0.72P` each, so the pip
    row stays the widest thing in the column, a little more so than the

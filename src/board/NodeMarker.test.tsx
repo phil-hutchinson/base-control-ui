@@ -11,7 +11,7 @@ import type {
   NodeChargeAnimation,
 } from "./boardAnimations";
 import { NodeMarker } from "./NodeMarker";
-import { SIGNAL_COLORS } from "./squareArt";
+import { PLAYER_NODE_COLORS, SIGNAL_COLORS } from "./squareArt";
 
 afterEach(cleanup);
 
@@ -315,6 +315,28 @@ describe("NodeMarker", () => {
         expect(circle).toHaveAttribute("stroke", SIGNAL_COLORS[signal].core);
       }
     });
+
+    it.each(["green", "red"] as const)(
+      "draws its rings in %s's own colour instead of the signal's when matched to %s (steal.md §9)",
+      (matchedSide) => {
+        const { container } = render(
+          <NodeMarker
+            state="prospective"
+            squareName={SQUARE_NAME}
+            signal={0}
+            matchedSide={matchedSide}
+          />,
+        );
+
+        const circles = container.querySelectorAll("circle");
+        for (const circle of circles) {
+          expect(circle).toHaveAttribute(
+            "stroke",
+            PLAYER_NODE_COLORS[matchedSide].core,
+          );
+        }
+      },
+    );
   });
 
   describe("a charged node's steal ball (steal.md §2)", () => {
@@ -376,6 +398,26 @@ describe("NodeMarker", () => {
       const circle = container.querySelector("circle");
       expect(circle).toHaveAttribute("r", EXPECTED_ARTWORK.charged.radius);
     });
+
+    it.each(["green", "red"] as const)(
+      "draws its ball in %s's own colours instead of the signal's when matched to %s (steal.md §9)",
+      (matchedSide) => {
+        const { container } = render(
+          <NodeMarker
+            state="charged"
+            squareName={SQUARE_NAME}
+            signal={0}
+            matchedSide={matchedSide}
+          />,
+        );
+
+        const { core, rim } = PLAYER_NODE_COLORS[matchedSide];
+        const stops = container.querySelectorAll("stop");
+        expect(stops[0]).toHaveAttribute("stop-color", core);
+        expect(stops[1]).toHaveAttribute("stop-color", core);
+        expect(stops[2]).toHaveAttribute("stop-color", rim);
+      },
+    );
   });
 
   describe("the charge animation", () => {
@@ -459,6 +501,31 @@ describe("NodeMarker", () => {
         expect(
           container.querySelector(".node-marker__charge-reveal"),
         ).toHaveAttribute("mask", `url(#${mask?.getAttribute("id")})`);
+      },
+    );
+
+    it.each(["green", "red"] as const)(
+      "draws the outgoing rings and the revealed ball in %s's own colours for a matched claim (steal.md §9)",
+      (matchedSide) => {
+        const { container } = render(
+          <NodeMarker
+            state="charged"
+            squareName={SQUARE_NAME}
+            signal={0}
+            matchedSide={matchedSide}
+            chargeAnimation={{ type: "node-charge", signal: 0, runId: 7 }}
+          />,
+        );
+
+        const { core, rim } = PLAYER_NODE_COLORS[matchedSide];
+        const rings = container.querySelectorAll(".node-marker__outgoing-ring");
+        for (const ring of rings) {
+          expect(ring).toHaveAttribute("stroke", core);
+        }
+
+        const stops = container.querySelectorAll("stop");
+        expect(stops[0]).toHaveAttribute("stop-color", core);
+        expect(stops[2]).toHaveAttribute("stop-color", rim);
       },
     );
 

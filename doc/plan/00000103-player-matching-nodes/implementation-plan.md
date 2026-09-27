@@ -705,7 +705,43 @@ screen is checked by hand at Step 6.)
 
 ### Step 5 — The matched nodes' colours and the pips
 
-Status: pending
+Status: committed
+
+Notes: Implemented per D7 and D8. `src/board/squareArt.ts` gained
+`PLAYER_NODE_COLORS` (green core `#3FA66B`/rim `#C2E3D0`, red core
+`#C8503F`/rim `#EDC7C2` — lighter tints of the app's own player colours, at
+roughly the same core-to-rim mix ratio gold's own wheat rim uses) and
+`colorsForSignal(signal, matchedSide?)`. `NodeMarker.tsx` gained an optional
+`matchedSide` prop and now reads every colour — the charged ball, the
+prospective rings and the charge animation's outgoing rings — through that
+helper instead of `SIGNAL_COLORS` directly; `BoardSquare.tsx` passes the prop
+through unchanged; `Board.tsx` computes each node square's matched side with
+`sideMatchedToSignal` only when `state.playerMatching !== "off"`. For the
+pips, `ScoreDisplay.tsx` now reads `turnCollection` (Step 3): the row is
+`min(ships, chargedNodeCount)` plus one under DOUBLE; lit pips are the
+counted nodes; REQUIRED's withheld turn draws an X (a new
+`score-display__pip--x` modifier, a centred "×" glyph in the dim text
+colour) over each held node's pip instead of lighting it, with no value
+highlighted. A row longer than five (DOUBLE's only route there) carries
+`score-display__pips--long`, shrinking its font-size by a factor of
+`4.7 / 5.71 ≈ 0.823` in both orientations, so it never exceeds the five-pip
+row's width; `App.css`'s landscape comment was updated to describe it.
+Added the "From story 103" entry to the accessibility ledger (D11) for the
+colour-alone matched node and the decorative, sometimes-silent X pips. Tests
+added: `NodeMarker.test.tsx` (matched-side colours for the prospective
+rings, the charged ball and the charge animation, for both sides);
+`Board.test.tsx` (a new "player-matching nodes' colours" describe block
+covering the five/four/three-node colour tables under DOUBLE, OFF's
+unchanged colours on the same board, and a non-steal game showing no player
+colour); `ScoreDisplay.test.tsx` (a new "player-matching nodes" describe
+block covering DOUBLE's lengthened and shrunk row with the doubled amount
+highlighted, DOUBLE holding nothing, REQUIRED's X pips withheld, and
+REQUIRED lit and highlighted once the own node is held). No deviation from
+the plan; the rim colours, the X's look (a glyph, in the dim text colour)
+and the six-pip shrink factor are the implementer's choice the plan left
+open, for the owner to adjust at Step 6's gate. `npm test` (81 files, 1705
+tests, up from 1690), `npm run typecheck`, `npm run lint` and
+`npm run format:check` all clean.
 
 Two presentational changes, both driven by state Step 3 already computes.
 

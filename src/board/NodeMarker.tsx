@@ -33,11 +33,12 @@ import type { CSSProperties } from "react";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
 import type { NodeSignal } from "../rules/steal";
+import type { Side } from "../rules/fleet";
 import type {
   NodeBurnoutAnimation,
   NodeChargeAnimation,
 } from "./boardAnimations";
-import { INACTIVE_RING_COLOR, SIGNAL_COLORS } from "./squareArt";
+import { INACTIVE_RING_COLOR, colorsForSignal } from "./squareArt";
 import "./NodeMarker.css";
 
 interface NodeMarkerProps {
@@ -67,6 +68,14 @@ interface NodeMarkerProps {
    * colour when absent.
    */
   readonly signal?: NodeSignal;
+  /**
+   * The side `signal` is matched to under player-matching nodes (steal.md
+   * §9), if any. When given, every colour this marker would otherwise draw
+   * from `signal` — the charged ball, the prospective rings, and the charge
+   * animation's outgoing rings — is drawn in this side's own colour instead
+   * (`colorsForSignal` in `squareArt.ts`). Ignored when `signal` is absent.
+   */
+  readonly matchedSide?: Side;
   /**
    * Present while this square's node is playing its inactive-to-charged
    * animation (`boardAnimations.ts`). Ignored unless `state` is `"charged"`.
@@ -153,9 +162,10 @@ function chargedShape(
 /** Radii, gradient stops, colours and opacities for the two clocked states, taken from
  * doc/plan/00000023-update-node-visual/node-artwork.md exactly as specified
  * there, except that a charged node carrying a steal signal (steal.md §2)
- * draws the same shape in its signal's colours instead of gold, fixed at its
- * start-of-cycle offset regardless of `cyclePosition` — a steal node has no
- * countdown for a middle stop to travel towards (steal.md §2). One artwork
+ * draws the same shape in its signal's colours instead of gold — or, when
+ * that signal is matched to a side (steal.md §9), that side's own colours —
+ * fixed at its start-of-cycle offset regardless of `cyclePosition` — a steal
+ * node has no countdown for a middle stop to travel towards (steal.md §2). One artwork
  * per clocked state; the exhaustive switch has no default, so a new clocked
  * state is a compile error rather than a silent gap. Inactive and
  * prospective are drawn separately, as rings, by `NodeMarker` itself.
@@ -164,9 +174,10 @@ function nodeArtwork(
   state: "charged" | "depleted",
   cyclePosition: number | undefined,
   signal?: NodeSignal,
+  matchedSide?: Side,
 ): NodeStateArtwork {
   if (state === "charged" && signal !== undefined) {
-    const { core, rim } = SIGNAL_COLORS[signal];
+    const { core, rim } = colorsForSignal(signal, matchedSide);
     return chargedShape(core, rim, CHARGED_START_OFFSET_PERCENT);
   }
   switch (state) {
@@ -206,6 +217,7 @@ export function NodeMarker({
   cyclePosition,
   priority,
   signal,
+  matchedSide,
   chargeAnimation,
   burnoutAnimation,
 }: NodeMarkerProps) {
@@ -242,7 +254,9 @@ export function NodeMarker({
     // signal) falls back to the ordinary ring colour rather than drawing
     // nothing.
     const ringColor =
-      signal === undefined ? INACTIVE_RING_COLOR : SIGNAL_COLORS[signal].core;
+      signal === undefined
+        ? INACTIVE_RING_COLOR
+        : colorsForSignal(signal, matchedSide).core;
     return (
       <svg
         className={`node-marker node-marker--${state}`}
@@ -264,7 +278,12 @@ export function NodeMarker({
     );
   }
 
-  const { radius, stops } = nodeArtwork(state, cyclePosition, signal);
+  const { radius, stops } = nodeArtwork(
+    state,
+    cyclePosition,
+    signal,
+    matchedSide,
+  );
   // SVG ids are document-global, and several node markers are drawn into
   // one document at once, so the gradient id carries the square's own name.
   const gradientId = `node-${squareName}-fill`;
@@ -286,7 +305,7 @@ export function NodeMarker({
     const outgoingRingColor =
       chargeAnimation.signal === undefined
         ? INACTIVE_RING_COLOR
-        : SIGNAL_COLORS[chargeAnimation.signal].core;
+        : colorsForSignal(chargeAnimation.signal, matchedSide).core;
     return (
       <svg
         key={chargeAnimation.runId}
