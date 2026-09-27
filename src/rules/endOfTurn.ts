@@ -53,7 +53,7 @@ import { squareName } from "./board";
 import { isPlanet } from "./planets";
 import { type NodeChargedEffect, runCharging } from "./charging";
 import { turnCollection } from "./energy";
-import type { Side, ShipId } from "./fleet";
+import { otherSide, type Side, type ShipId } from "./fleet";
 import {
   type GameState,
   type NodeStatus,
@@ -72,10 +72,6 @@ import { gainPower, MAX_POWER, type PowerLevel } from "./power";
 import { spendPly, TRAP_COUNTDOWN_PLIES } from "./countdown";
 import { reliefSquare } from "./relief";
 import { placeRotators } from "./rotators";
-
-function otherSide(side: Side): Side {
-  return side === "green" ? "red" : "green";
-}
 
 /**
  * A ship standing on a planet gained power at the end of its side's turn

@@ -36,7 +36,7 @@ import {
 import { isPlanet } from "./planets";
 import { planetBonusPoints } from "./planetBonus";
 import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
-import type { Side, ShipId } from "./fleet";
+import { otherSide, type Side, type ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type GameState, type Ship, shipsBySquare } from "./gameState";
 import {
@@ -52,10 +52,6 @@ import {
 } from "./nodeQueue";
 import { type PowerLevel, spendPower } from "./power";
 import { abandonNode, claimNode, type NodeSignal } from "./steal";
-
-function otherSide(side: Side): Side {
-  return side === "green" ? "red" : "green";
-}
 
 /** Why the side to move's ply passed instead of moving or attacking (rules.md §5). */
 export type PassReason = "cannot-move-or-attack" | "out-of-time";

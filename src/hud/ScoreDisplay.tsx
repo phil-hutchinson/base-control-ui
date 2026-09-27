@@ -3,10 +3,18 @@
 // true total and the count reach assistive technology through a visually
 // hidden sentence from `announcements.ts`.
 
+import type { CSSProperties } from "react";
 import { scoreSentence } from "../board/announcements";
-import { energyForNodesHeld, turnCollection } from "../rules/energy";
-import type { Side } from "../rules/fleet";
+import { colorsForSignal } from "../board/squareArt";
+import { type Square, squareName } from "../rules/board";
+import {
+  type TurnCollection,
+  energyForNodesHeld,
+  turnCollection,
+} from "../rules/energy";
+import { otherSide, type Side } from "../rules/fleet";
 import type { GameState } from "../rules/gameState";
+import { matchedSideForSignal, matchedSignalForSide } from "../rules/steal";
 import "./ScoreDisplay.css";
 
 /** The most a turn can pay is whatever the chosen setting pays for the
@@ -21,6 +29,53 @@ const SIDE_NAME: Readonly<Record<Side, string>> = {
   green: "Green",
   red: "Red",
 };
+
+/**
+ * The colour each lit pip is filled with, or each X pip crossed in, in row
+ * order: the board colour of
+ * the node it stands for (`colorsForSignal`, as `NodeMarker` draws it), or
+ * `undefined` for a node with no signal, which the stylesheet fills gold.
+ * With player-matching nodes on, the row runs own node, opponent's node, then
+ * the rest in board order, and under DOUBLE the own node fills two pips.
+ */
+function pipFills(
+  state: GameState,
+  side: Side,
+  collection: TurnCollection,
+): readonly (string | undefined)[] {
+  const fillFor = (square: Square): string | undefined => {
+    const signal = state.nodes[squareName(square)]?.signal;
+    if (signal === undefined) {
+      return undefined;
+    }
+    return colorsForSignal(signal, matchedSideForSignal(state, signal)).core;
+  };
+  if (state.playerMatching === "off") {
+    return collection.heldSquares.map(fillFor);
+  }
+  const opponentSignal = matchedSignalForSide(
+    otherSide(side),
+    state.chargedNodeCount,
+  );
+  const opponentSquare = collection.heldSquares.find(
+    (square) => state.nodes[squareName(square)]?.signal === opponentSignal,
+  );
+  const ownSquares =
+    collection.ownNodeSquare === undefined
+      ? []
+      : state.playerMatching === "double"
+        ? [collection.ownNodeSquare, collection.ownNodeSquare]
+        : [collection.ownNodeSquare];
+  const others = collection.heldSquares.filter(
+    (square) =>
+      square !== collection.ownNodeSquare && square !== opponentSquare,
+  );
+  return [
+    ...ownSquares,
+    ...(opponentSquare === undefined ? [] : [opponentSquare]),
+    ...others,
+  ].map(fillFor);
+}
 
 interface ScoreDisplayProps {
   readonly state: GameState;
@@ -55,6 +110,7 @@ export function ScoreDisplay({
   // draws an X instead, and no value is highlighted.
   const litCount = collection.withheld ? 0 : collection.countedNodes;
   const xCount = collection.withheld ? collection.heldSquares.length : 0;
+  const fills = pipFills(state, side, collection);
 
   return (
     <div className={`score-display score-display--${side}`}>
@@ -75,14 +131,19 @@ export function ScoreDisplay({
         {Array.from({ length: pipCount }, (_, index) => {
           const count = index + 1;
           let pipClassName = "score-display__pip";
+          let pipStyle: CSSProperties | undefined;
           if (index < xCount) {
             pipClassName += " score-display__pip--x";
           } else if (index < litCount) {
             pipClassName += " score-display__pip--lit";
           }
+          const fill = fills[index];
+          if (index < Math.max(xCount, litCount) && fill !== undefined) {
+            pipStyle = { "--pip-fill": fill } as CSSProperties;
+          }
           return (
             <span key={index} className="score-display__pip-column">
-              <span className={pipClassName} />
+              <span className={pipClassName} style={pipStyle} />
               <span
                 className={
                   count === litCount
