@@ -1811,6 +1811,15 @@ green. The owner checks the look in Step 15.
 
 Status: pending
 
+Notes: At the first check, the owner asked for about 15% more space between
+the cell's sections and 2.5 times the gap before the clocks. Done inline:
+- The symbol band's tuck is eased to 3.4cqw, leaving about 12.6cqw visible
+  between the planet and the symbol, up from about 11cqw.
+- The caption sits 5.75cqw below the band (it was 5cqw).
+- The portrait height factor is now 1.92.
+- In landscape, `.app__clocks`'s gap is 0.35 × `--region-extent`. Portrait
+  keeps 0.14, because there the gap comes out of the panel's own height.
+
 No code, unless the owner turns up a defect. If so, fix it here and record
 it in Notes.
 

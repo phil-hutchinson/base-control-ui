@@ -36,14 +36,15 @@
    kinds they show, and a short symbol such as `+N` or the fuel bar gets
    air around it instead of pulling the caption up. The planet artwork
    leaves about a sixth of its square empty below the body, and the small
-   negative top margin takes up part of that. */
+   negative top margin takes up part of that, leaving about 12.6cqw of
+   visible space between the planet and the symbol. */
 .advanced-bonus-cell__symbol {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 70%;
   aspect-ratio: 1;
-  margin-top: -5cqw;
+  margin-top: -3.4cqw;
   flex: 0 0 auto;
 }
 
@@ -57,7 +58,7 @@
   font-weight: 700;
   font-size: 17cqw;
   line-height: 1.1;
-  margin-top: 5cqw;
+  margin-top: 5.75cqw;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-bright);

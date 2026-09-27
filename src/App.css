@@ -258,6 +258,14 @@
     width: var(--region-extent);
   }
 
+  .app__clocks {
+    /* Landscape leaves the column's height to its content, so a wide gap
+       costs nothing: it sets the bonus panel well apart from the clocks.
+       Portrait keeps the narrower base gap, because there the gap comes out
+       of the panel's own height budget. */
+    gap: calc(var(--region-extent) * 0.35);
+  }
+
   .app__title {
     /* The portrait `clamp(1.5rem, 4vw, 3.5rem)` grows with the window's
        width and would overrun the fixed-width column; sized as a fraction
