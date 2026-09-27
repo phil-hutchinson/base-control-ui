@@ -1,9 +1,24 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import {
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+} from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { planetArrangement, planetForSquare } from "../board/planetPlacement";
-import { startingGameState, type BonusPlanetEntry } from "../rules/gameState";
+import type { Square } from "../rules/board";
+import {
+  advancedBonusPoints,
+  type AdvancedBonusKind,
+} from "../rules/advancedBonus";
+import {
+  startingGameState,
+  type BonusPlanetEntry,
+  type GameState,
+} from "../rules/gameState";
+import { PLANETS } from "../rules/planets";
 import { PlanetBonusPanel } from "./PlanetBonusPanel";
 
 afterEach(cleanup);
@@ -19,6 +34,21 @@ function rowUseHrefs(container: HTMLElement, rowClass: string): string[] {
   return Array.from(row.querySelectorAll(".planet > use"), (use) =>
     use.getAttribute("href"),
   ).filter((href): href is string => href !== null);
+}
+
+/**
+ * jsdom has no `PointerEvent` constructor, so `fireEvent.pointerEnter`'s
+ * `init` object is silently dropped by the plain `Event` it falls back to.
+ * Setting `pointerType` on the created event directly is what actually
+ * reaches the handler, since React reads it straight off the native event.
+ */
+function firePointerEnter(node: Element, pointerType: string) {
+  const event = createEvent.pointerEnter(node);
+  Object.defineProperty(event, "pointerType", {
+    value: pointerType,
+    configurable: true,
+  });
+  fireEvent(node, event);
 }
 
 describe("PlanetBonusPanel", () => {
@@ -206,5 +236,356 @@ describe("PlanetBonusPanel", () => {
       "aria-hidden",
       "true",
     );
+  });
+
+  it("reports the hovered square entering a classic cell, and undefined leaving it", () => {
+    const state = startingGameState(SEED, { planetBonus: "three" });
+    const onHoverSquare = vi.fn();
+
+    const { container } = render(
+      <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+    );
+
+    const cell = container.querySelector(".planet-bonus-panel__cell")!;
+    fireEvent.pointerEnter(cell);
+    expect(onHoverSquare).toHaveBeenLastCalledWith(
+      state.bonusPlanets.green[0].square,
+    );
+
+    fireEvent.pointerLeave(cell);
+    expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it("ignores a touch tap on a classic cell, so no glow sticks after the tap", () => {
+    const state = startingGameState(SEED, { planetBonus: "three" });
+    const onHoverSquare = vi.fn();
+
+    const { container } = render(
+      <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+    );
+
+    const cell = container.querySelector(".planet-bonus-panel__cell")!;
+    firePointerEnter(cell, "touch");
+
+    expect(onHoverSquare).not.toHaveBeenCalled();
+  });
+
+  it("glows exactly the cell whose square matches glowSquare, and none by default", () => {
+    const base = startingGameState(SEED, { planetBonus: "three" });
+    // Disjoint sets, unlike the real (random) deal, so exactly one cell in
+    // the whole panel can ever match a given glowSquare.
+    const state: typeof base = {
+      ...base,
+      bonusPlanets: {
+        green: [
+          { square: PLANETS[0] },
+          { square: PLANETS[1] },
+          { square: PLANETS[2] },
+        ],
+        red: [
+          { square: PLANETS[3] },
+          { square: PLANETS[4] },
+          { square: PLANETS[5] },
+        ],
+      },
+    };
+
+    const { container: plain } = render(<PlanetBonusPanel state={state} />);
+    expect(
+      plain.querySelectorAll(".planet-bonus-panel__cell--glow"),
+    ).toHaveLength(0);
+    cleanup();
+
+    const { container } = render(
+      <PlanetBonusPanel state={state} glowSquare={PLANETS[4]} />,
+    );
+    const glowing = container.querySelectorAll(
+      ".planet-bonus-panel__cell--glow",
+    );
+    expect(glowing).toHaveLength(1);
+    expect(
+      container.querySelectorAll(".planet-bonus-panel__row--red")[0]
+        .children[1],
+    ).toHaveClass("planet-bonus-panel__cell--glow");
+  });
+
+  it("glows a planet shared by both sides in both rows", () => {
+    const base = startingGameState(SEED, { planetBonus: "three" });
+    const sharedSquare = PLANETS[0];
+    const state: typeof base = {
+      ...base,
+      bonusPlanets: {
+        green: [
+          { square: sharedSquare },
+          { square: PLANETS[1] },
+          { square: PLANETS[2] },
+        ],
+        red: [
+          { square: sharedSquare },
+          { square: PLANETS[3] },
+          { square: PLANETS[4] },
+        ],
+      },
+    };
+
+    const { container } = render(
+      <PlanetBonusPanel state={state} glowSquare={sharedSquare} />,
+    );
+
+    const glowing = container.querySelectorAll(
+      ".planet-bonus-panel__cell--glow",
+    );
+    expect(glowing).toHaveLength(2);
+  });
+
+  describe("under advanced (steal.md §10)", () => {
+    function withAdvancedBonuses(
+      first: readonly [Square, AdvancedBonusKind],
+      second: readonly [Square, AdvancedBonusKind],
+    ): GameState {
+      const base = startingGameState(SEED, {
+        nodePlaystyle: "steal",
+        planetBonus: "advanced",
+      });
+      return {
+        ...base,
+        advancedBonuses: [
+          { square: first[0], kind: first[1] },
+          { square: second[0], kind: second[1] },
+        ],
+      };
+    }
+
+    it("renders exactly two cells, in slot order, with the board's own planet artwork", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+      const arrangement = planetArrangement(state.openingSeed);
+
+      const { container } = render(<PlanetBonusPanel state={state} />);
+
+      const row = container.querySelector(".planet-bonus-panel__advanced-row");
+      const cells = row?.querySelectorAll(".planet-bonus-panel__advanced-cell");
+      expect(cells).toHaveLength(2);
+      const hrefs = Array.from(
+        row?.querySelectorAll(".planet > use") ?? [],
+        (use) => use.getAttribute("href"),
+      );
+      expect(hrefs).toEqual([
+        `#${planetForSquare(arrangement, PLANETS[0])?.ids.body}`,
+        `#${planetForSquare(arrangement, PLANETS[1])?.ids.body}`,
+      ]);
+    });
+
+    it("is hidden from the accessibility tree", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+
+      const { container } = render(<PlanetBonusPanel state={state} />);
+
+      expect(
+        container.querySelector(".planet-bonus-panel--advanced"),
+      ).toHaveAttribute("aria-hidden", "true");
+    });
+
+    it("shows a points bonus's `+N` amount for the game's own settings", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+
+      const { container } = render(<PlanetBonusPanel state={state} />);
+
+      const expectedAmount = advancedBonusPoints(
+        state.chargedNodeCount,
+        state.playerMatching,
+        state.scoring,
+        "large",
+      );
+      expect(container.querySelector(".points-symbol")).toHaveTextContent(
+        `+${expectedAmount}`,
+      );
+    });
+
+    it("captions every points size BONUS, and Fuel, Additional nodes and Node scramble their own word", () => {
+      const points = withAdvancedBonuses(
+        [PLANETS[0], "medium-points"],
+        [PLANETS[1], "small-points"],
+      );
+      const { container } = render(<PlanetBonusPanel state={points} />);
+      const captions = Array.from(
+        container.querySelectorAll(".advanced-bonus-cell__caption"),
+        (caption) => caption.textContent,
+      );
+      expect(captions).toEqual(["BONUS", "BONUS"]);
+      cleanup();
+
+      const rest = withAdvancedBonuses(
+        [PLANETS[0], "fuel"],
+        [PLANETS[1], "additional-nodes"],
+      );
+      const { container: restContainer } = render(
+        <PlanetBonusPanel state={rest} />,
+      );
+      const restCaptions = Array.from(
+        restContainer.querySelectorAll(".advanced-bonus-cell__caption"),
+        (caption) => caption.textContent,
+      );
+      expect(restCaptions).toEqual(["FUEL", "ADD NODES"]);
+      cleanup();
+
+      const scramble = withAdvancedBonuses(
+        [PLANETS[0], "node-scramble"],
+        [PLANETS[1], "large-points"],
+      );
+      const { container: scrambleContainer } = render(
+        <PlanetBonusPanel state={scramble} />,
+      );
+      expect(
+        scrambleContainer.querySelector(".advanced-bonus-cell__caption"),
+      ).toHaveTextContent("SCRAMBLE");
+    });
+
+    it("draws Fuel as a single bar, Additional nodes as three coloured rings and Node scramble as a three-coloured rotation mark", () => {
+      const fuel = withAdvancedBonuses(
+        [PLANETS[0], "fuel"],
+        [PLANETS[1], "small-points"],
+      );
+      const { container: fuelContainer } = render(
+        <PlanetBonusPanel state={fuel} />,
+      );
+      expect(fuelContainer.querySelector(".fuel-symbol")).toBeInTheDocument();
+      cleanup();
+
+      const additionalNodes = withAdvancedBonuses(
+        [PLANETS[0], "additional-nodes"],
+        [PLANETS[1], "small-points"],
+      );
+      const { container: nodesContainer } = render(
+        <PlanetBonusPanel state={additionalNodes} />,
+      );
+      const rings = nodesContainer.querySelectorAll(
+        ".additional-nodes-symbol circle",
+      );
+      expect(rings).toHaveLength(3);
+      const ringColors = new Set(
+        Array.from(rings, (ring) => ring.getAttribute("stroke")),
+      );
+      expect(ringColors.size).toBe(3);
+      cleanup();
+
+      const scramble = withAdvancedBonuses(
+        [PLANETS[0], "node-scramble"],
+        [PLANETS[1], "small-points"],
+      );
+      const { container: scrambleContainer } = render(
+        <PlanetBonusPanel state={scramble} />,
+      );
+      const arcs = scrambleContainer.querySelectorAll(
+        ".node-scramble-symbol path",
+      );
+      expect(arcs).toHaveLength(3);
+      const arcColors = new Set(
+        Array.from(arcs, (arc) => arc.getAttribute("stroke")),
+      );
+      expect(arcColors.size).toBe(3);
+    });
+
+    it("keeps the survivor in its own slot and puts the new bonus in the claimed slot", () => {
+      const before = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+      // Slot 0 (PLANETS[0]) was claimed and redrawn to a new kind; slot 1
+      // (the survivor, PLANETS[1]) kept its square but changed kind; a new
+      // bonus (PLANETS[2]) took slot 0.
+      const after: GameState = {
+        ...before,
+        advancedBonuses: [
+          { square: PLANETS[2], kind: "node-scramble" },
+          { square: PLANETS[1], kind: "additional-nodes" },
+        ],
+      };
+      const arrangement = planetArrangement(after.openingSeed);
+
+      const { container } = render(<PlanetBonusPanel state={after} />);
+
+      const row = container.querySelector(".planet-bonus-panel__advanced-row");
+      const hrefs = Array.from(
+        row?.querySelectorAll(".planet > use") ?? [],
+        (use) => use.getAttribute("href"),
+      );
+      expect(hrefs).toEqual([
+        `#${planetForSquare(arrangement, PLANETS[2])?.ids.body}`,
+        `#${planetForSquare(arrangement, PLANETS[1])?.ids.body}`,
+      ]);
+    });
+
+    it("reports the hovered square entering an advanced cell, and undefined leaving it", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+      const onHoverSquare = vi.fn();
+
+      const { container } = render(
+        <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+      );
+
+      const cells = container.querySelectorAll(
+        ".planet-bonus-panel__advanced-cell",
+      );
+      fireEvent.pointerEnter(cells[1]);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(PLANETS[1]);
+
+      fireEvent.pointerLeave(cells[1]);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it("ignores a touch tap on an advanced cell, so no glow sticks after the tap", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+      const onHoverSquare = vi.fn();
+
+      const { container } = render(
+        <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+      );
+
+      const cells = container.querySelectorAll(
+        ".planet-bonus-panel__advanced-cell",
+      );
+      firePointerEnter(cells[1], "touch");
+
+      expect(onHoverSquare).not.toHaveBeenCalled();
+    });
+
+    it("glows exactly the slot whose square matches glowSquare, and none by default", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+
+      const { container: plain } = render(<PlanetBonusPanel state={state} />);
+      expect(
+        plain.querySelectorAll(".planet-bonus-panel__advanced-cell--glow"),
+      ).toHaveLength(0);
+      cleanup();
+
+      const { container } = render(
+        <PlanetBonusPanel state={state} glowSquare={PLANETS[1]} />,
+      );
+      const cells = container.querySelectorAll(
+        ".planet-bonus-panel__advanced-cell",
+      );
+      expect(cells[1]).toHaveClass("planet-bonus-panel__advanced-cell--glow");
+      expect(cells[0]).not.toHaveClass(
+        "planet-bonus-panel__advanced-cell--glow",
+      );
+    });
   });
 });

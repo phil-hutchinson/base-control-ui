@@ -2,6 +2,7 @@ import { useReducer } from "react";
 import { Board } from "./board/Board";
 import { PlanetDefs } from "./board/PlanetDefs";
 import { PlanetBonusPanel } from "./bonus/PlanetBonusPanel";
+import { useBonusHoverGlow } from "./bonus/useBonusHoverGlow";
 import { ClockRegion } from "./clock/ClockRegion";
 import { freshSeed } from "./game/seed";
 import { createSession, sessionReducer } from "./game/session";
@@ -47,6 +48,11 @@ export function App() {
   // last turn's score roll has settled — until then the game stays on
   // screen and the HUD keeps counting up.
   const gameOver = isGameOver(session.state) && settled;
+
+  // The planet, if any, glowing on the board and in the bonus panel because
+  // it is hovered in either — held above both, since neither owns the
+  // other.
+  const { glowSquare, onHoverSquare } = useBonusHoverGlow(session.state);
 
   const {
     screen,
@@ -115,10 +121,19 @@ export function App() {
               <Hud state={session.state} displayedEnergy={displayedEnergy} />
             </div>
             <div className="app__play">
-              <Board session={session} onIntent={dispatch} />
+              <Board
+                session={session}
+                onIntent={dispatch}
+                glowSquare={glowSquare}
+                onHoverSquare={onHoverSquare}
+              />
             </div>
             <div className="app__clocks">
-              <PlanetBonusPanel state={session.state} />
+              <PlanetBonusPanel
+                state={session.state}
+                glowSquare={glowSquare}
+                onHoverSquare={onHoverSquare}
+              />
               <ClockRegion
                 state={session.state}
                 clockSetting={clockSetting}

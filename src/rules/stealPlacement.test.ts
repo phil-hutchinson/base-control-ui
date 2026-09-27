@@ -220,7 +220,7 @@ describe("the fallback never fires, at the largest fleet and five nodes — the 
       const seed = 40_000_000 + i;
       const state = startingGameState(seed, {
         chargedNodeCount: 5,
-        fleetSize: 6,
+        fleetSize: 5,
         nodePlaystyle: "steal",
         lengthInRounds: 40,
       });
@@ -424,7 +424,7 @@ describe("the fallback never fires during play either, at the largest fleet and 
     for (const seed of SEEDS) {
       let state = startingGameState(seed, {
         chargedNodeCount: 5,
-        fleetSize: 6,
+        fleetSize: 5,
         nodePlaystyle: "steal",
         lengthInRounds: 90,
       });

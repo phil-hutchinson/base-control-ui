@@ -2,18 +2,24 @@
 // diagrams"): a caller-given number of columns holding a fixed list of
 // cells, each a real `BoardSquare`, a numeral drawn over one, a standalone
 // note, a quiet label, a full-width rule, an arrow, a bonus planet cell
-// (`PlanetBonusCell`, shared with `PlanetBonusPanel`), or nothing. Purely
-// presentational — no session, no state, no event handlers — and hidden
-// from the accessibility tree, since the paragraph above each diagram
-// already carries its meaning in words.
+// (`PlanetBonusCell`, shared with `PlanetBonusPanel`), an advanced planet
+// bonus cell (`AdvancedBonusCell`, shared with `PlanetBonusPanel`'s advanced
+// row), or nothing. Purely presentational — no session, no state, no event
+// handlers — and hidden from the accessibility tree, since the paragraph
+// above each diagram already carries its meaning in words.
 
 import type { CSSProperties, ReactNode } from "react";
 import type { BoardSquareProps } from "../board/BoardSquare";
 import { BoardSquare } from "../board/BoardSquare";
 import type { PlanetArt } from "../board/planetArt";
 import type { BonusBadgeState } from "../bonus/bonusBadge";
+import { AdvancedBonusCell } from "../bonus/AdvancedBonusCell";
 import { PlanetBonusCell } from "../bonus/PlanetBonusCell";
 import type { Side } from "../rules/fleet";
+import type { AdvancedBonusKind } from "../rules/advancedBonus";
+import type { ChargedNodeCount } from "../rules/nodes";
+import type { PlayerMatchingSetting } from "../rules/playerMatching";
+import type { ScoringSetting } from "../rules/scoring";
 import "./GuideDiagram.css";
 
 export type GuideDiagramCell =
@@ -34,6 +40,14 @@ export type GuideDiagramCell =
       readonly art: PlanetArt;
       /** Never `"amount"`: no diagram has a payment ply to show it fading in from. */
       readonly badge: Exclude<BonusBadgeState, "amount">;
+    }
+  | {
+      readonly kind: "advancedBonus";
+      readonly art: PlanetArt;
+      readonly bonusKind: AdvancedBonusKind;
+      readonly nodeCount: ChargedNodeCount;
+      readonly playerMatching: PlayerMatchingSetting;
+      readonly scoring: ScoringSetting;
     };
 
 export interface GuideDiagramProps {
@@ -110,6 +124,16 @@ function renderCell(cell: GuideDiagramCell): ReactNode {
       return (
         <PlanetBonusCell side={cell.side} art={cell.art} badge={cell.badge} />
       );
+    case "advancedBonus":
+      return (
+        <AdvancedBonusCell
+          art={cell.art}
+          kind={cell.bonusKind}
+          nodeCount={cell.nodeCount}
+          playerMatching={cell.playerMatching}
+          scoring={cell.scoring}
+        />
+      );
   }
 }
 
@@ -134,7 +158,9 @@ export function GuideDiagram({
             ? "guide-diagram__cell guide-diagram__cell--label"
             : cell.kind === "rule"
               ? "guide-diagram__cell guide-diagram__cell--rule"
-              : "guide-diagram__cell";
+              : cell.kind === "advancedBonus"
+                ? "guide-diagram__cell guide-diagram__cell--advanced-bonus"
+                : "guide-diagram__cell";
         return (
           <div className={cellClassName} key={index}>
             {renderCell(cell)}

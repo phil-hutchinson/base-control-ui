@@ -13,9 +13,10 @@
 
 .board-frame {
   /* `.board-frame` is fifteen tracks wide and fifteen tall, so a square is
-     one fifteenth of the container's smaller dimension, floored at
+     one fifteenth of the play area's side. `--square` reads `App.css`'s
+     `--board-square-size` (`:root`), that division floored at
      `--board-square-floor` (`index.css`) for legibility. */
-  --square: max(var(--board-square-floor), calc(100cqmin / 15));
+  --square: var(--board-square-size);
   display: inline-grid;
   grid-template-columns: repeat(15, var(--square));
   grid-template-rows: repeat(15, var(--square));

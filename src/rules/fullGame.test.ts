@@ -33,8 +33,18 @@ import {
   type ChargedNodeCount,
 } from "./nodes";
 import { NODE_PLAYSTYLES, type NodePlaystyle } from "./nodePlaystyle";
-import type { ScoringSetting } from "./scoring";
-import { NODE_SIGNALS, type NodeSignal, squaresForSignal } from "./steal";
+import type { PlanetBonusSetting } from "./planetBonus";
+import {
+  PLAYER_MATCHING_SETTINGS,
+  type PlayerMatchingSetting,
+} from "./playerMatching";
+import { SCORING_SETTINGS, type ScoringSetting } from "./scoring";
+import {
+  NODE_SIGNALS,
+  type NodeSignal,
+  everyNodeHasExtra,
+  squaresForSignal,
+} from "./steal";
 import {
   type AttackEffect,
   type MoveEffect,
@@ -99,8 +109,16 @@ function distanceToNearestChargedOrInactive(
   return nearest;
 }
 
+/** Whether `square` is one of the two current advanced planet bonuses' planets (steal.md §10). */
+function isAdvancedBonusPlanet(state: GameState, square: Square): boolean {
+  return state.advancedBonuses.some(
+    (bonus) => squareName(bonus.square) === squareName(square),
+  );
+}
+
 /**
- * A deterministic greedy policy: head for a charged node first — or, under
+ * A deterministic greedy policy: under advanced, race for a bonus planet
+ * first (steal.md §10) — otherwise head for a charged node, or, under
  * steal, a prospective node, since landing on one is the only way to claim
  * or steal it (steal.md §3) — otherwise close the distance to the nearest
  * charged-or-eligible-to-be-charged (or, under steal, prospective) node,
@@ -108,6 +126,17 @@ function distanceToNearestChargedOrInactive(
  */
 function choosePly(state: GameState): PlyChoice | undefined {
   const ships = state.ships;
+
+  // 0. Under advanced, the first destination, in fleet-then-destination
+  // order, that lands on one of the two current bonus planets. Vacuous —
+  // `state.advancedBonuses` is empty — under every other setting.
+  for (const ship of ships) {
+    for (const destination of legalDestinations(state, ship.id)) {
+      if (isAdvancedBonusPlanet(state, destination)) {
+        return { kind: "move", shipId: ship.id, destination };
+      }
+    }
+  }
 
   // 1. The first destination, in fleet-then-destination order, that is
   // itself a charged node, or, under steal, a prospective one.
@@ -191,6 +220,8 @@ interface PlayFullGameOptions {
   readonly combatEnabled?: boolean;
   readonly scoring?: ScoringSetting;
   readonly nodePlaystyle?: NodePlaystyle;
+  readonly planetBonus?: PlanetBonusSetting;
+  readonly playerMatching?: PlayerMatchingSetting;
   /**
    * Called with the state after the opening deal and again after every ply,
    * so a caller can check an invariant throughout a game rather than only
@@ -210,7 +241,7 @@ interface PlayFullGameOptions {
 
 /**
  * Plays a whole game from `seed` at `lengthInRounds` using the greedy policy
- * above, dealt with `fleetSize` ships a side (the app's default six),
+ * above, dealt with `fleetSize` ships a side (the app's default five),
  * `chargedNodeCount` charged nodes (the app's default five), combat on
  * unless `combatEnabled` says otherwise, simple scoring unless `scoring`
  * says otherwise, and the continuous playstyle unless `nodePlaystyle` says
@@ -225,6 +256,8 @@ function playFullGame(
     combatEnabled = true,
     scoring = "simple",
     nodePlaystyle = "continuous",
+    planetBonus,
+    playerMatching,
     onPly,
     onEffects,
   }: PlayFullGameOptions = {},
@@ -236,6 +269,8 @@ function playFullGame(
     combatEnabled,
     scoring,
     nodePlaystyle,
+    planetBonus,
+    playerMatching,
   });
   onPly?.(state);
   const greenCollected: EnergyCollectedEffect[] = [];
@@ -428,9 +463,16 @@ function assertStealNodeInvariants(
     chargedNodeCount,
   ) as readonly NodeSignal[]) {
     const squares = squaresForSignal(state.nodes, signal);
-    expect(squares).toHaveLength(2);
-
     const statuses = squares.map((square) => nodeStatusAt(state, square));
+    const extraCount = statuses.filter(
+      (status) => status?.extra === true,
+    ).length;
+    // Two squares ordinarily; three when Additional nodes has given this
+    // signal an extra (steal.md §10) — the advanced sweep below is what
+    // exercises that case.
+    expect(squares).toHaveLength(extraCount === 1 ? 3 : 2);
+    expect(extraCount).toBeLessThanOrEqual(1);
+
     const chargedCount = statuses.filter(
       (status) => status?.state === "charged",
     ).length;
@@ -441,7 +483,40 @@ function assertStealNodeInvariants(
         status?.state === "charged" || status?.state === "prospective",
       ).toBe(true);
       expect(status?.level).toBe(0);
+      if (status?.extra === true) {
+        expect(status.state).toBe("prospective");
+      }
     }
+  }
+}
+
+/**
+ * Every advanced planet bonus invariant that must hold at any ply (steal.md
+ * §10): exactly two bonuses stand, on two different planets, of two
+ * different kinds, and neither planet carries a ship; and Additional nodes
+ * never stands among them while every node already has its extra.
+ */
+function assertAdvancedBonusInvariants(
+  state: GameState,
+  chargedNodeCount: ChargedNodeCount,
+): void {
+  expect(state.advancedBonuses).toHaveLength(2);
+  const [first, second] = state.advancedBonuses;
+  expect(squareName(first.square)).not.toBe(squareName(second.square));
+  expect(first.kind).not.toBe(second.kind);
+
+  const shipSquareNames = new Set(
+    state.ships.map((ship) => squareName(ship.square)),
+  );
+  for (const bonus of state.advancedBonuses) {
+    expect(shipSquareNames.has(squareName(bonus.square))).toBe(false);
+  }
+
+  const additionalNodesStanding = state.advancedBonuses.some(
+    (bonus) => bonus.kind === "additional-nodes",
+  );
+  if (additionalNodesStanding) {
+    expect(everyNodeHasExtra(state.nodes, chargedNodeCount)).toBe(false);
   }
 }
 
@@ -698,6 +773,61 @@ describe.each(CHARGED_NODE_COUNTS)(
   },
 );
 
+describe.each(CHARGED_NODE_COUNTS)(
+  "a full steal game under advanced planet bonuses, end to end, at %d nodes (steal.md §10)",
+  (chargedNodeCount) => {
+    it.each(
+      PLAYER_MATCHING_SETTINGS.flatMap((playerMatching) =>
+        SCORING_SETTINGS.flatMap((scoring) =>
+          [true, false].map(
+            (combatEnabled) =>
+              [playerMatching, scoring, combatEnabled] as const,
+          ),
+        ),
+      ),
+    )(
+      "keeps two distinct bonuses on two empty planets throughout, claiming at least one, with player-matching=%s, scoring=%s, combat enabled=%s",
+      (playerMatching, scoring, combatEnabled) => {
+        const seed = 20260819;
+        let previousGreen = 0;
+        let previousRed = 0;
+        let claims = 0;
+
+        const { finalState } = playFullGame(seed, 30, {
+          chargedNodeCount,
+          combatEnabled,
+          scoring,
+          nodePlaystyle: "steal",
+          planetBonus: "advanced",
+          playerMatching,
+          onPly: (state) => {
+            assertStealNodeInvariants(state, chargedNodeCount);
+            assertAdvancedBonusInvariants(state, chargedNodeCount);
+            expect(state.energy.green).toBeGreaterThanOrEqual(previousGreen);
+            expect(state.energy.red).toBeGreaterThanOrEqual(previousRed);
+            previousGreen = state.energy.green;
+            previousRed = state.energy.red;
+          },
+          onEffects: (effects) => {
+            claims += effects.filter(
+              (effect) => effect.type === "advanced-bonus-claimed",
+            ).length;
+          },
+        });
+
+        expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
+        expect(isGameOver(finalState)).toBe(true);
+        assertStealNodeInvariants(finalState, chargedNodeCount);
+        assertAdvancedBonusInvariants(finalState, chargedNodeCount);
+
+        // Not vacuous: the bonus-preferring policy actually races for and
+        // claims bonuses over the course of the game.
+        expect(claims).toBeGreaterThan(0);
+      },
+    );
+  },
+);
+
 describe("a full game, end to end", () => {
   it("refuses an attack, not only a move and a pass, once the game is over", () => {
     // Built rather than played out, so the attack refusal does not depend
@@ -728,6 +858,7 @@ describe("a full game, end to end", () => {
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
+      advancedBonuses: [],
       energy: { green: 0, red: 0 },
       lengthInRounds: 1,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -777,22 +908,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
         expect(finalState.energy.red).toBe(sumAmounts(redCollected));
       });
 
-      it("plays a six-a-side game to its end, with totals consistent throughout", () => {
-        const seed = 20260819;
-        const { finalState, greenCollected, redCollected } = playFullGame(
-          seed,
-          30,
-          { fleetSize: 6, chargedNodeCount },
-        );
-
-        expect(finalState.ships).toHaveLength(12);
-        expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
-        expect(isGameOver(finalState)).toBe(true);
-
-        expect(finalState.energy.green).toBe(sumAmounts(greenCollected));
-        expect(finalState.energy.red).toBe(sumAmounts(redCollected));
-      });
-
       it("plays a three-a-side game to its end, with totals consistent throughout", () => {
         const seed = 20260819;
         const { finalState, greenCollected, redCollected } = playFullGame(
@@ -827,7 +942,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     },
   );
 
-  it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
+  it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, as ordinary squares, and lets a ship move into one of them", () => {
     const state = startingGameState(20260819, {
       lengthInRounds: 30,
       fleetSize: 5,
@@ -843,8 +958,8 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     }
 
     // green-1 (H15 at the start of a five-ship game) relocated within reach
-    // of O14, one of the starting squares that began empty: it is an
-    // ordinary destination like any other, since a starting square carries
+    // of O14, no longer a starting square under any fleet size: it is an
+    // ordinary destination like any other, since a board square carries
     // none of a planet's properties (rules.md §4).
     const nearO14: GameState = {
       ...state,
@@ -857,39 +972,11 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     );
   });
 
-  it("starts a six-ship game with L15 occupied and H15, H1 empty, as ordinary starting squares, and lets a ship move into one of them", () => {
-    const state = startingGameState(20260819, {
-      lengthInRounds: 30,
-      fleetSize: 6,
-      combatEnabled: true,
-    });
-    const shipSquareNames = new Set(
-      state.ships.map((s) => squareName(s.square)),
-    );
-
-    expect(shipSquareNames.has("L15")).toBe(true);
-    for (const emptySquare of ["H15", "H1"]) {
-      expect(shipSquareNames.has(emptySquare)).toBe(false);
-    }
-
-    // green-1 (O14 at the start of a six-ship game) relocated within reach
-    // of H15, one of the two starting squares that began empty.
-    const nearH15: GameState = {
-      ...state,
-      ships: state.ships.map((s) =>
-        s.id === "green-1" ? { ...s, square: squareFromName("H13") } : s,
-      ),
-    };
-    expect(legalDestinations(nearH15, "green-1")).toContainEqual(
-      squareFromName("H15"),
-    );
-  });
-
   it("draws both fighting ships' returns only from the planets left empty, tight to a five-ship game's own arithmetic", () => {
-    // A five-ship game has ten ships in all; with the fight's own two
-    // excluded, at most eight other ships can occupy a planet, so at least
-    // four of the twelve are free — the tightest a five-ship game's own
-    // §7.1 arithmetic ever gets.
+    // A five-ship game has ten ships in all — the largest fleet the rules
+    // allow (rules.md §4) — so with the fight's own two excluded, at most
+    // eight other ships can occupy a planet, and at least four of the
+    // twelve are free: the tightest §7.1's arithmetic ever gets.
     const emptyPlanetNames = PLANETS.slice(0, 4).map(squareName);
     const state: GameState = {
       ships: [
@@ -906,6 +993,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
+      advancedBonuses: [],
       energy: { green: 0, red: 0 },
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -942,58 +1030,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
     expect(new Set(returnedPlanetNames).size).toBe(2);
   });
 
-  it("draws both fighting ships' returns only from the planets left empty, tight to a six-ship game's own arithmetic", () => {
-    // A six-ship game has twelve ships in all; with the fight's own two
-    // excluded, at most ten other ships can occupy a planet, so exactly two
-    // of the twelve are free — the tightest §7.1's arithmetic ever gets.
-    const emptyPlanetNames = PLANETS.slice(0, 2).map(squareName);
-    const state: GameState = {
-      ships: [
-        ...shipsFillingPlanetsExcept(emptyPlanetNames),
-        ship("green-1", "green", "H8"),
-        ship("red-1", "red", "H9"),
-      ],
-      nodes: {},
-      sideToMove: "green",
-      plyNumber: 1,
-      randomSeed: 1,
-      openingSeed: 1,
-      nodePlaystyle: "continuous",
-      rotators: [],
-      planetBonus: "off",
-      bonusPlanets: { green: [], red: [] },
-      energy: { green: 0, red: 0 },
-      lengthInRounds: 30,
-      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
-      outOfTime: { green: false, red: false },
-      combatEnabled: true,
-      scoring: "simple",
-      playerMatching: "off",
-    };
-
-    const result = applyAttack(state, "green-1", squareFromName("H9"));
-    expect(result.outcome).toBe("applied");
-    if (result.outcome !== "applied") {
-      throw new Error("expected the attack to be applied");
-    }
-    const fightResolved = result.effects.find(
-      (effect) => effect.type === "fight-resolved",
-    );
-    if (
-      fightResolved === undefined ||
-      fightResolved.type !== "fight-resolved"
-    ) {
-      throw new Error("expected a fight-resolved effect");
-    }
-    // Exactly two planets are free, and this fight's two ships must fill
-    // both.
-    expect(fightResolved.returns).toHaveLength(2);
-    const returnedPlanetNames = fightResolved.returns.map((entry) =>
-      squareName(entry.to),
-    );
-    expect(new Set(returnedPlanetNames)).toEqual(new Set(emptyPlanetNames));
-  });
-
   it("settles a five-ship game with no throw when a side occupies five depleted nodes", () => {
     const depletedNodes = ["C3", "F3", "C6", "F6", "C9"].map(squareFromName);
     const ships: readonly Ship[] = depletedNodes.map((node, index) => ({
@@ -1017,6 +1053,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
+      advancedBonuses: [],
       energy: { green: 50, red: 0 },
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

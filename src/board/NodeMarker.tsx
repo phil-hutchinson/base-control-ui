@@ -38,6 +38,10 @@ import type {
   NodeBurnoutAnimation,
   NodeChargeAnimation,
 } from "./boardAnimations";
+import {
+  INACTIVE_RING_RADII,
+  INACTIVE_RING_STROKE_WIDTH,
+} from "./nodeMarkerGeometry";
 import { INACTIVE_RING_COLOR, colorsForSignal } from "./squareArt";
 import "./NodeMarker.css";
 
@@ -124,13 +128,8 @@ function middleStopOffsetPercent(
   );
 }
 
-// An inactive node's rings, innermost first, in the marker's 100-unit
-// viewBox. Priority p draws the innermost p rings, so a priority-1 node is
-// one small ring and a priority-3 node is three rings growing outward: the
-// node visibly fills up as its turn approaches. Starting values for the
-// owner's eye, not a measured result.
-const INACTIVE_RING_RADII: readonly number[] = [18, 28, 38];
-const INACTIVE_RING_STROKE_WIDTH = 5;
+// Ring radii and stroke width live in `nodeMarkerGeometry.ts`, shared with
+// the advanced planet bonus panel's Additional nodes symbol.
 
 // The charge animation's round mask, at its smallest, in the marker's own
 // 0-100 units - about the size of the charged gradient's gold core. A

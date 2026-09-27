@@ -58,6 +58,15 @@
 // run (steal.md §8). The sequence of `node-claimed` and `node-abandoned`
 // effects a steal game produces is recorded and compared below, the same
 // way the queue's refills are above.
+//
+// 0.41 added the advanced planet bonus setting, offered only under steal
+// (steal.md §10): the opening deal draws four more steps for the two
+// bonuses' planets and kinds, and every claim draws its own effect's steps
+// (none for a points kind or Fuel, one per node for Additional nodes or
+// Node scramble), then one for the survivor's new kind, one for the new
+// bonus's planet and one for its kind. A separate harness below plays a
+// steal game under advanced with a bonus-racing policy and compares its
+// sequence of `advanced-bonus-claimed` effects the same way.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -236,9 +245,9 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     combatEnabled: true,
     // Pinned, not left to the app's default: every figure this file checks
     // — fight counts, planet returns, queue refills — was measured under
-    // six a side, five charged nodes, simple scoring and continuous
+    // five a side, five charged nodes, simple scoring and continuous
     // rotation, and the comments above record them as such.
-    fleetSize: 6,
+    fleetSize: 5,
     chargedNodeCount: 5,
     scoring: "simple",
     nodePlaystyle: "continuous",
@@ -343,14 +352,14 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
     // planet, away from the board's outer edge — so this attack-first
     // policy keeps finding fights across the run rather than stalling
     // early, even though its second preference, moving onto a charged
-    // node, competes with attacking for a ship's ply. This seed over
-    // forty rounds measures 11 fights and the 22 planet returns they
+    // node, competes with attacking for a ship's ply. At five a side this
+    // seed over forty rounds measures 3 fights and the 6 planet returns they
     // send ships back on. The floors below sit well beneath that: the
     // figures are this run's own, and any rule that changes the course
     // of a ply moves them.
     expect(fightCount).toBeGreaterThanOrEqual(1);
     expect(planetReturns.length).toBeGreaterThanOrEqual(2);
-    // The same run measures 22 charges, 19 retirements and 19 refills.
+    // The same run measures 19 charges, 17 retirements and 19 refills.
     // These are this run's own numbers and move with any rule that
     // changes the course of a ply, so the floors below leave margin.
     expect(chargedNodes.length).toBeGreaterThanOrEqual(4);
@@ -591,7 +600,7 @@ function playSeededStealGame(
   let state = startingGameState(seed, {
     lengthInRounds,
     combatEnabled: true,
-    fleetSize: 6,
+    fleetSize: 5,
     chargedNodeCount: 5,
     scoring: "simple",
     nodePlaystyle: "steal",
@@ -656,10 +665,10 @@ describe("a seeded steal game replays its opening board and its claim and abando
     );
     const abandoned = events.filter((event) => event.kind === "abandoned");
 
-    // This seed over forty rounds measures 40 claims, 22 of them steals, 15
-    // abandons and 8 fights. These are this run's own numbers and move with
-    // any rule that changes the course of a ply, so the floors below leave
-    // margin.
+    // At five a side this seed over forty rounds measures 53 claims, 31 of
+    // them steals, 18 abandons and 5 fights. These are this run's own
+    // numbers and move with any rule that changes the course of a ply, so
+    // the floors below leave margin.
     expect(claimed.length).toBeGreaterThanOrEqual(10);
     expect(stolen.length).toBeGreaterThanOrEqual(5);
     expect(abandoned.length).toBeGreaterThanOrEqual(5);
@@ -684,5 +693,240 @@ describe("a seeded steal game replays its opening board and its claim and abando
 
     expect(second.openingBoard).not.toEqual(first.openingBoard);
     expect(second.events).not.toEqual(first.events);
+  });
+});
+
+/** Whether `square` is one of the two current advanced planet bonuses' planets (steal.md §10). */
+function isAdvancedBonusPlanet(state: GameState, square: Square): boolean {
+  return state.advancedBonuses.some(
+    (bonus) => squareName(bonus.square) === squareName(square),
+  );
+}
+
+/**
+ * An attack-first, bonus-racing policy for a steal game under advanced
+ * planet bonuses (steal.md §10): the first ship, in fleet order, with a
+ * legal attack takes it; failing that, the first ship, in
+ * fleet-then-destination order, with a legal move onto one of the two
+ * current bonus planets takes it; failing that, the same for a move onto a
+ * prospective node; failing that, the move that most closes the distance to
+ * the nearest prospective node; failing that, the first ship with any legal
+ * move; failing that, there is nothing to do and the pass guard handles it.
+ */
+function chooseStealAdvancedPly(state: GameState): PlyChoice | undefined {
+  for (const ship of state.ships) {
+    const targets = legalTargets(state, ship.id);
+    if (targets.length > 0) {
+      return { kind: "attack", shipId: ship.id, target: targets[0] };
+    }
+  }
+
+  for (const ship of state.ships) {
+    for (const destination of legalDestinations(state, ship.id)) {
+      if (isAdvancedBonusPlanet(state, destination)) {
+        return { kind: "move", shipId: ship.id, destination };
+      }
+    }
+  }
+
+  for (const ship of state.ships) {
+    for (const destination of legalDestinations(state, ship.id)) {
+      if (nodeStateAt(state, destination) === "prospective") {
+        return { kind: "move", shipId: ship.id, destination };
+      }
+    }
+  }
+
+  let best:
+    { shipId: ShipId; destination: Square; improvement: number } | undefined;
+  for (const ship of state.ships) {
+    const destinations = legalDestinations(state, ship.id);
+    if (destinations.length === 0) {
+      continue;
+    }
+    const fromDistance = distanceToNearestProspective(state, ship.square);
+    for (const destination of destinations) {
+      const toDistance = distanceToNearestProspective(state, destination);
+      const improvement = fromDistance - toDistance;
+      if (best === undefined || improvement > best.improvement) {
+        best = { shipId: ship.id, destination, improvement };
+      }
+    }
+  }
+  if (best !== undefined) {
+    return { kind: "move", shipId: best.shipId, destination: best.destination };
+  }
+
+  for (const ship of state.ships) {
+    const destinations = legalDestinations(state, ship.id);
+    if (destinations.length > 0) {
+      return { kind: "move", shipId: ship.id, destination: destinations[0] };
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * One `advanced-bonus-claimed` effect, reduced to the fields worth comparing
+ * across a replay: the claiming side, the kind claimed, the planet it was
+ * claimed on, and the survivor's and the new bonus's kinds — enough to prove
+ * a replay reproduces every draw the claim made, without repeating the
+ * effect's own square-list fields.
+ */
+interface AdvancedBonusEvent {
+  readonly side: string;
+  readonly kind: string;
+  readonly square: string;
+  readonly survivorNewKind: string;
+  readonly newBonusKind: string;
+}
+
+/** Every `advanced-bonus-claimed` effect nested inside a ply's own effects, in order (steal.md §10). */
+function advancedBonusEvents(
+  effects: readonly (MoveEffect | AttackEffect)[],
+): readonly AdvancedBonusEvent[] {
+  const events: AdvancedBonusEvent[] = [];
+  for (const effect of effects) {
+    if (effect.type === "advanced-bonus-claimed") {
+      events.push({
+        side: effect.side,
+        kind: effect.kind,
+        square: squareName(effect.square),
+        survivorNewKind: effect.survivor.newKind,
+        newBonusKind: effect.newBonus.kind,
+      });
+    }
+  }
+  return events;
+}
+
+interface PlayedStealAdvancedGame {
+  readonly finalState: GameState;
+  readonly openingBoard: Readonly<Record<string, GameState["nodes"][string]>>;
+  readonly events: readonly StealNodeEvent[];
+  readonly bonusEvents: readonly AdvancedBonusEvent[];
+  readonly fightCount: number;
+}
+
+/**
+ * Plays a whole steal game under advanced planet bonuses from `seed` at
+ * `lengthInRounds` using `chooseStealAdvancedPly`, and records the opening
+ * board the seed dealt (steal.md §7, §10) before play began, every
+ * `node-claimed` and `node-abandoned` event and every `advanced-bonus-claimed`
+ * event the game raised, in order, and how many fights happened.
+ */
+function playSeededStealAdvancedGame(
+  seed: number,
+  lengthInRounds: number,
+): PlayedStealAdvancedGame {
+  let state = startingGameState(seed, {
+    lengthInRounds,
+    combatEnabled: true,
+    fleetSize: 5,
+    chargedNodeCount: 5,
+    scoring: "simple",
+    nodePlaystyle: "steal",
+    planetBonus: "advanced",
+  });
+  const openingBoard = state.nodes;
+  const events: StealNodeEvent[] = [];
+  const bonusEvents: AdvancedBonusEvent[] = [];
+  let fightCount = 0;
+
+  let pliesApplied = 0;
+  while (!isGameOver(state)) {
+    if (pliesApplied >= MAX_PLIES) {
+      throw new Error(
+        `seeded steal + advanced replay game exceeded ${MAX_PLIES} plies without ending — likely a regression`,
+      );
+    }
+    pliesApplied += 1;
+
+    const choice = chooseStealAdvancedPly(state);
+
+    if (choice === undefined) {
+      const { state: nextState } = applyPassGuard(state);
+      state = nextState;
+      continue;
+    }
+
+    if (choice.kind === "attack") {
+      const result = applyAttack(state, choice.shipId, choice.target);
+      if (result.outcome !== "applied") {
+        throw new Error(
+          `policy chose an illegal attack: ${result.reason} for ${choice.shipId} on ${squareName(choice.target)}`,
+        );
+      }
+      state = result.state;
+      for (const effect of result.effects) {
+        if (effect.type === "fight-resolved") {
+          fightCount += 1;
+        }
+      }
+      events.push(...stealNodeEvents(result.effects));
+      bonusEvents.push(...advancedBonusEvents(result.effects));
+    } else {
+      const result = applyMove(state, choice.shipId, choice.destination);
+      if (result.outcome !== "applied") {
+        throw new Error(
+          `policy chose an illegal move: ${result.reason} for ${choice.shipId} to ${squareName(choice.destination)}`,
+        );
+      }
+      state = result.state;
+      events.push(...stealNodeEvents(result.effects));
+      bonusEvents.push(...advancedBonusEvents(result.effects));
+    }
+  }
+
+  return { finalState: state, openingBoard, events, bonusEvents, fightCount };
+}
+
+describe("a seeded steal + advanced game replays its opening board, its claim/abandon sequence and its bonus claims exactly (steal.md §10)", () => {
+  it("produces plenty of claims and bonus claims of every kind, over a two-hundred-round game — the run is not vacuous", () => {
+    const { events, bonusEvents, fightCount } = playSeededStealAdvancedGame(
+      20260819,
+      200,
+    );
+
+    const claimed = events.filter((event) => event.kind === "claimed");
+    const abandoned = events.filter((event) => event.kind === "abandoned");
+    const claimedKinds = new Set(bonusEvents.map((event) => event.kind));
+
+    // At five a side this seed over two hundred rounds measures 112 claims,
+    // 73 abandons, 11 fights and 20 bonus claims, touching every one of the
+    // six kinds. These are this run's own numbers and move with any rule
+    // that changes the course of a ply, so the floors below leave margin.
+    // The run needs this many rounds because a bonus claim's own draws (a
+    // survivor kind, a new bonus planet and kind) compete for the same
+    // stream as the node claims and abandons a bonus-racing policy also
+    // produces, so every one of the six kinds appearing takes a while.
+    expect(claimed.length).toBeGreaterThanOrEqual(30);
+    expect(abandoned.length).toBeGreaterThanOrEqual(20);
+    expect(fightCount).toBeGreaterThanOrEqual(3);
+    expect(bonusEvents.length).toBeGreaterThanOrEqual(10);
+    expect(claimedKinds.size).toBe(6);
+  });
+
+  it("replays the same opening board, the same claim/abandon sequence, the same bonus-claim sequence and the same final state from the same seed", () => {
+    const first = playSeededStealAdvancedGame(20260819, 40);
+    const second = playSeededStealAdvancedGame(20260819, 40);
+
+    expect(second.openingBoard).toEqual(first.openingBoard);
+    expect(second.events).toEqual(first.events);
+    expect(second.bonusEvents).toEqual(first.bonusEvents);
+    expect(second.finalState).toEqual(first.finalState);
+  });
+
+  it("deals a different opening board and produces a different claim/abandon sequence and a different bonus-claim sequence from a different seed", () => {
+    // Any pair of distinct seeds is expected to diverge; this pair is
+    // confirmed to by running this test. If a future change to the game
+    // happens to make it coincide, pick another pair.
+    const first = playSeededStealAdvancedGame(20260819, 40);
+    const second = playSeededStealAdvancedGame(20260820, 40);
+
+    expect(second.openingBoard).not.toEqual(first.openingBoard);
+    expect(second.events).not.toEqual(first.events);
+    expect(second.bonusEvents).not.toEqual(first.bonusEvents);
   });
 });

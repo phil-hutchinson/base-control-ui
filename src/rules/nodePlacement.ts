@@ -263,14 +263,23 @@ export function drawWeightedNodeSquare(
  *     w(s) = d(s, a) + min over x in S of d(s, x)
  *
  * `a` is the node's anchor — its charged square when it has one, and its
- * remaining prospective square when it does not — and `S` is every square
- * belonging to any other node, charged or prospective alike; `d` is
- * Chebyshev distance. The first term dominates and can range up to 14: it
- * pushes a node's new prospective square a long way from the node itself, so
- * a steal is a real relocation rather than a shuffle. The second term, about
- * 2 to 5, is a prop-up for a square in an otherwise empty region and is
- * deliberately the smaller of the two. It is 0 when `S` is empty, which only
- * happens for the very first node of the opening deal.
+ * remaining prospective square when it does not (steal.md §10 gives the
+ * anchor of a node with an extra prospective square, which this does not
+ * cover on its own) — and `S` is every square belonging to any other node,
+ * charged or prospective alike; `d` is Chebyshev distance. The first term
+ * dominates and can range up to 14: it pushes a node's new prospective
+ * square a long way from the node itself, so a steal is a real relocation
+ * rather than a shuffle. The second term, about 2 to 5, is a prop-up for a
+ * square in an otherwise empty region and is deliberately the smaller of the
+ * two. It is 0 when `S` is empty, which only happens for the very first node
+ * of the opening deal.
+ *
+ * `anchors` may hold more than one square (steal.md §10): when a node has no
+ * charged square and no extra, but two ordinary prospective squares — the
+ * one case Additional nodes reaches, drawing a third square for an Open
+ * node — the anchor term is the distance to the **nearer** of the two.
+ * Every other caller passes exactly one anchor, for which this is identical
+ * to a plain distance.
  *
  * A square on the outer edge has its weight halved, so the rim stays
  * available without becoming the likeliest place for a node to end up.
@@ -280,10 +289,12 @@ export function drawWeightedNodeSquare(
  */
 function stealProspectiveWeight(
   square: Square,
-  anchor: Square,
+  anchors: readonly Square[],
   otherNodeSquares: readonly Square[],
 ): number {
-  const distanceFromAnchor = chebyshevDistance(square, anchor);
+  const distanceFromAnchor = Math.min(
+    ...anchors.map((anchor) => chebyshevDistance(square, anchor)),
+  );
   const distanceFromOthers =
     otherNodeSquares.length === 0
       ? 0
@@ -299,21 +310,21 @@ function stealProspectiveWeight(
  * (steal.md §6), from the widened pool (constraints 3 and 4 lifted,
  * fallback included), weighted by `stealProspectiveWeight`. `occupiedNodeSquares`
  * is every square belonging to any node, the drawing node's own included;
- * `anchor` is the drawing node's charged square if it has one, otherwise its
- * remaining prospective square; `otherNodeSquares` is every square belonging
- * to any other node. Advances the seed exactly once, via `drawWeightedIndex`,
- * so a recorded game replays exactly.
+ * `anchors` is the drawing node's anchor square or squares (steal.md §6, §10);
+ * `otherNodeSquares` is every square belonging to any other node. Advances
+ * the seed exactly once, via `drawWeightedIndex`, so a recorded game replays
+ * exactly.
  */
 export function drawStealProspectiveSquare(
   occupiedNodeSquares: readonly Square[],
-  anchor: Square,
+  anchors: readonly Square[],
   otherNodeSquares: readonly Square[],
   shipSquares: readonly Square[],
   seed: number,
 ): [square: Square, nextSeed: number] {
   const pool = legalNodePool(occupiedNodeSquares, shipSquares, "widened");
   const weights = pool.map((square) =>
-    stealProspectiveWeight(square, anchor, otherNodeSquares),
+    stealProspectiveWeight(square, anchors, otherNodeSquares),
   );
   const [index, nextSeed] = drawWeightedIndex(seed, weights);
   return [pool[index], nextSeed];
@@ -335,7 +346,7 @@ export function drawStealProspectiveSquare(
  */
 export function drawStealOpeningProspectiveSquare(
   occupiedNodeSquares: readonly Square[],
-  anchor: Square,
+  anchors: readonly Square[],
   otherNodeSquares: readonly Square[],
   shipSquares: readonly Square[],
   seed: number,
@@ -350,7 +361,7 @@ export function drawStealOpeningProspectiveSquare(
       ? strictPool
       : legalNodePool(occupiedNodeSquares, shipSquares, "widened");
   const weights = pool.map((square) =>
-    stealProspectiveWeight(square, anchor, otherNodeSquares),
+    stealProspectiveWeight(square, anchors, otherNodeSquares),
   );
   const [index, nextSeed] = drawWeightedIndex(seed, weights);
   return [pool[index], nextSeed];

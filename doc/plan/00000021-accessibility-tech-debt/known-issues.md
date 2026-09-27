@@ -482,3 +482,47 @@ separate the node colours, gets none of it.
 
 Where: `src/hud/ScoreDisplay.tsx`, `src/hud/ScoreDisplay.css`,
 `src/board/announcements.ts`.
+
+## From story 105 — Advanced planet bonuses
+
+Source: `doc/plan/00000105-advanced-planet-bonuses/implementation-plan.md`
+decision D15, Step 6.
+
+### 1. Which two planets carry a bonus, and of which kind, is shown visually only
+
+Under the advanced planet bonus setting (steal.md §10) the panel above the
+clocks shows the two current bonus planets and a symbol for each one's kind,
+but the whole panel is `aria-hidden`, exactly as the classic panel it
+replaces already is. A screen-reader user is never told which two planets
+currently carry a bonus, nor which of the six kinds either one is, at any
+point they choose to ask; a sighted player reads both at a glance.
+
+It is mitigated but not resolved: a claim itself is announced through the
+live region's sentence (`src/board/announcements.ts`) as it happens, so the
+event is not silently lost — what is missing is the standing state between
+claims, which nothing but the panel carries. This is the advanced setting's
+own instance of the gap story 97 already recorded for the classic panel.
+
+Where: `src/bonus/PlanetBonusPanel.tsx`.
+
+### 2. A scramble's or an Additional nodes' new squares are not listed
+
+An Additional nodes claim's live-region sentence says only that every node
+gained an extra waiting square, and a Node scramble claim's says only that
+every node's waiting squares were redrawn — neither names which squares. A
+sighted player sees every new ring appear on the board; a screen-reader user
+is told the event happened but not where.
+
+Where: `src/board/announcements.ts`.
+
+### 3. The hover link between the panel and the board is pointer-only
+
+Hovering a planet drawn in the bonus panel lights that planet's own square
+on the board, so a sighted mouse user can match a panel cell to its square
+at a glance (Step 12). It has no touch or keyboard equivalent: a touch
+player never sees it, and a keyboard or screen-reader user has no way to ask
+which square a panel cell belongs to at all — the panel stays `aria-hidden`
+and carries no focusable element.
+
+Where: `src/App.tsx`, `src/board/Board.tsx`, `src/board/BoardSquare.tsx`,
+`src/bonus/PlanetBonusPanel.tsx`.

@@ -59,6 +59,7 @@ function buildState(config: {
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
+    advancedBonuses: [],
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -905,6 +906,27 @@ describe("sessionReducer — new-game", () => {
     });
 
     expect(result.state.planetBonus).toBe("off");
+    expect(result.state.bonusPlanets).toEqual({ green: [], red: [] });
+  });
+
+  it("honours a chosen planet bonus setting of advanced under steal, dealing a state with two advanced bonuses", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 9,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
+      scoring: "simple",
+      nodePlaystyle: "steal",
+      planetBonus: "advanced",
+      playerMatching: "off",
+    });
+
+    expect(result.state.planetBonus).toBe("advanced");
+    expect(result.state.advancedBonuses).toHaveLength(2);
     expect(result.state.bonusPlanets).toEqual({ green: [], red: [] });
   });
 });

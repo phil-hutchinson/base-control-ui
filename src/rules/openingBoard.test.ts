@@ -175,6 +175,7 @@ describe.each(CHARGED_NODE_COUNTS)(
           rotators: [],
           planetBonus: "off",
           bonusPlanets: { green: [], red: [] },
+          advancedBonuses: [],
           energy: { green: 0, red: 0 },
           lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
           chargedNodeCount,

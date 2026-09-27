@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PLANETS, isPlanet } from "./planets";
 import { COLUMN_LETTERS, type Square, squareAt, squareName } from "./board";
-import { startingFleet } from "./fleet";
+import { FLEET_SIZES, startingFleet } from "./fleet";
 
 /** The named twelve, in the order rules.md §3.1 gives the six base squares and their rotations. */
 const EXPECTED_PLANET_NAMES = [
@@ -92,8 +92,8 @@ describe("planets", () => {
 
   it("has none on a starting square", () => {
     const startingSquareNames = new Set(
-      [...startingFleet(5), ...startingFleet(6)].map((entry) =>
-        squareName(entry.square),
+      FLEET_SIZES.flatMap((fleetSize) =>
+        startingFleet(fleetSize).map((entry) => squareName(entry.square)),
       ),
     );
     for (const planet of PLANETS) {

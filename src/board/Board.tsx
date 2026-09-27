@@ -1,11 +1,22 @@
 // The board: 15 x 15 squares built from a game session's state (see
 // BoardSquare.tsx for one square's contents). This component walks the
 // grid's index space, maps each cell back to its rule-space square, and
-// gives it its accessible name.
+// gives it its accessible name. `glowSquare` is the one piece it draws that
+// is not part of the game state: which planet, if any, the player is
+// currently hovering in the bonus panel above the clocks, held and passed
+// down by `App`. The link runs the other way too: `onHoverSquare` reports
+// the pointer entering a planet square on the board, but only for a square
+// the bonus panel currently draws (`bonusPanelSquareNames`) — entering any
+// other planet, or any other square, reports nothing. Every square reports
+// the pointer leaving it, whether or not it was one the panel drew, so a
+// square that stops being a bonus planet the moment it is claimed still
+// clears the hover when the pointer moves off it.
 
 import { useCallback, useMemo } from "react";
+import { bonusPanelSquareNames } from "../bonus/bonusPanelSquares";
+import { isTouchPointer } from "../bonus/pointerHover";
 import { GAME_NAME } from "../gameName";
-import { BOARD_SIZE, squareName } from "../rules/board";
+import { BOARD_SIZE, squareName, type Square } from "../rules/board";
 import { isPlanet } from "../rules/planets";
 import { shipCanMoveOrAttack } from "../rules/canMoveOrAttack";
 import { legalAttacks } from "../rules/combat";
@@ -36,6 +47,19 @@ export interface BoardProps {
   readonly session: Session;
   /** Dispatches a player's intent (activate or dismiss) to the session reducer. */
   readonly onIntent: (intent: SessionIntent) => void;
+  /**
+   * The planet square, if any, to draw glowing — because the player is
+   * hovering that planet in the bonus panel above the clocks (`App`'s
+   * lifted hover state). Not part of `session.state`.
+   */
+  readonly glowSquare?: Square;
+  /**
+   * Reports the square the pointer is over as it enters a bonus planet
+   * square, so `App` can light the matching cell in the bonus panel above
+   * the clocks, and `undefined` as the pointer leaves any square, bonus
+   * planet or not. Omit for no hover reporting.
+   */
+  readonly onHoverSquare?: (square: Square | undefined) => void;
 }
 
 /**
@@ -45,7 +69,12 @@ export interface BoardProps {
  * `role="grid"` element (a grid may only own rows), alongside the grid
  * itself.
  */
-export function Board({ session, onIntent }: BoardProps) {
+export function Board({
+  session,
+  onIntent,
+  glowSquare,
+  onHoverSquare,
+}: BoardProps) {
   const handleActivate = useCallback(
     (position: GridPosition) => {
       onIntent({
@@ -65,7 +94,11 @@ export function Board({ session, onIntent }: BoardProps) {
     [session.state.openingSeed],
   );
 
+  const glowSquareName =
+    glowSquare === undefined ? undefined : squareName(glowSquare);
+
   const rows: GridCellDescriptor[][] = useMemo(() => {
+    const hoverableSquareNames = bonusPanelSquareNames(session.state);
     const ships = shipsBySquare(session.state);
     const animations = boardAnimations(session);
     const rotatorSquareNames = new Set(
@@ -151,6 +184,7 @@ export function Board({ session, onIntent }: BoardProps) {
 
         const destinationCost = destinationCosts.get(name);
         const targetCost = targetCosts.get(name);
+        const hoverable = hoverableSquareNames.has(name);
 
         let mark: SquareMark | undefined;
         if (selectedShip && squareName(selectedShip.square) === name) {
@@ -178,6 +212,21 @@ export function Board({ session, onIntent }: BoardProps) {
               condition={condition}
               mark={mark}
               animation={animations.get(name)}
+              glow={name === glowSquareName}
+              onPointerEnter={
+                hoverable
+                  ? (event) => {
+                      if (!isTouchPointer(event)) {
+                        onHoverSquare?.(square);
+                      }
+                    }
+                  : undefined
+              }
+              onPointerLeave={(event) => {
+                if (!isTouchPointer(event)) {
+                  onHoverSquare?.(undefined);
+                }
+              }}
             />
           ),
           label: squareLabel({
@@ -193,7 +242,7 @@ export function Board({ session, onIntent }: BoardProps) {
         };
       }),
     );
-  }, [session, arrangement]);
+  }, [session, arrangement, glowSquareName, onHoverSquare]);
 
   return (
     <div className="board-frame">

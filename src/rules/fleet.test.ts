@@ -11,29 +11,7 @@ import {
 import { isPowerLevel, MAX_POWER } from "./power";
 
 /**
- * §4's six-a-side layout, clockwise from H15: H15 and H1 start empty, so the
- * list starts at L15, the first occupied starting square after H15, and
- * skips straight from L1 to D1 where H1 would otherwise sit.
- */
-const SIX_A_SIDE: readonly [string, "green" | "red"][] = [
-  ["L15", "red"],
-  ["O14", "green"],
-  ["O10", "red"],
-  ["O6", "green"],
-  ["O2", "red"],
-  ["L1", "green"],
-  ["D1", "green"],
-  ["A2", "red"],
-  ["A6", "green"],
-  ["A10", "red"],
-  ["A14", "green"],
-  ["D15", "red"],
-];
-
-/**
- * §4's five-a-side layout, clockwise from H15: O14, O2, A14 and A2 start
- * empty, and the colours on the two four-square edges are reversed from the
- * six-ship game.
+ * §4's five-a-side layout, clockwise from H15.
  */
 const FIVE_A_SIDE: readonly [string, "green" | "red"][] = [
   ["H15", "green"],
@@ -82,24 +60,19 @@ const LAYOUTS_BY_FLEET_SIZE: Readonly<
   3: THREE_A_SIDE,
   4: FOUR_A_SIDE,
   5: FIVE_A_SIDE,
-  6: SIX_A_SIDE,
 };
 
-/** §4's eighteen starting squares. */
+/** §4's fourteen starting squares. */
 const ALL_STARTING_SQUARES = [
   "H15",
   "L15",
-  "O14",
   "O10",
   "O6",
-  "O2",
   "L1",
   "H1",
   "D1",
-  "A2",
   "A6",
   "A10",
-  "A14",
   "D15",
   "C15",
   "M15",
@@ -111,23 +84,9 @@ const ALL_STARTING_SQUARES = [
 const EMPTY_STARTING_SQUARES_BY_FLEET_SIZE: Readonly<
   Record<FleetSize, readonly string[]>
 > = {
-  3: [
-    "L15",
-    "O14",
-    "O2",
-    "L1",
-    "D1",
-    "A2",
-    "A14",
-    "D15",
-    "C15",
-    "M15",
-    "C1",
-    "M1",
-  ],
-  4: ["H15", "L15", "O14", "O2", "L1", "H1", "D1", "A2", "A14", "D15"],
-  5: ["O14", "O2", "A14", "A2", "C15", "M15", "C1", "M1"],
-  6: ["H15", "H1", "C15", "M15", "C1", "M1"],
+  3: ["L15", "L1", "D1", "D15", "C15", "M15", "C1", "M1"],
+  4: ["H15", "L15", "L1", "H1", "D1", "D15"],
+  5: ["C15", "M15", "C1", "M1"],
 };
 
 function entryBySquare(
@@ -139,11 +98,11 @@ function entryBySquare(
 
 describe("FLEET_SIZES", () => {
   it("is largest first, the order the start screen renders them", () => {
-    expect(FLEET_SIZES).toEqual([6, 5, 4, 3]);
+    expect(FLEET_SIZES).toEqual([5, 4, 3]);
   });
 
   it("puts the largest fleet size in MAX_SHIPS_PER_SIDE regardless of list order", () => {
-    expect(MAX_SHIPS_PER_SIDE).toBe(6);
+    expect(MAX_SHIPS_PER_SIDE).toBe(5);
   });
 
   it("defaults to five ships a side", () => {
@@ -261,8 +220,7 @@ describe.each(FLEET_SIZES)("starting fleet for %i a side", (fleetSize) => {
 describe("alternation around the clockwise ring", () => {
   // §4's five-a-side layout puts five ships on a ring of five starting
   // squares, and they alternate perfectly around it, including the
-  // wraparound. §4's six-a-side layout does not: dropping H15 leaves D15 red
-  // next to L15 red, and dropping H1 leaves L1 green next to D1 green.
+  // wraparound.
   it("alternates sides around the clockwise ring, including the wraparound, at 5 a side", () => {
     const fleet = startingFleet(5);
     for (let index = 0; index < fleet.length; index++) {
@@ -288,9 +246,8 @@ describe("alternation around the clockwise ring", () => {
   // starting squares, which cannot alternate perfectly: the half-turn
   // rotation maps every square to one of the same parity, so a perfectly
   // alternating assignment would send each side onto itself rather than its
-  // opponent. The two breaks sit where the six-a-side layout puts its own,
-  // on the top edge (C15, M15, both green) and the bottom edge (M1, C1,
-  // both red).
+  // opponent. The two breaks sit on the top edge (C15, M15, both green) and
+  // the bottom edge (M1, C1, both red).
   it("has exactly two same-side neighbours at 4 a side, on the top and bottom edges", () => {
     const fleet = startingFleet(4);
     const breaks: [string, string][] = [];
@@ -306,16 +263,5 @@ describe("alternation around the clockwise ring", () => {
     expect(breaks).toHaveLength(2);
     expect(breaks).toContainEqual(["M1", "C1"]);
     expect(breaks).toContainEqual(["C15", "M15"]);
-  });
-});
-
-describe("startingFleet(6)", () => {
-  it("assigns green-1 to L15's neighbour O14, and red-1 to L15", () => {
-    const fleet = startingFleet(6);
-    const green1 = entryBySquare(fleet, squareAt("O", 14));
-    const red1 = entryBySquare(fleet, squareAt("L", 15));
-
-    expect(green1?.id).toBe("green-1");
-    expect(red1?.id).toBe("red-1");
   });
 });

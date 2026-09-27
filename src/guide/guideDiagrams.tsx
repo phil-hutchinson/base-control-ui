@@ -7,10 +7,13 @@
 // are derived from `../rules/countdown`, exactly as `Board` derives them,
 // rather than typed in by hand. NEW CHARGED NODE SELECTION carries two of
 // these — the rotation diagram every setting shares, and a second, a bare
-// square holding a rotator, for the dedicated setting alone. PLANET BONUS's
-// diagram is the one exception to "built from `BoardSquare`s": its cells are
-// `PlanetBonusCell`, the same cell `PlanetBonusPanel` draws, so the guide's
-// checkmark can never drift from the panel's own.
+// square holding a rotator, for the dedicated setting alone. PLANET BONUS
+// and ADVANCED PLANET BONUSES are the exceptions to "built from
+// `BoardSquare`s": their cells are `PlanetBonusCell` and `AdvancedBonusCell`,
+// the same cells `PlanetBonusPanel` draws, so the guide's checkmark and
+// symbols can never drift from the panel's own. ADVANCED PLANET BONUSES'
+// `+N` amount is read from the point lookup at the app's own default
+// settings, never typed in by hand.
 
 import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import { energyForNodesHeld } from "../rules/energy";
@@ -18,12 +21,15 @@ import type { NodePriority } from "../rules/nodeQueue";
 import type { PowerLevel } from "../rules/power";
 import { MAX_POWER } from "../rules/power";
 import type { ScoringSetting } from "../rules/scoring";
+import { DEFAULT_SCORING } from "../rules/scoring";
 import type { NodeSignal } from "../rules/steal";
 import { PLANET_ART } from "../board/planetArt";
 import type { GuideDiagramCell } from "./GuideDiagram";
 import { GuideDiagram } from "./GuideDiagram";
 import type { MovementCostOffset } from "./movementCosts";
 import { movementCostOffsets } from "./movementCosts";
+import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
+import { DEFAULT_PLAYER_MATCHING } from "../rules/playerMatching";
 
 /** One through five: the largest charged-node count the board offers, and so the widest the scoring diagram's table needs to run. */
 const SCORING_TABLE_COUNTS = [1, 2, 3, 4, 5] as const;
@@ -367,4 +373,33 @@ export function PlanetBonusDiagram() {
     { kind: "bonusPlanet", side: "green", art: PLANET_ART[2], badge: "none" },
   ];
   return <GuideDiagram columns={3} cells={cells} />;
+}
+
+/**
+ * Diagram 10: the ADVANCED PLANET BONUSES panel (steal.md §10) at a glance —
+ * a Large points bonus beside a Node scramble bonus, drawn with the same
+ * `AdvancedBonusCell` the panel itself draws, at the app's own default
+ * settings (its `+N` comes from the point lookup, never typed in) and so in
+ * gold/silver/blue, since player-matching is off by default.
+ */
+export function AdvancedPlanetBonusDiagram() {
+  const cells: readonly GuideDiagramCell[] = [
+    {
+      kind: "advancedBonus",
+      art: PLANET_ART[0],
+      bonusKind: "large-points",
+      nodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      playerMatching: DEFAULT_PLAYER_MATCHING,
+      scoring: DEFAULT_SCORING,
+    },
+    {
+      kind: "advancedBonus",
+      art: PLANET_ART[1],
+      bonusKind: "node-scramble",
+      nodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      playerMatching: DEFAULT_PLAYER_MATCHING,
+      scoring: DEFAULT_SCORING,
+    },
+  ];
+  return <GuideDiagram columns={2} cells={cells} />;
 }

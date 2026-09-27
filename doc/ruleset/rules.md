@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.40**
+**Rules version: 0.41**
 
 This document is the single source of truth for how Base Control is played,
 together with its companion [steal.md](steal.md), which holds the node rules
@@ -14,7 +14,7 @@ app has a bug.
 ## 1. Overview
 
 Base Control is a two-player game played on a square board. Each player
-commands a fleet of three to six ships and competes to occupy the board's
+commands a fleet of three to five ships and competes to occupy the board's
 contested nodes, collecting **energy** for every turn they hold one — and,
 under the planet bonus setting (section 3.4), for landing on the right
 planet. The player with the most energy when the game ends is the winner.
@@ -49,7 +49,12 @@ a fight are pushed back to. Under the dedicated playstyle (section
 drawn. Under the planet bonus setting (section 3.4) there is another: which
 three planets each player is dealt. Under the steal playstyle (section 8.2)
 the random element is different again — where each new prospective node is
-drawn, in place of the refill and the priority deal (steal.md). No two games
+drawn, in place of the refill and the priority deal (steal.md). Under the
+advanced planet bonus setting, offered only under steal, there are more
+still: where the game's two bonuses first stand and what kind each is, and,
+every time one is claimed, what kind the bonus left behind turns into,
+where the new bonus appears and what kind it is, and, for two of the six
+kinds, which squares change on the board (steal.md §10). No two games
 start on the same board, and neither player has seen this one before.
 
 ---
@@ -135,12 +140,12 @@ A planet is an ordinary square in every way except two:
   ship goes to recover.
 
 Planets are not owned. Either player's ships may use any planet. Under the
-planet bonus setting, landing on the right planet also pays a one-time
-bonus (section 3.4).
+planet bonus setting, a ship may also claim a bonus by landing on the right
+planet (section 3.4).
 
 This diagram shows the board's fixed squares: the twelve planets, and the
-eighteen starting squares (section 4) where ships begin — fleet size decides
-which of the eighteen are used. A starting square is otherwise an ordinary
+fourteen starting squares (section 4) where ships begin — fleet size decides
+which of the fourteen are used. A starting square is otherwise an ordinary
 square: it gives nothing and protects nothing. The diagram does not show any
 node, because a node's square is not fixed — where nodes stand changes as
 the game runs (section 3.2):
@@ -148,7 +153,7 @@ the game runs (section 3.2):
 ```
      A B C D E F G H I J K L M N O
  15  . . S S . . . S . . . S S . .
- 14  S . . . . P . . . . . . . . S
+ 14  . . . . . P . . . . . . . . .
  13  . . . . . . . . . . . . . P .
  12  . P . . . . . . P . . . . . .
  11  . . . . . . . . . . . . . . .
@@ -160,7 +165,7 @@ the game runs (section 3.2):
   5  . . . . . . . . . . . . . . .
   4  . . . . . . P . . . . . . P .
   3  . P . . . . . . . . . . . . .
-  2  S . . . . . . . . P . . . . S
+  2  . . . . . . . . . P . . . . .
   1  . . S S . . . S . . . S S . .
 
 P  planet          S  a starting square (fleet size decides which are used)
@@ -270,10 +275,12 @@ board's nodes.
 
 ### 3.4 Planet bonuses
 
-The planet bonus is **off, 2 points or 3 points**, the same for both
-players, chosen before play begins and fixed for the game's lifetime.
+The planet bonus is **off, 2 points, 3 points or advanced**, the same for
+both players, chosen before play begins and fixed for the game's lifetime.
+**Advanced is offered only under the steal playstyle** (section 8.2); its
+rules are steal.md's own, in a section of its own (steal.md §10).
 
-With it off, nothing in this section applies. With it on:
+With it off, nothing in this section applies. With **2 points or 3 points**:
 
 - **Each player is dealt three planets at random from the twelve**, three
   distinct planets a side. The two sets are drawn independently, so they
@@ -294,33 +301,24 @@ With it off, nothing in this section applies. With it on:
 - **Both players' three planets are known to both players from the start of
   the game.**
 
-A bonus planet is an ordinary planet that also pays once: it is not owned,
-and everything section 3.1 says about a planet — the protection from
-attack, and the power a ship recovers there — still applies to it exactly
-as it does to any other planet.
+Under 2 points or 3 points, a bonus planet is an ordinary planet that also
+pays once: it is not owned, and everything section 3.1 says about a
+planet — the protection from attack, and the power a ship recovers
+there — still applies to it exactly as it does to any other planet. Under
+advanced, a bonus planet is an ordinary planet in the same way (steal.md
+§10).
 
 ---
 
 ## 4. Ships
 
-Each player has **three, four, five or six** ships — the same number for
+Each player has **three, four or five** ships — the same number for
 both players, chosen before play begins. One player is **green**, the other
 **red**. Green takes the first turn.
 
 A ship starts on a **starting square** (section 3.1) — an ordinary square in
 every way, occupied or not. Which starting squares are used, and which
 colour stands on each, depends on the fleet size:
-
-**Six a side (12 ships).**
-
-| Edge   | Left to right / top to bottom        |
-| ------ | ------------------------------------ |
-| Top    | D15 red, L15 red                     |
-| Right  | O14 green, O10 red, O6 green, O2 red |
-| Bottom | D1 green, L1 green                   |
-| Left   | A14 green, A10 red, A6 green, A2 red |
-
-Green: O14, O6, D1, L1, A14, A6. Red: D15, L15, O10, O2, A10, A2.
 
 **Five a side (10 ships).**
 
@@ -355,7 +353,7 @@ Green: C15, M15, O6, A6. Red: O10, M1, C1, A10.
 
 Green: H15, O6, A6. Red: O10, H1, A10.
 
-In each of the four layouts, one player's starting fleet is the exact
+In each of the three layouts, one player's starting fleet is the exact
 half-turn rotation of the other's, so neither side begins with better
 ground.
 
@@ -373,9 +371,11 @@ charging (section 3.1) — up to the maximum of 6. Nothing else changes a
 ship's power: a **charged** node does not reduce it, a **depleted** node does
 not refill it, an **inactive** node does neither, and a fight leaves the
 defender's power alone (section 7). Under the steal playstyle (section 8.2)
-a **prospective** node does nothing to it either. A ship at 0 power is not
-destroyed and is not stuck: the one-square orthogonal move is free, and a
-planet will refill it.
+a **prospective** node does nothing to it either. Under the advanced planet
+bonus setting, claiming a Fuel bonus is the one exception: it raises power
+directly, outside a planet and outside the end of a turn (steal.md §10). A
+ship at 0 power is not destroyed and is not stuck: the one-square
+orthogonal move is free, and a planet will refill it.
 
 ---
 
@@ -535,13 +535,13 @@ placed first, and the defender's planet is then drawn from the planets still
 empty. Which ship is placed first makes no difference to the odds, but
 fixing the order is what lets a recorded game replay exactly. Under the
 planet bonus setting, a ship placed here may claim a bonus on arrival, for
-its own side (section 3.4).
+its own side (section 3.4) — under advanced, steal.md §10 states the fight's
+own order for the two placements and their claims.
 
-There is always somewhere to go: with at most twelve ships and twelve
-planets, the two ships in a fight were by definition not on planets, so at
-most ten planets are occupied and at least two are free — enough for the
-attacker's placement, and the defender's after it, to each find an empty
-one.
+There is always somewhere to go: with at most ten ships and twelve planets,
+the two ships in a fight were by definition not on planets, so at most eight
+planets are occupied and at least four are free — enough for the attacker's
+placement, and the defender's after it, to each find an empty one.
 
 ### 7.2 Returning by choice
 
@@ -859,7 +859,7 @@ Everything that happens at the end of a turn happens in this order:
    freed. If no depleted node under that player's ships qualifies, nothing
    happens, and that player's turn passes under section 5.
 
-Under the planet bonus setting, a bonus (section 3.4) is paid at the
+Under the planet bonus setting, a bonus (section 3.4) takes effect at the
 instant a ship lands and takes no step in this order.
 
 Under the steal playstyle (section 8.2), only steps 1 and 2 of this order

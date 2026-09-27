@@ -7,11 +7,14 @@ import { CHARGED_NODE_COUNTS } from "./nodes";
 import { mulberry32 } from "./random";
 import {
   abandonNode,
+  addExtraProspectiveSquares,
   claimNode,
   dealStealOpeningBoard,
+  everyNodeHasExtra,
   matchedSignalForSide,
   nodeAnchor,
   NODE_SIGNALS,
+  scrambleProspectiveSquares,
   sideMatchedToSignal,
   squaresForSignal,
 } from "./steal";
@@ -105,22 +108,39 @@ describe("nodeAnchor", () => {
       B4: { state: "charged", level: 0, signal: 0 },
       L8: { state: "prospective", level: 0, signal: 0 },
     });
-    expect(squareName(nodeAnchor(map, 0))).toBe("B4");
+    expect(nodeAnchor(map, 0).map(squareName)).toEqual(["B4"]);
+  });
+
+  it("is the extra when the node is Held and carries one, even with the ordinary square present too", () => {
+    const map = nodes({
+      B4: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+    });
+    expect(nodeAnchor(map, 0).map(squareName)).toEqual(["B4"]);
   });
 
   it("is the one square present when only one has been placed", () => {
     const map = nodes({
       B4: { state: "prospective", level: 0, signal: 0 },
     });
-    expect(squareName(nodeAnchor(map, 0))).toBe("B4");
+    expect(nodeAnchor(map, 0).map(squareName)).toEqual(["B4"]);
   });
 
-  it("throws for an Open node, which carries no single square to anchor on", () => {
+  it("is the extra alone when a node is Open with a surviving extra and one other square", () => {
+    const map = nodes({
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+    });
+    expect(nodeAnchor(map, 0).map(squareName)).toEqual(["L8"]);
+  });
+
+  it("is both ordinary squares of an Open node with no extra (steal.md §10's two-anchor case)", () => {
     const map = nodes({
       B4: { state: "prospective", level: 0, signal: 0 },
       L8: { state: "prospective", level: 0, signal: 0 },
     });
-    expect(() => nodeAnchor(map, 0)).toThrow(RangeError);
+    expect(nodeAnchor(map, 0).map(squareName).sort()).toEqual(["B4", "L8"]);
   });
 
   it("throws for a signal with no squares at all", () => {
@@ -217,7 +237,7 @@ describe("claimNode (steal.md §3)", () => {
     const result = claimNode(before, 0, claimedSquare, shipSquares, 4242);
 
     expect(result.releasedSquare).toBeUndefined();
-    expect(result.discardedSquare).toEqual(squareAt("L", 8));
+    expect(result.discardedSquares).toEqual([squareAt("L", 8)]);
     expect(result.nodes.H8).toEqual({ state: "charged", level: 0, signal: 0 });
     expect(result.nodes.L8).toBeUndefined();
     expect(Object.keys(result.nodes).sort()).toEqual(
@@ -243,7 +263,7 @@ describe("claimNode (steal.md §3)", () => {
     const result = claimNode(before, 0, claimedSquare, [claimedSquare], 17);
 
     expect(result.releasedSquare).toEqual(squareAt("G", 8));
-    expect(result.discardedSquare).toBeUndefined();
+    expect(result.discardedSquares).toEqual([]);
     expect(result.nodes.G8).toBeUndefined();
     expect(result.nodes.H8).toEqual({ state: "charged", level: 0, signal: 0 });
   });
@@ -264,7 +284,7 @@ describe("claimNode (steal.md §3)", () => {
 
     const expected = drawStealProspectiveSquare(
       [claimedSquare, squareAt("C", 3), squareAt("D", 4)],
-      claimedSquare,
+      [claimedSquare],
       [squareAt("C", 3), squareAt("D", 4)],
       [claimedSquare],
       8,
@@ -300,6 +320,74 @@ describe("claimNode (steal.md §3)", () => {
 
     expect(second).toEqual(first);
     expect(third).not.toEqual(first);
+  });
+
+  it("claims either prospective square of an Open node with an extra, leaving it Held with exactly two squares and no extra (steal.md §10)", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+    };
+    const claimedSquare = squareAt("H", 8);
+
+    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 4242);
+
+    expect(result.discardedSquares).toEqual([squareAt("L", 8)]);
+    expect(result.nodes.H8).toEqual({ state: "charged", level: 0, signal: 0 });
+    expect(result.nodes.L8).toBeUndefined();
+    expect(Object.keys(result.nodes).sort()).toEqual(
+      ["H8", squareName(result.newProspective)].sort(),
+    );
+    expect(
+      result.nodes[squareName(result.newProspective)]?.extra,
+    ).toBeUndefined();
+  });
+
+  it("claims a Held node with an extra: releases the charged square and discards the extra alongside", () => {
+    const before: Record<string, NodeStatus> = {
+      G8: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+    };
+    const claimedSquare = squareAt("H", 8);
+
+    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 17);
+
+    expect(result.releasedSquare).toEqual(squareAt("G", 8));
+    expect(result.discardedSquares).toEqual([squareAt("L", 8)]);
+    expect(result.nodes.G8).toBeUndefined();
+    expect(result.nodes.L8).toBeUndefined();
+    expect(result.nodes.H8).toEqual({ state: "charged", level: 0, signal: 0 });
+  });
+
+  it("claims an Open node with an extra by landing on the extra itself, discarding both ordinary squares", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 0 },
+      K5: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+    };
+    const claimedSquare = squareAt("L", 8);
+
+    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 4242);
+
+    expect(result.discardedSquares.map(squareName).sort()).toEqual(
+      ["H8", "K5"].sort(),
+    );
+    expect(result.nodes.L8).toEqual({ state: "charged", level: 0, signal: 0 });
+  });
+
+  it("treats a holder relocating onto its own node's extra as a claim, releasing only the charged square", () => {
+    const before: Record<string, NodeStatus> = {
+      G8: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+    };
+    const claimedSquare = squareAt("L", 8);
+
+    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 17);
+
+    expect(result.releasedSquare).toEqual(squareAt("G", 8));
+    expect(result.discardedSquares).toEqual([squareAt("H", 8)]);
+    expect(result.nodes.L8).toEqual({ state: "charged", level: 0, signal: 0 });
   });
 });
 
@@ -357,5 +445,263 @@ describe("abandonNode (steal.md §4)", () => {
 
     expect(second).toEqual(first);
     expect(third).not.toEqual(first);
+  });
+
+  it("leaving a Held node with an extra leaves it Open with three prospective squares, the extra still flagged", () => {
+    const before: Record<string, NodeStatus> = {
+      G8: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+    };
+    const vacatedSquare = squareAt("G", 8);
+
+    const result = abandonNode(before, 0, vacatedSquare, [], 654);
+
+    expect(result.nodes.G8).toBeUndefined();
+    expect(result.nodes.H8).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 0,
+    });
+    expect(result.nodes.L8).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 0,
+      extra: true,
+    });
+    expect(squaresForSignal(result.nodes, 0)).toHaveLength(3);
+  });
+
+  it("anchors the new square on the extra, not the ordinary square, when leaving a Held node with an extra", () => {
+    const before: Record<string, NodeStatus> = {
+      G8: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+    };
+    const vacatedSquare = squareAt("G", 8);
+    const shipSquares = [squareAt("D", 4)];
+    const seed = 654;
+
+    const result = abandonNode(before, 0, vacatedSquare, shipSquares, seed);
+
+    const expected = drawStealProspectiveSquare(
+      [squareAt("H", 8), squareAt("L", 8)],
+      [squareAt("L", 8)],
+      [],
+      shipSquares,
+      seed,
+    );
+    expect(squareName(result.newProspective)).toBe(squareName(expected[0]));
+    expect(result.nextSeed).toBe(expected[1]);
+  });
+});
+
+describe("everyNodeHasExtra (steal.md §10)", () => {
+  it("is false while any node up to nodeCount lacks an extra", () => {
+    const map = nodes({
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      C3: { state: "prospective", level: 0, signal: 1 },
+      D4: { state: "prospective", level: 0, signal: 1 },
+      E5: { state: "prospective", level: 0, signal: 2 },
+      F6: { state: "prospective", level: 0, signal: 2, extra: true },
+    });
+    expect(everyNodeHasExtra(map, 3)).toBe(false);
+  });
+
+  it("is true once every node up to nodeCount carries an extra", () => {
+    const map = nodes({
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      C3: { state: "prospective", level: 0, signal: 1 },
+      D4: { state: "prospective", level: 0, signal: 1, extra: true },
+      E5: { state: "prospective", level: 0, signal: 2 },
+      F6: { state: "prospective", level: 0, signal: 2, extra: true },
+    });
+    expect(everyNodeHasExtra(map, 3)).toBe(true);
+  });
+});
+
+describe("addExtraProspectiveSquares (steal.md §10)", () => {
+  const before: Record<string, NodeStatus> = {
+    H8: { state: "prospective", level: 0, signal: 0 },
+    L8: { state: "prospective", level: 0, signal: 0 },
+    C3: { state: "prospective", level: 0, signal: 1, extra: true },
+    D4: { state: "prospective", level: 0, signal: 1 },
+    F5: { state: "prospective", level: 0, signal: 2 },
+    F9: { state: "prospective", level: 0, signal: 2 },
+  };
+
+  it("adds exactly one extra to each node lacking one, none to a node that already has one, in signal order", () => {
+    const result = addExtraProspectiveSquares(before, 3, [], 4242);
+
+    expect(result.nodes.C3).toEqual(before.C3);
+    expect(result.nodes.D4).toEqual(before.D4);
+    expect(result.addedSquares).toHaveLength(2);
+
+    const [firstAdded, secondAdded] = result.addedSquares;
+    expect(result.nodes[squareName(firstAdded)]).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 0,
+      extra: true,
+    });
+    expect(result.nodes[squareName(secondAdded)]).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 2,
+      extra: true,
+    });
+
+    for (const signal of [0, 1, 2] as const) {
+      const extras = squaresForSignal(result.nodes, signal).filter(
+        (square) => result.nodes[squareName(square)]?.extra === true,
+      );
+      expect(extras).toHaveLength(1);
+    }
+  });
+
+  it("consumes exactly one seed step per square added", () => {
+    const seed = 4242;
+    const result = addExtraProspectiveSquares(before, 3, [], seed);
+
+    let expectedSeed = seed;
+    for (let step = 0; step < result.addedSquares.length; step++) {
+      [, expectedSeed] = mulberry32(expectedSeed);
+    }
+    expect(result.nextSeed).toBe(expectedSeed);
+  });
+
+  it("deals the same result for the same seed, and a different one for a different seed", () => {
+    const first = addExtraProspectiveSquares(before, 3, [], 9);
+    const second = addExtraProspectiveSquares(before, 3, [], 9);
+    const third = addExtraProspectiveSquares(before, 3, [], 10);
+
+    expect(second).toEqual(first);
+    expect(third).not.toEqual(first);
+  });
+
+  it("adds nothing, and does not touch the seed, once every node already has its extra", () => {
+    const everyoneHasExtra: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      C3: { state: "prospective", level: 0, signal: 1 },
+      D4: { state: "prospective", level: 0, signal: 1, extra: true },
+      F5: { state: "prospective", level: 0, signal: 2 },
+      F9: { state: "prospective", level: 0, signal: 2, extra: true },
+    };
+    const result = addExtraProspectiveSquares(everyoneHasExtra, 3, [], 4242);
+
+    expect(result.addedSquares).toEqual([]);
+    expect(result.nodes).toEqual(everyoneHasExtra);
+    expect(result.nextSeed).toBe(4242);
+  });
+
+  it("draws each added square from the widened pool, off every other node's squares and every ship", () => {
+    const shipSquares = [squareAt("A", 1), squareAt("O", 15)];
+    const result = addExtraProspectiveSquares(before, 3, shipSquares, 777);
+
+    const occupiedBefore = new Set(Object.keys(before));
+    const shipNames = new Set(shipSquares.map(squareName));
+    for (const square of result.addedSquares) {
+      const name = squareName(square);
+      expect(occupiedBefore.has(name)).toBe(false);
+      expect(shipNames.has(name)).toBe(false);
+    }
+  });
+});
+
+describe("scrambleProspectiveSquares (steal.md §10)", () => {
+  const before: Record<string, NodeStatus> = {
+    G8: { state: "charged", level: 0, signal: 0 },
+    H8: { state: "prospective", level: 0, signal: 0 },
+    L8: { state: "prospective", level: 0, signal: 0, extra: true },
+    C3: { state: "prospective", level: 0, signal: 1 },
+    D4: { state: "prospective", level: 0, signal: 1 },
+    E10: { state: "prospective", level: 0, signal: 2 },
+    K12: { state: "prospective", level: 0, signal: 2 },
+    N2: { state: "prospective", level: 0, signal: 2, extra: true },
+  };
+
+  it("leaves charged squares and extras exactly where they were, and redraws every ordinary prospective square", () => {
+    const result = scrambleProspectiveSquares(before, 3, [], 4242);
+
+    expect(result.nodes.G8).toEqual(before.G8);
+    expect(result.nodes.L8).toEqual(before.L8);
+    expect(result.nodes.N2).toEqual(before.N2);
+
+    expect(result.removedSquares.map(squareName).sort()).toEqual(
+      ["C3", "D4", "E10", "H8", "K12"].sort(),
+    );
+    expect(result.addedSquares).toHaveLength(5);
+
+    const signal0 = squaresForSignal(result.nodes, 0);
+    expect(signal0).toHaveLength(3);
+    expect(
+      signal0.filter(
+        (square) => result.nodes[squareName(square)]?.state === "charged",
+      ),
+    ).toHaveLength(1);
+    expect(
+      signal0.filter(
+        (square) => result.nodes[squareName(square)]?.extra === true,
+      ),
+    ).toHaveLength(1);
+
+    const signal1 = squaresForSignal(result.nodes, 1);
+    expect(signal1).toHaveLength(2);
+    expect(
+      signal1.some(
+        (square) => result.nodes[squareName(square)]?.extra === true,
+      ),
+    ).toBe(false);
+
+    const signal2 = squaresForSignal(result.nodes, 2);
+    expect(signal2).toHaveLength(3);
+    expect(
+      signal2.filter(
+        (square) => result.nodes[squareName(square)]?.extra === true,
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("consumes exactly one seed step per square added", () => {
+    const seed = 4242;
+    const result = scrambleProspectiveSquares(before, 3, [], seed);
+
+    let expectedSeed = seed;
+    for (let step = 0; step < result.addedSquares.length; step++) {
+      [, expectedSeed] = mulberry32(expectedSeed);
+    }
+    expect(result.nextSeed).toBe(expectedSeed);
+  });
+
+  it("deals the same result for the same seed, and a different one for a different seed", () => {
+    const first = scrambleProspectiveSquares(before, 3, [], 9);
+    const second = scrambleProspectiveSquares(before, 3, [], 9);
+    const third = scrambleProspectiveSquares(before, 3, [], 10);
+
+    expect(second).toEqual(first);
+    expect(third).not.toEqual(first);
+  });
+
+  it("draws an Open node's pair afresh, uniformly for the first and weighted for the second, when nothing survives it", () => {
+    const openWithNothingLeft: Record<string, NodeStatus> = {
+      C3: { state: "prospective", level: 0, signal: 0 },
+      D4: { state: "prospective", level: 0, signal: 0 },
+      G8: { state: "charged", level: 0, signal: 1 },
+      H8: { state: "prospective", level: 0, signal: 1 },
+      K11: { state: "charged", level: 0, signal: 2 },
+      K12: { state: "prospective", level: 0, signal: 2 },
+    };
+    const result = scrambleProspectiveSquares(openWithNothingLeft, 3, [], 4242);
+
+    expect(result.removedSquares.map(squareName).sort()).toEqual(
+      ["C3", "D4", "H8", "K12"].sort(),
+    );
+    expect(result.addedSquares).toHaveLength(4);
+    expect(squaresForSignal(result.nodes, 0)).toHaveLength(2);
+    expect(squaresForSignal(result.nodes, 1)).toHaveLength(2);
+    expect(squaresForSignal(result.nodes, 2)).toHaveLength(2);
   });
 });

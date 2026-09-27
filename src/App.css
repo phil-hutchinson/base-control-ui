@@ -62,6 +62,16 @@
       )
     )
   );
+
+  /* The size a planet actually draws at on the board: one board square,
+     `--square` in Board.css, one fifteenth of `--play-size` and never below
+     `--board-square-floor` (`index.css`). `PlanetBonusPanel.css` reads this
+     token too, so its own planets stay at least as large as the board's, in
+     step with it as the window changes. */
+  --board-square-size: max(
+    var(--board-square-floor),
+    calc(var(--play-size) / 15)
+  );
 }
 
 .app {
@@ -159,16 +169,17 @@
 }
 
 .app__play {
-  /* A size container so `.board-frame` can measure its square size against
-     the room this element actually has. `--play-size` gives it an explicit,
-     definite width and height computed directly from the window (see the
-     `:root` token above), rather than one inherited down a flex chain, so
-     `flex: 0 0 auto` — it neither grows into nor shrinks out of the size
-     already computed for it. The board is always exactly this container's
-     size, so `justify-content: center` and `align-items: flex-start` have
-     nothing left to do; they stay as belt-and-braces against a container
-     that can no longer be undersized. */
-  container-type: size;
+  /* `--play-size` gives this an explicit, definite width and height
+     computed directly from the window (see the `:root` token above),
+     rather than one inherited down a flex chain, so `flex: 0 0 auto` — it
+     neither grows into nor shrinks out of the size already computed for
+     it. `.board-frame`'s own square size (`--board-square-size`, `App.css`
+     `:root`) is derived from that same `--play-size` token directly rather
+     than by measuring this box, since the two are already defined to be
+     identical. The board is always exactly this container's size, so
+     `justify-content: center` and `align-items: flex-start` have nothing
+     left to do; they stay as belt-and-braces against a container that can
+     no longer be undersized. */
   display: flex;
   flex: 0 0 auto;
   width: var(--play-size);
@@ -186,12 +197,14 @@
      beside them; each of the two owns everything inside itself and its own
      stylesheet, exactly as `.app__info` owns `Hud`. With the panel off
      (`PlanetBonusPanel` renders nothing) this box holds only the clock
-     region, exactly as it always has. */
+     region, exactly as it always has. The gap only ever sits between the
+     panel and the clocks, and is wide enough to read the two as separate
+     groups. */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--region-extent) * 0.05);
+  gap: calc(var(--region-extent) * 0.14);
   flex: 0 0 var(--region-extent);
   width: 100%;
 }
@@ -243,6 +256,14 @@
        centred against the play area by `.app__screen`'s existing cross-axis
        centring. */
     width: var(--region-extent);
+  }
+
+  .app__clocks {
+    /* Landscape leaves the column's height to its content, so a wide gap
+       costs nothing: it sets the bonus panel well apart from the clocks.
+       Portrait keeps the narrower base gap, because there the gap comes out
+       of the panel's own height budget. */
+    gap: calc(var(--region-extent) * 0.35);
   }
 
   .app__title {

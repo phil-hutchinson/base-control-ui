@@ -26,8 +26,18 @@
 // A square also carries at most one `animation` (`boardAnimations.ts`),
 // routed here to whichever of the node marker, the countdown or the rotator
 // mark it belongs to.
+//
+// A planet square also gains a soft halo around its drawing while the
+// player is hovering that planet in the bonus panel (`App`'s lifted hover
+// state, rules.md §3.4, steal.md §10) — purely decorative, drawn in CSS
+// alone from the `glow` flag, with no effect on the square's accessible
+// name. The link runs the other way too: a bonus planet square reports the
+// pointer entering it through `onPointerEnter`, so hovering it lights the
+// matching cell in the panel — `Board` supplies this only for a square the
+// panel currently draws. Every square reports the pointer leaving it
+// through `onPointerLeave`, whether or not it is one the panel draws.
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, PointerEvent } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
@@ -83,6 +93,20 @@ export interface BoardSquareProps {
   readonly mark?: SquareMark;
   /** The animation, if any, currently playing on this square's node or rotator. */
   readonly animation?: SquareAnimation;
+  /**
+   * Whether this square's planet should glow, because it is the one the
+   * player is currently hovering in the bonus panel (`Board`'s `glowSquare`
+   * prop). Meaningless off a planet square.
+   */
+  readonly glow?: boolean;
+  /**
+   * Reports the pointer entering this square, for a bonus planet square
+   * only (`Board` supplies this only when the square is one the bonus panel
+   * currently draws).
+   */
+  readonly onPointerEnter?: (event: PointerEvent<HTMLDivElement>) => void;
+  /** Reports the pointer leaving this square, whether or not it is a bonus planet. */
+  readonly onPointerLeave?: (event: PointerEvent<HTMLDivElement>) => void;
 }
 
 // Geometry for the markings, in the same 0-100 viewBox ShipModel and
@@ -242,6 +266,9 @@ export function BoardSquare({
   condition,
   mark,
   animation,
+  glow,
+  onPointerEnter,
+  onPointerLeave,
 }: BoardSquareProps) {
   const chargeAnimation =
     animation?.type === "node-charge" ? animation : undefined;
@@ -259,6 +286,9 @@ export function BoardSquare({
   if (isDampened) {
     classNames.push("board-square--dampened");
   }
+  if (glow) {
+    classNames.push("board-square--glow");
+  }
 
   // Threads DAMPENED_OPACITY into BoardSquare.css as the one place it is
   // defined, rather than duplicating the number in the stylesheet.
@@ -267,7 +297,12 @@ export function BoardSquare({
     : undefined;
 
   return (
-    <div className={classNames.join(" ")} style={style}>
+    <div
+      className={classNames.join(" ")}
+      style={style}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
+    >
       {planet && <Planet planet={planet} />}
       {nodeState && (
         <NodeMarker

@@ -11,6 +11,7 @@ import type {
   EnergyCollectedEffect,
 } from "../rules/endOfTurn";
 import type {
+  AdvancedBonusClaimedEffect,
   FightResolvedEffect,
   NodeAbandonedEffect,
   NodeClaimedEffect,
@@ -51,8 +52,9 @@ function settlementsIn(effects: readonly EndOfTurnEffect[]): Settlement[] {
  * otherwise different types (a move's can also carry a `NodeSpentEffect` or,
  * under steal, a `NodeAbandonedEffect` and a `NodeClaimedEffect`, and an
  * attack's a `FightResolvedEffect`, and either can carry a
- * `QueueRotatedEffect` or a `PlanetBonusClaimedEffect`, none of which carries
- * a settlement of its own).
+ * `QueueRotatedEffect`, a `PlanetBonusClaimedEffect` or an
+ * `AdvancedBonusClaimedEffect`, none of which carries a settlement of its
+ * own).
  */
 function endOfPlySettlements(
   effects: readonly (
@@ -63,6 +65,7 @@ function endOfPlySettlements(
     | NodeAbandonedEffect
     | NodeClaimedEffect
     | PlanetBonusClaimedEffect
+    | AdvancedBonusClaimedEffect
     | QueueRotatedEffect
   )[],
 ): Settlement[] {

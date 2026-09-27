@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
 import { PLANETS, isPlanet } from "../rules/planets";
@@ -123,6 +129,7 @@ function stateWithNode(
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
+    advancedBonuses: [],
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -151,6 +158,7 @@ function stateWithStealNodes(
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
+    advancedBonuses: [],
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -176,6 +184,33 @@ function stateWithRotators(squares: readonly Square[]): GameState {
     rotators: squares,
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
+    advancedBonuses: [],
+    energy: { green: 0, red: 0 },
+    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+    outOfTime: { green: false, red: false },
+    combatEnabled: true,
+    scoring: "simple",
+    playerMatching: "off",
+  };
+}
+
+/** A minimal hand-built state carrying a single classic bonus planet
+ * (rules.md §3.4) for green, isolating the wiring from `state.bonusPlanets`
+ * through `Board.tsx`'s hover reporting to `bonusPanelSquareNames`. */
+function stateWithBonusPlanet(square: Square): GameState {
+  return {
+    ships: [],
+    nodes: {},
+    sideToMove: "green",
+    plyNumber: 1,
+    randomSeed: 1,
+    openingSeed: 1,
+    nodePlaystyle: "continuous",
+    rotators: [],
+    planetBonus: "two",
+    bonusPlanets: { green: [{ square }], red: [] },
+    advancedBonuses: [],
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -302,6 +337,189 @@ describe("Board", () => {
     }
 
     expect(container.querySelectorAll(".planet")).toHaveLength(PLANETS.length);
+  });
+
+  describe("glowSquare (App's hover state, steal.md §10, rules.md §3.4)", () => {
+    it("glows exactly the given planet square, and none by default", () => {
+      const { container: plain } = render(
+        <Board session={startingSession} onIntent={noop} />,
+      );
+      expect(plain.querySelectorAll(".board-square--glow")).toHaveLength(0);
+      cleanup();
+
+      const { container } = render(
+        <Board
+          session={startingSession}
+          onIntent={noop}
+          glowSquare={PLANETS[0]}
+        />,
+      );
+      const glowing = container.querySelectorAll(".board-square--glow");
+      expect(glowing).toHaveLength(1);
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(PLANETS[0])}, planet`,
+      });
+      expect(cell.querySelector(".board-square--glow")).toBeInTheDocument();
+    });
+
+    it("moves the glow off a square once glowSquare no longer names it", () => {
+      const { container, rerender } = render(
+        <Board
+          session={startingSession}
+          onIntent={noop}
+          glowSquare={PLANETS[0]}
+        />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(PLANETS[0])}, planet`,
+      });
+      expect(cell.querySelector(".board-square--glow")).toBeInTheDocument();
+
+      rerender(
+        <Board
+          session={startingSession}
+          onIntent={noop}
+          glowSquare={undefined}
+        />,
+      );
+      expect(container.querySelectorAll(".board-square--glow")).toHaveLength(0);
+    });
+  });
+
+  describe("onHoverSquare (reporting a hover on a bonus planet, steal.md §10, rules.md §3.4)", () => {
+    it("reports the square entering a planet the bonus panel draws, and undefined leaving it", () => {
+      const bonusSquare = PLANETS[0];
+      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const onHoverSquare = vi.fn();
+
+      render(
+        <Board
+          session={session}
+          onIntent={noop}
+          onHoverSquare={onHoverSquare}
+        />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(bonusSquare)}, planet`,
+      });
+
+      fireEvent.pointerEnter(cell.querySelector(".board-square")!);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(bonusSquare);
+
+      fireEvent.pointerLeave(cell.querySelector(".board-square")!);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it("reports nothing for a planet the bonus panel does not draw", () => {
+      const bonusSquare = PLANETS[0];
+      const otherPlanet = PLANETS[1];
+      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const onHoverSquare = vi.fn();
+
+      render(
+        <Board
+          session={session}
+          onIntent={noop}
+          onHoverSquare={onHoverSquare}
+        />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(otherPlanet)}, planet`,
+      });
+
+      fireEvent.pointerEnter(cell.querySelector(".board-square")!);
+      expect(onHoverSquare).not.toHaveBeenCalled();
+    });
+
+    it("reports the pointer leaving a planet even after it has stopped being one the bonus panel draws", () => {
+      // A square that was hoverable when the pointer entered it can become
+      // non-hoverable by the time the pointer leaves — a claim removes it
+      // from the bonus set without the pointer ever moving. The leave must
+      // still be reported, or the hover state never learns the pointer went
+      // away.
+      const bonusSquare = PLANETS[0];
+      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const onHoverSquare = vi.fn();
+
+      const { rerender } = render(
+        <Board
+          session={session}
+          onIntent={noop}
+          onHoverSquare={onHoverSquare}
+        />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(bonusSquare)}, planet`,
+      });
+      const square = cell.querySelector(".board-square")!;
+
+      fireEvent.pointerEnter(square);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(bonusSquare);
+
+      // The planet stops carrying a bonus, with the pointer still over it.
+      const noLongerABonusPlanet = createSession({
+        ...session.state,
+        bonusPlanets: { green: [], red: [] },
+      });
+      rerender(
+        <Board
+          session={noLongerABonusPlanet}
+          onIntent={noop}
+          onHoverSquare={onHoverSquare}
+        />,
+      );
+
+      fireEvent.pointerLeave(square);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it("still reports a click activating a bonus planet, hovered or not", () => {
+      const bonusSquare = PLANETS[0];
+      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const onIntent = vi.fn();
+
+      render(
+        <Board session={session} onIntent={onIntent} onHoverSquare={noop} />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(bonusSquare)}, planet`,
+      });
+
+      fireEvent.pointerEnter(cell.querySelector(".board-square")!);
+      fireEvent.click(cell);
+
+      expect(onIntent).toHaveBeenCalledWith({
+        type: "activate",
+        square: bonusSquare,
+      });
+    });
+
+    it("ignores a touch-type enter, so no glow sticks after the tap", () => {
+      const bonusSquare = PLANETS[0];
+      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const onHoverSquare = vi.fn();
+
+      render(
+        <Board
+          session={session}
+          onIntent={noop}
+          onHoverSquare={onHoverSquare}
+        />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(bonusSquare)}, planet`,
+      });
+      const event = createEvent.pointerEnter(
+        cell.querySelector(".board-square")!,
+      );
+      Object.defineProperty(event, "pointerType", {
+        value: "touch",
+        configurable: true,
+      });
+
+      fireEvent(cell.querySelector(".board-square")!, event);
+      expect(onHoverSquare).not.toHaveBeenCalled();
+    });
   });
 
   it("draws every gauge slot lit for the starting fleet, since every ship starts at full power", () => {
@@ -571,6 +789,39 @@ describe("Board", () => {
       expect(
         screen.getByRole("gridcell", { name: "H8, prospective node" }),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe("a node with an extra prospective square (steal.md §10)", () => {
+    it("draws all three of its squares as ordinary prospective rings, in its signal's colour", () => {
+      const squares = [squareAt("H", 8), squareAt("E", 5), squareAt("K", 11)];
+      const nodes: Record<string, NodeStatus> = Object.fromEntries(
+        squares.map((square) => [
+          squareName(square),
+          { state: "prospective" as const, level: 0, signal: 2 },
+        ]),
+      );
+      const extraSquareName = squareName(squares[2]);
+      nodes[extraSquareName] = { ...nodes[extraSquareName], extra: true };
+
+      const { container } = render(
+        <Board
+          session={createSession(stateWithStealNodes(nodes))}
+          onIntent={noop}
+        />,
+      );
+
+      for (const square of squares) {
+        const cell = screen.getByRole("gridcell", {
+          name: `${squareName(square)}, prospective node`,
+        });
+        const circles = cell.querySelectorAll(".node-marker circle");
+        expect(circles).toHaveLength(3);
+        for (const circle of circles) {
+          expect(circle).toHaveAttribute("stroke", SIGNAL_COLORS[2].core);
+        }
+      }
+      expect(container.querySelectorAll(".node-marker")).toHaveLength(3);
     });
   });
 
@@ -891,6 +1142,7 @@ describe("Board", () => {
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
+        advancedBonuses: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -993,6 +1245,7 @@ describe("Board", () => {
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
+        advancedBonuses: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1079,6 +1332,7 @@ describe("Board", () => {
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
+        advancedBonuses: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1261,6 +1515,7 @@ describe("Board", () => {
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
+        advancedBonuses: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1463,6 +1718,7 @@ describe("Board", () => {
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
+        advancedBonuses: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1578,6 +1834,7 @@ describe("Board", () => {
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
+        advancedBonuses: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1627,6 +1884,7 @@ describe("Board", () => {
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
+        advancedBonuses: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

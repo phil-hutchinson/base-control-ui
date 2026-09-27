@@ -34,6 +34,7 @@ import {
 } from "../rules/nodes";
 import {
   DEFAULT_PLANET_BONUS,
+  offeredPlanetBonusSettings,
   PLANET_BONUS_SETTINGS,
   type PlanetBonusSetting,
 } from "../rules/planetBonus";
@@ -84,6 +85,7 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
   off: "OFF",
   two: "2 POINTS",
   three: "3 POINTS",
+  advanced: "ADVANCED",
 };
 
 /** The Player-matching nodes group's labels, mirroring `StartScreen`'s own map. */
@@ -184,7 +186,7 @@ describe("StartScreen", () => {
   });
 
   it("renders the ships group with its values and the selected one checked", () => {
-    renderStartScreen({ fleetSize: 6 });
+    renderStartScreen({ fleetSize: 4 });
 
     const group = screen.getByRole("group", { name: "Ships" });
     for (const value of FLEET_SIZES) {
@@ -192,12 +194,24 @@ describe("StartScreen", () => {
         name: String(value),
       });
       expect(radio).toHaveAttribute("value", String(value));
-      if (value === 6) {
+      if (value === 4) {
         expect(radio).toBeChecked();
       } else {
         expect(radio).not.toBeChecked();
       }
     }
+  });
+
+  it("offers exactly 5, 4 and 3 ships, with 5 preselected", () => {
+    renderStartScreen();
+
+    const group = screen.getByRole("group", { name: "Ships" });
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual(["5", "4", "3"]);
+    expect(within(group).getByRole("radio", { name: "5" })).toBeChecked();
   });
 
   it("renders the charged nodes group with its values and the selected one checked", () => {
@@ -408,11 +422,11 @@ describe("StartScreen", () => {
     expect(onScoringChange).toHaveBeenCalledExactlyOnceWith("simple");
   });
 
-  it("renders the planet bonus group with all three labels and the given one checked", () => {
-    renderStartScreen({ planetBonus: "three" });
+  it("renders the planet bonus group with the three classic labels and the given one checked, under a non-steal playstyle", () => {
+    renderStartScreen({ nodePlaystyle: "planet", planetBonus: "three" });
 
     const group = screen.getByRole("group", { name: "Planet bonus" });
-    for (const value of PLANET_BONUS_SETTINGS) {
+    for (const value of offeredPlanetBonusSettings("planet")) {
       const radio = within(group).getByRole("radio", {
         name: PLANET_BONUS_SETTING_LABELS[value],
       });
@@ -422,6 +436,9 @@ describe("StartScreen", () => {
         expect(radio).not.toBeChecked();
       }
     }
+    expect(
+      screen.queryByRole("radio", { name: "ADVANCED" }),
+    ).not.toBeInTheDocument();
   });
 
   it("checks OFF by default, with the planet bonus radios in order OFF, 2 POINTS, 3 POINTS", () => {
@@ -434,6 +451,29 @@ describe("StartScreen", () => {
         .getAllByRole("radio")
         .map((radio) => radio.getAttribute("value")),
     ).toEqual(["off", "two", "three"]);
+  });
+
+  it("offers ADVANCED only while STEAL is chosen, last after the three classic settings", () => {
+    renderStartScreen({ nodePlaystyle: "steal" });
+
+    const group = screen.getByRole("group", { name: "Planet bonus" });
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual(PLANET_BONUS_SETTINGS);
+    expect(
+      within(group).getByRole("radio", { name: "ADVANCED" }),
+    ).toBeInTheDocument();
+  });
+
+  it("checks ADVANCED when chosen under STEAL", () => {
+    renderStartScreen({ nodePlaystyle: "steal", planetBonus: "advanced" });
+
+    const group = screen.getByRole("group", { name: "Planet bonus" });
+    expect(
+      within(group).getByRole("radio", { name: "ADVANCED" }),
+    ).toBeChecked();
   });
 
   it("calls the planet bonus change handler with three when 3 POINTS is chosen, and not the others", async () => {
@@ -594,7 +634,7 @@ describe("StartScreen", () => {
       onLengthInRoundsChange,
       onClockSettingChange,
       onPlay,
-    } = renderStartScreen({ fleetSize: 6 });
+    } = renderStartScreen({ fleetSize: 4 });
 
     const group = screen.getByRole("group", { name: "Ships" });
     await user.click(within(group).getByRole("radio", { name: "5" }));
@@ -654,7 +694,7 @@ describe("StartScreen", () => {
       onLengthInRoundsChange,
       onClockSettingChange,
       onPlay,
-    } = renderStartScreen({ fleetSize: 6 });
+    } = renderStartScreen({ fleetSize: 4 });
 
     const shipsGroup = screen.getByRole("group", { name: "Ships" });
     await user.click(within(shipsGroup).getByRole("radio", { name: "3" }));
