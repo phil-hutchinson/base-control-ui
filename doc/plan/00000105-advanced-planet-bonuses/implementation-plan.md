@@ -1421,7 +1421,13 @@ doc/ruleset/changelog.md` finds nothing.
 
 ### Step 9 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator. Fleet sizes now three, four or five
+(intro and start-screen list); the planet bonus choice lists advanced, offered
+when steal is chosen; a short passage on advanced follows the planet-bonus
+passage; the quick-guide list gains advanced planet bonuses. `grep -n -i "six
+ships\|(six" README.md` finds nothing.
 
 Run `/update-readme` (or do its job by hand): the fleet sizes become
 "three, four or five" (line ~4 and the start-screen choices list around

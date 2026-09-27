@@ -1,7 +1,7 @@
 # Base Control — Play in Your Browser
 
 Base Control is a game for two players. Each of you commands a fleet of
-three, four, five or six ships — you choose the size before play begins — on
+three, four or five ships — you choose the size before play begins — on
 a 15 x 15 board, competing for the handful of contested nodes that light up
 across it. Hold a node and it pays you energy every turn, at a rate you choose
 before play begins. The player with the most energy at the end wins.
@@ -56,21 +56,21 @@ install, no account, no server.
 > **Status:** early development. The app now plays a whole game, from the
 > opening position to the final score. Opening it shows a start screen, not the
 > board: the game's name, a choice of node playstyle (continuous, planet,
-> dedicated or steal, planet to start), a choice of how many ships a side (six,
-> five, four or three, five to start), a choice of how many nodes are lit at
+> dedicated or steal, planet to start), a choice of how many ships a side
+> (five, four or three, five to start), a choice of how many nodes are lit at
 > once (five, four or three, four to start), a choice of player-matching
 > nodes when steal is chosen (off, double or required, off to start), a
 > choice of how scoring works (simple, one energy for each node held, or
 > bonus, where each extra node held at once is worth more than the last, bonus
-> to start), a choice of whether planets pay a one-time bonus (off, two points
-> or three points, off to start), a choice of whether combat is on or off (off
+> to start), a choice of whether planets pay a bonus (off, two points,
+> three points or, when steal is chosen, advanced, off to start), a choice of whether combat is on or off (off
 > to start), a choice of how many rounds the game lasts (thirty, forty-five,
 > sixty or ninety, thirty to start), a choice of a clock (unlimited, or six,
 > four or two seconds a turn, unlimited to start) and a PLAY button. The start
 > screen also offers a quick guide — a first read for someone who has never
 > played, not a full rules reference — explaining scoring, movement,
-> refuelling, how nodes come and go, player-matching nodes and the planet
-> bonus, with a back button that returns you to the start screen with the
+> refuelling, how nodes come and go, player-matching nodes, the planet
+> bonus and advanced planet bonuses, with a back button that returns you to the start screen with the
 > choices exactly as you left them. Your
 > browser's own back and forward buttons move between the screens too, and the
 > address bar says which screen you are on. Changing any of the choices
@@ -97,7 +97,13 @@ install, no account, no server.
 > for each side, so the two sets may share any number of planets, or none.
 > The first time one of a player's ships lands on one of that player's own
 > three, it pays that player energy once — two or three, whichever was chosen
-> — and never again for that planet, however often ships return to it. Green
+> — and never again for that planet, however often ships return to it.
+> Under steal there is also an advanced option: instead of planets of their
+> own, the players race for two bonuses that stand on the board at once,
+> each on an empty planet. Whoever lands there first takes it — points, a
+> top-up of power for their whole fleet, an extra waiting square for every
+> node, or a shuffle of every node's waiting squares — and the bonus left
+> behind turns into something else while a new one appears elsewhere. Green
 > goes first, and each player moves one ship — or attacks
 > with one, when combat is on — by mouse or by keyboard. Picking a ship shows
 > you where it can go and what each move would cost: a dot on every square it
