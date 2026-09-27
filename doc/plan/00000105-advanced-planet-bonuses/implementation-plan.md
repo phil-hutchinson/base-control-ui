@@ -1450,7 +1450,13 @@ lists matches `StartScreen.tsx`.
 
 ### Step 10 — The owner plays it
 
-Status: pending
+Status: committed
+
+Notes: The owner played it and accepted the rules, balance and guide as they
+stand. Their feedback was on the panel and on finding a bonus planet on the
+board. It became Steps 11 and 12, and Step 13 is the re-check. story.md was
+corrected in place to match: panel sizing, captions, a single fuel bar, and
+the hover glow.
 
 No code, unless the owner's play turns up a defect — fix it here, with a
 test where the defect is in logic, and record it in Notes. A rules wording
@@ -1495,3 +1501,109 @@ here:
 
 (Seeded replay and the live-region sentences are covered by the suite and
 are not part of this check.)
+
+---
+
+### Step 11 — A larger, captioned bonus panel
+
+Status: pending
+
+Rework the ADVANCED panel in `src/bonus/` (`PlanetBonusPanel.tsx`/`.css`,
+`AdvancedBonusCell.tsx`/`.css`, `FuelSymbol.tsx`) to the story's revised
+_What the player sees_:
+
+- **Planet size.** Each planet in the panel is drawn at least as large as a
+  planet on the board. Size it from the same measure the board's squares
+  come from (App.css derives the board size; expose or reuse that rather
+  than hard-coding a second estimate), so the two stay in step as the window
+  changes.
+- **Symbol size.** The symbol under each planet grows to be read at a
+  glance. Aim for most of the planet's width.
+- **Caption.** Under the symbol, add a one-word caption in the arcade face
+  the panel's labels already use: BONUS for every points kind, FUEL,
+  ADD NODES, SCRAMBLE. Keep the words in the kind-to-caption mapping beside
+  the symbol dispatch, not in the rules module. They are UI chrome.
+- **Fuel symbol.** Draw a **single** fuel bar instead of a full gauge.
+- **Layout.** Side by side where the clock region's width allows two cells
+  at that size, stacked where it does not, in landscape and portrait alike.
+  A CSS-only switch is preferred, e.g. a flex row that wraps, or a container
+  query on the panel. The existing guard still holds: `--region-extent` and
+  the board never shrink to make room (see the panel's CSS header). If a
+  real window can't fit two board-sized planets plus their symbols and
+  captions alongside the clocks, choose a layout that keeps the planets
+  board-sized, then record the trade-off and the window sizes you checked in
+  Notes.
+- **The Quick Guide diagram** draws the same cell, so it gains the caption
+  and the single bar with no work of its own. Check that its grid still
+  fits.
+- The classic (2 / 3 points) panel is unchanged by this step.
+
+Tests: the caption for each of the four kinds (all three point sizes read
+BONUS); `FuelSymbol` renders exactly one bar; existing panel and guide
+tests updated where the markup changed. Record in the accessibility ledger
+only if something accessible is actually lost. The panel is already
+`aria-hidden`.
+
+Depends on: Step 6 (the panel), Step 7 (the guide diagram that reuses it).
+
+Verification (automated): typecheck, lint, format:check and full `npm test`
+green. The look itself is checked by the owner in Step 13.
+
+---
+
+### Step 12 — Hovering a panel planet lights it on the board
+
+Status: pending
+
+While the pointer is over a planet drawing in the bonus panel, that
+planet's square on the board glows. When the pointer leaves, the glow ends.
+This applies under every planet bonus setting the panel draws: the
+ADVANCED pair and both classic rows. It is a pointer-hover affordance only.
+It needs no touch or keyboard equivalent, and it changes no game state.
+
+- Hold the hovered square as UI state above both the panel and the board,
+  at the level where `App` already wires the two together. Pass it down as a
+  prop. It is not `GameState`, and it never reaches the rules modules.
+- The glow is drawn by the board on that planet square: a soft halo around
+  the planet artwork, in the app's existing glow idiom (e.g. the
+  `--glow-text` family in `index.css`), clearly visible without covering the
+  planet. Clear it if the hovered planet stops being in the panel mid-hover,
+  for example when a claim replaces it.
+- The panel stays `aria-hidden`. Add a line to
+  `doc/plan/00000021-accessibility-tech-debt/known-issues.md` under story
+  105's section: the hover link between the panel and the board is
+  pointer-only.
+
+Tests: hovering a panel cell puts the glow on exactly that board square,
+and leaving removes it, under ADVANCED and under a classic setting; the glow
+clears when the hovered bonus is claimed and replaced.
+
+Depends on: Step 11 (the panel cells as they now are).
+
+Verification (automated): typecheck, lint, format:check and full `npm test`
+green. The look is checked by the owner in Step 13.
+
+---
+
+### Step 13 — The owner re-checks the panel
+
+Status: pending
+
+No code, unless the owner turns up a defect. In that case fix it here and
+record it in Notes.
+
+Depends on: Steps 11–12.
+
+Verification (manual): run `npm run dev` in the Dev Container. Under steal
+with ADVANCED:
+
+- Each planet in the panel is at least as large as a planet on the board,
+  and each symbol is easy to read, in a wide landscape window, a narrow
+  landscape window and portrait.
+- The two bonuses sit side by side where there is room and stack where
+  there is not, and the board is no smaller than with the panel off.
+- The captions read BONUS, FUEL, ADD NODES and SCRAMBLE, and Fuel shows a
+  single bar.
+- Hovering each panel planet makes the matching board planet glow, and
+  moving off ends it. Check this under 2 or 3 points as well.
+- The Quick Guide's ADVANCED PLANET BONUSES diagram still looks right.

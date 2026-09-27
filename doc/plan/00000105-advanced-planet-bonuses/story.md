@@ -172,26 +172,38 @@ such guarantee.
   that, the choice survives a return to the start screen, like every other.
 - **The Ships group** offers 3, 4 and 5. Five stays preselected.
 - **The bonus panel** sits where it does today, above the clocks. Under
-  ADVANCED it shows **the two current bonus planets side by side**, drawn
-  with the same artwork the board uses on those squares, so a player can
-  match each one to the board at a glance. **Below each planet is a symbol
-  for its kind**:
-  - **Points**: `+N`, the amount the bonus would pay.
-  - **Fuel**: the fuel bar the ships' power gauges already use.
-  - **Additional nodes**: a node's three rings, each ring in a different
-    colour.
-  - **Node scramble**: the rotation symbol the app already has, drawn in
-    three colours.
+  ADVANCED it shows **the two current bonus planets**, drawn with the same
+  artwork the board uses on those squares, so a player can match each one to
+  the board. Each planet is drawn **at least as large as a planet on the
+  board**. The two sit **side by side where the space allows, and stack one
+  above the other where it does not**, in portrait as well as landscape.
+  **Below each planet is a symbol for its kind**, sized to be read at a
+  glance, and **below the symbol a one-word caption**:
 
-  The three colours are **gold, red and green** when player-matching is
-  DOUBLE or REQUIRED, and **gold, silver and blue** otherwise. Blue is the
-  node colour that comes after silver.
+  | Kind             | Symbol                                                | Caption   |
+  | ---------------- | ----------------------------------------------------- | --------- |
+  | Points (any)     | `+N`, the amount the bonus would pay                  | BONUS     |
+  | Fuel             | a **single** fuel bar, the one the power gauges use   | FUEL      |
+  | Additional nodes | a node's three rings, each ring in a different colour | ADD NODES |
+  | Node scramble    | the app's rotation symbol, in three colours           | SCRAMBLE  |
+
+  The single fuel bar says "one power", which is what Fuel gives. ADD NODES
+  stays plural even when only one node still lacks its extra square. The
+  three colours are **gold, red and green** when player-matching is DOUBLE
+  or REQUIRED, and **gold, silver and blue** otherwise. Blue is the node
+  colour that comes after silver.
+- **Hovering over a planet in the panel makes that planet glow on the
+  board**, for as long as the pointer stays on it. This works for every
+  planet the panel draws, under ADVANCED and under 2 or 3 points alike. It
+  is a way to find a planet, not a marking: nothing on the board shows a
+  bonus otherwise.
 - **When a bonus is claimed**, the panel changes straight to the new pair.
   The planet that was not claimed shows its new symbol, and the new planet
   takes the other slot. The claiming side's score rises at the moment of
   the landing.
 - **The board** does not mark bonus planets under ADVANCED, just as it
-  marks none today; the panel is where players read them. The board does
+  marks none today; the panel is where players read them, and the hover
+  glow is the only link between the two. The board does
   show extra prospective squares, as ordinary prospective rings in their
   node's colour, and it shows a scramble's new squares.
 - **The live region** gets a sentence for each claim, saying which side
@@ -256,7 +268,8 @@ choices to weigh against a points bonus.
 
 - **Advanced under the continuous, planet or dedicated playstyles.**
 - **Any animation** of a claim, a re-roll or a new bonus in the panel, and
-  any marking of bonus planets on the board.
+  any lasting marking of bonus planets on the board. The hover glow is the
+  only board effect.
 - **More than two bonuses at once**, or bonus kinds beyond the six listed.
 - **Retuning** the weights, or anything other than the point amounts (see
   _Balancing_).
@@ -279,9 +292,13 @@ result; the measured figures, the rescale and what stayed unchanged are in
 - The Ships group offers 3, 4 and 5 only, with 5 preselected.
 - The Planet bonus group shows ADVANCED only while STEAL is chosen.
   Switching away from STEAL while ADVANCED is chosen resets it to OFF.
-- Under ADVANCED, the panel shows two planets side by side, matching the
-  board's artwork. Their symbols are always two different kinds, and neither
-  planet has a ship on it.
+- Under ADVANCED, the panel shows two planets matching the board's
+  artwork, each at least as large as a planet on the board: side by side
+  where there is room, stacked where there is not. Their symbols are always
+  two different kinds, each captioned BONUS, FUEL, ADD NODES or SCRAMBLE,
+  and neither planet has a ship on it.
+- Hovering over a planet in the panel, under any planet bonus setting,
+  makes that planet glow on the board; moving off it ends the glow.
 - Landing on a points bonus raises the claiming side's score by the table's
   amount, right away. The other planet's symbol changes to a different kind,
   and a new bonus appears on another empty planet.
