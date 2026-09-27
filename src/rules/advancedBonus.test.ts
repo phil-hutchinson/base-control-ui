@@ -3,20 +3,42 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   ADVANCED_BONUS_KINDS,
+  type AdvancedBonusEntry,
   type AdvancedBonusKind,
   advancedBonusPoints,
   dealAdvancedBonuses,
   drawAdvancedBonusKind,
   drawAdvancedBonusPlanet,
   isAdvancedBonusKindAvailable,
+  resolveAdvancedBonusClaim,
 } from "./advancedBonus";
-import { squareName } from "./board";
-import type { NodeStatus } from "./gameState";
+import { type Square, squareFromName, squareName } from "./board";
+import type { NodeStatus, Ship } from "./gameState";
 import { CHARGED_NODE_COUNTS, type ChargedNodeCount } from "./nodes";
 import { PLANETS } from "./planets";
 import { PLAYER_MATCHING_SETTINGS } from "./playerMatching";
+import { MAX_POWER, type PowerLevel } from "./power";
 import { mulberry32 } from "./random";
 import { SCORING_SETTINGS } from "./scoring";
+
+function ship(
+  id: string,
+  side: "green" | "red",
+  square: string,
+  power: PowerLevel = 4,
+): Ship {
+  return { id, side, square: squareFromName(square), power };
+}
+
+function bonuses(
+  first: readonly [Square, AdvancedBonusKind],
+  second: readonly [Square, AdvancedBonusKind],
+): readonly [AdvancedBonusEntry, AdvancedBonusEntry] {
+  return [
+    { square: first[0], kind: first[1] },
+    { square: second[0], kind: second[1] },
+  ];
+}
 
 const NO_NODES: Readonly<Record<string, NodeStatus>> = {};
 
@@ -275,5 +297,226 @@ describe("dealAdvancedBonuses (steal.md §10, D4)", () => {
 
     expect(secondBonuses).toEqual(firstBonuses);
     expect(thirdBonuses).not.toEqual(firstBonuses);
+  });
+});
+
+describe("resolveAdvancedBonusClaim (steal.md §10, D2, D5)", () => {
+  const [claimedPlanet, survivorPlanet] = PLANETS;
+
+  function stateFor(config: {
+    readonly kind: AdvancedBonusKind;
+    readonly survivorKind?: AdvancedBonusKind;
+    readonly nodes?: Readonly<Record<string, NodeStatus>>;
+    readonly ships?: readonly Ship[];
+    readonly playerMatching?: "off" | "double" | "required";
+    readonly scoring?: "simple" | "bonus";
+    readonly randomSeed?: number;
+  }) {
+    return {
+      nodes: config.nodes ?? NO_NODES,
+      ships: config.ships ?? [
+        ship("green-1", "green", squareName(claimedPlanet)),
+      ],
+      advancedBonuses: bonuses(
+        [claimedPlanet, config.kind],
+        [survivorPlanet, config.survivorKind ?? "medium-points"],
+      ),
+      chargedNodeCount: 3 as ChargedNodeCount,
+      playerMatching: config.playerMatching ?? "off",
+      scoring: config.scoring ?? "simple",
+      randomSeed: config.randomSeed ?? 4242,
+    };
+  }
+
+  it("throws when the landed planet carries neither current bonus", () => {
+    const state = stateFor({ kind: "small-points" });
+    expect(() => resolveAdvancedBonusClaim(state, "green", PLANETS[5])).toThrow(
+      RangeError,
+    );
+  });
+
+  it("a points kind reports the table's amount and leaves nodes and ships untouched", () => {
+    const state = stateFor({
+      kind: "large-points",
+      survivorKind: "fuel",
+      playerMatching: "off",
+      scoring: "simple",
+    });
+    const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+
+    expect(result.outcome.kind).toBe("large-points");
+    expect(result.outcome.pointsAwarded).toBe(
+      advancedBonusPoints(3, "off", "simple", "large"),
+    );
+    expect(result.outcome.poweredShipIds).toEqual([]);
+    expect(result.outcome.addedSquares).toEqual([]);
+    expect(result.outcome.removedSquares).toEqual([]);
+    expect(result.nodes).toEqual(state.nodes);
+    expect(result.ships).toEqual(state.ships);
+  });
+
+  it("Fuel raises every one of the claiming side's ships below the maximum by one, and leaves the opponent's untouched", () => {
+    const ships: Ship[] = [
+      ship("green-1", "green", squareName(claimedPlanet), 3),
+      ship("green-2", "green", "A5", MAX_POWER),
+      ship("green-3", "green", "B6", 2),
+      ship("red-1", "red", "C7", 3),
+    ];
+    const state = stateFor({ kind: "fuel", ships });
+    const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+
+    expect([...result.outcome.poweredShipIds].sort()).toEqual([
+      "green-1",
+      "green-3",
+    ]);
+    const byId = new Map(result.ships.map((s) => [s.id, s]));
+    expect(byId.get("green-1")?.power).toBe(4);
+    expect(byId.get("green-2")?.power).toBe(MAX_POWER);
+    expect(byId.get("green-3")?.power).toBe(3);
+    expect(byId.get("red-1")?.power).toBe(3);
+    expect(result.outcome.pointsAwarded).toBe(0);
+  });
+
+  it("Additional nodes gives an extra to every node lacking one, and consumes one seed step per square added", () => {
+    const nodes: Record<string, NodeStatus> = {
+      G8: { state: "prospective", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+      C3: { state: "prospective", level: 0, signal: 1, extra: true },
+      D4: { state: "prospective", level: 0, signal: 1 },
+      F9: { state: "prospective", level: 0, signal: 2 },
+      F5: { state: "prospective", level: 0, signal: 2 },
+    };
+    const state = stateFor({ kind: "additional-nodes", nodes });
+    const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+
+    expect(result.outcome.addedSquares).toHaveLength(2);
+    for (const signal of [0, 1, 2] as const) {
+      const extras = Object.entries(result.nodes).filter(
+        ([, status]) => status.signal === signal && status.extra === true,
+      );
+      expect(extras).toHaveLength(1);
+    }
+    expect(result.outcome.removedSquares).toEqual([]);
+    expect(result.outcome.pointsAwarded).toBe(0);
+  });
+
+  it("Node scramble leaves charged squares and extras in place and redraws every ordinary prospective square", () => {
+    const nodes: Record<string, NodeStatus> = {
+      G8: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      C3: { state: "prospective", level: 0, signal: 1 },
+      D4: { state: "prospective", level: 0, signal: 1 },
+      F5: { state: "prospective", level: 0, signal: 2 },
+      N2: { state: "prospective", level: 0, signal: 2, extra: true },
+    };
+    const state = stateFor({ kind: "node-scramble", nodes });
+    const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+
+    expect(result.nodes.G8).toEqual(nodes.G8);
+    expect(result.nodes.L8).toEqual(nodes.L8);
+    expect(result.nodes.N2).toEqual(nodes.N2);
+    expect(result.outcome.removedSquares.map(squareName).sort()).toEqual(
+      ["C3", "D4", "F5", "H8"].sort(),
+    );
+    expect(result.outcome.addedSquares).toHaveLength(4);
+    expect(result.outcome.pointsAwarded).toBe(0);
+  });
+
+  it("redraws the surviving bonus to a kind other than the one it was, over many seeds", () => {
+    for (let seed = 0; seed < 300; seed++) {
+      const state = stateFor({
+        kind: "small-points",
+        survivorKind: "fuel",
+        randomSeed: seed,
+      });
+      const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+      expect(result.outcome.survivor.oldKind).toBe("fuel");
+      expect(result.outcome.survivor.newKind).not.toBe("fuel");
+    }
+  });
+
+  it("draws the new bonus a kind other than the survivor's new kind, over many seeds", () => {
+    for (let seed = 0; seed < 300; seed++) {
+      const state = stateFor({
+        kind: "small-points",
+        survivorKind: "fuel",
+        randomSeed: seed,
+      });
+      const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+      expect(result.outcome.newBonus.kind).not.toBe(
+        result.outcome.survivor.newKind,
+      );
+    }
+  });
+
+  it("gives the new bonus a planet neither ship-occupied nor the survivor's own, over many seeds", () => {
+    const occupiedPlanet = PLANETS[2];
+    for (let seed = 0; seed < 100; seed++) {
+      const state = stateFor({
+        kind: "small-points",
+        ships: [
+          ship("green-1", "green", squareName(claimedPlanet)),
+          ship("red-1", "red", squareName(occupiedPlanet)),
+        ],
+        randomSeed: seed,
+      });
+      const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+      expect(squareName(result.outcome.newBonus.square)).not.toBe(
+        squareName(survivorPlanet),
+      );
+      expect(squareName(result.outcome.newBonus.square)).not.toBe(
+        squareName(occupiedPlanet),
+      );
+    }
+  });
+
+  it("keeps the survivor in its own slot and puts the new bonus in the claimed slot, whichever slot was claimed", () => {
+    const claimedFirst = stateFor({ kind: "small-points" });
+    const resultClaimedFirst = resolveAdvancedBonusClaim(
+      claimedFirst,
+      "green",
+      claimedPlanet,
+    );
+    expect(squareName(resultClaimedFirst.advancedBonuses[0].square)).not.toBe(
+      squareName(claimedPlanet),
+    );
+    expect(squareName(resultClaimedFirst.advancedBonuses[1].square)).toBe(
+      squareName(survivorPlanet),
+    );
+
+    const claimedSecond = stateFor({ kind: "small-points" });
+    const resultClaimedSecond = resolveAdvancedBonusClaim(
+      claimedSecond,
+      "green",
+      survivorPlanet,
+    );
+    expect(squareName(resultClaimedSecond.advancedBonuses[1].square)).not.toBe(
+      squareName(survivorPlanet),
+    );
+    expect(squareName(resultClaimedSecond.advancedBonuses[0].square)).toBe(
+      squareName(claimedPlanet),
+    );
+  });
+
+  it("is deterministic for a seed, and differs for a different seed", () => {
+    const first = resolveAdvancedBonusClaim(
+      stateFor({ kind: "small-points", randomSeed: 9 }),
+      "green",
+      claimedPlanet,
+    );
+    const second = resolveAdvancedBonusClaim(
+      stateFor({ kind: "small-points", randomSeed: 9 }),
+      "green",
+      claimedPlanet,
+    );
+    const third = resolveAdvancedBonusClaim(
+      stateFor({ kind: "small-points", randomSeed: 10 }),
+      "green",
+      claimedPlanet,
+    );
+
+    expect(second).toEqual(first);
+    expect(third).not.toEqual(first);
   });
 });

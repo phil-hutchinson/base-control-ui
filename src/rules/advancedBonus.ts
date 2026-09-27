@@ -1,14 +1,16 @@
 // The advanced planet bonus setting's own rules (steal.md §10): the six
 // kinds and their weights, the point table, availability, the weighted kind
-// draw, the uniform planet draw, and the opening deal of the pair. A leaf
-// module over `gameState.ts`'s `NodeStatus` (type only — the same cycle
-// `steal.ts` already carries with `gameState.ts`), `steal.ts`'s
-// `everyNodeHasExtra`, `nodes.ts`'s `ChargedNodeCount`, `planets.ts`'s
-// `PLANETS`, `playerMatching.ts`'s `PlayerMatchingSetting`, `scoring.ts`'s
-// `ScoringSetting` and `random.ts`'s draws. Claiming a bonus in play — the
-// three-part claim order of steal.md §10 — is `ply.ts`'s to call into, once
-// Step 5 adds it; this module only resolves the opening deal, since that is
-// the one draw that happens before any `GameState` exists.
+// draw, the uniform planet draw, the opening deal of the pair and the claim
+// resolution. A leaf module over `gameState.ts`'s `NodeStatus` and `Ship`
+// (types only — the same cycle `steal.ts` already carries with
+// `gameState.ts`), `steal.ts`'s node-changing bonus effects, `fleet.ts`'s
+// `Side` and `ShipId`, `nodes.ts`'s `ChargedNodeCount`, `planets.ts`'s
+// `PLANETS`, `playerMatching.ts`'s `PlayerMatchingSetting`, `power.ts`'s
+// `gainPower`, `scoring.ts`'s `ScoringSetting` and `random.ts`'s draws.
+// `ply.ts` calls `resolveAdvancedBonusClaim` when a landing claims a bonus,
+// and this module only ever changes the fields the claim touches — nodes,
+// ships, the bonus pair and the seed — leaving everything else (whose ply it
+// is, energy other than the claim's own payout, and so on) to `ply.ts`.
 //
 // The opening deal (steal.md §10) consumes exactly four seed steps, in this
 // fixed order, after the steal opening deal has run and before play begins:
@@ -17,22 +19,36 @@
 // slot 1's kind (weighted, excluding slot 0's kind). `gameState.ts` calls
 // `dealAdvancedBonuses` for this.
 //
-// Every kind draw — here and in the claim resolution Step 5 adds — is a
-// single `drawWeightedIndex` call over all six kinds in their fixed table
-// order below, with weight 0 for any kind excluded or unavailable at that
-// moment (steal.md §10): this keeps every kind draw at exactly one seed step
-// and keeps the index-to-kind mapping independent of which kinds are
-// excluded.
+// A claim (steal.md §10, D5 of the implementation plan) consumes, in this
+// fixed order: (1) the claimed kind's own draws — none for a points kind or
+// Fuel, one per square Additional nodes or Node scramble adds
+// (`addExtraProspectiveSquares`, `scrambleProspectiveSquares`); (2) one step
+// for the surviving bonus's new kind, excluding the kind it was; (3) one
+// step for the new bonus's planet, drawn from planets empty at that moment
+// and not the survivor's; (4) one step for the new bonus's kind, excluding
+// the survivor's new kind. `resolveAdvancedBonusClaim` runs all four.
+//
+// Every kind draw — here and in the claim resolution — is a single
+// `drawWeightedIndex` call over all six kinds in their fixed table order
+// below, with weight 0 for any kind excluded or unavailable at that moment
+// (steal.md §10): this keeps every kind draw at exactly one seed step and
+// keeps the index-to-kind mapping independent of which kinds are excluded.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
-import type { NodeStatus } from "./gameState";
+import type { Side, ShipId } from "./fleet";
+import type { GameState, NodeStatus, Ship } from "./gameState";
 import type { ChargedNodeCount } from "./nodes";
 import { PLANETS } from "./planets";
 import type { PlayerMatchingSetting } from "./playerMatching";
+import { gainPower } from "./power";
 import { drawIndex, drawWeightedIndex } from "./random";
 import type { ScoringSetting } from "./scoring";
-import { everyNodeHasExtra } from "./steal";
+import {
+  addExtraProspectiveSquares,
+  everyNodeHasExtra,
+  scrambleProspectiveSquares,
+} from "./steal";
 
 /**
  * The six kinds an advanced planet bonus may be (steal.md §10), in the
@@ -262,4 +278,201 @@ export function dealAdvancedBonuses(
     ],
     nextSeed,
   ];
+}
+
+/**
+ * What resolving a claim changed, beyond the state itself (steal.md §10): the
+ * kind that was claimed; the energy it paid (0 for every kind but a points
+ * one); which of the claiming side's ships gained a point of power from Fuel
+ * (empty for every other kind); the squares Additional nodes added, and the
+ * squares Node scramble removed and added (empty for every kind that is
+ * neither); and the surviving bonus's square with its old and new kind,
+ * alongside the new bonus's square and kind. Enough for `ply.ts` to build an
+ * `AdvancedBonusClaimedEffect` and for the live region to describe the claim.
+ */
+export interface AdvancedBonusClaimOutcome {
+  readonly kind: AdvancedBonusKind;
+  readonly pointsAwarded: number;
+  readonly poweredShipIds: readonly ShipId[];
+  readonly addedSquares: readonly Square[];
+  readonly removedSquares: readonly Square[];
+  readonly survivor: {
+    readonly square: Square;
+    readonly oldKind: AdvancedBonusKind;
+    readonly newKind: AdvancedBonusKind;
+  };
+  readonly newBonus: {
+    readonly square: Square;
+    readonly kind: AdvancedBonusKind;
+  };
+}
+
+/** The state fields a claim's resolution changes, plus the outcome describing what happened. */
+export interface ResolveAdvancedBonusClaimResult {
+  readonly nodes: Readonly<Record<string, NodeStatus>>;
+  readonly ships: readonly Ship[];
+  readonly advancedBonuses: readonly [AdvancedBonusEntry, AdvancedBonusEntry];
+  readonly nextSeed: number;
+  readonly outcome: AdvancedBonusClaimOutcome;
+}
+
+/**
+ * Resolves `side` landing on `planet`, one of the two current advanced
+ * bonuses' planets (steal.md §10): applies the claimed kind's own effect —
+ * a points kind adds `advancedBonusPoints` to `side`'s energy (returned as
+ * `pointsAwarded`, for `ply.ts` to apply — this function never reads or
+ * writes an energy total itself); Fuel raises each of `side`'s ships below
+ * the maximum by one power (`gainPower`), the claiming ship included, wherever
+ * it stands; Additional nodes and Node scramble redraw the node map
+ * (`addExtraProspectiveSquares`, `scrambleProspectiveSquares`), threading the
+ * seed on. Then redraws the surviving bonus's kind, excluding the kind it
+ * was; draws the new bonus's planet from the planets empty at that moment and
+ * not the survivor's own; and draws the new bonus's kind, excluding the
+ * survivor's new kind (D5's four-part order, the effect's own draws first).
+ * The new bonus takes the claimed bonus's slot; the survivor keeps its own
+ * (D1). Throws a `RangeError` if `planet` carries neither current bonus, or
+ * if no planet is left for the new bonus to appear on — the five-ship limit
+ * guarantees one, so the latter is a bug detector, not a case to handle.
+ */
+export function resolveAdvancedBonusClaim(
+  state: Pick<
+    GameState,
+    | "nodes"
+    | "ships"
+    | "advancedBonuses"
+    | "chargedNodeCount"
+    | "playerMatching"
+    | "scoring"
+    | "randomSeed"
+  >,
+  side: Side,
+  planet: Square,
+): ResolveAdvancedBonusClaimResult {
+  const claimedIndex = state.advancedBonuses.findIndex(
+    (entry) => squareName(entry.square) === squareName(planet),
+  );
+  if (claimedIndex === -1) {
+    throw new RangeError(
+      `resolveAdvancedBonusClaim: ${squareName(planet)} carries no advanced bonus`,
+    );
+  }
+  const claimed = state.advancedBonuses[claimedIndex];
+  const survivor = state.advancedBonuses[claimedIndex === 0 ? 1 : 0];
+
+  let nodes = state.nodes;
+  let ships = state.ships;
+  let seed = state.randomSeed;
+  let pointsAwarded = 0;
+  let poweredShipIds: readonly ShipId[] = [];
+  let addedSquares: readonly Square[] = [];
+  let removedSquares: readonly Square[] = [];
+
+  const pointSize = advancedBonusPointSize(claimed.kind);
+  if (pointSize !== undefined) {
+    pointsAwarded = advancedBonusPoints(
+      state.chargedNodeCount,
+      state.playerMatching,
+      state.scoring,
+      pointSize,
+    );
+  } else if (claimed.kind === "fuel") {
+    const powered: ShipId[] = [];
+    ships = state.ships.map((ship) => {
+      if (ship.side !== side) {
+        return ship;
+      }
+      const gained = gainPower(ship.power, 1);
+      if (gained.amount === 0) {
+        return ship;
+      }
+      powered.push(ship.id);
+      return { ...ship, power: gained.power };
+    });
+    poweredShipIds = powered;
+  } else if (claimed.kind === "additional-nodes") {
+    const shipSquares = ships.map((ship) => ship.square);
+    const added = addExtraProspectiveSquares(
+      nodes,
+      state.chargedNodeCount,
+      shipSquares,
+      seed,
+    );
+    nodes = added.nodes;
+    seed = added.nextSeed;
+    addedSquares = added.addedSquares;
+  } else if (claimed.kind === "node-scramble") {
+    const shipSquares = ships.map((ship) => ship.square);
+    const scrambled = scrambleProspectiveSquares(
+      nodes,
+      state.chargedNodeCount,
+      shipSquares,
+      seed,
+    );
+    nodes = scrambled.nodes;
+    seed = scrambled.nextSeed;
+    removedSquares = scrambled.removedSquares;
+    addedSquares = scrambled.addedSquares;
+  }
+
+  const [survivorNewKind, seedAfterSurvivorKind] = drawAdvancedBonusKind(
+    seed,
+    nodes,
+    state.chargedNodeCount,
+    new Set([survivor.kind]),
+  );
+
+  const occupiedSquareNames = new Set(
+    ships.map((ship) => squareName(ship.square)),
+  );
+  const eligiblePlanets = PLANETS.filter(
+    (square) =>
+      !occupiedSquareNames.has(squareName(square)) &&
+      squareName(square) !== squareName(survivor.square),
+  );
+  if (eligiblePlanets.length === 0) {
+    throw new RangeError(
+      "resolveAdvancedBonusClaim: no empty planet is left for the new bonus — rules.md §7.1's five-ship limit guarantees one",
+    );
+  }
+  const [newBonusSquare, seedAfterNewBonusPlanet] = drawAdvancedBonusPlanet(
+    seedAfterSurvivorKind,
+    eligiblePlanets,
+  );
+  const [newBonusKind, nextSeed] = drawAdvancedBonusKind(
+    seedAfterNewBonusPlanet,
+    nodes,
+    state.chargedNodeCount,
+    new Set([survivorNewKind]),
+  );
+
+  const survivorEntry: AdvancedBonusEntry = {
+    square: survivor.square,
+    kind: survivorNewKind,
+  };
+  const newEntry: AdvancedBonusEntry = {
+    square: newBonusSquare,
+    kind: newBonusKind,
+  };
+  const advancedBonuses: readonly [AdvancedBonusEntry, AdvancedBonusEntry] =
+    claimedIndex === 0 ? [newEntry, survivorEntry] : [survivorEntry, newEntry];
+
+  return {
+    nodes,
+    ships,
+    advancedBonuses,
+    nextSeed,
+    outcome: {
+      kind: claimed.kind,
+      pointsAwarded,
+      poweredShipIds,
+      addedSquares,
+      removedSquares,
+      survivor: {
+        square: survivor.square,
+        oldKind: survivor.kind,
+        newKind: survivorNewKind,
+      },
+      newBonus: { square: newBonusSquare, kind: newBonusKind },
+    },
+  };
 }

@@ -949,7 +949,78 @@ typecheck, lint, format:check clean.
 
 ### Step 5 — Claiming a bonus: moves, returns and fights
 
-Status: pending
+Status: committed
+
+Notes: `advancedBonus.ts` gained `resolveAdvancedBonusClaim` (D2, D5): given a
+state slice, a side and the landed planet, it applies the claimed kind's own
+effect (points report `pointsAwarded` for the caller to add; Fuel raises each
+of the claiming side's ships below `power.ts`'s maximum by one via
+`gainPower`; Additional nodes / Node scramble call Step 3's
+`addExtraProspectiveSquares` / `scrambleProspectiveSquares` with the ship
+squares as they stand), then redraws the survivor's kind (excluding its old
+kind), draws the new bonus's planet (from planets empty now and not the
+survivor's — throwing a `RangeError`, a bug detector, if none exists), and
+its kind (excluding the survivor's new kind), returning the new slot pair
+(D1: survivor keeps its slot, new bonus takes the claimed one) and an
+`AdvancedBonusClaimOutcome` describing what happened. `ply.ts` gained
+`AdvancedBonusClaimedEffect` (D11) and a `claimAdvancedBonus` helper
+mirroring `claimPlanetBonus`, wired into `applyMove` at the same point the
+classic claim is (both are called unconditionally; each no-ops under the
+other's setting, so exactly one ever fires). `applyAttack` is reordered
+exactly per D10: attacker placed → attacker's claim (classic or advanced) →
+attacker's rotation → defender's planet drawn (from planets empty at that
+point) and placed → defender's claim → defender's rotation;
+`assertFightInvariants` gates its power-equality and whole node-equality
+checks behind `before.planetBonus !== "advanced"` (D10), since a claim can
+legitimately change either under advanced, while every placement check
+(planet, distinct, previously empty, fleet counts) still runs unconditionally.
+The full pre-existing suite (fights, classic claims) passed unchanged after
+the reorder, confirming it does not alter the seed stream or result for
+off/two/three, exactly as D10 predicted.
+
+New tests: `advancedBonus.test.ts` gained a `resolveAdvancedBonusClaim`
+describe block (26 tests total in the file) covering each kind's own effect,
+the survivor's and new bonus's exclusions over many seeds, slot assignment
+both ways, the eligible-planet exclusions, the not-carrying-a-bonus throw and
+determinism. New `src/rules/advancedBonusClaim.test.ts` (15 tests) covers the
+`ply.ts` integration: a points claim's immediate payment (including under
+REQUIRED withholding node energy only), Fuel's effect on a non-landing
+fleet-mate (isolated from end-of-turn recovery) and on a full ship and the
+opponent, Additional nodes and Node scramble through a move, the two-bonuses/
+distinct-kinds/both-empty invariant, slot preservation both ways, flying over
+a bonus planet claiming nothing, D9 (leaving a charged node and landing on a
+Node scramble planet scrambles the already-Open node, discarding even the
+leave's own fresh square), and, for fights: the attacker's claim before the
+defender's, a seed-order test proving the defender's return planet is drawn
+only after the attacker's claim's own draws have run (by comparing against
+what a naive, un-reordered computation would have produced, over 40 seeds),
+the defender claiming whichever of the survivor or the newly-appeared bonus
+it lands on, and `assertFightInvariants`'s advanced exemptions plus its
+continued placement checks.
+
+Deviations from the plan: the fight test asking for a board where "the
+defender can land only on the just-appeared bonus" is written instead as a
+board where the defender's only two possible landings are the survivor's
+bonus and the newly-appeared one, asserting whichever one it lands on is
+correctly claimed — forcing literal exclusivity to the new bonus alone is
+structurally impossible (the survivor's own bonus planet is, by the rule's
+own invariant, always ship-free too, so it is always a legal alternative
+landing for the defender); this still exercises S6's "including the one that
+has only just appeared" sentence, without asserting something the rules
+cannot guarantee. `resolveAdvancedBonusClaim`'s own behaviour (kind effects,
+exclusions, slot logic) is unit-tested directly in `advancedBonus.test.ts`
+rather than only through `ply.ts`, so the `ply.ts`-level tests in
+`advancedBonusClaim.test.ts` could stay focused on wiring, ordering and the
+fight reorder rather than re-deriving claim-resolution behaviour already
+covered at the leaf level. `src/board/EnergyOverlay.tsx`'s
+`endOfPlySettlements` helper needed `AdvancedBonusClaimedEffect` added to its
+explicit effect-type union (mechanical — `MoveEffect`/`AttackEffect` widened
+by this step's new member, and that function's parameter type is spelled out
+rather than reusing the union types directly).
+
+Full `npm test` — **83 test files, 1778 tests, all green** (up from 1753);
+`npm run typecheck`, `npm run lint` and `npm run format:check` all pass
+(prettier reformatted the two new/edited test files).
 
 Wire claims into play.
 
