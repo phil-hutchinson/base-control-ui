@@ -4,7 +4,7 @@
 // the other — `App` wires the two together through this hook. Not part of
 // `GameState`, and it never reaches the rules modules.
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { squareName, type Square } from "../rules/board";
 import type { GameState } from "../rules/gameState";
 import { bonusPanelSquareNames } from "./bonusPanelSquares";
@@ -16,23 +16,41 @@ export interface BonusHoverGlow {
   readonly onHoverSquare: (square: Square | undefined) => void;
 }
 
+/** The raw pointer position, tagged with the game it was hovered in. */
+interface Hovered {
+  readonly square: Square;
+  readonly openingSeed: number;
+}
+
 /**
- * Tracks the hovered square, clearing it whenever it stops being one of the
- * bonus panel's own squares under the game's current state — for example
- * when a claim replaces one of the two ADVANCED bonuses, or moves the game
- * on to a state where the hovered planet no longer carries a bonus at all.
+ * Tracks the hovered square, showing it as the glow only while it is still
+ * one of the bonus panel's own squares in a game with the same opening seed
+ * it was hovered in. The opening-seed check, not just the square-membership
+ * one, is what clears a hover left over from a game that has since ended —
+ * a new game can otherwise deal a bonus onto the same square the player was
+ * last hovering, with no pointer anywhere near the panel.
  */
 export function useBonusHoverGlow(state: GameState): BonusHoverGlow {
-  const [glowSquare, setGlowSquare] = useState<Square | undefined>(undefined);
+  const [hovered, setHovered] = useState<Hovered | undefined>(undefined);
 
-  useEffect(() => {
-    setGlowSquare((current) =>
-      current !== undefined &&
-      bonusPanelSquareNames(state).has(squareName(current))
-        ? current
-        : undefined,
+  const glowSquare = useMemo(() => {
+    if (
+      hovered === undefined ||
+      hovered.openingSeed !== state.openingSeed ||
+      !bonusPanelSquareNames(state).has(squareName(hovered.square))
+    ) {
+      return undefined;
+    }
+    return hovered.square;
+  }, [hovered, state]);
+
+  const onHoverSquare = (square: Square | undefined) => {
+    setHovered(
+      square === undefined
+        ? undefined
+        : { square, openingSeed: state.openingSeed },
     );
-  }, [state]);
+  };
 
-  return { glowSquare, onHoverSquare: setGlowSquare };
+  return { glowSquare, onHoverSquare };
 }

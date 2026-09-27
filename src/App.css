@@ -64,14 +64,10 @@
   );
 
   /* The size a planet actually draws at on the board: one board square,
-     `--square` in Board.css. `.app__play`'s own definite size is always
-     exactly `--play-size` (its `width`/`height` below), so a board square's
-     size can be derived straight from that token here — the same formula
-     Board.css used to reach via a container query on `.app__play` — rather
-     than measuring it a second way. `PlanetBonusPanel.css` reads this token
-     so its own planets stay at least as large as the board's, in step with
-     it as the window changes, without a second copy of the board-floor
-     arithmetic. */
+     `--square` in Board.css, one fifteenth of `--play-size` and never below
+     `--board-square-floor` (`index.css`). `PlanetBonusPanel.css` reads this
+     token too, so its own planets stay at least as large as the board's, in
+     step with it as the window changes. */
   --board-square-size: max(
     var(--board-square-floor),
     calc(var(--play-size) / 15)

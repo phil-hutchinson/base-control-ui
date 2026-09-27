@@ -20,7 +20,7 @@
 // `onHoverSquare`, so `App` can light the matching square on the board — a
 // pointer-only affordance, unrelated to the panel staying `aria-hidden`.
 
-import { useMemo } from "react";
+import { useMemo, type PointerEvent } from "react";
 import type { PlanetArt } from "../board/planetArt";
 import { planetArrangement, planetForSquare } from "../board/planetPlacement";
 import { squareName, type Square } from "../rules/board";
@@ -34,6 +34,17 @@ import "./PlanetBonusPanel.css";
 
 /** Green above red, matching the clocks' own order in both orientations. */
 const SIDES: readonly Side[] = ["green", "red"];
+
+/**
+ * A touch tap fires a pointer-enter event too, which would otherwise leave a
+ * glow stuck on the board until the player taps elsewhere. `pointerType` is
+ * absent in jsdom's synthetic events, so a missing value is treated as a
+ * mouse (or, on real touch hardware, a pen — which does report "pen" and
+ * stays a hover affordance).
+ */
+function isTouchPointer(event: PointerEvent): boolean {
+  return event.pointerType === "touch";
+}
 
 /**
  * Each row's heading, so a player reads whose three planets a row is rather
@@ -74,8 +85,16 @@ function BonusCell({
   return (
     <div
       className="planet-bonus-panel__cell"
-      onMouseEnter={() => onHoverSquare?.(entry.square)}
-      onMouseLeave={() => onHoverSquare?.(undefined)}
+      onPointerEnter={(event) => {
+        if (!isTouchPointer(event)) {
+          onHoverSquare?.(entry.square);
+        }
+      }}
+      onPointerLeave={(event) => {
+        if (!isTouchPointer(event)) {
+          onHoverSquare?.(undefined);
+        }
+      }}
     >
       {badge === "amount" ? (
         <PlanetBonusCell side={side} art={art} badge="amount" amount={amount} />
@@ -129,8 +148,16 @@ export function PlanetBonusPanel({
               <div
                 key={squareName(entry.square)}
                 className="planet-bonus-panel__advanced-cell"
-                onMouseEnter={() => onHoverSquare?.(entry.square)}
-                onMouseLeave={() => onHoverSquare?.(undefined)}
+                onPointerEnter={(event) => {
+                  if (!isTouchPointer(event)) {
+                    onHoverSquare?.(entry.square);
+                  }
+                }}
+                onPointerLeave={(event) => {
+                  if (!isTouchPointer(event)) {
+                    onHoverSquare?.(undefined);
+                  }
+                }}
               >
                 <AdvancedBonusCell
                   art={art}

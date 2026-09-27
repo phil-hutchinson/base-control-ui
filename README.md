@@ -98,17 +98,19 @@ install, no account, no server.
 > The first time one of a player's ships lands on one of that player's own
 > three, it pays that player energy once — two or three, whichever was chosen
 > — and never again for that planet, however often ships return to it.
-> Under steal there is also an advanced option: instead of planets of their
-> own, the players race for two bonuses that stand on the board at once,
-> each on an empty planet. Whoever lands there first takes it — points, a
-> top-up of power for their whole fleet, an extra waiting square for every
-> node, or a shuffle of every node's waiting squares — and the bonus left
-> behind turns into something else while a new one appears elsewhere. Green
-> goes first, and each player moves one ship — or attacks
-> with one, when combat is on — by mouse or by keyboard. Picking a ship shows
-> you where it can go and what each move would cost: a dot on every square it
-> can reach for free, and elsewhere the same small bars the ship's own power
-> gauge shows — one bar for one point of power, two for two, three for three.
+> Under steal there is also an advanced option: instead of planets of their own,
+> the players race for two bonuses that stand on the board at once, each on an
+> empty planet. Whoever lands there first takes it — points, a top-up of power
+> for their whole fleet, an extra waiting square for every node, or a shuffle of
+> every node's waiting squares — and the bonus left behind turns into something
+> else while a new one appears elsewhere. Whatever the planet bonus option,
+> hovering over a planet in the bonus panel above the clocks lights up the
+> matching planet on the board, so it's easy to find. Green goes first, and each
+> player moves one ship — or attacks with one, when combat is on — by mouse or
+> by keyboard. Picking a ship shows you where it can go and what each move would
+> cost: a dot on every square it can reach for free, and elsewhere the same small
+> bars the ship's own power gauge shows — one bar for one point of power, two
+> for two, three for three.
 > With combat on, a ship it can strike is ringed, with the same bars inside the
 > ring when the shot costs power, and a bare ring when it is free. Every game
 > deals a different opening board: it opens with as many lit nodes as you chose

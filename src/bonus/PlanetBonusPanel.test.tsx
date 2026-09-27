@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render } from "@testing-library/react";
+import {
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { planetArrangement, planetForSquare } from "../board/planetPlacement";
 import type { Square } from "../rules/board";
@@ -29,6 +34,21 @@ function rowUseHrefs(container: HTMLElement, rowClass: string): string[] {
   return Array.from(row.querySelectorAll(".planet > use"), (use) =>
     use.getAttribute("href"),
   ).filter((href): href is string => href !== null);
+}
+
+/**
+ * jsdom has no `PointerEvent` constructor, so `fireEvent.pointerEnter`'s
+ * `init` object is silently dropped by the plain `Event` it falls back to.
+ * Setting `pointerType` on the created event directly is what actually
+ * reaches the handler, since React reads it straight off the native event.
+ */
+function firePointerEnter(node: Element, pointerType: string) {
+  const event = createEvent.pointerEnter(node);
+  Object.defineProperty(event, "pointerType", {
+    value: pointerType,
+    configurable: true,
+  });
+  fireEvent(node, event);
 }
 
 describe("PlanetBonusPanel", () => {
@@ -227,13 +247,27 @@ describe("PlanetBonusPanel", () => {
     );
 
     const cell = container.querySelector(".planet-bonus-panel__cell")!;
-    fireEvent.mouseEnter(cell);
+    fireEvent.pointerEnter(cell);
     expect(onHoverSquare).toHaveBeenLastCalledWith(
       state.bonusPlanets.green[0].square,
     );
 
-    fireEvent.mouseLeave(cell);
+    fireEvent.pointerLeave(cell);
     expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it("ignores a touch tap on a classic cell, so no glow sticks after the tap", () => {
+    const state = startingGameState(SEED, { planetBonus: "three" });
+    const onHoverSquare = vi.fn();
+
+    const { container } = render(
+      <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+    );
+
+    const cell = container.querySelector(".planet-bonus-panel__cell")!;
+    firePointerEnter(cell, "touch");
+
+    expect(onHoverSquare).not.toHaveBeenCalled();
   });
 
   describe("under advanced (steal.md §10)", () => {
@@ -436,11 +470,30 @@ describe("PlanetBonusPanel", () => {
       const cells = container.querySelectorAll(
         ".planet-bonus-panel__advanced-cell",
       );
-      fireEvent.mouseEnter(cells[1]);
+      fireEvent.pointerEnter(cells[1]);
       expect(onHoverSquare).toHaveBeenLastCalledWith(PLANETS[1]);
 
-      fireEvent.mouseLeave(cells[1]);
+      fireEvent.pointerLeave(cells[1]);
       expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it("ignores a touch tap on an advanced cell, so no glow sticks after the tap", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+      const onHoverSquare = vi.fn();
+
+      const { container } = render(
+        <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+      );
+
+      const cells = container.querySelectorAll(
+        ".planet-bonus-panel__advanced-cell",
+      );
+      firePointerEnter(cells[1], "touch");
+
+      expect(onHoverSquare).not.toHaveBeenCalled();
     });
   });
 });

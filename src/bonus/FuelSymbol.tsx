@@ -1,10 +1,8 @@
-// The Fuel symbol an advanced Fuel bonus draws beneath its planet (steal.md
-// §10): a single power-gauge bar — the story asks for one bar, not the
-// ship's full six-slot gauge, since Fuel gives "one power" — in the same
-// double-stroke shape a ship's own gauge bar draws (`ShipModel.tsx`,
-// `powerGauge.ts`, `shipArt.ts`), scaled up to fill this symbol's own box
-// since it stands alone here rather than sharing room with five other slots
-// and a hull.
+// The Fuel symbol an advanced Fuel bonus draws beneath its planet: a single
+// gauge bar, because Fuel gives one power, in the same double-stroke shape a
+// ship's own gauge bar draws (`ShipModel.tsx`, `powerGauge.ts`,
+// `shipArt.ts`), scaled up to fill this symbol's own box since it stands
+// alone here rather than sharing room with five other slots and a hull.
 
 import { SIGNAL_COLORS } from "../board/squareArt";
 import {

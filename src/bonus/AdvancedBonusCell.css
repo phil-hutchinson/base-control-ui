@@ -16,12 +16,11 @@
   gap: 3cqw;
 }
 
-/* At least `--board-square-size` (`App.css`) — a planet on the board's own
-   size — and never less: this box's width already comes from the caller at
-   or above that size (`PlanetBonusPanel.css`), and `aspect-ratio: 1` keeps
-   its height in step, rather than the old `flex: 1` share of whatever
-   height the row happened to have, which could draw the planet smaller
-   than the board's own. */
+/* Fills the width the caller gives this cell (`PlanetBonusPanel.css`) — a
+   planet on the board's own size or larger in landscape, and in portrait
+   whatever narrower width keeps the whole stack inside the panel's own
+   height — and `aspect-ratio: 1` keeps this square's height in step with
+   that width. */
 .advanced-bonus-cell__planet {
   width: 100%;
   aspect-ratio: 1;

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { AdvancedBonusKind } from "../rules/advancedBonus";
 import type { Square } from "../rules/board";
@@ -50,7 +50,7 @@ describe("useBonusHoverGlow", () => {
     expect(result.current.glowSquare).toBeUndefined();
   });
 
-  it("clears the glow once a claim replaces the hovered bonus", async () => {
+  it("clears the glow once a claim replaces the hovered bonus", () => {
     const before = withAdvancedBonuses(
       [PLANETS[0], "large-points"],
       [PLANETS[1], "fuel"],
@@ -76,12 +76,10 @@ describe("useBonusHoverGlow", () => {
     };
     rerender({ state: after });
 
-    await waitFor(() => {
-      expect(result.current.glowSquare).toBeUndefined();
-    });
+    expect(result.current.glowSquare).toBeUndefined();
   });
 
-  it("leaves the glow alone when the hovered square still carries a bonus", async () => {
+  it("leaves the glow alone when the hovered square still carries a bonus", () => {
     const before = withAdvancedBonuses(
       [PLANETS[0], "large-points"],
       [PLANETS[1], "fuel"],
@@ -106,8 +104,35 @@ describe("useBonusHoverGlow", () => {
     };
     rerender({ state: after });
 
-    await waitFor(() => {
-      expect(result.current.glowSquare).toBe(PLANETS[1]);
+    expect(result.current.glowSquare).toBe(PLANETS[1]);
+  });
+
+  it("clears a hover left over from an earlier game, even if the new game deals a bonus onto the same square", () => {
+    const before = withAdvancedBonuses(
+      [PLANETS[0], "large-points"],
+      [PLANETS[1], "fuel"],
+    );
+    const { result, rerender } = renderHook(
+      ({ state }: { state: GameState }) => useBonusHoverGlow(state),
+      { initialProps: { state: before } },
+    );
+
+    act(() => {
+      result.current.onHoverSquare(PLANETS[0]);
     });
+    expect(result.current.glowSquare).toBe(PLANETS[0]);
+
+    // A fresh game (a different opening seed) whose bonus set happens to
+    // include the same square the player was hovering in the last one.
+    const freshGame: GameState = {
+      ...withAdvancedBonuses(
+        [PLANETS[0], "small-points"],
+        [PLANETS[2], "node-scramble"],
+      ),
+      openingSeed: before.openingSeed + 1,
+    };
+    rerender({ state: freshGame });
+
+    expect(result.current.glowSquare).toBeUndefined();
   });
 });

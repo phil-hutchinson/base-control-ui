@@ -318,7 +318,7 @@ describe("App", () => {
       .querySelector(".planet > use")
       ?.getAttribute("href");
 
-    fireEvent.mouseEnter(panelCell);
+    fireEvent.pointerEnter(panelCell);
 
     const glowing = container.querySelectorAll(".board-square--glow");
     expect(glowing).toHaveLength(1);
@@ -326,7 +326,7 @@ describe("App", () => {
       glowing[0].querySelector(".planet > use")?.getAttribute("href"),
     ).toBe(panelHref);
 
-    fireEvent.mouseLeave(panelCell);
+    fireEvent.pointerLeave(panelCell);
     expect(container.querySelectorAll(".board-square--glow")).toHaveLength(0);
   });
 
@@ -350,7 +350,7 @@ describe("App", () => {
       .querySelector(".planet > use")
       ?.getAttribute("href");
 
-    fireEvent.mouseEnter(panelCell);
+    fireEvent.pointerEnter(panelCell);
 
     const glowing = container.querySelectorAll(".board-square--glow");
     expect(glowing).toHaveLength(1);
@@ -358,7 +358,7 @@ describe("App", () => {
       glowing[0].querySelector(".planet > use")?.getAttribute("href"),
     ).toBe(panelHref);
 
-    fireEvent.mouseLeave(panelCell);
+    fireEvent.pointerLeave(panelCell);
     expect(container.querySelectorAll(".board-square--glow")).toHaveLength(0);
   });
 

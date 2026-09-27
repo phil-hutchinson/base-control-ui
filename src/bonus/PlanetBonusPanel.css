@@ -2,18 +2,17 @@
    `--region-extent` box with the clocks rather than measuring itself from
    the window: `--region-extent` is a height budget in portrait and a width
    budget in landscape, and every size below is a fraction of it so the
-   panel scales down with the box itself instead of overflowing it. If the
-   box is too small for both the panel and the clocks, this is what shrinks
-   — `--region-extent` and the board never do (App.css): `min-height: 0`
-   lets this flex item's used height fall below its own content's height,
-   and `overflow: hidden` clips what no longer fits instead of letting it
-   spill into `.clock-region` below (`ClockRegion.css` holds that box to its
-   natural size, so it is never the one that gives). The classic rows fit
+   panel scales down with the box itself instead of overflowing it. Height
+   is otherwise unconstrained in landscape, so only portrait can ever be
+   short of room: there, `min-height: 0` lets this flex item's used height
+   fall below its own content's height, and `overflow: hidden` clips
+   anything that still doesn't fit rather than letting it spill into
+   `.clock-region` below (`ClockRegion.css` holds that box to its natural
+   size, so it is never the one that gives). The classic rows fit
    comfortably at every size this panel renders at, so neither rule does
-   anything there; under advanced, a board-sized pair of cells (below) can
-   be taller than `--region-extent` at the window's smallest sizes, and
-   this box's own height is deliberately what gives when that happens,
-   rather than `--region-extent` or the board shrinking to make room. */
+   anything there; under advanced, the portrait cell sizing below already
+   shrinks the pair to the height actually available, so these two
+   properties are a safety margin rather than the thing doing the work. */
 .planet-bonus-panel {
   display: flex;
   flex-direction: column;
@@ -22,6 +21,21 @@
   width: 100%;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Portrait only: the pair's height budget is whatever `.app__clocks`
+   (App.css) leaves over its fixed `--region-extent` once the clock region
+   has taken its own natural height — `.clock-region`'s `flex-shrink: 0`
+   means it always gets that in full, so `flex: 1 1 0` gives this box
+   exactly the rest. `container-type: size` turns that resolved height into
+   `cqh` for `.planet-bonus-panel__advanced-cell` below to size the pair
+   from, rather than clip it. Landscape leaves the panel's height to its own
+   content, as it already did, so this rule is scoped to portrait only. */
+@media (orientation: portrait) {
+  .planet-bonus-panel--advanced {
+    flex: 1 1 0;
+    container-type: size;
+  }
 }
 
 /* One side's heading and its three planets, as a unit. */
@@ -67,16 +81,17 @@
 
 /* Under advanced (steal.md §10) there is one row of two bonuses rather than
    two sides' rows of three, each drawn at least as large as a planet on the
-   board (`--board-square-size`, `App.css`) and taller than it is wide to
-   leave room for the symbol and caption under the planet. `flex-wrap` is
-   the CSS-only switch between the two layouts the story asks for: the pair
-   sits side by side whenever this row has room for two board-sized cells
-   plus the gap between them, and drops to one cell per line — stacked —
-   the moment it does not, in landscape (where this row's own width is
-   `--region-extent`) and portrait (where it is nearly the whole window)
-   alike. `align-items: flex-start` keeps a shorter symbol/caption stack
-   from being stretched to match a taller one when a claim's redraw changes
-   which kind either slot shows. */
+   board (`--board-square-size`, `App.css`) in landscape — shrinking to fit
+   the panel's own height in portrait instead (below) — and taller than it
+   is wide to leave room for the symbol and caption under the planet.
+   `flex-wrap` is the CSS-only switch between the two layouts the story
+   asks for: the pair sits side by side whenever this row has room for two
+   board-sized cells plus the gap between them, and drops to one cell per
+   line — stacked — the moment it does not, in landscape (where this row's
+   own width is `--region-extent`) and portrait (where it is nearly the
+   whole window) alike. `align-items: flex-start` keeps a shorter
+   symbol/caption stack from being stretched to match a taller one when a
+   claim's redraw changes which kind either slot shows. */
 .planet-bonus-panel__advanced-row {
   display: flex;
   flex-wrap: wrap;
@@ -92,4 +107,21 @@
 .planet-bonus-panel__advanced-cell {
   flex: 0 0 auto;
   width: max(var(--board-square-size), calc(var(--region-extent) * 0.3));
+}
+
+/* Portrait only: caps the cell's width so its stack (planet, symbol,
+   caption — `AdvancedBonusCell.css`) never grows taller than the height
+   `.planet-bonus-panel--advanced` actually has, shrinking it below a board
+   square's size rather than clipping the caption off. The stack's own
+   height comes out to about 2.06 times its width (a planet plus two 3cqw
+   gaps plus a 78cqw symbol plus a 15cqw caption line, `AdvancedBonusCell.css`),
+   so dividing the container's full height (`100cqh`) by that factor gives
+   the widest cell that still fits it. */
+@media (orientation: portrait) {
+  .planet-bonus-panel__advanced-cell {
+    width: min(
+      max(var(--board-square-size), calc(var(--region-extent) * 0.3)),
+      calc(100cqh / 2.06)
+    );
+  }
 }

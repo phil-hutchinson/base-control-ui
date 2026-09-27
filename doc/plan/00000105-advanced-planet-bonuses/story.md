@@ -174,11 +174,14 @@ such guarantee.
 - **The bonus panel** sits where it does today, above the clocks. Under
   ADVANCED it shows **the two current bonus planets**, drawn with the same
   artwork the board uses on those squares, so a player can match each one to
-  the board. Each planet is drawn **at least as large as a planet on the
-  board**. The two sit **side by side where the space allows, and stack one
-  above the other where it does not**, in portrait as well as landscape.
-  **Below each planet is a symbol for its kind**, sized to be read at a
-  glance, and **below the symbol a one-word caption**:
+  the board. In landscape each planet is drawn **at least as large as a
+  planet on the board**; in portrait, where the panel shares its space with
+  the clocks, the pair **shrinks to fit that space** instead, so a planet
+  there may draw smaller than one on the board. The two sit **side by side
+  where the space allows, and stack one above the other where it does not**,
+  in portrait as well as landscape. **Below each planet is a symbol for its
+  kind**, sized to be read at a glance, and **below the symbol a one-word
+  caption**:
 
   | Kind             | Symbol                                                | Caption   |
   | ---------------- | ----------------------------------------------------- | --------- |
@@ -293,10 +296,11 @@ result; the measured figures, the rescale and what stayed unchanged are in
 - The Planet bonus group shows ADVANCED only while STEAL is chosen.
   Switching away from STEAL while ADVANCED is chosen resets it to OFF.
 - Under ADVANCED, the panel shows two planets matching the board's
-  artwork, each at least as large as a planet on the board: side by side
-  where there is room, stacked where there is not. Their symbols are always
-  two different kinds, each captioned BONUS, FUEL, ADD NODES or SCRAMBLE,
-  and neither planet has a ship on it.
+  artwork: side by side where there is room, stacked where there is not.
+  In landscape each is at least as large as a planet on the board; in
+  portrait the pair shrinks to fit the space above the clocks, without
+  clipping. Their symbols are always two different kinds, each captioned
+  BONUS, FUEL, ADD NODES or SCRAMBLE, and neither planet has a ship on it.
 - Hovering over a planet in the panel, under any planet bonus setting,
   makes that planet glow on the board; moving off it ends the glow.
 - Landing on a points bonus raises the claiming side's score by the table's
