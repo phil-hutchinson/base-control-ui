@@ -78,6 +78,11 @@ export interface AppScreen {
  * quick guide at its own address and changes nothing else; there is no
  * matching close action, because `handleReturnToStart` already means "leave
  * for the start screen", which is exactly what leaving the guide does.
+ * `setNodePlaystyle` wraps the raw state setter: leaving steal while the
+ * remembered planet bonus is `"advanced"` resets it to `"off"` (steal.md
+ * §10), unlike player-matching, which is left as it is and resolved at PLAY
+ * instead (`resolvePlayerMatching`) — the group must show OFF, not jump back
+ * to ADVANCED on returning to steal.
  */
 export function useAppScreen(
   dispatch: (intent: SessionIntent) => void,
@@ -91,7 +96,7 @@ export function useAppScreen(
   );
   const [combatEnabled, setCombatEnabled] = useState(DEFAULT_COMBAT_ENABLED);
   const [scoring, setScoring] = useState<ScoringSetting>(DEFAULT_SCORING);
-  const [nodePlaystyle, setNodePlaystyle] = useState<NodePlaystyle>(
+  const [nodePlaystyle, setNodePlaystyleState] = useState<NodePlaystyle>(
     DEFAULT_NODE_PLAYSTYLE,
   );
   const [planetBonus, setPlanetBonus] =
@@ -105,6 +110,16 @@ export function useAppScreen(
   const [clockSetting, setClockSetting] = useState<ClockSetting>(
     DEFAULT_CLOCK_SETTING,
   );
+
+  function setNodePlaystyle(nextNodePlaystyle: NodePlaystyle) {
+    setNodePlaystyleState(nextNodePlaystyle);
+    // Advanced (steal.md §10) is offered only under steal (S15): leaving
+    // steal with it selected drops the Planet bonus group back to off,
+    // rather than leaving it hidden and ready to reappear.
+    if (nextNodePlaystyle !== "steal" && planetBonus === "advanced") {
+      setPlanetBonus("off");
+    }
+  }
 
   function handlePlay() {
     dispatch({

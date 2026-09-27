@@ -55,6 +55,7 @@ function buildState(config: {
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
+    advancedBonuses: [],
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

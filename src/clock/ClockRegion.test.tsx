@@ -19,6 +19,7 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
+    advancedBonuses: [],
     energy: { green: 0, red: 0 },
     lengthInRounds: 30,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

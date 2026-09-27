@@ -31,6 +31,7 @@ import {
 } from "./nodePlaystyle";
 import { dealStealOpeningBoard, type NodeSignal } from "./steal";
 import { dealBonusPlanets } from "./bonusPlanets";
+import { dealAdvancedBonuses, type AdvancedBonusEntry } from "./advancedBonus";
 import {
   DEFAULT_PLANET_BONUS,
   isPlanetBonusSetting,
@@ -221,10 +222,23 @@ export interface GameState {
   /**
    * Each side's three dealt bonus planets (rules.md §3.4), fixed for the
    * game's lifetime once dealt by `startingGameState`. Both sides' lists are
-   * empty when `planetBonus` is off. See `BonusPlanetEntry` for why an
+   * empty when `planetBonus` is off or advanced — advanced has no per-player
+   * planets; see `advancedBonuses` below. See `BonusPlanetEntry` for why an
    * entry's claim is recorded as a ply number rather than a boolean.
    */
   readonly bonusPlanets: BonusPlanetsBySide;
+  /**
+   * The two bonuses standing on the board under the advanced planet bonus
+   * setting (steal.md §10), dealt by `startingGameState` and updated as
+   * claims resolve. Slot order is meaningful: on a claim the surviving bonus
+   * keeps its slot and the new bonus takes the claimed one's, so the panel
+   * can read the pair straight off this list with no state of its own.
+   * Always empty except under advanced, when it always holds exactly two
+   * entries, on two different planets, of two different kinds — `bonusPlanets`
+   * above stays empty for both sides under advanced, since there are no
+   * per-player planets to deal.
+   */
+  readonly advancedBonuses: readonly AdvancedBonusEntry[];
   /**
    * The player-matching nodes setting (steal.md §9), fixed for the game's
    * lifetime once set by `startingGameState`. Every place that prices a
@@ -300,8 +314,11 @@ export interface StartingGameStateOptions {
    * `PlanetBonusSetting`, for the same reason `scoring` and `nodePlaystyle`
    * are: a setting arriving from outside the type system can be any string.
    * Must be one of `planetBonus.ts`'s offered settings, or this throws a
-   * `RangeError`. `bonusPlanets` is not an option — it is produced by the
-   * deal, never supplied.
+   * `RangeError`. `"advanced"` (steal.md §10) paired with a `nodePlaystyle`
+   * other than `"steal"` also throws a `RangeError` — a non-steal advanced
+   * game is a state the rules do not allow. `bonusPlanets` and
+   * `advancedBonuses` are not options — they are produced by the deal, never
+   * supplied.
    */
   readonly planetBonus?: string;
   /**
@@ -337,15 +354,18 @@ export interface StartingGameStateOptions {
  * + 4` steps of the stream before play begins — nine at five charged, eight
  * at four, seven at three — plus, under the dedicated playstyle only, up to
  * eight more for the opening rotator set (rules.md §3.3), plus,
- * when the planet bonus is on, exactly six more for the bonus planet deal
- * (rules.md §3.4), drawn last so an off game spends nothing extra. Under
- * steal instead, the deal consumes exactly `2 * chargedNodeCount` steps
- * (`dealStealOpeningBoard`, steal.md §7) — no rotator set is ever drawn — and
- * the bonus planet deal, if any, still runs last. The player-matching nodes
- * setting (steal.md §9) draws nothing — which two signals are matched to the
- * players is derived from `chargedNodeCount`, not drawn — so a steal game
- * started with double or required deals exactly the board an off game deals
- * from the same seed. The
+ * when the planet bonus is a classic amount, exactly six more for the bonus
+ * planet deal (rules.md §3.4), drawn last so an off game spends nothing
+ * extra. Under steal instead, the deal consumes exactly `2 *
+ * chargedNodeCount` steps (`dealStealOpeningBoard`, steal.md §7) — no
+ * rotator set is ever drawn — and the classic bonus planet deal, if the
+ * setting calls for one, still runs last. When the planet bonus is
+ * `"advanced"` (steal.md §10, steal only), the classic deal does not run and
+ * `dealAdvancedBonuses` instead draws exactly four more steps, also last.
+ * The player-matching nodes setting (steal.md §9) draws nothing — which two
+ * signals are matched to the players is derived from `chargedNodeCount`, not
+ * drawn — so a steal game started with double or required deals exactly the
+ * board an off game deals from the same seed. The
  * resulting state's `randomSeed` is the seed all of that left behind. That
  * argument is also recorded verbatim as `openingSeed`, so the state
  * remembers where its deal started even once `randomSeed` has moved on. See
@@ -425,6 +445,11 @@ export function startingGameState(
       `startingGameState: playerMatching "${playerMatching}" is only valid under the steal node playstyle, got nodePlaystyle "${nodePlaystyle}"`,
     );
   }
+  if (planetBonus === "advanced" && nodePlaystyle !== "steal") {
+    throw new RangeError(
+      `startingGameState: planetBonus "advanced" is only valid under the steal node playstyle, got nodePlaystyle "${nodePlaystyle}"`,
+    );
+  }
 
   const ships = startingFleet(fleetSize).map((entry) => ({
     id: entry.id,
@@ -447,10 +472,15 @@ export function startingGameState(
       ? placeRotators(dealtNodeSquares, shipSquares, dealtSeed)
       : [[], dealtSeed];
 
-  const [bonusPlanets, nextSeed]: [BonusPlanetsBySide, number] =
-    planetBonus === "off"
+  const [bonusPlanets, seedAfterBonusPlanets]: [BonusPlanetsBySide, number] =
+    planetBonus === "off" || planetBonus === "advanced"
       ? [{ green: [], red: [] }, seedAfterRotators]
       : dealBonusPlanetEntries(seedAfterRotators);
+
+  const [advancedBonuses, nextSeed]: [readonly AdvancedBonusEntry[], number] =
+    planetBonus === "advanced"
+      ? dealAdvancedBonuses(nodes, chargedNodeCount, seedAfterBonusPlanets)
+      : [[], seedAfterBonusPlanets];
 
   return {
     ships,
@@ -469,6 +499,7 @@ export function startingGameState(
     rotators,
     planetBonus,
     bonusPlanets,
+    advancedBonuses,
     playerMatching,
   };
 }

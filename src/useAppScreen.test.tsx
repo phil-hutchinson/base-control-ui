@@ -203,6 +203,46 @@ describe("useAppScreen", () => {
     );
   });
 
+  it("resets the planet bonus to off when the node playstyle leaves steal while advanced is chosen, and does not jump back to advanced on returning to steal", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
+
+    act(() => {
+      result.current.setNodePlaystyle("steal");
+    });
+    act(() => {
+      result.current.setPlanetBonus("advanced");
+    });
+    expect(result.current.planetBonus).toBe("advanced");
+
+    act(() => {
+      result.current.setNodePlaystyle("planet");
+    });
+    expect(result.current.planetBonus).toBe("off");
+
+    act(() => {
+      result.current.setNodePlaystyle("steal");
+    });
+    expect(result.current.planetBonus).toBe("off");
+  });
+
+  it("leaves a classic planet bonus setting untouched by a node playstyle switch away from steal", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
+
+    act(() => {
+      result.current.setNodePlaystyle("steal");
+    });
+    act(() => {
+      result.current.setPlanetBonus("three");
+    });
+    act(() => {
+      result.current.setNodePlaystyle("planet");
+    });
+
+    expect(result.current.planetBonus).toBe("three");
+  });
+
   it("dispatches the player-matching setting only while the node playstyle is steal, and remembers it switching back", () => {
     const dispatch = vi.fn();
     const { result } = renderHook(() => useAppScreen(dispatch, false));

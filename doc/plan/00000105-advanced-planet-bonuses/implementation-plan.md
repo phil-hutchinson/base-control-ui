@@ -819,7 +819,58 @@ format:check clean.
 
 ### Step 4 — The ADVANCED setting, the start screen and the opening deal
 
-Status: pending
+Status: committed
+
+Notes: `planetBonus.ts` gained `"advanced"` on `PlanetBonusSetting`, a
+`ClassicPlanetBonusSetting` narrowing type for `planetBonusPoints` (D3), and
+`offeredPlanetBonusSettings(nodePlaystyle)` — the classic three everywhere,
+plus advanced last under steal — which `StartScreen.tsx`'s Planet bonus group
+now renders from instead of the raw settings list. New leaf module
+`src/rules/advancedBonus.ts` (D2) holds `AdvancedBonusKind`/
+`ADVANCED_BONUS_KINDS` in table order, the six weights, `isAdvancedBonusKindAvailable`
+(Additional nodes unavailable exactly when Step 3's `everyNodeHasExtra` is
+true), `drawAdvancedBonusKind` (D6: one `drawWeightedIndex` call over all six
+kinds, weight 0 for excluded/unavailable), `drawAdvancedBonusPlanet` (uniform),
+the point table mirrored verbatim from steal.md §10 with `advancedBonusPoints`
+as its lookup, and `dealAdvancedBonuses` (D4: slot 0 planet, slot 1 planet,
+slot 0 kind, slot 1 kind — four seed steps). `gameState.ts` gained the
+`advancedBonuses` field (D1, empty except under advanced, where it always
+holds exactly two entries), a `RangeError` for `"advanced"` paired with a
+non-steal playstyle (mirroring the existing `playerMatching` guard), and
+`startingGameState` now runs `dealAdvancedBonuses` last, after the (skipped,
+for advanced) classic bonus deal, leaving `bonusPlanets` empty for both sides
+under advanced. `useAppScreen.ts`'s `setNodePlaystyle` now wraps the raw state
+setter: leaving steal while the remembered planet bonus is `"advanced"` resets
+it to `"off"` (S15) — deliberately not the `resolvePlayerMatching` pattern,
+since the story wants OFF to show and stay showing rather than jumping back.
+`PlanetBonusPanel.tsx` and `ply.ts`'s `claimPlanetBonus` both gained a
+temporary `"advanced"` branch that behaves exactly as `"off"` (render
+nothing; claim nothing, since `bonusPlanets` is empty anyway) — Step 5 and
+Step 6 replace these.
+
+Every test fixture across the suite that builds a `GameState` object literal
+needed `advancedBonuses: []` added alongside its existing `bonusPlanets: {
+green: [], red: [] }` (a required field addition); this was mechanical and
+touched no assertions. New tests: `planetBonus.test.ts` (the fourth setting,
+`offeredPlanetBonusSettings` by playstyle); `advancedBonus.test.ts` (kind
+order, availability, the weighted draw's exclusions/frequency/one-seed-step,
+the planet draw, point-table spot checks, the D12 steal.md mirror test
+parsing section 10's table with `node:fs`, and the opening deal's
+distinctness/seed-count/determinism); `gameState.test.ts` (the non-steal
+`RangeError`, the two-bonus/two-planet/two-kind/empty-planets/empty-
+`bonusPlanets` shape, the four-extra-seed-steps-with-identical-nodes-and-ships
+check, and off/two/three leaving `advancedBonuses` empty); `useAppScreen.test.tsx`
+and `App.test.tsx` (ADVANCED offered only under steal, the reset-to-OFF on
+leaving steal and non-reappearance on returning, survival across a
+return-to-start, and a classic setting being left untouched by the same
+switch); `session.test.ts` (a `new-game` intent with steal + advanced deals a
+state with two `advancedBonuses` and empty `bonusPlanets`). No deviations
+from the plan.
+
+Full `npm test` — **82 test files, 1753 tests, all green** (up from 1721,
+Step 3's count); `npm run typecheck`, `npm run lint` and `npm run
+format:check` all pass (prettier reformatted the four files the new tests and
+`advancedBonus.ts` were added to/in).
 
 **Rules layer.**
 

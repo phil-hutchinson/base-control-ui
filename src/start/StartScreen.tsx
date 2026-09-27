@@ -1,8 +1,9 @@
 // The start screen: the app's front door. Carries the game's on-screen
 // name, the options a player sets before a game begins — eight of them,
 // nine under the steal playstyle, which alone offers player-matching nodes
-// — and the PLAY button. Rendered by `App` in place of the game whenever
-// there is no game in progress.
+// and, alone among the Planet bonus group's four settings, ADVANCED
+// (`offeredPlanetBonusSettings`) — and the PLAY button. Rendered by `App` in
+// place of the game whenever there is no game in progress.
 
 import { useId } from "react";
 import { GAME_NAME } from "../gameName";
@@ -13,8 +14,8 @@ import { GAME_LENGTH_OPTIONS_ROUNDS } from "../rules/gameLength";
 import { type NodePlaystyle, NODE_PLAYSTYLES } from "../rules/nodePlaystyle";
 import { type ChargedNodeCount, CHARGED_NODE_COUNTS } from "../rules/nodes";
 import {
+  offeredPlanetBonusSettings,
   type PlanetBonusSetting,
-  PLANET_BONUS_SETTINGS,
 } from "../rules/planetBonus";
 import {
   type PlayerMatchingSetting,
@@ -48,6 +49,7 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
   off: "OFF",
   two: "2 POINTS",
   three: "3 POINTS",
+  advanced: "ADVANCED",
 };
 
 /**
@@ -235,7 +237,7 @@ export function StartScreen({
       <fieldset className="start-screen__options">
         <legend className="start-screen__legend">Planet bonus</legend>
         <div className="start-screen__choices">
-          {PLANET_BONUS_SETTINGS.map((value) => (
+          {offeredPlanetBonusSettings(nodePlaystyle).map((value) => (
             <OptionChoice
               key={value}
               name={planetBonusGroupName}

@@ -645,6 +645,60 @@ describe("App", () => {
     ).toBeChecked();
   });
 
+  it("choosing ADVANCED under STEAL before PLAY starts a game, and returning to start still shows it chosen", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    stubConfirm(true);
+
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+    );
+    await user.click(
+      within(planetBonusGroup()).getByRole("radio", { name: "ADVANCED" }),
+    );
+    await pressPlay();
+
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+
+    traverseTo("");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+    ).toBeInTheDocument();
+    expect(
+      within(planetBonusGroup()).getByRole("radio", { name: "ADVANCED" }),
+    ).toBeChecked();
+  });
+
+  it("hides ADVANCED and shows OFF checked once the node playstyle leaves steal, and it stays off returning to steal", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+    );
+    await user.click(
+      within(planetBonusGroup()).getByRole("radio", { name: "ADVANCED" }),
+    );
+
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
+    expect(
+      screen.queryByRole("radio", { name: "ADVANCED" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(planetBonusGroup()).getByRole("radio", { name: "OFF" }),
+    ).toBeChecked();
+
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+    );
+    expect(
+      within(planetBonusGroup()).getByRole("radio", { name: "OFF" }),
+    ).toBeChecked();
+  });
+
   it("does not repaint the board on a clock tick", async () => {
     // `shouldAdvanceTime` lets user-event's own internal scheduling (pointer
     // events, focus handling) keep resolving in the background while the

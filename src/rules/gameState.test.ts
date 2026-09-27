@@ -568,6 +568,15 @@ describe("startingGameState", () => {
     },
   );
 
+  it.each(["continuous", "planet", "dedicated"] as const)(
+    "throws a RangeError for advanced paired with the %s node playstyle",
+    (nodePlaystyle) => {
+      expect(() =>
+        startingGameState(SEED, { nodePlaystyle, planetBonus: "advanced" }),
+      ).toThrow(RangeError);
+    },
+  );
+
   it("is one of the offered planet bonus settings, exactly the one given", () => {
     const state = startingGameState(SEED, { planetBonus: "two" });
 
@@ -652,6 +661,92 @@ describe("startingGameState under steal (steal.md §7)", () => {
     expect(withBonus.bonusPlanets.green).toHaveLength(3);
     expect(withBonus.bonusPlanets.red).toHaveLength(3);
     expect(withBonus.randomSeed).not.toBe(seedAfterDeal);
+  });
+});
+
+describe("startingGameState's advancedBonuses field (steal.md §10)", () => {
+  it("is empty under off, two and three, whose seed consumption is unaffected", () => {
+    for (const planetBonus of ["off", "two", "three"] as const) {
+      const state = startingGameState(SEED, {
+        nodePlaystyle: "steal",
+        chargedNodeCount: 4,
+        planetBonus,
+      });
+      expect(state.advancedBonuses).toEqual([]);
+    }
+
+    const withoutOption = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+    });
+    const withOff = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+      planetBonus: "off",
+    });
+    expect(withoutOption).toEqual(withOff);
+  });
+
+  it("deals exactly two bonuses, on two distinct empty planets, of two distinct kinds, with bonusPlanets left empty", () => {
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+      planetBonus: "advanced",
+    });
+
+    expect(state.advancedBonuses).toHaveLength(2);
+    const [first, second] = state.advancedBonuses;
+    expect(squareName(first.square)).not.toBe(squareName(second.square));
+    expect(first.kind).not.toBe(second.kind);
+    for (const entry of state.advancedBonuses) {
+      expect(isPlanet(entry.square)).toBe(true);
+      expect(
+        state.ships.some(
+          (ship) => squareName(ship.square) === squareName(entry.square),
+        ),
+      ).toBe(false);
+    }
+    expect(state.bonusPlanets).toEqual({ green: [], red: [] });
+  });
+
+  it("consumes exactly four seed steps more than the same seed without advanced, leaving the nodes and ships unaffected", () => {
+    const withoutAdvanced = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+      planetBonus: "off",
+    });
+    const withAdvanced = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+      planetBonus: "advanced",
+    });
+
+    expect(withAdvanced.nodes).toEqual(withoutAdvanced.nodes);
+    expect(withAdvanced.ships).toEqual(withoutAdvanced.ships);
+
+    let expectedSeed = withoutAdvanced.randomSeed;
+    for (let step = 0; step < 4; step++) {
+      [, expectedSeed] = mulberry32(expectedSeed);
+    }
+    expect(withAdvanced.randomSeed).toBe(expectedSeed);
+  });
+
+  it("deals the same pair for the same seed, and a different one for a different seed", () => {
+    const first = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      planetBonus: "advanced",
+    });
+    const second = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      planetBonus: "advanced",
+    });
+    const third = startingGameState(SEED + 1, {
+      nodePlaystyle: "steal",
+      planetBonus: "advanced",
+    });
+
+    expect(second.advancedBonuses).toEqual(first.advancedBonuses);
+    expect(third.advancedBonuses).not.toEqual(first.advancedBonuses);
   });
 });
 

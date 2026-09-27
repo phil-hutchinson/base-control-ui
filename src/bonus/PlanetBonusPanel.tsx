@@ -77,7 +77,9 @@ export function PlanetBonusPanel({ state }: PlanetBonusPanelProps) {
     [state.openingSeed],
   );
 
-  if (state.planetBonus === "off") {
+  if (state.planetBonus === "off" || state.planetBonus === "advanced") {
+    // Advanced's own panel is Step 6's; until then this renders nothing,
+    // just as off does.
     return null;
   }
 

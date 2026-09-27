@@ -459,14 +459,15 @@ function rotateForLanding(
 }
 
 /**
- * Pays a planet bonus if `square` triggers one for `side` landing there
- * (rules.md §3.4), modelled on `rotateForLanding` above: does nothing at
- * all — returning `state` unchanged — when the planet bonus setting is off,
- * when `square` is not one of `side`'s three dealt planets, or when `side`
- * has already claimed it. Otherwise it does two things at once: `side`'s
- * energy rises by `planetBonusPoints(state.planetBonus)`, and that planet's
- * entry in `state.bonusPlanets` records `state.plyNumber` — the ply the
- * landing happened on, since `endPly` has not yet advanced it. Shared by
+ * Pays a classic planet bonus if `square` triggers one for `side` landing
+ * there (rules.md §3.4), modelled on `rotateForLanding` above: does nothing
+ * at all — returning `state` unchanged — when the planet bonus setting is
+ * off or advanced (advanced's own claim is a separate path — steal.md §10,
+ * Step 5), when `square` is not one of `side`'s three dealt planets, or when
+ * `side` has already claimed it. Otherwise it does two things at once:
+ * `side`'s energy rises by `planetBonusPoints(state.planetBonus)`, and that
+ * planet's entry in `state.bonusPlanets` records `state.plyNumber` — the ply
+ * the landing happened on, since `endPly` has not yet advanced it. Shared by
  * `applyMove`, which calls this once, and `applyAttack`, which calls it
  * twice — the attacker's return planet first, then the defender's —
  * threading the state returned by the first call into the second, so two
@@ -480,7 +481,9 @@ function claimPlanetBonus(
   readonly state: GameState;
   readonly effect: PlanetBonusClaimedEffect | undefined;
 } {
-  if (state.planetBonus === "off") {
+  if (state.planetBonus === "off" || state.planetBonus === "advanced") {
+    // Advanced has no per-side `bonusPlanets` to look up — `applyMove` and
+    // `applyAttack` resolve its claims separately (steal.md §10).
     return { state, effect: undefined };
   }
 
