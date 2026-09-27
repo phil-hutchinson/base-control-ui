@@ -18,6 +18,7 @@ import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import type { ScoringSetting } from "../rules/scoring";
 import type { NodeSignal } from "../rules/steal";
 import type { PlayerMatchingSetting } from "../rules/playerMatching";
+import { PLAYER_NODE_COLORS, SIGNAL_COLORS } from "../board/squareArt";
 import { ScoreDisplay } from "./ScoreDisplay";
 
 afterEach(cleanup);
@@ -117,6 +118,14 @@ function buildStealState(config: {
   };
 }
 
+/** Each lit pip's fill colour, in row order — empty for a pip left to the
+ * stylesheet's gold. */
+function litFills(container: HTMLElement): readonly string[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(".score-display__pip--lit"),
+  ).map((pip) => pip.style.getPropertyValue("--pip-fill"));
+}
+
 describe("ScoreDisplay", () => {
   it("carries the true total and node count as a hidden sentence", () => {
     const state = buildState({ energy: { green: 24, red: 9 } });
@@ -207,6 +216,19 @@ describe("ScoreDisplay", () => {
     expect(
       screen.getByText("Green: 0 energy, 2 nodes held."),
     ).toBeInTheDocument();
+  });
+
+  it("leaves a lit pip to the stylesheet's gold when its node has no colour of its own", () => {
+    const state = buildState({
+      nodes: { H8: "charged" },
+      ships: [ship("green-1", "green", "H8")],
+    });
+
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
+
+    expect(litFills(container)).toEqual([""]);
   });
 
   it("does not light a pip for a node the opposing side holds", () => {
@@ -441,6 +463,98 @@ describe("ScoreDisplay", () => {
       );
       expect(marked).toHaveLength(1);
       expect(marked[0]).toHaveTextContent("3");
+    });
+
+    it("fills each lit pip in its node's colour, in board order, with player-matching nodes off", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("red", 3),
+          ship("red-a", "red", "E5"),
+          ship("red-b", "red", "K5"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "off",
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="red" displayedTotal={0} />,
+      );
+
+      expect(litFills(container)).toEqual([
+        SIGNAL_COLORS[0].core,
+        SIGNAL_COLORS[2].core,
+      ]);
+    });
+
+    it("orders DOUBLE's pips own node twice, then the opponent's, then the rest", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("red", 2),
+          ship("red-other", "red", "E5"),
+          ship("red-theirs", "red", "K11"),
+          ship("red-own", "red", "E11"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "double",
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="red" displayedTotal={0} />,
+      );
+
+      expect(litFills(container)).toEqual([
+        PLAYER_NODE_COLORS.red.core,
+        PLAYER_NODE_COLORS.red.core,
+        PLAYER_NODE_COLORS.green.core,
+        SIGNAL_COLORS[0].core,
+      ]);
+    });
+
+    it("orders REQUIRED's pips own node once, then the opponent's, then the rest", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("green", 2),
+          ship("green-other", "green", "E5"),
+          ship("green-theirs", "green", "E11"),
+          ship("green-own", "green", "K11"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "required",
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+      );
+
+      expect(litFills(container)).toEqual([
+        PLAYER_NODE_COLORS.green.core,
+        PLAYER_NODE_COLORS.red.core,
+        SIGNAL_COLORS[0].core,
+      ]);
+    });
+
+    it("gives REQUIRED's X pips no fill colour", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("red", 3),
+          ship("red-a", "red", "H8"),
+          ship("red-b", "red", "K11"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "required",
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="red" displayedTotal={0} />,
+      );
+
+      const xPips = Array.from(
+        container.querySelectorAll<HTMLElement>(".score-display__pip--x"),
+      );
+      expect(xPips).toHaveLength(2);
+      for (const pip of xPips) {
+        expect(pip.style.getPropertyValue("--pip-fill")).toBe("");
+      }
     });
   });
 });

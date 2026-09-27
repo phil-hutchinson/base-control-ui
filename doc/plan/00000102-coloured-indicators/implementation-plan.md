@@ -36,7 +36,11 @@ there is no ruleset step.
 
 ## Step 1 — Coloured pips, white outlines, own-enemy-others order
 
-Status: pending
+Status: committed
+
+Notes: `pipFills` in `ScoreDisplay.tsx` builds the ordered fill list; lit
+pips carry it inline as `--pip-fill`, and the per-side border and X rules are
+gone from the stylesheet. Five tests added; no deviation from the plan.
 
 In `src/hud/ScoreDisplay.tsx`, build the row's fill colours from
 `turnCollection`: one entry per held node (two for the own node under

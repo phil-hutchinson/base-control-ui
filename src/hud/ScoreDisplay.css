@@ -38,36 +38,29 @@
   gap: 0.35em;
 }
 
+/* Every pip's outline is white; a lit pip fills with the board colour of
+   the node it stands for, set per pip as `--pip-fill` (`ScoreDisplay.tsx`),
+   or gold for a node with no colour of its own. */
 .score-display__pip {
   width: 0.6em;
   height: 0.6em;
   border-radius: 50%;
   background-color: transparent;
-  border: 1px solid var(--color-text-dim);
-}
-
-/* Every pip's border is the side's own colour; a lit pip fills with the
-   colour of a charged node, so the border says whose it is and the fill
-   says what it counts. */
-.score-display--green .score-display__pip {
-  border-color: var(--color-green);
-}
-
-.score-display--red .score-display__pip {
-  border-color: var(--color-red);
+  border: 1px solid var(--color-text-bright);
 }
 
 .score-display__pip--lit {
-  background-color: var(--color-node-charged);
-  box-shadow: 0 0 0.4em var(--color-node-charged);
+  background-color: var(--pip-fill, var(--color-node-charged));
+  box-shadow: 0 0 0.4em var(--pip-fill, var(--color-node-charged));
 }
 
 /* REQUIRED (steal.md §9) withholds a turn's collection while the side holds
    a node but not its own: each held node's pip stays unlit and is crossed
-   through instead, two diagonals in the side's own colour — the same line
-   as its border — cutting the circle into four quarters. The pip keeps its
-   size; the crossing is background, clipped to the circle by its radius. */
+   through instead, two white diagonals — the same line as its outline —
+   cutting the circle into four quarters. The pip keeps its size; the
+   crossing is background, clipped to the circle by its radius. */
 .score-display__pip--x {
+  --pip-x-line: var(--color-text-bright);
   background-image:
     linear-gradient(
       45deg,
@@ -83,14 +76,6 @@
       var(--pip-x-line) calc(50% + 0.5px),
       transparent calc(50% + 0.5px)
     );
-}
-
-.score-display--green .score-display__pip--x {
-  --pip-x-line: var(--color-green);
-}
-
-.score-display--red .score-display__pip--x {
-  --pip-x-line: var(--color-red);
 }
 
 /* DOUBLE (steal.md §9) can lengthen the row to six pips — one more than the
