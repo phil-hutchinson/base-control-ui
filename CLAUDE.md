@@ -3,10 +3,10 @@
 ## Project
 
 This repository is the web app for **Base Control**: a two-player, space-themed
-board game in which each side manoeuvres a fleet of seven ships to occupy
-contested nodes and collect energy. It is not a pure-strategy game — which
-site is charged next is random, and so is which bay a beaten ship is
-pushed back to.
+board game in which each side manoeuvres a fleet of three to five ships to
+occupy contested nodes and collect energy. It is not a pure-strategy game —
+where a new node appears is random, and so is which planet a beaten ship is
+pushed back to and, under the planet bonus options, which planets pay.
 
 The app is a **front-end only** TypeScript/React single-page application — no
 backend API; it must be deployable from a static file host.
@@ -138,8 +138,9 @@ must not be used loosely.
 **Node** — a position on the board that runs `inactive` → `charged` →
 `depleted` and then ends, at which point a new inactive node appears
 somewhere else. Under the Steal playstyle a node instead never ends: it is
-two squares — `charged` and `prospective`, or two `prospective` — and moves
-when a ship claims or leaves it. The same word everywhere: code, tests and
+two squares — `charged` and `prospective`, or two `prospective` — plus, for a
+while, one extra `prospective` square when an Additional nodes bonus has
+given it one, and it moves when a ship claims or leaves it. The same word everywhere: code, tests and
 player-facing text. This replaces an older split, where "hub" was the code
 word for a charged site and "site" named a fixed position a hub could appear
 at — a board with no fixed positions has no honest use for either word, so this is a knowing
