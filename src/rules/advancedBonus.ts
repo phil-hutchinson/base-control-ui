@@ -182,7 +182,7 @@ const ADVANCED_BONUS_POINTS: Readonly<
     },
     double: {
       simple: { small: 2, medium: 4, large: 6 },
-      bonus: { small: 4, medium: 6, large: 10 },
+      bonus: { small: 5, medium: 8, large: 12 },
     },
     required: {
       simple: { small: 1, medium: 2, large: 4 },
@@ -196,7 +196,7 @@ const ADVANCED_BONUS_POINTS: Readonly<
     },
     double: {
       simple: { small: 3, medium: 5, large: 8 },
-      bonus: { small: 5, medium: 8, large: 12 },
+      bonus: { small: 6, medium: 10, large: 15 },
     },
     required: {
       simple: { small: 2, medium: 3, large: 5 },

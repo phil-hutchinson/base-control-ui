@@ -184,7 +184,7 @@ describe("advancedBonusPoints (steal.md §10)", () => {
   it("pays the table's spot amounts", () => {
     expect(advancedBonusPoints(3, "off", "simple", "small")).toBe(2);
     expect(advancedBonusPoints(3, "off", "bonus", "large")).toBe(8);
-    expect(advancedBonusPoints(4, "double", "bonus", "medium")).toBe(8);
+    expect(advancedBonusPoints(4, "double", "bonus", "medium")).toBe(10);
     expect(advancedBonusPoints(5, "required", "simple", "large")).toBe(6);
     expect(advancedBonusPoints(5, "double", "bonus", "large")).toBe(15);
   });

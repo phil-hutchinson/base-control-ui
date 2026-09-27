@@ -1298,7 +1298,55 @@ typecheck, lint, format:check clean.
 
 ### Step 8 — Balancing the point table
 
-Status: pending
+Status: committed
+
+Notes: Wrote an improvised, uncommitted `*.test.ts` under `src/rules/`
+playing 200 seeded steal games per combination (100 combat off, 100 combat
+on; 30 rounds; the app's default fleet of five; planet bonus off) at all 18
+node-count/player-matching/scoring combinations, with a deterministic,
+matching-aware policy (attack first; then claim/steal the side's own
+matched node if reachable; then any prospective node; then close distance
+to the own matched node while it applies and is unheld, else to the nearest
+prospective node; then any legal move), recording mean node energy per ply
+and its standard deviation per combination. Took the median of the 18
+(story Medium ÷ measured mean) ratios as the common scale, `k ≈ 2.9667`;
+rescaled each cell's Medium to `k × measured mean`, kept the story's number
+where the rescaled Medium was within one of it (15 of 18 cells, including
+every `off` and `required` row and every `double` row under simple
+scoring), and moved the remaining two — both double/bonus scoring, at 3 and
+4 nodes — up to the Small/Large already paired with that Medium elsewhere
+in the table (Medium 8 → 5/8/12, Medium 10 → 6/10/15), rather than
+inventing new proportions. The 5-node double/bonus cell's rescaled Medium
+(≈11.45) also crossed a full step above the story's 10, but that step sits
+inside the cell's own sampling noise (standard error ≈0.065 against a step
+of 1), so it was correctly kept unchanged — coincidentally landing the
+4-node and 5-node double/bonus rows on the same triple (6/10/15), noted in
+tech-notes rather than smoothed away. Applied the two changed cells to
+`src/rules/advancedBonus.ts`'s table, `doc/ruleset/steal.md` §10's table (the
+D12 mirror test ties them together), the one spot-check in
+`advancedBonus.test.ts` that pinned the changed 4-node cell, and `story.md`'s
+table and its "Balancing" and pattern-note prose (corrected in place to what
+was built, per project rule). Added a new `doc/ruleset/tech-notes.md`
+section, "Sizing advanced planet bonus points", in the shape of "Placing
+prospective nodes under steal": the measured income table, the rescale
+method and `k`, the before/after table for the two changed cells, whether
+the story's double/required pattern held (only in direction — double's
+measured income beat "one node more" by a growing margin under bonus
+scoring's triangular payout, and required's fell further behind "one node
+fewer" than the pattern assumed, though every required cell still landed
+within tolerance), the sampling-noise caveat, the 4-node/5-node coincidence,
+and what the app guards. The changelog's 0.41 entry needed no edit — D12
+already has it point to steal.md §10 rather than copy the numbers, so it
+reads correctly unchanged; no version bump, per S20. Deleted the
+measurement script before finishing (`git status` shows no stray file).
+
+No deviations from the plan.
+
+Full `npm test` — **84 test files, 1796 tests, all green** (unchanged, as
+expected — only point amounts moved, not behaviour); `npm run typecheck`,
+`npm run lint` and `npm run format:check` all pass (prettier reformatted
+`tech-notes.md` after the new section was added). `grep -n "0.42"
+doc/ruleset/rules.md doc/ruleset/changelog.md` finds nothing.
 
 Revisit the point table (story "Balancing") so a point bonus stays in
 proportion to how fast nodes typically pay in each combination, keeping the

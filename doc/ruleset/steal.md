@@ -281,10 +281,10 @@ how fast nodes pay in that game:
 | Nodes | Player-matching | Simple scoring (S / M / L) | Bonus scoring (S / M / L) |
 | ----: | --------------- | -------------------------- | ------------------------- |
 |     3 | off             | 2 / 3 / 5                  | 3 / 5 / 8                 |
-|     3 | double          | 2 / 4 / 6                  | 4 / 6 / 10                |
+|     3 | double          | 2 / 4 / 6                  | 5 / 8 / 12                |
 |     3 | required        | 1 / 2 / 4                  | 2 / 4 / 6                 |
 |     4 | off             | 2 / 4 / 6                  | 4 / 6 / 10                |
-|     4 | double          | 3 / 5 / 8                  | 5 / 8 / 12                |
+|     4 | double          | 3 / 5 / 8                  | 6 / 10 / 15               |
 |     4 | required        | 2 / 3 / 5                  | 3 / 5 / 8                 |
 |     5 | off             | 3 / 5 / 8                  | 5 / 8 / 12                |
 |     5 | double          | 3 / 6 / 10                 | 6 / 10 / 15               |

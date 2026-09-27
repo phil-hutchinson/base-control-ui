@@ -82,25 +82,31 @@ Claiming a Fuel bonus does not change that end-of-turn recovery.
 
 **Point bonuses** pay the claiming side energy at once. The amount depends
 on the game's node count, its scoring and its player-matching setting, so
-that a bonus stays in proportion to how fast nodes pay in that game. Here is
-a first set of numbers:
+that a bonus stays in proportion to how fast nodes pay in that game. The
+table below was balanced by measurement (see _Balancing_ and
+`doc/ruleset/tech-notes.md`, "Sizing advanced planet bonus points"):
 
 | Nodes | Player-matching | Simple scoring (S / M / L) | Bonus scoring (S / M / L) |
 | ----: | --------------- | -------------------------- | ------------------------- |
 |     3 | off             | 2 / 3 / 5                  | 3 / 5 / 8                 |
-|     3 | double          | 2 / 4 / 6                  | 4 / 6 / 10                |
+|     3 | double          | 2 / 4 / 6                  | 5 / 8 / 12                |
 |     3 | required        | 1 / 2 / 4                  | 2 / 4 / 6                 |
 |     4 | off             | 2 / 4 / 6                  | 4 / 6 / 10                |
-|     4 | double          | 3 / 5 / 8                  | 5 / 8 / 12                |
+|     4 | double          | 3 / 5 / 8                  | 6 / 10 / 15               |
 |     4 | required        | 2 / 3 / 5                  | 3 / 5 / 8                 |
 |     5 | off             | 3 / 5 / 8                  | 5 / 8 / 12                |
 |     5 | double          | 3 / 6 / 10                 | 6 / 10 / 15               |
 |     5 | required        | 2 / 4 / 6                  | 4 / 6 / 10                |
 
-The table follows a simple pattern. DOUBLE plays like one node more, since
-a player's own node counts as two, and REQUIRED plays like one node fewer,
-since income stops whenever the player loses their own node. These numbers
-are provisional (see _Balancing_).
+The table mostly follows a simple pattern: DOUBLE plays like one node more,
+since a player's own node counts as two, and REQUIRED plays like one node
+fewer, since income stops whenever the player loses their own node.
+Measurement bore this out only loosely — DOUBLE under bonus scoring pays
+considerably more than "one node more" once the own node's double count
+compounds with bonus scoring's triangular payout, which is why the DOUBLE
+column under bonus scoring differs from a first estimate built on the
+pattern alone; every other cell held within a rounding step of what the
+pattern predicted.
 
 **Fuel** gives one power to each of the claiming side's ships below the
 maximum of 6, wherever those ships are. The claiming ship is included, and
@@ -257,12 +263,14 @@ choices to weigh against a points bonus.
 
 ## Balancing
 
-The point table above is a first estimate. Once the rest of the story
-works, a final step in the plan revisits it. Keep the numbers round where
-possible, and keep a point bonus in proportion to how fast nodes typically
-pay in each combination. That step may change any number in the table,
-together with the ruleset's copy of it, within this story's single version
-bump.
+The point table above was a first estimate, built from a stated pattern
+rather than measurement. A later step in the plan measured how fast nodes
+actually pay, under a matching-aware policy, at every combination of node
+count, player-matching and scoring, and rescaled the table to match while
+keeping the numbers round — changing two cells, both DOUBLE under bonus
+scoring, and leaving the rest as first estimated. The table above is the
+result; the measured figures, the rescale and what stayed unchanged are in
+`doc/ruleset/tech-notes.md`, "Sizing advanced planet bonus points".
 
 ## Verification
 

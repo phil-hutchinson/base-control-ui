@@ -224,3 +224,110 @@ draws' mean distance and outer-edge share within a band around their own
 re-measured figures; and, at the largest fleet and five nodes, it confirms
 §3.2's own fallback never fires, both across a batch of opening deals and
 across a batch of whole games' worth of claims and abandons.
+
+---
+
+## Sizing advanced planet bonus points
+
+Story 105's point table ([steal.md](steal.md) §10) started as an estimate
+built from a stated pattern — double plays like one node more, required
+like one fewer — rather than from measurement. Once the rest of the story
+worked, this pass measured how fast nodes actually pay under each of the 18
+combinations (node count 3/4/5 × player-matching off/double/required ×
+scoring simple/bonus) and rescaled the table to match, keeping the numbers
+round (an improvised script, not committed).
+
+**The measurement.** For each combination, 100 seeded steal games with
+combat off and a further 100 with combat on (200 games per combination, 30
+rounds, the app's default fleet of five ships a side, planet bonus **off**
+so only node income was measured), played by a deterministic,
+matching-aware policy: an attack first if one is legal; otherwise a move
+claiming or stealing the side's own matched node if one is reachable;
+otherwise a move claiming or stealing any prospective node; otherwise the
+move that most closes the distance to the side's own matched node (while
+player-matching applies and it is not already held) or to the nearest
+prospective node; otherwise any legal move. (A policy blind to
+player-matching would make required's income an artefact of luck, since it
+would rarely sit on the one node that actually pays.) For each game, node
+energy collected was divided by the plies played; the mean and standard
+deviation of that per-game rate, across the 200 games, is the combination's
+measured income:
+
+| Nodes | Player-matching | Simple scoring (mean, sd) | Bonus scoring (mean, sd) |
+| ----: | --------------- | ------------------------- | ------------------------ |
+|     3 | off             | 1.1098, 0.2001            | 1.4743, 0.3267           |
+|     3 | double          | 1.5431, 0.3061            | 2.6251, 0.6564           |
+|     3 | required        | 0.7143, 0.2555            | 1.0198, 0.3837           |
+|     4 | off             | 1.3761, 0.2206            | 1.9990, 0.4151           |
+|     4 | double          | 1.8149, 0.3043            | 3.2768, 0.7532           |
+|     4 | required        | 0.8328, 0.2998            | 1.3098, 0.5124           |
+|     5 | off             | 1.6024, 0.2470            | 2.5341, 0.5485           |
+|     5 | double          | 2.0465, 0.3514            | 3.8594, 0.9228           |
+|     5 | required        | 0.9206, 0.3642            | 1.5467, 0.6612           |
+
+**The rescale.** For each combination, the story's Medium amount divided by
+its measured mean gives a ratio; the median of the 18 ratios, **k ≈
+2.9667**, is the common scale kept for the whole table (the story's overall
+level stays; only the proportions between combinations move). Target
+Medium is `k × measured mean`, rounded; Small and Large keep the story's own
+proportions to Medium. Where the rescaled Medium differs from the story's by
+no more than one, the story's number was kept — 15 of the 18 cells landed
+within that margin and are unchanged, several of them exactly. The
+remaining two, both **double, bonus scoring**, moved up to a Medium the
+table already used elsewhere, keeping that Medium's existing Small and
+Large rather than inventing new ones: steal.md §10 already priced Medium 8
+as 5/8/12 (4-node double-bonus's own original triple, and 5-node
+off-bonus's), and Medium 10 as 6/10/15 (5-node double-bonus's own triple):
+
+| Nodes | Player-matching | Bonus scoring — before | Bonus scoring — after   |
+| ----: | --------------- | ---------------------- | ----------------------- |
+|     3 | double          | 4 / 6 / 10             | 5 / 8 / 12              |
+|     4 | double          | 5 / 8 / 12             | 6 / 10 / 15             |
+|     5 | double          | 6 / 10 / 15            | 6 / 10 / 15 (unchanged) |
+
+Every other cell — every `off` and `required` row, and every `double`
+row under simple scoring — was already within one rounding step of the
+measured figure and needed no change.
+
+**Whether the story's pattern held.** Only in direction, not in size.
+Double's measured income consistently beat the "one node more" estimate,
+and the gap widens sharply under bonus scoring: holding a player's own node
+counts it twice, and bonus scoring's triangular payout (`n(n+1)/2`) prices
+that extra node far above a flat one-node addition — three nodes counted
+pays 6, not 4.5 more than two nodes' 3. That is why only the double/bonus
+cells moved. Required's measured income, meanwhile, fell markedly further
+than "one node fewer" would suggest — withholding the whole turn's income
+for not holding the own node is a harsher penalty than losing one node's
+share of it — yet every required cell still landed within the one-step
+tolerance, the original table having already discounted required enough by
+happenstance for its numbers to survive.
+
+Each measured mean's sampling uncertainty (standard error ≈ sd/√200) is
+itself close to the size of the smallest rounding step being decided
+between, which is exactly the noise the one-step tolerance exists to
+absorb — the 5-node double/bonus cell (measured mean 3.8594, sd 0.9228,
+standard error ≈0.065) is the clearest example: its rescaled Medium (≈11.45)
+rounds a full step above the story's 10, but that step sits well inside the
+combination's own sampling noise, so the story's number was correctly kept.
+
+One artefact of the rescale is worth naming rather than smoothing over: the
+4-node and 5-node double/bonus rows now carry identical numbers (6/10/15).
+This is not an error — the two measured means are genuinely different
+(3.2768 vs 3.8594) — it is the rounding-and-no-churn rule landing both rows
+on the same nearby round triple. Nothing in the story requires strict
+monotonicity between adjacent node counts, so this was left as it fell out.
+
+**Caveat.** A scripted policy is not a human player: it never bluffs, never
+misjudges a race for a bonus, and always knows exactly which node is its
+own. The absolute income figures above are a mechanical lower bound on how
+fast a competent player collects, not a prediction of real play — which is
+why this pass treated the **proportions** between combinations as the
+signal worth rescaling to, and kept the story's own overall level (via the
+median ratio `k`) rather than replacing it outright.
+
+**What the app guards:** `src/rules/advancedBonus.test.ts`'s point-table
+mirror test (D12) reads this file's steal.md §10 table with `node:fs` and
+asserts the code's `advancedBonusPoints` lookup agrees with it for all 18
+cells, so the table in the two places cannot drift apart; its spot-check
+test pins a handful of cells, including one of the two rows this pass
+changed.
