@@ -464,3 +464,21 @@ nothing where a sighted player sees the X's appear.
 
 Where: `src/hud/ScoreDisplay.tsx`, `src/board/announcements.ts`,
 `src/rules/endOfTurn.ts`.
+
+## From story 102 — Coloured indicators
+
+Source: `doc/plan/00000102-coloured-indicators/implementation-plan.md`
+decision D1, Step 1.
+
+### 1. Which nodes a player holds is told by pip colour alone
+
+Each lit pip under a player's score is now filled in the board colour of the
+node it stands for, and under DOUBLE and REQUIRED the row is ordered own
+node, opponent's node, then the rest — so a sighted player can read off
+_which_ nodes are held, not just how many. That reading is carried by colour
+alone, and the whole pip row is `aria-hidden`: the hidden score sentence
+still gives only the count, so a screen-reader user, or a player who cannot
+separate the node colours, gets none of it.
+
+Where: `src/hud/ScoreDisplay.tsx`, `src/hud/ScoreDisplay.css`,
+`src/board/announcements.ts`.

@@ -65,7 +65,11 @@ all pass, including the new ordering and colour tests.
 
 ## Step 2 — Accessibility note and README check
 
-Status: pending
+Status: committed
+
+Notes: Added the story 102 section to `known-issues.md`. `README.md` needs no
+change: it says the app shows how many nodes each player holds, which is
+still true, and says nothing about pip colours.
 
 Add a "From story 102" section to
 `doc/plan/00000021-accessibility-tech-debt/known-issues.md` recording that
