@@ -181,6 +181,7 @@ describe.each(CHARGED_NODE_COUNTS)(
           outOfTime: { green: false, red: false },
           combatEnabled: true,
           scoring: "simple",
+          playerMatching: "off",
         };
 
         const { effects } = runCharging(state);

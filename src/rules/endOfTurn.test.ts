@@ -83,6 +83,7 @@ function buildState(config: {
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: config.scoring ?? "simple",
+    playerMatching: "off",
   };
 }
 
@@ -1650,6 +1651,7 @@ describe("runEndOfTurn — steal runs only power and energy (steal.md §8)", () 
       outOfTime: { green: false, red: false },
       combatEnabled: true,
       scoring: "simple",
+      playerMatching: "off",
     };
 
     const result = runEndOfTurn(state);

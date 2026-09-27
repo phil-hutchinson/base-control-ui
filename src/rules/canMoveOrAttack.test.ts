@@ -52,6 +52,7 @@ function buildState(config: {
     outOfTime: { green: false, red: false },
     combatEnabled: config.combatEnabled ?? true,
     scoring: "simple",
+    playerMatching: "off",
   };
 }
 

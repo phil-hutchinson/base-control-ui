@@ -37,6 +37,12 @@ import {
   PLANET_BONUS_SETTINGS,
   type PlanetBonusSetting,
 } from "./planetBonus";
+import {
+  DEFAULT_PLAYER_MATCHING,
+  isPlayerMatchingSetting,
+  PLAYER_MATCHING_SETTINGS,
+  type PlayerMatchingSetting,
+} from "./playerMatching";
 import { placeRotators } from "./rotators";
 import {
   DEFAULT_SCORING,
@@ -212,6 +218,17 @@ export interface GameState {
    * entry's claim is recorded as a ply number rather than a boolean.
    */
   readonly bonusPlanets: BonusPlanetsBySide;
+  /**
+   * The player-matching nodes setting (steal.md §9), fixed for the game's
+   * lifetime once set by `startingGameState`. Every place that prices a
+   * turn's collection reads it from here rather than from an app default.
+   * Always `"off"` outside steal — `startingGameState` rejects any other
+   * value paired with a non-steal node playstyle, since a non-steal game
+   * with matched nodes is a state the rules do not allow. It cannot be
+   * derived from a board: an off game and a required game with nothing yet
+   * held look identical in `state.nodes`.
+   */
+  readonly playerMatching: PlayerMatchingSetting;
 }
 
 /**
@@ -280,6 +297,19 @@ export interface StartingGameStateOptions {
    * deal, never supplied.
    */
   readonly planetBonus?: string;
+  /**
+   * The player-matching nodes setting (steal.md §9), offered only under the
+   * steal node playstyle. Defaults to `DEFAULT_PLAYER_MATCHING` (off).
+   * Deliberately typed `string`, not `PlayerMatchingSetting`, for the same
+   * reason `scoring`, `nodePlaystyle` and `planetBonus` are: a setting
+   * arriving from outside the type system can be any string. Must be one of
+   * `playerMatching.ts`'s offered settings, or this throws a `RangeError`.
+   * A value other than `"off"` paired with a `nodePlaystyle` other than
+   * `"steal"` also throws a `RangeError` — a non-steal game with matched
+   * nodes is a state the rules do not allow, and a caller asking for one is
+   * a bug.
+   */
+  readonly playerMatching?: string;
 }
 
 /**
@@ -304,7 +334,11 @@ export interface StartingGameStateOptions {
  * (rules.md §3.4), drawn last so an off game spends nothing extra. Under
  * steal instead, the deal consumes exactly `2 * chargedNodeCount` steps
  * (`dealStealOpeningBoard`, steal.md §7) — no rotator set is ever drawn — and
- * the bonus planet deal, if any, still runs last. The
+ * the bonus planet deal, if any, still runs last. The player-matching nodes
+ * setting (steal.md §9) draws nothing — which two signals are matched to the
+ * players is derived from `chargedNodeCount`, not drawn — so a steal game
+ * started with double or required deals exactly the board an off game deals
+ * from the same seed. The
  * resulting state's `randomSeed` is the seed all of that left behind. That
  * argument is also recorded verbatim as `openingSeed`, so the state
  * remembers where its deal started even once `randomSeed` has moved on. See
@@ -341,6 +375,7 @@ export function startingGameState(
     scoring = DEFAULT_SCORING,
     nodePlaystyle = DEFAULT_NODE_PLAYSTYLE,
     planetBonus = DEFAULT_PLANET_BONUS,
+    playerMatching = DEFAULT_PLAYER_MATCHING,
   } = options;
 
   if (!isGameLengthRounds(lengthInRounds)) {
@@ -371,6 +406,16 @@ export function startingGameState(
   if (!isPlanetBonusSetting(planetBonus)) {
     throw new RangeError(
       `startingGameState: planetBonus must be one of ${PLANET_BONUS_SETTINGS.join(", ")}, got ${planetBonus}`,
+    );
+  }
+  if (!isPlayerMatchingSetting(playerMatching)) {
+    throw new RangeError(
+      `startingGameState: playerMatching must be one of ${PLAYER_MATCHING_SETTINGS.join(", ")}, got ${playerMatching}`,
+    );
+  }
+  if (playerMatching !== "off" && nodePlaystyle !== "steal") {
+    throw new RangeError(
+      `startingGameState: playerMatching "${playerMatching}" is only valid under the steal node playstyle, got nodePlaystyle "${nodePlaystyle}"`,
     );
   }
 
@@ -417,6 +462,7 @@ export function startingGameState(
     rotators,
     planetBonus,
     bonusPlanets,
+    playerMatching,
   };
 }
 

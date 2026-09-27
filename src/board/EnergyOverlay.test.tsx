@@ -32,6 +32,7 @@ function buildState(plyNumber: number): GameState {
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
+    playerMatching: "off",
   };
 }
 

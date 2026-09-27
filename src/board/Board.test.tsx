@@ -129,6 +129,7 @@ function stateWithNode(
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
+    playerMatching: "off",
   };
 }
 
@@ -156,6 +157,7 @@ function stateWithStealNodes(
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
+    playerMatching: "off",
   };
 }
 
@@ -180,6 +182,7 @@ function stateWithRotators(squares: readonly Square[]): GameState {
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
+    playerMatching: "off",
   };
 }
 
@@ -794,6 +797,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       };
       const session: Session = {
         state,
@@ -895,6 +899,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       };
       const fullPowerSession: Session = {
         state: fullPowerState,
@@ -980,6 +985,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: overrides?.combatEnabled ?? true,
         scoring: "simple",
+        playerMatching: "off",
       };
     }
 
@@ -1161,6 +1167,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: config.combatEnabled ?? true,
         scoring: "simple",
+        playerMatching: "off",
       };
     }
 
@@ -1362,6 +1369,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       };
     }
 
@@ -1476,6 +1484,7 @@ describe("Board", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       };
       const session: Session = {
         state,
@@ -1523,6 +1532,7 @@ describe("Board", () => {
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         outOfTime: { green: false, red: false },
         scoring: "simple",
+        playerMatching: "off",
       };
 
       const off: Session = {

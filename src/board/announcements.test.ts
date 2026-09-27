@@ -1673,6 +1673,7 @@ describe("announcementForSession", () => {
       outOfTime: config.outOfTime ?? { green: false, red: false },
       combatEnabled: true,
       scoring: "simple",
+      playerMatching: "off",
     };
   }
 
@@ -2063,6 +2064,7 @@ describe("turnIndicatorText", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       }),
     ).toBe("Green to play");
   });
@@ -2086,6 +2088,7 @@ describe("turnIndicatorText", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       }),
     ).toBe("Red to play");
   });
@@ -2109,6 +2112,7 @@ describe("turnIndicatorText", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       }),
     ).toBe("Game over");
   });
@@ -2148,6 +2152,7 @@ describe("HUD wording", () => {
       outOfTime: { green: false, red: false },
       combatEnabled: true,
       scoring: "simple",
+      playerMatching: "off",
     };
   }
 

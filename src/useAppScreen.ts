@@ -27,6 +27,11 @@ import {
   DEFAULT_PLANET_BONUS,
   type PlanetBonusSetting,
 } from "./rules/planetBonus";
+import {
+  DEFAULT_PLAYER_MATCHING,
+  resolvePlayerMatching,
+  type PlayerMatchingSetting,
+} from "./rules/playerMatching";
 import { DEFAULT_SCORING, type ScoringSetting } from "./rules/scoring";
 
 /** The app's current screen and options, plus the actions that change either. */
@@ -38,6 +43,7 @@ export interface AppScreen {
   readonly scoring: ScoringSetting;
   readonly nodePlaystyle: NodePlaystyle;
   readonly planetBonus: PlanetBonusSetting;
+  readonly playerMatching: PlayerMatchingSetting;
   readonly lengthInRounds: number;
   readonly clockSetting: ClockSetting;
   readonly setFleetSize: (fleetSize: FleetSize) => void;
@@ -46,6 +52,7 @@ export interface AppScreen {
   readonly setScoring: (scoring: ScoringSetting) => void;
   readonly setNodePlaystyle: (nodePlaystyle: NodePlaystyle) => void;
   readonly setPlanetBonus: (planetBonus: PlanetBonusSetting) => void;
+  readonly setPlayerMatching: (playerMatching: PlayerMatchingSetting) => void;
   readonly setLengthInRounds: (lengthInRounds: number) => void;
   readonly setClockSetting: (clockSetting: ClockSetting) => void;
   readonly handlePlay: () => void;
@@ -85,6 +92,9 @@ export function useAppScreen(
   );
   const [planetBonus, setPlanetBonus] =
     useState<PlanetBonusSetting>(DEFAULT_PLANET_BONUS);
+  const [playerMatching, setPlayerMatching] = useState<PlayerMatchingSetting>(
+    DEFAULT_PLAYER_MATCHING,
+  );
   const [lengthInRounds, setLengthInRounds] = useState(
     DEFAULT_GAME_LENGTH_ROUNDS,
   );
@@ -103,6 +113,7 @@ export function useAppScreen(
       scoring,
       nodePlaystyle,
       planetBonus,
+      playerMatching: resolvePlayerMatching(nodePlaystyle, playerMatching),
     });
     showGame();
   }
@@ -123,6 +134,7 @@ export function useAppScreen(
     scoring,
     nodePlaystyle,
     planetBonus,
+    playerMatching,
     lengthInRounds,
     clockSetting,
     setFleetSize,
@@ -131,6 +143,7 @@ export function useAppScreen(
     setScoring,
     setNodePlaystyle,
     setPlanetBonus,
+    setPlayerMatching,
     setLengthInRounds,
     setClockSetting,
     handlePlay,

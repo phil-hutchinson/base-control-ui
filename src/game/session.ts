@@ -11,6 +11,7 @@ import type { FleetSize, Side, ShipId } from "../rules/fleet";
 import type { NodePlaystyle } from "../rules/nodePlaystyle";
 import type { ChargedNodeCount } from "../rules/nodes";
 import type { PlanetBonusSetting } from "../rules/planetBonus";
+import type { PlayerMatchingSetting } from "../rules/playerMatching";
 import type { PowerLevel } from "../rules/power";
 import type { ScoringSetting } from "../rules/scoring";
 import {
@@ -108,12 +109,12 @@ export type SessionEvent =
  * selection, start a new game, report a clock running out, or pass a turn
  * for time. `new-game` carries the seed, the length in rounds, the fleet
  * size, the charged-node count, whether combat is enabled, the scoring
- * setting, the node playstyle and the planet bonus setting the new
- * game starts from — the reducer uses what it is handed and never draws a
- * seed or reaches for a default itself. `clock-expired` and
- * `pass-out-of-time` are dispatched by the app's own clock (rules.md §10);
- * the rules layer never reads a clock itself (`markOutOfTime`,
- * `applyOutOfTimePass`).
+ * setting, the node playstyle, the planet bonus setting and the
+ * player-matching nodes setting the new game starts from — the reducer uses
+ * what it is handed and never draws a seed or reaches for a default itself.
+ * `clock-expired` and `pass-out-of-time` are dispatched by the app's own
+ * clock (rules.md §10); the rules layer never reads a clock itself
+ * (`markOutOfTime`, `applyOutOfTimePass`).
  */
 export type SessionIntent =
   | { readonly type: "activate"; readonly square: Square }
@@ -128,6 +129,7 @@ export type SessionIntent =
       readonly scoring: ScoringSetting;
       readonly nodePlaystyle: NodePlaystyle;
       readonly planetBonus: PlanetBonusSetting;
+      readonly playerMatching: PlayerMatchingSetting;
     }
   | { readonly type: "clock-expired"; readonly side: Side }
   | { readonly type: "pass-out-of-time" };
@@ -289,6 +291,7 @@ export function sessionReducer(
         scoring: intent.scoring,
         nodePlaystyle: intent.nodePlaystyle,
         planetBonus: intent.planetBonus,
+        playerMatching: intent.playerMatching,
       }),
     );
   }

@@ -36,6 +36,7 @@ function finishedState(overrides: Partial<GameState> = {}): GameState {
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
+    playerMatching: "off",
     ...overrides,
   };
 }
@@ -199,6 +200,7 @@ describe("GameOverPanel", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       };
     }
 
@@ -236,6 +238,7 @@ describe("GameOverPanel", () => {
         outOfTime: { green: false, red: false },
         combatEnabled: true,
         scoring: "simple",
+        playerMatching: "off",
       };
     }
 

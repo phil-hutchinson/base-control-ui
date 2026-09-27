@@ -514,7 +514,26 @@ default and no colour.
 
 ### Step 2 — The setting reaches the game state
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned. Added `src/rules/playerMatching.ts` (type,
+`PLAYER_MATCHING_SETTINGS`, `DEFAULT_PLAYER_MATCHING`, `isPlayerMatchingSetting`,
+and `resolvePlayerMatching`) with unit tests; added `matchedSignalForSide` and
+`sideMatchedToSignal` to `src/rules/steal.ts` with tests covering 5/4/3-node
+games and the unmatched-signal case; added `GameState.playerMatching` and
+`StartingGameStateOptions.playerMatching` to `gameState.ts`, validated via the
+guard plus a `RangeError` for a non-off setting paired with a non-steal
+playstyle, with `startingGameState` storing it and drawing nothing extra for
+it; added `playerMatching: "off"` to every hand-built `GameState` literal the
+typechecker flagged (26 test files); added the required `playerMatching`
+field to the `new-game` session intent and updated every existing
+construction; and gave `useAppScreen` its own `playerMatching` state and
+setter, resolving it through `resolvePlayerMatching` in `handlePlay` (the
+start screen does not expose it yet, so it is always `"off"` from the UI).
+Added the tests Step 2 calls for in `playerMatching.test.ts`, `steal.test.ts`,
+`gameState.test.ts` and `useAppScreen.test.tsx`. No deviation from the plan.
+`npm test` (81 files, 1671 tests, up from 1644), `npm run typecheck`,
+`npm run lint` and `npm run format:check` all clean.
 
 Scaffolding only: after this step every game carries the setting, but no
 turn pays differently and nothing looks different.
