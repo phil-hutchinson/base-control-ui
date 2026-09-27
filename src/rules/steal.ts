@@ -34,9 +34,11 @@
 // `addExtraProspectiveSquares` (Additional nodes) draws one square per
 // signal lacking an extra, one seed step each; `scrambleProspectiveSquares`
 // (Node scramble) redraws every ordinary prospective square, one seed step
-// per square added (one for a Held node or an Open node with a surviving
-// extra, two for an Open node left with nothing). `advancedBonus.ts` calls
-// both and threads the seed on into its own claim-resolution draws.
+// per square added: one for a Held node, with or without a surviving extra,
+// anchored on its charged square; two for an Open node with a surviving
+// extra, both anchored on the extra; two for an Open node left with
+// nothing. `advancedBonus.ts` calls both and threads the seed on into its
+// own claim-resolution draws.
 
 import { ALL_SQUARES, type Square, squareName } from "./board";
 import type { Side } from "./fleet";
@@ -462,8 +464,9 @@ export interface ScrambleProspectiveSquaresResult {
  * Redraws every node's ordinary prospective squares (steal.md §10). Charged
  * squares, the ships on them, and extra prospective squares are left exactly
  * where they stand. For each signal, in order 0 through `nodeCount - 1`: a
- * Held node, or an Open node with a surviving extra, draws one replacement
- * anchored on its charged square or its extra; an Open node left with
+ * Held node, with or without a surviving extra, draws one replacement
+ * anchored on its charged square; an Open node with a surviving extra draws
+ * two replacements, both anchored on the extra; an Open node left with
  * nothing draws its first square uniformly from section 6's widened pool
  * and its second by the weighted rule, anchored on the first. Every draw
  * sees every square already placed, this call's own included.
@@ -509,11 +512,10 @@ export function scrambleProspectiveSquares(
       (square) => nodes[squareName(square)]?.extra === true,
     );
 
-    if (charged !== undefined || extra !== undefined) {
-      const anchors = [(charged ?? extra) as Square];
+    if (charged !== undefined) {
       const [square, nextSeed] = drawStealProspectiveSquare(
         occupiedNodeSquares(),
-        anchors,
+        [charged],
         otherNodeSquares(signal),
         shipSquares,
         workingSeed,
@@ -524,6 +526,25 @@ export function scrambleProspectiveSquares(
       };
       addedSquares.push(square);
       workingSeed = nextSeed;
+      continue;
+    }
+
+    if (extra !== undefined) {
+      for (let i = 0; i < 2; i += 1) {
+        const [square, nextSeed] = drawStealProspectiveSquare(
+          occupiedNodeSquares(),
+          [extra],
+          otherNodeSquares(signal),
+          shipSquares,
+          workingSeed,
+        );
+        nodes = {
+          ...nodes,
+          [squareName(square)]: { state: "prospective", level: 0, signal },
+        };
+        addedSquares.push(square);
+        workingSeed = nextSeed;
+      }
       continue;
     }
 

@@ -510,8 +510,8 @@ function rotateForLanding(
  * Pays a classic planet bonus if `square` triggers one for `side` landing
  * there (rules.md §3.4), modelled on `rotateForLanding` above: does nothing
  * at all — returning `state` unchanged — when the planet bonus setting is
- * off or advanced (advanced's own claim is a separate path — steal.md §10,
- * Step 5), when `square` is not one of `side`'s three dealt planets, or when
+ * off or advanced (advanced's own claim is a separate path — steal.md §10),
+ * when `square` is not one of `side`'s three dealt planets, or when
  * `side` has already claimed it. Otherwise it does two things at once:
  * `side`'s energy rises by `planetBonusPoints(state.planetBonus)`, and that
  * planet's entry in `state.bonusPlanets` records `state.plyNumber` — the ply
@@ -669,10 +669,11 @@ function claimAdvancedBonus(
  * raising a `PlanetBonusClaimedEffect`, and `claimAdvancedBonus` claims an
  * advanced one the same way, raising an `AdvancedBonusClaimedEffect` — a move
  * that leaves a charged node and lands on a bonus planet resolves the leave
- * first, exactly as steal.md §10 states (D9 never arises the other way round,
- * since a planet is never a node square). Finally, `rotateForLanding` rotates
- * the queue once if `destination` is a planet under the planet setting, or a
- * rotator under dedicated — spending the rotator as it lands — raising a
+ * first, exactly as steal.md §10 states — a planet is never a node square, so
+ * one move can at most leave one node and land on one bonus planet. Finally,
+ * `rotateForLanding` rotates the queue once if `destination` is a planet
+ * under the planet setting, or a rotator under dedicated — spending the
+ * rotator as it lands — raising a
  * `QueueRotatedEffect` after any node effect and any bonus claim; under
  * continuous, under steal, or when the destination triggers neither, nothing
  * happens here.
@@ -902,11 +903,13 @@ function placeOnPlanet(
  * can legitimately change power (Fuel) and a node's squares (Additional
  * nodes, Node scramble) — the very things the power and node checks below
  * exist to protect against a fight touching. `before.planetBonus` decides
- * this once: when it is `"advanced"`, both the power check and the entire
- * node-equality check are skipped, and every placement check (each returned
- * ship on its own planet, previously empty, every other ship exactly where
- * it stood, both fleets the same size) still runs, since a claim never moves
- * a ship or changes who has how many.
+ * this once: when it is `"advanced"`, the power check widens to allow a
+ * returning ship's power to be exactly one higher than expected, since Fuel
+ * is the only advanced kind that touches power and never raises a ship by
+ * more than one; the node-equality check is skipped entirely. Every
+ * placement check (each returned ship on its own planet, previously empty,
+ * every other ship exactly where it stood, both fleets the same size) still
+ * runs, since a claim never moves a ship or changes who has how many.
  *
  * Exported so a test can hand-construct an otherwise-impossible before/after
  * pair, since it has no other seam.
@@ -959,19 +962,23 @@ export function assertFightInvariants(
           `returned ship "${ship.id}" ended on planet "${updatedName}", which held a ship before the fight: rules.md §7.1 draws only from planets empty at the moment`,
         );
       }
-      // A landing's advanced claim (steal.md §10) can legitimately raise
-      // either fighter's power (Fuel), so this check only applies off
-      // advanced.
-      if (!isAdvanced) {
-        const isAttacker = ship.id === attackerShipId;
-        const expectedPower = isAttacker ? ship.power - cost : ship.power;
-        if (updated.power !== expectedPower) {
-          throw new RangeError(
-            isAttacker
-              ? `attacking ship "${ship.id}" had ${ship.power} power before the fight and paid ${cost} for the shot, so should have ended with ${expectedPower}, but ended with ${updated.power} instead: rules.md §6, §7 spend exactly the cost of the shape struck down`
-              : `defending ship "${ship.id}" had ${ship.power} power before the fight and ${updated.power} after: rules.md §7 leaves the defender's power untouched`,
-          );
-        }
+      // Under advanced, a landing's claim (steal.md §10) can legitimately
+      // raise either fighter's power by exactly one (Fuel) — no other kind
+      // touches power, and Fuel never raises a ship already at the maximum —
+      // so the gap between the expected and the actual power is 0 off
+      // advanced, and 0 or 1 under it.
+      const isAttacker = ship.id === attackerShipId;
+      const expectedPower = isAttacker ? ship.power - cost : ship.power;
+      const powerGap = updated.power - expectedPower;
+      const powerGapIsAllowed = isAdvanced
+        ? powerGap === 0 || powerGap === 1
+        : powerGap === 0;
+      if (!powerGapIsAllowed) {
+        throw new RangeError(
+          isAttacker
+            ? `attacking ship "${ship.id}" had ${ship.power} power before the fight and paid ${cost} for the shot, so should have ended with ${expectedPower}${isAdvanced ? " (or one more, from a Fuel claim)" : ""}, but ended with ${updated.power} instead: rules.md §6, §7 spend exactly the cost of the shape struck down`
+            : `defending ship "${ship.id}" had ${ship.power} power before the fight and ${updated.power} after${isAdvanced ? ", more than a Fuel claim's one point could add" : ""}: rules.md §7 leaves the defender's power untouched`,
+        );
       }
     }
   }
@@ -1050,16 +1057,13 @@ export function assertFightInvariants(
  * (`rotateForLanding`, §8.2) — before the defender's own return planet is
  * even drawn, from the planets still empty at that point. This is steal.md
  * §10's fight order, stated there because it matters for a recorded game's
- * replay: an advanced claim can change which planets are empty (a new bonus
- * appearing changes no occupancy, since a bonus never blocks a landing, but
- * the draws it makes advance the seed the defender's own draw then continues
- * from) and, under Fuel, which ships have power to spend — and the reorder
- * changes nothing for the classic settings, since neither a classic claim nor
- * a rotation ever touches the seed. The defender's landing is then settled
- * the same way. `assertFightInvariants` runs once, against the fully settled
- * state. An attack ends the ply (rules.md §5), just as a move does: play
- * passes to the other side, and the result then passes through
- * `applyPassGuard`.
+ * replay: the attacker's claim advances the seed, and, under advanced, may
+ * change which ships carry power (Fuel) and which squares a node occupies
+ * (Additional nodes, Node scramble), before the defender's planet is drawn
+ * and its own landing settled the same way. `assertFightInvariants` runs
+ * once, against the fully settled state. An attack ends the ply (rules.md
+ * §5), just as a move does: play passes to the other side, and the result
+ * then passes through `applyPassGuard`.
  */
 export function applyAttack(
   state: GameState,

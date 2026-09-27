@@ -62,20 +62,20 @@ install, no account, no server.
 > nodes when steal is chosen (off, double or required, off to start), a
 > choice of how scoring works (simple, one energy for each node held, or
 > bonus, where each extra node held at once is worth more than the last, bonus
-> to start), a choice of whether planets pay a bonus (off, two points,
-> three points or, when steal is chosen, advanced, off to start), a choice of whether combat is on or off (off
-> to start), a choice of how many rounds the game lasts (thirty, forty-five,
-> sixty or ninety, thirty to start), a choice of a clock (unlimited, or six,
-> four or two seconds a turn, unlimited to start) and a PLAY button. The start
-> screen also offers a quick guide — a first read for someone who has never
-> played, not a full rules reference — explaining scoring, movement,
-> refuelling, how nodes come and go, player-matching nodes, the planet
-> bonus and advanced planet bonuses, with a back button that returns you to the start screen with the
-> choices exactly as you left them. Your
-> browser's own back and forward buttons move between the screens too, and the
-> address bar says which screen you are on. Changing any of the choices
-> starts nothing — the board only appears
-> once PLAY is pressed, dealt with the choices you made. A clock is each
+> to start), a choice of whether planets pay a bonus (off, two points, three
+> points or, when steal is chosen, advanced, off to start), a choice of whether
+> combat is on or off (off to start), a choice of how many rounds the game lasts
+> (thirty, forty-five, sixty or ninety, thirty to start), a choice of a clock
+> (unlimited, or six, four or two seconds a turn, unlimited to start) and a PLAY
+> button. The start screen also offers a quick guide — a first read for someone
+> who has never played, not a full rules reference — explaining scoring,
+> movement, refuelling, how nodes come and go, player-matching nodes, the planet
+> bonus and advanced planet bonuses, with a back button that returns you to the
+> start screen with the choices exactly as you left them. Your browser's own
+> back and forward buttons move between the screens too, and the address bar
+> says which screen you are on. Changing any of the choices starts nothing — the
+> board only appears once PLAY is pressed, dealt with the choices you made. A
+> clock is each
 > player's own time for the whole game, not per turn — a thirty-round game at
 > six seconds a turn gives each of you three minutes to spend however you like
 > across your turns. A player who runs out passes every turn from then on, and

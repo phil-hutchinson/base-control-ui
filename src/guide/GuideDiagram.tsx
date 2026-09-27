@@ -4,10 +4,9 @@
 // note, a quiet label, a full-width rule, an arrow, a bonus planet cell
 // (`PlanetBonusCell`, shared with `PlanetBonusPanel`), an advanced planet
 // bonus cell (`AdvancedBonusCell`, shared with `PlanetBonusPanel`'s advanced
-// row — story 105, ADVANCED PLANET BONUSES), or nothing. Purely
-// presentational — no session, no state, no event handlers — and hidden
-// from the accessibility tree, since the paragraph above each diagram
-// already carries its meaning in words.
+// row), or nothing. Purely presentational — no session, no state, no event
+// handlers — and hidden from the accessibility tree, since the paragraph
+// above each diagram already carries its meaning in words.
 
 import type { CSSProperties, ReactNode } from "react";
 import type { BoardSquareProps } from "../board/BoardSquare";

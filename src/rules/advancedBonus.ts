@@ -19,14 +19,14 @@
 // slot 1's kind (weighted, excluding slot 0's kind). `gameState.ts` calls
 // `dealAdvancedBonuses` for this.
 //
-// A claim (steal.md §10, D5 of the implementation plan) consumes, in this
-// fixed order: (1) the claimed kind's own draws — none for a points kind or
-// Fuel, one per square Additional nodes or Node scramble adds
-// (`addExtraProspectiveSquares`, `scrambleProspectiveSquares`); (2) one step
-// for the surviving bonus's new kind, excluding the kind it was; (3) one
-// step for the new bonus's planet, drawn from planets empty at that moment
-// and not the survivor's; (4) one step for the new bonus's kind, excluding
-// the survivor's new kind. `resolveAdvancedBonusClaim` runs all four.
+// A claim (steal.md §10) consumes, in this fixed order: (1) the claimed
+// kind's own draws — none for a points kind or Fuel, one per square
+// Additional nodes or Node scramble adds (`addExtraProspectiveSquares`,
+// `scrambleProspectiveSquares`); (2) one step for the surviving bonus's new
+// kind, excluding the kind it was; (3) one step for the new bonus's planet,
+// drawn from planets empty at that moment and not the survivor's; (4) one
+// step for the new bonus's kind, excluding the survivor's new kind.
+// `resolveAdvancedBonusClaim` runs all four.
 //
 // Every kind draw — here and in the claim resolution — is a single
 // `drawWeightedIndex` call over all six kinds in their fixed table order
@@ -106,11 +106,10 @@ export function isAdvancedBonusKindAvailable(
 }
 
 /**
- * Draws one of the six kinds by weight (steal.md §10, D6 of the
- * implementation plan): a single `drawWeightedIndex` call over all six kinds
- * in their fixed table order, with weight 0 for any kind in `excludedKinds`
- * or currently unavailable (`isAdvancedBonusKindAvailable`). Exactly one
- * seed step.
+ * Draws one of the six kinds by weight (steal.md §10): a single
+ * `drawWeightedIndex` call over all six kinds in their fixed table order,
+ * with weight 0 for any kind in `excludedKinds` or currently unavailable
+ * (`isAdvancedBonusKindAvailable`). Exactly one seed step.
  */
 export function drawAdvancedBonusKind(
   seed: number,
@@ -328,9 +327,9 @@ export interface ResolveAdvancedBonusClaimResult {
  * seed on. Then redraws the surviving bonus's kind, excluding the kind it
  * was; draws the new bonus's planet from the planets empty at that moment and
  * not the survivor's own; and draws the new bonus's kind, excluding the
- * survivor's new kind (D5's four-part order, the effect's own draws first).
- * The new bonus takes the claimed bonus's slot; the survivor keeps its own
- * (D1). Throws a `RangeError` if `planet` carries neither current bonus, or
+ * survivor's new kind, in that fixed order, the effect's own draws first.
+ * The new bonus takes the claimed bonus's slot; the survivor keeps its own.
+ * Throws a `RangeError` if `planet` carries neither current bonus, or
  * if no planet is left for the new bonus to appear on — the five-ship limit
  * guarantees one, so the latter is a bug detector, not a case to handle.
  */

@@ -98,7 +98,7 @@ describe("isAdvancedBonusKindAvailable (steal.md §10)", () => {
   });
 });
 
-describe("drawAdvancedBonusKind (steal.md §10, D6)", () => {
+describe("drawAdvancedBonusKind (steal.md §10)", () => {
   it("advances the seed by exactly one mulberry32 step", () => {
     const [, nextSeed] = drawAdvancedBonusKind(777, NO_NODES, 4);
     const [, expectedSeed] = mulberry32(777);
@@ -190,7 +190,7 @@ describe("advancedBonusPoints (steal.md §10)", () => {
   });
 });
 
-describe("the point table mirrors steal.md §10 (D12)", () => {
+describe("the point table mirrors steal.md §10", () => {
   it("agrees with the code for all 18 node-count/matching/scoring cells", () => {
     const stealMdPath = fileURLToPath(
       new URL("../../doc/ruleset/steal.md", import.meta.url),
@@ -268,7 +268,7 @@ describe("the point table mirrors steal.md §10 (D12)", () => {
   }
 });
 
-describe("dealAdvancedBonuses (steal.md §10, D4)", () => {
+describe("dealAdvancedBonuses (steal.md §10)", () => {
   it("deals two distinct planets, of two distinct kinds, both from the twelve planets", () => {
     const [[first, second]] = dealAdvancedBonuses(NO_NODES, 4, 2024);
 
@@ -300,7 +300,7 @@ describe("dealAdvancedBonuses (steal.md §10, D4)", () => {
   });
 });
 
-describe("resolveAdvancedBonusClaim (steal.md §10, D2, D5)", () => {
+describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
   const [claimedPlanet, survivorPlanet] = PLANETS;
 
   function stateFor(config: {
@@ -408,6 +408,7 @@ describe("resolveAdvancedBonusClaim (steal.md §10, D2, D5)", () => {
       C3: { state: "prospective", level: 0, signal: 1 },
       D4: { state: "prospective", level: 0, signal: 1 },
       F5: { state: "prospective", level: 0, signal: 2 },
+      K12: { state: "prospective", level: 0, signal: 2 },
       N2: { state: "prospective", level: 0, signal: 2, extra: true },
     };
     const state = stateFor({ kind: "node-scramble", nodes });
@@ -417,9 +418,9 @@ describe("resolveAdvancedBonusClaim (steal.md §10, D2, D5)", () => {
     expect(result.nodes.L8).toEqual(nodes.L8);
     expect(result.nodes.N2).toEqual(nodes.N2);
     expect(result.outcome.removedSquares.map(squareName).sort()).toEqual(
-      ["C3", "D4", "F5", "H8"].sort(),
+      ["C3", "D4", "F5", "H8", "K12"].sort(),
     );
-    expect(result.outcome.addedSquares).toHaveLength(4);
+    expect(result.outcome.addedSquares).toHaveLength(5);
     expect(result.outcome.pointsAwarded).toBe(0);
   });
 

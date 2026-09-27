@@ -113,9 +113,9 @@ export function useAppScreen(
 
   function setNodePlaystyle(nextNodePlaystyle: NodePlaystyle) {
     setNodePlaystyleState(nextNodePlaystyle);
-    // Advanced (steal.md §10) is offered only under steal (S15): leaving
-    // steal with it selected drops the Planet bonus group back to off,
-    // rather than leaving it hidden and ready to reappear.
+    // Advanced (steal.md §10) is offered only under steal: leaving steal
+    // with it selected drops the Planet bonus group back to off, rather
+    // than leaving it hidden and ready to reappear.
     if (nextNodePlaystyle !== "steal" && planetBonus === "advanced") {
       setPlanetBonus("off");
     }

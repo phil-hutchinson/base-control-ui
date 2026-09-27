@@ -2,8 +2,8 @@
 // §10): `+N` for a points kind, the fuel bar for Fuel, three coloured rings
 // for Additional nodes, the three-coloured rotation mark for Node scramble.
 // A pure dispatch over `AdvancedBonusKind`, so `AdvancedBonusCell` — and
-// the Quick Guide's diagram, which shares it (story 105, Step 7) — never
-// need to know which symbol a kind draws.
+// the Quick Guide's diagram, which shares it — never need to know which
+// symbol a kind draws.
 
 import {
   advancedBonusPoints,

@@ -271,7 +271,7 @@ its measured mean gives a ratio; the median of the 18 ratios, **k ≈
 level stays; only the proportions between combinations move). Target
 Medium is `k × measured mean`, rounded; Small and Large keep the story's own
 proportions to Medium. Where the rescaled Medium differs from the story's by
-no more than one, the story's number was kept — 15 of the 18 cells landed
+no more than one, the story's number was kept — 16 of the 18 cells landed
 within that margin and are unchanged, several of them exactly. The
 remaining two, both **double, bonus scoring**, moved up to a Medium the
 table already used elsewhere, keeping that Medium's existing Small and
@@ -302,13 +302,10 @@ share of it — yet every required cell still landed within the one-step
 tolerance, the original table having already discounted required enough by
 happenstance for its numbers to survive.
 
-Each measured mean's sampling uncertainty (standard error ≈ sd/√200) is
-itself close to the size of the smallest rounding step being decided
-between, which is exactly the noise the one-step tolerance exists to
-absorb — the 5-node double/bonus cell (measured mean 3.8594, sd 0.9228,
-standard error ≈0.065) is the clearest example: its rescaled Medium (≈11.45)
-rounds a full step above the story's 10, but that step sits well inside the
-combination's own sampling noise, so the story's number was correctly kept.
+The 5-node double/bonus cell is the clearest example of the one-step
+tolerance at work: its rescaled Medium (≈11.45) rounds to 11, a full step
+above the story's 10 — within the margin the rescale allows, so it is one
+of the 16 kept cells, not one of the two that moved.
 
 One artefact of the rescale is worth naming rather than smoothing over: the
 4-node and 5-node double/bonus rows now carry identical numbers (6/10/15).

@@ -3,8 +3,8 @@
 // advanced bonus belongs to neither side until claimed, so there is no
 // side-coloured badge to draw over the drawing the way a classic
 // `PlanetBonusCell` does. Shared by `PlanetBonusPanel` and the Quick
-// Guide's ADVANCED PLANET BONUSES diagram (story 105, Step 7), so the two
-// never draw two different symbols for the same kind. Self-contained, like
+// Guide's ADVANCED PLANET BONUSES diagram, so the two never draw two
+// different symbols for the same kind. Self-contained, like
 // `PlanetBonusCell`: it fills whatever box its caller sizes.
 
 import type { PlanetArt } from "../board/planetArt";

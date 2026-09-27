@@ -31,6 +31,8 @@ carries an extra (section 10):
 | ---------------------------------- | --------------- | ------------------- |
 | **Open** — how every node is dealt | 0               | 2                   |
 | **Held**                           | 1               | 1                   |
+| **Open**, carrying an extra        | 0               | 3                   |
+| **Held**, carrying an extra        | 1               | 2                   |
 
 A **charged** square works exactly as rules.md describes a charged node
 working: a ship standing on it collects energy (rules.md §8.4) and can
@@ -218,14 +220,14 @@ planet is always empty.
 
 **The six kinds.** Each bonus is one of six kinds, dealt by weight:
 
-| Bonus            | Weight | What it does                                                   |
-| ---------------- | -----: | -------------------------------------------------------------- |
-| Small points     |     30 | Pays energy — the smallest of the three amounts                |
-| Medium points    |     40 | Pays energy — the middle amount                                |
-| Large points     |     20 | Pays energy — the largest amount                               |
-| Fuel             |     16 | One power to every one of the claimer's ships that is not full |
-| Additional nodes |     10 | Every node gains one extra prospective square                  |
-| Node scramble    |     10 | Every node's prospective squares are cleared and redrawn       |
+| Bonus            | Weight | What it does                                                      |
+| ---------------- | -----: | ----------------------------------------------------------------- |
+| Small points     |     30 | Pays energy — the smallest of the three amounts                   |
+| Medium points    |     40 | Pays energy — the middle amount                                   |
+| Large points     |     20 | Pays energy — the largest amount                                  |
+| Fuel             |     16 | One power to every one of the claimer's ships that is not full    |
+| Additional nodes |     10 | Every node gains one extra prospective square                     |
+| Node scramble    |     10 | Every node's ordinary prospective squares are cleared and redrawn |
 
 **The opening deal.** After everything the opening board already deals
 (section 7), two different planets are drawn at random, every planet
@@ -290,9 +292,10 @@ how fast nodes pay in that game:
 |     5 | double          | 3 / 6 / 10                 | 6 / 10 / 15               |
 |     5 | required        | 2 / 4 / 6                  | 4 / 6 / 10                |
 
-Double plays like one node more, since a player's own node counts as two;
-required plays like one node fewer, since income stops whenever the player
-loses their own node.
+The table roughly follows a pattern: double plays like one node more, since
+a player's own node counts as two, and required plays like one node fewer,
+since income stops whenever the player loses their own node. Under bonus
+scoring, double pays more than that pattern alone would predict.
 
 **Fuel** gives one power to each of the claiming side's ships below the
 maximum of 6 (rules.md §4.1), wherever those ships are on the board. The

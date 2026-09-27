@@ -4,6 +4,7 @@
 // beneath it and no side to colour it — the bonus belongs to neither side
 // until claimed.
 
+import { SIGNAL_COLORS } from "../board/squareArt";
 import { MAX_POWER } from "../rules/power";
 import { gaugeSlots } from "../ships/powerGauge";
 import {
@@ -16,7 +17,7 @@ import {
 import "./FuelSymbol.css";
 
 /** The lit bar's colour — gold, since this symbol belongs to neither side. */
-const FUEL_BAR_COLOR = "#DAA520";
+const FUEL_BAR_COLOR = SIGNAL_COLORS[0].core;
 
 export function FuelSymbol() {
   return (

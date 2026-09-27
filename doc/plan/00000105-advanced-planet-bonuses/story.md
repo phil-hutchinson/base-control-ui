@@ -25,7 +25,7 @@ by weight:
 | Large points     |     20 | Pays energy — the largest amount                              |
 | Fuel             |     16 | One power to every one of the claimer's ships that is not full |
 | Additional nodes |     10 | Every node gains one extra prospective square                 |
-| Node scramble    |     10 | Every node's prospective squares are cleared and redrawn      |
+| Node scramble    |     10 | Every node's ordinary prospective squares are cleared and redrawn |
 
 This needs room on the planets, so the story also **retires the six-a-side
 fleet** under every playstyle. The largest fleet is now five a side, which

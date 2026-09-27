@@ -342,19 +342,6 @@ describe("claimNode (steal.md §3)", () => {
     ).toBeUndefined();
   });
 
-  it("claiming an Open node's extra square itself discards its ordinary square instead", () => {
-    const before: Record<string, NodeStatus> = {
-      H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
-    };
-    const claimedSquare = squareAt("L", 8);
-
-    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 4242);
-
-    expect(result.discardedSquares).toEqual([squareAt("H", 8)]);
-    expect(result.nodes.L8).toEqual({ state: "charged", level: 0, signal: 0 });
-  });
-
   it("claims a Held node with an extra: releases the charged square and discards the extra alongside", () => {
     const before: Record<string, NodeStatus> = {
       G8: { state: "charged", level: 0, signal: 0 },
@@ -632,6 +619,7 @@ describe("scrambleProspectiveSquares (steal.md §10)", () => {
     C3: { state: "prospective", level: 0, signal: 1 },
     D4: { state: "prospective", level: 0, signal: 1 },
     E10: { state: "prospective", level: 0, signal: 2 },
+    K12: { state: "prospective", level: 0, signal: 2 },
     N2: { state: "prospective", level: 0, signal: 2, extra: true },
   };
 
@@ -643,9 +631,9 @@ describe("scrambleProspectiveSquares (steal.md §10)", () => {
     expect(result.nodes.N2).toEqual(before.N2);
 
     expect(result.removedSquares.map(squareName).sort()).toEqual(
-      ["C3", "D4", "E10", "H8"].sort(),
+      ["C3", "D4", "E10", "H8", "K12"].sort(),
     );
-    expect(result.addedSquares).toHaveLength(4);
+    expect(result.addedSquares).toHaveLength(5);
 
     const signal0 = squaresForSignal(result.nodes, 0);
     expect(signal0).toHaveLength(3);
@@ -669,7 +657,7 @@ describe("scrambleProspectiveSquares (steal.md §10)", () => {
     ).toBe(false);
 
     const signal2 = squaresForSignal(result.nodes, 2);
-    expect(signal2).toHaveLength(2);
+    expect(signal2).toHaveLength(3);
     expect(
       signal2.filter(
         (square) => result.nodes[squareName(square)]?.extra === true,
