@@ -793,7 +793,7 @@ typecheck, lint, format:check clean.
 
 ### Step 6 — The colour, pip and start-screen gate
 
-Status: pending
+Status: committed
 
 No new behaviour: this is the owner's look at Steps 4 and 5 in the running
 app. Adjustments the owner asks for here (the player node colours' rims, the
@@ -829,6 +829,13 @@ the app.
   usual.
 - A game started under PLANET after choosing DOUBLE under STEAL shows no red
   or green node.
+
+Notes: The owner confirmed the functionality works. One adjustment: the
+REQUIRED X was a "×" glyph whose `font-size` shrank the pip's em-based
+circle; it is now drawn as two background diagonals in the side's colour,
+1px like the border, crossing the full-size unlit pip into four quarters.
+The owner approved the result. Rims and the six-pip shrink stand as Step 5
+chose them.
 
 ---
 

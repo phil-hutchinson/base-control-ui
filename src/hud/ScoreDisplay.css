@@ -63,20 +63,35 @@
 }
 
 /* REQUIRED (steal.md §9) withholds a turn's collection while the side holds
-   a node but not its own: each held node's pip draws an X instead of
-   lighting, in the dim text colour, since no value is highlighted for it
-   either. */
+   a node but not its own: each held node's pip stays unlit and is crossed
+   through instead, two diagonals in the side's own colour — the same line
+   as its border — cutting the circle into four quarters. The pip keeps its
+   size; the crossing is background, clipped to the circle by its radius. */
 .score-display__pip--x {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.5em;
-  line-height: 1;
-  color: var(--color-text-dim);
+  --pip-x-line: var(--color-text-dim);
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent calc(50% - 0.5px),
+      var(--pip-x-line) calc(50% - 0.5px),
+      var(--pip-x-line) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      -45deg,
+      transparent calc(50% - 0.5px),
+      var(--pip-x-line) calc(50% - 0.5px),
+      var(--pip-x-line) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
+    );
 }
 
-.score-display__pip--x::before {
-  content: "\00D7";
+.score-display--green .score-display__pip--x {
+  --pip-x-line: var(--color-green);
+}
+
+.score-display--red .score-display__pip--x {
+  --pip-x-line: var(--color-red);
 }
 
 /* DOUBLE (steal.md §9) can lengthen the row to six pips — one more than the
