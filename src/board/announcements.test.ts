@@ -1485,6 +1485,266 @@ describe("announcementFor — a planet bonus claimed (rules.md §3.4)", () => {
   });
 });
 
+describe("announcementFor — an advanced planet bonus claimed (steal.md §10)", () => {
+  it("announces a points claim, between the move cost and the turn-ending clause", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 6),
+      to: squareAt("D", 6),
+      effects: [
+        {
+          type: "advanced-bonus-claimed",
+          side: "green",
+          square: squareAt("D", 6),
+          kind: "large-points",
+          pointsAwarded: 8,
+          poweredShipIds: [],
+          addedSquares: [],
+          removedSquares: [],
+          survivor: {
+            square: squareAt("F", 14),
+            oldKind: "fuel",
+            newKind: "small-points",
+          },
+          newBonus: { square: squareAt("K", 5), kind: "node-scramble" },
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C6 onto the D6 planet. The move was free; it still has 6 power. " +
+        "Green claimed a Large points bonus at the D6 planet: 8 energy. Red's turn.",
+    );
+  });
+
+  it("announces a Fuel claim, naming how many ships it powered", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 6),
+      to: squareAt("D", 6),
+      effects: [
+        {
+          type: "advanced-bonus-claimed",
+          side: "green",
+          square: squareAt("D", 6),
+          kind: "fuel",
+          pointsAwarded: 0,
+          poweredShipIds: ["green-1", "green-2", "green-3"],
+          addedSquares: [],
+          removedSquares: [],
+          survivor: {
+            square: squareAt("F", 14),
+            oldKind: "small-points",
+            newKind: "medium-points",
+          },
+          newBonus: { square: squareAt("K", 5), kind: "additional-nodes" },
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C6 onto the D6 planet. The move was free; it still has 6 power. " +
+        "Green claimed a Fuel bonus at the D6 planet: one power to 3 ships. Red's turn.",
+    );
+  });
+
+  it("announces a Fuel claim that powered no ships, all already full", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 6),
+      to: squareAt("D", 6),
+      effects: [
+        {
+          type: "advanced-bonus-claimed",
+          side: "green",
+          square: squareAt("D", 6),
+          kind: "fuel",
+          pointsAwarded: 0,
+          poweredShipIds: [],
+          addedSquares: [],
+          removedSquares: [],
+          survivor: {
+            square: squareAt("F", 14),
+            oldKind: "small-points",
+            newKind: "medium-points",
+          },
+          newBonus: { square: squareAt("K", 5), kind: "additional-nodes" },
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C6 onto the D6 planet. The move was free; it still has 6 power. " +
+        "Green claimed a Fuel bonus at the D6 planet: one power to no ships. Red's turn.",
+    );
+  });
+
+  it("announces an Additional nodes claim", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 6),
+      to: squareAt("D", 6),
+      effects: [
+        {
+          type: "advanced-bonus-claimed",
+          side: "green",
+          square: squareAt("D", 6),
+          kind: "additional-nodes",
+          pointsAwarded: 0,
+          poweredShipIds: [],
+          addedSquares: [squareAt("H", 8)],
+          removedSquares: [],
+          survivor: {
+            square: squareAt("F", 14),
+            oldKind: "fuel",
+            newKind: "small-points",
+          },
+          newBonus: { square: squareAt("K", 5), kind: "node-scramble" },
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C6 onto the D6 planet. The move was free; it still has 6 power. " +
+        "Green claimed an Additional nodes bonus at the D6 planet: every node gained an extra waiting square. Red's turn.",
+    );
+  });
+
+  it("announces a Node scramble claim", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("C", 6),
+      to: squareAt("D", 6),
+      effects: [
+        {
+          type: "advanced-bonus-claimed",
+          side: "green",
+          square: squareAt("D", 6),
+          kind: "node-scramble",
+          pointsAwarded: 0,
+          poweredShipIds: [],
+          addedSquares: [squareAt("H", 8)],
+          removedSquares: [squareAt("H", 9)],
+          survivor: {
+            square: squareAt("F", 14),
+            oldKind: "fuel",
+            newKind: "small-points",
+          },
+          newBonus: { square: squareAt("K", 5), kind: "large-points" },
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+      cost: 0,
+      powerAfter: 6,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from C6 onto the D6 planet. The move was free; it still has 6 power. " +
+        "Green claimed a Node scramble bonus at the D6 planet: every node's waiting squares were redrawn. Red's turn.",
+    );
+  });
+
+  it("announces a fight's claims for both sides, attacker's first, after the returns", () => {
+    const fight: FightResolvedEffect = {
+      type: "fight-resolved",
+      attacker: {
+        shipId: "green-1",
+        side: "green",
+        square: squareAt("J", 4),
+        power: 3,
+      },
+      defender: {
+        shipId: "red-1",
+        side: "red",
+        square: squareAt("K", 5),
+        power: 4,
+      },
+      cost: 1,
+      returns: [
+        {
+          shipId: "green-1",
+          side: "green",
+          from: squareAt("J", 4),
+          to: squareAt("A", 6),
+        },
+        {
+          shipId: "red-1",
+          side: "red",
+          from: squareAt("K", 5),
+          to: squareAt("D", 1),
+        },
+      ],
+    };
+    const event: AttackedEvent = {
+      type: "attacked",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("J", 4),
+      target: squareAt("K", 5),
+      effects: [
+        fight,
+        {
+          type: "advanced-bonus-claimed",
+          side: "green",
+          square: squareAt("A", 6),
+          kind: "small-points",
+          pointsAwarded: 2,
+          poweredShipIds: [],
+          addedSquares: [],
+          removedSquares: [],
+          survivor: {
+            square: squareAt("D", 1),
+            oldKind: "fuel",
+            newKind: "large-points",
+          },
+          newBonus: { square: squareAt("H", 8), kind: "additional-nodes" },
+        },
+        {
+          type: "advanced-bonus-claimed",
+          side: "red",
+          square: squareAt("D", 1),
+          kind: "large-points",
+          pointsAwarded: 5,
+          poweredShipIds: [],
+          addedSquares: [],
+          removedSquares: [],
+          survivor: {
+            square: squareAt("H", 8),
+            oldKind: "additional-nodes",
+            newKind: "node-scramble",
+          },
+          newBonus: { square: squareAt("K", 11), kind: "fuel" },
+        },
+        { type: "ply-ended", side: "green", sideToMove: "red", endOfTurn: [] },
+      ],
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship at J4 attacked the red ship at K5 and both were beaten. " +
+        "The attack cost the attacker 1 power, leaving 2. The defender kept the power it was carrying. " +
+        "The attacker returned to the A6 planet and the defender to the D1 planet. " +
+        "Green claimed a Small points bonus at the A6 planet: 2 energy. " +
+        "Red claimed a Large points bonus at the D1 planet: 5 energy. Red's turn.",
+    );
+  });
+});
+
 describe("announcementFor — energy collected (rules.md \u00a78.4)", () => {
   it("announces one node held", () => {
     const event: MovedEvent = {

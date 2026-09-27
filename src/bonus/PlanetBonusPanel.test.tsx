@@ -3,7 +3,17 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { planetArrangement, planetForSquare } from "../board/planetPlacement";
-import { startingGameState, type BonusPlanetEntry } from "../rules/gameState";
+import type { Square } from "../rules/board";
+import {
+  advancedBonusPoints,
+  type AdvancedBonusKind,
+} from "../rules/advancedBonus";
+import {
+  startingGameState,
+  type BonusPlanetEntry,
+  type GameState,
+} from "../rules/gameState";
+import { PLANETS } from "../rules/planets";
 import { PlanetBonusPanel } from "./PlanetBonusPanel";
 
 afterEach(cleanup);
@@ -206,5 +216,153 @@ describe("PlanetBonusPanel", () => {
       "aria-hidden",
       "true",
     );
+  });
+
+  describe("under advanced (steal.md §10)", () => {
+    function withAdvancedBonuses(
+      first: readonly [Square, AdvancedBonusKind],
+      second: readonly [Square, AdvancedBonusKind],
+    ): GameState {
+      const base = startingGameState(SEED, {
+        nodePlaystyle: "steal",
+        planetBonus: "advanced",
+      });
+      return {
+        ...base,
+        advancedBonuses: [
+          { square: first[0], kind: first[1] },
+          { square: second[0], kind: second[1] },
+        ],
+      };
+    }
+
+    it("renders exactly two cells, in slot order, with the board's own planet artwork", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+      const arrangement = planetArrangement(state.openingSeed);
+
+      const { container } = render(<PlanetBonusPanel state={state} />);
+
+      const row = container.querySelector(".planet-bonus-panel__advanced-row");
+      const cells = row?.querySelectorAll(".planet-bonus-panel__advanced-cell");
+      expect(cells).toHaveLength(2);
+      const hrefs = Array.from(
+        row?.querySelectorAll(".planet > use") ?? [],
+        (use) => use.getAttribute("href"),
+      );
+      expect(hrefs).toEqual([
+        `#${planetForSquare(arrangement, PLANETS[0])?.ids.body}`,
+        `#${planetForSquare(arrangement, PLANETS[1])?.ids.body}`,
+      ]);
+    });
+
+    it("is hidden from the accessibility tree", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+
+      const { container } = render(<PlanetBonusPanel state={state} />);
+
+      expect(
+        container.querySelector(".planet-bonus-panel--advanced"),
+      ).toHaveAttribute("aria-hidden", "true");
+    });
+
+    it("shows a points bonus's `+N` amount for the game's own settings", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+
+      const { container } = render(<PlanetBonusPanel state={state} />);
+
+      const expectedAmount = advancedBonusPoints(
+        state.chargedNodeCount,
+        state.playerMatching,
+        state.scoring,
+        "large",
+      );
+      expect(container.querySelector(".points-symbol")).toHaveTextContent(
+        `+${expectedAmount}`,
+      );
+    });
+
+    it("draws Fuel as a gauge, Additional nodes as three coloured rings and Node scramble as a three-coloured rotation mark", () => {
+      const fuel = withAdvancedBonuses(
+        [PLANETS[0], "fuel"],
+        [PLANETS[1], "small-points"],
+      );
+      const { container: fuelContainer } = render(
+        <PlanetBonusPanel state={fuel} />,
+      );
+      expect(fuelContainer.querySelector(".fuel-symbol")).toBeInTheDocument();
+      cleanup();
+
+      const additionalNodes = withAdvancedBonuses(
+        [PLANETS[0], "additional-nodes"],
+        [PLANETS[1], "small-points"],
+      );
+      const { container: nodesContainer } = render(
+        <PlanetBonusPanel state={additionalNodes} />,
+      );
+      const rings = nodesContainer.querySelectorAll(
+        ".additional-nodes-symbol circle",
+      );
+      expect(rings).toHaveLength(3);
+      const ringColors = new Set(
+        Array.from(rings, (ring) => ring.getAttribute("stroke")),
+      );
+      expect(ringColors.size).toBe(3);
+      cleanup();
+
+      const scramble = withAdvancedBonuses(
+        [PLANETS[0], "node-scramble"],
+        [PLANETS[1], "small-points"],
+      );
+      const { container: scrambleContainer } = render(
+        <PlanetBonusPanel state={scramble} />,
+      );
+      const arcs = scrambleContainer.querySelectorAll(
+        ".node-scramble-symbol path",
+      );
+      expect(arcs).toHaveLength(3);
+      const arcColors = new Set(
+        Array.from(arcs, (arc) => arc.getAttribute("stroke")),
+      );
+      expect(arcColors.size).toBe(3);
+    });
+
+    it("keeps the survivor in its own slot and puts the new bonus in the claimed slot", () => {
+      const before = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+      // Slot 0 (PLANETS[0]) was claimed and redrawn to a new kind; slot 1
+      // (the survivor, PLANETS[1]) kept its square but changed kind; a new
+      // bonus (PLANETS[2]) took slot 0.
+      const after: GameState = {
+        ...before,
+        advancedBonuses: [
+          { square: PLANETS[2], kind: "node-scramble" },
+          { square: PLANETS[1], kind: "additional-nodes" },
+        ],
+      };
+      const arrangement = planetArrangement(after.openingSeed);
+
+      const { container } = render(<PlanetBonusPanel state={after} />);
+
+      const row = container.querySelector(".planet-bonus-panel__advanced-row");
+      const hrefs = Array.from(
+        row?.querySelectorAll(".planet > use") ?? [],
+        (use) => use.getAttribute("href"),
+      );
+      expect(hrefs).toEqual([
+        `#${planetForSquare(arrangement, PLANETS[2])?.ids.body}`,
+        `#${planetForSquare(arrangement, PLANETS[1])?.ids.body}`,
+      ]);
+    });
   });
 });

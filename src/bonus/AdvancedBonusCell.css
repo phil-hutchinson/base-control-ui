@@ -1,0 +1,26 @@
+/* Fills whatever box its caller sizes — `PlanetBonusPanel`'s own explicit
+   cell, or the Quick Guide diagram's grid cell — so the two callers draw
+   the same cell at two different scales, the same idiom `PlanetBonusCell`
+   uses. Stacks the planet above its symbol rather than overlaying one on
+   the other, since an advanced bonus carries a symbol instead of a
+   claimed-by badge. */
+.advanced-bonus-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  gap: 4%;
+}
+
+.advanced-bonus-cell__planet {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.advanced-bonus-cell__symbol {
+  width: 55%;
+  flex: 0 0 auto;
+  aspect-ratio: 1;
+}

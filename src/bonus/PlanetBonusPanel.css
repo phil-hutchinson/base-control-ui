@@ -61,3 +61,18 @@
   width: calc(var(--region-extent) * 0.15);
   height: calc(var(--region-extent) * 0.15);
 }
+
+/* Under advanced (steal.md §10) there is one row of two bonuses rather than
+   two sides' rows of three, so each cell can afford to be bigger, and
+   taller than it is wide to leave room for the symbol under the planet. */
+.planet-bonus-panel__advanced-row {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--region-extent) * 0.08);
+}
+
+.planet-bonus-panel__advanced-cell {
+  flex: 0 0 auto;
+  width: calc(var(--region-extent) * 0.22);
+  height: calc(var(--region-extent) * 0.3);
+}

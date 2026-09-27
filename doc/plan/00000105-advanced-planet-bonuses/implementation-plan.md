@@ -1112,7 +1112,48 @@ typecheck, lint, format:check clean.
 
 ### Step 6 — The bonus panel under ADVANCED and the live-region sentence
 
-Status: pending
+Status: committed
+
+Notes: Replaced Step 4's temporary render-nothing branch in
+`PlanetBonusPanel.tsx` with the advanced layout: a single row of two cells,
+slot 0 left and slot 1 right, read straight off `state.advancedBonuses`, each
+an `AdvancedBonusCell` (new) stacking the planet's board artwork
+(`planetForSquare`, as the classic rows already use) above the kind's symbol.
+`AdvancedBonusSymbol` (new) dispatches by kind to four new presentational
+components: `PointsSymbol` (a `+N` badge, sized from the point lookup for the
+game's own node count/matching/scoring), `FuelSymbol` (the ship gauge's own
+geometry and slot count, fully lit, in a neutral gold since the bonus belongs
+to neither side), `AdditionalNodesSymbol` and `NodeScrambleSymbol` (three
+rings / three rotator arcs, each in one of three colours from the new
+`advancedBonusColors.ts` helper — gold/silver/blue, or gold/red/green under
+DOUBLE or REQUIRED per S16). Since a component file may only export
+components (`react-refresh/only-export-components`), the ring and arc
+geometry `NodeMarker.tsx` and `RotatorMarker.tsx` already had was pulled out
+into two new sibling modules, `nodeMarkerGeometry.ts` and
+`rotatorMarkerGeometry.ts`, which both markers and the two new symbols now
+import — a mechanical extraction with no behaviour change, confirmed by the
+untouched `NodeMarker.test.tsx` suite staying green. Confirmed by reading
+(and a new test) that the board's per-square rendering already copes with a
+signal spanning three prospective squares with no change needed: `Board.tsx`
+and `BoardSquare.tsx` draw each square from its own `NodeStatus` independent
+of how many other squares share its signal, so a three-square signal was
+already handled before this step. Added `advancedBonusClaimedClause(s)` to
+`announcements.ts`, wired into `moveSentence` and `fightSentence` at the same
+position the classic claim clause sits, with a kind-labelled sentence per
+steal.md §10's six kinds (an "a"/"an" label table per kind, since "an
+Additional nodes bonus" needs the vowel article). Added the story 105
+accessibility-ledger entry (D15) to
+`doc/plan/00000021-accessibility-tech-debt/known-issues.md`, at the end of
+the file per its append order, covering the panel being decorative and the
+Additional-nodes/Node-scramble sentences not naming which squares changed.
+No deviations from the plan.
+
+Full `npm test` — **84 test files, 1793 tests, all green** (up from 1778,
+Step 5's count: 3 new colour-helper tests, 5 new `PlanetBonusPanel` tests, 6
+new `announcements.ts` tests, 1 new `Board.tsx` test); `npm run typecheck`,
+`npm run lint` and `npm run format:check` all pass (prettier reformatted
+`announcements.ts`, `AdvancedBonusSymbol.tsx` and both `PlanetBonusPanel`
+files after they were edited/added).
 
 **Panel (S16, D13).** In `src/bonus/`: replace Step 4's temporary
 render-nothing branch with the advanced layout — two cells side by side,

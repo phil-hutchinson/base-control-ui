@@ -6,6 +6,15 @@
 // (`board/announcements.ts`), not through this panel. Each cell's drawing and
 // badge are `PlanetBonusCell`, shared with the Quick Guide's PLANET BONUS
 // diagram.
+//
+// Under the advanced setting (steal.md §10) there are no per-side planets to
+// draw two rows of: instead this renders a single row of the two current
+// bonuses, slot 0 left and slot 1 right (`GameState.advancedBonuses`), each
+// as an `AdvancedBonusCell` — the planet's own artwork with its kind's
+// symbol beneath it. Reading the pair straight off `state.advancedBonuses`
+// in slot order is what keeps a claim's redraw showing the survivor in its
+// own slot and the new bonus in the other one, with no component state of
+// its own.
 
 import { useMemo } from "react";
 import type { PlanetArt } from "../board/planetArt";
@@ -14,6 +23,7 @@ import { squareName } from "../rules/board";
 import type { Side } from "../rules/fleet";
 import type { BonusPlanetEntry, GameState } from "../rules/gameState";
 import { planetBonusPoints } from "../rules/planetBonus";
+import { AdvancedBonusCell } from "./AdvancedBonusCell";
 import { bonusBadgeState } from "./bonusBadge";
 import { PlanetBonusCell } from "./PlanetBonusCell";
 import "./PlanetBonusPanel.css";
@@ -77,10 +87,42 @@ export function PlanetBonusPanel({ state }: PlanetBonusPanelProps) {
     [state.openingSeed],
   );
 
-  if (state.planetBonus === "off" || state.planetBonus === "advanced") {
-    // Advanced's own panel is Step 6's; until then this renders nothing,
-    // just as off does.
+  if (state.planetBonus === "off") {
     return null;
+  }
+
+  if (state.planetBonus === "advanced") {
+    return (
+      <div
+        className="planet-bonus-panel planet-bonus-panel--advanced"
+        aria-hidden="true"
+      >
+        <div className="planet-bonus-panel__advanced-row">
+          {state.advancedBonuses.map((entry) => {
+            const art = planetForSquare(arrangement, entry.square);
+            if (art === undefined) {
+              throw new Error(
+                `PlanetBonusPanel: ${squareName(entry.square)} is not a planet square in this arrangement`,
+              );
+            }
+            return (
+              <div
+                key={squareName(entry.square)}
+                className="planet-bonus-panel__advanced-cell"
+              >
+                <AdvancedBonusCell
+                  art={art}
+                  kind={entry.kind}
+                  nodeCount={state.chargedNodeCount}
+                  playerMatching={state.playerMatching}
+                  scoring={state.scoring}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   const amount = planetBonusPoints(state.planetBonus);

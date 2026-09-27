@@ -577,6 +577,39 @@ describe("Board", () => {
     });
   });
 
+  describe("a node with an extra prospective square (steal.md §10)", () => {
+    it("draws all three of its squares as ordinary prospective rings, in its signal's colour", () => {
+      const squares = [squareAt("H", 8), squareAt("E", 5), squareAt("K", 11)];
+      const nodes: Record<string, NodeStatus> = Object.fromEntries(
+        squares.map((square) => [
+          squareName(square),
+          { state: "prospective" as const, level: 0, signal: 2 },
+        ]),
+      );
+      const extraSquareName = squareName(squares[2]);
+      nodes[extraSquareName] = { ...nodes[extraSquareName], extra: true };
+
+      const { container } = render(
+        <Board
+          session={createSession(stateWithStealNodes(nodes))}
+          onIntent={noop}
+        />,
+      );
+
+      for (const square of squares) {
+        const cell = screen.getByRole("gridcell", {
+          name: `${squareName(square)}, prospective node`,
+        });
+        const circles = cell.querySelectorAll(".node-marker circle");
+        expect(circles).toHaveLength(3);
+        for (const circle of circles) {
+          expect(circle).toHaveAttribute("stroke", SIGNAL_COLORS[2].core);
+        }
+      }
+      expect(container.querySelectorAll(".node-marker")).toHaveLength(3);
+    });
+  });
+
   describe("player-matching nodes' colours (steal.md §9)", () => {
     // Five squares this file already uses for a five-node board (see
     // STATED_NODE_STATES); signal 0 uses the first, and so on, so the same

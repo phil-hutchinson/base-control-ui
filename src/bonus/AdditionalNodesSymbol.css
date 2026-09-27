@@ -1,0 +1,7 @@
+/* Fills whatever box its caller sizes, the same idiom NodeMarker.css and
+   RotatorMarker.css use for their own square-level art. */
+.additional-nodes-symbol {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
