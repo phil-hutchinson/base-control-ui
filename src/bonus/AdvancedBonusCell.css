@@ -29,13 +29,21 @@
 /* Most of the planet's own width, so the symbol reads at a glance — bigger
    than the badge-sized amount a classic `PlanetBonusCell` draws, since this
    symbol is the only thing beneath the planet telling the two bonuses
-   apart. Its height is its own drawing's (each symbol's viewBox is cropped
-   to what it draws). The planet artwork leaves about a sixth of its square
-   empty below the body, so the negative top margin tucks the symbol up
-   into that band: planet, symbol and caption read as one tight unit. */
+   apart. A fixed-height band, square at 70cqw, which is the height of the
+   tallest symbol (the rings and the rotation mark, whose viewBoxes are
+   cropped to their drawings). Every kind centres in the same band, so the
+   planets, symbols and captions line up across the two cells whichever
+   kinds they show, and a short symbol such as `+N` or the fuel bar gets
+   air around it instead of pulling the caption up. The planet artwork
+   leaves about a sixth of its square empty below the body, and the small
+   negative top margin takes up part of that. */
 .advanced-bonus-cell__symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 70%;
-  margin-top: -10cqw;
+  aspect-ratio: 1;
+  margin-top: -5cqw;
   flex: 0 0 auto;
 }
 
@@ -49,7 +57,7 @@
   font-weight: 700;
   font-size: 17cqw;
   line-height: 1.1;
-  margin-top: 2cqw;
+  margin-top: 5cqw;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-bright);

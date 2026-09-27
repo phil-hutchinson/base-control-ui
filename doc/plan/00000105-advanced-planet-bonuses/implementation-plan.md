@@ -1657,7 +1657,7 @@ green. The look is checked by the owner in Step 13.
 
 ### Step 13 — The owner re-checks the panel
 
-Status: pending
+Status: committed
 
 Notes: At the first re-check, the owner asked for the planet, symbol and
 caption to sit tight together, with a clear gap before the clocks, and for
@@ -1670,6 +1670,17 @@ a larger caption. Done inline:
   NODES still fits.
 - `.app__clocks`'s gap doubles to 0.1 × `--region-extent`.
 - The portrait height factor is now 1.8 (it was 2.06).
+
+At the second re-check, the owner asked for a fixed-height symbol section so
+the cells line up, a little more room within the cell, and a comfortable
+gap before the clocks. Done inline:
+- The symbol band is now a fixed 70cqw square, with each kind centred in it.
+- The tuck is eased to 5cqw, and the caption sits 5cqw below the band.
+- The portrait height factor is now 1.9.
+- `.app__clocks`'s gap is now 0.14 × `--region-extent`.
+
+The owner also asked for the glow to work both ways, which became Step 14.
+Step 15 is the re-check.
 
 No code, unless the owner turns up a defect. In that case fix it here and
 record it in Notes.
@@ -1695,3 +1706,67 @@ with ADVANCED:
 - The Quick Guide's ADVANCED PLANET BONUSES diagram still looks right.
 - `README.md`'s advanced-bonus paragraph and its mention of the hover glow
   read well.
+
+---
+
+### Step 14 — The glow works both ways
+
+Status: pending
+
+Make Step 12's hover glow bidirectional. Hovering a bonus planet **on the
+board** now glows that planet in the panel as well as on the board. Hovering
+it **in the panel** glows it on the board, as it already does, and now in
+the panel too. One hovered square lights both places.
+
+- The board reports pointer enter and leave on a planet square only when
+  that square is one the panel currently draws (`bonusPanelSquareNames`).
+  Hovering any other planet, or any other square, does nothing. Use the
+  same pointer handling as the panel: pointer events, ignoring
+  `pointerType === "touch"`. The existing hook (`useBonusHoverGlow`) stays
+  the single holder of the hovered square. The board gains a hover callback
+  prop, the panel gains a glow prop, and `App` wires both. The derivation
+  rules stay as they are: the glow is cleared when the square leaves the
+  panel, and when a new game starts.
+- The board's own pointer behaviour (selecting ships, choosing moves) must
+  be unaffected. Hovering is additive and changes no game state.
+- The panel draws the glow on its planet drawing in the same idiom the
+  board uses (`BoardSquare.css`'s drop-shadow halo on `.planet`), under
+  ADVANCED and in the classic rows. A planet in both classic rows glows in
+  both.
+- Update the story in place: the hover bullet in _What the player sees_ and
+  the matching Verification bullet say the glow works both ways. Update the
+  README sentence from Step 12's round-2 fix to match. The accessibility
+  ledger entry already covers pointer-only.
+
+Tests:
+- hovering a panel-drawn planet on the board glows the matching panel cell
+  and that board square, and leaving clears both;
+- hovering a board planet that the panel does not draw glows nothing;
+- a touch-type enter on the board glows nothing;
+- the existing panel-to-board tests still pass, now also asserting the
+  panel cell's own glow.
+
+Depends on: Step 12 (the hook and the board glow).
+
+Verification (automated): typecheck, lint, format:check and full `npm test`
+green. The owner checks the look in Step 15.
+
+---
+
+### Step 15 — The owner re-checks
+
+Status: pending
+
+No code, unless the owner turns up a defect. If so, fix it here and record
+it in Notes.
+
+Depends on: Step 14, and Step 13's second round of inline spacing changes.
+
+Verification (manual): run `npm run dev` under steal with ADVANCED. Check:
+- In each cell, the planet, the symbol band and the caption line up across
+  the two cells whichever kinds are showing, with a little room between
+  them.
+- There is a comfortable gap before the clocks.
+- Hovering a bonus planet on the board glows it there and in the panel, and
+  hovering it in the panel does the same. Check this under 2 or 3 points
+  too.
