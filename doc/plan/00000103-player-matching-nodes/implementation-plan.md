@@ -985,7 +985,7 @@ is false.
 
 ### Step 10 — The owner plays it
 
-Status: pending
+Status: committed
 
 No code, unless the owner's play turns up a defect — fix it here, with a
 test where the defect is in logic, and record it in the Notes. If a fix
@@ -1013,3 +1013,6 @@ walks the story's own Verification list:
 - The choice survives a return to the start screen.
 - Taking the opponent's node under REQUIRED shuts off their income while it
   is held.
+
+Notes: The owner played it and reported it looks good; no defects, no
+fixes.
