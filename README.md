@@ -55,24 +55,25 @@ install, no account, no server.
 
 > **Status:** early development. The app now plays a whole game, from the
 > opening position to the final score. Opening it shows a start screen, not the
-> board: the game's name, a choice of how many ships a side (six, five, four or
-> three, five to start), a choice of how many nodes are lit at once (five, four
-> or three, four to start), a choice of how scoring works (simple, one energy
-> for each node held, or bonus, where each extra node held at once is worth
-> more than the last, bonus to start), a choice of whether planets pay a
-> one-time bonus (off, two points or three points, off to start), a choice of
-> node playstyle (continuous, planet, dedicated or steal, planet to
-> start), a choice of whether combat is on or off (off to
-> start), a choice of how many rounds the game lasts (thirty, forty-five,
+> board: the game's name, a choice of node playstyle (continuous, planet,
+> dedicated or steal, planet to start), a choice of how many ships a side (six,
+> five, four or three, five to start), a choice of how many nodes are lit at
+> once (five, four or three, four to start), a choice of player-matching
+> nodes when steal is chosen (off, double or required, off to start), a
+> choice of how scoring works (simple, one energy for each node held, or
+> bonus, where each extra node held at once is worth more than the last, bonus
+> to start), a choice of whether planets pay a one-time bonus (off, two points
+> or three points, off to start), a choice of whether combat is on or off (off
+> to start), a choice of how many rounds the game lasts (thirty, forty-five,
 > sixty or ninety, thirty to start), a choice of a clock (unlimited, or six,
 > four or two seconds a turn, unlimited to start) and a PLAY button. The start
 > screen also offers a quick guide — a first read for someone who has never
 > played, not a full rules reference — explaining scoring, movement,
-> refuelling, how nodes come and go and the planet bonus, with a back button
-> that returns you to the start screen with the eight choices exactly as you
-> left them. Your
+> refuelling, how nodes come and go, player-matching nodes and the planet
+> bonus, with a back button that returns you to the start screen with the
+> choices exactly as you left them. Your
 > browser's own back and forward buttons move between the screens too, and the
-> address bar says which screen you are on. Changing any of the eight choices
+> address bar says which screen you are on. Changing any of the choices
 > starts nothing — the board only appears
 > once PLAY is pressed, dealt with the choices you made. A clock is each
 > player's own time for the whole game, not per turn — a thirty-round game at
@@ -126,7 +127,11 @@ install, no account, no server.
 > allows each time a waiting node lights. Steal sets all of that aside:
 > every node shows two squares in a colour of its own, a ship landing on one
 > takes the node for its player, and it keeps paying until someone lands on
-> its other square and takes it away. Under the other three, whatever runs
+> its other square and takes it away. A further choice, offered only under
+> steal, lets you give each player a node of their own, shown in red and
+> green: off treats every node the same, double lets your own node count as
+> two when you are holding it, and required means you collect nothing from
+> any node until you are standing on your own — off to start. Under the other three, whatever runs
 > out during a turn is made up at the end of it by lighting from the waiting three, highest rings
 > first, so the board is always brought back to whichever count you chose by
 > the time your turn begins. Land a ship on a lit node and a black number

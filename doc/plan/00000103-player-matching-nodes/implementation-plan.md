@@ -947,7 +947,21 @@ Gate: the owner approved the paragraph and the diagram as drafted;
 
 ### Step 9 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Reordered the status paragraph's list of start-screen choices to the
+start screen's new order (node playstyle, ships, charged nodes,
+player-matching nodes when steal is chosen, scoring, planet bonus, combat,
+rounds, clock), added the player-matching nodes choice (off, double or
+required, off to start) conditioned on steal; corrected both occurrences of
+"the eight choices" to "the choices", since the count is now conditional;
+added "player-matching nodes" to the list of what the quick guide explains;
+and added one sentence on matched nodes to the steal passage, naming only
+red and green and no other palette. No deviation from the plan. `npm run
+format:check` clean; full `npm test` green (81 files, 1714 tests, unchanged
+from Step 8, as expected for a docs-only step); `npm run typecheck` and
+`npm run lint` clean. By inspection: every choice the README lists, and the
+order it lists them in, matches `StartScreen.tsx`'s fieldsets.
 
 Run `/update-readme` (or do its job by hand): in the status paragraph's list
 of start-screen choices, add the player-matching nodes choice (off, double
