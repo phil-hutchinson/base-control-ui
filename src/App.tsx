@@ -49,8 +49,9 @@ export function App() {
   // screen and the HUD keeps counting up.
   const gameOver = isGameOver(session.state) && settled;
 
-  // The planet, if any, glowing on the board because it is hovered in the
-  // bonus panel — held above both, since neither owns the other.
+  // The planet, if any, glowing on the board and in the bonus panel because
+  // it is hovered in either — held above both, since neither owns the
+  // other.
   const { glowSquare, onHoverSquare } = useBonusHoverGlow(session.state);
 
   const {

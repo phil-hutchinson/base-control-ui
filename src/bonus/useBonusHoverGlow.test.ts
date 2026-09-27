@@ -107,6 +107,49 @@ describe("useBonusHoverGlow", () => {
     expect(result.current.glowSquare).toBe(PLANETS[1]);
   });
 
+  it("clears a hover left over from a claim, even if a later bonus in the same game lands back on that square", () => {
+    const before = withAdvancedBonuses(
+      [PLANETS[0], "large-points"],
+      [PLANETS[1], "fuel"],
+    );
+    const { result, rerender } = renderHook(
+      ({ state }: { state: GameState }) => useBonusHoverGlow(state),
+      { initialProps: { state: before } },
+    );
+
+    // Hovered while it was a bonus planet, and the pointer never reports
+    // leaving — the usual way a player claims it is by clicking it while
+    // already hovering it.
+    act(() => {
+      result.current.onHoverSquare(PLANETS[0]);
+    });
+    expect(result.current.glowSquare).toBe(PLANETS[0]);
+
+    // PLANETS[0] is claimed: it drops out of the bonus set entirely for a
+    // while.
+    const claimed: GameState = {
+      ...before,
+      advancedBonuses: [
+        { square: PLANETS[2], kind: "node-scramble" },
+        { square: PLANETS[1], kind: "additional-nodes" },
+      ],
+    };
+    rerender({ state: claimed });
+    expect(result.current.glowSquare).toBeUndefined();
+
+    // Later, still the same game, a bonus is dealt back onto PLANETS[0].
+    const dealtAgain: GameState = {
+      ...before,
+      advancedBonuses: [
+        { square: PLANETS[0], kind: "small-points" },
+        { square: PLANETS[1], kind: "additional-nodes" },
+      ],
+    };
+    rerender({ state: dealtAgain });
+
+    expect(result.current.glowSquare).toBeUndefined();
+  });
+
   it("clears a hover left over from an earlier game, even if the new game deals a bonus onto the same square", () => {
     const before = withAdvancedBonuses(
       [PLANETS[0], "large-points"],

@@ -32,9 +32,10 @@
 // state, rules.md §3.4, steal.md §10) — purely decorative, drawn in CSS
 // alone from the `glow` flag, with no effect on the square's accessible
 // name. The link runs the other way too: a bonus planet square reports the
-// pointer entering and leaving it through `onPointerEnter`/`onPointerLeave`,
-// so hovering it lights the matching cell in the panel — `Board` supplies
-// these only for a square the panel currently draws.
+// pointer entering it through `onPointerEnter`, so hovering it lights the
+// matching cell in the panel — `Board` supplies this only for a square the
+// panel currently draws. Every square reports the pointer leaving it
+// through `onPointerLeave`, whether or not it is one the panel draws.
 
 import type { CSSProperties, PointerEvent } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
@@ -99,11 +100,12 @@ export interface BoardSquareProps {
    */
   readonly glow?: boolean;
   /**
-   * Reports the pointer entering or leaving this square, for a bonus planet
-   * square only (`Board` supplies these only when the square is one the
-   * bonus panel currently draws).
+   * Reports the pointer entering this square, for a bonus planet square
+   * only (`Board` supplies this only when the square is one the bonus panel
+   * currently draws).
    */
   readonly onPointerEnter?: (event: PointerEvent<HTMLDivElement>) => void;
+  /** Reports the pointer leaving this square, whether or not it is a bonus planet. */
   readonly onPointerLeave?: (event: PointerEvent<HTMLDivElement>) => void;
 }
 

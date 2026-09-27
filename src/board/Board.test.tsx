@@ -431,6 +431,69 @@ describe("Board", () => {
       expect(onHoverSquare).not.toHaveBeenCalled();
     });
 
+    it("reports the pointer leaving a planet even after it has stopped being one the bonus panel draws", () => {
+      // A square that was hoverable when the pointer entered it can become
+      // non-hoverable by the time the pointer leaves — a claim removes it
+      // from the bonus set without the pointer ever moving. The leave must
+      // still be reported, or the hover state never learns the pointer went
+      // away.
+      const bonusSquare = PLANETS[0];
+      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const onHoverSquare = vi.fn();
+
+      const { rerender } = render(
+        <Board
+          session={session}
+          onIntent={noop}
+          onHoverSquare={onHoverSquare}
+        />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(bonusSquare)}, planet`,
+      });
+      const square = cell.querySelector(".board-square")!;
+
+      fireEvent.pointerEnter(square);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(bonusSquare);
+
+      // The planet stops carrying a bonus, with the pointer still over it.
+      const noLongerABonusPlanet = createSession({
+        ...session.state,
+        bonusPlanets: { green: [], red: [] },
+      });
+      rerender(
+        <Board
+          session={noLongerABonusPlanet}
+          onIntent={noop}
+          onHoverSquare={onHoverSquare}
+        />,
+      );
+
+      fireEvent.pointerLeave(square);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it("still reports a click activating a bonus planet, hovered or not", () => {
+      const bonusSquare = PLANETS[0];
+      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const onIntent = vi.fn();
+
+      render(
+        <Board session={session} onIntent={onIntent} onHoverSquare={noop} />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(bonusSquare)}, planet`,
+      });
+
+      fireEvent.pointerEnter(cell.querySelector(".board-square")!);
+      fireEvent.click(cell);
+
+      expect(onIntent).toHaveBeenCalledWith({
+        type: "activate",
+        square: bonusSquare,
+      });
+    });
+
     it("ignores a touch-type enter, so no glow sticks after the tap", () => {
       const bonusSquare = PLANETS[0];
       const session = createSession(stateWithBonusPlanet(bonusSquare));

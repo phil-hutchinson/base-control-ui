@@ -6,7 +6,7 @@
 // both, so hovering a bonus planet on the board or in the panel lights it
 // in both. Not part of `GameState`, and it never reaches the rules modules.
 
-import { useMemo, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { squareName, type Square } from "../rules/board";
 import type { GameState } from "../rules/gameState";
 import { bonusPanelSquareNames } from "./bonusPanelSquares";
@@ -35,32 +35,43 @@ interface Hovered {
 /**
  * Tracks the hovered square, showing it as the glow only while it is still
  * one of the bonus panel's own squares in a game with the same opening seed
- * it was hovered in. The opening-seed check, not just the square-membership
- * one, is what clears a hover left over from a game that has since ended —
- * a new game can otherwise deal a bonus onto the same square the player was
- * last hovering, with no pointer anywhere near the panel.
+ * it was hovered in. Whenever the current state fails that test, the raw
+ * hovered square is forgotten during the same render rather than merely
+ * hidden from the derived glow — so a later claim, followed by a later
+ * bonus dealt back onto the same planet, cannot make the glow reappear with
+ * no pointer anywhere near the board or the panel. The opening-seed check,
+ * not just the square-membership one, is what clears a hover left over from
+ * a game that has since ended — a new game can otherwise deal a bonus onto
+ * the same square the player was last hovering.
  */
 export function useBonusHoverGlow(state: GameState): BonusHoverGlow {
   const [hovered, setHovered] = useState<Hovered | undefined>(undefined);
 
-  const glowSquare = useMemo(() => {
-    if (
-      hovered === undefined ||
-      hovered.openingSeed !== state.openingSeed ||
-      !bonusPanelSquareNames(state).has(squareName(hovered.square))
-    ) {
-      return undefined;
-    }
-    return hovered.square;
-  }, [hovered, state]);
+  // The opening seed a hover should be tagged with, kept current every
+  // render so `onHoverSquare` can stay a stable callback instead of being
+  // rebuilt whenever `state` changes.
+  const openingSeedRef = useRef(state.openingSeed);
+  openingSeedRef.current = state.openingSeed;
 
-  const onHoverSquare = (square: Square | undefined) => {
+  const stillHovering =
+    hovered !== undefined &&
+    hovered.openingSeed === state.openingSeed &&
+    bonusPanelSquareNames(state).has(squareName(hovered.square));
+
+  if (hovered !== undefined && !stillHovering) {
+    setHovered(undefined);
+  }
+
+  const onHoverSquare = useCallback((square: Square | undefined) => {
     setHovered(
       square === undefined
         ? undefined
-        : { square, openingSeed: state.openingSeed },
+        : { square, openingSeed: openingSeedRef.current },
     );
-  };
+  }, []);
 
-  return { glowSquare, onHoverSquare };
+  return {
+    glowSquare: stillHovering ? hovered.square : undefined,
+    onHoverSquare,
+  };
 }

@@ -5,9 +5,12 @@
 // is not part of the game state: which planet, if any, the player is
 // currently hovering in the bonus panel above the clocks, held and passed
 // down by `App`. The link runs the other way too: `onHoverSquare` reports
-// the pointer entering and leaving a planet square on the board, but only
-// for a square the bonus panel currently draws (`bonusPanelSquareNames`) —
-// hovering any other planet, or any other square, reports nothing.
+// the pointer entering a planet square on the board, but only for a square
+// the bonus panel currently draws (`bonusPanelSquareNames`) — entering any
+// other planet, or any other square, reports nothing. Every square reports
+// the pointer leaving it, whether or not it was one the panel drew, so a
+// square that stops being a bonus planet the moment it is claimed still
+// clears the hover when the pointer moves off it.
 
 import { useCallback, useMemo } from "react";
 import { bonusPanelSquareNames } from "../bonus/bonusPanelSquares";
@@ -52,8 +55,9 @@ export interface BoardProps {
   readonly glowSquare?: Square;
   /**
    * Reports the square the pointer is over as it enters a bonus planet
-   * square, and `undefined` as it leaves — so `App` can light the matching
-   * cell in the bonus panel above the clocks. Omit for no hover reporting.
+   * square, so `App` can light the matching cell in the bonus panel above
+   * the clocks, and `undefined` as the pointer leaves any square, bonus
+   * planet or not. Omit for no hover reporting.
    */
   readonly onHoverSquare?: (square: Square | undefined) => void;
 }
@@ -218,15 +222,11 @@ export function Board({
                     }
                   : undefined
               }
-              onPointerLeave={
-                hoverable
-                  ? (event) => {
-                      if (!isTouchPointer(event)) {
-                        onHoverSquare?.(undefined);
-                      }
-                    }
-                  : undefined
-              }
+              onPointerLeave={(event) => {
+                if (!isTouchPointer(event)) {
+                  onHoverSquare?.(undefined);
+                }
+              }}
             />
           ),
           label: squareLabel({
