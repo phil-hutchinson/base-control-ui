@@ -2,12 +2,13 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { SIGNAL_COLORS } from "../board/squareArt";
+import { PLAYER_NODE_COLORS, SIGNAL_COLORS } from "../board/squareArt";
 import {
   MovementDiagram,
   NodeLifecycleDiagram,
   NodeSelectionDiagram,
   PlanetBonusDiagram,
+  PlayerMatchingNodesDiagram,
   RefuellingDiagram,
   RotatorSquareDiagram,
   ScoringDiagram,
@@ -213,6 +214,41 @@ describe("StealingNodesDiagram", () => {
     ).toBeInTheDocument();
     const afterCharged = chargedMarkers[1].closest(".board-square");
     expect(afterCharged?.querySelector(".ship-model--red")).toBeInTheDocument();
+  });
+});
+
+describe("PlayerMatchingNodesDiagram", () => {
+  it("shows green's own node charged with a green ship beside red's own node, still open", () => {
+    const { container } = render(<PlayerMatchingNodesDiagram />);
+
+    const chargedMarkers = container.querySelectorAll(".node-marker--charged");
+    expect(chargedMarkers).toHaveLength(1);
+    const prospectiveMarkers = container.querySelectorAll(
+      ".node-marker--prospective",
+    );
+    expect(prospectiveMarkers).toHaveLength(1);
+
+    const stops = chargedMarkers[0].querySelectorAll("stop");
+    expect(stops[0]).toHaveAttribute(
+      "stop-color",
+      PLAYER_NODE_COLORS.green.core,
+    );
+    expect(stops[2]).toHaveAttribute(
+      "stop-color",
+      PLAYER_NODE_COLORS.green.rim,
+    );
+
+    const ring = prospectiveMarkers[0].querySelector("circle");
+    expect(ring).toHaveAttribute("stroke", PLAYER_NODE_COLORS.red.core);
+
+    const chargedSquare = chargedMarkers[0].closest(".board-square");
+    expect(
+      chargedSquare?.querySelector(".ship-model--green"),
+    ).toBeInTheDocument();
+
+    expect(container.querySelectorAll(".ship-model--green")).toHaveLength(1);
+    expect(container.querySelectorAll(".ship-model--red")).toHaveLength(0);
+    expect(container.querySelectorAll(".guide-diagram__arrow")).toHaveLength(0);
   });
 });
 

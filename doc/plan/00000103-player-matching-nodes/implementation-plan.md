@@ -883,7 +883,32 @@ format:check clean.
 
 ### Step 8 — The Quick Guide's PLAYER-MATCHING NODES section
 
-Status: pending
+Status: committed
+
+Notes: Added `"playerMatchingNodes"` to `GuideSectionId` and its section to
+`GUIDE_SECTIONS` in `guideCopy.ts`, immediately after STEALING NODES and
+before PLANET BONUS, carrying D10's draft paragraph verbatim; updated the
+module's section-count doc comments ("six"/"five" headed sections) to
+"seven" and added a provenance sentence for the new paragraph beside
+STEALING NODES's own. Added `PlayerMatchingNodesDiagram` to
+`guideDiagrams.tsx` per D10 — two squares, green's own node charged with a
+green ship (signal 4) beside red's own node still open (signal 3, its
+prospective rings in red) — using the `matchedSide` prop Step 5 added to
+`BoardSquareProps`; renumbered the trailing diagram-count comments.
+`GuideScreen.tsx`'s `SECTION_DIAGRAMS` gained the pairing, and its own
+section-count doc comment was updated to "seven". Updated
+`guideCopy.test.ts` (seven headings, the new paragraph verbatim, the
+planet-bonus index shift), `guideDiagrams.test.tsx` (a new
+`PlayerMatchingNodesDiagram` case asserting the charged marker's gradient in
+green and the prospective ring's stroke in red, one ship, no arrow), and
+`GuideScreen.test.tsx` (nine diagrams, the new heading between STEALING
+NODES and PLANET BONUS, and a pairing test for its diagram). No deviation
+from the plan. The paragraph and diagram are D10's draft, as instructed;
+the owner's read of them (this step's manual gate) has not yet happened, so
+`guideCopy.ts`'s header does not yet credit the wording to the owner — that
+follows once the gate records an outcome. `npm test` (81 files, 1714 tests,
+up from 1711), `npm run typecheck`, `npm run lint` and `npm run
+format:check` all clean.
 
 Per D10:
 
@@ -914,6 +939,9 @@ NODES with its diagram showing a green node under a green spaceship and a
 red node's rings in red. The owner reads the paragraph and edits or approves
 it; record the final wording's provenance in the Notes and update
 `guideCopy.ts`'s header comment to say the section's copy is the owner's.
+
+Gate: the owner approved the paragraph and the diagram as drafted;
+`guideCopy.ts`'s header records that.
 
 ---
 

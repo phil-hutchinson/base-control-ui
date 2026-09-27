@@ -4,7 +4,9 @@
 // the owner for the inactive node rotation options
 // (doc/plan/00000090-add-prospective-node-rotation-options/implementation-plan.md).
 // The STEALING NODES section's paragraph describes the steal playstyle
-// (steal.md).
+// (steal.md). The PLAYER-MATCHING NODES section's paragraph describes the
+// player-matching nodes setting (steal.md §9), approved as drafted by the
+// owner (doc/plan/00000103-player-matching-nodes/implementation-plan.md).
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //
@@ -25,7 +27,7 @@ export const GUIDE_INTRO_PARAGRAPH =
   "extra node under bonus scoring.";
 
 /**
- * Identifies one of the guide's six headed sections, so a caller can pair
+ * Identifies one of the guide's seven headed sections, so a caller can pair
  * a section with its diagram without relying on array position.
  */
 export type GuideSectionId =
@@ -34,6 +36,7 @@ export type GuideSectionId =
   | "nodeLifecycle"
   | "nodeSelection"
   | "stealingNodes"
+  | "playerMatchingNodes"
   | "planetBonus";
 
 /**
@@ -46,7 +49,7 @@ export interface GuideSettingLine {
 }
 
 /**
- * One of the guide's five headed sections: a heading and its paragraph.
+ * One of the guide's seven headed sections: a heading and its paragraph.
  * `settingLines` is optional and, at present, carried by nodeSelection
  * alone: an ordered list of setting lines rendered between the section's
  * diagram and its second one.
@@ -59,9 +62,9 @@ export interface GuideSection {
 }
 
 /**
- * The six headed sections, in the order the guide reads: movement,
+ * The seven headed sections, in the order the guide reads: movement,
  * refuelling, the node lifecycle, new charged node selection, stealing
- * nodes, and the planet bonus.
+ * nodes, player-matching nodes, and the planet bonus.
  */
 export const GUIDE_SECTIONS: readonly GuideSection[] = [
   {
@@ -135,6 +138,18 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
       "on its rings — your spaceship is left on an ordinary square. If " +
       "you leave the node yourself, it goes back to two sets of rings, " +
       "for whoever reaches one first.",
+  },
+  {
+    id: "playerMatchingNodes",
+    heading: "PLAYER-MATCHING NODES",
+    paragraph:
+      "Under the Steal playstyle, you can give each player a node of " +
+      "their own, shown in their colour — a red node and a green node. " +
+      "With DOUBLE, your own node counts as two nodes when you gain " +
+      "points at the end of your turn. With REQUIRED, you gain no " +
+      "points for any node unless one of your spaceships is on your " +
+      "own node. Either player can land on either node: taking your " +
+      "opponent's node is a way to shut them out.",
   },
   {
     id: "planetBonus",

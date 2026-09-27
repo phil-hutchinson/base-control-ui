@@ -308,8 +308,49 @@ export function StealingNodesDiagram() {
   return <GuideDiagram columns={6} cells={cells} />;
 }
 
+// The signals PLAYER-MATCHING NODES's diagram draws with — the last two a
+// five-node game uses, red then green, matching steal.md §9's own
+// assignment (`matchedSignalForSide`) — so the diagram shows the same
+// signals a five-node game would match.
+const PLAYER_MATCHING_DIAGRAM_GREEN_SIGNAL: NodeSignal = 4;
+const PLAYER_MATCHING_DIAGRAM_RED_SIGNAL: NodeSignal = 3;
+const PLAYER_MATCHING_DIAGRAM_POWER = 4;
+
 /**
- * Diagram 8: green's bonus row alone — three planets, one already carrying
+ * Diagram 8: player-matching nodes (steal.md §9) at a glance — green's own
+ * node, charged, with a green ship on it, beside red's own node, still
+ * open, its prospective rings drawn in red rather than a signal's own
+ * colour.
+ */
+export function PlayerMatchingNodesDiagram() {
+  const cells: readonly GuideDiagramCell[] = [
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-player-matching-1",
+        nodeState: "charged",
+        signal: PLAYER_MATCHING_DIAGRAM_GREEN_SIGNAL,
+        matchedSide: "green",
+        occupant: { side: "green", power: PLAYER_MATCHING_DIAGRAM_POWER },
+      },
+    },
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-player-matching-2",
+        nodeState: "prospective",
+        signal: PLAYER_MATCHING_DIAGRAM_RED_SIGNAL,
+        matchedSide: "red",
+      },
+    },
+  ];
+  return <GuideDiagram columns={2} cells={cells} />;
+}
+
+/**
+ * Diagram 9: green's bonus row alone — three planets, one already carrying
  * the settled checkmark, the other two unclaimed. Red's row and the `+N`
  * badge are both left out; one row and one claim is what the section's
  * paragraph needs shown.

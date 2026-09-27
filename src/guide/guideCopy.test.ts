@@ -19,13 +19,14 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the six headed sections in the story's order", () => {
+  it("has the seven headed sections in the story's order", () => {
     expect(GUIDE_SECTIONS.map((section) => section.heading)).toEqual([
       "MOVEMENT",
       "REFUELING",
       "NODE LIFECYCLE",
       "NEW CHARGED NODE SELECTION",
       "STEALING NODES",
+      "PLAYER-MATCHING NODES",
       "PLANET BONUS",
     ]);
   });
@@ -87,8 +88,21 @@ describe("guideCopy", () => {
     expect(GUIDE_SECTIONS[4].paragraph.toLowerCase()).not.toContain("signal");
   });
 
-  it("has the planet bonus paragraph, last in the story's order", () => {
+  it("has the player-matching nodes paragraph, between stealing nodes and the planet bonus", () => {
+    expect(GUIDE_SECTIONS[5].heading).toBe("PLAYER-MATCHING NODES");
     expect(GUIDE_SECTIONS[5].paragraph).toBe(
+      "Under the Steal playstyle, you can give each player a node of " +
+        "their own, shown in their colour — a red node and a green " +
+        "node. With DOUBLE, your own node counts as two nodes when you " +
+        "gain points at the end of your turn. With REQUIRED, you gain " +
+        "no points for any node unless one of your spaceships is on " +
+        "your own node. Either player can land on either node: taking " +
+        "your opponent's node is a way to shut them out.",
+    );
+  });
+
+  it("has the planet bonus paragraph, last in the story's order", () => {
+    expect(GUIDE_SECTIONS[6].paragraph).toBe(
       "When the planet bonus option is on, each player is given three " +
         "planets that also pay them points — two or three, whichever was " +
         "chosen — the first time one of their spaceships lands there. " +
