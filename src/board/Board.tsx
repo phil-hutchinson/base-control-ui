@@ -1,11 +1,14 @@
 // The board: 15 x 15 squares built from a game session's state (see
 // BoardSquare.tsx for one square's contents). This component walks the
 // grid's index space, maps each cell back to its rule-space square, and
-// gives it its accessible name.
+// gives it its accessible name. `glowSquare` is the one piece it draws that
+// is not part of the game state: which planet, if any, the player is
+// currently hovering in the bonus panel above the clocks, held and passed
+// down by `App`.
 
 import { useCallback, useMemo } from "react";
 import { GAME_NAME } from "../gameName";
-import { BOARD_SIZE, squareName } from "../rules/board";
+import { BOARD_SIZE, squareName, type Square } from "../rules/board";
 import { isPlanet } from "../rules/planets";
 import { shipCanMoveOrAttack } from "../rules/canMoveOrAttack";
 import { legalAttacks } from "../rules/combat";
@@ -36,6 +39,12 @@ export interface BoardProps {
   readonly session: Session;
   /** Dispatches a player's intent (activate or dismiss) to the session reducer. */
   readonly onIntent: (intent: SessionIntent) => void;
+  /**
+   * The planet square, if any, to draw glowing — because the player is
+   * hovering that planet in the bonus panel above the clocks (`App`'s
+   * lifted hover state). Not part of `session.state`.
+   */
+  readonly glowSquare?: Square;
 }
 
 /**
@@ -45,7 +54,7 @@ export interface BoardProps {
  * `role="grid"` element (a grid may only own rows), alongside the grid
  * itself.
  */
-export function Board({ session, onIntent }: BoardProps) {
+export function Board({ session, onIntent, glowSquare }: BoardProps) {
   const handleActivate = useCallback(
     (position: GridPosition) => {
       onIntent({
@@ -64,6 +73,9 @@ export function Board({ session, onIntent }: BoardProps) {
     () => planetArrangement(session.state.openingSeed),
     [session.state.openingSeed],
   );
+
+  const glowSquareName =
+    glowSquare === undefined ? undefined : squareName(glowSquare);
 
   const rows: GridCellDescriptor[][] = useMemo(() => {
     const ships = shipsBySquare(session.state);
@@ -178,6 +190,7 @@ export function Board({ session, onIntent }: BoardProps) {
               condition={condition}
               mark={mark}
               animation={animations.get(name)}
+              glow={name === glowSquareName}
             />
           ),
           label: squareLabel({
@@ -193,7 +206,7 @@ export function Board({ session, onIntent }: BoardProps) {
         };
       }),
     );
-  }, [session, arrangement]);
+  }, [session, arrangement, glowSquareName]);
 
   return (
     <div className="board-frame">

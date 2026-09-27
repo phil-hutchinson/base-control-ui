@@ -307,6 +307,53 @@ describe("Board", () => {
     expect(container.querySelectorAll(".planet")).toHaveLength(PLANETS.length);
   });
 
+  describe("glowSquare (App's hover state, steal.md §10, rules.md §3.4)", () => {
+    it("glows exactly the given planet square, and none by default", () => {
+      const { container: plain } = render(
+        <Board session={startingSession} onIntent={noop} />,
+      );
+      expect(plain.querySelectorAll(".board-square--glow")).toHaveLength(0);
+      cleanup();
+
+      const { container } = render(
+        <Board
+          session={startingSession}
+          onIntent={noop}
+          glowSquare={PLANETS[0]}
+        />,
+      );
+      const glowing = container.querySelectorAll(".board-square--glow");
+      expect(glowing).toHaveLength(1);
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(PLANETS[0])}, planet`,
+      });
+      expect(cell.querySelector(".board-square--glow")).toBeInTheDocument();
+    });
+
+    it("moves the glow off a square once glowSquare no longer names it", () => {
+      const { container, rerender } = render(
+        <Board
+          session={startingSession}
+          onIntent={noop}
+          glowSquare={PLANETS[0]}
+        />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(PLANETS[0])}, planet`,
+      });
+      expect(cell.querySelector(".board-square--glow")).toBeInTheDocument();
+
+      rerender(
+        <Board
+          session={startingSession}
+          onIntent={noop}
+          glowSquare={undefined}
+        />,
+      );
+      expect(container.querySelectorAll(".board-square--glow")).toHaveLength(0);
+    });
+  });
+
   it("draws every gauge slot lit for the starting fleet, since every ship starts at full power", () => {
     const { container } = render(
       <Board session={startingSession} onIntent={noop} />,

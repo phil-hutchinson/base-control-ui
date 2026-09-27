@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { planetArrangement, planetForSquare } from "../board/planetPlacement";
 import type { Square } from "../rules/board";
 import {
@@ -218,6 +218,24 @@ describe("PlanetBonusPanel", () => {
     );
   });
 
+  it("reports the hovered square entering a classic cell, and undefined leaving it", () => {
+    const state = startingGameState(SEED, { planetBonus: "three" });
+    const onHoverSquare = vi.fn();
+
+    const { container } = render(
+      <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+    );
+
+    const cell = container.querySelector(".planet-bonus-panel__cell")!;
+    fireEvent.mouseEnter(cell);
+    expect(onHoverSquare).toHaveBeenLastCalledWith(
+      state.bonusPlanets.green[0].square,
+    );
+
+    fireEvent.mouseLeave(cell);
+    expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
+  });
+
   describe("under advanced (steal.md §10)", () => {
     function withAdvancedBonuses(
       first: readonly [Square, AdvancedBonusKind],
@@ -402,6 +420,27 @@ describe("PlanetBonusPanel", () => {
         `#${planetForSquare(arrangement, PLANETS[2])?.ids.body}`,
         `#${planetForSquare(arrangement, PLANETS[1])?.ids.body}`,
       ]);
+    });
+
+    it("reports the hovered square entering an advanced cell, and undefined leaving it", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+      const onHoverSquare = vi.fn();
+
+      const { container } = render(
+        <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+      );
+
+      const cells = container.querySelectorAll(
+        ".planet-bonus-panel__advanced-cell",
+      );
+      fireEvent.mouseEnter(cells[1]);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(PLANETS[1]);
+
+      fireEvent.mouseLeave(cells[1]);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
     });
   });
 });

@@ -26,6 +26,12 @@
 // A square also carries at most one `animation` (`boardAnimations.ts`),
 // routed here to whichever of the node marker, the countdown or the rotator
 // mark it belongs to.
+//
+// A planet square also gains a soft halo around its drawing while the
+// player is hovering that planet in the bonus panel (`App`'s lifted hover
+// state, rules.md §3.4, steal.md §10) — purely decorative, drawn in CSS
+// alone from the `glow` flag, with no effect on the square's accessible
+// name.
 
 import type { CSSProperties } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
@@ -83,6 +89,12 @@ export interface BoardSquareProps {
   readonly mark?: SquareMark;
   /** The animation, if any, currently playing on this square's node or rotator. */
   readonly animation?: SquareAnimation;
+  /**
+   * Whether this square's planet should glow, because it is the one the
+   * player is currently hovering in the bonus panel (`Board`'s `glowSquare`
+   * prop). Meaningless off a planet square.
+   */
+  readonly glow?: boolean;
 }
 
 // Geometry for the markings, in the same 0-100 viewBox ShipModel and
@@ -242,6 +254,7 @@ export function BoardSquare({
   condition,
   mark,
   animation,
+  glow,
 }: BoardSquareProps) {
   const chargeAnimation =
     animation?.type === "node-charge" ? animation : undefined;
@@ -258,6 +271,9 @@ export function BoardSquare({
   const isDampened = condition === "cannot-move-or-attack";
   if (isDampened) {
     classNames.push("board-square--dampened");
+  }
+  if (glow) {
+    classNames.push("board-square--glow");
   }
 
   // Threads DAMPENED_OPACITY into BoardSquare.css as the one place it is

@@ -1571,7 +1571,59 @@ green. The look itself is checked by the owner in Step 13.
 
 ### Step 12 — Hovering a panel planet lights it on the board
 
-Status: pending
+Status: committed
+
+Notes: The hovered square is held by a new hook, `useBonusHoverGlow`
+(`src/bonus/useBonusHoverGlow.ts`), called from `App` and returning
+`{ glowSquare, onHoverSquare }` — `App` passes `glowSquare` to `Board` and
+`onHoverSquare` to `PlanetBonusPanel`. The clearing check (is the hovered
+square still one of the panel's own squares?) is a small pure helper,
+`bonusPanelSquareNames` (`src/bonus/bonusPanelSquares.ts`), reused by the
+hook and unit-tested on its own; the hook wraps it in a `useEffect` that
+re-checks on every state change, satisfying "clear it if the hovered planet
+stops being in the panel mid-hover" without `App` growing the logic inline.
+A hook plus a pure helper is one layer more than the step's bullet list
+spells out (which reads as plain `useState` in `App`), but it is still
+exactly "state held above both the panel and the board, passed down as a
+prop" — the hook is `App`'s own state, just factored out so the
+claim-replaces-the-hovered-bonus case is unit-testable in isolation
+(`useBonusHoverGlow.test.ts`) rather than only reachable through a full
+`App` gameplay sequence, which a random opening seed makes impractical to
+drive deterministically.
+
+`PlanetBonusPanel` gained an optional `onHoverSquare` prop, wired to
+`onMouseEnter`/`onMouseLeave` on both the classic `BonusCell`'s wrapping div
+and the advanced row's per-slot div — mouse events only, per "needs no touch
+or keyboard equivalent". `Board` gained an optional `glowSquare` prop,
+compared by square name (not object identity) and threaded into the `rows`
+memo's dependency list; `BoardSquare` gained a `glow` boolean that adds a
+`board-square--glow` class. The halo itself is an SVG `drop-shadow` pair on
+`.board-square--glow .planet` in `BoardSquare.css`, mirroring the exact
+`0.3em`/`0.6em` two-layer `--glow-text` idiom `App.css`'s title already
+uses, translated from `text-shadow` to `drop-shadow` since the planet is an
+`<svg>` with no text.
+
+Added a line to `doc/plan/00000021-accessibility-tech-debt/known-issues.md`
+under story 105's section (item 3): the hover link is pointer-only, with no
+touch or keyboard equivalent.
+
+Tests: `bonusPanelSquares.test.ts` (new, 3 cases), `useBonusHoverGlow.test.ts`
+(new, 3 cases, including the claim-replaces-the-hovered-bonus clearing case
+via a hand-built before/after `GameState` pair, matching
+`PlanetBonusPanel.test.tsx`'s own advanced fixture), two new cases in
+`Board.test.tsx` (`glowSquare` glows exactly the named planet and none by
+default; moving `glowSquare` off a square removes the glow), two new cases
+in `PlanetBonusPanel.test.tsx` (`onHoverSquare` fires with the entered
+square and then `undefined` on leave, for a classic cell and an advanced
+cell), and two new integration cases in `App.test.tsx` (hovering a panel
+planet lights the board square carrying the same planet artwork, and
+leaving clears it, under 3 POINTS and under ADVANCED). No deviations beyond
+the hook/helper factoring noted above.
+
+Full `npm test` — **88 test files, 1856 tests, all green** (up from 87
+files / 1847 tests at Step 11); `npm run typecheck`, `npm run lint` and
+`npm run format:check` all pass (prettier reformatted `Board.test.tsx` after
+the new cases were added).
 
 While the pointer is over a planet drawing in the bonus panel, that
 planet's square on the board glows. When the pointer leaves, the glow ends.

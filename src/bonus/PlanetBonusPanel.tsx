@@ -15,11 +15,15 @@
 // in slot order is what keeps a claim's redraw showing the survivor in its
 // own slot and the new bonus in the other one, with no component state of
 // its own.
+//
+// Every cell reports the pointer hovering and leaving it through
+// `onHoverSquare`, so `App` can light the matching square on the board — a
+// pointer-only affordance, unrelated to the panel staying `aria-hidden`.
 
 import { useMemo } from "react";
 import type { PlanetArt } from "../board/planetArt";
 import { planetArrangement, planetForSquare } from "../board/planetPlacement";
-import { squareName } from "../rules/board";
+import { squareName, type Square } from "../rules/board";
 import type { Side } from "../rules/fleet";
 import type { BonusPlanetEntry, GameState } from "../rules/gameState";
 import { planetBonusPoints } from "../rules/planetBonus";
@@ -48,6 +52,7 @@ interface BonusCellProps {
   readonly arrangement: ReadonlyMap<string, PlanetArt>;
   readonly amount: number;
   readonly plyNumber: number;
+  readonly onHoverSquare?: (square: Square | undefined) => void;
 }
 
 function BonusCell({
@@ -56,6 +61,7 @@ function BonusCell({
   arrangement,
   amount,
   plyNumber,
+  onHoverSquare,
 }: BonusCellProps) {
   const art = planetForSquare(arrangement, entry.square);
   if (art === undefined) {
@@ -66,7 +72,11 @@ function BonusCell({
   const badge = bonusBadgeState(entry.claimedOnPly, plyNumber);
 
   return (
-    <div className="planet-bonus-panel__cell">
+    <div
+      className="planet-bonus-panel__cell"
+      onMouseEnter={() => onHoverSquare?.(entry.square)}
+      onMouseLeave={() => onHoverSquare?.(undefined)}
+    >
       {badge === "amount" ? (
         <PlanetBonusCell side={side} art={art} badge="amount" amount={amount} />
       ) : (
@@ -79,9 +89,19 @@ function BonusCell({
 export interface PlanetBonusPanelProps {
   /** The session's game state: read for the setting, the deal, the ply number and the opening seed. */
   readonly state: GameState;
+  /**
+   * Reports the square the pointer is over as it enters a cell, and
+   * `undefined` as it leaves — so `App` can light the matching board
+   * square. Omit to draw the panel with no hover reporting (e.g. in the
+   * Quick Guide diagram).
+   */
+  readonly onHoverSquare?: (square: Square | undefined) => void;
 }
 
-export function PlanetBonusPanel({ state }: PlanetBonusPanelProps) {
+export function PlanetBonusPanel({
+  state,
+  onHoverSquare,
+}: PlanetBonusPanelProps) {
   const arrangement = useMemo(
     () => planetArrangement(state.openingSeed),
     [state.openingSeed],
@@ -109,6 +129,8 @@ export function PlanetBonusPanel({ state }: PlanetBonusPanelProps) {
               <div
                 key={squareName(entry.square)}
                 className="planet-bonus-panel__advanced-cell"
+                onMouseEnter={() => onHoverSquare?.(entry.square)}
+                onMouseLeave={() => onHoverSquare?.(undefined)}
               >
                 <AdvancedBonusCell
                   art={art}
@@ -147,6 +169,7 @@ export function PlanetBonusPanel({ state }: PlanetBonusPanelProps) {
                 arrangement={arrangement}
                 amount={amount}
                 plyNumber={state.plyNumber}
+                onHoverSquare={onHoverSquare}
               />
             ))}
           </div>

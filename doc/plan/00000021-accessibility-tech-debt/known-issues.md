@@ -514,3 +514,15 @@ sighted player sees every new ring appear on the board; a screen-reader user
 is told the event happened but not where.
 
 Where: `src/board/announcements.ts`.
+
+### 3. The hover link between the panel and the board is pointer-only
+
+Hovering a planet drawn in the bonus panel lights that planet's own square
+on the board, so a sighted mouse user can match a panel cell to its square
+at a glance (Step 12). It has no touch or keyboard equivalent: a touch
+player never sees it, and a keyboard or screen-reader user has no way to ask
+which square a panel cell belongs to at all — the panel stays `aria-hidden`
+and carries no focusable element.
+
+Where: `src/App.tsx`, `src/board/Board.tsx`, `src/board/BoardSquare.tsx`,
+`src/bonus/PlanetBonusPanel.tsx`.

@@ -43,3 +43,13 @@
 .board-square--dampened .ship-model {
   opacity: var(--dampened-opacity, 1);
 }
+
+/* A planet's drawing gains a soft halo while its square is the one the
+   player is hovering in the bonus panel — the same layered-blur idiom
+   App.css's title and StartScreen.css's selected choice use via
+   --glow-text, as an SVG drop-shadow so the halo follows the planet's own
+   silhouette rather than its square's bounding box. */
+.board-square--glow .planet {
+  filter: drop-shadow(0 0 0.3em var(--glow-text))
+    drop-shadow(0 0 0.6em var(--glow-text));
+}

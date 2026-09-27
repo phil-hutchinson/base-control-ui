@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import {
   act,
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -301,6 +302,64 @@ describe("App", () => {
     expect(clocks.querySelectorAll(".planet-bonus-panel__cell")).toHaveLength(
       6,
     );
+  });
+
+  it("hovering a bonus planet in the panel lights the matching board square, and leaving ends it", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await user.click(
+      within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
+    );
+    await pressPlay();
+
+    const panelCell = container.querySelector(".planet-bonus-panel__cell")!;
+    const panelHref = panelCell
+      .querySelector(".planet > use")
+      ?.getAttribute("href");
+
+    fireEvent.mouseEnter(panelCell);
+
+    const glowing = container.querySelectorAll(".board-square--glow");
+    expect(glowing).toHaveLength(1);
+    expect(
+      glowing[0].querySelector(".planet > use")?.getAttribute("href"),
+    ).toBe(panelHref);
+
+    fireEvent.mouseLeave(panelCell);
+    expect(container.querySelectorAll(".board-square--glow")).toHaveLength(0);
+  });
+
+  it("hovering an ADVANCED bonus planet in the panel lights the matching board square, and leaving ends it", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+    stubConfirm(true);
+
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+    );
+    await user.click(
+      within(planetBonusGroup()).getByRole("radio", { name: "ADVANCED" }),
+    );
+    await pressPlay();
+
+    const panelCell = container.querySelector(
+      ".planet-bonus-panel__advanced-cell",
+    )!;
+    const panelHref = panelCell
+      .querySelector(".planet > use")
+      ?.getAttribute("href");
+
+    fireEvent.mouseEnter(panelCell);
+
+    const glowing = container.querySelectorAll(".board-square--glow");
+    expect(glowing).toHaveLength(1);
+    expect(
+      glowing[0].querySelector(".planet > use")?.getAttribute("href"),
+    ).toBe(panelHref);
+
+    fireEvent.mouseLeave(panelCell);
+    expect(container.querySelectorAll(".board-square--glow")).toHaveLength(0);
   });
 
   it("pressing PLAY with the defaults deals a five-a-side, thirty-round game", async () => {
