@@ -653,7 +653,25 @@ green; typecheck, lint, format:check clean.
 
 ### Step 4 — The start screen: reorder and the new group
 
-Status: pending
+Status: committed
+
+Notes: Reordered `StartScreen.tsx`'s fieldsets to S14's order (Node
+playstyle, Ships, Charged nodes, Player-matching nodes, Scoring, Planet
+bonus, Combat, Rounds, Clock), added `PLAYER_MATCHING_LABELS` and the
+Player-matching nodes fieldset rendered only when `nodePlaystyle === "steal"`
+(no hidden or disabled placeholder otherwise), and the new
+`playerMatching`/`onPlayerMatchingChange` props; updated the file's and
+`useAppScreen.ts`'s header/doc comments off "eight options" to note the
+ninth appears only under steal. `App.tsx` threads `playerMatching` and
+`setPlayerMatching` through (already exposed by `useAppScreen` since Step
+2). Updated `StartScreen.test.tsx`'s group-order test into two (eight groups
+under a non-steal playstyle, nine under STEAL) and added tests for the
+group's absence under the other three playstyles, its OFF/DOUBLE/REQUIRED
+order and default, and its change handler. Added
+`App.test.tsx` coverage that the group shows only under STEAL, survives a
+switch away and back, and survives a game's return to the start screen. No
+deviation from the plan. `npm test` (81 files, 1690 tests, up from 1684),
+`npm run typecheck`, `npm run lint` and `npm run format:check` all clean.
 
 Per D9:
 

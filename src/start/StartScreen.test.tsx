@@ -38,6 +38,11 @@ import {
   type PlanetBonusSetting,
 } from "../rules/planetBonus";
 import {
+  DEFAULT_PLAYER_MATCHING,
+  PLAYER_MATCHING_SETTINGS,
+  type PlayerMatchingSetting,
+} from "../rules/playerMatching";
+import {
   DEFAULT_SCORING,
   SCORING_SETTINGS,
   type ScoringSetting,
@@ -81,6 +86,13 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
   three: "3 POINTS",
 };
 
+/** The Player-matching nodes group's labels, mirroring `StartScreen`'s own map. */
+const PLAYER_MATCHING_LABELS: Record<PlayerMatchingSetting, string> = {
+  off: "OFF",
+  double: "DOUBLE",
+  required: "REQUIRED",
+};
+
 interface RenderOverrides {
   readonly fleetSize?: FleetSize;
   readonly chargedNodeCount?: ChargedNodeCount;
@@ -88,6 +100,7 @@ interface RenderOverrides {
   readonly scoring?: ScoringSetting;
   readonly planetBonus?: PlanetBonusSetting;
   readonly nodePlaystyle?: NodePlaystyle;
+  readonly playerMatching?: PlayerMatchingSetting;
   readonly lengthInRounds?: number;
   readonly clockSetting?: ClockSetting;
   readonly onFleetSizeChange?: (fleetSize: FleetSize) => void;
@@ -98,6 +111,9 @@ interface RenderOverrides {
   readonly onScoringChange?: (scoring: ScoringSetting) => void;
   readonly onPlanetBonusChange?: (planetBonus: PlanetBonusSetting) => void;
   readonly onNodePlaystyleChange?: (nodePlaystyle: NodePlaystyle) => void;
+  readonly onPlayerMatchingChange?: (
+    playerMatching: PlayerMatchingSetting,
+  ) => void;
   readonly onLengthInRoundsChange?: (lengthInRounds: number) => void;
   readonly onClockSettingChange?: (clockSetting: ClockSetting) => void;
   readonly onPlay?: () => void;
@@ -112,6 +128,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   const onScoringChange = overrides.onScoringChange ?? vi.fn();
   const onPlanetBonusChange = overrides.onPlanetBonusChange ?? vi.fn();
   const onNodePlaystyleChange = overrides.onNodePlaystyleChange ?? vi.fn();
+  const onPlayerMatchingChange = overrides.onPlayerMatchingChange ?? vi.fn();
   const onLengthInRoundsChange = overrides.onLengthInRoundsChange ?? vi.fn();
   const onClockSettingChange = overrides.onClockSettingChange ?? vi.fn();
   const onPlay = overrides.onPlay ?? vi.fn();
@@ -132,6 +149,8 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
       onPlanetBonusChange={onPlanetBonusChange}
       nodePlaystyle={overrides.nodePlaystyle ?? DEFAULT_NODE_PLAYSTYLE}
       onNodePlaystyleChange={onNodePlaystyleChange}
+      playerMatching={overrides.playerMatching ?? DEFAULT_PLAYER_MATCHING}
+      onPlayerMatchingChange={onPlayerMatchingChange}
       lengthInRounds={overrides.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS}
       onLengthInRoundsChange={onLengthInRoundsChange}
       clockSetting={overrides.clockSetting ?? DEFAULT_CLOCK_SETTING}
@@ -147,6 +166,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
     onScoringChange,
     onPlanetBonusChange,
     onNodePlaystyleChange,
+    onPlayerMatchingChange,
     onLengthInRoundsChange,
     onClockSettingChange,
     onPlay,
@@ -215,22 +235,115 @@ describe("StartScreen", () => {
     ).toEqual(["5", "4", "3"]);
   });
 
-  it("renders the eight option groups in order: Ships, Charged nodes, Scoring, Planet bonus, Node playstyle, Combat, Rounds, Clock", () => {
-    renderStartScreen();
+  it("renders the eight option groups in order: Node playstyle, Ships, Charged nodes, Scoring, Planet bonus, Combat, Rounds, Clock, with no Player-matching nodes group, under a non-steal playstyle", () => {
+    renderStartScreen({ nodePlaystyle: "planet" });
 
     const groups = screen.getAllByRole("group");
     expect(
       groups.map((group) => group.querySelector("legend")?.textContent ?? ""),
     ).toEqual([
+      "Node playstyle",
       "Ships",
       "Charged nodes",
       "Scoring",
       "Planet bonus",
-      "Node playstyle",
       "Combat",
       "Rounds",
       "Clock (time per move)",
     ]);
+  });
+
+  it("renders nine option groups under STEAL, with Player-matching nodes between Charged nodes and Scoring", () => {
+    renderStartScreen({ nodePlaystyle: "steal" });
+
+    const groups = screen.getAllByRole("group");
+    expect(
+      groups.map((group) => group.querySelector("legend")?.textContent ?? ""),
+    ).toEqual([
+      "Node playstyle",
+      "Ships",
+      "Charged nodes",
+      "Player-matching nodes",
+      "Scoring",
+      "Planet bonus",
+      "Combat",
+      "Rounds",
+      "Clock (time per move)",
+    ]);
+  });
+
+  it("renders the player-matching nodes group only under STEAL, and not under the other three playstyles", () => {
+    for (const nodePlaystyle of [
+      "continuous",
+      "planet",
+      "dedicated",
+    ] as const) {
+      renderStartScreen({ nodePlaystyle });
+
+      expect(
+        screen.queryByRole("group", { name: "Player-matching nodes" }),
+      ).not.toBeInTheDocument();
+
+      cleanup();
+    }
+  });
+
+  it("renders the player-matching nodes group under STEAL, offering OFF, DOUBLE, REQUIRED in order with the given one checked", () => {
+    renderStartScreen({ nodePlaystyle: "steal", playerMatching: "double" });
+
+    const group = screen.getByRole("group", { name: "Player-matching nodes" });
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => radio.getAttribute("value")),
+    ).toEqual(PLAYER_MATCHING_SETTINGS);
+    for (const value of PLAYER_MATCHING_SETTINGS) {
+      const radio = within(group).getByRole("radio", {
+        name: PLAYER_MATCHING_LABELS[value],
+      });
+      if (value === "double") {
+        expect(radio).toBeChecked();
+      } else {
+        expect(radio).not.toBeChecked();
+      }
+    }
+  });
+
+  it("checks OFF by default in the player-matching nodes group under STEAL", () => {
+    renderStartScreen({ nodePlaystyle: "steal" });
+
+    const group = screen.getByRole("group", { name: "Player-matching nodes" });
+    expect(within(group).getByRole("radio", { name: "OFF" })).toBeChecked();
+  });
+
+  it("calls the player-matching change handler with double when DOUBLE is chosen, and not the others", async () => {
+    const user = userEvent.setup();
+    const {
+      onFleetSizeChange,
+      onChargedNodeCountChange,
+      onScoringChange,
+      onPlanetBonusChange,
+      onNodePlaystyleChange,
+      onCombatEnabledChange,
+      onLengthInRoundsChange,
+      onClockSettingChange,
+      onPlay,
+      onPlayerMatchingChange,
+    } = renderStartScreen({ nodePlaystyle: "steal", playerMatching: "off" });
+
+    const group = screen.getByRole("group", { name: "Player-matching nodes" });
+    await user.click(within(group).getByRole("radio", { name: "DOUBLE" }));
+
+    expect(onPlayerMatchingChange).toHaveBeenCalledExactlyOnceWith("double");
+    expect(onFleetSizeChange).not.toHaveBeenCalled();
+    expect(onChargedNodeCountChange).not.toHaveBeenCalled();
+    expect(onScoringChange).not.toHaveBeenCalled();
+    expect(onPlanetBonusChange).not.toHaveBeenCalled();
+    expect(onNodePlaystyleChange).not.toHaveBeenCalled();
+    expect(onCombatEnabledChange).not.toHaveBeenCalled();
+    expect(onLengthInRoundsChange).not.toHaveBeenCalled();
+    expect(onClockSettingChange).not.toHaveBeenCalled();
+    expect(onPlay).not.toHaveBeenCalled();
   });
 
   it("renders the scoring group with both labels and the given one checked", () => {

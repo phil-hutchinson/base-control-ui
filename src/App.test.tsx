@@ -105,6 +105,10 @@ function planetBonusGroup() {
   return screen.getByRole("group", { name: "Planet bonus" });
 }
 
+function playerMatchingGroup() {
+  return screen.getByRole("group", { name: "Player-matching nodes" });
+}
+
 function clockGroup() {
   return screen.getByRole("group", { name: "Clock (time per move)" });
 }
@@ -157,18 +161,18 @@ describe("App", () => {
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
   });
 
-  it("renders the eight option groups in order: Ships, Charged nodes, Scoring, Planet bonus, Node playstyle, Combat, Rounds, Clock", () => {
+  it("renders the eight option groups in order: Node playstyle, Ships, Charged nodes, Scoring, Planet bonus, Combat, Rounds, Clock", () => {
     render(<App />);
 
     const groups = screen.getAllByRole("group");
     expect(
       groups.map((group) => group.querySelector("legend")?.textContent ?? ""),
     ).toEqual([
+      "Node playstyle",
       "Ships",
       "Charged nodes",
       "Scoring",
       "Planet bonus",
-      "Node playstyle",
       "Combat",
       "Rounds",
       "Clock (time per move)",
@@ -607,6 +611,49 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+    ).toBeChecked();
+  });
+
+  it("shows Player-matching nodes only under STEAL, remembers a choice across a switch away and back, and still shows it after a game returns to the start screen", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    stubConfirm(true);
+
+    expect(
+      screen.queryByRole("group", { name: "Player-matching nodes" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+    );
+    await user.click(
+      within(playerMatchingGroup()).getByRole("radio", { name: "DOUBLE" }),
+    );
+
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
+    expect(
+      screen.queryByRole("group", { name: "Player-matching nodes" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+    );
+    expect(
+      within(playerMatchingGroup()).getByRole("radio", { name: "DOUBLE" }),
+    ).toBeChecked();
+
+    await pressPlay();
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+
+    traverseTo("");
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: GAME_NAME }),
+    ).toBeInTheDocument();
+    expect(
+      within(playerMatchingGroup()).getByRole("radio", { name: "DOUBLE" }),
     ).toBeChecked();
   });
 
