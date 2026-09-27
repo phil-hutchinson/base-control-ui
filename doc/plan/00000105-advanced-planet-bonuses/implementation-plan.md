@@ -1659,6 +1659,18 @@ green. The look is checked by the owner in Step 13.
 
 Status: pending
 
+Notes: At the first re-check, the owner asked for the planet, symbol and
+caption to sit tight together, with a clear gap before the clocks, and for
+a larger caption. Done inline:
+- Each symbol's viewBox is cropped to its drawing, and the symbol takes its
+  height from that.
+- The symbol tucks 10cqw up into the planet artwork's empty lower band, and
+  the cell has no gap.
+- The caption grows from 15cqw to 17cqw, with tighter letter-spacing so ADD
+  NODES still fits.
+- `.app__clocks`'s gap doubles to 0.1 × `--region-extent`.
+- The portrait height factor is now 1.8 (it was 2.06).
+
 No code, unless the owner turns up a defect. In that case fix it here and
 record it in Notes.
 

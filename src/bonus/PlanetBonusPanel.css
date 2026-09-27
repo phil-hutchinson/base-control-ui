@@ -113,15 +113,16 @@
    caption — `AdvancedBonusCell.css`) never grows taller than the height
    `.planet-bonus-panel--advanced` actually has, shrinking it below a board
    square's size rather than clipping the caption off. The stack's own
-   height comes out to about 2.06 times its width (a planet plus two 3cqw
-   gaps plus a 78cqw symbol plus a 15cqw caption line, `AdvancedBonusCell.css`),
+   height comes out to at most about 1.8 times its width (a planet, less the
+   symbol's 10cqw tuck, plus the tallest symbol at 70cqw and a 2cqw-spaced
+   caption line of 17cqw × 1.1, `AdvancedBonusCell.css`),
    so dividing the container's full height (`100cqh`) by that factor gives
    the widest cell that still fits it. */
 @media (orientation: portrait) {
   .planet-bonus-panel__advanced-cell {
     width: min(
       max(var(--board-square-size), calc(var(--region-extent) * 0.3)),
-      calc(100cqh / 2.06)
+      calc(100cqh / 1.8)
     );
   }
 }

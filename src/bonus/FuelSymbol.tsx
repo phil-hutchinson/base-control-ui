@@ -32,7 +32,7 @@ export function FuelSymbol() {
   return (
     <svg
       className="fuel-symbol"
-      viewBox="0 0 100 100"
+      viewBox="8 32 84 36"
       aria-hidden="true"
       preserveAspectRatio="xMidYMid meet"
     >

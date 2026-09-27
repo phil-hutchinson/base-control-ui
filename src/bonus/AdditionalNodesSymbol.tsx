@@ -23,7 +23,7 @@ export function AdditionalNodesSymbol({
   return (
     <svg
       className="additional-nodes-symbol"
-      viewBox="0 0 100 100"
+      viewBox="8 8 84 84"
       aria-hidden="true"
     >
       {INACTIVE_RING_RADII.map((radius, index) => (

@@ -26,7 +26,7 @@ export function NodeScrambleSymbol({
   return (
     <svg
       className="node-scramble-symbol"
-      viewBox="0 0 100 100"
+      viewBox="6 6 88 88"
       aria-hidden="true"
     >
       {ARC_START_ANGLES.map((startDegrees, index) => (

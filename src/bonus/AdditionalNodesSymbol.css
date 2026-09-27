@@ -1,7 +1,8 @@
-/* Fills whatever box its caller sizes, the same idiom NodeMarker.css and
-   RotatorMarker.css use for their own square-level art. */
+/* Takes its caller's width; its height follows the viewBox, which is
+   cropped to the drawing itself, so no empty band sits above or below it
+   and the symbol packs tight against the planet and caption around it. */
 .additional-nodes-symbol {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
 }

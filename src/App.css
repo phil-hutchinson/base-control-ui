@@ -197,12 +197,14 @@
      beside them; each of the two owns everything inside itself and its own
      stylesheet, exactly as `.app__info` owns `Hud`. With the panel off
      (`PlanetBonusPanel` renders nothing) this box holds only the clock
-     region, exactly as it always has. */
+     region, exactly as it always has. The gap only ever sits between the
+     panel and the clocks, and is wide enough to read the two as separate
+     groups. */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--region-extent) * 0.05);
+  gap: calc(var(--region-extent) * 0.1);
   flex: 0 0 var(--region-extent);
   width: 100%;
 }

@@ -1,20 +1,20 @@
-/* Fills whatever box its caller sizes, the same self-contained idiom
-   PlanetBonusCell.css uses: the text's font-size is a fraction of this
-   element's own box width rather than of `--region-extent`, so the panel
-   and the Quick Guide's diagram draw the one symbol at two different
-   scales. */
+/* Takes its caller's width, and its height from one line of text set
+   solid (`line-height: 1`), so no empty band sits above or below the
+   amount. The text's font-size is a fraction of this element's own width
+   rather than of `--region-extent`, so the panel and the Quick Guide's
+   diagram draw the one symbol at two different scales. */
 .points-symbol {
   container-type: inline-size;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100%;
 }
 
 .points-symbol__text {
   font-family: var(--font-arcade);
   font-weight: 700;
   font-size: 65cqw;
+  line-height: 1;
   color: #f5deb3;
 }
