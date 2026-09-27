@@ -554,7 +554,7 @@ describe("ScoreDisplay", () => {
       ]);
     });
 
-    it("gives REQUIRED's X pips no fill colour", () => {
+    it("crosses REQUIRED's X pips in their nodes' colours, opponent's node first", () => {
       const state = buildStealState({
         ships: [
           ...shipsFor("red", 3),
@@ -572,10 +572,9 @@ describe("ScoreDisplay", () => {
       const xPips = Array.from(
         container.querySelectorAll<HTMLElement>(".score-display__pip--x"),
       );
-      expect(xPips).toHaveLength(2);
-      for (const pip of xPips) {
-        expect(pip.style.getPropertyValue("--pip-fill")).toBe("");
-      }
+      expect(
+        xPips.map((pip) => pip.style.getPropertyValue("--pip-fill")),
+      ).toEqual([PLAYER_NODE_COLORS.green.core, SIGNAL_COLORS[1].core]);
     });
   });
 });

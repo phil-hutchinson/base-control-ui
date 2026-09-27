@@ -31,7 +31,8 @@ const SIDE_NAME: Readonly<Record<Side, string>> = {
 };
 
 /**
- * The colour each lit pip is filled with, in row order: the board colour of
+ * The colour each lit pip is filled with, or each X pip crossed in, in row
+ * order: the board colour of
  * the node it stands for (`colorsForSignal`, as `NodeMarker` draws it), or
  * `undefined` for a node with no signal, which the stylesheet fills gold.
  * With player-matching nodes on, the row runs own node, opponent's node, then
@@ -135,10 +136,10 @@ export function ScoreDisplay({
             pipClassName += " score-display__pip--x";
           } else if (index < litCount) {
             pipClassName += " score-display__pip--lit";
-            const fill = fills[index];
-            if (fill !== undefined) {
-              pipStyle = { "--pip-fill": fill } as CSSProperties;
-            }
+          }
+          const fill = fills[index];
+          if (index < Math.max(xCount, litCount) && fill !== undefined) {
+            pipStyle = { "--pip-fill": fill } as CSSProperties;
           }
           return (
             <span key={index} className="score-display__pip-column">

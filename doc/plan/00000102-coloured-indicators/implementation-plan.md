@@ -28,9 +28,11 @@ there is no ruleset step.
   own node, opponent's node, then the remaining held nodes in the order
   `turnCollection` gives them (board order). With player-matching off, the
   whole row keeps board order, as today — the story asks for no change there.
-- **D4 — The X is white.** The X was drawn in the side's colour to match the
-  side-coloured outline; with the outline white, the X follows it so the
-  crossed pip still reads as one mark.
+- **D4 — The X is the node's colour.** First built white, to follow the
+  outline; changed at the owner's sign-off so each X is crossed in the colour
+  of the node it stands for, carried by the same per-pip `--pip-fill` as a
+  lit pip's fill. The X pips follow the same order as lit pips — with the own
+  node not held, that is the opponent's node, then the rest.
 - **D5 — Glow follows the fill.** A lit pip's glow was the fill colour; it
   stays so, in each node's colour.
 

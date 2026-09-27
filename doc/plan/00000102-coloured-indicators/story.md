@@ -21,8 +21,8 @@ changes.
   other than steal, every charged node is gold, so every lit pip is gold,
   as today.
 - **REQUIRED, without the player's own node.** Each held node's pip is
-  still marked with an X, as today, not filled with the node's colour. The
-  X is drawn in white, matching the outline.
+  still marked with an X, as today, not filled. The X is drawn in the
+  colour of the node it stands for, inside the white outline.
 - **DOUBLE, holding the player's own node.** The two pips the own node
   counts for are both filled with the player's own colour.
 - **Order under DOUBLE and REQUIRED.** The lit pips run own node first,
@@ -50,6 +50,6 @@ row is decorative. This is accepted and recorded in
   node's board colour, inside a white outline.
 - Under DOUBLE, holding the own node fills two pips in the player's colour,
   first in the row; the opponent's node, if held, comes next.
-- Under REQUIRED without the own node, each held node shows a white X and
-  no fill; once the own node is held, the pips fill own node first.
+- Under REQUIRED without the own node, each held node shows an X in that
+  node's colour and no fill, the opponent's node first; once the own node is held, the pips fill own node first.
 - Under any other playstyle, lit pips are gold in white outlines.
