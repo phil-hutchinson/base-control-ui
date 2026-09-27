@@ -114,7 +114,7 @@ changelog entry, in its own commit ahead of the code. Tagging stays on hold
 - **Everything under OFF**, and everything under the other three
   playstyles. A recorded game played with OFF replays exactly as it does
   today.
-- **How a node is claimed, left, stolen, relocated or drawn** (steal.md
+- **How a node is claimed, left, stolen, relocated or dealt** (steal.md
   §§3–7). A matched node behaves like any other node in every respect but
   what it pays.
 - **The scoring settings themselves.** Simple and bonus price a count of

@@ -68,7 +68,6 @@
    as its border — cutting the circle into four quarters. The pip keeps its
    size; the crossing is background, clipped to the circle by its radius. */
 .score-display__pip--x {
-  --pip-x-line: var(--color-text-dim);
   background-image:
     linear-gradient(
       45deg,

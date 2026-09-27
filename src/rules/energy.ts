@@ -61,6 +61,22 @@ export function energyForNodesHeld(
   return (nodesHeld * (nodesHeld + 1)) / 2;
 }
 
+/** The whole of what `side`'s end-of-turn collection is right now — see `turnCollection`. */
+export interface TurnCollection {
+  /** The charged nodes `side` holds. */
+  readonly heldSquares: readonly Square[];
+  /** Whether `side` is standing on its own matched node. */
+  readonly standingOnOwnNode: boolean;
+  /** The held square that is the side's own matched node, present exactly when `standingOnOwnNode` is true. */
+  readonly ownNodeSquare?: Square;
+  /** How many nodes the collection prices, after player-matching nodes has adjusted `heldSquares.length`. */
+  readonly countedNodes: number;
+  /** Whether the collection is withheld outright (required, holding nodes but not the own one). */
+  readonly withheld: boolean;
+  /** The resulting amount, `energyForNodesHeld(countedNodes, state.scoring)`. */
+  readonly amount: number;
+}
+
 /**
  * The whole of what `side`'s end-of-turn collection is right now (rules.md
  * §8.4, steal.md §9): the charged nodes it holds, whether it is standing on
@@ -79,16 +95,6 @@ export function energyForNodesHeld(
  * is unchanged — this changes the count that function is asked to price,
  * never the price a count is worth.
  */
-export interface TurnCollection {
-  readonly heldSquares: readonly Square[];
-  readonly standingOnOwnNode: boolean;
-  /** The held square that is the side's own matched node, present exactly when `standingOnOwnNode` is true. */
-  readonly ownNodeSquare?: Square;
-  readonly countedNodes: number;
-  readonly withheld: boolean;
-  readonly amount: number;
-}
-
 export function turnCollection(state: GameState, side: Side): TurnCollection {
   const heldSquares = chargedNodesHeldBy(state, side);
   const ownNodeSquare =

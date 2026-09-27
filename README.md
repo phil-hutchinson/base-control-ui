@@ -130,13 +130,14 @@ install, no account, no server.
 > its other square and takes it away. A further choice, offered only under
 > steal, lets you give each player a node of their own, shown in red and
 > green: off treats every node the same, double lets your own node count as
-> two when you are holding it, and required means you collect nothing from
-> any node until you are standing on your own — off to start. Under the other three, whatever runs
-> out during a turn is made up at the end of it by lighting from the waiting three, highest rings
-> first, so the board is always brought back to whichever count you chose by
-> the time your turn begins. Land a ship on a lit node and a black number
-> appears in its middle: six, counting down by one at the end of each of your
-> own turns while the ball itself grows steadily larger, until it runs out on
+> two when you are holding it, and required means you collect nothing from any
+> node until you are standing on your own — off to start. Under the other
+> three, whatever runs out during a turn is made up at the end of it by
+> lighting from the waiting three, highest rings first, so the board is always
+> brought back to whichever count you chose by the time your turn begins.
+> Land a ship on a lit node and a black number appears in its middle: six,
+> counting down by one at the end of each of your own turns while the ball
+> itself grows steadily larger, until it runs out on
 > your sixth turn there and traps you. Leave a node you are holding instead and
 > it ends immediately, right there in the middle of your turn — you cannot hand
 > it back, and your opponent cannot pick it up after you — though it stays on

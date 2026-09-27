@@ -6,7 +6,7 @@
 // The STEALING NODES section's paragraph describes the steal playstyle
 // (steal.md). The PLAYER-MATCHING NODES section's paragraph describes the
 // player-matching nodes setting (steal.md §9), approved as drafted by the
-// owner (doc/plan/00000103-player-matching-nodes/implementation-plan.md).
+// owner.
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //

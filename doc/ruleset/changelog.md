@@ -18,10 +18,11 @@ stays on hold until the game plays (see the project's contribution notes).
   before play begins and fixed for the game's lifetime. This document names
   no default.
 - **With double or required, two of the game's nodes are matched to the
-  players, one each, for the whole game.** The match is fixed — it does not
-  follow whoever holds the node — and a matched node is claimed, left,
-  stolen, relocated and drawn exactly as any other node (steal.md §§3–7).
-  Either player may take either matched node.
+  players, one each, for the whole game**: of the nodes the opening deal
+  deals, the second-to-last is red's and the last is green's. The match is
+  fixed — it does not follow whoever holds the node — and a matched node is
+  claimed, left, stolen, relocated and dealt exactly as any other node
+  (steal.md §§3–7). Either player may take either matched node.
 - **Double**: at the end of a player's turn, their own node, if one of their
   ships stands on it, counts as **two** nodes held; the opponent's matched
   node counts as one, like any other. The turn is then priced by the chosen

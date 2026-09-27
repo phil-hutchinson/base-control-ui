@@ -166,11 +166,12 @@ for the game's lifetime: **off, double or required**. This document names
 no default.
 
 With **double** or **required**, two of the game's nodes are matched to the
-players, one each, for the whole game. The match is fixed: it does not
-follow whoever holds the node. A matched node is claimed, left, stolen,
-relocated and drawn exactly as any other node (sections 3–7) — either
-player may take either matched node, and taking the opponent's is a
-legitimate way to deny it to them.
+players, one each, for the whole game: of the nodes the opening deal deals
+(section 7), the second-to-last is red's and the last is green's. The match
+is fixed: it does not follow whoever holds the node. A matched node is
+claimed, left, stolen, relocated and dealt exactly as any other node
+(sections 3–7) — either player may take either matched node, and taking the
+opponent's is a legitimate way to deny it to them.
 
 **Double.** At the end of a player's turn, their own node, if one of their
 ships stands on it, counts as **two** nodes held. The opponent's matched

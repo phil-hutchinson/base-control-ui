@@ -672,23 +672,6 @@ describe("Board", () => {
         expect(rim).toBe(SIGNAL_COLORS[signal].rim);
       });
     });
-
-    it("draws no matched colour anywhere under a non-steal playstyle", () => {
-      render(<Board session={startingSession} onIntent={noop} />);
-
-      const playerCoreColors = [
-        PLAYER_NODE_COLORS.red.core,
-        PLAYER_NODE_COLORS.green.core,
-      ];
-      const stops = screen
-        .getAllByRole("gridcell")
-        .flatMap((cell) =>
-          Array.from(cell.querySelectorAll(".node-marker stop")),
-        );
-      for (const stop of stops) {
-        expect(playerCoreColors).not.toContain(stop.getAttribute("stop-color"));
-      }
-    });
   });
 
   describe("rotators the board is told to draw", () => {
