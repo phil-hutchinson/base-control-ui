@@ -126,3 +126,14 @@
     );
   }
 }
+
+/* A cell's planet gains the board's own halo while its square is the one
+   the player is hovering on the board (`BoardSquare.css`'s
+   `.board-square--glow .planet` rule, the same layered `--glow-text`
+   drop-shadow pair), so the link between the panel and the board reads the
+   same in either direction. */
+.planet-bonus-panel__cell--glow .planet,
+.planet-bonus-panel__advanced-cell--glow .planet {
+  filter: drop-shadow(0 0 0.3em var(--glow-text))
+    drop-shadow(0 0 0.6em var(--glow-text));
+}

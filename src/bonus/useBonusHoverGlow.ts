@@ -1,8 +1,10 @@
-// The planet, if any, currently glowing on the board because the player is
-// hovering it in the bonus panel above the clocks (rules.md §3.4, steal.md
-// §10). Held above both `Board` and `PlanetBonusPanel`, since neither owns
-// the other — `App` wires the two together through this hook. Not part of
-// `GameState`, and it never reaches the rules modules.
+// The planet, if any, currently glowing on the board and in the bonus panel
+// above the clocks, because the player is hovering it in either place
+// (rules.md §3.4, steal.md §10). Held above both `Board` and
+// `PlanetBonusPanel`, since neither owns the other — `App` wires the two
+// together through this hook, passing the same `onHoverSquare` callback to
+// both, so hovering a bonus planet on the board or in the panel lights it
+// in both. Not part of `GameState`, and it never reaches the rules modules.
 
 import { useMemo, useState } from "react";
 import { squareName, type Square } from "../rules/board";
@@ -10,9 +12,17 @@ import type { GameState } from "../rules/gameState";
 import { bonusPanelSquareNames } from "./bonusPanelSquares";
 
 export interface BonusHoverGlow {
-  /** The square to draw glowing on the board, or `undefined` for none. */
+  /**
+   * The square to draw glowing, on the board (`Board`'s `glowSquare` prop)
+   * and in the bonus panel (`PlanetBonusPanel`'s `glowSquare` prop), or
+   * `undefined` for neither.
+   */
   readonly glowSquare: Square | undefined;
-  /** Pass straight to `PlanetBonusPanel`'s `onHoverSquare` prop. */
+  /**
+   * Pass straight to both `Board`'s and `PlanetBonusPanel`'s
+   * `onHoverSquare` prop — either one hovering a square lights it in both
+   * places.
+   */
   readonly onHoverSquare: (square: Square | undefined) => void;
 }
 

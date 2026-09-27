@@ -31,9 +31,12 @@
 // player is hovering that planet in the bonus panel (`App`'s lifted hover
 // state, rules.md §3.4, steal.md §10) — purely decorative, drawn in CSS
 // alone from the `glow` flag, with no effect on the square's accessible
-// name.
+// name. The link runs the other way too: a bonus planet square reports the
+// pointer entering and leaving it through `onPointerEnter`/`onPointerLeave`,
+// so hovering it lights the matching cell in the panel — `Board` supplies
+// these only for a square the panel currently draws.
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, PointerEvent } from "react";
 import type { ShipCondition, SquareMark, SquareOccupant } from "./squareLabel";
 import type { NodeState } from "../rules/nodes";
 import type { NodePriority } from "../rules/nodeQueue";
@@ -95,6 +98,13 @@ export interface BoardSquareProps {
    * prop). Meaningless off a planet square.
    */
   readonly glow?: boolean;
+  /**
+   * Reports the pointer entering or leaving this square, for a bonus planet
+   * square only (`Board` supplies these only when the square is one the
+   * bonus panel currently draws).
+   */
+  readonly onPointerEnter?: (event: PointerEvent<HTMLDivElement>) => void;
+  readonly onPointerLeave?: (event: PointerEvent<HTMLDivElement>) => void;
 }
 
 // Geometry for the markings, in the same 0-100 viewBox ShipModel and
@@ -255,6 +265,8 @@ export function BoardSquare({
   mark,
   animation,
   glow,
+  onPointerEnter,
+  onPointerLeave,
 }: BoardSquareProps) {
   const chargeAnimation =
     animation?.type === "node-charge" ? animation : undefined;
@@ -283,7 +295,12 @@ export function BoardSquare({
     : undefined;
 
   return (
-    <div className={classNames.join(" ")} style={style}>
+    <div
+      className={classNames.join(" ")}
+      style={style}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
+    >
       {planet && <Planet planet={planet} />}
       {nodeState && (
         <NodeMarker

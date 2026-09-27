@@ -1711,7 +1711,61 @@ with ADVANCED:
 
 ### Step 14 — The glow works both ways
 
-Status: pending
+Status: committed
+
+Notes: `Board` gained an `onHoverSquare` prop, reported only for a square in
+`bonusPanelSquareNames(session.state)` (every other planet, and every
+non-planet square, reports nothing); `PlanetBonusPanel` gained a
+`glowSquare` prop, compared by square name against each cell's own square
+(a classic cell and, separately, the advanced row's per-slot cell), so a
+planet shared by both classic rows glows in both, as their independent
+per-cell comparisons naturally give. `App` passes the same
+`useBonusHoverGlow` state and callback to both `Board` and
+`PlanetBonusPanel`, so hovering either one lights both. The shared
+touch-pointer filter (`isTouchPointer`, previously private to
+`PlanetBonusPanel.tsx`) moved to a new tiny module, `src/bonus/pointerHover.ts`,
+so `Board.tsx` and `PlanetBonusPanel.tsx` apply the same "ignore a touch tap"
+rule from one place rather than two copies — a small factoring beyond the
+step's bullet list, in the same spirit as Step 12's hook extraction.
+`BoardSquare` gained `onPointerEnter`/`onPointerLeave` props, applied to its
+root div, exactly mirroring how it already carries `glow`. The panel's own
+glow reuses the board's exact halo idiom: `.planet-bonus-panel__cell--glow
+.planet` and `.planet-bonus-panel__advanced-cell--glow .planet` carry the
+same two-layer `drop-shadow(var(--glow-text))` pair `BoardSquare.css`'s
+`.board-square--glow .planet` rule uses.
+
+Updated the story in place (the hover bullet in _What the player sees_ and
+the matching Verification bullet) to say the glow works both ways, and the
+README's Quick Guide-adjacent sentence from Step 12's round-2 fix to match.
+Left the accessibility ledger's item 3 untouched, as the step says — it
+already names both directions' files and states "no touch or keyboard
+equivalent" without assuming one direction.
+
+Tests: three new `Board.test.tsx` cases (a new `stateWithBonusPlanet` fixture,
+mirroring the file's other minimal hand-built states) — hovering a planet
+the panel draws reports it and then `undefined` on leaving; hovering a
+planet the panel does not draw reports nothing; a touch-type enter reports
+nothing. Three new `PlanetBonusPanel.test.tsx` cases — `glowSquare` glows
+exactly the matching classic cell and none by default, the matching advanced
+slot and none by default, and a planet shared by both classic rows glows in
+both (the last needed a hand-built disjoint/shared `bonusPlanets` fixture,
+since the existing seeded fixture's real deal doesn't reliably produce or
+avoid an overlap). Four new `App.test.tsx` integration cases, alongside
+updating the two existing panel-to-board cases (classic and ADVANCED) to
+also assert the panel cell itself gains the glow class: hovering a board
+planet under 3 POINTS lights the matching panel cell; the same under
+ADVANCED; hovering a board planet the panel does not draw glows nothing
+anywhere; a touch-type enter on a board planet glows nothing. Four new
+`pointerHover.test.ts` cases for the extracted helper (touch, mouse, pen,
+missing `pointerType`), matching the project's convention of a dedicated
+test file for every pure non-component module in `src/bonus/`.
+
+No other deviations from the plan.
+
+Full `npm test` — **89 test files, 1873 tests, all green** (up from 88
+files / 1859 tests before this step: +1 file, `pointerHover.test.ts`; +14
+tests: 3 Board, 3 PlanetBonusPanel, 4 App, 4 pointerHover); `npm run
+typecheck`, `npm run lint` and `npm run format:check` all pass.
 
 Make Step 12's hover glow bidirectional. Hovering a bonus planet **on the
 board** now glows that planet in the panel as well as on the board. Hovering

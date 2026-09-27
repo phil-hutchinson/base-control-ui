@@ -4,9 +4,14 @@
 // gives it its accessible name. `glowSquare` is the one piece it draws that
 // is not part of the game state: which planet, if any, the player is
 // currently hovering in the bonus panel above the clocks, held and passed
-// down by `App`.
+// down by `App`. The link runs the other way too: `onHoverSquare` reports
+// the pointer entering and leaving a planet square on the board, but only
+// for a square the bonus panel currently draws (`bonusPanelSquareNames`) —
+// hovering any other planet, or any other square, reports nothing.
 
 import { useCallback, useMemo } from "react";
+import { bonusPanelSquareNames } from "../bonus/bonusPanelSquares";
+import { isTouchPointer } from "../bonus/pointerHover";
 import { GAME_NAME } from "../gameName";
 import { BOARD_SIZE, squareName, type Square } from "../rules/board";
 import { isPlanet } from "../rules/planets";
@@ -45,6 +50,12 @@ export interface BoardProps {
    * lifted hover state). Not part of `session.state`.
    */
   readonly glowSquare?: Square;
+  /**
+   * Reports the square the pointer is over as it enters a bonus planet
+   * square, and `undefined` as it leaves — so `App` can light the matching
+   * cell in the bonus panel above the clocks. Omit for no hover reporting.
+   */
+  readonly onHoverSquare?: (square: Square | undefined) => void;
 }
 
 /**
@@ -54,7 +65,12 @@ export interface BoardProps {
  * `role="grid"` element (a grid may only own rows), alongside the grid
  * itself.
  */
-export function Board({ session, onIntent, glowSquare }: BoardProps) {
+export function Board({
+  session,
+  onIntent,
+  glowSquare,
+  onHoverSquare,
+}: BoardProps) {
   const handleActivate = useCallback(
     (position: GridPosition) => {
       onIntent({
@@ -78,6 +94,7 @@ export function Board({ session, onIntent, glowSquare }: BoardProps) {
     glowSquare === undefined ? undefined : squareName(glowSquare);
 
   const rows: GridCellDescriptor[][] = useMemo(() => {
+    const hoverableSquareNames = bonusPanelSquareNames(session.state);
     const ships = shipsBySquare(session.state);
     const animations = boardAnimations(session);
     const rotatorSquareNames = new Set(
@@ -163,6 +180,7 @@ export function Board({ session, onIntent, glowSquare }: BoardProps) {
 
         const destinationCost = destinationCosts.get(name);
         const targetCost = targetCosts.get(name);
+        const hoverable = hoverableSquareNames.has(name);
 
         let mark: SquareMark | undefined;
         if (selectedShip && squareName(selectedShip.square) === name) {
@@ -191,6 +209,24 @@ export function Board({ session, onIntent, glowSquare }: BoardProps) {
               mark={mark}
               animation={animations.get(name)}
               glow={name === glowSquareName}
+              onPointerEnter={
+                hoverable
+                  ? (event) => {
+                      if (!isTouchPointer(event)) {
+                        onHoverSquare?.(square);
+                      }
+                    }
+                  : undefined
+              }
+              onPointerLeave={
+                hoverable
+                  ? (event) => {
+                      if (!isTouchPointer(event)) {
+                        onHoverSquare?.(undefined);
+                      }
+                    }
+                  : undefined
+              }
             />
           ),
           label: squareLabel({
@@ -206,7 +242,7 @@ export function Board({ session, onIntent, glowSquare }: BoardProps) {
         };
       }),
     );
-  }, [session, arrangement, glowSquareName]);
+  }, [session, arrangement, glowSquareName, onHoverSquare]);
 
   return (
     <div className="board-frame">

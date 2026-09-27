@@ -196,7 +196,8 @@ such guarantee.
   or REQUIRED, and **gold, silver and blue** otherwise. Blue is the node
   colour that comes after silver.
 - **Hovering over a planet in the panel makes that planet glow on the
-  board**, for as long as the pointer stays on it. This works for every
+  board, and hovering that planet on the board makes it glow in the
+  panel**, for as long as the pointer stays there. This works for every
   planet the panel draws, under ADVANCED and under 2 or 3 points alike. It
   is a way to find a planet, not a marking: nothing on the board shows a
   bonus otherwise.
@@ -302,7 +303,8 @@ result; the measured figures, the rescale and what stayed unchanged are in
   clipping. Their symbols are always two different kinds, each captioned
   BONUS, FUEL, ADD NODES or SCRAMBLE, and neither planet has a ship on it.
 - Hovering over a planet in the panel, under any planet bonus setting,
-  makes that planet glow on the board; moving off it ends the glow.
+  makes that planet glow on the board, and hovering that planet on the
+  board makes it glow in the panel; moving off it ends the glow either way.
 - Landing on a points bonus raises the claiming side's score by the table's
   amount, right away. The other planet's symbol changes to a different kind,
   and a new bonus appears on another empty planet.

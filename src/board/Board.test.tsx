@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { useReducer } from "react";
 import { squareAt, squareName, type Square } from "../rules/board";
 import { PLANETS, isPlanet } from "../rules/planets";
@@ -189,6 +195,32 @@ function stateWithRotators(squares: readonly Square[]): GameState {
   };
 }
 
+/** A minimal hand-built state carrying a single classic bonus planet
+ * (rules.md §3.4) for green, isolating the wiring from `state.bonusPlanets`
+ * through `Board.tsx`'s hover reporting to `bonusPanelSquareNames`. */
+function stateWithBonusPlanet(square: Square): GameState {
+  return {
+    ships: [],
+    nodes: {},
+    sideToMove: "green",
+    plyNumber: 1,
+    randomSeed: 1,
+    openingSeed: 1,
+    nodePlaystyle: "continuous",
+    rotators: [],
+    planetBonus: "two",
+    bonusPlanets: { green: [{ square }], red: [] },
+    advancedBonuses: [],
+    energy: { green: 0, red: 0 },
+    lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+    chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+    outOfTime: { green: false, red: false },
+    combatEnabled: true,
+    scoring: "simple",
+    playerMatching: "off",
+  };
+}
+
 describe("Board", () => {
   it("renders 225 gridcells in 15 rows", () => {
     render(<Board session={startingSession} onIntent={noop} />);
@@ -351,6 +383,79 @@ describe("Board", () => {
         />,
       );
       expect(container.querySelectorAll(".board-square--glow")).toHaveLength(0);
+    });
+  });
+
+  describe("onHoverSquare (reporting a hover on a bonus planet, steal.md §10, rules.md §3.4)", () => {
+    it("reports the square entering a planet the bonus panel draws, and undefined leaving it", () => {
+      const bonusSquare = PLANETS[0];
+      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const onHoverSquare = vi.fn();
+
+      render(
+        <Board
+          session={session}
+          onIntent={noop}
+          onHoverSquare={onHoverSquare}
+        />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(bonusSquare)}, planet`,
+      });
+
+      fireEvent.pointerEnter(cell.querySelector(".board-square")!);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(bonusSquare);
+
+      fireEvent.pointerLeave(cell.querySelector(".board-square")!);
+      expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
+    });
+
+    it("reports nothing for a planet the bonus panel does not draw", () => {
+      const bonusSquare = PLANETS[0];
+      const otherPlanet = PLANETS[1];
+      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const onHoverSquare = vi.fn();
+
+      render(
+        <Board
+          session={session}
+          onIntent={noop}
+          onHoverSquare={onHoverSquare}
+        />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(otherPlanet)}, planet`,
+      });
+
+      fireEvent.pointerEnter(cell.querySelector(".board-square")!);
+      expect(onHoverSquare).not.toHaveBeenCalled();
+    });
+
+    it("ignores a touch-type enter, so no glow sticks after the tap", () => {
+      const bonusSquare = PLANETS[0];
+      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const onHoverSquare = vi.fn();
+
+      render(
+        <Board
+          session={session}
+          onIntent={noop}
+          onHoverSquare={onHoverSquare}
+        />,
+      );
+      const cell = screen.getByRole("gridcell", {
+        name: `${squareName(bonusSquare)}, planet`,
+      });
+      const event = createEvent.pointerEnter(
+        cell.querySelector(".board-square")!,
+      );
+      Object.defineProperty(event, "pointerType", {
+        value: "touch",
+        configurable: true,
+      });
+
+      fireEvent(cell.querySelector(".board-square")!, event);
+      expect(onHoverSquare).not.toHaveBeenCalled();
     });
   });
 

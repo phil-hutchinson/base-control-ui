@@ -124,11 +124,13 @@ export function App() {
                 session={session}
                 onIntent={dispatch}
                 glowSquare={glowSquare}
+                onHoverSquare={onHoverSquare}
               />
             </div>
             <div className="app__clocks">
               <PlanetBonusPanel
                 state={session.state}
+                glowSquare={glowSquare}
                 onHoverSquare={onHoverSquare}
               />
               <ClockRegion

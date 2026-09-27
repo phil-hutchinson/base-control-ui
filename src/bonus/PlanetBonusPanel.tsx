@@ -18,9 +18,14 @@
 //
 // Every cell reports the pointer hovering and leaving it through
 // `onHoverSquare`, so `App` can light the matching square on the board — a
-// pointer-only affordance, unrelated to the panel staying `aria-hidden`.
+// pointer-only affordance, unrelated to the panel staying `aria-hidden`. The
+// link runs the other way too: `glowSquare` is the square `Board` reports
+// the player hovering there (`App`'s lifted `useBonusHoverGlow` state), and
+// a cell drawing that same planet glows here as well, in the board's own
+// halo idiom. A planet shared by both classic rows glows in both, since
+// each row's cell compares against `glowSquare` on its own.
 
-import { useMemo, type PointerEvent } from "react";
+import { useMemo } from "react";
 import type { PlanetArt } from "../board/planetArt";
 import { planetArrangement, planetForSquare } from "../board/planetPlacement";
 import { squareName, type Square } from "../rules/board";
@@ -29,22 +34,12 @@ import type { BonusPlanetEntry, GameState } from "../rules/gameState";
 import { planetBonusPoints } from "../rules/planetBonus";
 import { AdvancedBonusCell } from "./AdvancedBonusCell";
 import { bonusBadgeState } from "./bonusBadge";
+import { isTouchPointer } from "./pointerHover";
 import { PlanetBonusCell } from "./PlanetBonusCell";
 import "./PlanetBonusPanel.css";
 
 /** Green above red, matching the clocks' own order in both orientations. */
 const SIDES: readonly Side[] = ["green", "red"];
-
-/**
- * A touch tap fires a pointer-enter event too, which would otherwise leave a
- * glow stuck on the board until the player taps elsewhere. `pointerType` is
- * absent in jsdom's synthetic events, so a missing value is treated as a
- * mouse (or, on real touch hardware, a pen — which does report "pen" and
- * stays a hover affordance).
- */
-function isTouchPointer(event: PointerEvent): boolean {
-  return event.pointerType === "touch";
-}
 
 /**
  * Each row's heading, so a player reads whose three planets a row is rather
@@ -63,6 +58,7 @@ interface BonusCellProps {
   readonly arrangement: ReadonlyMap<string, PlanetArt>;
   readonly amount: number;
   readonly plyNumber: number;
+  readonly glowSquare?: Square;
   readonly onHoverSquare?: (square: Square | undefined) => void;
 }
 
@@ -72,6 +68,7 @@ function BonusCell({
   arrangement,
   amount,
   plyNumber,
+  glowSquare,
   onHoverSquare,
 }: BonusCellProps) {
   const art = planetForSquare(arrangement, entry.square);
@@ -81,10 +78,17 @@ function BonusCell({
     );
   }
   const badge = bonusBadgeState(entry.claimedOnPly, plyNumber);
+  const glowing =
+    glowSquare !== undefined &&
+    squareName(glowSquare) === squareName(entry.square);
 
   return (
     <div
-      className="planet-bonus-panel__cell"
+      className={
+        glowing
+          ? "planet-bonus-panel__cell planet-bonus-panel__cell--glow"
+          : "planet-bonus-panel__cell"
+      }
       onPointerEnter={(event) => {
         if (!isTouchPointer(event)) {
           onHoverSquare?.(entry.square);
@@ -109,6 +113,12 @@ export interface PlanetBonusPanelProps {
   /** The session's game state: read for the setting, the deal, the ply number and the opening seed. */
   readonly state: GameState;
   /**
+   * The square, if any, to draw glowing here — because the player is
+   * hovering that planet on the board (`App`'s lifted hover state). Omit to
+   * draw the panel with no glow (e.g. in the Quick Guide diagram).
+   */
+  readonly glowSquare?: Square;
+  /**
    * Reports the square the pointer is over as it enters a cell, and
    * `undefined` as it leaves — so `App` can light the matching board
    * square. Omit to draw the panel with no hover reporting (e.g. in the
@@ -119,6 +129,7 @@ export interface PlanetBonusPanelProps {
 
 export function PlanetBonusPanel({
   state,
+  glowSquare,
   onHoverSquare,
 }: PlanetBonusPanelProps) {
   const arrangement = useMemo(
@@ -144,10 +155,17 @@ export function PlanetBonusPanel({
                 `PlanetBonusPanel: ${squareName(entry.square)} is not a planet square in this arrangement`,
               );
             }
+            const glowing =
+              glowSquare !== undefined &&
+              squareName(glowSquare) === squareName(entry.square);
             return (
               <div
                 key={squareName(entry.square)}
-                className="planet-bonus-panel__advanced-cell"
+                className={
+                  glowing
+                    ? "planet-bonus-panel__advanced-cell planet-bonus-panel__advanced-cell--glow"
+                    : "planet-bonus-panel__advanced-cell"
+                }
                 onPointerEnter={(event) => {
                   if (!isTouchPointer(event)) {
                     onHoverSquare?.(entry.square);
@@ -196,6 +214,7 @@ export function PlanetBonusPanel({
                 arrangement={arrangement}
                 amount={amount}
                 plyNumber={state.plyNumber}
+                glowSquare={glowSquare}
                 onHoverSquare={onHoverSquare}
               />
             ))}

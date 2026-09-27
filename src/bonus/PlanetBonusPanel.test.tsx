@@ -270,6 +270,74 @@ describe("PlanetBonusPanel", () => {
     expect(onHoverSquare).not.toHaveBeenCalled();
   });
 
+  it("glows exactly the cell whose square matches glowSquare, and none by default", () => {
+    const base = startingGameState(SEED, { planetBonus: "three" });
+    // Disjoint sets, unlike the real (random) deal, so exactly one cell in
+    // the whole panel can ever match a given glowSquare.
+    const state: typeof base = {
+      ...base,
+      bonusPlanets: {
+        green: [
+          { square: PLANETS[0] },
+          { square: PLANETS[1] },
+          { square: PLANETS[2] },
+        ],
+        red: [
+          { square: PLANETS[3] },
+          { square: PLANETS[4] },
+          { square: PLANETS[5] },
+        ],
+      },
+    };
+
+    const { container: plain } = render(<PlanetBonusPanel state={state} />);
+    expect(
+      plain.querySelectorAll(".planet-bonus-panel__cell--glow"),
+    ).toHaveLength(0);
+    cleanup();
+
+    const { container } = render(
+      <PlanetBonusPanel state={state} glowSquare={PLANETS[4]} />,
+    );
+    const glowing = container.querySelectorAll(
+      ".planet-bonus-panel__cell--glow",
+    );
+    expect(glowing).toHaveLength(1);
+    expect(
+      container.querySelectorAll(".planet-bonus-panel__row--red")[0]
+        .children[1],
+    ).toHaveClass("planet-bonus-panel__cell--glow");
+  });
+
+  it("glows a planet shared by both sides in both rows", () => {
+    const base = startingGameState(SEED, { planetBonus: "three" });
+    const sharedSquare = PLANETS[0];
+    const state: typeof base = {
+      ...base,
+      bonusPlanets: {
+        green: [
+          { square: sharedSquare },
+          { square: PLANETS[1] },
+          { square: PLANETS[2] },
+        ],
+        red: [
+          { square: sharedSquare },
+          { square: PLANETS[3] },
+          { square: PLANETS[4] },
+        ],
+      },
+    };
+
+    const { container } = render(
+      <PlanetBonusPanel state={state} glowSquare={sharedSquare} />,
+    );
+
+    const glowing = container.querySelectorAll(
+      ".planet-bonus-panel__cell--glow",
+    );
+    expect(glowing).toHaveLength(2);
+  });
+
   describe("under advanced (steal.md §10)", () => {
     function withAdvancedBonuses(
       first: readonly [Square, AdvancedBonusKind],
@@ -494,6 +562,30 @@ describe("PlanetBonusPanel", () => {
       firePointerEnter(cells[1], "touch");
 
       expect(onHoverSquare).not.toHaveBeenCalled();
+    });
+
+    it("glows exactly the slot whose square matches glowSquare, and none by default", () => {
+      const state = withAdvancedBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+
+      const { container: plain } = render(<PlanetBonusPanel state={state} />);
+      expect(
+        plain.querySelectorAll(".planet-bonus-panel__advanced-cell--glow"),
+      ).toHaveLength(0);
+      cleanup();
+
+      const { container } = render(
+        <PlanetBonusPanel state={state} glowSquare={PLANETS[1]} />,
+      );
+      const cells = container.querySelectorAll(
+        ".planet-bonus-panel__advanced-cell",
+      );
+      expect(cells[1]).toHaveClass("planet-bonus-panel__advanced-cell--glow");
+      expect(cells[0]).not.toHaveClass(
+        "planet-bonus-panel__advanced-cell--glow",
+      );
     });
   });
 });
