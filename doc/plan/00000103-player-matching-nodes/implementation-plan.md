@@ -441,7 +441,17 @@ addition to the step's own checks.
 
 ### Step 1 — The ruleset goes to 0.40: player-matching nodes
 
-Status: pending
+Status: committed
+
+Notes: Bumped `rules.md` to 0.40 and `RULES_VERSION` to match, added the
+0.40 changelog entry ahead of 0.39, and added `steal.md` §9
+"Player-matching nodes" stating the off/double/required choice, the fixed
+match, double's and required's pricing (with the story's worked example),
+the planet-bonus and no-subtraction notes, and the app's colour
+presentation — plus the one-sentence pointers from `steal.md` §8's closing
+paragraph, `rules.md` §8.4 and `rules.md` §10's pre-play list. No deviation
+from the plan; `rules.md` §1 and §9 were checked per the step's instructions
+and left unchanged, as the plan anticipated.
 
 Edit the ruleset, bump `rules.md` to **0.40**, bump `RULES_VERSION` in
 `src/rules/rulesVersion.ts` to `"0.40"`, and add **one**
