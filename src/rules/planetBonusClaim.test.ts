@@ -25,6 +25,8 @@ import {
 } from "./nodes";
 import { type NodePlaystyle } from "./nodePlaystyle";
 import { DEFAULT_PLANET_BONUS, type PlanetBonusSetting } from "./planetBonus";
+import type { PlayerMatchingSetting } from "./playerMatching";
+import type { NodeSignal } from "./steal";
 
 function ship(
   id: ShipId,
@@ -46,12 +48,22 @@ function belowSquare(square: Square): Square {
 }
 
 function nodeStatuses(
-  states: Readonly<Record<string, NodeState | readonly [NodeState, number]>>,
+  states: Readonly<
+    Record<
+      string,
+      | NodeState
+      | readonly [NodeState, number]
+      | readonly [NodeState, number, NodeSignal]
+    >
+  >,
 ): Record<string, NodeStatus> {
   return Object.fromEntries(
     Object.entries(states).map(([name, entry]) => {
-      const [state, level] = Array.isArray(entry) ? entry : [entry, 0];
-      return [name, { state, level }];
+      const [state, level, signal] = Array.isArray(entry) ? entry : [entry, 0];
+      return [
+        name,
+        { state, level, ...(signal !== undefined ? { signal } : {}) },
+      ];
     }),
   );
 }
@@ -63,13 +75,21 @@ function entry(square: Square, claimedOnPly?: number): BonusPlanetEntry {
 function buildState(config: {
   ships: readonly Ship[];
   sideToMove?: "green" | "red";
-  nodes?: Readonly<Record<string, NodeState | readonly [NodeState, number]>>;
+  nodes?: Readonly<
+    Record<
+      string,
+      | NodeState
+      | readonly [NodeState, number]
+      | readonly [NodeState, number, NodeSignal]
+    >
+  >;
   plyNumber?: number;
   chargedNodeCount?: ChargedNodeCount;
   energy?: { green: number; red: number };
   nodePlaystyle?: NodePlaystyle;
   planetBonus?: PlanetBonusSetting;
   bonusPlanets?: Readonly<Record<"green" | "red", readonly BonusPlanetEntry[]>>;
+  playerMatching?: PlayerMatchingSetting;
 }): GameState {
   return {
     ships: config.ships,
@@ -92,7 +112,7 @@ function buildState(config: {
     outOfTime: { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
-    playerMatching: "off",
+    playerMatching: config.playerMatching ?? "off",
   };
 }
 
@@ -371,6 +391,43 @@ describe("a move that lands on a bonus planet", () => {
     );
     expect(claimIndex).toBeGreaterThanOrEqual(0);
     expect(rotationIndex).toBeGreaterThan(claimIndex);
+  });
+
+  it("under REQUIRED player-matching nodes, still pays a side withheld from its node energy (steal.md §9)", () => {
+    const [planet] = PLANETS;
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", belowSquare(planet)),
+        // Green holds a charged node, but not its own (signal 4 in a
+        // five-node game) — REQUIRED withholds green's node energy this
+        // turn, but that must not touch the planet's claim below.
+        ship("green-2", "green", "F10"),
+        ship("red-1", "red", "A1"),
+      ],
+      nodePlaystyle: "steal",
+      chargedNodeCount: 5,
+      playerMatching: "required",
+      nodes: { F10: ["charged", 0, 0] },
+      planetBonus: "three",
+      bonusPlanets: { green: [entry(planet)], red: [] },
+    });
+
+    const result = applyMove(state, "green-1", planet);
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.effects).toContainEqual({
+      type: "planet-bonus-claimed",
+      side: "green",
+      square: planet,
+      amount: 3,
+    });
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "energy-collected" }),
+    );
+    expect(result.state.energy.green).toBe(3);
   });
 });
 

@@ -52,7 +52,7 @@ import type { Square } from "./board";
 import { squareName } from "./board";
 import { isPlanet } from "./planets";
 import { type NodeChargedEffect, runCharging } from "./charging";
-import { chargedNodesHeldBy, energyForNodesHeld } from "./energy";
+import { turnCollection } from "./energy";
 import type { Side, ShipId } from "./fleet";
 import {
   type GameState,
@@ -99,6 +99,12 @@ export interface EnergyCollectedEffect {
   readonly amount: number;
   readonly newTotal: number;
   readonly squares: readonly Square[];
+  /**
+   * The square of the side's own matched node, present only under the
+   * player-matching nodes setting DOUBLE (steal.md §9) when that node was
+   * held and so counted twice toward `amount`.
+   */
+  readonly ownNodeSquare?: Square;
 }
 
 /** A charged node's countdown ran out and it went depleted (§8.6 step 3, §8.3). */
@@ -274,15 +280,18 @@ export function runEndOfTurn(
   let workingState: GameState = { ...state, ships };
 
   // Step 2: the moving side collects what §8.4 prices the charged nodes it
-  // holds right now, at this game's chosen scoring setting. Nothing
-  // subtracts energy — a depleted node traps the ship standing on it (§8.1,
-  // §8.5) rather than costing its owner energy. A zero payout is not an
-  // event — no effect, no other state change — so a player standing on
-  // nothing does not read as having had something happen to them.
-  const heldSquares = chargedNodesHeldBy(workingState, side);
-  const amount = energyForNodesHeld(heldSquares.length, workingState.scoring);
-  if (amount > 0) {
-    const newTotal = workingState.energy[side] + amount;
+  // holds right now, at this game's chosen scoring setting — and, under
+  // steal, whatever the player-matching nodes setting (steal.md §9) makes
+  // of that count. Nothing subtracts energy — a depleted node traps the
+  // ship standing on it (§8.1, §8.5) rather than costing its owner energy —
+  // and REQUIRED withholding a turn's collection is the same fact: nothing
+  // is taken away, only not paid. A zero payout is not an event — no
+  // effect, no other state change — so a player standing on nothing, or
+  // withheld under REQUIRED, does not read as having had something happen
+  // to them.
+  const collection = turnCollection(workingState, side);
+  if (collection.amount > 0) {
+    const newTotal = workingState.energy[side] + collection.amount;
     workingState = {
       ...workingState,
       energy: { ...workingState.energy, [side]: newTotal },
@@ -290,9 +299,13 @@ export function runEndOfTurn(
     effects.push({
       type: "energy-collected",
       side,
-      amount,
+      amount: collection.amount,
       newTotal,
-      squares: heldSquares,
+      squares: collection.heldSquares,
+      ...(workingState.playerMatching === "double" &&
+      collection.ownNodeSquare !== undefined
+        ? { ownNodeSquare: collection.ownNodeSquare }
+        : {}),
     });
   }
 

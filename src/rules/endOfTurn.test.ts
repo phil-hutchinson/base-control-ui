@@ -34,6 +34,7 @@ import {
   type NodeState,
 } from "./nodes";
 import type { ScoringSetting } from "./scoring";
+import type { NodeSignal } from "./steal";
 
 function ship(
   id: ShipId,
@@ -1664,5 +1665,99 @@ describe("runEndOfTurn — steal runs only power and energy (steal.md §8)", () 
     expect(result.state.rotators).toEqual([]);
     expect(result.state.randomSeed).toBe(state.randomSeed);
     expect(result.state.energy.green).toBe(1);
+  });
+});
+
+describe("runEndOfTurn — player-matching nodes (steal.md §9)", () => {
+  // A five-node steal game: red is matched to signal 3, green to signal 4.
+  function stealState(config: {
+    playerMatching: "double" | "required";
+    nodes: Readonly<Record<string, readonly [NodeState, NodeSignal]>>;
+    ships: readonly Ship[];
+    scoring?: ScoringSetting;
+  }): GameState {
+    return {
+      ships: config.ships,
+      nodes: Object.fromEntries(
+        Object.entries(config.nodes).map(([name, [state, signal]]) => [
+          name,
+          { state, level: 0, signal },
+        ]),
+      ),
+      sideToMove: "red",
+      plyNumber: 1,
+      randomSeed: 4242,
+      openingSeed: 4242,
+      nodePlaystyle: "steal",
+      rotators: [],
+      planetBonus: "off",
+      bonusPlanets: { green: [], red: [] },
+      energy: { green: 0, red: 0 },
+      lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+      chargedNodeCount: 5,
+      outOfTime: { green: false, red: false },
+      combatEnabled: true,
+      scoring: config.scoring ?? "bonus",
+      playerMatching: config.playerMatching,
+    };
+  }
+
+  it("DOUBLE: collects for the own node counted twice, and names it on the effect", () => {
+    const state = stealState({
+      playerMatching: "double",
+      nodes: { C3: ["charged", 1], E5: ["charged", 3] },
+      ships: [ship("red-1", "red", "C3"), ship("red-2", "red", "E5")],
+    });
+
+    const result = runEndOfTurn(state);
+
+    const collected = result.effects.find(
+      (effect) => effect.type === "energy-collected",
+    );
+    expect(collected).toEqual({
+      type: "energy-collected",
+      side: "red",
+      amount: 6,
+      newTotal: 6,
+      squares: [squareFromName("C3"), squareFromName("E5")],
+      ownNodeSquare: squareFromName("E5"),
+    });
+    expect(result.state.energy.red).toBe(6);
+  });
+
+  it("REQUIRED: withholds the whole turn and raises no energy-collected effect", () => {
+    const state = stealState({
+      playerMatching: "required",
+      nodes: { B2: ["charged", 0], C3: ["charged", 1] },
+      ships: [ship("red-1", "red", "B2"), ship("red-2", "red", "C3")],
+    });
+
+    const result = runEndOfTurn(state);
+
+    expect(
+      result.effects.some((effect) => effect.type === "energy-collected"),
+    ).toBe(false);
+    expect(result.state.energy.red).toBe(0);
+  });
+
+  it("REQUIRED: collects as usual once the own node is held, with no own-node field", () => {
+    const state = stealState({
+      playerMatching: "required",
+      nodes: { B2: ["charged", 0], E5: ["charged", 3] },
+      ships: [ship("red-1", "red", "B2"), ship("red-2", "red", "E5")],
+    });
+
+    const result = runEndOfTurn(state);
+
+    const collected = result.effects.find(
+      (effect) => effect.type === "energy-collected",
+    );
+    expect(collected).toEqual({
+      type: "energy-collected",
+      side: "red",
+      amount: 3,
+      newTotal: 3,
+      squares: [squareFromName("B2"), squareFromName("E5")],
+    });
   });
 });

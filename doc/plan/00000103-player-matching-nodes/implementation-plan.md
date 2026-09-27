@@ -586,7 +586,28 @@ behaviour untouched); typecheck, lint, format:check clean.
 
 ### Step 3 — DOUBLE and REQUIRED price a turn
 
-Status: pending
+Status: committed
+
+Notes: Added `turnCollection` to `src/rules/energy.ts` per D4, returning the
+held squares, whether the side stands on its own matched node (via
+`matchedSignalForSide`, only when `playerMatching !== "off"`), the own-node
+square when it is held, the counted nodes, whether the turn is withheld, and
+the amount (`energyForNodesHeld` unchanged). `endOfTurn.ts` step 2 now reads
+`turnCollection` instead of `chargedNodesHeldBy` plus its own arithmetic, and
+`EnergyCollectedEffect` gained the optional `ownNodeSquare` field, set only
+under DOUBLE when the own node was held and counted twice; REQUIRED's
+withholding raises no effect, exactly as a zero payout already did. Added
+`turnCollection` unit tests in `energy.test.ts` (DOUBLE counting the own node
+twice and naming it, the opponent's own node counting once, the own node
+alone, REQUIRED withheld/not-withheld/holding-nothing, OFF unchanged, and one
+case each for four- and three-node games), sequence tests in
+`endOfTurn.test.ts` (DOUBLE's effect carrying `ownNodeSquare` and the correct
+total, REQUIRED withheld raising no `energy-collected` effect, REQUIRED paid
+once the own node is held), and a planet-bonus test in
+`planetBonusClaim.test.ts` confirming a REQUIRED-withheld side's bonus planet
+still pays on landing. No deviation from the plan. `npm test` (81 files, 1684
+tests, up from 1671), `npm run typecheck`, `npm run lint` and
+`npm run format:check` all clean.
 
 1. In `src/rules/energy.ts`, add D4's function (doc comment citing rules.md
    §8.4 and steal.md §9). It reads the side's matched signal (Step 2's
