@@ -841,7 +841,24 @@ chose them.
 
 ### Step 7 — The live region and the HUD sentence
 
-Status: pending
+Status: committed
+
+Notes: `energyCollectedClause` names `EnergyCollectedEffect.ownNodeSquare`
+when present — "its own node at D4" when it is the only square held, plus
+", counted twice"; alongside other squares, the usual "N nodes at ..." plus
+", its own node counting twice" — before "and now has". `scoreSentence` now
+reads `turnCollection` instead of `chargedNodesHeldBy` and appends ", counting
+as \<n\>" under DOUBLE when standing on its own node, or ", none paying
+without its own node" when REQUIRED withholds; every other case (OFF, DOUBLE
+without the own node, REQUIRED once the own node is held) is byte-for-byte
+unchanged. Added the D6 wordings as new tests in `announcements.test.ts`
+(two `energyCollectedClause` cases via `announcementFor`, and four
+`scoreSentence` cases via an extended `stateWith` helper taking
+`nodePlaystyle`, `chargedNodeCount`, `scoring`, `playerMatching` and
+per-square signals); all existing OFF-wording tests are untouched and still
+pass. No deviation from the plan. `npm test` (81 files, 1711 tests, up from
+1705), `npm run typecheck`, `npm run lint` and `npm run format:check` all
+clean.
 
 `src/board/announcements.ts`, per D6:
 
