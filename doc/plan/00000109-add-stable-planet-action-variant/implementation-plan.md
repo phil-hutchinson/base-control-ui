@@ -326,7 +326,15 @@ tests.
 
 ### Step 1 — The ruleset goes to 0.42
 
-Status: pending
+Status: committed
+
+Notes: rules.md (§§1, 3.1, 3.4 retitled "Planet bonus and planet activity",
+4.1, 7.1, 8.4, 8.6, 10) and steal.md (§§2, 3, 4, 9, 10 retitled "Planet
+activity") updated, version 0.42 in rules.md and `RULES_VERSION`, one 0.42
+changelog entry; point-table rows untouched. No deviations. Inspection: the
+"advanced" grep over rules.md/steal.md returns nothing; `## 0.42` appears
+once in changelog.md; the default/standard grep finds only steal.md §9's
+existing "no default" line.
 
 Edit `doc/ruleset/rules.md` and `doc/ruleset/steal.md`; bump the version
 line in `rules.md` to **0.42** and `RULES_VERSION` in
