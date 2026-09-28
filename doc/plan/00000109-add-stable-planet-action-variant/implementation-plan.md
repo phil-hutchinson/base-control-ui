@@ -547,7 +547,20 @@ copy, header comment and diagram name that Step 5 owns.
 
 ### Step 3 — Stable
 
-Status: pending
+Status: committed
+
+Notes: `"stable"` added to `PlanetActivitySetting` (off, stable, race) and
+the start screen; `resolveActivityBonusClaim` reads `planetActivity`, skips
+the survivor's draw under stable and now throws when activity is off; the
+header states both seed orders; ply.ts/PlanetBonusPanel comments and
+tech-notes follow; all planned tests added (claim tests per kind with
+one-step-fewer seed comparison against race and an exact draw check, fight
+block parametrised over race/stable, fullGame and seededReplay sweeps under
+both). Small deviations: `activityBonus.test.ts`'s `stateFor` had
+`planetActivity: "off"` from Step 2 and now says `"race"` (off would throw),
+the seeded-replay harness/policy were renamed from "race" to
+activity/bonus names, and its two-hundred-round non-vacuous run stays
+race-only (its floors were measured under race).
 
 Add `"stable"` to `PlanetActivitySetting`; `PLANET_ACTIVITY_SETTINGS`
 becomes off, stable, race (the start screen's order). Add STABLE to

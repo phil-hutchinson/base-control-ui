@@ -12,7 +12,7 @@
 // bonuses, slot 0 left and slot 1 right (`GameState.activityBonuses`), each
 // as an `ActivityBonusCell` — the planet's own artwork with its kind's
 // symbol beneath it. Reading the pair straight off `state.activityBonuses`
-// in slot order is what keeps a claim's redraw showing the survivor in its
+// in slot order is what keeps a claim showing the survivor in its
 // own slot and the new bonus in the other one, with no component state of
 // its own.
 //

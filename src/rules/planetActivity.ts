@@ -11,21 +11,23 @@ import type { NodePlaystyle } from "./nodePlaystyle";
 
 /**
  * A planet activity setting (steal.md §10): `"off"` puts no bonus on the
- * board; `"race"` puts two contested bonuses of six possible kinds on it,
- * and when one is claimed the one left standing changes kind. OFF / RACE are
- * the start screen's wording for these values and live on the start screen,
- * not here. Offered only under the steal node playstyle — see
+ * board; `"stable"` and `"race"` both put two contested bonuses of six
+ * possible kinds on it, and when one is claimed a new one replaces it — under
+ * stable the one left standing keeps its kind, under race it changes kind.
+ * OFF / STABLE / RACE are the start screen's wording for these values and
+ * live on the start screen, not here. Offered only under the steal node playstyle — see
  * `resolvePlanetActivity`.
  */
-export type PlanetActivitySetting = "off" | "race";
+export type PlanetActivitySetting = "off" | "stable" | "race";
 
 /**
  * The offered planet activity settings, in the order the start screen
- * renders them: off first. Which one the app preselects is independent of
+ * renders them: off, stable, race. Which one the app preselects is independent of
  * the render order — see `DEFAULT_PLANET_ACTIVITY`.
  */
 export const PLANET_ACTIVITY_SETTINGS: readonly PlanetActivitySetting[] = [
   "off",
+  "stable",
   "race",
 ];
 

@@ -94,6 +94,7 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
 /** The Planet activity group's labels, mirroring `StartScreen`'s own map. */
 const PLANET_ACTIVITY_SETTING_LABELS: Record<PlanetActivitySetting, string> = {
   off: "OFF",
+  stable: "STABLE",
   race: "RACE",
 };
 
@@ -494,10 +495,15 @@ describe("StartScreen", () => {
     }
   });
 
-  it("renders the planet activity group under STEAL, offering OFF, RACE in order, and no planet bonus group", () => {
+  it("renders the planet activity group under STEAL, offering OFF, STABLE, RACE in order, and no planet bonus group", () => {
     renderStartScreen({ nodePlaystyle: "steal" });
 
     const group = screen.getByRole("group", { name: "Planet activity" });
+    expect(
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => (radio as HTMLInputElement).labels?.[0]?.textContent),
+    ).toEqual(["OFF", "STABLE", "RACE"]);
     expect(
       within(group)
         .getAllByRole("radio")
@@ -523,6 +529,31 @@ describe("StartScreen", () => {
     const group = screen.getByRole("group", { name: "Planet activity" });
     expect(within(group).getByRole("radio", { name: "RACE" })).toBeChecked();
     expect(within(group).getByRole("radio", { name: "OFF" })).not.toBeChecked();
+  });
+
+  it("checks STABLE when chosen under STEAL", () => {
+    renderStartScreen({ nodePlaystyle: "steal", planetActivity: "stable" });
+
+    const group = screen.getByRole("group", { name: "Planet activity" });
+    expect(within(group).getByRole("radio", { name: "STABLE" })).toBeChecked();
+    expect(
+      within(group).getByRole("radio", { name: "RACE" }),
+    ).not.toBeChecked();
+    expect(within(group).getByRole("radio", { name: "OFF" })).not.toBeChecked();
+  });
+
+  it("calls the planet activity change handler with stable when STABLE is chosen", async () => {
+    const user = userEvent.setup();
+    const { onPlanetActivityChange, onPlanetBonusChange } = renderStartScreen({
+      nodePlaystyle: "steal",
+      planetActivity: "off",
+    });
+
+    const group = screen.getByRole("group", { name: "Planet activity" });
+    await user.click(within(group).getByRole("radio", { name: "STABLE" }));
+
+    expect(onPlanetActivityChange).toHaveBeenCalledExactlyOnceWith("stable");
+    expect(onPlanetBonusChange).not.toHaveBeenCalled();
   });
 
   it("calls the planet activity change handler with race when RACE is chosen, and not the planet bonus handler", async () => {

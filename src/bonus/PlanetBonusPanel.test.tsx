@@ -378,6 +378,28 @@ describe("PlanetBonusPanel", () => {
       ]);
     });
 
+    it("renders a stable game's pair exactly as it renders race's", () => {
+      const race = withActivityBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+      const stable: GameState = { ...race, planetActivity: "stable" };
+
+      const { container: raceContainer } = render(
+        <PlanetBonusPanel state={race} />,
+      );
+      const raceMarkup = raceContainer.innerHTML;
+      cleanup();
+      const { container: stableContainer } = render(
+        <PlanetBonusPanel state={stable} />,
+      );
+
+      expect(
+        stableContainer.querySelectorAll(".planet-bonus-panel__activity-cell"),
+      ).toHaveLength(2);
+      expect(stableContainer.innerHTML).toBe(raceMarkup);
+    });
+
     it("is hidden from the accessibility tree", () => {
       const state = withActivityBonuses(
         [PLANETS[0], "large-points"],

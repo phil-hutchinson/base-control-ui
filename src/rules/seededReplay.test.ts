@@ -64,9 +64,10 @@
 // bonuses' planets and kinds, and every claim draws its own effect's steps
 // (none for a points kind or Fuel, one per node for Additional nodes or
 // Node scramble), then one for the survivor's new kind, one for the new
-// bonus's planet and one for its kind. A separate harness below plays a
-// steal game under race with a bonus-racing policy and compares its
-// sequence of `activity-bonus-claimed` effects the same way.
+// bonus's planet and one for its kind — under stable, the same without the
+// survivor's draw. A separate harness below plays a steal game under stable
+// and under race with a bonus-seeking policy and compares its sequence of
+// `activity-bonus-claimed` effects the same way.
 
 import { describe, expect, it } from "vitest";
 import {
@@ -704,8 +705,8 @@ function isActivityBonusPlanet(state: GameState, square: Square): boolean {
 }
 
 /**
- * An attack-first, bonus-racing policy for a steal game under race
- * planet bonuses (steal.md §10): the first ship, in fleet order, with a
+ * An attack-first, bonus-seeking policy for a steal game under planet
+ * activity (steal.md §10): the first ship, in fleet order, with a
  * legal attack takes it; failing that, the first ship, in
  * fleet-then-destination order, with a legal move onto one of the two
  * current bonus planets takes it; failing that, the same for a move onto a
@@ -713,7 +714,7 @@ function isActivityBonusPlanet(state: GameState, square: Square): boolean {
  * the nearest prospective node; failing that, the first ship with any legal
  * move; failing that, there is nothing to do and the pass guard handles it.
  */
-function chooseStealRacePly(state: GameState): PlyChoice | undefined {
+function chooseStealBonusPly(state: GameState): PlyChoice | undefined {
   for (const ship of state.ships) {
     const targets = legalTargets(state, ship.id);
     if (targets.length > 0) {
@@ -770,7 +771,8 @@ function chooseStealRacePly(state: GameState): PlyChoice | undefined {
 /**
  * One `activity-bonus-claimed` effect, reduced to the fields worth comparing
  * across a replay: the claiming side, the kind claimed, the planet it was
- * claimed on, and the survivor's and the new bonus's kinds — enough to prove
+ * claimed on, and the survivor's kind after the claim and the new bonus's
+ * kind — enough to prove
  * a replay reproduces every draw the claim made, without repeating the
  * effect's own square-list fields.
  */
@@ -778,6 +780,7 @@ interface ActivityBonusEvent {
   readonly side: string;
   readonly kind: string;
   readonly square: string;
+  readonly survivorOldKind: string;
   readonly survivorNewKind: string;
   readonly newBonusKind: string;
 }
@@ -793,6 +796,7 @@ function activityBonusEvents(
         side: effect.side,
         kind: effect.kind,
         square: squareName(effect.square),
+        survivorOldKind: effect.survivor.oldKind,
         survivorNewKind: effect.survivor.newKind,
         newBonusKind: effect.newBonus.kind,
       });
@@ -801,7 +805,7 @@ function activityBonusEvents(
   return events;
 }
 
-interface PlayedStealRaceGame {
+interface PlayedStealActivityGame {
   readonly finalState: GameState;
   readonly openingBoard: Readonly<Record<string, GameState["nodes"][string]>>;
   readonly events: readonly StealNodeEvent[];
@@ -810,16 +814,17 @@ interface PlayedStealRaceGame {
 }
 
 /**
- * Plays a whole steal game under race planet activity from `seed` at
- * `lengthInRounds` using `chooseStealRacePly`, and records the opening
+ * Plays a whole steal game under `planetActivity` from `seed` at
+ * `lengthInRounds` using `chooseStealBonusPly`, and records the opening
  * board the seed dealt (steal.md §7, §10) before play began, every
  * `node-claimed` and `node-abandoned` event and every `activity-bonus-claimed`
  * event the game raised, in order, and how many fights happened.
  */
-function playSeededStealRaceGame(
+function playSeededStealActivityGame(
+  planetActivity: "stable" | "race",
   seed: number,
   lengthInRounds: number,
-): PlayedStealRaceGame {
+): PlayedStealActivityGame {
   let state = startingGameState(seed, {
     lengthInRounds,
     combatEnabled: true,
@@ -827,7 +832,7 @@ function playSeededStealRaceGame(
     chargedNodeCount: 5,
     scoring: "simple",
     nodePlaystyle: "steal",
-    planetActivity: "race",
+    planetActivity,
   });
   const openingBoard = state.nodes;
   const events: StealNodeEvent[] = [];
@@ -838,12 +843,12 @@ function playSeededStealRaceGame(
   while (!isGameOver(state)) {
     if (pliesApplied >= MAX_PLIES) {
       throw new Error(
-        `seeded steal + race replay game exceeded ${MAX_PLIES} plies without ending — likely a regression`,
+        `seeded steal + ${planetActivity} replay game exceeded ${MAX_PLIES} plies without ending — likely a regression`,
       );
     }
     pliesApplied += 1;
 
-    const choice = chooseStealRacePly(state);
+    const choice = chooseStealBonusPly(state);
 
     if (choice === undefined) {
       const { state: nextState } = applyPassGuard(state);
@@ -882,9 +887,10 @@ function playSeededStealRaceGame(
   return { finalState: state, openingBoard, events, bonusEvents, fightCount };
 }
 
-describe("a seeded steal + race game replays its opening board, its claim/abandon sequence and its bonus claims exactly (steal.md §10)", () => {
+describe("a seeded steal game under planet activity replays its opening board, its claim/abandon sequence and its bonus claims exactly (steal.md §10)", () => {
   it("produces plenty of claims and bonus claims of every kind, over a two-hundred-round game — the run is not vacuous", () => {
-    const { events, bonusEvents, fightCount } = playSeededStealRaceGame(
+    const { events, bonusEvents, fightCount } = playSeededStealActivityGame(
+      "race",
       20260819,
       200,
     );
@@ -908,22 +914,38 @@ describe("a seeded steal + race game replays its opening board, its claim/abando
     expect(claimedKinds.size).toBe(6);
   });
 
-  it("replays the same opening board, the same claim/abandon sequence, the same bonus-claim sequence and the same final state from the same seed", () => {
-    const first = playSeededStealRaceGame(20260819, 40);
-    const second = playSeededStealRaceGame(20260819, 40);
+  it.each(["stable", "race"] as const)(
+    "replays the same opening board, the same claim/abandon sequence, the same bonus-claim sequence and the same final state from the same seed, under %s",
+    (planetActivity) => {
+      const first = playSeededStealActivityGame(planetActivity, 20260819, 40);
+      const second = playSeededStealActivityGame(planetActivity, 20260819, 40);
 
-    expect(second.openingBoard).toEqual(first.openingBoard);
-    expect(second.events).toEqual(first.events);
-    expect(second.bonusEvents).toEqual(first.bonusEvents);
-    expect(second.finalState).toEqual(first.finalState);
+      expect(first.bonusEvents.length).toBeGreaterThan(0);
+
+      expect(second.openingBoard).toEqual(first.openingBoard);
+      expect(second.events).toEqual(first.events);
+      expect(second.bonusEvents).toEqual(first.bonusEvents);
+      expect(second.finalState).toEqual(first.finalState);
+    },
+  );
+
+  it("keeps every survivor's kind under stable, where race changes it", () => {
+    const stable = playSeededStealActivityGame("stable", 20260819, 40);
+    for (const event of stable.bonusEvents) {
+      expect(event.survivorNewKind).toBe(event.survivorOldKind);
+    }
+    const race = playSeededStealActivityGame("race", 20260819, 40);
+    for (const event of race.bonusEvents) {
+      expect(event.survivorNewKind).not.toBe(event.survivorOldKind);
+    }
   });
 
   it("deals a different opening board and produces a different claim/abandon sequence and a different bonus-claim sequence from a different seed", () => {
     // Any pair of distinct seeds is expected to diverge; this pair is
     // confirmed to by running this test. If a future change to the game
     // happens to make it coincide, pick another pair.
-    const first = playSeededStealRaceGame(20260819, 40);
-    const second = playSeededStealRaceGame(20260820, 40);
+    const first = playSeededStealActivityGame("race", 20260819, 40);
+    const second = playSeededStealActivityGame("race", 20260820, 40);
 
     expect(second.openingBoard).not.toEqual(first.openingBoard);
     expect(second.events).not.toEqual(first.events);

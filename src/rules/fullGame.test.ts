@@ -47,6 +47,7 @@ import {
   squaresForSignal,
 } from "./steal";
 import {
+  type ActivityBonusClaimedEffect,
   type AttackEffect,
   type MoveEffect,
   type PassEffect,
@@ -777,9 +778,15 @@ describe.each(CHARGED_NODE_COUNTS)(
   },
 );
 
-describe.each(CHARGED_NODE_COUNTS)(
-  "a full steal game under race planet activity, end to end, at %d nodes (steal.md §10)",
-  (chargedNodeCount) => {
+describe.each(
+  (["stable", "race"] as const).flatMap((planetActivity) =>
+    CHARGED_NODE_COUNTS.map(
+      (chargedNodeCount) => [planetActivity, chargedNodeCount] as const,
+    ),
+  ),
+)(
+  "a full steal game under %s planet activity, end to end, at %d nodes (steal.md §10)",
+  (planetActivity, chargedNodeCount) => {
     it.each(
       PLAYER_MATCHING_SETTINGS.flatMap((playerMatching) =>
         SCORING_SETTINGS.flatMap((scoring) =>
@@ -796,15 +803,19 @@ describe.each(CHARGED_NODE_COUNTS)(
         let previousGreen = 0;
         let previousRed = 0;
         let claims = 0;
+        let beforePly: GameState | undefined;
+        let afterPly: GameState | undefined;
 
         const { finalState } = playFullGame(seed, 30, {
           chargedNodeCount,
           combatEnabled,
           scoring,
           nodePlaystyle: "steal",
-          planetActivity: "race",
+          planetActivity,
           playerMatching,
           onPly: (state) => {
+            beforePly = afterPly;
+            afterPly = state;
             assertStealNodeInvariants(state, chargedNodeCount);
             assertActivityBonusInvariants(state, chargedNodeCount);
             expect(state.energy.green).toBeGreaterThanOrEqual(previousGreen);
@@ -813,9 +824,28 @@ describe.each(CHARGED_NODE_COUNTS)(
             previousRed = state.energy.red;
           },
           onEffects: (effects) => {
-            claims += effects.filter(
-              (effect) => effect.type === "activity-bonus-claimed",
-            ).length;
+            const claimEffects = effects.filter(
+              (effect): effect is ActivityBonusClaimedEffect =>
+                effect.type === "activity-bonus-claimed",
+            );
+            claims += claimEffects.length;
+            if (planetActivity !== "stable" || claimEffects.length === 0) {
+              return;
+            }
+            // Under stable, every claim keeps the survivor's kind, and every
+            // bonus standing before the ply that no claim took still stands,
+            // on the same planet, with the same kind.
+            for (const claim of claimEffects) {
+              expect(claim.survivor.newKind).toBe(claim.survivor.oldKind);
+            }
+            const claimedSquareNames = new Set(
+              claimEffects.map((claim) => squareName(claim.square)),
+            );
+            for (const bonus of beforePly!.activityBonuses) {
+              if (!claimedSquareNames.has(squareName(bonus.square))) {
+                expect(afterPly!.activityBonuses).toContainEqual(bonus);
+              }
+            }
           },
         });
 

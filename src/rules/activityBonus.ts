@@ -19,14 +19,16 @@
 // slot 1's kind (weighted, excluding slot 0's kind). `gameState.ts` calls
 // `dealActivityBonuses` for this.
 //
-// A claim (steal.md §10) consumes, in this fixed order: (1) the claimed
-// kind's own draws — none for a points kind or Fuel, one per square
+// A claim under race (steal.md §10) consumes, in this fixed order: (1) the
+// claimed kind's own draws — none for a points kind or Fuel, one per square
 // Additional nodes or Node scramble adds (`addExtraProspectiveSquares`,
 // `scrambleProspectiveSquares`); (2) one step for the surviving bonus's new
 // kind, excluding the kind it was; (3) one step for the new bonus's planet,
 // drawn from planets empty at that moment and not the survivor's; (4) one
-// step for the new bonus's kind, excluding the survivor's new kind.
-// `resolveActivityBonusClaim` runs all four.
+// step for the new bonus's kind, excluding the survivor's new kind. A claim
+// under stable consumes the same steps without (2): the survivor keeps its
+// kind, so nothing is drawn for it, and the new bonus's kind excludes the
+// survivor's kept kind. `resolveActivityBonusClaim` runs them.
 //
 // Every kind draw — here and in the claim resolution — is a single
 // `drawWeightedIndex` call over all six kinds in their fixed table order
@@ -324,14 +326,17 @@ export interface ResolveActivityBonusClaimResult {
  * the maximum by one power (`gainPower`), the claiming ship included, wherever
  * it stands; Additional nodes and Node scramble redraw the node map
  * (`addExtraProspectiveSquares`, `scrambleProspectiveSquares`), threading the
- * seed on. Then redraws the surviving bonus's kind, excluding the kind it
- * was; draws the new bonus's planet from the planets empty at that moment and
+ * seed on. Then, under race only, redraws the surviving bonus's kind,
+ * excluding the kind it was — under stable the survivor keeps its kind and
+ * nothing is drawn for it, so `survivor.newKind` equals `survivor.oldKind`;
+ * draws the new bonus's planet from the planets empty at that moment and
  * not the survivor's own; and draws the new bonus's kind, excluding the
- * survivor's new kind, in that fixed order, the effect's own draws first.
- * The new bonus takes the claimed bonus's slot; the survivor keeps its own.
- * Throws a `RangeError` if `planet` carries neither current bonus, or
- * if no planet is left for the new bonus to appear on — the five-ship limit
- * guarantees one, so the latter is a bug detector, not a case to handle.
+ * survivor's kind after the claim, in that fixed order, the effect's own
+ * draws first. The new bonus takes the claimed bonus's slot; the survivor
+ * keeps its own. Throws a `RangeError` if planet activity is off, if
+ * `planet` carries neither current bonus, or if no planet is left for the
+ * new bonus to appear on — the five-ship limit guarantees one, so the last
+ * is a bug detector, not a case to handle.
  */
 export function resolveActivityBonusClaim(
   state: Pick<
@@ -341,12 +346,18 @@ export function resolveActivityBonusClaim(
     | "activityBonuses"
     | "chargedNodeCount"
     | "playerMatching"
+    | "planetActivity"
     | "scoring"
     | "randomSeed"
   >,
   side: Side,
   planet: Square,
 ): ResolveActivityBonusClaimResult {
+  if (state.planetActivity === "off") {
+    throw new RangeError(
+      "resolveActivityBonusClaim: planet activity is off, so no bonus can be claimed",
+    );
+  }
   const claimedIndex = state.activityBonuses.findIndex(
     (entry) => squareName(entry.square) === squareName(planet),
   );
@@ -413,12 +424,15 @@ export function resolveActivityBonusClaim(
     addedSquares = scrambled.addedSquares;
   }
 
-  const [survivorNewKind, seedAfterSurvivorKind] = drawActivityBonusKind(
-    seed,
-    nodes,
-    state.chargedNodeCount,
-    new Set([survivor.kind]),
-  );
+  const [survivorNewKind, seedAfterSurvivorKind]: [ActivityBonusKind, number] =
+    state.planetActivity === "race"
+      ? drawActivityBonusKind(
+          seed,
+          nodes,
+          state.chargedNodeCount,
+          new Set([survivor.kind]),
+        )
+      : [survivor.kind, seed];
 
   const occupiedSquareNames = new Set(
     ships.map((ship) => squareName(ship.square)),

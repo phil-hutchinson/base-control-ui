@@ -7,8 +7,8 @@ import {
 } from "./planetActivity";
 
 describe("the offered planet activity settings (steal.md §10)", () => {
-  it("offers off and race, off first", () => {
-    expect(PLANET_ACTIVITY_SETTINGS).toEqual(["off", "race"]);
+  it("offers off, stable and race, in that order", () => {
+    expect(PLANET_ACTIVITY_SETTINGS).toEqual(["off", "stable", "race"]);
   });
 
   it("defaults to off", () => {
@@ -23,7 +23,16 @@ describe("the offered planet activity settings (steal.md §10)", () => {
   });
 
   it("rejects anything that is not one of them", () => {
-    for (const value of ["OFF", "RACE", "two", 0, null, undefined, {}]) {
+    for (const value of [
+      "OFF",
+      "STABLE",
+      "RACE",
+      "two",
+      0,
+      null,
+      undefined,
+      {},
+    ]) {
       expect(isPlanetActivitySetting(value)).toBe(false);
     }
   });

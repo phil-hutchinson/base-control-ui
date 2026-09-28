@@ -200,7 +200,8 @@ export interface PlanetBonusClaimedEffect {
  * Additional nodes claim gave their nodes, and `removedSquares` /
  * `addedSquares` together are what a Node scramble claim redrew (both empty
  * for every other kind). `survivor` is the bonus that was not claimed —
- * unmoved, but redrawn to a different kind — and `newBonus` is what appeared
+ * unmoved; under race redrawn to a different kind, under stable keeping its
+ * kind, so `newKind` equals `oldKind` — and `newBonus` is what appeared
  * in the claimed bonus's place. Sits where `PlanetBonusClaimedEffect` sits: a
  * fight raises the attacker's claim (if any) before the defender's, matching
  * the placement order rules.md §7.1 fixes, and steal.md §10's own fight order
@@ -564,7 +565,7 @@ function claimPlanetBonus(
  * returning `state` unchanged — when planet activity is off, or when
  * `square` is neither of the board's two current bonus planets. Otherwise
  * `resolveActivityBonusClaim` applies the claimed kind's own effect, redraws
- * the surviving bonus's kind and deals a new bonus in the claimed one's
+ * the surviving bonus's kind (under race only) and deals a new bonus in the claimed one's
  * place; this wraps its result into `state` — `nodes`, `ships`,
  * `activityBonuses` and `randomSeed` all follow the resolution, and `side`'s
  * energy rises by whatever it awarded (0 for every kind but a points one) —

@@ -61,6 +61,7 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
  */
 const PLANET_ACTIVITY_SETTING_LABELS: Record<PlanetActivitySetting, string> = {
   off: "OFF",
+  stable: "STABLE",
   race: "RACE",
 };
 

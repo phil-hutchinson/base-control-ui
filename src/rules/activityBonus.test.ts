@@ -317,7 +317,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       ships: config.ships ?? [
         ship("green-1", "green", squareName(claimedPlanet)),
       ],
-      planetActivity: "off",
+      planetActivity: "race" as const,
       activityBonuses: bonuses(
         [claimedPlanet, config.kind],
         [survivorPlanet, config.survivorKind ?? "medium-points"],
@@ -328,6 +328,16 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       randomSeed: config.randomSeed ?? 4242,
     };
   }
+
+  it("throws when planet activity is off", () => {
+    const state = {
+      ...stateFor({ kind: "small-points" }),
+      planetActivity: "off" as const,
+    };
+    expect(() =>
+      resolveActivityBonusClaim(state, "green", claimedPlanet),
+    ).toThrow(RangeError);
+  });
 
   it("throws when the landed planet carries neither current bonus", () => {
     const state = stateFor({ kind: "small-points" });

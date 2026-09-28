@@ -683,7 +683,18 @@ describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §1
     expect(state.planetBonus).toBe("off");
   });
 
-  it.each(["RACE", "stable", "two", "on", ""])(
+  it("is exactly stable when stable is given under steal", () => {
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      planetActivity: "stable",
+    });
+
+    expect(state.planetActivity).toBe("stable");
+    expect(state.planetBonus).toBe("off");
+    expect(state.activityBonuses).toHaveLength(2);
+  });
+
+  it.each(["RACE", "STABLE", "advanced", "two", "on", ""])(
     "throws a RangeError for a planet activity setting of %j",
     (planetActivity) => {
       expect(() =>
@@ -692,11 +703,17 @@ describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §1
     },
   );
 
-  it.each(["continuous", "planet", "dedicated"] as const)(
-    "throws a RangeError for race paired with the %s node playstyle",
-    (nodePlaystyle) => {
+  it.each(
+    (["continuous", "planet", "dedicated"] as const).flatMap((nodePlaystyle) =>
+      (["stable", "race"] as const).map(
+        (planetActivity) => [planetActivity, nodePlaystyle] as const,
+      ),
+    ),
+  )(
+    "throws a RangeError for %s paired with the %s node playstyle",
+    (planetActivity, nodePlaystyle) => {
       expect(() =>
-        startingGameState(SEED, { nodePlaystyle, planetActivity: "race" }),
+        startingGameState(SEED, { nodePlaystyle, planetActivity }),
       ).toThrow(RangeError);
     },
   );
@@ -804,6 +821,28 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
 
       expect(state.activityBonuses).toEqual(bonuses);
       expect(state.randomSeed).toBe(nextSeed);
+    },
+  );
+
+  it.each(CHARGED_NODE_COUNTS)(
+    "deals the same pair and leaves the same seed under stable as under race, at %d nodes",
+    (chargedNodeCount) => {
+      for (const seed of [SEED, SEED + 1, 12345]) {
+        const stable = startingGameState(seed, {
+          nodePlaystyle: "steal",
+          chargedNodeCount,
+          planetActivity: "stable",
+        });
+        const race = startingGameState(seed, {
+          nodePlaystyle: "steal",
+          chargedNodeCount,
+          planetActivity: "race",
+        });
+
+        expect(stable.activityBonuses).toEqual(race.activityBonuses);
+        expect(stable.randomSeed).toBe(race.randomSeed);
+        expect(stable.nodes).toEqual(race.nodes);
+      }
     },
   );
 
