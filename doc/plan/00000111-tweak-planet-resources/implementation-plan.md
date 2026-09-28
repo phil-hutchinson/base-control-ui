@@ -502,7 +502,9 @@ present and passing.
 
 ### Step 3 — Extra as a count, simplified anchor, and the in-place Node scramble
 
-Status: pending
+Status: committed
+
+Notes: `NodeStatus.extra` removed; `nodeCarriesExtra`, the simplified `nodeAnchor` and `shuffleProspectiveSignals(nodes, nodeCount, playerMatching, seed)` in `steal.ts` (order per D4, stated in the module header); `removedSquares` gone from the outcome and effect; announcement reworded; tests as planned, and `assertStealNodeInvariants` also caps prospective counts at the usual two/one when planet resources is off. One addition beyond the plan: `src/bonus/NodeScrambleSymbol.tsx`'s header comment said "redrawn" and now says "shuffled between the nodes" (comment only). Searches: `extra:`/`.extra` in `src/` match only a test title's prose; `removedSquares` and `scrambleProspectiveSquares` match nothing. No replay seed or run length changed.
 
 One step because the three changes cannot be separated cleanly: the
 in-place shuffle moves signals between squares, which breaks any per-square

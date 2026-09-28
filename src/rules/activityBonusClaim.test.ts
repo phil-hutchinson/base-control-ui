@@ -32,7 +32,12 @@ import type { ChargedNodeCount } from "./nodes";
 import type { PlanetActivitySetting } from "./planetActivity";
 import type { PlayerMatchingSetting } from "./playerMatching";
 import type { ScoringSetting } from "./scoring";
-import { addExtraProspectiveSquares, everyNodeHasExtra } from "./steal";
+import {
+  addExtraProspectiveSquares,
+  everyNodeHasExtra,
+  nodeCarriesExtra,
+  shuffleProspectiveSignals,
+} from "./steal";
 import { PLANETS } from "./planets";
 
 function ship(
@@ -237,23 +242,25 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
     );
   });
 
-  it("redraws every node's ordinary prospective squares, leaving charged squares and extras where they were", () => {
+  it("shuffles the prospective squares' signals in place, leaving every square, charged square and ship where it was", () => {
     const [planet, other] = PLANETS;
     const nodes: Record<string, NodeStatus> = {
       G8: { state: "charged", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
       C3: { state: "prospective", level: 0, signal: 1 },
       D4: { state: "prospective", level: 0, signal: 1 },
       F5: { state: "prospective", level: 0, signal: 2 },
-      N2: { state: "prospective", level: 0, signal: 2, extra: true },
+      M11: { state: "prospective", level: 0, signal: 2 },
+      N2: { state: "prospective", level: 0, signal: 2 },
     };
     const state = buildState({
       ships: [
         ship("green-1", "green", belowSquare(planet)),
-        ship("red-1", "red", "A1"),
+        ship("red-1", "red", "G8"),
       ],
       nodes,
+      playerMatching: "required",
       activityBonuses: bonuses(
         [planet, "node-scramble"],
         [other, "large-points"],
@@ -266,9 +273,26 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
+    expect(Object.keys(result.state.nodes).sort()).toEqual(
+      Object.keys(nodes).sort(),
+    );
     expect(result.state.nodes.G8).toEqual(nodes.G8);
-    expect(result.state.nodes.L8).toEqual(nodes.L8);
-    expect(result.state.nodes.N2).toEqual(nodes.N2);
+    expect(
+      result.state.ships.find((entry) => entry.id === "red-1")?.square,
+    ).toEqual(squareFromName("G8"));
+    for (const signal of [0, 1, 2] as const) {
+      const prospectiveCount = (map: Readonly<Record<string, NodeStatus>>) =>
+        Object.values(map).filter(
+          (status) =>
+            status.signal === signal && status.state === "prospective",
+        ).length;
+      expect(prospectiveCount(result.state.nodes)).toBe(
+        prospectiveCount(nodes),
+      );
+    }
+    expect(result.state.nodes).toEqual(
+      shuffleProspectiveSignals(nodes, 3, "required", state.randomSeed).nodes,
+    );
     expect(result.effects).toContainEqual(
       expect.objectContaining({
         type: "activity-bonus-claimed",
@@ -370,7 +394,7 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
     expect(result.state.energy.green).toBe(0);
   });
 
-  it("a move that leaves a charged node and lands on a Node scramble planet scrambles the already-Open node (steal.md §10)", () => {
+  it("a move that leaves a charged node and lands on a Node scramble planet shuffles the already-Open node's squares too (steal.md §10)", () => {
     // The planet sits directly above its node's charged square, so leaving
     // that square and landing on the planet is one orthogonal step.
     const planet = PLANETS[1];
@@ -417,26 +441,43 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
     // The old charged square is gone — the leave already cleared it before
     // the scramble ran.
     expect(result.state.nodes[squareName(chargedSquare)]).toBeUndefined();
+    const abandoned = result.effects.find(
+      (effect) => effect.type === "node-abandoned",
+    );
+    if (abandoned?.type !== "node-abandoned") {
+      throw new Error("expected a node-abandoned effect");
+    }
+    // The shuffle runs over the node map as the leave left it: signal 0's
+    // remaining square and its newly drawn one take part like every other.
+    const afterLeave: Record<string, NodeStatus> = { ...nodes };
+    delete afterLeave[squareName(chargedSquare)];
+    afterLeave[squareName(abandoned.newProspective)] = {
+      state: "prospective",
+      level: 0,
+      signal: 0,
+    };
+    const [, seedAfterLeave] = mulberry32(state.randomSeed);
+    expect(result.state.nodes).toEqual(
+      shuffleProspectiveSignals(afterLeave, 3, "off", seedAfterLeave).nodes,
+    );
     const signalZeroSquares = Object.entries(result.state.nodes).filter(
       ([, status]) => status.signal === 0,
     );
     expect(signalZeroSquares).toHaveLength(2);
     for (const [, status] of signalZeroSquares) {
       expect(status.state).toBe("prospective");
-      expect(status.extra).toBeUndefined();
     }
   });
 
   it("leaves three prospective squares on a node whose extra survives both the leave and the scramble", () => {
-    // signal 0: Held with an extra, its ship about to leave. Leaving turns
-    // it Open with three squares (two ordinary plus the surviving extra),
-    // and the same move's Node scramble claim must then redraw both
-    // ordinary squares while leaving the extra where it stands.
+    // signal 0: Held carrying an extra, its ship about to leave. Leaving
+    // turns it Open with three prospective squares, and the same move's Node
+    // scramble keeps that count while shuffling which squares carry it.
     const planet = PLANETS[1];
     const other = PLANETS[0];
     const chargedSquare = belowSquare(planet);
     const remainingProspective = squareAt(planet.column, planet.row - 3);
-    const extraSquare = squareAt("M", 2);
+    const thirdProspective = squareAt("M", 2);
     const nodes: Record<string, NodeStatus> = {
       [squareName(chargedSquare)]: { state: "charged", level: 0, signal: 0 },
       [squareName(remainingProspective)]: {
@@ -444,11 +485,10 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
         level: 0,
         signal: 0,
       },
-      [squareName(extraSquare)]: {
+      [squareName(thirdProspective)]: {
         state: "prospective",
         level: 0,
         signal: 0,
-        extra: true,
       },
       // signal 1: an unrelated Open node, untouched by the move.
       C3: { state: "prospective", level: 0, signal: 1 },
@@ -480,12 +520,10 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
       ([, status]) => status.signal === 0,
     );
     expect(signalZeroSquares).toHaveLength(3);
-    const extras = signalZeroSquares.filter(([, status]) => status.extra);
-    expect(extras).toHaveLength(1);
-    expect(extras[0][0]).toBe(squareName(extraSquare));
     for (const [, status] of signalZeroSquares) {
       expect(status.state).toBe("prospective");
     }
+    expect(nodeCarriesExtra(result.state.nodes, 0)).toBe(true);
   });
 });
 

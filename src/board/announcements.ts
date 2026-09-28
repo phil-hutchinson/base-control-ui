@@ -417,7 +417,7 @@ function shipsPhrase(count: number): string {
  * the energy a points kind paid; how many ships Fuel raised, or "no ships"
  * when every one was already full; that every node gained an extra waiting
  * square (Additional nodes); or that every node's waiting squares were
- * redrawn (Node scramble).
+ * shuffled between the nodes (Node scramble).
  */
 function activityBonusClaimedDetail(
   effect: ActivityBonusClaimedEffect,
@@ -434,7 +434,7 @@ function activityBonusClaimedDetail(
     case "additional-nodes":
       return "every node gained an extra waiting square.";
     case "node-scramble":
-      return "every node's waiting squares were redrawn.";
+      return "every node's waiting squares were shuffled between the nodes.";
   }
 }
 

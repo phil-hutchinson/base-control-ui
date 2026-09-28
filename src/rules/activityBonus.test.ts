@@ -13,13 +13,14 @@ import {
   isActivityBonusKindAvailable,
   resolveActivityBonusClaim,
 } from "./activityBonus";
-import { type Square, squareFromName, squareName } from "./board";
+import { ALL_SQUARES, type Square, squareFromName, squareName } from "./board";
 import type { NodeStatus, Ship } from "./gameState";
 import { CHARGED_NODE_COUNTS, type ChargedNodeCount } from "./nodes";
 import { PLANETS } from "./planets";
 import { PLAYER_MATCHING_SETTINGS } from "./playerMatching";
 import { MAX_POWER, type PowerLevel } from "./power";
 import { mulberry32 } from "./random";
+import { nodeCarriesExtra, shuffleProspectiveSignals } from "./steal";
 import { SCORING_SETTINGS } from "./scoring";
 
 function ship(
@@ -64,19 +65,23 @@ function fleetsAt(power: PowerLevel): readonly Ship[] {
   return FULL_FLEETS.map((entry) => ({ ...entry, power }));
 }
 
-/** A node map for `nodeCount` signals, each already carrying an extra. */
+/**
+ * A node map for `nodeCount` signals, each Open with three prospective
+ * squares, so each already carries an extra.
+ */
 function everyNodeWithExtra(
   nodeCount: ChargedNodeCount,
 ): Readonly<Record<string, NodeStatus>> {
   const nodes: Record<string, NodeStatus> = {};
-  PLANETS.slice(0, nodeCount).forEach((square, signal) => {
-    nodes[squareName(square)] = {
-      state: "prospective",
-      level: 0,
-      signal: signal as NodeStatus["signal"],
-      extra: true,
-    };
-  });
+  for (let signal = 0; signal < nodeCount; signal++) {
+    for (const square of ALL_SQUARES.slice(signal * 3, signal * 3 + 3)) {
+      nodes[squareName(square)] = {
+        state: "prospective",
+        level: 0,
+        signal: signal as NodeStatus["signal"],
+      };
+    }
+  }
   return nodes;
 }
 
@@ -459,7 +464,6 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
     );
     expect(result.outcome.poweredShipIds).toEqual([]);
     expect(result.outcome.addedSquares).toEqual([]);
-    expect(result.outcome.removedSquares).toEqual([]);
     expect(result.nodes).toEqual(state.nodes);
     expect(result.ships).toEqual(state.ships);
   });
@@ -547,8 +551,9 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
     const nodes: Record<string, NodeStatus> = {
       G8: { state: "prospective", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
-      C3: { state: "prospective", level: 0, signal: 1, extra: true },
+      C3: { state: "prospective", level: 0, signal: 1 },
       D4: { state: "prospective", level: 0, signal: 1 },
+      J4: { state: "prospective", level: 0, signal: 1 },
       F9: { state: "prospective", level: 0, signal: 2 },
       F5: { state: "prospective", level: 0, signal: 2 },
     };
@@ -557,37 +562,52 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
 
     expect(result.outcome.addedSquares).toHaveLength(2);
     for (const signal of [0, 1, 2] as const) {
-      const extras = Object.entries(result.nodes).filter(
-        ([, status]) => status.signal === signal && status.extra === true,
+      const squares = Object.values(result.nodes).filter(
+        (status) => status.signal === signal,
       );
-      expect(extras).toHaveLength(1);
+      expect(squares).toHaveLength(3);
+      expect(nodeCarriesExtra(result.nodes, signal)).toBe(true);
     }
-    expect(result.outcome.removedSquares).toEqual([]);
     expect(result.outcome.pointsAwarded).toBe(0);
   });
 
-  it("Node scramble leaves charged squares and extras in place and redraws every ordinary prospective square", () => {
+  it("Node scramble shuffles the prospective squares' signals in place, leaving charged squares alone and each node's count as it was", () => {
     const nodes: Record<string, NodeStatus> = {
       G8: { state: "charged", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
       C3: { state: "prospective", level: 0, signal: 1 },
       D4: { state: "prospective", level: 0, signal: 1 },
       F5: { state: "prospective", level: 0, signal: 2 },
       K12: { state: "prospective", level: 0, signal: 2 },
-      N2: { state: "prospective", level: 0, signal: 2, extra: true },
+      N2: { state: "prospective", level: 0, signal: 2 },
     };
-    const state = stateFor({ kind: "node-scramble", nodes });
-    const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+    for (const playerMatching of ["off", "required"] as const) {
+      const state = stateFor({ kind: "node-scramble", nodes, playerMatching });
+      const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
 
-    expect(result.nodes.G8).toEqual(nodes.G8);
-    expect(result.nodes.L8).toEqual(nodes.L8);
-    expect(result.nodes.N2).toEqual(nodes.N2);
-    expect(result.outcome.removedSquares.map(squareName).sort()).toEqual(
-      ["C3", "D4", "F5", "H8", "K12"].sort(),
-    );
-    expect(result.outcome.addedSquares).toHaveLength(5);
-    expect(result.outcome.pointsAwarded).toBe(0);
+      const expected = shuffleProspectiveSignals(
+        nodes,
+        3,
+        playerMatching,
+        state.randomSeed,
+      );
+      expect(result.nodes).toEqual(expected.nodes);
+      expect(Object.keys(result.nodes).sort()).toEqual(
+        Object.keys(nodes).sort(),
+      );
+      expect(result.nodes.G8).toEqual(nodes.G8);
+      for (const signal of [0, 1, 2] as const) {
+        const count = (map: Readonly<Record<string, NodeStatus>>) =>
+          Object.values(map).filter(
+            (status) =>
+              status.signal === signal && status.state === "prospective",
+          ).length;
+        expect(count(result.nodes)).toBe(count(nodes));
+      }
+      expect(result.outcome.addedSquares).toEqual([]);
+      expect(result.outcome.pointsAwarded).toBe(0);
+    }
   });
 
   it("redraws the surviving bonus to a kind other than the one it was, over many seeds", () => {

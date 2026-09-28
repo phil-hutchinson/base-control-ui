@@ -29,16 +29,30 @@
 // leaving comes before claiming (steal.md §5) — for two seed steps in that
 // order.
 //
-// Under planet resources (steal.md §10), two more pure
-// functions change the node map outside a claim or a leave:
-// `addExtraProspectiveSquares` (Additional nodes) draws one square per
-// signal lacking an extra, one seed step each; `scrambleProspectiveSquares`
-// (Node scramble) redraws every ordinary prospective square, one seed step
-// per square added: one for a Held node, with or without a surviving extra,
-// anchored on its charged square; two for an Open node with a surviving
-// extra, both anchored on the extra; two for an Open node left with
-// nothing. `activityBonus.ts` calls both and threads the seed on into its
-// own claim-resolution draws.
+// Under planet resources (steal.md §10), two more pure functions change the
+// node map outside a claim or a leave. `addExtraProspectiveSquares`
+// (Additional nodes) draws one square per signal not already carrying an
+// extra, one seed step each. `shuffleProspectiveSignals` (Node scramble)
+// moves no square; it takes the signal off every prospective square and
+// places the signals back, in this fixed order:
+//
+// 1. The prospective squares, in board order, each remembered with its
+//    signal before the shuffle; a signal's unplaced count starts at how many
+//    of those squares carried it.
+// 2. The phases: with player-matching on, red's and green's matched signals
+//    in ascending signal order, then every other signal of the game in
+//    ascending order; with it off, one phase of every signal in ascending
+//    order.
+// 3. Each placement, while the current phase has a signal unplaced: one
+//    weighted draw over the phase's signals in phase order, each weighted by
+//    its unplaced count; then one uniform draw over the still-empty squares,
+//    in board order, whose signal before the shuffle differs from the drawn
+//    one — or, when there is none, over every still-empty square. Both draws
+//    are made even when there is only one option.
+//
+// Exactly two seed steps per prospective square. `activityBonus.ts` calls
+// both functions and threads the seed on into its own claim-resolution
+// draws.
 
 import { ALL_SQUARES, type Square, squareName } from "./board";
 import type { Side } from "./fleet";
@@ -48,9 +62,9 @@ import {
   drawNodeSquare,
   drawStealOpeningProspectiveSquare,
   drawStealProspectiveSquare,
-  legalNodePool,
 } from "./nodePlacement";
-import { drawIndex } from "./random";
+import type { PlayerMatchingSetting } from "./playerMatching";
+import { drawIndex, drawWeightedIndex } from "./random";
 
 /** A node's identity under steal (steal.md §2): one per node, 0 to 4. */
 export type NodeSignal = 0 | 1 | 2 | 3 | 4;
@@ -135,15 +149,9 @@ export function squaresForSignal(
 
 /**
  * A signal's anchor square or squares for the weighted draw (steal.md §6,
- * §10): its charged square if it is Held; otherwise its extra prospective
- * square, if it has one; otherwise its remaining ordinary prospective
- * square or squares. The last case is normally exactly one square —
- * meaningful only mid-transition, while the deal, a claim or an abandon has
- * left exactly one square for this signal and is about to draw its
- * partner — but is **two** squares for an Open node with no extra that
- * Additional nodes (steal.md §10) is about to give a third: the caller
- * weighs distance to the nearer of the two. Throws if the signal has no
- * squares at all.
+ * §10): its charged square if it is Held; otherwise every one of its
+ * prospective squares, the caller weighing distance to the nearest of them.
+ * Throws if the signal has no squares at all.
  */
 export function nodeAnchor(
   nodes: Readonly<Record<string, NodeStatus>>,
@@ -156,18 +164,31 @@ export function nodeAnchor(
   if (charged !== undefined) {
     return [charged];
   }
-  const extra = squares.find(
-    (square) => nodes[squareName(square)]?.extra === true,
-  );
-  if (extra !== undefined) {
-    return [extra];
-  }
   if (squares.length === 0) {
     throw new RangeError(
       `nodeAnchor: signal ${signal} has no squares to anchor on`,
     );
   }
   return squares;
+}
+
+/**
+ * Whether `signal`'s node carries an extra (steal.md §10): one prospective
+ * square more than usual — two when it is Held, three when it is Open. No
+ * particular square is the extra; this is a count.
+ */
+export function nodeCarriesExtra(
+  nodes: Readonly<Record<string, NodeStatus>>,
+  signal: NodeSignal,
+): boolean {
+  const statuses = squaresForSignal(nodes, signal).map(
+    (square) => nodes[squareName(square)],
+  );
+  const held = statuses.some((status) => status?.state === "charged");
+  const prospectiveCount = statuses.filter(
+    (status) => status?.state === "prospective",
+  ).length;
+  return prospectiveCount > (held ? 1 : 2);
 }
 
 /** The outcome of claiming a node (steal.md §3): the resulting node map, the next seed, and the squares the claim changed. */
@@ -179,8 +200,8 @@ export interface ClaimNodeResult {
   /**
    * The node's other prospective square or squares, discarded by the claim:
    * empty when the node was Held with no extra; one square otherwise
-   * (an Open node with no extra, or a Held node with one); two squares for
-   * an Open node with an extra (steal.md §10).
+   * (an Open node with no extra, or a Held node carrying one); two squares
+   * for an Open node carrying an extra (steal.md §10).
    */
   readonly discardedSquares: readonly Square[];
   /** The fresh prospective square drawn for the node's signal. */
@@ -192,8 +213,8 @@ export interface ClaimNodeResult {
  * `claimedSquare` (steal.md §3): `claimedSquare` becomes the node's charged
  * square; if the node was Held, its previous charged square is released
  * (whoever held it — including the claiming ship's own side, a relocation —
- * loses the node); every other square the node had — its other prospective
- * square if it was Open, its extra prospective square if it had one
+ * loses the node); every other prospective square the node had — one or
+ * two, depending on whether it was Open or Held and carried an extra
  * (steal.md §10) — is discarded; and one fresh prospective square is drawn,
  * anchored on `claimedSquare`, weighted against every other signal's current
  * squares (`drawStealProspectiveSquare`, steal.md §6). `shipSquares` is the
@@ -268,11 +289,12 @@ export interface AbandonNodeResult {
  * Abandons `signal`'s node by vacating its charged square at
  * `vacatedSquare`, without landing on that node's own prospective square
  * (steal.md §4): the vacated square becomes ordinary board, and a second
- * prospective square is drawn, anchored on the one the node already has (its
- * extra, if it has one — steal.md §10), weighted against every other
- * signal's current squares (`drawStealProspectiveSquare`, steal.md §6). If
- * the node had an extra, it survives, so the node ends Open with three
- * prospective squares. `shipSquares` is the board's ship squares as they
+ * prospective square is drawn, anchored per `nodeAnchor` on the prospective
+ * square or squares the node already has (the nearest counting), weighted
+ * against every other signal's current squares (`drawStealProspectiveSquare`,
+ * steal.md §6). A node carrying an extra (steal.md §10) still carries it, so
+ * it ends Open with three prospective squares. `shipSquares` is the board's
+ * ship squares as they
  * stand once the abandoning move has resolved. Exactly one seed step. Never
  * called for a ship relocating onto its own node's prospective square —
  * that is a claim alone (steal.md §5).
@@ -367,7 +389,7 @@ export function dealStealOpeningBoard(
 
 /**
  * Whether every one of the game's `nodeCount` signals already carries an
- * extra prospective square (steal.md §10) — the Additional nodes bonus is
+ * extra (steal.md §10, `nodeCarriesExtra`) — the Additional nodes bonus is
  * unavailable exactly when this is true.
  */
 export function everyNodeHasExtra(
@@ -375,9 +397,7 @@ export function everyNodeHasExtra(
   nodeCount: ChargedNodeCount,
 ): boolean {
   return NODE_SIGNALS.slice(0, nodeCount).every((signal) =>
-    squaresForSignal(nodes, signal).some(
-      (square) => nodes[squareName(square)]?.extra === true,
-    ),
+    nodeCarriesExtra(nodes, signal),
   );
 }
 
@@ -385,17 +405,18 @@ export function everyNodeHasExtra(
 export interface AddExtraProspectiveSquaresResult {
   readonly nodes: Readonly<Record<string, NodeStatus>>;
   readonly nextSeed: number;
-  /** The squares added, one per signal that lacked an extra, in signal order. */
+  /** The squares added, one per signal not carrying an extra, in signal order. */
   readonly addedSquares: readonly Square[];
 }
 
 /**
- * Gives one extra prospective square to every node that does not already
- * have one (steal.md §10): signal 0 through `nodeCount - 1` in turn, each
- * drawn by section 6's weighted rule (`drawStealProspectiveSquare`), anchored
- * per `nodeAnchor`, weighted against every other node's current squares —
- * including an extra just placed for an earlier signal in this same call.
- * A node that already has an extra is skipped. `shipSquares` is the board's
+ * Gives one more prospective square to every node that does not already
+ * carry an extra (steal.md §10, `nodeCarriesExtra`): signal 0 through
+ * `nodeCount - 1` in turn, each an ordinary prospective square drawn by
+ * section 6's weighted rule (`drawStealProspectiveSquare`), anchored per
+ * `nodeAnchor`, weighted against every other node's current squares —
+ * including a square just placed for an earlier signal in this same call.
+ * A node already carrying an extra is skipped. `shipSquares` is the board's
  * ship squares as they stand at the moment the bonus is claimed. One seed
  * step per square added — none at all when every node already has its
  * extra, in which case the caller should not have called this (see
@@ -412,11 +433,7 @@ export function addExtraProspectiveSquares(
   const addedSquares: Square[] = [];
 
   for (const signal of NODE_SIGNALS.slice(0, nodeCount)) {
-    const squares = squaresForSignal(nodes, signal);
-    const hasExtra = squares.some(
-      (square) => nodes[squareName(square)]?.extra === true,
-    );
-    if (hasExtra) {
+    if (nodeCarriesExtra(nodes, signal)) {
       continue;
     }
 
@@ -436,12 +453,7 @@ export function addExtraProspectiveSquares(
     );
     nodes = {
       ...nodes,
-      [squareName(square)]: {
-        state: "prospective",
-        level: 0,
-        signal,
-        extra: true,
-      },
+      [squareName(square)]: { state: "prospective", level: 0, signal },
     };
     addedSquares.push(square);
     workingSeed = nextSeed;
@@ -451,127 +463,87 @@ export function addExtraProspectiveSquares(
 }
 
 /** The outcome of a Node scramble bonus (steal.md §10). */
-export interface ScrambleProspectiveSquaresResult {
+export interface ShuffleProspectiveSignalsResult {
   readonly nodes: Readonly<Record<string, NodeStatus>>;
   readonly nextSeed: number;
-  /** Every ordinary prospective square cleared, in board order. */
-  readonly removedSquares: readonly Square[];
-  /** Every replacement square drawn, node by node in signal order. */
-  readonly addedSquares: readonly Square[];
 }
 
 /**
- * Redraws every node's ordinary prospective squares (steal.md §10). Charged
- * squares, the ships on them, and extra prospective squares are left exactly
- * where they stand. For each signal, in order 0 through `nodeCount - 1`: a
- * Held node, with or without a surviving extra, draws one replacement
- * anchored on its charged square; an Open node with a surviving extra draws
- * two replacements, both anchored on the extra; an Open node left with
- * nothing draws its first square uniformly from section 6's widened pool
- * and its second by the weighted rule, anchored on the first. Every draw
- * sees every square already placed, this call's own included.
- * `shipSquares` is the board's ship squares as they stand at the moment the
- * bonus is claimed. One seed step per square added.
+ * Shuffles the signals on every prospective square between the nodes
+ * (steal.md §10). No square is added, removed or moved, charged squares are
+ * left exactly as they stand, and each signal keeps as many prospective
+ * squares as it had. The signals are placed back one at a time, red's and
+ * green's matched signals first when `playerMatching` is on, then the rest:
+ * each placement draws a signal weighted by how many of it are still
+ * unplaced, then a square uniformly among the still-empty squares whose
+ * signal before the shuffle was a different one, or among every still-empty
+ * square when there is none. The fixed draw order is in this module's
+ * header. Exactly two seed steps per prospective square.
  */
-export function scrambleProspectiveSquares(
+export function shuffleProspectiveSignals(
   nodesBefore: Readonly<Record<string, NodeStatus>>,
   nodeCount: ChargedNodeCount,
-  shipSquares: readonly Square[],
+  playerMatching: PlayerMatchingSetting,
   seed: number,
-): ScrambleProspectiveSquaresResult {
-  const removedSquares = ALL_SQUARES.filter((square) => {
+): ShuffleProspectiveSignalsResult {
+  const prospective = ALL_SQUARES.flatMap((square) => {
     const status = nodesBefore[squareName(square)];
-    return (
-      status !== undefined &&
-      status.state === "prospective" &&
-      status.extra !== true
-    );
+    return status?.state === "prospective" && status.signal !== undefined
+      ? [{ square, signalBefore: status.signal }]
+      : [];
   });
 
-  let nodes: Record<string, NodeStatus> = { ...nodesBefore };
-  for (const square of removedSquares) {
-    delete nodes[squareName(square)];
+  const unplaced = new Map<NodeSignal, number>();
+  for (const { signalBefore } of prospective) {
+    unplaced.set(signalBefore, (unplaced.get(signalBefore) ?? 0) + 1);
   }
 
+  const signals = NODE_SIGNALS.slice(0, nodeCount);
+  const phases: (readonly NodeSignal[])[] = [];
+  if (playerMatching === "off") {
+    phases.push(signals);
+  } else {
+    const matched = [
+      matchedSignalForSide("red", nodeCount),
+      matchedSignalForSide("green", nodeCount),
+    ].sort((a, b) => a - b);
+    phases.push(matched);
+    phases.push(signals.filter((signal) => !matched.includes(signal)));
+  }
+
+  const nodes: Record<string, NodeStatus> = { ...nodesBefore };
+  const empty = [...prospective];
   let workingSeed = seed;
-  const addedSquares: Square[] = [];
 
-  const occupiedNodeSquares = (): readonly Square[] =>
-    ALL_SQUARES.filter((square) => nodes[squareName(square)] !== undefined);
-  const otherNodeSquares = (signal: NodeSignal): readonly Square[] =>
-    occupiedNodeSquares().filter(
-      (square) => nodes[squareName(square)]?.signal !== signal,
-    );
-
-  for (const signal of NODE_SIGNALS.slice(0, nodeCount)) {
-    const squares = squaresForSignal(nodes, signal);
-    const charged = squares.find(
-      (square) => nodes[squareName(square)]?.state === "charged",
-    );
-    const extra = squares.find(
-      (square) => nodes[squareName(square)]?.extra === true,
-    );
-
-    if (charged !== undefined) {
-      const [square, nextSeed] = drawStealProspectiveSquare(
-        occupiedNodeSquares(),
-        [charged],
-        otherNodeSquares(signal),
-        shipSquares,
-        workingSeed,
+  for (const phase of phases) {
+    const remaining = (): number =>
+      phase.reduce<number>(
+        (total, signal) => total + (unplaced.get(signal) ?? 0),
+        0,
       );
-      nodes = {
-        ...nodes,
-        [squareName(square)]: { state: "prospective", level: 0, signal },
+    while (remaining() > 0) {
+      const [signalIndex, seedAfterSignal] = drawWeightedIndex(
+        workingSeed,
+        phase.map((signal) => unplaced.get(signal) ?? 0),
+      );
+      const signal = phase[signalIndex];
+      const differing = empty.filter((entry) => entry.signalBefore !== signal);
+      const candidates = differing.length > 0 ? differing : empty;
+      const [squareIndex, seedAfterSquare] = drawIndex(
+        seedAfterSignal,
+        candidates.length,
+      );
+      const chosen = candidates[squareIndex];
+      nodes[squareName(chosen.square)] = {
+        state: "prospective",
+        level: 0,
+        signal,
       };
-      addedSquares.push(square);
-      workingSeed = nextSeed;
-      continue;
+      empty.splice(empty.indexOf(chosen), 1);
+      unplaced.set(signal, (unplaced.get(signal) ?? 0) - 1);
+      workingSeed = seedAfterSquare;
     }
-
-    if (extra !== undefined) {
-      for (let i = 0; i < 2; i += 1) {
-        const [square, nextSeed] = drawStealProspectiveSquare(
-          occupiedNodeSquares(),
-          [extra],
-          otherNodeSquares(signal),
-          shipSquares,
-          workingSeed,
-        );
-        nodes = {
-          ...nodes,
-          [squareName(square)]: { state: "prospective", level: 0, signal },
-        };
-        addedSquares.push(square);
-        workingSeed = nextSeed;
-      }
-      continue;
-    }
-
-    const pool = legalNodePool(occupiedNodeSquares(), shipSquares, "widened");
-    const [firstIndex, seedAfterFirst] = drawIndex(workingSeed, pool.length);
-    const firstSquare = pool[firstIndex];
-    nodes = {
-      ...nodes,
-      [squareName(firstSquare)]: { state: "prospective", level: 0, signal },
-    };
-    addedSquares.push(firstSquare);
-    workingSeed = seedAfterFirst;
-
-    const [secondSquare, seedAfterSecond] = drawStealProspectiveSquare(
-      occupiedNodeSquares(),
-      [firstSquare],
-      otherNodeSquares(signal),
-      shipSquares,
-      workingSeed,
-    );
-    nodes = {
-      ...nodes,
-      [squareName(secondSquare)]: { state: "prospective", level: 0, signal },
-    };
-    addedSquares.push(secondSquare);
-    workingSeed = seedAfterSecond;
   }
 
-  return { nodes, nextSeed: workingSeed, removedSquares, addedSquares };
+  return { nodes, nextSeed: workingSeed };
 }

@@ -1502,7 +1502,6 @@ describe("announcementFor — a planet resources bonus claimed (steal.md §10)",
           pointsAwarded: 8,
           poweredShipIds: [],
           addedSquares: [],
-          removedSquares: [],
           survivor: {
             square: squareAt("F", 14),
             oldKind: "fuel",
@@ -1537,7 +1536,6 @@ describe("announcementFor — a planet resources bonus claimed (steal.md §10)",
           pointsAwarded: 0,
           poweredShipIds: ["green-1", "green-2", "green-3"],
           addedSquares: [],
-          removedSquares: [],
           survivor: {
             square: squareAt("F", 14),
             oldKind: "small-points",
@@ -1572,7 +1570,6 @@ describe("announcementFor — a planet resources bonus claimed (steal.md §10)",
           pointsAwarded: 0,
           poweredShipIds: [],
           addedSquares: [],
-          removedSquares: [],
           survivor: {
             square: squareAt("F", 14),
             oldKind: "small-points",
@@ -1607,7 +1604,6 @@ describe("announcementFor — a planet resources bonus claimed (steal.md §10)",
           pointsAwarded: 0,
           poweredShipIds: [],
           addedSquares: [squareAt("H", 8)],
-          removedSquares: [],
           survivor: {
             square: squareAt("F", 14),
             oldKind: "fuel",
@@ -1641,8 +1637,7 @@ describe("announcementFor — a planet resources bonus claimed (steal.md §10)",
           kind: "node-scramble",
           pointsAwarded: 0,
           poweredShipIds: [],
-          addedSquares: [squareAt("H", 8)],
-          removedSquares: [squareAt("H", 9)],
+          addedSquares: [],
           survivor: {
             square: squareAt("F", 14),
             oldKind: "fuel",
@@ -1657,7 +1652,7 @@ describe("announcementFor — a planet resources bonus claimed (steal.md §10)",
     };
     expect(announcementFor(event)).toBe(
       "Green ship moved from C6 onto the D6 planet. The move was free; it still has 6 power. " +
-        "Green claimed a Node scramble bonus at the D6 planet: every node's waiting squares were redrawn. Red's turn.",
+        "Green claimed a Node scramble bonus at the D6 planet: every node's waiting squares were shuffled between the nodes. Red's turn.",
     );
   });
 
@@ -1708,7 +1703,6 @@ describe("announcementFor — a planet resources bonus claimed (steal.md §10)",
           pointsAwarded: 2,
           poweredShipIds: [],
           addedSquares: [],
-          removedSquares: [],
           survivor: {
             square: squareAt("D", 1),
             oldKind: "fuel",
@@ -1724,7 +1718,6 @@ describe("announcementFor — a planet resources bonus claimed (steal.md §10)",
           pointsAwarded: 5,
           poweredShipIds: [],
           addedSquares: [],
-          removedSquares: [],
           survivor: {
             square: squareAt("H", 8),
             oldKind: "additional-nodes",

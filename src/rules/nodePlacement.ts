@@ -262,10 +262,9 @@ export function drawWeightedNodeSquare(
  *
  *     w(s) = d(s, a) + min over x in S of d(s, x)
  *
- * `a` is the node's anchor — its charged square when it has one, and its
- * remaining prospective square when it does not (steal.md §10 gives the
- * anchor of a node with an extra prospective square, which this does not
- * cover on its own) — and `S` is every square belonging to any other node,
+ * `a` is the node's anchor — its charged square when it has one, and
+ * otherwise every one of its prospective squares, the nearest counting
+ * (steal.md §6, §10) — and `S` is every square belonging to any other node,
  * charged or prospective alike; `d` is Chebyshev distance. The first term
  * dominates and can range up to 14: it pushes a node's new prospective
  * square a long way from the node itself, so a steal is a real relocation
@@ -274,12 +273,9 @@ export function drawWeightedNodeSquare(
  * two. It is 0 when `S` is empty, which only happens for the very first node
  * of the opening deal.
  *
- * `anchors` may hold more than one square (steal.md §10): when a node has no
- * charged square and no extra, but two ordinary prospective squares — the
- * one case Additional nodes reaches, drawing a third square for an Open
- * node — the anchor term is the distance to the **nearer** of the two.
- * Every other caller passes exactly one anchor, for which this is identical
- * to a plain distance.
+ * `anchors` is the charged square, or every prospective square of the node:
+ * when it holds more than one square, the anchor term is the distance to the
+ * **nearest** of them. With exactly one anchor, this is a plain distance.
  *
  * A square on the outer edge has its weight halved, so the rim stays
  * available without becoming the likeliest place for a node to end up.
@@ -310,7 +306,8 @@ function stealProspectiveWeight(
  * (steal.md §6), from the widened pool (constraints 3 and 4 lifted,
  * fallback included), weighted by `stealProspectiveWeight`. `occupiedNodeSquares`
  * is every square belonging to any node, the drawing node's own included;
- * `anchors` is the drawing node's anchor square or squares (steal.md §6, §10);
+ * `anchors` is the drawing node's anchor — its charged square, or every
+ * prospective square of the node, the nearest counting (steal.md §6, §10);
  * `otherNodeSquares` is every square belonging to any other node. Advances
  * the seed exactly once, via `drawWeightedIndex`, so a recorded game replays
  * exactly.

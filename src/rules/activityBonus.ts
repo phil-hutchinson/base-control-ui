@@ -21,8 +21,8 @@
 //
 // A claim under race (steal.md §10) consumes, in this fixed order: (1) the
 // claimed kind's own draws — none for a points kind or Fuel, one per square
-// Additional nodes or Node scramble adds (`addExtraProspectiveSquares`,
-// `scrambleProspectiveSquares`); (2) one step for the surviving bonus's new
+// Additional nodes adds (`addExtraProspectiveSquares`), two per prospective
+// square a Node scramble shuffles (`shuffleProspectiveSignals`); (2) one step for the surviving bonus's new
 // kind, excluding the kind it was; (3) one step for the new bonus's planet,
 // drawn from planets empty at that moment and not the survivor's; (4) one
 // step for the new bonus's kind, excluding the survivor's new kind. A claim
@@ -52,7 +52,7 @@ import type { ScoringSetting } from "./scoring";
 import {
   addExtraProspectiveSquares,
   everyNodeHasExtra,
-  scrambleProspectiveSquares,
+  shuffleProspectiveSignals,
 } from "./steal";
 
 /**
@@ -322,9 +322,9 @@ export function dealActivityBonuses(
  * What resolving a claim changed, beyond the state itself (steal.md §10): the
  * kind that was claimed; the energy it paid (0 for every kind but a points
  * one); which of the claiming side's ships gained a point of power from Fuel
- * (empty for every other kind); the squares Additional nodes added, and the
- * squares Node scramble removed and added (empty for every kind that is
- * neither); and the surviving bonus's square with its old and new kind,
+ * (empty for every other kind); the squares Additional nodes added (empty
+ * for every other kind — a Node scramble adds no square, it only shuffles
+ * signals); and the surviving bonus's square with its old and new kind,
  * alongside the new bonus's square and kind. Enough for `ply.ts` to build an
  * `ActivityBonusClaimedEffect` and for the live region to describe the claim.
  */
@@ -333,7 +333,6 @@ export interface ActivityBonusClaimOutcome {
   readonly pointsAwarded: number;
   readonly poweredShipIds: readonly ShipId[];
   readonly addedSquares: readonly Square[];
-  readonly removedSquares: readonly Square[];
   readonly survivor: {
     readonly square: Square;
     readonly oldKind: ActivityBonusKind;
@@ -361,9 +360,9 @@ export interface ResolveActivityBonusClaimResult {
  * `pointsAwarded`, for `ply.ts` to apply — this function never reads or
  * writes an energy total itself); Fuel raises each of `side`'s ships below
  * the maximum by one power (`gainPower`), the claiming ship included, wherever
- * it stands; Additional nodes and Node scramble redraw the node map
- * (`addExtraProspectiveSquares`, `scrambleProspectiveSquares`), threading the
- * seed on. Then, under race only, redraws the surviving bonus's kind,
+ * it stands; Additional nodes adds prospective squares
+ * (`addExtraProspectiveSquares`) and Node scramble shuffles the prospective
+ * squares' signals (`shuffleProspectiveSignals`), threading the seed on. Then, under race only, redraws the surviving bonus's kind,
  * excluding the kind it was — under stable the survivor keeps its kind and
  * nothing is drawn for it, so `survivor.newKind` equals `survivor.oldKind`;
  * draws the new bonus's planet from the planets empty at that moment and
@@ -414,7 +413,6 @@ export function resolveActivityBonusClaim(
   let pointsAwarded = 0;
   let poweredShipIds: readonly ShipId[] = [];
   let addedSquares: readonly Square[] = [];
-  let removedSquares: readonly Square[] = [];
 
   const pointSize = activityBonusPointSize(claimed.kind);
   if (pointSize !== undefined) {
@@ -450,17 +448,14 @@ export function resolveActivityBonusClaim(
     seed = added.nextSeed;
     addedSquares = added.addedSquares;
   } else if (claimed.kind === "node-scramble") {
-    const shipSquares = ships.map((ship) => ship.square);
-    const scrambled = scrambleProspectiveSquares(
+    const shuffled = shuffleProspectiveSignals(
       nodes,
       state.chargedNodeCount,
-      shipSquares,
+      state.playerMatching,
       seed,
     );
-    nodes = scrambled.nodes;
-    seed = scrambled.nextSeed;
-    removedSquares = scrambled.removedSquares;
-    addedSquares = scrambled.addedSquares;
+    nodes = shuffled.nodes;
+    seed = shuffled.nextSeed;
   }
 
   const [survivorNewKind, seedAfterSurvivorKind]: [ActivityBonusKind, number] =
@@ -520,7 +515,6 @@ export function resolveActivityBonusClaim(
       pointsAwarded,
       poweredShipIds,
       addedSquares,
-      removedSquares,
       survivor: {
         square: survivor.square,
         oldKind: survivor.kind,

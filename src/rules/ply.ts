@@ -118,8 +118,8 @@ export interface StrandedShip {
  * has resolved, `strandedShip` names it: that ship is left on an ordinary
  * square, free to move next turn. `discardedSquares` is every other
  * prospective square the node had — empty for a Held node with no extra, one
- * square for an Open node with no extra or a Held node with one, two squares
- * for an Open node with an extra (steal.md §10). `newProspective` is the
+ * square for an Open node with no extra or a Held node carrying one, two
+ * squares for an Open node carrying an extra (steal.md §10). `newProspective` is the
  * fresh prospective square drawn for the node's signal (steal.md §6). Always
  * after any `NodeAbandonedEffect` the same move also raises — leaving comes
  * before claiming when one move does both (steal.md §5) — and before any
@@ -197,9 +197,9 @@ export interface PlanetBonusClaimedEffect {
  * `pointsAwarded` is the energy a points kind paid (0 for every other kind);
  * `poweredShipIds` names every one of `side`'s ships a Fuel claim raised by a
  * point (empty for every other kind); `addedSquares` are the squares an
- * Additional nodes claim gave their nodes, and `removedSquares` /
- * `addedSquares` together are what a Node scramble claim redrew (both empty
- * for every other kind). `survivor` is the bonus that was not claimed —
+ * Additional nodes claim gave their nodes (empty for every other kind — a
+ * Node scramble adds no square, it only shuffles the prospective squares'
+ * signals, which the new node map already shows). `survivor` is the bonus that was not claimed —
  * unmoved; under race redrawn to a different kind, under stable keeping its
  * kind, so `newKind` equals `oldKind` — and `newBonus` is what appeared
  * in the claimed bonus's place. Sits where `PlanetBonusClaimedEffect` sits: a
@@ -216,7 +216,6 @@ export interface ActivityBonusClaimedEffect {
   readonly pointsAwarded: number;
   readonly poweredShipIds: readonly ShipId[];
   readonly addedSquares: readonly Square[];
-  readonly removedSquares: readonly Square[];
   readonly survivor: {
     readonly square: Square;
     readonly oldKind: ActivityBonusKind;
@@ -621,7 +620,6 @@ function claimActivityBonus(
       pointsAwarded: result.outcome.pointsAwarded,
       poweredShipIds: result.outcome.poweredShipIds,
       addedSquares: result.outcome.addedSquares,
-      removedSquares: result.outcome.removedSquares,
       survivor: result.outcome.survivor,
       newBonus: result.outcome.newBonus,
     },
@@ -901,7 +899,7 @@ function placeOnPlanet(
  * struck down (rules.md §6, §7).
  *
  * Under planet resources (steal.md §10), a landing's claim can legitimately
- * change power (Fuel) and a node's squares (Additional nodes, Node scramble)
+ * change power (Fuel) and the node map (Additional nodes, Node scramble)
  * — the very things the power and node checks below exist to protect against
  * a fight touching. `before.planetActivity` decides this once: when it is on,
  * the power check widens to allow a returning ship's power to be exactly one
@@ -995,8 +993,9 @@ export function assertFightInvariants(
     }
   }
 
-  // A landing's activity bonus claim (steal.md §10) can legitimately add or
-  // remove a node's squares (Additional nodes, Node scramble), so this whole
+  // A landing's activity bonus claim (steal.md §10) can legitimately add a
+  // node's squares (Additional nodes) or move signals between prospective
+  // squares (Node scramble), so this whole
   // check only applies with the planet resources setting off, where a fight
   // must leave every node exactly as it stood.
   if (isPlanetActivityOn) {
@@ -1059,7 +1058,7 @@ export function assertFightInvariants(
  * §10's fight order, stated there because it matters for a recorded game's
  * replay: the attacker's claim advances the seed, and, under the planet
  * resources setting, may change which ships carry power (Fuel) and which
- * squares a node occupies (Additional nodes, Node scramble), before the
+ * squares belong to which node (Additional nodes, Node scramble), before the
  * defender's planet is drawn and its own landing settled the same way. `assertFightInvariants` runs
  * once, against the fully settled state. An attack ends the ply (rules.md
  * §5), just as a move does: play passes to the other side, and the result
