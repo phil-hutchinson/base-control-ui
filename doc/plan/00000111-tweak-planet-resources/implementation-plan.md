@@ -314,7 +314,9 @@ smaller change and their tests do not depend on the node model.
 
 ### Step 1 — The ruleset goes to 0.43
 
-Status: pending
+Status: committed
+
+Notes: steal.md §§2, 3, 4, 6, 10 and rules.md §1 rewritten per S1–S6, version 0.43 in rules.md and `RULES_VERSION`, one changelog entry. §6 now also states that a multi-square anchor's `d(s, a)` is the distance to the nearest, matching §10's anchor paragraph; the "Available" paragraph was extended to cover Fuel's weight (the full statement lives in a new "Fuel's weight" paragraph after the kinds table). Inspection: `## 0.43` appears once in changelog.md; the only "redrawn" left in steal.md is the race redraw of a bonus's kind, and "its extra, if it has one" is gone.
 
 Edit `doc/ruleset/steal.md` and `doc/ruleset/rules.md`; bump the version
 line in `rules.md` to **0.43** and `RULES_VERSION` in

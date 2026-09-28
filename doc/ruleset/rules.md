@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.42**
+**Rules version: 0.43**
 
 This document is the single source of truth for how Base Control is played,
 together with its companion [steal.md](steal.md), which holds the node rules
@@ -54,8 +54,9 @@ drawn, in place of the refill and the priority deal (steal.md). Under the
 planet resources setting, offered only under steal, there are more still:
 where the game's two bonuses first stand and what kind each is, and, every
 time one is claimed, where the new bonus appears and what kind it is, what
-kind the bonus left behind turns into (under race only), and, for two of
-the six kinds, which squares change on the board (steal.md §10). No two games
+kind the bonus left behind turns into (under race only), where an
+Additional nodes bonus places its new squares, and how a Node scramble
+shuffles the signals on the waiting squares (steal.md §10). No two games
 start on the same board, and neither player has seen this one before.
 
 ---
