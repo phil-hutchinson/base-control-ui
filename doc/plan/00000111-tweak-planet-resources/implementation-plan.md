@@ -607,7 +607,7 @@ in Notes.
 
 ### Step 4 — The Quick Guide's wording, and the owner plays the finished story
 
-Status: pending
+Status: committed
 
 In `src/guide/guideCopy.ts`, the PLANET RESOURCES paragraph's closing list
 replaces "or every node's waiting squares redrawn." with wording that says
@@ -655,3 +655,9 @@ Verification (manual — the pipeline pauses here). First run full
 
 Announcement wording is not part of this check (covered by the automated
 suite). Record the owner's outcome in Notes.
+
+Notes: Guide sentence now ends "or the colours of every node's waiting
+squares swapped around."; `guideCopy.test.ts` updated to match. README
+checked: no "redrawn" and no weight figures, so unchanged. Owner played the
+story and confirmed every check passed; Fuel turned up often once fuel was
+deliberately drawn down.

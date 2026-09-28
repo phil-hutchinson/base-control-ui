@@ -126,8 +126,8 @@ describe("guideCopy", () => {
         "changes into something else too, so a bonus is only worth " +
         "heading for while nobody takes the other one first. A bonus " +
         "can be points in three sizes, fuel for every one of your " +
-        "spaceships, an extra waiting square for every node, or every " +
-        "node's waiting squares redrawn.",
+        "spaceships, an extra waiting square for every node, or the " +
+        "colours of every node's waiting squares swapped around.",
     );
   });
 
