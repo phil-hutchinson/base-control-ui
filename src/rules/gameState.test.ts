@@ -22,6 +22,8 @@ import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 import { DEFAULT_NODE_PLAYSTYLE, NODE_PLAYSTYLES } from "./nodePlaystyle";
 import { dealStealOpeningBoard } from "./steal";
 import { legalDestinations } from "./movement";
+import { dealActivityBonuses } from "./activityBonus";
+import { DEFAULT_PLANET_ACTIVITY } from "./planetActivity";
 import { PLANET_BONUS_SETTINGS } from "./planetBonus";
 import {
   DEFAULT_PLAYER_MATCHING,
@@ -568,11 +570,11 @@ describe("startingGameState", () => {
     },
   );
 
-  it.each(["continuous", "planet", "dedicated"] as const)(
-    "throws a RangeError for advanced paired with the %s node playstyle",
-    (nodePlaystyle) => {
+  it.each(["two", "three"] as const)(
+    "throws a RangeError for a planet bonus of %s paired with the steal node playstyle",
+    (planetBonus) => {
       expect(() =>
-        startingGameState(SEED, { nodePlaystyle, planetBonus: "advanced" }),
+        startingGameState(SEED, { nodePlaystyle: "steal", planetBonus }),
       ).toThrow(RangeError);
     },
   );
@@ -640,11 +642,11 @@ describe("startingGameState under steal (steal.md §7)", () => {
     expect(third.nodes).not.toEqual(first.nodes);
   });
 
-  it("consumes exactly 2N seed steps for the deal, leaving the bonus deal to run afterwards unchanged", () => {
+  it("consumes exactly 2N seed steps for the deal, leaving the planet activity deal to run afterwards unchanged", () => {
     const withoutBonus = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
-      planetBonus: "off",
+      planetActivity: "off",
     });
     const [, seedAfterDeal] = dealStealOpeningBoard(
       STARTING_FLEET_SQUARES,
@@ -656,25 +658,64 @@ describe("startingGameState under steal (steal.md §7)", () => {
     const withBonus = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
-      planetBonus: "two",
+      planetActivity: "race",
     });
-    expect(withBonus.bonusPlanets.green).toHaveLength(3);
-    expect(withBonus.bonusPlanets.red).toHaveLength(3);
+    expect(withBonus.activityBonuses).toHaveLength(2);
     expect(withBonus.randomSeed).not.toBe(seedAfterDeal);
   });
 });
 
-describe("startingGameState's advancedBonuses field (steal.md §10)", () => {
-  it("is empty under off, two and three, whose seed consumption is unaffected", () => {
-    for (const planetBonus of ["off", "two", "three"] as const) {
-      const state = startingGameState(SEED, {
-        nodePlaystyle: "steal",
-        chargedNodeCount: 4,
-        planetBonus,
-      });
-      expect(state.advancedBonuses).toEqual([]);
-    }
+describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §10)", () => {
+  it("defaults to off, the app's default, when none is given", () => {
+    const state = startingGameState(SEED, { nodePlaystyle: "steal" });
 
+    expect(state.planetActivity).toBe("off");
+    expect(state.planetActivity).toBe(DEFAULT_PLANET_ACTIVITY);
+  });
+
+  it("is exactly the one given under steal", () => {
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "steal",
+      planetActivity: "race",
+    });
+
+    expect(state.planetActivity).toBe("race");
+    expect(state.planetBonus).toBe("off");
+  });
+
+  it.each(["RACE", "stable", "two", "on", ""])(
+    "throws a RangeError for a planet activity setting of %j",
+    (planetActivity) => {
+      expect(() =>
+        startingGameState(SEED, { nodePlaystyle: "steal", planetActivity }),
+      ).toThrow(RangeError);
+    },
+  );
+
+  it.each(["continuous", "planet", "dedicated"] as const)(
+    "throws a RangeError for race paired with the %s node playstyle",
+    (nodePlaystyle) => {
+      expect(() =>
+        startingGameState(SEED, { nodePlaystyle, planetActivity: "race" }),
+      ).toThrow(RangeError);
+    },
+  );
+
+  it.each(["continuous", "planet", "dedicated"] as const)(
+    "accepts off paired with the %s node playstyle",
+    (nodePlaystyle) => {
+      const state = startingGameState(SEED, {
+        nodePlaystyle,
+        planetActivity: "off",
+      });
+
+      expect(state.planetActivity).toBe("off");
+    },
+  );
+});
+
+describe("startingGameState's activityBonuses field (steal.md §10)", () => {
+  it("is empty with planet activity off under steal, whose seed consumption is unaffected", () => {
     const withoutOption = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
@@ -682,23 +723,34 @@ describe("startingGameState's advancedBonuses field (steal.md §10)", () => {
     const withOff = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
-      planetBonus: "off",
+      planetActivity: "off",
     });
+    expect(withOff.activityBonuses).toEqual([]);
     expect(withoutOption).toEqual(withOff);
+  });
+
+  it("is empty under every planet bonus setting outside steal", () => {
+    for (const planetBonus of PLANET_BONUS_SETTINGS) {
+      const state = startingGameState(SEED, {
+        nodePlaystyle: "planet",
+        planetBonus,
+      });
+      expect(state.activityBonuses).toEqual([]);
+    }
   });
 
   it("deals exactly two bonuses, on two distinct empty planets, of two distinct kinds, with bonusPlanets left empty", () => {
     const state = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
-      planetBonus: "advanced",
+      planetActivity: "race",
     });
 
-    expect(state.advancedBonuses).toHaveLength(2);
-    const [first, second] = state.advancedBonuses;
+    expect(state.activityBonuses).toHaveLength(2);
+    const [first, second] = state.activityBonuses;
     expect(squareName(first.square)).not.toBe(squareName(second.square));
     expect(first.kind).not.toBe(second.kind);
-    for (const entry of state.advancedBonuses) {
+    for (const entry of state.activityBonuses) {
       expect(isPlanet(entry.square)).toBe(true);
       expect(
         state.ships.some(
@@ -709,44 +761,68 @@ describe("startingGameState's advancedBonuses field (steal.md §10)", () => {
     expect(state.bonusPlanets).toEqual({ green: [], red: [] });
   });
 
-  it("consumes exactly four seed steps more than the same seed without advanced, leaving the nodes and ships unaffected", () => {
-    const withoutAdvanced = startingGameState(SEED, {
+  it("consumes exactly four seed steps more than the same seed with planet activity off, leaving the nodes and ships unaffected", () => {
+    const withoutActivity = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
-      planetBonus: "off",
+      planetActivity: "off",
     });
-    const withAdvanced = startingGameState(SEED, {
+    const withRace = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
-      planetBonus: "advanced",
+      planetActivity: "race",
     });
 
-    expect(withAdvanced.nodes).toEqual(withoutAdvanced.nodes);
-    expect(withAdvanced.ships).toEqual(withoutAdvanced.ships);
+    expect(withRace.nodes).toEqual(withoutActivity.nodes);
+    expect(withRace.ships).toEqual(withoutActivity.ships);
 
-    let expectedSeed = withoutAdvanced.randomSeed;
+    let expectedSeed = withoutActivity.randomSeed;
     for (let step = 0; step < 4; step++) {
       [, expectedSeed] = mulberry32(expectedSeed);
     }
-    expect(withAdvanced.randomSeed).toBe(expectedSeed);
+    expect(withRace.randomSeed).toBe(expectedSeed);
   });
+
+  it.each(CHARGED_NODE_COUNTS)(
+    "under race at %d nodes, deals exactly the pair and leaves exactly the seed dealActivityBonuses gives from the post-board seed",
+    (chargedNodeCount) => {
+      const state = startingGameState(SEED, {
+        nodePlaystyle: "steal",
+        chargedNodeCount,
+        planetActivity: "race",
+      });
+      const [nodes, seedAfterBoard] = dealStealOpeningBoard(
+        STARTING_FLEET_SQUARES,
+        chargedNodeCount,
+        SEED,
+      );
+      const [bonuses, nextSeed] = dealActivityBonuses(
+        nodes,
+        chargedNodeCount,
+        seedAfterBoard,
+      );
+
+      expect(state.activityBonuses).toEqual(bonuses);
+      expect(state.randomSeed).toBe(nextSeed);
+    },
+  );
 
   it("deals the same pair for the same seed, and a different one for a different seed", () => {
     const first = startingGameState(SEED, {
       nodePlaystyle: "steal",
-      planetBonus: "advanced",
+      planetActivity: "race",
     });
     const second = startingGameState(SEED, {
       nodePlaystyle: "steal",
-      planetBonus: "advanced",
+      planetActivity: "race",
     });
     const third = startingGameState(SEED + 1, {
       nodePlaystyle: "steal",
-      planetBonus: "advanced",
+      planetActivity: "race",
     });
 
-    expect(second.advancedBonuses).toEqual(first.advancedBonuses);
-    expect(third.advancedBonuses).not.toEqual(first.advancedBonuses);
+    expect(second.activityBonuses).toEqual(first.activityBonuses);
+    expect(third.activityBonuses).not.toEqual(first.activityBonuses);
   });
 });
 

@@ -9,7 +9,7 @@
 // these — the rotation diagram every setting shares, and a second, a bare
 // square holding a rotator, for the dedicated setting alone. PLANET BONUS
 // and ADVANCED PLANET BONUSES are the exceptions to "built from
-// `BoardSquare`s": their cells are `PlanetBonusCell` and `AdvancedBonusCell`,
+// `BoardSquare`s": their cells are `PlanetBonusCell` and `ActivityBonusCell`,
 // the same cells `PlanetBonusPanel` draws, so the guide's checkmark and
 // symbols can never drift from the panel's own. ADVANCED PLANET BONUSES'
 // `+N` amount is read from the point lookup at the app's own default
@@ -378,14 +378,14 @@ export function PlanetBonusDiagram() {
 /**
  * Diagram 10: the ADVANCED PLANET BONUSES panel (steal.md §10) at a glance —
  * a Large points bonus beside a Node scramble bonus, drawn with the same
- * `AdvancedBonusCell` the panel itself draws, at the app's own default
+ * `ActivityBonusCell` the panel itself draws, at the app's own default
  * settings (its `+N` comes from the point lookup, never typed in) and so in
  * gold/silver/blue, since player-matching is off by default.
  */
 export function AdvancedPlanetBonusDiagram() {
   const cells: readonly GuideDiagramCell[] = [
     {
-      kind: "advancedBonus",
+      kind: "activityBonus",
       art: PLANET_ART[0],
       bonusKind: "large-points",
       nodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -393,7 +393,7 @@ export function AdvancedPlanetBonusDiagram() {
       scoring: DEFAULT_SCORING,
     },
     {
-      kind: "advancedBonus",
+      kind: "activityBonus",
       art: PLANET_ART[1],
       bonusKind: "node-scramble",
       nodeCount: DEFAULT_CHARGED_NODE_COUNT,

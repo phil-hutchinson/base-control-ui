@@ -1,4 +1,4 @@
-// The three colours an advanced planet bonus's Additional nodes and Node
+// The three colours a planet activity bonus's Additional nodes and Node
 // scramble symbols draw in (steal.md §10): gold, silver and mid blue
 // ordinarily, or gold plus the two player colours when player-matching
 // nodes are on (DOUBLE or REQUIRED, steal.md §9) — silver and blue are then
@@ -11,16 +11,16 @@ import type { PlayerMatchingSetting } from "../rules/playerMatching";
 import { PLAYER_NODE_COLORS, SIGNAL_COLORS } from "../board/squareArt";
 
 /** The three colours a symbol's rings or arcs are drawn in, in a fixed order. */
-export type AdvancedBonusSymbolColors = readonly [string, string, string];
+export type ActivityBonusSymbolColors = readonly [string, string, string];
 
 /**
  * The three colours for the given game's player-matching setting (steal.md
  * §10): gold, red, green under DOUBLE or REQUIRED; gold, silver, blue
  * otherwise.
  */
-export function advancedBonusSymbolColors(
+export function activityBonusSymbolColors(
   playerMatching: PlayerMatchingSetting,
-): AdvancedBonusSymbolColors {
+): ActivityBonusSymbolColors {
   if (playerMatching === "double" || playerMatching === "required") {
     return [
       SIGNAL_COLORS[0].core,

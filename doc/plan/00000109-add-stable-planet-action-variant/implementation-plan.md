@@ -435,7 +435,25 @@ doc/ruleset/steal.md` finds no new statement of a default.
 
 ### Step 2 — Planet activity replaces advanced (race only), and the code vocabulary follows
 
-Status: pending
+Status: committed
+
+Notes: Split and rename done per D1–D3 (new `planetActivity.ts` + test,
+`planetBonus.ts` narrowed with `resolvePlanetBonus`, `advanced*` →
+`activity*` via `git mv`, `GameState.planetActivity`, the two new
+`RangeError`s, start screen/`useAppScreen`/session wiring, panel, tests,
+tech-notes heading). Golden trace: seeds 20260819, 12345 and 987654321 × 3/4/5
+nodes × player-matching off/double/required × combat on/off × scoring
+simple/bonus (108 games, 1440 claims), recording opening pair, every claim,
+per-ply seeds, final energy/seed/ships/nodes/pair — before/after output
+byte-identical; temp file deleted. Deviations: removed
+`planetBonusClaim.test.ts`'s "classic bonus pays under REQUIRED" case, since
+classic bonuses under steal are now a state the rules forbid (the activity
+equivalent in `activityBonusClaim.test.ts` stays); dropped `"advanced"` from
+the guards' rejection lists so the grep stays clean. `grep -rn -i advanced
+src` leaves only the unrelated seed/"not yet advanced" uses plus the Quick
+Guide's section id, heading, copy, header comment, diagram name and tests,
+and two comments in `ActivityBonusCell.tsx`/`activityBonusColors.ts` naming
+the guide's ADVANCED PLANET BONUSES heading — all for Step 5.
 
 A behaviour-preserving split and rename. After it, the app offers under
 steal a **Planet activity** group with **OFF** and **RACE** (STABLE comes

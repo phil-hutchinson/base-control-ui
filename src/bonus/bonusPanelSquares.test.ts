@@ -25,16 +25,16 @@ describe("bonusPanelSquareNames", () => {
     expect(names).toEqual(expected);
   });
 
-  it("names exactly the two current bonus squares under advanced", () => {
+  it("names exactly the two current bonus squares under planet activity", () => {
     const state = startingGameState(SEED, {
       nodePlaystyle: "steal",
-      planetBonus: "advanced",
+      planetActivity: "race",
     });
 
     const names = bonusPanelSquareNames(state);
 
     expect(names).toEqual(
-      new Set(state.advancedBonuses.map((entry) => squareName(entry.square))),
+      new Set(state.activityBonuses.map((entry) => squareName(entry.square))),
     );
     expect(names.size).toBe(2);
   });

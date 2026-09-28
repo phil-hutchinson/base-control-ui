@@ -59,7 +59,8 @@ function buildState(config: {
     rotators: [],
     planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
-    advancedBonuses: [],
+    planetActivity: "off",
+    activityBonuses: [],
     energy: { green: 0, red: 0 },
     lengthInRounds: config.lengthInRounds ?? DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -589,6 +590,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -622,6 +624,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -641,6 +644,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
     const second = sessionReducer(session, {
@@ -653,6 +657,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -674,6 +679,7 @@ describe("sessionReducer — new-game", () => {
         scoring: "simple",
         nodePlaystyle: "continuous",
         planetBonus: "off",
+        planetActivity: "off",
         playerMatching: "off",
       });
 
@@ -717,6 +723,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -741,6 +748,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -765,6 +773,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -784,6 +793,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -803,6 +813,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -822,6 +833,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "bonus",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -841,6 +853,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -861,6 +874,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "dedicated",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -881,6 +895,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "three",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -902,6 +917,7 @@ describe("sessionReducer — new-game", () => {
       scoring: "simple",
       nodePlaystyle: "continuous",
       planetBonus: "off",
+      planetActivity: "off",
       playerMatching: "off",
     });
 
@@ -909,7 +925,7 @@ describe("sessionReducer — new-game", () => {
     expect(result.state.bonusPlanets).toEqual({ green: [], red: [] });
   });
 
-  it("honours a chosen planet bonus setting of advanced under steal, dealing a state with two advanced bonuses", () => {
+  it("honours a chosen planet activity setting of race under steal, dealing a state with two activity bonuses", () => {
     const session = sessionFor(buildState({ ships: [] }));
 
     const result = sessionReducer(session, {
@@ -921,12 +937,14 @@ describe("sessionReducer — new-game", () => {
       combatEnabled: true,
       scoring: "simple",
       nodePlaystyle: "steal",
-      planetBonus: "advanced",
+      planetBonus: "off",
+      planetActivity: "race",
       playerMatching: "off",
     });
 
-    expect(result.state.planetBonus).toBe("advanced");
-    expect(result.state.advancedBonuses).toHaveLength(2);
+    expect(result.state.planetActivity).toBe("race");
+    expect(result.state.planetBonus).toBe("off");
+    expect(result.state.activityBonuses).toHaveLength(2);
     expect(result.state.bonusPlanets).toEqual({ green: [], red: [] });
   });
 });

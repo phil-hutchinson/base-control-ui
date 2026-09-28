@@ -33,8 +33,12 @@ import {
   type ChargedNodeCount,
 } from "../rules/nodes";
 import {
+  DEFAULT_PLANET_ACTIVITY,
+  PLANET_ACTIVITY_SETTINGS,
+  type PlanetActivitySetting,
+} from "../rules/planetActivity";
+import {
   DEFAULT_PLANET_BONUS,
-  offeredPlanetBonusSettings,
   PLANET_BONUS_SETTINGS,
   type PlanetBonusSetting,
 } from "../rules/planetBonus";
@@ -85,7 +89,12 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
   off: "OFF",
   two: "2 POINTS",
   three: "3 POINTS",
-  advanced: "ADVANCED",
+};
+
+/** The Planet activity group's labels, mirroring `StartScreen`'s own map. */
+const PLANET_ACTIVITY_SETTING_LABELS: Record<PlanetActivitySetting, string> = {
+  off: "OFF",
+  race: "RACE",
 };
 
 /** The Player-matching nodes group's labels, mirroring `StartScreen`'s own map. */
@@ -101,6 +110,7 @@ interface RenderOverrides {
   readonly combatEnabled?: boolean;
   readonly scoring?: ScoringSetting;
   readonly planetBonus?: PlanetBonusSetting;
+  readonly planetActivity?: PlanetActivitySetting;
   readonly nodePlaystyle?: NodePlaystyle;
   readonly playerMatching?: PlayerMatchingSetting;
   readonly lengthInRounds?: number;
@@ -112,6 +122,9 @@ interface RenderOverrides {
   readonly onCombatEnabledChange?: (combatEnabled: boolean) => void;
   readonly onScoringChange?: (scoring: ScoringSetting) => void;
   readonly onPlanetBonusChange?: (planetBonus: PlanetBonusSetting) => void;
+  readonly onPlanetActivityChange?: (
+    planetActivity: PlanetActivitySetting,
+  ) => void;
   readonly onNodePlaystyleChange?: (nodePlaystyle: NodePlaystyle) => void;
   readonly onPlayerMatchingChange?: (
     playerMatching: PlayerMatchingSetting,
@@ -129,6 +142,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   const onCombatEnabledChange = overrides.onCombatEnabledChange ?? vi.fn();
   const onScoringChange = overrides.onScoringChange ?? vi.fn();
   const onPlanetBonusChange = overrides.onPlanetBonusChange ?? vi.fn();
+  const onPlanetActivityChange = overrides.onPlanetActivityChange ?? vi.fn();
   const onNodePlaystyleChange = overrides.onNodePlaystyleChange ?? vi.fn();
   const onPlayerMatchingChange = overrides.onPlayerMatchingChange ?? vi.fn();
   const onLengthInRoundsChange = overrides.onLengthInRoundsChange ?? vi.fn();
@@ -149,6 +163,8 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
       onScoringChange={onScoringChange}
       planetBonus={overrides.planetBonus ?? DEFAULT_PLANET_BONUS}
       onPlanetBonusChange={onPlanetBonusChange}
+      planetActivity={overrides.planetActivity ?? DEFAULT_PLANET_ACTIVITY}
+      onPlanetActivityChange={onPlanetActivityChange}
       nodePlaystyle={overrides.nodePlaystyle ?? DEFAULT_NODE_PLAYSTYLE}
       onNodePlaystyleChange={onNodePlaystyleChange}
       playerMatching={overrides.playerMatching ?? DEFAULT_PLAYER_MATCHING}
@@ -167,6 +183,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
     onCombatEnabledChange,
     onScoringChange,
     onPlanetBonusChange,
+    onPlanetActivityChange,
     onNodePlaystyleChange,
     onPlayerMatchingChange,
     onLengthInRoundsChange,
@@ -267,7 +284,7 @@ describe("StartScreen", () => {
     ]);
   });
 
-  it("renders nine option groups under STEAL, with Player-matching nodes between Charged nodes and Scoring", () => {
+  it("renders nine option groups under STEAL, with Player-matching nodes between Charged nodes and Scoring, and Planet activity in Planet bonus's place", () => {
     renderStartScreen({ nodePlaystyle: "steal" });
 
     const groups = screen.getAllByRole("group");
@@ -279,7 +296,7 @@ describe("StartScreen", () => {
       "Charged nodes",
       "Player-matching nodes",
       "Scoring",
-      "Planet bonus",
+      "Planet activity",
       "Combat",
       "Rounds",
       "Clock (time per move)",
@@ -426,7 +443,7 @@ describe("StartScreen", () => {
     renderStartScreen({ nodePlaystyle: "planet", planetBonus: "three" });
 
     const group = screen.getByRole("group", { name: "Planet bonus" });
-    for (const value of offeredPlanetBonusSettings("planet")) {
+    for (const value of PLANET_BONUS_SETTINGS) {
       const radio = within(group).getByRole("radio", {
         name: PLANET_BONUS_SETTING_LABELS[value],
       });
@@ -436,9 +453,6 @@ describe("StartScreen", () => {
         expect(radio).not.toBeChecked();
       }
     }
-    expect(
-      screen.queryByRole("radio", { name: "ADVANCED" }),
-    ).not.toBeInTheDocument();
   });
 
   it("checks OFF by default, with the planet bonus radios in order OFF, 2 POINTS, 3 POINTS", () => {
@@ -453,27 +467,75 @@ describe("StartScreen", () => {
     ).toEqual(["off", "two", "three"]);
   });
 
-  it("offers ADVANCED only while STEAL is chosen, last after the three classic settings", () => {
+  it("renders the planet bonus group, offering OFF, 2 POINTS, 3 POINTS in order, and no planet activity group, under each non-steal playstyle", () => {
+    for (const nodePlaystyle of [
+      "continuous",
+      "planet",
+      "dedicated",
+    ] as const) {
+      renderStartScreen({ nodePlaystyle });
+
+      const group = screen.getByRole("group", { name: "Planet bonus" });
+      expect(
+        within(group)
+          .getAllByRole("radio")
+          .map((radio) => radio.getAttribute("value")),
+      ).toEqual(PLANET_BONUS_SETTINGS);
+      expect(
+        within(group)
+          .getAllByRole("radio")
+          .map((radio) => (radio as HTMLInputElement).labels?.[0]?.textContent),
+      ).toEqual(["OFF", "2 POINTS", "3 POINTS"]);
+      expect(
+        screen.queryByRole("group", { name: "Planet activity" }),
+      ).not.toBeInTheDocument();
+
+      cleanup();
+    }
+  });
+
+  it("renders the planet activity group under STEAL, offering OFF, RACE in order, and no planet bonus group", () => {
     renderStartScreen({ nodePlaystyle: "steal" });
 
-    const group = screen.getByRole("group", { name: "Planet bonus" });
+    const group = screen.getByRole("group", { name: "Planet activity" });
     expect(
       within(group)
         .getAllByRole("radio")
         .map((radio) => radio.getAttribute("value")),
-    ).toEqual(PLANET_BONUS_SETTINGS);
+    ).toEqual(PLANET_ACTIVITY_SETTINGS);
     expect(
-      within(group).getByRole("radio", { name: "ADVANCED" }),
-    ).toBeInTheDocument();
+      within(group)
+        .getAllByRole("radio")
+        .map((radio) => (radio as HTMLInputElement).labels?.[0]?.textContent),
+    ).toEqual(
+      PLANET_ACTIVITY_SETTINGS.map(
+        (value) => PLANET_ACTIVITY_SETTING_LABELS[value],
+      ),
+    );
+    expect(
+      screen.queryByRole("group", { name: "Planet bonus" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("checks ADVANCED when chosen under STEAL", () => {
-    renderStartScreen({ nodePlaystyle: "steal", planetBonus: "advanced" });
+  it("checks RACE when chosen under STEAL", () => {
+    renderStartScreen({ nodePlaystyle: "steal", planetActivity: "race" });
 
-    const group = screen.getByRole("group", { name: "Planet bonus" });
-    expect(
-      within(group).getByRole("radio", { name: "ADVANCED" }),
-    ).toBeChecked();
+    const group = screen.getByRole("group", { name: "Planet activity" });
+    expect(within(group).getByRole("radio", { name: "RACE" })).toBeChecked();
+    expect(within(group).getByRole("radio", { name: "OFF" })).not.toBeChecked();
+  });
+
+  it("calls the planet activity change handler with race when RACE is chosen, and not the planet bonus handler", async () => {
+    const user = userEvent.setup();
+    const { onPlanetActivityChange, onPlanetBonusChange, onPlay } =
+      renderStartScreen({ nodePlaystyle: "steal", planetActivity: "off" });
+
+    const group = screen.getByRole("group", { name: "Planet activity" });
+    await user.click(within(group).getByRole("radio", { name: "RACE" }));
+
+    expect(onPlanetActivityChange).toHaveBeenCalledExactlyOnceWith("race");
+    expect(onPlanetBonusChange).not.toHaveBeenCalled();
+    expect(onPlay).not.toHaveBeenCalled();
   });
 
   it("calls the planet bonus change handler with three when 3 POINTS is chosen, and not the others", async () => {

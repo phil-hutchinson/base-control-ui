@@ -1,22 +1,22 @@
-// Claiming an advanced planet bonus through play (steal.md §10): the
-// `claimAdvancedBonus` helper in `ply.ts` that `applyMove` and `applyAttack`
+// Claiming a planet activity bonus through play (steal.md §10): the
+// `claimActivityBonus` helper in `ply.ts` that `applyMove` and `applyAttack`
 // both call, and the reordered fight this claim order requires. Kept apart
 // from `ply.test.ts` and `planetBonusClaim.test.ts`, in the same style,
-// since claiming under advanced has its own state shape (`advancedBonuses`
-// rather than `bonusPlanets`). `resolveAdvancedBonusClaim` itself — the pure
-// function this all wraps — is tested directly in `advancedBonus.test.ts`;
+// since claiming under planet activity has its own state shape (`activityBonuses`
+// rather than `bonusPlanets`). `resolveActivityBonusClaim` itself — the pure
+// function this all wraps — is tested directly in `activityBonus.test.ts`;
 // this file is about what `ply.ts` does with it: when a claim fires, where
 // its effect sits, and how a fight's two landings interact with it.
 
 import { describe, expect, it } from "vitest";
-import type { AdvancedBonusEntry, AdvancedBonusKind } from "./advancedBonus";
-import { advancedBonusPoints } from "./advancedBonus";
+import type { ActivityBonusEntry, ActivityBonusKind } from "./activityBonus";
+import { activityBonusPoints } from "./activityBonus";
 import { type Square, squareAt, squareFromName, squareName } from "./board";
 import type { ShipId } from "./fleet";
 import { type GameState, type NodeStatus, type Ship } from "./gameState";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import {
-  type AdvancedBonusClaimedEffect,
+  type ActivityBonusClaimedEffect,
   applyAttack,
   applyMove,
   assertFightInvariants,
@@ -44,9 +44,9 @@ function ship(
 }
 
 function bonuses(
-  first: readonly [Square, AdvancedBonusKind],
-  second: readonly [Square, AdvancedBonusKind],
-): readonly [AdvancedBonusEntry, AdvancedBonusEntry] {
+  first: readonly [Square, ActivityBonusKind],
+  second: readonly [Square, ActivityBonusKind],
+): readonly [ActivityBonusEntry, ActivityBonusEntry] {
   return [
     { square: first[0], kind: first[1] },
     { square: second[0], kind: second[1] },
@@ -65,7 +65,7 @@ function buildState(config: {
   plyNumber?: number;
   chargedNodeCount?: ChargedNodeCount;
   energy?: { green: number; red: number };
-  advancedBonuses?: readonly [AdvancedBonusEntry, AdvancedBonusEntry];
+  activityBonuses?: readonly [ActivityBonusEntry, ActivityBonusEntry];
   playerMatching?: PlayerMatchingSetting;
   scoring?: ScoringSetting;
   randomSeed?: number;
@@ -80,10 +80,11 @@ function buildState(config: {
     openingSeed: config.randomSeed ?? 1,
     nodePlaystyle: "steal",
     rotators: [],
-    planetBonus: "advanced",
+    planetBonus: "off",
     bonusPlanets: { green: [], red: [] },
-    advancedBonuses:
-      config.advancedBonuses ??
+    planetActivity: "race",
+    activityBonuses:
+      config.activityBonuses ??
       bonuses([PLANETS[0], "small-points"], [PLANETS[1], "fuel"]),
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
@@ -95,7 +96,7 @@ function buildState(config: {
   };
 }
 
-describe("a move that lands on an advanced bonus planet (steal.md §10)", () => {
+describe("a move that lands on a planet activity bonus planet (steal.md §10)", () => {
   it("pays the moving side a points bonus's table amount, immediately, before the ply-ended effect", () => {
     const [planet, other] = PLANETS;
     const state = buildState({
@@ -103,7 +104,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
         ship("green-1", "green", belowSquare(planet)),
         ship("red-1", "red", "A1"),
       ],
-      advancedBonuses: bonuses([planet, "large-points"], [other, "fuel"]),
+      activityBonuses: bonuses([planet, "large-points"], [other, "fuel"]),
     });
 
     const result = applyMove(state, "green-1", planet);
@@ -113,11 +114,11 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
       throw new Error("expected the move to be applied");
     }
     expect(result.state.energy.green).toBe(
-      advancedBonusPoints(3, "off", "simple", "large"),
+      activityBonusPoints(3, "off", "simple", "large"),
     );
     expect(result.state.energy.red).toBe(0);
     const claimIndex = result.effects.findIndex(
-      (effect) => effect.type === "advanced-bonus-claimed",
+      (effect) => effect.type === "activity-bonus-claimed",
     );
     const plyEndedIndex = result.effects.findIndex(
       (effect) => effect.type === "ply-ended",
@@ -140,7 +141,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
       chargedNodeCount: 5,
       playerMatching: "required",
       nodes: { F10: { state: "charged", level: 0, signal: 0 } },
-      advancedBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
+      activityBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
     });
 
     const result = applyMove(state, "green-1", planet);
@@ -150,7 +151,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
       throw new Error("expected the move to be applied");
     }
     expect(result.state.energy.green).toBe(
-      advancedBonusPoints(5, "required", "simple", "small"),
+      activityBonusPoints(5, "required", "simple", "small"),
     );
     expect(result.effects).not.toContainEqual(
       expect.objectContaining({ type: "energy-collected" }),
@@ -166,7 +167,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
         ship("green-3", "green", "B6", MAX_POWER),
         ship("red-1", "red", "C7", 3),
       ],
-      advancedBonuses: bonuses([planet, "fuel"], [other, "large-points"]),
+      activityBonuses: bonuses([planet, "fuel"], [other, "large-points"]),
     });
 
     const result = applyMove(state, "green-1", planet);
@@ -185,7 +186,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
     expect(opponent?.power).toBe(3);
     expect(result.effects).toContainEqual(
       expect.objectContaining({
-        type: "advanced-bonus-claimed",
+        type: "activity-bonus-claimed",
         kind: "fuel",
         poweredShipIds: expect.arrayContaining(["green-1", "green-2"]),
       }),
@@ -208,7 +209,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
         ship("red-1", "red", "A1"),
       ],
       nodes,
-      advancedBonuses: bonuses(
+      activityBonuses: bonuses(
         [planet, "additional-nodes"],
         [other, "large-points"],
       ),
@@ -223,7 +224,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
     expect(everyNodeHasExtra(result.state.nodes, 3)).toBe(true);
     expect(result.effects).toContainEqual(
       expect.objectContaining({
-        type: "advanced-bonus-claimed",
+        type: "activity-bonus-claimed",
         kind: "additional-nodes",
       }),
     );
@@ -246,7 +247,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
         ship("red-1", "red", "A1"),
       ],
       nodes,
-      advancedBonuses: bonuses(
+      activityBonuses: bonuses(
         [planet, "node-scramble"],
         [other, "large-points"],
       ),
@@ -263,7 +264,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
     expect(result.state.nodes.N2).toEqual(nodes.N2);
     expect(result.effects).toContainEqual(
       expect.objectContaining({
-        type: "advanced-bonus-claimed",
+        type: "activity-bonus-claimed",
         kind: "node-scramble",
       }),
     );
@@ -276,7 +277,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
         ship("green-1", "green", belowSquare(planet)),
         ship("red-1", "red", "A1"),
       ],
-      advancedBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
+      activityBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
     });
 
     const result = applyMove(state, "green-1", planet);
@@ -285,7 +286,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    const [first, second] = result.state.advancedBonuses;
+    const [first, second] = result.state.activityBonuses;
     expect(squareName(first.square)).not.toBe(squareName(second.square));
     expect(first.kind).not.toBe(second.kind);
     const shipSquareNames = new Set(
@@ -302,17 +303,17 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
         ship("green-1", "green", belowSquare(planet)),
         ship("red-1", "red", "A1"),
       ],
-      advancedBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
+      activityBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
     });
     const resultFirst = applyMove(claimedFirst, "green-1", planet);
     expect(resultFirst.outcome).toBe("applied");
     if (resultFirst.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(squareName(resultFirst.state.advancedBonuses[1].square)).toBe(
+    expect(squareName(resultFirst.state.activityBonuses[1].square)).toBe(
       squareName(other),
     );
-    expect(squareName(resultFirst.state.advancedBonuses[0].square)).not.toBe(
+    expect(squareName(resultFirst.state.activityBonuses[0].square)).not.toBe(
       squareName(planet),
     );
 
@@ -321,17 +322,17 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
         ship("green-1", "green", belowSquare(other)),
         ship("red-1", "red", "A1"),
       ],
-      advancedBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
+      activityBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
     });
     const resultSecond = applyMove(claimedSecond, "green-1", other);
     expect(resultSecond.outcome).toBe("applied");
     if (resultSecond.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(squareName(resultSecond.state.advancedBonuses[0].square)).toBe(
+    expect(squareName(resultSecond.state.activityBonuses[0].square)).toBe(
       squareName(planet),
     );
-    expect(squareName(resultSecond.state.advancedBonuses[1].square)).not.toBe(
+    expect(squareName(resultSecond.state.activityBonuses[1].square)).not.toBe(
       squareName(other),
     );
   });
@@ -341,7 +342,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
     const otherPlanet = PLANETS.find((square) => squareName(square) !== "D6")!;
     const state = buildState({
       ships: [ship("green-1", "green", "D4", 3), ship("red-1", "red", "A1")],
-      advancedBonuses: bonuses(
+      activityBonuses: bonuses(
         [bonusPlanet, "small-points"],
         [otherPlanet, "fuel"],
       ),
@@ -356,9 +357,9 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
       throw new Error("expected the move to be applied");
     }
     expect(result.effects).not.toContainEqual(
-      expect.objectContaining({ type: "advanced-bonus-claimed" }),
+      expect.objectContaining({ type: "activity-bonus-claimed" }),
     );
-    expect(result.state.advancedBonuses).toEqual(state.advancedBonuses);
+    expect(result.state.activityBonuses).toEqual(state.activityBonuses);
     expect(result.state.energy.green).toBe(0);
   });
 
@@ -391,7 +392,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
       ],
       nodes,
       chargedNodeCount: 3,
-      advancedBonuses: bonuses(
+      activityBonuses: bonuses(
         [planet, "node-scramble"],
         [other, "large-points"],
       ),
@@ -456,7 +457,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
       ],
       nodes,
       chargedNodeCount: 3,
-      advancedBonuses: bonuses(
+      activityBonuses: bonuses(
         [planet, "node-scramble"],
         [other, "large-points"],
       ),
@@ -481,7 +482,7 @@ describe("a move that lands on an advanced bonus planet (steal.md §10)", () => 
   });
 });
 
-describe("advanced bonus claims in a fight (steal.md §10)", () => {
+describe("planet activity bonus claims in a fight (steal.md §10)", () => {
   it("the attacker's claim resolves for the attacker's side, before the defender's own claim", () => {
     const state = buildState({
       ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
@@ -500,7 +501,7 @@ describe("advanced bonus claims in a fight (steal.md §10)", () => {
     const survivorPlanet = defenderPool[0];
     const withBonus: GameState = {
       ...state,
-      advancedBonuses: bonuses(
+      activityBonuses: bonuses(
         [attackerPlanet, "large-points"],
         [survivorPlanet, "fuel"],
       ),
@@ -513,10 +514,10 @@ describe("advanced bonus claims in a fight (steal.md §10)", () => {
       throw new Error("expected the attack to be applied");
     }
     expect(result.state.energy.green).toBe(
-      advancedBonusPoints(3, "off", "simple", "large"),
+      activityBonusPoints(3, "off", "simple", "large"),
     );
     const claims = result.effects.filter(
-      (effect) => effect.type === "advanced-bonus-claimed",
+      (effect) => effect.type === "activity-bonus-claimed",
     );
     expect(claims).toHaveLength(1);
     expect(claims[0]).toMatchObject({ side: "green" });
@@ -524,7 +525,7 @@ describe("advanced bonus claims in a fight (steal.md §10)", () => {
       (effect) => effect.type === "fight-resolved",
     );
     const claimIndex = result.effects.findIndex(
-      (effect) => effect.type === "advanced-bonus-claimed",
+      (effect) => effect.type === "activity-bonus-claimed",
     );
     expect(claimIndex).toBeGreaterThan(fightIndex);
   });
@@ -573,7 +574,7 @@ describe("advanced bonus claims in a fight (steal.md §10)", () => {
         ],
         nodes,
         chargedNodeCount: 5,
-        advancedBonuses: bonuses(
+        activityBonuses: bonuses(
           [attackerPlanet, "additional-nodes"],
           [survivorPlanet, "large-points"],
         ),
@@ -650,7 +651,7 @@ describe("advanced bonus claims in a fight (steal.md §10)", () => {
         ],
         nodes,
         chargedNodeCount: 5,
-        advancedBonuses: bonuses(
+        activityBonuses: bonuses(
           [attackerPlanet, "additional-nodes"],
           [survivorPlanet, "large-points"],
         ),
@@ -663,8 +664,8 @@ describe("advanced bonus claims in a fight (steal.md §10)", () => {
         throw new Error("expected the attack to be applied");
       }
       const claim = result.effects.find(
-        (effect): effect is AdvancedBonusClaimedEffect =>
-          effect.type === "advanced-bonus-claimed" &&
+        (effect): effect is ActivityBonusClaimedEffect =>
+          effect.type === "activity-bonus-claimed" &&
           effect.kind === "additional-nodes",
       );
       expect(claim).toBeDefined();
@@ -701,7 +702,7 @@ describe("advanced bonus claims in a fight (steal.md §10)", () => {
         ship("red-1", "red", "H9", 2),
         ...fillers,
       ],
-      advancedBonuses: bonuses(
+      activityBonuses: bonuses(
         [attackerPlanet, "small-points"],
         [survivorPlanet, "medium-points"],
       ),
@@ -715,8 +716,8 @@ describe("advanced bonus claims in a fight (steal.md §10)", () => {
       throw new Error("expected the attack to be applied");
     }
     const claims = result.effects.filter(
-      (effect): effect is AdvancedBonusClaimedEffect =>
-        effect.type === "advanced-bonus-claimed",
+      (effect): effect is ActivityBonusClaimedEffect =>
+        effect.type === "activity-bonus-claimed",
     );
     expect(claims.length).toBeGreaterThanOrEqual(1);
     const attackerClaim = claims[0];
@@ -740,7 +741,7 @@ describe("advanced bonus claims in a fight (steal.md §10)", () => {
   });
 });
 
-describe("assertFightInvariants under advanced planet bonuses (steal.md §10)", () => {
+describe("assertFightInvariants under planet activity (steal.md §10)", () => {
   const baseState = buildState({
     ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
   });

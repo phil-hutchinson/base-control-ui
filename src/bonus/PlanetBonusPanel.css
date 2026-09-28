@@ -10,7 +10,7 @@
    `.clock-region` below (`ClockRegion.css` holds that box to its natural
    size, so it is never the one that gives). The classic rows fit
    comfortably at every size this panel renders at, so neither rule does
-   anything there; under advanced, the portrait cell sizing below already
+   anything there; under planet activity, the portrait cell sizing below already
    shrinks the pair to the height actually available, so these two
    properties are a safety margin rather than the thing doing the work. */
 .planet-bonus-panel {
@@ -28,11 +28,11 @@
    has taken its own natural height — `.clock-region`'s `flex-shrink: 0`
    means it always gets that in full, so `flex: 1 1 0` gives this box
    exactly the rest. `container-type: size` turns that resolved height into
-   `cqh` for `.planet-bonus-panel__advanced-cell` below to size the pair
+   `cqh` for `.planet-bonus-panel__activity-cell` below to size the pair
    from, rather than clip it. Landscape leaves the panel's height to its own
    content, as it already did, so this rule is scoped to portrait only. */
 @media (orientation: portrait) {
-  .planet-bonus-panel--advanced {
+  .planet-bonus-panel--activity {
     flex: 1 1 0;
     container-type: size;
   }
@@ -79,7 +79,7 @@
   height: calc(var(--region-extent) * 0.15);
 }
 
-/* Under advanced (steal.md §10) there is one row of two bonuses rather than
+/* Under planet activity (steal.md §10) there is one row of two bonuses rather than
    two sides' rows of three, each drawn at least as large as a planet on the
    board (`--board-square-size`, `App.css`) in landscape — shrinking to fit
    the panel's own height in portrait instead (below) — and taller than it
@@ -92,7 +92,7 @@
    whole window) alike. `align-items: flex-start` keeps a shorter
    symbol/caption stack from being stretched to match a taller one when a
    claim's redraw changes which kind either slot shows. */
-.planet-bonus-panel__advanced-row {
+.planet-bonus-panel__activity-row {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -103,23 +103,23 @@
 /* At least a board-sized planet's width; free to grow a little past it with
    `--region-extent` when the panel has the room, the way the classic row's
    own cells already do. Height is left to the cell's own content
-   (`AdvancedBonusCell.css`), not fixed here. */
-.planet-bonus-panel__advanced-cell {
+   (`ActivityBonusCell.css`), not fixed here. */
+.planet-bonus-panel__activity-cell {
   flex: 0 0 auto;
   width: max(var(--board-square-size), calc(var(--region-extent) * 0.3));
 }
 
 /* Portrait only: caps the cell's width so its stack (planet, symbol,
-   caption — `AdvancedBonusCell.css`) never grows taller than the height
-   `.planet-bonus-panel--advanced` actually has, shrinking it below a board
+   caption — `ActivityBonusCell.css`) never grows taller than the height
+   `.planet-bonus-panel--activity` actually has, shrinking it below a board
    square's size rather than clipping the caption off. The stack's own
    height comes out to about 1.92 times its width (a planet, less the
    symbol band's 3.4cqw tuck, plus the fixed 70cqw symbol band and a
-   5.75cqw-spaced caption line of 17cqw × 1.1, `AdvancedBonusCell.css`),
+   5.75cqw-spaced caption line of 17cqw × 1.1, `ActivityBonusCell.css`),
    so dividing the container's full height (`100cqh`) by that factor gives
    the widest cell that still fits it. */
 @media (orientation: portrait) {
-  .planet-bonus-panel__advanced-cell {
+  .planet-bonus-panel__activity-cell {
     width: min(
       max(var(--board-square-size), calc(var(--region-extent) * 0.3)),
       calc(100cqh / 1.92)
@@ -133,7 +133,7 @@
    drop-shadow pair), so the link between the panel and the board reads the
    same in either direction. */
 .planet-bonus-panel__cell--glow .planet,
-.planet-bonus-panel__advanced-cell--glow .planet {
+.planet-bonus-panel__activity-cell--glow .planet {
   filter: drop-shadow(0 0 0.3em var(--glow-text))
     drop-shadow(0 0 0.6em var(--glow-text));
 }

@@ -18,11 +18,11 @@
 // a planet or a rotator rotates the queue on the spot, before the end-of-turn
 // sequence ever runs (§8.2). A landing on a planet may also pay a planet
 // bonus, immediately: the classic setting pays if it is on and the planet is
-// one of the landing side's unclaimed three (§3.4); the advanced setting
-// (steal.md §10) instead claims one of the board's two contested bonuses if
+// one of the landing side's unclaimed three (§3.4); under steal, planet
+// activity (steal.md §10) instead claims one of the board's two contested bonuses if
 // the planet carries one, whoever's landing it is. A fight's two landings are
-// each checked in turn, attacker's first, and under advanced the attacker's
-// claim resolves in full — including the bonus pair it leaves behind — before
+// each checked in turn, attacker's first, and under planet activity the
+// attacker's claim resolves in full — including the bonus pair it leaves behind — before
 // the defender's own return planet is even drawn (steal.md §10, `applyAttack`
 // below). A turn is one move or one attack (§5), so every move and every
 // attack ends the ply: play always passes to the other side. The pass guard
@@ -41,9 +41,9 @@ import {
 import { isPlanet } from "./planets";
 import { planetBonusPoints } from "./planetBonus";
 import {
-  type AdvancedBonusKind,
-  resolveAdvancedBonusClaim,
-} from "./advancedBonus";
+  type ActivityBonusKind,
+  resolveActivityBonusClaim,
+} from "./activityBonus";
 import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
 import { otherSide, type Side, type ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
@@ -191,8 +191,8 @@ export interface PlanetBonusClaimedEffect {
 }
 
 /**
- * A ship's landing claimed one of the board's two contested bonuses under the
- * advanced planet bonus setting (steal.md §10): `side` is the claiming side,
+ * A ship's landing claimed one of the board's two contested bonuses under
+ * planet activity (steal.md §10): `side` is the claiming side,
  * `square` the planet landed on and `kind` the bonus claimed there.
  * `pointsAwarded` is the energy a points kind paid (0 for every other kind);
  * `poweredShipIds` names every one of `side`'s ships a Fuel claim raised by a
@@ -207,23 +207,23 @@ export interface PlanetBonusClaimedEffect {
  * resolves the attacker's claim, bonus pair and all, before the defender's
  * return planet is even drawn.
  */
-export interface AdvancedBonusClaimedEffect {
-  readonly type: "advanced-bonus-claimed";
+export interface ActivityBonusClaimedEffect {
+  readonly type: "activity-bonus-claimed";
   readonly side: Side;
   readonly square: Square;
-  readonly kind: AdvancedBonusKind;
+  readonly kind: ActivityBonusKind;
   readonly pointsAwarded: number;
   readonly poweredShipIds: readonly ShipId[];
   readonly addedSquares: readonly Square[];
   readonly removedSquares: readonly Square[];
   readonly survivor: {
     readonly square: Square;
-    readonly oldKind: AdvancedBonusKind;
-    readonly newKind: AdvancedBonusKind;
+    readonly oldKind: ActivityBonusKind;
+    readonly newKind: ActivityBonusKind;
   };
   readonly newBonus: {
     readonly square: Square;
-    readonly kind: AdvancedBonusKind;
+    readonly kind: ActivityBonusKind;
   };
 }
 
@@ -233,7 +233,7 @@ export type MoveEffect =
   | NodeAbandonedEffect
   | NodeClaimedEffect
   | PlanetBonusClaimedEffect
-  | AdvancedBonusClaimedEffect
+  | ActivityBonusClaimedEffect
   | QueueRotatedEffect
   | EndOfPlyEffect;
 
@@ -300,7 +300,7 @@ export interface FightResolvedEffect {
 export type AttackEffect =
   | FightResolvedEffect
   | PlanetBonusClaimedEffect
-  | AdvancedBonusClaimedEffect
+  | ActivityBonusClaimedEffect
   | QueueRotatedEffect
   | EndOfPlyEffect;
 
@@ -510,7 +510,8 @@ function rotateForLanding(
  * Pays a classic planet bonus if `square` triggers one for `side` landing
  * there (rules.md §3.4), modelled on `rotateForLanding` above: does nothing
  * at all — returning `state` unchanged — when the planet bonus setting is
- * off or advanced (advanced's own claim is a separate path — steal.md §10),
+ * off (always the case under steal, whose planet activity claims are a
+ * separate path — steal.md §10),
  * when `square` is not one of `side`'s three dealt planets, or when
  * `side` has already claimed it. Otherwise it does two things at once:
  * `side`'s energy rises by `planetBonusPoints(state.planetBonus)`, and that
@@ -529,9 +530,7 @@ function claimPlanetBonus(
   readonly state: GameState;
   readonly effect: PlanetBonusClaimedEffect | undefined;
 } {
-  if (state.planetBonus === "off" || state.planetBonus === "advanced") {
-    // Advanced has no per-side `bonusPlanets` to look up — `applyMove` and
-    // `applyAttack` resolve its claims separately (steal.md §10).
+  if (state.planetBonus === "off") {
     return { state, effect: undefined };
   }
 
@@ -560,42 +559,42 @@ function claimPlanetBonus(
 }
 
 /**
- * Claims an advanced planet bonus if `square` carries one (steal.md §10),
- * modelled on `claimPlanetBonus` above: does nothing at all — returning
- * `state` unchanged — when the planet bonus setting is not advanced, or when
+ * Claims one of planet activity's two bonuses if `square` carries one
+ * (steal.md §10), modelled on `claimPlanetBonus` above: does nothing at all —
+ * returning `state` unchanged — when planet activity is off, or when
  * `square` is neither of the board's two current bonus planets. Otherwise
- * `resolveAdvancedBonusClaim` applies the claimed kind's own effect, redraws
+ * `resolveActivityBonusClaim` applies the claimed kind's own effect, redraws
  * the surviving bonus's kind and deals a new bonus in the claimed one's
  * place; this wraps its result into `state` — `nodes`, `ships`,
- * `advancedBonuses` and `randomSeed` all follow the resolution, and `side`'s
+ * `activityBonuses` and `randomSeed` all follow the resolution, and `side`'s
  * energy rises by whatever it awarded (0 for every kind but a points one) —
- * and raises an `AdvancedBonusClaimedEffect` describing what happened. Shared
+ * and raises an `ActivityBonusClaimedEffect` describing what happened. Shared
  * by `applyMove`, which calls this once, and `applyAttack`, which calls it
  * twice — the attacker's return planet first, then the defender's — threading
  * the state returned by the first call into the second, exactly as
  * `claimPlanetBonus` and `rotateForLanding` already do.
  */
-function claimAdvancedBonus(
+function claimActivityBonus(
   state: GameState,
   side: Side,
   square: Square,
 ): {
   readonly state: GameState;
-  readonly effect: AdvancedBonusClaimedEffect | undefined;
+  readonly effect: ActivityBonusClaimedEffect | undefined;
 } {
-  if (state.planetBonus !== "advanced") {
+  if (state.planetActivity === "off") {
     return { state, effect: undefined };
   }
 
   const landedSquareName = squareName(square);
-  const isBonusPlanet = state.advancedBonuses.some(
+  const isBonusPlanet = state.activityBonuses.some(
     (entry) => squareName(entry.square) === landedSquareName,
   );
   if (!isBonusPlanet) {
     return { state, effect: undefined };
   }
 
-  const result = resolveAdvancedBonusClaim(state, side, square);
+  const result = resolveActivityBonusClaim(state, side, square);
   const energy =
     result.outcome.pointsAwarded === 0
       ? state.energy
@@ -609,12 +608,12 @@ function claimAdvancedBonus(
       ...state,
       nodes: result.nodes,
       ships: result.ships,
-      advancedBonuses: result.advancedBonuses,
+      activityBonuses: result.activityBonuses,
       randomSeed: result.nextSeed,
       energy,
     },
     effect: {
-      type: "advanced-bonus-claimed",
+      type: "activity-bonus-claimed",
       side,
       square,
       kind: result.outcome.kind,
@@ -638,9 +637,8 @@ function claimAdvancedBonus(
  * sequence (rules.md §3.1, §4.1), like any other planet stay — but it may
  * gain energy on arrival, if `destination` is one of the moving side's
  * unclaimed bonus planets (rules.md §3.4, `claimPlanetBonus` below) or, under
- * the advanced planet bonus setting, one of the board's two current bonus
- * planets (steal.md §10, `claimAdvancedBonus` below) — the two settings are
- * mutually exclusive, so only one of the two ever fires.
+ * planet activity, one of the board's two current bonus planets (steal.md
+ * §10, `claimActivityBonus` below) — the two settings are mutually exclusive, so only one of the two ever fires.
  *
  * Under the continuous, planet and dedicated playstyles, up to two node
  * changes can happen as the move resolves — two knowing exceptions to a
@@ -666,8 +664,8 @@ function claimAdvancedBonus(
  * carries the seed either has left behind.
  *
  * Then `claimPlanetBonus` pays a classic bonus if `destination` earns one,
- * raising a `PlanetBonusClaimedEffect`, and `claimAdvancedBonus` claims an
- * advanced one the same way, raising an `AdvancedBonusClaimedEffect` — a move
+ * raising a `PlanetBonusClaimedEffect`, and `claimActivityBonus` claims a
+ * planet activity one the same way, raising an `ActivityBonusClaimedEffect` — a move
  * that leaves a charged node and lands on a bonus planet resolves the leave
  * first, exactly as steal.md §10 states — a planet is never a node square, so
  * one move can at most leave one node and land on one bonus planet. Finally,
@@ -822,10 +820,10 @@ export function applyMove(
   if (claimEffect !== undefined) {
     effects.push(claimEffect);
   }
-  const { state: claimedState, effect: advancedClaimEffect } =
-    claimAdvancedBonus(classicClaimedState, ship.side, destination);
-  if (advancedClaimEffect !== undefined) {
-    effects.push(advancedClaimEffect);
+  const { state: claimedState, effect: activityClaimEffect } =
+    claimActivityBonus(classicClaimedState, ship.side, destination);
+  if (activityClaimEffect !== undefined) {
+    effects.push(activityClaimEffect);
   }
   // Captured before rotateForLanding, so a node that charges later in this
   // same ply is reported at the priority a player last saw it holding, not
@@ -899,13 +897,12 @@ function placeOnPlanet(
  * attacker's must be exactly `before`'s power less `cost` — the shape it
  * struck down (rules.md §6, §7).
  *
- * Under the advanced planet bonus setting (steal.md §10), a landing's claim
- * can legitimately change power (Fuel) and a node's squares (Additional
- * nodes, Node scramble) — the very things the power and node checks below
- * exist to protect against a fight touching. `before.planetBonus` decides
- * this once: when it is `"advanced"`, the power check widens to allow a
- * returning ship's power to be exactly one higher than expected, since Fuel
- * is the only advanced kind that touches power and never raises a ship by
+ * Under planet activity (steal.md §10), a landing's claim can legitimately
+ * change power (Fuel) and a node's squares (Additional nodes, Node scramble)
+ * — the very things the power and node checks below exist to protect against
+ * a fight touching. `before.planetActivity` decides this once: when it is on,
+ * the power check widens to allow a returning ship's power to be exactly one
+ * higher than expected, since Fuel is the only bonus kind that touches power and never raises a ship by
  * more than one; the node-equality check is skipped entirely. Every
  * placement check (each returned ship on its own planet, previously empty,
  * every other ship exactly where it stood, both fleets the same size) still
@@ -921,7 +918,7 @@ export function assertFightInvariants(
   cost: PowerLevel,
   returnedShipIds: ReadonlySet<ShipId>,
 ): void {
-  const isAdvanced = before.planetBonus === "advanced";
+  const isPlanetActivityOn = before.planetActivity !== "off";
   const beforeOccupiedSquareNames = new Set(
     before.ships.map((ship) => squareName(ship.square)),
   );
@@ -962,22 +959,22 @@ export function assertFightInvariants(
           `returned ship "${ship.id}" ended on planet "${updatedName}", which held a ship before the fight: rules.md §7.1 draws only from planets empty at the moment`,
         );
       }
-      // Under advanced, a landing's claim (steal.md §10) can legitimately
-      // raise either fighter's power by exactly one (Fuel) — no other kind
-      // touches power, and Fuel never raises a ship already at the maximum —
-      // so the gap between the expected and the actual power is 0 off
-      // advanced, and 0 or 1 under it.
+      // Under planet activity, a landing's claim (steal.md §10) can
+      // legitimately raise either fighter's power by exactly one (Fuel) — no
+      // other kind touches power, and Fuel never raises a ship already at the
+      // maximum — so the gap between the expected and the actual power is 0
+      // with planet activity off, and 0 or 1 with it on.
       const isAttacker = ship.id === attackerShipId;
       const expectedPower = isAttacker ? ship.power - cost : ship.power;
       const powerGap = updated.power - expectedPower;
-      const powerGapIsAllowed = isAdvanced
+      const powerGapIsAllowed = isPlanetActivityOn
         ? powerGap === 0 || powerGap === 1
         : powerGap === 0;
       if (!powerGapIsAllowed) {
         throw new RangeError(
           isAttacker
-            ? `attacking ship "${ship.id}" had ${ship.power} power before the fight and paid ${cost} for the shot, so should have ended with ${expectedPower}${isAdvanced ? " (or one more, from a Fuel claim)" : ""}, but ended with ${updated.power} instead: rules.md §6, §7 spend exactly the cost of the shape struck down`
-            : `defending ship "${ship.id}" had ${ship.power} power before the fight and ${updated.power} after${isAdvanced ? ", more than a Fuel claim's one point could add" : ""}: rules.md §7 leaves the defender's power untouched`,
+            ? `attacking ship "${ship.id}" had ${ship.power} power before the fight and paid ${cost} for the shot, so should have ended with ${expectedPower}${isPlanetActivityOn ? " (or one more, from a Fuel claim)" : ""}, but ended with ${updated.power} instead: rules.md §6, §7 spend exactly the cost of the shape struck down`
+            : `defending ship "${ship.id}" had ${ship.power} power before the fight and ${updated.power} after${isPlanetActivityOn ? ", more than a Fuel claim's one point could add" : ""}: rules.md §7 leaves the defender's power untouched`,
         );
       }
     }
@@ -995,11 +992,11 @@ export function assertFightInvariants(
     }
   }
 
-  // A landing's advanced claim (steal.md §10) can legitimately add or remove
-  // a node's squares (Additional nodes, Node scramble), so this whole check
-  // only applies off advanced, where a fight must leave every node exactly
+  // A landing's planet activity claim (steal.md §10) can legitimately add or
+  // remove a node's squares (Additional nodes, Node scramble), so this whole
+  // check only applies with planet activity off, where a fight must leave every node exactly
   // as it stood.
-  if (isAdvanced) {
+  if (isPlanetActivityOn) {
     return;
   }
 
@@ -1053,11 +1050,12 @@ export function assertFightInvariants(
  *
  * The two returns do not happen together: the attacker is placed first, and
  * its landing is settled in full — any planet bonus it claims (`claimPlanetBonus`,
- * §3.4, or `claimAdvancedBonus`, steal.md §10) and any rotation that follows
+ * §3.4, or `claimActivityBonus`, steal.md §10) and any rotation that follows
  * (`rotateForLanding`, §8.2) — before the defender's own return planet is
  * even drawn, from the planets still empty at that point. This is steal.md
  * §10's fight order, stated there because it matters for a recorded game's
- * replay: the attacker's claim advances the seed, and, under advanced, may
+ * replay: the attacker's claim advances the seed, and, under planet
+ * activity, may
  * change which ships carry power (Fuel) and which squares a node occupies
  * (Additional nodes, Node scramble), before the defender's planet is drawn
  * and its own landing settled the same way. `assertFightInvariants` runs
@@ -1104,32 +1102,32 @@ export function applyAttack(
     randomSeed: seedAfterAttacker,
   };
 
-  // The attacker's landing is settled in full — its claim, classic or
-  // advanced, and the rotation that follows — before the defender's own
+  // The attacker's landing is settled in full — its claim, planet bonus or
+  // planet activity, and the rotation that follows — before the defender's own
   // return planet is even drawn (steal.md §10).
   const attackerClassicClaim = claimPlanetBonus(
     afterAttackerReturned,
     attackerShip.side,
     attackerTo,
   );
-  const attackerAdvancedClaim = claimAdvancedBonus(
+  const attackerActivityClaim = claimActivityBonus(
     attackerClassicClaim.state,
     attackerShip.side,
     attackerTo,
   );
   const attackerClaimEffect =
-    attackerClassicClaim.effect ?? attackerAdvancedClaim.effect;
+    attackerClassicClaim.effect ?? attackerActivityClaim.effect;
   // Captured once, ahead of either fighter's rotation, so a node that charges
   // later in this same ply is reported at the priority a player last saw it
-  // holding. Only a classic setting ever rotates a fight's landing — advanced
-  // is steal-only, and steal never rotates one — and neither classic claim
-  // touches a node, so this is the same snapshot the un-reordered code took,
+  // holding. Only a classic setting ever rotates a fight's landing — planet
+  // activity is steal-only, and steal never rotates one — and neither
+  // classic claim touches a node, so this is the same snapshot the un-reordered code took,
   // whether it is read now or once both ships have landed.
   const priorityBeforeLanding = snapshotInactivePriorities(
-    attackerAdvancedClaim.state.nodes,
+    attackerActivityClaim.state.nodes,
   );
   const afterAttackerRotation = rotateForLanding(
-    attackerAdvancedClaim.state,
+    attackerActivityClaim.state,
     attackerTo,
   );
 
@@ -1151,15 +1149,15 @@ export function applyAttack(
     defenderShip.side,
     defenderTo,
   );
-  const defenderAdvancedClaim = claimAdvancedBonus(
+  const defenderActivityClaim = claimActivityBonus(
     defenderClassicClaim.state,
     defenderShip.side,
     defenderTo,
   );
   const defenderClaimEffect =
-    defenderClassicClaim.effect ?? defenderAdvancedClaim.effect;
+    defenderClassicClaim.effect ?? defenderActivityClaim.effect;
   const afterDefenderRotation = rotateForLanding(
-    defenderAdvancedClaim.state,
+    defenderActivityClaim.state,
     defenderTo,
   );
   const rotatedState = afterDefenderRotation.state;

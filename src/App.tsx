@@ -66,6 +66,8 @@ export function App() {
     setScoring,
     planetBonus,
     setPlanetBonus,
+    planetActivity,
+    setPlanetActivity,
     nodePlaystyle,
     setNodePlaystyle,
     playerMatching,
@@ -96,6 +98,8 @@ export function App() {
             onScoringChange={setScoring}
             planetBonus={planetBonus}
             onPlanetBonusChange={setPlanetBonus}
+            planetActivity={planetActivity}
+            onPlanetActivityChange={setPlanetActivity}
             nodePlaystyle={nodePlaystyle}
             onNodePlaystyleChange={setNodePlaystyle}
             playerMatching={playerMatching}

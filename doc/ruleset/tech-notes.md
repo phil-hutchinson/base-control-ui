@@ -227,9 +227,10 @@ across a batch of whole games' worth of claims and abandons.
 
 ---
 
-## Sizing advanced planet bonus points
+## Sizing planet activity bonus points
 
-Story 105's point table ([steal.md](steal.md) §10) started as an estimate
+Story 105's point table ([steal.md](steal.md) §10), built for the setting
+then called advanced and now called race, started as an estimate
 built from a stated pattern — double plays like one node more, required
 like one fewer — rather than from measurement. Once the rest of the story
 worked, this pass measured how fast nodes actually pay under each of the 18
@@ -322,9 +323,9 @@ why this pass treated the **proportions** between combinations as the
 signal worth rescaling to, and kept the story's own overall level (via the
 median ratio `k`) rather than replacing it outright.
 
-**What the app guards:** `src/rules/advancedBonus.test.ts`'s point-table
+**What the app guards:** `src/rules/activityBonus.test.ts`'s point-table
 mirror test (D12) reads this file's steal.md §10 table with `node:fs` and
-asserts the code's `advancedBonusPoints` lookup agrees with it for all 18
+asserts the code's `activityBonusPoints` lookup agrees with it for all 18
 cells, so the table in the two places cannot drift apart; its spot-check
 test pins a handful of cells, including one of the two rows this pass
 changed.

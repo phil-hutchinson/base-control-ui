@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { PLAYER_NODE_COLORS, SIGNAL_COLORS } from "../board/squareArt";
-import { advancedBonusPoints } from "../rules/advancedBonus";
+import { activityBonusPoints } from "../rules/activityBonus";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { DEFAULT_PLAYER_MATCHING } from "../rules/playerMatching";
 import { DEFAULT_SCORING } from "../rules/scoring";
@@ -284,10 +284,10 @@ describe("AdvancedPlanetBonusDiagram", () => {
     const { container } = render(<AdvancedPlanetBonusDiagram />);
 
     expect(container.querySelectorAll(".guide-diagram__cell")).toHaveLength(2);
-    expect(container.querySelectorAll(".advanced-bonus-cell")).toHaveLength(2);
+    expect(container.querySelectorAll(".activity-bonus-cell")).toHaveLength(2);
     expect(container.querySelectorAll(".planet")).toHaveLength(2);
 
-    const expectedAmount = advancedBonusPoints(
+    const expectedAmount = activityBonusPoints(
       DEFAULT_CHARGED_NODE_COUNT,
       DEFAULT_PLAYER_MATCHING,
       DEFAULT_SCORING,

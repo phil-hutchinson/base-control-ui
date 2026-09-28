@@ -157,7 +157,7 @@ describe("GuideScreen", () => {
     });
     const section = heading.closest("section");
     expect(section).not.toBeNull();
-    expect(section?.querySelectorAll(".advanced-bonus-cell")).toHaveLength(2);
+    expect(section?.querySelectorAll(".activity-bonus-cell")).toHaveLength(2);
     expect(section?.querySelectorAll(".points-symbol")).toHaveLength(1);
     expect(section?.querySelectorAll(".node-scramble-symbol")).toHaveLength(1);
   });

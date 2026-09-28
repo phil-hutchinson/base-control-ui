@@ -29,7 +29,7 @@
 // leaving comes before claiming (steal.md §5) — for two seed steps in that
 // order.
 //
-// Under the advanced planet bonus setting (steal.md §10), two more pure
+// Under planet activity (steal.md §10), two more pure
 // functions change the node map outside a claim or a leave:
 // `addExtraProspectiveSquares` (Additional nodes) draws one square per
 // signal lacking an extra, one seed step each; `scrambleProspectiveSquares`
@@ -37,7 +37,7 @@
 // per square added: one for a Held node, with or without a surviving extra,
 // anchored on its charged square; two for an Open node with a surviving
 // extra, both anchored on the extra; two for an Open node left with
-// nothing. `advancedBonus.ts` calls both and threads the seed on into its
+// nothing. `activityBonus.ts` calls both and threads the seed on into its
 // own claim-resolution draws.
 
 import { ALL_SQUARES, type Square, squareName } from "./board";

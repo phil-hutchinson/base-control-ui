@@ -10,6 +10,7 @@ import { type AttackRefusalReason, legalTargets } from "../rules/combat";
 import type { FleetSize, Side, ShipId } from "../rules/fleet";
 import type { NodePlaystyle } from "../rules/nodePlaystyle";
 import type { ChargedNodeCount } from "../rules/nodes";
+import type { PlanetActivitySetting } from "../rules/planetActivity";
 import type { PlanetBonusSetting } from "../rules/planetBonus";
 import type { PlayerMatchingSetting } from "../rules/playerMatching";
 import type { PowerLevel } from "../rules/power";
@@ -109,8 +110,9 @@ export type SessionEvent =
  * selection, start a new game, report a clock running out, or pass a turn
  * for time. `new-game` carries the seed, the length in rounds, the fleet
  * size, the charged-node count, whether combat is enabled, the scoring
- * setting, the node playstyle, the planet bonus setting and the
- * player-matching nodes setting the new game starts from — the reducer uses
+ * setting, the node playstyle, the planet bonus setting, the planet
+ * activity setting and the player-matching nodes setting the new game
+ * starts from — the reducer uses
  * what it is handed and never draws a seed or reaches for a default itself.
  * `clock-expired` and `pass-out-of-time` are dispatched by the app's own
  * clock (rules.md §10); the rules layer never reads a clock itself
@@ -129,6 +131,7 @@ export type SessionIntent =
       readonly scoring: ScoringSetting;
       readonly nodePlaystyle: NodePlaystyle;
       readonly planetBonus: PlanetBonusSetting;
+      readonly planetActivity: PlanetActivitySetting;
       readonly playerMatching: PlayerMatchingSetting;
     }
   | { readonly type: "clock-expired"; readonly side: Side }
@@ -291,6 +294,7 @@ export function sessionReducer(
         scoring: intent.scoring,
         nodePlaystyle: intent.nodePlaystyle,
         planetBonus: intent.planetBonus,
+        planetActivity: intent.planetActivity,
         playerMatching: intent.playerMatching,
       }),
     );

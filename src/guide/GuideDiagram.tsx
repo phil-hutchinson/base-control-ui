@@ -2,8 +2,8 @@
 // diagrams"): a caller-given number of columns holding a fixed list of
 // cells, each a real `BoardSquare`, a numeral drawn over one, a standalone
 // note, a quiet label, a full-width rule, an arrow, a bonus planet cell
-// (`PlanetBonusCell`, shared with `PlanetBonusPanel`), an advanced planet
-// bonus cell (`AdvancedBonusCell`, shared with `PlanetBonusPanel`'s advanced
+// (`PlanetBonusCell`, shared with `PlanetBonusPanel`), a planet activity
+// bonus cell (`ActivityBonusCell`, shared with `PlanetBonusPanel`'s planet activity
 // row), or nothing. Purely presentational — no session, no state, no event
 // handlers — and hidden from the accessibility tree, since the paragraph
 // above each diagram already carries its meaning in words.
@@ -13,10 +13,10 @@ import type { BoardSquareProps } from "../board/BoardSquare";
 import { BoardSquare } from "../board/BoardSquare";
 import type { PlanetArt } from "../board/planetArt";
 import type { BonusBadgeState } from "../bonus/bonusBadge";
-import { AdvancedBonusCell } from "../bonus/AdvancedBonusCell";
+import { ActivityBonusCell } from "../bonus/ActivityBonusCell";
 import { PlanetBonusCell } from "../bonus/PlanetBonusCell";
 import type { Side } from "../rules/fleet";
-import type { AdvancedBonusKind } from "../rules/advancedBonus";
+import type { ActivityBonusKind } from "../rules/activityBonus";
 import type { ChargedNodeCount } from "../rules/nodes";
 import type { PlayerMatchingSetting } from "../rules/playerMatching";
 import type { ScoringSetting } from "../rules/scoring";
@@ -42,9 +42,9 @@ export type GuideDiagramCell =
       readonly badge: Exclude<BonusBadgeState, "amount">;
     }
   | {
-      readonly kind: "advancedBonus";
+      readonly kind: "activityBonus";
       readonly art: PlanetArt;
-      readonly bonusKind: AdvancedBonusKind;
+      readonly bonusKind: ActivityBonusKind;
       readonly nodeCount: ChargedNodeCount;
       readonly playerMatching: PlayerMatchingSetting;
       readonly scoring: ScoringSetting;
@@ -124,9 +124,9 @@ function renderCell(cell: GuideDiagramCell): ReactNode {
       return (
         <PlanetBonusCell side={cell.side} art={cell.art} badge={cell.badge} />
       );
-    case "advancedBonus":
+    case "activityBonus":
       return (
-        <AdvancedBonusCell
+        <ActivityBonusCell
           art={cell.art}
           kind={cell.bonusKind}
           nodeCount={cell.nodeCount}
@@ -158,8 +158,8 @@ export function GuideDiagram({
             ? "guide-diagram__cell guide-diagram__cell--label"
             : cell.kind === "rule"
               ? "guide-diagram__cell guide-diagram__cell--rule"
-              : cell.kind === "advancedBonus"
-                ? "guide-diagram__cell guide-diagram__cell--advanced-bonus"
+              : cell.kind === "activityBonus"
+                ? "guide-diagram__cell guide-diagram__cell--activity-bonus"
                 : "guide-diagram__cell";
         return (
           <div className={cellClassName} key={index}>

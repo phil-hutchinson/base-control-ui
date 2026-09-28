@@ -1485,7 +1485,7 @@ describe("announcementFor — a planet bonus claimed (rules.md §3.4)", () => {
   });
 });
 
-describe("announcementFor — an advanced planet bonus claimed (steal.md §10)", () => {
+describe("announcementFor — a planet activity bonus claimed (steal.md §10)", () => {
   it("announces a points claim, between the move cost and the turn-ending clause", () => {
     const event: MovedEvent = {
       type: "moved",
@@ -1495,7 +1495,7 @@ describe("announcementFor — an advanced planet bonus claimed (steal.md §10)",
       to: squareAt("D", 6),
       effects: [
         {
-          type: "advanced-bonus-claimed",
+          type: "activity-bonus-claimed",
           side: "green",
           square: squareAt("D", 6),
           kind: "large-points",
@@ -1530,7 +1530,7 @@ describe("announcementFor — an advanced planet bonus claimed (steal.md §10)",
       to: squareAt("D", 6),
       effects: [
         {
-          type: "advanced-bonus-claimed",
+          type: "activity-bonus-claimed",
           side: "green",
           square: squareAt("D", 6),
           kind: "fuel",
@@ -1565,7 +1565,7 @@ describe("announcementFor — an advanced planet bonus claimed (steal.md §10)",
       to: squareAt("D", 6),
       effects: [
         {
-          type: "advanced-bonus-claimed",
+          type: "activity-bonus-claimed",
           side: "green",
           square: squareAt("D", 6),
           kind: "fuel",
@@ -1600,7 +1600,7 @@ describe("announcementFor — an advanced planet bonus claimed (steal.md §10)",
       to: squareAt("D", 6),
       effects: [
         {
-          type: "advanced-bonus-claimed",
+          type: "activity-bonus-claimed",
           side: "green",
           square: squareAt("D", 6),
           kind: "additional-nodes",
@@ -1635,7 +1635,7 @@ describe("announcementFor — an advanced planet bonus claimed (steal.md §10)",
       to: squareAt("D", 6),
       effects: [
         {
-          type: "advanced-bonus-claimed",
+          type: "activity-bonus-claimed",
           side: "green",
           square: squareAt("D", 6),
           kind: "node-scramble",
@@ -1701,7 +1701,7 @@ describe("announcementFor — an advanced planet bonus claimed (steal.md §10)",
       effects: [
         fight,
         {
-          type: "advanced-bonus-claimed",
+          type: "activity-bonus-claimed",
           side: "green",
           square: squareAt("A", 6),
           kind: "small-points",
@@ -1717,7 +1717,7 @@ describe("announcementFor — an advanced planet bonus claimed (steal.md §10)",
           newBonus: { square: squareAt("H", 8), kind: "additional-nodes" },
         },
         {
-          type: "advanced-bonus-claimed",
+          type: "activity-bonus-claimed",
           side: "red",
           square: squareAt("D", 1),
           kind: "large-points",
@@ -2000,7 +2000,8 @@ describe("announcementForSession", () => {
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
-      advancedBonuses: [],
+      planetActivity: "off",
+      activityBonuses: [],
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -2392,7 +2393,8 @@ describe("turnIndicatorText", () => {
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
-        advancedBonuses: [],
+        planetActivity: "off",
+        activityBonuses: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -2417,7 +2419,8 @@ describe("turnIndicatorText", () => {
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
-        advancedBonuses: [],
+        planetActivity: "off",
+        activityBonuses: [],
         energy: { green: 0, red: 0 },
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -2442,7 +2445,8 @@ describe("turnIndicatorText", () => {
         rotators: [],
         planetBonus: "off",
         bonusPlanets: { green: [], red: [] },
-        advancedBonuses: [],
+        planetActivity: "off",
+        activityBonuses: [],
         energy: { green: 4, red: 4 },
         lengthInRounds: 3,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -2496,7 +2500,8 @@ describe("HUD wording", () => {
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
-      advancedBonuses: [],
+      planetActivity: "off",
+      activityBonuses: [],
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
       chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,

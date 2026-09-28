@@ -1,4 +1,4 @@
-// The Fuel symbol an advanced Fuel bonus draws beneath its planet: a single
+// The Fuel symbol a planet activity Fuel bonus draws beneath its planet: a single
 // gauge bar, because Fuel gives one power, in the same double-stroke shape a
 // ship's own gauge bar draws (`ShipModel.tsx`, `powerGauge.ts`,
 // `shipArt.ts`), scaled up to fill this symbol's own box since it stands
