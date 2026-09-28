@@ -31,17 +31,26 @@ import {
 } from "./nodePlaystyle";
 import { dealStealOpeningBoard, type NodeSignal } from "./steal";
 import { dealBonusPlanets } from "./bonusPlanets";
-import { dealAdvancedBonuses, type AdvancedBonusEntry } from "./advancedBonus";
+import { dealActivityBonuses, type ActivityBonusEntry } from "./activityBonus";
 import {
   DEFAULT_PLANET_BONUS,
   isPlanetBonusSetting,
   PLANET_BONUS_SETTINGS,
+  resolvePlanetBonus,
   type PlanetBonusSetting,
 } from "./planetBonus";
+import {
+  DEFAULT_PLANET_ACTIVITY,
+  isPlanetActivitySetting,
+  PLANET_ACTIVITY_SETTINGS,
+  resolvePlanetActivity,
+  type PlanetActivitySetting,
+} from "./planetActivity";
 import {
   DEFAULT_PLAYER_MATCHING,
   isPlayerMatchingSetting,
   PLAYER_MATCHING_SETTINGS,
+  resolvePlayerMatching,
   type PlayerMatchingSetting,
 } from "./playerMatching";
 import { placeRotators } from "./rotators";
@@ -84,11 +93,11 @@ export interface Ship {
  * carries `level` 0 always — steal has no countdown of any kind. No node
  * square of any other playstyle ever carries `signal`.
  *
- * `extra` exists only under the advanced planet bonus setting (steal.md
- * §10): a prospective square an Additional nodes bonus gave its node, on top
- * of the two every node ordinarily carries. Only a prospective square ever
- * carries it, a signal carries at most one such square, and it is never
- * `true` outside an advanced steal game.
+ * `extra` exists only under planet resources (steal.md §10): a prospective
+ * square an Additional nodes bonus gave its node, on top of the two every
+ * node ordinarily carries. Only a prospective square ever carries it, a
+ * signal carries at most one such square, and it is never `true` in a game
+ * with planet resources off.
  */
 export interface NodeStatus {
   readonly state: NodeState;
@@ -216,29 +225,40 @@ export interface GameState {
    * landing pays reads it from here rather than from an app default. It
    * cannot be derived from a board or from `bonusPlanets` below: an off game
    * and an on game that happens to have claimed nothing yet look identical
-   * on the board.
+   * on the board. Always `"off"` under steal — `startingGameState` rejects
+   * any other value paired with the steal node playstyle, whose planet
+   * choice is `planetActivity` instead.
    */
   readonly planetBonus: PlanetBonusSetting;
   /**
    * Each side's three dealt bonus planets (rules.md §3.4), fixed for the
    * game's lifetime once dealt by `startingGameState`. Both sides' lists are
-   * empty when `planetBonus` is off or advanced — advanced has no per-player
-   * planets; see `advancedBonuses` below. See `BonusPlanetEntry` for why an
-   * entry's claim is recorded as a ply number rather than a boolean.
+   * empty when `planetBonus` is off, and so always under steal — the planet
+   * resources setting has no per-player planets; see `activityBonuses` below.
+   * See `BonusPlanetEntry` for why an entry's claim is recorded as a ply
+   * number rather than a boolean.
    */
   readonly bonusPlanets: BonusPlanetsBySide;
   /**
-   * The two bonuses standing on the board under the advanced planet bonus
-   * setting (steal.md §10), dealt by `startingGameState` and updated as
+   * The planet resources setting (rules.md §3.4, steal.md §10), fixed for the
+   * game's lifetime once set by `startingGameState`. Every place that decides
+   * whether a landing claims one of the two contested bonuses reads it from
+   * here. Always `"off"` outside steal — `startingGameState` rejects any
+   * other value paired with a non-steal node playstyle.
+   */
+  readonly planetActivity: PlanetActivitySetting;
+  /**
+   * The two bonuses standing on the board while planet resources is on
+   * (steal.md §10), dealt by `startingGameState` and updated as
    * claims resolve. Slot order is meaningful: on a claim the surviving bonus
    * keeps its slot and the new bonus takes the claimed one's, so the panel
    * can read the pair straight off this list with no state of its own.
-   * Always empty except under advanced, when it always holds exactly two
-   * entries, on two different planets, of two different kinds — `bonusPlanets`
-   * above stays empty for both sides under advanced, since there are no
-   * per-player planets to deal.
+   * Always empty while planet resources is off; otherwise it always holds
+   * exactly two entries, on two different planets, of two different kinds —
+   * `bonusPlanets` above stays empty for both sides under steal, since there
+   * are no per-player planets to deal.
    */
-  readonly advancedBonuses: readonly AdvancedBonusEntry[];
+  readonly activityBonuses: readonly ActivityBonusEntry[];
   /**
    * The player-matching nodes setting (steal.md §9), fixed for the game's
    * lifetime once set by `startingGameState`. Every place that prices a
@@ -255,7 +275,10 @@ export interface GameState {
 /**
  * The options `startingGameState` accepts beyond the seed, each fixed for
  * the game's lifetime once set. All are optional and fall back to the
- * app's defaults.
+ * app's defaults; the three settings a playstyle may not offer — planet
+ * bonus, planet resources and player-matching — fall back to the app's
+ * default resolved for the chosen node playstyle, so that omitting them
+ * never asks for a combination the rules do not allow.
  */
 export interface StartingGameStateOptions {
   /**
@@ -300,7 +323,7 @@ export interface StartingGameStateOptions {
   readonly scoring?: string;
   /**
    * The node playstyle (rules.md §8.2): continuous, planet, dedicated or
-   * steal (steal.md). Defaults to `DEFAULT_NODE_PLAYSTYLE` (planet).
+   * steal (steal.md). Defaults to `DEFAULT_NODE_PLAYSTYLE` (steal).
    * Deliberately typed `string`, not `NodePlaystyle`, for the same reason
    * `scoring` is: a setting arriving from outside the type system can be
    * any string. Must be one of `nodePlaystyle.ts`'s offered settings, or
@@ -309,21 +332,38 @@ export interface StartingGameStateOptions {
    */
   readonly nodePlaystyle?: string;
   /**
-   * The planet bonus setting (rules.md §3.4). Defaults to
-   * `DEFAULT_PLANET_BONUS` (off). Deliberately typed `string`, not
+   * The planet bonus setting (rules.md §3.4). When omitted, defaults to
+   * `DEFAULT_PLANET_BONUS` (off) resolved for the chosen node playstyle by
+   * `resolvePlanetBonus` — always off under steal. Deliberately typed `string`, not
    * `PlanetBonusSetting`, for the same reason `scoring` and `nodePlaystyle`
    * are: a setting arriving from outside the type system can be any string.
    * Must be one of `planetBonus.ts`'s offered settings, or this throws a
-   * `RangeError`. `"advanced"` (steal.md §10) paired with a `nodePlaystyle`
-   * other than `"steal"` also throws a `RangeError` — a non-steal advanced
-   * game is a state the rules do not allow. `bonusPlanets` and
-   * `advancedBonuses` are not options — they are produced by the deal, never
-   * supplied.
+   * `RangeError`. A value other than `"off"` paired with the `"steal"` node
+   * playstyle also throws a `RangeError` — rules.md §3.4 offers planet bonus
+   * only outside steal. `bonusPlanets` is not an option — it is produced by
+   * the deal, never supplied.
    */
   readonly planetBonus?: string;
   /**
+   * The planet resources setting (rules.md §3.4, steal.md §10), offered only
+   * under the steal node playstyle. When omitted, defaults to
+   * `DEFAULT_PLANET_ACTIVITY` (race) resolved for the chosen node playstyle
+   * by `resolvePlanetActivity` — off outside steal. Deliberately typed
+   * `string`, not `PlanetActivitySetting`, for the same reason `scoring`,
+   * `nodePlaystyle` and `planetBonus` are: a setting arriving from outside
+   * the type system can be any string. Must be one of
+   * `planetActivity.ts`'s offered settings, or this throws a `RangeError`. A
+   * value other than `"off"` paired with a `nodePlaystyle` other than
+   * `"steal"` also throws a `RangeError` — a non-steal game with planet
+   * resources is a state the rules do not allow. `activityBonuses` is not an
+   * option — it is produced by the deal, never supplied.
+   */
+  readonly planetActivity?: string;
+  /**
    * The player-matching nodes setting (steal.md §9), offered only under the
-   * steal node playstyle. Defaults to `DEFAULT_PLAYER_MATCHING` (off).
+   * steal node playstyle. When omitted, defaults to `DEFAULT_PLAYER_MATCHING`
+   * (required) resolved for the chosen node playstyle by
+   * `resolvePlayerMatching` — off outside steal.
    * Deliberately typed `string`, not `PlayerMatchingSetting`, for the same
    * reason `scoring`, `nodePlaystyle` and `planetBonus` are: a setting
    * arriving from outside the type system can be any string. Must be one of
@@ -358,10 +398,10 @@ export interface StartingGameStateOptions {
  * planet deal (rules.md §3.4), drawn last so an off game spends nothing
  * extra. Under steal instead, the deal consumes exactly `2 *
  * chargedNodeCount` steps (`dealStealOpeningBoard`, steal.md §7) — no
- * rotator set is ever drawn — and the classic bonus planet deal, if the
- * setting calls for one, still runs last. When the planet bonus is
- * `"advanced"` (steal.md §10, steal only), the classic deal does not run and
- * `dealAdvancedBonuses` instead draws exactly four more steps, also last.
+ * rotator set is ever drawn — and the planet bonus is always off, so the
+ * classic bonus planet deal never runs. When planet resources is on
+ * (steal.md §10, steal only), `dealActivityBonuses` instead draws exactly
+ * four more steps, last.
  * The player-matching nodes setting (steal.md §9) draws nothing — which two
  * signals are matched to the players is derived from `chargedNodeCount`, not
  * drawn — so a steal game started with double or required deals exactly the
@@ -401,8 +441,6 @@ export function startingGameState(
     combatEnabled = DEFAULT_COMBAT_ENABLED,
     scoring = DEFAULT_SCORING,
     nodePlaystyle = DEFAULT_NODE_PLAYSTYLE,
-    planetBonus = DEFAULT_PLANET_BONUS,
-    playerMatching = DEFAULT_PLAYER_MATCHING,
   } = options;
 
   if (!isGameLengthRounds(lengthInRounds)) {
@@ -430,9 +468,25 @@ export function startingGameState(
       `startingGameState: nodePlaystyle must be one of ${NODE_PLAYSTYLES.join(", ")}, got ${nodePlaystyle}`,
     );
   }
+  const {
+    planetBonus = resolvePlanetBonus(nodePlaystyle, DEFAULT_PLANET_BONUS),
+    planetActivity = resolvePlanetActivity(
+      nodePlaystyle,
+      DEFAULT_PLANET_ACTIVITY,
+    ),
+    playerMatching = resolvePlayerMatching(
+      nodePlaystyle,
+      DEFAULT_PLAYER_MATCHING,
+    ),
+  } = options;
   if (!isPlanetBonusSetting(planetBonus)) {
     throw new RangeError(
       `startingGameState: planetBonus must be one of ${PLANET_BONUS_SETTINGS.join(", ")}, got ${planetBonus}`,
+    );
+  }
+  if (!isPlanetActivitySetting(planetActivity)) {
+    throw new RangeError(
+      `startingGameState: planetActivity must be one of ${PLANET_ACTIVITY_SETTINGS.join(", ")}, got ${planetActivity}`,
     );
   }
   if (!isPlayerMatchingSetting(playerMatching)) {
@@ -445,9 +499,14 @@ export function startingGameState(
       `startingGameState: playerMatching "${playerMatching}" is only valid under the steal node playstyle, got nodePlaystyle "${nodePlaystyle}"`,
     );
   }
-  if (planetBonus === "advanced" && nodePlaystyle !== "steal") {
+  if (planetActivity !== "off" && nodePlaystyle !== "steal") {
     throw new RangeError(
-      `startingGameState: planetBonus "advanced" is only valid under the steal node playstyle, got nodePlaystyle "${nodePlaystyle}"`,
+      `startingGameState: planetActivity "${planetActivity}" is only valid under the steal node playstyle, got nodePlaystyle "${nodePlaystyle}"`,
+    );
+  }
+  if (planetBonus !== "off" && nodePlaystyle === "steal") {
+    throw new RangeError(
+      `startingGameState: planetBonus "${planetBonus}" is not valid under the steal node playstyle, which offers planet resources instead`,
     );
   }
 
@@ -473,13 +532,13 @@ export function startingGameState(
       : [[], dealtSeed];
 
   const [bonusPlanets, seedAfterBonusPlanets]: [BonusPlanetsBySide, number] =
-    planetBonus === "off" || planetBonus === "advanced"
+    planetBonus === "off"
       ? [{ green: [], red: [] }, seedAfterRotators]
       : dealBonusPlanetEntries(seedAfterRotators);
 
-  const [advancedBonuses, nextSeed]: [readonly AdvancedBonusEntry[], number] =
-    planetBonus === "advanced"
-      ? dealAdvancedBonuses(nodes, chargedNodeCount, seedAfterBonusPlanets)
+  const [activityBonuses, nextSeed]: [readonly ActivityBonusEntry[], number] =
+    planetActivity !== "off"
+      ? dealActivityBonuses(nodes, chargedNodeCount, seedAfterBonusPlanets)
       : [[], seedAfterBonusPlanets];
 
   return {
@@ -499,7 +558,8 @@ export function startingGameState(
     rotators,
     planetBonus,
     bonusPlanets,
-    advancedBonuses,
+    planetActivity,
+    activityBonuses,
     playerMatching,
   };
 }

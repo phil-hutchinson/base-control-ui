@@ -7,13 +7,16 @@ const SEED = 12345;
 
 describe("bonusPanelSquareNames", () => {
   it("is empty when the setting is off", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
 
     expect(bonusPanelSquareNames(state).size).toBe(0);
   });
 
   it("names both sides' planets, deduplicated, under two or three points", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
 
     const names = bonusPanelSquareNames(state);
 
@@ -25,16 +28,16 @@ describe("bonusPanelSquareNames", () => {
     expect(names).toEqual(expected);
   });
 
-  it("names exactly the two current bonus squares under advanced", () => {
+  it("names exactly the two current bonus squares under planet resources", () => {
     const state = startingGameState(SEED, {
       nodePlaystyle: "steal",
-      planetBonus: "advanced",
+      planetActivity: "race",
     });
 
     const names = bonusPanelSquareNames(state);
 
     expect(names).toEqual(
-      new Set(state.advancedBonuses.map((entry) => squareName(entry.square))),
+      new Set(state.activityBonuses.map((entry) => squareName(entry.square))),
     );
     expect(names.size).toBe(2);
   });

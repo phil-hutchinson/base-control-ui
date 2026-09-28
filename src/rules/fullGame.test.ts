@@ -33,6 +33,7 @@ import {
   type ChargedNodeCount,
 } from "./nodes";
 import { NODE_PLAYSTYLES, type NodePlaystyle } from "./nodePlaystyle";
+import type { PlanetActivitySetting } from "./planetActivity";
 import type { PlanetBonusSetting } from "./planetBonus";
 import {
   PLAYER_MATCHING_SETTINGS,
@@ -46,6 +47,7 @@ import {
   squaresForSignal,
 } from "./steal";
 import {
+  type ActivityBonusClaimedEffect,
   type AttackEffect,
   type MoveEffect,
   type PassEffect,
@@ -109,17 +111,17 @@ function distanceToNearestChargedOrInactive(
   return nearest;
 }
 
-/** Whether `square` is one of the two current advanced planet bonuses' planets (steal.md §10). */
-function isAdvancedBonusPlanet(state: GameState, square: Square): boolean {
-  return state.advancedBonuses.some(
+/** Whether `square` is one of the two current planet resources bonuses' planets (steal.md §10). */
+function isActivityBonusPlanet(state: GameState, square: Square): boolean {
+  return state.activityBonuses.some(
     (bonus) => squareName(bonus.square) === squareName(square),
   );
 }
 
 /**
- * A deterministic greedy policy: under advanced, race for a bonus planet
- * first (steal.md §10) — otherwise head for a charged node, or, under
- * steal, a prospective node, since landing on one is the only way to claim
+ * A deterministic greedy policy: under planet resources, race for a bonus
+ * planet first (steal.md §10) — otherwise head for a charged node, or,
+ * under steal, a prospective node, since landing on one is the only way to claim
  * or steal it (steal.md §3) — otherwise close the distance to the nearest
  * charged-or-eligible-to-be-charged (or, under steal, prospective) node,
  * otherwise attack, otherwise pass. Evaluated fresh for every ply.
@@ -127,12 +129,12 @@ function isAdvancedBonusPlanet(state: GameState, square: Square): boolean {
 function choosePly(state: GameState): PlyChoice | undefined {
   const ships = state.ships;
 
-  // 0. Under advanced, the first destination, in fleet-then-destination
-  // order, that lands on one of the two current bonus planets. Vacuous —
-  // `state.advancedBonuses` is empty — under every other setting.
+  // 0. Under planet resources, the first destination, in
+  // fleet-then-destination order, that lands on one of the two current bonus planets. Vacuous —
+  // `state.activityBonuses` is empty — under every other setting.
   for (const ship of ships) {
     for (const destination of legalDestinations(state, ship.id)) {
-      if (isAdvancedBonusPlanet(state, destination)) {
+      if (isActivityBonusPlanet(state, destination)) {
         return { kind: "move", shipId: ship.id, destination };
       }
     }
@@ -221,6 +223,7 @@ interface PlayFullGameOptions {
   readonly scoring?: ScoringSetting;
   readonly nodePlaystyle?: NodePlaystyle;
   readonly planetBonus?: PlanetBonusSetting;
+  readonly planetActivity?: PlanetActivitySetting;
   readonly playerMatching?: PlayerMatchingSetting;
   /**
    * Called with the state after the opening deal and again after every ply,
@@ -257,6 +260,7 @@ function playFullGame(
     scoring = "simple",
     nodePlaystyle = "continuous",
     planetBonus,
+    planetActivity,
     playerMatching,
     onPly,
     onEffects,
@@ -270,6 +274,7 @@ function playFullGame(
     scoring,
     nodePlaystyle,
     planetBonus,
+    planetActivity,
     playerMatching,
   });
   onPly?.(state);
@@ -468,8 +473,8 @@ function assertStealNodeInvariants(
       (status) => status?.extra === true,
     ).length;
     // Two squares ordinarily; three when Additional nodes has given this
-    // signal an extra (steal.md §10) — the advanced sweep below is what
-    // exercises that case.
+    // signal an extra (steal.md §10) — the planet resources sweep below is
+    // what exercises that case.
     expect(squares).toHaveLength(extraCount === 1 ? 3 : 2);
     expect(extraCount).toBeLessThanOrEqual(1);
 
@@ -491,28 +496,28 @@ function assertStealNodeInvariants(
 }
 
 /**
- * Every advanced planet bonus invariant that must hold at any ply (steal.md
+ * Every planet resources invariant that must hold at any ply (steal.md
  * §10): exactly two bonuses stand, on two different planets, of two
  * different kinds, and neither planet carries a ship; and Additional nodes
  * never stands among them while every node already has its extra.
  */
-function assertAdvancedBonusInvariants(
+function assertActivityBonusInvariants(
   state: GameState,
   chargedNodeCount: ChargedNodeCount,
 ): void {
-  expect(state.advancedBonuses).toHaveLength(2);
-  const [first, second] = state.advancedBonuses;
+  expect(state.activityBonuses).toHaveLength(2);
+  const [first, second] = state.activityBonuses;
   expect(squareName(first.square)).not.toBe(squareName(second.square));
   expect(first.kind).not.toBe(second.kind);
 
   const shipSquareNames = new Set(
     state.ships.map((ship) => squareName(ship.square)),
   );
-  for (const bonus of state.advancedBonuses) {
+  for (const bonus of state.activityBonuses) {
     expect(shipSquareNames.has(squareName(bonus.square))).toBe(false);
   }
 
-  const additionalNodesStanding = state.advancedBonuses.some(
+  const additionalNodesStanding = state.activityBonuses.some(
     (bonus) => bonus.kind === "additional-nodes",
   );
   if (additionalNodesStanding) {
@@ -773,9 +778,15 @@ describe.each(CHARGED_NODE_COUNTS)(
   },
 );
 
-describe.each(CHARGED_NODE_COUNTS)(
-  "a full steal game under advanced planet bonuses, end to end, at %d nodes (steal.md §10)",
-  (chargedNodeCount) => {
+describe.each(
+  (["stable", "race"] as const).flatMap((planetActivity) =>
+    CHARGED_NODE_COUNTS.map(
+      (chargedNodeCount) => [planetActivity, chargedNodeCount] as const,
+    ),
+  ),
+)(
+  "a full steal game under %s planet resources, end to end, at %d nodes (steal.md §10)",
+  (planetActivity, chargedNodeCount) => {
     it.each(
       PLAYER_MATCHING_SETTINGS.flatMap((playerMatching) =>
         SCORING_SETTINGS.flatMap((scoring) =>
@@ -792,33 +803,56 @@ describe.each(CHARGED_NODE_COUNTS)(
         let previousGreen = 0;
         let previousRed = 0;
         let claims = 0;
+        let beforePly: GameState | undefined;
+        let afterPly: GameState | undefined;
 
         const { finalState } = playFullGame(seed, 30, {
           chargedNodeCount,
           combatEnabled,
           scoring,
           nodePlaystyle: "steal",
-          planetBonus: "advanced",
+          planetActivity,
           playerMatching,
           onPly: (state) => {
+            beforePly = afterPly;
+            afterPly = state;
             assertStealNodeInvariants(state, chargedNodeCount);
-            assertAdvancedBonusInvariants(state, chargedNodeCount);
+            assertActivityBonusInvariants(state, chargedNodeCount);
             expect(state.energy.green).toBeGreaterThanOrEqual(previousGreen);
             expect(state.energy.red).toBeGreaterThanOrEqual(previousRed);
             previousGreen = state.energy.green;
             previousRed = state.energy.red;
           },
           onEffects: (effects) => {
-            claims += effects.filter(
-              (effect) => effect.type === "advanced-bonus-claimed",
-            ).length;
+            const claimEffects = effects.filter(
+              (effect): effect is ActivityBonusClaimedEffect =>
+                effect.type === "activity-bonus-claimed",
+            );
+            claims += claimEffects.length;
+            if (planetActivity !== "stable" || claimEffects.length === 0) {
+              return;
+            }
+            // Under stable, every claim keeps the survivor's kind, and every
+            // bonus standing before the ply that no claim took still stands,
+            // on the same planet, with the same kind.
+            for (const claim of claimEffects) {
+              expect(claim.survivor.newKind).toBe(claim.survivor.oldKind);
+            }
+            const claimedSquareNames = new Set(
+              claimEffects.map((claim) => squareName(claim.square)),
+            );
+            for (const bonus of beforePly!.activityBonuses) {
+              if (!claimedSquareNames.has(squareName(bonus.square))) {
+                expect(afterPly!.activityBonuses).toContainEqual(bonus);
+              }
+            }
           },
         });
 
         expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
         expect(isGameOver(finalState)).toBe(true);
         assertStealNodeInvariants(finalState, chargedNodeCount);
-        assertAdvancedBonusInvariants(finalState, chargedNodeCount);
+        assertActivityBonusInvariants(finalState, chargedNodeCount);
 
         // Not vacuous: the bonus-preferring policy actually races for and
         // claims bonuses over the course of the game.
@@ -858,7 +892,8 @@ describe("a full game, end to end", () => {
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
-      advancedBonuses: [],
+      planetActivity: "off",
+      activityBonuses: [],
       energy: { green: 0, red: 0 },
       lengthInRounds: 1,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -993,7 +1028,8 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
-      advancedBonuses: [],
+      planetActivity: "off",
+      activityBonuses: [],
       energy: { green: 0, red: 0 },
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
@@ -1053,7 +1089,8 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       rotators: [],
       planetBonus: "off",
       bonusPlanets: { green: [], red: [] },
-      advancedBonuses: [],
+      planetActivity: "off",
+      activityBonuses: [],
       energy: { green: 50, red: 0 },
       lengthInRounds: 30,
       chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,

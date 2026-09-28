@@ -56,21 +56,23 @@ install, no account, no server.
 > **Status:** early development. The app now plays a whole game, from the
 > opening position to the final score. Opening it shows a start screen, not the
 > board: the game's name, a choice of node playstyle (continuous, planet,
-> dedicated or steal, planet to start), a choice of how many ships a side
+> dedicated or steal, steal to start), a choice of how many ships a side
 > (five, four or three, five to start), a choice of how many nodes are lit at
 > once (five, four or three, four to start), a choice of player-matching
-> nodes when steal is chosen (off, double or required, off to start), a
+> nodes when steal is chosen (off, double or required, required to start), a
 > choice of how scoring works (simple, one energy for each node held, or
 > bonus, where each extra node held at once is worth more than the last, bonus
-> to start), a choice of whether planets pay a bonus (off, two points, three
-> points or, when steal is chosen, advanced, off to start), a choice of whether
-> combat is on or off (off to start), a choice of how many rounds the game lasts
+> to start), a choice of whether planets pay a bonus when continuous, planet
+> or dedicated is chosen (off, two points or three points, off to start), a
+> choice of planet resources when steal is chosen instead (off, stable or race,
+> race to start), a choice of whether combat is on or off (off to start), a
+> choice of how many rounds the game lasts
 > (thirty, forty-five, sixty or ninety, thirty to start), a choice of a clock
 > (unlimited, or six, four or two seconds a turn, unlimited to start) and a PLAY
 > button. The start screen also offers a quick guide — a first read for someone
 > who has never played, not a full rules reference — explaining scoring,
 > movement, refuelling, how nodes come and go, player-matching nodes, the planet
-> bonus and advanced planet bonuses, with a back button that returns you to the
+> bonus and planet resources, with a back button that returns you to the
 > start screen with the choices exactly as you left them. Your browser's own
 > back and forward buttons move between the screens too, and the address bar
 > says which screen you are on. Changing any of the choices starts nothing — the
@@ -81,7 +83,7 @@ install, no account, no server.
 > across your turns. A player who runs out passes every turn from then on, and
 > once both players have run out the game ends there and then; running out is
 > not a loss, since energy still decides who wins. A smaller fleet starts from
-> fewer of the board's eighteen starting squares, leaving the rest empty; every
+> fewer of the board's fourteen starting squares, leaving the rest empty; every
 > starting square is an ordinary square, whether or not a ship stands there —
 > it gives a ship nothing and protects it from nothing. Twelve planets sit
 > inside the board instead, at fixed squares, none of them on the outer edge,
@@ -92,19 +94,22 @@ install, no account, no server.
 > attacked, and gains back a point of power at the end of each of its owner's
 > turns, or two if it is the only one of that player's ships still topping up
 > power on a planet, up to a full six. A ship already full doesn't count
-> towards that. With the planet bonus option on, three planets are also dealt
+> towards that. Under continuous, planet and dedicated, with the planet bonus
+> option on, three planets are also dealt
 > to each player at the start of the game, drawn at random and independently
 > for each side, so the two sets may share any number of planets, or none.
 > The first time one of a player's ships lands on one of that player's own
 > three, it pays that player energy once — two or three, whichever was chosen
 > — and never again for that planet, however often ships return to it.
-> Under steal there is also an advanced option: instead of planets of their own,
-> the players race for two bonuses that stand on the board at once, each on an
+> Steal offers planet resources instead: rather than planets of their own, the
+> players compete for two bonuses that stand on the board at once, each on an
 > empty planet. Whoever lands there first takes it — points, a top-up of power
 > for their whole fleet, an extra waiting square for every node, or a shuffle of
-> every node's waiting squares — and the bonus left behind turns into something
-> else while a new one appears elsewhere. Whatever the planet bonus option,
-> hovering over a planet in the bonus panel above the clocks lights up the
+> every node's waiting squares — and a new bonus appears on another planet.
+> Under stable, the bonus left behind stays as it is, so you can plan a route
+> to it; under race, it turns into something else too, so a bonus is only worth
+> heading for while nobody takes the other one first. Whichever planet choice
+> is on, hovering over a planet in the bonus panel above the clocks lights up the
 > matching planet on the board, and hovering that planet on the board lights
 > it up in the panel, so it's easy to match the two. Green goes first, and each
 > player moves one ship — or attacks with one, when combat is on — by mouse or
@@ -125,8 +130,8 @@ install, no account, no server.
 > choice too. Continuous is the simplest: on a turn when nothing lights, the
 > rings shift round — the single becomes a double, the double becomes a
 > triple, and the triple drops back to a single — so you can read not just
-> what lights next but what lights the turn after that. Planet, the one the
-> app starts on, stops that automatic shift: the rings sit still until a ship
+> what lights next but what lights the turn after that. Planet
+> stops that automatic shift: the rings sit still until a ship
 > lands on a planet, which shifts them one step right in the middle of that
 > player's turn — so refuelling and choosing what lights next become the same
 > thing, and a fight under combat sends both ships to planets at once and
@@ -140,7 +145,7 @@ install, no account, no server.
 > steal, lets you give each player a node of their own, shown in red and
 > green: off treats every node the same, double lets your own node count as
 > two when you are holding it, and required means you collect nothing from any
-> node until you are standing on your own — off to start. Under the other
+> node until you are standing on your own — required to start. Under the other
 > three, whatever runs out during a turn is made up at the end of it by
 > lighting from the waiting three, highest rings first, so the board is always
 > brought back to whichever count you chose by the time your turn begins.

@@ -24,9 +24,10 @@ describe("useAppScreen", () => {
     expect(result.current.chargedNodeCount).toBe(4);
     expect(result.current.combatEnabled).toBe(false);
     expect(result.current.scoring).toBe("bonus");
-    expect(result.current.nodePlaystyle).toBe("planet");
+    expect(result.current.nodePlaystyle).toBe("steal");
     expect(result.current.planetBonus).toBe("off");
-    expect(result.current.playerMatching).toBe("off");
+    expect(result.current.planetActivity).toBe("race");
+    expect(result.current.playerMatching).toBe("required");
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
   });
@@ -174,6 +175,9 @@ describe("useAppScreen", () => {
     const { result } = renderHook(() => useAppScreen(dispatch, true));
 
     act(() => {
+      result.current.setNodePlaystyle("planet");
+    });
+    act(() => {
       result.current.setPlanetBonus("three");
     });
     act(() => {
@@ -203,7 +207,7 @@ describe("useAppScreen", () => {
     );
   });
 
-  it("resets the planet bonus to off when the node playstyle leaves steal while advanced is chosen, and does not jump back to advanced on returning to steal", () => {
+  it("remembers planet bonus and planet resources separately across node playstyle switches", () => {
     const dispatch = vi.fn();
     const { result } = renderHook(() => useAppScreen(dispatch, false));
 
@@ -211,36 +215,79 @@ describe("useAppScreen", () => {
       result.current.setNodePlaystyle("steal");
     });
     act(() => {
-      result.current.setPlanetBonus("advanced");
+      result.current.setPlanetActivity("stable");
     });
-    expect(result.current.planetBonus).toBe("advanced");
-
     act(() => {
       result.current.setNodePlaystyle("planet");
-    });
-    expect(result.current.planetBonus).toBe("off");
-
-    act(() => {
-      result.current.setNodePlaystyle("steal");
-    });
-    expect(result.current.planetBonus).toBe("off");
-  });
-
-  it("leaves a classic planet bonus setting untouched by a node playstyle switch away from steal", () => {
-    const dispatch = vi.fn();
-    const { result } = renderHook(() => useAppScreen(dispatch, false));
-
-    act(() => {
-      result.current.setNodePlaystyle("steal");
     });
     act(() => {
       result.current.setPlanetBonus("three");
     });
+    expect(result.current.planetActivity).toBe("stable");
+    expect(result.current.planetBonus).toBe("three");
+
+    act(() => {
+      result.current.setNodePlaystyle("steal");
+    });
+    expect(result.current.planetActivity).toBe("stable");
+    expect(result.current.planetBonus).toBe("three");
+  });
+
+  it("PLAY under steal dispatches planet bonus off with the remembered planet resources", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
+
+    act(() => {
+      result.current.setPlanetBonus("three");
+    });
+    act(() => {
+      result.current.setNodePlaystyle("steal");
+    });
+    act(() => {
+      result.current.setPlanetActivity("stable");
+    });
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        type: "new-game",
+        nodePlaystyle: "steal",
+        planetBonus: "off",
+        planetActivity: "stable",
+      }),
+    );
+  });
+
+  it("PLAY under planet dispatches planet resources off with the remembered planet bonus", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
+
+    act(() => {
+      result.current.setNodePlaystyle("steal");
+    });
+    act(() => {
+      result.current.setPlanetActivity("stable");
+    });
     act(() => {
       result.current.setNodePlaystyle("planet");
     });
+    act(() => {
+      result.current.setPlanetBonus("two");
+    });
+    act(() => {
+      result.current.handlePlay();
+    });
 
-    expect(result.current.planetBonus).toBe("three");
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        type: "new-game",
+        nodePlaystyle: "planet",
+        planetBonus: "two",
+        planetActivity: "off",
+      }),
+    );
   });
 
   it("dispatches the player-matching setting only while the node playstyle is steal, and remembers it switching back", () => {

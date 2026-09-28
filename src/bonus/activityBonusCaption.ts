@@ -1,12 +1,12 @@
-// The one-word caption an advanced planet bonus's cell draws beneath its
+// The one-word caption an activity bonus's cell draws beneath its
 // symbol: UI chrome, not a rules word, so the mapping lives here beside the
-// symbol dispatch (`AdvancedBonusSymbol.tsx`) rather than in
-// `rules/advancedBonus.ts`. All three point kinds share one caption, BONUS,
+// symbol dispatch (`ActivityBonusSymbol.tsx`) rather than in
+// `rules/activityBonus.ts`. All three point kinds share one caption, BONUS,
 // since the symbol above them (`+N`) already says which size.
 
-import type { AdvancedBonusKind } from "../rules/advancedBonus";
+import type { ActivityBonusKind } from "../rules/activityBonus";
 
-export function advancedBonusCaption(kind: AdvancedBonusKind): string {
+export function activityBonusCaption(kind: ActivityBonusKind): string {
   switch (kind) {
     case "small-points":
     case "medium-points":

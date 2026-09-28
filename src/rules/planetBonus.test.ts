@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_PLANET_BONUS,
   isPlanetBonusSetting,
-  offeredPlanetBonusSettings,
   PLANET_BONUS_SETTINGS,
   planetBonusPoints,
+  resolvePlanetBonus,
 } from "./planetBonus";
 
 describe("the offered planet bonus settings (rules.md §3.4)", () => {
-  it("offers off, two, three and advanced, off first and advanced last", () => {
-    expect(PLANET_BONUS_SETTINGS).toEqual(["off", "two", "three", "advanced"]);
+  it("offers off, two and three, off first", () => {
+    expect(PLANET_BONUS_SETTINGS).toEqual(["off", "two", "three"]);
   });
 
   it("defaults to off", () => {
@@ -17,41 +17,47 @@ describe("the offered planet bonus settings (rules.md §3.4)", () => {
     expect(PLANET_BONUS_SETTINGS).toContain(DEFAULT_PLANET_BONUS);
   });
 
-  it("accepts all four offered settings", () => {
+  it("accepts all three offered settings", () => {
     for (const setting of PLANET_BONUS_SETTINGS) {
       expect(isPlanetBonusSetting(setting)).toBe(true);
     }
   });
 
   it("rejects anything that is not one of them", () => {
-    for (const value of ["OFF", "twos", "four", 0, 2, 3, null, undefined, {}]) {
+    for (const value of [
+      "OFF",
+      "twos",
+      "four",
+      "race",
+      0,
+      2,
+      3,
+      null,
+      undefined,
+      {},
+    ]) {
       expect(isPlanetBonusSetting(value)).toBe(false);
     }
   });
 });
 
-describe("offeredPlanetBonusSettings (rules.md §3.4, steal.md §10)", () => {
-  it("offers only the three classic settings under continuous, planet and dedicated", () => {
+describe("resolvePlanetBonus (rules.md §3.4)", () => {
+  it("returns the remembered setting under continuous, planet and dedicated", () => {
     for (const nodePlaystyle of [
       "continuous",
       "planet",
       "dedicated",
     ] as const) {
-      expect(offeredPlanetBonusSettings(nodePlaystyle)).toEqual([
-        "off",
-        "two",
-        "three",
-      ]);
+      for (const setting of PLANET_BONUS_SETTINGS) {
+        expect(resolvePlanetBonus(nodePlaystyle, setting)).toBe(setting);
+      }
     }
   });
 
-  it("offers all four, advanced last, under steal", () => {
-    expect(offeredPlanetBonusSettings("steal")).toEqual([
-      "off",
-      "two",
-      "three",
-      "advanced",
-    ]);
+  it("returns off under steal for every setting", () => {
+    for (const setting of PLANET_BONUS_SETTINGS) {
+      expect(resolvePlanetBonus("steal", setting)).toBe("off");
+    }
   });
 });
 

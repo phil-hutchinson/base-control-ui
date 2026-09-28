@@ -1,8 +1,8 @@
 // The start screen: the app's front door. Carries the game's on-screen
 // name, the options a player sets before a game begins — eight of them,
 // nine under the steal playstyle, which alone offers player-matching nodes
-// and, alone among the Planet bonus group's four settings, ADVANCED
-// (`offeredPlanetBonusSettings`) — and the PLAY button. Rendered by `App` in
+// and shows a Planet resources group in place of the Planet bonus group — and
+// the PLAY button. Rendered by `App` in
 // place of the game whenever there is no game in progress.
 
 import { useId } from "react";
@@ -14,8 +14,12 @@ import { GAME_LENGTH_OPTIONS_ROUNDS } from "../rules/gameLength";
 import { type NodePlaystyle, NODE_PLAYSTYLES } from "../rules/nodePlaystyle";
 import { type ChargedNodeCount, CHARGED_NODE_COUNTS } from "../rules/nodes";
 import {
-  offeredPlanetBonusSettings,
+  type PlanetActivitySetting,
+  PLANET_ACTIVITY_SETTINGS,
+} from "../rules/planetActivity";
+import {
   type PlanetBonusSetting,
+  PLANET_BONUS_SETTINGS,
 } from "../rules/planetBonus";
 import {
   type PlayerMatchingSetting,
@@ -49,7 +53,16 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
   off: "OFF",
   two: "2 POINTS",
   three: "3 POINTS",
-  advanced: "ADVANCED",
+};
+
+/**
+ * The Planet resources group's labels — start-screen chrome, not a rules
+ * concern.
+ */
+const PLANET_ACTIVITY_SETTING_LABELS: Record<PlanetActivitySetting, string> = {
+  off: "OFF",
+  stable: "STABLE",
+  race: "RACE",
 };
 
 /**
@@ -91,6 +104,10 @@ interface StartScreenProps {
   readonly onScoringChange: (scoring: ScoringSetting) => void;
   readonly planetBonus: PlanetBonusSetting;
   readonly onPlanetBonusChange: (planetBonus: PlanetBonusSetting) => void;
+  readonly planetActivity: PlanetActivitySetting;
+  readonly onPlanetActivityChange: (
+    planetActivity: PlanetActivitySetting,
+  ) => void;
   readonly nodePlaystyle: NodePlaystyle;
   readonly onNodePlaystyleChange: (nodePlaystyle: NodePlaystyle) => void;
   readonly playerMatching: PlayerMatchingSetting;
@@ -112,6 +129,10 @@ interface StartScreenProps {
  * matching handler — it dispatches nothing and starts no game. The
  * Player-matching nodes group renders only while the node playstyle is
  * steal, so the caller's `playerMatching` value is otherwise unused chrome.
+ * In the same position, the Planet resources group renders under steal and
+ * the Planet bonus group under every other playstyle, so only one of
+ * `planetBonus` and `planetActivity` is ever shown; each keeps its own value
+ * while hidden.
  */
 export function StartScreen({
   fleetSize,
@@ -124,6 +145,8 @@ export function StartScreen({
   onScoringChange,
   planetBonus,
   onPlanetBonusChange,
+  planetActivity,
+  onPlanetActivityChange,
   nodePlaystyle,
   onNodePlaystyleChange,
   playerMatching,
@@ -139,6 +162,7 @@ export function StartScreen({
   const chargedNodeCountGroupName = useId();
   const scoringGroupName = useId();
   const planetBonusGroupName = useId();
+  const planetActivityGroupName = useId();
   const nodePlaystyleGroupName = useId();
   const playerMatchingGroupName = useId();
   const combatEnabledGroupName = useId();
@@ -234,21 +258,39 @@ export function StartScreen({
           ))}
         </div>
       </fieldset>
-      <fieldset className="start-screen__options">
-        <legend className="start-screen__legend">Planet bonus</legend>
-        <div className="start-screen__choices">
-          {offeredPlanetBonusSettings(nodePlaystyle).map((value) => (
-            <OptionChoice
-              key={value}
-              name={planetBonusGroupName}
-              value={value}
-              label={PLANET_BONUS_SETTING_LABELS[value]}
-              checked={value === planetBonus}
-              onChange={() => onPlanetBonusChange(value)}
-            />
-          ))}
-        </div>
-      </fieldset>
+      {nodePlaystyle === "steal" ? (
+        <fieldset className="start-screen__options">
+          <legend className="start-screen__legend">Planet resources</legend>
+          <div className="start-screen__choices">
+            {PLANET_ACTIVITY_SETTINGS.map((value) => (
+              <OptionChoice
+                key={value}
+                name={planetActivityGroupName}
+                value={value}
+                label={PLANET_ACTIVITY_SETTING_LABELS[value]}
+                checked={value === planetActivity}
+                onChange={() => onPlanetActivityChange(value)}
+              />
+            ))}
+          </div>
+        </fieldset>
+      ) : (
+        <fieldset className="start-screen__options">
+          <legend className="start-screen__legend">Planet bonus</legend>
+          <div className="start-screen__choices">
+            {PLANET_BONUS_SETTINGS.map((value) => (
+              <OptionChoice
+                key={value}
+                name={planetBonusGroupName}
+                value={value}
+                label={PLANET_BONUS_SETTING_LABELS[value]}
+                checked={value === planetBonus}
+                onChange={() => onPlanetBonusChange(value)}
+              />
+            ))}
+          </div>
+        </fieldset>
+      )}
       <fieldset className="start-screen__options">
         <legend className="start-screen__legend">Combat</legend>
         <div className="start-screen__choices">

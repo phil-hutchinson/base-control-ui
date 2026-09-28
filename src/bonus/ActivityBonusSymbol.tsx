@@ -1,14 +1,14 @@
-// Which of the four symbols an advanced planet bonus's kind draws (steal.md
-// §10): `+N` for a points kind, the fuel bar for Fuel, three coloured rings
+// Which of the four symbols an activity bonus's kind draws (steal.md §10):
+// `+N` for a points kind, the fuel bar for Fuel, three coloured rings
 // for Additional nodes, the three-coloured rotation mark for Node scramble.
-// A pure dispatch over `AdvancedBonusKind`, so `AdvancedBonusCell` — and
+// A pure dispatch over `ActivityBonusKind`, so `ActivityBonusCell` — and
 // the Quick Guide's diagram, which shares it — never need to know which
 // symbol a kind draws.
 
 import {
-  advancedBonusPoints,
-  type AdvancedBonusKind,
-} from "../rules/advancedBonus";
+  activityBonusPoints,
+  type ActivityBonusKind,
+} from "../rules/activityBonus";
 import type { ChargedNodeCount } from "../rules/nodes";
 import type { PlayerMatchingSetting } from "../rules/playerMatching";
 import type { ScoringSetting } from "../rules/scoring";
@@ -17,24 +17,24 @@ import { FuelSymbol } from "./FuelSymbol";
 import { NodeScrambleSymbol } from "./NodeScrambleSymbol";
 import { PointsSymbol } from "./PointsSymbol";
 
-export interface AdvancedBonusSymbolProps {
-  readonly kind: AdvancedBonusKind;
+export interface ActivityBonusSymbolProps {
+  readonly kind: ActivityBonusKind;
   readonly nodeCount: ChargedNodeCount;
   readonly playerMatching: PlayerMatchingSetting;
   readonly scoring: ScoringSetting;
 }
 
-export function AdvancedBonusSymbol({
+export function ActivityBonusSymbol({
   kind,
   nodeCount,
   playerMatching,
   scoring,
-}: AdvancedBonusSymbolProps) {
+}: ActivityBonusSymbolProps) {
   switch (kind) {
     case "small-points":
       return (
         <PointsSymbol
-          amount={advancedBonusPoints(
+          amount={activityBonusPoints(
             nodeCount,
             playerMatching,
             scoring,
@@ -45,7 +45,7 @@ export function AdvancedBonusSymbol({
     case "medium-points":
       return (
         <PointsSymbol
-          amount={advancedBonusPoints(
+          amount={activityBonusPoints(
             nodeCount,
             playerMatching,
             scoring,
@@ -56,7 +56,7 @@ export function AdvancedBonusSymbol({
     case "large-points":
       return (
         <PointsSymbol
-          amount={advancedBonusPoints(
+          amount={activityBonusPoints(
             nodeCount,
             playerMatching,
             scoring,

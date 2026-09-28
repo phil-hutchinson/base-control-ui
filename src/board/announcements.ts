@@ -24,7 +24,7 @@ import {
   type GameResult,
 } from "../rules/gameLength";
 import type {
-  AdvancedBonusClaimedEffect,
+  ActivityBonusClaimedEffect,
   AttackEffect,
   FightResolvedEffect,
   MoveEffect,
@@ -36,7 +36,7 @@ import type {
   PlyEndedEffect,
   QueueRotatedEffect,
 } from "../rules/ply";
-import type { AdvancedBonusKind } from "../rules/advancedBonus";
+import type { ActivityBonusKind } from "../rules/activityBonus";
 import { MAX_POWER, spendPower, type PowerLevel } from "../rules/power";
 import type {
   AttackedEvent,
@@ -395,11 +395,11 @@ function planetBonusClaimedClausesText(
 }
 
 /**
- * Each advanced bonus kind's player-facing name (steal.md §10), with its
- * own article, so `advancedBonusClaimedClause` reads "claimed a Fuel bonus"
+ * Each activity bonus kind's player-facing name (steal.md §10), with its own
+ * article, so `activityBonusClaimedClause` reads "claimed a Fuel bonus"
  * and "claimed an Additional nodes bonus" rather than picking the wrong one.
  */
-const ADVANCED_BONUS_KIND_LABEL: Readonly<Record<AdvancedBonusKind, string>> = {
+const ACTIVITY_BONUS_KIND_LABEL: Readonly<Record<ActivityBonusKind, string>> = {
   "small-points": "a Small points",
   "medium-points": "a Medium points",
   "large-points": "a Large points",
@@ -413,14 +413,14 @@ function shipsPhrase(count: number): string {
 }
 
 /**
- * What an advanced bonus's own kind gave the claiming side (steal.md §10):
+ * What an activity bonus's own kind gave the claiming side (steal.md §10):
  * the energy a points kind paid; how many ships Fuel raised, or "no ships"
  * when every one was already full; that every node gained an extra waiting
  * square (Additional nodes); or that every node's waiting squares were
  * redrawn (Node scramble).
  */
-function advancedBonusClaimedDetail(
-  effect: AdvancedBonusClaimedEffect,
+function activityBonusClaimedDetail(
+  effect: ActivityBonusClaimedEffect,
 ): string {
   switch (effect.kind) {
     case "small-points":
@@ -439,31 +439,31 @@ function advancedBonusClaimedDetail(
 }
 
 /**
- * A landing claiming an advanced planet bonus (steal.md §10): who claimed
+ * A landing claiming an activity bonus (steal.md §10): who claimed
  * it, which kind, the planet, and what it gave them. Unlike the classic
  * claim clause there is no running total to omit — a points kind's amount is
- * exactly `advancedBonusClaimedDetail`'s "N energy", nothing more.
+ * exactly `activityBonusClaimedDetail`'s "N energy", nothing more.
  */
-function advancedBonusClaimedClause(
-  effect: AdvancedBonusClaimedEffect,
+function activityBonusClaimedClause(
+  effect: ActivityBonusClaimedEffect,
 ): string {
-  return `${capitalize(effect.side)} claimed ${ADVANCED_BONUS_KIND_LABEL[effect.kind]} bonus at the ${squareName(effect.square)} planet: ${advancedBonusClaimedDetail(effect)}`;
+  return `${capitalize(effect.side)} claimed ${ACTIVITY_BONUS_KIND_LABEL[effect.kind]} bonus at the ${squareName(effect.square)} planet: ${activityBonusClaimedDetail(effect)}`;
 }
 
 /**
- * Every `advanced-bonus-claimed` effect in a move's or a fight's effect
+ * Every `activity-bonus-claimed` effect in a move's or a fight's effect
  * list, as one clause each, in the order they occurred — a fight raises the
  * attacker's claim (if any) before the defender's (steal.md §10).
  */
-function advancedBonusClaimedClausesText(
+function activityBonusClaimedClausesText(
   effects: readonly (MoveEffect | AttackEffect)[],
 ): string {
   const claims = effects.filter(
-    (effect): effect is AdvancedBonusClaimedEffect =>
-      effect.type === "advanced-bonus-claimed",
+    (effect): effect is ActivityBonusClaimedEffect =>
+      effect.type === "activity-bonus-claimed",
   );
   return claims
-    .map((effect) => ` ${advancedBonusClaimedClause(effect)}`)
+    .map((effect) => ` ${activityBonusClaimedClause(effect)}`)
     .join("");
 }
 
@@ -531,7 +531,7 @@ function moveSentence(event: MovedEvent): string {
   const nodeSpentClauseText =
     nodeSpent !== undefined ? ` ${nodeSpentClause(nodeSpent.square)}` : "";
 
-  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}${nodeSpentClauseText}${nodeAbandonedClauseText(event.effects, event.side)}${nodeClaimedClauseText(event.effects)}${planetBonusClaimedClausesText(event.effects)}${advancedBonusClaimedClausesText(event.effects)}${queueRotatedClausesText(event.effects)}`;
+  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}${nodeSpentClauseText}${nodeAbandonedClauseText(event.effects, event.side)}${nodeClaimedClauseText(event.effects)}${planetBonusClaimedClausesText(event.effects)}${activityBonusClaimedClausesText(event.effects)}${queueRotatedClausesText(event.effects)}`;
 }
 
 /**
@@ -616,7 +616,7 @@ function fightSentence(event: AttackedEvent): string {
     throw new RangeError("a fight-resolved effect always carries two returns");
   }
   const [attackerReturn, defenderReturn] = fight.returns;
-  return `${opening} and both were beaten. ${attackCostClause} The defender kept the power it was carrying. The attacker returned to the ${squareName(attackerReturn.to)} planet and the defender to the ${squareName(defenderReturn.to)} planet.${planetBonusClaimedClausesText(event.effects)}${advancedBonusClaimedClausesText(event.effects)}${queueRotatedClausesText(event.effects)}`;
+  return `${opening} and both were beaten. ${attackCostClause} The defender kept the power it was carrying. The attacker returned to the ${squareName(attackerReturn.to)} planet and the defender to the ${squareName(defenderReturn.to)} planet.${planetBonusClaimedClausesText(event.effects)}${activityBonusClaimedClausesText(event.effects)}${queueRotatedClausesText(event.effects)}`;
 }
 
 function rejectionSentence(event: RejectedEvent): string {

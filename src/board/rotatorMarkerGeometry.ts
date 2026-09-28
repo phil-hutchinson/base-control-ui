@@ -1,6 +1,6 @@
 // The rotator mark's geometry `RotatorMarker.tsx` draws with, pulled into
 // its own module because a component file may only export components
-// (`react-refresh/only-export-components`). Also used by the advanced
+// (`react-refresh/only-export-components`). Also used by the planet resources
 // planet bonus panel's Node scramble symbol (steal.md §10,
 // `src/bonus/NodeScrambleSymbol.tsx`), which draws the same three arcs in
 // three different colours rather than the rotator's own single colour.

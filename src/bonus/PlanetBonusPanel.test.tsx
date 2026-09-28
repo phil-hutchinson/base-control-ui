@@ -10,9 +10,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { planetArrangement, planetForSquare } from "../board/planetPlacement";
 import type { Square } from "../rules/board";
 import {
-  advancedBonusPoints,
-  type AdvancedBonusKind,
-} from "../rules/advancedBonus";
+  activityBonusPoints,
+  type ActivityBonusKind,
+} from "../rules/activityBonus";
 import {
   startingGameState,
   type BonusPlanetEntry,
@@ -53,7 +53,7 @@ function firePointerEnter(node: Element, pointerType: string) {
 
 describe("PlanetBonusPanel", () => {
   it("renders nothing at all when the setting is off", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
 
     const { container } = render(<PlanetBonusPanel state={state} />);
 
@@ -61,7 +61,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("renders two rows, green above red, each with that side's three planets", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
 
     const { container } = render(<PlanetBonusPanel state={state} />);
 
@@ -78,7 +81,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("heads each row with that side's name", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
 
     const { container } = render(<PlanetBonusPanel state={state} />);
 
@@ -91,7 +97,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("draws each planet with the same artwork the board carries on that square", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const arrangement = planetArrangement(state.openingSeed);
 
     const { container } = render(<PlanetBonusPanel state={state} />);
@@ -124,7 +133,10 @@ describe("PlanetBonusPanel", () => {
   }
 
   it("shows no badge until claimed, the amount on the claiming ply and the ply after, and the checkmark from then on", () => {
-    const base = startingGameState(SEED, { planetBonus: "three" });
+    const base = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const claimedSquare = base.bonusPlanets.green[0].square;
 
     const unclaimed = base;
@@ -176,7 +188,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("draws red's claim in red's colour, independently of green's", () => {
-    const base = startingGameState(SEED, { planetBonus: "two" });
+    const base = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "two",
+    });
     const claimedSquare = base.bonusPlanets.red[0].square;
     const state: typeof base = {
       ...base,
@@ -195,7 +210,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("draws a planet shared by both sides in both rows, each with its own badge", () => {
-    const base = startingGameState(SEED, { planetBonus: "three" });
+    const base = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const sharedSquare = base.bonusPlanets.green[0].square;
     const state: typeof base = {
       ...base,
@@ -228,7 +246,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("is hidden from the accessibility tree", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
 
     const { container } = render(<PlanetBonusPanel state={state} />);
 
@@ -239,7 +260,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("reports the hovered square entering a classic cell, and undefined leaving it", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const onHoverSquare = vi.fn();
 
     const { container } = render(
@@ -257,7 +281,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("ignores a touch tap on a classic cell, so no glow sticks after the tap", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const onHoverSquare = vi.fn();
 
     const { container } = render(
@@ -271,7 +298,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("glows exactly the cell whose square matches glowSquare, and none by default", () => {
-    const base = startingGameState(SEED, { planetBonus: "three" });
+    const base = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     // Disjoint sets, unlike the real (random) deal, so exactly one cell in
     // the whole panel can ever match a given glowSquare.
     const state: typeof base = {
@@ -310,7 +340,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("glows a planet shared by both sides in both rows", () => {
-    const base = startingGameState(SEED, { planetBonus: "three" });
+    const base = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const sharedSquare = PLANETS[0];
     const state: typeof base = {
       ...base,
@@ -338,18 +371,18 @@ describe("PlanetBonusPanel", () => {
     expect(glowing).toHaveLength(2);
   });
 
-  describe("under advanced (steal.md §10)", () => {
-    function withAdvancedBonuses(
-      first: readonly [Square, AdvancedBonusKind],
-      second: readonly [Square, AdvancedBonusKind],
+  describe("under planet resources (steal.md §10)", () => {
+    function withActivityBonuses(
+      first: readonly [Square, ActivityBonusKind],
+      second: readonly [Square, ActivityBonusKind],
     ): GameState {
       const base = startingGameState(SEED, {
         nodePlaystyle: "steal",
-        planetBonus: "advanced",
+        planetActivity: "race",
       });
       return {
         ...base,
-        advancedBonuses: [
+        activityBonuses: [
           { square: first[0], kind: first[1] },
           { square: second[0], kind: second[1] },
         ],
@@ -357,7 +390,7 @@ describe("PlanetBonusPanel", () => {
     }
 
     it("renders exactly two cells, in slot order, with the board's own planet artwork", () => {
-      const state = withAdvancedBonuses(
+      const state = withActivityBonuses(
         [PLANETS[0], "large-points"],
         [PLANETS[1], "fuel"],
       );
@@ -365,8 +398,8 @@ describe("PlanetBonusPanel", () => {
 
       const { container } = render(<PlanetBonusPanel state={state} />);
 
-      const row = container.querySelector(".planet-bonus-panel__advanced-row");
-      const cells = row?.querySelectorAll(".planet-bonus-panel__advanced-cell");
+      const row = container.querySelector(".planet-bonus-panel__activity-row");
+      const cells = row?.querySelectorAll(".planet-bonus-panel__activity-cell");
       expect(cells).toHaveLength(2);
       const hrefs = Array.from(
         row?.querySelectorAll(".planet > use") ?? [],
@@ -378,8 +411,30 @@ describe("PlanetBonusPanel", () => {
       ]);
     });
 
+    it("renders a stable game's pair exactly as it renders race's", () => {
+      const race = withActivityBonuses(
+        [PLANETS[0], "large-points"],
+        [PLANETS[1], "fuel"],
+      );
+      const stable: GameState = { ...race, planetActivity: "stable" };
+
+      const { container: raceContainer } = render(
+        <PlanetBonusPanel state={race} />,
+      );
+      const raceMarkup = raceContainer.innerHTML;
+      cleanup();
+      const { container: stableContainer } = render(
+        <PlanetBonusPanel state={stable} />,
+      );
+
+      expect(
+        stableContainer.querySelectorAll(".planet-bonus-panel__activity-cell"),
+      ).toHaveLength(2);
+      expect(stableContainer.innerHTML).toBe(raceMarkup);
+    });
+
     it("is hidden from the accessibility tree", () => {
-      const state = withAdvancedBonuses(
+      const state = withActivityBonuses(
         [PLANETS[0], "large-points"],
         [PLANETS[1], "fuel"],
       );
@@ -387,19 +442,19 @@ describe("PlanetBonusPanel", () => {
       const { container } = render(<PlanetBonusPanel state={state} />);
 
       expect(
-        container.querySelector(".planet-bonus-panel--advanced"),
+        container.querySelector(".planet-bonus-panel--activity"),
       ).toHaveAttribute("aria-hidden", "true");
     });
 
     it("shows a points bonus's `+N` amount for the game's own settings", () => {
-      const state = withAdvancedBonuses(
+      const state = withActivityBonuses(
         [PLANETS[0], "large-points"],
         [PLANETS[1], "fuel"],
       );
 
       const { container } = render(<PlanetBonusPanel state={state} />);
 
-      const expectedAmount = advancedBonusPoints(
+      const expectedAmount = activityBonusPoints(
         state.chargedNodeCount,
         state.playerMatching,
         state.scoring,
@@ -411,19 +466,19 @@ describe("PlanetBonusPanel", () => {
     });
 
     it("captions every points size BONUS, and Fuel, Additional nodes and Node scramble their own word", () => {
-      const points = withAdvancedBonuses(
+      const points = withActivityBonuses(
         [PLANETS[0], "medium-points"],
         [PLANETS[1], "small-points"],
       );
       const { container } = render(<PlanetBonusPanel state={points} />);
       const captions = Array.from(
-        container.querySelectorAll(".advanced-bonus-cell__caption"),
+        container.querySelectorAll(".activity-bonus-cell__caption"),
         (caption) => caption.textContent,
       );
       expect(captions).toEqual(["BONUS", "BONUS"]);
       cleanup();
 
-      const rest = withAdvancedBonuses(
+      const rest = withActivityBonuses(
         [PLANETS[0], "fuel"],
         [PLANETS[1], "additional-nodes"],
       );
@@ -431,13 +486,13 @@ describe("PlanetBonusPanel", () => {
         <PlanetBonusPanel state={rest} />,
       );
       const restCaptions = Array.from(
-        restContainer.querySelectorAll(".advanced-bonus-cell__caption"),
+        restContainer.querySelectorAll(".activity-bonus-cell__caption"),
         (caption) => caption.textContent,
       );
       expect(restCaptions).toEqual(["FUEL", "ADD NODES"]);
       cleanup();
 
-      const scramble = withAdvancedBonuses(
+      const scramble = withActivityBonuses(
         [PLANETS[0], "node-scramble"],
         [PLANETS[1], "large-points"],
       );
@@ -445,12 +500,12 @@ describe("PlanetBonusPanel", () => {
         <PlanetBonusPanel state={scramble} />,
       );
       expect(
-        scrambleContainer.querySelector(".advanced-bonus-cell__caption"),
+        scrambleContainer.querySelector(".activity-bonus-cell__caption"),
       ).toHaveTextContent("SCRAMBLE");
     });
 
     it("draws Fuel as a single bar, Additional nodes as three coloured rings and Node scramble as a three-coloured rotation mark", () => {
-      const fuel = withAdvancedBonuses(
+      const fuel = withActivityBonuses(
         [PLANETS[0], "fuel"],
         [PLANETS[1], "small-points"],
       );
@@ -460,7 +515,7 @@ describe("PlanetBonusPanel", () => {
       expect(fuelContainer.querySelector(".fuel-symbol")).toBeInTheDocument();
       cleanup();
 
-      const additionalNodes = withAdvancedBonuses(
+      const additionalNodes = withActivityBonuses(
         [PLANETS[0], "additional-nodes"],
         [PLANETS[1], "small-points"],
       );
@@ -477,7 +532,7 @@ describe("PlanetBonusPanel", () => {
       expect(ringColors.size).toBe(3);
       cleanup();
 
-      const scramble = withAdvancedBonuses(
+      const scramble = withActivityBonuses(
         [PLANETS[0], "node-scramble"],
         [PLANETS[1], "small-points"],
       );
@@ -495,7 +550,7 @@ describe("PlanetBonusPanel", () => {
     });
 
     it("keeps the survivor in its own slot and puts the new bonus in the claimed slot", () => {
-      const before = withAdvancedBonuses(
+      const before = withActivityBonuses(
         [PLANETS[0], "large-points"],
         [PLANETS[1], "fuel"],
       );
@@ -504,7 +559,7 @@ describe("PlanetBonusPanel", () => {
       // bonus (PLANETS[2]) took slot 0.
       const after: GameState = {
         ...before,
-        advancedBonuses: [
+        activityBonuses: [
           { square: PLANETS[2], kind: "node-scramble" },
           { square: PLANETS[1], kind: "additional-nodes" },
         ],
@@ -513,7 +568,7 @@ describe("PlanetBonusPanel", () => {
 
       const { container } = render(<PlanetBonusPanel state={after} />);
 
-      const row = container.querySelector(".planet-bonus-panel__advanced-row");
+      const row = container.querySelector(".planet-bonus-panel__activity-row");
       const hrefs = Array.from(
         row?.querySelectorAll(".planet > use") ?? [],
         (use) => use.getAttribute("href"),
@@ -524,8 +579,8 @@ describe("PlanetBonusPanel", () => {
       ]);
     });
 
-    it("reports the hovered square entering an advanced cell, and undefined leaving it", () => {
-      const state = withAdvancedBonuses(
+    it("reports the hovered square entering a planet resources cell, and undefined leaving it", () => {
+      const state = withActivityBonuses(
         [PLANETS[0], "large-points"],
         [PLANETS[1], "fuel"],
       );
@@ -536,7 +591,7 @@ describe("PlanetBonusPanel", () => {
       );
 
       const cells = container.querySelectorAll(
-        ".planet-bonus-panel__advanced-cell",
+        ".planet-bonus-panel__activity-cell",
       );
       fireEvent.pointerEnter(cells[1]);
       expect(onHoverSquare).toHaveBeenLastCalledWith(PLANETS[1]);
@@ -545,8 +600,8 @@ describe("PlanetBonusPanel", () => {
       expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
     });
 
-    it("ignores a touch tap on an advanced cell, so no glow sticks after the tap", () => {
-      const state = withAdvancedBonuses(
+    it("ignores a touch tap on a planet resources cell, so no glow sticks after the tap", () => {
+      const state = withActivityBonuses(
         [PLANETS[0], "large-points"],
         [PLANETS[1], "fuel"],
       );
@@ -557,7 +612,7 @@ describe("PlanetBonusPanel", () => {
       );
 
       const cells = container.querySelectorAll(
-        ".planet-bonus-panel__advanced-cell",
+        ".planet-bonus-panel__activity-cell",
       );
       firePointerEnter(cells[1], "touch");
 
@@ -565,14 +620,14 @@ describe("PlanetBonusPanel", () => {
     });
 
     it("glows exactly the slot whose square matches glowSquare, and none by default", () => {
-      const state = withAdvancedBonuses(
+      const state = withActivityBonuses(
         [PLANETS[0], "large-points"],
         [PLANETS[1], "fuel"],
       );
 
       const { container: plain } = render(<PlanetBonusPanel state={state} />);
       expect(
-        plain.querySelectorAll(".planet-bonus-panel__advanced-cell--glow"),
+        plain.querySelectorAll(".planet-bonus-panel__activity-cell--glow"),
       ).toHaveLength(0);
       cleanup();
 
@@ -580,11 +635,11 @@ describe("PlanetBonusPanel", () => {
         <PlanetBonusPanel state={state} glowSquare={PLANETS[1]} />,
       );
       const cells = container.querySelectorAll(
-        ".planet-bonus-panel__advanced-cell",
+        ".planet-bonus-panel__activity-cell",
       );
-      expect(cells[1]).toHaveClass("planet-bonus-panel__advanced-cell--glow");
+      expect(cells[1]).toHaveClass("planet-bonus-panel__activity-cell--glow");
       expect(cells[0]).not.toHaveClass(
-        "planet-bonus-panel__advanced-cell--glow",
+        "planet-bonus-panel__activity-cell--glow",
       );
     });
   });

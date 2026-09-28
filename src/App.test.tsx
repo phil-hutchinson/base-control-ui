@@ -107,6 +107,10 @@ function planetBonusGroup() {
   return screen.getByRole("group", { name: "Planet bonus" });
 }
 
+function planetActivityGroup() {
+  return screen.getByRole("group", { name: "Planet resources" });
+}
+
 function playerMatchingGroup() {
   return screen.getByRole("group", { name: "Player-matching nodes" });
 }
@@ -121,7 +125,7 @@ async function pressPlay() {
 }
 
 describe("App", () => {
-  it("opens on the start screen: the name, all eight option groups at their defaults, and PLAY — no board, no HUD", () => {
+  it("opens on the start screen: the name, all nine option groups at their defaults, and PLAY — no board, no HUD", () => {
     render(<App />);
 
     expect(
@@ -142,10 +146,16 @@ describe("App", () => {
       within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
     ).toBeChecked();
     expect(
-      within(planetBonusGroup()).getByRole("radio", { name: "OFF" }),
+      within(playerMatchingGroup()).getByRole("radio", { name: "REQUIRED" }),
     ).toBeChecked();
     expect(
-      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+      within(planetActivityGroup()).getByRole("radio", { name: "RACE" }),
+    ).toBeChecked();
+    expect(
+      screen.queryByRole("group", { name: "Planet bonus" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
     ).toBeChecked();
     expect(
       within(combatGroup()).getByRole("radio", { name: "OFF" }),
@@ -163,7 +173,7 @@ describe("App", () => {
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
   });
 
-  it("renders the eight option groups in order: Node playstyle, Ships, Charged nodes, Scoring, Planet bonus, Combat, Rounds, Clock", () => {
+  it("renders the nine option groups in order under the default STEAL: Node playstyle, Ships, Charged nodes, Player-matching nodes, Scoring, Planet resources, Combat, Rounds, Clock", () => {
     render(<App />);
 
     const groups = screen.getAllByRole("group");
@@ -173,8 +183,9 @@ describe("App", () => {
       "Node playstyle",
       "Ships",
       "Charged nodes",
+      "Player-matching nodes",
       "Scoring",
-      "Planet bonus",
+      "Planet resources",
       "Combat",
       "Rounds",
       "Clock (time per move)",
@@ -279,8 +290,12 @@ describe("App", () => {
     }
   });
 
-  it("with the default OFF, the clock region holds only the clocks — no bonus panel", async () => {
+  it("under PLANET with the default planet bonus OFF, the clock region holds only the clocks — no bonus panel", async () => {
+    const user = userEvent.setup();
     const { container } = render(<App />);
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
     await pressPlay();
 
     const clocks = container.querySelector(".app__clocks")!;
@@ -292,6 +307,9 @@ describe("App", () => {
     const user = userEvent.setup();
     const { container } = render(<App />);
 
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
     await user.click(
       within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
     );
@@ -310,6 +328,9 @@ describe("App", () => {
     const { container } = render(<App />);
 
     await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
+    await user.click(
       within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
     );
     await pressPlay();
@@ -333,7 +354,7 @@ describe("App", () => {
     expect(panelCell).not.toHaveClass("planet-bonus-panel__cell--glow");
   });
 
-  it("hovering an ADVANCED bonus planet in the panel lights the matching board square, and leaving ends it", async () => {
+  it("hovering a RACE bonus planet in the panel lights the matching board square, and leaving ends it", async () => {
     const user = userEvent.setup();
     const { container } = render(<App />);
     stubConfirm(true);
@@ -342,12 +363,12 @@ describe("App", () => {
       within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
     );
     await user.click(
-      within(planetBonusGroup()).getByRole("radio", { name: "ADVANCED" }),
+      within(planetActivityGroup()).getByRole("radio", { name: "RACE" }),
     );
     await pressPlay();
 
     const panelCell = container.querySelector(
-      ".planet-bonus-panel__advanced-cell",
+      ".planet-bonus-panel__activity-cell",
     )!;
     const panelHref = panelCell
       .querySelector(".planet > use")
@@ -360,12 +381,12 @@ describe("App", () => {
     expect(
       glowing[0].querySelector(".planet > use")?.getAttribute("href"),
     ).toBe(panelHref);
-    expect(panelCell).toHaveClass("planet-bonus-panel__advanced-cell--glow");
+    expect(panelCell).toHaveClass("planet-bonus-panel__activity-cell--glow");
 
     fireEvent.pointerLeave(panelCell);
     expect(container.querySelectorAll(".board-square--glow")).toHaveLength(0);
     expect(panelCell).not.toHaveClass(
-      "planet-bonus-panel__advanced-cell--glow",
+      "planet-bonus-panel__activity-cell--glow",
     );
   });
 
@@ -374,6 +395,9 @@ describe("App", () => {
     const { container } = render(<App />);
 
     await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
+    await user.click(
       within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
     );
     await pressPlay();
@@ -401,7 +425,7 @@ describe("App", () => {
     expect(panelCell).not.toHaveClass("planet-bonus-panel__cell--glow");
   });
 
-  it("hovering an ADVANCED bonus planet on the board lights the matching panel cell, and leaving ends it", async () => {
+  it("hovering a RACE bonus planet on the board lights the matching panel cell, and leaving ends it", async () => {
     const user = userEvent.setup();
     const { container } = render(<App />);
     stubConfirm(true);
@@ -410,12 +434,12 @@ describe("App", () => {
       within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
     );
     await user.click(
-      within(planetBonusGroup()).getByRole("radio", { name: "ADVANCED" }),
+      within(planetActivityGroup()).getByRole("radio", { name: "RACE" }),
     );
     await pressPlay();
 
     const panelCell = container.querySelector(
-      ".planet-bonus-panel__advanced-cell",
+      ".planet-bonus-panel__activity-cell",
     )!;
     const panelHref = panelCell
       .querySelector(".planet > use")
@@ -431,13 +455,13 @@ describe("App", () => {
     fireEvent.pointerEnter(boardSquare);
 
     expect(boardSquare).toHaveClass("board-square--glow");
-    expect(panelCell).toHaveClass("planet-bonus-panel__advanced-cell--glow");
+    expect(panelCell).toHaveClass("planet-bonus-panel__activity-cell--glow");
 
     fireEvent.pointerLeave(boardSquare);
 
     expect(boardSquare).not.toHaveClass("board-square--glow");
     expect(panelCell).not.toHaveClass(
-      "planet-bonus-panel__advanced-cell--glow",
+      "planet-bonus-panel__activity-cell--glow",
     );
   });
 
@@ -445,6 +469,9 @@ describe("App", () => {
     const user = userEvent.setup();
     const { container } = render(<App />);
 
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
     await user.click(
       within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
     );
@@ -477,6 +504,9 @@ describe("App", () => {
     const user = userEvent.setup();
     const { container } = render(<App />);
 
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
     await user.click(
       within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
     );
@@ -582,6 +612,9 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
     const chargedNodesGroup = screen.getByRole("group", {
       name: "Charged nodes",
     });
@@ -599,6 +632,9 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
     const chargedNodesGroup = screen.getByRole("group", {
       name: "Charged nodes",
     });
@@ -760,13 +796,13 @@ describe("App", () => {
     ).toBeChecked();
   });
 
-  it("choosing STEAL before PLAY starts a game, and returning to start still shows it chosen", async () => {
+  it("choosing PLANET before PLAY starts a game, and returning to start still shows it chosen", async () => {
     const user = userEvent.setup();
     render(<App />);
     stubConfirm(true);
 
     await user.click(
-      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
     );
     await pressPlay();
 
@@ -778,7 +814,7 @@ describe("App", () => {
       screen.getByRole("heading", { level: 1, name: GAME_NAME }),
     ).toBeInTheDocument();
     expect(
-      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
     ).toBeChecked();
   });
 
@@ -787,13 +823,8 @@ describe("App", () => {
     render(<App />);
     stubConfirm(true);
 
-    expect(
-      screen.queryByRole("group", { name: "Player-matching nodes" }),
-    ).not.toBeInTheDocument();
+    expect(playerMatchingGroup()).toBeInTheDocument();
 
-    await user.click(
-      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
-    );
     await user.click(
       within(playerMatchingGroup()).getByRole("radio", { name: "DOUBLE" }),
     );
@@ -831,6 +862,9 @@ describe("App", () => {
     stubConfirm(true);
 
     await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
+    await user.click(
       within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
     );
     await pressPlay();
@@ -847,16 +881,13 @@ describe("App", () => {
     ).toBeChecked();
   });
 
-  it("choosing ADVANCED under STEAL before PLAY starts a game, and returning to start still shows it chosen", async () => {
+  it("choosing STABLE under STEAL before PLAY starts a game, and returning to start still shows it chosen", async () => {
     const user = userEvent.setup();
     render(<App />);
     stubConfirm(true);
 
     await user.click(
-      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
-    );
-    await user.click(
-      within(planetBonusGroup()).getByRole("radio", { name: "ADVANCED" }),
+      within(planetActivityGroup()).getByRole("radio", { name: "STABLE" }),
     );
     await pressPlay();
 
@@ -868,36 +899,43 @@ describe("App", () => {
       screen.getByRole("heading", { level: 1, name: GAME_NAME }),
     ).toBeInTheDocument();
     expect(
-      within(planetBonusGroup()).getByRole("radio", { name: "ADVANCED" }),
+      within(planetActivityGroup()).getByRole("radio", { name: "STABLE" }),
     ).toBeChecked();
   });
 
-  it("hides ADVANCED and shows OFF checked once the node playstyle leaves steal, and it stays off returning to steal", async () => {
+  it("shows Planet resources in place of Planet bonus under STEAL, and each group remembers its own choice across switches", async () => {
     const user = userEvent.setup();
     render(<App />);
 
+    expect(
+      screen.queryByRole("group", { name: "Planet bonus" }),
+    ).not.toBeInTheDocument();
     await user.click(
-      within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
-    );
-    await user.click(
-      within(planetBonusGroup()).getByRole("radio", { name: "ADVANCED" }),
+      within(planetActivityGroup()).getByRole("radio", { name: "STABLE" }),
     );
 
     await user.click(
       within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
     );
     expect(
-      screen.queryByRole("radio", { name: "ADVANCED" }),
+      screen.queryByRole("group", { name: "Planet resources" }),
     ).not.toBeInTheDocument();
-    expect(
-      within(planetBonusGroup()).getByRole("radio", { name: "OFF" }),
-    ).toBeChecked();
+    await user.click(
+      within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
+    );
 
     await user.click(
       within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
     );
     expect(
-      within(planetBonusGroup()).getByRole("radio", { name: "OFF" }),
+      within(planetActivityGroup()).getByRole("radio", { name: "STABLE" }),
+    ).toBeChecked();
+
+    await user.click(
+      within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
+    );
+    expect(
+      within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),
     ).toBeChecked();
   });
 

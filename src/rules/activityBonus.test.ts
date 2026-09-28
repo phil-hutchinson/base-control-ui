@@ -2,16 +2,16 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
-  ADVANCED_BONUS_KINDS,
-  type AdvancedBonusEntry,
-  type AdvancedBonusKind,
-  advancedBonusPoints,
-  dealAdvancedBonuses,
-  drawAdvancedBonusKind,
-  drawAdvancedBonusPlanet,
-  isAdvancedBonusKindAvailable,
-  resolveAdvancedBonusClaim,
-} from "./advancedBonus";
+  ACTIVITY_BONUS_KINDS,
+  type ActivityBonusEntry,
+  type ActivityBonusKind,
+  activityBonusPoints,
+  dealActivityBonuses,
+  drawActivityBonusKind,
+  drawActivityBonusPlanet,
+  isActivityBonusKindAvailable,
+  resolveActivityBonusClaim,
+} from "./activityBonus";
 import { type Square, squareFromName, squareName } from "./board";
 import type { NodeStatus, Ship } from "./gameState";
 import { CHARGED_NODE_COUNTS, type ChargedNodeCount } from "./nodes";
@@ -31,9 +31,9 @@ function ship(
 }
 
 function bonuses(
-  first: readonly [Square, AdvancedBonusKind],
-  second: readonly [Square, AdvancedBonusKind],
-): readonly [AdvancedBonusEntry, AdvancedBonusEntry] {
+  first: readonly [Square, ActivityBonusKind],
+  second: readonly [Square, ActivityBonusKind],
+): readonly [ActivityBonusEntry, ActivityBonusEntry] {
   return [
     { square: first[0], kind: first[1] },
     { square: second[0], kind: second[1] },
@@ -58,9 +58,9 @@ function everyNodeWithExtra(
   return nodes;
 }
 
-describe("the six advanced bonus kinds (steal.md §10)", () => {
+describe("the six planet resources bonus kinds (steal.md §10)", () => {
   it("are, in table order, the six named kinds", () => {
-    expect(ADVANCED_BONUS_KINDS).toEqual([
+    expect(ACTIVITY_BONUS_KINDS).toEqual([
       "small-points",
       "medium-points",
       "large-points",
@@ -71,25 +71,25 @@ describe("the six advanced bonus kinds (steal.md §10)", () => {
   });
 });
 
-describe("isAdvancedBonusKindAvailable (steal.md §10)", () => {
+describe("isActivityBonusKindAvailable (steal.md §10)", () => {
   it("is always available for every kind but additional nodes", () => {
-    for (const kind of ADVANCED_BONUS_KINDS) {
+    for (const kind of ACTIVITY_BONUS_KINDS) {
       if (kind === "additional-nodes") {
         continue;
       }
-      expect(isAdvancedBonusKindAvailable(kind, NO_NODES, 3)).toBe(true);
-      expect(isAdvancedBonusKindAvailable(kind, everyNodeWithExtra(3), 3)).toBe(
+      expect(isActivityBonusKindAvailable(kind, NO_NODES, 3)).toBe(true);
+      expect(isActivityBonusKindAvailable(kind, everyNodeWithExtra(3), 3)).toBe(
         true,
       );
     }
   });
 
   it("makes additional nodes unavailable exactly when every node already has an extra", () => {
-    expect(isAdvancedBonusKindAvailable("additional-nodes", NO_NODES, 3)).toBe(
+    expect(isActivityBonusKindAvailable("additional-nodes", NO_NODES, 3)).toBe(
       true,
     );
     expect(
-      isAdvancedBonusKindAvailable(
+      isActivityBonusKindAvailable(
         "additional-nodes",
         everyNodeWithExtra(3),
         3,
@@ -98,18 +98,18 @@ describe("isAdvancedBonusKindAvailable (steal.md §10)", () => {
   });
 });
 
-describe("drawAdvancedBonusKind (steal.md §10)", () => {
+describe("drawActivityBonusKind (steal.md §10)", () => {
   it("advances the seed by exactly one mulberry32 step", () => {
-    const [, nextSeed] = drawAdvancedBonusKind(777, NO_NODES, 4);
+    const [, nextSeed] = drawActivityBonusKind(777, NO_NODES, 4);
     const [, expectedSeed] = mulberry32(777);
     expect(nextSeed).toBe(expectedSeed);
   });
 
   it("never draws an excluded kind, over many seeds", () => {
-    const excluded = new Set<AdvancedBonusKind>(["large-points", "fuel"]);
+    const excluded = new Set<ActivityBonusKind>(["large-points", "fuel"]);
     let seed = 12345;
     for (let i = 0; i < 500; i++) {
-      const [kind, nextSeed] = drawAdvancedBonusKind(
+      const [kind, nextSeed] = drawActivityBonusKind(
         seed,
         NO_NODES,
         5,
@@ -124,14 +124,14 @@ describe("drawAdvancedBonusKind (steal.md §10)", () => {
     const everyExtra = everyNodeWithExtra(3);
     let seed = 54321;
     for (let i = 0; i < 500; i++) {
-      const [kind, nextSeed] = drawAdvancedBonusKind(seed, everyExtra, 3);
+      const [kind, nextSeed] = drawActivityBonusKind(seed, everyExtra, 3);
       expect(kind).not.toBe("additional-nodes");
       seed = nextSeed;
     }
   });
 
   it("draws each kind with a frequency close to its share of the weights, over a large sample", () => {
-    const counts: Record<AdvancedBonusKind, number> = {
+    const counts: Record<ActivityBonusKind, number> = {
       "small-points": 0,
       "medium-points": 0,
       "large-points": 0,
@@ -142,12 +142,12 @@ describe("drawAdvancedBonusKind (steal.md §10)", () => {
     const sampleSize = 20000;
     let seed = 999;
     for (let i = 0; i < sampleSize; i++) {
-      const [kind, nextSeed] = drawAdvancedBonusKind(seed, NO_NODES, 5);
+      const [kind, nextSeed] = drawActivityBonusKind(seed, NO_NODES, 5);
       counts[kind]++;
       seed = nextSeed;
     }
 
-    const expectedShare: Record<AdvancedBonusKind, number> = {
+    const expectedShare: Record<ActivityBonusKind, number> = {
       "small-points": 30 / 126,
       "medium-points": 40 / 126,
       "large-points": 20 / 126,
@@ -156,7 +156,7 @@ describe("drawAdvancedBonusKind (steal.md §10)", () => {
       "node-scramble": 10 / 126,
     };
 
-    for (const kind of ADVANCED_BONUS_KINDS) {
+    for (const kind of ACTIVITY_BONUS_KINDS) {
       const observed = counts[kind] / sampleSize;
       expect(observed).toBeGreaterThan(expectedShare[kind] - 0.03);
       expect(observed).toBeLessThan(expectedShare[kind] + 0.03);
@@ -164,9 +164,9 @@ describe("drawAdvancedBonusKind (steal.md §10)", () => {
   });
 });
 
-describe("drawAdvancedBonusPlanet (steal.md §10)", () => {
+describe("drawActivityBonusPlanet (steal.md §10)", () => {
   it("draws uniformly from the given list and advances the seed by one step", () => {
-    const [square, nextSeed] = drawAdvancedBonusPlanet(42, PLANETS);
+    const [square, nextSeed] = drawActivityBonusPlanet(42, PLANETS);
     expect(PLANETS.some((p) => squareName(p) === squareName(square))).toBe(
       true,
     );
@@ -175,18 +175,18 @@ describe("drawAdvancedBonusPlanet (steal.md §10)", () => {
   });
 
   it("draws every planet in a single-element list", () => {
-    const [square] = drawAdvancedBonusPlanet(1, [PLANETS[5]]);
+    const [square] = drawActivityBonusPlanet(1, [PLANETS[5]]);
     expect(squareName(square)).toBe(squareName(PLANETS[5]));
   });
 });
 
-describe("advancedBonusPoints (steal.md §10)", () => {
+describe("activityBonusPoints (steal.md §10)", () => {
   it("pays the table's spot amounts", () => {
-    expect(advancedBonusPoints(3, "off", "simple", "small")).toBe(2);
-    expect(advancedBonusPoints(3, "off", "bonus", "large")).toBe(8);
-    expect(advancedBonusPoints(4, "double", "bonus", "medium")).toBe(10);
-    expect(advancedBonusPoints(5, "required", "simple", "large")).toBe(6);
-    expect(advancedBonusPoints(5, "double", "bonus", "large")).toBe(15);
+    expect(activityBonusPoints(3, "off", "simple", "small")).toBe(2);
+    expect(activityBonusPoints(3, "off", "bonus", "large")).toBe(8);
+    expect(activityBonusPoints(4, "double", "bonus", "medium")).toBe(10);
+    expect(activityBonusPoints(5, "required", "simple", "large")).toBe(6);
+    expect(activityBonusPoints(5, "double", "bonus", "large")).toBe(15);
   });
 });
 
@@ -223,22 +223,22 @@ describe("the point table mirrors steal.md §10", () => {
       const [smallSimple, mediumSimple, largeSimple] = row.simple;
       const [smallBonus, mediumBonus, largeBonus] = row.bonus;
       expect(
-        advancedBonusPoints(row.nodes, row.matching, "simple", "small"),
+        activityBonusPoints(row.nodes, row.matching, "simple", "small"),
       ).toBe(smallSimple);
       expect(
-        advancedBonusPoints(row.nodes, row.matching, "simple", "medium"),
+        activityBonusPoints(row.nodes, row.matching, "simple", "medium"),
       ).toBe(mediumSimple);
       expect(
-        advancedBonusPoints(row.nodes, row.matching, "simple", "large"),
+        activityBonusPoints(row.nodes, row.matching, "simple", "large"),
       ).toBe(largeSimple);
       expect(
-        advancedBonusPoints(row.nodes, row.matching, "bonus", "small"),
+        activityBonusPoints(row.nodes, row.matching, "bonus", "small"),
       ).toBe(smallBonus);
       expect(
-        advancedBonusPoints(row.nodes, row.matching, "bonus", "medium"),
+        activityBonusPoints(row.nodes, row.matching, "bonus", "medium"),
       ).toBe(mediumBonus);
       expect(
-        advancedBonusPoints(row.nodes, row.matching, "bonus", "large"),
+        activityBonusPoints(row.nodes, row.matching, "bonus", "large"),
       ).toBe(largeBonus);
     }
 
@@ -259,7 +259,7 @@ describe("the point table mirrors steal.md §10", () => {
         for (const matching of PLAYER_MATCHING_SETTINGS) {
           for (const size of ["small", "medium", "large"] as const) {
             expect(() =>
-              advancedBonusPoints(nodeCount, matching, scoring, size),
+              activityBonusPoints(nodeCount, matching, scoring, size),
             ).not.toThrow();
           }
         }
@@ -268,9 +268,9 @@ describe("the point table mirrors steal.md §10", () => {
   }
 });
 
-describe("dealAdvancedBonuses (steal.md §10)", () => {
+describe("dealActivityBonuses (steal.md §10)", () => {
   it("deals two distinct planets, of two distinct kinds, both from the twelve planets", () => {
-    const [[first, second]] = dealAdvancedBonuses(NO_NODES, 4, 2024);
+    const [[first, second]] = dealActivityBonuses(NO_NODES, 4, 2024);
 
     expect(squareName(first.square)).not.toBe(squareName(second.square));
     expect(first.kind).not.toBe(second.kind);
@@ -282,7 +282,7 @@ describe("dealAdvancedBonuses (steal.md §10)", () => {
   });
 
   it("consumes exactly four seed steps", () => {
-    const [, nextSeed] = dealAdvancedBonuses(NO_NODES, 4, 2024);
+    const [, nextSeed] = dealActivityBonuses(NO_NODES, 4, 2024);
     let expectedSeed = 2024;
     for (let step = 0; step < 4; step++) {
       [, expectedSeed] = mulberry32(expectedSeed);
@@ -291,21 +291,21 @@ describe("dealAdvancedBonuses (steal.md §10)", () => {
   });
 
   it("is deterministic for a seed, and differs for a different seed", () => {
-    const [firstBonuses] = dealAdvancedBonuses(NO_NODES, 4, 555);
-    const [secondBonuses] = dealAdvancedBonuses(NO_NODES, 4, 555);
-    const [thirdBonuses] = dealAdvancedBonuses(NO_NODES, 4, 556);
+    const [firstBonuses] = dealActivityBonuses(NO_NODES, 4, 555);
+    const [secondBonuses] = dealActivityBonuses(NO_NODES, 4, 555);
+    const [thirdBonuses] = dealActivityBonuses(NO_NODES, 4, 556);
 
     expect(secondBonuses).toEqual(firstBonuses);
     expect(thirdBonuses).not.toEqual(firstBonuses);
   });
 });
 
-describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
+describe("resolveActivityBonusClaim (steal.md §10)", () => {
   const [claimedPlanet, survivorPlanet] = PLANETS;
 
   function stateFor(config: {
-    readonly kind: AdvancedBonusKind;
-    readonly survivorKind?: AdvancedBonusKind;
+    readonly kind: ActivityBonusKind;
+    readonly survivorKind?: ActivityBonusKind;
     readonly nodes?: Readonly<Record<string, NodeStatus>>;
     readonly ships?: readonly Ship[];
     readonly playerMatching?: "off" | "double" | "required";
@@ -317,7 +317,8 @@ describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
       ships: config.ships ?? [
         ship("green-1", "green", squareName(claimedPlanet)),
       ],
-      advancedBonuses: bonuses(
+      planetActivity: "race" as const,
+      activityBonuses: bonuses(
         [claimedPlanet, config.kind],
         [survivorPlanet, config.survivorKind ?? "medium-points"],
       ),
@@ -328,9 +329,19 @@ describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
     };
   }
 
+  it("throws when planet resources is off", () => {
+    const state = {
+      ...stateFor({ kind: "small-points" }),
+      planetActivity: "off" as const,
+    };
+    expect(() =>
+      resolveActivityBonusClaim(state, "green", claimedPlanet),
+    ).toThrow(RangeError);
+  });
+
   it("throws when the landed planet carries neither current bonus", () => {
     const state = stateFor({ kind: "small-points" });
-    expect(() => resolveAdvancedBonusClaim(state, "green", PLANETS[5])).toThrow(
+    expect(() => resolveActivityBonusClaim(state, "green", PLANETS[5])).toThrow(
       RangeError,
     );
   });
@@ -342,11 +353,11 @@ describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
       playerMatching: "off",
       scoring: "simple",
     });
-    const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+    const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
 
     expect(result.outcome.kind).toBe("large-points");
     expect(result.outcome.pointsAwarded).toBe(
-      advancedBonusPoints(3, "off", "simple", "large"),
+      activityBonusPoints(3, "off", "simple", "large"),
     );
     expect(result.outcome.poweredShipIds).toEqual([]);
     expect(result.outcome.addedSquares).toEqual([]);
@@ -363,7 +374,7 @@ describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
       ship("red-1", "red", "C7", 3),
     ];
     const state = stateFor({ kind: "fuel", ships });
-    const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+    const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
 
     expect([...result.outcome.poweredShipIds].sort()).toEqual([
       "green-1",
@@ -387,7 +398,7 @@ describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
       F5: { state: "prospective", level: 0, signal: 2 },
     };
     const state = stateFor({ kind: "additional-nodes", nodes });
-    const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+    const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
 
     expect(result.outcome.addedSquares).toHaveLength(2);
     for (const signal of [0, 1, 2] as const) {
@@ -412,7 +423,7 @@ describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
       N2: { state: "prospective", level: 0, signal: 2, extra: true },
     };
     const state = stateFor({ kind: "node-scramble", nodes });
-    const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+    const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
 
     expect(result.nodes.G8).toEqual(nodes.G8);
     expect(result.nodes.L8).toEqual(nodes.L8);
@@ -431,7 +442,7 @@ describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
         survivorKind: "fuel",
         randomSeed: seed,
       });
-      const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+      const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
       expect(result.outcome.survivor.oldKind).toBe("fuel");
       expect(result.outcome.survivor.newKind).not.toBe("fuel");
     }
@@ -444,7 +455,7 @@ describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
         survivorKind: "fuel",
         randomSeed: seed,
       });
-      const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+      const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
       expect(result.outcome.newBonus.kind).not.toBe(
         result.outcome.survivor.newKind,
       );
@@ -462,7 +473,7 @@ describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
         ],
         randomSeed: seed,
       });
-      const result = resolveAdvancedBonusClaim(state, "green", claimedPlanet);
+      const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
       expect(squareName(result.outcome.newBonus.square)).not.toBe(
         squareName(survivorPlanet),
       );
@@ -474,44 +485,44 @@ describe("resolveAdvancedBonusClaim (steal.md §10)", () => {
 
   it("keeps the survivor in its own slot and puts the new bonus in the claimed slot, whichever slot was claimed", () => {
     const claimedFirst = stateFor({ kind: "small-points" });
-    const resultClaimedFirst = resolveAdvancedBonusClaim(
+    const resultClaimedFirst = resolveActivityBonusClaim(
       claimedFirst,
       "green",
       claimedPlanet,
     );
-    expect(squareName(resultClaimedFirst.advancedBonuses[0].square)).not.toBe(
+    expect(squareName(resultClaimedFirst.activityBonuses[0].square)).not.toBe(
       squareName(claimedPlanet),
     );
-    expect(squareName(resultClaimedFirst.advancedBonuses[1].square)).toBe(
+    expect(squareName(resultClaimedFirst.activityBonuses[1].square)).toBe(
       squareName(survivorPlanet),
     );
 
     const claimedSecond = stateFor({ kind: "small-points" });
-    const resultClaimedSecond = resolveAdvancedBonusClaim(
+    const resultClaimedSecond = resolveActivityBonusClaim(
       claimedSecond,
       "green",
       survivorPlanet,
     );
-    expect(squareName(resultClaimedSecond.advancedBonuses[1].square)).not.toBe(
+    expect(squareName(resultClaimedSecond.activityBonuses[1].square)).not.toBe(
       squareName(survivorPlanet),
     );
-    expect(squareName(resultClaimedSecond.advancedBonuses[0].square)).toBe(
+    expect(squareName(resultClaimedSecond.activityBonuses[0].square)).toBe(
       squareName(claimedPlanet),
     );
   });
 
   it("is deterministic for a seed, and differs for a different seed", () => {
-    const first = resolveAdvancedBonusClaim(
+    const first = resolveActivityBonusClaim(
       stateFor({ kind: "small-points", randomSeed: 9 }),
       "green",
       claimedPlanet,
     );
-    const second = resolveAdvancedBonusClaim(
+    const second = resolveActivityBonusClaim(
       stateFor({ kind: "small-points", randomSeed: 9 }),
       "green",
       claimedPlanet,
     );
-    const third = resolveAdvancedBonusClaim(
+    const third = resolveActivityBonusClaim(
       stateFor({ kind: "small-points", randomSeed: 10 }),
       "green",
       claimedPlanet,

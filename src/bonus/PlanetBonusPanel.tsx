@@ -1,18 +1,18 @@
 // Both sides' bonus planets (rules.md §3.4), shown above the clocks: three
 // drawings a side, green's row over red's, each carrying a badge for whether
-// it has been claimed. Renders nothing at all when the setting is off — not
-// an empty row, not a hidden one — and decorative throughout: a claim reaches
-// a screen-reader user through the live region's sentence
-// (`board/announcements.ts`), not through this panel. Each cell's drawing and
-// badge are `PlanetBonusCell`, shared with the Quick Guide's PLANET BONUS
-// diagram.
+// it has been claimed. Renders nothing at all when both the planet bonus and
+// the planet resources setting are off — not an empty row, not a hidden one
+// — and decorative throughout: a claim reaches a screen-reader user through
+// the live region's sentence (`board/announcements.ts`), not through this
+// panel. Each cell's drawing and badge are `PlanetBonusCell`, shared with
+// the Quick Guide's PLANET BONUS diagram.
 //
-// Under the advanced setting (steal.md §10) there are no per-side planets to
-// draw two rows of: instead this renders a single row of the two current
-// bonuses, slot 0 left and slot 1 right (`GameState.advancedBonuses`), each
-// as an `AdvancedBonusCell` — the planet's own artwork with its kind's
-// symbol beneath it. Reading the pair straight off `state.advancedBonuses`
-// in slot order is what keeps a claim's redraw showing the survivor in its
+// Under the planet resources setting (steal.md §10) there are no per-side
+// planets to draw two rows of: instead this renders a single row of the two
+// current activity bonuses, slot 0 left and slot 1 right (`GameState.activityBonuses`), each
+// as an `ActivityBonusCell` — the planet's own artwork with its kind's
+// symbol beneath it. Reading the pair straight off `state.activityBonuses`
+// in slot order is what keeps a claim showing the survivor in its
 // own slot and the new bonus in the other one, with no component state of
 // its own.
 //
@@ -32,7 +32,7 @@ import { squareName, type Square } from "../rules/board";
 import type { Side } from "../rules/fleet";
 import type { BonusPlanetEntry, GameState } from "../rules/gameState";
 import { planetBonusPoints } from "../rules/planetBonus";
-import { AdvancedBonusCell } from "./AdvancedBonusCell";
+import { ActivityBonusCell } from "./ActivityBonusCell";
 import { bonusBadgeState } from "./bonusBadge";
 import { isTouchPointer } from "./pointerHover";
 import { PlanetBonusCell } from "./PlanetBonusCell";
@@ -137,18 +137,14 @@ export function PlanetBonusPanel({
     [state.openingSeed],
   );
 
-  if (state.planetBonus === "off") {
-    return null;
-  }
-
-  if (state.planetBonus === "advanced") {
+  if (state.planetActivity !== "off") {
     return (
       <div
-        className="planet-bonus-panel planet-bonus-panel--advanced"
+        className="planet-bonus-panel planet-bonus-panel--activity"
         aria-hidden="true"
       >
-        <div className="planet-bonus-panel__advanced-row">
-          {state.advancedBonuses.map((entry) => {
+        <div className="planet-bonus-panel__activity-row">
+          {state.activityBonuses.map((entry) => {
             const art = planetForSquare(arrangement, entry.square);
             if (art === undefined) {
               throw new Error(
@@ -163,8 +159,8 @@ export function PlanetBonusPanel({
                 key={squareName(entry.square)}
                 className={
                   glowing
-                    ? "planet-bonus-panel__advanced-cell planet-bonus-panel__advanced-cell--glow"
-                    : "planet-bonus-panel__advanced-cell"
+                    ? "planet-bonus-panel__activity-cell planet-bonus-panel__activity-cell--glow"
+                    : "planet-bonus-panel__activity-cell"
                 }
                 onPointerEnter={(event) => {
                   if (!isTouchPointer(event)) {
@@ -177,7 +173,7 @@ export function PlanetBonusPanel({
                   }
                 }}
               >
-                <AdvancedBonusCell
+                <ActivityBonusCell
                   art={art}
                   kind={entry.kind}
                   nodeCount={state.chargedNodeCount}
@@ -190,6 +186,10 @@ export function PlanetBonusPanel({
         </div>
       </div>
     );
+  }
+
+  if (state.planetBonus === "off") {
+    return null;
   }
 
   const amount = planetBonusPoints(state.planetBonus);

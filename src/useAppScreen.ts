@@ -1,6 +1,7 @@
 // The app's front door: which screen is showing, the options chosen on the
 // start screen — eight of them, nine under the steal playstyle, which alone
-// offers player-matching nodes — and the two actions that move between
+// offers player-matching nodes and offers planet resources in place of planet
+// bonus — and the two actions that move between
 // screens. Lives
 // outside App.tsx so PLAY's wiring and the return to start are a real unit,
 // exercised on their own rather than only through the whole app. Which
@@ -26,7 +27,13 @@ import {
   type ChargedNodeCount,
 } from "./rules/nodes";
 import {
+  DEFAULT_PLANET_ACTIVITY,
+  resolvePlanetActivity,
+  type PlanetActivitySetting,
+} from "./rules/planetActivity";
+import {
   DEFAULT_PLANET_BONUS,
+  resolvePlanetBonus,
   type PlanetBonusSetting,
 } from "./rules/planetBonus";
 import {
@@ -45,6 +52,7 @@ export interface AppScreen {
   readonly scoring: ScoringSetting;
   readonly nodePlaystyle: NodePlaystyle;
   readonly planetBonus: PlanetBonusSetting;
+  readonly planetActivity: PlanetActivitySetting;
   readonly playerMatching: PlayerMatchingSetting;
   readonly lengthInRounds: number;
   readonly clockSetting: ClockSetting;
@@ -54,6 +62,7 @@ export interface AppScreen {
   readonly setScoring: (scoring: ScoringSetting) => void;
   readonly setNodePlaystyle: (nodePlaystyle: NodePlaystyle) => void;
   readonly setPlanetBonus: (planetBonus: PlanetBonusSetting) => void;
+  readonly setPlanetActivity: (planetActivity: PlanetActivitySetting) => void;
   readonly setPlayerMatching: (playerMatching: PlayerMatchingSetting) => void;
   readonly setLengthInRounds: (lengthInRounds: number) => void;
   readonly setClockSetting: (clockSetting: ClockSetting) => void;
@@ -68,9 +77,11 @@ export interface AppScreen {
  * delegates which screen is showing to `useScreenAddress`, which reads it
  * from the browser's address. `handlePlay` dispatches `new-game` with a fresh
  * seed and the fleet size, charged-node count, combat setting, scoring
- * setting, node playstyle, planet bonus setting, player-matching setting
- * (resolved for the node playstyle actually chosen, `resolvePlayerMatching`)
- * and length through `dispatch`, then hands the game its address;
+ * setting, node playstyle, planet bonus, planet resources and player-matching
+ * settings (each resolved for the node playstyle actually chosen —
+ * `resolvePlanetBonus`, `resolvePlanetActivity`, `resolvePlayerMatching` —
+ * so a game never starts with a setting its playstyle does not offer) and
+ * length through `dispatch`, then hands the game its address;
  * `handleReturnToStart` moves the browser back, the same as its own Back
  * button. The clock setting is not
  * part of `new-game` — the rules layer knows nothing about time — so it is
@@ -78,11 +89,9 @@ export interface AppScreen {
  * quick guide at its own address and changes nothing else; there is no
  * matching close action, because `handleReturnToStart` already means "leave
  * for the start screen", which is exactly what leaving the guide does.
- * `setNodePlaystyle` wraps the raw state setter: leaving steal while the
- * remembered planet bonus is `"advanced"` resets it to `"off"` (steal.md
- * §10), unlike player-matching, which is left as it is and resolved at PLAY
- * instead (`resolvePlayerMatching`) — the group must show OFF, not jump back
- * to ADVANCED on returning to steal.
+ * Planet bonus and planet resources are remembered separately, so switching
+ * playstyle shows the other group as it was last left, and switching back
+ * finds the first unchanged.
  */
 export function useAppScreen(
   dispatch: (intent: SessionIntent) => void,
@@ -96,11 +105,14 @@ export function useAppScreen(
   );
   const [combatEnabled, setCombatEnabled] = useState(DEFAULT_COMBAT_ENABLED);
   const [scoring, setScoring] = useState<ScoringSetting>(DEFAULT_SCORING);
-  const [nodePlaystyle, setNodePlaystyleState] = useState<NodePlaystyle>(
+  const [nodePlaystyle, setNodePlaystyle] = useState<NodePlaystyle>(
     DEFAULT_NODE_PLAYSTYLE,
   );
   const [planetBonus, setPlanetBonus] =
     useState<PlanetBonusSetting>(DEFAULT_PLANET_BONUS);
+  const [planetActivity, setPlanetActivity] = useState<PlanetActivitySetting>(
+    DEFAULT_PLANET_ACTIVITY,
+  );
   const [playerMatching, setPlayerMatching] = useState<PlayerMatchingSetting>(
     DEFAULT_PLAYER_MATCHING,
   );
@@ -110,16 +122,6 @@ export function useAppScreen(
   const [clockSetting, setClockSetting] = useState<ClockSetting>(
     DEFAULT_CLOCK_SETTING,
   );
-
-  function setNodePlaystyle(nextNodePlaystyle: NodePlaystyle) {
-    setNodePlaystyleState(nextNodePlaystyle);
-    // Advanced (steal.md §10) is offered only under steal: leaving steal
-    // with it selected drops the Planet bonus group back to off, rather
-    // than leaving it hidden and ready to reappear.
-    if (nextNodePlaystyle !== "steal" && planetBonus === "advanced") {
-      setPlanetBonus("off");
-    }
-  }
 
   function handlePlay() {
     dispatch({
@@ -131,7 +133,8 @@ export function useAppScreen(
       combatEnabled,
       scoring,
       nodePlaystyle,
-      planetBonus,
+      planetBonus: resolvePlanetBonus(nodePlaystyle, planetBonus),
+      planetActivity: resolvePlanetActivity(nodePlaystyle, planetActivity),
       playerMatching: resolvePlayerMatching(nodePlaystyle, playerMatching),
     });
     showGame();
@@ -153,6 +156,7 @@ export function useAppScreen(
     scoring,
     nodePlaystyle,
     planetBonus,
+    planetActivity,
     playerMatching,
     lengthInRounds,
     clockSetting,
@@ -162,6 +166,7 @@ export function useAppScreen(
     setScoring,
     setNodePlaystyle,
     setPlanetBonus,
+    setPlanetActivity,
     setPlayerMatching,
     setLengthInRounds,
     setClockSetting,

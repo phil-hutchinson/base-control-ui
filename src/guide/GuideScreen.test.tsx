@@ -138,26 +138,26 @@ describe("GuideScreen", () => {
     ).toHaveLength(0);
   });
 
-  it("pairs ADVANCED PLANET BONUSES, last in the story's order, with a diagram of two bonuses", () => {
+  it("pairs PLANET RESOURCES, last in the story's order, with a diagram of two bonuses", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     const headings = screen
       .getAllByRole("heading", { level: 2 })
       .map((heading) => heading.textContent);
     const planetBonusIndex = headings.indexOf("PLANET BONUS");
-    const advancedIndex = headings.indexOf("ADVANCED PLANET BONUSES");
-    expect(advancedIndex).toBe(planetBonusIndex + 1);
+    const planetActivityIndex = headings.indexOf("PLANET RESOURCES");
+    expect(planetActivityIndex).toBe(planetBonusIndex + 1);
     expect(GUIDE_SECTIONS[GUIDE_SECTIONS.length - 1].heading).toBe(
-      "ADVANCED PLANET BONUSES",
+      "PLANET RESOURCES",
     );
 
     const heading = screen.getByRole("heading", {
       level: 2,
-      name: "ADVANCED PLANET BONUSES",
+      name: "PLANET RESOURCES",
     });
     const section = heading.closest("section");
     expect(section).not.toBeNull();
-    expect(section?.querySelectorAll(".advanced-bonus-cell")).toHaveLength(2);
+    expect(section?.querySelectorAll(".activity-bonus-cell")).toHaveLength(2);
     expect(section?.querySelectorAll(".points-symbol")).toHaveLength(1);
     expect(section?.querySelectorAll(".node-scramble-symbol")).toHaveLength(1);
   });

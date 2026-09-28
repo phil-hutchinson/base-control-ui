@@ -20,8 +20,8 @@ Under steal, a node is not a single square that comes into being, runs down
 and ends. Each node is dealt a **signal** of its own, and always occupies
 exactly **two squares** on the board — its squares carry that signal, which
 is the only thing tying them together. The app shows each signal as a
-colour, so a node's two squares always look alike. Under the advanced
-planet bonus setting, a node may carry a third square, its **extra**
+colour, so a node's two squares always look alike. Under planet resources
+(stable or race), a node may carry a third square, its **extra**
 prospective square (section 10).
 
 A node is always in exactly one of two configurations, or a third when it
@@ -64,7 +64,7 @@ three things at once: claiming a node nobody held, taking a node away from
 the opponent, and a holder relocating its own node out of reach — which
 costs the holder a whole turn and a move, and leaves the node's new
 prospective square drawn afresh, exactly as taking it from an opponent
-would. Under the advanced planet bonus setting, a node with an extra
+would. Under planet resources (stable or race), a node with an extra
 prospective square is claimed a little differently (section 10).
 
 ## 4. Leaving a node
@@ -75,7 +75,7 @@ own prospective square:
 1. The vacated square becomes ordinary board, leaving nothing behind.
 2. The node draws **a second prospective square** (section 6).
 
-Under the advanced planet bonus setting, a node's extra prospective square,
+Under planet resources (stable or race), a node's extra prospective square,
 if it has one, survives leaving alongside this second square (section 10).
 
 The node is Open afterwards: the next ship to reach either of its two
@@ -196,24 +196,30 @@ on their own node, they collect **no** node energy that turn, however many
 other nodes they hold. If one does, they collect exactly what rules.md
 §8.4 gives, their own node counting once, like any other.
 
-**Planet bonuses** (rules.md §3.4) are unaffected by either setting:
+**Planet resources** (section 10) is unaffected by either setting:
 required withholds node energy only, and a bonus planet pays on landing
 whether or not a player holds their own node. Nothing here ever subtracts
 energy; required withholds a turn's node energy, and never takes any away.
-Under the advanced planet bonus setting, this section's choice also sizes
-the **point amounts** a points bonus pays (section 10).
+Under planet resources, stable and race alike, this section's choice also
+sizes the **point amounts** a points bonus pays (section 10).
 
 The app shows the two matched nodes in the players' own colours, in the
 same manner that section 2 already notes for a signal.
 
 With **off**, none of this section applies, and no node is matched.
 
-## 10. Advanced planet bonuses
+## 10. Planet resources
 
-**Advanced** is one of the four values of the planet bonus setting
-(rules.md §3.4) — off, 2 points, 3 points or advanced — offered only under
-the steal playstyle. Under it there are no per-player planets: the board
-always carries exactly **two bonuses**, on two different planets, always of
+**Planet resources** is **off, stable or race** (rules.md §3.4), the same
+for both players, chosen before play begins and fixed for the game's
+lifetime, and offered only under the steal playstyle. With it **off**,
+there are no planet bonuses at all, and nothing in this section applies.
+Everything the rest of this section says applies to both **stable** and
+**race**, except where it says otherwise; the two differ only in what
+happens to the bonus left standing when the other is claimed.
+
+Under stable and race there are no per-player planets: the board always
+carries exactly **two bonuses**, on two different planets, always of
 **two different kinds**, and **either player** claims one by landing a ship
 on it. A bonus is only ever placed on an **empty** planet, so a bonus
 planet is always empty.
@@ -243,12 +249,21 @@ fight (rules.md §7.1). Flying over the planet does not count. A claim
 resolves at once, in this order:
 
 1. **The bonus takes effect** for the claiming side, as set out below.
-2. **The other bonus stays on its planet but changes kind.** It is redrawn
-   by weight from the kinds available, excluding the kind it was.
+2. **The other bonus stays on its planet.** Under **race** it changes
+   kind: it is redrawn by weight from the kinds available, excluding the
+   kind it was. Under **stable** it keeps its kind, and nothing is drawn
+   for it.
 3. **A new bonus appears** on a planet drawn at random from the planets
    that are empty at that moment and do not carry the other bonus, every
    such planet equally likely. Its kind is drawn by weight from the kinds
-   available, excluding the other bonus's new kind.
+   available, excluding the other bonus's kind — under race, its new kind.
+   So the two bonuses are always of different kinds.
+
+Under stable, a claim therefore makes one fewer draw than under race. A
+bonus that stands under stable never becomes unavailable while it stands:
+only claiming Additional nodes makes a kind unavailable, and the bonus left
+standing then is never Additional nodes itself, since the two are always
+of different kinds.
 
 "Available" is checked at the moment of each draw, so it reflects what step
 1 has just done — this matters for Additional nodes, which is not
@@ -260,8 +275,8 @@ already orders a leave ahead of a claim: a Node scramble claimed on such a
 move therefore sees the left node already Open.
 
 **Fighting for a bonus.** In a fight (rules.md §7), the attacker is placed
-first and its claim, if any, resolves in full — including any redraw of the
-other bonus and any new bonus that appears — before the defender's planet
+first and its claim, if any, resolves in full — including, under race, the
+redraw of the other bonus, and any new bonus that appears — before the defender's planet
 is drawn from the planets still empty. The defender may land on either
 bonus, including the one that has only just appeared, and if so it claims
 that bonus for the defender's side. While the attacker's claim resolves,
@@ -349,7 +364,7 @@ included.
 
 **Every draw uses the game's seeded random stream**, so a recorded game
 replays exactly: the opening planets and kinds, every redraw of the other
-bonus's kind, every new bonus's planet and kind, and every square that
+bonus's kind (under race), every new bonus's planet and kind, and every square that
 Additional nodes or Node scramble places.
 
 **Why five is the limit.** With five ships a side there are at most ten

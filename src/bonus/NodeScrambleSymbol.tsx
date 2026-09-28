@@ -1,4 +1,4 @@
-// The Node scramble symbol an advanced bonus draws beneath its planet
+// The Node scramble symbol an activity bonus draws beneath its planet
 // (steal.md §10): the rotator's own recycling mark (`RotatorMarker.tsx`),
 // but each of its three arcs in a different colour rather than the
 // rotator's own single colour — since this symbol stands for every node's
@@ -12,7 +12,7 @@ import {
   arrowheadPoints,
 } from "../board/rotatorMarkerGeometry";
 import type { PlayerMatchingSetting } from "../rules/playerMatching";
-import { advancedBonusSymbolColors } from "./advancedBonusColors";
+import { activityBonusSymbolColors } from "./activityBonusColors";
 import "./NodeScrambleSymbol.css";
 
 export interface NodeScrambleSymbolProps {
@@ -22,7 +22,7 @@ export interface NodeScrambleSymbolProps {
 export function NodeScrambleSymbol({
   playerMatching,
 }: NodeScrambleSymbolProps) {
-  const colors = advancedBonusSymbolColors(playerMatching);
+  const colors = activityBonusSymbolColors(playerMatching);
   return (
     <svg
       className="node-scramble-symbol"

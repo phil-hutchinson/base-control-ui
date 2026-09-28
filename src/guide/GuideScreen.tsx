@@ -13,10 +13,10 @@ import {
   GUIDE_TITLE,
 } from "./guideCopy";
 import {
-  AdvancedPlanetBonusDiagram,
   MovementDiagram,
   NodeLifecycleDiagram,
   NodeSelectionDiagram,
+  PlanetActivityDiagram,
   PlanetBonusDiagram,
   PlayerMatchingNodesDiagram,
   RefuellingDiagram,
@@ -39,7 +39,7 @@ const SECTION_DIAGRAMS: Record<GuideSectionId, ComponentType> = {
   stealingNodes: StealingNodesDiagram,
   playerMatchingNodes: PlayerMatchingNodesDiagram,
   planetBonus: PlanetBonusDiagram,
-  advancedPlanetBonus: AdvancedPlanetBonusDiagram,
+  planetActivity: PlanetActivityDiagram,
 };
 
 /**

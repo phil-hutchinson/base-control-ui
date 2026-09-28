@@ -1,4 +1,4 @@
-// The Additional nodes symbol an advanced bonus draws beneath its planet
+// The Additional nodes symbol an activity bonus draws beneath its planet
 // (steal.md §10): a node's three rings, in the same geometry a prospective
 // node's own marker draws them (`NodeMarker.tsx`), but each ring in a
 // different colour rather than one node's own single signal colour — since
@@ -9,7 +9,7 @@ import {
   INACTIVE_RING_STROKE_WIDTH,
 } from "../board/nodeMarkerGeometry";
 import type { PlayerMatchingSetting } from "../rules/playerMatching";
-import { advancedBonusSymbolColors } from "./advancedBonusColors";
+import { activityBonusSymbolColors } from "./activityBonusColors";
 import "./AdditionalNodesSymbol.css";
 
 export interface AdditionalNodesSymbolProps {
@@ -19,7 +19,7 @@ export interface AdditionalNodesSymbolProps {
 export function AdditionalNodesSymbol({
   playerMatching,
 }: AdditionalNodesSymbolProps) {
-  const colors = advancedBonusSymbolColors(playerMatching);
+  const colors = activityBonusSymbolColors(playerMatching);
   return (
     <svg
       className="additional-nodes-symbol"

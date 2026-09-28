@@ -2,12 +2,12 @@
    its content — a planet square, a symbol beneath it and a caption beneath
    that, stacked, rather than the single square `PlanetBonusCell.css`
    fills — so callers that force a square box on every cell (the Quick
-   Guide's grid, `GuideDiagram.css`'s `.guide-diagram__cell--advanced-bonus`)
+   Guide's grid, `GuideDiagram.css`'s `.guide-diagram__cell--activity-bonus`)
    must opt out of that for this one. `container-type: inline-size` lets the
    caption's own font-size scale from this box's width (`cqw`), the same
    idiom `PointsSymbol.css` uses, so it stays legible at whatever width the
    caller gives the cell. */
-.advanced-bonus-cell {
+.activity-bonus-cell {
   container-type: inline-size;
   display: flex;
   flex-direction: column;
@@ -20,7 +20,7 @@
    whatever narrower width keeps the whole stack inside the panel's own
    height — and `aspect-ratio: 1` keeps this square's height in step with
    that width. */
-.advanced-bonus-cell__planet {
+.activity-bonus-cell__planet {
   width: 100%;
   aspect-ratio: 1;
   flex: 0 0 auto;
@@ -38,7 +38,7 @@
    leaves about a sixth of its square empty below the body, and the small
    negative top margin takes up part of that, leaving about 12.6cqw of
    visible space between the planet and the symbol. */
-.advanced-bonus-cell__symbol {
+.activity-bonus-cell__symbol {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,7 +52,7 @@
    the classic panel's side headings. Sized so the longest caption, ADD
    NODES — nine monospace characters at about 0.64em each with this
    letter-spacing — still fits inside the cell's own width. */
-.advanced-bonus-cell__caption {
+.activity-bonus-cell__caption {
   flex: 0 0 auto;
   font-family: var(--font-arcade);
   font-weight: 700;

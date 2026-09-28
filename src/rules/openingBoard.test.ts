@@ -71,6 +71,7 @@ describe.each(CHARGED_NODE_COUNTS)(
           lengthInRounds: RUN_TO_COMPLETION_LENGTH_IN_ROUNDS,
           chargedNodeCount,
           combatEnabled: true,
+          nodePlaystyle: "planet",
         });
 
         const dealtNodeNames = nodeSquares(state).map(squareName);
@@ -175,7 +176,8 @@ describe.each(CHARGED_NODE_COUNTS)(
           rotators: [],
           planetBonus: "off",
           bonusPlanets: { green: [], red: [] },
-          advancedBonuses: [],
+          planetActivity: "off",
+          activityBonuses: [],
           energy: { green: 0, red: 0 },
           lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
           chargedNodeCount,

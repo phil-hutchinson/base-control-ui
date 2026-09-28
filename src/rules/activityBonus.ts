@@ -1,4 +1,4 @@
-// The advanced planet bonus setting's own rules (steal.md §10): the six
+// The planet resources setting's own rules (steal.md §10): the six
 // kinds and their weights, the point table, availability, the weighted kind
 // draw, the uniform planet draw, the opening deal of the pair and the claim
 // resolution. A leaf module over `gameState.ts`'s `NodeStatus` and `Ship`
@@ -7,7 +7,7 @@
 // `Side` and `ShipId`, `nodes.ts`'s `ChargedNodeCount`, `planets.ts`'s
 // `PLANETS`, `playerMatching.ts`'s `PlayerMatchingSetting`, `power.ts`'s
 // `gainPower`, `scoring.ts`'s `ScoringSetting` and `random.ts`'s draws.
-// `ply.ts` calls `resolveAdvancedBonusClaim` when a landing claims a bonus,
+// `ply.ts` calls `resolveActivityBonusClaim` when a landing claims a bonus,
 // and this module only ever changes the fields the claim touches — nodes,
 // ships, the bonus pair and the seed — leaving everything else (whose ply it
 // is, energy other than the claim's own payout, and so on) to `ply.ts`.
@@ -17,16 +17,18 @@
 // slot 0's planet (uniform over all twelve planets), slot 1's planet
 // (uniform over the eleven left), slot 0's kind (weighted, no exclusions),
 // slot 1's kind (weighted, excluding slot 0's kind). `gameState.ts` calls
-// `dealAdvancedBonuses` for this.
+// `dealActivityBonuses` for this.
 //
-// A claim (steal.md §10) consumes, in this fixed order: (1) the claimed
-// kind's own draws — none for a points kind or Fuel, one per square
+// A claim under race (steal.md §10) consumes, in this fixed order: (1) the
+// claimed kind's own draws — none for a points kind or Fuel, one per square
 // Additional nodes or Node scramble adds (`addExtraProspectiveSquares`,
 // `scrambleProspectiveSquares`); (2) one step for the surviving bonus's new
 // kind, excluding the kind it was; (3) one step for the new bonus's planet,
 // drawn from planets empty at that moment and not the survivor's; (4) one
-// step for the new bonus's kind, excluding the survivor's new kind.
-// `resolveAdvancedBonusClaim` runs all four.
+// step for the new bonus's kind, excluding the survivor's new kind. A claim
+// under stable consumes the same steps without (2): the survivor keeps its
+// kind, so nothing is drawn for it, and the new bonus's kind excludes the
+// survivor's kept kind. `resolveActivityBonusClaim` runs them.
 //
 // Every kind draw — here and in the claim resolution — is a single
 // `drawWeightedIndex` call over all six kinds in their fixed table order
@@ -51,10 +53,10 @@ import {
 } from "./steal";
 
 /**
- * The six kinds an advanced planet bonus may be (steal.md §10), in the
+ * The six kinds an activity bonus may be (steal.md §10), in the
  * table's fixed order — the order every weighted kind draw uses.
  */
-export type AdvancedBonusKind =
+export type ActivityBonusKind =
   | "small-points"
   | "medium-points"
   | "large-points"
@@ -63,7 +65,7 @@ export type AdvancedBonusKind =
   | "node-scramble";
 
 /** The six kinds, in table order (steal.md §10). */
-export const ADVANCED_BONUS_KINDS: readonly AdvancedBonusKind[] = [
+export const ACTIVITY_BONUS_KINDS: readonly ActivityBonusKind[] = [
   "small-points",
   "medium-points",
   "large-points",
@@ -73,7 +75,7 @@ export const ADVANCED_BONUS_KINDS: readonly AdvancedBonusKind[] = [
 ];
 
 /** Each kind's weight in the dealt-by-weight draw (steal.md §10). */
-const ADVANCED_BONUS_WEIGHTS: Readonly<Record<AdvancedBonusKind, number>> = {
+const ACTIVITY_BONUS_WEIGHTS: Readonly<Record<ActivityBonusKind, number>> = {
   "small-points": 30,
   "medium-points": 40,
   "large-points": 20,
@@ -82,10 +84,10 @@ const ADVANCED_BONUS_WEIGHTS: Readonly<Record<AdvancedBonusKind, number>> = {
   "node-scramble": 10,
 };
 
-/** One of the two bonuses standing on the board under advanced (steal.md §10). */
-export interface AdvancedBonusEntry {
+/** One of the two activity bonuses standing on the board (steal.md §10). */
+export interface ActivityBonusEntry {
   readonly square: Square;
-  readonly kind: AdvancedBonusKind;
+  readonly kind: ActivityBonusKind;
 }
 
 /**
@@ -94,8 +96,8 @@ export interface AdvancedBonusEntry {
  * exactly when every one of the game's `nodeCount` nodes already carries an
  * extra prospective square (`everyNodeHasExtra`).
  */
-export function isAdvancedBonusKindAvailable(
-  kind: AdvancedBonusKind,
+export function isActivityBonusKindAvailable(
+  kind: ActivityBonusKind,
   nodes: Readonly<Record<string, NodeStatus>>,
   nodeCount: ChargedNodeCount,
 ): boolean {
@@ -109,29 +111,29 @@ export function isAdvancedBonusKindAvailable(
  * Draws one of the six kinds by weight (steal.md §10): a single
  * `drawWeightedIndex` call over all six kinds in their fixed table order,
  * with weight 0 for any kind in `excludedKinds` or currently unavailable
- * (`isAdvancedBonusKindAvailable`). Exactly one seed step.
+ * (`isActivityBonusKindAvailable`). Exactly one seed step.
  */
-export function drawAdvancedBonusKind(
+export function drawActivityBonusKind(
   seed: number,
   nodes: Readonly<Record<string, NodeStatus>>,
   nodeCount: ChargedNodeCount,
-  excludedKinds: ReadonlySet<AdvancedBonusKind> = new Set(),
-): [kind: AdvancedBonusKind, nextSeed: number] {
-  const weights = ADVANCED_BONUS_KINDS.map((kind) =>
+  excludedKinds: ReadonlySet<ActivityBonusKind> = new Set(),
+): [kind: ActivityBonusKind, nextSeed: number] {
+  const weights = ACTIVITY_BONUS_KINDS.map((kind) =>
     excludedKinds.has(kind) ||
-    !isAdvancedBonusKindAvailable(kind, nodes, nodeCount)
+    !isActivityBonusKindAvailable(kind, nodes, nodeCount)
       ? 0
-      : ADVANCED_BONUS_WEIGHTS[kind],
+      : ACTIVITY_BONUS_WEIGHTS[kind],
   );
   const [index, nextSeed] = drawWeightedIndex(seed, weights);
-  return [ADVANCED_BONUS_KINDS[index], nextSeed];
+  return [ACTIVITY_BONUS_KINDS[index], nextSeed];
 }
 
 /**
  * Draws one planet uniformly at random from `eligiblePlanets`, every one
  * equally likely (steal.md §10). Exactly one seed step.
  */
-export function drawAdvancedBonusPlanet(
+export function drawActivityBonusPlanet(
   seed: number,
   eligiblePlanets: readonly Square[],
 ): [square: Square, nextSeed: number] {
@@ -140,12 +142,12 @@ export function drawAdvancedBonusPlanet(
 }
 
 /** One of the three sizes a points bonus's amount is looked up by (steal.md §10). */
-export type AdvancedBonusPointSize = "small" | "medium" | "large";
+export type ActivityBonusPointSize = "small" | "medium" | "large";
 
-/** `AdvancedBonusPointSize` for a points kind, or `undefined` for a non-points kind. */
-export function advancedBonusPointSize(
-  kind: AdvancedBonusKind,
-): AdvancedBonusPointSize | undefined {
+/** `ActivityBonusPointSize` for a points kind, or `undefined` for a non-points kind. */
+export function activityBonusPointSize(
+  kind: ActivityBonusKind,
+): ActivityBonusPointSize | undefined {
   switch (kind) {
     case "small-points":
       return "small";
@@ -158,7 +160,7 @@ export function advancedBonusPointSize(
   }
 }
 
-type PointsBySize = Readonly<Record<AdvancedBonusPointSize, number>>;
+type PointsBySize = Readonly<Record<ActivityBonusPointSize, number>>;
 type PointsByScoring = Readonly<Record<ScoringSetting, PointsBySize>>;
 type PointsByMatching = Readonly<
   Record<PlayerMatchingSetting, PointsByScoring>
@@ -167,11 +169,11 @@ type PointsByMatching = Readonly<
 /**
  * The point amounts a points bonus pays (steal.md §10), keyed by the game's
  * node count, its player-matching setting and its scoring, mirrored verbatim
- * from steal.md §10's table — `advancedBonus.test.ts` reads that table and
+ * from steal.md §10's table — `activityBonus.test.ts` reads that table and
  * asserts the two agree, so a balancing change to one without the other
  * fails the suite.
  */
-const ADVANCED_BONUS_POINTS: Readonly<
+const ACTIVITY_BONUS_POINTS: Readonly<
   Record<ChargedNodeCount, PointsByMatching>
 > = {
   3: {
@@ -222,13 +224,13 @@ const ADVANCED_BONUS_POINTS: Readonly<
  * The energy a points bonus of the given size pays, for a game of
  * `nodeCount` nodes under `playerMatching` and `scoring` (steal.md §10).
  */
-export function advancedBonusPoints(
+export function activityBonusPoints(
   nodeCount: ChargedNodeCount,
   playerMatching: PlayerMatchingSetting,
   scoring: ScoringSetting,
-  size: AdvancedBonusPointSize,
+  size: ActivityBonusPointSize,
 ): number {
-  return ADVANCED_BONUS_POINTS[nodeCount][playerMatching][scoring][size];
+  return ACTIVITY_BONUS_POINTS[nodeCount][playerMatching][scoring][size];
 }
 
 /**
@@ -239,31 +241,31 @@ export function advancedBonusPoints(
  * planet is empty at this point — no starting square is a planet — so no
  * planet needs excluding beyond slot 0's own. Exactly four seed steps.
  */
-export function dealAdvancedBonuses(
+export function dealActivityBonuses(
   nodes: Readonly<Record<string, NodeStatus>>,
   nodeCount: ChargedNodeCount,
   seed: number,
 ): [
-  bonuses: readonly [AdvancedBonusEntry, AdvancedBonusEntry],
+  bonuses: readonly [ActivityBonusEntry, ActivityBonusEntry],
   nextSeed: number,
 ] {
-  const [firstPlanet, seedAfterFirstPlanet] = drawAdvancedBonusPlanet(
+  const [firstPlanet, seedAfterFirstPlanet] = drawActivityBonusPlanet(
     seed,
     PLANETS,
   );
   const remainingPlanets = PLANETS.filter(
     (square) => squareName(square) !== squareName(firstPlanet),
   );
-  const [secondPlanet, seedAfterSecondPlanet] = drawAdvancedBonusPlanet(
+  const [secondPlanet, seedAfterSecondPlanet] = drawActivityBonusPlanet(
     seedAfterFirstPlanet,
     remainingPlanets,
   );
-  const [firstKind, seedAfterFirstKind] = drawAdvancedBonusKind(
+  const [firstKind, seedAfterFirstKind] = drawActivityBonusKind(
     seedAfterSecondPlanet,
     nodes,
     nodeCount,
   );
-  const [secondKind, nextSeed] = drawAdvancedBonusKind(
+  const [secondKind, nextSeed] = drawActivityBonusKind(
     seedAfterFirstKind,
     nodes,
     nodeCount,
@@ -287,76 +289,85 @@ export function dealAdvancedBonuses(
  * squares Node scramble removed and added (empty for every kind that is
  * neither); and the surviving bonus's square with its old and new kind,
  * alongside the new bonus's square and kind. Enough for `ply.ts` to build an
- * `AdvancedBonusClaimedEffect` and for the live region to describe the claim.
+ * `ActivityBonusClaimedEffect` and for the live region to describe the claim.
  */
-export interface AdvancedBonusClaimOutcome {
-  readonly kind: AdvancedBonusKind;
+export interface ActivityBonusClaimOutcome {
+  readonly kind: ActivityBonusKind;
   readonly pointsAwarded: number;
   readonly poweredShipIds: readonly ShipId[];
   readonly addedSquares: readonly Square[];
   readonly removedSquares: readonly Square[];
   readonly survivor: {
     readonly square: Square;
-    readonly oldKind: AdvancedBonusKind;
-    readonly newKind: AdvancedBonusKind;
+    readonly oldKind: ActivityBonusKind;
+    readonly newKind: ActivityBonusKind;
   };
   readonly newBonus: {
     readonly square: Square;
-    readonly kind: AdvancedBonusKind;
+    readonly kind: ActivityBonusKind;
   };
 }
 
 /** The state fields a claim's resolution changes, plus the outcome describing what happened. */
-export interface ResolveAdvancedBonusClaimResult {
+export interface ResolveActivityBonusClaimResult {
   readonly nodes: Readonly<Record<string, NodeStatus>>;
   readonly ships: readonly Ship[];
-  readonly advancedBonuses: readonly [AdvancedBonusEntry, AdvancedBonusEntry];
+  readonly activityBonuses: readonly [ActivityBonusEntry, ActivityBonusEntry];
   readonly nextSeed: number;
-  readonly outcome: AdvancedBonusClaimOutcome;
+  readonly outcome: ActivityBonusClaimOutcome;
 }
 
 /**
- * Resolves `side` landing on `planet`, one of the two current advanced
- * bonuses' planets (steal.md §10): applies the claimed kind's own effect —
- * a points kind adds `advancedBonusPoints` to `side`'s energy (returned as
+ * Resolves `side` landing on `planet`, one of the two current activity
+ * bonuses' planets (steal.md §10): applies the claimed kind's own effect — a
+ * points kind adds `activityBonusPoints` to `side`'s energy (returned as
  * `pointsAwarded`, for `ply.ts` to apply — this function never reads or
  * writes an energy total itself); Fuel raises each of `side`'s ships below
  * the maximum by one power (`gainPower`), the claiming ship included, wherever
  * it stands; Additional nodes and Node scramble redraw the node map
  * (`addExtraProspectiveSquares`, `scrambleProspectiveSquares`), threading the
- * seed on. Then redraws the surviving bonus's kind, excluding the kind it
- * was; draws the new bonus's planet from the planets empty at that moment and
+ * seed on. Then, under race only, redraws the surviving bonus's kind,
+ * excluding the kind it was — under stable the survivor keeps its kind and
+ * nothing is drawn for it, so `survivor.newKind` equals `survivor.oldKind`;
+ * draws the new bonus's planet from the planets empty at that moment and
  * not the survivor's own; and draws the new bonus's kind, excluding the
- * survivor's new kind, in that fixed order, the effect's own draws first.
- * The new bonus takes the claimed bonus's slot; the survivor keeps its own.
- * Throws a `RangeError` if `planet` carries neither current bonus, or
- * if no planet is left for the new bonus to appear on — the five-ship limit
- * guarantees one, so the latter is a bug detector, not a case to handle.
+ * survivor's kind after the claim, in that fixed order, the effect's own
+ * draws first. The new bonus takes the claimed bonus's slot; the survivor
+ * keeps its own. Throws a `RangeError` if the planet resources setting is
+ * off, if `planet` carries neither current bonus, or if no planet is left
+ * for the new bonus to appear on — the five-ship limit guarantees one, so
+ * the last is a bug detector, not a case to handle.
  */
-export function resolveAdvancedBonusClaim(
+export function resolveActivityBonusClaim(
   state: Pick<
     GameState,
     | "nodes"
     | "ships"
-    | "advancedBonuses"
+    | "activityBonuses"
     | "chargedNodeCount"
     | "playerMatching"
+    | "planetActivity"
     | "scoring"
     | "randomSeed"
   >,
   side: Side,
   planet: Square,
-): ResolveAdvancedBonusClaimResult {
-  const claimedIndex = state.advancedBonuses.findIndex(
+): ResolveActivityBonusClaimResult {
+  if (state.planetActivity === "off") {
+    throw new RangeError(
+      "resolveActivityBonusClaim: the planet resources setting is off, so no activity bonus can be claimed",
+    );
+  }
+  const claimedIndex = state.activityBonuses.findIndex(
     (entry) => squareName(entry.square) === squareName(planet),
   );
   if (claimedIndex === -1) {
     throw new RangeError(
-      `resolveAdvancedBonusClaim: ${squareName(planet)} carries no advanced bonus`,
+      `resolveActivityBonusClaim: ${squareName(planet)} carries no activity bonus`,
     );
   }
-  const claimed = state.advancedBonuses[claimedIndex];
-  const survivor = state.advancedBonuses[claimedIndex === 0 ? 1 : 0];
+  const claimed = state.activityBonuses[claimedIndex];
+  const survivor = state.activityBonuses[claimedIndex === 0 ? 1 : 0];
 
   let nodes = state.nodes;
   let ships = state.ships;
@@ -366,9 +377,9 @@ export function resolveAdvancedBonusClaim(
   let addedSquares: readonly Square[] = [];
   let removedSquares: readonly Square[] = [];
 
-  const pointSize = advancedBonusPointSize(claimed.kind);
+  const pointSize = activityBonusPointSize(claimed.kind);
   if (pointSize !== undefined) {
-    pointsAwarded = advancedBonusPoints(
+    pointsAwarded = activityBonusPoints(
       state.chargedNodeCount,
       state.playerMatching,
       state.scoring,
@@ -413,12 +424,15 @@ export function resolveAdvancedBonusClaim(
     addedSquares = scrambled.addedSquares;
   }
 
-  const [survivorNewKind, seedAfterSurvivorKind] = drawAdvancedBonusKind(
-    seed,
-    nodes,
-    state.chargedNodeCount,
-    new Set([survivor.kind]),
-  );
+  const [survivorNewKind, seedAfterSurvivorKind]: [ActivityBonusKind, number] =
+    state.planetActivity === "race"
+      ? drawActivityBonusKind(
+          seed,
+          nodes,
+          state.chargedNodeCount,
+          new Set([survivor.kind]),
+        )
+      : [survivor.kind, seed];
 
   const occupiedSquareNames = new Set(
     ships.map((ship) => squareName(ship.square)),
@@ -430,35 +444,35 @@ export function resolveAdvancedBonusClaim(
   );
   if (eligiblePlanets.length === 0) {
     throw new RangeError(
-      "resolveAdvancedBonusClaim: no empty planet is left for the new bonus — rules.md §7.1's five-ship limit guarantees one",
+      "resolveActivityBonusClaim: no empty planet is left for the new bonus — rules.md §7.1's five-ship limit guarantees one",
     );
   }
-  const [newBonusSquare, seedAfterNewBonusPlanet] = drawAdvancedBonusPlanet(
+  const [newBonusSquare, seedAfterNewBonusPlanet] = drawActivityBonusPlanet(
     seedAfterSurvivorKind,
     eligiblePlanets,
   );
-  const [newBonusKind, nextSeed] = drawAdvancedBonusKind(
+  const [newBonusKind, nextSeed] = drawActivityBonusKind(
     seedAfterNewBonusPlanet,
     nodes,
     state.chargedNodeCount,
     new Set([survivorNewKind]),
   );
 
-  const survivorEntry: AdvancedBonusEntry = {
+  const survivorEntry: ActivityBonusEntry = {
     square: survivor.square,
     kind: survivorNewKind,
   };
-  const newEntry: AdvancedBonusEntry = {
+  const newEntry: ActivityBonusEntry = {
     square: newBonusSquare,
     kind: newBonusKind,
   };
-  const advancedBonuses: readonly [AdvancedBonusEntry, AdvancedBonusEntry] =
+  const activityBonuses: readonly [ActivityBonusEntry, ActivityBonusEntry] =
     claimedIndex === 0 ? [newEntry, survivorEntry] : [survivorEntry, newEntry];
 
   return {
     nodes,
     ships,
-    advancedBonuses,
+    activityBonuses,
     nextSeed,
     outcome: {
       kind: claimed.kind,
