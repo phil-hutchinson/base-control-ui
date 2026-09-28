@@ -119,7 +119,7 @@
   background-color: var(--color-text-bright);
 }
 
-/* A planet resources bonus cell (`ActivityBonusCell`) stacks a planet above its
+/* An activity bonus cell (`ActivityBonusCell`) stacks a planet above its
    symbol and caption, so it needs more height than width; this drops the
    grid's usual forced square and lets the cell's height follow that stack's
    own content instead, the same escape `.guide-diagram__cell--rule` takes

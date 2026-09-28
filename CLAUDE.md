@@ -158,6 +158,14 @@ node from another. The internal name, used in code, tests and planning
 documents; the app shows a signal as a colour, and player-facing wording is
 free to present it differently without a code change.
 
+**Planet resources** — under Steal, the pre-play setting that puts two
+contested bonuses on the board: off, stable or race. The player-facing name,
+used on the start screen, in the Quick Guide, `rules.md`, `steal.md` and
+`README.md`. Code, tests and planning documents call it **activity** instead
+(`planetActivity`, and "activity bonus" for one of the two bonuses): the
+internal name was settled before the player-facing one changed, and the split
+is deliberate — do not "fix" it in either direction.
+
 ## Story Documentation
 
 The folder `doc/plan/{story-name}/` (where the story name can be derived from

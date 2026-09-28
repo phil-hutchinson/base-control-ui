@@ -1,15 +1,15 @@
 // Both sides' bonus planets (rules.md §3.4), shown above the clocks: three
 // drawings a side, green's row over red's, each carrying a badge for whether
-// it has been claimed. Renders nothing at all when both planet bonus and
-// planet resources are off — not an empty row, not a hidden one — and
-// decorative throughout: a claim reaches a screen-reader user through the
-// live region's sentence (`board/announcements.ts`), not through this panel. Each cell's drawing and
-// badge are `PlanetBonusCell`, shared with the Quick Guide's PLANET BONUS
-// diagram.
+// it has been claimed. Renders nothing at all when both the planet bonus and
+// the planet resources setting are off — not an empty row, not a hidden one
+// — and decorative throughout: a claim reaches a screen-reader user through
+// the live region's sentence (`board/announcements.ts`), not through this
+// panel. Each cell's drawing and badge are `PlanetBonusCell`, shared with
+// the Quick Guide's PLANET BONUS diagram.
 //
-// Under planet resources (steal.md §10) there are no per-side planets to
-// draw two rows of: instead this renders a single row of the two current
-// bonuses, slot 0 left and slot 1 right (`GameState.activityBonuses`), each
+// Under the planet resources setting (steal.md §10) there are no per-side
+// planets to draw two rows of: instead this renders a single row of the two
+// current activity bonuses, slot 0 left and slot 1 right (`GameState.activityBonuses`), each
 // as an `ActivityBonusCell` — the planet's own artwork with its kind's
 // symbol beneath it. Reading the pair straight off `state.activityBonuses`
 // in slot order is what keeps a claim showing the survivor in its

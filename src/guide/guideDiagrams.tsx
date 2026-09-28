@@ -8,12 +8,12 @@
 // rather than typed in by hand. NEW CHARGED NODE SELECTION carries two of
 // these — the rotation diagram every setting shares, and a second, a bare
 // square holding a rotator, for the dedicated setting alone. PLANET BONUS
-// and PLANET RESOURCES are the exceptions to "built from
-// `BoardSquare`s": their cells are `PlanetBonusCell` and `ActivityBonusCell`,
-// the same cells `PlanetBonusPanel` draws, so the guide's checkmark and
-// symbols can never drift from the panel's own. PLANET RESOURCES's
-// `+N` amount is read from the point lookup at the app's own default
-// settings, never typed in by hand.
+// and PLANET RESOURCES are the exceptions to "built from `BoardSquare`s":
+// their cells are `PlanetBonusCell` and `ActivityBonusCell`, the same cells
+// `PlanetBonusPanel` draws, so the guide's checkmark and symbols can never
+// drift from the panel's own. The PLANET RESOURCES section's `+N` amount is
+// read from the point lookup at the app's own default settings, never typed
+// in by hand.
 
 import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import { energyForNodesHeld } from "../rules/energy";

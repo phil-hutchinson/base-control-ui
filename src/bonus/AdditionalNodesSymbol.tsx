@@ -1,4 +1,4 @@
-// The Additional nodes symbol a planet resources bonus draws beneath its planet
+// The Additional nodes symbol an activity bonus draws beneath its planet
 // (steal.md §10): a node's three rings, in the same geometry a prospective
 // node's own marker draws them (`NodeMarker.tsx`), but each ring in a
 // different colour rather than one node's own single signal colour — since

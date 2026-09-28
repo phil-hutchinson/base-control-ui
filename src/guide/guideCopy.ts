@@ -7,9 +7,7 @@
 // (steal.md). The PLAYER-MATCHING NODES section's paragraph describes the
 // player-matching nodes setting (steal.md §9), approved as drafted by the
 // owner. The PLANET RESOURCES section's paragraph describes the planet
-// resources setting (steal.md §10); it was drafted for story 109
-// (doc/plan/00000109-add-stable-planet-action-variant) and awaits the
-// owner's review.
+// resources setting (steal.md §10), approved by the owner.
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //

@@ -1,11 +1,11 @@
-// Planet resources's pre-play choice (rules.md §3.4, steal.md §10): the
-// offered settings, the app's default, the guard over them, and the helper
-// that resolves what a game actually starts with. Pure data about a choice,
-// with no knowledge of a game state, leaving this a leaf module the way
-// `clock.ts`, `combatSetting.ts`, `nodePlaystyle.ts`, `planetBonus.ts`,
+// The planet resources setting's pre-play choice (rules.md §3.4, steal.md
+// §10): the offered settings, the app's default, the guard over them, and
+// the helper that resolves what a game actually starts with. Pure data about
+// a choice, with no knowledge of a game state, leaving this a leaf module the
+// way `clock.ts`, `combatSetting.ts`, `nodePlaystyle.ts`, `planetBonus.ts`,
 // `playerMatching.ts` and `scoring.ts` already are. The rules of the two
-// bonuses that stand on the board while it is on — their kinds, the point
-// table, the deal and the claim — live in `activityBonus.ts`.
+// activity bonuses that stand on the board while it is on — their kinds, the
+// point table, the deal and the claim — live in `activityBonus.ts`.
 
 import type { NodePlaystyle } from "./nodePlaystyle";
 

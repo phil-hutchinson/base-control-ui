@@ -64,7 +64,7 @@ export function resolvePlanetBonus(
 /**
  * The energy a planet bonus pays under the given setting (rules.md §3.4): 0
  * for off, 2 for two, 3 for three. The one place the settings' words and
- * their payouts are tied together. Planet resources's point amounts are
+ * their payouts are tied together. An activity bonus's point amounts are
  * `activityBonus.ts`'s `activityBonusPoints`, sized by the game's node
  * count, scoring and player-matching setting rather than fixed per setting.
  */

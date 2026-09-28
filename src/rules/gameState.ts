@@ -233,9 +233,10 @@ export interface GameState {
   /**
    * Each side's three dealt bonus planets (rules.md §3.4), fixed for the
    * game's lifetime once dealt by `startingGameState`. Both sides' lists are
-   * empty when `planetBonus` is off, and so always under steal — planet
-   * resources has no per-player planets; see `activityBonuses` below. See `BonusPlanetEntry` for why an
-   * entry's claim is recorded as a ply number rather than a boolean.
+   * empty when `planetBonus` is off, and so always under steal — the planet
+   * resources setting has no per-player planets; see `activityBonuses` below.
+   * See `BonusPlanetEntry` for why an entry's claim is recorded as a ply
+   * number rather than a boolean.
    */
   readonly bonusPlanets: BonusPlanetsBySide;
   /**
@@ -347,9 +348,10 @@ export interface StartingGameStateOptions {
    * The planet resources setting (rules.md §3.4, steal.md §10), offered only
    * under the steal node playstyle. When omitted, defaults to
    * `DEFAULT_PLANET_ACTIVITY` (race) resolved for the chosen node playstyle
-   * by `resolvePlanetActivity` — off outside steal. Deliberately typed `string`, not `PlanetActivitySetting`, for the
-   * same reason `scoring`, `nodePlaystyle` and `planetBonus` are: a setting
-   * arriving from outside the type system can be any string. Must be one of
+   * by `resolvePlanetActivity` — off outside steal. Deliberately typed
+   * `string`, not `PlanetActivitySetting`, for the same reason `scoring`,
+   * `nodePlaystyle` and `planetBonus` are: a setting arriving from outside
+   * the type system can be any string. Must be one of
    * `planetActivity.ts`'s offered settings, or this throws a `RangeError`. A
    * value other than `"off"` paired with a `nodePlaystyle` other than
    * `"steal"` also throws a `RangeError` — a non-steal game with planet

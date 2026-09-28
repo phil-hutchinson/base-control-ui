@@ -17,7 +17,8 @@ Base Control is a two-player game played on a square board. Each player
 commands a fleet of three to five ships and competes to occupy the board's
 contested nodes, collecting **energy** for every turn they hold one — and,
 under the planet bonus or planet resources setting (section 3.4), for
-landing on the right planet. The player with the most energy when the game ends is the winner.
+landing on the right planet. The player with the most energy when the game
+ends is the winner.
 
 Combat is a choice made before play begins (section 7). When it is on,
 ships are never destroyed: a fight has no winner — both ships involved are

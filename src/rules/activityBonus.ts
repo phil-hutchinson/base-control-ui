@@ -1,4 +1,4 @@
-// Planet resources's own rules (steal.md §10): the six
+// The planet resources setting's own rules (steal.md §10): the six
 // kinds and their weights, the point table, availability, the weighted kind
 // draw, the uniform planet draw, the opening deal of the pair and the claim
 // resolution. A leaf module over `gameState.ts`'s `NodeStatus` and `Ship`
@@ -53,7 +53,7 @@ import {
 } from "./steal";
 
 /**
- * The six kinds a planet resources bonus may be (steal.md §10), in the
+ * The six kinds an activity bonus may be (steal.md §10), in the
  * table's fixed order — the order every weighted kind draw uses.
  */
 export type ActivityBonusKind =
@@ -84,7 +84,7 @@ const ACTIVITY_BONUS_WEIGHTS: Readonly<Record<ActivityBonusKind, number>> = {
   "node-scramble": 10,
 };
 
-/** One of the two bonuses standing on the board under planet resources (steal.md §10). */
+/** One of the two activity bonuses standing on the board (steal.md §10). */
 export interface ActivityBonusEntry {
   readonly square: Square;
   readonly kind: ActivityBonusKind;
@@ -318,9 +318,9 @@ export interface ResolveActivityBonusClaimResult {
 }
 
 /**
- * Resolves `side` landing on `planet`, one of the two current planet
- * resources bonuses' planets (steal.md §10): applies the claimed kind's own
- * effect — a points kind adds `activityBonusPoints` to `side`'s energy (returned as
+ * Resolves `side` landing on `planet`, one of the two current activity
+ * bonuses' planets (steal.md §10): applies the claimed kind's own effect — a
+ * points kind adds `activityBonusPoints` to `side`'s energy (returned as
  * `pointsAwarded`, for `ply.ts` to apply — this function never reads or
  * writes an energy total itself); Fuel raises each of `side`'s ships below
  * the maximum by one power (`gainPower`), the claiming ship included, wherever
@@ -333,10 +333,10 @@ export interface ResolveActivityBonusClaimResult {
  * not the survivor's own; and draws the new bonus's kind, excluding the
  * survivor's kind after the claim, in that fixed order, the effect's own
  * draws first. The new bonus takes the claimed bonus's slot; the survivor
- * keeps its own. Throws a `RangeError` if planet resources is off, if
- * `planet` carries neither current bonus, or if no planet is left for the
- * new bonus to appear on — the five-ship limit guarantees one, so the last
- * is a bug detector, not a case to handle.
+ * keeps its own. Throws a `RangeError` if the planet resources setting is
+ * off, if `planet` carries neither current bonus, or if no planet is left
+ * for the new bonus to appear on — the five-ship limit guarantees one, so
+ * the last is a bug detector, not a case to handle.
  */
 export function resolveActivityBonusClaim(
   state: Pick<
@@ -355,7 +355,7 @@ export function resolveActivityBonusClaim(
 ): ResolveActivityBonusClaimResult {
   if (state.planetActivity === "off") {
     throw new RangeError(
-      "resolveActivityBonusClaim: planet resources is off, so no bonus can be claimed",
+      "resolveActivityBonusClaim: the planet resources setting is off, so no activity bonus can be claimed",
     );
   }
   const claimedIndex = state.activityBonuses.findIndex(
@@ -363,7 +363,7 @@ export function resolveActivityBonusClaim(
   );
   if (claimedIndex === -1) {
     throw new RangeError(
-      `resolveActivityBonusClaim: ${squareName(planet)} carries no planet resources bonus`,
+      `resolveActivityBonusClaim: ${squareName(planet)} carries no activity bonus`,
     );
   }
   const claimed = state.activityBonuses[claimedIndex];

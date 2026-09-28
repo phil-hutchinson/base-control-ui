@@ -323,11 +323,11 @@ why this pass treated the **proportions** between combinations as the
 signal worth rescaling to, and kept the story's own overall level (via the
 median ratio `k`) rather than replacing it outright.
 
-**Stable.** Planet resources's stable setting, added after this pass, uses
-the same table unretuned. The measurement above priced points bonuses
-against node income alone, which stable does not change; whether stable's
-calmer bonuses make the amounts play richer or poorer than under race has
-not been measured.
+**Stable.** The planet resources setting's stable value, added after this
+pass, uses the same table unretuned. The measurement above priced points
+bonuses against node income alone, which stable does not change; whether
+stable's calmer bonuses make the amounts play richer or poorer than under
+race has not been measured.
 
 **What the app guards:** `src/rules/activityBonus.test.ts`'s point-table
 mirror test (D12) reads this file's steal.md §10 table with `node:fs` and

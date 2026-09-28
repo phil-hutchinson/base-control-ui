@@ -1,4 +1,4 @@
-// The `+N` symbol a planet resources points bonus draws beneath its planet
+// The `+N` symbol an activity bonus of a points kind draws beneath its planet
 // (steal.md §10): the amount the bonus would pay, in the panel's own badge
 // typography (`PlanetBonusCell.css`'s `--amount` badge), so a points bonus
 // reads the same whichever side is about to claim it.

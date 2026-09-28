@@ -560,13 +560,13 @@ function claimPlanetBonus(
 }
 
 /**
- * Claims one of planet resources's two bonuses if `square` carries one
- * (steal.md §10), modelled on `claimPlanetBonus` above: does nothing at all —
- * returning `state` unchanged — when planet resources is off, or when
- * `square` is neither of the board's two current bonus planets. Otherwise
- * `resolveActivityBonusClaim` applies the claimed kind's own effect, redraws
- * the surviving bonus's kind (under race only) and deals a new bonus in the claimed one's
- * place; this wraps its result into `state` — `nodes`, `ships`,
+ * Claims one of the two activity bonuses if `square` carries one (steal.md
+ * §10), modelled on `claimPlanetBonus` above: does nothing at all —
+ * returning `state` unchanged — when the planet resources setting is off, or
+ * when `square` is neither of the board's two current bonus planets.
+ * Otherwise `resolveActivityBonusClaim` applies the claimed kind's own
+ * effect, redraws the surviving bonus's kind (under race only) and deals a
+ * new bonus in the claimed one's place; this wraps its result into `state` — `nodes`, `ships`,
  * `activityBonuses` and `randomSeed` all follow the resolution, and `side`'s
  * energy rises by whatever it awarded (0 for every kind but a points one) —
  * and raises an `ActivityBonusClaimedEffect` describing what happened. Shared
@@ -638,8 +638,9 @@ function claimActivityBonus(
  * sequence (rules.md §3.1, §4.1), like any other planet stay — but it may
  * gain energy on arrival, if `destination` is one of the moving side's
  * unclaimed bonus planets (rules.md §3.4, `claimPlanetBonus` below) or, under
- * planet resources, one of the board's two current bonus planets (steal.md
- * §10, `claimActivityBonus` below) — the two settings are mutually exclusive, so only one of the two ever fires.
+ * the planet resources setting, one of the board's two current activity bonus
+ * planets (steal.md §10, `claimActivityBonus` below) — the two settings are
+ * mutually exclusive, so only one of the two ever fires.
  *
  * Under the continuous, planet and dedicated playstyles, up to two node
  * changes can happen as the move resolves — two knowing exceptions to a
@@ -665,11 +666,12 @@ function claimActivityBonus(
  * carries the seed either has left behind.
  *
  * Then `claimPlanetBonus` pays a classic bonus if `destination` earns one,
- * raising a `PlanetBonusClaimedEffect`, and `claimActivityBonus` claims a
- * planet resources one the same way, raising an `ActivityBonusClaimedEffect` — a move
- * that leaves a charged node and lands on a bonus planet resolves the leave
- * first, exactly as steal.md §10 states — a planet is never a node square, so
- * one move can at most leave one node and land on one bonus planet. Finally,
+ * raising a `PlanetBonusClaimedEffect`, and `claimActivityBonus` claims an
+ * activity bonus the same way, raising an `ActivityBonusClaimedEffect` — a
+ * move that leaves a charged node and lands on a bonus planet resolves the
+ * leave first, exactly as steal.md §10 states — a planet is never a node
+ * square, so one move can at most leave one node and land on one bonus
+ * planet. Finally,
  * `rotateForLanding` rotates the queue once if `destination` is a planet
  * under the planet setting, or a rotator under dedicated — spending the
  * rotator as it lands — raising a
@@ -993,10 +995,10 @@ export function assertFightInvariants(
     }
   }
 
-  // A landing's planet resources claim (steal.md §10) can legitimately add or
+  // A landing's activity bonus claim (steal.md §10) can legitimately add or
   // remove a node's squares (Additional nodes, Node scramble), so this whole
-  // check only applies with planet resources off, where a fight must leave every node exactly
-  // as it stood.
+  // check only applies with the planet resources setting off, where a fight
+  // must leave every node exactly as it stood.
   if (isPlanetActivityOn) {
     return;
   }
@@ -1055,11 +1057,10 @@ export function assertFightInvariants(
  * (`rotateForLanding`, §8.2) — before the defender's own return planet is
  * even drawn, from the planets still empty at that point. This is steal.md
  * §10's fight order, stated there because it matters for a recorded game's
- * replay: the attacker's claim advances the seed, and, under planet
- * resources, may
- * change which ships carry power (Fuel) and which squares a node occupies
- * (Additional nodes, Node scramble), before the defender's planet is drawn
- * and its own landing settled the same way. `assertFightInvariants` runs
+ * replay: the attacker's claim advances the seed, and, under the planet
+ * resources setting, may change which ships carry power (Fuel) and which
+ * squares a node occupies (Additional nodes, Node scramble), before the
+ * defender's planet is drawn and its own landing settled the same way. `assertFightInvariants` runs
  * once, against the fully settled state. An attack ends the ply (rules.md
  * §5), just as a move does: play passes to the other side, and the result
  * then passes through `applyPassGuard`.
@@ -1104,7 +1105,7 @@ export function applyAttack(
   };
 
   // The attacker's landing is settled in full — its claim, planet bonus or
-  // planet resources, and the rotation that follows — before the defender's own
+  // activity bonus, and the rotation that follows — before the defender's own
   // return planet is even drawn (steal.md §10).
   const attackerClassicClaim = claimPlanetBonus(
     afterAttackerReturned,
@@ -1120,10 +1121,10 @@ export function applyAttack(
     attackerClassicClaim.effect ?? attackerActivityClaim.effect;
   // Captured once, ahead of either fighter's rotation, so a node that charges
   // later in this same ply is reported at the priority a player last saw it
-  // holding. Only a classic setting ever rotates a fight's landing — planet
-  // resources is steal-only, and steal never rotates one — and neither
-  // classic claim touches a node, so this is the same snapshot the un-reordered code took,
-  // whether it is read now or once both ships have landed.
+  // holding. Only a classic setting ever rotates a fight's landing — the
+  // planet resources setting is steal-only, and steal never rotates one — and
+  // neither classic claim touches a node, so the snapshot is the same whether
+  // it is read now or once both ships have landed.
   const priorityBeforeLanding = snapshotInactivePriorities(
     attackerActivityClaim.state.nodes,
   );

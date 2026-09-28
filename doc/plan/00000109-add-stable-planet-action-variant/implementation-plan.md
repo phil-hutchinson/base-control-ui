@@ -62,6 +62,14 @@ is kept out of the manual check.
 
 ## Vocabulary reminder for the implementer
 
+> **Note:** after Step 5's check the setting's player-facing name became
+> **planet resources** — group legend **Planet resources**, Quick Guide
+> heading PLANET RESOURCES — everywhere the ruleset, the UI and `README.md`
+> name it. "Activity" is kept only as the internal code word
+> (`planetActivity`, activity bonus). Where this plan below says "planet
+> activity" or PLANET ACTIVITY as the player-facing name, read "planet
+> resources"; the step bodies are left as the historical record.
+
 - **Ply** is the code and planning word; **turn** is what the ruleset, the
   UI, the Quick Guide and `README.md` say (`CLAUDE.md`, Vocabulary). **Move**
   means one ship changing squares, never a ply or a turn.

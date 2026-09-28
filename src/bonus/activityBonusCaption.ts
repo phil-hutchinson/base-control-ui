@@ -1,4 +1,4 @@
-// The one-word caption a planet resources bonus's cell draws beneath its
+// The one-word caption an activity bonus's cell draws beneath its
 // symbol: UI chrome, not a rules word, so the mapping lives here beside the
 // symbol dispatch (`ActivityBonusSymbol.tsx`) rather than in
 // `rules/activityBonus.ts`. All three point kinds share one caption, BONUS,
