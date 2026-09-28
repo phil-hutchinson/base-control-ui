@@ -538,7 +538,12 @@ export function startingGameState(
 
   const [activityBonuses, nextSeed]: [readonly ActivityBonusEntry[], number] =
     planetActivity !== "off"
-      ? dealActivityBonuses(nodes, chargedNodeCount, seedAfterBonusPlanets)
+      ? dealActivityBonuses(
+          nodes,
+          chargedNodeCount,
+          ships,
+          seedAfterBonusPlanets,
+        )
       : [[], seedAfterBonusPlanets];
 
   return {

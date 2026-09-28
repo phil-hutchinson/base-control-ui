@@ -429,7 +429,9 @@ agree.
 
 ### Step 2 — Needs-based Fuel weight, and 15 for the node kinds
 
-Status: pending
+Status: committed
+
+Notes: `fuelWeight(ships)` (with `FUEL_BASE_WEIGHT` / `FUEL_MISSING_POWER_CAP`) added in `activityBonus.ts`; `drawActivityBonusKind` and `dealActivityBonuses` take the ships (before `excludedKinds` / `seed` respectively), `startingGameState` passes its fleet, and the claim passes its post-effect ships to both kind draws. Tests as planned; the ply-level fight test gives its state a three-signal node map so a defender landing on a freshly dealt Additional nodes bonus has nodes to act on. No replay seed or run length needed changing.
 
 Implement D1 in `src/rules/activityBonus.ts`:
 
