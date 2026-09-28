@@ -775,7 +775,19 @@ covered by the automated suite and are not part of this check.)
 
 ### Step 6 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: README edited by hand to the setting's player-facing name
+**planet resources** (not "planet activity", after Step 5's rename): the
+status blurb gives steal, required and race as the defaults and lists the
+two planet choices by playstyle; the Quick Guide list, the bonus passage
+(stable and race) and "fourteen starting squares" follow. The sweep also
+removed "Planet, the one the app starts on" and corrected the second "off to
+start" for player-matching to required, and the classic three-planet
+sentence now says it applies under continuous, planet and dedicated.
+Inspection: `grep -n -i "advanced\|eighteen" README.md` returns nothing;
+every choice and default listed matches `StartScreen.tsx` and the
+`DEFAULT_` constants.
 
 Run `/update-readme` (or do its job by hand), making at least these edits
 (S10), in plain words for a non-technical reader:
