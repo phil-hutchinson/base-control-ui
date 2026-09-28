@@ -1,4 +1,4 @@
-// Which of the four symbols a planet activity bonus's kind draws (steal.md
+// Which of the four symbols a planet resources bonus's kind draws (steal.md
 // §10): `+N` for a points kind, the fuel bar for Fuel, three coloured rings
 // for Additional nodes, the three-coloured rotation mark for Node scramble.
 // A pure dispatch over `ActivityBonusKind`, so `ActivityBonusCell` — and

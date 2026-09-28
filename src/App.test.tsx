@@ -108,7 +108,7 @@ function planetBonusGroup() {
 }
 
 function planetActivityGroup() {
-  return screen.getByRole("group", { name: "Planet activity" });
+  return screen.getByRole("group", { name: "Planet resources" });
 }
 
 function playerMatchingGroup() {
@@ -173,7 +173,7 @@ describe("App", () => {
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
   });
 
-  it("renders the nine option groups in order under the default STEAL: Node playstyle, Ships, Charged nodes, Player-matching nodes, Scoring, Planet activity, Combat, Rounds, Clock", () => {
+  it("renders the nine option groups in order under the default STEAL: Node playstyle, Ships, Charged nodes, Player-matching nodes, Scoring, Planet resources, Combat, Rounds, Clock", () => {
     render(<App />);
 
     const groups = screen.getAllByRole("group");
@@ -185,7 +185,7 @@ describe("App", () => {
       "Charged nodes",
       "Player-matching nodes",
       "Scoring",
-      "Planet activity",
+      "Planet resources",
       "Combat",
       "Rounds",
       "Clock (time per move)",
@@ -903,7 +903,7 @@ describe("App", () => {
     ).toBeChecked();
   });
 
-  it("shows Planet activity in place of Planet bonus under STEAL, and each group remembers its own choice across switches", async () => {
+  it("shows Planet resources in place of Planet bonus under STEAL, and each group remembers its own choice across switches", async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -918,7 +918,7 @@ describe("App", () => {
       within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
     );
     expect(
-      screen.queryByRole("group", { name: "Planet activity" }),
+      screen.queryByRole("group", { name: "Planet resources" }),
     ).not.toBeInTheDocument();
     await user.click(
       within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),

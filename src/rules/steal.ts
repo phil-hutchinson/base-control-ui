@@ -29,7 +29,7 @@
 // leaving comes before claiming (steal.md §5) — for two seed steps in that
 // order.
 //
-// Under planet activity (steal.md §10), two more pure
+// Under planet resources (steal.md §10), two more pure
 // functions change the node map outside a claim or a leave:
 // `addExtraProspectiveSquares` (Additional nodes) draws one square per
 // signal lacking an extra, one seed step each; `scrambleProspectiveSquares`

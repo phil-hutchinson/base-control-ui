@@ -6,7 +6,7 @@
 // hidden from the accessibility tree.
 //
 // The mark's geometry — the three arcs and their arrowheads — lives in
-// `rotatorMarkerGeometry.ts`, shared with the planet activity panel's
+// `rotatorMarkerGeometry.ts`, shared with the planet resources panel's
 // Node scramble symbol.
 //
 // A rotator still on the board when another one is landed on and spent plays

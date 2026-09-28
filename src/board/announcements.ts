@@ -395,7 +395,7 @@ function planetBonusClaimedClausesText(
 }
 
 /**
- * Each planet activity bonus kind's player-facing name (steal.md §10), with its
+ * Each planet resources bonus kind's player-facing name (steal.md §10), with its
  * own article, so `activityBonusClaimedClause` reads "claimed a Fuel bonus"
  * and "claimed an Additional nodes bonus" rather than picking the wrong one.
  */
@@ -413,7 +413,7 @@ function shipsPhrase(count: number): string {
 }
 
 /**
- * What a planet activity bonus's own kind gave the claiming side (steal.md §10):
+ * What a planet resources bonus's own kind gave the claiming side (steal.md §10):
  * the energy a points kind paid; how many ships Fuel raised, or "no ships"
  * when every one was already full; that every node gained an extra waiting
  * square (Additional nodes); or that every node's waiting squares were
@@ -439,7 +439,7 @@ function activityBonusClaimedDetail(
 }
 
 /**
- * A landing claiming a planet activity bonus (steal.md §10): who claimed
+ * A landing claiming a planet resources bonus (steal.md §10): who claimed
  * it, which kind, the planet, and what it gave them. Unlike the classic
  * claim clause there is no running total to omit — a points kind's amount is
  * exactly `activityBonusClaimedDetail`'s "N energy", nothing more.

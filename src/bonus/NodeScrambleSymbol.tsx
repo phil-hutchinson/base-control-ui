@@ -1,4 +1,4 @@
-// The Node scramble symbol a planet activity bonus draws beneath its planet
+// The Node scramble symbol a planet resources bonus draws beneath its planet
 // (steal.md §10): the rotator's own recycling mark (`RotatorMarker.tsx`),
 // but each of its three arcs in a different colour rather than the
 // rotator's own single colour — since this symbol stands for every node's

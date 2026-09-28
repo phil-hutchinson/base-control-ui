@@ -1,10 +1,10 @@
-// One planet activity bonus's own cell (steal.md §10): the planet's board
+// One planet resources bonus's own cell (steal.md §10): the planet's board
 // artwork, at least as large as a planet draws on the board itself
 // (`--board-square-size`, `App.css`), with the kind's symbol and a one-word
-// caption beneath it, not overlaid on top of it — a planet activity bonus belongs
+// caption beneath it, not overlaid on top of it — a planet resources bonus belongs
 // to neither side until claimed, so there is no side-coloured badge to draw
 // over the drawing the way a classic `PlanetBonusCell` does. Shared by
-// `PlanetBonusPanel` and the Quick Guide's ADVANCED PLANET BONUSES diagram,
+// `PlanetBonusPanel` and the Quick Guide's PLANET RESOURCES diagram,
 // so the two never draw two different symbols or captions for the same
 // kind. Self-contained, like `PlanetBonusCell`: it fills whatever width its
 // caller gives it and takes its own height from its content, rather than

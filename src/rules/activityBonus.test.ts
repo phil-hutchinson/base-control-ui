@@ -58,7 +58,7 @@ function everyNodeWithExtra(
   return nodes;
 }
 
-describe("the six planet activity bonus kinds (steal.md §10)", () => {
+describe("the six planet resources bonus kinds (steal.md §10)", () => {
   it("are, in table order, the six named kinds", () => {
     expect(ACTIVITY_BONUS_KINDS).toEqual([
       "small-points",
@@ -329,7 +329,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
     };
   }
 
-  it("throws when planet activity is off", () => {
+  it("throws when planet resources is off", () => {
     const state = {
       ...stateFor({ kind: "small-points" }),
       planetActivity: "off" as const,

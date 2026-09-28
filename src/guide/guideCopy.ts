@@ -6,9 +6,10 @@
 // The STEALING NODES section's paragraph describes the steal playstyle
 // (steal.md). The PLAYER-MATCHING NODES section's paragraph describes the
 // player-matching nodes setting (steal.md §9), approved as drafted by the
-// owner. The ADVANCED PLANET BONUSES section's paragraph describes the
-// advanced planet bonus setting (steal.md §10); it was drafted for story 105
-// (doc/plan/00000105-advanced-planet-bonuses) and awaits the owner's review.
+// owner. The PLANET RESOURCES section's paragraph describes the planet
+// resources setting (steal.md §10); it was drafted for story 109
+// (doc/plan/00000109-add-stable-planet-action-variant) and awaits the
+// owner's review.
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //
@@ -40,7 +41,7 @@ export type GuideSectionId =
   | "stealingNodes"
   | "playerMatchingNodes"
   | "planetBonus"
-  | "advancedPlanetBonus";
+  | "planetActivity";
 
 /**
  * One emphasised label and its sentence, under NEW CHARGED NODE SELECTION —
@@ -67,8 +68,7 @@ export interface GuideSection {
 /**
  * The eight headed sections, in the order the guide reads: movement,
  * refuelling, the node lifecycle, new charged node selection, stealing
- * nodes, player-matching nodes, the planet bonus, and advanced planet
- * bonuses.
+ * nodes, player-matching nodes, the planet bonus, and planet resources.
  */
 export const GUIDE_SECTIONS: readonly GuideSection[] = [
   {
@@ -159,23 +159,26 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
     id: "planetBonus",
     heading: "PLANET BONUS",
     paragraph:
-      "When the planet bonus option is on, each player is given three " +
-      "planets that also pay them points — two or three, whichever was " +
-      "chosen — the first time one of their spaceships lands there. Each " +
-      "planet only pays a player once, however often their spaceships " +
-      "return to it.",
+      "Under the Continuous, Planet and Dedicated playstyles, when the " +
+      "planet bonus option is on, each player is given three planets " +
+      "that also pay them points — two or three, whichever was chosen — " +
+      "the first time one of their spaceships lands there. Each planet " +
+      "only pays a player once, however often their spaceships return " +
+      "to it.",
   },
   {
-    id: "advancedPlanetBonus",
-    heading: "ADVANCED PLANET BONUSES",
+    id: "planetActivity",
+    heading: "PLANET RESOURCES",
     paragraph:
-      "Under the Steal playstyle, you can choose Advanced planet bonuses " +
-      "instead. Two bonuses always stand on two planets, shown above the " +
-      "clocks, and either player can claim one by landing a spaceship " +
-      "there. Taking a bonus removes it at once: the bonus left standing " +
-      "changes into something else, and a new bonus appears on another " +
-      "planet. A bonus can be points in three sizes, fuel for every one " +
-      "of your spaceships, an extra waiting square for every node, or " +
-      "every node's waiting squares redrawn.",
+      "Under the Steal playstyle, the planet resources option puts two " +
+      "bonuses on the board instead, on two planets shown above the " +
+      "clocks. Either player can claim one by landing a spaceship there. " +
+      "A bonus that is taken is always replaced by a new one on another " +
+      "planet. Under Stable, the bonus left standing stays as it is, so " +
+      "you can plan a route to it. Under Race, it changes into something " +
+      "else too, so a bonus is only worth heading for while nobody takes " +
+      "the other one first. A bonus can be points in three sizes, fuel " +
+      "for every one of your spaceships, an extra waiting square for " +
+      "every node, or every node's waiting squares redrawn.",
   },
 ];

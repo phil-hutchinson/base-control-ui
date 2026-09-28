@@ -7,7 +7,7 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
-## 0.42 — planet activity: a stable variant, and race replaces advanced
+## 0.42 — planet resources: a stable variant, and race replaces advanced
 
 This is a gameplay change — steal gains a calmer way to play for planet
 bonuses, and loses the classic ones — and so would be a tag candidate;
@@ -17,7 +17,7 @@ notes).
 - **The planet choice splits into two settings** (rules.md §3.4), each the
   same for both players and fixed for the game. The **planet bonus** — off,
   2 points or 3 points — is offered under the continuous, planet and
-  dedicated playstyles. **Planet activity** — off, stable or race — is
+  dedicated playstyles. **Planet resources** — off, stable or race — is
   offered only under steal, with its rules in steal.md §10. Neither is
   offered under the other's playstyles.
 - **Advanced is renamed race**, with its rules unchanged: the two bonuses,
@@ -32,10 +32,10 @@ notes).
   else follows race, and the point table is used unchanged.
 - **The classic 2- and 3-point planet bonuses are no longer offered under
   steal.** A steal game never has per-player bonus planets.
-- **Off** under planet activity means no planet bonuses at all.
+- **Off** under planet resources means no planet bonuses at all.
 - **`rules.md` §§1, 3.1, 3.4, 4.1, 7.1, 8.4, 8.6 and 10** and **`steal.md`
   §§2, 3, 4, 9 and 10** are updated to match. Section 3.4 is retitled
-  _Planet bonus and planet activity_, and steal.md §10 _Planet activity_.
+  _Planet bonus and planet resources_, and steal.md §10 _Planet resources_.
 - **Nothing else changes.** The planet bonus under continuous, planet and
   dedicated plays exactly as before; the steal node rules, movement,
   combat, the clock, the game length, the fleet sizes and the node counts

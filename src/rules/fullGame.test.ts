@@ -111,7 +111,7 @@ function distanceToNearestChargedOrInactive(
   return nearest;
 }
 
-/** Whether `square` is one of the two current planet activity bonuses' planets (steal.md §10). */
+/** Whether `square` is one of the two current planet resources bonuses' planets (steal.md §10). */
 function isActivityBonusPlanet(state: GameState, square: Square): boolean {
   return state.activityBonuses.some(
     (bonus) => squareName(bonus.square) === squareName(square),
@@ -119,7 +119,7 @@ function isActivityBonusPlanet(state: GameState, square: Square): boolean {
 }
 
 /**
- * A deterministic greedy policy: under planet activity, race for a bonus
+ * A deterministic greedy policy: under planet resources, race for a bonus
  * planet first (steal.md §10) — otherwise head for a charged node, or,
  * under steal, a prospective node, since landing on one is the only way to claim
  * or steal it (steal.md §3) — otherwise close the distance to the nearest
@@ -129,7 +129,7 @@ function isActivityBonusPlanet(state: GameState, square: Square): boolean {
 function choosePly(state: GameState): PlyChoice | undefined {
   const ships = state.ships;
 
-  // 0. Under planet activity, the first destination, in
+  // 0. Under planet resources, the first destination, in
   // fleet-then-destination order, that lands on one of the two current bonus planets. Vacuous —
   // `state.activityBonuses` is empty — under every other setting.
   for (const ship of ships) {
@@ -473,7 +473,7 @@ function assertStealNodeInvariants(
       (status) => status?.extra === true,
     ).length;
     // Two squares ordinarily; three when Additional nodes has given this
-    // signal an extra (steal.md §10) — the planet activity sweep below is
+    // signal an extra (steal.md §10) — the planet resources sweep below is
     // what exercises that case.
     expect(squares).toHaveLength(extraCount === 1 ? 3 : 2);
     expect(extraCount).toBeLessThanOrEqual(1);
@@ -496,7 +496,7 @@ function assertStealNodeInvariants(
 }
 
 /**
- * Every planet activity invariant that must hold at any ply (steal.md
+ * Every planet resources invariant that must hold at any ply (steal.md
  * §10): exactly two bonuses stand, on two different planets, of two
  * different kinds, and neither planet carries a ship; and Additional nodes
  * never stands among them while every node already has its extra.
@@ -785,7 +785,7 @@ describe.each(
     ),
   ),
 )(
-  "a full steal game under %s planet activity, end to end, at %d nodes (steal.md §10)",
+  "a full steal game under %s planet resources, end to end, at %d nodes (steal.md §10)",
   (planetActivity, chargedNodeCount) => {
     it.each(
       PLAYER_MATCHING_SETTINGS.flatMap((playerMatching) =>

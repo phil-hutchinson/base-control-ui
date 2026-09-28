@@ -1,7 +1,7 @@
 // The start screen: the app's front door. Carries the game's on-screen
 // name, the options a player sets before a game begins — eight of them,
 // nine under the steal playstyle, which alone offers player-matching nodes
-// and shows a Planet activity group in place of the Planet bonus group — and
+// and shows a Planet resources group in place of the Planet bonus group — and
 // the PLAY button. Rendered by `App` in
 // place of the game whenever there is no game in progress.
 
@@ -56,7 +56,7 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
 };
 
 /**
- * The Planet activity group's labels — start-screen chrome, not a rules
+ * The Planet resources group's labels — start-screen chrome, not a rules
  * concern.
  */
 const PLANET_ACTIVITY_SETTING_LABELS: Record<PlanetActivitySetting, string> = {
@@ -129,7 +129,7 @@ interface StartScreenProps {
  * matching handler — it dispatches nothing and starts no game. The
  * Player-matching nodes group renders only while the node playstyle is
  * steal, so the caller's `playerMatching` value is otherwise unused chrome.
- * In the same position, the Planet activity group renders under steal and
+ * In the same position, the Planet resources group renders under steal and
  * the Planet bonus group under every other playstyle, so only one of
  * `planetBonus` and `planetActivity` is ever shown; each keeps its own value
  * while hidden.
@@ -260,7 +260,7 @@ export function StartScreen({
       </fieldset>
       {nodePlaystyle === "steal" ? (
         <fieldset className="start-screen__options">
-          <legend className="start-screen__legend">Planet activity</legend>
+          <legend className="start-screen__legend">Planet resources</legend>
           <div className="start-screen__choices">
             {PLANET_ACTIVITY_SETTINGS.map((value) => (
               <OptionChoice

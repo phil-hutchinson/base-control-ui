@@ -8,7 +8,7 @@ import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { DEFAULT_PLAYER_MATCHING } from "../rules/playerMatching";
 import { DEFAULT_SCORING } from "../rules/scoring";
 import {
-  AdvancedPlanetBonusDiagram,
+  PlanetActivityDiagram,
   MovementDiagram,
   NodeLifecycleDiagram,
   NodeSelectionDiagram,
@@ -279,9 +279,9 @@ describe("PlanetBonusDiagram", () => {
   });
 });
 
-describe("AdvancedPlanetBonusDiagram", () => {
+describe("PlanetActivityDiagram", () => {
   it("shows a Large points bonus beside a Node scramble bonus, in gold/red/green", () => {
-    const { container } = render(<AdvancedPlanetBonusDiagram />);
+    const { container } = render(<PlanetActivityDiagram />);
 
     expect(container.querySelectorAll(".guide-diagram__cell")).toHaveLength(2);
     expect(container.querySelectorAll(".activity-bonus-cell")).toHaveLength(2);

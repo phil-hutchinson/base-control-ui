@@ -16,7 +16,7 @@ app has a bug.
 Base Control is a two-player game played on a square board. Each player
 commands a fleet of three to five ships and competes to occupy the board's
 contested nodes, collecting **energy** for every turn they hold one — and,
-under the planet bonus or planet activity setting (section 3.4), for
+under the planet bonus or planet resources setting (section 3.4), for
 landing on the right planet. The player with the most energy when the game ends is the winner.
 
 Combat is a choice made before play begins (section 7). When it is on,
@@ -50,7 +50,7 @@ drawn. Under the planet bonus setting (section 3.4) there is another: which
 three planets each player is dealt. Under the steal playstyle (section 8.2)
 the random element is different again — where each new prospective node is
 drawn, in place of the refill and the priority deal (steal.md). Under the
-planet activity setting, offered only under steal, there are more still:
+planet resources setting, offered only under steal, there are more still:
 where the game's two bonuses first stand and what kind each is, and, every
 time one is claimed, where the new bonus appears and what kind it is, what
 kind the bonus left behind turns into (under race only), and, for two of
@@ -140,7 +140,7 @@ A planet is an ordinary square in every way except two:
   ship goes to recover.
 
 Planets are not owned. Either player's ships may use any planet. Under the
-planet bonus or planet activity setting, a ship may also claim a bonus by
+planet bonus or planet resources setting, a ship may also claim a bonus by
 landing on the right planet (section 3.4).
 
 This diagram shows the board's fixed squares: the twelve planets, and the
@@ -273,7 +273,7 @@ ordinary square in every other way — a ship may land on it, fly over it
 state, no countdown and no priority, and it is never counted among the
 board's nodes.
 
-### 3.4 Planet bonus and planet activity
+### 3.4 Planet bonus and planet resources
 
 There are two pre-play settings for planets. Each is the same for both
 players, chosen before play begins and fixed for the game's lifetime, and a
@@ -282,7 +282,7 @@ game has only the one its node playstyle (section 8.2) offers:
 - **The planet bonus** is **off, 2 points or 3 points**. It is offered
   under the continuous, planet and dedicated playstyles, and its rules are
   this section's.
-- **Planet activity** is **off, stable or race**. It is offered only under
+- **Planet resources** is **off, stable or race**. It is offered only under
   the steal playstyle, and its rules are steal.md's own, in a section of
   their own (steal.md §10).
 
@@ -315,7 +315,7 @@ Under 2 points or 3 points, a bonus planet is an ordinary planet that also
 pays once: it is not owned, and everything section 3.1 says about a
 planet — the protection from attack, and the power a ship recovers
 there — still applies to it exactly as it does to any other planet. Under
-planet activity, a bonus planet is an ordinary planet in the same way
+planet resources, a bonus planet is an ordinary planet in the same way
 (steal.md §10).
 
 ---
@@ -381,7 +381,7 @@ charging (section 3.1) — up to the maximum of 6. Nothing else changes a
 ship's power: a **charged** node does not reduce it, a **depleted** node does
 not refill it, an **inactive** node does neither, and a fight leaves the
 defender's power alone (section 7). Under the steal playstyle (section 8.2)
-a **prospective** node does nothing to it either. Under planet activity
+a **prospective** node does nothing to it either. Under planet resources
 (stable or race), claiming a Fuel bonus is the one exception: it raises
 power directly, outside a planet and outside the end of a turn (steal.md §10). A
 ship at 0 power is not destroyed and is not stuck: the one-square
@@ -544,8 +544,8 @@ before anything else happens. Every fight returns two ships: the attacker is
 placed first, and the defender's planet is then drawn from the planets still
 empty. Which ship is placed first makes no difference to the odds, but
 fixing the order is what lets a recorded game replay exactly. Under the
-planet bonus or planet activity setting, a ship placed here may claim a
-bonus on arrival, for its own side (section 3.4) — under planet activity,
+planet bonus or planet resources setting, a ship placed here may claim a
+bonus on arrival, for its own side (section 3.4) — under planet resources,
 steal.md §10 states the fight's own order for the two placements and their
 claims.
 
@@ -798,7 +798,7 @@ charges more than the chosen number of nodes at once (sections 8.1, 8.2),
 but that is a fact about the board, not a cap on what collecting can pay.
 
 Node collection is not the only source of energy: under the planet bonus
-or planet activity setting, landing on the right planet also pays
+or planet resources setting, landing on the right planet also pays
 (section 3.4).
 
 This section applies under the steal playstyle too: a player is paid exactly
@@ -871,7 +871,7 @@ Everything that happens at the end of a turn happens in this order:
    freed. If no depleted node under that player's ships qualifies, nothing
    happens, and that player's turn passes under section 5.
 
-Under the planet bonus or planet activity setting, a bonus (section 3.4)
+Under the planet bonus or planet resources setting, a bonus (section 3.4)
 takes effect at the instant a ship lands and takes no step in this order.
 
 Under the steal playstyle (section 8.2), only steps 1 and 2 of this order
@@ -949,7 +949,7 @@ energy is a draw.
 Alongside the fleet size, the number of rounds, the charged-node count
 (section 8.1), whether combat is on or off (section 7), how scoring is
 priced (section 8.4), the node playstyle (section 8.2), the
-planet bonus or, under the steal playstyle, planet activity (section 3.4)
+planet bonus or, under the steal playstyle, planet resources (section 3.4)
 and, under the steal playstyle, the player-matching nodes setting
 (steal.md §9), a player chooses a **clock**
 before play begins: no clock, or 6, 4 or 2 seconds a turn.

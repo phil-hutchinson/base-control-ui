@@ -1,8 +1,8 @@
-// Claiming a planet activity bonus through play (steal.md §10): the
+// Claiming a planet resources bonus through play (steal.md §10): the
 // `claimActivityBonus` helper in `ply.ts` that `applyMove` and `applyAttack`
 // both call, and the reordered fight this claim order requires. Kept apart
 // from `ply.test.ts` and `planetBonusClaim.test.ts`, in the same style,
-// since claiming under planet activity has its own state shape (`activityBonuses`
+// since claiming under planet resources has its own state shape (`activityBonuses`
 // rather than `bonusPlanets`). `resolveActivityBonusClaim` itself — the pure
 // function this all wraps — is tested directly in `activityBonus.test.ts`;
 // this file is about what `ply.ts` does with it: when a claim fires, where
@@ -103,7 +103,7 @@ function buildState(config: {
   };
 }
 
-describe("a move that lands on a planet activity bonus planet (steal.md §10)", () => {
+describe("a move that lands on a planet resources bonus planet (steal.md §10)", () => {
   it("pays the moving side a points bonus's table amount, immediately, before the ply-ended effect", () => {
     const [planet, other] = PLANETS;
     const state = buildState({
@@ -501,7 +501,7 @@ function seedStepsBetween(from: number, to: number): number {
   throw new Error("the two seeds are not within 64 steps of each other");
 }
 
-describe("a claim under stable planet activity (steal.md §10)", () => {
+describe("a claim under stable planet resources (steal.md §10)", () => {
   const [claimedPlanet, survivorPlanet] = PLANETS;
 
   const cases: readonly {
@@ -669,7 +669,7 @@ describe("a claim under stable planet activity (steal.md §10)", () => {
 });
 
 describe.each(["race", "stable"] as const)(
-  "planet activity bonus claims in a fight, under %s (steal.md §10)",
+  "planet resources bonus claims in a fight, under %s (steal.md §10)",
   (planetActivity) => {
     it("the attacker's claim resolves for the attacker's side, before the defender's own claim", () => {
       const state = buildState({
@@ -937,7 +937,7 @@ describe.each(["race", "stable"] as const)(
   },
 );
 
-describe("assertFightInvariants under planet activity (steal.md §10)", () => {
+describe("assertFightInvariants under planet resources (steal.md §10)", () => {
   const baseState = buildState({
     ships: [ship("green-1", "green", "H8", 1), ship("red-1", "red", "H9", 3)],
   });

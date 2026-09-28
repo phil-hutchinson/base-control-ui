@@ -1,4 +1,4 @@
-// Planet activity's pre-play choice (rules.md §3.4, steal.md §10): the
+// Planet resources's pre-play choice (rules.md §3.4, steal.md §10): the
 // offered settings, the app's default, the guard over them, and the helper
 // that resolves what a game actually starts with. Pure data about a choice,
 // with no knowledge of a game state, leaving this a leaf module the way
@@ -10,7 +10,7 @@
 import type { NodePlaystyle } from "./nodePlaystyle";
 
 /**
- * A planet activity setting (steal.md §10): `"off"` puts no bonus on the
+ * A planet resources setting (steal.md §10): `"off"` puts no bonus on the
  * board; `"stable"` and `"race"` both put two contested bonuses of six
  * possible kinds on it, and when one is claimed a new one replaces it — under
  * stable the one left standing keeps its kind, under race it changes kind.
@@ -21,7 +21,7 @@ import type { NodePlaystyle } from "./nodePlaystyle";
 export type PlanetActivitySetting = "off" | "stable" | "race";
 
 /**
- * The offered planet activity settings, in the order the start screen
+ * The offered planet resources settings, in the order the start screen
  * renders them: off, stable, race. Which one the app preselects is independent of
  * the render order — see `DEFAULT_PLANET_ACTIVITY`.
  */
@@ -35,8 +35,8 @@ export const PLANET_ACTIVITY_SETTINGS: readonly PlanetActivitySetting[] = [
 export const DEFAULT_PLANET_ACTIVITY: PlanetActivitySetting = "race";
 
 /**
- * Whether a value is one of the offered planet activity settings.
- * `startingGameState` uses it to validate a planet activity setting that
+ * Whether a value is one of the offered planet resources settings.
+ * `startingGameState` uses it to validate a planet resources setting that
  * arrives from outside the type system, such as an options object built by
  * a caller other than the start screen.
  */
@@ -47,7 +47,7 @@ export function isPlanetActivitySetting(
 }
 
 /**
- * The planet activity setting a game actually starts with, given the node
+ * The planet resources setting a game actually starts with, given the node
  * playstyle it starts under and the setting remembered on the start screen
  * (steal.md §10 applies only under steal): the remembered setting under
  * steal, `"off"` under continuous, planet or dedicated regardless of what

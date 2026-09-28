@@ -59,7 +59,7 @@
 // effects a steal game produces is recorded and compared below, the same
 // way the queue's refills are above.
 //
-// Planet activity, offered only under steal (steal.md §10), adds draws of
+// Planet resources, offered only under steal (steal.md §10), adds draws of
 // its own: the opening deal draws four more steps for the two
 // bonuses' planets and kinds, and every claim draws its own effect's steps
 // (none for a points kind or Fuel, one per node for Additional nodes or
@@ -690,7 +690,7 @@ describe("a seeded steal game replays its opening board and its claim and abando
   });
 });
 
-/** Whether `square` is one of the two current planet activity bonuses' planets (steal.md §10). */
+/** Whether `square` is one of the two current planet resources bonuses' planets (steal.md §10). */
 function isActivityBonusPlanet(state: GameState, square: Square): boolean {
   return state.activityBonuses.some(
     (bonus) => squareName(bonus.square) === squareName(square),
@@ -699,7 +699,7 @@ function isActivityBonusPlanet(state: GameState, square: Square): boolean {
 
 /**
  * An attack-first, bonus-seeking policy for a steal game under planet
- * activity (steal.md §10): the first ship, in fleet order, with a
+ * resources (steal.md §10): the first ship, in fleet order, with a
  * legal attack takes it; failing that, the first ship, in
  * fleet-then-destination order, with a legal move onto one of the two
  * current bonus planets takes it; failing that, the same for a move onto a
@@ -880,7 +880,7 @@ function playSeededStealActivityGame(
   return { finalState: state, openingBoard, events, bonusEvents, fightCount };
 }
 
-describe("a seeded steal game under planet activity replays its opening board, its claim/abandon sequence and its bonus claims exactly (steal.md §10)", () => {
+describe("a seeded steal game under planet resources replays its opening board, its claim/abandon sequence and its bonus claims exactly (steal.md §10)", () => {
   it("produces plenty of claims and bonus claims of every kind, over a two-hundred-round game — the run is not vacuous", () => {
     const { events, bonusEvents, fightCount } = playSeededStealActivityGame(
       "race",

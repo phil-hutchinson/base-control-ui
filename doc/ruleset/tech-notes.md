@@ -227,7 +227,7 @@ across a batch of whole games' worth of claims and abandons.
 
 ---
 
-## Sizing planet activity bonus points
+## Sizing planet resources bonus points
 
 Story 105's point table ([steal.md](steal.md) §10), built for the setting
 then called advanced and now called race, started as an estimate
@@ -323,7 +323,7 @@ why this pass treated the **proportions** between combinations as the
 signal worth rescaling to, and kept the story's own overall level (via the
 median ratio `k`) rather than replacing it outright.
 
-**Stable.** Planet activity's stable setting, added after this pass, uses
+**Stable.** Planet resources's stable setting, added after this pass, uses
 the same table unretuned. The measurement above priced points bonuses
 against node income alone, which stable does not change; whether stable's
 calmer bonuses make the amounts play richer or poorer than under race has

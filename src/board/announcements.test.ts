@@ -1485,7 +1485,7 @@ describe("announcementFor — a planet bonus claimed (rules.md §3.4)", () => {
   });
 });
 
-describe("announcementFor — a planet activity bonus claimed (steal.md §10)", () => {
+describe("announcementFor — a planet resources bonus claimed (steal.md §10)", () => {
   it("announces a points claim, between the move cost and the turn-ending clause", () => {
     const event: MovedEvent = {
       type: "moved",

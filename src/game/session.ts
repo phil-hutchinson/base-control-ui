@@ -111,7 +111,7 @@ export type SessionEvent =
  * for time. `new-game` carries the seed, the length in rounds, the fleet
  * size, the charged-node count, whether combat is enabled, the scoring
  * setting, the node playstyle, the planet bonus setting, the planet
- * activity setting and the player-matching nodes setting the new game
+ * resources setting and the player-matching nodes setting the new game
  * starts from — the reducer uses
  * what it is handed and never draws a seed or reaches for a default itself.
  * `clock-expired` and `pass-out-of-time` are dispatched by the app's own

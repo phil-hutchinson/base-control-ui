@@ -91,7 +91,7 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
   three: "3 POINTS",
 };
 
-/** The Planet activity group's labels, mirroring `StartScreen`'s own map. */
+/** The Planet resources group's labels, mirroring `StartScreen`'s own map. */
 const PLANET_ACTIVITY_SETTING_LABELS: Record<PlanetActivitySetting, string> = {
   off: "OFF",
   stable: "STABLE",
@@ -285,7 +285,7 @@ describe("StartScreen", () => {
     ]);
   });
 
-  it("renders nine option groups under STEAL, with Player-matching nodes between Charged nodes and Scoring, and Planet activity in Planet bonus's place", () => {
+  it("renders nine option groups under STEAL, with Player-matching nodes between Charged nodes and Scoring, and Planet resources in Planet bonus's place", () => {
     renderStartScreen({ nodePlaystyle: "steal" });
 
     const groups = screen.getAllByRole("group");
@@ -297,7 +297,7 @@ describe("StartScreen", () => {
       "Charged nodes",
       "Player-matching nodes",
       "Scoring",
-      "Planet activity",
+      "Planet resources",
       "Combat",
       "Rounds",
       "Clock (time per move)",
@@ -470,7 +470,7 @@ describe("StartScreen", () => {
     ).toEqual(["off", "two", "three"]);
   });
 
-  it("renders the planet bonus group, offering OFF, 2 POINTS, 3 POINTS in order, and no planet activity group, under each non-steal playstyle", () => {
+  it("renders the planet bonus group, offering OFF, 2 POINTS, 3 POINTS in order, and no planet resources group, under each non-steal playstyle", () => {
     for (const nodePlaystyle of [
       "continuous",
       "planet",
@@ -490,17 +490,17 @@ describe("StartScreen", () => {
           .map((radio) => (radio as HTMLInputElement).labels?.[0]?.textContent),
       ).toEqual(["OFF", "2 POINTS", "3 POINTS"]);
       expect(
-        screen.queryByRole("group", { name: "Planet activity" }),
+        screen.queryByRole("group", { name: "Planet resources" }),
       ).not.toBeInTheDocument();
 
       cleanup();
     }
   });
 
-  it("renders the planet activity group under STEAL, offering OFF, STABLE, RACE in order, and no planet bonus group", () => {
+  it("renders the planet resources group under STEAL, offering OFF, STABLE, RACE in order, and no planet bonus group", () => {
     renderStartScreen({ nodePlaystyle: "steal" });
 
-    const group = screen.getByRole("group", { name: "Planet activity" });
+    const group = screen.getByRole("group", { name: "Planet resources" });
     expect(
       within(group)
         .getAllByRole("radio")
@@ -525,17 +525,17 @@ describe("StartScreen", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("checks RACE by default in the planet activity group under the default STEAL", () => {
+  it("checks RACE by default in the planet resources group under the default STEAL", () => {
     renderStartScreen();
 
-    const group = screen.getByRole("group", { name: "Planet activity" });
+    const group = screen.getByRole("group", { name: "Planet resources" });
     expect(within(group).getByRole("radio", { name: "RACE" })).toBeChecked();
   });
 
   it("checks RACE when chosen under STEAL", () => {
     renderStartScreen({ nodePlaystyle: "steal", planetActivity: "race" });
 
-    const group = screen.getByRole("group", { name: "Planet activity" });
+    const group = screen.getByRole("group", { name: "Planet resources" });
     expect(within(group).getByRole("radio", { name: "RACE" })).toBeChecked();
     expect(within(group).getByRole("radio", { name: "OFF" })).not.toBeChecked();
   });
@@ -543,7 +543,7 @@ describe("StartScreen", () => {
   it("checks STABLE when chosen under STEAL", () => {
     renderStartScreen({ nodePlaystyle: "steal", planetActivity: "stable" });
 
-    const group = screen.getByRole("group", { name: "Planet activity" });
+    const group = screen.getByRole("group", { name: "Planet resources" });
     expect(within(group).getByRole("radio", { name: "STABLE" })).toBeChecked();
     expect(
       within(group).getByRole("radio", { name: "RACE" }),
@@ -551,26 +551,26 @@ describe("StartScreen", () => {
     expect(within(group).getByRole("radio", { name: "OFF" })).not.toBeChecked();
   });
 
-  it("calls the planet activity change handler with stable when STABLE is chosen", async () => {
+  it("calls the planet resources change handler with stable when STABLE is chosen", async () => {
     const user = userEvent.setup();
     const { onPlanetActivityChange, onPlanetBonusChange } = renderStartScreen({
       nodePlaystyle: "steal",
       planetActivity: "off",
     });
 
-    const group = screen.getByRole("group", { name: "Planet activity" });
+    const group = screen.getByRole("group", { name: "Planet resources" });
     await user.click(within(group).getByRole("radio", { name: "STABLE" }));
 
     expect(onPlanetActivityChange).toHaveBeenCalledExactlyOnceWith("stable");
     expect(onPlanetBonusChange).not.toHaveBeenCalled();
   });
 
-  it("calls the planet activity change handler with race when RACE is chosen, and not the planet bonus handler", async () => {
+  it("calls the planet resources change handler with race when RACE is chosen, and not the planet bonus handler", async () => {
     const user = userEvent.setup();
     const { onPlanetActivityChange, onPlanetBonusChange, onPlay } =
       renderStartScreen({ nodePlaystyle: "steal", planetActivity: "off" });
 
-    const group = screen.getByRole("group", { name: "Planet activity" });
+    const group = screen.getByRole("group", { name: "Planet resources" });
     await user.click(within(group).getByRole("radio", { name: "RACE" }));
 
     expect(onPlanetActivityChange).toHaveBeenCalledExactlyOnceWith("race");

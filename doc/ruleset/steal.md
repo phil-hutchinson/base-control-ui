@@ -20,7 +20,7 @@ Under steal, a node is not a single square that comes into being, runs down
 and ends. Each node is dealt a **signal** of its own, and always occupies
 exactly **two squares** on the board — its squares carry that signal, which
 is the only thing tying them together. The app shows each signal as a
-colour, so a node's two squares always look alike. Under planet activity
+colour, so a node's two squares always look alike. Under planet resources
 (stable or race), a node may carry a third square, its **extra**
 prospective square (section 10).
 
@@ -64,7 +64,7 @@ three things at once: claiming a node nobody held, taking a node away from
 the opponent, and a holder relocating its own node out of reach — which
 costs the holder a whole turn and a move, and leaves the node's new
 prospective square drawn afresh, exactly as taking it from an opponent
-would. Under planet activity (stable or race), a node with an extra
+would. Under planet resources (stable or race), a node with an extra
 prospective square is claimed a little differently (section 10).
 
 ## 4. Leaving a node
@@ -75,7 +75,7 @@ own prospective square:
 1. The vacated square becomes ordinary board, leaving nothing behind.
 2. The node draws **a second prospective square** (section 6).
 
-Under planet activity (stable or race), a node's extra prospective square,
+Under planet resources (stable or race), a node's extra prospective square,
 if it has one, survives leaving alongside this second square (section 10).
 
 The node is Open afterwards: the next ship to reach either of its two
@@ -196,11 +196,11 @@ on their own node, they collect **no** node energy that turn, however many
 other nodes they hold. If one does, they collect exactly what rules.md
 §8.4 gives, their own node counting once, like any other.
 
-**Planet activity** (section 10) is unaffected by either setting:
+**Planet resources** (section 10) is unaffected by either setting:
 required withholds node energy only, and a bonus planet pays on landing
 whether or not a player holds their own node. Nothing here ever subtracts
 energy; required withholds a turn's node energy, and never takes any away.
-Under planet activity, stable and race alike, this section's choice also
+Under planet resources, stable and race alike, this section's choice also
 sizes the **point amounts** a points bonus pays (section 10).
 
 The app shows the two matched nodes in the players' own colours, in the
@@ -208,9 +208,9 @@ same manner that section 2 already notes for a signal.
 
 With **off**, none of this section applies, and no node is matched.
 
-## 10. Planet activity
+## 10. Planet resources
 
-**Planet activity** is **off, stable or race** (rules.md §3.4), the same
+**Planet resources** is **off, stable or race** (rules.md §3.4), the same
 for both players, chosen before play begins and fixed for the game's
 lifetime, and offered only under the steal playstyle. With it **off**,
 there are no planet bonuses at all, and nothing in this section applies.

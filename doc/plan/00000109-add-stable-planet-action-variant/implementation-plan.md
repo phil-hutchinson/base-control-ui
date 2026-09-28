@@ -683,7 +683,24 @@ measurement above.
 
 ### Step 5 — The Quick Guide's PLANET ACTIVITY section, and the owner plays it
 
-Status: pending
+Status: committed
+
+Notes: Section id/heading renamed to `planetActivity` / PLANET ACTIVITY
+(still last), `AdvancedPlanetBonusDiagram` → `PlanetActivityDiagram` with
+nothing drawn differently, both paragraphs set to the draft copy verbatim,
+header comments updated (including the two in `ActivityBonusCell.tsx` and
+`activityBonusColors.ts`), tests follow. No deviations; `grep -rn -i
+advanced src` leaves only the unrelated seed/"not yet advanced"/"leaving
+it advanced" uses and `gameState.test.ts`'s check that the retired value
+`"advanced"` is rejected. Owner's manual check passed. Rename after the
+check: the owner renamed the setting's player-facing name from "planet
+activity" to **planet resources** (start-screen legend "Planet resources",
+Quick Guide heading PLANET RESOURCES; values still OFF / STABLE / RACE),
+applied to the start screen, the guide copy and its tests, rules.md,
+steal.md §10, the 0.42 changelog entry (edited in place), tech-notes.md,
+story.md and code comments. Code identifiers keep "activity"
+(`planetActivity`, `activityBonus`, the `planetActivity` section id, file
+names) as the internal name, as "signal" is shown as a colour.
 
 In `src/guide/guideCopy.ts`: the section id `advancedPlanetBonus` becomes
 `planetActivity`, its heading **PLANET ACTIVITY**; it stays last, right
@@ -767,12 +784,12 @@ Run `/update-readme` (or do its job by hand), making at least these edits
   (was planet); player-matching nodes "required to start" (was off); the
   planet choice becomes two — under continuous, planet and dedicated,
   whether planets pay a bonus (off, two points or three points, off to
-  start); under steal, planet activity (off, stable or race, race to
+  start); under steal, planet resources (off, stable or race, race to
   start). Ships, nodes, scoring, combat, rounds and clock are unchanged.
 - The quick-guide list: "the planet bonus and advanced planet bonuses" →
-  "the planet bonus and planet activity".
+  "the planet bonus and planet resources".
 - The "Under steal there is also an advanced option…" passage describes
-  planet activity: two bonuses anyone can claim; a taken bonus is always
+  planet resources: two bonuses anyone can claim; a taken bonus is always
   replaced elsewhere; under stable the one left standing stays as it is,
   under race it changes too. Keep the "Whatever the planet bonus option,
   hovering…" sentence true for both settings.
