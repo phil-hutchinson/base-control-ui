@@ -53,7 +53,7 @@ function firePointerEnter(node: Element, pointerType: string) {
 
 describe("PlanetBonusPanel", () => {
   it("renders nothing at all when the setting is off", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
 
     const { container } = render(<PlanetBonusPanel state={state} />);
 
@@ -61,7 +61,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("renders two rows, green above red, each with that side's three planets", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
 
     const { container } = render(<PlanetBonusPanel state={state} />);
 
@@ -78,7 +81,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("heads each row with that side's name", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
 
     const { container } = render(<PlanetBonusPanel state={state} />);
 
@@ -91,7 +97,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("draws each planet with the same artwork the board carries on that square", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const arrangement = planetArrangement(state.openingSeed);
 
     const { container } = render(<PlanetBonusPanel state={state} />);
@@ -124,7 +133,10 @@ describe("PlanetBonusPanel", () => {
   }
 
   it("shows no badge until claimed, the amount on the claiming ply and the ply after, and the checkmark from then on", () => {
-    const base = startingGameState(SEED, { planetBonus: "three" });
+    const base = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const claimedSquare = base.bonusPlanets.green[0].square;
 
     const unclaimed = base;
@@ -176,7 +188,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("draws red's claim in red's colour, independently of green's", () => {
-    const base = startingGameState(SEED, { planetBonus: "two" });
+    const base = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "two",
+    });
     const claimedSquare = base.bonusPlanets.red[0].square;
     const state: typeof base = {
       ...base,
@@ -195,7 +210,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("draws a planet shared by both sides in both rows, each with its own badge", () => {
-    const base = startingGameState(SEED, { planetBonus: "three" });
+    const base = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const sharedSquare = base.bonusPlanets.green[0].square;
     const state: typeof base = {
       ...base,
@@ -228,7 +246,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("is hidden from the accessibility tree", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
 
     const { container } = render(<PlanetBonusPanel state={state} />);
 
@@ -239,7 +260,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("reports the hovered square entering a classic cell, and undefined leaving it", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const onHoverSquare = vi.fn();
 
     const { container } = render(
@@ -257,7 +281,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("ignores a touch tap on a classic cell, so no glow sticks after the tap", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const onHoverSquare = vi.fn();
 
     const { container } = render(
@@ -271,7 +298,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("glows exactly the cell whose square matches glowSquare, and none by default", () => {
-    const base = startingGameState(SEED, { planetBonus: "three" });
+    const base = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     // Disjoint sets, unlike the real (random) deal, so exactly one cell in
     // the whole panel can ever match a given glowSquare.
     const state: typeof base = {
@@ -310,7 +340,10 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("glows a planet shared by both sides in both rows", () => {
-    const base = startingGameState(SEED, { planetBonus: "three" });
+    const base = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
     const sharedSquare = PLANETS[0];
     const state: typeof base = {
       ...base,

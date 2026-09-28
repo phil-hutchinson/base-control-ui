@@ -341,11 +341,13 @@ describe("StartScreen", () => {
     }
   });
 
-  it("checks OFF by default in the player-matching nodes group under STEAL", () => {
+  it("checks REQUIRED by default in the player-matching nodes group under STEAL", () => {
     renderStartScreen({ nodePlaystyle: "steal" });
 
     const group = screen.getByRole("group", { name: "Player-matching nodes" });
-    expect(within(group).getByRole("radio", { name: "OFF" })).toBeChecked();
+    expect(
+      within(group).getByRole("radio", { name: "REQUIRED" }),
+    ).toBeChecked();
   });
 
   it("calls the player-matching change handler with double when DOUBLE is chosen, and not the others", async () => {
@@ -457,7 +459,7 @@ describe("StartScreen", () => {
   });
 
   it("checks OFF by default, with the planet bonus radios in order OFF, 2 POINTS, 3 POINTS", () => {
-    renderStartScreen();
+    renderStartScreen({ nodePlaystyle: "planet" });
 
     const group = screen.getByRole("group", { name: "Planet bonus" });
     expect(within(group).getByRole("radio", { name: "OFF" })).toBeChecked();
@@ -523,6 +525,13 @@ describe("StartScreen", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("checks RACE by default in the planet activity group under the default STEAL", () => {
+    renderStartScreen();
+
+    const group = screen.getByRole("group", { name: "Planet activity" });
+    expect(within(group).getByRole("radio", { name: "RACE" })).toBeChecked();
+  });
+
   it("checks RACE when chosen under STEAL", () => {
     renderStartScreen({ nodePlaystyle: "steal", planetActivity: "race" });
 
@@ -581,7 +590,7 @@ describe("StartScreen", () => {
       onLengthInRoundsChange,
       onClockSettingChange,
       onPlay,
-    } = renderStartScreen({ planetBonus: "off" });
+    } = renderStartScreen({ nodePlaystyle: "planet", planetBonus: "off" });
 
     const group = screen.getByRole("group", { name: "Planet bonus" });
     await user.click(within(group).getByRole("radio", { name: "3 POINTS" }));
@@ -615,13 +624,13 @@ describe("StartScreen", () => {
     }
   });
 
-  it("checks PLANET by default, with the radios in order CONTINUOUS, PLANET, DEDICATED, STEAL", () => {
+  it("checks STEAL by default, with the radios in order CONTINUOUS, PLANET, DEDICATED, STEAL", () => {
     renderStartScreen();
 
     const group = screen.getByRole("group", {
       name: "Node playstyle",
     });
-    expect(within(group).getByRole("radio", { name: "PLANET" })).toBeChecked();
+    expect(within(group).getByRole("radio", { name: "STEAL" })).toBeChecked();
     expect(
       within(group)
         .getAllByRole("radio")

@@ -55,7 +55,7 @@ describe("startingGameState", () => {
   });
 
   it("has green to move, ply 1 and the deal's advanced seed", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
     const [, dealtSeed] = dealOpeningBoard(
       STARTING_FLEET_SQUARES,
       DEFAULT_CHARGED_NODE_COUNT,
@@ -76,7 +76,7 @@ describe("startingGameState", () => {
   });
 
   it("deals the board dealOpeningBoard deals for the same seed: five charged, three inactive, none depleted", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
     const [dealt] = dealOpeningBoard(
       STARTING_FLEET_SQUARES,
       DEFAULT_CHARGED_NODE_COUNT,
@@ -101,7 +101,7 @@ describe("startingGameState", () => {
   });
 
   it("deals every charged node at baseline (no countdown) and every inactive level a priority of {1, 2, 3}", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
 
     const priorities: number[] = [];
     for (const status of Object.values(state.nodes)) {
@@ -296,7 +296,10 @@ describe("startingGameState", () => {
   });
 
   it("takes a charged-node count of three, dealing six nodes: three charged, three inactive, none depleted", () => {
-    const state = startingGameState(SEED, { chargedNodeCount: 3 });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      chargedNodeCount: 3,
+    });
 
     const states = Object.values(state.nodes).map((status) => status.state);
 
@@ -415,16 +418,18 @@ describe("startingGameState", () => {
     },
   );
 
-  it("defaults to the planet playstyle, the app's default, with an empty rotator list, when none is given", () => {
+  it("defaults to the steal playstyle, the app's default, with an empty rotator list, when none is given", () => {
     const state = startingGameState(SEED);
 
-    expect(state.nodePlaystyle).toBe("planet");
+    expect(state.nodePlaystyle).toBe("steal");
     expect(state.nodePlaystyle).toBe(DEFAULT_NODE_PLAYSTYLE);
     expect(state.rotators).toEqual([]);
   });
 
   it("takes a given node playstyle, changing nothing else about the state", () => {
-    const defaultPlaystyle = startingGameState(SEED);
+    const continuousPlaystyle = startingGameState(SEED, {
+      nodePlaystyle: "continuous",
+    });
     const planetPlaystyle = startingGameState(SEED, {
       nodePlaystyle: "planet",
     });
@@ -433,8 +438,8 @@ describe("startingGameState", () => {
     expect(planetPlaystyle.rotators).toEqual([]);
     expect({
       ...planetPlaystyle,
-      nodePlaystyle: defaultPlaystyle.nodePlaystyle,
-    }).toEqual(defaultPlaystyle);
+      nodePlaystyle: continuousPlaystyle.nodePlaystyle,
+    }).toEqual(continuousPlaystyle);
   });
 
   it("is one of the offered node playstyles, exactly the one given", () => {
@@ -526,8 +531,14 @@ describe("startingGameState", () => {
   });
 
   it("deals each side three distinct planets in board order, none claimed, spending six seed steps beyond the off game", () => {
-    const off = startingGameState(SEED, { planetBonus: "off" });
-    const on = startingGameState(SEED, { planetBonus: "three" });
+    const off = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "off",
+    });
+    const on = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
 
     expect(on.planetBonus).toBe("three");
     for (const side of ["green", "red"] as const) {
@@ -555,8 +566,14 @@ describe("startingGameState", () => {
   });
 
   it("deals the same six planets whatever the amount, since the amount does not affect the draw", () => {
-    const two = startingGameState(SEED, { planetBonus: "two" });
-    const three = startingGameState(SEED, { planetBonus: "three" });
+    const two = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "two",
+    });
+    const three = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
 
     expect({ ...two, planetBonus: three.planetBonus }).toEqual(three);
   });
@@ -580,7 +597,10 @@ describe("startingGameState", () => {
   );
 
   it("is one of the offered planet bonus settings, exactly the one given", () => {
-    const state = startingGameState(SEED, { planetBonus: "two" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "two",
+    });
 
     expect(PLANET_BONUS_SETTINGS).toContain(state.planetBonus);
     expect(state.planetBonus).toBe("two");
@@ -666,10 +686,10 @@ describe("startingGameState under steal (steal.md §7)", () => {
 });
 
 describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §10)", () => {
-  it("defaults to off, the app's default, when none is given", () => {
+  it("defaults to race, the app's default, when none is given under steal", () => {
     const state = startingGameState(SEED, { nodePlaystyle: "steal" });
 
-    expect(state.planetActivity).toBe("off");
+    expect(state.planetActivity).toBe("race");
     expect(state.planetActivity).toBe(DEFAULT_PLANET_ACTIVITY);
   });
 
@@ -733,17 +753,18 @@ describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §1
 
 describe("startingGameState's activityBonuses field (steal.md §10)", () => {
   it("is empty with planet activity off under steal, whose seed consumption is unaffected", () => {
-    const withoutOption = startingGameState(SEED, {
-      nodePlaystyle: "steal",
-      chargedNodeCount: 4,
-    });
     const withOff = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
       planetActivity: "off",
     });
+    const [, seedAfterDeal] = dealStealOpeningBoard(
+      STARTING_FLEET_SQUARES,
+      4,
+      SEED,
+    );
     expect(withOff.activityBonuses).toEqual([]);
-    expect(withoutOption).toEqual(withOff);
+    expect(withOff.randomSeed).toBe(seedAfterDeal);
   });
 
   it("is empty under every planet bonus setting outside steal", () => {
@@ -866,10 +887,10 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
 });
 
 describe("startingGameState's playerMatching field (steal.md §9)", () => {
-  it("defaults to off, the app's default, when none is given", () => {
+  it("defaults to required, the app's default, when none is given under steal", () => {
     const state = startingGameState(SEED, { nodePlaystyle: "steal" });
 
-    expect(state.playerMatching).toBe("off");
+    expect(state.playerMatching).toBe("required");
     expect(state.playerMatching).toBe(DEFAULT_PLAYER_MATCHING);
   });
 
@@ -939,6 +960,31 @@ describe("startingGameState's playerMatching field (steal.md §9)", () => {
           expect(matched.randomSeed).toBe(off.randomSeed);
         }
       }
+    },
+  );
+});
+
+describe("startingGameState's defaults, resolved for the chosen node playstyle", () => {
+  it("starts steal, with player-matching required, planet activity race and planet bonus off, when no option is given", () => {
+    const state = startingGameState(SEED);
+
+    expect(state.nodePlaystyle).toBe("steal");
+    expect(state.playerMatching).toBe("required");
+    expect(state.planetActivity).toBe("race");
+    expect(state.planetBonus).toBe("off");
+    expect(state.activityBonuses).toHaveLength(2);
+  });
+
+  it.each(["continuous", "planet", "dedicated"] as const)(
+    "starts %s with player-matching off, planet activity off and planet bonus off when only the playstyle is given",
+    (nodePlaystyle) => {
+      const state = startingGameState(SEED, { nodePlaystyle });
+
+      expect(state.nodePlaystyle).toBe(nodePlaystyle);
+      expect(state.playerMatching).toBe("off");
+      expect(state.planetActivity).toBe("off");
+      expect(state.planetBonus).toBe("off");
+      expect(state.activityBonuses).toEqual([]);
     },
   );
 });

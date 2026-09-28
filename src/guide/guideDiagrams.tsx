@@ -380,7 +380,7 @@ export function PlanetBonusDiagram() {
  * a Large points bonus beside a Node scramble bonus, drawn with the same
  * `ActivityBonusCell` the panel itself draws, at the app's own default
  * settings (its `+N` comes from the point lookup, never typed in) and so in
- * gold/silver/blue, since player-matching is off by default.
+ * gold/red/green, since player-matching is required by default.
  */
 export function AdvancedPlanetBonusDiagram() {
   const cells: readonly GuideDiagramCell[] = [

@@ -24,10 +24,10 @@ describe("useAppScreen", () => {
     expect(result.current.chargedNodeCount).toBe(4);
     expect(result.current.combatEnabled).toBe(false);
     expect(result.current.scoring).toBe("bonus");
-    expect(result.current.nodePlaystyle).toBe("planet");
+    expect(result.current.nodePlaystyle).toBe("steal");
     expect(result.current.planetBonus).toBe("off");
-    expect(result.current.planetActivity).toBe("off");
-    expect(result.current.playerMatching).toBe("off");
+    expect(result.current.planetActivity).toBe("race");
+    expect(result.current.playerMatching).toBe("required");
     expect(result.current.lengthInRounds).toBe(30);
     expect(result.current.clockSetting).toBe("none");
   });
@@ -175,6 +175,9 @@ describe("useAppScreen", () => {
     const { result } = renderHook(() => useAppScreen(dispatch, true));
 
     act(() => {
+      result.current.setNodePlaystyle("planet");
+    });
+    act(() => {
       result.current.setPlanetBonus("three");
     });
     act(() => {
@@ -212,7 +215,7 @@ describe("useAppScreen", () => {
       result.current.setNodePlaystyle("steal");
     });
     act(() => {
-      result.current.setPlanetActivity("race");
+      result.current.setPlanetActivity("stable");
     });
     act(() => {
       result.current.setNodePlaystyle("planet");
@@ -220,13 +223,13 @@ describe("useAppScreen", () => {
     act(() => {
       result.current.setPlanetBonus("three");
     });
-    expect(result.current.planetActivity).toBe("race");
+    expect(result.current.planetActivity).toBe("stable");
     expect(result.current.planetBonus).toBe("three");
 
     act(() => {
       result.current.setNodePlaystyle("steal");
     });
-    expect(result.current.planetActivity).toBe("race");
+    expect(result.current.planetActivity).toBe("stable");
     expect(result.current.planetBonus).toBe("three");
   });
 
@@ -241,7 +244,7 @@ describe("useAppScreen", () => {
       result.current.setNodePlaystyle("steal");
     });
     act(() => {
-      result.current.setPlanetActivity("race");
+      result.current.setPlanetActivity("stable");
     });
     act(() => {
       result.current.handlePlay();
@@ -252,7 +255,7 @@ describe("useAppScreen", () => {
         type: "new-game",
         nodePlaystyle: "steal",
         planetBonus: "off",
-        planetActivity: "race",
+        planetActivity: "stable",
       }),
     );
   });
@@ -265,7 +268,7 @@ describe("useAppScreen", () => {
       result.current.setNodePlaystyle("steal");
     });
     act(() => {
-      result.current.setPlanetActivity("race");
+      result.current.setPlanetActivity("stable");
     });
     act(() => {
       result.current.setNodePlaystyle("planet");

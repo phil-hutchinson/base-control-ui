@@ -36,18 +36,21 @@ import {
   DEFAULT_PLANET_BONUS,
   isPlanetBonusSetting,
   PLANET_BONUS_SETTINGS,
+  resolvePlanetBonus,
   type PlanetBonusSetting,
 } from "./planetBonus";
 import {
   DEFAULT_PLANET_ACTIVITY,
   isPlanetActivitySetting,
   PLANET_ACTIVITY_SETTINGS,
+  resolvePlanetActivity,
   type PlanetActivitySetting,
 } from "./planetActivity";
 import {
   DEFAULT_PLAYER_MATCHING,
   isPlayerMatchingSetting,
   PLAYER_MATCHING_SETTINGS,
+  resolvePlayerMatching,
   type PlayerMatchingSetting,
 } from "./playerMatching";
 import { placeRotators } from "./rotators";
@@ -271,7 +274,10 @@ export interface GameState {
 /**
  * The options `startingGameState` accepts beyond the seed, each fixed for
  * the game's lifetime once set. All are optional and fall back to the
- * app's defaults.
+ * app's defaults; the three settings a playstyle may not offer — planet
+ * bonus, planet activity and player-matching — fall back to the app's
+ * default resolved for the chosen node playstyle, so that omitting them
+ * never asks for a combination the rules do not allow.
  */
 export interface StartingGameStateOptions {
   /**
@@ -316,7 +322,7 @@ export interface StartingGameStateOptions {
   readonly scoring?: string;
   /**
    * The node playstyle (rules.md §8.2): continuous, planet, dedicated or
-   * steal (steal.md). Defaults to `DEFAULT_NODE_PLAYSTYLE` (planet).
+   * steal (steal.md). Defaults to `DEFAULT_NODE_PLAYSTYLE` (steal).
    * Deliberately typed `string`, not `NodePlaystyle`, for the same reason
    * `scoring` is: a setting arriving from outside the type system can be
    * any string. Must be one of `nodePlaystyle.ts`'s offered settings, or
@@ -325,8 +331,9 @@ export interface StartingGameStateOptions {
    */
   readonly nodePlaystyle?: string;
   /**
-   * The planet bonus setting (rules.md §3.4). Defaults to
-   * `DEFAULT_PLANET_BONUS` (off). Deliberately typed `string`, not
+   * The planet bonus setting (rules.md §3.4). When omitted, defaults to
+   * `DEFAULT_PLANET_BONUS` (off) resolved for the chosen node playstyle by
+   * `resolvePlanetBonus` — always off under steal. Deliberately typed `string`, not
    * `PlanetBonusSetting`, for the same reason `scoring` and `nodePlaystyle`
    * are: a setting arriving from outside the type system can be any string.
    * Must be one of `planetBonus.ts`'s offered settings, or this throws a
@@ -338,8 +345,9 @@ export interface StartingGameStateOptions {
   readonly planetBonus?: string;
   /**
    * The planet activity setting (rules.md §3.4, steal.md §10), offered only
-   * under the steal node playstyle. Defaults to `DEFAULT_PLANET_ACTIVITY`
-   * (off). Deliberately typed `string`, not `PlanetActivitySetting`, for the
+   * under the steal node playstyle. When omitted, defaults to
+   * `DEFAULT_PLANET_ACTIVITY` (race) resolved for the chosen node playstyle
+   * by `resolvePlanetActivity` — off outside steal. Deliberately typed `string`, not `PlanetActivitySetting`, for the
    * same reason `scoring`, `nodePlaystyle` and `planetBonus` are: a setting
    * arriving from outside the type system can be any string. Must be one of
    * `planetActivity.ts`'s offered settings, or this throws a `RangeError`. A
@@ -351,7 +359,9 @@ export interface StartingGameStateOptions {
   readonly planetActivity?: string;
   /**
    * The player-matching nodes setting (steal.md §9), offered only under the
-   * steal node playstyle. Defaults to `DEFAULT_PLAYER_MATCHING` (off).
+   * steal node playstyle. When omitted, defaults to `DEFAULT_PLAYER_MATCHING`
+   * (required) resolved for the chosen node playstyle by
+   * `resolvePlayerMatching` — off outside steal.
    * Deliberately typed `string`, not `PlayerMatchingSetting`, for the same
    * reason `scoring`, `nodePlaystyle` and `planetBonus` are: a setting
    * arriving from outside the type system can be any string. Must be one of
@@ -429,9 +439,6 @@ export function startingGameState(
     combatEnabled = DEFAULT_COMBAT_ENABLED,
     scoring = DEFAULT_SCORING,
     nodePlaystyle = DEFAULT_NODE_PLAYSTYLE,
-    planetBonus = DEFAULT_PLANET_BONUS,
-    planetActivity = DEFAULT_PLANET_ACTIVITY,
-    playerMatching = DEFAULT_PLAYER_MATCHING,
   } = options;
 
   if (!isGameLengthRounds(lengthInRounds)) {
@@ -459,6 +466,17 @@ export function startingGameState(
       `startingGameState: nodePlaystyle must be one of ${NODE_PLAYSTYLES.join(", ")}, got ${nodePlaystyle}`,
     );
   }
+  const {
+    planetBonus = resolvePlanetBonus(nodePlaystyle, DEFAULT_PLANET_BONUS),
+    planetActivity = resolvePlanetActivity(
+      nodePlaystyle,
+      DEFAULT_PLANET_ACTIVITY,
+    ),
+    playerMatching = resolvePlayerMatching(
+      nodePlaystyle,
+      DEFAULT_PLAYER_MATCHING,
+    ),
+  } = options;
   if (!isPlanetBonusSetting(planetBonus)) {
     throw new RangeError(
       `startingGameState: planetBonus must be one of ${PLANET_BONUS_SETTINGS.join(", ")}, got ${planetBonus}`,

@@ -611,7 +611,21 @@ present and passing; `npm run typecheck`, `npm run lint`,
 
 ### Step 4 — The new defaults
 
-Status: pending
+Status: committed
+
+Notes: Defaults flipped (steal, required, race) and D5 implemented in
+`startingGameState` (omitted planet bonus, planet activity and
+player-matching resolve against the validated playstyle; option docs say
+so); tests pinned to planet/continuous, re-expected, unhollowed (STEAL →
+PLANET, RACE → STABLE) and the two D5 tests added. Before fixes: **77
+failing tests across 14 files** (vs the measured 49/11 — the extra are
+Step 3's new tests plus `planetActivity.test`, `playerMatching.test` and
+`guideDiagrams.test`). Deviation: the Quick Guide's two-bonus diagram reads
+`DEFAULT_PLAYER_MATCHING` by design, so its Node scramble symbol now draws
+gold/red/green (and its `+N` the required amount) instead of
+gold/silver/blue — the diagram code is unchanged, its comment and test
+re-expected; Step 5's "unchanged diagram" check should expect this. `git
+diff --stat` shows no file under `doc/ruleset/`.
 
 Change `DEFAULT_NODE_PLAYSTYLE` to `"steal"` (`src/rules/nodePlaystyle.ts`),
 `DEFAULT_PLAYER_MATCHING` to `"required"` (`src/rules/playerMatching.ts`)
@@ -733,7 +747,9 @@ the Dev Container and checks:
   is paid.
 - A PLANET game with 2 POINTS or 3 POINTS plays and looks as before.
 - The Quick Guide has a PLANET ACTIVITY section, after PLANET BONUS, with
-  the unchanged two-bonus diagram; approve or rewrite both paragraphs.
+  the two-bonus diagram — which follows the app's defaults, so since Step 4
+  it draws in the required look (Node scramble in gold/red/green, Large
+  points +8); approve or rewrite both paragraphs.
 
 (Seeded replay under stable and race, and the claim announcements, are
 covered by the automated suite and are not part of this check.)

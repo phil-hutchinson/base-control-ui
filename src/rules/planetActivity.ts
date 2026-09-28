@@ -31,8 +31,8 @@ export const PLANET_ACTIVITY_SETTINGS: readonly PlanetActivitySetting[] = [
   "race",
 ];
 
-/** The app's default: no planet activity. */
-export const DEFAULT_PLANET_ACTIVITY: PlanetActivitySetting = "off";
+/** The app's default: race. */
+export const DEFAULT_PLANET_ACTIVITY: PlanetActivitySetting = "race";
 
 /**
  * Whether a value is one of the offered planet activity settings.

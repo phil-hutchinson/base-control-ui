@@ -11,8 +11,8 @@ describe("the offered player-matching settings (steal.md §9)", () => {
     expect(PLAYER_MATCHING_SETTINGS).toEqual(["off", "double", "required"]);
   });
 
-  it("defaults to off", () => {
-    expect(DEFAULT_PLAYER_MATCHING).toBe("off");
+  it("defaults to required", () => {
+    expect(DEFAULT_PLAYER_MATCHING).toBe("required");
     expect(PLAYER_MATCHING_SETTINGS).toContain(DEFAULT_PLAYER_MATCHING);
   });
 

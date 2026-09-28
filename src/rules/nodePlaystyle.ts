@@ -31,8 +31,8 @@ export const NODE_PLAYSTYLES: readonly NodePlaystyle[] = [
   "steal",
 ];
 
-/** The app's default: planet rotation. */
-export const DEFAULT_NODE_PLAYSTYLE: NodePlaystyle = "planet";
+/** The app's default: steal. */
+export const DEFAULT_NODE_PLAYSTYLE: NodePlaystyle = "steal";
 
 /**
  * Whether a value is one of the offered node playstyles. Unlike

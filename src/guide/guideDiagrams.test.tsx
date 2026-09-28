@@ -280,7 +280,7 @@ describe("PlanetBonusDiagram", () => {
 });
 
 describe("AdvancedPlanetBonusDiagram", () => {
-  it("shows a Large points bonus beside a Node scramble bonus, in gold/silver/blue", () => {
+  it("shows a Large points bonus beside a Node scramble bonus, in gold/red/green", () => {
     const { container } = render(<AdvancedPlanetBonusDiagram />);
 
     expect(container.querySelectorAll(".guide-diagram__cell")).toHaveLength(2);
@@ -301,8 +301,8 @@ describe("AdvancedPlanetBonusDiagram", () => {
     expect(arcs).toHaveLength(3);
     expect(Array.from(arcs, (arc) => arc.getAttribute("stroke"))).toEqual([
       SIGNAL_COLORS[0].core,
-      SIGNAL_COLORS[1].core,
-      SIGNAL_COLORS[2].core,
+      PLAYER_NODE_COLORS.red.core,
+      PLAYER_NODE_COLORS.green.core,
     ]);
     expect(container.querySelectorAll(".guide-diagram__arrow")).toHaveLength(0);
   });

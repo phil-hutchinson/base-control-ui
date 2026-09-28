@@ -606,6 +606,7 @@ describe("sessionReducer — new-game", () => {
         fleetSize: DEFAULT_FLEET_SIZE,
         chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
         combatEnabled: true,
+        nodePlaystyle: "continuous",
       }).randomSeed,
     );
     expect(result.state.lengthInRounds).toBe(100);
@@ -704,6 +705,7 @@ describe("sessionReducer — new-game", () => {
           fleetSize,
           chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
           combatEnabled: true,
+          nodePlaystyle: "continuous",
         }).randomSeed,
       );
       expect(result.state.lengthInRounds).toBe(30);

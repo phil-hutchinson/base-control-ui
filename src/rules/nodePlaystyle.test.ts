@@ -15,8 +15,8 @@ describe("the offered node playstyles (rules.md §8.2)", () => {
     ]);
   });
 
-  it("defaults to planet rotation", () => {
-    expect(DEFAULT_NODE_PLAYSTYLE).toBe("planet");
+  it("defaults to steal", () => {
+    expect(DEFAULT_NODE_PLAYSTYLE).toBe("steal");
     expect(NODE_PLAYSTYLES).toContain(DEFAULT_NODE_PLAYSTYLE);
   });
 

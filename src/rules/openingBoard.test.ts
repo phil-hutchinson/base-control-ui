@@ -71,6 +71,7 @@ describe.each(CHARGED_NODE_COUNTS)(
           lengthInRounds: RUN_TO_COMPLETION_LENGTH_IN_ROUNDS,
           chargedNodeCount,
           combatEnabled: true,
+          nodePlaystyle: "planet",
         });
 
         const dealtNodeNames = nodeSquares(state).map(squareName);

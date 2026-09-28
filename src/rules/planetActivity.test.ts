@@ -11,8 +11,8 @@ describe("the offered planet activity settings (steal.md §10)", () => {
     expect(PLANET_ACTIVITY_SETTINGS).toEqual(["off", "stable", "race"]);
   });
 
-  it("defaults to off", () => {
-    expect(DEFAULT_PLANET_ACTIVITY).toBe("off");
+  it("defaults to race", () => {
+    expect(DEFAULT_PLANET_ACTIVITY).toBe("race");
     expect(PLANET_ACTIVITY_SETTINGS).toContain(DEFAULT_PLANET_ACTIVITY);
   });
 

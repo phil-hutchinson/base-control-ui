@@ -7,13 +7,16 @@ const SEED = 12345;
 
 describe("bonusPanelSquareNames", () => {
   it("is empty when the setting is off", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
 
     expect(bonusPanelSquareNames(state).size).toBe(0);
   });
 
   it("names both sides' planets, deduplicated, under two or three points", () => {
-    const state = startingGameState(SEED, { planetBonus: "three" });
+    const state = startingGameState(SEED, {
+      nodePlaystyle: "planet",
+      planetBonus: "three",
+    });
 
     const names = bonusPanelSquareNames(state);
 

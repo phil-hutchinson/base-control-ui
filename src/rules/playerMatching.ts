@@ -30,8 +30,8 @@ export const PLAYER_MATCHING_SETTINGS: readonly PlayerMatchingSetting[] = [
   "required",
 ];
 
-/** The app's default: no node matched to either player. */
-export const DEFAULT_PLAYER_MATCHING: PlayerMatchingSetting = "off";
+/** The app's default: a turn's node energy requires holding one's own node. */
+export const DEFAULT_PLAYER_MATCHING: PlayerMatchingSetting = "required";
 
 /**
  * Whether a value is one of the offered player-matching settings. Unlike

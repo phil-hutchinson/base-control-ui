@@ -430,6 +430,7 @@ describe.each(CHARGED_NODE_COUNTS)(
             lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
             chargedNodeCount,
             combatEnabled: true,
+            nodePlaystyle: "planet",
           });
           const shipSquares = state.ships.map((ship) => ship.square);
           const allNodeSquares = nodeSquares(state);
