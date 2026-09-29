@@ -139,9 +139,7 @@ describe("guideCopy", () => {
       },
       {
         label: "Planet",
-        text:
-          "The rings rotate each time a ship arrives at a planet " +
-          "(including post-combat, if combat is enabled).",
+        text: "The rings rotate each time a ship arrives at a planet.",
       },
       {
         label: "Dedicated",

@@ -16,6 +16,10 @@ for it, are unchanged. Only the choice is taken off the menu.
 - **`README.md`** no longer lists a combat choice among the start-screen
   options, and its opening description says the app plays every game with
   combat off, while still describing how combat works.
+- **The Quick Guide's** Planet playstyle line no longer mentions arrivals
+  after a fight "if combat is enabled": it says only that the rings rotate
+  each time a ship arrives at a planet, so the guide does not refer to a
+  choice the player cannot make.
 
 ## What does not change
 
@@ -25,7 +29,6 @@ for it, are unchanged. Only the choice is taken off the menu.
   defaults). No rules-version bump and no changelog entry.
 - **Combat in the game.** Attacks, fights, their announcements and their
   board markings all stay, and still work in a game started with combat on.
-- **The Quick Guide.**
 - **Every other start-screen option.**
 
 ## Verification

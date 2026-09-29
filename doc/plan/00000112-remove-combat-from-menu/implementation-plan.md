@@ -41,9 +41,12 @@ Status and Notes, one commit per step, and a peer review by the
   choice; which choices the app offers is the app's concern, in the same way
   a default is (the ruleset names none). No version bump, no changelog
   entry.
-- **Quick Guide untouched**, per the story. Its Planet playstyle line
-  mentions arrivals "post-combat, if combat is enabled", which remains true
-  of the game.
+- **The Quick Guide drops its combat aside.** Its Planet playstyle line
+  said the rings rotate on every planet arrival "(including post-combat, if
+  combat is enabled)". That was still true of the game, but the owner chose
+  to keep the interface consistent: no player-facing text refers to a
+  choice the player cannot make. This was decided at sign-off, after the
+  peer review, and is Step 3.
 - **Accessibility**: removing a whole option group costs no accessible
   behaviour, so nothing is recorded in the accessibility ledger.
 
@@ -110,3 +113,19 @@ Depends on: Step 1 (the README describes what the app now does).
 Verification (automated): `npm run format:check` passes, and
 `grep -n -i combat README.md` shows no remaining claim that the start
 screen offers a combat choice.
+
+### Step 3 — Quick Guide: drop the combat aside
+
+Status: committed
+
+Remove "(including post-combat, if combat is enabled)" from the Quick
+Guide's Planet playstyle line in `src/guide/guideCopy.ts`, and update the
+matching expectation in `src/guide/guideCopy.test.ts`.
+
+Depends on: Step 1 (the combat choice is gone from the start screen).
+
+Verification (automated): `npm run typecheck`, `npm run lint`,
+`npm run format:check` and the full `npm test` all pass.
+
+Notes: Added at the owner's sign-off, after the peer review, so the review
+does not cover it; it is a one-sentence copy change.
