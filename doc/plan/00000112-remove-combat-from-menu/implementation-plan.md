@@ -90,7 +90,12 @@ combat off.
 
 ### Step 2 — README check
 
-Status: pending
+Status: committed
+
+Notes: The README review was done inline in the main session, not through
+the `/update-readme` command, since the two changes were already known. It
+made exactly the two expected edits; the rest of the opening paragraph was
+rewrapped only to keep its lines within 80 columns.
 
 Run the `/update-readme` review of the branch diff. Expected changes:
 remove "a choice of whether combat is on or off (off to start)" from the
