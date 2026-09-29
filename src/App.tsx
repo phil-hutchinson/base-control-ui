@@ -60,8 +60,6 @@ export function App() {
     setFleetSize,
     chargedNodeCount,
     setChargedNodeCount,
-    combatEnabled,
-    setCombatEnabled,
     scoring,
     setScoring,
     planetBonus,
@@ -92,8 +90,6 @@ export function App() {
             onFleetSizeChange={setFleetSize}
             chargedNodeCount={chargedNodeCount}
             onChargedNodeCountChange={setChargedNodeCount}
-            combatEnabled={combatEnabled}
-            onCombatEnabledChange={setCombatEnabled}
             scoring={scoring}
             onScoringChange={setScoring}
             planetBonus={planetBonus}

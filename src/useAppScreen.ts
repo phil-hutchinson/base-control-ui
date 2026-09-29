@@ -15,7 +15,6 @@ import type { SessionIntent } from "./game/session";
 import type { Screen } from "./nav/screenAddress";
 import { useScreenAddress } from "./nav/useScreenAddress";
 import { type ClockSetting, DEFAULT_CLOCK_SETTING } from "./rules/clock";
-import { DEFAULT_COMBAT_ENABLED } from "./rules/combatSetting";
 import { DEFAULT_FLEET_SIZE, type FleetSize } from "./rules/fleet";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./rules/gameLength";
 import {
@@ -48,7 +47,6 @@ export interface AppScreen {
   readonly screen: Screen;
   readonly fleetSize: FleetSize;
   readonly chargedNodeCount: ChargedNodeCount;
-  readonly combatEnabled: boolean;
   readonly scoring: ScoringSetting;
   readonly nodePlaystyle: NodePlaystyle;
   readonly planetBonus: PlanetBonusSetting;
@@ -58,7 +56,6 @@ export interface AppScreen {
   readonly clockSetting: ClockSetting;
   readonly setFleetSize: (fleetSize: FleetSize) => void;
   readonly setChargedNodeCount: (chargedNodeCount: ChargedNodeCount) => void;
-  readonly setCombatEnabled: (combatEnabled: boolean) => void;
   readonly setScoring: (scoring: ScoringSetting) => void;
   readonly setNodePlaystyle: (nodePlaystyle: NodePlaystyle) => void;
   readonly setPlanetBonus: (planetBonus: PlanetBonusSetting) => void;
@@ -76,12 +73,13 @@ export interface AppScreen {
  * the start screen with the options it was played with still set, and
  * delegates which screen is showing to `useScreenAddress`, which reads it
  * from the browser's address. `handlePlay` dispatches `new-game` with a fresh
- * seed and the fleet size, charged-node count, combat setting, scoring
- * setting, node playstyle, planet bonus, planet resources and player-matching
- * settings (each resolved for the node playstyle actually chosen —
+ * seed and the fleet size, charged-node count, scoring setting, node
+ * playstyle, planet bonus, planet resources and player-matching settings
+ * (each resolved for the node playstyle actually chosen —
  * `resolvePlanetBonus`, `resolvePlanetActivity`, `resolvePlayerMatching` —
  * so a game never starts with a setting its playstyle does not offer) and
- * length through `dispatch`, then hands the game its address;
+ * length through `dispatch`, always with combat off — the start screen
+ * offers no combat choice — then hands the game its address;
  * `handleReturnToStart` moves the browser back, the same as its own Back
  * button. The clock setting is not
  * part of `new-game` — the rules layer knows nothing about time — so it is
@@ -103,7 +101,6 @@ export function useAppScreen(
   const [chargedNodeCount, setChargedNodeCount] = useState<ChargedNodeCount>(
     DEFAULT_CHARGED_NODE_COUNT,
   );
-  const [combatEnabled, setCombatEnabled] = useState(DEFAULT_COMBAT_ENABLED);
   const [scoring, setScoring] = useState<ScoringSetting>(DEFAULT_SCORING);
   const [nodePlaystyle, setNodePlaystyle] = useState<NodePlaystyle>(
     DEFAULT_NODE_PLAYSTYLE,
@@ -130,7 +127,7 @@ export function useAppScreen(
       lengthInRounds,
       fleetSize,
       chargedNodeCount,
-      combatEnabled,
+      combatEnabled: false,
       scoring,
       nodePlaystyle,
       planetBonus: resolvePlanetBonus(nodePlaystyle, planetBonus),
@@ -152,7 +149,6 @@ export function useAppScreen(
     screen,
     fleetSize,
     chargedNodeCount,
-    combatEnabled,
     scoring,
     nodePlaystyle,
     planetBonus,
@@ -162,7 +158,6 @@ export function useAppScreen(
     clockSetting,
     setFleetSize,
     setChargedNodeCount,
-    setCombatEnabled,
     setScoring,
     setNodePlaystyle,
     setPlanetBonus,

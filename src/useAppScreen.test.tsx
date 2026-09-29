@@ -2,6 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { NODE_PLAYSTYLES } from "./rules/nodePlaystyle";
 import { useAppScreen } from "./useAppScreen";
 
 afterEach(cleanup);
@@ -22,7 +23,6 @@ describe("useAppScreen", () => {
     expect(result.current.screen).toBe("start");
     expect(result.current.fleetSize).toBe(5);
     expect(result.current.chargedNodeCount).toBe(4);
-    expect(result.current.combatEnabled).toBe(false);
     expect(result.current.scoring).toBe("bonus");
     expect(result.current.nodePlaystyle).toBe("steal");
     expect(result.current.planetBonus).toBe("off");
@@ -65,41 +65,31 @@ describe("useAppScreen", () => {
     expect(result.current.screen).toBe("game");
   });
 
-  it("carries a chosen combat setting of on into the new-game intent, and keeps it on returning to start", async () => {
-    const dispatch = vi.fn();
-    // gameOver: true — handleReturnToStart is reached from a game in progress
-    // only through the game-over panel's button, so this is the flow that
-    // actually crosses the guard without a confirmation prompt.
-    const { result } = renderHook(() => useAppScreen(dispatch, true));
+  it("always dispatches combat off, under every node playstyle", () => {
+    for (const nodePlaystyle of NODE_PLAYSTYLES) {
+      const dispatch = vi.fn();
+      const { result, unmount } = renderHook(() =>
+        useAppScreen(dispatch, false),
+      );
 
-    act(() => {
-      result.current.setCombatEnabled(true);
-    });
-    act(() => {
-      result.current.handlePlay();
-    });
+      act(() => {
+        result.current.setNodePlaystyle(nodePlaystyle);
+      });
+      act(() => {
+        result.current.handlePlay();
+      });
 
-    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ type: "new-game", combatEnabled: true }),
-    );
+      expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          type: "new-game",
+          nodePlaystyle,
+          combatEnabled: false,
+        }),
+      );
 
-    act(() => {
-      result.current.handleReturnToStart();
-    });
-
-    await waitFor(() => {
-      expect(result.current.screen).toBe("start");
-    });
-    expect(result.current.combatEnabled).toBe(true);
-
-    dispatch.mockClear();
-    act(() => {
-      result.current.handlePlay();
-    });
-
-    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({ type: "new-game", combatEnabled: true }),
-    );
+      unmount();
+      resetAddress();
+    }
   });
 
   it("carries a chosen scoring setting of bonus into the new-game intent, and keeps it on returning to start", async () => {

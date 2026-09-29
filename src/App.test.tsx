@@ -91,10 +91,6 @@ function roundsGroup() {
   return screen.getByRole("group", { name: "Rounds" });
 }
 
-function combatGroup() {
-  return screen.getByRole("group", { name: "Combat" });
-}
-
 function scoringGroup() {
   return screen.getByRole("group", { name: "Scoring" });
 }
@@ -158,9 +154,6 @@ describe("App", () => {
       within(nodePlaystyleGroup()).getByRole("radio", { name: "STEAL" }),
     ).toBeChecked();
     expect(
-      within(combatGroup()).getByRole("radio", { name: "OFF" }),
-    ).toBeChecked();
-    expect(
       within(screen.getByRole("group", { name: "Rounds" })).getByRole("radio", {
         name: "30",
       }),
@@ -173,7 +166,7 @@ describe("App", () => {
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
   });
 
-  it("renders the nine option groups in order under the default STEAL: Node playstyle, Ships, Charged nodes, Player-matching nodes, Scoring, Planet resources, Combat, Rounds, Clock", () => {
+  it("renders the eight option groups in order under the default STEAL: Node playstyle, Ships, Charged nodes, Player-matching nodes, Scoring, Planet resources, Rounds, Clock", () => {
     render(<App />);
 
     const groups = screen.getAllByRole("group");
@@ -186,7 +179,6 @@ describe("App", () => {
       "Player-matching nodes",
       "Scoring",
       "Planet resources",
-      "Combat",
       "Rounds",
       "Clock (time per move)",
     ]);
@@ -725,7 +717,6 @@ describe("App", () => {
     const shipsGroup = screen.getByRole("group", { name: "Ships" });
     await user.click(within(shipsGroup).getByRole("radio", { name: "5" }));
     await user.click(within(roundsGroup()).getByRole("radio", { name: "45" }));
-    await user.click(within(combatGroup()).getByRole("radio", { name: "ON" }));
     await user.click(
       within(scoringGroup()).getByRole("radio", { name: "BONUS" }),
     );
@@ -760,9 +751,6 @@ describe("App", () => {
     ).toBeChecked();
     expect(
       within(roundsGroup()).getByRole("radio", { name: "45" }),
-    ).toBeChecked();
-    expect(
-      within(combatGroup()).getByRole("radio", { name: "ON" }),
     ).toBeChecked();
     expect(
       within(scoringGroup()).getByRole("radio", { name: "BONUS" }),

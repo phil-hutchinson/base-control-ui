@@ -4,11 +4,10 @@
 // `fleet.ts` and `nodes.ts` already are.
 
 /**
- * The offered combat settings, in the order the start screen renders them:
- * off first. `false` is combat off — no attack is legal for either player
- * (rules.md §7) — and `true` is the game §7 describes. Which one the app
- * preselects is independent of the render order — see
- * `DEFAULT_COMBAT_ENABLED`.
+ * The combat settings rules.md §7 offers, off first. `false` is combat off —
+ * no attack is legal for either player — and `true` is the game §7
+ * describes. The start screen offers neither; the app starts every game
+ * with combat off.
  */
 export const COMBAT_SETTINGS: readonly boolean[] = [false, true];
 

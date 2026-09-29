@@ -51,7 +51,12 @@ Status and Notes, one commit per step, and a peer review by the
 
 ### Step 1 — Remove the Combat group from the start screen
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned. The new start-screen test loops over every
+node playstyle; the new `useAppScreen` test does the same, resetting the
+address between iterations. Typecheck, lint, format check and the full suite
+(90 files, 1993 tests) pass.
 
 - `src/start/StartScreen.tsx`: remove the Combat fieldset, its labels map,
   the `combatSettingValue` helper, the group id, the `combatEnabled` and
