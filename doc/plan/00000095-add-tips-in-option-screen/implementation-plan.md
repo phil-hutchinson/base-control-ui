@@ -464,7 +464,9 @@ Then the owner runs `npm run dev` and checks, in a browser:
 
 ### Step 4 — README check
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator via `/update-readme`: the two renames, a sentence on the start-screen tips and one on spelling. `grep -ni "planet resources" README.md` prints nothing.
 
 Run the `/update-readme` review of the branch diff. Expected changes to
 `README.md`, kept in international spelling:
