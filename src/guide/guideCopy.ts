@@ -6,8 +6,8 @@
 // The STEALING NODES section's paragraph describes the steal playstyle
 // (steal.md). The PLAYER-MATCHING NODES section's paragraph describes the
 // player-matching nodes setting (steal.md §9), approved as drafted by the
-// owner. The PLANET RESOURCES section's paragraph describes the planet
-// resources setting (steal.md §10), approved by the owner.
+// owner. The PLANET EFFECTS section's paragraph describes the planet
+// effects setting (steal.md §10), approved by the owner.
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //
@@ -66,7 +66,7 @@ export interface GuideSection {
 /**
  * The eight headed sections, in the order the guide reads: movement,
  * refuelling, the node lifecycle, new charged node selection, stealing
- * nodes, player-matching nodes, the planet bonus, and planet resources.
+ * nodes, player-matching nodes, the planet bonus, and planet effects.
  */
 export const GUIDE_SECTIONS: readonly GuideSection[] = [
   {
@@ -78,7 +78,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
   },
   {
     id: "refuelling",
-    heading: "REFUELING",
+    heading: "REFUELLING",
     paragraph:
       "Spaceships can hold up to six fuel. At the end of a player's turn, " +
       "spaceships sitting on planets regain one fuel. If a player has " +
@@ -164,9 +164,9 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
   },
   {
     id: "planetActivity",
-    heading: "PLANET RESOURCES",
+    heading: "PLANET EFFECTS",
     paragraph:
-      "Under the Steal playstyle, the planet resources option puts two " +
+      "Under the Steal playstyle, the planet effects option puts two " +
       "bonuses on the board instead, on two planets shown above the " +
       "clocks. Either player can claim one by landing a spaceship there. " +
       "A bonus that is taken is always replaced by a new one on another " +

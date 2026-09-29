@@ -93,7 +93,7 @@ export interface Ship {
  * carries `level` 0 always — steal has no countdown of any kind. No node
  * square of any other playstyle ever carries `signal`. A steal node square
  * carries only `state`, `level` and `signal`: whether a node carries an
- * extra under planet resources (steal.md §10) is a count of its prospective
+ * extra under planet effects (steal.md §10) is a count of its prospective
  * squares, not a mark on any one of them (`nodeCarriesExtra`).
  */
 export interface NodeStatus {
@@ -236,7 +236,7 @@ export interface GameState {
    */
   readonly bonusPlanets: BonusPlanetsBySide;
   /**
-   * The planet resources setting (rules.md §3.4, steal.md §10), fixed for the
+   * The planet effects setting (rules.md §3.4, steal.md §10), fixed for the
    * game's lifetime once set by `startingGameState`. Every place that decides
    * whether a landing claims one of the two contested bonuses reads it from
    * here. Always `"off"` outside steal — `startingGameState` rejects any
@@ -244,12 +244,12 @@ export interface GameState {
    */
   readonly planetActivity: PlanetActivitySetting;
   /**
-   * The two bonuses standing on the board while planet resources is on
+   * The two bonuses standing on the board while planet effects is on
    * (steal.md §10), dealt by `startingGameState` and updated as
    * claims resolve. Slot order is meaningful: on a claim the surviving bonus
    * keeps its slot and the new bonus takes the claimed one's, so the panel
    * can read the pair straight off this list with no state of its own.
-   * Always empty while planet resources is off; otherwise it always holds
+   * Always empty while planet effects is off; otherwise it always holds
    * exactly two entries, on two different planets, of two different kinds —
    * `bonusPlanets` above stays empty for both sides under steal, since there
    * are no per-player planets to deal.
@@ -272,7 +272,7 @@ export interface GameState {
  * The options `startingGameState` accepts beyond the seed, each fixed for
  * the game's lifetime once set. All are optional and fall back to the
  * app's defaults; the three settings a playstyle may not offer — planet
- * bonus, planet resources and player-matching — fall back to the app's
+ * bonus, planet effects and player-matching — fall back to the app's
  * default resolved for the chosen node playstyle, so that omitting them
  * never asks for a combination the rules do not allow.
  */
@@ -341,7 +341,7 @@ export interface StartingGameStateOptions {
    */
   readonly planetBonus?: string;
   /**
-   * The planet resources setting (rules.md §3.4, steal.md §10), offered only
+   * The planet effects setting (rules.md §3.4, steal.md §10), offered only
    * under the steal node playstyle. When omitted, defaults to
    * `DEFAULT_PLANET_ACTIVITY` (race) resolved for the chosen node playstyle
    * by `resolvePlanetActivity` — off outside steal. Deliberately typed
@@ -395,7 +395,7 @@ export interface StartingGameStateOptions {
  * extra. Under steal instead, the deal consumes exactly `2 *
  * chargedNodeCount` steps (`dealStealOpeningBoard`, steal.md §7) — no
  * rotator set is ever drawn — and the planet bonus is always off, so the
- * classic bonus planet deal never runs. When planet resources is on
+ * classic bonus planet deal never runs. When planet effects is on
  * (steal.md §10, steal only), `dealActivityBonuses` instead draws exactly
  * four more steps, last.
  * The player-matching nodes setting (steal.md §9) draws nothing — which two
@@ -502,7 +502,7 @@ export function startingGameState(
   }
   if (planetBonus !== "off" && nodePlaystyle === "steal") {
     throw new RangeError(
-      `startingGameState: planetBonus "${planetBonus}" is not valid under the steal node playstyle, which offers planet resources instead`,
+      `startingGameState: planetBonus "${planetBonus}" is not valid under the steal node playstyle, which offers planet effects instead`,
     );
   }
 

@@ -197,7 +197,7 @@ describe("useAppScreen", () => {
     );
   });
 
-  it("remembers planet bonus and planet resources separately across node playstyle switches", () => {
+  it("remembers planet bonus and planet effects separately across node playstyle switches", () => {
     const dispatch = vi.fn();
     const { result } = renderHook(() => useAppScreen(dispatch, false));
 
@@ -223,7 +223,7 @@ describe("useAppScreen", () => {
     expect(result.current.planetBonus).toBe("three");
   });
 
-  it("PLAY under steal dispatches planet bonus off with the remembered planet resources", () => {
+  it("PLAY under steal dispatches planet bonus off with the remembered planet effects", () => {
     const dispatch = vi.fn();
     const { result } = renderHook(() => useAppScreen(dispatch, false));
 
@@ -250,7 +250,7 @@ describe("useAppScreen", () => {
     );
   });
 
-  it("PLAY under planet dispatches planet resources off with the remembered planet bonus", () => {
+  it("PLAY under planet dispatches planet effects off with the remembered planet bonus", () => {
     const dispatch = vi.fn();
     const { result } = renderHook(() => useAppScreen(dispatch, false));
 

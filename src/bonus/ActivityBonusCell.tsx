@@ -4,7 +4,7 @@
 // caption beneath it, not overlaid on top of it — an activity bonus belongs
 // to neither side until claimed, so there is no side-coloured badge to draw
 // over the drawing the way a classic `PlanetBonusCell` does. Shared by
-// `PlanetBonusPanel` and the Quick Guide's PLANET RESOURCES diagram,
+// `PlanetBonusPanel` and the Quick Guide's PLANET EFFECTS diagram,
 // so the two never draw two different symbols or captions for the same
 // kind. Self-contained, like `PlanetBonusCell`: it fills whatever width its
 // caller gives it and takes its own height from its content, rather than

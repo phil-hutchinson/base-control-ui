@@ -3,7 +3,7 @@
 // cells, each a real `BoardSquare`, a numeral drawn over one, a standalone
 // note, a quiet label, a full-width rule, an arrow, a bonus planet cell
 // (`PlanetBonusCell`, shared with `PlanetBonusPanel`), an activity bonus
-// cell (`ActivityBonusCell`, shared with `PlanetBonusPanel`'s planet resources
+// cell (`ActivityBonusCell`, shared with `PlanetBonusPanel`'s planet effects
 // row), or nothing. Purely presentational — no session, no state, no event
 // handlers — and hidden from the accessibility tree, since the paragraph
 // above each diagram already carries its meaning in words.

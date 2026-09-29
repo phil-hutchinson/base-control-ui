@@ -227,7 +227,7 @@ across a batch of whole games' worth of claims and abandons.
 
 ---
 
-## Sizing planet resources bonus points
+## Sizing planet effects bonus points
 
 Story 105's point table ([steal.md](steal.md) §10), built for the setting
 then called advanced and now called race, started as an estimate
@@ -235,7 +235,7 @@ built from a stated pattern — double plays like one node more, required
 like one fewer — rather than from measurement. Once the rest of the story
 worked, this pass measured how fast nodes actually pay under each of the 18
 combinations (node count 3/4/5 × player-matching off/double/required ×
-scoring simple/bonus) and rescaled the table to match, keeping the numbers
+node scoring simple/bonus) and rescaled the table to match, keeping the numbers
 round (an improvised script, not committed).
 
 **The measurement.** For each combination, 100 seeded steal games with
@@ -323,7 +323,7 @@ why this pass treated the **proportions** between combinations as the
 signal worth rescaling to, and kept the story's own overall level (via the
 median ratio `k`) rather than replacing it outright.
 
-**Stable.** The planet resources setting's stable value, added after this
+**Stable.** The planet effects setting's stable value, added after this
 pass, uses the same table unretuned. The measurement above priced points
 bonuses against node income alone, which stable does not change; whether
 stable's calmer bonuses make the amounts play richer or poorer than under

@@ -60,21 +60,25 @@ install, no account, no server.
 > (five, four or three, five to start), a choice of how many nodes are lit at
 > once (five, four or three, four to start), a choice of player-matching
 > nodes when steal is chosen (off, double or required, required to start), a
-> choice of how scoring works (simple, one energy for each node held, or
+> choice of node scoring (simple, one energy for each node held, or
 > bonus, where each extra node held at once is worth more than the last, bonus
 > to start), a choice of whether planets pay a bonus when continuous, planet
 > or dedicated is chosen (off, two points or three points, off to start), a
-> choice of planet resources when steal is chosen instead (off, stable or race,
+> choice of planet effects when steal is chosen instead (off, stable or race,
 > race to start), a choice of how many rounds the game lasts
 > (thirty, forty-five, sixty or ninety, thirty to start), a choice of a clock
 > (unlimited, or six, four or two seconds a turn, unlimited to start) and a PLAY
 > button. The start screen also offers a quick guide — a first read for someone
 > who has never played, not a full rules reference — explaining scoring,
 > movement, refuelling, how nodes come and go, player-matching nodes, the planet
-> bonus and planet resources, with a back button that returns you to the
-> start screen with the choices exactly as you left them. Your browser's own
+> bonus and planet effects, with a back button that returns you to the
+> start screen with the choices exactly as you left them. Each choice also has
+> a question mark beside its title, which opens a short explanation of it
+> right there on the start screen. Your browser's own
 > back and forward buttons move between the screens too, and the address bar
-> says which screen you are on. Changing any of the choices starts nothing — the
+> says which screen you are on. The app's spelling follows your browser's
+> language: American spelling if it prefers US English, international spelling
+> otherwise. Changing any of the choices starts nothing — the
 > board only appears once PLAY is pressed, dealt with the choices you made. A
 > clock is each
 > player's own time for the whole game, not per turn — a thirty-round game at
@@ -100,7 +104,7 @@ install, no account, no server.
 > The first time one of a player's ships lands on one of that player's own
 > three, it pays that player energy once — two or three, whichever was chosen
 > — and never again for that planet, however often ships return to it.
-> Steal offers planet resources instead: rather than planets of their own, the
+> Steal offers planet effects instead: rather than planets of their own, the
 > players compete for two bonuses that stand on the board at once, each on an
 > empty planet. Whoever lands there first takes it — points, a top-up of power
 > for their whole fleet, an extra waiting square for every node, or a shuffle of

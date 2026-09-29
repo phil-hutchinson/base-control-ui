@@ -48,9 +48,19 @@ import {
   SCORING_SETTINGS,
   type ScoringSetting,
 } from "../rules/scoring";
+import type { Spelling } from "../spelling/spelling";
+import { SpellingContext } from "../spelling/spellingContext";
 import { StartScreen } from "./StartScreen";
 
 afterEach(cleanup);
+
+/** An option group's title: the text of the element that names it. */
+function groupTitle(group: HTMLElement): string {
+  const titleId = group.getAttribute("aria-labelledby");
+  return titleId === null
+    ? ""
+    : (document.getElementById(titleId)?.textContent ?? "");
+}
 
 /** The Clock group's labels, mirroring `StartScreen`'s own map. */
 const CLOCK_SETTING_LABELS: Record<ClockSetting, string> = {
@@ -60,7 +70,7 @@ const CLOCK_SETTING_LABELS: Record<ClockSetting, string> = {
   2: "2s",
 };
 
-/** The Scoring group's labels, mirroring `StartScreen`'s own map. */
+/** The Node scoring group's labels, mirroring `StartScreen`'s own map. */
 const SCORING_SETTING_LABELS: Record<ScoringSetting, string> = {
   simple: "SIMPLE",
   bonus: "BONUS",
@@ -81,7 +91,7 @@ const PLANET_BONUS_SETTING_LABELS: Record<PlanetBonusSetting, string> = {
   three: "3 POINTS",
 };
 
-/** The Planet resources group's labels, mirroring `StartScreen`'s own map. */
+/** The Planet effects group's labels, mirroring `StartScreen`'s own map. */
 const PLANET_ACTIVITY_SETTING_LABELS: Record<PlanetActivitySetting, string> = {
   off: "OFF",
   stable: "STABLE",
@@ -122,6 +132,7 @@ interface RenderOverrides {
   readonly onClockSettingChange?: (clockSetting: ClockSetting) => void;
   readonly onPlay?: () => void;
   readonly onOpenGuide?: () => void;
+  readonly spelling?: Spelling;
 }
 
 function renderStartScreen(overrides: RenderOverrides = {}) {
@@ -137,6 +148,7 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   const onClockSettingChange = overrides.onClockSettingChange ?? vi.fn();
   const onPlay = overrides.onPlay ?? vi.fn();
   const onOpenGuide = overrides.onOpenGuide ?? vi.fn();
+  const spelling = overrides.spelling;
   render(
     <StartScreen
       fleetSize={overrides.fleetSize ?? DEFAULT_FLEET_SIZE}
@@ -162,6 +174,13 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
       onPlay={onPlay}
       onOpenGuide={onOpenGuide}
     />,
+    spelling === undefined
+      ? {}
+      : {
+          wrapper: ({ children }) => (
+            <SpellingContext value={spelling}>{children}</SpellingContext>
+          ),
+        },
   );
   return {
     onFleetSizeChange,
@@ -251,38 +270,34 @@ describe("StartScreen", () => {
     ).toEqual(["5", "4", "3"]);
   });
 
-  it("renders the seven option groups in order: Node playstyle, Ships, Charged nodes, Scoring, Planet bonus, Rounds, Clock, with no Player-matching nodes group, under a non-steal playstyle", () => {
+  it("renders the seven option groups in order: Node playstyle, Ships, Charged nodes, Node scoring, Planet bonus, Rounds, Clock, with no Player-matching nodes group, under a non-steal playstyle", () => {
     renderStartScreen({ nodePlaystyle: "planet" });
 
     const groups = screen.getAllByRole("group");
-    expect(
-      groups.map((group) => group.querySelector("legend")?.textContent ?? ""),
-    ).toEqual([
+    expect(groups.map(groupTitle)).toEqual([
       "Node playstyle",
       "Ships",
       "Charged nodes",
-      "Scoring",
+      "Node scoring",
       "Planet bonus",
       "Rounds",
-      "Clock (time per move)",
+      "Clock (time per turn)",
     ]);
   });
 
-  it("renders eight option groups under STEAL, with Player-matching nodes between Charged nodes and Scoring, and Planet resources in Planet bonus's place", () => {
+  it("renders eight option groups under STEAL, with Player-matching nodes between Charged nodes and Node scoring, and Planet effects in Planet bonus's place", () => {
     renderStartScreen({ nodePlaystyle: "steal" });
 
     const groups = screen.getAllByRole("group");
-    expect(
-      groups.map((group) => group.querySelector("legend")?.textContent ?? ""),
-    ).toEqual([
+    expect(groups.map(groupTitle)).toEqual([
       "Node playstyle",
       "Ships",
       "Charged nodes",
       "Player-matching nodes",
-      "Scoring",
-      "Planet resources",
+      "Node scoring",
+      "Planet effects",
       "Rounds",
-      "Clock (time per move)",
+      "Clock (time per turn)",
     ]);
   });
 
@@ -363,7 +378,7 @@ describe("StartScreen", () => {
   it("renders the scoring group with both labels and the given one checked", () => {
     renderStartScreen({ scoring: "bonus" });
 
-    const group = screen.getByRole("group", { name: "Scoring" });
+    const group = screen.getByRole("group", { name: "Node scoring" });
     for (const value of SCORING_SETTINGS) {
       const radio = within(group).getByRole("radio", {
         name: SCORING_SETTING_LABELS[value],
@@ -379,7 +394,7 @@ describe("StartScreen", () => {
   it("checks BONUS by default, with the radios in order SIMPLE then BONUS", () => {
     renderStartScreen();
 
-    const group = screen.getByRole("group", { name: "Scoring" });
+    const group = screen.getByRole("group", { name: "Node scoring" });
     expect(within(group).getByRole("radio", { name: "BONUS" })).toBeChecked();
     expect(
       within(group)
@@ -399,7 +414,7 @@ describe("StartScreen", () => {
       onPlay,
     } = renderStartScreen({ scoring: "simple" });
 
-    const group = screen.getByRole("group", { name: "Scoring" });
+    const group = screen.getByRole("group", { name: "Node scoring" });
     await user.click(within(group).getByRole("radio", { name: "BONUS" }));
 
     expect(onScoringChange).toHaveBeenCalledExactlyOnceWith("bonus");
@@ -414,7 +429,7 @@ describe("StartScreen", () => {
     const user = userEvent.setup();
     const { onScoringChange } = renderStartScreen({ scoring: "bonus" });
 
-    const group = screen.getByRole("group", { name: "Scoring" });
+    const group = screen.getByRole("group", { name: "Node scoring" });
     await user.click(within(group).getByRole("radio", { name: "SIMPLE" }));
 
     expect(onScoringChange).toHaveBeenCalledExactlyOnceWith("simple");
@@ -448,7 +463,7 @@ describe("StartScreen", () => {
     ).toEqual(["off", "two", "three"]);
   });
 
-  it("renders the planet bonus group, offering OFF, 2 POINTS, 3 POINTS in order, and no planet resources group, under each non-steal playstyle", () => {
+  it("renders the planet bonus group, offering OFF, 2 POINTS, 3 POINTS in order, and no planet effects group, under each non-steal playstyle", () => {
     for (const nodePlaystyle of [
       "continuous",
       "planet",
@@ -468,17 +483,17 @@ describe("StartScreen", () => {
           .map((radio) => (radio as HTMLInputElement).labels?.[0]?.textContent),
       ).toEqual(["OFF", "2 POINTS", "3 POINTS"]);
       expect(
-        screen.queryByRole("group", { name: "Planet resources" }),
+        screen.queryByRole("group", { name: "Planet effects" }),
       ).not.toBeInTheDocument();
 
       cleanup();
     }
   });
 
-  it("renders the planet resources group under STEAL, offering OFF, STABLE, RACE in order, and no planet bonus group", () => {
+  it("renders the planet effects group under STEAL, offering OFF, STABLE, RACE in order, and no planet bonus group", () => {
     renderStartScreen({ nodePlaystyle: "steal" });
 
-    const group = screen.getByRole("group", { name: "Planet resources" });
+    const group = screen.getByRole("group", { name: "Planet effects" });
     expect(
       within(group)
         .getAllByRole("radio")
@@ -503,17 +518,17 @@ describe("StartScreen", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("checks RACE by default in the planet resources group under the default STEAL", () => {
+  it("checks RACE by default in the planet effects group under the default STEAL", () => {
     renderStartScreen();
 
-    const group = screen.getByRole("group", { name: "Planet resources" });
+    const group = screen.getByRole("group", { name: "Planet effects" });
     expect(within(group).getByRole("radio", { name: "RACE" })).toBeChecked();
   });
 
   it("checks RACE when chosen under STEAL", () => {
     renderStartScreen({ nodePlaystyle: "steal", planetActivity: "race" });
 
-    const group = screen.getByRole("group", { name: "Planet resources" });
+    const group = screen.getByRole("group", { name: "Planet effects" });
     expect(within(group).getByRole("radio", { name: "RACE" })).toBeChecked();
     expect(within(group).getByRole("radio", { name: "OFF" })).not.toBeChecked();
   });
@@ -521,7 +536,7 @@ describe("StartScreen", () => {
   it("checks STABLE when chosen under STEAL", () => {
     renderStartScreen({ nodePlaystyle: "steal", planetActivity: "stable" });
 
-    const group = screen.getByRole("group", { name: "Planet resources" });
+    const group = screen.getByRole("group", { name: "Planet effects" });
     expect(within(group).getByRole("radio", { name: "STABLE" })).toBeChecked();
     expect(
       within(group).getByRole("radio", { name: "RACE" }),
@@ -529,26 +544,26 @@ describe("StartScreen", () => {
     expect(within(group).getByRole("radio", { name: "OFF" })).not.toBeChecked();
   });
 
-  it("calls the planet resources change handler with stable when STABLE is chosen", async () => {
+  it("calls the planet effects change handler with stable when STABLE is chosen", async () => {
     const user = userEvent.setup();
     const { onPlanetActivityChange, onPlanetBonusChange } = renderStartScreen({
       nodePlaystyle: "steal",
       planetActivity: "off",
     });
 
-    const group = screen.getByRole("group", { name: "Planet resources" });
+    const group = screen.getByRole("group", { name: "Planet effects" });
     await user.click(within(group).getByRole("radio", { name: "STABLE" }));
 
     expect(onPlanetActivityChange).toHaveBeenCalledExactlyOnceWith("stable");
     expect(onPlanetBonusChange).not.toHaveBeenCalled();
   });
 
-  it("calls the planet resources change handler with race when RACE is chosen, and not the planet bonus handler", async () => {
+  it("calls the planet effects change handler with race when RACE is chosen, and not the planet bonus handler", async () => {
     const user = userEvent.setup();
     const { onPlanetActivityChange, onPlanetBonusChange, onPlay } =
       renderStartScreen({ nodePlaystyle: "steal", planetActivity: "off" });
 
-    const group = screen.getByRole("group", { name: "Planet resources" });
+    const group = screen.getByRole("group", { name: "Planet effects" });
     await user.click(within(group).getByRole("radio", { name: "RACE" }));
 
     expect(onPlanetActivityChange).toHaveBeenCalledExactlyOnceWith("race");
@@ -672,7 +687,7 @@ describe("StartScreen", () => {
     renderStartScreen({ clockSetting: 4 });
 
     const group = screen.getByRole("group", {
-      name: "Clock (time per move)",
+      name: "Clock (time per turn)",
     });
     for (const value of CLOCK_SETTINGS) {
       const radio = within(group).getByRole("radio", {
@@ -837,5 +852,239 @@ describe("StartScreen", () => {
     expect(onLengthInRoundsChange).not.toHaveBeenCalled();
     expect(onClockSettingChange).not.toHaveBeenCalled();
     expect(onPlay).not.toHaveBeenCalled();
+  });
+});
+
+/** The question mark beside the group titled `title`. */
+function tipButton(title: string): HTMLElement {
+  return screen.getByRole("button", { name: `About ${title}` });
+}
+
+/** The tip a question mark opens and closes. */
+function tipOf(button: HTMLElement): HTMLElement {
+  const tip = document.getElementById(
+    button.getAttribute("aria-controls") ?? "",
+  );
+  if (tip === null) {
+    throw new Error("the question mark controls no tip");
+  }
+  return tip;
+}
+
+describe("StartScreen tips", () => {
+  it.each<NodePlaystyle>(["planet", "steal"])(
+    "gives every rendered group a question mark named after its title, and nothing else one, under %s",
+    (nodePlaystyle) => {
+      renderStartScreen({ nodePlaystyle });
+
+      const groups = screen.getAllByRole("group");
+      for (const group of groups) {
+        expect(
+          within(group).getByRole("button", {
+            name: `About ${groupTitle(group)}`,
+          }),
+        ).toBeInTheDocument();
+      }
+      expect(screen.getAllByRole("button", { name: /^About / })).toHaveLength(
+        groups.length,
+      );
+    },
+  );
+
+  it("shows no question mark for a group its playstyle hides", () => {
+    for (const nodePlaystyle of [
+      "continuous",
+      "planet",
+      "dedicated",
+    ] as const) {
+      renderStartScreen({ nodePlaystyle });
+
+      expect(
+        screen.queryByRole("button", { name: "About Player-matching nodes" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "About Planet effects" }),
+      ).not.toBeInTheDocument();
+      expect(tipButton("Planet bonus")).toBeInTheDocument();
+
+      cleanup();
+    }
+
+    renderStartScreen({ nodePlaystyle: "steal" });
+
+    expect(
+      screen.queryByRole("button", { name: "About Planet bonus" }),
+    ).not.toBeInTheDocument();
+    expect(tipButton("Player-matching nodes")).toBeInTheDocument();
+    expect(tipButton("Planet effects")).toBeInTheDocument();
+  });
+
+  it("keeps every tip closed until its question mark is pressed", () => {
+    renderStartScreen();
+
+    for (const button of screen.getAllByRole("button", { name: /^About / })) {
+      expect(button).toHaveAttribute("aria-expanded", "false");
+      expect(tipOf(button)).not.toBeVisible();
+    }
+  });
+
+  it("opens a group's tip when its question mark is pressed, and closes it when pressed again", async () => {
+    const user = userEvent.setup();
+    renderStartScreen();
+
+    const button = tipButton("Node scoring");
+    await user.click(button);
+
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    expect(tipOf(button)).toBeVisible();
+    const tip = tipOf(button);
+    expect(within(tip).getByRole("paragraph")).toHaveTextContent(
+      "How nodes score at the end of each turn:",
+    );
+    expect(
+      within(tip)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual([
+      "SIMPLE: One point for each node you hold.",
+      "BONUS: Each extra node you hold is worth one more than the last: " +
+        "1, 3, 6, 10 or 15 points for one to five nodes.",
+    ]);
+
+    await user.click(button);
+
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(tipOf(button)).not.toBeVisible();
+  });
+
+  it("switches to another group's tip when its question mark is pressed, so only one is open", async () => {
+    const user = userEvent.setup();
+    renderStartScreen();
+
+    const ships = tipButton("Ships");
+    const rounds = tipButton("Rounds");
+    await user.click(ships);
+    await user.click(rounds);
+
+    expect(ships).toHaveAttribute("aria-expanded", "false");
+    expect(tipOf(ships)).not.toBeVisible();
+    expect(rounds).toHaveAttribute("aria-expanded", "true");
+    expect(tipOf(rounds)).toBeVisible();
+    expect(
+      screen
+        .getAllByRole("button", { name: /^About / })
+        .filter((button) => button.getAttribute("aria-expanded") === "true"),
+    ).toEqual([rounds]);
+  });
+
+  it("closes the open tip when a title is pressed", async () => {
+    const user = userEvent.setup();
+    renderStartScreen();
+
+    const button = tipButton("Charged nodes");
+    await user.click(button);
+    await user.click(screen.getByText("Ships"));
+
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(tipOf(button)).not.toBeVisible();
+  });
+
+  it("closes the open tip when the tip itself is pressed", async () => {
+    const user = userEvent.setup();
+    renderStartScreen();
+
+    const button = tipButton("Clock (time per turn)");
+    await user.click(button);
+    await user.click(tipOf(button));
+
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(tipOf(button)).not.toBeVisible();
+  });
+
+  it("closes the open tip on Escape", async () => {
+    const user = userEvent.setup();
+    renderStartScreen();
+
+    const button = tipButton("Node playstyle");
+    await user.click(button);
+    await user.keyboard("{Escape}");
+
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(tipOf(button)).not.toBeVisible();
+  });
+
+  it("closes the open tip when focus moves on, by keyboard", async () => {
+    const user = userEvent.setup();
+    renderStartScreen();
+
+    const button = tipButton("Node playstyle");
+    await user.click(button);
+    await user.tab();
+
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(tipOf(button)).not.toBeVisible();
+  });
+
+  it("closes the open tip and still selects a choice pressed in another group", async () => {
+    const user = userEvent.setup();
+    const { onFleetSizeChange } = renderStartScreen({ fleetSize: 5 });
+
+    const button = tipButton("Rounds");
+    await user.click(button);
+    const shipsGroup = screen.getByRole("group", { name: "Ships" });
+    await user.click(within(shipsGroup).getByRole("radio", { name: "3" }));
+
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(onFleetSizeChange).toHaveBeenCalledExactlyOnceWith(3);
+  });
+
+  it("changes no option when tips are opened, switched and closed", async () => {
+    const user = userEvent.setup();
+    const handlers = renderStartScreen({ nodePlaystyle: "steal" });
+
+    for (const button of screen.getAllByRole("button", { name: /^About / })) {
+      await user.click(button);
+      await user.click(tipOf(button));
+      await user.click(button);
+    }
+    await user.keyboard("{Escape}");
+
+    for (const handler of Object.values(handlers)) {
+      expect(handler).not.toHaveBeenCalled();
+    }
+  });
+
+  it.each<NodePlaystyle>(["planet", "steal"])(
+    "names in each tip only choices its group offers, under %s",
+    (nodePlaystyle) => {
+      renderStartScreen({ nodePlaystyle });
+
+      for (const group of screen.getAllByRole("group")) {
+        const labels = within(group)
+          .getAllByRole("radio")
+          .map((radio) => (radio as HTMLInputElement).labels?.[0]?.textContent);
+        const tip = tipOf(
+          within(group).getByRole("button", { name: /^About / }),
+        );
+        for (const name of tip.querySelectorAll("strong")) {
+          expect(labels).toContain(name.textContent?.replace(/:$/, ""));
+        }
+      }
+    },
+  );
+
+  it("spells the player-matching nodes tip in international spelling by default", () => {
+    renderStartScreen({ nodePlaystyle: "steal" });
+
+    const tip = tipOf(tipButton("Player-matching nodes"));
+    expect(tip).toHaveTextContent("in their own colour,");
+  });
+
+  it("spells the player-matching nodes tip in American spelling under an American provider", () => {
+    renderStartScreen({ nodePlaystyle: "steal", spelling: "american" });
+
+    const tip = tipOf(tipButton("Player-matching nodes"));
+    expect(tip).toHaveTextContent("in their own color,");
+    expect(tip).not.toHaveTextContent("colour");
   });
 });

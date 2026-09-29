@@ -662,7 +662,7 @@ describe("startingGameState under steal (steal.md §7)", () => {
     expect(third.nodes).not.toEqual(first.nodes);
   });
 
-  it("consumes exactly 2N seed steps for the deal, leaving the planet resources deal to run afterwards unchanged", () => {
+  it("consumes exactly 2N seed steps for the deal, leaving the planet effects deal to run afterwards unchanged", () => {
     const withoutBonus = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
@@ -715,7 +715,7 @@ describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §1
   });
 
   it.each(["RACE", "STABLE", "advanced", "two", "on", ""])(
-    "throws a RangeError for a planet resources setting of %j",
+    "throws a RangeError for a planet effects setting of %j",
     (planetActivity) => {
       expect(() =>
         startingGameState(SEED, { nodePlaystyle: "steal", planetActivity }),
@@ -752,7 +752,7 @@ describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §1
 });
 
 describe("startingGameState's activityBonuses field (steal.md §10)", () => {
-  it("is empty with planet resources off under steal, whose seed consumption is unaffected", () => {
+  it("is empty with planet effects off under steal, whose seed consumption is unaffected", () => {
     const withOff = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
@@ -799,7 +799,7 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
     expect(state.bonusPlanets).toEqual({ green: [], red: [] });
   });
 
-  it("consumes exactly four seed steps more than the same seed with planet resources off, leaving the nodes and ships unaffected", () => {
+  it("consumes exactly four seed steps more than the same seed with planet effects off, leaving the nodes and ships unaffected", () => {
     const withoutActivity = startingGameState(SEED, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
@@ -970,7 +970,7 @@ describe("startingGameState's playerMatching field (steal.md §9)", () => {
 });
 
 describe("startingGameState's defaults, resolved for the chosen node playstyle", () => {
-  it("starts steal, with player-matching required, planet resources race and planet bonus off, when no option is given", () => {
+  it("starts steal, with player-matching required, planet effects race and planet bonus off, when no option is given", () => {
     const state = startingGameState(SEED);
 
     expect(state.nodePlaystyle).toBe("steal");
@@ -981,7 +981,7 @@ describe("startingGameState's defaults, resolved for the chosen node playstyle",
   });
 
   it.each(["continuous", "planet", "dedicated"] as const)(
-    "starts %s with player-matching off, planet resources off and planet bonus off when only the playstyle is given",
+    "starts %s with player-matching off, planet effects off and planet bonus off when only the playstyle is given",
     (nodePlaystyle) => {
       const state = startingGameState(SEED, { nodePlaystyle });
 

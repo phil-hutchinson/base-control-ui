@@ -371,7 +371,7 @@ describe("PlanetBonusPanel", () => {
     expect(glowing).toHaveLength(2);
   });
 
-  describe("under planet resources (steal.md §10)", () => {
+  describe("under planet effects (steal.md §10)", () => {
     function withActivityBonuses(
       first: readonly [Square, ActivityBonusKind],
       second: readonly [Square, ActivityBonusKind],
@@ -579,7 +579,7 @@ describe("PlanetBonusPanel", () => {
       ]);
     });
 
-    it("reports the hovered square entering a planet resources cell, and undefined leaving it", () => {
+    it("reports the hovered square entering a planet effects cell, and undefined leaving it", () => {
       const state = withActivityBonuses(
         [PLANETS[0], "large-points"],
         [PLANETS[1], "fuel"],
@@ -600,7 +600,7 @@ describe("PlanetBonusPanel", () => {
       expect(onHoverSquare).toHaveBeenLastCalledWith(undefined);
     });
 
-    it("ignores a touch tap on a planet resources cell, so no glow sticks after the tap", () => {
+    it("ignores a touch tap on a planet effects cell, so no glow sticks after the tap", () => {
       const state = withActivityBonuses(
         [PLANETS[0], "large-points"],
         [PLANETS[1], "fuel"],

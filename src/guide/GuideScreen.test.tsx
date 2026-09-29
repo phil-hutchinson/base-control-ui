@@ -8,6 +8,7 @@ import {
   GUIDE_SECTIONS,
   GUIDE_TITLE,
 } from "./guideCopy";
+import { SpellingContext } from "../spelling/spellingContext";
 import { GuideScreen } from "./GuideScreen";
 
 afterEach(cleanup);
@@ -138,22 +139,22 @@ describe("GuideScreen", () => {
     ).toHaveLength(0);
   });
 
-  it("pairs PLANET RESOURCES, last in the story's order, with a diagram of two bonuses", () => {
+  it("pairs PLANET EFFECTS, last in the story's order, with a diagram of two bonuses", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     const headings = screen
       .getAllByRole("heading", { level: 2 })
       .map((heading) => heading.textContent);
     const planetBonusIndex = headings.indexOf("PLANET BONUS");
-    const planetActivityIndex = headings.indexOf("PLANET RESOURCES");
+    const planetActivityIndex = headings.indexOf("PLANET EFFECTS");
     expect(planetActivityIndex).toBe(planetBonusIndex + 1);
     expect(GUIDE_SECTIONS[GUIDE_SECTIONS.length - 1].heading).toBe(
-      "PLANET RESOURCES",
+      "PLANET EFFECTS",
     );
 
     const heading = screen.getByRole("heading", {
       level: 2,
-      name: "PLANET RESOURCES",
+      name: "PLANET EFFECTS",
     });
     const section = heading.closest("section");
     expect(section).not.toBeNull();
@@ -188,6 +189,30 @@ describe("GuideScreen", () => {
 
     await user.click(backButtons[1]);
     expect(onBack).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses international spelling when no spelling is provided", () => {
+    const { container } = render(<GuideScreen onBack={vi.fn()} />);
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "REFUELLING" }),
+    ).toBeInTheDocument();
+    expect(container.textContent).toMatch(/\bcolour\b/);
+    expect(container.textContent).not.toMatch(/\bcolor\b/);
+  });
+
+  it("uses American spelling inside an American spelling provider", () => {
+    const { container } = render(
+      <SpellingContext value="american">
+        <GuideScreen onBack={vi.fn()} />
+      </SpellingContext>,
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "REFUELING" }),
+    ).toBeInTheDocument();
+    expect(container.textContent).toMatch(/\bcolor\b/);
+    expect(container.textContent).not.toMatch(/\bcolour\b/);
   });
 
   it("is not the board and not the start screen: no grid, gridcell or radio", () => {

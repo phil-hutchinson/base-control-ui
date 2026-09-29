@@ -22,13 +22,13 @@ describe("guideCopy", () => {
   it("has the eight headed sections in the story's order", () => {
     expect(GUIDE_SECTIONS.map((section) => section.heading)).toEqual([
       "MOVEMENT",
-      "REFUELING",
+      "REFUELLING",
       "NODE LIFECYCLE",
       "NEW CHARGED NODE SELECTION",
       "STEALING NODES",
       "PLAYER-MATCHING NODES",
       "PLANET BONUS",
-      "PLANET RESOURCES",
+      "PLANET EFFECTS",
     ]);
   });
 
@@ -102,7 +102,7 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the planet bonus paragraph, scoped to the other playstyles, before planet resources", () => {
+  it("has the planet bonus paragraph, scoped to the other playstyles, before planet effects", () => {
     expect(GUIDE_SECTIONS[6].paragraph).toBe(
       "Under the Continuous, Planet and Dedicated playstyles, when the " +
         "planet bonus option is on, each player is given three planets " +
@@ -113,11 +113,11 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the planet resources paragraph, last in the story's order, covering Stable and Race", () => {
+  it("has the planet effects paragraph, last in the story's order, covering Stable and Race", () => {
     expect(GUIDE_SECTIONS[7].id).toBe("planetActivity");
-    expect(GUIDE_SECTIONS[7].heading).toBe("PLANET RESOURCES");
+    expect(GUIDE_SECTIONS[7].heading).toBe("PLANET EFFECTS");
     expect(GUIDE_SECTIONS[7].paragraph).toBe(
-      "Under the Steal playstyle, the planet resources option puts two " +
+      "Under the Steal playstyle, the planet effects option puts two " +
         "bonuses on the board instead, on two planets shown above the " +
         "clocks. Either player can claim one by landing a spaceship " +
         "there. A bonus that is taken is always replaced by a new one " +

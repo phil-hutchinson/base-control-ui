@@ -21,7 +21,7 @@
 // one of the landing side's unclaimed three (§3.4); under steal, planet
 // resources (steal.md §10) instead claims one of the board's two contested bonuses if
 // the planet carries one, whoever's landing it is. A fight's two landings are
-// each checked in turn, attacker's first, and under planet resources the
+// each checked in turn, attacker's first, and under planet effects the
 // attacker's claim resolves in full — including the bonus pair it leaves behind — before
 // the defender's own return planet is even drawn (steal.md §10, `applyAttack`
 // below). A turn is one move or one attack (§5), so every move and every
@@ -192,7 +192,7 @@ export interface PlanetBonusClaimedEffect {
 
 /**
  * A ship's landing claimed one of the board's two contested bonuses under
- * planet resources (steal.md §10): `side` is the claiming side,
+ * planet effects (steal.md §10): `side` is the claiming side,
  * `square` the planet landed on and `kind` the bonus claimed there.
  * `pointsAwarded` is the energy a points kind paid (0 for every other kind);
  * `poweredShipIds` names every one of `side`'s ships a Fuel claim raised by a
@@ -510,7 +510,7 @@ function rotateForLanding(
  * Pays a classic planet bonus if `square` triggers one for `side` landing
  * there (rules.md §3.4), modelled on `rotateForLanding` above: does nothing
  * at all — returning `state` unchanged — when the planet bonus setting is
- * off (always the case under steal, whose planet resources claims are a
+ * off (always the case under steal, whose planet effects claims are a
  * separate path — steal.md §10),
  * when `square` is not one of `side`'s three dealt planets, or when
  * `side` has already claimed it. Otherwise it does two things at once:
@@ -561,7 +561,7 @@ function claimPlanetBonus(
 /**
  * Claims one of the two activity bonuses if `square` carries one (steal.md
  * §10), modelled on `claimPlanetBonus` above: does nothing at all —
- * returning `state` unchanged — when the planet resources setting is off, or
+ * returning `state` unchanged — when the planet effects setting is off, or
  * when `square` is neither of the board's two current bonus planets.
  * Otherwise `resolveActivityBonusClaim` applies the claimed kind's own
  * effect, redraws the surviving bonus's kind (under race only) and deals a
@@ -636,7 +636,7 @@ function claimActivityBonus(
  * sequence (rules.md §3.1, §4.1), like any other planet stay — but it may
  * gain energy on arrival, if `destination` is one of the moving side's
  * unclaimed bonus planets (rules.md §3.4, `claimPlanetBonus` below) or, under
- * the planet resources setting, one of the board's two current activity bonus
+ * the planet effects setting, one of the board's two current activity bonus
  * planets (steal.md §10, `claimActivityBonus` below) — the two settings are
  * mutually exclusive, so only one of the two ever fires.
  *
@@ -898,7 +898,7 @@ function placeOnPlanet(
  * attacker's must be exactly `before`'s power less `cost` — the shape it
  * struck down (rules.md §6, §7).
  *
- * Under planet resources (steal.md §10), a landing's claim can legitimately
+ * Under planet effects (steal.md §10), a landing's claim can legitimately
  * change power (Fuel) and the node map (Additional nodes, Node scramble)
  * — the very things the power and node checks below exist to protect against
  * a fight touching. `before.planetActivity` decides this once: when it is on,
@@ -960,11 +960,11 @@ export function assertFightInvariants(
           `returned ship "${ship.id}" ended on planet "${updatedName}", which held a ship before the fight: rules.md §7.1 draws only from planets empty at the moment`,
         );
       }
-      // Under planet resources, a landing's claim (steal.md §10) can
+      // Under planet effects, a landing's claim (steal.md §10) can
       // legitimately raise either fighter's power by exactly one (Fuel) — no
       // other kind touches power, and Fuel never raises a ship already at the
       // maximum — so the gap between the expected and the actual power is 0
-      // with planet resources off, and 0 or 1 with it on.
+      // with planet effects off, and 0 or 1 with it on.
       const isAttacker = ship.id === attackerShipId;
       const expectedPower = isAttacker ? ship.power - cost : ship.power;
       const powerGap = updated.power - expectedPower;
@@ -1121,7 +1121,7 @@ export function applyAttack(
   // Captured once, ahead of either fighter's rotation, so a node that charges
   // later in this same ply is reported at the priority a player last saw it
   // holding. Only a classic setting ever rotates a fight's landing — the
-  // planet resources setting is steal-only, and steal never rotates one — and
+  // planet effects setting is steal-only, and steal never rotates one — and
   // neither classic claim touches a node, so the snapshot is the same whether
   // it is read now or once both ships have landed.
   const priorityBeforeLanding = snapshotInactivePriorities(

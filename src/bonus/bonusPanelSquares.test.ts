@@ -28,7 +28,7 @@ describe("bonusPanelSquareNames", () => {
     expect(names).toEqual(expected);
   });
 
-  it("names exactly the two current bonus squares under planet resources", () => {
+  it("names exactly the two current bonus squares under planet effects", () => {
     const state = startingGameState(SEED, {
       nodePlaystyle: "steal",
       planetActivity: "race",

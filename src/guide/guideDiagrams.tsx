@@ -8,10 +8,10 @@
 // rather than typed in by hand. NEW CHARGED NODE SELECTION carries two of
 // these — the rotation diagram every setting shares, and a second, a bare
 // square holding a rotator, for the dedicated setting alone. PLANET BONUS
-// and PLANET RESOURCES are the exceptions to "built from `BoardSquare`s":
+// and PLANET EFFECTS are the exceptions to "built from `BoardSquare`s":
 // their cells are `PlanetBonusCell` and `ActivityBonusCell`, the same cells
 // `PlanetBonusPanel` draws, so the guide's checkmark and symbols can never
-// drift from the panel's own. The PLANET RESOURCES section's `+N` amount is
+// drift from the panel's own. The PLANET EFFECTS section's `+N` amount is
 // read from the point lookup at the app's own default settings, never typed
 // in by hand.
 
@@ -376,7 +376,7 @@ export function PlanetBonusDiagram() {
 }
 
 /**
- * Diagram 10: the PLANET RESOURCES panel (steal.md §10) at a glance —
+ * Diagram 10: the PLANET EFFECTS panel (steal.md §10) at a glance —
  * a Large points bonus beside a Node scramble bonus, drawn with the same
  * `ActivityBonusCell` the panel itself draws, at the app's own default
  * settings (its `+N` comes from the point lookup, never typed in) and so in

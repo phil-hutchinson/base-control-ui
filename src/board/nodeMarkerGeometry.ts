@@ -1,6 +1,6 @@
 // The inactive/prospective ring geometry `NodeMarker.tsx` draws with, pulled
 // into its own module because a component file may only export components
-// (`react-refresh/only-export-components`). Also used by the planet resources
+// (`react-refresh/only-export-components`). Also used by the planet effects
 // planet bonus panel's Additional nodes symbol (steal.md §10,
 // `src/bonus/AdditionalNodesSymbol.tsx`), which draws the same three rings
 // in three different colours rather than one node's own single colour.

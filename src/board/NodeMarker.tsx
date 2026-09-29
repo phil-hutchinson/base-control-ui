@@ -129,7 +129,7 @@ function middleStopOffsetPercent(
 }
 
 // Ring radii and stroke width live in `nodeMarkerGeometry.ts`, shared with
-// the planet resources panel's Additional nodes symbol.
+// the planet effects panel's Additional nodes symbol.
 
 // The charge animation's round mask, at its smallest, in the marker's own
 // 0-100 units - about the size of the charged gradient's gold core. A

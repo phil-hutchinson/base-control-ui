@@ -82,6 +82,14 @@ function shipCells() {
   return screen.getAllByRole("gridcell", { name: /ship, power \d of 6$/ });
 }
 
+/** An option group's title: the text of the element that names it. */
+function groupTitle(group: HTMLElement): string {
+  const titleId = group.getAttribute("aria-labelledby");
+  return titleId === null
+    ? ""
+    : (document.getElementById(titleId)?.textContent ?? "");
+}
+
 /**
  * The start screen's option groups. Every radio query goes through one of
  * these: with Ships offering 6, 5, 4, 3 and Charged nodes offering 5, 4, 3,
@@ -92,7 +100,7 @@ function roundsGroup() {
 }
 
 function scoringGroup() {
-  return screen.getByRole("group", { name: "Scoring" });
+  return screen.getByRole("group", { name: "Node scoring" });
 }
 
 function nodePlaystyleGroup() {
@@ -104,7 +112,7 @@ function planetBonusGroup() {
 }
 
 function planetActivityGroup() {
-  return screen.getByRole("group", { name: "Planet resources" });
+  return screen.getByRole("group", { name: "Planet effects" });
 }
 
 function playerMatchingGroup() {
@@ -112,7 +120,7 @@ function playerMatchingGroup() {
 }
 
 function clockGroup() {
-  return screen.getByRole("group", { name: "Clock (time per move)" });
+  return screen.getByRole("group", { name: "Clock (time per turn)" });
 }
 
 async function pressPlay() {
@@ -166,21 +174,19 @@ describe("App", () => {
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
   });
 
-  it("renders the eight option groups in order under the default STEAL: Node playstyle, Ships, Charged nodes, Player-matching nodes, Scoring, Planet resources, Rounds, Clock", () => {
+  it("renders the eight option groups in order under the default STEAL: Node playstyle, Ships, Charged nodes, Player-matching nodes, Node scoring, Planet effects, Rounds, Clock", () => {
     render(<App />);
 
     const groups = screen.getAllByRole("group");
-    expect(
-      groups.map((group) => group.querySelector("legend")?.textContent ?? ""),
-    ).toEqual([
+    expect(groups.map(groupTitle)).toEqual([
       "Node playstyle",
       "Ships",
       "Charged nodes",
       "Player-matching nodes",
-      "Scoring",
-      "Planet resources",
+      "Node scoring",
+      "Planet effects",
       "Rounds",
-      "Clock (time per move)",
+      "Clock (time per turn)",
     ]);
   });
 
@@ -891,7 +897,7 @@ describe("App", () => {
     ).toBeChecked();
   });
 
-  it("shows Planet resources in place of Planet bonus under STEAL, and each group remembers its own choice across switches", async () => {
+  it("shows Planet effects in place of Planet bonus under STEAL, and each group remembers its own choice across switches", async () => {
     const user = userEvent.setup();
     render(<App />);
 
@@ -906,7 +912,7 @@ describe("App", () => {
       within(nodePlaystyleGroup()).getByRole("radio", { name: "PLANET" }),
     );
     expect(
-      screen.queryByRole("group", { name: "Planet resources" }),
+      screen.queryByRole("group", { name: "Planet effects" }),
     ).not.toBeInTheDocument();
     await user.click(
       within(planetBonusGroup()).getByRole("radio", { name: "3 POINTS" }),

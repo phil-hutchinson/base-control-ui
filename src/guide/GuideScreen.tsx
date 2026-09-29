@@ -24,6 +24,8 @@ import {
   ScoringDiagram,
   StealingNodesDiagram,
 } from "./guideDiagrams";
+import { respell } from "../spelling/spelling";
+import { useSpelling } from "../spelling/spellingContext";
 import "./GuideScreen.css";
 
 /**
@@ -60,29 +62,34 @@ interface GuideScreenProps {
  * The Quick Guide: the intro paragraph and scoring diagram, then the eight
  * headed sections, each a heading, its paragraph and its diagram — NEW
  * CHARGED NODE SELECTION also carries the three rotation setting lines and a
- * second, trailing diagram. `onBack` is called by either Back button and
- * otherwise means nothing to this component — it holds no state of its own.
+ * second, trailing diagram. All copy is shown in the spelling in force.
+ * `onBack` is called by either Back button and otherwise means nothing to
+ * this component — it holds no state of its own.
  */
 export function GuideScreen({ onBack }: GuideScreenProps) {
+  const spelling = useSpelling();
+  const spelt = (text: string) => respell(text, spelling);
   return (
     <div className="guide-screen">
       <button type="button" className="guide-screen__back" onClick={onBack}>
         Back
       </button>
-      <h1 className="guide-screen__title">{GUIDE_TITLE}</h1>
-      <p className="guide-screen__paragraph">{GUIDE_INTRO_PARAGRAPH}</p>
+      <h1 className="guide-screen__title">{spelt(GUIDE_TITLE)}</h1>
+      <p className="guide-screen__paragraph">{spelt(GUIDE_INTRO_PARAGRAPH)}</p>
       <ScoringDiagram />
       {GUIDE_SECTIONS.map((section) => {
         const Diagram = SECTION_DIAGRAMS[section.id];
         const TrailingDiagram = TRAILING_DIAGRAMS[section.id];
         return (
           <section key={section.heading} className="guide-screen__section">
-            <h2 className="guide-screen__heading">{section.heading}</h2>
-            <p className="guide-screen__paragraph">{section.paragraph}</p>
+            <h2 className="guide-screen__heading">{spelt(section.heading)}</h2>
+            <p className="guide-screen__paragraph">
+              {spelt(section.paragraph)}
+            </p>
             <Diagram />
             {section.settingLines?.map((line) => (
               <p key={line.label} className="guide-screen__paragraph">
-                <em>{line.label}</em>: {line.text}
+                <em>{spelt(line.label)}</em>: {spelt(line.text)}
               </p>
             ))}
             {TrailingDiagram && <TrailingDiagram />}

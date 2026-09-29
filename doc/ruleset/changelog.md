@@ -7,6 +7,19 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.44 — planet effects and node scoring: two settings renamed
+
+This is a wording change only — nothing about how the game is played
+changes — and so is not a tag candidate (tagging stays on hold regardless;
+see the project's contribution notes).
+
+- **Planet resources is renamed planet effects**, wherever the setting is
+  named: rules.md §1, §3.1, §3.4 (its heading and body), §4.1, §7.1, §8.4,
+  §8.6 and §10, and steal.md §2, §3, §4, §9 and §10 (its heading and body).
+- **Scoring is renamed node scoring**, where the setting is named: rules.md
+  §8.4 and §10, and steal.md §9 and §10. "Simple scoring" and "bonus
+  scoring", which describe how the choices pay, are unchanged.
+
 ## 0.43 — planet resources: needs-based Fuel, and Node scramble shuffles in place
 
 This is a gameplay change — Fuel turns up when fleets are running low, and
