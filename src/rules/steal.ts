@@ -286,18 +286,17 @@ export interface AbandonNodeResult {
 }
 
 /**
- * Abandons `signal`'s node by vacating its charged square at
- * `vacatedSquare`, without landing on that node's own prospective square
- * (steal.md §4): the vacated square becomes ordinary board, and a second
- * prospective square is drawn, anchored per `nodeAnchor` on the prospective
- * square or squares the node already has (the nearest counting), weighted
- * against every other signal's current squares (`drawStealProspectiveSquare`,
- * steal.md §6). A node carrying an extra (steal.md §10) still carries it, so
- * it ends Open with three prospective squares. `shipSquares` is the board's
- * ship squares as they
- * stand once the abandoning move has resolved. Exactly one seed step. Never
- * called for a ship relocating onto its own node's prospective square —
- * that is a claim alone (steal.md §5).
+ * Abandons `signal`'s node by vacating its charged square at `vacatedSquare`,
+ * without landing on that node's own prospective square (steal.md §4): the
+ * vacated square becomes ordinary board, and a second prospective square is
+ * drawn, anchored per `nodeAnchor` on the prospective square or squares the
+ * node already has (the nearest counting), weighted against every other
+ * signal's current squares (`drawStealProspectiveSquare`, steal.md §6). A node
+ * carrying an extra (steal.md §10) still carries it, so it ends Open with three
+ * prospective squares. `shipSquares` is the board's ship squares as they stand
+ * once the abandoning move has resolved. Exactly one seed step. Never called
+ * for a ship relocating onto its own node's prospective square — that is a
+ * claim alone (steal.md §5).
  */
 export function abandonNode(
   nodesBefore: Readonly<Record<string, NodeStatus>>,

@@ -43,7 +43,7 @@ Branch `feat/111-tweak-planet-resources`, clean at the start of planning
 
 ## How this plan is run
 
-Steps 1–3 and 5 are verified automatically. The one manual gate is
+Steps 1–3 are verified automatically. The one manual gate is
 **Step 4**, where the owner reads the Quick Guide copy and plays the
 finished feature against the story's Verification list; every check the
 owner would otherwise have paused for is collected there. A step that

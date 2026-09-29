@@ -125,6 +125,12 @@ changelog entry, in its own commit ahead of the code. Tagging stays on hold
   when it is measured; Node scramble rewritten as above; "carries an extra"
   defined by count; the anchor paragraph simplified.
 - **steal.md §6**: its anchor definition points to the simplified one.
+- **steal.md §§2–4**: where they mention a node's extra, they word it by
+  count — one prospective square more than usual — rather than as a
+  particular square.
+- **rules.md §1**: the paragraph on random elements names where an
+  Additional nodes bonus places its new squares and how a Node scramble
+  shuffles the signals, in place of "which squares change on the board".
 - **steal.md §10, fighting for a bonus**: the note that squares drawn by
   the attacker's claim treat the defender's square as occupied now
   mentions Additional nodes only, since a Node scramble draws no squares.
