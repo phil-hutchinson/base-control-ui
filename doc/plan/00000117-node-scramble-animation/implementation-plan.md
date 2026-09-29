@@ -173,7 +173,10 @@ scramble before this story, with no fringe of the old colour.
 
 ### Step 4 — README check
 
-Status: pending
+Status: committed
+
+Notes: Done ahead of Step 3, which waits on the owner. `README.md` mentions
+neither animations nor Node scramble, so it needs no change.
 
 Review `README.md` against the branch diff. Expected: no change — the
 README does not describe board animations.
