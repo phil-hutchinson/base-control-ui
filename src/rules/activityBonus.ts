@@ -53,6 +53,7 @@ import type { ScoringSetting } from "./scoring";
 import {
   addExtraProspectiveSquares,
   everyNodeHasExtra,
+  type RecoloredSquare,
   shuffleProspectiveSignals,
 } from "./steal";
 
@@ -325,7 +326,9 @@ export function dealActivityBonuses(
  * one); which of the claiming side's ships gained a point of power from Fuel
  * (empty for every other kind); the squares Additional nodes added (empty
  * for every other kind — a Node scramble adds no square, it only shuffles
- * signals); and the surviving bonus's square with its old and new kind,
+ * signals); the prospective squares a Node scramble moved to another signal,
+ * each with its old and new one (empty for every other kind, and never
+ * listing a square the shuffle left on its own signal); and the surviving bonus's square with its old and new kind,
  * alongside the new bonus's square and kind. Enough for `ply.ts` to build an
  * `ActivityBonusClaimedEffect` and for the live region to describe the claim.
  */
@@ -334,6 +337,7 @@ export interface ActivityBonusClaimOutcome {
   readonly pointsAwarded: number;
   readonly poweredShipIds: readonly ShipId[];
   readonly addedSquares: readonly Square[];
+  readonly recoloredSquares: readonly RecoloredSquare[];
   readonly survivor: {
     readonly square: Square;
     readonly oldKind: ActivityBonusKind;
@@ -414,6 +418,7 @@ export function resolveActivityBonusClaim(
   let pointsAwarded = 0;
   let poweredShipIds: readonly ShipId[] = [];
   let addedSquares: readonly Square[] = [];
+  let recoloredSquares: readonly RecoloredSquare[] = [];
 
   const pointSize = activityBonusPointSize(claimed.kind);
   if (pointSize !== undefined) {
@@ -457,6 +462,7 @@ export function resolveActivityBonusClaim(
     );
     nodes = shuffled.nodes;
     seed = shuffled.nextSeed;
+    recoloredSquares = shuffled.recoloredSquares;
   }
 
   const [survivorNewKind, seedAfterSurvivorKind]: [ActivityBonusKind, number] =
@@ -516,6 +522,7 @@ export function resolveActivityBonusClaim(
       pointsAwarded,
       poweredShipIds,
       addedSquares,
+      recoloredSquares,
       survivor: {
         square: survivor.square,
         oldKind: survivor.kind,

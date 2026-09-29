@@ -88,7 +88,12 @@ Status and Notes, one commit per step, and a peer review by the
 
 ### Step 1 — Report the squares a scramble recoloured
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned; the list's element type is `RecoloredSquare`
+in `steal.ts`. The seven effect literals in `announcements.test.ts` gained an
+empty `recoloredSquares`. Typecheck, lint, format check and the full suite
+(92 files, 2045 tests) pass.
 
 - `src/rules/steal.ts`: `shuffleProspectiveSignals` also returns the
   prospective squares whose signal changed, each with its old and new

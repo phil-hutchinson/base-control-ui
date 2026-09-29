@@ -461,10 +461,22 @@ export function addExtraProspectiveSquares(
   return { nodes, nextSeed: workingSeed, addedSquares };
 }
 
-/** The outcome of a Node scramble bonus (steal.md §10). */
+/** A prospective square a Node scramble moved from one signal to another. */
+export interface RecoloredSquare {
+  readonly square: Square;
+  readonly oldSignal: NodeSignal;
+  readonly newSignal: NodeSignal;
+}
+
+/**
+ * The outcome of a Node scramble bonus (steal.md §10): the new node map, the
+ * seed after its draws, and the prospective squares whose signal changed, in
+ * board order — a square the shuffle left on its own signal is not listed.
+ */
 export interface ShuffleProspectiveSignalsResult {
   readonly nodes: Readonly<Record<string, NodeStatus>>;
   readonly nextSeed: number;
+  readonly recoloredSquares: readonly RecoloredSquare[];
 }
 
 /**
@@ -477,7 +489,8 @@ export interface ShuffleProspectiveSignalsResult {
  * unplaced, then a square uniformly among the still-empty squares whose
  * signal before the shuffle was a different one, or among every still-empty
  * square when there is none. The fixed draw order is in this module's
- * header. Exactly two seed steps per prospective square.
+ * header. Exactly two seed steps per prospective square. Also reports every
+ * square whose signal changed, with its old and new signal.
  */
 export function shuffleProspectiveSignals(
   nodesBefore: Readonly<Record<string, NodeStatus>>,
@@ -544,5 +557,12 @@ export function shuffleProspectiveSignals(
     }
   }
 
-  return { nodes, nextSeed: workingSeed };
+  const recoloredSquares = prospective.flatMap(({ square, signalBefore }) => {
+    const newSignal = nodes[squareName(square)].signal;
+    return newSignal === undefined || newSignal === signalBefore
+      ? []
+      : [{ square, oldSignal: signalBefore, newSignal }];
+  });
+
+  return { nodes, nextSeed: workingSeed, recoloredSquares };
 }

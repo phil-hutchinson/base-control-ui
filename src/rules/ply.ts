@@ -60,7 +60,12 @@ import {
   snapshotInactivePriorities,
 } from "./nodeQueue";
 import { type PowerLevel, spendPower } from "./power";
-import { abandonNode, claimNode, type NodeSignal } from "./steal";
+import {
+  abandonNode,
+  claimNode,
+  type NodeSignal,
+  type RecoloredSquare,
+} from "./steal";
 
 /** Why the side to move's ply passed instead of moving or attacking (rules.md §5). */
 export type PassReason = "cannot-move-or-attack" | "out-of-time";
@@ -198,8 +203,10 @@ export interface PlanetBonusClaimedEffect {
  * `poweredShipIds` names every one of `side`'s ships a Fuel claim raised by a
  * point (empty for every other kind); `addedSquares` are the squares an
  * Additional nodes claim gave their nodes (empty for every other kind — a Node
- * scramble adds no square, it only shuffles the prospective squares' signals,
- * which the new node map already shows). `survivor` is the bonus that was not
+ * scramble adds no square, it only shuffles the prospective squares' signals);
+ * `recoloredSquares` are the prospective squares a Node scramble moved to
+ * another signal, each with its old and new one (empty for every other kind),
+ * so the board can show the change. `survivor` is the bonus that was not
  * claimed — unmoved; under race redrawn to a different kind, under stable
  * keeping its kind, so `newKind` equals `oldKind` — and `newBonus` is what
  * appeared in the claimed bonus's place. Sits where `PlanetBonusClaimedEffect`
@@ -216,6 +223,7 @@ export interface ActivityBonusClaimedEffect {
   readonly pointsAwarded: number;
   readonly poweredShipIds: readonly ShipId[];
   readonly addedSquares: readonly Square[];
+  readonly recoloredSquares: readonly RecoloredSquare[];
   readonly survivor: {
     readonly square: Square;
     readonly oldKind: ActivityBonusKind;
@@ -620,6 +628,7 @@ function claimActivityBonus(
       pointsAwarded: result.outcome.pointsAwarded,
       poweredShipIds: result.outcome.poweredShipIds,
       addedSquares: result.outcome.addedSquares,
+      recoloredSquares: result.outcome.recoloredSquares,
       survivor: result.outcome.survivor,
       newBonus: result.outcome.newBonus,
     },
