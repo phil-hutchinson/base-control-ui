@@ -2,15 +2,15 @@
 // kinds and their weights, the point table, availability, the weighted kind
 // draw, the uniform planet draw, the opening deal of the pair and the claim
 // resolution. A leaf module over `gameState.ts`'s `NodeStatus` and `Ship`
-// (types only — the same cycle `steal.ts` already carries with
-// `gameState.ts`), `steal.ts`'s node-changing bonus effects, `fleet.ts`'s
-// `Side` and `ShipId`, `nodes.ts`'s `ChargedNodeCount`, `planets.ts`'s
-// `PLANETS`, `playerMatching.ts`'s `PlayerMatchingSetting`, `power.ts`'s
-// `gainPower`, `scoring.ts`'s `ScoringSetting` and `random.ts`'s draws.
-// `ply.ts` calls `resolveActivityBonusClaim` when a landing claims a bonus,
-// and this module only ever changes the fields the claim touches — nodes,
-// ships, the bonus pair and the seed — leaving everything else (whose ply it
-// is, energy other than the claim's own payout, and so on) to `ply.ts`.
+// (types only — the same cycle `steal.ts` already carries with `gameState.ts`),
+// `steal.ts`'s node-changing bonus effects, `fleet.ts`'s `Side` and `ShipId`,
+// `nodes.ts`'s `ChargedNodeCount`, `planets.ts`'s `PLANETS`,
+// `playerMatching.ts`'s `PlayerMatchingSetting`, `power.ts`'s `gainPower` and
+// `MAX_POWER`, `scoring.ts`'s `ScoringSetting` and `random.ts`'s draws.
+// `ply.ts` calls `resolveActivityBonusClaim` when a landing claims a bonus, and
+// this module only ever changes the fields the claim touches — nodes, ships,
+// the bonus pair and the seed — leaving everything else (whose ply it is,
+// energy other than the claim's own payout, and so on) to `ply.ts`.
 //
 // The opening deal (steal.md §10) consumes exactly four seed steps, in this
 // fixed order, after the steal opening deal has run and before play begins:
@@ -21,20 +21,24 @@
 //
 // A claim under race (steal.md §10) consumes, in this fixed order: (1) the
 // claimed kind's own draws — none for a points kind or Fuel, one per square
-// Additional nodes or Node scramble adds (`addExtraProspectiveSquares`,
-// `scrambleProspectiveSquares`); (2) one step for the surviving bonus's new
-// kind, excluding the kind it was; (3) one step for the new bonus's planet,
-// drawn from planets empty at that moment and not the survivor's; (4) one
-// step for the new bonus's kind, excluding the survivor's new kind. A claim
-// under stable consumes the same steps without (2): the survivor keeps its
-// kind, so nothing is drawn for it, and the new bonus's kind excludes the
-// survivor's kept kind. `resolveActivityBonusClaim` runs them.
+// Additional nodes adds (`addExtraProspectiveSquares`), two per prospective
+// square a Node scramble shuffles (`shuffleProspectiveSignals`); (2) one step
+// for the surviving bonus's new kind, excluding the kind it was; (3) one step
+// for the new bonus's planet, drawn from planets empty at that moment and not
+// the survivor's; (4) one step for the new bonus's kind, excluding the
+// survivor's new kind. A claim under stable consumes the same steps without
+// (2): the survivor keeps its kind, so nothing is drawn for it, and the new
+// bonus's kind excludes the survivor's kept kind. `resolveActivityBonusClaim`
+// runs them.
 //
 // Every kind draw — here and in the claim resolution — is a single
 // `drawWeightedIndex` call over all six kinds in their fixed table order
 // below, with weight 0 for any kind excluded or unavailable at that moment
 // (steal.md §10): this keeps every kind draw at exactly one seed step and
 // keeps the index-to-kind mapping independent of which kinds are excluded.
+// Fuel's weight is measured from the ships passed to each draw
+// (`fuelWeight`): the opening deal passes the starting fleet, and a claim
+// passes every ship as it stands after the claimed kind's own effect.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
@@ -43,13 +47,13 @@ import type { GameState, NodeStatus, Ship } from "./gameState";
 import type { ChargedNodeCount } from "./nodes";
 import { PLANETS } from "./planets";
 import type { PlayerMatchingSetting } from "./playerMatching";
-import { gainPower } from "./power";
+import { gainPower, MAX_POWER } from "./power";
 import { drawIndex, drawWeightedIndex } from "./random";
 import type { ScoringSetting } from "./scoring";
 import {
   addExtraProspectiveSquares,
   everyNodeHasExtra,
-  scrambleProspectiveSquares,
+  shuffleProspectiveSignals,
 } from "./steal";
 
 /**
@@ -74,15 +78,40 @@ export const ACTIVITY_BONUS_KINDS: readonly ActivityBonusKind[] = [
   "node-scramble",
 ];
 
-/** Each kind's weight in the dealt-by-weight draw (steal.md §10). */
-const ACTIVITY_BONUS_WEIGHTS: Readonly<Record<ActivityBonusKind, number>> = {
+/**
+ * Each fixed-weight kind's weight in the dealt-by-weight draw (steal.md
+ * §10). Fuel's weight is not fixed: `fuelWeight` computes it.
+ */
+const ACTIVITY_BONUS_WEIGHTS: Readonly<
+  Record<Exclude<ActivityBonusKind, "fuel">, number>
+> = {
   "small-points": 30,
   "medium-points": 40,
   "large-points": 20,
-  fuel: 16,
-  "additional-nodes": 10,
-  "node-scramble": 10,
+  "additional-nodes": 15,
+  "node-scramble": 15,
 };
+
+/** Fuel's weight when no ship is missing any power (steal.md §10). */
+const FUEL_BASE_WEIGHT = 10;
+
+/** The most missing power that adds to Fuel's weight (steal.md §10). */
+const FUEL_MISSING_POWER_CAP = 30;
+
+/**
+ * Fuel's weight in a kind draw (steal.md §10): `FUEL_BASE_WEIGHT`, plus one
+ * for every point of power missing across every ship given — a ship's
+ * missing power being `MAX_POWER` less its power — the addition capped at
+ * `FUEL_MISSING_POWER_CAP`, so 10 to 40. Callers pass every ship on the
+ * board, of both sides, as it stands at the moment of the draw.
+ */
+export function fuelWeight(ships: readonly Pick<Ship, "power">[]): number {
+  const missing = ships.reduce(
+    (total, ship) => total + (MAX_POWER - ship.power),
+    0,
+  );
+  return FUEL_BASE_WEIGHT + Math.min(FUEL_MISSING_POWER_CAP, missing);
+}
 
 /** One of the two activity bonuses standing on the board (steal.md §10). */
 export interface ActivityBonusEntry {
@@ -111,19 +140,24 @@ export function isActivityBonusKindAvailable(
  * Draws one of the six kinds by weight (steal.md §10): a single
  * `drawWeightedIndex` call over all six kinds in their fixed table order,
  * with weight 0 for any kind in `excludedKinds` or currently unavailable
- * (`isActivityBonusKindAvailable`). Exactly one seed step.
+ * (`isActivityBonusKindAvailable`). Fuel's weight is measured from `ships`
+ * (`fuelWeight`), which should be every ship on the board as it stands at
+ * the moment of the draw. Exactly one seed step.
  */
 export function drawActivityBonusKind(
   seed: number,
   nodes: Readonly<Record<string, NodeStatus>>,
   nodeCount: ChargedNodeCount,
+  ships: readonly Pick<Ship, "power">[],
   excludedKinds: ReadonlySet<ActivityBonusKind> = new Set(),
 ): [kind: ActivityBonusKind, nextSeed: number] {
   const weights = ACTIVITY_BONUS_KINDS.map((kind) =>
     excludedKinds.has(kind) ||
     !isActivityBonusKindAvailable(kind, nodes, nodeCount)
       ? 0
-      : ACTIVITY_BONUS_WEIGHTS[kind],
+      : kind === "fuel"
+        ? fuelWeight(ships)
+        : ACTIVITY_BONUS_WEIGHTS[kind],
   );
   const [index, nextSeed] = drawWeightedIndex(seed, weights);
   return [ACTIVITY_BONUS_KINDS[index], nextSeed];
@@ -239,11 +273,13 @@ export function activityBonusPoints(
  * planets, slot 1's uniformly over the eleven left, slot 0's kind by weight
  * with no exclusions, slot 1's by weight excluding slot 0's kind. Every
  * planet is empty at this point — no starting square is a planet — so no
- * planet needs excluding beyond slot 0's own. Exactly four seed steps.
+ * planet needs excluding beyond slot 0's own. Both kind draws measure
+ * Fuel's weight from `ships`, the starting fleet. Exactly four seed steps.
  */
 export function dealActivityBonuses(
   nodes: Readonly<Record<string, NodeStatus>>,
   nodeCount: ChargedNodeCount,
+  ships: readonly Pick<Ship, "power">[],
   seed: number,
 ): [
   bonuses: readonly [ActivityBonusEntry, ActivityBonusEntry],
@@ -264,11 +300,13 @@ export function dealActivityBonuses(
     seedAfterSecondPlanet,
     nodes,
     nodeCount,
+    ships,
   );
   const [secondKind, nextSeed] = drawActivityBonusKind(
     seedAfterFirstKind,
     nodes,
     nodeCount,
+    ships,
     new Set([firstKind]),
   );
 
@@ -285,9 +323,9 @@ export function dealActivityBonuses(
  * What resolving a claim changed, beyond the state itself (steal.md §10): the
  * kind that was claimed; the energy it paid (0 for every kind but a points
  * one); which of the claiming side's ships gained a point of power from Fuel
- * (empty for every other kind); the squares Additional nodes added, and the
- * squares Node scramble removed and added (empty for every kind that is
- * neither); and the surviving bonus's square with its old and new kind,
+ * (empty for every other kind); the squares Additional nodes added (empty
+ * for every other kind — a Node scramble adds no square, it only shuffles
+ * signals); and the surviving bonus's square with its old and new kind,
  * alongside the new bonus's square and kind. Enough for `ply.ts` to build an
  * `ActivityBonusClaimedEffect` and for the live region to describe the claim.
  */
@@ -296,7 +334,6 @@ export interface ActivityBonusClaimOutcome {
   readonly pointsAwarded: number;
   readonly poweredShipIds: readonly ShipId[];
   readonly addedSquares: readonly Square[];
-  readonly removedSquares: readonly Square[];
   readonly survivor: {
     readonly square: Square;
     readonly oldKind: ActivityBonusKind;
@@ -321,22 +358,24 @@ export interface ResolveActivityBonusClaimResult {
  * Resolves `side` landing on `planet`, one of the two current activity
  * bonuses' planets (steal.md §10): applies the claimed kind's own effect — a
  * points kind adds `activityBonusPoints` to `side`'s energy (returned as
- * `pointsAwarded`, for `ply.ts` to apply — this function never reads or
- * writes an energy total itself); Fuel raises each of `side`'s ships below
- * the maximum by one power (`gainPower`), the claiming ship included, wherever
- * it stands; Additional nodes and Node scramble redraw the node map
- * (`addExtraProspectiveSquares`, `scrambleProspectiveSquares`), threading the
- * seed on. Then, under race only, redraws the surviving bonus's kind,
- * excluding the kind it was — under stable the survivor keeps its kind and
- * nothing is drawn for it, so `survivor.newKind` equals `survivor.oldKind`;
- * draws the new bonus's planet from the planets empty at that moment and
- * not the survivor's own; and draws the new bonus's kind, excluding the
- * survivor's kind after the claim, in that fixed order, the effect's own
- * draws first. The new bonus takes the claimed bonus's slot; the survivor
- * keeps its own. Throws a `RangeError` if the planet resources setting is
- * off, if `planet` carries neither current bonus, or if no planet is left
- * for the new bonus to appear on — the five-ship limit guarantees one, so
- * the last is a bug detector, not a case to handle.
+ * `pointsAwarded`, for `ply.ts` to apply — this function never reads or writes
+ * an energy total itself); Fuel raises each of `side`'s ships below the maximum
+ * by one power (`gainPower`), the claiming ship included, wherever it stands;
+ * Additional nodes adds prospective squares (`addExtraProspectiveSquares`) and
+ * Node scramble shuffles the prospective squares' signals
+ * (`shuffleProspectiveSignals`), threading the seed on. Then, under race only,
+ * redraws the surviving bonus's kind, excluding the kind it was — under stable
+ * the survivor keeps its kind and nothing is drawn for it, so
+ * `survivor.newKind` equals `survivor.oldKind`; draws the new bonus's planet
+ * from the planets empty at that moment and not the survivor's own; and draws
+ * the new bonus's kind, excluding the survivor's kind after the claim, in that
+ * fixed order, the effect's own draws first. Both kind draws measure Fuel's
+ * weight from every ship as it stands after the claimed kind's own effect — a
+ * Fuel just paid included. The new bonus takes the claimed bonus's slot; the
+ * survivor keeps its own. Throws a `RangeError` if the planet resources setting
+ * is off, if `planet` carries neither current bonus, or if no planet is left
+ * for the new bonus to appear on — the five-ship limit guarantees one, so the
+ * last is a bug detector, not a case to handle.
  */
 export function resolveActivityBonusClaim(
   state: Pick<
@@ -375,7 +414,6 @@ export function resolveActivityBonusClaim(
   let pointsAwarded = 0;
   let poweredShipIds: readonly ShipId[] = [];
   let addedSquares: readonly Square[] = [];
-  let removedSquares: readonly Square[] = [];
 
   const pointSize = activityBonusPointSize(claimed.kind);
   if (pointSize !== undefined) {
@@ -411,17 +449,14 @@ export function resolveActivityBonusClaim(
     seed = added.nextSeed;
     addedSquares = added.addedSquares;
   } else if (claimed.kind === "node-scramble") {
-    const shipSquares = ships.map((ship) => ship.square);
-    const scrambled = scrambleProspectiveSquares(
+    const shuffled = shuffleProspectiveSignals(
       nodes,
       state.chargedNodeCount,
-      shipSquares,
+      state.playerMatching,
       seed,
     );
-    nodes = scrambled.nodes;
-    seed = scrambled.nextSeed;
-    removedSquares = scrambled.removedSquares;
-    addedSquares = scrambled.addedSquares;
+    nodes = shuffled.nodes;
+    seed = shuffled.nextSeed;
   }
 
   const [survivorNewKind, seedAfterSurvivorKind]: [ActivityBonusKind, number] =
@@ -430,6 +465,7 @@ export function resolveActivityBonusClaim(
           seed,
           nodes,
           state.chargedNodeCount,
+          ships,
           new Set([survivor.kind]),
         )
       : [survivor.kind, seed];
@@ -455,6 +491,7 @@ export function resolveActivityBonusClaim(
     seedAfterNewBonusPlanet,
     nodes,
     state.chargedNodeCount,
+    ships,
     new Set([survivorNewKind]),
   );
 
@@ -479,7 +516,6 @@ export function resolveActivityBonusClaim(
       pointsAwarded,
       poweredShipIds,
       addedSquares,
-      removedSquares,
       survivor: {
         square: survivor.square,
         oldKind: survivor.kind,

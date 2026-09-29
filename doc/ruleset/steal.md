@@ -21,8 +21,8 @@ and ends. Each node is dealt a **signal** of its own, and always occupies
 exactly **two squares** on the board — its squares carry that signal, which
 is the only thing tying them together. The app shows each signal as a
 colour, so a node's two squares always look alike. Under planet resources
-(stable or race), a node may carry a third square, its **extra**
-prospective square (section 10).
+(stable or race), a node may carry a third square: it then carries an
+**extra**, one prospective square more than usual (section 10).
 
 A node is always in exactly one of two configurations, or a third when it
 carries an extra (section 10):
@@ -64,8 +64,8 @@ three things at once: claiming a node nobody held, taking a node away from
 the opponent, and a holder relocating its own node out of reach — which
 costs the holder a whole turn and a move, and leaves the node's new
 prospective square drawn afresh, exactly as taking it from an opponent
-would. Under planet resources (stable or race), a node with an extra
-prospective square is claimed a little differently (section 10).
+would. Under planet resources (stable or race), a node carrying an extra
+is claimed a little differently (section 10).
 
 ## 4. Leaving a node
 
@@ -75,8 +75,8 @@ own prospective square:
 1. The vacated square becomes ordinary board, leaving nothing behind.
 2. The node draws **a second prospective square** (section 6).
 
-Under planet resources (stable or race), a node's extra prospective square,
-if it has one, survives leaving alongside this second square (section 10).
+Under planet resources (stable or race), a node that carries an extra
+still carries it after leaving (section 10).
 
 The node is Open afterwards: the next ship to reach either of its two
 prospective squares takes it.
@@ -102,15 +102,16 @@ square, which section 7 draws from the **strict** pool instead, wherever the
 board leaves room.
 
 The draw is weighted. For a candidate square `s`, with `a` the node's
-**anchor** — its charged square when it has one, and its remaining
-prospective square when it does not (section 10 gives the anchor of a node
-that carries an extra prospective square, which this does not cover) — and
-with `S` every square belonging to any **other** node, charged or
-prospective alike:
+**anchor** — its charged square when it has one, and otherwise the
+**nearest** of its prospective squares, which is simply its one remaining
+square unless it carries an extra (section 10) — and with `S` every square
+belonging to any **other** node, charged or prospective alike:
 
     w(s) = d(s, a) + min over x in S of d(s, x)
 
-where `d` is Chebyshev distance, as rules.md §3.2 defines it. When `S` is
+where `d` is Chebyshev distance, as rules.md §3.2 defines it. When the
+anchor is more than one square, `d(s, a)` is the distance from `s` to the
+nearest of them. When `S` is
 empty — only the very first node of the opening deal — the second term is 0.
 
 **A square on the outer edge has its weight halved** — row 1 or 15, column A
@@ -226,14 +227,31 @@ planet is always empty.
 
 **The six kinds.** Each bonus is one of six kinds, dealt by weight:
 
-| Bonus            | Weight | What it does                                                      |
-| ---------------- | -----: | ----------------------------------------------------------------- |
-| Small points     |     30 | Pays energy — the smallest of the three amounts                   |
-| Medium points    |     40 | Pays energy — the middle amount                                   |
-| Large points     |     20 | Pays energy — the largest amount                                  |
-| Fuel             |     16 | One power to every one of the claimer's ships that is not full    |
-| Additional nodes |     10 | Every node gains one extra prospective square                     |
-| Node scramble    |     10 | Every node's ordinary prospective squares are cleared and redrawn |
+| Bonus            |                       Weight | What it does                                                                   |
+| ---------------- | ---------------------------: | ------------------------------------------------------------------------------ |
+| Small points     |                           30 | Pays energy — the smallest of the three amounts                                |
+| Medium points    |                           40 | Pays energy — the middle amount                                                |
+| Large points     |                           20 | Pays energy — the largest amount                                               |
+| Fuel             | 10 + missing power, up to 40 | One power to every one of the claimer's ships that is not full                 |
+| Additional nodes |                           15 | Every node gains one extra prospective square                                  |
+| Node scramble    |                           15 | The signals on every node's prospective squares are shuffled between the nodes |
+
+**Fuel's weight** is 10, plus one for every point of power missing across
+every ship on the board, of both players — a ship's missing power being 6
+minus its power. The addition is capped at 30, so Fuel's weight runs from 10
+to 40. It is measured at the moment of each kind draw, from every ship's
+power as it stands then:
+
+- **At the opening deal** every ship is full, so Fuel's weight is 10.
+- **On a claim**, the kind draws see the claiming ship's power after it has
+  paid for its move, after any leave has resolved, and after the claimed
+  bonus has taken effect — a Fuel bonus just paid included. The recovery of
+  ships on planets at the end of the turn (rules.md §8.6) comes after the
+  draws, and never counts towards them.
+- **In a fight**, the attacker's claim sees the attacker's power after it
+  has paid for the shot, and the defender's power as it stands. The
+  defender's claim, if any, sees everything the attacker's claim has
+  already done.
 
 **The opening deal.** After everything the opening board already deals
 (section 7), two different planets are drawn at random, every planet
@@ -265,14 +283,16 @@ only claiming Additional nodes makes a kind unavailable, and the bonus left
 standing then is never Additional nodes itself, since the two are always
 of different kinds.
 
-"Available" is checked at the moment of each draw, so it reflects what step
-1 has just done — this matters for Additional nodes, which is not
-available once every node already has its extra prospective square.
+"Available" is checked at the moment of each draw, exactly as Fuel's weight
+is measured, so both reflect what step 1 has just done — this matters for
+Additional nodes, which is not available once every node already carries
+an extra, and for Fuel, whose weight falls once a Fuel bonus has paid.
 
 A move that **leaves** a charged square and **lands** on a bonus planet in
 the same move resolves the leave (section 4) first, exactly as section 5
 already orders a leave ahead of a claim: a Node scramble claimed on such a
-move therefore sees the left node already Open.
+move therefore sees the left node already Open, and shuffles its
+prospective squares with everyone else's.
 
 **Fighting for a bonus.** In a fight (rules.md §7), the attacker is placed
 first and its claim, if any, resolves in full — including, under race, the
@@ -282,7 +302,7 @@ bonus, including the one that has only just appeared, and if so it claims
 that bonus for the defender's side. While the attacker's claim resolves,
 the defender is still standing on the square it was attacked on, since it
 has not yet been placed, so any square drawn by that claim (Additional
-nodes or Node scramble) treats that square as occupied.
+nodes) treats that square as occupied.
 
 A claim is instant. It is not part of the end-of-turn order (rules.md
 §8.6), exactly like the classic planet bonus. A bonus planet is otherwise
@@ -318,54 +338,72 @@ claiming ship is included, and it still recovers on the planet at the end
 of the turn as usual. A ship already at 6 gains nothing.
 
 **Additional nodes** gives **one extra prospective square** to every node
-that does not already have one. A node that already has an extra gets
-nothing, so a node never has more than one extra. Each new square is drawn
-by section 6's weighted rule, one node at a time in the order the nodes
-were dealt. This kind is **not available**, and so never dealt, while every
-node already has its extra.
+that does not already carry an extra. A node **carries an extra** when it
+has one prospective square more than usual: three when Open, two when
+Held. No particular square is the extra — it is a count, not a square. A
+node that already carries an extra gets nothing, so a node never carries
+more than one. Each new square is drawn by section 6's weighted rule, one
+node at a time in the order the nodes were dealt. This kind is **not
+available**, and so never dealt, while every node already carries an
+extra.
 
-A node with an extra square behaves as follows:
+A node carrying an extra behaves as follows:
 
 - **Held**, it has one charged square and two prospective squares. **Open**,
   it has three prospective squares.
 - **Landing on any of its prospective squares claims it** (section 3). All
   of the node's other squares go — the old charged square if it had one,
-  and every other prospective square, the extra included. Then **one**
-  fresh prospective square is drawn, as usual. The extra is used up, and
-  the node goes back to the usual two squares.
+  and every other prospective square. Then **one** fresh prospective square
+  is drawn, as usual. The extra is used up, and the node goes back to the
+  usual two squares.
 - **Leaving it** (section 4) works as it does everywhere else. The charged
   square becomes ordinary board and the node draws its usual second
-  prospective square. The extra **survives**, so the node is now Open with
-  three prospective squares. The extra lasts until the node is next
+  prospective square. The node **still carries its extra**, so it is now
+  Open with three prospective squares, and carries it until it is next
   claimed.
 
-**Node scramble** clears every node's ordinary prospective squares and
-draws replacements. Charged squares, and the ships on them, are not
-touched, and **extra prospective squares survive** the scramble where they
-stand. The replacements are drawn one node at a time in the order the
-nodes were dealt, each by section 6's weighted rule. A held node, or an
-Open node with an extra, uses its charged square or its extra as its
-anchor as usual. An Open node with nothing left draws its first square at
-random from section 6's widened pool, every square equally likely, and its
-second by the weighted rule. Each draw takes account of the squares already
-drawn before it.
+**Node scramble** shuffles the signals on the prospective squares between
+the nodes. Only prospective squares take part — every one of them, a
+node's extra included. Charged squares, and the ships on them, are not
+touched. No square is added, removed or drawn anew: the squares stay where
+they are, and only which node each belongs to changes. Each node keeps
+exactly as many prospective squares as it had, so a Held node stays Held,
+an Open node stays Open, and a node carrying an extra still carries it.
 
-**The anchor of a node with an extra.** Section 6 defines a node's anchor
-as its charged square when it has one, and its remaining prospective
-square when it does not — which assumes a node has at most one other
-square. A node with an extra prospective square may have more than one, so
-its anchor is: its charged square if it is Held; otherwise its extra, if
-it has one; otherwise its ordinary prospective square. When a node has two
-ordinary prospective squares and no extra — which only Additional nodes
-placing a square on an Open node reaches — the anchor term of section 6's
-weight is the distance to the **nearer** of the two. The other-node term
-(`S` in section 6) is unchanged: every square of every other node, extras
-included.
+Each prospective square's signal is taken off it, and the signals are
+placed back onto the squares one at a time:
+
+1. **The player-matched signals first.** With player-matching (section 9)
+   double or required, take the red and green signals. Draw one of them at
+   random, weighted by how many of each are still unplaced. Place it on a
+   square drawn at random, every square equally likely, among the squares
+   still empty **whose signal before the shuffle was a different one**; if
+   there is no such square, draw from every square still empty instead.
+   Repeat until every red and green signal has been placed.
+2. **The other signals.** Do the same with every other signal. With
+   player-matching off, this is the only step, and it takes every signal.
+
+Every placement is drawn — the signal and then the square — even when there
+is only one to choose from, or when every choice would give the same
+result.
+
+The shuffle does not promise that every square changes colour, or even that
+every node moves: an early placement can take the only square a later
+signal could have changed to. That keeps a scramble unpredictable, while
+with player-matching on it always moves red or green onto at least one
+square that was a different colour before.
+
+**A node's anchor**, for section 6's weighted rule, is its charged square
+when it is Held, and otherwise the **nearest** of its prospective squares:
+the anchor term of section 6's weight is the distance to the nearest of
+them. The other-node term (`S` in section 6) is unchanged: every square of
+every other node, whether or not that node carries an extra.
 
 **Every draw uses the game's seeded random stream**, so a recorded game
 replays exactly: the opening planets and kinds, every redraw of the other
-bonus's kind (under race), every new bonus's planet and kind, and every square that
-Additional nodes or Node scramble places.
+bonus's kind (under race), every new bonus's planet and kind, every square
+that Additional nodes places, and every draw of a Node scramble's shuffle —
+a signal and a square for each placement.
 
 **Why five is the limit.** With five ships a side there are at most ten
 ships on twelve planets. When a ship claims a bonus, it stands on one

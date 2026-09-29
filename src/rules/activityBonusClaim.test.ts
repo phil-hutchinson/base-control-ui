@@ -32,7 +32,12 @@ import type { ChargedNodeCount } from "./nodes";
 import type { PlanetActivitySetting } from "./planetActivity";
 import type { PlayerMatchingSetting } from "./playerMatching";
 import type { ScoringSetting } from "./scoring";
-import { addExtraProspectiveSquares, everyNodeHasExtra } from "./steal";
+import {
+  addExtraProspectiveSquares,
+  everyNodeHasExtra,
+  nodeCarriesExtra,
+  shuffleProspectiveSignals,
+} from "./steal";
 import { PLANETS } from "./planets";
 
 function ship(
@@ -237,23 +242,25 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
     );
   });
 
-  it("redraws every node's ordinary prospective squares, leaving charged squares and extras where they were", () => {
+  it("shuffles the prospective squares' signals in place, leaving every square, charged square and ship where it was", () => {
     const [planet, other] = PLANETS;
     const nodes: Record<string, NodeStatus> = {
       G8: { state: "charged", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
       C3: { state: "prospective", level: 0, signal: 1 },
       D4: { state: "prospective", level: 0, signal: 1 },
       F5: { state: "prospective", level: 0, signal: 2 },
-      N2: { state: "prospective", level: 0, signal: 2, extra: true },
+      M11: { state: "prospective", level: 0, signal: 2 },
+      N2: { state: "prospective", level: 0, signal: 2 },
     };
     const state = buildState({
       ships: [
         ship("green-1", "green", belowSquare(planet)),
-        ship("red-1", "red", "A1"),
+        ship("red-1", "red", "G8"),
       ],
       nodes,
+      playerMatching: "required",
       activityBonuses: bonuses(
         [planet, "node-scramble"],
         [other, "large-points"],
@@ -266,9 +273,26 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
+    expect(Object.keys(result.state.nodes).sort()).toEqual(
+      Object.keys(nodes).sort(),
+    );
     expect(result.state.nodes.G8).toEqual(nodes.G8);
-    expect(result.state.nodes.L8).toEqual(nodes.L8);
-    expect(result.state.nodes.N2).toEqual(nodes.N2);
+    expect(
+      result.state.ships.find((entry) => entry.id === "red-1")?.square,
+    ).toEqual(squareFromName("G8"));
+    for (const signal of [0, 1, 2] as const) {
+      const prospectiveCount = (map: Readonly<Record<string, NodeStatus>>) =>
+        Object.values(map).filter(
+          (status) =>
+            status.signal === signal && status.state === "prospective",
+        ).length;
+      expect(prospectiveCount(result.state.nodes)).toBe(
+        prospectiveCount(nodes),
+      );
+    }
+    expect(result.state.nodes).toEqual(
+      shuffleProspectiveSignals(nodes, 3, "required", state.randomSeed).nodes,
+    );
     expect(result.effects).toContainEqual(
       expect.objectContaining({
         type: "activity-bonus-claimed",
@@ -370,7 +394,7 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
     expect(result.state.energy.green).toBe(0);
   });
 
-  it("a move that leaves a charged node and lands on a Node scramble planet scrambles the already-Open node (steal.md §10)", () => {
+  it("a move that leaves a charged node and lands on a Node scramble planet shuffles the already-Open node's squares too (steal.md §10)", () => {
     // The planet sits directly above its node's charged square, so leaving
     // that square and landing on the planet is one orthogonal step.
     const planet = PLANETS[1];
@@ -417,26 +441,43 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
     // The old charged square is gone — the leave already cleared it before
     // the scramble ran.
     expect(result.state.nodes[squareName(chargedSquare)]).toBeUndefined();
+    const abandoned = result.effects.find(
+      (effect) => effect.type === "node-abandoned",
+    );
+    if (abandoned?.type !== "node-abandoned") {
+      throw new Error("expected a node-abandoned effect");
+    }
+    // The shuffle runs over the node map as the leave left it: signal 0's
+    // remaining square and its newly drawn one take part like every other.
+    const afterLeave: Record<string, NodeStatus> = { ...nodes };
+    delete afterLeave[squareName(chargedSquare)];
+    afterLeave[squareName(abandoned.newProspective)] = {
+      state: "prospective",
+      level: 0,
+      signal: 0,
+    };
+    const [, seedAfterLeave] = mulberry32(state.randomSeed);
+    expect(result.state.nodes).toEqual(
+      shuffleProspectiveSignals(afterLeave, 3, "off", seedAfterLeave).nodes,
+    );
     const signalZeroSquares = Object.entries(result.state.nodes).filter(
       ([, status]) => status.signal === 0,
     );
     expect(signalZeroSquares).toHaveLength(2);
     for (const [, status] of signalZeroSquares) {
       expect(status.state).toBe("prospective");
-      expect(status.extra).toBeUndefined();
     }
   });
 
   it("leaves three prospective squares on a node whose extra survives both the leave and the scramble", () => {
-    // signal 0: Held with an extra, its ship about to leave. Leaving turns
-    // it Open with three squares (two ordinary plus the surviving extra),
-    // and the same move's Node scramble claim must then redraw both
-    // ordinary squares while leaving the extra where it stands.
+    // signal 0: Held carrying an extra, its ship about to leave. Leaving
+    // turns it Open with three prospective squares, and the same move's Node
+    // scramble keeps that count while shuffling which squares carry it.
     const planet = PLANETS[1];
     const other = PLANETS[0];
     const chargedSquare = belowSquare(planet);
     const remainingProspective = squareAt(planet.column, planet.row - 3);
-    const extraSquare = squareAt("M", 2);
+    const thirdProspective = squareAt("M", 2);
     const nodes: Record<string, NodeStatus> = {
       [squareName(chargedSquare)]: { state: "charged", level: 0, signal: 0 },
       [squareName(remainingProspective)]: {
@@ -444,11 +485,10 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
         level: 0,
         signal: 0,
       },
-      [squareName(extraSquare)]: {
+      [squareName(thirdProspective)]: {
         state: "prospective",
         level: 0,
         signal: 0,
-        extra: true,
       },
       // signal 1: an unrelated Open node, untouched by the move.
       C3: { state: "prospective", level: 0, signal: 1 },
@@ -480,12 +520,10 @@ describe("a move that lands on a planet resources bonus planet (steal.md §10)",
       ([, status]) => status.signal === 0,
     );
     expect(signalZeroSquares).toHaveLength(3);
-    const extras = signalZeroSquares.filter(([, status]) => status.extra);
-    expect(extras).toHaveLength(1);
-    expect(extras[0][0]).toBe(squareName(extraSquare));
     for (const [, status] of signalZeroSquares) {
       expect(status.state).toBe("prospective");
     }
+    expect(nodeCarriesExtra(result.state.nodes, 0)).toBe(true);
   });
 });
 
@@ -500,6 +538,303 @@ function seedStepsBetween(from: number, to: number): number {
   }
   throw new Error("the two seeds are not within 64 steps of each other");
 }
+
+describe.each(["race", "stable"] as const)(
+  "when Fuel's weight is measured for a claim's kind draws, under %s (steal.md §10)",
+  (planetActivity) => {
+    /** The survivor's and the new bonus's kinds a claim resolves to. */
+    function claimedKinds(
+      state: GameState,
+      side: "green" | "red",
+      planet: Square,
+    ): [ActivityBonusKind, ActivityBonusKind] {
+      const { outcome } = resolveActivityBonusClaim(state, side, planet);
+      return [outcome.survivor.newKind, outcome.newBonus.kind];
+    }
+
+    function withPower(
+      ships: readonly Ship[],
+      id: ShipId,
+      power: PowerLevel,
+    ): readonly Ship[] {
+      return ships.map((entry) =>
+        entry.id === id ? { ...entry, power } : entry,
+      );
+    }
+
+    it("a costly move's claim sees the ship's power after the move's cost, and before the end-of-turn recovery", () => {
+      const planet = squareFromName("D6");
+      const survivorPlanet = squareFromName("B3");
+      let recoveryWouldDiffer = 0;
+      let costWouldDiffer = 0;
+      for (let seed = 1; seed <= 300; seed++) {
+        const state = buildState({
+          planetActivity,
+          ships: [
+            ship("green-1", "green", "F8", MAX_POWER),
+            ship("red-1", "red", "A1", MAX_POWER),
+          ],
+          activityBonuses: bonuses(
+            [planet, "small-points"],
+            [survivorPlanet, "medium-points"],
+          ),
+          randomSeed: seed,
+        });
+
+        const result = applyMove(state, "green-1", planet);
+        expect(result.outcome).toBe("applied");
+        if (result.outcome !== "applied") {
+          throw new Error("expected the move to be applied");
+        }
+        const claim = result.effects.find(
+          (effect): effect is ActivityBonusClaimedEffect =>
+            effect.type === "activity-bonus-claimed",
+        );
+        expect(claim).toBeDefined();
+
+        const recoveredPower = result.state.ships.find(
+          (entry) => entry.id === "green-1",
+        )!.power;
+        const paidPower = (MAX_POWER - 3) as PowerLevel;
+        expect(recoveredPower).toBeGreaterThan(paidPower);
+
+        const landed = withPower(
+          state.ships.map((entry) =>
+            entry.id === "green-1" ? { ...entry, square: planet } : entry,
+          ),
+          "green-1",
+          paidPower,
+        );
+        const afterCost = claimedKinds(
+          { ...state, ships: landed },
+          "green",
+          planet,
+        );
+        expect([claim!.survivor.newKind, claim!.newBonus.kind]).toEqual(
+          afterCost,
+        );
+
+        const afterRecovery = claimedKinds(
+          { ...state, ships: withPower(landed, "green-1", recoveredPower) },
+          "green",
+          planet,
+        );
+        const beforeCost = claimedKinds(
+          { ...state, ships: withPower(landed, "green-1", MAX_POWER) },
+          "green",
+          planet,
+        );
+        if (JSON.stringify(afterRecovery) !== JSON.stringify(afterCost)) {
+          recoveryWouldDiffer++;
+        }
+        if (JSON.stringify(beforeCost) !== JSON.stringify(afterCost)) {
+          costWouldDiffer++;
+        }
+      }
+      expect(recoveryWouldDiffer).toBeGreaterThan(0);
+      expect(costWouldDiffer).toBeGreaterThan(0);
+    });
+
+    it("an attacker's claim sees the attacker's power after the shot, and the defender's power as it stood", () => {
+      let shotWouldDiffer = 0;
+      let defenderWouldDiffer = 0;
+      for (let seed = 1; seed <= 300; seed++) {
+        const [attackerIndex, seedAfterAttacker] = drawIndex(
+          seed,
+          PLANETS.length,
+        );
+        const attackerPlanet = PLANETS[attackerIndex];
+        const survivorPlanet = PLANETS[(attackerIndex + 1) % PLANETS.length];
+        const state = buildState({
+          planetActivity,
+          ships: [
+            ship("green-1", "green", "H8", MAX_POWER),
+            ship("red-1", "red", "I9", 1),
+          ],
+          nodes: {
+            A5: { state: "prospective", level: 0, signal: 0 },
+            A6: { state: "prospective", level: 0, signal: 0 },
+            A9: { state: "prospective", level: 0, signal: 1 },
+            A10: { state: "prospective", level: 0, signal: 1 },
+            F3: { state: "prospective", level: 0, signal: 2 },
+            F4: { state: "prospective", level: 0, signal: 2 },
+          },
+          activityBonuses: bonuses(
+            [attackerPlanet, "small-points"],
+            [survivorPlanet, "medium-points"],
+          ),
+          randomSeed: seed,
+        });
+
+        const result = applyAttack(state, "green-1", squareFromName("I9"));
+        expect(result.outcome).toBe("applied");
+        if (result.outcome !== "applied") {
+          throw new Error("expected the attack to be applied");
+        }
+        const claims = result.effects.filter(
+          (effect): effect is ActivityBonusClaimedEffect =>
+            effect.type === "activity-bonus-claimed" && effect.side === "green",
+        );
+        expect(claims).toHaveLength(1);
+
+        const paidPower = (MAX_POWER - 1) as PowerLevel;
+        const atClaim: readonly Ship[] = [
+          ship("green-1", "green", attackerPlanet, paidPower),
+          ship("red-1", "red", "I9", 1),
+        ];
+        const afterShot = claimedKinds(
+          { ...state, ships: atClaim, randomSeed: seedAfterAttacker },
+          "green",
+          attackerPlanet,
+        );
+        expect([claims[0].survivor.newKind, claims[0].newBonus.kind]).toEqual(
+          afterShot,
+        );
+
+        const beforeShot = claimedKinds(
+          {
+            ...state,
+            ships: withPower(atClaim, "green-1", MAX_POWER),
+            randomSeed: seedAfterAttacker,
+          },
+          "green",
+          attackerPlanet,
+        );
+        if (JSON.stringify(beforeShot) !== JSON.stringify(afterShot)) {
+          shotWouldDiffer++;
+        }
+
+        const defenderAtFull = claimedKinds(
+          {
+            ...state,
+            ships: withPower(atClaim, "red-1", MAX_POWER),
+            randomSeed: seedAfterAttacker,
+          },
+          "green",
+          attackerPlanet,
+        );
+        if (JSON.stringify(defenderAtFull) !== JSON.stringify(afterShot)) {
+          defenderWouldDiffer++;
+        }
+      }
+      expect(shotWouldDiffer).toBeGreaterThan(0);
+      expect(defenderWouldDiffer).toBeGreaterThan(0);
+    });
+
+    it("a defender's claim sees every ship as the attacker's Fuel claim left it", () => {
+      let defenderClaims = 0;
+      let fuelWouldDiffer = 0;
+      for (let seed = 1; seed <= 400; seed++) {
+        const [attackerIndex, seedAfterAttacker] = drawIndex(
+          seed,
+          PLANETS.length,
+        );
+        const attackerPlanet = PLANETS[attackerIndex];
+        const survivorPlanet = PLANETS[(attackerIndex + 1) % PLANETS.length];
+        const state = buildState({
+          planetActivity,
+          ships: [
+            ship("green-1", "green", "H8", MAX_POWER),
+            ship("green-2", "green", "C8", 1),
+            ship("green-3", "green", "L8", 1),
+            ship("red-1", "red", "I9", 2),
+          ],
+          nodes: {
+            A5: { state: "prospective", level: 0, signal: 0 },
+            A6: { state: "prospective", level: 0, signal: 0 },
+            A9: { state: "prospective", level: 0, signal: 1 },
+            A10: { state: "prospective", level: 0, signal: 1 },
+            F3: { state: "prospective", level: 0, signal: 2 },
+            F4: { state: "prospective", level: 0, signal: 2 },
+          },
+          activityBonuses: bonuses(
+            [attackerPlanet, "fuel"],
+            [survivorPlanet, "small-points"],
+          ),
+          randomSeed: seed,
+        });
+
+        // The attacker's landing and Fuel claim, as the fight resolves them.
+        const beforeFuel = withPower(
+          state.ships.map((entry) =>
+            entry.id === "green-1"
+              ? { ...entry, square: attackerPlanet }
+              : entry,
+          ),
+          "green-1",
+          (MAX_POWER - 1) as PowerLevel,
+        );
+        const attackerClaim = resolveActivityBonusClaim(
+          { ...state, ships: beforeFuel, randomSeed: seedAfterAttacker },
+          "green",
+          attackerPlanet,
+        );
+        const defenderPool = PLANETS.filter(
+          (square) => squareName(square) !== squareName(attackerPlanet),
+        );
+        const [defenderIndex, seedAfterDefender] = drawIndex(
+          attackerClaim.nextSeed,
+          defenderPool.length,
+        );
+        const defenderPlanet = defenderPool[defenderIndex];
+        const landsOnABonus = attackerClaim.activityBonuses.some(
+          (entry) => squareName(entry.square) === squareName(defenderPlanet),
+        );
+        if (!landsOnABonus) {
+          continue;
+        }
+        defenderClaims++;
+
+        const result = applyAttack(state, "green-1", squareFromName("I9"));
+        expect(result.outcome).toBe("applied");
+        if (result.outcome !== "applied") {
+          throw new Error("expected the attack to be applied");
+        }
+        const claims = result.effects.filter(
+          (effect): effect is ActivityBonusClaimedEffect =>
+            effect.type === "activity-bonus-claimed",
+        );
+        expect(claims).toHaveLength(2);
+        expect(claims[0]).toMatchObject({ side: "green", kind: "fuel" });
+        expect(claims[1].side).toBe("red");
+        expect(squareName(claims[1].square)).toBe(squareName(defenderPlanet));
+
+        const withDefenderLanded = (ships: readonly Ship[]) =>
+          ships.map((entry) =>
+            entry.id === "red-1" ? { ...entry, square: defenderPlanet } : entry,
+          );
+        const atDefenderClaim: GameState = {
+          ...state,
+          nodes: attackerClaim.nodes,
+          ships: withDefenderLanded(attackerClaim.ships),
+          activityBonuses: attackerClaim.activityBonuses,
+          randomSeed: seedAfterDefender,
+        };
+        const afterFuelKinds = claimedKinds(
+          atDefenderClaim,
+          "red",
+          defenderPlanet,
+        );
+        expect([claims[1].survivor.newKind, claims[1].newBonus.kind]).toEqual(
+          afterFuelKinds,
+        );
+
+        const beforeFuelKinds = claimedKinds(
+          { ...atDefenderClaim, ships: withDefenderLanded(beforeFuel) },
+          "red",
+          defenderPlanet,
+        );
+        if (
+          JSON.stringify(beforeFuelKinds) !== JSON.stringify(afterFuelKinds)
+        ) {
+          fuelWouldDiffer++;
+        }
+      }
+      expect(defenderClaims).toBeGreaterThan(0);
+      expect(fuelWouldDiffer).toBeGreaterThan(0);
+    });
+  },
+);
 
 describe("a claim under stable planet resources (steal.md §10)", () => {
   const [claimedPlanet, survivorPlanet] = PLANETS;
@@ -629,6 +964,7 @@ describe("a claim under stable planet resources (steal.md §10)", () => {
         seedAfterPlanet,
         state.nodes,
         3,
+        state.ships,
         new Set([survivor.kind]),
       );
 

@@ -7,6 +7,48 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.43 — planet resources: needs-based Fuel, and Node scramble shuffles in place
+
+This is a gameplay change — Fuel turns up when fleets are running low, and
+a Node scramble reshuffles which node each waiting square belongs to
+instead of drawing new ones — and so would be a tag candidate; tagging
+stays on hold until the game plays (see the project's contribution notes).
+
+- **New kind weights** (steal.md §10), under stable and race alike. Small,
+  Medium and Large points keep 30, 40 and 20. Additional nodes and Node
+  scramble go from 10 to **15**.
+- **Fuel's weight is needs-based.** It is 10, plus one for every point of
+  power missing across every ship on the board, of both players, the
+  addition capped at 30 — so 10 to 40, where it was a fixed 16. It is
+  measured at the moment of each kind draw: after the claiming ship has
+  paid for its move and any leave has resolved, after the claimed bonus has
+  taken effect (a Fuel just paid included), and before the end-of-turn
+  recovery, which never counts. At the opening deal every ship is full, so
+  Fuel's weight is 10.
+- **Node scramble shuffles in place.** No square is added, removed or drawn
+  anew: the prospective squares stay where they are, and their signals are
+  shuffled between the nodes, extras included. Charged squares and their
+  ships are untouched, and every node keeps as many prospective squares as
+  it had. With player-matching on, the red and green signals are placed
+  first; each placement draws a signal, weighted by how many of each are
+  still unplaced, and then a square among those still empty whose signal
+  was a different one before the shuffle, or among every empty square if
+  there is none. Every placement is drawn from the seeded stream, even with
+  a single option.
+- **An extra is a count, not a square.** A node carries an extra when it
+  has one prospective square more than usual — three when Open, two when
+  Held. Claiming, leaving and Additional nodes do exactly what they did.
+- **A node's anchor is simplified**: its charged square when Held,
+  otherwise the nearest of its prospective squares. The one place this
+  plays differently is a Held node carrying an extra being left: its new
+  square is now pushed away from the nearer of its two remaining
+  prospective squares, rather than from the extra alone.
+- **`rules.md` §1** and **`steal.md` §§2, 3, 4, 6 and 10** are updated to
+  match.
+- **Nothing else changes.** The point bonuses and the point table, what
+  Fuel and Additional nodes do when claimed, the claim order, the opening
+  deal, fights, and every other steal rule are unchanged.
+
 ## 0.42 — planet resources: a stable variant, and race replaces advanced
 
 This is a gameplay change — steal gains a calmer way to play for planet

@@ -837,11 +837,16 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
       const [bonuses, nextSeed] = dealActivityBonuses(
         nodes,
         chargedNodeCount,
+        state.ships,
         seedAfterBoard,
       );
 
       expect(state.activityBonuses).toEqual(bonuses);
       expect(state.randomSeed).toBe(nextSeed);
+      expect(state.ships.every((ship) => ship.power === MAX_POWER)).toBe(true);
+      expect(
+        dealActivityBonuses(nodes, chargedNodeCount, [], seedAfterBoard),
+      ).toEqual([bonuses, nextSeed]);
     },
   );
 

@@ -2,7 +2,8 @@
 // (steal.md §10): the rotator's own recycling mark (`RotatorMarker.tsx`),
 // but each of its three arcs in a different colour rather than the
 // rotator's own single colour — since this symbol stands for every node's
-// waiting squares being redrawn, not one rotator turning.
+// waiting squares being shuffled between the nodes, not one rotator
+// turning.
 
 import {
   ARC_SPAN_DEGREES,

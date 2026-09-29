@@ -1,10 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { COLUMN_LETTERS, type Square, squareAt, squareName } from "./board";
+import {
+  ALL_SQUARES,
+  COLUMN_LETTERS,
+  type Square,
+  squareAt,
+  squareName,
+} from "./board";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import type { NodeStatus } from "./gameState";
 import { drawStealProspectiveSquare, legalNodePool } from "./nodePlacement";
 import { CHARGED_NODE_COUNTS } from "./nodes";
-import { mulberry32 } from "./random";
+import { drawIndex, drawWeightedIndex, mulberry32 } from "./random";
 import {
   abandonNode,
   addExtraProspectiveSquares,
@@ -14,7 +20,8 @@ import {
   matchedSignalForSide,
   nodeAnchor,
   NODE_SIGNALS,
-  scrambleProspectiveSquares,
+  nodeCarriesExtra,
+  shuffleProspectiveSignals,
   sideMatchedToSignal,
   squaresForSignal,
 } from "./steal";
@@ -36,6 +43,8 @@ function interiorSquares(): Square[] {
 }
 
 const INTERIOR_NAMES = new Set(interiorSquares().map(squareName));
+
+const ALL_SQUARE_NAMES = ALL_SQUARES.map(squareName);
 
 /** Whether two squares are orthogonally or diagonally adjacent. */
 function isAdjacent(a: Square, b: Square): boolean {
@@ -111,11 +120,11 @@ describe("nodeAnchor", () => {
     expect(nodeAnchor(map, 0).map(squareName)).toEqual(["B4"]);
   });
 
-  it("is the extra when the node is Held and carries one, even with the ordinary square present too", () => {
+  it("is the charged square when the node is Held and carries an extra", () => {
     const map = nodes({
       B4: { state: "charged", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
     });
     expect(nodeAnchor(map, 0).map(squareName)).toEqual(["B4"]);
   });
@@ -127,20 +136,22 @@ describe("nodeAnchor", () => {
     expect(nodeAnchor(map, 0).map(squareName)).toEqual(["B4"]);
   });
 
-  it("is the extra alone when a node is Open with a surviving extra and one other square", () => {
-    const map = nodes({
-      H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
-    });
-    expect(nodeAnchor(map, 0).map(squareName)).toEqual(["L8"]);
-  });
-
-  it("is both ordinary squares of an Open node with no extra (steal.md §10's two-anchor case)", () => {
+  it("is both prospective squares of an Open node with two", () => {
     const map = nodes({
       B4: { state: "prospective", level: 0, signal: 0 },
       L8: { state: "prospective", level: 0, signal: 0 },
     });
-    expect(nodeAnchor(map, 0).map(squareName).sort()).toEqual(["B4", "L8"]);
+    expect(nodeAnchor(map, 0).map(squareName)).toEqual(["B4", "L8"]);
+  });
+
+  it("is all three prospective squares of an Open node carrying an extra", () => {
+    const map = nodes({
+      B4: { state: "prospective", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0 },
+      F6: { state: "prospective", level: 0, signal: 1 },
+    });
+    expect(nodeAnchor(map, 0).map(squareName)).toEqual(["B4", "H8", "L8"]);
   });
 
   it("throws for a signal with no squares at all", () => {
@@ -322,10 +333,10 @@ describe("claimNode (steal.md §3)", () => {
     expect(third).not.toEqual(first);
   });
 
-  it("claims either prospective square of an Open node with an extra, leaving it Held with exactly two squares and no extra (steal.md §10)", () => {
+  it("claims a prospective square of an Open node carrying an extra, leaving it Held with exactly two squares (steal.md §10)", () => {
     const before: Record<string, NodeStatus> = {
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
     };
     const claimedSquare = squareAt("H", 8);
 
@@ -337,16 +348,13 @@ describe("claimNode (steal.md §3)", () => {
     expect(Object.keys(result.nodes).sort()).toEqual(
       ["H8", squareName(result.newProspective)].sort(),
     );
-    expect(
-      result.nodes[squareName(result.newProspective)]?.extra,
-    ).toBeUndefined();
   });
 
-  it("claims a Held node with an extra: releases the charged square and discards the extra alongside", () => {
+  it("claims a Held node carrying an extra: releases the charged square and discards the other prospective square", () => {
     const before: Record<string, NodeStatus> = {
       G8: { state: "charged", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
     };
     const claimedSquare = squareAt("H", 8);
 
@@ -359,11 +367,11 @@ describe("claimNode (steal.md §3)", () => {
     expect(result.nodes.H8).toEqual({ state: "charged", level: 0, signal: 0 });
   });
 
-  it("claims an Open node with an extra by landing on the extra itself, discarding both ordinary squares", () => {
+  it("claims an Open node carrying an extra by landing on any one of its three squares, discarding the other two", () => {
     const before: Record<string, NodeStatus> = {
       H8: { state: "prospective", level: 0, signal: 0 },
       K5: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
     };
     const claimedSquare = squareAt("L", 8);
 
@@ -375,11 +383,11 @@ describe("claimNode (steal.md §3)", () => {
     expect(result.nodes.L8).toEqual({ state: "charged", level: 0, signal: 0 });
   });
 
-  it("treats a holder relocating onto its own node's extra as a claim, releasing only the charged square", () => {
+  it("treats a holder relocating onto one of its own node's two prospective squares as a claim, releasing the charged square and discarding the other", () => {
     const before: Record<string, NodeStatus> = {
       G8: { state: "charged", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
     };
     const claimedSquare = squareAt("L", 8);
 
@@ -447,11 +455,11 @@ describe("abandonNode (steal.md §4)", () => {
     expect(third).not.toEqual(first);
   });
 
-  it("leaving a Held node with an extra leaves it Open with three prospective squares, the extra still flagged", () => {
+  it("leaving a Held node carrying an extra leaves it Open with three prospective squares, still carrying the extra", () => {
     const before: Record<string, NodeStatus> = {
       G8: { state: "charged", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
     };
     const vacatedSquare = squareAt("G", 8);
 
@@ -467,16 +475,16 @@ describe("abandonNode (steal.md §4)", () => {
       state: "prospective",
       level: 0,
       signal: 0,
-      extra: true,
     });
     expect(squaresForSignal(result.nodes, 0)).toHaveLength(3);
+    expect(nodeCarriesExtra(result.nodes, 0)).toBe(true);
   });
 
-  it("anchors the new square on the extra, not the ordinary square, when leaving a Held node with an extra", () => {
+  it("anchors the new square on both remaining prospective squares when leaving a Held node carrying an extra", () => {
     const before: Record<string, NodeStatus> = {
       G8: { state: "charged", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
     };
     const vacatedSquare = squareAt("G", 8);
     const shipSquares = [squareAt("D", 4)];
@@ -486,7 +494,7 @@ describe("abandonNode (steal.md §4)", () => {
 
     const expected = drawStealProspectiveSquare(
       [squareAt("H", 8), squareAt("L", 8)],
-      [squareAt("L", 8)],
+      [squareAt("H", 8), squareAt("L", 8)],
       [],
       shipSquares,
       seed,
@@ -496,15 +504,47 @@ describe("abandonNode (steal.md §4)", () => {
   });
 });
 
+describe("nodeCarriesExtra (steal.md §10)", () => {
+  it("is false for a Held node with one prospective square, true with two", () => {
+    const held = nodes({
+      B4: { state: "charged", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+    });
+    expect(nodeCarriesExtra(held, 0)).toBe(false);
+    expect(
+      nodeCarriesExtra(
+        { ...held, L8: { state: "prospective", level: 0, signal: 0 } },
+        0,
+      ),
+    ).toBe(true);
+  });
+
+  it("is false for an Open node with two prospective squares, true with three", () => {
+    const open = nodes({
+      B4: { state: "prospective", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+    });
+    expect(nodeCarriesExtra(open, 0)).toBe(false);
+    expect(
+      nodeCarriesExtra(
+        { ...open, L8: { state: "prospective", level: 0, signal: 0 } },
+        0,
+      ),
+    ).toBe(true);
+  });
+});
+
 describe("everyNodeHasExtra (steal.md §10)", () => {
   it("is false while any node up to nodeCount lacks an extra", () => {
     const map = nodes({
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
+      M12: { state: "prospective", level: 0, signal: 0 },
       C3: { state: "prospective", level: 0, signal: 1 },
       D4: { state: "prospective", level: 0, signal: 1 },
-      E5: { state: "prospective", level: 0, signal: 2 },
-      F6: { state: "prospective", level: 0, signal: 2, extra: true },
+      E5: { state: "charged", level: 0, signal: 2 },
+      F6: { state: "prospective", level: 0, signal: 2 },
+      F9: { state: "prospective", level: 0, signal: 2 },
     });
     expect(everyNodeHasExtra(map, 3)).toBe(false);
   });
@@ -512,11 +552,14 @@ describe("everyNodeHasExtra (steal.md §10)", () => {
   it("is true once every node up to nodeCount carries an extra", () => {
     const map = nodes({
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
+      M12: { state: "prospective", level: 0, signal: 0 },
       C3: { state: "prospective", level: 0, signal: 1 },
-      D4: { state: "prospective", level: 0, signal: 1, extra: true },
-      E5: { state: "prospective", level: 0, signal: 2 },
-      F6: { state: "prospective", level: 0, signal: 2, extra: true },
+      D4: { state: "prospective", level: 0, signal: 1 },
+      J4: { state: "prospective", level: 0, signal: 1 },
+      E5: { state: "charged", level: 0, signal: 2 },
+      F6: { state: "prospective", level: 0, signal: 2 },
+      F9: { state: "prospective", level: 0, signal: 2 },
     });
     expect(everyNodeHasExtra(map, 3)).toBe(true);
   });
@@ -526,17 +569,19 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
   const before: Record<string, NodeStatus> = {
     H8: { state: "prospective", level: 0, signal: 0 },
     L8: { state: "prospective", level: 0, signal: 0 },
-    C3: { state: "prospective", level: 0, signal: 1, extra: true },
+    C3: { state: "prospective", level: 0, signal: 1 },
     D4: { state: "prospective", level: 0, signal: 1 },
+    J4: { state: "prospective", level: 0, signal: 1 },
     F5: { state: "prospective", level: 0, signal: 2 },
     F9: { state: "prospective", level: 0, signal: 2 },
   };
 
-  it("adds exactly one extra to each node lacking one, none to a node that already has one, in signal order", () => {
+  it("adds exactly one square to each node not carrying an extra, none to a node that already carries one, in signal order", () => {
     const result = addExtraProspectiveSquares(before, 3, [], 4242);
 
     expect(result.nodes.C3).toEqual(before.C3);
     expect(result.nodes.D4).toEqual(before.D4);
+    expect(result.nodes.J4).toEqual(before.J4);
     expect(result.addedSquares).toHaveLength(2);
 
     const [firstAdded, secondAdded] = result.addedSquares;
@@ -544,21 +589,18 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
       state: "prospective",
       level: 0,
       signal: 0,
-      extra: true,
     });
     expect(result.nodes[squareName(secondAdded)]).toEqual({
       state: "prospective",
       level: 0,
       signal: 2,
-      extra: true,
     });
 
     for (const signal of [0, 1, 2] as const) {
-      const extras = squaresForSignal(result.nodes, signal).filter(
-        (square) => result.nodes[squareName(square)]?.extra === true,
-      );
-      expect(extras).toHaveLength(1);
+      expect(squaresForSignal(result.nodes, signal)).toHaveLength(3);
+      expect(nodeCarriesExtra(result.nodes, signal)).toBe(true);
     }
+    expect(everyNodeHasExtra(result.nodes, 3)).toBe(true);
   });
 
   it("consumes exactly one seed step per square added", () => {
@@ -584,11 +626,14 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
   it("adds nothing, and does not touch the seed, once every node already has its extra", () => {
     const everyoneHasExtra: Record<string, NodeStatus> = {
       H8: { state: "prospective", level: 0, signal: 0 },
-      L8: { state: "prospective", level: 0, signal: 0, extra: true },
-      C3: { state: "prospective", level: 0, signal: 1 },
-      D4: { state: "prospective", level: 0, signal: 1, extra: true },
+      L8: { state: "prospective", level: 0, signal: 0 },
+      M12: { state: "prospective", level: 0, signal: 0 },
+      C3: { state: "charged", level: 0, signal: 1 },
+      D4: { state: "prospective", level: 0, signal: 1 },
+      J4: { state: "prospective", level: 0, signal: 1 },
       F5: { state: "prospective", level: 0, signal: 2 },
-      F9: { state: "prospective", level: 0, signal: 2, extra: true },
+      F9: { state: "prospective", level: 0, signal: 2 },
+      K13: { state: "prospective", level: 0, signal: 2 },
     };
     const result = addExtraProspectiveSquares(everyoneHasExtra, 3, [], 4242);
 
@@ -611,97 +656,214 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
   });
 });
 
-describe("scrambleProspectiveSquares (steal.md §10)", () => {
-  const before: Record<string, NodeStatus> = {
+describe("shuffleProspectiveSignals (steal.md §10)", () => {
+  /** Every prospective square's signal, keyed by square name. */
+  function prospectiveSignals(
+    map: Readonly<Record<string, NodeStatus>>,
+  ): Record<string, NodeStatus["signal"]> {
+    const result: Record<string, NodeStatus["signal"]> = {};
+    for (const [name, status] of Object.entries(map)) {
+      if (status.state === "prospective") {
+        result[name] = status.signal;
+      }
+    }
+    return result;
+  }
+
+  /** How many prospective squares each signal has. */
+  function prospectiveCounts(
+    map: Readonly<Record<string, NodeStatus>>,
+  ): Map<NodeStatus["signal"], number> {
+    const counts = new Map<NodeStatus["signal"], number>();
+    for (const signal of Object.values(prospectiveSignals(map))) {
+      counts.set(signal, (counts.get(signal) ?? 0) + 1);
+    }
+    return counts;
+  }
+
+  /** The invariants every shuffle keeps, whatever the draws. */
+  function expectShuffleInvariants(
+    before: Readonly<Record<string, NodeStatus>>,
+    after: Readonly<Record<string, NodeStatus>>,
+  ): void {
+    expect(Object.keys(after).sort()).toEqual(Object.keys(before).sort());
+    for (const [name, status] of Object.entries(before)) {
+      if (status.state === "charged") {
+        expect(after[name]).toEqual(status);
+      } else {
+        expect(after[name]?.state).toBe("prospective");
+        expect(after[name]?.level).toBe(0);
+      }
+    }
+    expect(prospectiveCounts(after)).toEqual(prospectiveCounts(before));
+  }
+
+  /** The seed `steps` mulberry32 steps on from `seed`. */
+  function seedAfter(seed: number, steps: number): number {
+    let result = seed;
+    for (let step = 0; step < steps; step++) {
+      [, result] = mulberry32(result);
+    }
+    return result;
+  }
+
+  // Five signals: 0 Held with an extra, 1 Open, 2 Open with an extra,
+  // 3 Held, 4 Open. Red's matched signal is 3, green's 4.
+  const fiveNodes: Record<string, NodeStatus> = {
     G8: { state: "charged", level: 0, signal: 0 },
     H8: { state: "prospective", level: 0, signal: 0 },
-    L8: { state: "prospective", level: 0, signal: 0, extra: true },
+    L8: { state: "prospective", level: 0, signal: 0 },
     C3: { state: "prospective", level: 0, signal: 1 },
-    D4: { state: "prospective", level: 0, signal: 1 },
+    D5: { state: "prospective", level: 0, signal: 1 },
     E10: { state: "prospective", level: 0, signal: 2 },
     K12: { state: "prospective", level: 0, signal: 2 },
-    N2: { state: "prospective", level: 0, signal: 2, extra: true },
+    N2: { state: "prospective", level: 0, signal: 2 },
+    B13: { state: "charged", level: 0, signal: 3 },
+    M4: { state: "prospective", level: 0, signal: 3 },
+    F13: { state: "prospective", level: 0, signal: 4 },
+    J2: { state: "prospective", level: 0, signal: 4 },
   };
+  const fiveNodesProspectiveCount = 10;
 
-  it("leaves charged squares and extras exactly where they were, and redraws every ordinary prospective square", () => {
-    const result = scrambleProspectiveSquares(before, 3, [], 4242);
+  it.each(["off", "double", "required"] as const)(
+    "moves no square, leaves every charged square alone and keeps each node's count (player-matching %s)",
+    (playerMatching) => {
+      for (let seed = 1; seed <= 200; seed++) {
+        const result = shuffleProspectiveSignals(
+          fiveNodes,
+          5,
+          playerMatching,
+          seed,
+        );
+        expectShuffleInvariants(fiveNodes, result.nodes);
+      }
+    },
+  );
 
-    expect(result.nodes.G8).toEqual(before.G8);
-    expect(result.nodes.L8).toEqual(before.L8);
-    expect(result.nodes.N2).toEqual(before.N2);
-
-    expect(result.removedSquares.map(squareName).sort()).toEqual(
-      ["C3", "D4", "E10", "H8", "K12"].sort(),
-    );
-    expect(result.addedSquares).toHaveLength(5);
-
-    const signal0 = squaresForSignal(result.nodes, 0);
-    expect(signal0).toHaveLength(3);
-    expect(
-      signal0.filter(
-        (square) => result.nodes[squareName(square)]?.state === "charged",
-      ),
-    ).toHaveLength(1);
-    expect(
-      signal0.filter(
-        (square) => result.nodes[squareName(square)]?.extra === true,
-      ),
-    ).toHaveLength(1);
-
-    const signal1 = squaresForSignal(result.nodes, 1);
-    expect(signal1).toHaveLength(2);
-    expect(
-      signal1.some(
-        (square) => result.nodes[squareName(square)]?.extra === true,
-      ),
-    ).toBe(false);
-
-    const signal2 = squaresForSignal(result.nodes, 2);
-    expect(signal2).toHaveLength(3);
-    expect(
-      signal2.filter(
-        (square) => result.nodes[squareName(square)]?.extra === true,
-      ),
-    ).toHaveLength(1);
-  });
-
-  it("consumes exactly one seed step per square added", () => {
-    const seed = 4242;
-    const result = scrambleProspectiveSquares(before, 3, [], seed);
-
-    let expectedSeed = seed;
-    for (let step = 0; step < result.addedSquares.length; step++) {
-      [, expectedSeed] = mulberry32(expectedSeed);
-    }
-    expect(result.nextSeed).toBe(expectedSeed);
-  });
+  it.each(["off", "double", "required"] as const)(
+    "consumes exactly two seed steps per prospective square (player-matching %s)",
+    (playerMatching) => {
+      const seed = 4242;
+      const result = shuffleProspectiveSignals(
+        fiveNodes,
+        5,
+        playerMatching,
+        seed,
+      );
+      expect(result.nextSeed).toBe(
+        seedAfter(seed, 2 * fiveNodesProspectiveCount),
+      );
+    },
+  );
 
   it("deals the same result for the same seed, and a different one for a different seed", () => {
-    const first = scrambleProspectiveSquares(before, 3, [], 9);
-    const second = scrambleProspectiveSquares(before, 3, [], 9);
-    const third = scrambleProspectiveSquares(before, 3, [], 10);
+    const first = shuffleProspectiveSignals(fiveNodes, 5, "required", 9);
+    const second = shuffleProspectiveSignals(fiveNodes, 5, "required", 9);
+    const third = shuffleProspectiveSignals(fiveNodes, 5, "required", 10);
 
     expect(second).toEqual(first);
     expect(third).not.toEqual(first);
   });
 
-  it("draws an Open node's pair afresh, uniformly for the first and weighted for the second, when nothing survives it", () => {
-    const openWithNothingLeft: Record<string, NodeStatus> = {
-      C3: { state: "prospective", level: 0, signal: 0 },
-      D4: { state: "prospective", level: 0, signal: 0 },
-      G8: { state: "charged", level: 0, signal: 1 },
-      H8: { state: "prospective", level: 0, signal: 1 },
-      K11: { state: "charged", level: 0, signal: 2 },
-      K12: { state: "prospective", level: 0, signal: 2 },
-    };
-    const result = scrambleProspectiveSquares(openWithNothingLeft, 3, [], 4242);
-
-    expect(result.removedSquares.map(squareName).sort()).toEqual(
-      ["C3", "D4", "H8", "K12"].sort(),
+  it("places red's or green's signal first, on a square that carried a different signal", () => {
+    // The first placement draws a signal weighted over red's and green's
+    // unplaced counts, then a square among those not carrying it before.
+    const seed = 31;
+    const before = prospectiveSignals(fiveNodes);
+    const squares = Object.keys(before).sort(
+      (a, b) => ALL_SQUARE_NAMES.indexOf(a) - ALL_SQUARE_NAMES.indexOf(b),
     );
-    expect(result.addedSquares).toHaveLength(4);
-    expect(squaresForSignal(result.nodes, 0)).toHaveLength(2);
-    expect(squaresForSignal(result.nodes, 1)).toHaveLength(2);
-    expect(squaresForSignal(result.nodes, 2)).toHaveLength(2);
+    const [signalIndex, seedAfterSignal] = drawWeightedIndex(seed, [1, 2]);
+    const firstSignal = ([3, 4] as const)[signalIndex];
+    const candidates = squares.filter((name) => before[name] !== firstSignal);
+    const [squareIndex] = drawIndex(seedAfterSignal, candidates.length);
+
+    const result = shuffleProspectiveSignals(fiveNodes, 5, "double", seed);
+    expect(result.nodes[candidates[squareIndex]]?.signal).toBe(firstSignal);
   });
+
+  it.each(["double", "required"] as const)(
+    "always puts red or green on at least one square that was a different signal before (player-matching %s)",
+    (playerMatching) => {
+      const boards: readonly [Record<string, NodeStatus>, 3 | 4 | 5][] = [
+        [fiveNodes, 5],
+        [
+          {
+            C3: { state: "prospective", level: 0, signal: 0 },
+            D5: { state: "prospective", level: 0, signal: 0 },
+            H8: { state: "prospective", level: 0, signal: 0 },
+            G8: { state: "charged", level: 0, signal: 1 },
+            K12: { state: "prospective", level: 0, signal: 1 },
+            B13: { state: "charged", level: 0, signal: 2 },
+            M4: { state: "prospective", level: 0, signal: 2 },
+          },
+          3,
+        ],
+      ];
+      for (const [board, nodeCount] of boards) {
+        const before = prospectiveSignals(board);
+        const matched = new Set([
+          matchedSignalForSide("red", nodeCount),
+          matchedSignalForSide("green", nodeCount),
+        ]);
+        for (let seed = 1; seed <= 300; seed++) {
+          const after = prospectiveSignals(
+            shuffleProspectiveSignals(board, nodeCount, playerMatching, seed)
+              .nodes,
+          );
+          const moved = Object.keys(before).some((name) => {
+            const signal = after[name];
+            return (
+              signal !== undefined &&
+              matched.has(signal) &&
+              before[name] !== signal
+            );
+          });
+          expect(moved).toBe(true);
+        }
+      }
+    },
+  );
+
+  it("falls back to every empty square when no square with a different signal is left", () => {
+    // Signal 0 owns three of the five prospective squares, so once signals 1
+    // and 2 have taken the only two squares that were not 0's, signal 0's
+    // placements have nowhere different to go.
+    const board: Record<string, NodeStatus> = {
+      C3: { state: "prospective", level: 0, signal: 0 },
+      D5: { state: "prospective", level: 0, signal: 0 },
+      H8: { state: "prospective", level: 0, signal: 0 },
+      G8: { state: "charged", level: 0, signal: 1 },
+      K12: { state: "prospective", level: 0, signal: 1 },
+      B13: { state: "charged", level: 0, signal: 2 },
+      M4: { state: "prospective", level: 0, signal: 2 },
+    };
+    for (const playerMatching of ["off", "double", "required"] as const) {
+      for (let seed = 1; seed <= 300; seed++) {
+        const result = shuffleProspectiveSignals(
+          board,
+          3,
+          playerMatching,
+          seed,
+        );
+        expectShuffleInvariants(board, result.nodes);
+        expect(result.nextSeed).toBe(seedAfter(seed, 10));
+      }
+    }
+  });
+
+  it.each([3, 4, 5] as const)(
+    "shuffles every opening deal of %d nodes with player-matching off, keeping every invariant",
+    (nodeCount) => {
+      const [dealt] = dealStealOpeningBoard(FLEET_SQUARES, nodeCount, 777);
+      const outcomes = new Set<string>();
+      for (let seed = 1; seed <= 50; seed++) {
+        const result = shuffleProspectiveSignals(dealt, nodeCount, "off", seed);
+        expectShuffleInvariants(dealt, result.nodes);
+        expect(result.nextSeed).toBe(seedAfter(seed, 2 * 2 * nodeCount));
+        outcomes.add(JSON.stringify(prospectiveSignals(result.nodes)));
+      }
+      expect(outcomes.size).toBeGreaterThan(1);
+    },
+  );
 });

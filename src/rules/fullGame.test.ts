@@ -450,11 +450,12 @@ function assertNoInactiveOrDepletedNodes(state: GameState): void {
 }
 
 /**
- * Every steal node invariant that must hold at any ply (steal.md §§2, 8):
- * each of the game's `chargedNodeCount` signals has exactly two squares,
- * charged and prospective or two prospective, never depleted or inactive; a
- * charged square never carries a countdown; and no rotator is ever laid
- * down.
+ * Every steal node invariant that must hold at any ply (steal.md §§2, 8,
+ * 10): each of the game's `chargedNodeCount` signals has at most one charged
+ * square, and one or two prospective squares when Held, two or three when
+ * Open — the larger count only under planet resources, when the node carries
+ * an extra; never depleted or inactive; a charged square never carries a
+ * countdown; and no rotator is ever laid down.
  */
 function assertStealNodeInvariants(
   state: GameState,
@@ -469,28 +470,28 @@ function assertStealNodeInvariants(
   ) as readonly NodeSignal[]) {
     const squares = squaresForSignal(state.nodes, signal);
     const statuses = squares.map((square) => nodeStatusAt(state, square));
-    const extraCount = statuses.filter(
-      (status) => status?.extra === true,
-    ).length;
-    // Two squares ordinarily; three when Additional nodes has given this
-    // signal an extra (steal.md §10) — the planet resources sweep below is
-    // what exercises that case.
-    expect(squares).toHaveLength(extraCount === 1 ? 3 : 2);
-    expect(extraCount).toBeLessThanOrEqual(1);
 
     const chargedCount = statuses.filter(
       (status) => status?.state === "charged",
     ).length;
     expect(chargedCount).toBeLessThanOrEqual(1);
 
+    const prospectiveCount = statuses.filter(
+      (status) => status?.state === "prospective",
+    ).length;
+    const usual = chargedCount === 1 ? 1 : 2;
+    // One more than usual only when Additional nodes has given this signal
+    // an extra (steal.md §10) — the planet resources sweep below is what
+    // exercises that case.
+    const most = state.planetActivity === "off" ? usual : usual + 1;
+    expect(prospectiveCount).toBeGreaterThanOrEqual(usual);
+    expect(prospectiveCount).toBeLessThanOrEqual(most);
+
     for (const status of statuses) {
       expect(
         status?.state === "charged" || status?.state === "prospective",
       ).toBe(true);
       expect(status?.level).toBe(0);
-      if (status?.extra === true) {
-        expect(status.state).toBe("prospective");
-      }
     }
   }
 }
