@@ -132,13 +132,12 @@ interface StartScreenProps {
  * generates for its radio groups, is which group's tip is open, if any;
  * opening or closing a tip never calls an option handler. Changing an option
  * only calls the matching handler — it dispatches nothing and starts no
- * game. The
- * Player-matching nodes group renders only while the node playstyle is
- * steal, so the caller's `playerMatching` value is otherwise unused chrome.
- * In the same position, the Planet effects group renders under steal and
- * the Planet bonus group under every other playstyle, so only one of
- * `planetBonus` and `planetActivity` is ever shown; each keeps its own value
- * while hidden.
+ * game. The Player-matching nodes group renders only while the node
+ * playstyle is steal, so the caller's `playerMatching` value is otherwise
+ * unused chrome. In the same position, the Planet effects group renders
+ * under steal and the Planet bonus group under every other playstyle, so
+ * only one of `planetBonus` and `planetActivity` is ever shown; each keeps
+ * its own value while hidden.
  */
 export function StartScreen({
   fleetSize,

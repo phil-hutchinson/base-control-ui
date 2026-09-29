@@ -111,7 +111,7 @@ function distanceToNearestChargedOrInactive(
   return nearest;
 }
 
-/** Whether `square` is one of the two current planet resources bonuses' planets (steal.md §10). */
+/** Whether `square` is one of the two current planet effects bonuses' planets (steal.md §10). */
 function isActivityBonusPlanet(state: GameState, square: Square): boolean {
   return state.activityBonuses.some(
     (bonus) => squareName(bonus.square) === squareName(square),
@@ -119,7 +119,7 @@ function isActivityBonusPlanet(state: GameState, square: Square): boolean {
 }
 
 /**
- * A deterministic greedy policy: under planet resources, race for a bonus
+ * A deterministic greedy policy: under planet effects, race for a bonus
  * planet first (steal.md §10) — otherwise head for a charged node, or,
  * under steal, a prospective node, since landing on one is the only way to claim
  * or steal it (steal.md §3) — otherwise close the distance to the nearest
@@ -129,7 +129,7 @@ function isActivityBonusPlanet(state: GameState, square: Square): boolean {
 function choosePly(state: GameState): PlyChoice | undefined {
   const ships = state.ships;
 
-  // 0. Under planet resources, the first destination, in
+  // 0. Under planet effects, the first destination, in
   // fleet-then-destination order, that lands on one of the two current bonus planets. Vacuous —
   // `state.activityBonuses` is empty — under every other setting.
   for (const ship of ships) {
@@ -453,7 +453,7 @@ function assertNoInactiveOrDepletedNodes(state: GameState): void {
  * Every steal node invariant that must hold at any ply (steal.md §§2, 8,
  * 10): each of the game's `chargedNodeCount` signals has at most one charged
  * square, and one or two prospective squares when Held, two or three when
- * Open — the larger count only under planet resources, when the node carries
+ * Open — the larger count only under planet effects, when the node carries
  * an extra; never depleted or inactive; a charged square never carries a
  * countdown; and no rotator is ever laid down.
  */
@@ -481,7 +481,7 @@ function assertStealNodeInvariants(
     ).length;
     const usual = chargedCount === 1 ? 1 : 2;
     // One more than usual only when Additional nodes has given this signal
-    // an extra (steal.md §10) — the planet resources sweep below is what
+    // an extra (steal.md §10) — the planet effects sweep below is what
     // exercises that case.
     const most = state.planetActivity === "off" ? usual : usual + 1;
     expect(prospectiveCount).toBeGreaterThanOrEqual(usual);
@@ -497,7 +497,7 @@ function assertStealNodeInvariants(
 }
 
 /**
- * Every planet resources invariant that must hold at any ply (steal.md
+ * Every planet effects invariant that must hold at any ply (steal.md
  * §10): exactly two bonuses stand, on two different planets, of two
  * different kinds, and neither planet carries a ship; and Additional nodes
  * never stands among them while every node already has its extra.
@@ -786,7 +786,7 @@ describe.each(
     ),
   ),
 )(
-  "a full steal game under %s planet resources, end to end, at %d nodes (steal.md §10)",
+  "a full steal game under %s planet effects, end to end, at %d nodes (steal.md §10)",
   (planetActivity, chargedNodeCount) => {
     it.each(
       PLAYER_MATCHING_SETTINGS.flatMap((playerMatching) =>

@@ -927,7 +927,7 @@ describe("sessionReducer — new-game", () => {
     expect(result.state.bonusPlanets).toEqual({ green: [], red: [] });
   });
 
-  it("honours a chosen planet resources setting of race under steal, dealing a state with two activity bonuses", () => {
+  it("honours a chosen planet effects setting of race under steal, dealing a state with two activity bonuses", () => {
     const session = sessionFor(buildState({ ships: [] }));
 
     const result = sessionReducer(session, {

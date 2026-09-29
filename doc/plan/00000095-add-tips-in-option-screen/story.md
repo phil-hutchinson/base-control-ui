@@ -85,8 +85,8 @@ The number of turns each player has in the game.
 
 **Clock (time per turn)**
 
-When on, each player has a total time for the whole game: the chosen time
-per turn, multiplied by the number of rounds.
+Each player has a total time for the whole game: the chosen time per turn,
+multiplied by the number of rounds. UNLIMITED means no clock.
 
 ### The renames
 

@@ -1,6 +1,6 @@
 // The app's front door: which screen is showing, the options chosen on the
 // start screen — eight of them, nine under the steal playstyle, which alone
-// offers player-matching nodes and offers planet resources in place of planet
+// offers player-matching nodes and offers planet effects in place of planet
 // bonus — and the two actions that move between
 // screens. Lives
 // outside App.tsx so PLAY's wiring and the return to start are a real unit,
@@ -74,7 +74,7 @@ export interface AppScreen {
  * delegates which screen is showing to `useScreenAddress`, which reads it
  * from the browser's address. `handlePlay` dispatches `new-game` with a fresh
  * seed and the fleet size, charged-node count, scoring setting, node
- * playstyle, planet bonus, planet resources and player-matching settings
+ * playstyle, planet bonus, planet effects and player-matching settings
  * (each resolved for the node playstyle actually chosen —
  * `resolvePlanetBonus`, `resolvePlanetActivity`, `resolvePlayerMatching` —
  * so a game never starts with a setting its playstyle does not offer) and
@@ -87,7 +87,7 @@ export interface AppScreen {
  * quick guide at its own address and changes nothing else; there is no
  * matching close action, because `handleReturnToStart` already means "leave
  * for the start screen", which is exactly what leaving the guide does.
- * Planet bonus and planet resources are remembered separately, so switching
+ * Planet bonus and planet effects are remembered separately, so switching
  * playstyle shows the other group as it was last left, and switching back
  * finds the first unchanged.
  */

@@ -5,7 +5,7 @@
 // to which side, leaving this a leaf module the way `clock.ts`,
 // `combatSetting.ts`, `nodePlaystyle.ts`, `planetActivity.ts`,
 // `playerMatching.ts` and `scoring.ts` already are. The steal playstyle's
-// planet choice is planet resources (`planetActivity.ts`), not this one.
+// planet choice is planet effects (`planetActivity.ts`), not this one.
 
 import type { NodePlaystyle } from "./nodePlaystyle";
 

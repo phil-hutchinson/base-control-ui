@@ -6,7 +6,7 @@ import {
   resolvePlanetActivity,
 } from "./planetActivity";
 
-describe("the offered planet resources settings (steal.md §10)", () => {
+describe("the offered planet effects settings (steal.md §10)", () => {
   it("offers off, stable and race, in that order", () => {
     expect(PLANET_ACTIVITY_SETTINGS).toEqual(["off", "stable", "race"]);
   });

@@ -1,4 +1,4 @@
-// The planet resources setting's own rules (steal.md §10): the six
+// The planet effects setting's own rules (steal.md §10): the six
 // kinds and their weights, the point table, availability, the weighted kind
 // draw, the uniform planet draw, the opening deal of the pair and the claim
 // resolution. A leaf module over `gameState.ts`'s `NodeStatus` and `Ship`
@@ -372,7 +372,7 @@ export interface ResolveActivityBonusClaimResult {
  * fixed order, the effect's own draws first. Both kind draws measure Fuel's
  * weight from every ship as it stands after the claimed kind's own effect — a
  * Fuel just paid included. The new bonus takes the claimed bonus's slot; the
- * survivor keeps its own. Throws a `RangeError` if the planet resources setting
+ * survivor keeps its own. Throws a `RangeError` if the planet effects setting
  * is off, if `planet` carries neither current bonus, or if no planet is left
  * for the new bonus to appear on — the five-ship limit guarantees one, so the
  * last is a bug detector, not a case to handle.
@@ -394,7 +394,7 @@ export function resolveActivityBonusClaim(
 ): ResolveActivityBonusClaimResult {
   if (state.planetActivity === "off") {
     throw new RangeError(
-      "resolveActivityBonusClaim: the planet resources setting is off, so no activity bonus can be claimed",
+      "resolveActivityBonusClaim: the planet effects setting is off, so no activity bonus can be claimed",
     );
   }
   const claimedIndex = state.activityBonuses.findIndex(
