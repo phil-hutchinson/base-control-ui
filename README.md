@@ -111,8 +111,8 @@ install, no account, no server.
 > is on, hovering over a planet in the bonus panel above the clocks lights up the
 > matching planet on the board, and hovering that planet on the board lights
 > it up in the panel, so it's easy to match the two. Green goes first, and each
-> player moves one ship — or attacks with one, when combat is on — by mouse or
-> by keyboard. Picking a ship shows you where it can go and what each move would
+> player moves one ship — or attacks with one, when combat is on, which the app
+> does not currently offer — by mouse or by keyboard. Picking a ship shows you where it can go and what each move would
 > cost: a dot on every square it can reach for free, and elsewhere the same small
 > bars the ship's own power gauge shows — one bar for one point of power, two
 > for two, three for three.
