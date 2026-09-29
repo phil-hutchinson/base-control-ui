@@ -224,7 +224,9 @@ rather than a gate of their own, since the tips add a second place
 
 ### Step 1 — Ruleset and vocabulary: Node scoring and Planet effects (0.44)
 
-Status: pending
+Status: committed
+
+Notes: Renamed planet resources to planet effects throughout `rules.md`, `steal.md` and `tech-notes.md` (including the steal.md §10 and tech-notes headings), and scoring to node scoring where the setting is named (rules.md §8.4 and §10, steal.md §9 and §10, and one tech-notes line); the version is now 0.44, with a changelog entry and `RULES_VERSION` bumped. The implementing agent left `CLAUDE.md` alone; the orchestrator made the Vocabulary edit, as the owner-approved story specifies.
 
 Documentation only; no code other than the version constant.
 
