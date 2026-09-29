@@ -10,10 +10,6 @@ import {
   DEFAULT_CLOCK_SETTING,
 } from "../rules/clock";
 import {
-  COMBAT_SETTINGS,
-  DEFAULT_COMBAT_ENABLED,
-} from "../rules/combatSetting";
-import {
   DEFAULT_FLEET_SIZE,
   FLEET_SIZES,
   type FleetSize,
@@ -64,12 +60,6 @@ const CLOCK_SETTING_LABELS: Record<ClockSetting, string> = {
   2: "2s",
 };
 
-/** The Combat group's labels, mirroring `StartScreen`'s own map. */
-const COMBAT_SETTING_LABELS: Record<"off" | "on", string> = {
-  off: "OFF",
-  on: "ON",
-};
-
 /** The Scoring group's labels, mirroring `StartScreen`'s own map. */
 const SCORING_SETTING_LABELS: Record<ScoringSetting, string> = {
   simple: "SIMPLE",
@@ -108,7 +98,6 @@ const PLAYER_MATCHING_LABELS: Record<PlayerMatchingSetting, string> = {
 interface RenderOverrides {
   readonly fleetSize?: FleetSize;
   readonly chargedNodeCount?: ChargedNodeCount;
-  readonly combatEnabled?: boolean;
   readonly scoring?: ScoringSetting;
   readonly planetBonus?: PlanetBonusSetting;
   readonly planetActivity?: PlanetActivitySetting;
@@ -120,7 +109,6 @@ interface RenderOverrides {
   readonly onChargedNodeCountChange?: (
     chargedNodeCount: ChargedNodeCount,
   ) => void;
-  readonly onCombatEnabledChange?: (combatEnabled: boolean) => void;
   readonly onScoringChange?: (scoring: ScoringSetting) => void;
   readonly onPlanetBonusChange?: (planetBonus: PlanetBonusSetting) => void;
   readonly onPlanetActivityChange?: (
@@ -140,7 +128,6 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   const onFleetSizeChange = overrides.onFleetSizeChange ?? vi.fn();
   const onChargedNodeCountChange =
     overrides.onChargedNodeCountChange ?? vi.fn();
-  const onCombatEnabledChange = overrides.onCombatEnabledChange ?? vi.fn();
   const onScoringChange = overrides.onScoringChange ?? vi.fn();
   const onPlanetBonusChange = overrides.onPlanetBonusChange ?? vi.fn();
   const onPlanetActivityChange = overrides.onPlanetActivityChange ?? vi.fn();
@@ -158,8 +145,6 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
         overrides.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT
       }
       onChargedNodeCountChange={onChargedNodeCountChange}
-      combatEnabled={overrides.combatEnabled ?? DEFAULT_COMBAT_ENABLED}
-      onCombatEnabledChange={onCombatEnabledChange}
       scoring={overrides.scoring ?? DEFAULT_SCORING}
       onScoringChange={onScoringChange}
       planetBonus={overrides.planetBonus ?? DEFAULT_PLANET_BONUS}
@@ -181,7 +166,6 @@ function renderStartScreen(overrides: RenderOverrides = {}) {
   return {
     onFleetSizeChange,
     onChargedNodeCountChange,
-    onCombatEnabledChange,
     onScoringChange,
     onPlanetBonusChange,
     onPlanetActivityChange,
@@ -267,7 +251,7 @@ describe("StartScreen", () => {
     ).toEqual(["5", "4", "3"]);
   });
 
-  it("renders the eight option groups in order: Node playstyle, Ships, Charged nodes, Scoring, Planet bonus, Combat, Rounds, Clock, with no Player-matching nodes group, under a non-steal playstyle", () => {
+  it("renders the seven option groups in order: Node playstyle, Ships, Charged nodes, Scoring, Planet bonus, Rounds, Clock, with no Player-matching nodes group, under a non-steal playstyle", () => {
     renderStartScreen({ nodePlaystyle: "planet" });
 
     const groups = screen.getAllByRole("group");
@@ -279,13 +263,12 @@ describe("StartScreen", () => {
       "Charged nodes",
       "Scoring",
       "Planet bonus",
-      "Combat",
       "Rounds",
       "Clock (time per move)",
     ]);
   });
 
-  it("renders nine option groups under STEAL, with Player-matching nodes between Charged nodes and Scoring, and Planet resources in Planet bonus's place", () => {
+  it("renders eight option groups under STEAL, with Player-matching nodes between Charged nodes and Scoring, and Planet resources in Planet bonus's place", () => {
     renderStartScreen({ nodePlaystyle: "steal" });
 
     const groups = screen.getAllByRole("group");
@@ -298,7 +281,6 @@ describe("StartScreen", () => {
       "Player-matching nodes",
       "Scoring",
       "Planet resources",
-      "Combat",
       "Rounds",
       "Clock (time per move)",
     ]);
@@ -358,7 +340,6 @@ describe("StartScreen", () => {
       onScoringChange,
       onPlanetBonusChange,
       onNodePlaystyleChange,
-      onCombatEnabledChange,
       onLengthInRoundsChange,
       onClockSettingChange,
       onPlay,
@@ -374,7 +355,6 @@ describe("StartScreen", () => {
     expect(onScoringChange).not.toHaveBeenCalled();
     expect(onPlanetBonusChange).not.toHaveBeenCalled();
     expect(onNodePlaystyleChange).not.toHaveBeenCalled();
-    expect(onCombatEnabledChange).not.toHaveBeenCalled();
     expect(onLengthInRoundsChange).not.toHaveBeenCalled();
     expect(onClockSettingChange).not.toHaveBeenCalled();
     expect(onPlay).not.toHaveBeenCalled();
@@ -414,7 +394,6 @@ describe("StartScreen", () => {
       onFleetSizeChange,
       onChargedNodeCountChange,
       onScoringChange,
-      onCombatEnabledChange,
       onLengthInRoundsChange,
       onClockSettingChange,
       onPlay,
@@ -426,7 +405,6 @@ describe("StartScreen", () => {
     expect(onScoringChange).toHaveBeenCalledExactlyOnceWith("bonus");
     expect(onFleetSizeChange).not.toHaveBeenCalled();
     expect(onChargedNodeCountChange).not.toHaveBeenCalled();
-    expect(onCombatEnabledChange).not.toHaveBeenCalled();
     expect(onLengthInRoundsChange).not.toHaveBeenCalled();
     expect(onClockSettingChange).not.toHaveBeenCalled();
     expect(onPlay).not.toHaveBeenCalled();
@@ -585,7 +563,6 @@ describe("StartScreen", () => {
       onChargedNodeCountChange,
       onScoringChange,
       onPlanetBonusChange,
-      onCombatEnabledChange,
       onNodePlaystyleChange,
       onLengthInRoundsChange,
       onClockSettingChange,
@@ -600,7 +577,6 @@ describe("StartScreen", () => {
     expect(onChargedNodeCountChange).not.toHaveBeenCalled();
     expect(onScoringChange).not.toHaveBeenCalled();
     expect(onNodePlaystyleChange).not.toHaveBeenCalled();
-    expect(onCombatEnabledChange).not.toHaveBeenCalled();
     expect(onLengthInRoundsChange).not.toHaveBeenCalled();
     expect(onClockSettingChange).not.toHaveBeenCalled();
     expect(onPlay).not.toHaveBeenCalled();
@@ -644,7 +620,6 @@ describe("StartScreen", () => {
       onFleetSizeChange,
       onChargedNodeCountChange,
       onScoringChange,
-      onCombatEnabledChange,
       onNodePlaystyleChange,
       onLengthInRoundsChange,
       onClockSettingChange,
@@ -660,38 +635,21 @@ describe("StartScreen", () => {
     expect(onFleetSizeChange).not.toHaveBeenCalled();
     expect(onChargedNodeCountChange).not.toHaveBeenCalled();
     expect(onScoringChange).not.toHaveBeenCalled();
-    expect(onCombatEnabledChange).not.toHaveBeenCalled();
     expect(onLengthInRoundsChange).not.toHaveBeenCalled();
     expect(onClockSettingChange).not.toHaveBeenCalled();
     expect(onPlay).not.toHaveBeenCalled();
   });
 
-  it("renders the combat group with both labels and the given one checked", () => {
-    renderStartScreen({ combatEnabled: true });
+  it("renders no Combat group under any node playstyle", () => {
+    for (const nodePlaystyle of NODE_PLAYSTYLES) {
+      renderStartScreen({ nodePlaystyle });
 
-    const group = screen.getByRole("group", { name: "Combat" });
-    for (const value of COMBAT_SETTINGS) {
-      const radio = within(group).getByRole("radio", {
-        name: COMBAT_SETTING_LABELS[value ? "on" : "off"],
-      });
-      if (value) {
-        expect(radio).toBeChecked();
-      } else {
-        expect(radio).not.toBeChecked();
-      }
+      expect(
+        screen.queryByRole("group", { name: "Combat" }),
+      ).not.toBeInTheDocument();
+
+      cleanup();
     }
-  });
-
-  it("checks OFF by default, with the radios in order OFF then ON", () => {
-    renderStartScreen();
-
-    const group = screen.getByRole("group", { name: "Combat" });
-    expect(within(group).getByRole("radio", { name: "OFF" })).toBeChecked();
-    expect(
-      within(group)
-        .getAllByRole("radio")
-        .map((radio) => radio.getAttribute("value")),
-    ).toEqual(["off", "on"]);
   });
 
   it("renders the rounds group with its values and the selected one checked", () => {
@@ -806,40 +764,6 @@ describe("StartScreen", () => {
     expect(onLengthInRoundsChange).not.toHaveBeenCalled();
     expect(onClockSettingChange).not.toHaveBeenCalled();
     expect(onPlay).not.toHaveBeenCalled();
-  });
-
-  it("calls the combat change handler with true when ON is chosen, and not the others", async () => {
-    const user = userEvent.setup();
-    const {
-      onFleetSizeChange,
-      onChargedNodeCountChange,
-      onCombatEnabledChange,
-      onLengthInRoundsChange,
-      onClockSettingChange,
-      onPlay,
-    } = renderStartScreen({ combatEnabled: false });
-
-    const group = screen.getByRole("group", { name: "Combat" });
-    await user.click(within(group).getByRole("radio", { name: "ON" }));
-
-    expect(onCombatEnabledChange).toHaveBeenCalledExactlyOnceWith(true);
-    expect(onFleetSizeChange).not.toHaveBeenCalled();
-    expect(onChargedNodeCountChange).not.toHaveBeenCalled();
-    expect(onLengthInRoundsChange).not.toHaveBeenCalled();
-    expect(onClockSettingChange).not.toHaveBeenCalled();
-    expect(onPlay).not.toHaveBeenCalled();
-  });
-
-  it("calls the combat change handler with false when OFF is chosen from an ON state", async () => {
-    const user = userEvent.setup();
-    const { onCombatEnabledChange } = renderStartScreen({
-      combatEnabled: true,
-    });
-
-    const group = screen.getByRole("group", { name: "Combat" });
-    await user.click(within(group).getByRole("radio", { name: "OFF" }));
-
-    expect(onCombatEnabledChange).toHaveBeenCalledExactlyOnceWith(false);
   });
 
   it("calls the rounds change handler, and not the others, when a different value is chosen", async () => {

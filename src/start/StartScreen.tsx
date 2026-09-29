@@ -1,6 +1,6 @@
 // The start screen: the app's front door. Carries the game's on-screen
-// name, the options a player sets before a game begins — eight of them,
-// nine under the steal playstyle, which alone offers player-matching nodes
+// name, the options a player sets before a game begins — seven of them,
+// eight under the steal playstyle, which alone offers player-matching nodes
 // and shows a Planet resources group in place of the Planet bonus group — and
 // the PLAY button. Rendered by `App` in
 // place of the game whenever there is no game in progress.
@@ -8,7 +8,6 @@
 import { useId } from "react";
 import { GAME_NAME } from "../gameName";
 import { type ClockSetting, CLOCK_SETTINGS } from "../rules/clock";
-import { COMBAT_SETTINGS } from "../rules/combatSetting";
 import { type FleetSize, FLEET_SIZES } from "../rules/fleet";
 import { GAME_LENGTH_OPTIONS_ROUNDS } from "../rules/gameLength";
 import { type NodePlaystyle, NODE_PLAYSTYLES } from "../rules/nodePlaystyle";
@@ -34,12 +33,6 @@ const CLOCK_SETTING_LABELS: Record<ClockSetting, string> = {
   6: "6s",
   4: "4s",
   2: "2s",
-};
-
-/** The Combat group's labels — start-screen chrome, not a rules concern. */
-const COMBAT_SETTING_LABELS: Record<"off" | "on", string> = {
-  off: "OFF",
-  on: "ON",
 };
 
 /** The Scoring group's labels — start-screen chrome, not a rules concern. */
@@ -86,11 +79,6 @@ const NODE_PLAYSTYLE_LABELS: Record<NodePlaystyle, string> = {
   steal: "STEAL",
 };
 
-/** The Combat group's radio `value` attributes, one per offered setting. */
-function combatSettingValue(combatEnabled: boolean): "off" | "on" {
-  return combatEnabled ? "on" : "off";
-}
-
 interface StartScreenProps {
   readonly fleetSize: FleetSize;
   readonly onFleetSizeChange: (fleetSize: FleetSize) => void;
@@ -98,8 +86,6 @@ interface StartScreenProps {
   readonly onChargedNodeCountChange: (
     chargedNodeCount: ChargedNodeCount,
   ) => void;
-  readonly combatEnabled: boolean;
-  readonly onCombatEnabledChange: (combatEnabled: boolean) => void;
   readonly scoring: ScoringSetting;
   readonly onScoringChange: (scoring: ScoringSetting) => void;
   readonly planetBonus: PlanetBonusSetting;
@@ -139,8 +125,6 @@ export function StartScreen({
   onFleetSizeChange,
   chargedNodeCount,
   onChargedNodeCountChange,
-  combatEnabled,
-  onCombatEnabledChange,
   scoring,
   onScoringChange,
   planetBonus,
@@ -165,7 +149,6 @@ export function StartScreen({
   const planetActivityGroupName = useId();
   const nodePlaystyleGroupName = useId();
   const playerMatchingGroupName = useId();
-  const combatEnabledGroupName = useId();
   const lengthGroupName = useId();
   const clockSettingGroupName = useId();
 
@@ -291,21 +274,6 @@ export function StartScreen({
           </div>
         </fieldset>
       )}
-      <fieldset className="start-screen__options">
-        <legend className="start-screen__legend">Combat</legend>
-        <div className="start-screen__choices">
-          {COMBAT_SETTINGS.map((value) => (
-            <OptionChoice
-              key={combatSettingValue(value)}
-              name={combatEnabledGroupName}
-              value={combatSettingValue(value)}
-              label={COMBAT_SETTING_LABELS[combatSettingValue(value)]}
-              checked={value === combatEnabled}
-              onChange={() => onCombatEnabledChange(value)}
-            />
-          ))}
-        </div>
-      </fieldset>
       <fieldset className="start-screen__options">
         <legend className="start-screen__legend">Rounds</legend>
         <div className="start-screen__choices">

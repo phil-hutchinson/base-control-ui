@@ -18,17 +18,17 @@ path; a ship flies straight over its own side. The only way to refill is to sit
 on a planet: at the end of its owner's turn a ship parked on one gains a point
 of power, or two if it is the only one of that player's ships still topping up
 power on a planet at that moment — a ship already full doesn't count — up to a
-maximum of six. Fighting is a choice you make before play begins: the app starts
-with combat off, and a game with it off has no attacks in it at all — nodes are
-won by getting there first and held by staying put. Turn it on and it works like
-this. An attack costs its attacker the same price as the move it used to strike,
-and reaches exactly as far as a move does — a ship with 3 to spend can strike
-from three squares away, not just two — while the ship being attacked keeps
-whatever power it had. A ship holding a node cannot be attacked while it holds
-it. A fight has no winner: both ships involved are pushed back to a planet,
-chosen at random from wherever the board has one standing empty — the ship that
-was attacked carrying whatever power it had, and the attacker already having
-paid for its shot — and fly again from there. Ships are never destroyed.
+maximum of six. Fighting is part of the rules, but the app currently plays every
+game with combat off, and a game with it off has no attacks in it at all — nodes
+are won by getting there first and held by staying put. With combat on, it works
+like this. An attack costs its attacker the same price as the move it used to
+strike, and reaches exactly as far as a move does — a ship with 3 to spend can
+strike from three squares away, not just two — while the ship being attacked
+keeps whatever power it had. A ship holding a node cannot be attacked while it
+holds it. A fight has no winner: both ships involved are pushed back to a
+planet, chosen at random from wherever the board has one standing empty — the
+ship that was attacked carrying whatever power it had, and the attacker already
+having paid for its shot — and fly again from there. Ships are never destroyed.
 
 A node doesn't wear down on its own: it just sits there, lit, for as long as
 it takes until a ship lands on it and starts its countdown. From that moment
@@ -65,8 +65,7 @@ install, no account, no server.
 > to start), a choice of whether planets pay a bonus when continuous, planet
 > or dedicated is chosen (off, two points or three points, off to start), a
 > choice of planet resources when steal is chosen instead (off, stable or race,
-> race to start), a choice of whether combat is on or off (off to start), a
-> choice of how many rounds the game lasts
+> race to start), a choice of how many rounds the game lasts
 > (thirty, forty-five, sixty or ninety, thirty to start), a choice of a clock
 > (unlimited, or six, four or two seconds a turn, unlimited to start) and a PLAY
 > button. The start screen also offers a quick guide — a first read for someone
@@ -112,8 +111,8 @@ install, no account, no server.
 > is on, hovering over a planet in the bonus panel above the clocks lights up the
 > matching planet on the board, and hovering that planet on the board lights
 > it up in the panel, so it's easy to match the two. Green goes first, and each
-> player moves one ship — or attacks with one, when combat is on — by mouse or
-> by keyboard. Picking a ship shows you where it can go and what each move would
+> player moves one ship — or attacks with one, when combat is on, which the app
+> does not currently offer — by mouse or by keyboard. Picking a ship shows you where it can go and what each move would
 > cost: a dot on every square it can reach for free, and elsewhere the same small
 > bars the ship's own power gauge shows — one bar for one point of power, two
 > for two, three for three.
