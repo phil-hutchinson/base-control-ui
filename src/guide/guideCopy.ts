@@ -78,7 +78,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
   },
   {
     id: "refuelling",
-    heading: "REFUELING",
+    heading: "REFUELLING",
     paragraph:
       "Spaceships can hold up to six fuel. At the end of a player's turn, " +
       "spaceships sitting on planets regain one fuel. If a player has " +

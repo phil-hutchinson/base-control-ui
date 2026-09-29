@@ -276,7 +276,9 @@ nothing, and `grep -n "Scoring is" doc/ruleset/rules.md` prints nothing.
 
 ### Step 2 — Spelling from the browser's preferred languages
 
-Status: pending
+Status: committed
+
+Notes: Added `src/spelling/spelling.ts` (language choice, word table, `respell`) and `src/spelling/spellingContext.ts`, wired the provider in `main.tsx` (also falling back to `navigator.language` when `languages` is empty), respelled the Quick Guide and the board's announcement and square names, and made the guide's heading `REFUELLING`. Deviation: the context module is a `.ts` file exporting the context and the `useSpelling` hook, with no separate provider component — React 19 renders the context itself as its provider (`<SpellingContext value=…>`), and a `.tsx` exporting a hook beside a component would trip the react-refresh lint rule.
 
 Add the spelling choice (D8) and route today's player-facing text through
 it.

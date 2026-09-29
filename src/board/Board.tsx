@@ -27,6 +27,8 @@ import type { PowerLevel } from "../rules/power";
 import { countdownNumber, nodeCyclePosition } from "../rules/countdown";
 import { inactivePriority } from "../rules/nodeQueue";
 import type { Session, SessionIntent } from "../game/session";
+import { respell } from "../spelling/spelling";
+import { useSpelling } from "../spelling/spellingContext";
 import { announcementForSession } from "./announcements";
 import { boardAnimations } from "./boardAnimations";
 import { squareForGridPosition } from "./boardView";
@@ -75,6 +77,8 @@ export function Board({
   glowSquare,
   onHoverSquare,
 }: BoardProps) {
+  const spelling = useSpelling();
+
   const handleActivate = useCallback(
     (position: GridPosition) => {
       onIntent({
@@ -229,20 +233,23 @@ export function Board({
               }}
             />
           ),
-          label: squareLabel({
-            square,
-            isPlanet: planetSquare,
-            nodeState,
-            hasRotator,
-            occupant,
-            condition,
-            mark,
-          }),
+          label: respell(
+            squareLabel({
+              square,
+              isPlanet: planetSquare,
+              nodeState,
+              hasRotator,
+              occupant,
+              condition,
+              mark,
+            }),
+            spelling,
+          ),
           focusable: true,
         };
       }),
     );
-  }, [session, arrangement, glowSquareName, onHoverSquare]);
+  }, [session, arrangement, glowSquareName, onHoverSquare, spelling]);
 
   return (
     <div className="board-frame">
@@ -252,7 +259,7 @@ export function Board({
         className="board"
         onActivate={handleActivate}
         onDismiss={handleDismiss}
-        announcement={announcementForSession(session)}
+        announcement={respell(announcementForSession(session), spelling)}
       />
       <EnergyOverlay session={session} />
     </div>

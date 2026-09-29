@@ -22,7 +22,7 @@ describe("guideCopy", () => {
   it("has the eight headed sections in the story's order", () => {
     expect(GUIDE_SECTIONS.map((section) => section.heading)).toEqual([
       "MOVEMENT",
-      "REFUELING",
+      "REFUELLING",
       "NODE LIFECYCLE",
       "NEW CHARGED NODE SELECTION",
       "STEALING NODES",
