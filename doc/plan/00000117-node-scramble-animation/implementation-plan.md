@@ -120,7 +120,14 @@ replay tests unchanged (the shuffle's draws are untouched).
 
 ### Step 2 — Derive and draw the recolour sweep
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned. The swept rings carry their circumference
+both as `stroke-dasharray` and as the `--node-recolor-ring-length` custom
+property the keyframe starts from; `--node-recolor-duration` (700ms) sits on
+`.node-marker` beside the charge duration. The underlay's keyframe holds it
+at full opacity to 99%. Typecheck, lint, format check and the full suite
+(92 files, 2053 tests) pass.
 
 - `src/board/boardAnimations.ts`: add the `node-recolor` animation type
   (old signal, old matched side, `runId`) to `SquareAnimation`, and derive

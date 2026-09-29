@@ -9,6 +9,7 @@ import { NODE_SIGNALS } from "../rules/steal";
 import type {
   NodeBurnoutAnimation,
   NodeChargeAnimation,
+  NodeRecolorAnimation,
 } from "./boardAnimations";
 import { NodeMarker } from "./NodeMarker";
 import { PLAYER_NODE_COLORS, SIGNAL_COLORS } from "./squareArt";
@@ -559,6 +560,103 @@ describe("NodeMarker", () => {
       );
 
       expect(container.innerHTML).toBe(plain.container.innerHTML);
+    });
+  });
+
+  describe("the Node scramble recolour sweep (steal.md §10)", () => {
+    const RECOLOR_ANIMATION: NodeRecolorAnimation = {
+      type: "node-recolor",
+      fromSignal: 1,
+      runId: 4,
+    };
+
+    it("draws the old signal's rings beneath and the new signal's swept rings above", () => {
+      const { container } = render(
+        <NodeMarker
+          state="prospective"
+          squareName={SQUARE_NAME}
+          signal={0}
+          recolorAnimation={RECOLOR_ANIMATION}
+        />,
+      );
+
+      const svg = container.querySelector("svg");
+      expect(svg).toHaveClass("node-marker", "node-marker--prospective");
+      expect(svg).toHaveClass("node-marker--recoloring");
+
+      const underlay = container.querySelectorAll(
+        ".node-marker__recolor-underlay",
+      );
+      const sweep = container.querySelectorAll(".node-marker__recolor-sweep");
+      expect(
+        Array.from(underlay, (circle) => circle.getAttribute("r")),
+      ).toEqual(INACTIVE_RING_RADII.map(String));
+      expect(Array.from(sweep, (circle) => circle.getAttribute("r"))).toEqual(
+        INACTIVE_RING_RADII.map(String),
+      );
+      for (const circle of underlay) {
+        expect(circle).toHaveAttribute("stroke", SIGNAL_COLORS[1].core);
+      }
+      for (const circle of sweep) {
+        expect(circle).toHaveAttribute("stroke", SIGNAL_COLORS[0].core);
+      }
+      // The underlay comes first, so the swept rings paint over it.
+      expect(container.querySelectorAll("circle")[0]).toHaveClass(
+        "node-marker__recolor-underlay",
+      );
+    });
+
+    it("dashes each swept ring to its own circumference, starting at 12 o'clock", () => {
+      const { container } = render(
+        <NodeMarker
+          state="prospective"
+          squareName={SQUARE_NAME}
+          signal={0}
+          recolorAnimation={RECOLOR_ANIMATION}
+        />,
+      );
+
+      const sweep = container.querySelectorAll(".node-marker__recolor-sweep");
+      sweep.forEach((circle, index) => {
+        const length = 2 * Math.PI * Number(INACTIVE_RING_RADII[index]);
+        expect(circle).toHaveAttribute("stroke-dasharray", String(length));
+        expect(circle).toHaveAttribute("transform", "rotate(-90 50 50)");
+        expect(
+          (circle as unknown as HTMLElement).style.getPropertyValue(
+            "--node-recolor-ring-length",
+          ),
+        ).toBe(String(length));
+      });
+    });
+
+    it("draws the old rings in the side's own colour when the old signal was matched (steal.md §9)", () => {
+      const { container } = render(
+        <NodeMarker
+          state="prospective"
+          squareName={SQUARE_NAME}
+          signal={0}
+          recolorAnimation={{ ...RECOLOR_ANIMATION, fromMatchedSide: "red" }}
+        />,
+      );
+
+      for (const circle of container.querySelectorAll(
+        ".node-marker__recolor-underlay",
+      )) {
+        expect(circle).toHaveAttribute("stroke", PLAYER_NODE_COLORS.red.core);
+      }
+    });
+
+    it("draws no sweep without a recolour animation", () => {
+      const { container } = render(
+        <NodeMarker state="prospective" squareName={SQUARE_NAME} signal={0} />,
+      );
+
+      expect(container.querySelector("svg")).not.toHaveClass(
+        "node-marker--recoloring",
+      );
+      expect(container.querySelectorAll("circle")).toHaveLength(
+        INACTIVE_RING_RADII.length,
+      );
     });
   });
 

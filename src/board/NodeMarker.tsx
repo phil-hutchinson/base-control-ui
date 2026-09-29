@@ -28,6 +28,17 @@
 // do not animate, since they already agree at this transition. It is drawn
 // only while `burnoutAnimation` is given; without it, a depleted node's
 // markup is unchanged from the plain artwork below.
+//
+// A prospective square a Node scramble moved to another signal (steal.md
+// §10) plays a recolour sweep: its rings are drawn in the old signal's
+// colour, and the new colour's rings are painted over them along their own
+// circumference, from 12 o'clock clockwise, all three together. Each swept
+// ring is dashed to exactly its own length, so animating the dash offset
+// from that length to zero reveals it from the path's start; a circle's
+// path starts at 3 o'clock and runs clockwise on screen, so the swept rings
+// are turned a quarter back to start at 12. It is drawn only while
+// `recolorAnimation` is given; without it, a prospective node's markup is
+// unchanged from the plain artwork below.
 
 import type { CSSProperties } from "react";
 import type { NodeState } from "../rules/nodes";
@@ -37,6 +48,7 @@ import type { Side } from "../rules/fleet";
 import type {
   NodeBurnoutAnimation,
   NodeChargeAnimation,
+  NodeRecolorAnimation,
 } from "./boardAnimations";
 import {
   INACTIVE_RING_RADII,
@@ -91,6 +103,12 @@ interface NodeMarkerProps {
    * `"depleted"`.
    */
   readonly burnoutAnimation?: NodeBurnoutAnimation;
+  /**
+   * Present while this square's rings are sweeping from an old signal's
+   * colour to `signal`'s, because a Node scramble recoloured it
+   * (`boardAnimations.ts`). Ignored unless `state` is `"prospective"`.
+   */
+  readonly recolorAnimation?: NodeRecolorAnimation;
 }
 
 interface GradientStop {
@@ -219,6 +237,7 @@ export function NodeMarker({
   matchedSide,
   chargeAnimation,
   burnoutAnimation,
+  recolorAnimation,
 }: NodeMarkerProps) {
   if (state === "inactive") {
     // A priority is always given for a real inactive node (Board.tsx reads
@@ -256,6 +275,53 @@ export function NodeMarker({
       signal === undefined
         ? INACTIVE_RING_COLOR
         : colorsForSignal(signal, matchedSide).core;
+    if (recolorAnimation) {
+      const fromColor = colorsForSignal(
+        recolorAnimation.fromSignal,
+        recolorAnimation.fromMatchedSide,
+      ).core;
+      return (
+        <svg
+          key={recolorAnimation.runId}
+          className={`node-marker node-marker--${state} node-marker--recoloring`}
+          viewBox="0 0 100 100"
+          aria-hidden="true"
+        >
+          {INACTIVE_RING_RADII.map((radius) => (
+            <circle
+              key={`from-${radius}`}
+              className="node-marker__recolor-underlay"
+              cx={50}
+              cy={50}
+              r={radius}
+              fill="none"
+              stroke={fromColor}
+              strokeWidth={INACTIVE_RING_STROKE_WIDTH}
+            />
+          ))}
+          {INACTIVE_RING_RADII.map((radius) => {
+            const length = 2 * Math.PI * radius;
+            return (
+              <circle
+                key={`to-${radius}`}
+                className="node-marker__recolor-sweep"
+                cx={50}
+                cy={50}
+                r={radius}
+                fill="none"
+                stroke={ringColor}
+                strokeWidth={INACTIVE_RING_STROKE_WIDTH}
+                strokeDasharray={length}
+                transform="rotate(-90 50 50)"
+                style={
+                  { "--node-recolor-ring-length": length } as CSSProperties
+                }
+              />
+            );
+          })}
+        </svg>
+      );
+    }
     return (
       <svg
         className={`node-marker node-marker--${state}`}

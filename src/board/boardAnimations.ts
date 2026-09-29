@@ -6,8 +6,10 @@
 
 import { squareName } from "../rules/board";
 import type { EndOfTurnEffect } from "../rules/endOfTurn";
+import type { Side } from "../rules/fleet";
 import type { NodePriority } from "../rules/nodeQueue";
 import type {
+  ActivityBonusClaimedEffect,
   AttackEffect,
   MoveEffect,
   NodeClaimedEffect,
@@ -16,7 +18,7 @@ import type {
   PlyEndedEffect,
   QueueRotatedEffect,
 } from "../rules/ply";
-import type { NodeSignal } from "../rules/steal";
+import { matchedSideForSignal, type NodeSignal } from "../rules/steal";
 import type { Session, SessionEvent } from "../game/session";
 
 /**
@@ -60,12 +62,29 @@ export interface RotatorTurnAnimation {
 }
 
 /**
+ * A prospective square's rings sweeping from their old signal's colour to
+ * their new one because a Node scramble moved the square to another signal
+ * (steal.md §10). `fromSignal` is the signal the square showed before the
+ * event, and `fromMatchedSide` the side that signal was matched to, if any —
+ * the marker's own matched side belongs to the new signal.
+ */
+export interface NodeRecolorAnimation {
+  readonly type: "node-recolor";
+  readonly fromSignal: NodeSignal;
+  readonly fromMatchedSide?: Side;
+  readonly runId: number;
+}
+
+/**
  * Everything that can be animating on one square. `runId` is
  * `session.state.plyNumber`, used as a React key so a fresh animation on the
  * same square restarts rather than continuing an old one.
  */
 export type SquareAnimation =
-  NodeChargeAnimation | NodeBurnoutAnimation | RotatorTurnAnimation;
+  | NodeChargeAnimation
+  | NodeBurnoutAnimation
+  | RotatorTurnAnimation
+  | NodeRecolorAnimation;
 
 /**
  * The `ply-ended` and `ply-passed` end-of-turn lists out of a move's or an
@@ -159,6 +178,38 @@ function rotatorTriggerIn(
 }
 
 /**
+ * The signal each square showed before the event, for every square a Node
+ * scramble claim in the event recoloured, keyed by square name. Only a
+ * `moved` or an `attacked` event can carry a claim; a fight can carry two,
+ * and a square recoloured by both keeps the first claim's old signal - what
+ * was on screen before the event.
+ */
+function signalsBeforeScramble(
+  event: SessionEvent | undefined,
+): ReadonlyMap<string, NodeSignal> {
+  const before = new Map<string, NodeSignal>();
+  if (
+    event === undefined ||
+    (event.type !== "moved" && event.type !== "attacked")
+  ) {
+    return before;
+  }
+  const claims = event.effects.filter(
+    (effect): effect is ActivityBonusClaimedEffect =>
+      effect.type === "activity-bonus-claimed",
+  );
+  for (const claim of claims) {
+    for (const { square, oldSignal } of claim.recoloredSquares) {
+      const name = squareName(square);
+      if (!before.has(name)) {
+        before.set(name, oldSignal);
+      }
+    }
+  }
+  return before;
+}
+
+/**
  * Given a session, what - if anything - is animating right now, and on
  * which squares. Derived entirely from `session.lastEvent`; a new event
  * replaces whatever was animating rather than queuing behind it, so an
@@ -209,6 +260,25 @@ export function boardAnimations(
       signal: nodeClaimed.signal,
       runId,
     });
+  }
+
+  // A recoloured square animates only if the board now shows it on a
+  // different signal, so the sweep always ends on what is drawn anyway.
+  for (const [name, fromSignal] of signalsBeforeScramble(session.lastEvent)) {
+    const status = session.state.nodes[name];
+    if (
+      status?.state === "prospective" &&
+      status.signal !== undefined &&
+      status.signal !== fromSignal &&
+      !animations.has(name)
+    ) {
+      animations.set(name, {
+        type: "node-recolor",
+        fromSignal,
+        fromMatchedSide: matchedSideForSignal(session.state, fromSignal),
+        runId,
+      });
+    }
   }
 
   // When the same ply also refilled the rotator set, the marks standing on
