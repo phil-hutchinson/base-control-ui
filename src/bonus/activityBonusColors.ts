@@ -5,7 +5,7 @@
 // dropped in favour of the colours a matched node itself can be drawn in, so
 // the symbol never borrows a colour that means something else on the board
 // at the same time. Pure, so `PlanetBonusPanel` and the Quick Guide's
-// PLANET RESOURCES diagram draw from the one source.
+// PLANET EFFECTS diagram draw from the one source.
 
 import type { PlayerMatchingSetting } from "../rules/playerMatching";
 import { PLAYER_NODE_COLORS, SIGNAL_COLORS } from "../board/squareArt";

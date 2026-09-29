@@ -526,3 +526,27 @@ and carries no focusable element.
 
 Where: `src/App.tsx`, `src/board/Board.tsx`, `src/board/BoardSquare.tsx`,
 `src/bonus/PlanetBonusPanel.tsx`.
+
+## From story 95 — tips on the start screen
+
+Source: `doc/plan/00000095-add-tips-in-option-screen/implementation-plan.md`
+decision D9, Step 3.
+
+### 1. Opening a tip announces nothing
+
+Pressing a group's question mark shows its tip, but nothing is spoken: the
+button's expanded state changes and the tip appears, with no live-region
+announcement of its text. A screen-reader user reaches the tip only by
+reading on from the question mark, since the tip follows the group's title
+in document order.
+
+Where: `src/start/StartScreen.tsx`.
+
+### 2. A tip closes as soon as focus leaves its question mark
+
+An open tip closes when focus moves to anything other than its own question
+mark, so a keyboard user cannot tab into it. The tip holds nothing
+focusable, but its text has to be read with a screen reader's reading
+cursor rather than reached by focus.
+
+Where: `src/start/StartScreen.tsx`.

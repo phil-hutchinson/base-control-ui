@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import * as guideCopy from "../guide/guideCopy";
+import * as optionTips from "../start/optionTips";
 import {
   respell,
   SPELLING_TABLE,
@@ -78,8 +79,11 @@ describe("respell", () => {
 });
 
 describe("source copy spelling", () => {
-  it("has no American form from the table in the Quick Guide's copy", () => {
-    const strings = stringsIn(Object.values(guideCopy));
+  it.each([
+    ["the Quick Guide's copy", guideCopy],
+    ["the start screen's tips", optionTips],
+  ])("has no American form from the table in %s", (_, copy) => {
+    const strings = stringsIn(Object.values(copy));
     expect(strings.length).toBeGreaterThan(0);
     for (const [, american] of SPELLING_TABLE) {
       const pattern = new RegExp(`\\b${american}\\b`, "i");

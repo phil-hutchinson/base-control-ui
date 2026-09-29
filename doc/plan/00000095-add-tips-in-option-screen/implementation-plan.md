@@ -339,7 +339,9 @@ in Step 3's owner gate.
 
 ### Step 3 — Start screen: the renames and the tips
 
-Status: pending
+Status: committed
+
+Notes: Renamed the three group titles, added `src/start/optionTips.ts` and a `useTipDismissal` hook, wrapped each group in an `OptionGroup` component (title span naming the fieldset, `?` button, always-rendered tip, choices), styled the toggle and overlay, renamed the guide's section to PLANET EFFECTS, added the known-issues section and the tests listed. Beyond the plan: the comments in `guideDiagrams.tsx`, `ActivityBonusCell.tsx` and `activityBonusColors.ts` that name the guide's PLANET RESOURCES section by its heading now say PLANET EFFECTS; other code comments that say "planet resources" for the setting are left alone, as the step does not list them.
 
 - `src/start/StartScreen.tsx`, renames: the group titles "Scoring" →
   "Node scoring", "Planet resources" → "Planet effects", and

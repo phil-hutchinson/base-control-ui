@@ -139,22 +139,22 @@ describe("GuideScreen", () => {
     ).toHaveLength(0);
   });
 
-  it("pairs PLANET RESOURCES, last in the story's order, with a diagram of two bonuses", () => {
+  it("pairs PLANET EFFECTS, last in the story's order, with a diagram of two bonuses", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     const headings = screen
       .getAllByRole("heading", { level: 2 })
       .map((heading) => heading.textContent);
     const planetBonusIndex = headings.indexOf("PLANET BONUS");
-    const planetActivityIndex = headings.indexOf("PLANET RESOURCES");
+    const planetActivityIndex = headings.indexOf("PLANET EFFECTS");
     expect(planetActivityIndex).toBe(planetBonusIndex + 1);
     expect(GUIDE_SECTIONS[GUIDE_SECTIONS.length - 1].heading).toBe(
-      "PLANET RESOURCES",
+      "PLANET EFFECTS",
     );
 
     const heading = screen.getByRole("heading", {
       level: 2,
-      name: "PLANET RESOURCES",
+      name: "PLANET EFFECTS",
     });
     const section = heading.closest("section");
     expect(section).not.toBeNull();

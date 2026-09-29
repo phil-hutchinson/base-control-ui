@@ -87,6 +87,11 @@
      separates a rendered legend from the fieldset's content. */
   padding: 0.5rem 0 0;
   border: 0;
+  /* The positioning context for the group's tip, which opens over the
+     choices below the title. No z-index here: a fieldset must not become a
+     stacking context, or a later group would paint over an earlier
+     group's open tip. */
+  position: relative;
 }
 
 .start-screen__legend {
@@ -103,6 +108,86 @@
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--color-text-dim);
+  /* The title and its question mark, side by side on one line. */
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+
+/* The question mark beside each title: small, round and quiet, in the
+   legend's own dim colour until hovered. */
+.start-screen__tip-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  padding: 0;
+  font-family: var(--font-arcade);
+  font-size: 0.85em;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--color-text-dim);
+  background-color: var(--color-space-raised);
+  border: 1px solid var(--color-text-dim);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.start-screen__tip-toggle:hover,
+.start-screen__tip-toggle[aria-expanded="true"] {
+  color: var(--color-text-bright);
+  border-color: var(--color-text-bright);
+}
+
+.start-screen__tip-toggle:focus {
+  outline: none;
+}
+
+.start-screen__tip-toggle:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* An open tip: an overlay just below its group's title, drawn over the
+   group's choices and whatever follows rather than pushing them down. It
+   sets no `display`, so the `hidden` attribute still hides a closed tip. */
+.start-screen__tip {
+  position: absolute;
+  top: 0.25rem;
+  left: 50%;
+  z-index: 10;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  text-align: left;
+  color: var(--color-text-bright);
+  background-color: var(--color-space-raised);
+  border: 1px solid var(--color-text-dim);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 60%);
+}
+
+.start-screen__tip-intro {
+  margin: 0;
+}
+
+.start-screen__tip-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.start-screen__tip-intro + .start-screen__tip-choices {
+  margin-top: 0.5rem;
 }
 
 .start-screen__choices {
