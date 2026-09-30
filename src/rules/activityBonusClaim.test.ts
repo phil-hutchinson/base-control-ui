@@ -82,6 +82,7 @@ function buildState(config: {
   randomSeed?: number;
   combatEnabled?: boolean;
   planetActivity?: Exclude<PlanetActivitySetting, "off">;
+  outOfTime?: Readonly<Record<"green" | "red", boolean>>;
 }): GameState {
   return {
     ships: config.ships,
@@ -101,7 +102,7 @@ function buildState(config: {
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: config.chargedNodeCount ?? 3,
-    outOfTime: { green: false, red: false },
+    outOfTime: config.outOfTime ?? { green: false, red: false },
     combatEnabled: config.combatEnabled ?? true,
     scoring: config.scoring ?? "simple",
     playerMatching: config.playerMatching ?? "off",
@@ -1272,6 +1273,112 @@ describe.each(["race", "stable"] as const)(
     });
   },
 );
+
+describe("a defender who is out of time (rules.md §10)", () => {
+  it("claims a points bonus in full but is paid nothing, and the effect reports zero points", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
+      outOfTime: { green: false, red: true },
+    });
+
+    const [attackerIndex, seedAfterAttacker] = drawIndex(
+      state.randomSeed,
+      PLANETS.length,
+    );
+    const attackerPlanet = PLANETS[attackerIndex];
+    const defenderPool = PLANETS.filter(
+      (square) => squareName(square) !== squareName(attackerPlanet),
+    );
+    const [defenderIndex] = drawIndex(seedAfterAttacker, defenderPool.length);
+    const defenderPlanet = defenderPool[defenderIndex];
+    // The surviving bonus sits on a third planet, not the attacker's own
+    // landing — the attacker must land on no bonus at all, or its own claim
+    // would advance the seed before the defender's return planet is drawn
+    // (steal.md §10's fight order), breaking the index math above.
+    const survivorPlanet = defenderPool.find(
+      (square) => squareName(square) !== squareName(defenderPlanet),
+    )!;
+
+    const withBonus: GameState = {
+      ...state,
+      activityBonuses: bonuses(
+        [defenderPlanet, "large-points"],
+        [survivorPlanet, "fuel"],
+      ),
+    };
+
+    const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(result.state.energy.red).toBe(0);
+    const claim = result.effects.find(
+      (effect): effect is ActivityBonusClaimedEffect =>
+        effect.type === "activity-bonus-claimed" && effect.side === "red",
+    );
+    expect(claim).toBeDefined();
+    expect(claim?.kind).toBe("large-points");
+    expect(claim?.pointsAwarded).toBe(0);
+    // The bonus is still replaced as usual: the claimed planet no longer
+    // carries either of the two current bonuses.
+    expect(
+      result.state.activityBonuses.some(
+        (entry) => squareName(entry.square) === squareName(defenderPlanet),
+      ),
+    ).toBe(false);
+  });
+
+  it("still takes a non-points bonus's effect (Fuel powers the ship that claims it)", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
+      outOfTime: { green: false, red: true },
+    });
+
+    const [attackerIndex, seedAfterAttacker] = drawIndex(
+      state.randomSeed,
+      PLANETS.length,
+    );
+    const attackerPlanet = PLANETS[attackerIndex];
+    const defenderPool = PLANETS.filter(
+      (square) => squareName(square) !== squareName(attackerPlanet),
+    );
+    const [defenderIndex] = drawIndex(seedAfterAttacker, defenderPool.length);
+    const defenderPlanet = defenderPool[defenderIndex];
+    // The surviving bonus sits on a third planet, not the attacker's own
+    // landing — see the comment in the case above.
+    const survivorPlanet = defenderPool.find(
+      (square) => squareName(square) !== squareName(defenderPlanet),
+    )!;
+
+    const withBonus: GameState = {
+      ...state,
+      activityBonuses: bonuses(
+        [defenderPlanet, "fuel"],
+        [survivorPlanet, "large-points"],
+      ),
+    };
+
+    const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    const defenderShip = result.state.ships.find((s) => s.id === "red-1");
+    expect(defenderShip?.power).toBe(3);
+    expect(result.effects).toContainEqual(
+      expect.objectContaining({
+        type: "activity-bonus-claimed",
+        side: "red",
+        kind: "fuel",
+        poweredShipIds: expect.arrayContaining(["red-1"]),
+      }),
+    );
+    expect(result.state.energy.red).toBe(0);
+  });
+});
 
 describe("assertFightInvariants under planet effects (steal.md §10)", () => {
   const baseState = buildState({

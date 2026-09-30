@@ -4,8 +4,10 @@
 // an energy one. Under steal, player-matching nodes (steal.md §9) can change
 // what a turn's held squares are actually worth; `turnCollection` is the one
 // place that reckons a side's whole end-of-turn collection, so the payout,
-// the pips and the live region cannot drift apart. Nothing about the
-// end-of-turn sequence, effects or running totals lives here.
+// the pips and the live region cannot drift apart. A side whose clock has
+// run out (§10) is withheld outright, taking precedence over player-matching
+// nodes. Nothing about the end-of-turn sequence, effects or running totals
+// lives here.
 
 import { type Square, squareName } from "./board";
 import {
@@ -61,6 +63,14 @@ export function energyForNodesHeld(
   return (nodesHeld * (nodesHeld + 1)) / 2;
 }
 
+/**
+ * Why a collection is withheld outright: `"out-of-time"` when the side's
+ * clock has run out (§10), which takes precedence over `"required"`, the
+ * player-matching nodes case of holding nodes but not the side's own one
+ * (steal.md §9).
+ */
+export type WithheldReason = "out-of-time" | "required";
+
 /** The whole of what `side`'s end-of-turn collection is right now — see `turnCollection`. */
 export interface TurnCollection {
   /** The charged nodes `side` holds. */
@@ -71,21 +81,32 @@ export interface TurnCollection {
   readonly ownNodeSquare?: Square;
   /** How many nodes the collection prices, after player-matching nodes has adjusted `heldSquares.length`. */
   readonly countedNodes: number;
-  /** Whether the collection is withheld outright (required, holding nodes but not the own one). */
+  /** Whether the collection is withheld outright (out of time, or required, holding nodes but not the own one). */
   readonly withheld: boolean;
+  /** Why the collection is withheld, present exactly when `withheld` is true. */
+  readonly withheldReason?: WithheldReason;
   /** The resulting amount, `energyForNodesHeld(countedNodes, state.scoring)`. */
   readonly amount: number;
 }
 
 /**
  * The whole of what `side`'s end-of-turn collection is right now (rules.md
- * §8.4, steal.md §9): the charged nodes it holds, whether it is standing on
- * its own matched node, how many nodes that prices to, whether the
- * collection is withheld outright, and the resulting amount.
+ * §8.4, §10, steal.md §9): the charged nodes it holds, whether it is
+ * standing on its own matched node, how many nodes that prices to, whether
+ * the collection is withheld outright, why, and the resulting amount.
  *
- * Under `"off"` — and under every playstyle but steal, which never carries
- * anything but `"off"` — `standingOnOwnNode` is always false and
- * `countedNodes` is `heldSquares.length`, so this is exactly today's
+ * A side whose clock has run out (`state.outOfTime`) is withheld outright
+ * whatever the player-matching setting says: `countedNodes` 0, `amount` 0,
+ * and `withheld` true exactly when it holds at least one charged node —
+ * holding nothing is not "withheld", there being nothing to cross. This
+ * takes precedence over every player-matching case below. `heldSquares`,
+ * `standingOnOwnNode` and `ownNodeSquare` still report the truth about the
+ * board — a node held by a side that is out of time is otherwise an
+ * ordinary held node (§10).
+ *
+ * Otherwise, under `"off"` — and under every playstyle but steal, which
+ * never carries anything but `"off"` — `standingOnOwnNode` is always false
+ * and `countedNodes` is `heldSquares.length`, so this is exactly today's
  * reckoning. Under `"double"`, the own node, if held, counts twice —
  * `heldSquares.length + 1` — while the opponent's matched node counts once,
  * like any other. Under `"required"`, holding at least one node without
@@ -107,6 +128,19 @@ export function turnCollection(state: GameState, side: Side): TurnCollection {
         );
   const standingOnOwnNode = ownNodeSquare !== undefined;
 
+  if (state.outOfTime[side]) {
+    const withheld = heldSquares.length > 0;
+    return {
+      heldSquares,
+      standingOnOwnNode,
+      ownNodeSquare,
+      countedNodes: 0,
+      withheld,
+      withheldReason: withheld ? "out-of-time" : undefined,
+      amount: 0,
+    };
+  }
+
   let countedNodes: number;
   let withheld: boolean;
   if (state.playerMatching === "double") {
@@ -126,6 +160,7 @@ export function turnCollection(state: GameState, side: Side): TurnCollection {
     ownNodeSquare,
     countedNodes,
     withheld,
+    withheldReason: withheld ? "required" : undefined,
     amount: energyForNodesHeld(countedNodes, state.scoring),
   };
 }

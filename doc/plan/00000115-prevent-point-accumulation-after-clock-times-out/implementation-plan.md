@@ -220,7 +220,33 @@ player collects or is paid.
 
 ### Step 2 — Rule logic and HUD: withhold all energy once out of time
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned, in `src/rules/energy.ts` (`TurnCollection` gains
+`withheldReason: "out-of-time" | "required"`, present exactly when `withheld`
+is true; being out of time takes precedence over player-matching nodes),
+`src/rules/endOfTurn.ts` (comment only — step 2's existing `collection.amount
+> 0` guard already covers the new case), `src/rules/ply.ts`
+(`claimPlanetBonus` is a no-op when the landing side is out of time;
+`claimActivityBonus` resolves the claim in full but reports `pointsAwarded`
+as 0 and does not raise the side's energy when it is out of time),
+`src/board/announcements.ts` (`scoreSentence` adds ", none paying, out of
+time" ahead of REQUIRED's clause) and `src/hud/ScoreDisplay.tsx` (`pipFills`
+only doubles the own node under DOUBLE when the collection is not withheld,
+so an out-of-time DOUBLE row still crosses one pip per held node). Updated
+the existing `applyOutOfTimePass` test in `src/rules/ply.test.ts` that
+asserted the old (pre-story) behaviour of an out-of-time side still
+collecting energy — that assertion was the very thing this story overturns —
+and added the tests the plan names, including one confirming the opponent's
+own forced pass still collects normally. Also added a session-level test in
+`src/game/session.test.ts` (`sessionReducer — a turn made before the clock
+runs out pays in full`) driving intents end to end: a move made with time
+left ends its ply with an `energy-collected` effect and raises the mover's
+total, and that total is then left untouched when a `clock-expired` intent
+and a `pass-out-of-time` intent run on that same side's *next* turn — closing
+the gap the first pass at this step left, per the coordinator's follow-up.
+`npm test` (2069 tests), `npm run typecheck` and `npm run lint` all pass. No
+deviations beyond the necessarily corrected pre-existing test.
 
 Implement the freeze in the rule logic, and make the score pips and the
 score cell's hidden sentence show it. See "Design decisions" above for the

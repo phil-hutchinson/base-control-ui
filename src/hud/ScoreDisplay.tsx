@@ -55,7 +55,10 @@ const SIDE_NAME: Readonly<Record<Side, string>> = {
  * the node it stands for (`colorsForSignal`, as `NodeMarker` draws it), or
  * `undefined` for a node with no signal, which the stylesheet fills gold.
  * With player-matching nodes on, the row runs own node, opponent's node, then
- * the rest in board order, and under DOUBLE the own node fills two pips.
+ * the rest in board order, and under DOUBLE the own node fills two pips —
+ * except while the collection is withheld (REQUIRED, or out of time, §10),
+ * when the row is one cross per held node and the own node fills only one of
+ * them.
  */
 function pipFills(
   state: GameState,
@@ -82,7 +85,7 @@ function pipFills(
   const ownSquares =
     collection.ownNodeSquare === undefined
       ? []
-      : state.playerMatching === "double"
+      : state.playerMatching === "double" && !collection.withheld
         ? [collection.ownNodeSquare, collection.ownNodeSquare]
         : [collection.ownNodeSquare];
   const others = collection.heldSquares.filter(
@@ -125,8 +128,10 @@ export function ScoreDisplay({
   // it, so a row longer than five is the one that needs to shrink.
   const isLongRow = pipCount > 5;
   // REQUIRED (steal.md §9) withholds the turn's whole collection while the
-  // side holds a node but not its own: no pip lights, each held node's pip
-  // draws an X instead, and no value is highlighted.
+  // side holds a node but not its own, and being out of time (rules.md §10)
+  // withholds it outright regardless of player-matching nodes: either way,
+  // no pip lights, each held node's pip draws an X instead, and no value is
+  // highlighted.
   const litCount = collection.withheld ? 0 : collection.countedNodes;
   const xCount = collection.withheld ? collection.heldSquares.length : 0;
   const fills = pipFills(state, side, collection);

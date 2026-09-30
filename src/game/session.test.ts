@@ -1122,3 +1122,72 @@ describe("sessionReducer — pass-out-of-time", () => {
     expect(result.selectedShipId).toBeUndefined();
   });
 });
+
+describe("sessionReducer — a turn made before the clock runs out pays in full (rules.md §10)", () => {
+  it("collects for the held node at the end of a move made with time left, and the total stands once that side's clock later runs out", () => {
+    // green-1 sits on H8, a charged node, for the whole test — held
+    // throughout, never itself the ship that moves — so the turn's
+    // collection is exercised without any node-countdown timing to manage.
+    // green-2 makes green's actual move each of its turns; red-1 makes
+    // red's, just enough to pass the ply back to green.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8"),
+        ship("green-2", "green", "A1"),
+        ship("red-1", "red", "O1"),
+      ],
+      nodes: { H8: "charged" },
+    });
+    let session = sessionFor(state);
+
+    // Green's turn is made with its clock still running: the move ends the
+    // ply and its own end-of-turn collection pays in full.
+    session = activate(session, "A1");
+    session = activate(session, "A2");
+
+    expect(session.state.sideToMove).toBe("red");
+    expect(session.state.energy.green).toBe(1);
+    if (session.lastEvent?.type !== "moved") {
+      throw new Error("expected a moved event");
+    }
+    expect(session.lastEvent.effects).toContainEqual({
+      type: "ply-ended",
+      side: "green",
+      sideToMove: "red",
+      endOfTurn: [
+        {
+          type: "energy-collected",
+          side: "green",
+          amount: 1,
+          newTotal: 1,
+          squares: [squareFromName("H8")],
+        },
+      ],
+    });
+
+    // Red's own move, passing the ply back to green.
+    session = activate(session, "O1");
+    session = activate(session, "O2");
+    expect(session.state.sideToMove).toBe("green");
+    expect(session.state.energy.green).toBe(1);
+
+    // Only now, on green's next turn, does its clock run out — after the
+    // turn above was already made and paid in full.
+    session = sessionReducer(session, {
+      type: "clock-expired",
+      side: "green",
+    });
+    session = sessionReducer(session, { type: "pass-out-of-time" });
+
+    expect(session.state.sideToMove).toBe("red");
+    // The frozen total from the in-time move stands: nothing claws it back.
+    expect(session.state.energy.green).toBe(1);
+    expect(session.lastEvent).toEqual({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      reason: "out-of-time",
+      endOfTurn: [],
+    });
+  });
+});
