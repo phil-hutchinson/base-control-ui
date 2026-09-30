@@ -19,10 +19,15 @@ closes it.
 
 - **A player who is out of time gains no energy.** From the moment their
   clock reaches zero, they collect nothing for the nodes they hold at the
-  end of a turn, and no bonus pays them energy. This includes the turn in
-  which the clock runs out. It applies to every turn they pass from then
-  on, including one that would have passed anyway because they could
-  neither move nor attack.
+  end of a turn, and no bonus pays them energy. The turn on which their
+  clock runs out passes, because no move was made in time, and pays
+  nothing. So does every turn they pass from then on, including one that
+  would have passed anyway because they could neither move nor attack.
+- **A turn made in time counts in full.** A player's clock runs only
+  during their own turn and stops the moment they move. A move made before
+  the clock reaches zero pays everything it would normally pay: any bonus
+  from the landing, and the nodes held at the end of that turn. Either the
+  turn was made in time or it was not.
 - **Their total is frozen**, not reduced. Nothing in the game subtracts
   energy.
 - **The rest of the end-of-turn order still runs** for their passed turns,
