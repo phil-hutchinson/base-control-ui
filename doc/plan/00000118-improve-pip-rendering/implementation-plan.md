@@ -88,7 +88,11 @@ portrait and landscape, including the six-pip row.
 
 ### Step 2 — README check
 
-Status: pending
+Status: committed
+
+Notes: `README.md` does not mention pips or how the HUD is drawn, so it
+needs no update. Checked directly rather than through `/update-readme`,
+since the diff touches only the pip drawing.
 
 Run `/update-readme`. The README is not expected to describe how pips are
 drawn, so no update is expected.
