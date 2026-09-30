@@ -9,7 +9,6 @@ import type { EndOfTurnEffect } from "../rules/endOfTurn";
 import type { Side } from "../rules/fleet";
 import type { NodePriority } from "../rules/nodeQueue";
 import type {
-  ActivityBonusClaimedEffect,
   AttackEffect,
   MoveEffect,
   NodeClaimedEffect,
@@ -182,7 +181,10 @@ function rotatorTriggerIn(
  * scramble claim in the event recoloured, keyed by square name. Only a
  * `moved` or an `attacked` event can carry a claim; a fight can carry two,
  * and a square recoloured by both keeps the first claim's old signal - what
- * was on screen before the event.
+ * was on screen before the event. A square the event itself made
+ * prospective ahead of the scramble - an abandon's or a claim's
+ * `newProspective`, or an earlier Additional nodes claim's added square -
+ * was empty on screen, so it has no old colour and is left out.
  */
 function signalsBeforeScramble(
   event: SessionEvent | undefined,
@@ -194,15 +196,19 @@ function signalsBeforeScramble(
   ) {
     return before;
   }
-  const claims = event.effects.filter(
-    (effect): effect is ActivityBonusClaimedEffect =>
-      effect.type === "activity-bonus-claimed",
-  );
-  for (const claim of claims) {
-    for (const { square, oldSignal } of claim.recoloredSquares) {
-      const name = squareName(square);
-      if (!before.has(name)) {
-        before.set(name, oldSignal);
+  const madeByEvent = new Set<string>();
+  for (const effect of event.effects) {
+    if (effect.type === "node-abandoned" || effect.type === "node-claimed") {
+      madeByEvent.add(squareName(effect.newProspective));
+    } else if (effect.type === "activity-bonus-claimed") {
+      for (const { square, oldSignal } of effect.recoloredSquares) {
+        const name = squareName(square);
+        if (!madeByEvent.has(name) && !before.has(name)) {
+          before.set(name, oldSignal);
+        }
+      }
+      for (const square of effect.addedSquares) {
+        madeByEvent.add(squareName(square));
       }
     }
   }

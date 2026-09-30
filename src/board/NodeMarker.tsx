@@ -280,6 +280,8 @@ export function NodeMarker({
         recolorAnimation.fromSignal,
         recolorAnimation.fromMatchedSide,
       ).core;
+      // `node-marker--recoloring`, like `--charging` and `--burning-out`,
+      // is read by no stylesheet: it only marks the sweep for tests.
       return (
         <svg
           key={recolorAnimation.runId}

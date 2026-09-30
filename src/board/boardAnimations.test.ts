@@ -342,6 +342,53 @@ describe("boardAnimations", () => {
       });
     });
 
+    it("sweeps no square the same event made prospective before the scramble, since it had no colour on screen", () => {
+      const event = movedWith([
+        {
+          type: "node-abandoned",
+          signal: 0,
+          square: squareAt("C", 7),
+          newProspective: squareAt("E", 5),
+        },
+        activityClaim("node-scramble", [
+          { square: squareAt("E", 5), oldSignal: 0, newSignal: 1 },
+          { square: squareAt("J", 9), oldSignal: 1, newSignal: 0 },
+        ]),
+      ]);
+
+      const animations = boardAnimations(sessionWithEvent(event, steal));
+
+      expect(animations.has("E5")).toBe(false);
+      expect(animations.get("J9")).toMatchObject({ fromSignal: 1 });
+      expect(animations.size).toBe(1);
+    });
+
+    it("sweeps no square an earlier claim in the same fight added (Additional nodes)", () => {
+      const event: AttackedEvent = {
+        type: "attacked",
+        shipId: "green-1",
+        side: "green",
+        from: squareAt("C", 7),
+        target: squareAt("C", 8),
+        effects: [
+          {
+            ...activityClaim("additional-nodes", []),
+            addedSquares: [squareAt("E", 5)],
+          },
+          activityClaim("node-scramble", [
+            { square: squareAt("E", 5), oldSignal: 0, newSignal: 1 },
+            { square: squareAt("J", 9), oldSignal: 1, newSignal: 0 },
+          ]),
+        ],
+      };
+
+      const animations = boardAnimations(sessionWithEvent(event, steal));
+
+      expect(animations.has("E5")).toBe(false);
+      expect(animations.get("J9")).toMatchObject({ fromSignal: 1 });
+      expect(animations.size).toBe(1);
+    });
+
     it("sweeps nothing for any other kind of claim", () => {
       const event = movedWith([activityClaim("additional-nodes", [])]);
 

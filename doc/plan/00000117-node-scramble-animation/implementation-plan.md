@@ -43,6 +43,13 @@ Status and Notes, one commit per step, and a peer review by the
   animation always end on exactly what the board would draw anyway, even
   if a second scramble in the same fight put a square back on its old
   signal (no animation — nothing visibly changed).
+- **A square the event itself made prospective does not sweep.** One move
+  can abandon a node and then claim a Node scramble (steal.md §10 resolves
+  the leave first), and a fight can carry an Additional nodes claim before
+  a scramble; the fresh square is then shuffled, but it was empty on screen
+  before the event, so there is no old colour to sweep from. It appears in
+  its final colour, like any other newly drawn square. Found in peer review
+  (#1).
 - **A new square-animation kind, `node-recolor`**, alongside `node-charge`,
   `node-burnout` and `rotator-turn`, carrying the old signal and the side
   it was matched to (`matchedSideForSignal` on the current state — the

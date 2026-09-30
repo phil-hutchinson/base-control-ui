@@ -328,9 +328,10 @@ export function dealActivityBonuses(
  * for every other kind — a Node scramble adds no square, it only shuffles
  * signals); the prospective squares a Node scramble moved to another signal,
  * each with its old and new one (empty for every other kind, and never
- * listing a square the shuffle left on its own signal); and the surviving bonus's square with its old and new kind,
- * alongside the new bonus's square and kind. Enough for `ply.ts` to build an
- * `ActivityBonusClaimedEffect` and for the live region to describe the claim.
+ * listing a square the shuffle left on its own signal); and the surviving
+ * bonus's square with its old and new kind, alongside the new bonus's square
+ * and kind. Enough for `ply.ts` to build an `ActivityBonusClaimedEffect` and
+ * for the live region to describe the claim.
  */
 export interface ActivityBonusClaimOutcome {
   readonly kind: ActivityBonusKind;
