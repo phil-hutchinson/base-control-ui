@@ -25,6 +25,25 @@ import "./ScoreDisplay.css";
  * readout's fixed width never reflows as the total grows. */
 const SCORE_DIGITS = 4;
 
+/** The side of a pip's square viewBox, and the centre its circle and cross
+ * are drawn around. */
+const PIP_VIEWBOX_SIZE = 10;
+const PIP_CENTRE = PIP_VIEWBOX_SIZE / 2;
+
+/** A pip's circle, its stroke centred a little inside the viewBox's edge.
+ * The outline's weight is fixed in pixels (`ScoreDisplay.css`), so how much
+ * of it lies outside the box varies with the pip's size; the svg's visible
+ * overflow keeps any such part drawn. */
+const PIP_RADIUS = 4.5;
+
+/** How far each diagonal of an X pip runs from the centre along each axis:
+ * far enough to end on the circle's rim, so no clip path is needed. */
+const PIP_X_REACH = PIP_RADIUS * Math.SQRT1_2;
+
+/** The two diagonals of an X pip, as the sign of each end's x offset from
+ * the centre (both run top to bottom). */
+const PIP_X_DIAGONALS = [-1, 1] as const;
+
 const SIDE_NAME: Readonly<Record<Side, string>> = {
   green: "Green",
   red: "Red",
@@ -143,7 +162,25 @@ export function ScoreDisplay({
           }
           return (
             <span key={index} className="score-display__pip-column">
-              <span className={pipClassName} style={pipStyle} />
+              <svg
+                className={pipClassName}
+                style={pipStyle}
+                viewBox={`0 0 ${PIP_VIEWBOX_SIZE} ${PIP_VIEWBOX_SIZE}`}
+              >
+                {/* The cross comes first so the circle's outline is drawn
+                    over the ends of its lines, not under them. */}
+                {index < xCount &&
+                  PIP_X_DIAGONALS.map((sign) => (
+                    <line
+                      key={sign}
+                      x1={PIP_CENTRE + sign * PIP_X_REACH}
+                      y1={PIP_CENTRE - PIP_X_REACH}
+                      x2={PIP_CENTRE - sign * PIP_X_REACH}
+                      y2={PIP_CENTRE + PIP_X_REACH}
+                    />
+                  ))}
+                <circle cx={PIP_CENTRE} cy={PIP_CENTRE} r={PIP_RADIUS} />
+              </svg>
               <span
                 className={
                   count === litCount
