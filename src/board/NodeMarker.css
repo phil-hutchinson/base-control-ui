@@ -14,6 +14,9 @@
      to reveal all of it. A starting value for the owner's eye, not a
      measured result. */
   --node-charge-duration: 750ms;
+
+  /* The Node scramble recolour sweep's single duration (see below). */
+  --node-recolor-duration: 700ms;
 }
 
 /* The outgoing rings and the masked reveal are only ever drawn while the
@@ -88,11 +91,49 @@
   }
 }
 
+/* The recolour sweep's rings are only ever drawn while a Node scramble's
+   sweep is playing (NodeMarker.tsx), so, as above, their base styles are the
+   finished picture: the swept rings whole, and the old colour's underlay
+   gone - two strokes of one radius and width do not quite cover each other,
+   so a visible underlay would leave a fringe of the old colour. The
+   keyframes supply only the start: each swept ring's dash offset its own
+   length, set per ring in NodeMarker.tsx, so nothing of it shows; and the
+   underlay held visible until the very end. Linear, so the sweep moves at a
+   clock hand's steady pace; its duration, declared on .node-marker, is a
+   starting value for the owner's eye, not a measured result. */
+.node-marker__recolor-sweep {
+  stroke-dashoffset: 0;
+  animation: node-recolor-sweep var(--node-recolor-duration) linear;
+}
+
+.node-marker__recolor-underlay {
+  opacity: 0;
+  animation: node-recolor-underlay var(--node-recolor-duration) linear;
+}
+
+@keyframes node-recolor-sweep {
+  from {
+    stroke-dashoffset: var(--node-recolor-ring-length);
+  }
+}
+
+@keyframes node-recolor-underlay {
+  from {
+    opacity: 1;
+  }
+
+  99% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .node-marker__outgoing-ring,
   .node-marker__charge-reveal,
   .node-marker__charge-mask-circle,
-  .node-marker__burnout-stop {
+  .node-marker__burnout-stop,
+  .node-marker__recolor-sweep,
+  .node-marker__recolor-underlay {
     animation: none;
   }
 }

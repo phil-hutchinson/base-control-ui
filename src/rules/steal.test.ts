@@ -756,6 +756,36 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
     },
   );
 
+  it.each(["off", "double", "required"] as const)(
+    "reports exactly the squares whose signal changed, with their old and new signals, in board order (player-matching %s)",
+    (playerMatching) => {
+      const boardOrder = ALL_SQUARES.map(squareName);
+      for (let seed = 1; seed <= 200; seed++) {
+        const result = shuffleProspectiveSignals(
+          fiveNodes,
+          5,
+          playerMatching,
+          seed,
+        );
+        const expected = boardOrder.flatMap((name) => {
+          const before = fiveNodes[name];
+          const after = result.nodes[name];
+          return before?.state === "prospective" &&
+            after?.signal !== before.signal
+            ? [{ name, oldSignal: before.signal, newSignal: after?.signal }]
+            : [];
+        });
+        expect(
+          result.recoloredSquares.map(({ square, oldSignal, newSignal }) => ({
+            name: squareName(square),
+            oldSignal,
+            newSignal,
+          })),
+        ).toEqual(expected);
+      }
+    },
+  );
+
   it("deals the same result for the same seed, and a different one for a different seed", () => {
     const first = shuffleProspectiveSignals(fiveNodes, 5, "required", 9);
     const second = shuffleProspectiveSignals(fiveNodes, 5, "required", 9);

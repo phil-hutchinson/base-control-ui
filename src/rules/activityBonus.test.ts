@@ -464,6 +464,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
     );
     expect(result.outcome.poweredShipIds).toEqual([]);
     expect(result.outcome.addedSquares).toEqual([]);
+    expect(result.outcome.recoloredSquares).toEqual([]);
     expect(result.nodes).toEqual(state.nodes);
     expect(result.ships).toEqual(state.ships);
   });
@@ -561,6 +562,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
     const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
 
     expect(result.outcome.addedSquares).toHaveLength(2);
+    expect(result.outcome.recoloredSquares).toEqual([]);
     for (const signal of [0, 1, 2] as const) {
       const squares = Object.values(result.nodes).filter(
         (status) => status.signal === signal,
@@ -593,6 +595,9 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
         state.randomSeed,
       );
       expect(result.nodes).toEqual(expected.nodes);
+      expect(result.outcome.recoloredSquares).toEqual(
+        expected.recoloredSquares,
+      );
       expect(Object.keys(result.nodes).sort()).toEqual(
         Object.keys(nodes).sort(),
       );

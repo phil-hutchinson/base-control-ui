@@ -1502,6 +1502,7 @@ describe("announcementFor — a planet effects bonus claimed (steal.md §10)", (
           pointsAwarded: 8,
           poweredShipIds: [],
           addedSquares: [],
+          recoloredSquares: [],
           survivor: {
             square: squareAt("F", 14),
             oldKind: "fuel",
@@ -1536,6 +1537,7 @@ describe("announcementFor — a planet effects bonus claimed (steal.md §10)", (
           pointsAwarded: 0,
           poweredShipIds: ["green-1", "green-2", "green-3"],
           addedSquares: [],
+          recoloredSquares: [],
           survivor: {
             square: squareAt("F", 14),
             oldKind: "small-points",
@@ -1570,6 +1572,7 @@ describe("announcementFor — a planet effects bonus claimed (steal.md §10)", (
           pointsAwarded: 0,
           poweredShipIds: [],
           addedSquares: [],
+          recoloredSquares: [],
           survivor: {
             square: squareAt("F", 14),
             oldKind: "small-points",
@@ -1604,6 +1607,7 @@ describe("announcementFor — a planet effects bonus claimed (steal.md §10)", (
           pointsAwarded: 0,
           poweredShipIds: [],
           addedSquares: [squareAt("H", 8)],
+          recoloredSquares: [],
           survivor: {
             square: squareAt("F", 14),
             oldKind: "fuel",
@@ -1638,6 +1642,7 @@ describe("announcementFor — a planet effects bonus claimed (steal.md §10)", (
           pointsAwarded: 0,
           poweredShipIds: [],
           addedSquares: [],
+          recoloredSquares: [],
           survivor: {
             square: squareAt("F", 14),
             oldKind: "fuel",
@@ -1703,6 +1708,7 @@ describe("announcementFor — a planet effects bonus claimed (steal.md §10)", (
           pointsAwarded: 2,
           poweredShipIds: [],
           addedSquares: [],
+          recoloredSquares: [],
           survivor: {
             square: squareAt("D", 1),
             oldKind: "fuel",
@@ -1718,6 +1724,7 @@ describe("announcementFor — a planet effects bonus claimed (steal.md §10)", (
           pointsAwarded: 5,
           poweredShipIds: [],
           addedSquares: [],
+          recoloredSquares: [],
           survivor: {
             square: squareAt("H", 8),
             oldKind: "additional-nodes",
