@@ -437,8 +437,10 @@ describe("ScoreDisplay", () => {
         container.querySelectorAll(".score-display__pip--x line"),
       ).toHaveLength(4);
       expect(
-        container.querySelectorAll(".score-display__pip line"),
-      ).toHaveLength(4);
+        container.querySelectorAll(
+          ".score-display__pip:not(.score-display__pip--x) line",
+        ),
+      ).toHaveLength(0);
       expect(
         container.querySelectorAll(".score-display__pip--lit"),
       ).toHaveLength(0);

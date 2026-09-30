@@ -35,14 +35,19 @@ Status and Notes, one commit per step, and a peer review by the
   and stroke from CSS (`--pip-fill`, `--color-node-charged`,
   `--color-text-bright`) rather than from presentation attributes, so the
   palette tokens remain the single place pip colours come from, as before.
-- **Keep the 1px weight.** Outline and cross lines keep today's 1px weight
-  at every size, using `vector-effect: non-scaling-stroke`. The owner
-  judged the look right and the rendering wrong, so the weight stays. A
+- **A fixed 2px weight.** Outline and cross lines keep a fixed pixel
+  weight at every size, using `vector-effect: non-scaling-stroke`. A
   stroke scaled in viewBox units would thicken in landscape, where the row
-  grows with the digits.
+  grows with the digits. Step 1 kept the old border's 1px. At sign-off the
+  owner doubled it to 2px (Step 3), because 1px still read as too thin.
 - **The cross ends on the circle's rim.** Each diagonal runs between the
   two points where it meets the circle, so no clip path is needed. A clip
   path would need a document-unique id for every pip.
+- **The cross is drawn under the outline.** In Step 1 the lines came
+  after the circle, so their ends painted over the white outline where the
+  two met. At sign-off the owner asked for the cross to sit inside the
+  circle instead. The lines now come first in the SVG, and the circle's
+  outline covers their ends (Step 3).
 - **The glow becomes `filter: drop-shadow`.** `box-shadow` on an `<svg>`
   follows its square box, not the circle, so the lit pip's glow moves to a
   drop-shadow filter of the same colour.
@@ -101,3 +106,32 @@ Depends on: Step 1.
 
 Verification (automated): the README either needs no change or is updated
 to match.
+
+### Step 3 — Sign-off tweaks
+
+Status: committed
+
+Notes: Implemented as listed. Typecheck, lint and the full suite (92
+files, 2055 tests) pass. The manual check is the owner's.
+
+Changes the owner asked for at sign-off, after the peer review:
+
+- Double the outline and cross stroke weight to 2px (`ScoreDisplay.css`).
+- Draw the cross's lines before the circle, so the outline covers their
+  ends (`ScoreDisplay.tsx`).
+- While that markup is rewritten, apply peer-review items 3 and 4. Name
+  the viewBox size and centre, and build the two diagonals from one list.
+  In the crossed-pip test, assert directly that uncrossed pips draw no
+  lines.
+- Answer peer-review items 1 and 2 in comments: why the drop-shadow blur
+  value was halved, and that the radius does not keep the outline inside
+  the box.
+
+Depends on: Step 1. It follows the README check only because it came
+after the review. It changes nothing the README describes.
+
+Verification (automated): `npm run typecheck`, `npm run lint` and the full
+`npm test` pass.
+
+Verification (manual): the owner checks the thicker outline and cross,
+and that the cross no longer paints over the outline.

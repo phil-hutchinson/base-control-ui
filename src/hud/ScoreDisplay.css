@@ -42,7 +42,7 @@
    rounded box, so its circle and any cross come out smooth at every size.
    Every pip's outline is white; a lit pip fills with the board colour of
    the node it stands for, set per pip as `--pip-fill` (`ScoreDisplay.tsx`),
-   or gold for a node with no colour of its own. Strokes stay 1px at every
+   or gold for a node with no colour of its own. Strokes stay 2px at every
    size, landscape included, rather than scaling with the viewBox. */
 .score-display__pip {
   display: block;
@@ -53,7 +53,7 @@
 
 .score-display__pip circle,
 .score-display__pip line {
-  stroke-width: 1px;
+  stroke-width: 2px;
   vector-effect: non-scaling-stroke;
 }
 
@@ -63,7 +63,9 @@
 }
 
 /* The glow is a drop-shadow, not a box-shadow, so it follows the circle
-   rather than the svg's square box. */
+   rather than the svg's square box. A drop-shadow's blur is a standard
+   deviation rather than a radius, so 0.2em gives the glow the old 0.4em
+   box-shadow had. */
 .score-display__pip--lit {
   filter: drop-shadow(0 0 0.2em var(--pip-fill, var(--color-node-charged)));
 }
@@ -76,7 +78,7 @@
    a node but not its own: each held node's pip stays unlit and is crossed
    through instead, two diagonals in the colour of the node it stands for
    (`--pip-fill`), cutting the circle into four quarters. The pip keeps its
-   size; each diagonal ends on the circle's rim. */
+   size; each diagonal ends on the circle's rim, under its outline. */
 .score-display__pip--x line {
   stroke: var(--pip-fill, var(--color-text-bright));
 }
