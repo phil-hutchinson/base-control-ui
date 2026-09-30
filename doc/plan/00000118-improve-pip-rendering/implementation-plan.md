@@ -65,7 +65,7 @@ Status: committed
 Notes: Implemented as planned, with a 10-unit viewBox and a circle of
 radius 4.5. The two tests that read `--pip-fill` off a pip now type the
 element as `SVGElement`. Typecheck, lint and the full suite (92 files, 2055
-tests) pass. The manual check is left to the owner at sign-off.
+tests) pass. The owner did the manual check at sign-off (see Step 3).
 
 - `src/hud/ScoreDisplay.tsx`: each pip becomes an `<svg>` with a small
   square viewBox. It carries the class and style the `<span>` had, and
@@ -112,7 +112,7 @@ to match.
 Status: committed
 
 Notes: Implemented as listed. Typecheck, lint and the full suite (92
-files, 2055 tests) pass. The manual check is the owner's.
+files, 2055 tests) pass. The owner checked the result in the app and signed it off.
 
 Changes the owner asked for at sign-off, after the peer review:
 
