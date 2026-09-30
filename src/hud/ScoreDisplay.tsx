@@ -25,6 +25,14 @@ import "./ScoreDisplay.css";
  * readout's fixed width never reflows as the total grows. */
 const SCORE_DIGITS = 4;
 
+/** A pip's circle in its 10-unit viewBox, inset so the 1px outline
+ * (`ScoreDisplay.css`) is not cut off at the edge. */
+const PIP_RADIUS = 4.5;
+
+/** How far each diagonal of an X pip runs from the centre along each axis:
+ * far enough to end on the circle's rim, so no clip path is needed. */
+const PIP_X_REACH = PIP_RADIUS * Math.SQRT1_2;
+
 const SIDE_NAME: Readonly<Record<Side, string>> = {
   green: "Green",
   red: "Red",
@@ -143,7 +151,29 @@ export function ScoreDisplay({
           }
           return (
             <span key={index} className="score-display__pip-column">
-              <span className={pipClassName} style={pipStyle} />
+              <svg
+                className={pipClassName}
+                style={pipStyle}
+                viewBox="0 0 10 10"
+              >
+                <circle cx={5} cy={5} r={PIP_RADIUS} />
+                {index < xCount && (
+                  <>
+                    <line
+                      x1={5 - PIP_X_REACH}
+                      y1={5 - PIP_X_REACH}
+                      x2={5 + PIP_X_REACH}
+                      y2={5 + PIP_X_REACH}
+                    />
+                    <line
+                      x1={5 + PIP_X_REACH}
+                      y1={5 - PIP_X_REACH}
+                      x2={5 - PIP_X_REACH}
+                      y2={5 + PIP_X_REACH}
+                    />
+                  </>
+                )}
+              </svg>
               <span
                 className={
                   count === litCount

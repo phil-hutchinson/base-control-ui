@@ -126,7 +126,7 @@ function buildStealState(config: {
  * stylesheet's gold. */
 function litFills(container: HTMLElement): readonly string[] {
   return Array.from(
-    container.querySelectorAll<HTMLElement>(".score-display__pip--lit"),
+    container.querySelectorAll<SVGElement>(".score-display__pip--lit"),
   ).map((pip) => pip.style.getPropertyValue("--pip-fill"));
 }
 
@@ -432,6 +432,13 @@ describe("ScoreDisplay", () => {
       expect(container.querySelectorAll(".score-display__pip--x")).toHaveLength(
         2,
       );
+      // Two diagonals through each crossed pip, and none through the rest.
+      expect(
+        container.querySelectorAll(".score-display__pip--x line"),
+      ).toHaveLength(4);
+      expect(
+        container.querySelectorAll(".score-display__pip line"),
+      ).toHaveLength(4);
       expect(
         container.querySelectorAll(".score-display__pip--lit"),
       ).toHaveLength(0);
@@ -459,6 +466,9 @@ describe("ScoreDisplay", () => {
       expect(container.querySelectorAll(".score-display__pip--x")).toHaveLength(
         0,
       );
+      expect(
+        container.querySelectorAll(".score-display__pip line"),
+      ).toHaveLength(0);
       expect(
         container.querySelectorAll(".score-display__pip--lit"),
       ).toHaveLength(2);
@@ -574,7 +584,7 @@ describe("ScoreDisplay", () => {
       );
 
       const xPips = Array.from(
-        container.querySelectorAll<HTMLElement>(".score-display__pip--x"),
+        container.querySelectorAll<SVGElement>(".score-display__pip--x"),
       );
       expect(
         xPips.map((pip) => pip.style.getPropertyValue("--pip-fill")),

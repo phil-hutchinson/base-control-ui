@@ -55,7 +55,12 @@ Status and Notes, one commit per step, and a peer review by the
 
 ### Step 1 — Draw pips as SVG
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned, with a 10-unit viewBox and a circle of
+radius 4.5. The two tests that read `--pip-fill` off a pip now type the
+element as `SVGElement`. Typecheck, lint and the full suite (92 files, 2055
+tests) pass. The manual check is left to the owner at sign-off.
 
 - `src/hud/ScoreDisplay.tsx`: each pip becomes an `<svg>` with a small
   square viewBox. It carries the class and style the `<span>` had, and
