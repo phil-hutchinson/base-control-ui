@@ -165,7 +165,10 @@ tests above.
 
 ### Step 3 — Owner's check of the sweep
 
-Status: pending
+Status: committed
+
+Notes: The owner checked the sweep in play after the peer-review fixes and
+approved it as it stands; the 700ms duration was kept.
 
 The owner plays a steal game with planet effects on and claims a Node
 scramble, and adjusts the duration if it looks too fast or slow.
