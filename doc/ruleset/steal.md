@@ -277,6 +277,9 @@ resolves at once, in this order:
    available, excluding the other bonus's kind — under race, its new kind.
    So the two bonuses are always of different kinds.
 
+A player who is out of time (rules.md §10) still claims a bonus this way in
+full, all three steps included, but a points bonus pays them nothing.
+
 Under stable, a claim therefore makes one fewer draw than under race. A
 bonus that stands under stable never becomes unavailable while it stands:
 only claiming Additional nodes makes a kind unavailable, and the bonus left

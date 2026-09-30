@@ -143,7 +143,18 @@ pays.
 
 ### Step 1 — Ruleset: an out-of-time player gains no energy (0.45)
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned. Added the new rule to rules.md §10 (with a
+dedicated paragraph making explicit that a turn made before the clock
+reaches zero pays in full, per the owner's clarification), corrected §8.4's
+"only ever rises" to "never falls" and added the out-of-time exception
+sentence, added the out-of-time exception to §8.6's step 2 and its passing
+paragraph, added the "unless out of time" pointer to §3.4, added the
+claiming pointer to steal.md §10, bumped RULES_VERSION to 0.45 and added the
+changelog entry. `npm test`, `npm run typecheck` and `npm run lint` all
+pass (2055 tests, including `rulesVersion.test.ts`). No deviations from the
+plan.
 
 Update the ruleset so it states the new rule, then bump the version. This
 step touches only documents and the version constant, and is committed on

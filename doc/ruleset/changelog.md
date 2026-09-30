@@ -7,6 +7,35 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.45 — a player out of time gains no more energy
+
+This is a gameplay change — a player whose clock has run out could
+previously go on scoring for the nodes they held through every turn the
+clock passed for them, and this closes that off — and so is a tag
+candidate; tagging stays on hold until the game plays (see the project's
+contribution notes).
+
+- **A player whose clock reaches zero gains no more energy, from any
+  source, for the rest of the game** (rules.md §10, new). This includes the
+  turn on which the clock runs out — it passes, since no move was made in
+  time, and pays nothing — and every turn after. Their total is frozen, not
+  reduced. A turn made before the clock reached zero is unaffected and pays
+  in full, whatever it would normally pay.
+- **The rest of the end-of-turn order still runs** for their passed turns:
+  power recovery, countdowns, depletion and traps all carry on as usual
+  (rules.md §10, §8.6). Only the payment stops. Their ships stay where they
+  are and keep their nodes; a node they hold pays nothing but is otherwise
+  an ordinary held node.
+- **A landing that returns their ship to a planet after a fight** pays them
+  nothing: under the planet bonus, the planet is not paid out and is not
+  used up (rules.md §3.4, §10). Under planet effects, the bonus is still
+  claimed and replaced as usual, and every bonus that is not energy still
+  takes effect, but a points bonus pays them nothing (steal.md §10).
+- **rules.md §8.4 and §8.6** are corrected to match: §8.4's "a player's
+  total only ever rises" becomes "never falls", and §8.6's claim that a
+  passing player "still collects exactly as they would otherwise" now
+  excepts a player who is out of time.
+
 ## 0.44 — planet effects and node scoring: two settings renamed
 
 This is a wording change only — nothing about how the game is played

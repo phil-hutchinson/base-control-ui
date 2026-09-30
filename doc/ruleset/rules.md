@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.44**
+**Rules version: 0.45**
 
 This document is the single source of truth for how Base Control is played,
 together with its companion [steal.md](steal.md), which holds the node rules
@@ -298,8 +298,9 @@ With **2 points or 3 points**:
   distinct planets a side. The two sets are drawn independently, so they
   may overlap in any number from none to all three.
 - **A player is paid the chosen amount of energy the first time one of their
-  ships lands on one of their three planets.** Each planet pays each player
-  **at most once**, however often that player's ships return to it.
+  ships lands on one of their three planets** — unless they are out of time
+  (section 10). Each planet pays each player **at most once**, however often
+  that player's ships return to it.
 - **A shared planet pays both players, independently, in either order.**
   Neither player's claim takes anything from the other, and there is
   nothing to race for and nothing to deny.
@@ -808,7 +809,10 @@ the same way for the charged nodes they hold when their turn ends
 (section 8.2, steal.md) — except that, under steal, the player-matching
 nodes setting can change what a turn pays (steal.md §9).
 
-Nothing in the game subtracts energy. A player's total only ever rises.
+A player whose clock has run out collects none of this: from that moment
+they gain no energy from any source (section 10).
+
+Nothing in the game subtracts energy: a player's total never falls.
 
 ### 8.5 Standing on a depleted node
 
@@ -843,7 +847,8 @@ Everything that happens at the end of a turn happens in this order:
    or two if it is the only one of that player's ships charging (section
    3.1) — up to the maximum of 6 (section 4.1).
 2. The moving player collects energy for the charged nodes they hold
-   (section 8.4).
+   (section 8.4) — unless that player is out of time, in which case they
+   collect nothing (section 10).
 3. Every charged node **carrying a countdown** spends one turn of it; any
    that runs out goes depleted, with an 11-turn countdown, and traps the
    ship standing on it (section 8.5).
@@ -884,7 +889,8 @@ A turn that passes because the player could neither move nor attack
 would for a turn in which a ship moved or attacked. Countdowns still tick,
 and a ship of the passing player standing on a planet still gains power at
 the section 3.1 rate; the passing player still collects exactly as they
-would otherwise.
+would otherwise — unless that player is out of time, in which case section
+10's exception applies instead, and they collect nothing.
 
 Step 5 sits **before** step 6 **deliberately**. A node placed by a refill
 is inactive for the whole of the next turn and can first be charged at the
@@ -967,6 +973,34 @@ is is counting; the clock changes hands the instant the turn does.
 A player whose clock reaches zero passes every remaining turn. Those turns
 are still turns — section 8.6 runs in full for them — and their opponent
 goes on playing normally.
+
+**From the moment a player's clock reaches zero — including the turn on
+which it does — they gain no more energy, from any source, for the rest of
+the game.** They collect nothing for the nodes they hold at the end of a
+turn, and no bonus pays them energy. Their total is frozen from that point,
+not reduced (section 8.4). The rest of the end-of-turn order (section 8.6)
+still runs for their passed turns: a ship of theirs standing on a planet
+still recovers power, and countdowns, depletion and traps all carry on as
+usual. Their ships stay exactly where they are and keep whatever nodes they
+hold — a node held by a player who is out of time pays nothing, but is
+otherwise an ordinary held node, and under the steal playstyle the opponent
+can still take it in the usual way (steal.md).
+
+A turn made before the clock reaches zero is unaffected by any of this: it
+pays everything it would normally pay, the landing's own bonus included,
+and the nodes held when that turn ends. A turn was either made in time or it
+was not; there is no partial turn to withhold from.
+
+A landing that returns one of their ships to a planet after a fight, once
+they are out of time, pays them nothing from that landing: under the planet
+bonus, the planet is not paid out and is not used up. Under planet effects,
+the bonus itself is still claimed and replaced exactly as usual, and every
+bonus that is not energy — Fuel, Additional nodes, Node scramble — takes
+effect exactly as usual, but a points bonus pays them nothing (steal.md
+§10).
+
+The opponent is unaffected by any of this: they go on playing and
+collecting energy normally.
 
 When both players' clocks have reached zero, the game ends immediately
 (section 9).
