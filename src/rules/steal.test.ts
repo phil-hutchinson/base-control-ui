@@ -10,7 +10,7 @@ import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import type { NodeStatus } from "./gameState";
 import { drawStealProspectiveSquare, legalNodePool } from "./nodePlacement";
 import { CHARGED_NODE_COUNTS } from "./nodes";
-import { drawIndex, drawWeightedIndex, mulberry32 } from "./random";
+import { mulberry32, seededRandom } from "./random";
 import {
   abandonNode,
   addExtraProspectiveSquares,
@@ -163,7 +163,11 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
   it.each(CHARGED_NODE_COUNTS)(
     "deals 2 x %d prospective squares, two per signal, none charged, inactive or depleted",
     (nodeCount) => {
-      const [dealt] = dealStealOpeningBoard(FLEET_SQUARES, nodeCount, 12345);
+      const dealt = dealStealOpeningBoard(
+        FLEET_SQUARES,
+        nodeCount,
+        seededRandom(12345),
+      );
 
       const entries = Object.values(dealt);
       expect(entries).toHaveLength(nodeCount * 2);
@@ -179,7 +183,7 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
   );
 
   it("puts at least one of each signal's two squares in the strict pool's interior, since the first is always drawn from it", () => {
-    const [dealt] = dealStealOpeningBoard(FLEET_SQUARES, 5, 99);
+    const dealt = dealStealOpeningBoard(FLEET_SQUARES, 5, seededRandom(99));
 
     for (const signal of NODE_SIGNALS) {
       const names = squaresForSignal(dealt, signal).map(squareName);
@@ -190,7 +194,7 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
   });
 
   it("never places a signal's two squares adjacent to each other", () => {
-    const [dealt] = dealStealOpeningBoard(FLEET_SQUARES, 5, 4242);
+    const dealt = dealStealOpeningBoard(FLEET_SQUARES, 5, seededRandom(4242));
 
     for (const signal of NODE_SIGNALS) {
       const squares = squaresForSignal(dealt, signal);
@@ -200,7 +204,7 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
   });
 
   it("never places a node under a ship", () => {
-    const [dealt] = dealStealOpeningBoard(FLEET_SQUARES, 5, 777);
+    const dealt = dealStealOpeningBoard(FLEET_SQUARES, 5, seededRandom(777));
     const shipNames = new Set(FLEET_SQUARES.map(squareName));
 
     for (const name of Object.keys(dealt)) {
@@ -209,15 +213,15 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
   });
 
   it("deals the same board for the same seed, and a different board for a different seed", () => {
-    const [first] = dealStealOpeningBoard(FLEET_SQUARES, 4, 1000);
-    const [second] = dealStealOpeningBoard(FLEET_SQUARES, 4, 1000);
-    const [third] = dealStealOpeningBoard(FLEET_SQUARES, 4, 1001);
+    const first = dealStealOpeningBoard(FLEET_SQUARES, 4, seededRandom(1000));
+    const second = dealStealOpeningBoard(FLEET_SQUARES, 4, seededRandom(1000));
+    const third = dealStealOpeningBoard(FLEET_SQUARES, 4, seededRandom(1001));
 
     expect(second).toEqual(first);
     expect(third).not.toEqual(first);
   });
 
-  it("advances the seed by exactly 2 x nodeCount mulberry32 steps", () => {
+  it("makes exactly 2 x nodeCount draws", () => {
     const seed = 55;
     for (const nodeCount of CHARGED_NODE_COUNTS) {
       let expectedSeed = seed;
@@ -225,13 +229,11 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
         [, expectedSeed] = mulberry32(expectedSeed);
       }
 
-      const [, nextSeed] = dealStealOpeningBoard(
-        FLEET_SQUARES,
-        nodeCount,
-        seed,
-      );
+      const random = seededRandom(seed);
+      dealStealOpeningBoard(FLEET_SQUARES, nodeCount, random);
 
-      expect(nextSeed).toBe(expectedSeed);
+      expect(random.currentSeed()).toBe(expectedSeed);
+      expect(random.draws()).toHaveLength(nodeCount * 2);
     }
   });
 });
@@ -245,7 +247,13 @@ describe("claimNode (steal.md §3)", () => {
     const claimedSquare = squareAt("H", 8);
     const shipSquares = [claimedSquare];
 
-    const result = claimNode(before, 0, claimedSquare, shipSquares, 4242);
+    const result = claimNode(
+      before,
+      0,
+      claimedSquare,
+      shipSquares,
+      seededRandom(4242),
+    );
 
     expect(result.releasedSquare).toBeUndefined();
     expect(result.discardedSquares).toEqual([squareAt("L", 8)]);
@@ -271,7 +279,13 @@ describe("claimNode (steal.md §3)", () => {
     };
     const claimedSquare = squareAt("H", 8);
 
-    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 17);
+    const result = claimNode(
+      before,
+      0,
+      claimedSquare,
+      [claimedSquare],
+      seededRandom(17),
+    );
 
     expect(result.releasedSquare).toEqual(squareAt("G", 8));
     expect(result.discardedSquares).toEqual([]);
@@ -288,23 +302,25 @@ describe("claimNode (steal.md §3)", () => {
     };
     const claimedSquare = squareAt("H", 8);
 
-    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 8);
+    const random = seededRandom(8);
+    const result = claimNode(before, 0, claimedSquare, [claimedSquare], random);
 
     expect(result.nodes.C3).toEqual(before.C3);
     expect(result.nodes.D4).toEqual(before.D4);
 
+    const expectedRandom = seededRandom(8);
     const expected = drawStealProspectiveSquare(
       [claimedSquare, squareAt("C", 3), squareAt("D", 4)],
       [claimedSquare],
       [squareAt("C", 3), squareAt("D", 4)],
       [claimedSquare],
-      8,
+      expectedRandom,
     );
-    expect(squareName(result.newProspective)).toBe(squareName(expected[0]));
-    expect(result.nextSeed).toBe(expected[1]);
+    expect(squareName(result.newProspective)).toBe(squareName(expected));
+    expect(random.currentSeed()).toBe(expectedRandom.currentSeed());
   });
 
-  it("advances the seed by exactly one mulberry32 step", () => {
+  it("makes exactly one draw", () => {
     const before: Record<string, NodeStatus> = {
       H8: { state: "prospective", level: 0, signal: 0 },
       L8: { state: "prospective", level: 0, signal: 0 },
@@ -313,9 +329,11 @@ describe("claimNode (steal.md §3)", () => {
     const seed = 321;
 
     const [, expectedSeed] = mulberry32(seed);
-    const result = claimNode(before, 0, claimedSquare, [claimedSquare], seed);
+    const random = seededRandom(seed);
+    claimNode(before, 0, claimedSquare, [claimedSquare], random);
 
-    expect(result.nextSeed).toBe(expectedSeed);
+    expect(random.currentSeed()).toBe(expectedSeed);
+    expect(random.draws()).toHaveLength(1);
   });
 
   it("deals the same result for the same seed, and a different one for a different seed", () => {
@@ -325,9 +343,27 @@ describe("claimNode (steal.md §3)", () => {
     };
     const claimedSquare = squareAt("H", 8);
 
-    const first = claimNode(before, 0, claimedSquare, [claimedSquare], 9);
-    const second = claimNode(before, 0, claimedSquare, [claimedSquare], 9);
-    const third = claimNode(before, 0, claimedSquare, [claimedSquare], 10);
+    const first = claimNode(
+      before,
+      0,
+      claimedSquare,
+      [claimedSquare],
+      seededRandom(9),
+    );
+    const second = claimNode(
+      before,
+      0,
+      claimedSquare,
+      [claimedSquare],
+      seededRandom(9),
+    );
+    const third = claimNode(
+      before,
+      0,
+      claimedSquare,
+      [claimedSquare],
+      seededRandom(10),
+    );
 
     expect(second).toEqual(first);
     expect(third).not.toEqual(first);
@@ -340,7 +376,13 @@ describe("claimNode (steal.md §3)", () => {
     };
     const claimedSquare = squareAt("H", 8);
 
-    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 4242);
+    const result = claimNode(
+      before,
+      0,
+      claimedSquare,
+      [claimedSquare],
+      seededRandom(4242),
+    );
 
     expect(result.discardedSquares).toEqual([squareAt("L", 8)]);
     expect(result.nodes.H8).toEqual({ state: "charged", level: 0, signal: 0 });
@@ -358,7 +400,13 @@ describe("claimNode (steal.md §3)", () => {
     };
     const claimedSquare = squareAt("H", 8);
 
-    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 17);
+    const result = claimNode(
+      before,
+      0,
+      claimedSquare,
+      [claimedSquare],
+      seededRandom(17),
+    );
 
     expect(result.releasedSquare).toEqual(squareAt("G", 8));
     expect(result.discardedSquares).toEqual([squareAt("L", 8)]);
@@ -375,7 +423,13 @@ describe("claimNode (steal.md §3)", () => {
     };
     const claimedSquare = squareAt("L", 8);
 
-    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 4242);
+    const result = claimNode(
+      before,
+      0,
+      claimedSquare,
+      [claimedSquare],
+      seededRandom(4242),
+    );
 
     expect(result.discardedSquares.map(squareName).sort()).toEqual(
       ["H8", "K5"].sort(),
@@ -391,7 +445,13 @@ describe("claimNode (steal.md §3)", () => {
     };
     const claimedSquare = squareAt("L", 8);
 
-    const result = claimNode(before, 0, claimedSquare, [claimedSquare], 17);
+    const result = claimNode(
+      before,
+      0,
+      claimedSquare,
+      [claimedSquare],
+      seededRandom(17),
+    );
 
     expect(result.releasedSquare).toEqual(squareAt("G", 8));
     expect(result.discardedSquares).toEqual([squareAt("H", 8)]);
@@ -407,7 +467,7 @@ describe("abandonNode (steal.md §4)", () => {
     };
     const vacatedSquare = squareAt("G", 8);
 
-    const result = abandonNode(before, 0, vacatedSquare, [], 654);
+    const result = abandonNode(before, 0, vacatedSquare, [], seededRandom(654));
 
     expect(result.nodes.G8).toBeUndefined();
     expect(result.nodes.H8).toEqual({
@@ -428,7 +488,7 @@ describe("abandonNode (steal.md §4)", () => {
     expect(pool.map(squareName)).toContain(squareName(result.newProspective));
   });
 
-  it("advances the seed by exactly one mulberry32 step", () => {
+  it("makes exactly one draw", () => {
     const before: Record<string, NodeStatus> = {
       G8: { state: "charged", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
@@ -436,9 +496,11 @@ describe("abandonNode (steal.md §4)", () => {
     const seed = 111;
 
     const [, expectedSeed] = mulberry32(seed);
-    const result = abandonNode(before, 0, squareAt("G", 8), [], seed);
+    const random = seededRandom(seed);
+    abandonNode(before, 0, squareAt("G", 8), [], random);
 
-    expect(result.nextSeed).toBe(expectedSeed);
+    expect(random.currentSeed()).toBe(expectedSeed);
+    expect(random.draws()).toHaveLength(1);
   });
 
   it("deals the same result for the same seed, and a different one for a different seed", () => {
@@ -447,9 +509,15 @@ describe("abandonNode (steal.md §4)", () => {
       H8: { state: "prospective", level: 0, signal: 0 },
     };
 
-    const first = abandonNode(before, 0, squareAt("G", 8), [], 2);
-    const second = abandonNode(before, 0, squareAt("G", 8), [], 2);
-    const third = abandonNode(before, 0, squareAt("G", 8), [], 3);
+    const first = abandonNode(before, 0, squareAt("G", 8), [], seededRandom(2));
+    const second = abandonNode(
+      before,
+      0,
+      squareAt("G", 8),
+      [],
+      seededRandom(2),
+    );
+    const third = abandonNode(before, 0, squareAt("G", 8), [], seededRandom(3));
 
     expect(second).toEqual(first);
     expect(third).not.toEqual(first);
@@ -463,7 +531,7 @@ describe("abandonNode (steal.md §4)", () => {
     };
     const vacatedSquare = squareAt("G", 8);
 
-    const result = abandonNode(before, 0, vacatedSquare, [], 654);
+    const result = abandonNode(before, 0, vacatedSquare, [], seededRandom(654));
 
     expect(result.nodes.G8).toBeUndefined();
     expect(result.nodes.H8).toEqual({
@@ -490,17 +558,19 @@ describe("abandonNode (steal.md §4)", () => {
     const shipSquares = [squareAt("D", 4)];
     const seed = 654;
 
-    const result = abandonNode(before, 0, vacatedSquare, shipSquares, seed);
+    const random = seededRandom(seed);
+    const result = abandonNode(before, 0, vacatedSquare, shipSquares, random);
 
+    const expectedRandom = seededRandom(seed);
     const expected = drawStealProspectiveSquare(
       [squareAt("H", 8), squareAt("L", 8)],
       [squareAt("H", 8), squareAt("L", 8)],
       [],
       shipSquares,
-      seed,
+      expectedRandom,
     );
-    expect(squareName(result.newProspective)).toBe(squareName(expected[0]));
-    expect(result.nextSeed).toBe(expected[1]);
+    expect(squareName(result.newProspective)).toBe(squareName(expected));
+    expect(random.currentSeed()).toBe(expectedRandom.currentSeed());
   });
 });
 
@@ -577,7 +647,12 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
   };
 
   it("adds exactly one square to each node not carrying an extra, none to a node that already carries one, in signal order", () => {
-    const result = addExtraProspectiveSquares(before, 3, [], 4242);
+    const result = addExtraProspectiveSquares(
+      before,
+      3,
+      [],
+      seededRandom(4242),
+    );
 
     expect(result.nodes.C3).toEqual(before.C3);
     expect(result.nodes.D4).toEqual(before.D4);
@@ -603,21 +678,23 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
     expect(everyNodeHasExtra(result.nodes, 3)).toBe(true);
   });
 
-  it("consumes exactly one seed step per square added", () => {
+  it("makes exactly one draw per square added", () => {
     const seed = 4242;
-    const result = addExtraProspectiveSquares(before, 3, [], seed);
+    const random = seededRandom(seed);
+    const result = addExtraProspectiveSquares(before, 3, [], random);
 
     let expectedSeed = seed;
     for (let step = 0; step < result.addedSquares.length; step++) {
       [, expectedSeed] = mulberry32(expectedSeed);
     }
-    expect(result.nextSeed).toBe(expectedSeed);
+    expect(random.currentSeed()).toBe(expectedSeed);
+    expect(random.draws()).toHaveLength(result.addedSquares.length);
   });
 
   it("deals the same result for the same seed, and a different one for a different seed", () => {
-    const first = addExtraProspectiveSquares(before, 3, [], 9);
-    const second = addExtraProspectiveSquares(before, 3, [], 9);
-    const third = addExtraProspectiveSquares(before, 3, [], 10);
+    const first = addExtraProspectiveSquares(before, 3, [], seededRandom(9));
+    const second = addExtraProspectiveSquares(before, 3, [], seededRandom(9));
+    const third = addExtraProspectiveSquares(before, 3, [], seededRandom(10));
 
     expect(second).toEqual(first);
     expect(third).not.toEqual(first);
@@ -635,16 +712,23 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
       F9: { state: "prospective", level: 0, signal: 2 },
       K13: { state: "prospective", level: 0, signal: 2 },
     };
-    const result = addExtraProspectiveSquares(everyoneHasExtra, 3, [], 4242);
+    const random = seededRandom(4242);
+    const result = addExtraProspectiveSquares(everyoneHasExtra, 3, [], random);
 
     expect(result.addedSquares).toEqual([]);
     expect(result.nodes).toEqual(everyoneHasExtra);
-    expect(result.nextSeed).toBe(4242);
+    expect(random.currentSeed()).toBe(4242);
+    expect(random.draws()).toHaveLength(0);
   });
 
   it("draws each added square from the widened pool, off every other node's squares and every ship", () => {
     const shipSquares = [squareAt("A", 1), squareAt("O", 15)];
-    const result = addExtraProspectiveSquares(before, 3, shipSquares, 777);
+    const result = addExtraProspectiveSquares(
+      before,
+      3,
+      shipSquares,
+      seededRandom(777),
+    );
 
     const occupiedBefore = new Set(Object.keys(before));
     const shipNames = new Set(shipSquares.map(squareName));
@@ -733,7 +817,7 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
           fiveNodes,
           5,
           playerMatching,
-          seed,
+          seededRandom(seed),
         );
         expectShuffleInvariants(fiveNodes, result.nodes);
       }
@@ -741,18 +825,15 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
   );
 
   it.each(["off", "double", "required"] as const)(
-    "consumes exactly two seed steps per prospective square (player-matching %s)",
+    "makes exactly two draws per prospective square (player-matching %s)",
     (playerMatching) => {
       const seed = 4242;
-      const result = shuffleProspectiveSignals(
-        fiveNodes,
-        5,
-        playerMatching,
-        seed,
-      );
-      expect(result.nextSeed).toBe(
+      const random = seededRandom(seed);
+      shuffleProspectiveSignals(fiveNodes, 5, playerMatching, random);
+      expect(random.currentSeed()).toBe(
         seedAfter(seed, 2 * fiveNodesProspectiveCount),
       );
+      expect(random.draws()).toHaveLength(2 * fiveNodesProspectiveCount);
     },
   );
 
@@ -765,7 +846,7 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
           fiveNodes,
           5,
           playerMatching,
-          seed,
+          seededRandom(seed),
         );
         const expected = boardOrder.flatMap((name) => {
           const before = fiveNodes[name];
@@ -787,9 +868,24 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
   );
 
   it("deals the same result for the same seed, and a different one for a different seed", () => {
-    const first = shuffleProspectiveSignals(fiveNodes, 5, "required", 9);
-    const second = shuffleProspectiveSignals(fiveNodes, 5, "required", 9);
-    const third = shuffleProspectiveSignals(fiveNodes, 5, "required", 10);
+    const first = shuffleProspectiveSignals(
+      fiveNodes,
+      5,
+      "required",
+      seededRandom(9),
+    );
+    const second = shuffleProspectiveSignals(
+      fiveNodes,
+      5,
+      "required",
+      seededRandom(9),
+    );
+    const third = shuffleProspectiveSignals(
+      fiveNodes,
+      5,
+      "required",
+      seededRandom(10),
+    );
 
     expect(second).toEqual(first);
     expect(third).not.toEqual(first);
@@ -803,12 +899,18 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
     const squares = Object.keys(before).sort(
       (a, b) => ALL_SQUARE_NAMES.indexOf(a) - ALL_SQUARE_NAMES.indexOf(b),
     );
-    const [signalIndex, seedAfterSignal] = drawWeightedIndex(seed, [1, 2]);
+    const expectedRandom = seededRandom(seed);
+    const signalIndex = expectedRandom.weighted([1, 2]);
     const firstSignal = ([3, 4] as const)[signalIndex];
     const candidates = squares.filter((name) => before[name] !== firstSignal);
-    const [squareIndex] = drawIndex(seedAfterSignal, candidates.length);
+    const squareIndex = expectedRandom.uniform(candidates.length);
 
-    const result = shuffleProspectiveSignals(fiveNodes, 5, "double", seed);
+    const result = shuffleProspectiveSignals(
+      fiveNodes,
+      5,
+      "double",
+      seededRandom(seed),
+    );
     expect(result.nodes[candidates[squareIndex]]?.signal).toBe(firstSignal);
   });
 
@@ -838,8 +940,12 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
         ]);
         for (let seed = 1; seed <= 300; seed++) {
           const after = prospectiveSignals(
-            shuffleProspectiveSignals(board, nodeCount, playerMatching, seed)
-              .nodes,
+            shuffleProspectiveSignals(
+              board,
+              nodeCount,
+              playerMatching,
+              seededRandom(seed),
+            ).nodes,
           );
           const moved = Object.keys(before).some((name) => {
             const signal = after[name];
@@ -870,14 +976,15 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
     };
     for (const playerMatching of ["off", "double", "required"] as const) {
       for (let seed = 1; seed <= 300; seed++) {
+        const random = seededRandom(seed);
         const result = shuffleProspectiveSignals(
           board,
           3,
           playerMatching,
-          seed,
+          random,
         );
         expectShuffleInvariants(board, result.nodes);
-        expect(result.nextSeed).toBe(seedAfter(seed, 10));
+        expect(random.currentSeed()).toBe(seedAfter(seed, 10));
       }
     }
   });
@@ -885,12 +992,22 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
   it.each([3, 4, 5] as const)(
     "shuffles every opening deal of %d nodes with player-matching off, keeping every invariant",
     (nodeCount) => {
-      const [dealt] = dealStealOpeningBoard(FLEET_SQUARES, nodeCount, 777);
+      const dealt = dealStealOpeningBoard(
+        FLEET_SQUARES,
+        nodeCount,
+        seededRandom(777),
+      );
       const outcomes = new Set<string>();
       for (let seed = 1; seed <= 50; seed++) {
-        const result = shuffleProspectiveSignals(dealt, nodeCount, "off", seed);
+        const random = seededRandom(seed);
+        const result = shuffleProspectiveSignals(
+          dealt,
+          nodeCount,
+          "off",
+          random,
+        );
         expectShuffleInvariants(dealt, result.nodes);
-        expect(result.nextSeed).toBe(seedAfter(seed, 2 * 2 * nodeCount));
+        expect(random.currentSeed()).toBe(seedAfter(seed, 2 * 2 * nodeCount));
         outcomes.add(JSON.stringify(prospectiveSignals(result.nodes)));
       }
       expect(outcomes.size).toBeGreaterThan(1);

@@ -17,7 +17,7 @@ import {
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyAttack, applyMove } from "./ply";
 import type { PowerLevel } from "./power";
-import { drawIndex } from "./random";
+import { seededRandom } from "./random";
 import {
   DEFAULT_CHARGED_NODE_COUNT,
   type ChargedNodeCount,
@@ -404,15 +404,13 @@ describe("a fight's placement", () => {
       planetBonus: "three",
     });
 
-    const [attackerIndex, seedAfterAttacker] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
+    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
       (square) => squareName(square) !== squareName(attackerPlanet),
     );
-    drawIndex(seedAfterAttacker, defenderPool.length);
+    attackerRandom.uniform(defenderPool.length);
 
     const withBonus: GameState = {
       ...state,
@@ -441,15 +439,13 @@ describe("a fight's placement", () => {
       planetBonus: "two",
     });
 
-    const [attackerIndex, seedAfterAttacker] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
+    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
       (square) => squareName(square) !== squareName(attackerPlanet),
     );
-    const [defenderIndex] = drawIndex(seedAfterAttacker, defenderPool.length);
+    const defenderIndex = attackerRandom.uniform(defenderPool.length);
     const defenderPlanet = defenderPool[defenderIndex];
 
     const withBonus: GameState = {
@@ -478,15 +474,13 @@ describe("a fight's placement", () => {
       planetBonus: "three",
     });
 
-    const [attackerIndex, seedAfterAttacker] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
+    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
       (square) => squareName(square) !== squareName(attackerPlanet),
     );
-    const [defenderIndex] = drawIndex(seedAfterAttacker, defenderPool.length);
+    const defenderIndex = attackerRandom.uniform(defenderPool.length);
     const defenderPlanet = defenderPool[defenderIndex];
 
     const withBonus: GameState = {
@@ -530,7 +524,9 @@ describe("a fight's placement", () => {
       planetBonus: "off",
     });
 
-    const [attackerIndex] = drawIndex(state.randomSeed, PLANETS.length);
+    const attackerIndex = seededRandom(state.randomSeed).uniform(
+      PLANETS.length,
+    );
     const attackerPlanet = PLANETS[attackerIndex];
 
     const withBonus: GameState = {
@@ -557,15 +553,13 @@ describe("a fight's placement", () => {
       outOfTime: { green: false, red: true },
     });
 
-    const [attackerIndex, seedAfterAttacker] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
+    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
       (square) => squareName(square) !== squareName(attackerPlanet),
     );
-    const [defenderIndex] = drawIndex(seedAfterAttacker, defenderPool.length);
+    const defenderIndex = attackerRandom.uniform(defenderPool.length);
     const defenderPlanet = defenderPool[defenderIndex];
 
     const withBonus: GameState = {

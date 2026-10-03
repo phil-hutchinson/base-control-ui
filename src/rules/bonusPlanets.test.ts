@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ALL_SQUARES, squareName } from "./board";
 import { dealBonusPlanets } from "./bonusPlanets";
 import { isPlanet, PLANETS } from "./planets";
-import { mulberry32 } from "./random";
+import { mulberry32, seededRandom } from "./random";
 
 function boardIndexOf(squareNameToFind: string): number {
   return ALL_SQUARES.findIndex(
@@ -12,7 +12,7 @@ function boardIndexOf(squareNameToFind: string): number {
 
 describe("dealBonusPlanets (rules.md §3.4)", () => {
   it("deals each side three distinct planet squares", () => {
-    const [bySide] = dealBonusPlanets(1);
+    const bySide = dealBonusPlanets(seededRandom(1));
     for (const side of ["green", "red"] as const) {
       const planets = bySide[side];
       expect(planets).toHaveLength(3);
@@ -26,7 +26,7 @@ describe("dealBonusPlanets (rules.md §3.4)", () => {
 
   it("returns each side's three in board order", () => {
     for (let seed = 1; seed <= 20; seed++) {
-      const [bySide] = dealBonusPlanets(seed);
+      const bySide = dealBonusPlanets(seededRandom(seed));
       for (const side of ["green", "red"] as const) {
         const indexes = bySide[side].map((square) =>
           boardIndexOf(squareName(square)),
@@ -38,8 +38,8 @@ describe("dealBonusPlanets (rules.md §3.4)", () => {
   });
 
   it("deals the same six planets from the same seed", () => {
-    const [first] = dealBonusPlanets(42);
-    const [second] = dealBonusPlanets(42);
+    const first = dealBonusPlanets(seededRandom(42));
+    const second = dealBonusPlanets(seededRandom(42));
     expect(first.green.map(squareName)).toEqual(second.green.map(squareName));
     expect(first.red.map(squareName)).toEqual(second.red.map(squareName));
   });
@@ -47,7 +47,7 @@ describe("dealBonusPlanets (rules.md §3.4)", () => {
   it("generally deals different planets from different seeds", () => {
     const deals = new Set<string>();
     for (let seed = 1; seed <= 20; seed++) {
-      const [bySide] = dealBonusPlanets(seed);
+      const bySide = dealBonusPlanets(seededRandom(seed));
       deals.add(
         `${bySide.green.map(squareName).join(",")}|${bySide.red
           .map(squareName)
@@ -61,7 +61,7 @@ describe("dealBonusPlanets (rules.md §3.4)", () => {
     let sawOverlap = false;
     let sawDisjoint = false;
     for (let seed = 1; seed <= 50; seed++) {
-      const [bySide] = dealBonusPlanets(seed);
+      const bySide = dealBonusPlanets(seededRandom(seed));
       const greenNames = new Set(bySide.green.map(squareName));
       const redNames = new Set(bySide.red.map(squareName));
       const overlapCount = [...greenNames].filter((name) =>
@@ -81,22 +81,24 @@ describe("dealBonusPlanets (rules.md §3.4)", () => {
     expect(sawDisjoint).toBe(true);
   });
 
-  it("consumes exactly six mulberry32 steps", () => {
+  it("makes exactly six draws", () => {
     const seed = 12345;
-    const [, nextSeed] = dealBonusPlanets(seed);
+    const random = seededRandom(seed);
+    dealBonusPlanets(random);
 
     let expectedSeed = seed;
     for (let step = 0; step < 6; step++) {
       [, expectedSeed] = mulberry32(expectedSeed);
     }
 
-    expect(nextSeed).toBe(expectedSeed);
+    expect(random.currentSeed()).toBe(expectedSeed);
+    expect(random.draws()).toHaveLength(6);
   });
 
   it("only ever deals from the twelve planet squares", () => {
     const planetNames = new Set(PLANETS.map(squareName));
     for (let seed = 1; seed <= 10; seed++) {
-      const [bySide] = dealBonusPlanets(seed);
+      const bySide = dealBonusPlanets(seededRandom(seed));
       for (const side of ["green", "red"] as const) {
         for (const square of bySide[side]) {
           expect(planetNames.has(squareName(square))).toBe(true);

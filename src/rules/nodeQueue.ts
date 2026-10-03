@@ -7,8 +7,8 @@
 // shared by the opening deal (`nodes.ts`) and end-of-turn charging
 // (`charging.ts`, `endOfTurn.ts`) without either importing the other.
 //
-// A refill's four seed steps, in this fixed order, so a recorded game
-// replays exactly:
+// A refill's four draws, in this fixed order, so a recorded game replays
+// exactly:
 //
 // 1. The first square, drawn by `drawWeightedNodeSquare` over the strict
 //    pool (`legalNodePool`'s default) — all six of §3.2's constraints.
@@ -21,7 +21,7 @@
 //    The opening deal (`nodes.ts`) is an exception: it holds this draw to
 //    the strict pool too (rules.md §8.1), so a game never opens with a node
 //    on the rim.
-// 4. The priorities: one `drawIndex` over the six entries of
+// 4. The priorities: one uniform draw over the six entries of
 //    `PRIORITY_PERMUTATIONS`, applied to the three squares in the order
 //    they were drawn.
 
@@ -32,7 +32,7 @@ import {
   drawWeightedNodeSquare,
   legalNodePool,
 } from "./nodePlacement";
-import { drawIndex } from "./random";
+import type { RandomSource } from "./random";
 
 /**
  * The priority an inactive node carries (rules.md §8.2): one, two or
@@ -49,9 +49,9 @@ export const TOP_NODE_PRIORITY: NodePriority = 3;
 /**
  * The six orderings of (1, 2, 3), in lexicographic order — the table a
  * refill's priority draw picks one row from (rules.md §8.2). Written out
- * rather than shuffled, so dealing the three priorities is a single
- * `drawIndex` call and the possible outcomes are something a test can
- * assert against directly rather than trust to a loop's direction.
+ * rather than shuffled, so dealing the three priorities is a single uniform
+ * draw and the possible outcomes are something a test can assert against
+ * directly rather than trust to a loop's direction.
  */
 export const PRIORITY_PERMUTATIONS: readonly (readonly NodePriority[])[] = [
   [1, 2, 3],
@@ -74,8 +74,8 @@ export interface InactiveNodeDraw {
  * widened one, which is where a node can reach the outer edge — spread
  * apart from the squares already holding a charged node and from each other
  * by `drawWeightedNodeSquare`'s weighting, then dealt priorities 1, 2 and 3
- * in a random order. Consumes exactly four seed steps, in the order stated
- * in this module's header comment, and advances the seed no further.
+ * in a random order. Makes exactly four draws on `random`, in the order
+ * stated in this module's header comment.
  *
  * `occupiedNodeSquares` is every square that already holds a node. The
  * caller is expected to have swept the surviving inactive nodes out of it
@@ -90,17 +90,16 @@ export interface InactiveNodeDraw {
  * own §8.1 exception — so that every square it deals, charged and inactive
  * alike, stays inside the interior and a game never opens with a node on
  * the outer edge. The parameter changes only which pool the third draw
- * uses; it never changes how many draws happen or how the seed advances.
+ * uses; it never changes how many draws happen.
  */
 export function refillQueue(
   occupiedNodeSquares: readonly Square[],
   chargedNodeSquares: readonly Square[],
   shipSquares: readonly Square[],
-  seed: number,
+  random: RandomSource,
   thirdSquarePoolWidth: NodePoolWidth = "widened",
-): [nodes: readonly InactiveNodeDraw[], nextSeed: number] {
+): readonly InactiveNodeDraw[] {
   const drawnSquares: Square[] = [];
-  let workingSeed = seed;
 
   const poolWidths: readonly NodePoolWidth[] = [
     "strict",
@@ -113,28 +112,22 @@ export function refillQueue(
       shipSquares,
       poolWidth,
     );
-    const [square, nextSeed] = drawWeightedNodeSquare(
+    const square = drawWeightedNodeSquare(
       pool,
       chargedNodeSquares,
       drawnSquares,
-      workingSeed,
+      random,
     );
     drawnSquares.push(square);
-    workingSeed = nextSeed;
   }
 
-  const [permutationIndex, seedAfterPermutation] = drawIndex(
-    workingSeed,
-    PRIORITY_PERMUTATIONS.length,
-  );
+  const permutationIndex = random.uniform(PRIORITY_PERMUTATIONS.length);
   const priorities = PRIORITY_PERMUTATIONS[permutationIndex];
 
-  const nodes = drawnSquares.map((square, index) => ({
+  return drawnSquares.map((square, index) => ({
     square,
     priority: priorities[index],
   }));
-
-  return [nodes, seedAfterPermutation];
 }
 
 /**

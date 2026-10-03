@@ -22,7 +22,7 @@ import {
   reachFrom,
   shapeReaching,
 } from "./movement";
-import { drawIndex } from "./random";
+import type { RandomSource } from "./random";
 import { isShipTrapped } from "./trap";
 
 /**
@@ -205,24 +205,24 @@ export function legalTargets(
 
 /**
  * The planet a returning ship lands on, drawn at random from the planets
- * that are empty right now (rules.md §7.1): a seed in,
- * `[planet: Square, nextSeed: number]` out, in the shape `drawIndex` and
- * `mulberry32` already use. The pool is every planet in `PLANETS` order with
- * no ship on it, judged against `state`'s current occupancy — recomputed at
- * every point of use and never stored, so a ship moving off a planet can
- * change the answer for a later call. The caller must store the returned
- * seed.
+ * that are empty right now (rules.md §7.1): makes exactly one uniform draw
+ * on `random`. The pool is every planet in `PLANETS` order with no ship on
+ * it, judged against `state`'s current occupancy — recomputed at every
+ * point of use and never stored, so a ship moving off a planet can change
+ * the answer for a later call.
  *
  * Every fight returns two ships: call this once to place the attacker, then
- * call it again against the state that already holds the attacker **and the
- * advanced seed** to place the defender — there is no separate "second
- * draw" function.
+ * call it again against the state that already holds the attacker to place
+ * the defender — there is no separate "second draw" function.
  *
  * Throws if every planet is occupied. §7.1's argument that there is always
  * somewhere to go guarantees this cannot happen, so this is a bug detector,
  * not a case the caller need handle.
  */
-export function drawReturnPlanet(state: GameState): [Square, number] {
+export function drawReturnPlanet(
+  state: GameState,
+  random: RandomSource,
+): Square {
   const occupiedSquareNames = new Set(shipsBySquare(state).keys());
   const pool = PLANETS.filter(
     (square) => !occupiedSquareNames.has(squareName(square)),
@@ -234,6 +234,5 @@ export function drawReturnPlanet(state: GameState): [Square, number] {
     );
   }
 
-  const [index, nextSeed] = drawIndex(state.randomSeed, pool.length);
-  return [pool[index], nextSeed];
+  return pool[random.uniform(pool.length)];
 }

@@ -14,7 +14,7 @@ import {
   squareName,
 } from "./board";
 import { PLANETS, isPlanet } from "./planets";
-import { drawIndex, drawWeightedIndex } from "./random";
+import type { RandomSource } from "./random";
 
 /**
  * Which pool `legalNodePool` draws from (rules.md §3.2): the ordinary,
@@ -191,17 +191,16 @@ export function legalNodePool(
 /**
  * Draws one square for a new node from `legalNodePool`'s strict pool,
  * uniformly — a new node has no priority to weight by (rules.md §8.1).
- * Used by the opening deal for its charged squares. Advances the seed
- * exactly once, via `drawIndex`, so a recorded game replays exactly.
+ * Used by the opening deal for its charged squares. Makes exactly one
+ * uniform draw on `random`, so a recorded game replays exactly.
  */
 export function drawNodeSquare(
   occupiedNodeSquares: readonly Square[],
   shipSquares: readonly Square[],
-  seed: number,
-): [square: Square, nextSeed: number] {
+  random: RandomSource,
+): Square {
   const pool = legalNodePool(occupiedNodeSquares, shipSquares);
-  const [index, nextSeed] = drawIndex(seed, pool.length);
-  return [pool[index], nextSeed];
+  return pool[random.uniform(pool.length)];
 }
 
 /**
@@ -241,20 +240,19 @@ function nodeSquareWeight(
 /**
  * Draws one square from `pool`, weighted by `nodeSquareWeight` — spreading a
  * refill's new inactive nodes apart from the charged nodes and from each
- * other (rules.md §3.2). Advances the seed exactly once, via
- * `drawWeightedIndex`, so a recorded game replays exactly.
+ * other (rules.md §3.2). Makes exactly one weighted draw on `random`, so a
+ * recorded game replays exactly.
  */
 export function drawWeightedNodeSquare(
   pool: readonly Square[],
   chargedNodeSquares: readonly Square[],
   placedSquares: readonly Square[],
-  seed: number,
-): [square: Square, nextSeed: number] {
+  random: RandomSource,
+): Square {
   const weights = pool.map((square) =>
     nodeSquareWeight(square, chargedNodeSquares, placedSquares),
   );
-  const [index, nextSeed] = drawWeightedIndex(seed, weights);
-  return [pool[index], nextSeed];
+  return pool[random.weighted(weights)];
 }
 
 /**
@@ -308,23 +306,21 @@ function stealProspectiveWeight(
  * is every square belonging to any node, the drawing node's own included;
  * `anchors` is the drawing node's anchor — its charged square, or every
  * prospective square of the node, the nearest counting (steal.md §6, §10);
- * `otherNodeSquares` is every square belonging to any other node. Advances
- * the seed exactly once, via `drawWeightedIndex`, so a recorded game replays
- * exactly.
+ * `otherNodeSquares` is every square belonging to any other node. Makes
+ * exactly one weighted draw on `random`, so a recorded game replays exactly.
  */
 export function drawStealProspectiveSquare(
   occupiedNodeSquares: readonly Square[],
   anchors: readonly Square[],
   otherNodeSquares: readonly Square[],
   shipSquares: readonly Square[],
-  seed: number,
-): [square: Square, nextSeed: number] {
+  random: RandomSource,
+): Square {
   const pool = legalNodePool(occupiedNodeSquares, shipSquares, "widened");
   const weights = pool.map((square) =>
     stealProspectiveWeight(square, anchors, otherNodeSquares),
   );
-  const [index, nextSeed] = drawWeightedIndex(seed, weights);
-  return [pool[index], nextSeed];
+  return pool[random.weighted(weights)];
 }
 
 /**
@@ -338,16 +334,16 @@ export function drawStealProspectiveSquare(
  * provides. Every draw made after the opening — a claim's or an abandon's
  * fresh square — is unaffected and keeps using the widened pool. Weighted
  * by the same `stealProspectiveWeight` either way, so the edge halving only
- * ever matters here in the fallback case. Advances the seed exactly once,
- * via `drawWeightedIndex`.
+ * ever matters here in the fallback case. Makes exactly one weighted draw on
+ * `random`.
  */
 export function drawStealOpeningProspectiveSquare(
   occupiedNodeSquares: readonly Square[],
   anchors: readonly Square[],
   otherNodeSquares: readonly Square[],
   shipSquares: readonly Square[],
-  seed: number,
-): [square: Square, nextSeed: number] {
+  random: RandomSource,
+): Square {
   const strictPool = constrainedNodePool(
     occupiedNodeSquares,
     shipSquares,
@@ -360,6 +356,5 @@ export function drawStealOpeningProspectiveSquare(
   const weights = pool.map((square) =>
     stealProspectiveWeight(square, anchors, otherNodeSquares),
   );
-  const [index, nextSeed] = drawWeightedIndex(seed, weights);
-  return [pool[index], nextSeed];
+  return pool[random.weighted(weights)];
 }

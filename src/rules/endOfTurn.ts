@@ -39,8 +39,8 @@
 // runs once for `state.sideToMove` — the side that just played — and then
 // once for the other side, always in that fixed order, so a recorded
 // game's replay never depends on which side happened to need relief first.
-// Nothing in this whole sequence draws from the seeded stream any more
-// except step 5's refill: a tie on remaining life can no longer arise
+// Nothing in this whole sequence draws any more except step 5's refill: a
+// tie on remaining life can no longer arise
 // (rules.md §8.3, §8.6 step 7), so the relief's choice is fully
 // deterministic.
 //
@@ -70,6 +70,7 @@ import {
 } from "./nodeQueue";
 import { gainPower, MAX_POWER, type PowerLevel } from "./power";
 import { spendPly, TRAP_COUNTDOWN_PLIES } from "./countdown";
+import { seededRandom } from "./random";
 import { reliefSquare } from "./relief";
 import { placeRotators } from "./rotators";
 
@@ -323,7 +324,7 @@ export function runEndOfTurn(
   // and square — a ship never moves during this sequence — but must not be
   // read for its power, which step 1 above may have already changed. The
   // ordered snapshot of squares is taken once, up front, rather than
-  // recomputed on every iteration. Nothing here draws from the seed.
+  // recomputed on every iteration. Nothing here makes a draw.
   const step3Squares = nodeSquares(workingState);
   for (const square of step3Squares) {
     const name = squareName(square);
@@ -366,7 +367,7 @@ export function runEndOfTurn(
 
   // Step 4: the shortfall against the chosen charged-node count is filled
   // from the three inactive nodes, top-down by priority (§8.2, §8.6 step
-  // 4) — no draw, no weighting, no seed movement. The shortfall never
+  // 4) — no draw and no weighting. The shortfall never
   // exceeds two (§8.3), so the three-node queue always covers it.
   const charging = runCharging(workingState, reportedPriorities);
   workingState = charging.state;
@@ -383,7 +384,7 @@ export function runEndOfTurn(
   // since the sweep and the regeneration are one event at one instant.
   // Otherwise nothing charged: under the continuous setting every surviving
   // inactive node's priority rotates one step (1→2, 2→3, 3→1) through
-  // `rotateQueue`, silently and without moving the seed at all — a freshly
+  // `rotateQueue`, silently and without making a draw at all — a freshly
   // refilled trio is never rotated in the turn it was dealt. Under planet
   // and dedicated this branch does nothing at all: the priorities and the
   // rotator set stay exactly as the turn left them, since rotation under
@@ -400,11 +401,12 @@ export function runEndOfTurn(
     const chargedSquares = nodeSquares(workingState).filter(
       (square) => nodeStateAt(workingState, square) === "charged",
     );
-    const [newNodes, seedAfterRefill] = refillQueue(
+    const random = seededRandom(workingState.randomSeed);
+    const newNodes = refillQueue(
       nodeSquares({ ...workingState, nodes: nodesWithoutInactive }),
       chargedSquares,
       workingState.ships.map((ship) => ship.square),
-      workingState.randomSeed,
+      random,
     );
     const refilledNodes = { ...nodesWithoutInactive };
     for (const { square, priority } of newNodes) {
@@ -416,21 +418,22 @@ export function runEndOfTurn(
     workingState = {
       ...workingState,
       nodes: refilledNodes,
-      randomSeed: seedAfterRefill,
+      randomSeed: random.currentSeed(),
     };
 
     let newRotators: readonly Square[] = [];
     if (workingState.nodePlaystyle === "dedicated") {
-      const [rotators, seedAfterRotators] = placeRotators(
+      const rotatorsRandom = seededRandom(workingState.randomSeed);
+      const rotators = placeRotators(
         nodeSquares(workingState),
         workingState.ships.map((ship) => ship.square),
-        workingState.randomSeed,
+        rotatorsRandom,
       );
       newRotators = rotators;
       workingState = {
         ...workingState,
         rotators,
-        randomSeed: seedAfterRotators,
+        randomSeed: rotatorsRandom.currentSeed(),
       };
     }
 
@@ -456,7 +459,7 @@ export function runEndOfTurn(
   // spends a ply at the end of the next ply. The loop walks the entry
   // snapshot, not a live walk of the current board, and re-reads each
   // square's current status, skipping it if it is no longer depleted.
-  // Nothing here draws from the seed.
+  // Nothing here makes a draw.
   for (const square of depletedBeforePly) {
     const name = squareName(square);
     const status = workingState.nodes[name];

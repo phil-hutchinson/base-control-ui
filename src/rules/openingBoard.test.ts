@@ -30,6 +30,7 @@ import {
 } from "./gameState";
 import { TOP_NODE_PRIORITY } from "./nodeQueue";
 import { CHARGED_NODE_COUNTS, dealOpeningBoard } from "./nodes";
+import { seededRandom } from "./random";
 
 const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
   (entry) => entry.square,
@@ -134,15 +135,11 @@ describe.each(CHARGED_NODE_COUNTS)(
   "the first charge of a game charges the priority-3 node, at %d charged nodes (rules.md §8.1, §8.2)",
   (chargedNodeCount) => {
     it("charges exactly the priority-3 inactive node, deterministically, over many seeds", () => {
-      let seed = 20260901;
+      const random = seededRandom(20260901);
 
       for (let trial = 0; trial < 1_000; trial++) {
-        const [dealt, dealtSeed] = dealOpeningBoard(
-          FLEET_SQUARES,
-          chargedNodeCount,
-          seed,
-        );
-        seed = dealtSeed;
+        const dealt = dealOpeningBoard(FLEET_SQUARES, chargedNodeCount, random);
+        const seed = random.currentSeed();
 
         // Make room for one charge: the first dealt charged node goes
         // depleted instead, leaving a shortfall of one for `runCharging` to

@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   DesyncError,
-  drawIndex,
-  drawWeightedIndex,
   mulberry32,
   recordedRandom,
   seededRandom,
@@ -63,185 +61,154 @@ describe("mulberry32", () => {
   });
 });
 
-describe("drawIndex", () => {
-  it("draws indices uniformly enough over a realistic pool size", () => {
-    const buckets = 7;
-    const samples = 70000;
-    const counts = new Array<number>(buckets).fill(0);
-
-    let seed = 24601;
-    for (let i = 0; i < samples; i++) {
-      const [index, nextSeed] = drawIndex(seed, buckets);
-      counts[index]++;
-      seed = nextSeed;
-    }
-
-    const expected = samples / buckets;
-    for (const count of counts) {
-      expect(Math.abs(count - expected) / expected).toBeLessThan(0.05);
-    }
-  });
-
-  it("stays within bounds", () => {
-    let seed = 314159;
-    for (let i = 0; i < 2000; i++) {
-      const [index, nextSeed] = drawIndex(seed, 17);
-      expect(index).toBeGreaterThanOrEqual(0);
-      expect(index).toBeLessThan(17);
-      expect(Number.isInteger(index)).toBe(true);
-      seed = nextSeed;
-    }
-  });
-
-  it("always returns 0 for a count of 1", () => {
-    let seed = 1;
-    for (let i = 0; i < 20; i++) {
-      const [index, nextSeed] = drawIndex(seed, 1);
-      expect(index).toBe(0);
-      seed = nextSeed;
-    }
-  });
-
-  it("throws a RangeError for a count of 0", () => {
-    expect(() => drawIndex(1, 0)).toThrow(RangeError);
-  });
-
-  it("throws a RangeError for a negative count", () => {
-    expect(() => drawIndex(1, -3)).toThrow(RangeError);
-  });
-
-  it("throws a RangeError for a fractional count", () => {
-    expect(() => drawIndex(1, 2.5)).toThrow(RangeError);
-  });
-});
-
-describe("drawWeightedIndex", () => {
-  it("is deterministic: the same seed and weights give the same result", () => {
-    expect(drawWeightedIndex(24601, [1, 2, 3])).toEqual(
-      drawWeightedIndex(24601, [1, 2, 3]),
-    );
-  });
-
-  it("advances the seed exactly once, the same way mulberry32 alone would", () => {
-    const [, expectedNextSeed] = mulberry32(24601);
-    const [, nextSeed] = drawWeightedIndex(24601, [1, 2, 3]);
-    expect(nextSeed).toBe(expectedNextSeed);
-  });
-
-  it("draws each index in proportion to its share of the total weight", () => {
-    const weights = [10, 20, 30, 40];
-    const total = weights.reduce((sum, weight) => sum + weight, 0);
-    const samples = 100000;
-    const counts = new Array<number>(weights.length).fill(0);
-
-    let seed = 24601;
-    for (let i = 0; i < samples; i++) {
-      const [index, nextSeed] = drawWeightedIndex(seed, weights);
-      counts[index]++;
-      seed = nextSeed;
-    }
-
-    for (let i = 0; i < weights.length; i++) {
-      const expected = (samples * weights[i]) / total;
-      expect(Math.abs(counts[i] - expected) / expected).toBeLessThan(0.05);
-    }
-  });
-
-  it("always returns 0 for a single weight", () => {
-    let seed = 1;
-    for (let i = 0; i < 20; i++) {
-      const [index, nextSeed] = drawWeightedIndex(seed, [7]);
-      expect(index).toBe(0);
-      seed = nextSeed;
-    }
-  });
-
-  it("never draws a zero weight, splitting the rest proportionally", () => {
-    const weights = [5, 0, 15];
-    const samples = 50000;
-    const counts = new Array<number>(weights.length).fill(0);
-
-    let seed = 999;
-    for (let i = 0; i < samples; i++) {
-      const [index, nextSeed] = drawWeightedIndex(seed, weights);
-      counts[index]++;
-      seed = nextSeed;
-    }
-
-    expect(counts[1]).toBe(0);
-    const expectedRatio = weights[0] / weights[2];
-    const actualRatio = counts[0] / counts[2];
-    expect(Math.abs(actualRatio - expectedRatio) / expectedRatio).toBeLessThan(
-      0.05,
-    );
-  });
-
-  it("throws a RangeError for an empty list", () => {
-    expect(() => drawWeightedIndex(1, [])).toThrow(RangeError);
-  });
-
-  it("throws a RangeError for a negative weight", () => {
-    expect(() => drawWeightedIndex(1, [1, -2, 3])).toThrow(RangeError);
-  });
-
-  it("throws a RangeError for a non-finite weight", () => {
-    expect(() => drawWeightedIndex(1, [1, Infinity, 3])).toThrow(RangeError);
-    expect(() => drawWeightedIndex(1, [1, NaN, 3])).toThrow(RangeError);
-  });
-
-  it("throws a RangeError for an all-zero list", () => {
-    expect(() => drawWeightedIndex(1, [0, 0, 0])).toThrow(RangeError);
-  });
-
-  it("always returns an in-range index across a large sweep of seeds", () => {
-    const weights = [1, 0.001, 1000];
-    let seed = 271828;
-    for (let i = 0; i < 20000; i++) {
-      const [index, nextSeed] = drawWeightedIndex(seed, weights);
-      expect(index).toBeGreaterThanOrEqual(0);
-      expect(index).toBeLessThan(weights.length);
-      expect(Number.isInteger(index)).toBe(true);
-      seed = nextSeed;
-    }
-  });
-});
-
 describe("seededRandom", () => {
-  it("matches drawIndex/drawWeightedIndex stepped from the same seed, over a mixed run", () => {
+  describe("uniform", () => {
+    it("draws indices uniformly enough over a realistic pool size", () => {
+      const buckets = 7;
+      const samples = 70000;
+      const counts = new Array<number>(buckets).fill(0);
+
+      const source = seededRandom(24601);
+      for (let i = 0; i < samples; i++) {
+        counts[source.uniform(buckets)]++;
+      }
+
+      const expected = samples / buckets;
+      for (const count of counts) {
+        expect(Math.abs(count - expected) / expected).toBeLessThan(0.05);
+      }
+    });
+
+    it("stays within bounds", () => {
+      const source = seededRandom(314159);
+      for (let i = 0; i < 2000; i++) {
+        const index = source.uniform(17);
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(index).toBeLessThan(17);
+        expect(Number.isInteger(index)).toBe(true);
+      }
+    });
+
+    it("always returns 0 for a count of 1", () => {
+      const source = seededRandom(1);
+      for (let i = 0; i < 20; i++) {
+        expect(source.uniform(1)).toBe(0);
+      }
+    });
+
+    it("throws a RangeError for a count of 0", () => {
+      expect(() => seededRandom(1).uniform(0)).toThrow(RangeError);
+    });
+
+    it("throws a RangeError for a negative count", () => {
+      expect(() => seededRandom(1).uniform(-3)).toThrow(RangeError);
+    });
+
+    it("throws a RangeError for a fractional count", () => {
+      expect(() => seededRandom(1).uniform(2.5)).toThrow(RangeError);
+    });
+  });
+
+  describe("weighted", () => {
+    it("is deterministic: the same seed and weights give the same result", () => {
+      expect(seededRandom(24601).weighted([1, 2, 3])).toEqual(
+        seededRandom(24601).weighted([1, 2, 3]),
+      );
+    });
+
+    it("advances the seed exactly once, the same way mulberry32 alone would", () => {
+      const [, expectedNextSeed] = mulberry32(24601);
+      const source = seededRandom(24601);
+      source.weighted([1, 2, 3]);
+      expect(source.currentSeed()).toBe(expectedNextSeed);
+    });
+
+    it("draws each index in proportion to its share of the total weight", () => {
+      const weights = [10, 20, 30, 40];
+      const total = weights.reduce((sum, weight) => sum + weight, 0);
+      const samples = 100000;
+      const counts = new Array<number>(weights.length).fill(0);
+
+      const source = seededRandom(24601);
+      for (let i = 0; i < samples; i++) {
+        counts[source.weighted(weights)]++;
+      }
+
+      for (let i = 0; i < weights.length; i++) {
+        const expected = (samples * weights[i]) / total;
+        expect(Math.abs(counts[i] - expected) / expected).toBeLessThan(0.05);
+      }
+    });
+
+    it("always returns 0 for a single weight", () => {
+      const source = seededRandom(1);
+      for (let i = 0; i < 20; i++) {
+        expect(source.weighted([7])).toBe(0);
+      }
+    });
+
+    it("never draws a zero weight, splitting the rest proportionally", () => {
+      const weights = [5, 0, 15];
+      const samples = 50000;
+      const counts = new Array<number>(weights.length).fill(0);
+
+      const source = seededRandom(999);
+      for (let i = 0; i < samples; i++) {
+        counts[source.weighted(weights)]++;
+      }
+
+      expect(counts[1]).toBe(0);
+      const expectedRatio = weights[0] / weights[2];
+      const actualRatio = counts[0] / counts[2];
+      expect(
+        Math.abs(actualRatio - expectedRatio) / expectedRatio,
+      ).toBeLessThan(0.05);
+    });
+
+    it("throws a RangeError for an empty list", () => {
+      expect(() => seededRandom(1).weighted([])).toThrow(RangeError);
+    });
+
+    it("throws a RangeError for a negative weight", () => {
+      expect(() => seededRandom(1).weighted([1, -2, 3])).toThrow(RangeError);
+    });
+
+    it("throws a RangeError for a non-finite weight", () => {
+      expect(() => seededRandom(1).weighted([1, Infinity, 3])).toThrow(
+        RangeError,
+      );
+      expect(() => seededRandom(1).weighted([1, NaN, 3])).toThrow(RangeError);
+    });
+
+    it("throws a RangeError for an all-zero list", () => {
+      expect(() => seededRandom(1).weighted([0, 0, 0])).toThrow(RangeError);
+    });
+
+    it("always returns an in-range index across a large sweep of draws", () => {
+      const weights = [1, 0.001, 1000];
+      const source = seededRandom(271828);
+      for (let i = 0; i < 20000; i++) {
+        const index = source.weighted(weights);
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(index).toBeLessThan(weights.length);
+        expect(Number.isInteger(index)).toBe(true);
+      }
+    });
+  });
+
+  it("matches a golden sequence over a mixed run of uniform and weighted draws", () => {
+    // Locks seededRandom's output, uniform and weighted alike, so a recorded
+    // game replays exactly and a later refactor cannot silently change it.
     const source = seededRandom(24601);
-    let seed = 24601;
-    const expectedIndices: number[] = [];
-    const drawn: number[] = [];
+    const drawn = [
+      source.uniform(7),
+      source.weighted([1, 2, 3, 4]),
+      source.uniform(3),
+      source.weighted([5, 0, 1]),
+    ];
 
-    // Interleave uniform and weighted draws, each checked against the
-    // equivalent pure function stepped from the same running seed.
-    drawn.push(source.uniform(7));
-    {
-      const [index, nextSeed] = drawIndex(seed, 7);
-      seed = nextSeed;
-      expectedIndices.push(index);
-    }
-    drawn.push(source.weighted([1, 2, 3, 4]));
-    {
-      const [index, nextSeed] = drawWeightedIndex(seed, [1, 2, 3, 4]);
-      seed = nextSeed;
-      expectedIndices.push(index);
-    }
-    drawn.push(source.uniform(3));
-    {
-      const [index, nextSeed] = drawIndex(seed, 3);
-      seed = nextSeed;
-      expectedIndices.push(index);
-    }
-    drawn.push(source.weighted([5, 0, 1]));
-    {
-      const [index, nextSeed] = drawWeightedIndex(seed, [5, 0, 1]);
-      seed = nextSeed;
-      expectedIndices.push(index);
-    }
-
-    expect(drawn).toEqual(expectedIndices);
-    expect(source.currentSeed()).toBe(seed);
+    expect(drawn).toEqual([1, 2, 2, 0]);
+    expect(source.currentSeed()).toBe(3031320557);
   });
 
   it("records every draw it makes, in order", () => {

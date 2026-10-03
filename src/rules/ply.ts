@@ -60,6 +60,7 @@ import {
   snapshotInactivePriorities,
 } from "./nodeQueue";
 import { type PowerLevel, spendPower } from "./power";
+import { seededRandom } from "./random";
 import {
   abandonNode,
   claimNode,
@@ -614,7 +615,8 @@ function claimActivityBonus(
     return { state, effect: undefined };
   }
 
-  const result = resolveActivityBonusClaim(state, side, square);
+  const random = seededRandom(state.randomSeed);
+  const result = resolveActivityBonusClaim(state, side, square, random);
   const pointsAwarded = state.outOfTime[side]
     ? 0
     : result.outcome.pointsAwarded;
@@ -629,7 +631,7 @@ function claimActivityBonus(
       nodes: result.nodes,
       ships: result.ships,
       activityBonuses: result.activityBonuses,
-      randomSeed: result.nextSeed,
+      randomSeed: random.currentSeed(),
       energy,
     },
     effect: {
@@ -684,8 +686,8 @@ function claimActivityBonus(
  * raising a `NodeClaimedEffect` — after any `NodeAbandonedEffect`, since
  * leaving comes first when one move does both. A ship relocating onto its
  * own node's prospective square only claims: the abandon condition excludes
- * it. Both draws thread `state.randomSeed` in turn, so `afterMove` below
- * carries the seed either has left behind.
+ * it. Both draws are made on one `RandomSource` built from `state.randomSeed`,
+ * so `afterMove` below carries the seed it has left behind.
  *
  * Then `claimPlanetBonus` pays a classic bonus if `destination` earns one,
  * raising a `PlanetBonusClaimedEffect`, and `claimActivityBonus` claims an
@@ -736,7 +738,7 @@ export function applyMove(
   const leftSquareName = squareName(ship.square);
   const destinationSquareName = squareName(destination);
   let nodes = state.nodes;
-  let randomSeed = state.randomSeed;
+  const random = seededRandom(state.randomSeed);
 
   if (state.nodePlaystyle === "steal") {
     const leftStatus = state.nodes[leftSquareName];
@@ -757,10 +759,9 @@ export function applyMove(
         leftStatus.signal,
         ship.square,
         shipSquares,
-        randomSeed,
+        random,
       );
       nodes = abandoned.nodes;
-      randomSeed = abandoned.nextSeed;
       effects.push({
         type: "node-abandoned",
         signal: leftStatus.signal,
@@ -775,10 +776,9 @@ export function applyMove(
         destinationSignal,
         destination,
         shipSquares,
-        randomSeed,
+        random,
       );
       nodes = claimed.nodes;
-      randomSeed = claimed.nextSeed;
 
       const releasedSquare = claimed.releasedSquare;
       const strandedShip =
@@ -836,7 +836,12 @@ export function applyMove(
     }
   }
 
-  const afterMove: GameState = { ...state, ships, nodes, randomSeed };
+  const afterMove: GameState = {
+    ...state,
+    ships,
+    nodes,
+    randomSeed: random.currentSeed(),
+  };
   const { state: classicClaimedState, effect: claimEffect } = claimPlanetBonus(
     afterMove,
     ship.side,
@@ -1125,10 +1130,11 @@ export function applyAttack(
   const cost = shape.cost;
   const attackerPowerAfter = spendPower(attackerShip.power, cost);
 
-  const [attackerTo, seedAfterAttacker] = drawReturnPlanet(state);
+  const attackerRandom = seededRandom(state.randomSeed);
+  const attackerTo = drawReturnPlanet(state, attackerRandom);
   const afterAttackerReturned: GameState = {
     ...placeOnPlanet(state, attackerShip.id, attackerTo, attackerPowerAfter),
-    randomSeed: seedAfterAttacker,
+    randomSeed: attackerRandom.currentSeed(),
   };
 
   // The attacker's landing is settled in full — its claim, planet bonus or
@@ -1160,8 +1166,10 @@ export function applyAttack(
     attackerTo,
   );
 
-  const [defenderTo, seedAfterDefender] = drawReturnPlanet(
+  const defenderRandom = seededRandom(afterAttackerRotation.state.randomSeed);
+  const defenderTo = drawReturnPlanet(
     afterAttackerRotation.state,
+    defenderRandom,
   );
   const afterDefenderReturned: GameState = {
     ...placeOnPlanet(
@@ -1170,7 +1178,7 @@ export function applyAttack(
       defenderTo,
       defenderShip.power,
     ),
-    randomSeed: seedAfterDefender,
+    randomSeed: defenderRandom.currentSeed(),
   };
 
   const defenderClassicClaim = claimPlanetBonus(

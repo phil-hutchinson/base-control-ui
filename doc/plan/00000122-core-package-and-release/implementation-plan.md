@@ -422,7 +422,43 @@ Verification (automated): `npm run typecheck`, `npm run lint` and
 
 ### Step 2 — Rule draw functions take a RandomSource
 
-Status: pending
+Status: committed
+
+Notes: Converted every draw site listed under "Where things stand today" —
+`nodePlacement.ts` (`drawNodeSquare`, `drawWeightedNodeSquare`,
+`drawStealProspectiveSquare`, `drawStealOpeningProspectiveSquare`),
+`nodeQueue.ts` (`refillQueue`), `rotators.ts` (`placeRotators`),
+`bonusPlanets.ts` (`dealBonusPlanets`, and the private
+`drawThreeDistinctPlanets`), `activityBonus.ts` (`drawActivityBonusKind`,
+`drawActivityBonusPlanet`, `dealActivityBonuses`,
+`resolveActivityBonusClaim`), `steal.ts` (`dealStealOpeningBoard`,
+`claimNode`, `abandonNode`, `addExtraProspectiveSquares`,
+`shuffleProspectiveSignals`), `combat.ts` (`drawReturnPlanet`, now taking
+`(state, random)`) and `nodes.ts` (`dealOpeningBoard`) — from "seed in,
+`[result, nextSeed]` out" to "`RandomSource` in, result out", preserving
+draw order exactly. `drawIndex` and `drawWeightedIndex` are gone from
+`random.ts` entirely (not kept as internal helpers): `seededRandom`'s
+`uniform`/`weighted` methods now inline the same math directly, since
+nothing outside the file called the two functions once every draw site took
+a source; `mulberry32` is untouched. `GameState.randomSeed` and
+`openingSeed` stay on the state as planned; `startingGameState` (in
+`gameState.ts`) and the refill/rotator branch of `runEndOfTurn` (in
+`endOfTurn.ts`) each build a `seededRandom` from `state.randomSeed` at the
+existing threading site, pass it to the converted functions, and write its
+`currentSeed()` back — temporary adapters Step 3 removes. In `ply.ts`,
+`applyMove`'s steal branch, `applyAttack`'s two `drawReturnPlanet` calls and
+`claimActivityBonus` each build their own adapter the same way, one per
+draw site, matching "every random result is one draw" exactly. Updated the
+tests of every converted function, plus `combat.test.ts`,
+`gameState.test.ts`, `planetBonusClaim.test.ts` and `ply.test.ts` (which
+call converted functions directly or predict their draws), to build a
+`seededRandom(seed)` and pass it through, expressing "consumes N seed
+steps" as "makes N draws" via the source's `draws()`/`currentSeed()`.
+`seededReplay.test.ts`, `fullGame.test.ts` and `nodePool.test.ts` needed no
+changes — they only drive the unconverted top-level entry points. No
+seed-pinned expected outcome changed; `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` all pass (92 files, 2083 tests, the
+same count as Step 1). No other deviations.
 
 Convert every rules function that draws (the list under "Where things
 stand today", confirmed by grepping `src/rules/*.ts` for `seed`) from

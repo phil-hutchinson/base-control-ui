@@ -2,11 +2,11 @@
 // and the draw that places a rotator in six of them — the four corner
 // sections, always, plus two more drawn from the remaining five — under the
 // dedicated rotation setting only. A pure function of the squares that hold
-// a node, the squares ships occupy, and a seed — used by the opening deal,
-// before a `GameState` exists, and by `endOfTurn.ts`'s refill branch, whose
-// caller reads those two things off its own state. Knows nothing about the
-// rotation setting itself: not calling this is how continuous and planet
-// spend no seed steps on rotators at all.
+// a node, the squares ships occupy, and a RandomSource — used by the opening
+// deal, before a `GameState` exists, and by `endOfTurn.ts`'s refill branch,
+// whose caller reads those two things off its own state. Knows nothing about
+// the rotation setting itself: not calling this is how continuous and planet
+// make no draws for rotators at all.
 
 import {
   ALL_SQUARES,
@@ -17,7 +17,7 @@ import {
   squareName,
 } from "./board";
 import { isPlanet } from "./planets";
-import { drawIndex } from "./random";
+import type { RandomSource } from "./random";
 
 /** How many squares wide and tall each of the nine sections is. */
 const SECTION_SIZE = BOARD_SIZE / 3;
@@ -46,8 +46,8 @@ function bandRows(bandIndex: number): readonly number[] {
  * in: row bands ascending (1–5, 6–10, 11–15), and within a row band, column
  * bands ascending (A–E, F–J, K–O) — the same order `ALL_SQUARES` walks the
  * board in, scaled up to sections. **This order must never change**: it is
- * the order `placeRotators` spends its seed steps in, and a recorded game
- * replays by replaying the seed.
+ * the order `placeRotators` makes its draws in, and a recorded game replays
+ * by replaying them.
  */
 export const ROTATOR_SECTIONS: readonly RotatorSection[] = (() => {
   const sections: RotatorSection[] = [];
@@ -99,36 +99,35 @@ const OTHER_SECTION_INDEXES: readonly number[] = ROTATOR_SECTIONS.map(
 /**
  * Draws where the board's rotators fall (rules.md §3.3): the four corner
  * sections always carry one, and two more are drawn from the remaining
- * five. Draws happen in a **fixed order**, which fixes the seed and must
- * never change:
+ * five. Draws happen in a **fixed order**, which must never change:
  *
  * 1. one square, drawn uniformly from each corner section's free squares,
  *    in `ROTATOR_SECTIONS` order;
  * 2. two of the five non-corner sections, drawn without replacement (one of
  *    five, then one of the remaining four) — these two draws **always
- *    happen and always consume a seed step**, whether or not the sections
- *    they land on turn out to have a free square, which is what keeps the
- *    stream predictable;
+ *    happen and always make a draw**, whether or not the sections they land
+ *    on turn out to have a free square, which is what keeps the stream
+ *    predictable;
  * 3. one square, drawn uniformly from each of those two sections' free
  *    squares, in `ROTATOR_SECTIONS` order.
  *
  * A section's free squares exclude any square holding a planet, a ship or a
  * node in any state. A section with no free square yields no rotator for
- * that section and **consumes no seed step** for its own square draw, so a
- * board can carry fewer than six.
+ * that section and **makes no draw** for its own square, so a board can
+ * carry fewer than six.
  *
  * Returns the drawn squares in board order (the order `ALL_SQUARES` walks,
  * the same order `nodeSquares` returns its squares in) even though the
  * draws themselves walk sections — the two orders are deliberately
- * different, one fixing the seed and the other matching how the state
- * stores its squares. At most eight seed steps: two section draws plus at
- * most six square draws.
+ * different, one fixing the draw order and the other matching how the
+ * state stores its squares. At most eight draws on `random`: two section
+ * draws plus at most six square draws.
  */
 export function placeRotators(
   nodeSquares: readonly Square[],
   shipSquares: readonly Square[],
-  seed: number,
-): [rotators: readonly Square[], nextSeed: number] {
+  random: RandomSource,
+): readonly Square[] {
   const nodeNames = new Set(nodeSquares.map(squareName));
   const shipNames = new Set(shipSquares.map(squareName));
 
@@ -140,16 +139,14 @@ export function placeRotators(
   }
 
   const drawnNames = new Set<string>();
-  let workingSeed = seed;
 
   function drawFromSection(sectionIndex: number): void {
     const free = freeSquares(ROTATOR_SECTIONS[sectionIndex]);
     if (free.length === 0) {
       return;
     }
-    const [squareIndex, nextSeed] = drawIndex(workingSeed, free.length);
+    const squareIndex = random.uniform(free.length);
     drawnNames.add(squareName(free[squareIndex]));
-    workingSeed = nextSeed;
   }
 
   for (const sectionIndex of CORNER_SECTION_INDEXES) {
@@ -157,19 +154,11 @@ export function placeRotators(
   }
 
   const remainingIndexes = [...OTHER_SECTION_INDEXES];
-  const [firstPick, seedAfterFirstPick] = drawIndex(
-    workingSeed,
-    remainingIndexes.length,
-  );
+  const firstPick = random.uniform(remainingIndexes.length);
   const firstChosenIndex = remainingIndexes.splice(firstPick, 1)[0];
-  workingSeed = seedAfterFirstPick;
 
-  const [secondPick, seedAfterSecondPick] = drawIndex(
-    workingSeed,
-    remainingIndexes.length,
-  );
+  const secondPick = random.uniform(remainingIndexes.length);
   const secondChosenIndex = remainingIndexes[secondPick];
-  workingSeed = seedAfterSecondPick;
 
   for (const sectionIndex of [firstChosenIndex, secondChosenIndex].sort(
     (a, b) => a - b,
@@ -177,9 +166,5 @@ export function placeRotators(
     drawFromSection(sectionIndex);
   }
 
-  const rotators = ALL_SQUARES.filter((square) =>
-    drawnNames.has(squareName(square)),
-  );
-
-  return [rotators, workingSeed];
+  return ALL_SQUARES.filter((square) => drawnNames.has(squareName(square)));
 }

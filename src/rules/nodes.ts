@@ -11,6 +11,7 @@
 import { ALL_SQUARES, type Square, squareName } from "./board";
 import { drawNodeSquare } from "./nodePlacement";
 import { refillQueue } from "./nodeQueue";
+import type { RandomSource } from "./random";
 
 /**
  * The states a node can be in: `"inactive"`, `"charged"` and `"depleted"`
@@ -40,15 +41,14 @@ export function isChargedNodeCount(value: number): value is ChargedNodeCount {
 
 /**
  * Deals a whole opening board (rules.md §8.1): the squares the fleet stands
- * on, the chosen charged-node count, and a seed in; eight node statuses at
- * five charged, seven at four, six at three — `chargedNodeCount` charged
- * and three inactive — and the next seed out. `startingGameState` builds
- * the fleet first so it can pass the ships' squares here, which are
- * excluded from where a node may appear — building it consumes no
- * randomness, so the seeded stream is unaffected.
+ * on, the chosen charged-node count, and a RandomSource; eight node statuses
+ * at five charged, seven at four, six at three — `chargedNodeCount` charged
+ * and three inactive. `startingGameState` builds the fleet first so it can
+ * pass the ships' squares here, which are excluded from where a node may
+ * appear — building it draws nothing, so the stream is unaffected.
  *
  * The draw order is fixed and must not change, because a recorded game
- * replays by replaying the seed:
+ * replays by replaying its draws:
  *
  * 1. Draw `chargedNodeCount` squares, one at a time, via `drawNodeSquare`,
  *    each recomputed against the squares placed so far — so each placement
@@ -66,31 +66,21 @@ export function isChargedNodeCount(value: number): value is ChargedNodeCount {
  *    interior C3-M13 and the opening board never carries a node on the
  *    outer edge.
  *
- * That is `chargedNodeCount + 4` seed steps before green's first turn —
- * nine at five charged, eight at four, seven at three. Nothing is dealt
- * `depleted`.
+ * That is `chargedNodeCount + 4` draws before green's first turn — nine at
+ * five charged, eight at four, seven at three. Nothing is dealt `depleted`.
  */
 export function dealOpeningBoard(
   shipSquares: readonly Square[],
   chargedNodeCount: ChargedNodeCount,
-  seed: number,
-): [
-  nodes: Readonly<
-    Record<string, { readonly state: NodeState; readonly level: number }>
-  >,
-  nextSeed: number,
-] {
+  random: RandomSource,
+): Readonly<
+  Record<string, { readonly state: NodeState; readonly level: number }>
+> {
   const chargedSquares: Square[] = [];
-  let workingSeed = seed;
 
   for (let count = 0; count < chargedNodeCount; count++) {
-    const [square, nextSeed] = drawNodeSquare(
-      chargedSquares,
-      shipSquares,
-      workingSeed,
-    );
+    const square = drawNodeSquare(chargedSquares, shipSquares, random);
     chargedSquares.push(square);
-    workingSeed = nextSeed;
   }
 
   const chargedNames = new Set(chargedSquares.map(squareName));
@@ -104,17 +94,16 @@ export function dealOpeningBoard(
     nodes[squareName(square)] = { state: "charged", level: 0 };
   }
 
-  const [inactiveNodes, seedAfterRefill] = refillQueue(
+  const inactiveNodes = refillQueue(
     chargedSquares,
     chargedSquares,
     shipSquares,
-    workingSeed,
+    random,
     "strict",
   );
   for (const { square, priority } of inactiveNodes) {
     nodes[squareName(square)] = { state: "inactive", level: priority };
   }
-  workingSeed = seedAfterRefill;
 
-  return [nodes, workingSeed];
+  return nodes;
 }

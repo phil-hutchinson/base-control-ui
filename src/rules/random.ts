@@ -1,9 +1,9 @@
 // The published mulberry32 generator, restructured so the advanced seed is
-// returned rather than kept in a closure, plus uniform and weighted index
-// draws built on it. On top of that, the two RandomSource implementations
-// every draw in the rules goes through: seededRandom, which draws fresh
-// from a seed and records what it drew, and recordedRandom, which replays
-// a list of draws recorded by a previous seededRandom call and throws
+// returned rather than kept in a closure, plus the two RandomSource
+// implementations every draw in the rules goes through: seededRandom, which
+// draws fresh from a seed — one mulberry32 step per draw, uniform or
+// weighted — and records what it drew, and recordedRandom, which replays a
+// list of draws recorded by a previous seededRandom call and throws
 // DesyncError if they do not fit the draws asked of it. Knows nothing about
 // the game.
 
@@ -17,73 +17,6 @@ export function mulberry32(seed: number): [value: number, nextSeed: number] {
   t = (t + Math.imul(t ^ (t >>> 7), t | 61)) ^ t;
   const value = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   return [value, nextSeed >>> 0];
-}
-
-/**
- * Draws a uniform index in [0, count) from a seed, returning the index and
- * the next seed. Throws a RangeError for a count that is not a positive
- * integer, so a caller can never silently draw from an empty pool.
- */
-export function drawIndex(
-  seed: number,
-  count: number,
-): [index: number, nextSeed: number] {
-  if (!Number.isInteger(count) || count <= 0) {
-    throw new RangeError(
-      `drawIndex: count must be a positive integer, got ${count}`,
-    );
-  }
-  const [value, nextSeed] = mulberry32(seed);
-  const index = Math.floor(value * count);
-  return [index, nextSeed];
-}
-
-/**
- * Draws an index from a list of weights, with each index's chance of being
- * drawn proportional to its own weight's share of the total. Backs the
- * game's one weighted draw: a refill's node-spread weighting (§3.2).
- *
- * Advances the seed exactly once, like drawIndex, so a caller's seed
- * consumption is predictable and a recorded game replays. Throws a
- * RangeError for an empty list, for a weight that is negative or not
- * finite, or for a total that is not positive, so a caller can never
- * silently draw from nothing. A weight of 0 is legal and is simply never
- * drawn.
- */
-export function drawWeightedIndex(
-  seed: number,
-  weights: readonly number[],
-): [index: number, nextSeed: number] {
-  if (weights.length === 0) {
-    throw new RangeError("drawWeightedIndex: weights must not be empty");
-  }
-  let total = 0;
-  for (const weight of weights) {
-    if (!Number.isFinite(weight) || weight < 0) {
-      throw new RangeError(
-        `drawWeightedIndex: weights must be finite and non-negative, got ${weight}`,
-      );
-    }
-    total += weight;
-  }
-  if (total <= 0) {
-    throw new RangeError(
-      `drawWeightedIndex: total weight must be positive, got ${total}`,
-    );
-  }
-
-  const [value, nextSeed] = mulberry32(seed);
-  const target = value * total;
-  let cumulative = 0;
-  for (let index = 0; index < weights.length; index++) {
-    cumulative += weights[index];
-    if (target < cumulative) {
-      return [index, nextSeed];
-    }
-  }
-  // Floating-point accumulation can land target at or past the running
-  // total even though value < 1; the last in-range index is the answer.
-  return [weights.length - 1, nextSeed];
 }
 
 /**
@@ -112,10 +45,10 @@ export interface SeededRandomSource extends RandomSource {
 }
 
 /**
- * Draws fresh from a seed, one mulberry32 step per draw, producing exactly
- * the indices drawIndex/drawWeightedIndex would for the same seed. Records
- * every index it draws, in order. Its completion check never throws: a
- * seeded source has drawn exactly as many times as it was asked to.
+ * Draws fresh from a seed, one mulberry32 step per draw, uniform or
+ * weighted. Records every index it draws, in order. Its completion check
+ * never throws: a seeded source has drawn exactly as many times as it was
+ * asked to.
  */
 export function seededRandom(seed: number): SeededRandomSource {
   let currentSeed = seed;
@@ -123,13 +56,50 @@ export function seededRandom(seed: number): SeededRandomSource {
 
   return {
     uniform(count) {
-      const [index, nextSeed] = drawIndex(currentSeed, count);
+      if (!Number.isInteger(count) || count <= 0) {
+        throw new RangeError(
+          `seededRandom: count must be a positive integer, got ${count}`,
+        );
+      }
+      const [value, nextSeed] = mulberry32(currentSeed);
+      const index = Math.floor(value * count);
       currentSeed = nextSeed;
       recorded.push(index);
       return index;
     },
     weighted(weights) {
-      const [index, nextSeed] = drawWeightedIndex(currentSeed, weights);
+      if (weights.length === 0) {
+        throw new RangeError("seededRandom: weights must not be empty");
+      }
+      let total = 0;
+      for (const weight of weights) {
+        if (!Number.isFinite(weight) || weight < 0) {
+          throw new RangeError(
+            `seededRandom: weights must be finite and non-negative, got ${weight}`,
+          );
+        }
+        total += weight;
+      }
+      if (total <= 0) {
+        throw new RangeError(
+          `seededRandom: total weight must be positive, got ${total}`,
+        );
+      }
+
+      const [value, nextSeed] = mulberry32(currentSeed);
+      const target = value * total;
+      let cumulative = 0;
+      let index = weights.length - 1;
+      // Floating-point accumulation can land target at or past the running
+      // total even though value < 1; the last in-range index is the
+      // fallback answer in that case.
+      for (let candidate = 0; candidate < weights.length; candidate++) {
+        cumulative += weights[candidate];
+        if (target < cumulative) {
+          index = candidate;
+          break;
+        }
+      }
       currentSeed = nextSeed;
       recorded.push(index);
       return index;

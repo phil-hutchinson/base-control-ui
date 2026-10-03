@@ -20,7 +20,7 @@ import {
   type NodeClaimedEffect,
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
-import { drawIndex } from "./random";
+import { seededRandom } from "./random";
 import { TOP_NODE_PRIORITY, rotatePriority, rotateQueue } from "./nodeQueue";
 import {
   DEFAULT_CHARGED_NODE_COUNT,
@@ -632,18 +632,13 @@ describe("applyAttack", () => {
     // Both planets are empty before the fight, so the attacker's draw picks
     // from all twelve; the defender's draw is then made against the pool
     // with the attacker's planet removed.
-    const [attackerIndex, seedAfterAttackerDraw] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
+    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanetName = squareName(PLANETS[attackerIndex]);
     const defenderPool = PLANETS.filter(
       (square) => squareName(square) !== attackerPlanetName,
     );
-    const [defenderIndex] = drawIndex(
-      seedAfterAttackerDraw,
-      defenderPool.length,
-    );
+    const defenderIndex = attackerRandom.uniform(defenderPool.length);
     const defenderPlanetName = squareName(defenderPool[defenderIndex]);
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));
@@ -770,15 +765,10 @@ describe("applyAttack", () => {
     // Both planets start empty, so the attacker's draw picks from all
     // twelve and the defender's draw — against the state that already
     // holds the attacker — picks from the remaining eleven.
-    const [, seedAfterAttackerDraw] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
-    const [, seedAfterDefenderDraw] = drawIndex(
-      seedAfterAttackerDraw,
-      PLANETS.length - 1,
-    );
-    expect(result.state.randomSeed).toBe(seedAfterDefenderDraw);
+    const expectedRandom = seededRandom(state.randomSeed);
+    expectedRandom.uniform(PLANETS.length);
+    expectedRandom.uniform(PLANETS.length - 1);
+    expect(result.state.randomSeed).toBe(expectedRandom.currentSeed());
   });
 
   it("places both ships on different planets, whatever the seed, when exactly two planets are empty", () => {
@@ -1123,14 +1113,15 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
     }
 
     const [expectedNewProspective, expectedSeed] = (() => {
+      const random = seededRandom(seed);
       const claimed = claimNode(
         state.nodes,
         0,
         squareFromName("H8"),
         [squareFromName("H8"), squareFromName("A1")],
-        seed,
+        random,
       );
-      return [claimed.newProspective, claimed.nextSeed] as const;
+      return [claimed.newProspective, random.currentSeed()] as const;
     })();
 
     expect(result.state.nodes.H8).toEqual({
@@ -1262,12 +1253,13 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       throw new Error("expected the move to be applied");
     }
 
+    const abandonRandom = seededRandom(seed);
     const abandoned = abandonNode(
       state.nodes,
       0,
       squareFromName("G8"),
       [squareFromName("F8"), squareFromName("A1")],
-      seed,
+      abandonRandom,
     );
 
     expect(result.state.nodes.G8).toBeUndefined();
@@ -1281,7 +1273,7 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       level: 0,
       signal: 0,
     });
-    expect(result.state.randomSeed).toBe(abandoned.nextSeed);
+    expect(result.state.randomSeed).toBe(abandonRandom.currentSeed());
 
     expect(
       result.effects.some((effect) => effect.type === "node-claimed"),
@@ -1320,23 +1312,24 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
     }
 
     const movedShipSquares = [squareFromName("H8"), squareFromName("A1")];
+    const random = seededRandom(seed);
     const abandoned = abandonNode(
       nodesBefore,
       0,
       squareFromName("G8"),
       movedShipSquares,
-      seed,
+      random,
     );
     const claimed = claimNode(
       abandoned.nodes,
       1,
       squareFromName("H8"),
       movedShipSquares,
-      abandoned.nextSeed,
+      random,
     );
 
     expect(result.state.nodes).toEqual(claimed.nodes);
-    expect(result.state.randomSeed).toBe(claimed.nextSeed);
+    expect(result.state.randomSeed).toBe(random.currentSeed());
     expect(squareName(abandoned.newProspective)).not.toBe("H8");
 
     const abandonEffect = result.effects.find(
@@ -2598,18 +2591,13 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       nodes: { ...steadyCharged, ...threeInactive },
     });
 
-    const [attackerIndex, seedAfterAttackerDraw] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
+    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanetName = squareName(PLANETS[attackerIndex]);
     const defenderPool = PLANETS.filter(
       (square) => squareName(square) !== attackerPlanetName,
     );
-    const [defenderIndex] = drawIndex(
-      seedAfterAttackerDraw,
-      defenderPool.length,
-    );
+    const defenderIndex = attackerRandom.uniform(defenderPool.length);
     const defenderPlanetName = squareName(defenderPool[defenderIndex]);
 
     const result = applyAttack(state, "green-1", squareFromName("H9"));

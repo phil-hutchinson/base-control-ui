@@ -54,6 +54,7 @@ import {
   type PlayerMatchingSetting,
 } from "./playerMatching";
 import { placeRotators } from "./rotators";
+import { seededRandom, type RandomSource } from "./random";
 import {
   DEFAULT_SCORING,
   isScoringSetting,
@@ -385,45 +386,41 @@ export interface StartingGameStateOptions {
  * building the fleet draws no randomness, so the seeded stream is
  * unaffected.
  *
- * The seed argument is the seed the **deal** starts from, not the seed the
- * game's first turn draws from: dealing the board consumes `chargedNodeCount
- * + 4` steps of the stream before play begins — nine at five charged, eight
- * at four, seven at three — plus, under the dedicated playstyle only, up to
- * eight more for the opening rotator set (rules.md §3.3), plus,
- * when the planet bonus is a classic amount, exactly six more for the bonus
- * planet deal (rules.md §3.4), drawn last so an off game spends nothing
- * extra. Under steal instead, the deal consumes exactly `2 *
- * chargedNodeCount` steps (`dealStealOpeningBoard`, steal.md §7) — no
- * rotator set is ever drawn — and the planet bonus is always off, so the
- * classic bonus planet deal never runs. When planet effects is on
- * (steal.md §10, steal only), `dealActivityBonuses` instead draws exactly
- * four more steps, last.
+ * The `randomSeed` argument is the seed the **deal** starts from, not the
+ * seed the game's first turn draws from: dealing the board makes
+ * `chargedNodeCount + 4` draws before play begins — nine at five charged,
+ * eight at four, seven at three — plus, under the dedicated playstyle only,
+ * up to eight more for the opening rotator set (rules.md §3.3), plus, when
+ * the planet bonus is a classic amount, exactly six more for the bonus
+ * planet deal (rules.md §3.4), drawn last so an off game draws nothing
+ * extra. Under steal instead, the deal makes exactly `2 * chargedNodeCount`
+ * draws (`dealStealOpeningBoard`, steal.md §7) — no rotator set is ever
+ * drawn — and the planet bonus is always off, so the classic bonus planet
+ * deal never runs. When planet effects is on (steal.md §10, steal only),
+ * `dealActivityBonuses` instead makes exactly four more draws, last.
  * The player-matching nodes setting (steal.md §9) draws nothing — which two
  * signals are matched to the players is derived from `chargedNodeCount`, not
  * drawn — so a steal game started with double or required deals exactly the
  * board an off game deals from the same seed. The
- * resulting state's `randomSeed` is the seed all of that left behind. That
- * argument is also recorded verbatim as `openingSeed`, so the state
- * remembers where its deal started even once `randomSeed` has moved on. See
- * `src/game/seed.ts` for where the app's opening seed comes from. Every test
- * passes one explicitly, so a game's opening position is always
- * reproducible.
+ * resulting state's `randomSeed` is the seed the seeded source built from
+ * the argument left behind. That argument is also recorded verbatim as
+ * `openingSeed`, so the state remembers where its deal started even once
+ * `randomSeed` has moved on. See `src/game/seed.ts` for where the app's
+ * opening seed comes from. Every test passes one explicitly, so a game's
+ * opening position is always reproducible.
  *
  * `options` carries everything else, each optional and documented on
  * `StartingGameStateOptions` — see there for the fields and their defaults
  * and validation.
  */
 
-/** Both sides' three planets, dealt from `seed`, none yet claimed. */
-function dealBonusPlanetEntries(seed: number): [BonusPlanetsBySide, number] {
-  const [dealt, nextSeed] = dealBonusPlanets(seed);
-  return [
-    {
-      green: dealt.green.map((square) => ({ square })),
-      red: dealt.red.map((square) => ({ square })),
-    },
-    nextSeed,
-  ];
+/** Both sides' three planets, dealt by `random`, none yet claimed. */
+function dealBonusPlanetEntries(random: RandomSource): BonusPlanetsBySide {
+  const dealt = dealBonusPlanets(random);
+  return {
+    green: dealt.green.map((square) => ({ square })),
+    red: dealt.red.map((square) => ({ square })),
+  };
 }
 
 export function startingGameState(
@@ -514,40 +511,36 @@ export function startingGameState(
   }));
 
   const shipSquares = ships.map((ship) => ship.square);
-  const [nodes, dealtSeed]: [Readonly<Record<string, NodeStatus>>, number] =
+  const random = seededRandom(randomSeed);
+  const nodes: Readonly<Record<string, NodeStatus>> =
     nodePlaystyle === "steal"
-      ? dealStealOpeningBoard(shipSquares, chargedNodeCount, randomSeed)
-      : dealOpeningBoard(shipSquares, chargedNodeCount, randomSeed);
+      ? dealStealOpeningBoard(shipSquares, chargedNodeCount, random)
+      : dealOpeningBoard(shipSquares, chargedNodeCount, random);
 
   const dealtNodeSquares = ALL_SQUARES.filter(
     (square) => nodes[squareName(square)] !== undefined,
   );
-  const [rotators, seedAfterRotators] =
+  const rotators =
     nodePlaystyle === "dedicated"
-      ? placeRotators(dealtNodeSquares, shipSquares, dealtSeed)
-      : [[], dealtSeed];
+      ? placeRotators(dealtNodeSquares, shipSquares, random)
+      : [];
 
-  const [bonusPlanets, seedAfterBonusPlanets]: [BonusPlanetsBySide, number] =
+  const bonusPlanets: BonusPlanetsBySide =
     planetBonus === "off"
-      ? [{ green: [], red: [] }, seedAfterRotators]
-      : dealBonusPlanetEntries(seedAfterRotators);
+      ? { green: [], red: [] }
+      : dealBonusPlanetEntries(random);
 
-  const [activityBonuses, nextSeed]: [readonly ActivityBonusEntry[], number] =
+  const activityBonuses: readonly ActivityBonusEntry[] =
     planetActivity !== "off"
-      ? dealActivityBonuses(
-          nodes,
-          chargedNodeCount,
-          ships,
-          seedAfterBonusPlanets,
-        )
-      : [[], seedAfterBonusPlanets];
+      ? dealActivityBonuses(nodes, chargedNodeCount, ships, random)
+      : [];
 
   return {
     ships,
     nodes,
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: nextSeed,
+    randomSeed: random.currentSeed(),
     openingSeed: randomSeed,
     energy: { green: 0, red: 0 },
     lengthInRounds,

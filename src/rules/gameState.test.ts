@@ -32,7 +32,7 @@ import {
 import { isPlanet } from "./planets";
 import { MAX_POWER } from "./power";
 import { applyMove } from "./ply";
-import { mulberry32 } from "./random";
+import { mulberry32, seededRandom } from "./random";
 import { ROTATOR_SECTIONS } from "./rotators";
 import { DEFAULT_SCORING, SCORING_SETTINGS } from "./scoring";
 
@@ -56,15 +56,16 @@ describe("startingGameState", () => {
 
   it("has green to move, ply 1 and the deal's advanced seed", () => {
     const state = startingGameState(SEED, { nodePlaystyle: "planet" });
-    const [, dealtSeed] = dealOpeningBoard(
+    const random = seededRandom(SEED);
+    dealOpeningBoard(
       STARTING_FLEET_SQUARES,
       DEFAULT_CHARGED_NODE_COUNT,
-      SEED,
+      random,
     );
 
     expect(state.sideToMove).toBe("green");
     expect(state.plyNumber).toBe(1);
-    expect(state.randomSeed).toBe(dealtSeed);
+    expect(state.randomSeed).toBe(random.currentSeed());
     expect(state.randomSeed).not.toBe(SEED);
   });
 
@@ -77,10 +78,10 @@ describe("startingGameState", () => {
 
   it("deals the board dealOpeningBoard deals for the same seed: five charged, three inactive, none depleted", () => {
     const state = startingGameState(SEED, { nodePlaystyle: "planet" });
-    const [dealt] = dealOpeningBoard(
+    const dealt = dealOpeningBoard(
       STARTING_FLEET_SQUARES,
       DEFAULT_CHARGED_NODE_COUNT,
-      SEED,
+      seededRandom(SEED),
     );
 
     expect(state.nodes).toEqual(dealt);
@@ -626,7 +627,11 @@ describe("startingGameState under steal (steal.md §7)", () => {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
     });
-    const [dealt] = dealStealOpeningBoard(STARTING_FLEET_SQUARES, 4, SEED);
+    const dealt = dealStealOpeningBoard(
+      STARTING_FLEET_SQUARES,
+      4,
+      seededRandom(SEED),
+    );
 
     expect(state.nodes).toEqual(dealt);
     expect(Object.values(state.nodes)).toHaveLength(8);
@@ -668,12 +673,9 @@ describe("startingGameState under steal (steal.md §7)", () => {
       chargedNodeCount: 4,
       planetActivity: "off",
     });
-    const [, seedAfterDeal] = dealStealOpeningBoard(
-      STARTING_FLEET_SQUARES,
-      4,
-      SEED,
-    );
-    expect(withoutBonus.randomSeed).toBe(seedAfterDeal);
+    const dealRandom = seededRandom(SEED);
+    dealStealOpeningBoard(STARTING_FLEET_SQUARES, 4, dealRandom);
+    expect(withoutBonus.randomSeed).toBe(dealRandom.currentSeed());
 
     const withBonus = startingGameState(SEED, {
       nodePlaystyle: "steal",
@@ -681,7 +683,7 @@ describe("startingGameState under steal (steal.md §7)", () => {
       planetActivity: "race",
     });
     expect(withBonus.activityBonuses).toHaveLength(2);
-    expect(withBonus.randomSeed).not.toBe(seedAfterDeal);
+    expect(withBonus.randomSeed).not.toBe(dealRandom.currentSeed());
   });
 });
 
@@ -758,13 +760,10 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
       chargedNodeCount: 4,
       planetActivity: "off",
     });
-    const [, seedAfterDeal] = dealStealOpeningBoard(
-      STARTING_FLEET_SQUARES,
-      4,
-      SEED,
-    );
+    const dealRandom = seededRandom(SEED);
+    dealStealOpeningBoard(STARTING_FLEET_SQUARES, 4, dealRandom);
     expect(withOff.activityBonuses).toEqual([]);
-    expect(withOff.randomSeed).toBe(seedAfterDeal);
+    expect(withOff.randomSeed).toBe(dealRandom.currentSeed());
   });
 
   it("is empty under every planet bonus setting outside steal", () => {
@@ -829,24 +828,33 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
         chargedNodeCount,
         planetActivity: "race",
       });
-      const [nodes, seedAfterBoard] = dealStealOpeningBoard(
+      const boardRandom = seededRandom(SEED);
+      const nodes = dealStealOpeningBoard(
         STARTING_FLEET_SQUARES,
         chargedNodeCount,
-        SEED,
+        boardRandom,
       );
-      const [bonuses, nextSeed] = dealActivityBonuses(
+      const seedAfterBoard = boardRandom.currentSeed();
+      const bonusRandom = seededRandom(seedAfterBoard);
+      const bonuses = dealActivityBonuses(
         nodes,
         chargedNodeCount,
         state.ships,
-        seedAfterBoard,
+        bonusRandom,
       );
+      const nextSeed = bonusRandom.currentSeed();
 
       expect(state.activityBonuses).toEqual(bonuses);
       expect(state.randomSeed).toBe(nextSeed);
       expect(state.ships.every((ship) => ship.power === MAX_POWER)).toBe(true);
       expect(
-        dealActivityBonuses(nodes, chargedNodeCount, [], seedAfterBoard),
-      ).toEqual([bonuses, nextSeed]);
+        dealActivityBonuses(
+          nodes,
+          chargedNodeCount,
+          [],
+          seededRandom(seedAfterBoard),
+        ),
+      ).toEqual(bonuses);
     },
   );
 

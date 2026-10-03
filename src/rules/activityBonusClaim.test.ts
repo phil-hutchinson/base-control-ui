@@ -27,7 +27,7 @@ import {
   assertFightInvariants,
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
-import { drawIndex, mulberry32 } from "./random";
+import { mulberry32, seededRandom } from "./random";
 import type { ChargedNodeCount } from "./nodes";
 import type { PlanetActivitySetting } from "./planetActivity";
 import type { PlayerMatchingSetting } from "./playerMatching";
@@ -292,7 +292,12 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       );
     }
     expect(result.state.nodes).toEqual(
-      shuffleProspectiveSignals(nodes, 3, "required", state.randomSeed).nodes,
+      shuffleProspectiveSignals(
+        nodes,
+        3,
+        "required",
+        seededRandom(state.randomSeed),
+      ).nodes,
     );
     expect(result.effects).toContainEqual(
       expect.objectContaining({
@@ -459,7 +464,12 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
     };
     const [, seedAfterLeave] = mulberry32(state.randomSeed);
     expect(result.state.nodes).toEqual(
-      shuffleProspectiveSignals(afterLeave, 3, "off", seedAfterLeave).nodes,
+      shuffleProspectiveSignals(
+        afterLeave,
+        3,
+        "off",
+        seededRandom(seedAfterLeave),
+      ).nodes,
     );
     const signalZeroSquares = Object.entries(result.state.nodes).filter(
       ([, status]) => status.signal === 0,
@@ -549,7 +559,12 @@ describe.each(["race", "stable"] as const)(
       side: "green" | "red",
       planet: Square,
     ): [ActivityBonusKind, ActivityBonusKind] {
-      const { outcome } = resolveActivityBonusClaim(state, side, planet);
+      const { outcome } = resolveActivityBonusClaim(
+        state,
+        side,
+        planet,
+        seededRandom(state.randomSeed),
+      );
       return [outcome.survivor.newKind, outcome.newBonus.kind];
     }
 
@@ -640,10 +655,9 @@ describe.each(["race", "stable"] as const)(
       let shotWouldDiffer = 0;
       let defenderWouldDiffer = 0;
       for (let seed = 1; seed <= 300; seed++) {
-        const [attackerIndex, seedAfterAttacker] = drawIndex(
-          seed,
-          PLANETS.length,
-        );
+        const attackerRandom = seededRandom(seed);
+        const attackerIndex = attackerRandom.uniform(PLANETS.length);
+        const seedAfterAttacker = attackerRandom.currentSeed();
         const attackerPlanet = PLANETS[attackerIndex];
         const survivorPlanet = PLANETS[(attackerIndex + 1) % PLANETS.length];
         const state = buildState({
@@ -726,10 +740,9 @@ describe.each(["race", "stable"] as const)(
       let defenderClaims = 0;
       let fuelWouldDiffer = 0;
       for (let seed = 1; seed <= 400; seed++) {
-        const [attackerIndex, seedAfterAttacker] = drawIndex(
-          seed,
-          PLANETS.length,
-        );
+        const attackerRandom = seededRandom(seed);
+        const attackerIndex = attackerRandom.uniform(PLANETS.length);
+        const seedAfterAttacker = attackerRandom.currentSeed();
         const attackerPlanet = PLANETS[attackerIndex];
         const survivorPlanet = PLANETS[(attackerIndex + 1) % PLANETS.length];
         const state = buildState({
@@ -765,18 +778,21 @@ describe.each(["race", "stable"] as const)(
           "green-1",
           (MAX_POWER - 1) as PowerLevel,
         );
+        const attackerRandomAtClaim = seededRandom(seedAfterAttacker);
         const attackerClaim = resolveActivityBonusClaim(
-          { ...state, ships: beforeFuel, randomSeed: seedAfterAttacker },
+          { ...state, ships: beforeFuel },
           "green",
           attackerPlanet,
+          attackerRandomAtClaim,
         );
         const defenderPool = PLANETS.filter(
           (square) => squareName(square) !== squareName(attackerPlanet),
         );
-        const [defenderIndex, seedAfterDefender] = drawIndex(
-          attackerClaim.nextSeed,
-          defenderPool.length,
+        const defenderRandom = seededRandom(
+          attackerRandomAtClaim.currentSeed(),
         );
+        const defenderIndex = defenderRandom.uniform(defenderPool.length);
+        const seedAfterDefender = defenderRandom.currentSeed();
         const defenderPlanet = defenderPool[defenderIndex];
         const landsOnABonus = attackerClaim.activityBonuses.some(
           (entry) => squareName(entry.square) === squareName(defenderPlanet),
@@ -901,7 +917,12 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
       for (let seed = 1; seed <= 60; seed++) {
         const state = stateUnder("stable", kind, nodes, chargedNodeCount, seed);
         const survivor = state.activityBonuses[1];
-        const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+        const result = resolveActivityBonusClaim(
+          state,
+          "green",
+          claimedPlanet,
+          seededRandom(seed),
+        );
 
         expect(result.outcome.kind).toBe(kind);
         expect(result.outcome.survivor.oldKind).toBe(survivor.kind);
@@ -923,19 +944,23 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
 
     it(`consumes exactly one seed step fewer than race when ${kind} is claimed from the same state`, () => {
       for (let seed = 1; seed <= 60; seed++) {
+        const stableRandom = seededRandom(seed);
         const stable = resolveActivityBonusClaim(
           stateUnder("stable", kind, nodes, chargedNodeCount, seed),
           "green",
           claimedPlanet,
+          stableRandom,
         );
+        const raceRandom = seededRandom(seed);
         const race = resolveActivityBonusClaim(
           stateUnder("race", kind, nodes, chargedNodeCount, seed),
           "green",
           claimedPlanet,
+          raceRandom,
         );
 
-        expect(seedStepsBetween(seed, stable.nextSeed)).toBe(
-          seedStepsBetween(seed, race.nextSeed) - 1,
+        expect(seedStepsBetween(seed, stableRandom.currentSeed())).toBe(
+          seedStepsBetween(seed, raceRandom.currentSeed()) - 1,
         );
         // The claimed kind's own effect is identical under both.
         expect(stable.nodes).toEqual(race.nodes);
@@ -949,7 +974,13 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
     for (let seed = 1; seed <= 60; seed++) {
       const state = stateUnder("stable", "large-points", {}, 3, seed);
       const survivor = state.activityBonuses[1];
-      const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+      const random = seededRandom(seed);
+      const result = resolveActivityBonusClaim(
+        state,
+        "green",
+        claimedPlanet,
+        random,
+      );
 
       const eligible = PLANETS.filter(
         (square) =>
@@ -957,12 +988,10 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
           squareName(square) !== squareName(PLANETS[2]) &&
           squareName(square) !== squareName(survivor.square),
       );
-      const [expectedSquare, seedAfterPlanet] = drawActivityBonusPlanet(
-        seed,
-        eligible,
-      );
-      const [expectedKind, expectedNextSeed] = drawActivityBonusKind(
-        seedAfterPlanet,
+      const expectedRandom = seededRandom(seed);
+      const expectedSquare = drawActivityBonusPlanet(expectedRandom, eligible);
+      const expectedKind = drawActivityBonusKind(
+        expectedRandom,
         state.nodes,
         3,
         state.ships,
@@ -973,7 +1002,7 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
         square: expectedSquare,
         kind: expectedKind,
       });
-      expect(result.nextSeed).toBe(expectedNextSeed);
+      expect(random.currentSeed()).toBe(expectedRandom.currentSeed());
     }
   });
 
@@ -1017,15 +1046,13 @@ describe.each(["race", "stable"] as const)(
         ],
       });
 
-      const [attackerIndex, seedAfterAttacker] = drawIndex(
-        state.randomSeed,
-        PLANETS.length,
-      );
+      const attackerRandom = seededRandom(state.randomSeed);
+      const attackerIndex = attackerRandom.uniform(PLANETS.length);
       const attackerPlanet = PLANETS[attackerIndex];
       const defenderPool = PLANETS.filter(
         (square) => squareName(square) !== squareName(attackerPlanet),
       );
-      drawIndex(seedAfterAttacker, defenderPool.length);
+      attackerRandom.uniform(defenderPool.length);
 
       const survivorPlanet = defenderPool[0];
       const withBonus: GameState = {
@@ -1079,18 +1106,13 @@ describe.each(["race", "stable"] as const)(
 
       let sawADivergence = false;
       for (let seed = 1; seed <= 40; seed++) {
-        const [attackerIndex, seedAfterAttacker] = drawIndex(
-          seed,
-          PLANETS.length,
-        );
+        const attackerRandom = seededRandom(seed);
+        const attackerIndex = attackerRandom.uniform(PLANETS.length);
         const attackerPlanet = PLANETS[attackerIndex];
         const naivePool = PLANETS.filter(
           (square) => squareName(square) !== squareName(attackerPlanet),
         );
-        const [naiveDefenderIndex] = drawIndex(
-          seedAfterAttacker,
-          naivePool.length,
-        );
+        const naiveDefenderIndex = attackerRandom.uniform(naivePool.length);
         const naiveDefenderPlanet = naivePool[naiveDefenderIndex];
         const survivorPlanet = naivePool.find(
           (square) => squareName(square) !== squareName(naiveDefenderPlanet),
@@ -1149,10 +1171,8 @@ describe.each(["race", "stable"] as const)(
 
       let sawANaiveCollision = false;
       for (let seed = 1; seed <= 60; seed++) {
-        const [attackerIndex, seedAfterAttacker] = drawIndex(
-          seed,
-          PLANETS.length,
-        );
+        const attackerRandom = seededRandom(seed);
+        const attackerIndex = attackerRandom.uniform(PLANETS.length);
         const attackerPlanet = PLANETS[attackerIndex];
         const survivorPlanet = PLANETS.find(
           (square) => squareName(square) !== squareName(attackerPlanet),
@@ -1164,7 +1184,7 @@ describe.each(["race", "stable"] as const)(
           nodes,
           5,
           [attackerPlanet],
-          seedAfterAttacker,
+          attackerRandom,
         );
         const naiveCollides = naive.addedSquares.some(
           (square) => squareName(square) === squareName(defenderSquare),
@@ -1221,7 +1241,7 @@ describe.each(["race", "stable"] as const)(
       );
 
       const seed = 1;
-      const [attackerIndex] = drawIndex(seed, freePlanets.length);
+      const attackerIndex = seededRandom(seed).uniform(freePlanets.length);
       const attackerPlanet = freePlanets[attackerIndex];
       const survivorPlanet = freePlanets.find(
         (square) => squareName(square) !== squareName(attackerPlanet),
@@ -1281,15 +1301,13 @@ describe("a defender who is out of time (rules.md §10)", () => {
       outOfTime: { green: false, red: true },
     });
 
-    const [attackerIndex, seedAfterAttacker] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
+    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
       (square) => squareName(square) !== squareName(attackerPlanet),
     );
-    const [defenderIndex] = drawIndex(seedAfterAttacker, defenderPool.length);
+    const defenderIndex = attackerRandom.uniform(defenderPool.length);
     const defenderPlanet = defenderPool[defenderIndex];
     // The surviving bonus sits on a third planet, not the attacker's own
     // landing — the attacker must land on no bonus at all, or its own claim
@@ -1336,15 +1354,13 @@ describe("a defender who is out of time (rules.md §10)", () => {
       outOfTime: { green: false, red: true },
     });
 
-    const [attackerIndex, seedAfterAttacker] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
+    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
       (square) => squareName(square) !== squareName(attackerPlanet),
     );
-    const [defenderIndex] = drawIndex(seedAfterAttacker, defenderPool.length);
+    const defenderIndex = attackerRandom.uniform(defenderPool.length);
     const defenderPlanet = defenderPool[defenderIndex];
     // The surviving bonus sits on a third planet, not the attacker's own
     // landing — see the comment in the case above.
