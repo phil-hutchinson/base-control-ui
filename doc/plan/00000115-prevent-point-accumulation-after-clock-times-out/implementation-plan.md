@@ -322,7 +322,24 @@ energy, end-of-turn, ply, bonus, HUD and announcement test.
 
 ### Step 3 — Option tip, README, and the play-through
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned. Added a sentence to `OPTION_TIPS.clockSetting`'s
+intro in `src/start/optionTips.ts` saying a player who runs out passes every
+remaining turn and collects no more energy, and updated the matching
+assertion in `src/start/optionTips.test.ts`. Updated `README.md`'s clock
+passage to say a player who runs out collects no more energy from then on,
+so their total is frozen. Reviewed the branch diff (`git diff main..HEAD
+--stat`) and confirmed no other player-facing behaviour changed that the
+README would need to describe. `npm test` (2069 tests), `npm run typecheck`
+and `npm run lint` all pass. The manual play-through (verification steps 1-4)
+is left to the owner, per the step's own instruction. No deviations.
+
+During the owner's review the tip was rewritten at the owner's request to
+"Each player gets a total clock time based on this amount of time per turn."
+alone. The sentence on running out of time was dropped as too much detail
+for a tip, along with the UNLIMITED sentence, which needs no explanation;
+running out is covered by the README and the ruleset.
 
 - `src/start/optionTips.ts`, `clockSetting`: add a sentence to the intro
   saying that a player who runs out of time passes every remaining turn and
