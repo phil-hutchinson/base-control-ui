@@ -35,6 +35,8 @@ contribution notes).
   total only ever rises" becomes "never falls", and §8.6's claim that a
   passing player "still collects exactly as they would otherwise" now
   excepts a player who is out of time.
+- **steal.md §9** gains a pointer that a player who is out of time collects
+  nothing under either player-matching nodes setting (rules.md §10).
 
 ## 0.44 — planet effects and node scoring: two settings renamed
 

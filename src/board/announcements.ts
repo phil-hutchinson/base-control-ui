@@ -776,18 +776,18 @@ export function announcementForSession(session: Session): string {
  * the side's own node adds "counting as <n>", the count DOUBLE actually
  * prices. Under REQUIRED, a turn withheld for want of the side's own node
  * adds "none paying without its own node". A side whose clock has run out
- * (§10) is withheld regardless of player-matching nodes and adds "none
- * paying, out of time" instead. Every other case, including REQUIRED once
+ * (rules.md §10) is withheld regardless of player-matching nodes and adds
+ * "none paying, out of time" instead. Every other case, including REQUIRED once
  * the own node is held, reads exactly as it does under OFF.
  */
 export function scoreSentence(state: GameState, side: Side): string {
   const collection = turnCollection(state, side);
   const heldPhrase = nodesHeldPhrase(collection.heldSquares.length);
   const matchingClause =
-    state.playerMatching === "double" && collection.standingOnOwnNode
-      ? `, counting as ${collection.countedNodes}`
-      : collection.withheldReason === "out-of-time"
-        ? ", none paying, out of time"
+    collection.withheldReason === "out-of-time"
+      ? ", none paying, out of time"
+      : state.playerMatching === "double" && collection.standingOnOwnNode
+        ? `, counting as ${collection.countedNodes}`
         : collection.withheld
           ? ", none paying without its own node"
           : "";

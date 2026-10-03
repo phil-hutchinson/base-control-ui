@@ -1851,6 +1851,42 @@ describe("applyPassGuard", () => {
     });
   });
 
+  it("passes the ply and collects nothing when the boxed-in side holding a charged node is out of time (rules.md §5, §10)", () => {
+    // Same fixture as the "holds a charged node and has no legal move" case
+    // above, but green is out of time: the guard still reports
+    // "cannot-move-or-attack" (it is the one with nothing legal to do,
+    // regardless of its clock), and the end-of-turn sequence runs, but
+    // `turnCollection` withholds the energy, so no energy-collected effect
+    // is raised and green's total does not move.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("red-1", "red", "G7"),
+        ship("red-2", "red", "H7"),
+        ship("red-3", "red", "I7"),
+        ship("red-4", "red", "G8"),
+        ship("red-5", "red", "I8"),
+        ship("red-6", "red", "G9"),
+        ship("red-7", "red", "H9"),
+        ship("red-8", "red", "I9"),
+      ],
+      nodes: { H8: "charged" },
+      outOfTime: { green: true, red: false },
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state.sideToMove).toBe("red");
+    expect(result.effect).toEqual({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      reason: "cannot-move-or-attack",
+      endOfTurn: [],
+    });
+    expect(result.state.energy.green).toBe(0);
+  });
+
   it("passes the ply when every one of the side's ships is trapped and §8.6 step 7 cannot relieve any of them (rules.md §5, §8.6)", () => {
     // green-1 is trapped on the depleted node at A1 and, even if freed,
     // would have nowhere to go: its only two on-board orthogonal

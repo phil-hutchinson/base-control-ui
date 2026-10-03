@@ -5,9 +5,9 @@
 // what a turn's held squares are actually worth; `turnCollection` is the one
 // place that reckons a side's whole end-of-turn collection, so the payout,
 // the pips and the live region cannot drift apart. A side whose clock has
-// run out (§10) is withheld outright, taking precedence over player-matching
-// nodes. Nothing about the end-of-turn sequence, effects or running totals
-// lives here.
+// run out (rules.md §10) is withheld outright, taking precedence over
+// player-matching nodes. Nothing about the end-of-turn sequence, effects or
+// running totals lives here.
 
 import { type Square, squareName } from "./board";
 import {
@@ -65,7 +65,7 @@ export function energyForNodesHeld(
 
 /**
  * Why a collection is withheld outright: `"out-of-time"` when the side's
- * clock has run out (§10), which takes precedence over `"required"`, the
+ * clock has run out (rules.md §10), which takes precedence over `"required"`, the
  * player-matching nodes case of holding nodes but not the side's own one
  * (steal.md §9).
  */
@@ -102,7 +102,7 @@ export interface TurnCollection {
  * takes precedence over every player-matching case below. `heldSquares`,
  * `standingOnOwnNode` and `ownNodeSquare` still report the truth about the
  * board — a node held by a side that is out of time is otherwise an
- * ordinary held node (§10).
+ * ordinary held node (rules.md §10).
  *
  * Otherwise, under `"off"` — and under every playstyle but steal, which
  * never carries anything but `"off"` — `standingOnOwnNode` is always false

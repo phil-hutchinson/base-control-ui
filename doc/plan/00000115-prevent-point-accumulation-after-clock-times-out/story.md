@@ -60,9 +60,9 @@ with a changelog entry.
 - **The score pips show it.** Once a player is out of time, each node they
   hold shows as a **crossed** pip, the same one the Required option uses
   for a node that is held but not paying, and none of their pips light.
-- **The option tip for the clock** gains a sentence saying that a player
-  who runs out of time passes every remaining turn and collects no more
-  energy.
+- **The option tip for the clock** was simplified to "Each player gets a
+  total clock time based on this amount of time per turn." alone; running
+  out of time is covered by `README.md` and the ruleset instead.
 - **`README.md`**, where it describes the clock, says the same.
 
 ## What does not change

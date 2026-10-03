@@ -341,11 +341,11 @@ alone. The sentence on running out of time was dropped as too much detail
 for a tip, along with the UNLIMITED sentence, which needs no explanation;
 running out is covered by the README and the ruleset.
 
-- `src/start/optionTips.ts`, `clockSetting`: add a sentence to the intro
-  saying that a player who runs out of time passes every remaining turn and
-  collects no more energy. Keep the capitalised choice-name convention the
-  existing text uses (e.g. "UNLIMITED"). If a test asserts the tip's text,
-  update it.
+- `src/start/optionTips.ts`, `clockSetting`: the tip was simplified, at the
+  owner's request, to "Each player gets a total clock time based on this
+  amount of time per turn." alone, dropping both the out-of-time sentence
+  and the UNLIMITED sentence; running out of time is covered by `README.md`
+  and the ruleset instead. Update the matching test assertion.
 - `README.md`, the clock passage (around "A player who runs out passes
   every turn from then on…"): say that from then on they collect no more
   energy, so their total is frozen. Run `/update-readme` (or review the
@@ -358,8 +358,9 @@ true).
 Verification (manual): with `npm test`, `npm run typecheck` and
 `npm run lint` passing, run the app with `npm run dev` and check:
 
-1. On the start screen, open the clock option's question mark: the tip
-   includes the new sentence.
+1. On the start screen, open the clock option's question mark: the tip reads
+   "Each player gets a total clock time based on this amount of time per
+   turn." alone.
 2. Start a timed game at the shortest clock and fewest rounds (steal
    playstyle makes holding nodes easy). Play one side quickly and let the
    other side's clock run out while that side's ships hold charged nodes.

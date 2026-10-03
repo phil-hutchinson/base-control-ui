@@ -340,10 +340,7 @@ describe("ScoreDisplay", () => {
   it("crosses a pip for each node held by a side that is out of time, lighting none (rules.md §10)", () => {
     const state = buildState({
       nodes: { H8: "charged", E5: "charged" },
-      ships: [
-        ship("green-1", "green", "H8"),
-        ship("green-2", "green", "E5"),
-      ],
+      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "E5")],
       outOfTime: { green: true, red: false },
     });
 
@@ -354,9 +351,9 @@ describe("ScoreDisplay", () => {
     expect(container.querySelectorAll(".score-display__pip--x")).toHaveLength(
       2,
     );
-    expect(
-      container.querySelectorAll(".score-display__pip--lit"),
-    ).toHaveLength(0);
+    expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
+      0,
+    );
     expect(
       container.querySelectorAll(
         ".score-display__pip-value--green, .score-display__pip-value--red",

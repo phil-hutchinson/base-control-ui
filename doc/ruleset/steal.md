@@ -197,6 +197,9 @@ on their own node, they collect **no** node energy that turn, however many
 other nodes they hold. If one does, they collect exactly what rules.md
 §8.4 gives, their own node counting once, like any other.
 
+A player who is out of time collects nothing under either setting (rules.md
+§10).
+
 **Planet effects** (section 10) is unaffected by either setting:
 required withholds node energy only, and a bonus planet pays on landing
 whether or not a player holds their own node. Nothing here ever subtracts

@@ -2681,6 +2681,26 @@ describe("HUD wording", () => {
         "Green: 24 energy, 2 nodes held, none paying, out of time.",
       );
     });
+
+    it("prefers the out-of-time clause over DOUBLE's when standing on its own node", () => {
+      const state = stateWith({
+        energy: { green: 24, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 3,
+        nodePlaystyle: "steal",
+        chargedNodeCount: 5,
+        playerMatching: "double",
+        ships: [
+          { id: "green-1", side: "green", square: squareAt("H", 8), power: 4 },
+          { id: "green-2", side: "green", square: squareAt("E", 5), power: 4 },
+        ],
+        chargedSignals: { H8: 1, E5: 4 },
+        outOfTime: { green: true, red: false },
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 24 energy, 2 nodes held, none paying, out of time.",
+      );
+    });
   });
 
   describe("roundCounterText and roundCounterSpokenText", () => {
