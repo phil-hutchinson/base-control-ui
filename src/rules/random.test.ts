@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { drawIndex, drawWeightedIndex, mulberry32 } from "./random";
+import {
+  DesyncError,
+  drawIndex,
+  drawWeightedIndex,
+  mulberry32,
+  recordedRandom,
+  seededRandom,
+} from "./random";
 
 describe("mulberry32", () => {
   it("is deterministic: the same seed always produces the same pair", () => {
@@ -196,5 +203,135 @@ describe("drawWeightedIndex", () => {
       expect(Number.isInteger(index)).toBe(true);
       seed = nextSeed;
     }
+  });
+});
+
+describe("seededRandom", () => {
+  it("matches drawIndex/drawWeightedIndex stepped from the same seed, over a mixed run", () => {
+    const source = seededRandom(24601);
+    let seed = 24601;
+    const expectedIndices: number[] = [];
+    const drawn: number[] = [];
+
+    // Interleave uniform and weighted draws, each checked against the
+    // equivalent pure function stepped from the same running seed.
+    drawn.push(source.uniform(7));
+    {
+      const [index, nextSeed] = drawIndex(seed, 7);
+      seed = nextSeed;
+      expectedIndices.push(index);
+    }
+    drawn.push(source.weighted([1, 2, 3, 4]));
+    {
+      const [index, nextSeed] = drawWeightedIndex(seed, [1, 2, 3, 4]);
+      seed = nextSeed;
+      expectedIndices.push(index);
+    }
+    drawn.push(source.uniform(3));
+    {
+      const [index, nextSeed] = drawIndex(seed, 3);
+      seed = nextSeed;
+      expectedIndices.push(index);
+    }
+    drawn.push(source.weighted([5, 0, 1]));
+    {
+      const [index, nextSeed] = drawWeightedIndex(seed, [5, 0, 1]);
+      seed = nextSeed;
+      expectedIndices.push(index);
+    }
+
+    expect(drawn).toEqual(expectedIndices);
+    expect(source.currentSeed()).toBe(seed);
+  });
+
+  it("records every draw it makes, in order", () => {
+    const source = seededRandom(123);
+    const first = source.uniform(5);
+    const second = source.weighted([1, 1, 1]);
+    const third = source.uniform(9);
+
+    expect(source.draws()).toEqual([first, second, third]);
+  });
+
+  it("its current-seed read-out continues the stream when used to make a new source", () => {
+    const whole = seededRandom(7);
+    const wholeFirst = whole.uniform(10);
+    const wholeSecond = whole.weighted([2, 3, 5]);
+
+    const split = seededRandom(7);
+    const splitFirst = split.uniform(10);
+    const resumed = seededRandom(split.currentSeed());
+    const splitSecond = resumed.weighted([2, 3, 5]);
+
+    expect(splitFirst).toBe(wholeFirst);
+    expect(splitSecond).toBe(wholeSecond);
+  });
+
+  it("still throws a RangeError for a bad count or bad weights", () => {
+    const source = seededRandom(1);
+    expect(() => source.uniform(0)).toThrow(RangeError);
+    expect(() => source.weighted([])).toThrow(RangeError);
+    expect(() => source.weighted([0, 0])).toThrow(RangeError);
+  });
+});
+
+describe("recordedRandom", () => {
+  it("replays a seeded source's draws to the same indices and passes its completion check", () => {
+    const seeded = seededRandom(24601);
+    const a = seeded.uniform(7);
+    const b = seeded.weighted([1, 2, 3, 4]);
+    const c = seeded.uniform(3);
+
+    const recorded = recordedRandom(seeded.draws());
+    const replayedA = recorded.uniform(7);
+    const replayedB = recorded.weighted([1, 2, 3, 4]);
+    const replayedC = recorded.uniform(3);
+
+    expect([replayedA, replayedB, replayedC]).toEqual([a, b, c]);
+    expect(recorded.draws()).toEqual(seeded.draws());
+    expect(() => recorded.checkComplete()).not.toThrow();
+  });
+
+  it("throws DesyncError, recognisable by instanceof and name, when exhausted", () => {
+    const recorded = recordedRandom([]);
+    expect(() => recorded.uniform(5)).toThrow(DesyncError);
+    try {
+      recordedRandom([]).uniform(5);
+      throw new Error("expected a throw");
+    } catch (error) {
+      expect(error).toBeInstanceOf(DesyncError);
+      expect((error as DesyncError).name).toBe("DesyncError");
+    }
+  });
+
+  it("throws DesyncError for an out-of-range uniform index", () => {
+    const recorded = recordedRandom([5]);
+    expect(() => recorded.uniform(5)).toThrow(DesyncError);
+  });
+
+  it("throws DesyncError for an out-of-range weighted index", () => {
+    const recorded = recordedRandom([3]);
+    expect(() => recorded.weighted([1, 2, 3])).toThrow(DesyncError);
+  });
+
+  it("throws DesyncError for a weighted index whose weight is 0", () => {
+    const recorded = recordedRandom([1]);
+    expect(() => recorded.weighted([1, 0, 1])).toThrow(DesyncError);
+  });
+
+  it("throws DesyncError for a non-integer recorded entry", () => {
+    const recorded = recordedRandom([1.5]);
+    expect(() => recorded.uniform(5)).toThrow(DesyncError);
+  });
+
+  it("throws DesyncError for a negative recorded entry", () => {
+    const recorded = recordedRandom([-1]);
+    expect(() => recorded.uniform(5)).toThrow(DesyncError);
+  });
+
+  it("throws DesyncError from the completion check when draws are left over", () => {
+    const recorded = recordedRandom([2, 1]);
+    recorded.uniform(5);
+    expect(() => recorded.checkComplete()).toThrow(DesyncError);
   });
 });

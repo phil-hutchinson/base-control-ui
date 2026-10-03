@@ -380,7 +380,18 @@ on the branch. Step 8 starts from a clean tree, so it builds directly.
 
 ### Step 1 — Random sources
 
-Status: pending
+Status: committed
+
+Notes: Added `RandomSource`, `SeededRandomSource` (the seeded source's wider
+type, carrying `currentSeed()` beyond the `RandomSource` members),
+`seededRandom`, `recordedRandom` and `DesyncError` to `src/rules/random.ts`,
+built on the existing `mulberry32`/`drawIndex`/`drawWeightedIndex`, which are
+untouched. `draws()` on both sources returns a defensive copy of the
+recorded list rather than the live array, so a caller cannot mutate a
+source's internal state through its read-out; the plan did not specify this
+either way. Added the described test cases to `random.test.ts`. No other
+deviations. `npm run typecheck`, `npm run lint`, `npm run format:check` and
+`npm test` all pass (92 files, 2083 tests).
 
 In `src/rules/random.ts`, add the `RandomSource` type, `seededRandom`,
 `recordedRandom` and `DesyncError`, exactly as described under
