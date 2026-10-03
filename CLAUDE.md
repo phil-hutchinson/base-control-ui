@@ -166,6 +166,18 @@ used on the start screen, in the Quick Guide, `rules.md`, `steal.md` and
 internal name was settled before the player-facing one changed, and the split
 is deliberate — do not "fix" it in either direction.
 
+**Core** — the rules packaged for use outside the app: the entry point in
+`src/core/`, built into the `base-control-core` package and published as a
+`core-<hash>` release that the online-play server vendors. The core
+_applies_ plies. It knows what is legal and what happens, and it never
+chooses a ply. Not a player-facing word.
+
+**Engine** — reserved for an AI player: something that _chooses_ plies,
+by search or by a trained model, and plays them through the core. No engine
+exists yet. Do not call the core, the rules, or the rules package "the
+engine", even though "rules engine" is the usual phrase elsewhere. Here the
+two words name different things, and an engine is a consumer of the core.
+
 ## Story Documentation
 
 The folder `doc/plan/{story-name}/` (where the story name can be derived from
