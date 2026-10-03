@@ -49,6 +49,7 @@ function buildState(config: {
   chargedNodeCount?: ChargedNodeCount;
   scoring?: ScoringSetting;
   playerMatching?: PlayerMatchingSetting;
+  outOfTime?: Readonly<Record<"green" | "red", boolean>>;
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -66,7 +67,7 @@ function buildState(config: {
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
-    outOfTime: { green: false, red: false },
+    outOfTime: config.outOfTime ?? { green: false, red: false },
     combatEnabled: true,
     scoring: config.scoring ?? "simple",
     playerMatching: config.playerMatching ?? "off",
@@ -353,5 +354,94 @@ describe("turnCollection", () => {
     expect(result.standingOnOwnNode).toBe(true);
     expect(result.withheld).toBe(false);
     expect(result.countedNodes).toBe(1);
+  });
+
+  it("out of time: withholds the whole turn while holding charged nodes, for that reason", () => {
+    const state = buildState({
+      nodes: { H8: "charged", D2: "charged" },
+      ships: [ship("red-1", "red", "H8"), ship("red-2", "red", "D2")],
+      outOfTime: { green: false, red: true },
+    });
+
+    const result = turnCollection(state, "red");
+
+    expect(result.withheld).toBe(true);
+    expect(result.withheldReason).toBe("out-of-time");
+    expect(result.countedNodes).toBe(0);
+    expect(result.amount).toBe(0);
+    expect(result.heldSquares).toEqual([
+      squareFromName("D2"),
+      squareFromName("H8"),
+    ]);
+  });
+
+  it("out of time: holding nothing is not withheld, and pays nothing", () => {
+    const state = buildState({
+      nodes: { H8: "charged" },
+      ships: [],
+      outOfTime: { green: false, red: true },
+    });
+
+    const result = turnCollection(state, "red");
+
+    expect(result.withheld).toBe(false);
+    expect(result.withheldReason).toBeUndefined();
+    expect(result.countedNodes).toBe(0);
+    expect(result.amount).toBe(0);
+  });
+
+  it("out of time: still withholds under DOUBLE even while standing on the own node", () => {
+    const state = buildState({
+      nodePlaystyle: "steal",
+      chargedNodeCount: 5,
+      scoring: "bonus",
+      playerMatching: "double",
+      nodes: { [SIGNAL_3_RED_OWN]: ["charged", 3] },
+      ships: [ship("red-1", "red", SIGNAL_3_RED_OWN)],
+      outOfTime: { green: false, red: true },
+    });
+
+    const result = turnCollection(state, "red");
+
+    expect(result.standingOnOwnNode).toBe(true);
+    expect(result.withheld).toBe(true);
+    expect(result.withheldReason).toBe("out-of-time");
+    expect(result.countedNodes).toBe(0);
+    expect(result.amount).toBe(0);
+  });
+
+  it("out of time: still withholds under REQUIRED even while standing on the own node", () => {
+    const state = buildState({
+      nodePlaystyle: "steal",
+      chargedNodeCount: 5,
+      scoring: "bonus",
+      playerMatching: "required",
+      nodes: { [SIGNAL_3_RED_OWN]: ["charged", 3] },
+      ships: [ship("red-1", "red", SIGNAL_3_RED_OWN)],
+      outOfTime: { green: false, red: true },
+    });
+
+    const result = turnCollection(state, "red");
+
+    expect(result.standingOnOwnNode).toBe(true);
+    expect(result.withheld).toBe(true);
+    expect(result.withheldReason).toBe("out-of-time");
+    expect(result.countedNodes).toBe(0);
+    expect(result.amount).toBe(0);
+  });
+
+  it("out of time: the other side, with time left, is unaffected", () => {
+    const state = buildState({
+      nodes: { H8: "charged", D2: "charged" },
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "D2")],
+      outOfTime: { green: false, red: true },
+    });
+
+    const result = turnCollection(state, "green");
+
+    expect(result.withheld).toBe(false);
+    expect(result.withheldReason).toBeUndefined();
+    expect(result.countedNodes).toBe(1);
+    expect(result.amount).toBe(1);
   });
 });

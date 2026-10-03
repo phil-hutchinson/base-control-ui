@@ -83,7 +83,8 @@ install, no account, no server.
 > clock is each
 > player's own time for the whole game, not per turn — a thirty-round game at
 > six seconds a turn gives each of you three minutes to spend however you like
-> across your turns. A player who runs out passes every turn from then on, and
+> across your turns. A player who runs out passes every turn from then on and
+> collects no more energy, so their total is frozen from that point on, and
 > once both players have run out the game ends there and then; running out is
 > not a loss, since energy still decides who wins. A smaller fleet starts from
 > fewer of the board's fourteen starting squares, leaving the rest empty; every

@@ -281,10 +281,11 @@ export function runEndOfTurn(
   // of that count. Nothing subtracts energy — a depleted node traps the
   // ship standing on it (§8.1, §8.5) rather than costing its owner energy —
   // and REQUIRED withholding a turn's collection is the same fact: nothing
-  // is taken away, only not paid. A zero payout is not an event — no
-  // effect, no other state change — so a player standing on nothing, or
-  // withheld under REQUIRED, does not read as having had something happen
-  // to them.
+  // is taken away, only not paid. A side whose clock has run out (§10) is
+  // withheld the same way, whatever REQUIRED would otherwise say. A zero
+  // payout is not an event — no effect, no other state change — so a
+  // player standing on nothing, or withheld under REQUIRED or for being out
+  // of time, does not read as having had something happen to them.
   const collection = turnCollection(workingState, side);
   if (collection.amount > 0) {
     const newTotal = workingState.energy[side] + collection.amount;

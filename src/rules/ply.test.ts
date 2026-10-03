@@ -1851,6 +1851,42 @@ describe("applyPassGuard", () => {
     });
   });
 
+  it("passes the ply and collects nothing when the boxed-in side holding a charged node is out of time (rules.md §5, §10)", () => {
+    // Same fixture as the "holds a charged node and has no legal move" case
+    // above, but green is out of time: the guard still reports
+    // "cannot-move-or-attack" (it is the one with nothing legal to do,
+    // regardless of its clock), and the end-of-turn sequence runs, but
+    // `turnCollection` withholds the energy, so no energy-collected effect
+    // is raised and green's total does not move.
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "H8", 1),
+        ship("red-1", "red", "G7"),
+        ship("red-2", "red", "H7"),
+        ship("red-3", "red", "I7"),
+        ship("red-4", "red", "G8"),
+        ship("red-5", "red", "I8"),
+        ship("red-6", "red", "G9"),
+        ship("red-7", "red", "H9"),
+        ship("red-8", "red", "I9"),
+      ],
+      nodes: { H8: "charged" },
+      outOfTime: { green: true, red: false },
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state.sideToMove).toBe("red");
+    expect(result.effect).toEqual({
+      type: "ply-passed",
+      side: "green",
+      sideToMove: "red",
+      reason: "cannot-move-or-attack",
+      endOfTurn: [],
+    });
+    expect(result.state.energy.green).toBe(0);
+  });
+
   it("passes the ply when every one of the side's ships is trapped and §8.6 step 7 cannot relieve any of them (rules.md §5, §8.6)", () => {
     // green-1 is trapped on the depleted node at A1 and, even if freed,
     // would have nowhere to go: its only two on-board orthogonal
@@ -2034,7 +2070,7 @@ describe("applyPassGuard", () => {
 });
 
 describe("applyOutOfTimePass", () => {
-  it("passes the side to move's ply, running the end-of-turn sequence in full, when it is out of time (rules.md §5, §10)", () => {
+  it("passes the side to move's ply, running the end-of-turn sequence in full, but collects nothing, when it is out of time (rules.md §5, §10)", () => {
     // green-1 sits on K5, a charged node, with plenty of legal moves, which
     // proves the pass fires purely because green is out of time, not because
     // it had nothing else to do.
@@ -2048,26 +2084,19 @@ describe("applyOutOfTimePass", () => {
 
     expect(result.state.sideToMove).toBe("red");
     expect(result.state.plyNumber).toBe(2);
-    // The pass still runs the end-of-turn sequence in full: holding the
-    // node costs green-1 no power any more (§4.1), but its side still
-    // collects the node's energy (§8.6 step 1, §8.2).
+    // The pass still runs the end-of-turn sequence in full — the charged
+    // node's countdown still spends a turn — but green is out of time, so
+    // no energy-collected effect is raised and green's total does not move.
     expect(result.effects).toEqual([
       {
         type: "ply-passed",
         side: "green",
         sideToMove: "red",
         reason: "out-of-time",
-        endOfTurn: [
-          {
-            type: "energy-collected",
-            side: "green",
-            amount: 1,
-            newTotal: 1,
-            squares: [squareFromName("K5")],
-          },
-        ],
+        endOfTurn: [],
       },
     ]);
+    expect(result.state.energy.green).toBe(0);
     const passedShip = result.state.ships.find((s) => s.id === "green-1");
     expect(passedShip?.power).toBe(1);
   });
@@ -2131,6 +2160,80 @@ describe("applyOutOfTimePass", () => {
       side: "red",
       sideToMove: "green",
       reason: "cannot-move-or-attack",
+    });
+  });
+
+  it("still runs the end-of-turn sequence's power gain for a ship on a planet, while collecting no energy (rules.md §10)", () => {
+    // green-1 sits on the D6 planet at 1 power, with room to charge, and
+    // also holds the charged node there, so both step 1 and step 2 would
+    // otherwise fire; green is out of time, so only the power gain survives.
+    const state = buildState({
+      ships: [ship("green-1", "green", "D6", 1), ship("red-1", "red", "A1")],
+      nodes: { D6: "charged" },
+      outOfTime: { green: true, red: false },
+    });
+
+    const result = applyOutOfTimePass(state);
+
+    expect(result.effects).toEqual([
+      {
+        type: "ply-passed",
+        side: "green",
+        sideToMove: "red",
+        reason: "out-of-time",
+        endOfTurn: [
+          {
+            type: "power-gained",
+            shipId: "green-1",
+            side: "green",
+            square: squareFromName("D6"),
+            power: 3,
+            amount: 2,
+          },
+        ],
+      },
+    ]);
+    expect(result.state.energy.green).toBe(0);
+  });
+
+  it("the opponent's own forced pass still collects normally, unaffected by the other side being out of time (rules.md §10)", () => {
+    // Only green is out of time; red-1 is boxed in on the charged node at
+    // H8, exactly as in the "holds a charged node and has no legal move"
+    // case above, and still collects for holding it.
+    const state = buildState({
+      ships: [
+        ship("red-1", "red", "H8", 1),
+        ship("green-1", "green", "G7"),
+        ship("green-2", "green", "H7"),
+        ship("green-3", "green", "I7"),
+        ship("green-4", "green", "G8"),
+        ship("green-5", "green", "I8"),
+        ship("green-6", "green", "G9"),
+        ship("green-7", "green", "H9"),
+        ship("green-8", "green", "I9"),
+      ],
+      nodes: { H8: "charged" },
+      sideToMove: "red",
+      outOfTime: { green: true, red: false },
+    });
+
+    const result = applyPassGuard(state);
+
+    expect(result.state.sideToMove).toBe("green");
+    expect(result.effect).toEqual({
+      type: "ply-passed",
+      side: "red",
+      sideToMove: "green",
+      reason: "cannot-move-or-attack",
+      endOfTurn: [
+        {
+          type: "energy-collected",
+          side: "red",
+          amount: 1,
+          newTotal: 1,
+          squares: [squareFromName("H8")],
+        },
+      ],
     });
   });
 });

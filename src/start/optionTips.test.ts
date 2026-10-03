@@ -100,7 +100,7 @@ describe("OPTION_TIPS", () => {
   it("explains the clock in one sentence", () => {
     expect(OPTION_TIPS.clockSetting).toEqual({
       intro:
-        "Each player has a total time for the whole game: the chosen time per turn, multiplied by the number of rounds. UNLIMITED means no clock.",
+        "Each player gets a total clock time based on this amount of time per turn.",
     });
   });
 });

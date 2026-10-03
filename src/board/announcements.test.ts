@@ -2476,6 +2476,7 @@ describe("HUD wording", () => {
     chargedNodeCount?: ChargedNodeCount;
     scoring?: ScoringSetting;
     playerMatching?: PlayerMatchingSetting;
+    outOfTime?: Readonly<Record<"green" | "red", boolean>>;
   }): GameState {
     const nodes: Record<
       string,
@@ -2505,7 +2506,7 @@ describe("HUD wording", () => {
       energy: config.energy,
       lengthInRounds: config.lengthInRounds,
       chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
-      outOfTime: { green: false, red: false },
+      outOfTime: config.outOfTime ?? { green: false, red: false },
       combatEnabled: true,
       scoring: config.scoring ?? "simple",
       playerMatching: config.playerMatching ?? "off",
@@ -2661,6 +2662,43 @@ describe("HUD wording", () => {
       });
       expect(scoreSentence(state, "green")).toBe(
         "Green: 27 energy, 2 nodes held.",
+      );
+    });
+
+    it("adds an out-of-time clause when the side has run out of time while holding nodes (rules.md §10)", () => {
+      const state = stateWith({
+        energy: { green: 24, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 3,
+        ships: [
+          { id: "green-1", side: "green", square: squareAt("H", 8), power: 4 },
+          { id: "green-2", side: "green", square: squareAt("E", 5), power: 4 },
+        ],
+        charged: ["H8", "E5"],
+        outOfTime: { green: true, red: false },
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 24 energy, 2 nodes held, none paying, out of time.",
+      );
+    });
+
+    it("prefers the out-of-time clause over DOUBLE's when standing on its own node", () => {
+      const state = stateWith({
+        energy: { green: 24, red: 0 },
+        lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
+        plyNumber: 3,
+        nodePlaystyle: "steal",
+        chargedNodeCount: 5,
+        playerMatching: "double",
+        ships: [
+          { id: "green-1", side: "green", square: squareAt("H", 8), power: 4 },
+          { id: "green-2", side: "green", square: squareAt("E", 5), power: 4 },
+        ],
+        chargedSignals: { H8: 1, E5: 4 },
+        outOfTime: { green: true, red: false },
+      });
+      expect(scoreSentence(state, "green")).toBe(
+        "Green: 24 energy, 2 nodes held, none paying, out of time.",
       );
     });
   });

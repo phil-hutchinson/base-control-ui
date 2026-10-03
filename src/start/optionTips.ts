@@ -113,8 +113,7 @@ export const OPTION_TIPS: Readonly<Record<OptionGroupId, OptionTip>> = {
   },
   clockSetting: {
     intro:
-      "Each player has a total time for the whole game: the chosen time " +
-      "per turn, multiplied by the number of rounds. UNLIMITED means no " +
-      "clock.",
+      "Each player gets a total clock time based on this amount of time " +
+      "per turn.",
   },
 };

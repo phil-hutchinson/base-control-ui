@@ -55,6 +55,7 @@ function buildState(config: {
   nodes?: Readonly<Record<string, NodeState>>;
   chargedNodeCount?: ChargedNodeCount;
   scoring?: ScoringSetting;
+  outOfTime?: Readonly<Record<"green" | "red", boolean>>;
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -72,7 +73,7 @@ function buildState(config: {
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
-    outOfTime: { green: false, red: false },
+    outOfTime: config.outOfTime ?? { green: false, red: false },
     combatEnabled: true,
     scoring: config.scoring ?? "simple",
     playerMatching: "off",
@@ -98,6 +99,7 @@ function buildStealState(config: {
   signalBySquare?: Readonly<Record<string, NodeSignal>>;
   scoring?: ScoringSetting;
   playerMatching: PlayerMatchingSetting;
+  outOfTime?: Readonly<Record<"green" | "red", boolean>>;
 }): GameState {
   return {
     ships: config.ships ?? [],
@@ -115,7 +117,7 @@ function buildStealState(config: {
     energy: { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: 5,
-    outOfTime: { green: false, red: false },
+    outOfTime: config.outOfTime ?? { green: false, red: false },
     combatEnabled: true,
     scoring: config.scoring ?? "bonus",
     playerMatching: config.playerMatching,
@@ -335,6 +337,30 @@ describe("ScoreDisplay", () => {
     ).toHaveLength(0);
   });
 
+  it("crosses a pip for each node held by a side that is out of time, lighting none (rules.md §10)", () => {
+    const state = buildState({
+      nodes: { H8: "charged", E5: "charged" },
+      ships: [ship("green-1", "green", "H8"), ship("green-2", "green", "E5")],
+      outOfTime: { green: true, red: false },
+    });
+
+    const { container } = render(
+      <ScoreDisplay state={state} side="green" displayedTotal={0} />,
+    );
+
+    expect(container.querySelectorAll(".score-display__pip--x")).toHaveLength(
+      2,
+    );
+    expect(container.querySelectorAll(".score-display__pip--lit")).toHaveLength(
+      0,
+    );
+    expect(
+      container.querySelectorAll(
+        ".score-display__pip-value--green, .score-display__pip-value--red",
+      ),
+    ).toHaveLength(0);
+  });
+
   it("has no static accessibility violations", async () => {
     const state = buildState({});
 
@@ -545,6 +571,33 @@ describe("ScoreDisplay", () => {
         PLAYER_NODE_COLORS.green.core,
         SIGNAL_COLORS[0].core,
       ]);
+    });
+
+    it("crosses DOUBLE's pips carrying the own node's fill once, not twice, while out of time (rules.md §10)", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("red", 2),
+          ship("red-other", "red", "E5"),
+          ship("red-own", "red", "E11"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "double",
+        outOfTime: { green: false, red: true },
+      });
+
+      const { container } = render(
+        <ScoreDisplay state={state} side="red" displayedTotal={0} />,
+      );
+
+      const xPips = Array.from(
+        container.querySelectorAll<SVGElement>(".score-display__pip--x"),
+      );
+      expect(
+        xPips.map((pip) => pip.style.getPropertyValue("--pip-fill")),
+      ).toEqual([PLAYER_NODE_COLORS.red.core, SIGNAL_COLORS[0].core]);
+      expect(
+        container.querySelectorAll(".score-display__pip--lit"),
+      ).toHaveLength(0);
     });
 
     it("orders REQUIRED's pips own node once, then the opponent's, then the rest", () => {

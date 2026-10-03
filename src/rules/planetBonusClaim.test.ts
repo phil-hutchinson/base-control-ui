@@ -90,6 +90,7 @@ function buildState(config: {
   planetBonus?: PlanetBonusSetting;
   bonusPlanets?: Readonly<Record<"green" | "red", readonly BonusPlanetEntry[]>>;
   playerMatching?: PlayerMatchingSetting;
+  outOfTime?: Readonly<Record<"green" | "red", boolean>>;
 }): GameState {
   return {
     ships: config.ships,
@@ -111,7 +112,7 @@ function buildState(config: {
     energy: config.energy ?? { green: 0, red: 0 },
     lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
-    outOfTime: { green: false, red: false },
+    outOfTime: config.outOfTime ?? { green: false, red: false },
     combatEnabled: true,
     scoring: "simple",
     playerMatching: config.playerMatching ?? "off",
@@ -544,6 +545,41 @@ describe("a fight's placement", () => {
     }
     expect(result.state.energy.green).toBe(0);
     expect(result.state.energy.red).toBe(0);
+    expect(result.effects).not.toContainEqual(
+      expect.objectContaining({ type: "planet-bonus-claimed" }),
+    );
+  });
+
+  it("pays a defender who is out of time nothing, marks nothing claimed, and raises no effect (rules.md §10)", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8", 2), ship("red-1", "red", "H9", 2)],
+      planetBonus: "two",
+      outOfTime: { green: false, red: true },
+    });
+
+    const [attackerIndex, seedAfterAttacker] = drawIndex(
+      state.randomSeed,
+      PLANETS.length,
+    );
+    const attackerPlanet = PLANETS[attackerIndex];
+    const defenderPool = PLANETS.filter(
+      (square) => squareName(square) !== squareName(attackerPlanet),
+    );
+    const [defenderIndex] = drawIndex(seedAfterAttacker, defenderPool.length);
+    const defenderPlanet = defenderPool[defenderIndex];
+
+    const withBonus: GameState = {
+      ...state,
+      bonusPlanets: { green: [], red: [entry(defenderPlanet)] },
+    };
+    const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the attack to be applied");
+    }
+    expect(result.state.energy.red).toBe(0);
+    expect(result.state.bonusPlanets.red).toEqual([entry(defenderPlanet)]);
     expect(result.effects).not.toContainEqual(
       expect.objectContaining({ type: "planet-bonus-claimed" }),
     );

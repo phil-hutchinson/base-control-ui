@@ -520,8 +520,12 @@ function rotateForLanding(
  * at all — returning `state` unchanged — when the planet bonus setting is
  * off (always the case under steal, whose planet effects claims are a
  * separate path — steal.md §10),
- * when `square` is not one of `side`'s three dealt planets, or when
- * `side` has already claimed it. Otherwise it does two things at once:
+ * when `square` is not one of `side`'s three dealt planets, when `side` has
+ * already claimed it, or when `side` is out of time (rules.md §10) — a
+ * player who is out of time gains no energy from any source, and with the
+ * payment gone there is nothing left to claim, so the planet is left
+ * unclaimed. Otherwise
+ * it does two things at once:
  * `side`'s energy rises by `planetBonusPoints(state.planetBonus)`, and that
  * planet's entry in `state.bonusPlanets` records `state.plyNumber` — the ply
  * the landing happened on, since `endPly` has not yet advanced it. Shared by
@@ -538,7 +542,7 @@ function claimPlanetBonus(
   readonly state: GameState;
   readonly effect: PlanetBonusClaimedEffect | undefined;
 } {
-  if (state.planetBonus === "off") {
+  if (state.planetBonus === "off" || state.outOfTime[side]) {
     return { state, effect: undefined };
   }
 
@@ -576,7 +580,15 @@ function claimPlanetBonus(
  * new bonus in the claimed one's place; this wraps its result into `state` — `nodes`, `ships`,
  * `activityBonuses` and `randomSeed` all follow the resolution, and `side`'s
  * energy rises by whatever it awarded (0 for every kind but a points one) —
- * and raises an `ActivityBonusClaimedEffect` describing what happened. Shared
+ * and raises an `ActivityBonusClaimedEffect` describing what happened. The
+ * claim always resolves in full, even when `side` is out of time (rules.md
+ * §10): a bonus planet is always empty (steal.md §10), so the ship standing
+ * on one must claim it, and every bonus that is not energy is unaffected by
+ * being out of time. Only a points kind's energy is withheld — `side`'s
+ * energy is not raised, and the reported `pointsAwarded` is 0 — because a
+ * player who is out of time gains no energy from any source: the claim is
+ * resolved and the seed advanced exactly as for a side with time left, and
+ * only the energy is withheld here. Shared
  * by `applyMove`, which calls this once, and `applyAttack`, which calls it
  * twice — the attacker's return planet first, then the defender's — threading
  * the state returned by the first call into the second, exactly as
@@ -603,13 +615,13 @@ function claimActivityBonus(
   }
 
   const result = resolveActivityBonusClaim(state, side, square);
+  const pointsAwarded = state.outOfTime[side]
+    ? 0
+    : result.outcome.pointsAwarded;
   const energy =
-    result.outcome.pointsAwarded === 0
+    pointsAwarded === 0
       ? state.energy
-      : {
-          ...state.energy,
-          [side]: state.energy[side] + result.outcome.pointsAwarded,
-        };
+      : { ...state.energy, [side]: state.energy[side] + pointsAwarded };
 
   return {
     state: {
@@ -625,7 +637,7 @@ function claimActivityBonus(
       side,
       square,
       kind: result.outcome.kind,
-      pointsAwarded: result.outcome.pointsAwarded,
+      pointsAwarded,
       poweredShipIds: result.outcome.poweredShipIds,
       addedSquares: result.outcome.addedSquares,
       recoloredSquares: result.outcome.recoloredSquares,
@@ -647,7 +659,10 @@ function claimActivityBonus(
  * unclaimed bonus planets (rules.md §3.4, `claimPlanetBonus` below) or, under
  * the planet effects setting, one of the board's two current activity bonus
  * planets (steal.md §10, `claimActivityBonus` below) — the two settings are
- * mutually exclusive, so only one of the two ever fires.
+ * mutually exclusive, so only one of the two ever fires. A side that is out
+ * of time (rules.md §10) never moves — it only passes — so this landing's
+ * claim, if any, is never withheld here; that only happens on the return
+ * landing of a fight (`applyAttack` below).
  *
  * Under the continuous, planet and dedicated playstyles, up to two node
  * changes can happen as the move resolves — two knowing exceptions to a
@@ -1068,7 +1083,11 @@ export function assertFightInvariants(
  * replay: the attacker's claim advances the seed, and, under the planet
  * resources setting, may change which ships carry power (Fuel) and which
  * squares belong to which node (Additional nodes, Node scramble), before the
- * defender's planet is drawn and its own landing settled the same way. `assertFightInvariants` runs
+ * defender's planet is drawn and its own landing settled the same way. A
+ * fight is the only way a side that is out of time (rules.md §10) ever lands
+ * anywhere again — being defeated and pushed back — and its landing claims
+ * no energy from either bonus, though every other bonus effect still fires
+ * for it. `assertFightInvariants` runs
  * once, against the fully settled state. An attack ends the ply (rules.md
  * §5), just as a move does: play passes to the other side, and the result
  * then passes through `applyPassGuard`.

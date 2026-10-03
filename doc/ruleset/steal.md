@@ -197,6 +197,9 @@ on their own node, they collect **no** node energy that turn, however many
 other nodes they hold. If one does, they collect exactly what rules.md
 §8.4 gives, their own node counting once, like any other.
 
+A player who is out of time collects nothing under either setting (rules.md
+§10).
+
 **Planet effects** (section 10) is unaffected by either setting:
 required withholds node energy only, and a bonus planet pays on landing
 whether or not a player holds their own node. Nothing here ever subtracts
@@ -276,6 +279,9 @@ resolves at once, in this order:
    such planet equally likely. Its kind is drawn by weight from the kinds
    available, excluding the other bonus's kind — under race, its new kind.
    So the two bonuses are always of different kinds.
+
+A player who is out of time (rules.md §10) still claims a bonus this way in
+full, all three steps included, but a points bonus pays them nothing.
 
 Under stable, a claim therefore makes one fewer draw than under race. A
 bonus that stands under stable never becomes unavailable while it stands:
