@@ -919,7 +919,37 @@ Verification (automated):
 
 ### Step 8 — Replay measurement
 
-Status: pending
+Status: committed
+
+Notes: Built the clean tree with `npm run build:core` first, then added
+`scripts/measure-core-replay.mjs` against the resulting
+`dist-core/package/index.js`. For each of the four playstyles (90 rounds,
+five ships, five charged nodes, planet bonus `"three"` for continuous/
+planet/dedicated or planet effects `"race"` plus player-matching
+`"required"` for steal, combat off throughout — the plan's text names only
+planet bonus/effects, so combat off was chosen to keep the policy to moves
+only, which the rules guarantee always exist for the side to move when
+combat is off), the script plays one full game with a simple deterministic
+policy — the side to move tries its own ships in state order and, for each,
+the nearest destination squares first (by Chebyshev distance, cached per
+square), stopping at the first `applyPly` accepts, relying on the core's own
+guarantee that a refused ply draws nothing and leaves the random source
+untouched — then times rebuilding that fixed ply list from the seed
+(`seededRandom`, `startGame`, `applyPly` per `parsePly`'d ply text) over 30
+repetitions after a 5-repetition warm-up, reporting the median and worst
+elapsed time, the ply and draw counts, the Node version and the CPU model.
+Recorded the figures in `doc/ruleset/tech-notes.md` under a new "Replaying a
+game through the core" section: all four playstyles replay a full 90-round
+game in a few tens of milliseconds (12.7-23.3 ms median, 18.3-42.6 ms worst
+across repeated runs), comfortably inside the design doc's expectation of
+milliseconds — a measurement, not a gate, so nothing was raised with the
+owner. No deviations from the plan's design beyond the combat-off choice
+noted above, which is not a rule decision, only a measurement-script detail.
+`npm run lint`, `npm run format:check` and `npm test` all pass (98 files,
+2159 tests, unchanged from Step 7, since this step adds no
+`src/**/*.test.ts`); the script itself ran to completion each time, every
+generated game reaching game over with all plies applied (checked via
+`result()` on both the generated and the rebuilt final state).
 
 At the start of this step the tree is clean (Step 7 is committed), so run
 `npm run build:core` first. Then add `scripts/measure-core-replay.mjs`,
