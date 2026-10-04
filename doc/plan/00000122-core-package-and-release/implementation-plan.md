@@ -804,7 +804,86 @@ Verification (automated): `npm run typecheck`, `npm run lint` and
 
 ### Step 7 — Core build, package and smoke test
 
-Status: pending
+Status: committed
+
+Notes: Added `tsconfig.core.json` (`lib: ["ES2022"]`, `types: []`, `files:
+["src/core/index.ts"]`), referenced from `tsconfig.json`; `vite.core.config.ts`
+(library mode, ES format, unminified, target ES2022, `__CORE_BUILD__`
+substituted from a `CORE_BUILD_HASH` environment variable the build script
+sets, falling back to `"unstamped"`; the entry is the plain string
+`"src/core/index.ts"`, relative to Vite's root, so the config needs no Node
+path/URL module and stays inside the no-`node:*`-outside-tests rule without
+an exemption); `scripts/build-core.mjs` (refuses on `git status --porcelain`;
+hashes with `git rev-parse --short=7 HEAD`; clears `dist-core/`; emits
+declarations via `tsc --project tsconfig.core.json` with CLI overrides into
+`dist-core/package/types/`, then rewrites every extensionless relative
+`from "..."` specifier in the emitted `.d.ts` files to end in `.js`; bundles
+with Vite's JS `build()` API against `vite.core.config.ts`; writes the
+generated `package.json`); `scripts/pack-core.mjs` (`npm pack --json` of
+`dist-core/package/`, renamed to `core-<hash>.tgz` using the hash parsed
+back out of the built package's own `version`, rather than recomputing it
+from git, so the tarball name always matches what was actually built);
+`scripts/smoke-core.mjs` (installs the tarball into a temporary folder
+outside the repository with plain `npm install`, writes and runs a plain
+Node ES module there that imports `base-control-core` by name, plays the
+pinned game from `stateHash.test.ts` once with `seededRandom` and once
+replayed per call with `recordedRandom`, checks both reach the pinned hash
+`92eca44a0af5bd46`, and checks `CORE_BUILD` against the installed package's
+own `version`; then writes a one-line consumer `.ts` file and a `nodenext`/
+`strict`/`skipLibCheck:false` `tsconfig.json` next to it and type-checks it
+with the repository's own `node_modules/.bin/tsc`); the three npm scripts;
+`dist-core/` in `.gitignore`, `.prettierignore` and ESLint's `globalIgnores`;
+an ESLint block for `scripts/**/*.mjs` (`js.configs.recommended`, Node
+globals, module source type); and an ESLint block for `src/core/**/*.ts` and
+`src/rules/**/*.ts` restating the `node:*` pattern and adding one that lists
+every other top-level folder and file under `src/` by name
+(`../board/**`, `../bonus/**`, `../clock/**`, `../game/**`, `../guide/**`,
+`../hud/**`, `../nav/**`, `../ships/**`, `../spelling/**`, `../start/**`,
+`../App`, `../useAppScreen`, `../gameName`, `../main`) plus `paths` entries
+for `react` and `react-dom`.
+
+Deviation: the plan's "restricts imports to those two folders" reads most
+naturally as an allow-list, which an `ignore`-style pattern would normally
+write as `["../**", "!../rules/**", "!../core/**"]`. That does not work:
+ESLint's `no-restricted-imports` "group" matcher is the `ignore` npm
+package, which implements real gitignore semantics, including "a negated
+pattern cannot re-include a path once a broader pattern has excluded its
+parent" — so a single `"../**"` deny-all made every negation a no-op
+(verified directly against the `ignore` package before writing the config).
+The block instead denies every sibling folder and the top-level app files by
+name, which is what "no src/board, src/game, React, …" in Decisions shows
+as an example list anyway. A new top-level folder under `src/` would need
+adding here to stay covered; this is recorded so a future change notices.
+
+Verification: `npm run typecheck`, `npm run lint`, `npm run format:check`
+and `npm test` all pass (98 files, 2159 tests, unchanged from Step 6, since
+this step adds no `src/**/*.test.ts`). Item 2: on the still-dirty tree,
+`npm run build:core` exited 1 with the dirty-tree message and wrote no
+`dist-core/`. Item 4: a temporary `import { PLANET_ART } from
+"../board/planetArt"` added to `src/rules/board.ts` made `npm run lint` fail
+with the new rule; a temporary `console.log(document.title)` added to
+`src/core/freshSeed.ts` made `npm run typecheck` fail (on both `console` and
+`document`, there being no DOM *or* Node lib in `tsconfig.core.json`); both
+were reverted and the tree confirmed clean of them. Item 1 (a full
+clean-tree `build:core`/`pack:core`/`smoke:core` run) is for the orchestrator
+to run after this step is committed, per "How the steps verify a clean-tree
+build" — but every piece was sanity-checked directly against a scratch
+directory outside the repo without touching the dirty-tree refusal: `tsc
+--project tsconfig.core.json` with the build's own CLI overrides correctly
+mirrors `core/` and `rules/` into `.d.ts` files; the rewrite step turns their
+extensionless specifiers into `.js`-suffixed ones; Vite's `build()` API
+against `vite.core.config.ts` (output redirected to the scratch dir) bundles
+a working ES module with `__CORE_BUILD__` substituted; the bundled module,
+loaded directly by plain Node, plays the pinned game to hash
+`92eca44a0af5bd46`; a hand-written `package.json` plus a symlinked
+`node_modules/base-control-core` let a one-line consumer `.ts` file
+type-check under `nodenext`/`strict`/`skipLibCheck:false`; and `npm pack` on
+the scratch package directory produces a tarball whose `tar -tzf` listing is
+exactly `package.json`, `index.js` and the `types/` declarations. The
+orchestrator still needs to run the real `npm run build:core`, `npm run
+pack:core` and `npm run smoke:core -- dist-core/core-<hash>.tgz` on the
+committed, clean tree to close out verification item 3 for real (the exact
+commands are in this step's Notes above and in the handback report).
 
 Add, per "Packaging" in Decisions: `tsconfig.core.json` (and its reference
 from `tsconfig.json`), `vite.core.config.ts`, `scripts/build-core.mjs`,

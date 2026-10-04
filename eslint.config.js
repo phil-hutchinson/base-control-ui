@@ -11,7 +11,7 @@ export default tseslint.config([
   // Build output, and the machine-local scratchpad. Neither is tracked, but
   // eslint walks dot-directories, so without this it lints the read-only
   // snapshot of another project sitting in `.local/reference/`.
-  globalIgnores(["dist", ".local"]),
+  globalIgnores(["dist", "dist-core", ".local"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [
@@ -65,6 +65,77 @@ export default tseslint.config([
     // block's `extends` above, so it never applies to plain `.ts` files.
     files: ["**/*.tsx"],
     extends: [jsxA11y.flatConfigs.recommended],
+  },
+  {
+    // The core's boundary (story.md "The core's entry point"): src/core and
+    // src/rules only ever import from each other, never anything
+    // screen-related. This replaces the base block's `no-restricted-imports`
+    // entirely rather than adding to it, so the `node:*` pattern is restated
+    // here too.
+    files: ["src/core/**/*.ts", "src/rules/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["node:*"],
+              message:
+                "The core runs in a browser too - Node built-ins may only be imported from test files.",
+            },
+            {
+              // Every other top-level folder and file under src/, named
+              // explicitly rather than as "everything but core and rules":
+              // gitignore-style negation cannot re-include a path once a
+              // broader pattern has excluded its parent, so an "allow-list"
+              // written as negation does not work here.
+              group: [
+                "../board/**",
+                "../bonus/**",
+                "../clock/**",
+                "../game/**",
+                "../guide/**",
+                "../hud/**",
+                "../nav/**",
+                "../ships/**",
+                "../spelling/**",
+                "../start/**",
+                "../App",
+                "../useAppScreen",
+                "../gameName",
+                "../main",
+              ],
+              message:
+                "src/core and src/rules only import from each other - nothing screen-related may reach in.",
+            },
+          ],
+          paths: [
+            {
+              name: "react",
+              message:
+                "src/core and src/rules have no screen and no dependencies.",
+            },
+            {
+              name: "react-dom",
+              message:
+                "src/core and src/rules have no screen and no dependencies.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The build and packaging scripts (story.md "Packaging"): plain Node
+    // ES modules, run directly by `node`, never bundled or type-checked as
+    // part of `src`.
+    files: ["scripts/**/*.mjs"],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: globals.node,
+    },
   },
   {
     files: ["**/*.test.ts", "**/*.test.tsx"],

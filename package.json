@@ -12,7 +12,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:core": "node scripts/build-core.mjs",
+    "pack:core": "node scripts/pack-core.mjs",
+    "smoke:core": "node scripts/smoke-core.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",
