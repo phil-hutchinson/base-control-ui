@@ -666,7 +666,30 @@ Verification (automated): `npm run typecheck`, `npm run lint` and
 
 ### Step 5 — Core plies: notation, applyPly and read-outs
 
-Status: pending
+Status: committed
+
+Notes: Added `src/core/plyNotation.ts` (`Ply`, `parsePly`, `formatPly`,
+matching `text: string` in the exported signature exactly as story.md's
+table states it, with an internal `typeof` guard — rather than widening the
+parameter to `unknown` as `parseSetup` does — since the story names that
+signature explicitly, unlike `parseSetup`'s, and tests exercise non-string
+input via a cast); `src/core/applyPly.ts` (`applyPly`, `PlyRefusal`,
+`PlyEffect` with the new `ShipMovedEffect`); and `src/core/readOuts.ts`
+(`toMove`, `result`, the core's own `GameResult` without `winner`), exactly
+per the Decisions sections on `Ply`, `PlyEffect`, `GameResult`, `toMove`,
+refusal order, refused plies and `parsePly`. The automatic-pass test builds
+a hand-crafted board (one inactive node, a charged-node target the opening
+promotion can't fully satisfy) so that both the triggering move's own
+end-of-turn and the automatic pass's own end-of-turn each charge a node and
+refill the queue, giving two genuinely distinct, non-empty draw batches to
+prove the pass's draws land after the ply's own, rather than relying on one
+of the two being vacuously empty. The frozen-state tests cover both
+`applyPly` (via `startGame`) and `startGame` itself (per the step's text),
+both placed in `applyPly.test.ts` since the step's text introduces them
+there. No deviations from the plan's design beyond the signature note
+above. `npm run typecheck`, `npm run lint`, `npm run format:check` and
+`npm test` all pass (96 files, 2145 tests, up from 93/2106 before this
+step).
 
 Create `src/core/plyNotation.ts` (`Ply`, `parsePly`, `formatPly`),
 `src/core/applyPly.ts` (`applyPly`, `PlyRefusal`, `PlyEffect` with the new
