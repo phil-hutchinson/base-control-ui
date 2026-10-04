@@ -983,7 +983,42 @@ and `npm test` pass.
 
 ### Step 9 — Release workflow
 
-Status: pending
+Status: implemented
+
+Notes: Added `.github/workflows/core-release.yml`, the repository's first
+workflow, exactly per "The release workflow" in Decisions:
+`workflow_dispatch` only; a job-level `if: github.ref_type == 'branch'` so a
+tag dispatch is skipped rather than run; `permissions: contents: write` and
+nothing else at the top level; a `core-release-${{ github.sha }}`
+concurrency group. A "Check for an existing release" step computes the
+7-character hash with `git rev-parse --short=7 HEAD` and probes `gh release
+view core-<hash>`, recording `hash` and `exists` as step outputs; every
+later step (`npm ci`, `typecheck`, `lint`, `test`, `build:core`,
+`pack:core`, `smoke:core -- dist-core/core-<hash>.tgz`, and the final `gh
+release create`) is conditioned on `exists == 'false'`, so a rerun on a
+commit with an existing release does no further work and leaves it
+untouched — plus the plan's own backstop, `gh release create` itself
+refusing an existing tag, for the race the check alone cannot close. The
+final step writes `branch: <branch>` then `commit: <full SHA>` to a notes
+file (avoiding a multi-line shell variable) and runs `gh release create
+core-<hash> dist-core/core-<hash>.tgz --title core-<hash> --notes-file
+... --prerelease --latest=false --target <full SHA>`, so the tarball is the
+release's only asset. `GH_TOKEN` is `${{ github.token }}` (the built-in
+token) on both `gh` steps. No deviations from the plan's design.
+
+Verification: the YAML parses correctly (checked with `js-yaml` from
+`node_modules`, since no `yaml`/`gh` CLI is available in this environment)
+and a read-through maps each of story.md's five workflow list items onto
+the steps above one-for-one. `npm run format:check`, `npm run typecheck`,
+`npm run lint` and `npm test` (98 files, 2159 tests) all pass. The
+workflow's own commands (`build:core`, `pack:core`, `smoke:core`) were
+already verified to work end-to-end on a clean tree before this step, per
+the orchestrator's note; they were not re-run here since adding this step
+left the tree with an untracked `.github/` directory, and `build:core`
+correctly refuses a dirty tree — exactly the behaviour CI relies on, since
+a real checkout is clean. The workflow itself cannot be run from here (no
+`gh` CLI, no GitHub Actions access); the manual verification below is the
+owner's to run after the branch is pushed.
 
 Add `.github/workflows/core-release.yml` exactly as described under "The
 release workflow" in Decisions.

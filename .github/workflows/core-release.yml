@@ -1,0 +1,85 @@
+name: core-release
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: core-release-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # Only a branch can be vendored for the server's dev stage; a tag ref
+    # never means a core release.
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@v4
+
+      - name: Check for an existing release
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          hash=$(git rev-parse --short=7 HEAD)
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+          if gh release view "core-$hash" >/dev/null 2>&1; then
+            echo "::notice::core-$hash already exists; leaving it untouched."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.check.outputs.exists == 'false'
+        run: npm ci
+
+      - name: Typecheck
+        if: steps.check.outputs.exists == 'false'
+        run: npm run typecheck
+
+      - name: Lint
+        if: steps.check.outputs.exists == 'false'
+        run: npm run lint
+
+      - name: Test
+        if: steps.check.outputs.exists == 'false'
+        run: npm test
+
+      - name: Build the core
+        if: steps.check.outputs.exists == 'false'
+        run: npm run build:core
+
+      - name: Pack the core
+        if: steps.check.outputs.exists == 'false'
+        run: npm run pack:core
+
+      - name: Smoke-test the packed core
+        if: steps.check.outputs.exists == 'false'
+        run: npm run smoke:core -- "dist-core/core-${{ steps.check.outputs.hash }}.tgz"
+
+      - name: Create the prerelease
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          hash="${{ steps.check.outputs.hash }}"
+          printf 'branch: %s\ncommit: %s\n' "${{ github.ref_name }}" "${{ github.sha }}" > release-notes.txt
+          gh release create "core-$hash" \
+            "dist-core/core-$hash.tgz" \
+            --title "core-$hash" \
+            --notes-file release-notes.txt \
+            --prerelease \
+            --latest=false \
+            --target "${{ github.sha }}"
