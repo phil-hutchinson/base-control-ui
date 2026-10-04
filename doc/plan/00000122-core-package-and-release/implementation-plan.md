@@ -730,7 +730,35 @@ Verification (automated): `npm run typecheck`, `npm run lint` and
 
 ### Step 6 — State hash, CORE_BUILD and the entry point
 
-Status: pending
+Status: committed
+
+Notes: Added `src/core/stateHash.ts` (`canonicalState`, `fnv1a64`, `stateHash`),
+`src/core/coreBuild.ts` (`CORE_BUILD`, reading a build-substituted
+`__CORE_BUILD__` identifier via `typeof` so it falls back to `"unstamped"`
+unbuilt without throwing) and `src/core/index.ts`, exporting exactly the
+agreed list plus `DesyncError`. `seededRandom` is re-exported through a
+one-line local wrapper that narrows `SeededRandomSource` to `RandomSource`,
+per the Decisions note that the core hides `currentSeed()`. `canonicalState`
+builds a plain object in the documented key order and lets `JSON.stringify`
+do the rest; node order comes from `nodeSquares` (board order), never from
+`state.nodes`'s own key order, so insertion order cannot affect the hash.
+`fnv1a64` is exported from `stateHash.ts` (not from the core's `index.ts`)
+so its own test can check it against published reference values on
+arbitrary text, independent of `canonicalState`'s always-ASCII output.
+
+The pinned game is the story's example setup under a fixed seed (20240614),
+with eight plies found once by a scratch script driving `legalDestinations`
+(deleted before this commit) and written into `stateHash.test.ts` as literal
+notation; pinned hash `92eca44a0af5bd46`. The draws-round-trip test plays
+two longer (40-ply-capped) policy-driven games — steal with planet effects,
+dedicated with planet bonus on — with one `seededRandom`, then replays every
+call with a fresh `recordedRandom` built from that call's own recorded
+draws, checking the hash after each ply; the four tampering cases (dropped,
+extra, out-of-range, and an in-range-but-changed draw caught only by a
+differing hash) are checked once, on the steal game, since `recordedRandom`'s
+behaviour is not playstyle-specific. No deviations from the plan's design.
+`npm run typecheck`, `npm run lint`, `npm run format:check` and `npm test`
+all pass (98 files, 2159 tests, up from 96/2145 before this step).
 
 Create `src/core/stateHash.ts` (`canonicalState`, `stateHash`, per the
 Decisions sections), `src/core/coreBuild.ts` (`CORE_BUILD` with the
