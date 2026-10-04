@@ -54,8 +54,6 @@ function buildState(config: {
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     plyNumber: config.plyNumber ?? 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -476,7 +474,12 @@ describe("attackRefusalReason / legalTargets at the wider reach (rules.md §6, �
       attackRefusalReason(state, "green-1", squareFromName("K9")),
     ).toBeUndefined();
 
-    const result = applyAttack(state, "green-1", squareFromName("K9"));
+    const result = applyAttack(
+      state,
+      "green-1",
+      squareFromName("K9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -930,9 +933,9 @@ describe("drawReturnPlanet", () => {
       ships: [ship("red-1", "red", FIRST_PLANET_NAME, 4)],
     });
 
-    const firstRandom = seededRandom(state.randomSeed);
+    const firstRandom = seededRandom(1);
     const firstPlanet = drawReturnPlanet(state, firstRandom);
-    const secondRandom = seededRandom(state.randomSeed);
+    const secondRandom = seededRandom(1);
     const secondPlanet = drawReturnPlanet(state, secondRandom);
 
     expect(squareName(secondPlanet)).toBe(squareName(firstPlanet));
@@ -953,10 +956,7 @@ describe("drawReturnPlanet", () => {
     const occupiedState = buildState({
       ships: [ship("red-1", "red", FIRST_PLANET_NAME, 4)],
     });
-    const occupiedPlanet = drawReturnPlanet(
-      occupiedState,
-      seededRandom(occupiedState.randomSeed),
-    );
+    const occupiedPlanet = drawReturnPlanet(occupiedState, seededRandom(1));
     expect(squareName(occupiedPlanet)).not.toBe(FIRST_PLANET_NAME);
 
     const otherOccupiedPlanets = PLANETS.filter(
@@ -973,7 +973,7 @@ describe("drawReturnPlanet", () => {
     };
     const vacatedPlanet = drawReturnPlanet(
       fullyVacatedExceptOne,
-      seededRandom(fullyVacatedExceptOne.randomSeed),
+      seededRandom(1),
     );
     expect(squareName(vacatedPlanet)).toBe(FIRST_PLANET_NAME);
   });
@@ -985,9 +985,7 @@ describe("drawReturnPlanet", () => {
       ),
     });
 
-    expect(() =>
-      drawReturnPlanet(state, seededRandom(state.randomSeed)),
-    ).toThrow(/§7\.1/);
+    expect(() => drawReturnPlanet(state, seededRandom(1))).toThrow(/§7\.1/);
   });
 
   it("spreads draws over chained seeds across every empty planet, never an occupied one", () => {

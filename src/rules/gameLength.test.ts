@@ -10,6 +10,7 @@ import {
   roundForPly,
 } from "./gameLength";
 import { startingGameState } from "./gameState";
+import { seededRandom } from "./random";
 
 const SEED = 12345;
 
@@ -80,7 +81,7 @@ describe("isGameLengthRounds", () => {
 describe("isGameOver", () => {
   it("is not over at ply 60 of a default-length game", () => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       plyNumber: 60,
     };
     expect(isGameOver(state)).toBe(false);
@@ -88,7 +89,7 @@ describe("isGameOver", () => {
 
   it("is over at ply 61 of a default-length game", () => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       plyNumber: 61,
     };
     expect(isGameOver(state)).toBe(true);
@@ -96,7 +97,10 @@ describe("isGameOver", () => {
 
   it("is not over at ply 6 of a three-round game", () => {
     const state = {
-      ...startingGameState(SEED, { lengthInRounds: 3, combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), {
+        lengthInRounds: 3,
+        combatEnabled: true,
+      }),
       plyNumber: 6,
     };
     expect(isGameOver(state)).toBe(false);
@@ -104,20 +108,25 @@ describe("isGameOver", () => {
 
   it("is over at ply 7 of a three-round game", () => {
     const state = {
-      ...startingGameState(SEED, { lengthInRounds: 3, combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), {
+        lengthInRounds: 3,
+        combatEnabled: true,
+      }),
       plyNumber: 7,
     };
     expect(isGameOver(state)).toBe(true);
   });
 
   it("is not over, mid-game, when neither side is out of time", () => {
-    const state = startingGameState(SEED, { combatEnabled: true });
+    const state = startingGameState(seededRandom(SEED), {
+      combatEnabled: true,
+    });
     expect(isGameOver(state)).toBe(false);
   });
 
   it("is not over, mid-game, when only one side is out of time", () => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       outOfTime: { green: true, red: false },
     };
     expect(isGameOver(state)).toBe(false);
@@ -125,7 +134,7 @@ describe("isGameOver", () => {
 
   it("is over, at whatever ply, once both sides are out of time", () => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       plyNumber: 8,
       outOfTime: { green: true, red: true },
     };
@@ -140,7 +149,7 @@ describe("currentRound", () => {
     [61, 30],
   ])("reads %i as round %i in a default-length game", (plyNumber, round) => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       plyNumber,
     };
     expect(currentRound(state)).toBe(round);
@@ -151,7 +160,10 @@ describe("currentRound", () => {
     [7, 3],
   ])("reads %i as round %i in a three-round game", (plyNumber, round) => {
     const state = {
-      ...startingGameState(SEED, { lengthInRounds: 3, combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), {
+        lengthInRounds: 3,
+        combatEnabled: true,
+      }),
       plyNumber,
     };
     expect(currentRound(state)).toBe(round);
@@ -161,7 +173,7 @@ describe("currentRound", () => {
 describe("gameResult", () => {
   it("names green the winner when green's total is higher", () => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       plyNumber: 61,
       energy: { green: 10, red: 4 },
     };
@@ -174,7 +186,7 @@ describe("gameResult", () => {
 
   it("names red the winner when red's total is higher", () => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       plyNumber: 61,
       energy: { green: 4, red: 10 },
     };
@@ -187,7 +199,7 @@ describe("gameResult", () => {
 
   it("is a draw when both totals are equal", () => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       plyNumber: 61,
       energy: { green: 7, red: 7 },
     };
@@ -199,7 +211,7 @@ describe("gameResult", () => {
 
   it("throws when the game is not over", () => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       plyNumber: 60,
     };
     expect(() => gameResult(state)).toThrow(RangeError);
@@ -207,7 +219,7 @@ describe("gameResult", () => {
 
   it("decides on energy when the game ended because both sides ran out of time", () => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       plyNumber: 8,
       outOfTime: { green: true, red: true },
       energy: { green: 10, red: 4 },
@@ -221,7 +233,7 @@ describe("gameResult", () => {
 
   it("is a draw when both sides ran out of time with equal energy", () => {
     const state = {
-      ...startingGameState(SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(SEED), { combatEnabled: true }),
       plyNumber: 8,
       outOfTime: { green: true, red: true },
       energy: { green: 7, red: 7 },

@@ -54,7 +54,7 @@ import {
   type PlayerMatchingSetting,
 } from "./playerMatching";
 import { placeRotators } from "./rotators";
-import { seededRandom, type RandomSource } from "./random";
+import type { RandomSource } from "./random";
 import {
   DEFAULT_SCORING,
   isScoringSetting,
@@ -132,16 +132,6 @@ export interface GameState {
   readonly sideToMove: Side;
   /** The ply currently being played, starting at 1. */
   readonly plyNumber: number;
-  /** The 32-bit seed the next random draw will use (rules.md §8.2, §7.1). */
-  readonly randomSeed: number;
-  /**
-   * The 32-bit seed the opening deal started from — distinct from
-   * `randomSeed`, which is the seed the deal left behind and the next draw
-   * will use. Fixed for the game's lifetime once set by `startingGameState`;
-   * nothing in the rules layer reads it, but a game record wants it, and the
-   * board layer derives the planet arrangement from it.
-   */
-  readonly openingSeed: number;
   /** Each side's running energy total (rules.md §8.4), both starting at 0. */
   readonly energy: EnergyTotals;
   /**
@@ -383,11 +373,10 @@ export interface StartingGameStateOptions {
  *
  * The fleet is built before the deal so its ships' squares can be passed to
  * `dealOpeningBoard`, which excludes them from where a node may appear;
- * building the fleet draws no randomness, so the seeded stream is
- * unaffected.
+ * building the fleet draws no randomness, so `random` is left untouched by
+ * it.
  *
- * The `randomSeed` argument is the seed the **deal** starts from, not the
- * seed the game's first turn draws from: dealing the board makes
+ * `random` is the source the **deal** draws from: dealing the board makes
  * `chargedNodeCount + 4` draws before play begins — nine at five charged,
  * eight at four, seven at three — plus, under the dedicated playstyle only,
  * up to eight more for the opening rotator set (rules.md §3.3), plus, when
@@ -401,13 +390,11 @@ export interface StartingGameStateOptions {
  * The player-matching nodes setting (steal.md §9) draws nothing — which two
  * signals are matched to the players is derived from `chargedNodeCount`, not
  * drawn — so a steal game started with double or required deals exactly the
- * board an off game deals from the same seed. The
- * resulting state's `randomSeed` is the seed the seeded source built from
- * the argument left behind. That argument is also recorded verbatim as
- * `openingSeed`, so the state remembers where its deal started even once
- * `randomSeed` has moved on. See `src/game/seed.ts` for where the app's
- * opening seed comes from. Every test passes one explicitly, so a game's
- * opening position is always reproducible.
+ * board an off game deals from a source built the same way. `random` is left
+ * holding whatever it has drawn once this returns; this function neither
+ * reads nor stores a seed anywhere, so a caller that wants to remember where
+ * the deal started keeps that itself. Every test builds its own source, so a
+ * game's opening position is always reproducible.
  *
  * `options` carries everything else, each optional and documented on
  * `StartingGameStateOptions` — see there for the fields and their defaults
@@ -424,7 +411,7 @@ function dealBonusPlanetEntries(random: RandomSource): BonusPlanetsBySide {
 }
 
 export function startingGameState(
-  randomSeed: number,
+  random: RandomSource,
   options: StartingGameStateOptions = {},
 ): GameState {
   const {
@@ -511,7 +498,6 @@ export function startingGameState(
   }));
 
   const shipSquares = ships.map((ship) => ship.square);
-  const random = seededRandom(randomSeed);
   const nodes: Readonly<Record<string, NodeStatus>> =
     nodePlaystyle === "steal"
       ? dealStealOpeningBoard(shipSquares, chargedNodeCount, random)
@@ -540,8 +526,6 @@ export function startingGameState(
     nodes,
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: random.currentSeed(),
-    openingSeed: randomSeed,
     energy: { green: 0, red: 0 },
     lengthInRounds,
     chargedNodeCount,

@@ -14,13 +14,19 @@ import {
   type Ship,
   type NodeStatus,
 } from "../rules/gameState";
+import { seededRandom } from "../rules/random";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { legalTargets } from "../rules/combat";
 import { legalDestinations } from "../rules/movement";
 import { applyAttack, applyMove } from "../rules/ply";
 import { MAX_POWER, type PowerLevel } from "../rules/power";
 import { DEFAULT_CHARGED_NODE_COUNT, type NodeState } from "../rules/nodes";
-import { createSession, type Session, sessionReducer } from "./session";
+import {
+  createSession,
+  type Session,
+  type SessionIntent,
+  sessionReducer,
+} from "./session";
 
 function ship(
   id: ShipId,
@@ -53,8 +59,6 @@ function buildState(config: {
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     plyNumber: config.plyNumber ?? 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -72,7 +76,13 @@ function buildState(config: {
 }
 
 function sessionFor(state: GameState): Session {
-  return { state, selectedShipId: undefined, lastEvent: undefined };
+  return {
+    state,
+    selectedShipId: undefined,
+    lastEvent: undefined,
+    openingSeed: 0,
+    randomSeed: 0,
+  };
 }
 
 function activate(session: Session, square: string): Session {
@@ -226,7 +236,7 @@ describe("sessionReducer — a ship is selected", () => {
     const result = activate(selected, "H9");
 
     expect(result.selectedShipId).toBeUndefined();
-    const direct = applyMove(state, "green-1", destination);
+    const direct = applyMove(state, "green-1", destination, seededRandom(0));
     expect(direct.outcome).toBe("applied");
     if (direct.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -258,7 +268,7 @@ describe("sessionReducer — a ship is selected", () => {
       const result = activate(selected, "H9");
 
       expect(result.selectedShipId).toBeUndefined();
-      const direct = applyAttack(state, "green-1", target);
+      const direct = applyAttack(state, "green-1", target, seededRandom(0));
       expect(direct.outcome).toBe("applied");
       if (direct.outcome !== "applied") {
         throw new Error("expected the attack to be applied");
@@ -578,6 +588,8 @@ describe("sessionReducer — new-game", () => {
       state,
       selectedShipId: "green-1",
       lastEvent: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
     };
 
     const result = sessionReducer(session, {
@@ -597,18 +609,19 @@ describe("sessionReducer — new-game", () => {
     expect(result.selectedShipId).toBeUndefined();
     expect(result.state.plyNumber).toBe(1);
     expect(result.state.energy).toEqual({ green: 0, red: 0 });
-    // Not the literal seed the intent carried: `startingGameState` advances
-    // it dealing the opening board, and the reducer must carry that seed
-    // rather than the one it started from.
-    expect(result.state.randomSeed).toBe(
-      startingGameState(42, {
-        lengthInRounds: 100,
-        fleetSize: DEFAULT_FLEET_SIZE,
-        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
-        combatEnabled: true,
-        nodePlaystyle: "continuous",
-      }).randomSeed,
-    );
+    // Not the literal seed the intent carried: dealing the opening board
+    // advances the source, and the reducer must carry the seed it left
+    // behind rather than the one it started from.
+    const dealRandom = seededRandom(42);
+    startingGameState(dealRandom, {
+      lengthInRounds: 100,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
+      nodePlaystyle: "continuous",
+    });
+    expect(result.randomSeed).toBe(dealRandom.currentSeed());
+    expect(result.openingSeed).toBe(42);
     expect(result.state.lengthInRounds).toBe(100);
   });
 
@@ -662,7 +675,7 @@ describe("sessionReducer — new-game", () => {
       playerMatching: "off",
     });
 
-    expect(first.state.randomSeed).not.toBe(second.state.randomSeed);
+    expect(first.randomSeed).not.toBe(second.randomSeed);
   });
 
   it.each<FleetSize>(FLEET_SIZES)(
@@ -699,15 +712,15 @@ describe("sessionReducer — new-game", () => {
       );
       // Not the literal seed the intent carried — see the seed assertion
       // above.
-      expect(result.state.randomSeed).toBe(
-        startingGameState(9, {
-          lengthInRounds: 30,
-          fleetSize,
-          chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
-          combatEnabled: true,
-          nodePlaystyle: "continuous",
-        }).randomSeed,
-      );
+      const dealRandom = seededRandom(9);
+      startingGameState(dealRandom, {
+        lengthInRounds: 30,
+        fleetSize,
+        chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+        combatEnabled: true,
+        nodePlaystyle: "continuous",
+      });
+      expect(result.randomSeed).toBe(dealRandom.currentSeed());
       expect(result.state.lengthInRounds).toBe(30);
     },
   );
@@ -1113,6 +1126,8 @@ describe("sessionReducer — pass-out-of-time", () => {
       state,
       selectedShipId: "green-1",
       lastEvent: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
     };
 
     const result = sessionReducer(withSelection, {
@@ -1189,5 +1204,85 @@ describe("sessionReducer — a turn made before the clock runs out pays in full 
       reason: "out-of-time",
       endOfTurn: [],
     });
+  });
+});
+
+describe("sessionReducer — the stored seed (rules.md §7.1, §8.2)", () => {
+  it("gives identical sessions, stored seed included, for the same intent applied to the same session twice", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O1")],
+    });
+    const session = createSession(state, 1, 9);
+    const intent: SessionIntent = {
+      type: "activate",
+      square: squareFromName("H8"),
+    };
+
+    const first = sessionReducer(session, intent);
+    const second = sessionReducer(session, intent);
+
+    expect(first).toEqual(second);
+    expect(first.randomSeed).toBe(second.randomSeed);
+  });
+
+  it("leaves the stored seed untouched when a move draws nothing", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "H8"), ship("red-1", "red", "O1")],
+    });
+    const session = createSession(state, 1, 9);
+
+    const selected = activate(session, "H8");
+    const result = activate(selected, "H9");
+
+    expect(result.lastEvent?.type).toBe("moved");
+    expect(result.randomSeed).toBe(session.randomSeed);
+    expect(result.openingSeed).toBe(session.openingSeed);
+  });
+
+  it("advances the stored seed by exactly the draws a steal claim makes", () => {
+    const state: GameState = {
+      ...buildState({
+        ships: [ship("green-1", "green", "G8"), ship("red-1", "red", "A1")],
+      }),
+      nodePlaystyle: "steal",
+      nodes: {
+        H8: { state: "prospective", level: 0, signal: 0 },
+        L8: { state: "prospective", level: 0, signal: 0 },
+      },
+    };
+    const session = createSession(state, 1, 9);
+
+    const selected = activate(session, "G8");
+    const result = activate(selected, "H8");
+
+    expect(result.lastEvent?.type).toBe("moved");
+    const random = seededRandom(9);
+    const direct = applyMove(state, "green-1", squareFromName("H8"), random);
+    if (direct.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+    expect(result.randomSeed).toBe(random.currentSeed());
+    expect(result.randomSeed).not.toBe(9);
+  });
+
+  it("stores a new game's opening seed, distinct from the seed its deal leaves behind", () => {
+    const session = sessionFor(buildState({ ships: [] }));
+
+    const result = sessionReducer(session, {
+      type: "new-game",
+      randomSeed: 42,
+      lengthInRounds: 30,
+      fleetSize: DEFAULT_FLEET_SIZE,
+      chargedNodeCount: DEFAULT_CHARGED_NODE_COUNT,
+      combatEnabled: true,
+      scoring: "simple",
+      nodePlaystyle: "continuous",
+      planetBonus: "off",
+      planetActivity: "off",
+      playerMatching: "off",
+    });
+
+    expect(result.openingSeed).toBe(42);
+    expect(result.randomSeed).not.toBe(42);
   });
 });

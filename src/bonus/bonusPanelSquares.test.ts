@@ -1,19 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { squareName } from "../rules/board";
 import { startingGameState } from "../rules/gameState";
+import { seededRandom } from "../rules/random";
 import { bonusPanelSquareNames } from "./bonusPanelSquares";
 
 const SEED = 12345;
 
 describe("bonusPanelSquareNames", () => {
   it("is empty when the setting is off", () => {
-    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
+    const state = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "planet",
+    });
 
     expect(bonusPanelSquareNames(state).size).toBe(0);
   });
 
   it("names both sides' planets, deduplicated, under two or three points", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
@@ -29,7 +32,7 @@ describe("bonusPanelSquareNames", () => {
   });
 
   it("names exactly the two current bonus squares under planet effects", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "steal",
       planetActivity: "race",
     });

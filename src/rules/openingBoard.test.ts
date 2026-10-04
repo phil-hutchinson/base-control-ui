@@ -68,7 +68,8 @@ describe.each(CHARGED_NODE_COUNTS)(
     it.each(RUN_TO_COMPLETION_SEEDS)(
       "runs every dealt node out, retires depleted nodes, tops the board back up to its target, and charges at least one of the dealt-inactive nodes (seed %d)",
       (seed) => {
-        let state = startingGameState(seed, {
+        const random = seededRandom(seed);
+        let state = startingGameState(random, {
           lengthInRounds: RUN_TO_COMPLETION_LENGTH_IN_ROUNDS,
           chargedNodeCount,
           combatEnabled: true,
@@ -90,7 +91,7 @@ describe.each(CHARGED_NODE_COUNTS)(
 
         for (let ply = 0; ply < RUN_TO_COMPLETION_PLIES; ply++) {
           state = startOneCountdown(state);
-          const result = runEndOfTurn(state);
+          const result = runEndOfTurn(state, random);
           for (const effect of result.effects) {
             if (effect.type === "node-ran-out") {
               ranOut.add(squareName(effect.square));
@@ -139,7 +140,6 @@ describe.each(CHARGED_NODE_COUNTS)(
 
       for (let trial = 0; trial < 1_000; trial++) {
         const dealt = dealOpeningBoard(FLEET_SQUARES, chargedNodeCount, random);
-        const seed = random.currentSeed();
 
         // Make room for one charge: the first dealt charged node goes
         // depleted instead, leaving a shortfall of one for `runCharging` to
@@ -167,8 +167,6 @@ describe.each(CHARGED_NODE_COUNTS)(
           },
           sideToMove: "green",
           plyNumber: 1,
-          randomSeed: seed,
-          openingSeed: seed,
           nodePlaystyle: "continuous",
           rotators: [],
           planetBonus: "off",

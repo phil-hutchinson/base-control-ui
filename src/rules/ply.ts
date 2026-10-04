@@ -60,7 +60,7 @@ import {
   snapshotInactivePriorities,
 } from "./nodeQueue";
 import { type PowerLevel, spendPower } from "./power";
-import { seededRandom } from "./random";
+import type { RandomSource } from "./random";
 import {
   abandonNode,
   claimNode,
@@ -333,15 +333,17 @@ export type ApplyAttackResult = AppliedAttack | RefusedAttack;
  * for it (a passed ply is still a turn), the ply number advances and the
  * other side becomes the side to move (rules.md §5, §8.6). Shared by
  * `applyPassGuard` and `applyOutOfTimePass`, which differ only in why the
- * pass happens.
+ * pass happens. `random` is the source the end-of-turn sequence draws from,
+ * if it draws at all.
  */
 function passPly(
   state: GameState,
   reason: PassReason,
+  random: RandomSource,
 ): { readonly state: GameState; readonly effect: PassEffect } {
   const side = state.sideToMove;
   const sideToMove = otherSide(side);
-  const endOfTurn = runEndOfTurn(state);
+  const endOfTurn = runEndOfTurn(state, random);
   const passedState: GameState = {
     ...endOfTurn.state,
     plyNumber: endOfTurn.state.plyNumber + 1,
@@ -372,8 +374,14 @@ function passPly(
  * otherwise the guard would read "cannot move or attack" as a pass, run the
  * end-of-turn sequence for a ply that does not exist, and advance past the
  * end again on every subsequent call, without bound.
+ *
+ * `random` is drawn from only if the guard actually fires; a state with a
+ * legal move or attack leaves it untouched.
  */
-export function applyPassGuard(state: GameState): {
+export function applyPassGuard(
+  state: GameState,
+  random: RandomSource,
+): {
   readonly state: GameState;
   readonly effect: PassEffect | undefined;
 } {
@@ -385,7 +393,7 @@ export function applyPassGuard(state: GameState): {
     return { state, effect: undefined };
   }
 
-  return passPly(state, "cannot-move-or-attack");
+  return passPly(state, "cannot-move-or-attack", random);
 }
 
 /**
@@ -400,9 +408,13 @@ export function applyPassGuard(state: GameState): {
  * through `applyPassGuard` exactly as `applyMove` and `applyAttack` run their
  * own tail, so the side passed to never sits unable to move or attack. The
  * returned effects are therefore in order: the out-of-time pass, and — if the
- * guard fired — the cannot-move-or-attack pass that followed it.
+ * guard fired — the cannot-move-or-attack pass that followed it. Both draw,
+ * if they draw at all, from the same `random`.
  */
-export function applyOutOfTimePass(state: GameState): {
+export function applyOutOfTimePass(
+  state: GameState,
+  random: RandomSource,
+): {
   readonly state: GameState;
   readonly effects: readonly PassEffect[];
 } {
@@ -410,10 +422,13 @@ export function applyOutOfTimePass(state: GameState): {
     return { state, effects: [] };
   }
 
-  const { state: passedState, effect } = passPly(state, "out-of-time");
+  const { state: passedState, effect } = passPly(state, "out-of-time", random);
   const effects: PassEffect[] = [effect];
 
-  const { state: settled, effect: followingPass } = applyPassGuard(passedState);
+  const { state: settled, effect: followingPass } = applyPassGuard(
+    passedState,
+    random,
+  );
   if (followingPass !== undefined) {
     effects.push(followingPass);
   }
@@ -432,6 +447,10 @@ export function applyOutOfTimePass(state: GameState): {
  * either caller's effect list, since both `MoveEffect` and `AttackEffect`
  * include `EndOfPlyEffect` as one of their members.
  *
+ * `random` is the source both the end-of-turn sequence and the pass guard
+ * that follows it draw from, so a ply's own draws and any an automatic pass
+ * makes come from the same stream, in that order.
+ *
  * `reportedPriorities`, if given, is passed straight through to
  * `runEndOfTurn` — the priorities a landing rotated away from before this
  * ply's own move or attack got here (`rotateForLanding`, below).
@@ -439,11 +458,12 @@ export function applyOutOfTimePass(state: GameState): {
 function endPly(
   state: GameState,
   effects: (MoveEffect | AttackEffect)[],
+  random: RandomSource,
   reportedPriorities?: Readonly<Record<string, NodePriority>>,
 ): GameState {
   const side = state.sideToMove;
   const sideToMove = otherSide(side);
-  const endOfTurn = runEndOfTurn(state, reportedPriorities);
+  const endOfTurn = runEndOfTurn(state, random, reportedPriorities);
   const next: GameState = {
     ...endOfTurn.state,
     plyNumber: endOfTurn.state.plyNumber + 1,
@@ -456,7 +476,7 @@ function endPly(
     endOfTurn: endOfTurn.effects,
   });
 
-  const { state: settled, effect: passEffect } = applyPassGuard(next);
+  const { state: settled, effect: passEffect } = applyPassGuard(next, random);
   if (passEffect !== undefined) {
     effects.push(passEffect);
   }
@@ -578,27 +598,29 @@ function claimPlanetBonus(
  * when `square` is neither of the board's two current bonus planets.
  * Otherwise `resolveActivityBonusClaim` applies the claimed kind's own
  * effect, redraws the surviving bonus's kind (under race only) and deals a
- * new bonus in the claimed one's place; this wraps its result into `state` — `nodes`, `ships`,
- * `activityBonuses` and `randomSeed` all follow the resolution, and `side`'s
- * energy rises by whatever it awarded (0 for every kind but a points one) —
- * and raises an `ActivityBonusClaimedEffect` describing what happened. The
- * claim always resolves in full, even when `side` is out of time (rules.md
- * §10): a bonus planet is always empty (steal.md §10), so the ship standing
- * on one must claim it, and every bonus that is not energy is unaffected by
- * being out of time. Only a points kind's energy is withheld — `side`'s
- * energy is not raised, and the reported `pointsAwarded` is 0 — because a
- * player who is out of time gains no energy from any source: the claim is
- * resolved and the seed advanced exactly as for a side with time left, and
- * only the energy is withheld here. Shared
+ * new bonus in the claimed one's place; this wraps its result into `state` —
+ * `nodes`, `ships` and `activityBonuses` all follow the resolution, and
+ * `side`'s energy rises by whatever it awarded (0 for every kind but a
+ * points one) — and raises an `ActivityBonusClaimedEffect` describing what
+ * happened. The claim always resolves in full, even when `side` is out of
+ * time (rules.md §10): a bonus planet is always empty (steal.md §10), so the
+ * ship standing on one must claim it, and every bonus that is not energy is
+ * unaffected by being out of time. Only a points kind's energy is withheld —
+ * `side`'s energy is not raised, and the reported `pointsAwarded` is 0 —
+ * because a player who is out of time gains no energy from any source: the
+ * claim is resolved and `random` drawn from exactly as for a side with time
+ * left, and only the energy is withheld here. Shared
  * by `applyMove`, which calls this once, and `applyAttack`, which calls it
  * twice — the attacker's return planet first, then the defender's — threading
  * the state returned by the first call into the second, exactly as
- * `claimPlanetBonus` and `rotateForLanding` already do.
+ * `claimPlanetBonus` and `rotateForLanding` already do. `random` is the
+ * source the claim's own draw, if any, is made from.
  */
 function claimActivityBonus(
   state: GameState,
   side: Side,
   square: Square,
+  random: RandomSource,
 ): {
   readonly state: GameState;
   readonly effect: ActivityBonusClaimedEffect | undefined;
@@ -615,7 +637,6 @@ function claimActivityBonus(
     return { state, effect: undefined };
   }
 
-  const random = seededRandom(state.randomSeed);
   const result = resolveActivityBonusClaim(state, side, square, random);
   const pointsAwarded = state.outOfTime[side]
     ? 0
@@ -631,7 +652,6 @@ function claimActivityBonus(
       nodes: result.nodes,
       ships: result.ships,
       activityBonuses: result.activityBonuses,
-      randomSeed: random.currentSeed(),
       energy,
     },
     effect: {
@@ -686,8 +706,8 @@ function claimActivityBonus(
  * raising a `NodeClaimedEffect` — after any `NodeAbandonedEffect`, since
  * leaving comes first when one move does both. A ship relocating onto its
  * own node's prospective square only claims: the abandon condition excludes
- * it. Both draws are made on one `RandomSource` built from `state.randomSeed`,
- * so `afterMove` below carries the seed it has left behind.
+ * it. Both draws, and any `claimActivityBonus` below goes on to make, are
+ * made on the one `random` source this call was given.
  *
  * Then `claimPlanetBonus` pays a classic bonus if `destination` earns one,
  * raising a `PlanetBonusClaimedEffect`, and `claimActivityBonus` claims an
@@ -712,6 +732,7 @@ export function applyMove(
   state: GameState,
   shipId: ShipId,
   destination: Square,
+  random: RandomSource,
 ): ApplyMoveResult {
   const reason = moveRefusalReason(state, shipId, destination);
   if (reason !== undefined) {
@@ -738,7 +759,6 @@ export function applyMove(
   const leftSquareName = squareName(ship.square);
   const destinationSquareName = squareName(destination);
   let nodes = state.nodes;
-  const random = seededRandom(state.randomSeed);
 
   if (state.nodePlaystyle === "steal") {
     const leftStatus = state.nodes[leftSquareName];
@@ -840,7 +860,6 @@ export function applyMove(
     ...state,
     ships,
     nodes,
-    randomSeed: random.currentSeed(),
   };
   const { state: classicClaimedState, effect: claimEffect } = claimPlanetBonus(
     afterMove,
@@ -851,7 +870,7 @@ export function applyMove(
     effects.push(claimEffect);
   }
   const { state: claimedState, effect: activityClaimEffect } =
-    claimActivityBonus(classicClaimedState, ship.side, destination);
+    claimActivityBonus(classicClaimedState, ship.side, destination, random);
   if (activityClaimEffect !== undefined) {
     effects.push(activityClaimEffect);
   }
@@ -866,7 +885,7 @@ export function applyMove(
   if (rotationEffect !== undefined) {
     effects.push(rotationEffect);
   }
-  const settled = endPly(rotatedState, effects, priorityBeforeLanding);
+  const settled = endPly(rotatedState, effects, random, priorityBeforeLanding);
 
   return {
     outcome: "applied",
@@ -1085,8 +1104,8 @@ export function assertFightInvariants(
  * (`rotateForLanding`, §8.2) — before the defender's own return planet is
  * even drawn, from the planets still empty at that point. This is steal.md
  * §10's fight order, stated there because it matters for a recorded game's
- * replay: the attacker's claim advances the seed, and, under the planet
- * resources setting, may change which ships carry power (Fuel) and which
+ * replay: the attacker's claim draws from `random` first, and, under the
+ * planet resources setting, may change which ships carry power (Fuel) and which
  * squares belong to which node (Additional nodes, Node scramble), before the
  * defender's planet is drawn and its own landing settled the same way. A
  * fight is the only way a side that is out of time (rules.md §10) ever lands
@@ -1095,12 +1114,15 @@ export function assertFightInvariants(
  * for it. `assertFightInvariants` runs
  * once, against the fully settled state. An attack ends the ply (rules.md
  * §5), just as a move does: play passes to the other side, and the result
- * then passes through `applyPassGuard`.
+ * then passes through `applyPassGuard`. Every draw this call makes — both
+ * return planets and any bonus claim's own draw — comes from the one
+ * `random` source it was given, in that order.
  */
 export function applyAttack(
   state: GameState,
   shipId: ShipId,
   target: Square,
+  random: RandomSource,
 ): ApplyAttackResult {
   const reason = attackRefusalReason(state, shipId, target);
   if (reason !== undefined) {
@@ -1130,12 +1152,13 @@ export function applyAttack(
   const cost = shape.cost;
   const attackerPowerAfter = spendPower(attackerShip.power, cost);
 
-  const attackerRandom = seededRandom(state.randomSeed);
-  const attackerTo = drawReturnPlanet(state, attackerRandom);
-  const afterAttackerReturned: GameState = {
-    ...placeOnPlanet(state, attackerShip.id, attackerTo, attackerPowerAfter),
-    randomSeed: attackerRandom.currentSeed(),
-  };
+  const attackerTo = drawReturnPlanet(state, random);
+  const afterAttackerReturned: GameState = placeOnPlanet(
+    state,
+    attackerShip.id,
+    attackerTo,
+    attackerPowerAfter,
+  );
 
   // The attacker's landing is settled in full — its claim, planet bonus or
   // activity bonus, and the rotation that follows — before the defender's own
@@ -1149,6 +1172,7 @@ export function applyAttack(
     attackerClassicClaim.state,
     attackerShip.side,
     attackerTo,
+    random,
   );
   const attackerClaimEffect =
     attackerClassicClaim.effect ?? attackerActivityClaim.effect;
@@ -1166,20 +1190,13 @@ export function applyAttack(
     attackerTo,
   );
 
-  const defenderRandom = seededRandom(afterAttackerRotation.state.randomSeed);
-  const defenderTo = drawReturnPlanet(
+  const defenderTo = drawReturnPlanet(afterAttackerRotation.state, random);
+  const afterDefenderReturned: GameState = placeOnPlanet(
     afterAttackerRotation.state,
-    defenderRandom,
+    defenderShip.id,
+    defenderTo,
+    defenderShip.power,
   );
-  const afterDefenderReturned: GameState = {
-    ...placeOnPlanet(
-      afterAttackerRotation.state,
-      defenderShip.id,
-      defenderTo,
-      defenderShip.power,
-    ),
-    randomSeed: defenderRandom.currentSeed(),
-  };
 
   const defenderClassicClaim = claimPlanetBonus(
     afterDefenderReturned,
@@ -1190,6 +1207,7 @@ export function applyAttack(
     defenderClassicClaim.state,
     defenderShip.side,
     defenderTo,
+    random,
   );
   const defenderClaimEffect =
     defenderClassicClaim.effect ?? defenderActivityClaim.effect;
@@ -1244,7 +1262,7 @@ export function applyAttack(
     effects.push(afterDefenderRotation.effect);
   }
 
-  const settled = endPly(rotatedState, effects, priorityBeforeLanding);
+  const settled = endPly(rotatedState, effects, random, priorityBeforeLanding);
 
   return { outcome: "applied", state: settled, effects };
 }

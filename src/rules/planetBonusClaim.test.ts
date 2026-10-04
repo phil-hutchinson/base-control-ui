@@ -97,8 +97,6 @@ function buildState(config: {
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     plyNumber: config.plyNumber ?? 1,
-    randomSeed: 1,
-    openingSeed: 1,
     // Pinned to continuous, not left to the app's default: this is a
     // rules-level harness, and a case that names no rotation should keep
     // exercising the same setting regardless of which one the start screen
@@ -132,7 +130,7 @@ describe("a move that lands on a bonus planet", () => {
       bonusPlanets: { green: [entry(planet)], red: [] },
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -160,7 +158,7 @@ describe("a move that lands on a bonus planet", () => {
       bonusPlanets: { green: [entry(planet)], red: [] },
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -187,7 +185,7 @@ describe("a move that lands on a bonus planet", () => {
       bonusPlanets: { green: [], red: [entry(planet)] },
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -210,7 +208,12 @@ describe("a move that lands on a bonus planet", () => {
       bonusPlanets: { green: [entry(planet, 1)], red: [] },
     });
 
-    const left = applyMove(state, "green-1", belowSquare(planet));
+    const left = applyMove(
+      state,
+      "green-1",
+      belowSquare(planet),
+      seededRandom(1),
+    );
     expect(left.outcome).toBe("applied");
     if (left.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -218,12 +221,22 @@ describe("a move that lands on a bonus planet", () => {
     // Green's own move ends its ply, so red gets a turn of its own — an
     // unrelated filler move, well away from the planet — before green can
     // move again.
-    const fillerMove = applyMove(left.state, "red-1", squareFromName("A2"));
+    const fillerMove = applyMove(
+      left.state,
+      "red-1",
+      squareFromName("A2"),
+      seededRandom(1),
+    );
     expect(fillerMove.outcome).toBe("applied");
     if (fillerMove.outcome !== "applied") {
       throw new Error("expected the filler move to be applied");
     }
-    const returned = applyMove(fillerMove.state, "green-1", planet);
+    const returned = applyMove(
+      fillerMove.state,
+      "green-1",
+      planet,
+      seededRandom(1),
+    );
     expect(returned.outcome).toBe("applied");
     if (returned.outcome !== "applied") {
       throw new Error("expected the move back to be applied");
@@ -249,7 +262,7 @@ describe("a move that lands on a bonus planet", () => {
       bonusPlanets: { green: [entry(planet, 2)], red: [] },
     });
 
-    const result = applyMove(state, "green-2", planet);
+    const result = applyMove(state, "green-2", planet, seededRandom(1));
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -272,7 +285,7 @@ describe("a move that lands on a bonus planet", () => {
       bonusPlanets: { green: [entry(planet)], red: [entry(planet)] },
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -298,7 +311,7 @@ describe("a move that lands on a bonus planet", () => {
       bonusPlanets: { green: [entry(planet)], red: [entry(planet)] },
     });
 
-    const result = applyMove(state, "red-1", planet);
+    const result = applyMove(state, "red-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -320,7 +333,7 @@ describe("a move that lands on a bonus planet", () => {
       bonusPlanets: { green: [entry(planet)], red: [] },
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -342,7 +355,7 @@ describe("a move that lands on a bonus planet", () => {
       planetBonus: "two",
       bonusPlanets: { green: [entry(planet)], red: [] },
     });
-    const twoResult = applyMove(twoState, "green-1", planet);
+    const twoResult = applyMove(twoState, "green-1", planet, seededRandom(1));
     expect(twoResult.outcome).toBe("applied");
     if (twoResult.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -357,7 +370,12 @@ describe("a move that lands on a bonus planet", () => {
       planetBonus: "three",
       bonusPlanets: { green: [entry(planet)], red: [] },
     });
-    const threeResult = applyMove(threeState, "green-1", planet);
+    const threeResult = applyMove(
+      threeState,
+      "green-1",
+      planet,
+      seededRandom(1),
+    );
     expect(threeResult.outcome).toBe("applied");
     if (threeResult.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -377,7 +395,7 @@ describe("a move that lands on a bonus planet", () => {
       bonusPlanets: { green: [entry(planet)], red: [] },
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -404,7 +422,7 @@ describe("a fight's placement", () => {
       planetBonus: "three",
     });
 
-    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerRandom = seededRandom(1);
     const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
@@ -416,7 +434,12 @@ describe("a fight's placement", () => {
       ...state,
       bonusPlanets: { green: [entry(attackerPlanet)], red: [] },
     };
-    const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      withBonus,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -439,7 +462,7 @@ describe("a fight's placement", () => {
       planetBonus: "two",
     });
 
-    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerRandom = seededRandom(1);
     const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
@@ -452,7 +475,12 @@ describe("a fight's placement", () => {
       ...state,
       bonusPlanets: { green: [], red: [entry(defenderPlanet)] },
     };
-    const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      withBonus,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -474,7 +502,7 @@ describe("a fight's placement", () => {
       planetBonus: "three",
     });
 
-    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerRandom = seededRandom(1);
     const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
@@ -490,7 +518,12 @@ describe("a fight's placement", () => {
         red: [entry(defenderPlanet)],
       },
     };
-    const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      withBonus,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -524,16 +557,19 @@ describe("a fight's placement", () => {
       planetBonus: "off",
     });
 
-    const attackerIndex = seededRandom(state.randomSeed).uniform(
-      PLANETS.length,
-    );
+    const attackerIndex = seededRandom(1).uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
 
     const withBonus: GameState = {
       ...state,
       bonusPlanets: { green: [entry(attackerPlanet)], red: [] },
     };
-    const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      withBonus,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -553,7 +589,7 @@ describe("a fight's placement", () => {
       outOfTime: { green: false, red: true },
     });
 
-    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerRandom = seededRandom(1);
     const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
@@ -566,7 +602,12 @@ describe("a fight's placement", () => {
       ...state,
       bonusPlanets: { green: [], red: [entry(defenderPlanet)] },
     };
-    const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      withBonus,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {

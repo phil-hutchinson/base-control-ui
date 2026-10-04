@@ -4,13 +4,17 @@ import { cleanup, render, screen } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { startingGameState } from "../rules/gameState";
+import { seededRandom } from "../rules/random";
 import { RoundCounter } from "./RoundCounter";
 
 afterEach(cleanup);
 
 function atPly(plyNumber: number, lengthInRounds?: number) {
   return {
-    ...startingGameState(1, { lengthInRounds, combatEnabled: true }),
+    ...startingGameState(seededRandom(1), {
+      lengthInRounds,
+      combatEnabled: true,
+    }),
     plyNumber,
   };
 }

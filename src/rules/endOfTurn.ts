@@ -70,7 +70,7 @@ import {
 } from "./nodeQueue";
 import { gainPower, MAX_POWER, type PowerLevel } from "./power";
 import { spendPly, TRAP_COUNTDOWN_PLIES } from "./countdown";
-import { seededRandom } from "./random";
+import type { RandomSource } from "./random";
 import { reliefSquare } from "./relief";
 import { placeRotators } from "./rotators";
 
@@ -221,12 +221,17 @@ export interface EndOfTurnResult {
  * of the next turn instead. It is a snapshot, not a live walk, so that a
  * node written mid-sequence is never visited a second time.
  *
+ * `random` is the source step 5's refill — and, under dedicated, the fresh
+ * rotator set that follows it — draws from; nothing else in this sequence
+ * draws at all.
+ *
  * `reportedPriorities`, if given, is passed straight through to step 4's
  * `runCharging` — see its doc comment for what it changes and what it does
  * not.
  */
 export function runEndOfTurn(
   state: GameState,
+  random: RandomSource,
   reportedPriorities?: Readonly<Record<string, NodePriority>>,
 ): EndOfTurnResult {
   const depletedBeforePly = nodeSquares(state).filter(
@@ -401,7 +406,6 @@ export function runEndOfTurn(
     const chargedSquares = nodeSquares(workingState).filter(
       (square) => nodeStateAt(workingState, square) === "charged",
     );
-    const random = seededRandom(workingState.randomSeed);
     const newNodes = refillQueue(
       nodeSquares({ ...workingState, nodes: nodesWithoutInactive }),
       chargedSquares,
@@ -418,22 +422,19 @@ export function runEndOfTurn(
     workingState = {
       ...workingState,
       nodes: refilledNodes,
-      randomSeed: random.currentSeed(),
     };
 
     let newRotators: readonly Square[] = [];
     if (workingState.nodePlaystyle === "dedicated") {
-      const rotatorsRandom = seededRandom(workingState.randomSeed);
       const rotators = placeRotators(
         nodeSquares(workingState),
         workingState.ships.map((ship) => ship.square),
-        rotatorsRandom,
+        random,
       );
       newRotators = rotators;
       workingState = {
         ...workingState,
         rotators,
-        randomSeed: rotatorsRandom.currentSeed(),
       };
     }
 

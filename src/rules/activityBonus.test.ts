@@ -431,7 +431,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
     readonly ships?: readonly Ship[];
     readonly playerMatching?: "off" | "double" | "required";
     readonly scoring?: "simple" | "bonus";
-    readonly randomSeed?: number;
+    readonly seed?: number;
   }) {
     return {
       nodes: config.nodes ?? NO_NODES,
@@ -446,7 +446,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       chargedNodeCount: 3 as ChargedNodeCount,
       playerMatching: config.playerMatching ?? "off",
       scoring: config.scoring ?? "simple",
-      randomSeed: config.randomSeed ?? 4242,
+      seed: config.seed ?? 4242,
     };
   }
 
@@ -460,7 +460,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
         state,
         "green",
         claimedPlanet,
-        seededRandom(state.randomSeed),
+        seededRandom(state.seed),
       ),
     ).toThrow(RangeError);
   });
@@ -472,7 +472,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
         state,
         "green",
         PLANETS[5],
-        seededRandom(state.randomSeed),
+        seededRandom(state.seed),
       ),
     ).toThrow(RangeError);
   });
@@ -488,7 +488,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       state,
       "green",
       claimedPlanet,
-      seededRandom(state.randomSeed),
+      seededRandom(state.seed),
     );
 
     expect(result.outcome.kind).toBe("large-points");
@@ -514,7 +514,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       state,
       "green",
       claimedPlanet,
-      seededRandom(state.randomSeed),
+      seededRandom(state.seed),
     );
 
     expect([...result.outcome.poweredShipIds].sort()).toEqual([
@@ -568,12 +568,12 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
 
     let discriminatingSeeds = 0;
     for (let seed = 0; seed < 300; seed++) {
-      const state = stateFor({ kind: "fuel", ships, randomSeed: seed });
+      const state = stateFor({ kind: "fuel", ships, seed: seed });
       const result = resolveActivityBonusClaim(
         state,
         "green",
         claimedPlanet,
-        seededRandom(state.randomSeed),
+        seededRandom(state.seed),
       );
       const afterFuel = expectedKinds(seed, result.ships);
       const beforeFuel = expectedKinds(seed, ships);
@@ -604,7 +604,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       state,
       "green",
       claimedPlanet,
-      seededRandom(state.randomSeed),
+      seededRandom(state.seed),
     );
 
     expect(result.outcome.addedSquares).toHaveLength(2);
@@ -636,14 +636,14 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
         state,
         "green",
         claimedPlanet,
-        seededRandom(state.randomSeed),
+        seededRandom(state.seed),
       );
 
       const expected = shuffleProspectiveSignals(
         nodes,
         3,
         playerMatching,
-        seededRandom(state.randomSeed),
+        seededRandom(state.seed),
       );
       expect(result.nodes).toEqual(expected.nodes);
       expect(result.outcome.recoloredSquares).toEqual(
@@ -671,13 +671,13 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       const state = stateFor({
         kind: "small-points",
         survivorKind: "fuel",
-        randomSeed: seed,
+        seed: seed,
       });
       const result = resolveActivityBonusClaim(
         state,
         "green",
         claimedPlanet,
-        seededRandom(state.randomSeed),
+        seededRandom(state.seed),
       );
       expect(result.outcome.survivor.oldKind).toBe("fuel");
       expect(result.outcome.survivor.newKind).not.toBe("fuel");
@@ -689,13 +689,13 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       const state = stateFor({
         kind: "small-points",
         survivorKind: "fuel",
-        randomSeed: seed,
+        seed: seed,
       });
       const result = resolveActivityBonusClaim(
         state,
         "green",
         claimedPlanet,
-        seededRandom(state.randomSeed),
+        seededRandom(state.seed),
       );
       expect(result.outcome.newBonus.kind).not.toBe(
         result.outcome.survivor.newKind,
@@ -712,13 +712,13 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
           ship("green-1", "green", squareName(claimedPlanet)),
           ship("red-1", "red", squareName(occupiedPlanet)),
         ],
-        randomSeed: seed,
+        seed: seed,
       });
       const result = resolveActivityBonusClaim(
         state,
         "green",
         claimedPlanet,
-        seededRandom(state.randomSeed),
+        seededRandom(state.seed),
       );
       expect(squareName(result.outcome.newBonus.square)).not.toBe(
         squareName(survivorPlanet),
@@ -735,7 +735,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       claimedFirst,
       "green",
       claimedPlanet,
-      seededRandom(claimedFirst.randomSeed),
+      seededRandom(claimedFirst.seed),
     );
     expect(squareName(resultClaimedFirst.activityBonuses[0].square)).not.toBe(
       squareName(claimedPlanet),
@@ -749,7 +749,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       claimedSecond,
       "green",
       survivorPlanet,
-      seededRandom(claimedSecond.randomSeed),
+      seededRandom(claimedSecond.seed),
     );
     expect(squareName(resultClaimedSecond.activityBonuses[1].square)).not.toBe(
       squareName(survivorPlanet),
@@ -761,19 +761,19 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
 
   it("is deterministic for a seed, and differs for a different seed", () => {
     const first = resolveActivityBonusClaim(
-      stateFor({ kind: "small-points", randomSeed: 9 }),
+      stateFor({ kind: "small-points", seed: 9 }),
       "green",
       claimedPlanet,
       seededRandom(9),
     );
     const second = resolveActivityBonusClaim(
-      stateFor({ kind: "small-points", randomSeed: 9 }),
+      stateFor({ kind: "small-points", seed: 9 }),
       "green",
       claimedPlanet,
       seededRandom(9),
     );
     const third = resolveActivityBonusClaim(
-      stateFor({ kind: "small-points", randomSeed: 10 }),
+      stateFor({ kind: "small-points", seed: 10 }),
       "green",
       claimedPlanet,
       seededRandom(10),

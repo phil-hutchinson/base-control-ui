@@ -79,7 +79,6 @@ function buildState(config: {
   activityBonuses?: readonly [ActivityBonusEntry, ActivityBonusEntry];
   playerMatching?: PlayerMatchingSetting;
   scoring?: ScoringSetting;
-  randomSeed?: number;
   combatEnabled?: boolean;
   planetActivity?: Exclude<PlanetActivitySetting, "off">;
   outOfTime?: Readonly<Record<"green" | "red", boolean>>;
@@ -89,8 +88,6 @@ function buildState(config: {
     nodes: config.nodes ?? {},
     sideToMove: config.sideToMove ?? "green",
     plyNumber: config.plyNumber ?? 1,
-    randomSeed: config.randomSeed ?? 1,
-    openingSeed: config.randomSeed ?? 1,
     nodePlaystyle: "steal",
     rotators: [],
     planetBonus: "off",
@@ -120,7 +117,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       activityBonuses: bonuses([planet, "large-points"], [other, "fuel"]),
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -157,7 +154,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       activityBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -183,7 +180,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       activityBonuses: bonuses([planet, "fuel"], [other, "large-points"]),
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -228,7 +225,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       ),
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -268,7 +265,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       ),
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -292,12 +289,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       );
     }
     expect(result.state.nodes).toEqual(
-      shuffleProspectiveSignals(
-        nodes,
-        3,
-        "required",
-        seededRandom(state.randomSeed),
-      ).nodes,
+      shuffleProspectiveSignals(nodes, 3, "required", seededRandom(1)).nodes,
     );
     expect(result.effects).toContainEqual(
       expect.objectContaining({
@@ -317,7 +309,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       activityBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -342,7 +334,12 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       ],
       activityBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
     });
-    const resultFirst = applyMove(claimedFirst, "green-1", planet);
+    const resultFirst = applyMove(
+      claimedFirst,
+      "green-1",
+      planet,
+      seededRandom(1),
+    );
     expect(resultFirst.outcome).toBe("applied");
     if (resultFirst.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -361,7 +358,12 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       ],
       activityBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
     });
-    const resultSecond = applyMove(claimedSecond, "green-1", other);
+    const resultSecond = applyMove(
+      claimedSecond,
+      "green-1",
+      other,
+      seededRandom(1),
+    );
     expect(resultSecond.outcome).toBe("applied");
     if (resultSecond.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -387,7 +389,12 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
 
     // D4 to D7 is a three-square orthogonal move, passing over D5 and D6 —
     // the bonus planet — without ending there.
-    const result = applyMove(state, "green-1", squareFromName("D7"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("D7"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -435,7 +442,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       ),
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -462,7 +469,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       level: 0,
       signal: 0,
     };
-    const [, seedAfterLeave] = mulberry32(state.randomSeed);
+    const [, seedAfterLeave] = mulberry32(1);
     expect(result.state.nodes).toEqual(
       shuffleProspectiveSignals(
         afterLeave,
@@ -521,7 +528,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       ),
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -558,12 +565,13 @@ describe.each(["race", "stable"] as const)(
       state: GameState,
       side: "green" | "red",
       planet: Square,
+      seed: number,
     ): [ActivityBonusKind, ActivityBonusKind] {
       const { outcome } = resolveActivityBonusClaim(
         state,
         side,
         planet,
-        seededRandom(state.randomSeed),
+        seededRandom(seed),
       );
       return [outcome.survivor.newKind, outcome.newBonus.kind];
     }
@@ -594,10 +602,9 @@ describe.each(["race", "stable"] as const)(
             [planet, "small-points"],
             [survivorPlanet, "medium-points"],
           ),
-          randomSeed: seed,
         });
 
-        const result = applyMove(state, "green-1", planet);
+        const result = applyMove(state, "green-1", planet, seededRandom(seed));
         expect(result.outcome).toBe("applied");
         if (result.outcome !== "applied") {
           throw new Error("expected the move to be applied");
@@ -625,6 +632,7 @@ describe.each(["race", "stable"] as const)(
           { ...state, ships: landed },
           "green",
           planet,
+          seed,
         );
         expect([claim!.survivor.newKind, claim!.newBonus.kind]).toEqual(
           afterCost,
@@ -634,11 +642,13 @@ describe.each(["race", "stable"] as const)(
           { ...state, ships: withPower(landed, "green-1", recoveredPower) },
           "green",
           planet,
+          seed,
         );
         const beforeCost = claimedKinds(
           { ...state, ships: withPower(landed, "green-1", MAX_POWER) },
           "green",
           planet,
+          seed,
         );
         if (JSON.stringify(afterRecovery) !== JSON.stringify(afterCost)) {
           recoveryWouldDiffer++;
@@ -678,10 +688,14 @@ describe.each(["race", "stable"] as const)(
             [attackerPlanet, "small-points"],
             [survivorPlanet, "medium-points"],
           ),
-          randomSeed: seed,
         });
 
-        const result = applyAttack(state, "green-1", squareFromName("I9"));
+        const result = applyAttack(
+          state,
+          "green-1",
+          squareFromName("I9"),
+          seededRandom(seed),
+        );
         expect(result.outcome).toBe("applied");
         if (result.outcome !== "applied") {
           throw new Error("expected the attack to be applied");
@@ -698,9 +712,10 @@ describe.each(["race", "stable"] as const)(
           ship("red-1", "red", "I9", 1),
         ];
         const afterShot = claimedKinds(
-          { ...state, ships: atClaim, randomSeed: seedAfterAttacker },
+          { ...state, ships: atClaim },
           "green",
           attackerPlanet,
+          seedAfterAttacker,
         );
         expect([claims[0].survivor.newKind, claims[0].newBonus.kind]).toEqual(
           afterShot,
@@ -710,10 +725,10 @@ describe.each(["race", "stable"] as const)(
           {
             ...state,
             ships: withPower(atClaim, "green-1", MAX_POWER),
-            randomSeed: seedAfterAttacker,
           },
           "green",
           attackerPlanet,
+          seedAfterAttacker,
         );
         if (JSON.stringify(beforeShot) !== JSON.stringify(afterShot)) {
           shotWouldDiffer++;
@@ -723,10 +738,10 @@ describe.each(["race", "stable"] as const)(
           {
             ...state,
             ships: withPower(atClaim, "red-1", MAX_POWER),
-            randomSeed: seedAfterAttacker,
           },
           "green",
           attackerPlanet,
+          seedAfterAttacker,
         );
         if (JSON.stringify(defenderAtFull) !== JSON.stringify(afterShot)) {
           defenderWouldDiffer++;
@@ -765,7 +780,6 @@ describe.each(["race", "stable"] as const)(
             [attackerPlanet, "fuel"],
             [survivorPlanet, "small-points"],
           ),
-          randomSeed: seed,
         });
 
         // The attacker's landing and Fuel claim, as the fight resolves them.
@@ -802,7 +816,12 @@ describe.each(["race", "stable"] as const)(
         }
         defenderClaims++;
 
-        const result = applyAttack(state, "green-1", squareFromName("I9"));
+        const result = applyAttack(
+          state,
+          "green-1",
+          squareFromName("I9"),
+          seededRandom(seed),
+        );
         expect(result.outcome).toBe("applied");
         if (result.outcome !== "applied") {
           throw new Error("expected the attack to be applied");
@@ -825,12 +844,12 @@ describe.each(["race", "stable"] as const)(
           nodes: attackerClaim.nodes,
           ships: withDefenderLanded(attackerClaim.ships),
           activityBonuses: attackerClaim.activityBonuses,
-          randomSeed: seedAfterDefender,
         };
         const afterFuelKinds = claimedKinds(
           atDefenderClaim,
           "red",
           defenderPlanet,
+          seedAfterDefender,
         );
         expect([claims[1].survivor.newKind, claims[1].newBonus.kind]).toEqual(
           afterFuelKinds,
@@ -840,6 +859,7 @@ describe.each(["race", "stable"] as const)(
           { ...atDefenderClaim, ships: withDefenderLanded(beforeFuel) },
           "red",
           defenderPlanet,
+          seedAfterDefender,
         );
         if (
           JSON.stringify(beforeFuelKinds) !== JSON.stringify(afterFuelKinds)
@@ -894,7 +914,6 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
     kind: ActivityBonusKind,
     nodes: Readonly<Record<string, NodeStatus>>,
     chargedNodeCount: ChargedNodeCount,
-    randomSeed: number,
   ): GameState {
     return buildState({
       planetActivity,
@@ -908,14 +927,13 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
         [claimedPlanet, kind],
         [survivorPlanet, kind === "medium-points" ? "fuel" : "medium-points"],
       ),
-      randomSeed,
     });
   }
 
   for (const { kind, nodes, chargedNodeCount } of cases) {
     it(`keeps the survivor's square and kind when ${kind} is claimed, and deals a new bonus of a different kind on another empty planet in the claimed slot`, () => {
       for (let seed = 1; seed <= 60; seed++) {
-        const state = stateUnder("stable", kind, nodes, chargedNodeCount, seed);
+        const state = stateUnder("stable", kind, nodes, chargedNodeCount);
         const survivor = state.activityBonuses[1];
         const result = resolveActivityBonusClaim(
           state,
@@ -946,14 +964,14 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
       for (let seed = 1; seed <= 60; seed++) {
         const stableRandom = seededRandom(seed);
         const stable = resolveActivityBonusClaim(
-          stateUnder("stable", kind, nodes, chargedNodeCount, seed),
+          stateUnder("stable", kind, nodes, chargedNodeCount),
           "green",
           claimedPlanet,
           stableRandom,
         );
         const raceRandom = seededRandom(seed);
         const race = resolveActivityBonusClaim(
-          stateUnder("race", kind, nodes, chargedNodeCount, seed),
+          stateUnder("race", kind, nodes, chargedNodeCount),
           "green",
           claimedPlanet,
           raceRandom,
@@ -972,7 +990,7 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
 
   it("draws the new bonus's planet and then its kind straight after a points claim, with no draw for the survivor", () => {
     for (let seed = 1; seed <= 60; seed++) {
-      const state = stateUnder("stable", "large-points", {}, 3, seed);
+      const state = stateUnder("stable", "large-points", {}, 3);
       const survivor = state.activityBonuses[1];
       const random = seededRandom(seed);
       const result = resolveActivityBonusClaim(
@@ -1017,7 +1035,7 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
       activityBonuses: bonuses([planet, "small-points"], [other, "fuel"]),
     });
 
-    const result = applyMove(state, "green-1", planet);
+    const result = applyMove(state, "green-1", planet, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -1046,7 +1064,7 @@ describe.each(["race", "stable"] as const)(
         ],
       });
 
-      const attackerRandom = seededRandom(state.randomSeed);
+      const attackerRandom = seededRandom(1);
       const attackerIndex = attackerRandom.uniform(PLANETS.length);
       const attackerPlanet = PLANETS[attackerIndex];
       const defenderPool = PLANETS.filter(
@@ -1063,7 +1081,12 @@ describe.each(["race", "stable"] as const)(
         ),
       };
 
-      const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+      const result = applyAttack(
+        withBonus,
+        "green-1",
+        squareFromName("H9"),
+        seededRandom(1),
+      );
 
       expect(result.outcome).toBe("applied");
       if (result.outcome !== "applied") {
@@ -1130,10 +1153,14 @@ describe.each(["race", "stable"] as const)(
             [attackerPlanet, "additional-nodes"],
             [survivorPlanet, "large-points"],
           ),
-          randomSeed: seed,
         });
 
-        const result = applyAttack(state, "green-1", squareFromName("H9"));
+        const result = applyAttack(
+          state,
+          "green-1",
+          squareFromName("H9"),
+          seededRandom(seed),
+        );
         expect(result.outcome).toBe("applied");
         if (result.outcome !== "applied") {
           throw new Error("expected the attack to be applied");
@@ -1206,10 +1233,14 @@ describe.each(["race", "stable"] as const)(
             [attackerPlanet, "additional-nodes"],
             [survivorPlanet, "large-points"],
           ),
-          randomSeed: seed,
         });
 
-        const result = applyAttack(state, "green-1", squareFromName("H9"));
+        const result = applyAttack(
+          state,
+          "green-1",
+          squareFromName("H9"),
+          seededRandom(seed),
+        );
         expect(result.outcome).toBe("applied");
         if (result.outcome !== "applied") {
           throw new Error("expected the attack to be applied");
@@ -1258,10 +1289,14 @@ describe.each(["race", "stable"] as const)(
           [attackerPlanet, "small-points"],
           [survivorPlanet, "medium-points"],
         ),
-        randomSeed: seed,
       });
 
-      const result = applyAttack(state, "green-1", squareFromName("H9"));
+      const result = applyAttack(
+        state,
+        "green-1",
+        squareFromName("H9"),
+        seededRandom(seed),
+      );
 
       expect(result.outcome).toBe("applied");
       if (result.outcome !== "applied") {
@@ -1301,7 +1336,7 @@ describe("a defender who is out of time (rules.md §10)", () => {
       outOfTime: { green: false, red: true },
     });
 
-    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerRandom = seededRandom(1);
     const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
@@ -1325,7 +1360,12 @@ describe("a defender who is out of time (rules.md §10)", () => {
       ),
     };
 
-    const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      withBonus,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -1354,7 +1394,7 @@ describe("a defender who is out of time (rules.md §10)", () => {
       outOfTime: { green: false, red: true },
     });
 
-    const attackerRandom = seededRandom(state.randomSeed);
+    const attackerRandom = seededRandom(1);
     const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanet = PLANETS[attackerIndex];
     const defenderPool = PLANETS.filter(
@@ -1376,7 +1416,12 @@ describe("a defender who is out of time (rules.md §10)", () => {
       ),
     };
 
-    const result = applyAttack(withBonus, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      withBonus,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {

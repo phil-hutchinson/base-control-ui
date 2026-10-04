@@ -498,7 +498,63 @@ seeded source internals.
 
 ### Step 3 — The seed leaves GameState; the app keeps it in the session
 
-Status: pending
+Status: committed
+
+Notes: Removed `randomSeed`/`openingSeed` from `GameState` and gave
+`startingGameState`, `runEndOfTurn`, `applyMove`, `applyAttack`,
+`applyPassGuard`, `applyOutOfTimePass` (and the internal `passPly`,
+`endPly`, `claimActivityBonus`) a `RandomSource` parameter, removing Step
+2's per-call adapters; `applyAttack` now threads one `random` through both
+return-planet draws and both bonus claims instead of building
+`attackerRandom`/`defenderRandom` separately. Moved `freshSeed` to
+`src/core/freshSeed.ts` (reading `globalThis.crypto` through a narrow typed
+view, as the no-DOM core build will need from Step 7 on) and deleted
+`src/game/seed.ts`. `Session` gained `openingSeed` and `randomSeed` (the
+generator's next seed); `createSession(state, openingSeed = 0, randomSeed =
+0)` builds a `seededRandom` from `randomSeed` to run the pass guard and
+stores its advanced seed, with both seeds defaulting to 0 for hand-built
+test sessions that make no draw. `sessionReducer`'s `new-game` branch builds
+one `seededRandom(intent.randomSeed)`, deals through it, and passes its
+advanced seed into `createSession` so the guard continues the same stream;
+`activateWithSelection`'s move/attack branches and `pass-out-of-time` each
+build a fresh `seededRandom(session.randomSeed)` and store its
+`currentSeed()` in the returned session. `Board.tsx`, `PlanetBonusPanel.tsx`
+(gained an `openingSeed` prop) and `useBonusHoverGlow.ts` (gained an
+`openingSeed` parameter) read it from the session instead of `state`;
+`planetPlacement.ts` is unchanged. Added the three session tests the step
+asked for (reducer purity including the stored seed; a move advances the
+stored seed by exactly its draws, under a steal claim; a new game stores
+its opening seed distinct from the seed its deal leaves behind) plus one
+showing a draw-free move leaves the stored seed untouched.
+
+Across roughly 30 test files, every hand-built `GameState` literal lost its
+`randomSeed`/`openingSeed` fields, every top-level rule call gained a
+`RandomSource` argument (mostly `seededRandom(1)` where a test did not
+care which squares were drawn, or a shared source threaded through a loop
+where a test chained plies), and every place that predicted a draw's
+outcome by reading `state.randomSeed` was rewritten to read the seed off
+the `RandomSource` object the test itself built and passed in. Two
+rules-layer tests whose property no longer exists at this layer were
+removed rather than reworked: `startingGameState`'s "remembers the seed the
+deal started from, distinct from the seed it left behind" (opening seed is
+now the session's business, covered by the new session tests above), and
+`runCharging`'s "leaves the seed exactly as it found it" (charging takes no
+`RandomSource` at all now, so there is no seed to leave alone — rewritten
+to assert it changes nothing but `nodes`). `relief.test.ts`'s "regardless of
+the seed" test lost its seed parameter entirely for the same reason
+(`reliefSquare` draws nothing) and was reworded to a plain determinism
+check. A few local test helpers had a now-dead `randomSeed` config field
+removed outright (`activityBonusClaim.test.ts`'s `stateUnder`,
+`endOfTurn.test.ts`'s and `ply.test.ts`'s `buildState`); one,
+`activityBonus.test.ts`'s `stateFor`, used `randomSeed` as a local field
+name on a `Pick<GameState, …>`-shaped helper object unrelated to the real
+`GameState` field, and was renamed to `seed` purely so the grep below reads
+cleanly, not because it was ever a type error itself.
+
+No deviations from the plan's design. `npm run typecheck`, `npm run lint`,
+`npm run format:check`, `npm test` (2086 tests, 92 files) and `npm run
+build` all pass; `grep -rn "randomSeed\|openingSeed" src/rules` finds
+nothing.
 
 Rules: remove `randomSeed` and `openingSeed` from `GameState` and give the
 top-level entry points a `RandomSource` argument: `startingGameState`

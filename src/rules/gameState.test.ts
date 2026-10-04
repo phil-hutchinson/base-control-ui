@@ -42,7 +42,7 @@ const STARTING_FLEET_SQUARES = STARTING_FLEET.map((entry) => entry.square);
 
 describe("startingGameState", () => {
   it("has ten ships matching STARTING_FLEET entry for entry", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     expect(state.ships).toHaveLength(10);
     state.ships.forEach((ship, index) => {
@@ -54,30 +54,26 @@ describe("startingGameState", () => {
     });
   });
 
-  it("has green to move, ply 1 and the deal's advanced seed", () => {
-    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
+  it("has green to move, ply 1, and advances the given source by the deal", () => {
     const random = seededRandom(SEED);
+    const state = startingGameState(random, { nodePlaystyle: "planet" });
+    const expectedRandom = seededRandom(SEED);
     dealOpeningBoard(
       STARTING_FLEET_SQUARES,
       DEFAULT_CHARGED_NODE_COUNT,
-      random,
+      expectedRandom,
     );
 
     expect(state.sideToMove).toBe("green");
     expect(state.plyNumber).toBe(1);
-    expect(state.randomSeed).toBe(random.currentSeed());
-    expect(state.randomSeed).not.toBe(SEED);
-  });
-
-  it("remembers the seed the deal started from, distinct from the seed it left behind", () => {
-    const state = startingGameState(SEED);
-
-    expect(state.openingSeed).toBe(SEED);
-    expect(state.openingSeed).not.toBe(state.randomSeed);
+    expect(random.currentSeed()).toBe(expectedRandom.currentSeed());
+    expect(random.currentSeed()).not.toBe(SEED);
   });
 
   it("deals the board dealOpeningBoard deals for the same seed: five charged, three inactive, none depleted", () => {
-    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
+    const state = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "planet",
+    });
     const dealt = dealOpeningBoard(
       STARTING_FLEET_SQUARES,
       DEFAULT_CHARGED_NODE_COUNT,
@@ -102,7 +98,9 @@ describe("startingGameState", () => {
   });
 
   it("deals every charged node at baseline (no countdown) and every inactive level a priority of {1, 2, 3}", () => {
-    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
+    const state = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "planet",
+    });
 
     const priorities: number[] = [];
     for (const status of Object.values(state.nodes)) {
@@ -116,23 +114,23 @@ describe("startingGameState", () => {
   });
 
   it("deals the same board for the same seed, and a different board for a different seed", () => {
-    const first = startingGameState(SEED);
-    const second = startingGameState(SEED);
-    const other = startingGameState(SEED + 1);
+    const first = startingGameState(seededRandom(SEED));
+    const second = startingGameState(seededRandom(SEED));
+    const other = startingGameState(seededRandom(SEED + 1));
 
     expect(second.nodes).toEqual(first.nodes);
     expect(other.nodes).not.toEqual(first.nodes);
   });
 
   it("gives a non-node square no state or status", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     expect(nodeStateAt(state, squareFromName("A1"))).toBeUndefined();
     expect(nodeStatusAt(state, squareFromName("A1"))).toBeUndefined();
   });
 
   it("agrees with nodeStatusAt: the state matches, and the status carries the clock", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     for (const square of nodeSquares(state)) {
       const status = nodeStatusAt(state, square);
@@ -142,7 +140,7 @@ describe("startingGameState", () => {
   });
 
   it("finds a ship on each of the twelve starting-fleet squares and none on an ordinary square", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
     const index = shipsBySquare(state);
 
     for (const entry of STARTING_FLEET) {
@@ -154,8 +152,8 @@ describe("startingGameState", () => {
   });
 
   it("builds equal but independent values each time", () => {
-    const first = startingGameState(SEED);
-    const second = startingGameState(SEED);
+    const first = startingGameState(seededRandom(SEED));
+    const second = startingGameState(seededRandom(SEED));
 
     expect(first).toEqual(second);
     expect(first.ships).not.toBe(second.ships);
@@ -163,26 +161,28 @@ describe("startingGameState", () => {
   });
 
   it("starts both sides at 0 energy", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     expect(state.energy).toEqual({ green: 0, red: 0 });
   });
 
   it("starts neither side out of time", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     expect(state.outOfTime).toEqual({ green: false, red: false });
   });
 
   it("defaults to a hundred-round length when none is given", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     expect(state.lengthInRounds).toBe(DEFAULT_GAME_LENGTH_ROUNDS);
   });
 
   it("takes a given length, changing nothing else about the state", () => {
-    const defaultLength = startingGameState(SEED);
-    const shortGame = startingGameState(SEED, { lengthInRounds: 3 });
+    const defaultLength = startingGameState(seededRandom(SEED));
+    const shortGame = startingGameState(seededRandom(SEED), {
+      lengthInRounds: 3,
+    });
 
     expect(shortGame.lengthInRounds).toBe(3);
     expect({
@@ -192,13 +192,13 @@ describe("startingGameState", () => {
   });
 
   it.each([0, -1, 2.5])("throws a RangeError for a length of %s", (length) => {
-    expect(() => startingGameState(SEED, { lengthInRounds: length })).toThrow(
-      RangeError,
-    );
+    expect(() =>
+      startingGameState(seededRandom(SEED), { lengthInRounds: length }),
+    ).toThrow(RangeError);
   });
 
   it("defaults to a five-a-side fleet when none is given", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
     const expected = startingFleet(DEFAULT_FLEET_SIZE);
 
     expect(state.ships).toHaveLength(10);
@@ -210,11 +210,11 @@ describe("startingGameState", () => {
   });
 
   it("takes a given fleet size, dealing that layout's ships", () => {
-    const fiveASide = startingGameState(SEED, {
+    const fiveASide = startingGameState(seededRandom(SEED), {
       lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       fleetSize: 5,
     });
-    const fourASide = startingGameState(SEED, {
+    const fourASide = startingGameState(seededRandom(SEED), {
       lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       fleetSize: 4,
     });
@@ -241,11 +241,11 @@ describe("startingGameState", () => {
   it("deals the same board for the same seed whatever the fleet size", () => {
     const smallestFleetSize = Math.min(...FLEET_SIZES);
     const largestFleetSize = Math.max(...FLEET_SIZES);
-    const smallestASide = startingGameState(SEED, {
+    const smallestASide = startingGameState(seededRandom(SEED), {
       lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       fleetSize: smallestFleetSize,
     });
-    const largestASide = startingGameState(SEED, {
+    const largestASide = startingGameState(seededRandom(SEED), {
       lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
       fleetSize: largestFleetSize,
     });
@@ -255,7 +255,7 @@ describe("startingGameState", () => {
 
   it("starts every ship at full power whatever the fleet size", () => {
     for (const fleetSize of FLEET_SIZES) {
-      const state = startingGameState(SEED, {
+      const state = startingGameState(seededRandom(SEED), {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         fleetSize,
       });
@@ -269,7 +269,7 @@ describe("startingGameState", () => {
     "throws a RangeError for a fleet size of %s",
     (fleetSize) => {
       expect(() =>
-        startingGameState(SEED, {
+        startingGameState(seededRandom(SEED), {
           lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
           fleetSize,
         }),
@@ -278,26 +278,27 @@ describe("startingGameState", () => {
   );
 
   it("defaults to five charged nodes, the app's default, when none is given", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     expect(state.chargedNodeCount).toBe(DEFAULT_CHARGED_NODE_COUNT);
   });
 
   it("takes a given charged-node count, dealing that many charged and leaving everything else about the state alone", () => {
-    const defaultCount = startingGameState(SEED);
-    const fourCharged = startingGameState(SEED, { chargedNodeCount: 4 });
+    const defaultCount = startingGameState(seededRandom(SEED));
+    const fourCharged = startingGameState(seededRandom(SEED), {
+      chargedNodeCount: 4,
+    });
 
     expect(fourCharged.chargedNodeCount).toBe(4);
     expect({
       ...fourCharged,
       chargedNodeCount: defaultCount.chargedNodeCount,
       nodes: defaultCount.nodes,
-      randomSeed: defaultCount.randomSeed,
     }).toEqual(defaultCount);
   });
 
   it("takes a charged-node count of three, dealing six nodes: three charged, three inactive, none depleted", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       chargedNodeCount: 3,
     });
@@ -316,7 +317,9 @@ describe("startingGameState", () => {
   });
 
   it("is one of the offered charged-node counts, exactly the one given", () => {
-    const state = startingGameState(SEED, { chargedNodeCount: 4 });
+    const state = startingGameState(seededRandom(SEED), {
+      chargedNodeCount: 4,
+    });
 
     expect(CHARGED_NODE_COUNTS).toContain(state.chargedNodeCount);
     expect(state.chargedNodeCount).toBe(4);
@@ -325,22 +328,24 @@ describe("startingGameState", () => {
   it.each([2, 6, 0, 4.5])(
     "throws a RangeError for a charged-node count of %s",
     (chargedNodeCount) => {
-      expect(() => startingGameState(SEED, { chargedNodeCount })).toThrow(
-        RangeError,
-      );
+      expect(() =>
+        startingGameState(seededRandom(SEED), { chargedNodeCount }),
+      ).toThrow(RangeError);
     },
   );
 
   it("defaults to combat off, the app's default, when none is given", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     expect(state.combatEnabled).toBe(false);
     expect(state.combatEnabled).toBe(DEFAULT_COMBAT_ENABLED);
   });
 
   it("takes a given combat setting, changing nothing else about the state", () => {
-    const defaultCombat = startingGameState(SEED);
-    const combatOn = startingGameState(SEED, { combatEnabled: true });
+    const defaultCombat = startingGameState(seededRandom(SEED));
+    const combatOn = startingGameState(seededRandom(SEED), {
+      combatEnabled: true,
+    });
 
     expect(combatOn.combatEnabled).toBe(true);
     expect({
@@ -350,7 +355,9 @@ describe("startingGameState", () => {
   });
 
   it("carries combatEnabled unchanged through a move, for the game's lifetime", () => {
-    const state = startingGameState(SEED, { combatEnabled: true });
+    const state = startingGameState(seededRandom(SEED), {
+      combatEnabled: true,
+    });
     const ship = state.ships.find(
       (candidate) => legalDestinations(state, candidate.id).length > 0,
     );
@@ -359,7 +366,7 @@ describe("startingGameState", () => {
     }
     const [destination] = legalDestinations(state, ship.id);
 
-    const result = applyMove(state, ship.id, destination);
+    const result = applyMove(state, ship.id, destination, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -369,15 +376,17 @@ describe("startingGameState", () => {
   });
 
   it("defaults to bonus scoring, the app's default, when none is given", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     expect(state.scoring).toBe("bonus");
     expect(state.scoring).toBe(DEFAULT_SCORING);
   });
 
   it("takes a given scoring setting, changing nothing else about the state", () => {
-    const defaultScoring = startingGameState(SEED);
-    const bonusScoring = startingGameState(SEED, { scoring: "bonus" });
+    const defaultScoring = startingGameState(seededRandom(SEED));
+    const bonusScoring = startingGameState(seededRandom(SEED), {
+      scoring: "bonus",
+    });
 
     expect(bonusScoring.scoring).toBe("bonus");
     expect({
@@ -387,14 +396,14 @@ describe("startingGameState", () => {
   });
 
   it("is one of the offered scoring settings, exactly the one given", () => {
-    const state = startingGameState(SEED, { scoring: "bonus" });
+    const state = startingGameState(seededRandom(SEED), { scoring: "bonus" });
 
     expect(SCORING_SETTINGS).toContain(state.scoring);
     expect(state.scoring).toBe("bonus");
   });
 
   it("carries scoring unchanged through a move, for the game's lifetime", () => {
-    const state = startingGameState(SEED, { scoring: "bonus" });
+    const state = startingGameState(seededRandom(SEED), { scoring: "bonus" });
     const ship = state.ships.find(
       (candidate) => legalDestinations(state, candidate.id).length > 0,
     );
@@ -403,7 +412,7 @@ describe("startingGameState", () => {
     }
     const [destination] = legalDestinations(state, ship.id);
 
-    const result = applyMove(state, ship.id, destination);
+    const result = applyMove(state, ship.id, destination, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -415,12 +424,14 @@ describe("startingGameState", () => {
   it.each(["SIMPLE", "flat", "triangular", ""])(
     "throws a RangeError for a scoring setting of %j",
     (scoring) => {
-      expect(() => startingGameState(SEED, { scoring })).toThrow(RangeError);
+      expect(() => startingGameState(seededRandom(SEED), { scoring })).toThrow(
+        RangeError,
+      );
     },
   );
 
   it("defaults to the steal playstyle, the app's default, with an empty rotator list, when none is given", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     expect(state.nodePlaystyle).toBe("steal");
     expect(state.nodePlaystyle).toBe(DEFAULT_NODE_PLAYSTYLE);
@@ -428,10 +439,10 @@ describe("startingGameState", () => {
   });
 
   it("takes a given node playstyle, changing nothing else about the state", () => {
-    const continuousPlaystyle = startingGameState(SEED, {
+    const continuousPlaystyle = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "continuous",
     });
-    const planetPlaystyle = startingGameState(SEED, {
+    const planetPlaystyle = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
     });
 
@@ -444,14 +455,18 @@ describe("startingGameState", () => {
   });
 
   it("is one of the offered node playstyles, exactly the one given", () => {
-    const state = startingGameState(SEED, { nodePlaystyle: "dedicated" });
+    const state = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "dedicated",
+    });
 
     expect(NODE_PLAYSTYLES).toContain(state.nodePlaystyle);
     expect(state.nodePlaystyle).toBe("dedicated");
   });
 
   it("carries nodePlaystyle unchanged through a move, for the game's lifetime", () => {
-    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
+    const state = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "planet",
+    });
     const ship = state.ships.find(
       (candidate) => legalDestinations(state, candidate.id).length > 0,
     );
@@ -460,7 +475,7 @@ describe("startingGameState", () => {
     }
     const [destination] = legalDestinations(state, ship.id);
 
-    const result = applyMove(state, ship.id, destination);
+    const result = applyMove(state, ship.id, destination, seededRandom(1));
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -472,21 +487,23 @@ describe("startingGameState", () => {
   it.each(["CONTINUOUS", "planets", "rotator", ""])(
     "throws a RangeError for a node playstyle of %j",
     (nodePlaystyle) => {
-      expect(() => startingGameState(SEED, { nodePlaystyle })).toThrow(
-        RangeError,
-      );
+      expect(() =>
+        startingGameState(seededRandom(SEED), { nodePlaystyle }),
+      ).toThrow(RangeError);
     },
   );
 
   it("leaves the rotator list empty at continuous and planet, whatever the seed", () => {
     for (const nodePlaystyle of ["continuous", "planet"] as const) {
-      const state = startingGameState(SEED, { nodePlaystyle });
+      const state = startingGameState(seededRandom(SEED), { nodePlaystyle });
       expect(state.rotators).toEqual([]);
     }
   });
 
   it("places up to six rotators under dedicated, at most one per section, none on a planet, a ship or a node", () => {
-    const state = startingGameState(SEED, { nodePlaystyle: "dedicated" });
+    const state = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "dedicated",
+    });
 
     expect(state.rotators.length).toBeGreaterThan(0);
     expect(state.rotators.length).toBeLessThanOrEqual(6);
@@ -513,18 +530,25 @@ describe("startingGameState", () => {
     expect(sectionsHit.size).toBe(state.rotators.length);
   });
 
-  it("leaves randomSeed unaffected by node playstyle at continuous and planet, but advanced further at dedicated", () => {
-    const continuous = startingGameState(SEED, { nodePlaystyle: "continuous" });
-    const planet = startingGameState(SEED, { nodePlaystyle: "planet" });
-    const dedicated = startingGameState(SEED, { nodePlaystyle: "dedicated" });
+  it("leaves the source's seed unaffected by node playstyle at continuous and planet, but advanced further at dedicated", () => {
+    const continuousRandom = seededRandom(SEED);
+    startingGameState(continuousRandom, { nodePlaystyle: "continuous" });
+    const planetRandom = seededRandom(SEED);
+    startingGameState(planetRandom, { nodePlaystyle: "planet" });
+    const dedicatedRandom = seededRandom(SEED);
+    startingGameState(dedicatedRandom, { nodePlaystyle: "dedicated" });
 
-    expect(planet.randomSeed).toBe(continuous.randomSeed);
-    expect(dedicated.randomSeed).not.toBe(continuous.randomSeed);
+    expect(planetRandom.currentSeed()).toBe(continuousRandom.currentSeed());
+    expect(dedicatedRandom.currentSeed()).not.toBe(
+      continuousRandom.currentSeed(),
+    );
   });
 
   it("defaults to off, with both sides' bonus lists empty and no seed spent on a deal", () => {
-    const implicit = startingGameState(SEED);
-    const explicit = startingGameState(SEED, { planetBonus: "off" });
+    const implicit = startingGameState(seededRandom(SEED));
+    const explicit = startingGameState(seededRandom(SEED), {
+      planetBonus: "off",
+    });
 
     expect(implicit.planetBonus).toBe("off");
     expect(implicit.bonusPlanets).toEqual({ green: [], red: [] });
@@ -532,11 +556,13 @@ describe("startingGameState", () => {
   });
 
   it("deals each side three distinct planets in board order, none claimed, spending six seed steps beyond the off game", () => {
-    const off = startingGameState(SEED, {
+    const offRandom = seededRandom(SEED);
+    startingGameState(offRandom, {
       nodePlaystyle: "planet",
       planetBonus: "off",
     });
-    const on = startingGameState(SEED, {
+    const onRandom = seededRandom(SEED);
+    const on = startingGameState(onRandom, {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
@@ -559,19 +585,19 @@ describe("startingGameState", () => {
       expect(indexes).toEqual([...indexes].sort((a, b) => a - b));
     }
 
-    let expectedSeed = off.randomSeed;
+    let expectedSeed = offRandom.currentSeed();
     for (let step = 0; step < 6; step++) {
       [, expectedSeed] = mulberry32(expectedSeed);
     }
-    expect(on.randomSeed).toBe(expectedSeed);
+    expect(onRandom.currentSeed()).toBe(expectedSeed);
   });
 
   it("deals the same six planets whatever the amount, since the amount does not affect the draw", () => {
-    const two = startingGameState(SEED, {
+    const two = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "two",
     });
-    const three = startingGameState(SEED, {
+    const three = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
@@ -582,9 +608,9 @@ describe("startingGameState", () => {
   it.each(["TWO", "on", "3", ""])(
     "throws a RangeError for a planet bonus setting of %j",
     (planetBonus) => {
-      expect(() => startingGameState(SEED, { planetBonus })).toThrow(
-        RangeError,
-      );
+      expect(() =>
+        startingGameState(seededRandom(SEED), { planetBonus }),
+      ).toThrow(RangeError);
     },
   );
 
@@ -592,13 +618,16 @@ describe("startingGameState", () => {
     "throws a RangeError for a planet bonus of %s paired with the steal node playstyle",
     (planetBonus) => {
       expect(() =>
-        startingGameState(SEED, { nodePlaystyle: "steal", planetBonus }),
+        startingGameState(seededRandom(SEED), {
+          nodePlaystyle: "steal",
+          planetBonus,
+        }),
       ).toThrow(RangeError);
     },
   );
 
   it("is one of the offered planet bonus settings, exactly the one given", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "two",
     });
@@ -608,11 +637,11 @@ describe("startingGameState", () => {
   });
 
   it("deals bonus planets after the rotator draw, leaving the rotator set unaffected by the setting", () => {
-    const bonusOff = startingGameState(SEED, {
+    const bonusOff = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "dedicated",
       planetBonus: "off",
     });
-    const bonusOn = startingGameState(SEED, {
+    const bonusOn = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "dedicated",
       planetBonus: "three",
     });
@@ -623,7 +652,7 @@ describe("startingGameState", () => {
 
 describe("startingGameState under steal (steal.md §7)", () => {
   it("deals the board dealStealOpeningBoard deals for the same seed: 2N prospective squares, no charged, inactive or depleted square, and no rotators", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
     });
@@ -645,7 +674,7 @@ describe("startingGameState under steal (steal.md §7)", () => {
   it.each(CHARGED_NODE_COUNTS)(
     "opens with exactly 2 x %d prospective squares and no charged square anywhere",
     (chargedNodeCount) => {
-      const state = startingGameState(SEED, {
+      const state = startingGameState(seededRandom(SEED), {
         nodePlaystyle: "steal",
         chargedNodeCount,
       });
@@ -659,44 +688,54 @@ describe("startingGameState under steal (steal.md §7)", () => {
   );
 
   it("deals the same steal board for the same seed, and a different one for a different seed", () => {
-    const first = startingGameState(SEED, { nodePlaystyle: "steal" });
-    const second = startingGameState(SEED, { nodePlaystyle: "steal" });
-    const third = startingGameState(SEED + 1, { nodePlaystyle: "steal" });
+    const first = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "steal",
+    });
+    const second = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "steal",
+    });
+    const third = startingGameState(seededRandom(SEED + 1), {
+      nodePlaystyle: "steal",
+    });
 
     expect(second.nodes).toEqual(first.nodes);
     expect(third.nodes).not.toEqual(first.nodes);
   });
 
   it("consumes exactly 2N seed steps for the deal, leaving the planet effects deal to run afterwards unchanged", () => {
-    const withoutBonus = startingGameState(SEED, {
+    const withoutBonusRandom = seededRandom(SEED);
+    startingGameState(withoutBonusRandom, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
       planetActivity: "off",
     });
     const dealRandom = seededRandom(SEED);
     dealStealOpeningBoard(STARTING_FLEET_SQUARES, 4, dealRandom);
-    expect(withoutBonus.randomSeed).toBe(dealRandom.currentSeed());
+    expect(withoutBonusRandom.currentSeed()).toBe(dealRandom.currentSeed());
 
-    const withBonus = startingGameState(SEED, {
+    const withBonusRandom = seededRandom(SEED);
+    const withBonus = startingGameState(withBonusRandom, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
       planetActivity: "race",
     });
     expect(withBonus.activityBonuses).toHaveLength(2);
-    expect(withBonus.randomSeed).not.toBe(dealRandom.currentSeed());
+    expect(withBonusRandom.currentSeed()).not.toBe(dealRandom.currentSeed());
   });
 });
 
 describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §10)", () => {
   it("defaults to race, the app's default, when none is given under steal", () => {
-    const state = startingGameState(SEED, { nodePlaystyle: "steal" });
+    const state = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "steal",
+    });
 
     expect(state.planetActivity).toBe("race");
     expect(state.planetActivity).toBe(DEFAULT_PLANET_ACTIVITY);
   });
 
   it("is exactly the one given under steal", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "steal",
       planetActivity: "race",
     });
@@ -706,7 +745,7 @@ describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §1
   });
 
   it("is exactly stable when stable is given under steal", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "steal",
       planetActivity: "stable",
     });
@@ -720,7 +759,10 @@ describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §1
     "throws a RangeError for a planet effects setting of %j",
     (planetActivity) => {
       expect(() =>
-        startingGameState(SEED, { nodePlaystyle: "steal", planetActivity }),
+        startingGameState(seededRandom(SEED), {
+          nodePlaystyle: "steal",
+          planetActivity,
+        }),
       ).toThrow(RangeError);
     },
   );
@@ -735,7 +777,10 @@ describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §1
     "throws a RangeError for %s paired with the %s node playstyle",
     (planetActivity, nodePlaystyle) => {
       expect(() =>
-        startingGameState(SEED, { nodePlaystyle, planetActivity }),
+        startingGameState(seededRandom(SEED), {
+          nodePlaystyle,
+          planetActivity,
+        }),
       ).toThrow(RangeError);
     },
   );
@@ -743,7 +788,7 @@ describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §1
   it.each(["continuous", "planet", "dedicated"] as const)(
     "accepts off paired with the %s node playstyle",
     (nodePlaystyle) => {
-      const state = startingGameState(SEED, {
+      const state = startingGameState(seededRandom(SEED), {
         nodePlaystyle,
         planetActivity: "off",
       });
@@ -755,7 +800,8 @@ describe("startingGameState's planetActivity field (rules.md §3.4, steal.md §1
 
 describe("startingGameState's activityBonuses field (steal.md §10)", () => {
   it("is empty with planet effects off under steal, whose seed consumption is unaffected", () => {
-    const withOff = startingGameState(SEED, {
+    const withOffRandom = seededRandom(SEED);
+    const withOff = startingGameState(withOffRandom, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
       planetActivity: "off",
@@ -763,12 +809,12 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
     const dealRandom = seededRandom(SEED);
     dealStealOpeningBoard(STARTING_FLEET_SQUARES, 4, dealRandom);
     expect(withOff.activityBonuses).toEqual([]);
-    expect(withOff.randomSeed).toBe(dealRandom.currentSeed());
+    expect(withOffRandom.currentSeed()).toBe(dealRandom.currentSeed());
   });
 
   it("is empty under every planet bonus setting outside steal", () => {
     for (const planetBonus of PLANET_BONUS_SETTINGS) {
-      const state = startingGameState(SEED, {
+      const state = startingGameState(seededRandom(SEED), {
         nodePlaystyle: "planet",
         planetBonus,
       });
@@ -777,7 +823,7 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
   });
 
   it("deals exactly two bonuses, on two distinct empty planets, of two distinct kinds, with bonusPlanets left empty", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
       planetActivity: "race",
@@ -799,12 +845,14 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
   });
 
   it("consumes exactly four seed steps more than the same seed with planet effects off, leaving the nodes and ships unaffected", () => {
-    const withoutActivity = startingGameState(SEED, {
+    const withoutActivityRandom = seededRandom(SEED);
+    const withoutActivity = startingGameState(withoutActivityRandom, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
       planetActivity: "off",
     });
-    const withRace = startingGameState(SEED, {
+    const withRaceRandom = seededRandom(SEED);
+    const withRace = startingGameState(withRaceRandom, {
       nodePlaystyle: "steal",
       chargedNodeCount: 4,
       planetActivity: "race",
@@ -813,17 +861,18 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
     expect(withRace.nodes).toEqual(withoutActivity.nodes);
     expect(withRace.ships).toEqual(withoutActivity.ships);
 
-    let expectedSeed = withoutActivity.randomSeed;
+    let expectedSeed = withoutActivityRandom.currentSeed();
     for (let step = 0; step < 4; step++) {
       [, expectedSeed] = mulberry32(expectedSeed);
     }
-    expect(withRace.randomSeed).toBe(expectedSeed);
+    expect(withRaceRandom.currentSeed()).toBe(expectedSeed);
   });
 
   it.each(CHARGED_NODE_COUNTS)(
     "under race at %d nodes, deals exactly the pair and leaves exactly the seed dealActivityBonuses gives from the post-board seed",
     (chargedNodeCount) => {
-      const state = startingGameState(SEED, {
+      const stateRandom = seededRandom(SEED);
+      const state = startingGameState(stateRandom, {
         nodePlaystyle: "steal",
         chargedNodeCount,
         planetActivity: "race",
@@ -845,7 +894,7 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
       const nextSeed = bonusRandom.currentSeed();
 
       expect(state.activityBonuses).toEqual(bonuses);
-      expect(state.randomSeed).toBe(nextSeed);
+      expect(stateRandom.currentSeed()).toBe(nextSeed);
       expect(state.ships.every((ship) => ship.power === MAX_POWER)).toBe(true);
       expect(
         dealActivityBonuses(
@@ -862,34 +911,36 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
     "deals the same pair and leaves the same seed under stable as under race, at %d nodes",
     (chargedNodeCount) => {
       for (const seed of [SEED, SEED + 1, 12345]) {
-        const stable = startingGameState(seed, {
+        const stableRandom = seededRandom(seed);
+        const stable = startingGameState(stableRandom, {
           nodePlaystyle: "steal",
           chargedNodeCount,
           planetActivity: "stable",
         });
-        const race = startingGameState(seed, {
+        const raceRandom = seededRandom(seed);
+        const race = startingGameState(raceRandom, {
           nodePlaystyle: "steal",
           chargedNodeCount,
           planetActivity: "race",
         });
 
         expect(stable.activityBonuses).toEqual(race.activityBonuses);
-        expect(stable.randomSeed).toBe(race.randomSeed);
+        expect(stableRandom.currentSeed()).toBe(raceRandom.currentSeed());
         expect(stable.nodes).toEqual(race.nodes);
       }
     },
   );
 
   it("deals the same pair for the same seed, and a different one for a different seed", () => {
-    const first = startingGameState(SEED, {
+    const first = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "steal",
       planetActivity: "race",
     });
-    const second = startingGameState(SEED, {
+    const second = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "steal",
       planetActivity: "race",
     });
-    const third = startingGameState(SEED + 1, {
+    const third = startingGameState(seededRandom(SEED + 1), {
       nodePlaystyle: "steal",
       planetActivity: "race",
     });
@@ -901,7 +952,9 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
 
 describe("startingGameState's playerMatching field (steal.md §9)", () => {
   it("defaults to required, the app's default, when none is given under steal", () => {
-    const state = startingGameState(SEED, { nodePlaystyle: "steal" });
+    const state = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "steal",
+    });
 
     expect(state.playerMatching).toBe("required");
     expect(state.playerMatching).toBe(DEFAULT_PLAYER_MATCHING);
@@ -910,7 +963,7 @@ describe("startingGameState's playerMatching field (steal.md §9)", () => {
   it.each(PLAYER_MATCHING_SETTINGS)(
     "stores a given setting of %j under steal",
     (playerMatching) => {
-      const state = startingGameState(SEED, {
+      const state = startingGameState(seededRandom(SEED), {
         nodePlaystyle: "steal",
         playerMatching,
       });
@@ -923,7 +976,10 @@ describe("startingGameState's playerMatching field (steal.md §9)", () => {
     "throws a RangeError for a playerMatching setting of %j",
     (playerMatching) => {
       expect(() =>
-        startingGameState(SEED, { nodePlaystyle: "steal", playerMatching }),
+        startingGameState(seededRandom(SEED), {
+          nodePlaystyle: "steal",
+          playerMatching,
+        }),
       ).toThrow(RangeError);
     },
   );
@@ -932,10 +988,13 @@ describe("startingGameState's playerMatching field (steal.md §9)", () => {
     "throws a RangeError for double or required paired with the %s node playstyle",
     (nodePlaystyle) => {
       expect(() =>
-        startingGameState(SEED, { nodePlaystyle, playerMatching: "double" }),
+        startingGameState(seededRandom(SEED), {
+          nodePlaystyle,
+          playerMatching: "double",
+        }),
       ).toThrow(RangeError);
       expect(() =>
-        startingGameState(SEED, {
+        startingGameState(seededRandom(SEED), {
           nodePlaystyle,
           playerMatching: "required",
         }),
@@ -947,7 +1006,10 @@ describe("startingGameState's playerMatching field (steal.md §9)", () => {
     "does not throw for off paired with the %s node playstyle",
     (nodePlaystyle) => {
       expect(() =>
-        startingGameState(SEED, { nodePlaystyle, playerMatching: "off" }),
+        startingGameState(seededRandom(SEED), {
+          nodePlaystyle,
+          playerMatching: "off",
+        }),
       ).not.toThrow();
     },
   );
@@ -956,21 +1018,23 @@ describe("startingGameState's playerMatching field (steal.md §9)", () => {
     "deals exactly the board an off game deals from seed %d, for double and required, at every node count (D2 — no seed steps)",
     (seed) => {
       for (const chargedNodeCount of CHARGED_NODE_COUNTS) {
-        const off = startingGameState(seed, {
+        const offRandom = seededRandom(seed);
+        const off = startingGameState(offRandom, {
           nodePlaystyle: "steal",
           chargedNodeCount,
           playerMatching: "off",
         });
 
         for (const playerMatching of ["double", "required"] as const) {
-          const matched = startingGameState(seed, {
+          const matchedRandom = seededRandom(seed);
+          const matched = startingGameState(matchedRandom, {
             nodePlaystyle: "steal",
             chargedNodeCount,
             playerMatching,
           });
 
           expect(matched.nodes).toEqual(off.nodes);
-          expect(matched.randomSeed).toBe(off.randomSeed);
+          expect(matchedRandom.currentSeed()).toBe(offRandom.currentSeed());
         }
       }
     },
@@ -979,7 +1043,7 @@ describe("startingGameState's playerMatching field (steal.md §9)", () => {
 
 describe("startingGameState's defaults, resolved for the chosen node playstyle", () => {
   it("starts steal, with player-matching required, planet effects race and planet bonus off, when no option is given", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     expect(state.nodePlaystyle).toBe("steal");
     expect(state.playerMatching).toBe("required");
@@ -991,7 +1055,7 @@ describe("startingGameState's defaults, resolved for the chosen node playstyle",
   it.each(["continuous", "planet", "dedicated"] as const)(
     "starts %s with player-matching off, planet effects off and planet bonus off when only the playstyle is given",
     (nodePlaystyle) => {
-      const state = startingGameState(SEED, { nodePlaystyle });
+      const state = startingGameState(seededRandom(SEED), { nodePlaystyle });
 
       expect(state.nodePlaystyle).toBe(nodePlaystyle);
       expect(state.playerMatching).toBe("off");
@@ -1004,7 +1068,7 @@ describe("startingGameState's defaults, resolved for the chosen node playstyle",
 
 describe("markOutOfTime", () => {
   it("sets the given side's flag, leaving the other side and everything else untouched", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     const result = markOutOfTime(state, "green");
 
@@ -1013,7 +1077,7 @@ describe("markOutOfTime", () => {
   });
 
   it("sets both sides independently", () => {
-    const state = startingGameState(SEED);
+    const state = startingGameState(seededRandom(SEED));
 
     const bothOut = markOutOfTime(markOutOfTime(state, "green"), "red");
 
@@ -1021,7 +1085,7 @@ describe("markOutOfTime", () => {
   });
 
   it("is a no-op, returning the same object, when the side is already out of time", () => {
-    const state = markOutOfTime(startingGameState(SEED), "green");
+    const state = markOutOfTime(startingGameState(seededRandom(SEED)), "green");
 
     const result = markOutOfTime(state, "green");
 
@@ -1031,7 +1095,7 @@ describe("markOutOfTime", () => {
 
 /** A state built from `startingGameState`, with its node record replaced. */
 function boardWith(nodes: Readonly<Record<string, NodeStatus>>): GameState {
-  return { ...startingGameState(SEED), nodes };
+  return { ...startingGameState(seededRandom(SEED)), nodes };
 }
 
 describe("nodeSquares", () => {

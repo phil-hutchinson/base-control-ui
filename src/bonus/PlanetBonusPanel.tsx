@@ -110,8 +110,10 @@ function BonusCell({
 }
 
 export interface PlanetBonusPanelProps {
-  /** The session's game state: read for the setting, the deal, the ply number and the opening seed. */
+  /** The session's game state: read for the setting, the deal and the ply number. */
   readonly state: GameState;
+  /** The session's opening seed, no longer part of `state`, for the planet arrangement. */
+  readonly openingSeed: number;
   /**
    * The square, if any, to draw glowing here — because the player is
    * hovering that planet on the board (`App`'s lifted hover state). Omit to
@@ -129,12 +131,13 @@ export interface PlanetBonusPanelProps {
 
 export function PlanetBonusPanel({
   state,
+  openingSeed,
   glowSquare,
   onHoverSquare,
 }: PlanetBonusPanelProps) {
   const arrangement = useMemo(
-    () => planetArrangement(state.openingSeed),
-    [state.openingSeed],
+    () => planetArrangement(openingSeed),
+    [openingSeed],
   );
 
   if (state.planetActivity !== "off") {

@@ -212,7 +212,8 @@ function runEconomy(
   plies: number,
   chargedNodeCount: ChargedNodeCount,
 ): EconomyRun {
-  let state: GameState = startingGameState(seed, {
+  const random = seededRandom(seed);
+  let state: GameState = startingGameState(random, {
     lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
     chargedNodeCount,
     combatEnabled: true,
@@ -229,7 +230,7 @@ function runEconomy(
   for (let i = 0; i < plies; i++) {
     state = startOneCountdown(state);
     const beforeState = state;
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, random);
 
     const refilled = result.effects.find(
       (effect): effect is QueueRefilledEffect =>
@@ -424,7 +425,7 @@ describe.each(CHARGED_NODE_COUNTS)(
       it.each(SEEDS)(
         "deals an opening board whose nodes are all individually legal (seed %d)",
         (seed) => {
-          const state = startingGameState(seed, {
+          const state = startingGameState(seededRandom(seed), {
             lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
             chargedNodeCount,
             combatEnabled: true,

@@ -56,8 +56,6 @@ function buildState(config: {
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: config.nodePlaystyle ?? "continuous",
     rotators: [],
     planetBonus: "off",

@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { startingGameState, type GameState } from "../rules/gameState";
+import { seededRandom } from "../rules/random";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { TurnIndicator } from "./TurnIndicator";
 
@@ -15,8 +16,6 @@ function finishedState(): GameState {
     nodes: {},
     sideToMove: "green",
     plyNumber: 3,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -36,7 +35,7 @@ function finishedState(): GameState {
 describe("TurnIndicator", () => {
   it("says green to play, with the green side modifier", () => {
     const state = {
-      ...startingGameState(1, { combatEnabled: true }),
+      ...startingGameState(seededRandom(1), { combatEnabled: true }),
       sideToMove: "green" as const,
     };
 
@@ -49,7 +48,7 @@ describe("TurnIndicator", () => {
 
   it("says red to play, with the red side modifier", () => {
     const state = {
-      ...startingGameState(1, { combatEnabled: true }),
+      ...startingGameState(seededRandom(1), { combatEnabled: true }),
       sideToMove: "red" as const,
     };
 
@@ -70,7 +69,7 @@ describe("TurnIndicator", () => {
   });
 
   it("is not a live region", () => {
-    const state = startingGameState(1, { combatEnabled: true });
+    const state = startingGameState(seededRandom(1), { combatEnabled: true });
 
     const { container } = render(<TurnIndicator state={state} />);
 

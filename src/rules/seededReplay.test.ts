@@ -80,6 +80,7 @@ import { legalTargets } from "./combat";
 import type { ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type GameState, nodeStateAt, startingGameState } from "./gameState";
+import { seededRandom } from "./random";
 import { legalDestinations } from "./movement";
 import {
   type AttackEffect,
@@ -241,7 +242,8 @@ interface PlayedGame {
  * (§3.2, §8.2).
  */
 function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
-  let state = startingGameState(seed, {
+  const random = seededRandom(seed);
+  let state = startingGameState(random, {
     lengthInRounds,
     combatEnabled: true,
     // Pinned, not left to the app's default: every figure this file checks
@@ -272,7 +274,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     const choice = choosePly(state);
 
     if (choice === undefined) {
-      const { state: nextState, effect } = applyPassGuard(state);
+      const { state: nextState, effect } = applyPassGuard(state, random);
       state = nextState;
       assertChargedCountdownHasShip(state);
       if (effect !== undefined) {
@@ -284,7 +286,7 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
     }
 
     if (choice.kind === "attack") {
-      const result = applyAttack(state, choice.shipId, choice.target);
+      const result = applyAttack(state, choice.shipId, choice.target, random);
       if (result.outcome !== "applied") {
         throw new Error(
           `policy chose an illegal attack: ${result.reason} for ${choice.shipId} on ${squareName(choice.target)}`,
@@ -304,7 +306,12 @@ function playSeededGame(seed: number, lengthInRounds: number): PlayedGame {
       retiredNodeSquares.push(...retiredNodes(result.effects));
       queueRefillSweeps.push(...queueRefills(result.effects));
     } else {
-      const result = applyMove(state, choice.shipId, choice.destination);
+      const result = applyMove(
+        state,
+        choice.shipId,
+        choice.destination,
+        random,
+      );
       if (result.outcome !== "applied") {
         throw new Error(
           `policy chose an illegal move: ${result.reason} for ${choice.shipId} to ${squareName(choice.destination)}`,
@@ -400,14 +407,16 @@ describe("a seeded game replays its opening board, its fights, its planets, its 
 });
 
 describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream untouched at continuous", () => {
-  it("deals the same opening board and leaves the same randomSeed behind, at continuous and at planet", () => {
+  it("deals the same opening board and leaves the generator's seed in the same place, at continuous and at planet", () => {
     const seed = 20260819;
-    const continuousState = startingGameState(seed, {
+    const continuousRandom = seededRandom(seed);
+    const continuousState = startingGameState(continuousRandom, {
       lengthInRounds: 40,
       combatEnabled: true,
       nodePlaystyle: "continuous",
     });
-    const planetState = startingGameState(seed, {
+    const planetRandom = seededRandom(seed);
+    const planetState = startingGameState(planetRandom, {
       lengthInRounds: 40,
       combatEnabled: true,
       nodePlaystyle: "planet",
@@ -418,19 +427,21 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
     // never lands a ship anywhere.
     expect(planetState.nodes).toEqual(continuousState.nodes);
     expect(planetState.ships).toEqual(continuousState.ships);
-    expect(planetState.randomSeed).toBe(continuousState.randomSeed);
+    expect(planetRandom.currentSeed()).toBe(continuousRandom.currentSeed());
     expect(planetState.rotators).toEqual([]);
     expect(continuousState.rotators).toEqual([]);
   });
 
   it("deals the same board but spends more of the seed under dedicated, placing rotators no continuous or planet game carries", () => {
     const seed = 20260819;
-    const continuousState = startingGameState(seed, {
+    const continuousRandom = seededRandom(seed);
+    const continuousState = startingGameState(continuousRandom, {
       lengthInRounds: 40,
       combatEnabled: true,
       nodePlaystyle: "continuous",
     });
-    const dedicatedState = startingGameState(seed, {
+    const dedicatedRandom = seededRandom(seed);
+    const dedicatedState = startingGameState(dedicatedRandom, {
       lengthInRounds: 40,
       combatEnabled: true,
       nodePlaystyle: "dedicated",
@@ -441,7 +452,9 @@ describe("node rotation (rules.md §8.2, 0.36) leaves the pre-0.36 seeded stream
     // deal leaves behind differs.
     expect(dedicatedState.nodes).toEqual(continuousState.nodes);
     expect(dedicatedState.ships).toEqual(continuousState.ships);
-    expect(dedicatedState.randomSeed).not.toBe(continuousState.randomSeed);
+    expect(dedicatedRandom.currentSeed()).not.toBe(
+      continuousRandom.currentSeed(),
+    );
     expect(dedicatedState.rotators.length).toBeGreaterThan(0);
   });
 });
@@ -591,7 +604,8 @@ function playSeededStealGame(
   seed: number,
   lengthInRounds: number,
 ): PlayedStealGame {
-  let state = startingGameState(seed, {
+  const random = seededRandom(seed);
+  let state = startingGameState(random, {
     lengthInRounds,
     combatEnabled: true,
     fleetSize: 5,
@@ -615,13 +629,13 @@ function playSeededStealGame(
     const choice = chooseStealPly(state);
 
     if (choice === undefined) {
-      const { state: nextState } = applyPassGuard(state);
+      const { state: nextState } = applyPassGuard(state, random);
       state = nextState;
       continue;
     }
 
     if (choice.kind === "attack") {
-      const result = applyAttack(state, choice.shipId, choice.target);
+      const result = applyAttack(state, choice.shipId, choice.target, random);
       if (result.outcome !== "applied") {
         throw new Error(
           `policy chose an illegal attack: ${result.reason} for ${choice.shipId} on ${squareName(choice.target)}`,
@@ -635,7 +649,12 @@ function playSeededStealGame(
       }
       events.push(...stealNodeEvents(result.effects));
     } else {
-      const result = applyMove(state, choice.shipId, choice.destination);
+      const result = applyMove(
+        state,
+        choice.shipId,
+        choice.destination,
+        random,
+      );
       if (result.outcome !== "applied") {
         throw new Error(
           `policy chose an illegal move: ${result.reason} for ${choice.shipId} to ${squareName(choice.destination)}`,
@@ -818,7 +837,8 @@ function playSeededStealActivityGame(
   seed: number,
   lengthInRounds: number,
 ): PlayedStealActivityGame {
-  let state = startingGameState(seed, {
+  const random = seededRandom(seed);
+  let state = startingGameState(random, {
     lengthInRounds,
     combatEnabled: true,
     fleetSize: 5,
@@ -844,13 +864,13 @@ function playSeededStealActivityGame(
     const choice = chooseStealBonusPly(state);
 
     if (choice === undefined) {
-      const { state: nextState } = applyPassGuard(state);
+      const { state: nextState } = applyPassGuard(state, random);
       state = nextState;
       continue;
     }
 
     if (choice.kind === "attack") {
-      const result = applyAttack(state, choice.shipId, choice.target);
+      const result = applyAttack(state, choice.shipId, choice.target, random);
       if (result.outcome !== "applied") {
         throw new Error(
           `policy chose an illegal attack: ${result.reason} for ${choice.shipId} on ${squareName(choice.target)}`,
@@ -865,7 +885,12 @@ function playSeededStealActivityGame(
       events.push(...stealNodeEvents(result.effects));
       bonusEvents.push(...activityBonusEvents(result.effects));
     } else {
-      const result = applyMove(state, choice.shipId, choice.destination);
+      const result = applyMove(
+        state,
+        choice.shipId,
+        choice.destination,
+        random,
+      );
       if (result.outcome !== "applied") {
         throw new Error(
           `policy chose an illegal move: ${result.reason} for ${choice.shipId} to ${squareName(choice.destination)}`,

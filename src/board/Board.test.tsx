@@ -23,6 +23,7 @@ import {
   type GameState,
   type NodeStatus,
 } from "../rules/gameState";
+import { seededRandom } from "../rules/random";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { NODE_SIGNALS, type NodeSignal } from "../rules/steal";
@@ -91,18 +92,18 @@ const STATED_NODE_STATES: Readonly<Record<string, NodeStatus>> = {
   J14: { state: "inactive", level: 1 },
 };
 
-/** `startingGameState(TEST_SEED, { combatEnabled: true })`, with its nodes
+/** `startingGameState(seededRandom(TEST_SEED), { combatEnabled: true })`, with its nodes
  * replaced by the board this file states (`STATED_NODE_STATES`) rather than
  * whatever it happens to deal. Ships, seed, ply and length still come from
  * `startingGameState`. */
 function statedOpeningState(): GameState {
   return {
-    ...startingGameState(TEST_SEED, { combatEnabled: true }),
+    ...startingGameState(seededRandom(TEST_SEED), { combatEnabled: true }),
     nodes: STATED_NODE_STATES,
   };
 }
 
-const startingSession = createSession(statedOpeningState());
+const startingSession = createSession(statedOpeningState(), TEST_SEED);
 
 /** A minimal hand-built state with a single node square, isolating the
  * wiring from Board.tsx through the node's countdown to the marker's
@@ -123,8 +124,6 @@ function stateWithNode(
     },
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -153,8 +152,6 @@ function stateWithStealNodes(
     nodes,
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "steal",
     rotators: [],
     planetBonus: "off",
@@ -180,8 +177,6 @@ function stateWithRotators(squares: readonly Square[]): GameState {
     nodes: {},
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "dedicated",
     rotators: squares,
     planetBonus: "off",
@@ -207,8 +202,6 @@ function stateWithBonusPlanet(square: Square): GameState {
     nodes: {},
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "two",
@@ -329,7 +322,7 @@ describe("Board", () => {
 
     // No ship starts on a planet, so each planet square's name here is bare
     // (STATED_NODE_STATES and STARTING_FLEET never touch the twelve).
-    const arrangement = planetArrangement(startingSession.state.openingSeed);
+    const arrangement = planetArrangement(startingSession.openingSeed);
     for (const square of PLANETS) {
       const name = squareName(square);
       const cell = screen.getByRole("gridcell", { name: `${name}, planet` });
@@ -1009,6 +1002,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 0),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1020,6 +1015,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 11, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1031,6 +1028,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 1, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1042,6 +1041,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "depleted", 11, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1053,6 +1054,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "depleted", 1, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1064,6 +1067,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "depleted", 2),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1079,6 +1084,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 11, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1094,6 +1101,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 0),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1105,6 +1114,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "depleted", 5, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1120,6 +1131,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "depleted", 2),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1138,8 +1151,6 @@ describe("Board", () => {
         },
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1157,6 +1168,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1176,17 +1189,20 @@ describe("Board", () => {
     // A hand-built session with green-1 selected on H8. Built directly
     // rather than through the fixture.
     const state: GameState = {
-      ...startingGameState(TEST_SEED, { combatEnabled: true }),
-      ships: startingGameState(TEST_SEED, { combatEnabled: true }).ships.map(
-        (ship) =>
-          ship.id === "green-1"
-            ? { ...ship, square: squareAt("H", 8), power: 2 }
-            : ship,
+      ...startingGameState(seededRandom(TEST_SEED), { combatEnabled: true }),
+      ships: startingGameState(seededRandom(TEST_SEED), {
+        combatEnabled: true,
+      }).ships.map((ship) =>
+        ship.id === "green-1"
+          ? { ...ship, square: squareAt("H", 8), power: 2 }
+          : ship,
       ),
     };
     const session: Session = {
       state,
       selectedShipId: "green-1",
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: undefined,
     };
 
@@ -1242,8 +1258,6 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1261,6 +1275,8 @@ describe("Board", () => {
       const fullPowerSession: Session = {
         state: fullPowerState,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={fullPowerSession} onIntent={noop} />);
@@ -1330,8 +1346,6 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1353,6 +1367,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1387,6 +1403,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1400,6 +1418,8 @@ describe("Board", () => {
       const off: Session = {
         state: attackState({ combatEnabled: false }),
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={off} onIntent={noop} />);
@@ -1416,6 +1436,8 @@ describe("Board", () => {
       const on: Session = {
         state: attackState({ combatEnabled: true }),
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={on} onIntent={noop} />);
@@ -1435,6 +1457,8 @@ describe("Board", () => {
           const session: Session = {
             state,
             selectedShipId: "green-1",
+            openingSeed: 0,
+            randomSeed: 0,
             lastEvent: undefined,
           };
           render(<Board session={session} onIntent={noop} />);
@@ -1455,6 +1479,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1514,8 +1540,6 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1542,6 +1566,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1565,6 +1591,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1586,6 +1614,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1610,6 +1640,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1631,6 +1663,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1652,6 +1686,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1718,8 +1754,6 @@ describe("Board", () => {
         },
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1740,6 +1774,8 @@ describe("Board", () => {
       const session: Session = {
         state: depletedNodeState(),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1767,6 +1803,8 @@ describe("Board", () => {
       const session: Session = {
         state: depletedNodeState(),
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1782,6 +1820,8 @@ describe("Board", () => {
       const session: Session = {
         state: depletedNodeState(),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1835,8 +1875,6 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1854,6 +1892,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1886,8 +1926,6 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1905,6 +1943,8 @@ describe("Board", () => {
       const off: Session = {
         state: { ...baseState, combatEnabled: false },
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={off} onIntent={noop} />);
@@ -1919,6 +1959,8 @@ describe("Board", () => {
       const on: Session = {
         state: { ...baseState, combatEnabled: true },
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={on} onIntent={noop} />);
@@ -2226,6 +2268,8 @@ describe("the charge animation", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 
@@ -2290,6 +2334,8 @@ describe("the burnout animation", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 
@@ -2337,6 +2383,8 @@ describe("the burnout animation", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 
@@ -2384,6 +2432,8 @@ describe("the rotator turn animation", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 
@@ -2428,6 +2478,8 @@ describe("the rotator turn animation", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 
@@ -2445,7 +2497,7 @@ describe("the rotator turn animation", () => {
 describe("energy overlay composition", () => {
   it("draws it as a sibling of the grid, hidden from the accessibility tree", () => {
     const state: GameState = {
-      ...startingGameState(TEST_SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(TEST_SEED), { combatEnabled: true }),
     };
     const event: MovedEvent = {
       type: "moved",
@@ -2475,6 +2527,8 @@ describe("energy overlay composition", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 

@@ -10,7 +10,7 @@
 // the session intent PLAY needs.
 
 import { useState } from "react";
-import { freshSeed } from "./game/seed";
+import { freshSeed } from "./core/freshSeed";
 import type { SessionIntent } from "./game/session";
 import type { Screen } from "./nav/screenAddress";
 import { useScreenAddress } from "./nav/useScreenAddress";

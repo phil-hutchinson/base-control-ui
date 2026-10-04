@@ -18,6 +18,7 @@ import {
   type BonusPlanetEntry,
   type GameState,
 } from "../rules/gameState";
+import { seededRandom } from "../rules/random";
 import { PLANETS } from "../rules/planets";
 import { PlanetBonusPanel } from "./PlanetBonusPanel";
 
@@ -53,20 +54,26 @@ function firePointerEnter(node: Element, pointerType: string) {
 
 describe("PlanetBonusPanel", () => {
   it("renders nothing at all when the setting is off", () => {
-    const state = startingGameState(SEED, { nodePlaystyle: "planet" });
+    const state = startingGameState(seededRandom(SEED), {
+      nodePlaystyle: "planet",
+    });
 
-    const { container } = render(<PlanetBonusPanel state={state} />);
+    const { container } = render(
+      <PlanetBonusPanel state={state} openingSeed={SEED} />,
+    );
 
     expect(container).toBeEmptyDOMElement();
   });
 
   it("renders two rows, green above red, each with that side's three planets", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
 
-    const { container } = render(<PlanetBonusPanel state={state} />);
+    const { container } = render(
+      <PlanetBonusPanel state={state} openingSeed={SEED} />,
+    );
 
     const rows = container.querySelectorAll(".planet-bonus-panel__row");
     expect(rows).toHaveLength(2);
@@ -81,12 +88,14 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("heads each row with that side's name", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
 
-    const { container } = render(<PlanetBonusPanel state={state} />);
+    const { container } = render(
+      <PlanetBonusPanel state={state} openingSeed={SEED} />,
+    );
 
     const labels = container.querySelectorAll(".planet-bonus-panel__label");
     expect(labels).toHaveLength(2);
@@ -97,13 +106,15 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("draws each planet with the same artwork the board carries on that square", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
-    const arrangement = planetArrangement(state.openingSeed);
+    const arrangement = planetArrangement(SEED);
 
-    const { container } = render(<PlanetBonusPanel state={state} />);
+    const { container } = render(
+      <PlanetBonusPanel state={state} openingSeed={SEED} />,
+    );
 
     const expectedGreen = state.bonusPlanets.green.map((entry) => {
       const art = planetForSquare(arrangement, entry.square);
@@ -133,7 +144,7 @@ describe("PlanetBonusPanel", () => {
   }
 
   it("shows no badge until claimed, the amount on the claiming ply and the ply after, and the checkmark from then on", () => {
-    const base = startingGameState(SEED, {
+    const base = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
@@ -141,7 +152,7 @@ describe("PlanetBonusPanel", () => {
 
     const unclaimed = base;
     const { container: unclaimedContainer } = render(
-      <PlanetBonusPanel state={unclaimed} />,
+      <PlanetBonusPanel state={unclaimed} openingSeed={SEED} />,
     );
     expect(
       unclaimedContainer.querySelector(".planet-bonus-cell__badge"),
@@ -157,7 +168,7 @@ describe("PlanetBonusPanel", () => {
       },
     };
     const { container: amountContainer } = render(
-      <PlanetBonusPanel state={claimingPly} />,
+      <PlanetBonusPanel state={claimingPly} openingSeed={SEED} />,
     );
     const amountBadge = amountContainer.querySelector(
       ".planet-bonus-cell__badge--amount",
@@ -168,7 +179,7 @@ describe("PlanetBonusPanel", () => {
 
     const replyPly: typeof base = { ...claimingPly, plyNumber: 6 };
     const { container: replyContainer } = render(
-      <PlanetBonusPanel state={replyPly} />,
+      <PlanetBonusPanel state={replyPly} openingSeed={SEED} />,
     );
     expect(
       replyContainer.querySelector(".planet-bonus-cell__badge--amount"),
@@ -177,7 +188,7 @@ describe("PlanetBonusPanel", () => {
 
     const settledPly: typeof base = { ...claimingPly, plyNumber: 7 };
     const { container: settledContainer } = render(
-      <PlanetBonusPanel state={settledPly} />,
+      <PlanetBonusPanel state={settledPly} openingSeed={SEED} />,
     );
     expect(
       settledContainer.querySelector(".planet-bonus-cell__badge--claimed"),
@@ -188,7 +199,7 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("draws red's claim in red's colour, independently of green's", () => {
-    const base = startingGameState(SEED, {
+    const base = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "two",
     });
@@ -202,7 +213,9 @@ describe("PlanetBonusPanel", () => {
       },
     };
 
-    const { container } = render(<PlanetBonusPanel state={state} />);
+    const { container } = render(
+      <PlanetBonusPanel state={state} openingSeed={SEED} />,
+    );
 
     const badge = container.querySelector(".planet-bonus-cell__badge");
     expect(badge).toHaveClass("planet-bonus-cell__badge--red");
@@ -210,7 +223,7 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("draws a planet shared by both sides in both rows, each with its own badge", () => {
-    const base = startingGameState(SEED, {
+    const base = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
@@ -228,7 +241,9 @@ describe("PlanetBonusPanel", () => {
       },
     };
 
-    const { container } = render(<PlanetBonusPanel state={state} />);
+    const { container } = render(
+      <PlanetBonusPanel state={state} openingSeed={SEED} />,
+    );
 
     const greenRow = container.querySelector(
       ".planet-bonus-panel__row--green",
@@ -246,12 +261,14 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("is hidden from the accessibility tree", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
 
-    const { container } = render(<PlanetBonusPanel state={state} />);
+    const { container } = render(
+      <PlanetBonusPanel state={state} openingSeed={SEED} />,
+    );
 
     expect(container.querySelector(".planet-bonus-panel")).toHaveAttribute(
       "aria-hidden",
@@ -260,14 +277,18 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("reports the hovered square entering a classic cell, and undefined leaving it", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
     const onHoverSquare = vi.fn();
 
     const { container } = render(
-      <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+      <PlanetBonusPanel
+        state={state}
+        openingSeed={SEED}
+        onHoverSquare={onHoverSquare}
+      />,
     );
 
     const cell = container.querySelector(".planet-bonus-panel__cell")!;
@@ -281,14 +302,18 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("ignores a touch tap on a classic cell, so no glow sticks after the tap", () => {
-    const state = startingGameState(SEED, {
+    const state = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
     const onHoverSquare = vi.fn();
 
     const { container } = render(
-      <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+      <PlanetBonusPanel
+        state={state}
+        openingSeed={SEED}
+        onHoverSquare={onHoverSquare}
+      />,
     );
 
     const cell = container.querySelector(".planet-bonus-panel__cell")!;
@@ -298,7 +323,7 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("glows exactly the cell whose square matches glowSquare, and none by default", () => {
-    const base = startingGameState(SEED, {
+    const base = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
@@ -320,14 +345,20 @@ describe("PlanetBonusPanel", () => {
       },
     };
 
-    const { container: plain } = render(<PlanetBonusPanel state={state} />);
+    const { container: plain } = render(
+      <PlanetBonusPanel state={state} openingSeed={SEED} />,
+    );
     expect(
       plain.querySelectorAll(".planet-bonus-panel__cell--glow"),
     ).toHaveLength(0);
     cleanup();
 
     const { container } = render(
-      <PlanetBonusPanel state={state} glowSquare={PLANETS[4]} />,
+      <PlanetBonusPanel
+        state={state}
+        openingSeed={SEED}
+        glowSquare={PLANETS[4]}
+      />,
     );
     const glowing = container.querySelectorAll(
       ".planet-bonus-panel__cell--glow",
@@ -340,7 +371,7 @@ describe("PlanetBonusPanel", () => {
   });
 
   it("glows a planet shared by both sides in both rows", () => {
-    const base = startingGameState(SEED, {
+    const base = startingGameState(seededRandom(SEED), {
       nodePlaystyle: "planet",
       planetBonus: "three",
     });
@@ -362,7 +393,11 @@ describe("PlanetBonusPanel", () => {
     };
 
     const { container } = render(
-      <PlanetBonusPanel state={state} glowSquare={sharedSquare} />,
+      <PlanetBonusPanel
+        state={state}
+        openingSeed={SEED}
+        glowSquare={sharedSquare}
+      />,
     );
 
     const glowing = container.querySelectorAll(
@@ -376,7 +411,7 @@ describe("PlanetBonusPanel", () => {
       first: readonly [Square, ActivityBonusKind],
       second: readonly [Square, ActivityBonusKind],
     ): GameState {
-      const base = startingGameState(SEED, {
+      const base = startingGameState(seededRandom(SEED), {
         nodePlaystyle: "steal",
         planetActivity: "race",
       });
@@ -394,9 +429,11 @@ describe("PlanetBonusPanel", () => {
         [PLANETS[0], "large-points"],
         [PLANETS[1], "fuel"],
       );
-      const arrangement = planetArrangement(state.openingSeed);
+      const arrangement = planetArrangement(SEED);
 
-      const { container } = render(<PlanetBonusPanel state={state} />);
+      const { container } = render(
+        <PlanetBonusPanel state={state} openingSeed={SEED} />,
+      );
 
       const row = container.querySelector(".planet-bonus-panel__activity-row");
       const cells = row?.querySelectorAll(".planet-bonus-panel__activity-cell");
@@ -419,12 +456,12 @@ describe("PlanetBonusPanel", () => {
       const stable: GameState = { ...race, planetActivity: "stable" };
 
       const { container: raceContainer } = render(
-        <PlanetBonusPanel state={race} />,
+        <PlanetBonusPanel state={race} openingSeed={SEED} />,
       );
       const raceMarkup = raceContainer.innerHTML;
       cleanup();
       const { container: stableContainer } = render(
-        <PlanetBonusPanel state={stable} />,
+        <PlanetBonusPanel state={stable} openingSeed={SEED} />,
       );
 
       expect(
@@ -439,7 +476,9 @@ describe("PlanetBonusPanel", () => {
         [PLANETS[1], "fuel"],
       );
 
-      const { container } = render(<PlanetBonusPanel state={state} />);
+      const { container } = render(
+        <PlanetBonusPanel state={state} openingSeed={SEED} />,
+      );
 
       expect(
         container.querySelector(".planet-bonus-panel--activity"),
@@ -452,7 +491,9 @@ describe("PlanetBonusPanel", () => {
         [PLANETS[1], "fuel"],
       );
 
-      const { container } = render(<PlanetBonusPanel state={state} />);
+      const { container } = render(
+        <PlanetBonusPanel state={state} openingSeed={SEED} />,
+      );
 
       const expectedAmount = activityBonusPoints(
         state.chargedNodeCount,
@@ -470,7 +511,9 @@ describe("PlanetBonusPanel", () => {
         [PLANETS[0], "medium-points"],
         [PLANETS[1], "small-points"],
       );
-      const { container } = render(<PlanetBonusPanel state={points} />);
+      const { container } = render(
+        <PlanetBonusPanel state={points} openingSeed={SEED} />,
+      );
       const captions = Array.from(
         container.querySelectorAll(".activity-bonus-cell__caption"),
         (caption) => caption.textContent,
@@ -483,7 +526,7 @@ describe("PlanetBonusPanel", () => {
         [PLANETS[1], "additional-nodes"],
       );
       const { container: restContainer } = render(
-        <PlanetBonusPanel state={rest} />,
+        <PlanetBonusPanel state={rest} openingSeed={SEED} />,
       );
       const restCaptions = Array.from(
         restContainer.querySelectorAll(".activity-bonus-cell__caption"),
@@ -497,7 +540,7 @@ describe("PlanetBonusPanel", () => {
         [PLANETS[1], "large-points"],
       );
       const { container: scrambleContainer } = render(
-        <PlanetBonusPanel state={scramble} />,
+        <PlanetBonusPanel state={scramble} openingSeed={SEED} />,
       );
       expect(
         scrambleContainer.querySelector(".activity-bonus-cell__caption"),
@@ -510,7 +553,7 @@ describe("PlanetBonusPanel", () => {
         [PLANETS[1], "small-points"],
       );
       const { container: fuelContainer } = render(
-        <PlanetBonusPanel state={fuel} />,
+        <PlanetBonusPanel state={fuel} openingSeed={SEED} />,
       );
       expect(fuelContainer.querySelector(".fuel-symbol")).toBeInTheDocument();
       cleanup();
@@ -520,7 +563,7 @@ describe("PlanetBonusPanel", () => {
         [PLANETS[1], "small-points"],
       );
       const { container: nodesContainer } = render(
-        <PlanetBonusPanel state={additionalNodes} />,
+        <PlanetBonusPanel state={additionalNodes} openingSeed={SEED} />,
       );
       const rings = nodesContainer.querySelectorAll(
         ".additional-nodes-symbol circle",
@@ -537,7 +580,7 @@ describe("PlanetBonusPanel", () => {
         [PLANETS[1], "small-points"],
       );
       const { container: scrambleContainer } = render(
-        <PlanetBonusPanel state={scramble} />,
+        <PlanetBonusPanel state={scramble} openingSeed={SEED} />,
       );
       const arcs = scrambleContainer.querySelectorAll(
         ".node-scramble-symbol path",
@@ -564,9 +607,11 @@ describe("PlanetBonusPanel", () => {
           { square: PLANETS[1], kind: "additional-nodes" },
         ],
       };
-      const arrangement = planetArrangement(after.openingSeed);
+      const arrangement = planetArrangement(SEED);
 
-      const { container } = render(<PlanetBonusPanel state={after} />);
+      const { container } = render(
+        <PlanetBonusPanel state={after} openingSeed={SEED} />,
+      );
 
       const row = container.querySelector(".planet-bonus-panel__activity-row");
       const hrefs = Array.from(
@@ -587,7 +632,11 @@ describe("PlanetBonusPanel", () => {
       const onHoverSquare = vi.fn();
 
       const { container } = render(
-        <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+        <PlanetBonusPanel
+          state={state}
+          openingSeed={SEED}
+          onHoverSquare={onHoverSquare}
+        />,
       );
 
       const cells = container.querySelectorAll(
@@ -608,7 +657,11 @@ describe("PlanetBonusPanel", () => {
       const onHoverSquare = vi.fn();
 
       const { container } = render(
-        <PlanetBonusPanel state={state} onHoverSquare={onHoverSquare} />,
+        <PlanetBonusPanel
+          state={state}
+          openingSeed={SEED}
+          onHoverSquare={onHoverSquare}
+        />,
       );
 
       const cells = container.querySelectorAll(
@@ -625,14 +678,20 @@ describe("PlanetBonusPanel", () => {
         [PLANETS[1], "fuel"],
       );
 
-      const { container: plain } = render(<PlanetBonusPanel state={state} />);
+      const { container: plain } = render(
+        <PlanetBonusPanel state={state} openingSeed={SEED} />,
+      );
       expect(
         plain.querySelectorAll(".planet-bonus-panel__activity-cell--glow"),
       ).toHaveLength(0);
       cleanup();
 
       const { container } = render(
-        <PlanetBonusPanel state={state} glowSquare={PLANETS[1]} />,
+        <PlanetBonusPanel
+          state={state}
+          openingSeed={SEED}
+          glowSquare={PLANETS[1]}
+        />,
       );
       const cells = container.querySelectorAll(
         ".planet-bonus-panel__activity-cell",

@@ -14,8 +14,6 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     nodes: {},
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",

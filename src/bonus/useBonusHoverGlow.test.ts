@@ -5,18 +5,20 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { ActivityBonusKind } from "../rules/activityBonus";
 import type { Square } from "../rules/board";
 import { startingGameState, type GameState } from "../rules/gameState";
+import { seededRandom } from "../rules/random";
 import { PLANETS } from "../rules/planets";
 import { useBonusHoverGlow } from "./useBonusHoverGlow";
 
 afterEach(cleanup);
 
 const SEED = 12345;
+const OPENING_SEED = 1;
 
 function withActivityBonuses(
   first: readonly [Square, ActivityBonusKind],
   second: readonly [Square, ActivityBonusKind],
 ): GameState {
-  const base = startingGameState(SEED, {
+  const base = startingGameState(seededRandom(SEED), {
     nodePlaystyle: "steal",
     planetActivity: "race",
   });
@@ -35,7 +37,7 @@ describe("useBonusHoverGlow", () => {
       [PLANETS[0], "large-points"],
       [PLANETS[1], "fuel"],
     );
-    const { result } = renderHook(() => useBonusHoverGlow(state));
+    const { result } = renderHook(() => useBonusHoverGlow(state, OPENING_SEED));
 
     expect(result.current.glowSquare).toBeUndefined();
 
@@ -56,8 +58,9 @@ describe("useBonusHoverGlow", () => {
       [PLANETS[1], "fuel"],
     );
     const { result, rerender } = renderHook(
-      ({ state }: { state: GameState }) => useBonusHoverGlow(state),
-      { initialProps: { state: before } },
+      ({ state, openingSeed }: { state: GameState; openingSeed: number }) =>
+        useBonusHoverGlow(state, openingSeed),
+      { initialProps: { state: before, openingSeed: OPENING_SEED } },
     );
 
     act(() => {
@@ -74,7 +77,7 @@ describe("useBonusHoverGlow", () => {
         { square: PLANETS[1], kind: "additional-nodes" },
       ],
     };
-    rerender({ state: after });
+    rerender({ state: after, openingSeed: OPENING_SEED });
 
     expect(result.current.glowSquare).toBeUndefined();
   });
@@ -85,8 +88,9 @@ describe("useBonusHoverGlow", () => {
       [PLANETS[1], "fuel"],
     );
     const { result, rerender } = renderHook(
-      ({ state }: { state: GameState }) => useBonusHoverGlow(state),
-      { initialProps: { state: before } },
+      ({ state, openingSeed }: { state: GameState; openingSeed: number }) =>
+        useBonusHoverGlow(state, openingSeed),
+      { initialProps: { state: before, openingSeed: OPENING_SEED } },
     );
 
     act(() => {
@@ -102,7 +106,7 @@ describe("useBonusHoverGlow", () => {
         { square: PLANETS[1], kind: "additional-nodes" },
       ],
     };
-    rerender({ state: after });
+    rerender({ state: after, openingSeed: OPENING_SEED });
 
     expect(result.current.glowSquare).toBe(PLANETS[1]);
   });
@@ -113,8 +117,9 @@ describe("useBonusHoverGlow", () => {
       [PLANETS[1], "fuel"],
     );
     const { result, rerender } = renderHook(
-      ({ state }: { state: GameState }) => useBonusHoverGlow(state),
-      { initialProps: { state: before } },
+      ({ state, openingSeed }: { state: GameState; openingSeed: number }) =>
+        useBonusHoverGlow(state, openingSeed),
+      { initialProps: { state: before, openingSeed: OPENING_SEED } },
     );
 
     // Hovered while it was a bonus planet, and the pointer never reports
@@ -134,7 +139,7 @@ describe("useBonusHoverGlow", () => {
         { square: PLANETS[1], kind: "additional-nodes" },
       ],
     };
-    rerender({ state: claimed });
+    rerender({ state: claimed, openingSeed: OPENING_SEED });
     expect(result.current.glowSquare).toBeUndefined();
 
     // Later, still the same game, a bonus is dealt back onto PLANETS[0].
@@ -145,7 +150,7 @@ describe("useBonusHoverGlow", () => {
         { square: PLANETS[1], kind: "additional-nodes" },
       ],
     };
-    rerender({ state: dealtAgain });
+    rerender({ state: dealtAgain, openingSeed: OPENING_SEED });
 
     expect(result.current.glowSquare).toBeUndefined();
   });
@@ -156,8 +161,9 @@ describe("useBonusHoverGlow", () => {
       [PLANETS[1], "fuel"],
     );
     const { result, rerender } = renderHook(
-      ({ state }: { state: GameState }) => useBonusHoverGlow(state),
-      { initialProps: { state: before } },
+      ({ state, openingSeed }: { state: GameState; openingSeed: number }) =>
+        useBonusHoverGlow(state, openingSeed),
+      { initialProps: { state: before, openingSeed: OPENING_SEED } },
     );
 
     act(() => {
@@ -167,14 +173,11 @@ describe("useBonusHoverGlow", () => {
 
     // A fresh game (a different opening seed) whose bonus set happens to
     // include the same square the player was hovering in the last one.
-    const freshGame: GameState = {
-      ...withActivityBonuses(
-        [PLANETS[0], "small-points"],
-        [PLANETS[2], "node-scramble"],
-      ),
-      openingSeed: before.openingSeed + 1,
-    };
-    rerender({ state: freshGame });
+    const freshGame = withActivityBonuses(
+      [PLANETS[0], "small-points"],
+      [PLANETS[2], "node-scramble"],
+    );
+    rerender({ state: freshGame, openingSeed: OPENING_SEED + 1 });
 
     expect(result.current.glowSquare).toBeUndefined();
   });

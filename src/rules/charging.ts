@@ -52,8 +52,8 @@ export interface ChargingResult {
  * §8.2, §8.6 step 4). A charged node starts at baseline with no countdown,
  * and a newly charged node never has a ship on it already, since no node
  * ever appears under one. The queue order is decided entirely by
- * `orderByPriorityDescending` and consumes no randomness at all.
- * `state.randomSeed` is never touched here.
+ * `orderByPriorityDescending` and consumes no randomness at all: this
+ * function takes no `RandomSource` and draws nothing.
  *
  * `reportedPriorities`, if given, overrides only what a charging node's
  * effect *reports* as its priority, keyed by square name — never which node

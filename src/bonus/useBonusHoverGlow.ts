@@ -42,20 +42,24 @@ interface Hovered {
  * no pointer anywhere near the board or the panel. The opening-seed check,
  * not just the square-membership one, is what clears a hover left over from
  * a game that has since ended — a new game can otherwise deal a bonus onto
- * the same square the player was last hovering.
+ * the same square the player was last hovering. `openingSeed` comes from
+ * the session, since it no longer lives on `GameState`.
  */
-export function useBonusHoverGlow(state: GameState): BonusHoverGlow {
+export function useBonusHoverGlow(
+  state: GameState,
+  openingSeed: number,
+): BonusHoverGlow {
   const [hovered, setHovered] = useState<Hovered | undefined>(undefined);
 
   // The opening seed a hover should be tagged with, kept current every
   // render so `onHoverSquare` can stay a stable callback instead of being
-  // rebuilt whenever `state` changes.
-  const openingSeedRef = useRef(state.openingSeed);
-  openingSeedRef.current = state.openingSeed;
+  // rebuilt whenever `state` or `openingSeed` changes.
+  const openingSeedRef = useRef(openingSeed);
+  openingSeedRef.current = openingSeed;
 
   const stillHovering =
     hovered !== undefined &&
-    hovered.openingSeed === state.openingSeed &&
+    hovered.openingSeed === openingSeed &&
     bonusPanelSquareNames(state).has(squareName(hovered.square));
 
   if (hovered !== undefined && !stillHovering) {

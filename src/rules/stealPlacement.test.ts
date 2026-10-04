@@ -25,6 +25,7 @@ import {
 import { DEFAULT_FLEET_SIZE, FLEET_SIZES, type ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type GameState, startingGameState } from "./gameState";
+import { seededRandom } from "./random";
 import { legalDestinations } from "./movement";
 import { PLANETS, isPlanet } from "./planets";
 import { legalTargets } from "./combat";
@@ -148,7 +149,7 @@ describe.each(CHARGED_NODE_COUNTS)(
 
       for (let i = 0; i < TYPICAL_DEALS; i++) {
         const seed = 30_000_000 + chargedNodeCount * 1_000_000 + i;
-        const state = startingGameState(seed, {
+        const state = startingGameState(seededRandom(seed), {
           chargedNodeCount,
           fleetSize: DEFAULT_FLEET_SIZE,
           nodePlaystyle: "steal",
@@ -190,7 +191,7 @@ describe.each(CHARGED_NODE_COUNTS)(
         for (let i = 0; i < OUTER_RINGS_DEALS; i++) {
           const seed =
             60_000_000 + chargedNodeCount * 4_000_000 + fleetSize * 100_000 + i;
-          const state = startingGameState(seed, {
+          const state = startingGameState(seededRandom(seed), {
             chargedNodeCount,
             fleetSize,
             nodePlaystyle: "steal",
@@ -218,7 +219,7 @@ describe("the fallback never fires, at the largest fleet and five nodes — the 
   it("deals every opening square legally, with no square ever needing the fallback", () => {
     for (let i = 0; i < WORST_CASE_DEALS; i++) {
       const seed = 40_000_000 + i;
-      const state = startingGameState(seed, {
+      const state = startingGameState(seededRandom(seed), {
         chargedNodeCount: 5,
         fleetSize: 5,
         nodePlaystyle: "steal",
@@ -335,7 +336,8 @@ describe("the steal claim and abandon draws' placement figures, at 5 nodes, the 
     let total = 0;
 
     for (const seed of MID_GAME_SEEDS) {
-      let state = startingGameState(seed, {
+      const random = seededRandom(seed);
+      let state = startingGameState(random, {
         chargedNodeCount: 5,
         fleetSize: DEFAULT_FLEET_SIZE,
         nodePlaystyle: "steal",
@@ -348,15 +350,15 @@ describe("the steal claim and abandon draws' placement figures, at 5 nodes, the 
         const choice = chooseStealPlacementPly(state);
 
         if (choice === undefined) {
-          const { state: nextState } = applyPassGuard(state);
+          const { state: nextState } = applyPassGuard(state, random);
           state = nextState;
           continue;
         }
 
         const result =
           choice.kind === "attack"
-            ? applyAttack(state, choice.shipId, choice.target)
-            : applyMove(state, choice.shipId, choice.destination);
+            ? applyAttack(state, choice.shipId, choice.target, random)
+            : applyMove(state, choice.shipId, choice.destination, random);
 
         if (result.outcome !== "applied") {
           throw new Error(
@@ -422,7 +424,8 @@ describe("the fallback never fires during play either, at the largest fleet and 
     let eventsChecked = 0;
 
     for (const seed of SEEDS) {
-      let state = startingGameState(seed, {
+      const random = seededRandom(seed);
+      let state = startingGameState(random, {
         chargedNodeCount: 5,
         fleetSize: 5,
         nodePlaystyle: "steal",
@@ -435,15 +438,15 @@ describe("the fallback never fires during play either, at the largest fleet and 
         const choice = chooseStealPlacementPly(state);
 
         if (choice === undefined) {
-          const { state: nextState } = applyPassGuard(state);
+          const { state: nextState } = applyPassGuard(state, random);
           state = nextState;
           continue;
         }
 
         const result =
           choice.kind === "attack"
-            ? applyAttack(state, choice.shipId, choice.target)
-            : applyMove(state, choice.shipId, choice.destination);
+            ? applyAttack(state, choice.shipId, choice.target, random)
+            : applyMove(state, choice.shipId, choice.destination, random);
 
         if (result.outcome !== "applied") {
           throw new Error(
