@@ -610,7 +610,33 @@ Nothing should look or behave differently from before.
 
 ### Step 4 — Core setup: parseSetup and startGame
 
-Status: pending
+Status: committed
+
+Notes: Added `src/core/setup.ts` exactly as planned: `Setup`, `SetupProblemKind`/
+`SetupProblem`, `PLANET_PICTURE_NUMBERS` (the twelve gallery numbers,
+duplicated rather than imported since the core must not import
+`src/board/`), `parseSetup` and `startGame`. `parseSetup` checks the ten
+known fields in `Setup`'s own order, folding each playstyle cross-check
+(`not-allowed-with-playstyle`) into the check of the field it applies to
+(`planetBonus`, `planetActivity`, `playerMatching`) immediately after
+confirming that field's own value is offered, rather than as a separate
+pass — `playstyle` is always the first field checked, so its resolved value
+is already in hand; this reads the same as "checks fields in the story's
+listed order" but keeps the per-field logic together instead of splitting
+one field's checks across two passes. Unknown fields are appended last, in
+the input's own key order. `startGame` builds on `startingGameState` and
+`applyPassGuard` exactly as the app's `createSession` does, slicing its
+reported draws from `random.draws()` by position rather than assuming the
+source is fresh, and running `random.checkComplete()` once done, so it
+composes correctly whether given a fresh `seededRandom` or one already
+partway through a game. Tests in `src/core/setup.test.ts` cover every item
+the step lists, including the picture-number constant against
+`src/board/planetArt.ts`'s `PLANET_ART`, `startGame` matching
+`startingGameState` for the same seed and settings, a `recordedRandom`
+replay reaching an equal state, and a shortened or lengthened draw list
+throwing. No deviations from the plan. `npm run typecheck`, `npm run lint`,
+`npm run format:check` and `npm test` all pass (93 files, 2106 tests, up
+from 92/2086 before this step).
 
 Create `src/core/setup.ts` with the `Setup` and `SetupProblem` types, the
 planet picture numbers constant, `parseSetup` and `startGame`, following
