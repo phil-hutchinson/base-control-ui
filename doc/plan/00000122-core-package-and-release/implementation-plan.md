@@ -1045,7 +1045,34 @@ Verification (manual, by the owner, after the branch is pushed):
 
 ### Step 10 — Documentation and README check
 
-Status: pending
+Status: committed
+
+Notes: Added `build:core`, `pack:core` and `smoke:core` to `CONTRIBUTING.md`'s
+toolchain list, and a new "The core" section (placed right after the
+randomness paragraph under "Architecture constraints") covering what the
+core is (pointing at `CLAUDE.md`'s Vocabulary), the clean-tree rule and why,
+the no-DOM tsconfig and the ESLint import boundary, the smoke test, the
+measurement script (run directly with `node`, not an npm script), and how to
+dispatch a core release, including that a rerun on an already-released
+commit does nothing and that `core-<hash>` tags are a separate family from
+`rules-<version>`. Reworded the randomness paragraph under "Architecture
+constraints" and the `Math.random` lint note to describe the injected
+`RandomSource`/`seededRandom`/`recordedRandom` rather than a seed carried in
+`GameState`. Checked `CLAUDE.md`'s existing **Core** and **Engine** entries
+against what was actually built (entry point, export list, "never chooses a
+ply") and found them accurate as written, so left them unchanged.  Reviewed
+`story.md` against the Decisions made in Steps 1-9 (the `DesyncError` export,
+the `PlyEffect`/`GameResult` shapes, rotators added to the canonical state)
+and found nothing in it contradicted by what was built — the open points are
+still correctly open, resolved in this plan's Decisions rather than in
+`story.md` itself — so made no changes there. Reviewed the branch diff
+against `main` by hand (`git diff main...HEAD --stat` plus a grep of
+`README.md` for "seed"/"random"/"core"/"engine"): no player-facing file
+changed, so `README.md` needs no update, per the story's "nothing a player
+sees changes". No deviations from the plan. `npm run format:check`,
+`npm run lint`, `npm run typecheck` and `npm test` all pass (98 files, 2159
+tests); every `npm run …`/`npm test` command named in `CONTRIBUTING.md` is a
+script in `package.json`.
 
 - `CONTRIBUTING.md`: add `build:core`, `pack:core` and `smoke:core` to the
   toolchain list; a "The core" section covering what it is (pointing at
