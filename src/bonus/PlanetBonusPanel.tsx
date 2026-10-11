@@ -112,7 +112,7 @@ function BonusCell({
 export interface PlanetBonusPanelProps {
   /** The session's game state: read for the setting, the deal and the ply number. */
   readonly state: GameState;
-  /** The session's opening seed, no longer part of `state`, for the planet arrangement. */
+  /** The session's opening seed, for the planet arrangement. */
   readonly openingSeed: number;
   /**
    * The square, if any, to draw glowing here — because the player is

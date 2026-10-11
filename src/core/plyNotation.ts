@@ -1,6 +1,6 @@
-// The core's ply notation (story.md "Ply notation"): the plain-text spelling
-// of a move or an attack, `parsePly`'s parsing of untrusted text into a
-// `Ply`, and `formatPly`, the exact inverse `parsePly` round-trips through.
+// The core's ply notation: the plain-text spelling of a move or an attack,
+// `parsePly`'s parsing of untrusted text into a `Ply`, and `formatPly`, the
+// exact inverse `parsePly` round-trips through.
 
 import {
   type ColumnLetter,
@@ -20,10 +20,9 @@ export type Ply =
 
 /**
  * `number: action`, where `action` is two squares for a move or a square, an
- * "x" and a square for an attack (story.md "Ply notation"): a ply number with
- * no leading zero, a literal ": ", an upper-case column A-O and a row 1-15
- * with no leading zero, twice, with "x" between them for an attack and
- * nothing for a move.
+ * "x" and a square for an attack: a ply number with no leading zero, a
+ * literal ": ", an upper-case column A-O and a row 1-15 with no leading
+ * zero, twice, with "x" between them for an attack and nothing for a move.
  */
 const PLY_PATTERN =
   /^([1-9][0-9]*): ([A-O](?:[1-9]|1[0-5]))(x)?([A-O](?:[1-9]|1[0-5]))$/;

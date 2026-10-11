@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { squareFromName } from "../rules/board";
+import { legalTargets } from "../rules/combat";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { type GameState, type NodeStatus, type Ship } from "../rules/gameState";
 import { legalDestinations } from "../rules/movement";
@@ -104,6 +105,112 @@ const FROZEN_SETUP: Setup = {
   playerMatching: "off",
   artwork: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14],
 };
+
+const STEAL_WITH_PLANET_EFFECTS: Setup = {
+  playstyle: "steal",
+  rounds: 30,
+  fleetSize: 5,
+  chargedNodes: 4,
+  combat: false,
+  scoring: "bonus",
+  planetBonus: "off",
+  planetActivity: "race",
+  playerMatching: "required",
+  artwork: [3, 1, 14, 7, 2, 9, 5, 13, 4, 10, 6, 8],
+};
+
+const DEDICATED_WITH_PLANET_BONUS: Setup = {
+  playstyle: "dedicated",
+  rounds: 30,
+  fleetSize: 4,
+  chargedNodes: 3,
+  combat: true,
+  scoring: "simple",
+  planetBonus: "three",
+  playerMatching: "off",
+  planetActivity: "off",
+  artwork: [3, 1, 14, 7, 2, 9, 5, 13, 4, 10, 6, 8],
+};
+
+/**
+ * One ply for the side to move: an attack on the nearest legal target if
+ * one of its ships has one, so a combat-on game exercises attacks; failing
+ * that, the move that brings a ship closest to an enemy ship, so the
+ * fleets close distance instead of drifting apart. `null` once the side to
+ * move has neither.
+ */
+function closingPolicyPly(state: GameState): Ply | null {
+  const myShips = state.ships.filter(
+    (candidate) => candidate.side === state.sideToMove,
+  );
+  const enemyShips = state.ships.filter(
+    (candidate) => candidate.side !== state.sideToMove,
+  );
+
+  for (const attacker of myShips) {
+    const target = legalTargets(state, attacker.id)[0];
+    if (target !== undefined) {
+      return { type: "attack", from: attacker.square, target };
+    }
+  }
+
+  let bestShip: GameState["ships"][number] | null = null;
+  let bestDestination: ReturnType<typeof legalDestinations>[number] | null =
+    null;
+  let bestDistance = Infinity;
+  for (const mover of myShips) {
+    for (const destination of legalDestinations(state, mover.id)) {
+      const distance = Math.min(
+        ...enemyShips.map((enemy) =>
+          Math.max(
+            Math.abs(
+              destination.column.charCodeAt(0) -
+                enemy.square.column.charCodeAt(0),
+            ),
+            Math.abs(destination.row - enemy.square.row),
+          ),
+        ),
+      );
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestShip = mover;
+        bestDestination = destination;
+      }
+    }
+  }
+  if (bestShip === null || bestDestination === null) {
+    return null;
+  }
+  return { type: "move", from: bestShip.square, to: bestDestination };
+}
+
+/** Every ply `closingPolicyPly` finds, up to `maxPlies`, with the state it was applied to. */
+function playClosingPolicyGame(
+  setup: Setup,
+  seed: number,
+  maxPlies: number,
+): readonly { before: GameState; plyNumber: number; ply: Ply }[] {
+  const random = seededRandom(seed);
+  let state = startGame(setup, random).state;
+  const steps: { before: GameState; plyNumber: number; ply: Ply }[] = [];
+
+  for (let i = 0; i < maxPlies; i++) {
+    const ply = closingPolicyPly(state);
+    if (ply === null) {
+      break;
+    }
+    const before = state;
+    const plyNumber = state.plyNumber;
+    const result = applyPly(state, plyNumber, ply, random);
+    if (result.outcome !== "applied") {
+      throw new Error(`expected ${JSON.stringify(ply)} to apply`);
+    }
+    steps.push({ before, plyNumber, ply });
+    state = result.state;
+  }
+
+  return steps;
+}
 
 describe("applyPly", () => {
   it("applies a legal move, with ship-moved first and the rules' own effects after", () => {
@@ -334,6 +441,46 @@ describe("applyPly", () => {
     const second = applyPly(frozen, 1, ply, seededRandom(99));
 
     expect(first).toEqual(second);
+  });
+});
+
+describe("applyPly against a deeply frozen state, across a full policy game", () => {
+  it.each([
+    ["steal with planet effects", STEAL_WITH_PLANET_EFFECTS, 555],
+    [
+      "dedicated with planet bonus, combat on",
+      DEDICATED_WITH_PLANET_BONUS,
+      777,
+    ],
+  ])(
+    "gives the same result applied twice, at every ply (%s)",
+    (_label, setup, seed) => {
+      const steps = playClosingPolicyGame(setup, seed, 40);
+      expect(steps.length).toBeGreaterThan(10);
+
+      for (const step of steps) {
+        const frozen = deepFreeze(step.before);
+        const first = applyPly(
+          frozen,
+          step.plyNumber,
+          step.ply,
+          seededRandom(99),
+        );
+        const second = applyPly(
+          frozen,
+          step.plyNumber,
+          step.ply,
+          seededRandom(99),
+        );
+        expect(first).toEqual(second);
+      }
+    },
+  );
+
+  it("covers a combat-on attack, not only moves", () => {
+    const steps = playClosingPolicyGame(DEDICATED_WITH_PLANET_BONUS, 777, 40);
+
+    expect(steps.some((step) => step.ply.type === "attack")).toBe(true);
   });
 });
 

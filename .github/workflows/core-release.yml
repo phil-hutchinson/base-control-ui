@@ -20,15 +20,16 @@ jobs:
       - name: Check out the commit
         uses: actions/checkout@v4
 
-      - name: Check for an existing release
+      - name: Check for an existing tag or release
         id: check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           hash=$(git rev-parse --short=7 HEAD)
           echo "hash=$hash" >> "$GITHUB_OUTPUT"
-          if gh release view "core-$hash" >/dev/null 2>&1; then
-            echo "::notice::core-$hash already exists; leaving it untouched."
+          if git ls-remote --exit-code --tags origin "refs/tags/core-$hash" >/dev/null 2>&1 || \
+             gh release view "core-$hash" >/dev/null 2>&1; then
+            echo "::notice::core-$hash already exists as a tag or release; leaving it untouched."
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -67,19 +68,23 @@ jobs:
 
       - name: Smoke-test the packed core
         if: steps.check.outputs.exists == 'false'
-        run: npm run smoke:core -- "dist-core/core-${{ steps.check.outputs.hash }}.tgz"
+        env:
+          HASH: ${{ steps.check.outputs.hash }}
+        run: npm run smoke:core -- "dist-core/core-$HASH.tgz"
 
       - name: Create the prerelease
         if: steps.check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          HASH: ${{ steps.check.outputs.hash }}
         run: |
-          hash="${{ steps.check.outputs.hash }}"
-          printf 'branch: %s\ncommit: %s\n' "${{ github.ref_name }}" "${{ github.sha }}" > release-notes.txt
-          gh release create "core-$hash" \
-            "dist-core/core-$hash.tgz" \
-            --title "core-$hash" \
+          printf 'branch: %s\ncommit: %s\n' "$BRANCH" "$COMMIT" > release-notes.txt
+          gh release create "core-$HASH" \
+            "dist-core/core-$HASH.tgz" \
+            --title "core-$HASH" \
             --notes-file release-notes.txt \
             --prerelease \
             --latest=false \
-            --target "${{ github.sha }}"
+            --target "$COMMIT"

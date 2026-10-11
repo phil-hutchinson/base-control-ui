@@ -1,9 +1,9 @@
-// The core's setup contract (story.md "Setup"): the plain-JSON shape an
-// online game starts from, with every field required so an app default
-// never silently reaches an online game, `parseSetup`'s validation of
-// untrusted input into that shape, and `startGame`, which deals a
-// `GameState` from a validated `Setup` the same way the app's session does
-// — the opening deal, then the pass guard once.
+// The core's setup contract: the plain-JSON shape an online game starts
+// from, with every field required so an app default never silently reaches
+// an online game, `parseSetup`'s validation of untrusted input into that
+// shape, and `startGame`, which deals a `GameState` from a validated
+// `Setup` the same way the app's session does — the opening deal, then the
+// pass guard once.
 
 import { isChargedNodeCount, type ChargedNodeCount } from "../rules/nodes";
 import { isFleetSize, type FleetSize } from "../rules/fleet";
@@ -38,9 +38,9 @@ export const PLANET_PICTURE_NUMBERS: readonly number[] = [
 ];
 
 /**
- * An online game's setup (story.md "Setup"): every field required, so a
- * change to the app's own defaults never silently changes an online game.
- * Produced only by `parseSetup`.
+ * An online game's setup: every field required, so a change to the app's
+ * own defaults never silently changes an online game. Produced only by
+ * `parseSetup`.
  */
 export interface Setup {
   readonly playstyle: NodePlaystyle;

@@ -461,7 +461,7 @@ describe("createSession", () => {
   it("starts with nothing selected and no event when the side to move has a legal move", () => {
     const state = buildState({ ships: [ship("green-1", "green", "H8")] });
 
-    const session = createSession(state);
+    const session = createSession(state, 0, 0);
 
     expect(session.selectedShipId).toBeUndefined();
     expect(session.lastEvent).toBeUndefined();
@@ -491,7 +491,7 @@ describe("createSession", () => {
       nodes: { H8: "charged", K8: "charged", H12: "charged", K12: "charged" },
     });
 
-    const session = createSession(state);
+    const session = createSession(state, 0, 0);
 
     expect(session.state.sideToMove).toBe("red");
     expect(session.state.plyNumber).toBe(2);

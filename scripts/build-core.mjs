@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds the core package into dist-core/package/ (story.md "Packaging"):
+// Builds the core package into dist-core/package/:
 // type declarations from tsconfig.core.json, rewritten to resolve under
 // Node's `nodenext` module resolution, an ES module bundled by Vite with
 // CORE_BUILD substituted for the commit the package is built from, and a

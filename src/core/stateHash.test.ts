@@ -1,8 +1,8 @@
-// Tests for canonicalState and stateHash (story.md "State hash"): the
-// fixed-shape string, its order-independence and sensitivity, the FNV-1a
-// implementation against published reference values, a pinned hash for one
-// fixed game, and a draws round-trip through seededRandom and
-// recordedRandom, including the four ways a tampered draw must be caught.
+// Tests for canonicalState and stateHash: the fixed-shape string, its
+// order-independence and sensitivity, the FNV-1a implementation against
+// published reference values, a pinned hash for one fixed game, and a
+// draws round-trip through seededRandom and recordedRandom, including the
+// four ways a tampered draw must be caught.
 
 import { describe, expect, it } from "vitest";
 import { squareFromName } from "../rules/board";
@@ -134,8 +134,8 @@ const PINNED_SEED = 20240614;
 /**
  * Eight plies found once, by running `legalDestinations` under
  * `PINNED_SETUP` and `PINNED_SEED` and writing out the moves it offered -
- * see the smoke test (`scripts/smoke-core.mjs`, Step 7), which plays this
- * same game and must keep this pinned hash in step with this test.
+ * see `scripts/smoke-core.mjs`, which plays this same game and must keep
+ * this pinned hash in step with this test.
  */
 const PINNED_PLIES: readonly string[] = [
   "1: H15J13",

@@ -1,8 +1,8 @@
-// Applying a ply through the core (story.md "Malformed versus refused"):
-// `applyPly` finds the ship the ply names and runs it through the rules'
-// own `applyMove` or `applyAttack`, reporting `PlyRefusal` for anything the
-// game itself refuses — as opposed to `parsePly`'s "malformed", which never
-// looks at a state at all — and `PlyEffect` for what happened.
+// Applying a ply through the core: `applyPly` finds the ship the ply names
+// and runs it through the rules' own `applyMove` or `applyAttack`,
+// reporting `PlyRefusal` for anything the game itself refuses — as opposed
+// to `parsePly`'s "malformed", which never looks at a state at all — and
+// `PlyEffect` for what happened.
 
 import type { AttackRefusalReason } from "../rules/combat";
 import { type GameState, shipsBySquare } from "../rules/gameState";
@@ -21,11 +21,10 @@ import { type Square, squareName } from "../rules/board";
 import type { Ply } from "./plyNotation";
 
 /**
- * A move's first effect (story.md "The core's entry point"): the facts
- * `applyMove` returns beside its own effects — the ship, its side, where it
- * moved from and to, what the shape cost and the power it carries
- * afterwards — reported here rather than by the rules, so the app's own
- * effect lists stay untouched.
+ * A move's first effect: the facts `applyMove` returns beside its own
+ * effects — the ship, its side, where it moved from and to, what the shape
+ * cost and the power it carries afterwards — reported here rather than by
+ * the rules, so the app's own effect lists stay untouched.
  */
 export interface ShipMovedEffect {
   readonly type: "ship-moved";
@@ -37,15 +36,14 @@ export interface ShipMovedEffect {
   readonly powerAfter: PowerLevel;
 }
 
-/** Everything a ply, move or attack, can raise (story.md "The core's entry point"). */
+/** Everything a ply, move or attack, can raise. */
 export type PlyEffect = ShipMovedEffect | MoveEffect | AttackEffect;
 
 /**
- * Why a ply was refused, as opposed to malformed (story.md "Malformed versus
- * refused"): a wrong ply number, the game already over, no ship on the named
- * first square, or one of the rules' own reasons for refusing the move or
- * the attack it names (which includes `not-your-ship` and, for an attack,
- * `combat-is-off`).
+ * Why a ply was refused, as opposed to malformed: a wrong ply number, the
+ * game already over, no ship on the named first square, or one of the
+ * rules' own reasons for refusing the move or the attack it names (which
+ * includes `not-your-ship` and, for an attack, `combat-is-off`).
  */
 export type PlyRefusal =
   | "wrong-ply-number"
@@ -80,7 +78,7 @@ export function applyPly(
   | {
       readonly outcome: "applied";
       readonly state: GameState;
-      readonly draws: readonly number[];
+      readonly draws: number[];
       readonly effects: readonly PlyEffect[];
     }
   | { readonly outcome: "refused"; readonly reason: PlyRefusal } {

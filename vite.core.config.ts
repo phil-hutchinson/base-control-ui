@@ -1,8 +1,8 @@
 import { defineConfig } from "vite";
 
-// Bundles src/core/index.ts into the one ES module the core package ships
-// (story.md "Packaging"): no React plugin, ES format only, unminified, so
-// the published source stays readable, and CORE_BUILD_HASH substituted for
+// Bundles src/core/index.ts into the one ES module the core package ships:
+// no React plugin, ES format only, unminified, so the published source
+// stays readable, and CORE_BUILD_HASH substituted for
 // every reference to __CORE_BUILD__ - set by scripts/build-core.mjs to the
 // commit the package is built from, left unset everywhere else, where
 // src/core/coreBuild.ts falls back to "unstamped". The entry is given as a

@@ -1,7 +1,7 @@
-// Checks that src/core/index.ts exports exactly the agreed runtime names
-// (story.md "The core's entry point") - no more, no less. Types are erased
-// at runtime and so are not part of this list; they are exercised by the
-// type-checked uses throughout the other core tests.
+// Checks that src/core/index.ts exports exactly the agreed runtime names -
+// no more, no less. Types are erased at runtime and so are not part of
+// this list; they are exercised by the type-checked uses throughout the
+// other core tests.
 
 import { describe, expect, it } from "vitest";
 import * as core from "./index";

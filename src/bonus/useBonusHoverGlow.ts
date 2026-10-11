@@ -43,7 +43,7 @@ interface Hovered {
  * not just the square-membership one, is what clears a hover left over from
  * a game that has since ended — a new game can otherwise deal a bonus onto
  * the same square the player was last hovering. `openingSeed` comes from
- * the session, since it no longer lives on `GameState`.
+ * the session.
  */
 export function useBonusHoverGlow(
   state: GameState,

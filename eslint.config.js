@@ -67,11 +67,10 @@ export default tseslint.config([
     extends: [jsxA11y.flatConfigs.recommended],
   },
   {
-    // The core's boundary (story.md "The core's entry point"): src/core and
-    // src/rules only ever import from each other, never anything
-    // screen-related. This replaces the base block's `no-restricted-imports`
-    // entirely rather than adding to it, so the `node:*` pattern is restated
-    // here too.
+    // The core's boundary: src/core and src/rules only ever import from
+    // each other, never anything screen-related. This replaces the base
+    // block's `no-restricted-imports` entirely rather than adding to it, so
+    // the `node:*` pattern is restated here too.
     files: ["src/core/**/*.ts", "src/rules/**/*.ts"],
     rules: {
       "no-restricted-imports": [
@@ -126,9 +125,8 @@ export default tseslint.config([
     },
   },
   {
-    // The build and packaging scripts (story.md "Packaging"): plain Node
-    // ES modules, run directly by `node`, never bundled or type-checked as
-    // part of `src`.
+    // The build and packaging scripts: plain Node ES modules, run directly
+    // by `node`, never bundled or type-checked as part of `src`.
     files: ["scripts/**/*.mjs"],
     extends: [js.configs.recommended],
     languageOptions: {

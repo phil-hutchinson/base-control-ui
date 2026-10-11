@@ -154,10 +154,8 @@ describe("GameOverPanel", () => {
       initial: GameState;
       onReturnToStart: () => void;
     }) {
-      const [session, dispatch] = useReducer(
-        sessionReducer,
-        initial,
-        createSession,
+      const [session, dispatch] = useReducer(sessionReducer, initial, (state) =>
+        createSession(state, 0, 0),
       );
       const { displayed: displayedEnergy, settled } = useDisplayedEnergy(
         session.state.energy,

@@ -899,7 +899,7 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       (effect): effect is NodeRetiredEffect => effect.type === "node-retired",
     );
     expect(retired?.square).toEqual(squareFromName("D8"));
-    // Nothing in the sequence draws from the source any more.
+    // Nothing in the sequence draws from the source.
     expect(random.draws()).toEqual([]);
     // Step 6 spends one ply off both tied nodes, ahead of step 7's choice —
     // they are still tied, just one ply lower, when the choice is made.

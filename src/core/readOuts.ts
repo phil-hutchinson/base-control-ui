@@ -1,6 +1,5 @@
-// Reading a game's state without touching its internals (story.md "The
-// core's entry point"): who is to move and at what ply, and the game's
-// result once it is over.
+// Reading a game's state without touching its internals: who is to move
+// and at what ply, and the game's result once it is over.
 
 import type { EnergyTotals, GameState } from "../rules/gameState";
 import { gameResult, isGameOver } from "../rules/gameLength";

@@ -39,10 +39,9 @@
 // runs once for `state.sideToMove` — the side that just played — and then
 // once for the other side, always in that fixed order, so a recorded
 // game's replay never depends on which side happened to need relief first.
-// Nothing in this whole sequence draws any more except step 5's refill: a
-// tie on remaining life can no longer arise
-// (rules.md §8.3, §8.6 step 7), so the relief's choice is fully
-// deterministic.
+// Nothing in this whole sequence draws except step 5's refill: a tie on
+// remaining life cannot arise (rules.md §8.3, §8.6 step 7), so the
+// relief's choice is fully deterministic.
 //
 // Under steal (steal.md §8) none of steps 3 to 7 apply at all — there is no
 // countdown, no queue, no rotator set and no trap — so this sequence returns

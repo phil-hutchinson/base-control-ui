@@ -1,8 +1,8 @@
-// A game's state, boiled down to what both ends of an online game know
-// (story.md "State hash"): `canonicalState` writes it as a fixed-shape JSON
-// string, and `stateHash` takes a 64-bit FNV-1a hash of it so the server and
-// a client can compare one short string instead of the whole state. This
-// detects a desync; it is not a security check.
+// A game's state, boiled down to what both ends of an online game know:
+// `canonicalState` writes it as a fixed-shape JSON string, and `stateHash`
+// takes a 64-bit FNV-1a hash of it so the server and a client can compare
+// one short string instead of the whole state. This detects a desync; it
+// is not a security check.
 
 import { squareName } from "../rules/board";
 import { nodeSquares, type GameState } from "../rules/gameState";

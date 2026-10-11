@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Measures replaying a full-length game through the built core (story.md
-// "Replay measurement"): for each node playstyle, plays one 90-round game
-// (the longest the start screen offers) with a simple deterministic policy,
+// Measures replaying a full-length game through the built core: for each
+// node playstyle, plays one 90-round game (the longest the start screen
+// offers) with a simple deterministic policy,
 // then times rebuilding it from scratch the way the server rebuilds a game
 // on every ply — a fresh seededRandom from the seed, startGame, and every
 // applyPly from parsed ply text. Run with `node scripts/measure-core-replay.mjs`
@@ -140,8 +140,8 @@ function candidateSquares(origin) {
  * destination squares first, applying the first move `applyPly` accepts.
  * Combat is off in every config, so a legal move is guaranteed to exist
  * whenever it is a side's turn — a refused attempt draws nothing and
- * leaves the shared random source untouched (story.md's own guarantee),
- * so trying candidates this way costs nothing but time. Returns the ply
+ * leaves the shared random source untouched, so trying candidates this
+ * way costs nothing but time. Returns the ply
  * texts played, in order, and the draws the whole game made.
  */
 function playGame(setup, seed) {

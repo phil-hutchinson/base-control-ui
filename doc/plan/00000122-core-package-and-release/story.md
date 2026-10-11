@@ -167,7 +167,8 @@ notation and the core, so allowing it online later changes neither.
 `canonicalState`. That is a JSON string with a fixed field order and no
 optional fields, holding what both ends know: the ships (side, square,
 power), the nodes sorted by square, the side to move, the ply number,
-energy, the bonus planets and activity bonuses, and the setup's rule fields.
+energy, the bonus planets and activity bonuses, the rotators (board state
+both ends hold under the dedicated playstyle), and the setup's rule fields.
 It leaves out the seed, which the client never has, and the artwork. It
 detects a desync; it is not a security check.
 

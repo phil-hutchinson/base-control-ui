@@ -3,7 +3,7 @@ import { squareFromName } from "../rules/board";
 import { formatPly, parsePly } from "./plyNotation";
 
 describe("parsePly", () => {
-  it("parses a move, exactly as story.md's first example", () => {
+  it("parses a move", () => {
     const result = parsePly("57: H2H4");
     expect(result).toEqual({
       ok: true,
@@ -16,7 +16,7 @@ describe("parsePly", () => {
     });
   });
 
-  it("parses a move between two-digit rows, story.md's second example", () => {
+  it("parses a move between two-digit rows", () => {
     const result = parsePly("58: C12C9");
     expect(result).toEqual({
       ok: true,
@@ -29,7 +29,7 @@ describe("parsePly", () => {
     });
   });
 
-  it("parses an attack, story.md's third example", () => {
+  it("parses an attack", () => {
     const result = parsePly("59: H4xJ6");
     expect(result).toEqual({
       ok: true,

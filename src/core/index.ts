@@ -1,5 +1,5 @@
-// Base Control's core (story.md): the rules, packaged for use outside the
-// app — a server applies a ply exactly as the browser does, from the same
+// Base Control's core: the rules, packaged for use outside the app — a
+// server applies a ply exactly as the browser does, from the same
 // commit. Everything reachable from here is the agreed contract between
 // this repository and the online-play server; nothing else in `src/rules/`
 // is exported.

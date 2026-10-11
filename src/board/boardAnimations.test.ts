@@ -594,7 +594,7 @@ describe("boardAnimations", () => {
   });
 
   it("animates nothing at the opening deal", () => {
-    const session = createSession(startingGameState(seededRandom(1)));
+    const session = createSession(startingGameState(seededRandom(1)), 0, 0);
 
     expect(boardAnimations(session).size).toBe(0);
   });

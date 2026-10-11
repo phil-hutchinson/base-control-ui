@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Packs dist-core/package/ (built by npm run build:core) into a tarball
-// named by the commit hash the package was built from (story.md
-// "Packaging"), rather than npm's own name-and-version filename.
+// named by the commit hash the package was built from, rather than npm's
+// own name-and-version filename.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync, renameSync } from "node:fs";

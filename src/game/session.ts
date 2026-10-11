@@ -142,9 +142,8 @@ export type SessionIntent =
  * The game state, the selected ship if any, the last thing that happened,
  * and the two seeds a game record needs: `openingSeed`, the seed its deal
  * started from, and `randomSeed`, the seed the session's next draw will
- * use. Neither lives on `GameState` any more — the rules layer takes a
- * `RandomSource` rather than carrying a seed — so the session is where the
- * app remembers them instead, as plain numbers rather than a live source: a
+ * use. The rules layer takes a `RandomSource` rather than carrying a seed,
+ * so the session keeps both as plain numbers rather than a live source: a
  * stateful `RandomSource` kept here would draw twice under React's
  * `StrictMode`, which invokes a reducer call twice, and desynchronise.
  */
@@ -162,13 +161,12 @@ export interface Session {
  * legal move at all is never sat on — the same guard `applyMove` runs after
  * every move. `randomSeed` is the seed the guard itself draws from, if it
  * draws at all; the session stores the source's advanced seed, not the one
- * it was given. Both seeds default to 0 for a test that hand-builds a state
- * with no draw to make — a real game always passes both explicitly.
+ * it was given.
  */
 export function createSession(
   state: GameState,
-  openingSeed = 0,
-  randomSeed = 0,
+  openingSeed: number,
+  randomSeed: number,
 ): Session {
   const random = seededRandom(randomSeed);
   const { state: settled, effect } = applyPassGuard(state, random);

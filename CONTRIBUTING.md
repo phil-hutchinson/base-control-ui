@@ -226,11 +226,14 @@ stays internal to it.
   game through the built core, in each playstyle; the figures are recorded
   in `doc/ruleset/tech-notes.md`.
 - **Running a core release**: dispatch `.github/workflows/core-release.yml`
-  by hand, on any branch, from the repository's Actions tab. It typechecks,
-  lints, tests, builds, packs and smoke-tests the core, then publishes a
-  prerelease tagged `core-<hash>` with the packed tarball as its only asset.
-  A release built from `main` is what the online-play server vendors for
-  live; a branch's release can be vendored for the server's dev stage.
-  Running it again on a commit that already has a release does nothing and
-  leaves that release untouched. `core-<hash>` tags are a separate family
-  from `rules-<version>` tags and never mean a rules change.
+  by hand, on any branch, from the repository's Actions tab. GitHub only
+  lets a `workflow_dispatch` workflow be dispatched once its file is on the
+  default branch (`main`), so no branch can be dispatched until then. It
+  typechecks, lints, tests, builds, packs and smoke-tests the core, then
+  publishes a prerelease tagged `core-<hash>` with the packed tarball as its
+  only asset. A release built from `main` is what the online-play server
+  vendors for live; a branch's release can be vendored for the server's dev
+  stage. Running it again on a commit that already has a tag or a release
+  does nothing and leaves that release untouched. `core-<hash>` tags are a
+  separate family from `rules-<version>` tags and never mean a rules
+  change.

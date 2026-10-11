@@ -103,7 +103,7 @@ function statedOpeningState(): GameState {
   };
 }
 
-const startingSession = createSession(statedOpeningState(), TEST_SEED);
+const startingSession = createSession(statedOpeningState(), TEST_SEED, 0);
 
 /** A minimal hand-built state with a single node square, isolating the
  * wiring from Board.tsx through the node's countdown to the marker's
@@ -386,7 +386,7 @@ describe("Board", () => {
   describe("onHoverSquare (reporting a hover on a bonus planet, steal.md §10, rules.md §3.4)", () => {
     it("reports the square entering a planet the bonus panel draws, and undefined leaving it", () => {
       const bonusSquare = PLANETS[0];
-      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const session = createSession(stateWithBonusPlanet(bonusSquare), 0, 0);
       const onHoverSquare = vi.fn();
 
       render(
@@ -410,7 +410,7 @@ describe("Board", () => {
     it("reports nothing for a planet the bonus panel does not draw", () => {
       const bonusSquare = PLANETS[0];
       const otherPlanet = PLANETS[1];
-      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const session = createSession(stateWithBonusPlanet(bonusSquare), 0, 0);
       const onHoverSquare = vi.fn();
 
       render(
@@ -435,7 +435,7 @@ describe("Board", () => {
       // still be reported, or the hover state never learns the pointer went
       // away.
       const bonusSquare = PLANETS[0];
-      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const session = createSession(stateWithBonusPlanet(bonusSquare), 0, 0);
       const onHoverSquare = vi.fn();
 
       const { rerender } = render(
@@ -454,10 +454,14 @@ describe("Board", () => {
       expect(onHoverSquare).toHaveBeenLastCalledWith(bonusSquare);
 
       // The planet stops carrying a bonus, with the pointer still over it.
-      const noLongerABonusPlanet = createSession({
-        ...session.state,
-        bonusPlanets: { green: [], red: [] },
-      });
+      const noLongerABonusPlanet = createSession(
+        {
+          ...session.state,
+          bonusPlanets: { green: [], red: [] },
+        },
+        0,
+        0,
+      );
       rerender(
         <Board
           session={noLongerABonusPlanet}
@@ -472,7 +476,7 @@ describe("Board", () => {
 
     it("still reports a click activating a bonus planet, hovered or not", () => {
       const bonusSquare = PLANETS[0];
-      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const session = createSession(stateWithBonusPlanet(bonusSquare), 0, 0);
       const onIntent = vi.fn();
 
       render(
@@ -493,7 +497,7 @@ describe("Board", () => {
 
     it("ignores a touch-type enter, so no glow sticks after the tap", () => {
       const bonusSquare = PLANETS[0];
-      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const session = createSession(stateWithBonusPlanet(bonusSquare), 0, 0);
       const onHoverSquare = vi.fn();
 
       render(
@@ -724,6 +728,8 @@ describe("Board", () => {
                   signal,
                 },
               }),
+              0,
+              0,
             )}
             onIntent={noop}
           />,
@@ -752,6 +758,8 @@ describe("Board", () => {
               },
               [{ id: "green-1", side: "green", square, power: 4 }],
             ),
+            0,
+            0,
           )}
           onIntent={noop}
         />,
@@ -778,6 +786,8 @@ describe("Board", () => {
                 signal: 1,
               },
             }),
+            0,
+            0,
           )}
           onIntent={noop}
         />,
@@ -801,7 +811,7 @@ describe("Board", () => {
 
       const { container } = render(
         <Board
-          session={createSession(stateWithStealNodes(nodes))}
+          session={createSession(stateWithStealNodes(nodes), 0, 0)}
           onIntent={noop}
         />,
       );
@@ -882,11 +892,15 @@ describe("Board", () => {
         const signals = NODE_SIGNALS.slice(0, nodeCount);
         render(
           <Board
-            session={createSession({
-              ...stateWithStealNodes(stealNodesForSignals(signals)),
-              chargedNodeCount: nodeCount,
-              playerMatching: "double",
-            })}
+            session={createSession(
+              {
+                ...stateWithStealNodes(stealNodesForSignals(signals)),
+                chargedNodeCount: nodeCount,
+                playerMatching: "double",
+              },
+              0,
+              0,
+            )}
             onIntent={noop}
           />,
         );
@@ -903,11 +917,15 @@ describe("Board", () => {
       const signals = NODE_SIGNALS.slice(0, 5);
       render(
         <Board
-          session={createSession({
-            ...stateWithStealNodes(stealNodesForSignals(signals)),
-            chargedNodeCount: 5,
-            playerMatching: "off",
-          })}
+          session={createSession(
+            {
+              ...stateWithStealNodes(stealNodesForSignals(signals)),
+              chargedNodeCount: 5,
+              playerMatching: "off",
+            },
+            0,
+            0,
+          )}
           onIntent={noop}
         />,
       );
@@ -926,7 +944,7 @@ describe("Board", () => {
     it("draws the rotator mark on exactly the squares state.rotators names, and nowhere else", () => {
       const { container } = render(
         <Board
-          session={createSession(stateWithRotators(ROTATOR_SQUARES))}
+          session={createSession(stateWithRotators(ROTATOR_SQUARES), 0, 0)}
           onIntent={noop}
         />,
       );
@@ -945,7 +963,7 @@ describe("Board", () => {
     it("draws no rotator mark anywhere when state.rotators is empty", () => {
       const { container } = render(
         <Board
-          session={createSession(stateWithRotators([]))}
+          session={createSession(stateWithRotators([]), 0, 0)}
           onIntent={noop}
         />,
       );
@@ -975,7 +993,7 @@ describe("Board", () => {
         ship.id === "green-1" ? { ...ship, square: squareAt("H", 8) } : ship,
       ),
     };
-    const session = createSession(state);
+    const session = createSession(state, 0, 0);
 
     const { container } = render(<Board session={session} onIntent={noop} />);
 
@@ -1974,10 +1992,8 @@ describe("Board", () => {
     // A small stand-in for App.tsx's own useReducer wiring, so these tests
     // exercise the real session reducer rather than a hand-built session.
     function Harness({ initial }: { initial: GameState }) {
-      const [session, dispatch] = useReducer(
-        sessionReducer,
-        initial,
-        createSession,
+      const [session, dispatch] = useReducer(sessionReducer, initial, (state) =>
+        createSession(state, 0, 0),
       );
       return <Board session={session} onIntent={dispatch} />;
     }

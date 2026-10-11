@@ -90,9 +90,13 @@ export function seededRandom(seed: number): SeededRandomSource {
       const target = value * total;
       let cumulative = 0;
       let index = weights.length - 1;
+      while (index > 0 && weights[index] <= 0) {
+        index--;
+      }
       // Floating-point accumulation can land target at or past the running
-      // total even though value < 1; the last in-range index is the
-      // fallback answer in that case.
+      // total even though value < 1; the last index with a positive weight
+      // is the fallback answer in that case, never a weight-0 index, which
+      // a seeded source can never draw.
       for (let candidate = 0; candidate < weights.length; candidate++) {
         cumulative += weights[candidate];
         if (target < cumulative) {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Smoke-tests a packed core tarball in plain Node 22 (story.md
-// "Packaging"): installs it into an empty folder outside the repository,
-// plays the pinned game (src/core/stateHash.test.ts) once with
+// Smoke-tests a packed core tarball in plain Node 22: installs it into an
+// empty folder outside the repository, plays the pinned game
+// (src/core/stateHash.test.ts) once with
 // seededRandom and once replayed per call with recordedRandom, checking
 // both reach the pinned hash, then type-checks a one-line consumer against
 // the published declarations with the repository's own tsc under Node's

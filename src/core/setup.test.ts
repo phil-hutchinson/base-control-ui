@@ -9,7 +9,7 @@ import {
   type Setup,
 } from "./setup";
 
-/** The story's own example setup (story.md "Setup"). */
+/** A setup exercising every rule field. */
 const EXAMPLE_SETUP: Record<string, unknown> = {
   playstyle: "steal",
   rounds: 30,
