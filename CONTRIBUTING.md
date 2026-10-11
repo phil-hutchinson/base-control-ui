@@ -226,9 +226,12 @@ stays internal to it.
   game through the built core, in each playstyle; the figures are recorded
   in `doc/ruleset/tech-notes.md`.
 - **Running a core release**: dispatch `.github/workflows/core-release.yml`
-  by hand, on any branch, from the repository's Actions tab. GitHub only
-  lets a `workflow_dispatch` workflow be dispatched once its file is on the
-  default branch (`main`), so no branch can be dispatched until then. It
+  by hand from the repository's Actions tab, on `main` or on a branch made
+  from `main` since the workflow arrived (GitHub offers a
+  `workflow_dispatch` workflow only on a branch that contains its file).
+  This repository runs every core release, and for now the owner starts
+  it. The online-play server repository only downloads and pins a release;
+  it never starts, reruns or changes anything here. The workflow
   typechecks, lints, tests, builds, packs and smoke-tests the core, then
   publishes a prerelease tagged `core-<hash>` with the packed tarball as its
   only asset. A release built from `main` is what the online-play server

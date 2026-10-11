@@ -228,8 +228,10 @@ slow enough to matter.
 A new workflow, `.github/workflows/core-release.yml`, is the repository's
 first. It publishes one GitHub release per commit:
 
-1. **Run by hand** (`workflow_dispatch`) on any branch. A branch's core can
-   be vendored for the server's dev stage.
+1. **Run by hand** (`workflow_dispatch`) on `main`, or on any branch that
+   contains the workflow file (GitHub offers a hand-run workflow only once
+   its file is on the default branch). A branch's core can be vendored for
+   the server's dev stage.
 2. Check out the commit, install, then **typecheck, lint and test**.
 3. **Build and pack** the core, name the tarball `core-<hash>.tgz`, and run
    the **smoke test** on it.
@@ -291,14 +293,18 @@ the repository's "latest". `core-<hash>` tags are a separate family from
 Run the release workflow once from `main`, so the server repository can
 vendor a `main` core.
 
+Done on 2026-10-11: the first release is `core-a9d534e`, run from `main`.
+
 ## Verification
 
 - `npm run build:core` builds on a clean tree, and refuses on a dirty one.
 - The smoke test passes against the packed tarball in plain Node 22.
-- The release workflow, run by hand on the story branch, creates one
-  prerelease `core-<hash>` with exactly one asset, `core-<hash>.tgz`, and
-  notes starting `branch: feat/122-core-package-and-release`. Run again on
-  the same commit, it stops without touching that release.
+- The release workflow, run by hand on `main` after the merge (the branch
+  could not be dispatched before the workflow file was on `main`), creates
+  one prerelease `core-<hash>` with exactly one asset, `core-<hash>.tgz`,
+  and notes starting `branch: main`. Run again on the same commit, it
+  stops without touching that release. The first such release is
+  `core-a9d534e`.
 - Downloading that asset with
   `gh release download core-<hash> --pattern 'core-*.tgz'` gives a tarball
   that installs and loads.

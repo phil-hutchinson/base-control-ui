@@ -983,7 +983,7 @@ and `npm test` pass.
 
 ### Step 9 — Release workflow
 
-Status: implemented
+Status: committed
 
 Notes: Added `.github/workflows/core-release.yml`, the repository's first
 workflow, exactly per "The release workflow" in Decisions:
@@ -1019,6 +1019,23 @@ correctly refuses a dirty tree — exactly the behaviour CI relies on, since
 a real checkout is clean. The workflow itself cannot be run from here (no
 `gh` CLI, no GitHub Actions access); the manual verification below is the
 owner's to run after the branch is pushed.
+
+Manual verification ran from `main` after the merge, not on the branch, as
+the owner decided. GitHub only offers a `workflow_dispatch` workflow once
+its file is on the default branch, so the branch could not be dispatched.
+The owner started both runs by hand on `a9d534e`, the merge commit, and the
+online-play server repository's Claude checked them:
+
+- Run 38183438060 passed in 1m49s and created the prerelease `core-a9d534e`
+  on the full commit. Its notes read `branch: main`, then
+  `commit: <full commit>`. Its only asset is `core-a9d534e.tgz`, whose
+  sha256 matches GitHub's digest.
+- Run 38183793157, on the same commit, passed in 11s and changed nothing.
+- The tarball installs on Node 22, with `CORE_BUILD` `a9d534e` and version
+  `0.0.0-a9d534e`. Its exports match the agreed boundary, and `DesyncError`
+  is an `Error` subclass.
+
+Recorded by story 124.
 
 Add `.github/workflows/core-release.yml` exactly as described under "The
 release workflow" in Decisions.
@@ -1106,3 +1123,7 @@ repository can vendor a `main` core, and relays to the design doc: the
 replay figure, the `DesyncError` export, `recordedRandom` being one per
 call, the refusal order, the `PlyEffect`/`GameResult` shapes, and rotators
 in the canonical state.
+
+Done on 2026-10-11. The first release, `core-a9d534e`, was run from
+`main` (see Step 9's Notes). Each point above was added to the online-play
+design doc, in its handover section under "Core sharing".
