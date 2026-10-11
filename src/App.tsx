@@ -4,7 +4,7 @@ import { PlanetDefs } from "./board/PlanetDefs";
 import { PlanetBonusPanel } from "./bonus/PlanetBonusPanel";
 import { useBonusHoverGlow } from "./bonus/useBonusHoverGlow";
 import { ClockRegion } from "./clock/ClockRegion";
-import { freshSeed } from "./game/seed";
+import { freshSeed } from "./core/freshSeed";
 import { createSession, sessionReducer } from "./game/session";
 import { GAME_NAME } from "./gameName";
 import { GuideScreen } from "./guide/GuideScreen";
@@ -13,6 +13,7 @@ import { Hud } from "./hud/Hud";
 import { useDisplayedEnergy } from "./hud/useDisplayedEnergy";
 import { isGameOver } from "./rules/gameLength";
 import { startingGameState } from "./rules/gameState";
+import { seededRandom } from "./rules/random";
 import { ShipDefs } from "./ships/ShipDefs";
 import { StartScreen } from "./start/StartScreen";
 import { useAppScreen } from "./useAppScreen";
@@ -24,7 +25,10 @@ import "./App.css";
  * screen and this is replaced by the first PLAY press.
  */
 function createStartingSession() {
-  return createSession(startingGameState(freshSeed()));
+  const seed = freshSeed();
+  const random = seededRandom(seed);
+  const state = startingGameState(random);
+  return createSession(state, seed, random.currentSeed());
 }
 
 /**
@@ -52,7 +56,10 @@ export function App() {
   // The planet, if any, glowing on the board and in the bonus panel because
   // it is hovered in either — held above both, since neither owns the
   // other.
-  const { glowSquare, onHoverSquare } = useBonusHoverGlow(session.state);
+  const { glowSquare, onHoverSquare } = useBonusHoverGlow(
+    session.state,
+    session.openingSeed,
+  );
 
   const {
     screen,
@@ -131,6 +138,7 @@ export function App() {
             <div className="app__clocks">
               <PlanetBonusPanel
                 state={session.state}
+                openingSeed={session.openingSeed}
                 glowSquare={glowSquare}
                 onHoverSquare={onHoverSquare}
               />

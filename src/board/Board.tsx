@@ -94,8 +94,8 @@ export function Board({
   }, [onIntent]);
 
   const arrangement = useMemo(
-    () => planetArrangement(session.state.openingSeed),
-    [session.state.openingSeed],
+    () => planetArrangement(session.openingSeed),
+    [session.openingSeed],
   );
 
   const glowSquareName =

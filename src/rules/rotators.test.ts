@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ALL_SQUARES, type Square, squareAt, squareName } from "./board";
 import { isPlanet, PLANETS } from "./planets";
-import { drawIndex } from "./random";
+import { seededRandom } from "./random";
 import { placeRotators, ROTATOR_SECTIONS } from "./rotators";
 
 function names(squares: readonly Square[]): string[] {
@@ -63,7 +63,7 @@ describe("the board's nine 5 x 5 sections (rules.md §3.3)", () => {
 describe("placeRotators (rules.md §3.3)", () => {
   it("draws six rotators: one in each corner section, and one in two more of the remaining five, on an empty board", () => {
     for (let seed = 1; seed <= 10; seed++) {
-      const [rotators] = placeRotators([], [], seed);
+      const rotators = placeRotators([], [], seededRandom(seed));
       expect(rotators).toHaveLength(6);
 
       const sectionCounts = new Map<number, number>();
@@ -93,7 +93,11 @@ describe("placeRotators (rules.md §3.3)", () => {
     const shipSquares = [squareAt("C", 2), squareAt("M", 12)];
 
     for (let seed = 1; seed <= 20; seed++) {
-      const [rotators] = placeRotators(nodeSquares, shipSquares, seed);
+      const rotators = placeRotators(
+        nodeSquares,
+        shipSquares,
+        seededRandom(seed),
+      );
       const occupiedNames = new Set([
         ...names(nodeSquares),
         ...names(shipSquares),
@@ -111,11 +115,8 @@ describe("placeRotators (rules.md §3.3)", () => {
     const blockedSection = ROTATOR_SECTIONS[blockedIndex];
 
     const seed = 42;
-    const [rotators, finalSeed] = placeRotators(
-      [],
-      blockedSection.squares,
-      seed,
-    );
+    const random = seededRandom(seed);
+    const rotators = placeRotators([], blockedSection.squares, random);
 
     expect(rotators).toHaveLength(5);
     const blockedNames = new Set(names(blockedSection.squares));
@@ -142,54 +143,44 @@ describe("placeRotators (rules.md §3.3)", () => {
       ).length;
     }
 
-    let workingSeed = seed;
+    const expected = seededRandom(seed);
     for (const cornerIndex of CORNER_SECTION_INDEXES.filter(
       (index) => index !== blockedIndex,
     )) {
-      const [, nextSeed] = drawIndex(workingSeed, freeCount(cornerIndex));
-      workingSeed = nextSeed;
+      expected.uniform(freeCount(cornerIndex));
     }
 
-    const [firstPick, seedAfterFirstPick] = drawIndex(
-      workingSeed,
-      OTHER_SECTION_INDEXES.length,
-    );
     const remaining = [...OTHER_SECTION_INDEXES];
+    const firstPick = expected.uniform(OTHER_SECTION_INDEXES.length);
     const firstChosen = remaining.splice(firstPick, 1)[0];
-    workingSeed = seedAfterFirstPick;
 
-    const [secondPick, seedAfterSecondPick] = drawIndex(
-      workingSeed,
-      remaining.length,
-    );
+    const secondPick = expected.uniform(remaining.length);
     const secondChosen = remaining[secondPick];
-    workingSeed = seedAfterSecondPick;
 
     for (const index of [firstChosen, secondChosen].sort((a, b) => a - b)) {
-      const [, nextSeed] = drawIndex(workingSeed, freeCount(index));
-      workingSeed = nextSeed;
+      expected.uniform(freeCount(index));
     }
 
-    expect(finalSeed).toBe(workingSeed);
+    expect(random.currentSeed()).toBe(expected.currentSeed());
   });
 
   it("is a pure draw: the same seed and inputs give the same set", () => {
     const nodeSquares = [squareAt("H", 8)];
     const shipSquares = [squareAt("A", 1)];
 
-    const first = placeRotators(nodeSquares, shipSquares, 7);
-    const second = placeRotators(nodeSquares, shipSquares, 7);
+    const first = placeRotators(nodeSquares, shipSquares, seededRandom(7));
+    const second = placeRotators(nodeSquares, shipSquares, seededRandom(7));
     expect(second).toEqual(first);
   });
 
   it("generally draws a different set from a different seed", () => {
-    const [rotatorsA] = placeRotators([], [], 1);
-    const [rotatorsB] = placeRotators([], [], 999_999);
+    const rotatorsA = placeRotators([], [], seededRandom(1));
+    const rotatorsB = placeRotators([], [], seededRandom(999_999));
     expect(names(rotatorsB)).not.toEqual(names(rotatorsA));
   });
 
   it("returns the drawn squares in board order", () => {
-    const [rotators] = placeRotators([], [], 3);
+    const rotators = placeRotators([], [], seededRandom(3));
     const boardOrder = ALL_SQUARES.filter((square) =>
       new Set(names(rotators)).has(squareName(square)),
     );

@@ -23,6 +23,7 @@ import {
   type GameState,
   type NodeStatus,
 } from "../rules/gameState";
+import { seededRandom } from "../rules/random";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { NODE_SIGNALS, type NodeSignal } from "../rules/steal";
@@ -91,18 +92,18 @@ const STATED_NODE_STATES: Readonly<Record<string, NodeStatus>> = {
   J14: { state: "inactive", level: 1 },
 };
 
-/** `startingGameState(TEST_SEED, { combatEnabled: true })`, with its nodes
+/** `startingGameState(seededRandom(TEST_SEED), { combatEnabled: true })`, with its nodes
  * replaced by the board this file states (`STATED_NODE_STATES`) rather than
  * whatever it happens to deal. Ships, seed, ply and length still come from
  * `startingGameState`. */
 function statedOpeningState(): GameState {
   return {
-    ...startingGameState(TEST_SEED, { combatEnabled: true }),
+    ...startingGameState(seededRandom(TEST_SEED), { combatEnabled: true }),
     nodes: STATED_NODE_STATES,
   };
 }
 
-const startingSession = createSession(statedOpeningState());
+const startingSession = createSession(statedOpeningState(), TEST_SEED, 0);
 
 /** A minimal hand-built state with a single node square, isolating the
  * wiring from Board.tsx through the node's countdown to the marker's
@@ -123,8 +124,6 @@ function stateWithNode(
     },
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -153,8 +152,6 @@ function stateWithStealNodes(
     nodes,
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "steal",
     rotators: [],
     planetBonus: "off",
@@ -180,8 +177,6 @@ function stateWithRotators(squares: readonly Square[]): GameState {
     nodes: {},
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "dedicated",
     rotators: squares,
     planetBonus: "off",
@@ -207,8 +202,6 @@ function stateWithBonusPlanet(square: Square): GameState {
     nodes: {},
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "two",
@@ -329,7 +322,7 @@ describe("Board", () => {
 
     // No ship starts on a planet, so each planet square's name here is bare
     // (STATED_NODE_STATES and STARTING_FLEET never touch the twelve).
-    const arrangement = planetArrangement(startingSession.state.openingSeed);
+    const arrangement = planetArrangement(startingSession.openingSeed);
     for (const square of PLANETS) {
       const name = squareName(square);
       const cell = screen.getByRole("gridcell", { name: `${name}, planet` });
@@ -393,7 +386,7 @@ describe("Board", () => {
   describe("onHoverSquare (reporting a hover on a bonus planet, steal.md §10, rules.md §3.4)", () => {
     it("reports the square entering a planet the bonus panel draws, and undefined leaving it", () => {
       const bonusSquare = PLANETS[0];
-      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const session = createSession(stateWithBonusPlanet(bonusSquare), 0, 0);
       const onHoverSquare = vi.fn();
 
       render(
@@ -417,7 +410,7 @@ describe("Board", () => {
     it("reports nothing for a planet the bonus panel does not draw", () => {
       const bonusSquare = PLANETS[0];
       const otherPlanet = PLANETS[1];
-      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const session = createSession(stateWithBonusPlanet(bonusSquare), 0, 0);
       const onHoverSquare = vi.fn();
 
       render(
@@ -442,7 +435,7 @@ describe("Board", () => {
       // still be reported, or the hover state never learns the pointer went
       // away.
       const bonusSquare = PLANETS[0];
-      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const session = createSession(stateWithBonusPlanet(bonusSquare), 0, 0);
       const onHoverSquare = vi.fn();
 
       const { rerender } = render(
@@ -461,10 +454,14 @@ describe("Board", () => {
       expect(onHoverSquare).toHaveBeenLastCalledWith(bonusSquare);
 
       // The planet stops carrying a bonus, with the pointer still over it.
-      const noLongerABonusPlanet = createSession({
-        ...session.state,
-        bonusPlanets: { green: [], red: [] },
-      });
+      const noLongerABonusPlanet = createSession(
+        {
+          ...session.state,
+          bonusPlanets: { green: [], red: [] },
+        },
+        0,
+        0,
+      );
       rerender(
         <Board
           session={noLongerABonusPlanet}
@@ -479,7 +476,7 @@ describe("Board", () => {
 
     it("still reports a click activating a bonus planet, hovered or not", () => {
       const bonusSquare = PLANETS[0];
-      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const session = createSession(stateWithBonusPlanet(bonusSquare), 0, 0);
       const onIntent = vi.fn();
 
       render(
@@ -500,7 +497,7 @@ describe("Board", () => {
 
     it("ignores a touch-type enter, so no glow sticks after the tap", () => {
       const bonusSquare = PLANETS[0];
-      const session = createSession(stateWithBonusPlanet(bonusSquare));
+      const session = createSession(stateWithBonusPlanet(bonusSquare), 0, 0);
       const onHoverSquare = vi.fn();
 
       render(
@@ -731,6 +728,8 @@ describe("Board", () => {
                   signal,
                 },
               }),
+              0,
+              0,
             )}
             onIntent={noop}
           />,
@@ -759,6 +758,8 @@ describe("Board", () => {
               },
               [{ id: "green-1", side: "green", square, power: 4 }],
             ),
+            0,
+            0,
           )}
           onIntent={noop}
         />,
@@ -785,6 +786,8 @@ describe("Board", () => {
                 signal: 1,
               },
             }),
+            0,
+            0,
           )}
           onIntent={noop}
         />,
@@ -808,7 +811,7 @@ describe("Board", () => {
 
       const { container } = render(
         <Board
-          session={createSession(stateWithStealNodes(nodes))}
+          session={createSession(stateWithStealNodes(nodes), 0, 0)}
           onIntent={noop}
         />,
       );
@@ -889,11 +892,15 @@ describe("Board", () => {
         const signals = NODE_SIGNALS.slice(0, nodeCount);
         render(
           <Board
-            session={createSession({
-              ...stateWithStealNodes(stealNodesForSignals(signals)),
-              chargedNodeCount: nodeCount,
-              playerMatching: "double",
-            })}
+            session={createSession(
+              {
+                ...stateWithStealNodes(stealNodesForSignals(signals)),
+                chargedNodeCount: nodeCount,
+                playerMatching: "double",
+              },
+              0,
+              0,
+            )}
             onIntent={noop}
           />,
         );
@@ -910,11 +917,15 @@ describe("Board", () => {
       const signals = NODE_SIGNALS.slice(0, 5);
       render(
         <Board
-          session={createSession({
-            ...stateWithStealNodes(stealNodesForSignals(signals)),
-            chargedNodeCount: 5,
-            playerMatching: "off",
-          })}
+          session={createSession(
+            {
+              ...stateWithStealNodes(stealNodesForSignals(signals)),
+              chargedNodeCount: 5,
+              playerMatching: "off",
+            },
+            0,
+            0,
+          )}
           onIntent={noop}
         />,
       );
@@ -933,7 +944,7 @@ describe("Board", () => {
     it("draws the rotator mark on exactly the squares state.rotators names, and nowhere else", () => {
       const { container } = render(
         <Board
-          session={createSession(stateWithRotators(ROTATOR_SQUARES))}
+          session={createSession(stateWithRotators(ROTATOR_SQUARES), 0, 0)}
           onIntent={noop}
         />,
       );
@@ -952,7 +963,7 @@ describe("Board", () => {
     it("draws no rotator mark anywhere when state.rotators is empty", () => {
       const { container } = render(
         <Board
-          session={createSession(stateWithRotators([]))}
+          session={createSession(stateWithRotators([]), 0, 0)}
           onIntent={noop}
         />,
       );
@@ -982,7 +993,7 @@ describe("Board", () => {
         ship.id === "green-1" ? { ...ship, square: squareAt("H", 8) } : ship,
       ),
     };
-    const session = createSession(state);
+    const session = createSession(state, 0, 0);
 
     const { container } = render(<Board session={session} onIntent={noop} />);
 
@@ -1009,6 +1020,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 0),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1020,6 +1033,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 11, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1031,6 +1046,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 1, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1042,6 +1059,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "depleted", 11, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1053,6 +1072,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "depleted", 1, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1064,6 +1085,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "depleted", 2),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1079,6 +1102,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 11, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1094,6 +1119,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "charged", 0),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1105,6 +1132,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "depleted", 5, true),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1120,6 +1149,8 @@ describe("Board", () => {
       const session: Session = {
         state: stateWithNode(squareAt("H", 8), "depleted", 2),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1138,8 +1169,6 @@ describe("Board", () => {
         },
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1157,6 +1186,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1176,17 +1207,20 @@ describe("Board", () => {
     // A hand-built session with green-1 selected on H8. Built directly
     // rather than through the fixture.
     const state: GameState = {
-      ...startingGameState(TEST_SEED, { combatEnabled: true }),
-      ships: startingGameState(TEST_SEED, { combatEnabled: true }).ships.map(
-        (ship) =>
-          ship.id === "green-1"
-            ? { ...ship, square: squareAt("H", 8), power: 2 }
-            : ship,
+      ...startingGameState(seededRandom(TEST_SEED), { combatEnabled: true }),
+      ships: startingGameState(seededRandom(TEST_SEED), {
+        combatEnabled: true,
+      }).ships.map((ship) =>
+        ship.id === "green-1"
+          ? { ...ship, square: squareAt("H", 8), power: 2 }
+          : ship,
       ),
     };
     const session: Session = {
       state,
       selectedShipId: "green-1",
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: undefined,
     };
 
@@ -1242,8 +1276,6 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1261,6 +1293,8 @@ describe("Board", () => {
       const fullPowerSession: Session = {
         state: fullPowerState,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={fullPowerSession} onIntent={noop} />);
@@ -1330,8 +1364,6 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1353,6 +1385,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1387,6 +1421,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1400,6 +1436,8 @@ describe("Board", () => {
       const off: Session = {
         state: attackState({ combatEnabled: false }),
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={off} onIntent={noop} />);
@@ -1416,6 +1454,8 @@ describe("Board", () => {
       const on: Session = {
         state: attackState({ combatEnabled: true }),
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={on} onIntent={noop} />);
@@ -1435,6 +1475,8 @@ describe("Board", () => {
           const session: Session = {
             state,
             selectedShipId: "green-1",
+            openingSeed: 0,
+            randomSeed: 0,
             lastEvent: undefined,
           };
           render(<Board session={session} onIntent={noop} />);
@@ -1455,6 +1497,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1514,8 +1558,6 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1542,6 +1584,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1565,6 +1609,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1586,6 +1632,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1610,6 +1658,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1631,6 +1681,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1652,6 +1704,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       const { container } = render(<Board session={session} onIntent={noop} />);
@@ -1718,8 +1772,6 @@ describe("Board", () => {
         },
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1740,6 +1792,8 @@ describe("Board", () => {
       const session: Session = {
         state: depletedNodeState(),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1767,6 +1821,8 @@ describe("Board", () => {
       const session: Session = {
         state: depletedNodeState(),
         selectedShipId: "green-1",
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1782,6 +1838,8 @@ describe("Board", () => {
       const session: Session = {
         state: depletedNodeState(),
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1835,8 +1893,6 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1854,6 +1910,8 @@ describe("Board", () => {
       const session: Session = {
         state,
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={session} onIntent={noop} />);
@@ -1886,8 +1944,6 @@ describe("Board", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -1905,6 +1961,8 @@ describe("Board", () => {
       const off: Session = {
         state: { ...baseState, combatEnabled: false },
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={off} onIntent={noop} />);
@@ -1919,6 +1977,8 @@ describe("Board", () => {
       const on: Session = {
         state: { ...baseState, combatEnabled: true },
         selectedShipId: undefined,
+        openingSeed: 0,
+        randomSeed: 0,
         lastEvent: undefined,
       };
       render(<Board session={on} onIntent={noop} />);
@@ -1932,10 +1992,8 @@ describe("Board", () => {
     // A small stand-in for App.tsx's own useReducer wiring, so these tests
     // exercise the real session reducer rather than a hand-built session.
     function Harness({ initial }: { initial: GameState }) {
-      const [session, dispatch] = useReducer(
-        sessionReducer,
-        initial,
-        createSession,
+      const [session, dispatch] = useReducer(sessionReducer, initial, (state) =>
+        createSession(state, 0, 0),
       );
       return <Board session={session} onIntent={dispatch} />;
     }
@@ -2226,6 +2284,8 @@ describe("the charge animation", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 
@@ -2290,6 +2350,8 @@ describe("the burnout animation", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 
@@ -2337,6 +2399,8 @@ describe("the burnout animation", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 
@@ -2384,6 +2448,8 @@ describe("the rotator turn animation", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 
@@ -2428,6 +2494,8 @@ describe("the rotator turn animation", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 
@@ -2445,7 +2513,7 @@ describe("the rotator turn animation", () => {
 describe("energy overlay composition", () => {
   it("draws it as a sibling of the grid, hidden from the accessibility tree", () => {
     const state: GameState = {
-      ...startingGameState(TEST_SEED, { combatEnabled: true }),
+      ...startingGameState(seededRandom(TEST_SEED), { combatEnabled: true }),
     };
     const event: MovedEvent = {
       type: "moved",
@@ -2475,6 +2543,8 @@ describe("energy overlay composition", () => {
     const session: Session = {
       state,
       selectedShipId: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
       lastEvent: event,
     };
 

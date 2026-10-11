@@ -8,37 +8,37 @@
 // `playerMatching.ts`'s `PlayerMatchingSetting`, `power.ts`'s `gainPower` and
 // `MAX_POWER`, `scoring.ts`'s `ScoringSetting` and `random.ts`'s draws.
 // `ply.ts` calls `resolveActivityBonusClaim` when a landing claims a bonus, and
-// this module only ever changes the fields the claim touches — nodes, ships,
-// the bonus pair and the seed — leaving everything else (whose ply it is,
-// energy other than the claim's own payout, and so on) to `ply.ts`.
+// this module only ever changes the fields the claim touches — nodes, ships
+// and the bonus pair — leaving everything else (whose ply it is, energy
+// other than the claim's own payout, and so on) to `ply.ts`.
 //
-// The opening deal (steal.md §10) consumes exactly four seed steps, in this
-// fixed order, after the steal opening deal has run and before play begins:
-// slot 0's planet (uniform over all twelve planets), slot 1's planet
-// (uniform over the eleven left), slot 0's kind (weighted, no exclusions),
-// slot 1's kind (weighted, excluding slot 0's kind). `gameState.ts` calls
+// The opening deal (steal.md §10) makes exactly four draws, in this fixed
+// order, after the steal opening deal has run and before play begins: slot
+// 0's planet (uniform over all twelve planets), slot 1's planet (uniform
+// over the eleven left), slot 0's kind (weighted, no exclusions), slot 1's
+// kind (weighted, excluding slot 0's kind). `gameState.ts` calls
 // `dealActivityBonuses` for this.
 //
-// A claim under race (steal.md §10) consumes, in this fixed order: (1) the
+// A claim under race (steal.md §10) draws, in this fixed order: (1) the
 // claimed kind's own draws — none for a points kind or Fuel, one per square
 // Additional nodes adds (`addExtraProspectiveSquares`), two per prospective
-// square a Node scramble shuffles (`shuffleProspectiveSignals`); (2) one step
-// for the surviving bonus's new kind, excluding the kind it was; (3) one step
-// for the new bonus's planet, drawn from planets empty at that moment and not
-// the survivor's; (4) one step for the new bonus's kind, excluding the
-// survivor's new kind. A claim under stable consumes the same steps without
-// (2): the survivor keeps its kind, so nothing is drawn for it, and the new
-// bonus's kind excludes the survivor's kept kind. `resolveActivityBonusClaim`
-// runs them.
+// square a Node scramble shuffles (`shuffleProspectiveSignals`); (2) one
+// draw for the surviving bonus's new kind, excluding the kind it was; (3)
+// one draw for the new bonus's planet, drawn from planets empty at that
+// moment and not the survivor's; (4) one draw for the new bonus's kind,
+// excluding the survivor's new kind. A claim under stable makes the same
+// draws without (2): the survivor keeps its kind, so nothing is drawn for
+// it, and the new bonus's kind excludes the survivor's kept kind.
+// `resolveActivityBonusClaim` runs them.
 //
-// Every kind draw — here and in the claim resolution — is a single
-// `drawWeightedIndex` call over all six kinds in their fixed table order
-// below, with weight 0 for any kind excluded or unavailable at that moment
-// (steal.md §10): this keeps every kind draw at exactly one seed step and
-// keeps the index-to-kind mapping independent of which kinds are excluded.
-// Fuel's weight is measured from the ships passed to each draw
-// (`fuelWeight`): the opening deal passes the starting fleet, and a claim
-// passes every ship as it stands after the claimed kind's own effect.
+// Every kind draw — here and in the claim resolution — is a single weighted
+// draw over all six kinds in their fixed table order below, with weight 0
+// for any kind excluded or unavailable at that moment (steal.md §10): this
+// keeps every kind draw at exactly one draw and keeps the index-to-kind
+// mapping independent of which kinds are excluded. Fuel's weight is
+// measured from the ships passed to each draw (`fuelWeight`): the opening
+// deal passes the starting fleet, and a claim passes every ship as it
+// stands after the claimed kind's own effect.
 
 import type { Square } from "./board";
 import { squareName } from "./board";
@@ -48,7 +48,7 @@ import type { ChargedNodeCount } from "./nodes";
 import { PLANETS } from "./planets";
 import type { PlayerMatchingSetting } from "./playerMatching";
 import { gainPower, MAX_POWER } from "./power";
-import { drawIndex, drawWeightedIndex } from "./random";
+import type { RandomSource } from "./random";
 import type { ScoringSetting } from "./scoring";
 import {
   addExtraProspectiveSquares,
@@ -138,20 +138,20 @@ export function isActivityBonusKindAvailable(
 }
 
 /**
- * Draws one of the six kinds by weight (steal.md §10): a single
- * `drawWeightedIndex` call over all six kinds in their fixed table order,
- * with weight 0 for any kind in `excludedKinds` or currently unavailable
+ * Draws one of the six kinds by weight (steal.md §10): a single weighted
+ * draw over all six kinds in their fixed table order, with weight 0 for any
+ * kind in `excludedKinds` or currently unavailable
  * (`isActivityBonusKindAvailable`). Fuel's weight is measured from `ships`
  * (`fuelWeight`), which should be every ship on the board as it stands at
- * the moment of the draw. Exactly one seed step.
+ * the moment of the draw. Exactly one draw on `random`.
  */
 export function drawActivityBonusKind(
-  seed: number,
+  random: RandomSource,
   nodes: Readonly<Record<string, NodeStatus>>,
   nodeCount: ChargedNodeCount,
   ships: readonly Pick<Ship, "power">[],
   excludedKinds: ReadonlySet<ActivityBonusKind> = new Set(),
-): [kind: ActivityBonusKind, nextSeed: number] {
+): ActivityBonusKind {
   const weights = ACTIVITY_BONUS_KINDS.map((kind) =>
     excludedKinds.has(kind) ||
     !isActivityBonusKindAvailable(kind, nodes, nodeCount)
@@ -160,20 +160,18 @@ export function drawActivityBonusKind(
         ? fuelWeight(ships)
         : ACTIVITY_BONUS_WEIGHTS[kind],
   );
-  const [index, nextSeed] = drawWeightedIndex(seed, weights);
-  return [ACTIVITY_BONUS_KINDS[index], nextSeed];
+  return ACTIVITY_BONUS_KINDS[random.weighted(weights)];
 }
 
 /**
  * Draws one planet uniformly at random from `eligiblePlanets`, every one
- * equally likely (steal.md §10). Exactly one seed step.
+ * equally likely (steal.md §10). Exactly one draw on `random`.
  */
 export function drawActivityBonusPlanet(
-  seed: number,
+  random: RandomSource,
   eligiblePlanets: readonly Square[],
-): [square: Square, nextSeed: number] {
-  const [index, nextSeed] = drawIndex(seed, eligiblePlanets.length);
-  return [eligiblePlanets[index], nextSeed];
+): Square {
+  return eligiblePlanets[random.uniform(eligiblePlanets.length)];
 }
 
 /** One of the three sizes a points bonus's amount is looked up by (steal.md §10). */
@@ -275,36 +273,23 @@ export function activityBonusPoints(
  * with no exclusions, slot 1's by weight excluding slot 0's kind. Every
  * planet is empty at this point — no starting square is a planet — so no
  * planet needs excluding beyond slot 0's own. Both kind draws measure
- * Fuel's weight from `ships`, the starting fleet. Exactly four seed steps.
+ * Fuel's weight from `ships`, the starting fleet. Makes exactly four draws
+ * on `random`.
  */
 export function dealActivityBonuses(
   nodes: Readonly<Record<string, NodeStatus>>,
   nodeCount: ChargedNodeCount,
   ships: readonly Pick<Ship, "power">[],
-  seed: number,
-): [
-  bonuses: readonly [ActivityBonusEntry, ActivityBonusEntry],
-  nextSeed: number,
-] {
-  const [firstPlanet, seedAfterFirstPlanet] = drawActivityBonusPlanet(
-    seed,
-    PLANETS,
-  );
+  random: RandomSource,
+): readonly [ActivityBonusEntry, ActivityBonusEntry] {
+  const firstPlanet = drawActivityBonusPlanet(random, PLANETS);
   const remainingPlanets = PLANETS.filter(
     (square) => squareName(square) !== squareName(firstPlanet),
   );
-  const [secondPlanet, seedAfterSecondPlanet] = drawActivityBonusPlanet(
-    seedAfterFirstPlanet,
-    remainingPlanets,
-  );
-  const [firstKind, seedAfterFirstKind] = drawActivityBonusKind(
-    seedAfterSecondPlanet,
-    nodes,
-    nodeCount,
-    ships,
-  );
-  const [secondKind, nextSeed] = drawActivityBonusKind(
-    seedAfterFirstKind,
+  const secondPlanet = drawActivityBonusPlanet(random, remainingPlanets);
+  const firstKind = drawActivityBonusKind(random, nodes, nodeCount, ships);
+  const secondKind = drawActivityBonusKind(
+    random,
     nodes,
     nodeCount,
     ships,
@@ -312,11 +297,8 @@ export function dealActivityBonuses(
   );
 
   return [
-    [
-      { square: firstPlanet, kind: firstKind },
-      { square: secondPlanet, kind: secondKind },
-    ],
-    nextSeed,
+    { square: firstPlanet, kind: firstKind },
+    { square: secondPlanet, kind: secondKind },
   ];
 }
 
@@ -355,7 +337,6 @@ export interface ResolveActivityBonusClaimResult {
   readonly nodes: Readonly<Record<string, NodeStatus>>;
   readonly ships: readonly Ship[];
   readonly activityBonuses: readonly [ActivityBonusEntry, ActivityBonusEntry];
-  readonly nextSeed: number;
   readonly outcome: ActivityBonusClaimOutcome;
 }
 
@@ -368,8 +349,8 @@ export interface ResolveActivityBonusClaimResult {
  * by one power (`gainPower`), the claiming ship included, wherever it stands;
  * Additional nodes adds prospective squares (`addExtraProspectiveSquares`) and
  * Node scramble shuffles the prospective squares' signals
- * (`shuffleProspectiveSignals`), threading the seed on. Then, under race only,
- * redraws the surviving bonus's kind, excluding the kind it was — under stable
+ * (`shuffleProspectiveSignals`), both drawing on `random`. Then, under race
+ * only, redraws the surviving bonus's kind, excluding the kind it was — under stable
  * the survivor keeps its kind and nothing is drawn for it, so
  * `survivor.newKind` equals `survivor.oldKind`; draws the new bonus's planet
  * from the planets empty at that moment and not the survivor's own; and draws
@@ -392,10 +373,10 @@ export function resolveActivityBonusClaim(
     | "playerMatching"
     | "planetActivity"
     | "scoring"
-    | "randomSeed"
   >,
   side: Side,
   planet: Square,
+  random: RandomSource,
 ): ResolveActivityBonusClaimResult {
   if (state.planetActivity === "off") {
     throw new RangeError(
@@ -415,7 +396,6 @@ export function resolveActivityBonusClaim(
 
   let nodes = state.nodes;
   let ships = state.ships;
-  let seed = state.randomSeed;
   let pointsAwarded = 0;
   let poweredShipIds: readonly ShipId[] = [];
   let addedSquares: readonly Square[] = [];
@@ -449,33 +429,31 @@ export function resolveActivityBonusClaim(
       nodes,
       state.chargedNodeCount,
       shipSquares,
-      seed,
+      random,
     );
     nodes = added.nodes;
-    seed = added.nextSeed;
     addedSquares = added.addedSquares;
   } else if (claimed.kind === "node-scramble") {
     const shuffled = shuffleProspectiveSignals(
       nodes,
       state.chargedNodeCount,
       state.playerMatching,
-      seed,
+      random,
     );
     nodes = shuffled.nodes;
-    seed = shuffled.nextSeed;
     recoloredSquares = shuffled.recoloredSquares;
   }
 
-  const [survivorNewKind, seedAfterSurvivorKind]: [ActivityBonusKind, number] =
+  const survivorNewKind: ActivityBonusKind =
     state.planetActivity === "race"
       ? drawActivityBonusKind(
-          seed,
+          random,
           nodes,
           state.chargedNodeCount,
           ships,
           new Set([survivor.kind]),
         )
-      : [survivor.kind, seed];
+      : survivor.kind;
 
   const occupiedSquareNames = new Set(
     ships.map((ship) => squareName(ship.square)),
@@ -490,12 +468,9 @@ export function resolveActivityBonusClaim(
       "resolveActivityBonusClaim: no empty planet is left for the new bonus — rules.md §7.1's five-ship limit guarantees one",
     );
   }
-  const [newBonusSquare, seedAfterNewBonusPlanet] = drawActivityBonusPlanet(
-    seedAfterSurvivorKind,
-    eligiblePlanets,
-  );
-  const [newBonusKind, nextSeed] = drawActivityBonusKind(
-    seedAfterNewBonusPlanet,
+  const newBonusSquare = drawActivityBonusPlanet(random, eligiblePlanets);
+  const newBonusKind = drawActivityBonusKind(
+    random,
     nodes,
     state.chargedNodeCount,
     ships,
@@ -517,7 +492,6 @@ export function resolveActivityBonusClaim(
     nodes,
     ships,
     activityBonuses,
-    nextSeed,
     outcome: {
       kind: claimed.kind,
       pointsAwarded,

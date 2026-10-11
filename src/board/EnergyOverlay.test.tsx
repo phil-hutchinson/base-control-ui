@@ -20,8 +20,6 @@ function buildState(plyNumber: number): GameState {
     nodes: {},
     sideToMove: "green",
     plyNumber,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -39,7 +37,13 @@ function buildState(plyNumber: number): GameState {
 }
 
 function sessionWithEvent(event: SessionEvent | undefined): Session {
-  return { state: buildState(3), selectedShipId: undefined, lastEvent: event };
+  return {
+    state: buildState(3),
+    selectedShipId: undefined,
+    lastEvent: event,
+    openingSeed: 0,
+    randomSeed: 0,
+  };
 }
 
 const THREE_NODE_COLLECTION: EnergyCollectedEffect = {

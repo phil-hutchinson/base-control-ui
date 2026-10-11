@@ -9,7 +9,7 @@ import {
 } from "./board";
 import { PLANETS, isPlanet } from "./planets";
 import { legalNodePool } from "./nodePlacement";
-import { mulberry32 } from "./random";
+import { mulberry32, seededRandom } from "./random";
 import {
   INACTIVE_NODE_COUNT,
   type InactiveNodeDraw,
@@ -77,7 +77,12 @@ describe("constants", () => {
 describe("refillQueue", () => {
   it("deals three distinct squares, none adjacent to each other, to a charged node or to a planet, with the first two off the outer edge, over many seeds", () => {
     for (let seed = 0; seed < 200; seed++) {
-      const [nodes] = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], seed);
+      const nodes = refillQueue(
+        CHARGED_SQUARES,
+        CHARGED_SQUARES,
+        [],
+        seededRandom(seed),
+      );
 
       expect(nodes).toHaveLength(3);
       const names = nodes.map((node) => squareName(node.square));
@@ -113,7 +118,12 @@ describe("refillQueue", () => {
     const shipSquares = [squareAt("F", 6)];
 
     for (let seed = 0; seed < 100; seed++) {
-      const [nodes] = refillQueue(occupied, CHARGED_SQUARES, shipSquares, seed);
+      const nodes = refillQueue(
+        occupied,
+        CHARGED_SQUARES,
+        shipSquares,
+        seededRandom(seed),
+      );
       const names = nodes.map((node) => squareName(node.square));
 
       expect(names).not.toContain("H8");
@@ -131,7 +141,12 @@ describe("refillQueue", () => {
     let sawSquareOutsideStrictPool = false;
 
     for (let seed = 0; seed < 100; seed++) {
-      const [nodes] = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], seed);
+      const nodes = refillQueue(
+        CHARGED_SQUARES,
+        CHARGED_SQUARES,
+        [],
+        seededRandom(seed),
+      );
 
       const strictPool = legalNodePool(CHARGED_SQUARES, []);
       expect(strictPool.map(squareName)).toContain(squareName(nodes[0].square));
@@ -168,13 +183,14 @@ describe("refillQueue", () => {
     expect(sawSquareOutsideStrictPool).toBe(true);
   });
 
-  it('holds every draw to the strict pool, inside C3-M13, when passed "strict" for the third square, and advances the seed by the same four steps as the default call', () => {
+  it('holds every draw to the strict pool, inside C3-M13, when passed "strict" for the third square, and makes the same four draws as the default call', () => {
     for (let seed = 0; seed < 200; seed++) {
-      const [nodes, nextSeed] = refillQueue(
+      const random = seededRandom(seed);
+      const nodes = refillQueue(
         CHARGED_SQUARES,
         CHARGED_SQUARES,
         [],
-        seed,
+        random,
         "strict",
       );
 
@@ -187,7 +203,8 @@ describe("refillQueue", () => {
       for (let step = 0; step < 4; step++) {
         [, expectedSeed] = mulberry32(expectedSeed);
       }
-      expect(nextSeed).toBe(expectedSeed);
+      expect(random.currentSeed()).toBe(expectedSeed);
+      expect(random.draws()).toHaveLength(4);
     }
   });
 
@@ -200,7 +217,12 @@ describe("refillQueue", () => {
       seed < 3000 && !(sawOuterEdgeSquare && sawRingOneSquare);
       seed++
     ) {
-      const [nodes] = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], seed);
+      const nodes = refillQueue(
+        CHARGED_SQUARES,
+        CHARGED_SQUARES,
+        [],
+        seededRandom(seed),
+      );
       if (isOnOuterEdge(nodes[2].square)) {
         sawOuterEdgeSquare = true;
       }
@@ -215,7 +237,12 @@ describe("refillQueue", () => {
 
   it("always deals exactly the priorities {1, 2, 3}, with no repeat", () => {
     for (let seed = 0; seed < 300; seed++) {
-      const [nodes] = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], seed);
+      const nodes = refillQueue(
+        CHARGED_SQUARES,
+        CHARGED_SQUARES,
+        [],
+        seededRandom(seed),
+      );
       const priorities = nodes.map((node) => node.priority).sort();
 
       expect(priorities).toEqual([1, 2, 3]);
@@ -225,16 +252,10 @@ describe("refillQueue", () => {
   it("deals each of the six priority permutations roughly a sixth of the time, over several thousand refills", () => {
     const counts = PRIORITY_PERMUTATIONS.map(() => 0);
     const trials = 6000;
-    let seed = 20260906;
+    const random = seededRandom(20260906);
 
     for (let i = 0; i < trials; i++) {
-      const [nodes, nextSeed] = refillQueue(
-        CHARGED_SQUARES,
-        CHARGED_SQUARES,
-        [],
-        seed,
-      );
-      seed = nextSeed;
+      const nodes = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], random);
 
       const order = nodes.map((node) => node.priority);
       const index = PRIORITY_PERMUTATIONS.findIndex(
@@ -253,26 +274,33 @@ describe("refillQueue", () => {
     }
   });
 
-  it("advances the seed by exactly four mulberry32 steps", () => {
+  it("makes exactly four draws, advancing the seed by four mulberry32 steps", () => {
     const seed = 55;
     let expectedSeed = seed;
     for (let step = 0; step < 4; step++) {
       [, expectedSeed] = mulberry32(expectedSeed);
     }
 
-    const [, nextSeed] = refillQueue(
-      CHARGED_SQUARES,
-      CHARGED_SQUARES,
-      [],
-      seed,
-    );
+    const random = seededRandom(seed);
+    refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], random);
 
-    expect(nextSeed).toBe(expectedSeed);
+    expect(random.currentSeed()).toBe(expectedSeed);
+    expect(random.draws()).toHaveLength(4);
   });
 
   it("returns the same trio, in the same order, with the same priorities, for the same seed", () => {
-    const first = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], 4242);
-    const second = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], 4242);
+    const first = refillQueue(
+      CHARGED_SQUARES,
+      CHARGED_SQUARES,
+      [],
+      seededRandom(4242),
+    );
+    const second = refillQueue(
+      CHARGED_SQUARES,
+      CHARGED_SQUARES,
+      [],
+      seededRandom(4242),
+    );
 
     expect(first).toEqual(second);
   });
@@ -284,17 +312,11 @@ describe("refillQueue", () => {
     // pool for the second draw leaves less room to spread it from the
     // first. The floor keeps a comparable margin below the new figure.
     const trials = 4000;
-    let seed = 900001;
+    const random = seededRandom(900001);
     let totalMinimumGap = 0;
 
     for (let i = 0; i < trials; i++) {
-      const [nodes, nextSeed] = refillQueue(
-        CHARGED_SQUARES,
-        CHARGED_SQUARES,
-        [],
-        seed,
-      );
-      seed = nextSeed;
+      const nodes = refillQueue(CHARGED_SQUARES, CHARGED_SQUARES, [], random);
 
       let minimumGap = Infinity;
       for (let a = 0; a < nodes.length; a++) {

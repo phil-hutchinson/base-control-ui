@@ -4,10 +4,10 @@
 // a recorded game redraws identically.
 //
 // The shuffle runs its own copy of the seed, starting from the same value
-// the opening deal started from (`GameState.openingSeed`) but never touching
-// the deal's own seed stream: which drawing sits where is purely visual and
-// carries no rule, so it lives here in the board layer rather than in
-// `src/rules/`.
+// the opening deal started from (the session's `openingSeed`, `game/session.ts`)
+// but never touching the deal's own draw stream: which drawing sits where is
+// purely visual and carries no rule, so it lives here in the board layer
+// rather than in `src/rules/`.
 
 import { mulberry32 } from "../rules/random";
 import { PLANETS } from "../rules/planets";

@@ -20,7 +20,7 @@ import {
   type NodeClaimedEffect,
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
-import { drawIndex } from "./random";
+import { seededRandom } from "./random";
 import { TOP_NODE_PRIORITY, rotatePriority, rotateQueue } from "./nodeQueue";
 import {
   DEFAULT_CHARGED_NODE_COUNT,
@@ -70,15 +70,12 @@ function buildState(config: {
   combatEnabled?: boolean;
   nodePlaystyle?: NodePlaystyle;
   rotators?: readonly Square[];
-  randomSeed?: number;
 }): GameState {
   return {
     ships: config.ships,
     nodes: config.rawNodes ?? nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     plyNumber: config.plyNumber ?? 1,
-    randomSeed: config.randomSeed ?? 1,
-    openingSeed: 1,
     // Pinned to continuous, not left to the app's default: this is a
     // rules-level harness, and a case that names no rotation should keep
     // exercising the same setting regardless of which one the start screen
@@ -119,7 +116,12 @@ describe("applyMove", () => {
     });
     const before = structuredClone(state);
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -171,7 +173,12 @@ describe("applyMove", () => {
         I3: ["charged", 0],
       },
     });
-    const endResult = applyMove(endsOnPlanet, "green-1", squareFromName("D6"));
+    const endResult = applyMove(
+      endsOnPlanet,
+      "green-1",
+      squareFromName("D6"),
+      seededRandom(1),
+    );
     expect(endResult.outcome).toBe("applied");
     if (endResult.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -216,6 +223,7 @@ describe("applyMove", () => {
       passesOverPlanet,
       "green-1",
       squareFromName("E6"),
+      seededRandom(1),
     );
     expect(passResult.outcome).toBe("applied");
     if (passResult.outcome !== "applied") {
@@ -241,7 +249,12 @@ describe("applyMove", () => {
       plyNumber: 5,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("J8"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("J8"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -284,7 +297,12 @@ describe("applyMove", () => {
       plyNumber: 3,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("J9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("J9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -317,7 +335,12 @@ describe("applyMove", () => {
       },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -341,7 +364,12 @@ describe("applyMove", () => {
     });
     const before = structuredClone(state);
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result).toEqual({
       outcome: "refused",
@@ -351,7 +379,7 @@ describe("applyMove", () => {
   });
 
   it("gives green the first ply", () => {
-    expect(startingGameState(1).sideToMove).toBe("green");
+    expect(startingGameState(seededRandom(1)).sideToMove).toBe("green");
   });
 
   it("ends the ply and passes the turn", () => {
@@ -367,7 +395,12 @@ describe("applyMove", () => {
       },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -385,7 +418,12 @@ describe("applyMove", () => {
       sideToMove: "red",
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
     expect(result).toEqual({ outcome: "refused", reason: "not-your-ship" });
   });
 });
@@ -396,7 +434,12 @@ describe("applyMove deducts the shape's cost (rules.md §6)", () => {
       ships: [ship("green-1", "green", "H8", 2)],
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -412,7 +455,12 @@ describe("applyMove deducts the shape's cost (rules.md §6)", () => {
       ships: [ship("green-1", "green", "H8", 2)],
     });
 
-    const result = applyMove(state, "green-1", squareFromName("I9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("I9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -428,7 +476,12 @@ describe("applyMove deducts the shape's cost (rules.md §6)", () => {
       ships: [ship("green-1", "green", "H8", 2)],
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H10"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H10"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -443,7 +496,12 @@ describe("applyMove deducts the shape's cost (rules.md §6)", () => {
       ships: [ship("green-1", "green", "H8", 2)],
     });
 
-    const result = applyMove(state, "green-1", squareFromName("J9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("J9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -464,7 +522,12 @@ describe("applyMove deducts the shape's cost (rules.md §6)", () => {
       ["H10", "F9"],
     ];
     for (const [, to] of lDestinations) {
-      const result = applyMove(state, "green-1", squareFromName(to));
+      const result = applyMove(
+        state,
+        "green-1",
+        squareFromName(to),
+        seededRandom(1),
+      );
       expect(result.outcome).toBe("applied");
       if (result.outcome !== "applied") {
         throw new Error("expected the L move to be applied");
@@ -479,10 +542,20 @@ describe("applyMove deducts the shape's cost (rules.md §6)", () => {
     const ship1 = state.ships.find((s) => s.id === "green-1");
     expect(ship1?.power).toBe(0);
 
-    const refusedL = applyMove(state, "green-1", squareFromName("D8"));
+    const refusedL = applyMove(
+      state,
+      "green-1",
+      squareFromName("D8"),
+      seededRandom(1),
+    );
     expect(refusedL).toEqual({ outcome: "refused", reason: "cannot-afford" });
 
-    const stillFreeStep = applyMove(state, "green-1", squareFromName("F10"));
+    const stillFreeStep = applyMove(
+      state,
+      "green-1",
+      squareFromName("F10"),
+      seededRandom(1),
+    );
     expect(stillFreeStep.outcome).toBe("applied");
     if (stillFreeStep.outcome !== "applied") {
       throw new Error("expected the free orthogonal step to be applied");
@@ -519,7 +592,12 @@ describe("applyAttack", () => {
       });
       const before = structuredClone(state);
 
-      const result = applyAttack(state, "green-1", squareFromName("H9"));
+      const result = applyAttack(
+        state,
+        "green-1",
+        squareFromName("H9"),
+        seededRandom(1),
+      );
 
       expect(result.outcome).toBe("applied");
       if (result.outcome !== "applied") {
@@ -591,7 +669,12 @@ describe("applyAttack", () => {
       ships: [ship("green-1", "green", "H8", 4), ship("red-1", "red", "I9", 3)],
     });
 
-    const result = applyAttack(state, "green-1", squareFromName("I9"));
+    const result = applyAttack(
+      state,
+      "green-1",
+      squareFromName("I9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -632,21 +715,21 @@ describe("applyAttack", () => {
     // Both planets are empty before the fight, so the attacker's draw picks
     // from all twelve; the defender's draw is then made against the pool
     // with the attacker's planet removed.
-    const [attackerIndex, seedAfterAttackerDraw] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
+    const attackerRandom = seededRandom(1);
+    const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanetName = squareName(PLANETS[attackerIndex]);
     const defenderPool = PLANETS.filter(
       (square) => squareName(square) !== attackerPlanetName,
     );
-    const [defenderIndex] = drawIndex(
-      seedAfterAttackerDraw,
-      defenderPool.length,
-    );
+    const defenderIndex = attackerRandom.uniform(defenderPool.length);
     const defenderPlanetName = squareName(defenderPool[defenderIndex]);
 
-    const result = applyAttack(state, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -682,7 +765,12 @@ describe("applyAttack", () => {
 
     // Green's attack ends its ply, so the second fight is red's own turn on
     // the following ply, not a second green turn.
-    const first = applyAttack(state, "green-1", squareFromName("H9"));
+    const first = applyAttack(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
     expect(first.outcome).toBe("applied");
     if (first.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
@@ -693,7 +781,12 @@ describe("applyAttack", () => {
     expect(countBySide(first.state, "green")).toBe(7);
     expect(countBySide(first.state, "red")).toBe(7);
 
-    const second = applyAttack(first.state, "red-2", squareFromName("A1"));
+    const second = applyAttack(
+      first.state,
+      "red-2",
+      squareFromName("A1"),
+      seededRandom(1),
+    );
     expect(second.outcome).toBe("applied");
     if (second.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
@@ -722,7 +815,12 @@ describe("applyAttack", () => {
       ],
     });
 
-    const vacated = applyMove(state, "green-2", squareFromName("B2"));
+    const vacated = applyMove(
+      state,
+      "green-2",
+      squareFromName("B2"),
+      seededRandom(1),
+    );
     expect(vacated.outcome).toBe("applied");
     if (vacated.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -732,7 +830,12 @@ describe("applyAttack", () => {
     // The first and second planets are now the only empty planets, so the
     // fight's two returning ships must land there between them, whichever
     // seed drew them.
-    const result = applyAttack(vacated.state, "red-1", squareFromName("H9"));
+    const result = applyAttack(
+      vacated.state,
+      "red-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
@@ -747,7 +850,7 @@ describe("applyAttack", () => {
     );
   });
 
-  it("advances randomSeed exactly twice for the fight itself, and nothing further", () => {
+  it("advances the source exactly twice for the fight itself, and nothing further", () => {
     // Drawing the second return from the same seed the first draw used
     // would silently break replay: the pool is just one square shorter, so
     // the draw still looks legal. No inactive node is queued, so charging
@@ -763,22 +866,18 @@ describe("applyAttack", () => {
         I3: ["charged", 0],
       },
     });
-    const result = applyAttack(state, "green-1", squareFromName("H9"));
+    const random = seededRandom(1);
+    const result = applyAttack(state, "green-1", squareFromName("H9"), random);
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
     // Both planets start empty, so the attacker's draw picks from all
     // twelve and the defender's draw — against the state that already
     // holds the attacker — picks from the remaining eleven.
-    const [, seedAfterAttackerDraw] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
-    const [, seedAfterDefenderDraw] = drawIndex(
-      seedAfterAttackerDraw,
-      PLANETS.length - 1,
-    );
-    expect(result.state.randomSeed).toBe(seedAfterDefenderDraw);
+    const expectedRandom = seededRandom(1);
+    expectedRandom.uniform(PLANETS.length);
+    expectedRandom.uniform(PLANETS.length - 1);
+    expect(random.currentSeed()).toBe(expectedRandom.currentSeed());
   });
 
   it("places both ships on different planets, whatever the seed, when exactly two planets are empty", () => {
@@ -790,17 +889,19 @@ describe("applyAttack", () => {
     );
 
     for (const seed of [1, 2, 3, 42, 999]) {
-      const state: GameState = {
-        ...buildState({
-          ships: [
-            ship("green-1", "green", "H8", 2),
-            ship("red-1", "red", "H9", 2),
-            ...planetOccupants,
-          ],
-        }),
-        randomSeed: seed,
-      };
-      const result = applyAttack(state, "green-1", squareFromName("H9"));
+      const state = buildState({
+        ships: [
+          ship("green-1", "green", "H8", 2),
+          ship("red-1", "red", "H9", 2),
+          ...planetOccupants,
+        ],
+      });
+      const result = applyAttack(
+        state,
+        "green-1",
+        squareFromName("H9"),
+        seededRandom(seed),
+      );
       if (result.outcome !== "applied") {
         throw new Error("expected the attack to be applied");
       }
@@ -824,26 +925,27 @@ describe("applyAttack", () => {
       ship(`planet-filler-${index}`, "red", squareName(square)),
     );
 
-    let seed = 7;
+    const random = seededRandom(7);
     for (let round = 0; round < 200; round++) {
-      const state: GameState = {
-        ...buildState({
-          ships: [
-            ship("green-1", "green", "H8", 2),
-            ship("red-1", "red", "H9", 2),
-            ...planetOccupants,
-          ],
-        }),
-        randomSeed: seed,
-      };
-      const result = applyAttack(state, "green-1", squareFromName("H9"));
+      const state = buildState({
+        ships: [
+          ship("green-1", "green", "H8", 2),
+          ship("red-1", "red", "H9", 2),
+          ...planetOccupants,
+        ],
+      });
+      const result = applyAttack(
+        state,
+        "green-1",
+        squareFromName("H9"),
+        random,
+      );
       if (result.outcome !== "applied") {
         throw new Error("expected the attack to be applied");
       }
       const attacker = result.state.ships.find((s) => s.id === "green-1")!;
       const defender = result.state.ships.find((s) => s.id === "red-1")!;
       expect(squareName(attacker.square)).not.toBe(squareName(defender.square));
-      seed = result.state.randomSeed;
     }
   });
 
@@ -857,14 +959,24 @@ describe("applyAttack", () => {
       ],
     });
 
-    const first = applyAttack(state, "green-1", squareFromName("H9"));
+    const first = applyAttack(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
     expect(first.outcome).toBe("applied");
     if (first.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
     }
     expect(first.state.sideToMove).toBe("red");
 
-    const second = applyAttack(first.state, "red-2", squareFromName("A1"));
+    const second = applyAttack(
+      first.state,
+      "red-2",
+      squareFromName("A1"),
+      seededRandom(1),
+    );
     expect(second.outcome).toBe("applied");
   });
 
@@ -880,6 +992,7 @@ describe("applyAttack", () => {
       moveThenAttack,
       "green-1",
       squareFromName("H9"),
+      seededRandom(1),
     );
     expect(firstMove.outcome).toBe("applied");
     if (firstMove.outcome !== "applied") {
@@ -890,6 +1003,7 @@ describe("applyAttack", () => {
       firstMove.state,
       "red-1",
       squareFromName("A1"),
+      seededRandom(1),
     );
     expect(secondAttack.outcome).toBe("applied");
 
@@ -904,6 +1018,7 @@ describe("applyAttack", () => {
       attackThenMove,
       "green-1",
       squareFromName("H9"),
+      seededRandom(1),
     );
     expect(firstAttack.outcome).toBe("applied");
     if (firstAttack.outcome !== "applied") {
@@ -914,6 +1029,7 @@ describe("applyAttack", () => {
       firstAttack.state,
       "red-2",
       squareFromName("B2"),
+      seededRandom(1),
     );
     expect(secondMove.outcome).toBe("applied");
   });
@@ -930,7 +1046,12 @@ describe("applyAttack", () => {
     // refused when named directly.
     expect(legalTargets(state, "red-1")).toEqual([]);
 
-    const result = applyAttack(state, "red-1", squareFromName("K8"));
+    const result = applyAttack(
+      state,
+      "red-1",
+      squareFromName("K8"),
+      seededRandom(1),
+    );
 
     expect(result).toEqual({
       outcome: "refused",
@@ -948,7 +1069,12 @@ describe("applyAttack", () => {
       nodes: { D4: "depleted" },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("D5"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("D5"),
+      seededRandom(1),
+    );
 
     expect(result).toEqual({
       outcome: "refused",
@@ -970,7 +1096,12 @@ describe("applyAttack", () => {
       },
     });
 
-    const result = applyAttack(state, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
@@ -1005,7 +1136,12 @@ describe("applyAttack", () => {
     });
     const before = structuredClone(state);
 
-    const result = applyAttack(state, "green-1", squareFromName("A1"));
+    const result = applyAttack(
+      state,
+      "green-1",
+      squareFromName("A1"),
+      seededRandom(1),
+    );
 
     expect(result).toEqual({
       outcome: "refused",
@@ -1026,7 +1162,12 @@ describe("applyAttack", () => {
     });
     const before = structuredClone(state);
 
-    const result = applyAttack(state, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result).toEqual({ outcome: "refused", reason: "combat-is-off" });
     expect(state).toEqual(before);
@@ -1067,7 +1208,12 @@ describe("a move or an attack that never lands on or leaves a charged node touch
     }
 
     // Green's whole ply: an ordinary move touching no node.
-    const afterGreenMove = applyMove(state, "green-2", squareFromName("B5"));
+    const afterGreenMove = applyMove(
+      state,
+      "green-2",
+      squareFromName("B5"),
+      seededRandom(1),
+    );
     expect(afterGreenMove.outcome).toBe("applied");
     if (afterGreenMove.outcome !== "applied") {
       throw new Error("expected green's move to be applied");
@@ -1079,6 +1225,7 @@ describe("a move or an attack that never lands on or leaves a charged node touch
       afterGreenMove.state,
       "red-2",
       squareFromName("N5"),
+      seededRandom(1),
     );
     expect(afterRedMove.outcome).toBe("applied");
     if (afterRedMove.outcome !== "applied") {
@@ -1092,6 +1239,7 @@ describe("a move or an attack that never lands on or leaves a charged node touch
       afterRedMove.state,
       "green-1",
       squareFromName("F8"),
+      seededRandom(1),
     );
     expect(afterAttack.outcome).toBe("applied");
     if (afterAttack.outcome !== "applied") {
@@ -1113,24 +1261,25 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
         L8: { state: "prospective", level: 0, signal: 0 },
       },
       nodePlaystyle: "steal",
-      randomSeed: seed,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H8"));
+    const random = seededRandom(seed);
+    const result = applyMove(state, "green-1", squareFromName("H8"), random);
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
 
     const [expectedNewProspective, expectedSeed] = (() => {
+      const random = seededRandom(seed);
       const claimed = claimNode(
         state.nodes,
         0,
         squareFromName("H8"),
         [squareFromName("H8"), squareFromName("A1")],
-        seed,
+        random,
       );
-      return [claimed.newProspective, claimed.nextSeed] as const;
+      return [claimed.newProspective, random.currentSeed()] as const;
     })();
 
     expect(result.state.nodes.H8).toEqual({
@@ -1147,7 +1296,7 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       level: 0,
       signal: 0,
     });
-    expect(result.state.randomSeed).toBe(expectedSeed);
+    expect(random.currentSeed()).toBe(expectedSeed);
 
     const claimEffect = result.effects.find(
       (effect): effect is NodeClaimedEffect => effect.type === "node-claimed",
@@ -1173,10 +1322,14 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       },
       sideToMove: "red",
       nodePlaystyle: "steal",
-      randomSeed: seed,
     });
 
-    const result = applyMove(state, "red-1", squareFromName("H8"));
+    const result = applyMove(
+      state,
+      "red-1",
+      squareFromName("H8"),
+      seededRandom(seed),
+    );
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -1217,10 +1370,14 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
         H8: { state: "prospective", level: 0, signal: 0 },
       },
       nodePlaystyle: "steal",
-      randomSeed: seed,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H8"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H8"),
+      seededRandom(seed),
+    );
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -1253,21 +1410,22 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
         H8: { state: "prospective", level: 0, signal: 0 },
       },
       nodePlaystyle: "steal",
-      randomSeed: seed,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("F8"));
+    const random = seededRandom(seed);
+    const result = applyMove(state, "green-1", squareFromName("F8"), random);
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
 
+    const abandonRandom = seededRandom(seed);
     const abandoned = abandonNode(
       state.nodes,
       0,
       squareFromName("G8"),
       [squareFromName("F8"), squareFromName("A1")],
-      seed,
+      abandonRandom,
     );
 
     expect(result.state.nodes.G8).toBeUndefined();
@@ -1281,7 +1439,7 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       level: 0,
       signal: 0,
     });
-    expect(result.state.randomSeed).toBe(abandoned.nextSeed);
+    expect(random.currentSeed()).toBe(abandonRandom.currentSeed());
 
     expect(
       result.effects.some((effect) => effect.type === "node-claimed"),
@@ -1310,33 +1468,39 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       ships: [ship("green-1", "green", "G8"), ship("red-1", "red", "A1")],
       rawNodes: nodesBefore,
       nodePlaystyle: "steal",
-      randomSeed: seed,
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H8"));
+    const appliedRandom = seededRandom(seed);
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H8"),
+      appliedRandom,
+    );
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
 
     const movedShipSquares = [squareFromName("H8"), squareFromName("A1")];
+    const random = seededRandom(seed);
     const abandoned = abandonNode(
       nodesBefore,
       0,
       squareFromName("G8"),
       movedShipSquares,
-      seed,
+      random,
     );
     const claimed = claimNode(
       abandoned.nodes,
       1,
       squareFromName("H8"),
       movedShipSquares,
-      abandoned.nextSeed,
+      random,
     );
 
     expect(result.state.nodes).toEqual(claimed.nodes);
-    expect(result.state.randomSeed).toBe(claimed.nextSeed);
+    expect(appliedRandom.currentSeed()).toBe(random.currentSeed());
     expect(squareName(abandoned.newProspective)).not.toBe("H8");
 
     const abandonEffect = result.effects.find(
@@ -1380,7 +1544,12 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       nodePlaystyle: "steal",
     });
 
-    const result = applyMove(state, "green-2", squareFromName("H8"));
+    const result = applyMove(
+      state,
+      "green-2",
+      squareFromName("H8"),
+      seededRandom(1),
+    );
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -1414,7 +1583,12 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       const greenTo = toggle ? "A5" : "A6";
       const redTo = toggle ? "O5" : "O6";
 
-      const greenResult = applyMove(state, "green-2", squareFromName(greenTo));
+      const greenResult = applyMove(
+        state,
+        "green-2",
+        squareFromName(greenTo),
+        seededRandom(1),
+      );
       expect(greenResult.outcome).toBe("applied");
       if (greenResult.outcome !== "applied") {
         throw new Error("expected green's shuttle move to be applied");
@@ -1422,7 +1596,12 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       state = greenResult.state;
       expect(state.nodes.G8).toEqual({ state: "charged", level: 0, signal: 0 });
 
-      const redResult = applyMove(state, "red-1", squareFromName(redTo));
+      const redResult = applyMove(
+        state,
+        "red-1",
+        squareFromName(redTo),
+        seededRandom(1),
+      );
       expect(redResult.outcome).toBe("applied");
       if (redResult.outcome !== "applied") {
         throw new Error("expected red's shuttle move to be applied");
@@ -1457,7 +1636,12 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
     // D6 is a planet (as in the continuous-playstyle test above): landing on
     // it under steal must not rotate anything, since there is no queue to
     // rotate at all.
-    const result = applyMove(state, "green-1", squareFromName("D6"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("D6"),
+      seededRandom(1),
+    );
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
@@ -1485,7 +1669,12 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       combatEnabled: true,
     });
 
-    const result = applyAttack(state, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
@@ -1727,7 +1916,7 @@ describe("applyPassGuard", () => {
       ],
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state).toEqual(state);
     expect(result.effect).toBeUndefined();
@@ -1747,7 +1936,7 @@ describe("applyPassGuard", () => {
       combatEnabled: false,
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state.sideToMove).toBe("red");
     expect(result.effect).toEqual({
@@ -1782,7 +1971,7 @@ describe("applyPassGuard", () => {
       },
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state.sideToMove).toBe("red");
     expect(result.state.plyNumber).toBe(2);
@@ -1829,7 +2018,7 @@ describe("applyPassGuard", () => {
       nodes: { H8: "charged" },
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state.sideToMove).toBe("red");
     const winner = result.state.ships.find((s) => s.id === "green-1");
@@ -1874,7 +2063,7 @@ describe("applyPassGuard", () => {
       outOfTime: { green: true, red: false },
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state.sideToMove).toBe("red");
     expect(result.effect).toEqual({
@@ -1914,7 +2103,7 @@ describe("applyPassGuard", () => {
       },
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state.sideToMove).toBe("red");
     expect(result.effect).toEqual({
@@ -1932,7 +2121,7 @@ describe("applyPassGuard", () => {
   it("leaves a state with a legal move untouched", () => {
     const state = buildState({ ships: [ship("green-1", "green", "H8")] });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state).toEqual(state);
     expect(result.effect).toBeUndefined();
@@ -1951,7 +2140,7 @@ describe("applyPassGuard", () => {
       },
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state.sideToMove).toBe("red");
     expect(result.state.plyNumber).toBe(2);
@@ -1971,7 +2160,7 @@ describe("applyPassGuard", () => {
       expect(state.plyNumber).toBe(expectedPly);
       expect(state.sideToMove).toBe(expectedPly % 2 === 1 ? "green" : "red");
 
-      const result = applyPassGuard(state);
+      const result = applyPassGuard(state, seededRandom(1));
       expect(result.effect).toBeDefined();
       state = result.state;
     }
@@ -1998,7 +2187,7 @@ describe("applyPassGuard", () => {
       nodes: { K5: "charged" },
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.effect).toEqual({
       type: "ply-passed",
@@ -2026,7 +2215,7 @@ describe("applyPassGuard", () => {
     // sequence, tick a clock, collect energy or advance the ply.
     const state = buildState({ ships: [], plyNumber: 61 });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state).toEqual(state);
     expect(result.effect).toBeUndefined();
@@ -2039,7 +2228,7 @@ describe("applyPassGuard", () => {
       lengthInRounds: 3,
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state).toEqual(state);
     expect(result.effect).toBeUndefined();
@@ -2052,7 +2241,12 @@ describe("applyPassGuard", () => {
       plyNumber: 60,
     });
 
-    const result = applyMove(state, "red-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "red-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2063,7 +2257,7 @@ describe("applyPassGuard", () => {
       false,
     );
 
-    const guarded = applyPassGuard(result.state);
+    const guarded = applyPassGuard(result.state, seededRandom(1));
     expect(guarded.state).toEqual(result.state);
     expect(guarded.effect).toBeUndefined();
   });
@@ -2080,7 +2274,7 @@ describe("applyOutOfTimePass", () => {
       outOfTime: { green: true, red: false },
     });
 
-    const result = applyOutOfTimePass(state);
+    const result = applyOutOfTimePass(state, seededRandom(1));
 
     expect(result.state.sideToMove).toBe("red");
     expect(result.state.plyNumber).toBe(2);
@@ -2107,7 +2301,7 @@ describe("applyOutOfTimePass", () => {
       outOfTime: { green: false, red: false },
     });
 
-    const result = applyOutOfTimePass(state);
+    const result = applyOutOfTimePass(state, seededRandom(1));
 
     expect(result.state).toBe(state);
     expect(result.effects).toEqual([]);
@@ -2120,7 +2314,7 @@ describe("applyOutOfTimePass", () => {
       outOfTime: { green: true, red: false },
     });
 
-    const result = applyOutOfTimePass(state);
+    const result = applyOutOfTimePass(state, seededRandom(1));
 
     expect(result.state).toBe(state);
     expect(result.effects).toEqual([]);
@@ -2144,7 +2338,7 @@ describe("applyOutOfTimePass", () => {
       outOfTime: { green: true, red: false },
     });
 
-    const result = applyOutOfTimePass(state);
+    const result = applyOutOfTimePass(state, seededRandom(1));
 
     expect(result.state.sideToMove).toBe("green");
     expect(result.state.plyNumber).toBe(3);
@@ -2173,7 +2367,7 @@ describe("applyOutOfTimePass", () => {
       outOfTime: { green: true, red: false },
     });
 
-    const result = applyOutOfTimePass(state);
+    const result = applyOutOfTimePass(state, seededRandom(1));
 
     expect(result.effects).toEqual([
       {
@@ -2217,7 +2411,7 @@ describe("applyOutOfTimePass", () => {
       outOfTime: { green: true, red: false },
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.state.sideToMove).toBe("green");
     expect(result.effect).toEqual({
@@ -2248,7 +2442,12 @@ describe("a ship leaving a charged node depletes it at once (rules.md §8.3)", (
       nodes: { H8: ["charged", CHARGED_COUNTDOWN_PLIES] },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2276,7 +2475,12 @@ describe("a ship leaving a charged node depletes it at once (rules.md §8.3)", (
       nodes: { H8: ["charged", 0] },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H8"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H8"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2295,7 +2499,12 @@ describe("a ship leaving a charged node depletes it at once (rules.md §8.3)", (
       nodes: { H8: ["charged", 0] },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H8"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H8"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2320,7 +2529,12 @@ describe("a ship leaving a charged node depletes it at once (rules.md §8.3)", (
       },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2346,7 +2560,12 @@ describe("a ship leaving a charged node depletes it at once (rules.md §8.3)", (
       nodes: { H8: ["charged", CHARGED_COUNTDOWN_PLIES] },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2390,7 +2609,12 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       nodes: { ...steadyCharged, ...threeInactive },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("D6"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("D6"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2414,7 +2638,12 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       nodes: { ...steadyCharged, ...threeInactive },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("D6"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("D6"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2437,7 +2666,12 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       nodes: { ...steadyCharged, ...threeInactive },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("D6"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("D6"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2460,7 +2694,12 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       nodes: { ...steadyCharged, ...threeInactive },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2486,7 +2725,12 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       nodes: { ...steadyCharged, ...threeInactive },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2520,7 +2764,12 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
     // C6 to E6 is a two-square orthogonal move that turns through the D6
     // planet without stopping there (rules.md §6).
-    const result = applyMove(state, "green-1", squareFromName("E6"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("E6"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2545,7 +2794,12 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
 
     // H7 to H9 is a two-square orthogonal move turning through H8, which
     // holds the rotator, without stopping there.
-    const result = applyMove(state, "green-1", squareFromName("H9"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2574,7 +2828,12 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       nodes: { ...steadyCharged, ...threeInactive },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("G5"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("G5"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2598,21 +2857,21 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       nodes: { ...steadyCharged, ...threeInactive },
     });
 
-    const [attackerIndex, seedAfterAttackerDraw] = drawIndex(
-      state.randomSeed,
-      PLANETS.length,
-    );
+    const attackerRandom = seededRandom(1);
+    const attackerIndex = attackerRandom.uniform(PLANETS.length);
     const attackerPlanetName = squareName(PLANETS[attackerIndex]);
     const defenderPool = PLANETS.filter(
       (square) => squareName(square) !== attackerPlanetName,
     );
-    const [defenderIndex] = drawIndex(
-      seedAfterAttackerDraw,
-      defenderPool.length,
-    );
+    const defenderIndex = attackerRandom.uniform(defenderPool.length);
     const defenderPlanetName = squareName(defenderPool[defenderIndex]);
 
-    const result = applyAttack(state, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2644,7 +2903,12 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       nodes: { ...steadyCharged, ...threeInactive },
     });
 
-    const result = applyAttack(state, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
@@ -2689,6 +2953,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       underPlanet,
       "green-1",
       squareFromName("D6"),
+      seededRandom(1),
     );
     expect(planetResult.outcome).toBe("applied");
     if (planetResult.outcome !== "applied") {
@@ -2705,6 +2970,7 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       underContinuous,
       "green-1",
       squareFromName("D6"),
+      seededRandom(1),
     );
     expect(continuousResult.outcome).toBe("applied");
     if (continuousResult.outcome !== "applied") {
@@ -2725,7 +2991,12 @@ describe("a landing rotates the queue (rules.md §8.2)", () => {
       nodes: { C6: ["charged", CHARGED_COUNTDOWN_PLIES] },
     });
 
-    const result = applyMove(state, "green-1", squareFromName("D6"));
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("D6"),
+      seededRandom(1),
+    );
 
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {

@@ -30,6 +30,7 @@ import {
   applyMove,
 } from "./ply";
 import { MAX_POWER, type PowerLevel } from "./power";
+import { seededRandom } from "./random";
 
 function ship(
   id: ShipId,
@@ -49,8 +50,6 @@ function buildState(config: {
     nodes: {},
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -110,6 +109,7 @@ function shipOf(state: GameState, id: ShipId): Ship {
 
 describe("recovery — a beaten ship recovers on its planet, at the lone-charger rate of 2 a turn, only on its own turns, at no energy cost", () => {
   it("gains 2 at the end of each of its owner's turns, never the other side's, and stops at the maximum", () => {
+    const random = seededRandom(1);
     // green-1 attacks at 0 power (still one square orthogonally, rules.md
     // §4.1) and red-1 defends at full power, so the fight itself (§7)
     // leaves them exactly as they were — pinned below via the
@@ -126,7 +126,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
     });
 
     const fight = attackAppliedOrThrow(
-      applyAttack(initial, "green-1", squareFromName("H9")),
+      applyAttack(initial, "green-1", squareFromName("H9"), random),
     );
     const fightResolved = fight.effects.find(
       (effect): effect is FightResolvedEffect =>
@@ -176,7 +176,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
     // Red's turn: green-1 sits on its planet the whole time, but recovery is
     // an end-of-turn gain for the moving side only — never the other side's.
     const afterRedTurn1 = moveAppliedOrThrow(
-      applyMove(state, "red-2", squareFromName("K6")),
+      applyMove(state, "red-2", squareFromName("K6"), random),
     );
     expect(
       endOfTurnEffects(afterRedTurn1.effects).some(
@@ -194,7 +194,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
     // round again, so it gains its second helping of 2, still charging
     // alone.
     const afterGreenTurn2 = moveAppliedOrThrow(
-      applyMove(state, "green-2", squareFromName("E6")),
+      applyMove(state, "green-2", squareFromName("E6"), random),
     );
     expect(endOfTurnEffects(afterGreenTurn2.effects)).toContainEqual({
       type: "power-gained",
@@ -210,7 +210,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
 
     // Red's turn again: still nothing for green-1.
     const afterRedTurn2 = moveAppliedOrThrow(
-      applyMove(state, "red-2", squareFromName("K5")),
+      applyMove(state, "red-2", squareFromName("K5"), random),
     );
     expect(shipOf(afterRedTurn2.state, "green-1").power).toBe(4);
     state = afterRedTurn2.state;
@@ -218,7 +218,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
     // Green's turn: the third helping of 2 reaches the maximum exactly, with
     // nothing lost to the cap.
     const afterGreenTurn3 = moveAppliedOrThrow(
-      applyMove(state, "green-2", squareFromName("E5")),
+      applyMove(state, "green-2", squareFromName("E5"), random),
     );
     expect(endOfTurnEffects(afterGreenTurn3.effects)).toContainEqual({
       type: "power-gained",
@@ -234,7 +234,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
 
     // Red's turn again: no change.
     const afterRedTurn3 = moveAppliedOrThrow(
-      applyMove(state, "red-2", squareFromName("K6")),
+      applyMove(state, "red-2", squareFromName("K6"), random),
     );
     state = afterRedTurn3.state;
 
@@ -242,7 +242,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
     // longer charging at all — it gains nothing further and no effect is
     // raised for it, and it never goes past the maximum.
     const afterGreenTurn4 = moveAppliedOrThrow(
-      applyMove(state, "green-2", squareFromName("E6")),
+      applyMove(state, "green-2", squareFromName("E6"), random),
     );
     expect(
       endOfTurnEffects(afterGreenTurn4.effects).some(
@@ -262,6 +262,7 @@ describe("recovery — a beaten ship recovers on its planet, at the lone-charger
 
 describe("recovery — leaving a planet before it is full keeps what was recovered", () => {
   it("leaves at 2 power after just one of its owner's turns, with the reach of a 2-power ship", () => {
+    const random = seededRandom(1);
     // green-1 starts one square from a planet at 0 power — its only reach —
     // and moves onto it as its own first move, rather than being placed
     // there directly, so this also proves applyMove itself grants no instant
@@ -278,7 +279,7 @@ describe("recovery — leaving a planet before it is full keeps what was recover
     });
 
     const afterArrival = moveAppliedOrThrow(
-      applyMove(initial, "green-1", squareFromName("D6")),
+      applyMove(initial, "green-1", squareFromName("D6"), random),
     );
     expect(endOfTurnEffects(afterArrival.effects)).toContainEqual(
       expect.objectContaining({
@@ -291,7 +292,7 @@ describe("recovery — leaving a planet before it is full keeps what was recover
 
     // Red's turn: no change.
     const afterRedTurn1 = moveAppliedOrThrow(
-      applyMove(afterArrival.state, "red-1", squareFromName("K9")),
+      applyMove(afterArrival.state, "red-1", squareFromName("K9"), random),
     );
 
     // Green's turn: green-1 itself moves off the planet instead of staying,
@@ -302,7 +303,7 @@ describe("recovery — leaving a planet before it is full keeps what was recover
     // turn there.
     const destination = squareFromName("E6");
     const afterLeaving = moveAppliedOrThrow(
-      applyMove(afterRedTurn1.state, "green-1", destination),
+      applyMove(afterRedTurn1.state, "green-1", destination, random),
     );
     expect(
       endOfTurnEffects(afterLeaving.effects).some(
@@ -350,6 +351,7 @@ describe("recovery — leaving a planet before it is full keeps what was recover
 
 describe("recovery — a free orthogonal attack leaves both ships' power where it was, and empties both origin squares", () => {
   it("returns a full-power attacker and a drained defender each carrying what they had, with both origin squares emptied", () => {
+    const random = seededRandom(1);
     const initial = buildState({
       ships: [
         ship("green-1", "green", "H8", MAX_POWER),
@@ -358,7 +360,7 @@ describe("recovery — a free orthogonal attack leaves both ships' power where i
     });
 
     const result = attackAppliedOrThrow(
-      applyAttack(initial, "green-1", squareFromName("H9")),
+      applyAttack(initial, "green-1", squareFromName("H9"), random),
     );
 
     const fightResolved = result.effects.find(

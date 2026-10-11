@@ -3,6 +3,7 @@ import { squareAt } from "../rules/board";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { startingGameState, type GameState } from "../rules/gameState";
+import { seededRandom } from "../rules/random";
 import { createSession } from "../game/session";
 import type { NodeChargedEffect } from "../rules/charging";
 import type { NodeStatus } from "../rules/gameState";
@@ -31,8 +32,6 @@ function buildState(overrides: Partial<GameState> = {}): GameState {
     nodes: {},
     sideToMove: "green",
     plyNumber: 3,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -58,6 +57,8 @@ function sessionWithEvent(
     state: buildState(overrides),
     selectedShipId: undefined,
     lastEvent: event,
+    openingSeed: 0,
+    randomSeed: 0,
   };
 }
 
@@ -593,7 +594,7 @@ describe("boardAnimations", () => {
   });
 
   it("animates nothing at the opening deal", () => {
-    const session = createSession(startingGameState(1));
+    const session = createSession(startingGameState(seededRandom(1)), 0, 0);
 
     expect(boardAnimations(session).size).toBe(0);
   });

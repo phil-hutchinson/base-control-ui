@@ -31,6 +31,9 @@ npm run lint          # lint (eslint)
 npm run format:check  # formatting check (prettier); `npm run format` to fix
 npm test              # run the test suite (vitest)
 npm run build         # type check + production build into dist/
+npm run build:core    # build the core package into dist-core/package/
+npm run pack:core     # pack the built core into dist-core/core-<hash>.tgz
+npm run smoke:core    # smoke-test a packed core tarball in plain Node
 ```
 
 Type check, lint, formatting check, and tests should all pass clean before a
@@ -43,7 +46,8 @@ recommended rules on every `.tsx` file, catching common accessibility mistakes
 Two `no-restricted-*` rules encode project constraints that would otherwise be
 invisible: `node:*` imports are banned outside test files (the app is
 front-end only), and `Math.random` is banned outright (game randomness must
-come from the seeded generator, so records replay exactly).
+come from a `RandomSource` — `seededRandom` for a live game, `recordedRandom`
+to replay one — so records replay exactly).
 
 ## Testing
 
@@ -178,6 +182,58 @@ under. Every rules change still bumps the version and writes a changelog
 entry regardless. There is **no backwards compatibility** — an old game is
 replayed by checking out the tag it was played under, once tagging resumes.
 
-Because the game has a random element, the rules layer owns a **seeded**
-random source, and the seed is recorded with a game so it replays exactly. No
-game logic may reach for ambient randomness.
+Because the game has a random element, every random draw in the rules comes
+from a `RandomSource` the caller hands in — never from ambient randomness.
+`seededRandom(seed)` draws from a seed and records each draw it makes; the
+seed is recorded with a game, so rebuilding a `seededRandom` from it and
+replaying the same plies reproduces the game exactly. `recordedRandom(draws)`
+replays a list of draws already made, which is how a client applies a ply
+whose random results another party (the server, or a recorded game) has
+already drawn.
+
+## The core
+
+The rules are also packaged for use outside the app, as the **core** — see
+`CLAUDE.md`'s Vocabulary for what "core" and "engine" mean here.
+`src/core/index.ts` is the entry point; everything else in `src/rules/`
+stays internal to it.
+
+- **`npm run build:core`** builds `src/core/index.ts` into
+  `dist-core/package/`: a dependency-free ES module plus type declarations,
+  with a generated `package.json`. It **refuses on a dirty working tree** —
+  commit or stash first — because the package is stamped with
+  `git rev-parse --short=7 HEAD`, and that stamp must always name the commit
+  the tree actually holds.
+- **No DOM, no Node globals.** `tsconfig.core.json` (referenced from the
+  root `tsconfig.json`, so `npm run typecheck` enforces it on every run) has
+  no `lib` beyond `ES2022` and `types: []`, so a stray `document` or
+  `console` fails to typecheck. A matching ESLint block restricts
+  `src/core/**` and `src/rules/**` to importing only each other (and
+  restates the `node:*` ban), catching a plain `.ts` import of a
+  screen-related module that the tsconfig alone would not.
+- **`npm run pack:core`** packs the built package into
+  `dist-core/core-<hash>.tgz`.
+- **`npm run smoke:core -- <tarball>`** installs that tarball into an empty
+  folder outside the repository with plain `npm install`, then in plain
+  Node 22 (no Vite, no test framework) plays a short pinned game twice —
+  once with `seededRandom`, once replayed from its own draws with
+  `recordedRandom` — checking both reach the same pinned state hash, and
+  type-checks a one-line consumer against the package's declarations under
+  Node's module resolution. This shows the packed build behaves exactly
+  like the source.
+- **`node scripts/measure-core-replay.mjs`** (run directly with Node, not an
+  npm script, after `npm run build:core`) times replaying a full-length
+  game through the built core, in each playstyle; the figures are recorded
+  in `doc/ruleset/tech-notes.md`.
+- **Running a core release**: dispatch `.github/workflows/core-release.yml`
+  by hand, on any branch, from the repository's Actions tab. GitHub only
+  lets a `workflow_dispatch` workflow be dispatched once its file is on the
+  default branch (`main`), so no branch can be dispatched until then. It
+  typechecks, lints, tests, builds, packs and smoke-tests the core, then
+  publishes a prerelease tagged `core-<hash>` with the packed tarball as its
+  only asset. A release built from `main` is what the online-play server
+  vendors for live; a branch's release can be vendored for the server's dev
+  stage. Running it again on a commit that already has a tag or a release
+  does nothing and leaves that release untouched. `core-<hash>` tags are a
+  separate family from `rules-<version>` tags and never mean a rules
+  change.

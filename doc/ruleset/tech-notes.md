@@ -335,3 +335,43 @@ asserts the code's `activityBonusPoints` lookup agrees with it for all 18
 cells, so the table in the two places cannot drift apart; its spot-check
 test pins a handful of cells, including one of the two rows this pass
 changed.
+
+---
+
+## Replaying a game through the core
+
+Story 122 moves the rules to a `RandomSource` the caller hands in and
+packages them as the core (`src/core/`), so the online-play server can
+apply a ply exactly as the browser does. The server is expected to rebuild
+a game by replaying its whole log from the seed on every ply it applies, so
+this measures what that replay costs: `seededRandom(seed)`, `startGame`,
+then every ply's `applyPly` from parsed text, for one full-length game —
+90 rounds, the longest the start screen offers — in each of the four node
+playstyles, at five ships a side and five charged nodes, with planet bonus
+on (continuous, planet, dedicated) or planet effects on (steal) where the
+playstyle offers it. Each game was played once by a simple deterministic
+policy (`scripts/measure-core-replay.mjs`: the side to move tries its own
+ships in state order and, for each, the nearest destination squares first,
+stopping at the first `applyPly` accepts — not a strategy, just a quick way
+to reach a real, fully-played game), then its fixed ply list was rebuilt
+repeatedly and timed.
+
+**The measurement**, on the dev container (AMD Ryzen 7 8700F, Node v22.23.2),
+30 timed repetitions after a 5-repetition warm-up per playstyle:
+
+| Playstyle  | Plies | Draws |  Median |   Worst |
+| ---------- | ----: | ----: | ------: | ------: |
+| Continuous |   180 |    19 | 23.3 ms | 28.0 ms |
+| Planet     |   180 |    19 | 20.9 ms | 42.6 ms |
+| Dedicated  |   180 |    35 | 21.2 ms | 33.3 ms |
+| Steal      |   180 |    22 | 12.7 ms | 18.3 ms |
+
+A full 90-round game replays in a few tens of milliseconds, well inside the
+design doc's expectation of milliseconds; this is a measurement, not a
+pass/fail gate. Repeated runs (not recorded in the table) landed in the
+same range each time, with the worst figure moving around more than the
+median — expected of a single Node process's GC pauses rather than a sign
+the core itself is inconsistent.
+
+**To reproduce:** on a clean working tree, `npm run build:core`, then
+`node scripts/measure-core-replay.mjs`.

@@ -35,7 +35,6 @@ function buildState(config: {
   ships?: readonly Ship[];
   nodes?: Readonly<Record<string, readonly [NodeState, number]>>;
   plyNumber?: number;
-  randomSeed?: number;
   chargedNodeCount?: ChargedNodeCount;
 }): GameState {
   return {
@@ -43,8 +42,6 @@ function buildState(config: {
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: "green",
     plyNumber: config.plyNumber ?? 5,
-    randomSeed: config.randomSeed ?? 1,
-    openingSeed: config.randomSeed ?? 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -279,9 +276,8 @@ describe("runCharging — the shortfall (§8.2, §8.6 step 4)", () => {
 });
 
 describe("runCharging — consumes no randomness", () => {
-  it("leaves the seed exactly as it found it, whether or not anything charges", () => {
+  it("takes no RandomSource, whether or not anything charges, and changes nothing but nodes", () => {
     const withShortfall = buildState({
-      randomSeed: 42,
       nodes: {
         F2: ["charged", 0],
         N4: ["inactive", 3],
@@ -290,7 +286,6 @@ describe("runCharging — consumes no randomness", () => {
       },
     });
     const withoutShortfall = buildState({
-      randomSeed: 42,
       chargedNodeCount: 4,
       nodes: {
         F2: ["charged", 0],
@@ -300,8 +295,14 @@ describe("runCharging — consumes no randomness", () => {
       },
     });
 
-    expect(runCharging(withShortfall).state.randomSeed).toBe(42);
-    expect(runCharging(withoutShortfall).state.randomSeed).toBe(42);
+    expect({
+      ...runCharging(withShortfall).state,
+      nodes: withShortfall.nodes,
+    }).toEqual(withShortfall);
+    expect({
+      ...runCharging(withoutShortfall).state,
+      nodes: withoutShortfall.nodes,
+    }).toEqual(withoutShortfall);
   });
 });
 

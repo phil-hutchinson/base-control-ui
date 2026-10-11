@@ -54,6 +54,7 @@ import {
   type PlayerMatchingSetting,
 } from "./playerMatching";
 import { placeRotators } from "./rotators";
+import type { RandomSource } from "./random";
 import {
   DEFAULT_SCORING,
   isScoringSetting,
@@ -131,16 +132,6 @@ export interface GameState {
   readonly sideToMove: Side;
   /** The ply currently being played, starting at 1. */
   readonly plyNumber: number;
-  /** The 32-bit seed the next random draw will use (rules.md §8.2, §7.1). */
-  readonly randomSeed: number;
-  /**
-   * The 32-bit seed the opening deal started from — distinct from
-   * `randomSeed`, which is the seed the deal left behind and the next draw
-   * will use. Fixed for the game's lifetime once set by `startingGameState`;
-   * nothing in the rules layer reads it, but a game record wants it, and the
-   * board layer derives the planet arrangement from it.
-   */
-  readonly openingSeed: number;
   /** Each side's running energy total (rules.md §8.4), both starting at 0. */
   readonly energy: EnergyTotals;
   /**
@@ -382,52 +373,45 @@ export interface StartingGameStateOptions {
  *
  * The fleet is built before the deal so its ships' squares can be passed to
  * `dealOpeningBoard`, which excludes them from where a node may appear;
- * building the fleet draws no randomness, so the seeded stream is
- * unaffected.
+ * building the fleet draws no randomness, so `random` is left untouched by
+ * it.
  *
- * The seed argument is the seed the **deal** starts from, not the seed the
- * game's first turn draws from: dealing the board consumes `chargedNodeCount
- * + 4` steps of the stream before play begins — nine at five charged, eight
- * at four, seven at three — plus, under the dedicated playstyle only, up to
- * eight more for the opening rotator set (rules.md §3.3), plus,
- * when the planet bonus is a classic amount, exactly six more for the bonus
- * planet deal (rules.md §3.4), drawn last so an off game spends nothing
- * extra. Under steal instead, the deal consumes exactly `2 *
- * chargedNodeCount` steps (`dealStealOpeningBoard`, steal.md §7) — no
- * rotator set is ever drawn — and the planet bonus is always off, so the
- * classic bonus planet deal never runs. When planet effects is on
- * (steal.md §10, steal only), `dealActivityBonuses` instead draws exactly
- * four more steps, last.
+ * `random` is the source the **deal** draws from: dealing the board makes
+ * `chargedNodeCount + 4` draws before play begins — nine at five charged,
+ * eight at four, seven at three — plus, under the dedicated playstyle only,
+ * up to eight more for the opening rotator set (rules.md §3.3), plus, when
+ * the planet bonus is a classic amount, exactly six more for the bonus
+ * planet deal (rules.md §3.4), drawn last so an off game draws nothing
+ * extra. Under steal instead, the deal makes exactly `2 * chargedNodeCount`
+ * draws (`dealStealOpeningBoard`, steal.md §7) — no rotator set is ever
+ * drawn — and the planet bonus is always off, so the classic bonus planet
+ * deal never runs. When planet effects is on (steal.md §10, steal only),
+ * `dealActivityBonuses` instead makes exactly four more draws, last.
  * The player-matching nodes setting (steal.md §9) draws nothing — which two
  * signals are matched to the players is derived from `chargedNodeCount`, not
  * drawn — so a steal game started with double or required deals exactly the
- * board an off game deals from the same seed. The
- * resulting state's `randomSeed` is the seed all of that left behind. That
- * argument is also recorded verbatim as `openingSeed`, so the state
- * remembers where its deal started even once `randomSeed` has moved on. See
- * `src/game/seed.ts` for where the app's opening seed comes from. Every test
- * passes one explicitly, so a game's opening position is always
- * reproducible.
+ * board an off game deals from a source built the same way. `random` is left
+ * holding whatever it has drawn once this returns; this function neither
+ * reads nor stores a seed anywhere, so a caller that wants to remember where
+ * the deal started keeps that itself. Every test builds its own source, so a
+ * game's opening position is always reproducible.
  *
  * `options` carries everything else, each optional and documented on
  * `StartingGameStateOptions` — see there for the fields and their defaults
  * and validation.
  */
 
-/** Both sides' three planets, dealt from `seed`, none yet claimed. */
-function dealBonusPlanetEntries(seed: number): [BonusPlanetsBySide, number] {
-  const [dealt, nextSeed] = dealBonusPlanets(seed);
-  return [
-    {
-      green: dealt.green.map((square) => ({ square })),
-      red: dealt.red.map((square) => ({ square })),
-    },
-    nextSeed,
-  ];
+/** Both sides' three planets, dealt by `random`, none yet claimed. */
+function dealBonusPlanetEntries(random: RandomSource): BonusPlanetsBySide {
+  const dealt = dealBonusPlanets(random);
+  return {
+    green: dealt.green.map((square) => ({ square })),
+    red: dealt.red.map((square) => ({ square })),
+  };
 }
 
 export function startingGameState(
-  randomSeed: number,
+  random: RandomSource,
   options: StartingGameStateOptions = {},
 ): GameState {
   const {
@@ -514,41 +498,34 @@ export function startingGameState(
   }));
 
   const shipSquares = ships.map((ship) => ship.square);
-  const [nodes, dealtSeed]: [Readonly<Record<string, NodeStatus>>, number] =
+  const nodes: Readonly<Record<string, NodeStatus>> =
     nodePlaystyle === "steal"
-      ? dealStealOpeningBoard(shipSquares, chargedNodeCount, randomSeed)
-      : dealOpeningBoard(shipSquares, chargedNodeCount, randomSeed);
+      ? dealStealOpeningBoard(shipSquares, chargedNodeCount, random)
+      : dealOpeningBoard(shipSquares, chargedNodeCount, random);
 
   const dealtNodeSquares = ALL_SQUARES.filter(
     (square) => nodes[squareName(square)] !== undefined,
   );
-  const [rotators, seedAfterRotators] =
+  const rotators =
     nodePlaystyle === "dedicated"
-      ? placeRotators(dealtNodeSquares, shipSquares, dealtSeed)
-      : [[], dealtSeed];
+      ? placeRotators(dealtNodeSquares, shipSquares, random)
+      : [];
 
-  const [bonusPlanets, seedAfterBonusPlanets]: [BonusPlanetsBySide, number] =
+  const bonusPlanets: BonusPlanetsBySide =
     planetBonus === "off"
-      ? [{ green: [], red: [] }, seedAfterRotators]
-      : dealBonusPlanetEntries(seedAfterRotators);
+      ? { green: [], red: [] }
+      : dealBonusPlanetEntries(random);
 
-  const [activityBonuses, nextSeed]: [readonly ActivityBonusEntry[], number] =
+  const activityBonuses: readonly ActivityBonusEntry[] =
     planetActivity !== "off"
-      ? dealActivityBonuses(
-          nodes,
-          chargedNodeCount,
-          ships,
-          seedAfterBonusPlanets,
-        )
-      : [[], seedAfterBonusPlanets];
+      ? dealActivityBonuses(nodes, chargedNodeCount, ships, random)
+      : [];
 
   return {
     ships,
     nodes,
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: nextSeed,
-    openingSeed: randomSeed,
     energy: { green: 0, red: 0 },
     lengthInRounds,
     chargedNodeCount,

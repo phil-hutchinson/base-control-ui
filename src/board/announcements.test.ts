@@ -1994,8 +1994,6 @@ describe("announcementForSession", () => {
       nodes: {},
       sideToMove: config.sideToMove,
       plyNumber: config.plyNumber,
-      randomSeed: 1,
-      openingSeed: 1,
       nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
@@ -2035,6 +2033,8 @@ describe("announcementForSession", () => {
       state,
       selectedShipId: undefined,
       lastEvent: event,
+      openingSeed: 0,
+      randomSeed: 0,
     };
     expect(announcementForSession(session)).toBe(announcementFor(event));
   });
@@ -2067,6 +2067,8 @@ describe("announcementForSession", () => {
       state,
       selectedShipId: undefined,
       lastEvent: event,
+      openingSeed: 0,
+      randomSeed: 0,
     };
     expect(announcementForSession(session)).toBe(
       "Red ship moved from G7 to H8. The move cost 1 power, leaving 5. The game is over after 3 rounds. Red wins, 7 energy to 4.",
@@ -2091,6 +2093,8 @@ describe("announcementForSession", () => {
       state,
       selectedShipId: undefined,
       lastEvent: event,
+      openingSeed: 0,
+      randomSeed: 0,
     };
     expect(announcementForSession(session)).toBe(
       "Red cannot move or attack, so the turn passes. The game is over after 3 rounds. The game is a draw, 4 energy each.",
@@ -2116,6 +2120,8 @@ describe("announcementForSession", () => {
       state,
       selectedShipId: undefined,
       lastEvent: event,
+      openingSeed: 0,
+      randomSeed: 0,
     };
     expect(announcementForSession(session)).toBe(
       "Red is out of time, so the turn passes. The game is over: both players are out of time. The game is a draw, 4 energy each.",
@@ -2174,6 +2180,8 @@ describe("announcementForSession", () => {
       state,
       selectedShipId: undefined,
       lastEvent: event,
+      openingSeed: 0,
+      randomSeed: 0,
     };
     expect(announcementForSession(session)).toBe(
       "Green ship at H8 attacked the red ship at H9 and both were beaten. The attack was free; the attacker still has 2 power. The defender kept the power it was carrying. The attacker returned to the A1 planet and the defender to the A8 planet. The game is over after 3 rounds. Green wins, 9 energy to 2.",
@@ -2196,6 +2204,8 @@ describe("announcementForSession", () => {
       state,
       selectedShipId: undefined,
       lastEvent: event,
+      openingSeed: 0,
+      randomSeed: 0,
     };
     expect(announcementForSession(session)).toBe(
       "The game is over. Nothing further can be played.",
@@ -2213,6 +2223,8 @@ describe("announcementForSession", () => {
       state,
       selectedShipId: undefined,
       lastEvent: undefined,
+      openingSeed: 0,
+      randomSeed: 0,
     };
     expect(announcementForSession(session)).toBe("");
   });
@@ -2387,8 +2399,6 @@ describe("turnIndicatorText", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -2413,8 +2423,6 @@ describe("turnIndicatorText", () => {
         nodes: {},
         sideToMove: "red",
         plyNumber: 1,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -2439,8 +2447,6 @@ describe("turnIndicatorText", () => {
         nodes: {},
         sideToMove: "green",
         plyNumber: 7,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -2495,8 +2501,6 @@ describe("HUD wording", () => {
       nodes,
       sideToMove: "green",
       plyNumber: config.plyNumber,
-      randomSeed: 1,
-      openingSeed: 1,
       nodePlaystyle: config.nodePlaystyle ?? "continuous",
       rotators: [],
       planetBonus: "off",

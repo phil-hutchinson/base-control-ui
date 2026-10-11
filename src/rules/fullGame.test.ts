@@ -25,6 +25,7 @@ import {
   nodeStatusAt,
   startingGameState,
 } from "./gameState";
+import { seededRandom } from "./random";
 import { type EnergyCollectedEffect, runEndOfTurn } from "./endOfTurn";
 import { legalDestinations } from "./movement";
 import {
@@ -266,7 +267,8 @@ function playFullGame(
     onEffects,
   }: PlayFullGameOptions = {},
 ): PlayedGame {
-  let state = startingGameState(seed, {
+  const random = seededRandom(seed);
+  let state = startingGameState(random, {
     lengthInRounds,
     fleetSize,
     chargedNodeCount,
@@ -295,11 +297,16 @@ function playFullGame(
     let effects: readonly (MoveEffect | AttackEffect)[];
 
     if (choice === undefined) {
-      const { state: nextState, effect } = applyPassGuard(state);
+      const { state: nextState, effect } = applyPassGuard(state, random);
       state = nextState;
       effects = effect === undefined ? [] : [effect];
     } else if (choice.kind === "move") {
-      const result = applyMove(state, choice.shipId, choice.destination);
+      const result = applyMove(
+        state,
+        choice.shipId,
+        choice.destination,
+        random,
+      );
       if (result.outcome !== "applied") {
         throw new Error(
           `policy chose an illegal move: ${result.reason} for ${choice.shipId} to ${squareName(choice.destination)}`,
@@ -308,7 +315,7 @@ function playFullGame(
       state = result.state;
       effects = result.effects;
     } else {
-      const result = applyAttack(state, choice.shipId, choice.target);
+      const result = applyAttack(state, choice.shipId, choice.target, random);
       if (result.outcome !== "applied") {
         throw new Error(
           `policy chose an illegal attack: ${result.reason} for ${choice.shipId} on ${squareName(choice.target)}`,
@@ -397,7 +404,12 @@ function assertRefusesEverything(state: GameState): boolean {
   if (move === undefined) {
     throw new Error("expected at least one move legal a moment earlier");
   }
-  const moveAttempt = applyMove(state, move.shipId, move.destination);
+  const moveAttempt = applyMove(
+    state,
+    move.shipId,
+    move.destination,
+    seededRandom(0),
+  );
   expect(moveAttempt.outcome).toBe("refused");
   if (moveAttempt.outcome === "refused") {
     expect(moveAttempt.reason).toBe("game-over");
@@ -406,14 +418,19 @@ function assertRefusesEverything(state: GameState): boolean {
   const attack = findAttackLegalAMomentEarlier(state);
   const foundAttack = attack !== undefined;
   if (attack !== undefined) {
-    const attackAttempt = applyAttack(state, attack.shipId, attack.target);
+    const attackAttempt = applyAttack(
+      state,
+      attack.shipId,
+      attack.target,
+      seededRandom(0),
+    );
     expect(attackAttempt.outcome).toBe("refused");
     if (attackAttempt.outcome === "refused") {
       expect(attackAttempt.reason).toBe("game-over");
     }
   }
 
-  const guarded = applyPassGuard(state);
+  const guarded = applyPassGuard(state, seededRandom(0));
   expect(guarded.state).toEqual(state);
   expect(guarded.effect).toBeUndefined();
 
@@ -887,8 +904,6 @@ describe("a full game, end to end", () => {
       nodes: {},
       sideToMove: "green",
       plyNumber: pliesForGameLength(1) + 1,
-      randomSeed: 1,
-      openingSeed: 1,
       nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
@@ -979,7 +994,7 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
   );
 
   it("starts a five-ship game with H15 occupied and O14, O2, A14, A2 empty, as ordinary squares, and lets a ship move into one of them", () => {
-    const state = startingGameState(20260819, {
+    const state = startingGameState(seededRandom(20260819), {
       lengthInRounds: 30,
       fleetSize: 5,
       combatEnabled: true,
@@ -1023,8 +1038,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       nodes: {},
       sideToMove: "green",
       plyNumber: 1,
-      randomSeed: 1,
-      openingSeed: 1,
       nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
@@ -1040,7 +1053,12 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       playerMatching: "off",
     };
 
-    const result = applyAttack(state, "green-1", squareFromName("H9"));
+    const result = applyAttack(
+      state,
+      "green-1",
+      squareFromName("H9"),
+      seededRandom(1),
+    );
     expect(result.outcome).toBe("applied");
     if (result.outcome !== "applied") {
       throw new Error("expected the attack to be applied");
@@ -1084,8 +1102,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       nodes,
       sideToMove: "green",
       plyNumber: 1,
-      randomSeed: 1,
-      openingSeed: 1,
       nodePlaystyle: "continuous",
       rotators: [],
       planetBonus: "off",
@@ -1101,6 +1117,6 @@ describe("smaller fleets play end to end (rules.md §4)", () => {
       playerMatching: "off",
     };
 
-    expect(() => runEndOfTurn(state)).not.toThrow();
+    expect(() => runEndOfTurn(state, seededRandom(1))).not.toThrow();
   });
 });

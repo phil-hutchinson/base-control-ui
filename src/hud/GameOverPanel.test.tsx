@@ -24,8 +24,6 @@ function finishedState(overrides: Partial<GameState> = {}): GameState {
     nodes: {},
     sideToMove: "green",
     plyNumber: 3,
-    randomSeed: 1,
-    openingSeed: 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -156,10 +154,8 @@ describe("GameOverPanel", () => {
       initial: GameState;
       onReturnToStart: () => void;
     }) {
-      const [session, dispatch] = useReducer(
-        sessionReducer,
-        initial,
-        createSession,
+      const [session, dispatch] = useReducer(sessionReducer, initial, (state) =>
+        createSession(state, 0, 0),
       );
       const { displayed: displayedEnergy, settled } = useDisplayedEnergy(
         session.state.energy,
@@ -190,8 +186,6 @@ describe("GameOverPanel", () => {
         nodes: {},
         sideToMove: "red",
         plyNumber: 2,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",
@@ -230,8 +224,6 @@ describe("GameOverPanel", () => {
         },
         sideToMove: "red",
         plyNumber: 2,
-        randomSeed: 1,
-        openingSeed: 1,
         nodePlaystyle: "continuous",
         rotators: [],
         planetBonus: "off",

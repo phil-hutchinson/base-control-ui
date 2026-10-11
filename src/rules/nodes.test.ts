@@ -10,7 +10,7 @@ import {
 } from "./board";
 import { PLANETS } from "./planets";
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
-import { mulberry32 } from "./random";
+import { mulberry32, seededRandom } from "./random";
 import {
   CHARGED_NODE_COUNTS,
   DEFAULT_CHARGED_NODE_COUNT,
@@ -97,7 +97,11 @@ describe.each(CHARGED_NODE_COUNTS)(
     const totalNodes = chargedNodeCount + INACTIVE_NODE_COUNT;
 
     it(`deals exactly ${totalNodes} nodes, ${chargedNodeCount} charged and three inactive, none depleted`, () => {
-      const [nodes] = dealOpeningBoard(FLEET_SQUARES, chargedNodeCount, 1);
+      const nodes = dealOpeningBoard(
+        FLEET_SQUARES,
+        chargedNodeCount,
+        seededRandom(1),
+      );
 
       expect(Object.keys(nodes)).toHaveLength(totalNodes);
 
@@ -117,14 +121,9 @@ describe.each(CHARGED_NODE_COUNTS)(
     });
 
     it("deals every charged node at baseline — no countdown until a ship steps on it", () => {
-      let seed = 1;
+      const random = seededRandom(1);
       for (let i = 0; i < 200; i++) {
-        const [nodes, nextSeed] = dealOpeningBoard(
-          FLEET_SQUARES,
-          chargedNodeCount,
-          seed,
-        );
-        seed = nextSeed;
+        const nodes = dealOpeningBoard(FLEET_SQUARES, chargedNodeCount, random);
         for (const status of Object.values(nodes)) {
           if (status.state === "charged") {
             expect(status.level).toBe(0);
@@ -134,14 +133,9 @@ describe.each(CHARGED_NODE_COUNTS)(
     });
 
     it("deals the three inactive nodes priorities {1, 2, 3}, one each, never a repeat", () => {
-      let seed = 1;
+      const random = seededRandom(1);
       for (let i = 0; i < 300; i++) {
-        const [nodes, nextSeed] = dealOpeningBoard(
-          FLEET_SQUARES,
-          chargedNodeCount,
-          seed,
-        );
-        seed = nextSeed;
+        const nodes = dealOpeningBoard(FLEET_SQUARES, chargedNodeCount, random);
 
         const priorities = Object.values(nodes)
           .filter((status) => status.state === "inactive")
@@ -153,14 +147,9 @@ describe.each(CHARGED_NODE_COUNTS)(
 
     it("deals every square, charged and inactive alike, inside C3-M13 — off any ship, no two dealt squares adjacent — over many seeds", () => {
       const fleetNames = new Set(FLEET_SQUARES.map(squareName));
-      let seed = 1;
+      const random = seededRandom(1);
       for (let i = 0; i < 500; i++) {
-        const [nodes, nextSeed] = dealOpeningBoard(
-          FLEET_SQUARES,
-          chargedNodeCount,
-          seed,
-        );
-        seed = nextSeed;
+        const nodes = dealOpeningBoard(FLEET_SQUARES, chargedNodeCount, random);
 
         const names = Object.keys(nodes);
         const dealtSquares = names.map(squareFromName);
@@ -191,43 +180,42 @@ describe.each(CHARGED_NODE_COUNTS)(
     });
 
     it("deals the same board and the same next seed from the same seed", () => {
-      const [firstStates, firstNextSeed] = dealOpeningBoard(
+      const firstRandom = seededRandom(12345);
+      const firstStates = dealOpeningBoard(
         FLEET_SQUARES,
         chargedNodeCount,
-        12345,
+        firstRandom,
       );
-      const [secondStates, secondNextSeed] = dealOpeningBoard(
+      const secondRandom = seededRandom(12345);
+      const secondStates = dealOpeningBoard(
         FLEET_SQUARES,
         chargedNodeCount,
-        12345,
+        secondRandom,
       );
 
       expect(secondStates).toEqual(firstStates);
-      expect(secondNextSeed).toBe(firstNextSeed);
+      expect(secondRandom.currentSeed()).toBe(firstRandom.currentSeed());
     });
 
     it("deals a different board from a different seed (confirmed for this pair; any other distinct pair is expected to work the same way)", () => {
-      const [firstStates] = dealOpeningBoard(
+      const firstStates = dealOpeningBoard(
         FLEET_SQUARES,
         chargedNodeCount,
-        12345,
+        seededRandom(12345),
       );
-      const [secondStates] = dealOpeningBoard(
+      const secondStates = dealOpeningBoard(
         FLEET_SQUARES,
         chargedNodeCount,
-        54321,
+        seededRandom(54321),
       );
 
       expect(secondStates).not.toEqual(firstStates);
     });
 
-    it(`advances the seed by exactly ${chargedNodeCount + 4} steps`, () => {
+    it(`makes exactly ${chargedNodeCount + 4} draws`, () => {
       const seed = 987654321;
-      const [, nextSeed] = dealOpeningBoard(
-        FLEET_SQUARES,
-        chargedNodeCount,
-        seed,
-      );
+      const random = seededRandom(seed);
+      dealOpeningBoard(FLEET_SQUARES, chargedNodeCount, random);
 
       let expectedSeed = seed;
       for (let i = 0; i < chargedNodeCount + 4; i++) {
@@ -235,7 +223,8 @@ describe.each(CHARGED_NODE_COUNTS)(
         expectedSeed = advanced;
       }
 
-      expect(nextSeed).toBe(expectedSeed);
+      expect(random.currentSeed()).toBe(expectedSeed);
+      expect(random.draws()).toHaveLength(chargedNodeCount + 4);
     });
 
     // The pool is a fixed 51 squares whose balance is settled by the planet
@@ -245,14 +234,9 @@ describe.each(CHARGED_NODE_COUNTS)(
       const DEALS = 3_000;
       const seenSquares = new Set<string>();
 
-      let seed = 1;
+      const random = seededRandom(1);
       for (let i = 0; i < DEALS; i++) {
-        const [nodes, nextSeed] = dealOpeningBoard(
-          FLEET_SQUARES,
-          chargedNodeCount,
-          seed,
-        );
-        seed = nextSeed;
+        const nodes = dealOpeningBoard(FLEET_SQUARES, chargedNodeCount, random);
 
         for (const name of Object.keys(nodes)) {
           seenSquares.add(name);

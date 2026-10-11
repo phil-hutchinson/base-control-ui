@@ -24,15 +24,12 @@ function node(state: NodeState, level: number): NodeStatus {
 function buildState(config: {
   ships?: readonly Ship[];
   nodes?: Readonly<Record<string, NodeStatus>>;
-  randomSeed?: number;
 }): GameState {
   return {
     ships: config.ships ?? [],
     nodes: config.nodes ?? {},
     sideToMove: "green",
     plyNumber: 1,
-    randomSeed: config.randomSeed ?? 1,
-    openingSeed: config.randomSeed ?? 1,
     nodePlaystyle: "continuous",
     rotators: [],
     planetBonus: "off",
@@ -135,11 +132,10 @@ describe("reliefSquare", () => {
     );
   });
 
-  it("picks the same square every time, regardless of the seed", () => {
+  it("picks the same square every time: the choice is deterministic", () => {
     const state = buildState({
       nodes: { D8: node("depleted", 3), L8: node("depleted", 3) },
       ships: [ship("green-1", "green", "L8"), ship("green-2", "green", "D8")],
-      randomSeed: 1,
     });
 
     const first = reliefSquare(state, "green");

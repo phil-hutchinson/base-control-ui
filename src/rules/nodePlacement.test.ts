@@ -15,7 +15,7 @@ import {
   drawWeightedNodeSquare,
   legalNodePool,
 } from "./nodePlacement";
-import { drawWeightedIndex, mulberry32 } from "./random";
+import { mulberry32, seededRandom } from "./random";
 
 /** The 121 squares C3-M13, in board order — the interior §3.2's two ring exclusions leave. */
 function interiorSquares(): Square[] {
@@ -221,12 +221,11 @@ describe("legalNodePool", () => {
   });
 
   it("deals nodes for many rounds without ever throwing", () => {
-    let seed = 20260905;
+    const random = seededRandom(20260905);
     let occupied: readonly Square[] = [];
 
     for (let i = 0; i < 12; i++) {
-      const [square, nextSeed] = drawNodeSquare(occupied, [], seed);
-      seed = nextSeed;
+      const square = drawNodeSquare(occupied, [], random);
       occupied = [...occupied, square];
     }
 
@@ -289,51 +288,62 @@ describe("legalNodePool with the widened pool", () => {
 });
 
 describe("drawNodeSquare", () => {
-  it("returns a member of the pool and advances the seed exactly once", () => {
+  it("returns a member of the pool and makes exactly one draw", () => {
     const [, expectedNextSeed] = mulberry32(999);
-    const [square, nextSeed] = drawNodeSquare([], [], 999);
+    const random = seededRandom(999);
+    const square = drawNodeSquare([], [], random);
     const pool = legalNodePool([], []);
 
     expect(pool.map(squareName)).toContain(squareName(square));
-    expect(nextSeed).toBe(expectedNextSeed);
+    expect(random.currentSeed()).toBe(expectedNextSeed);
+    expect(random.draws()).toHaveLength(1);
   });
 
-  it("returns the same square and seed for the same inputs", () => {
-    const first = drawNodeSquare([squareAt("H", 8)], [squareAt("D", 4)], 42);
-    const second = drawNodeSquare([squareAt("H", 8)], [squareAt("D", 4)], 42);
+  it("returns the same square for the same inputs", () => {
+    const first = drawNodeSquare(
+      [squareAt("H", 8)],
+      [squareAt("D", 4)],
+      seededRandom(42),
+    );
+    const second = drawNodeSquare(
+      [squareAt("H", 8)],
+      [squareAt("D", 4)],
+      seededRandom(42),
+    );
 
     expect(first).toEqual(second);
   });
 });
 
 describe("drawWeightedNodeSquare", () => {
-  it("advances the seed exactly once", () => {
+  it("makes exactly one draw", () => {
     const pool = [squareAt("C", 3), squareAt("D", 4)];
     const [, expectedNextSeed] = mulberry32(123);
-    const [, nextSeed] = drawWeightedNodeSquare(pool, [], [], 123);
+    const random = seededRandom(123);
+    drawWeightedNodeSquare(pool, [], [], random);
 
-    expect(nextSeed).toBe(expectedNextSeed);
+    expect(random.currentSeed()).toBe(expectedNextSeed);
+    expect(random.draws()).toHaveLength(1);
   });
 
-  it("returns the same square and seed for the same inputs", () => {
+  it("returns the same square for the same inputs", () => {
     const pool = [squareAt("C", 3), squareAt("D", 4), squareAt("J", 10)];
     const charged = [squareAt("H", 8)];
     const placed = [squareAt("E", 5)];
 
-    expect(drawWeightedNodeSquare(pool, charged, placed, 55)).toEqual(
-      drawWeightedNodeSquare(pool, charged, placed, 55),
-    );
+    expect(
+      drawWeightedNodeSquare(pool, charged, placed, seededRandom(55)),
+    ).toEqual(drawWeightedNodeSquare(pool, charged, placed, seededRandom(55)));
   });
 
   it("is uniform with no charged nodes and no already-placed nodes", () => {
     const pool = [squareAt("C", 3), squareAt("F", 6), squareAt("J", 10)];
     const counts = pool.map(() => 0);
     const trials = 6000;
-    let seed = 1;
+    const random = seededRandom(1);
 
     for (let i = 0; i < trials; i++) {
-      const [square, nextSeed] = drawWeightedNodeSquare(pool, [], [], seed);
-      seed = nextSeed;
+      const square = drawWeightedNodeSquare(pool, [], [], random);
       const index = pool.findIndex(
         (candidate) => squareName(candidate) === squareName(square),
       );
@@ -355,16 +365,10 @@ describe("drawWeightedNodeSquare", () => {
     let nearCount = 0;
     let farCount = 0;
     const trials = 6000;
-    let seed = 2;
+    const random = seededRandom(2);
 
     for (let i = 0; i < trials; i++) {
-      const [square, nextSeed] = drawWeightedNodeSquare(
-        pool,
-        charged,
-        [],
-        seed,
-      );
-      seed = nextSeed;
+      const square = drawWeightedNodeSquare(pool, charged, [], random);
       if (squareName(square) === squareName(near)) {
         nearCount += 1;
       } else {
@@ -392,19 +396,18 @@ describe("drawWeightedNodeSquare", () => {
     const expectedWeights = [5, 67];
 
     for (const seed of [999, 12345, 0, 42]) {
-      const [expectedIndex, expectedNextSeed] = drawWeightedIndex(
-        seed,
-        expectedWeights,
-      );
-      const [square, nextSeed] = drawWeightedNodeSquare(
+      const expectedSource = seededRandom(seed);
+      const expectedIndex = expectedSource.weighted(expectedWeights);
+      const actualSource = seededRandom(seed);
+      const square = drawWeightedNodeSquare(
         pool,
         charged,
         placed,
-        seed,
+        actualSource,
       );
 
       expect(squareName(square)).toBe(squareName(pool[expectedIndex]));
-      expect(nextSeed).toBe(expectedNextSeed);
+      expect(actualSource.currentSeed()).toBe(expectedSource.currentSeed());
     }
   });
 });
@@ -420,17 +423,16 @@ describe("drawStealProspectiveSquare", () => {
     );
     const widened = legalNodePool(occupied, ships, "widened");
 
-    let seed = 11;
+    const random = seededRandom(11);
     let sawEdgeSquare = false;
     for (let i = 0; i < 500; i++) {
-      const [square, nextSeed] = drawStealProspectiveSquare(
+      const square = drawStealProspectiveSquare(
         occupied,
         [anchor],
         others,
         ships,
-        seed,
+        random,
       );
-      seed = nextSeed;
       expect(widened.map(squareName)).toContain(squareName(square));
       if (
         square.row === 1 ||
@@ -444,21 +446,17 @@ describe("drawStealProspectiveSquare", () => {
     expect(sawEdgeSquare).toBe(true);
   });
 
-  it("advances the seed exactly once", () => {
+  it("makes exactly one draw", () => {
     const anchor = squareAt("H", 8);
     const [, expectedNextSeed] = mulberry32(123);
-    const [, nextSeed] = drawStealProspectiveSquare(
-      [anchor],
-      [anchor],
-      [],
-      [],
-      123,
-    );
+    const random = seededRandom(123);
+    drawStealProspectiveSquare([anchor], [anchor], [], [], random);
 
-    expect(nextSeed).toBe(expectedNextSeed);
+    expect(random.currentSeed()).toBe(expectedNextSeed);
+    expect(random.draws()).toHaveLength(1);
   });
 
-  it("returns the same square and seed for the same inputs", () => {
+  it("returns the same square for the same inputs", () => {
     const anchor = squareAt("H", 8);
     const other = squareAt("C", 3);
     const occupied = [anchor, other];
@@ -470,14 +468,14 @@ describe("drawStealProspectiveSquare", () => {
       [anchor],
       others,
       ships,
-      55,
+      seededRandom(55),
     );
     const second = drawStealProspectiveSquare(
       occupied,
       [anchor],
       others,
       ships,
-      55,
+      seededRandom(55),
     );
 
     expect(first).toEqual(second);
@@ -508,20 +506,19 @@ describe("drawStealProspectiveSquare", () => {
     );
 
     for (const seed of [999, 12345, 0, 42]) {
-      const [expectedIndex, expectedNextSeed] = drawWeightedIndex(
-        seed,
-        expectedWeights,
-      );
-      const [square, nextSeed] = drawStealProspectiveSquare(
+      const expectedSource = seededRandom(seed);
+      const expectedIndex = expectedSource.weighted(expectedWeights);
+      const actualSource = seededRandom(seed);
+      const square = drawStealProspectiveSquare(
         [anchor],
         [anchor],
         [],
         ships,
-        seed,
+        actualSource,
       );
 
       expect(squareName(square)).toBe(squareName(pool[expectedIndex]));
-      expect(nextSeed).toBe(expectedNextSeed);
+      expect(actualSource.currentSeed()).toBe(expectedSource.currentSeed());
     }
   });
 
@@ -551,20 +548,19 @@ describe("drawStealProspectiveSquare", () => {
     );
 
     for (const seed of [999, 12345, 0, 42]) {
-      const [expectedIndex, expectedNextSeed] = drawWeightedIndex(
-        seed,
-        expectedWeights,
-      );
-      const [square, nextSeed] = drawStealProspectiveSquare(
+      const expectedSource = seededRandom(seed);
+      const expectedIndex = expectedSource.weighted(expectedWeights);
+      const actualSource = seededRandom(seed);
+      const square = drawStealProspectiveSquare(
         occupied,
         [anchor],
         [other],
         ships,
-        seed,
+        actualSource,
       );
 
       expect(squareName(square)).toBe(squareName(pool[expectedIndex]));
-      expect(nextSeed).toBe(expectedNextSeed);
+      expect(actualSource.currentSeed()).toBe(expectedSource.currentSeed());
     }
   });
 });
@@ -574,16 +570,15 @@ describe("drawStealOpeningProspectiveSquare", () => {
     const anchor = squareAt("H", 8);
     const strict = legalNodePool([anchor], []);
 
-    let seed = 7;
+    const random = seededRandom(7);
     for (let i = 0; i < 200; i++) {
-      const [square, nextSeed] = drawStealOpeningProspectiveSquare(
+      const square = drawStealOpeningProspectiveSquare(
         [anchor],
         [anchor],
         [],
         [],
-        seed,
+        random,
       );
-      seed = nextSeed;
       expect(strict.map(squareName)).toContain(squareName(square));
       expect(square.row).not.toBe(1);
       expect(square.row).not.toBe(15);
@@ -605,32 +600,28 @@ describe("drawStealOpeningProspectiveSquare", () => {
     const widened = legalNodePool(occupied, [], "widened");
     expect(widened.length).toBeLessThan(universalFallback.length);
 
-    const [square] = drawStealOpeningProspectiveSquare(
+    const square = drawStealOpeningProspectiveSquare(
       occupied,
       [anchor],
       [],
       [],
-      13,
+      seededRandom(13),
     );
 
     expect(widened.map(squareName)).toContain(squareName(square));
   });
 
-  it("advances the seed exactly once", () => {
+  it("makes exactly one draw", () => {
     const anchor = squareAt("H", 8);
     const [, expectedNextSeed] = mulberry32(321);
-    const [, nextSeed] = drawStealOpeningProspectiveSquare(
-      [anchor],
-      [anchor],
-      [],
-      [],
-      321,
-    );
+    const random = seededRandom(321);
+    drawStealOpeningProspectiveSquare([anchor], [anchor], [], [], random);
 
-    expect(nextSeed).toBe(expectedNextSeed);
+    expect(random.currentSeed()).toBe(expectedNextSeed);
+    expect(random.draws()).toHaveLength(1);
   });
 
-  it("returns the same square and seed for the same inputs", () => {
+  it("returns the same square for the same inputs", () => {
     const anchor = squareAt("H", 8);
     const other = squareAt("C", 3);
     const occupied = [anchor, other];
@@ -641,14 +632,14 @@ describe("drawStealOpeningProspectiveSquare", () => {
       [anchor],
       others,
       [],
-      55,
+      seededRandom(55),
     );
     const second = drawStealOpeningProspectiveSquare(
       occupied,
       [anchor],
       others,
       [],
-      55,
+      seededRandom(55),
     );
 
     expect(first).toEqual(second);
@@ -679,20 +670,19 @@ describe("drawStealOpeningProspectiveSquare", () => {
     );
 
     for (const seed of [999, 12345, 0, 42]) {
-      const [expectedIndex, expectedNextSeed] = drawWeightedIndex(
-        seed,
-        expectedWeights,
-      );
-      const [square, nextSeed] = drawStealOpeningProspectiveSquare(
+      const expectedSource = seededRandom(seed);
+      const expectedIndex = expectedSource.weighted(expectedWeights);
+      const actualSource = seededRandom(seed);
+      const square = drawStealOpeningProspectiveSquare(
         occupied,
         [anchor],
         [other],
         ships,
-        seed,
+        actualSource,
       );
 
       expect(squareName(square)).toBe(squareName(pool[expectedIndex]));
-      expect(nextSeed).toBe(expectedNextSeed);
+      expect(actualSource.currentSeed()).toBe(expectedSource.currentSeed());
     }
   });
 });

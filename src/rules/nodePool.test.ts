@@ -57,7 +57,7 @@ import {
 } from "./nodeQueue";
 import { CHARGED_NODE_COUNTS, type ChargedNodeCount } from "./nodes";
 import { PLANETS, isPlanet } from "./planets";
-import { drawIndex } from "./random";
+import { type RandomSource, seededRandom } from "./random";
 
 /** A generous game length: this test drives `runEndOfTurn` directly and never consults `isGameOver`. */
 const NOMINAL_LENGTH_IN_ROUNDS = 1_000;
@@ -68,15 +68,13 @@ const SEEDS = [20260819, 20260820, 20260821, 20260822, 20260823];
 /**
  * Draws one square uniformly from an already-computed pool — the unweighted
  * comparison draw below needs the same uniform-from-a-pool arithmetic that
- * §3.2's weighting is measured against. Advances the seed exactly once, via
- * `drawIndex`, so a recorded game replays exactly.
+ * §3.2's weighting is measured against. Makes exactly one draw on `random`.
  */
 function drawUniformSquare(
   pool: readonly Square[],
-  seed: number,
-): [square: Square, nextSeed: number] {
-  const [index, nextSeed] = drawIndex(seed, pool.length);
-  return [pool[index], nextSeed];
+  random: RandomSource,
+): Square {
+  return pool[random.uniform(pool.length)];
 }
 
 /**
@@ -214,7 +212,8 @@ function runEconomy(
   plies: number,
   chargedNodeCount: ChargedNodeCount,
 ): EconomyRun {
-  let state: GameState = startingGameState(seed, {
+  const random = seededRandom(seed);
+  let state: GameState = startingGameState(random, {
     lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
     chargedNodeCount,
     combatEnabled: true,
@@ -231,7 +230,7 @@ function runEconomy(
   for (let i = 0; i < plies; i++) {
     state = startOneCountdown(state);
     const beforeState = state;
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, random);
 
     const refilled = result.effects.find(
       (effect): effect is QueueRefilledEffect =>
@@ -426,7 +425,7 @@ describe.each(CHARGED_NODE_COUNTS)(
       it.each(SEEDS)(
         "deals an opening board whose nodes are all individually legal (seed %d)",
         (seed) => {
-          const state = startingGameState(seed, {
+          const state = startingGameState(seededRandom(seed), {
             lengthInRounds: NOMINAL_LENGTH_IN_ROUNDS,
             chargedNodeCount,
             combatEnabled: true,
@@ -543,7 +542,7 @@ describe.each(CHARGED_NODE_COUNTS)(
       it("keeps a freshly refilled trio's mean smallest pairwise gap above a floor, and measurably above what an unweighted draw from the same pools would produce", () => {
         const weightedGaps: number[] = [];
         const unweightedGaps: number[] = [];
-        let comparisonSeed = 424242;
+        const comparisonRandom = seededRandom(424242);
 
         for (const seed of SEEDS) {
           const run = runEconomy(seed, PLIES_TO_RUN, chargedNodeCount);
@@ -555,34 +554,30 @@ describe.each(CHARGED_NODE_COUNTS)(
 
             // The unweighted comparison draws from exactly the same pools the
             // real refill saw, uniformly rather than by §3.2's weighting, via a
-            // seed stream of its own so it never disturbs the seed the economy
+            // source of its own so it never disturbs the source the economy
             // above is actually driven by.
             const strictPool = legalNodePool(
               refill.occupiedBeforeRefill,
               run.shipSquares,
             );
-            const [firstSquare, seedAfterFirst] = drawUniformSquare(
-              strictPool,
-              comparisonSeed,
-            );
+            const firstSquare = drawUniformSquare(strictPool, comparisonRandom);
             const strictPoolAfterFirst = legalNodePool(
               [...refill.occupiedBeforeRefill, firstSquare],
               run.shipSquares,
             );
-            const [secondSquare, seedAfterSecond] = drawUniformSquare(
+            const secondSquare = drawUniformSquare(
               strictPoolAfterFirst,
-              seedAfterFirst,
+              comparisonRandom,
             );
             const widenedPoolAfterSecond = legalNodePool(
               [...refill.occupiedBeforeRefill, firstSquare, secondSquare],
               run.shipSquares,
               "widened",
             );
-            const [thirdSquare, seedAfterThird] = drawUniformSquare(
+            const thirdSquare = drawUniformSquare(
               widenedPoolAfterSecond,
-              seedAfterSecond,
+              comparisonRandom,
             );
-            comparisonSeed = seedAfterThird;
 
             unweightedGaps.push(
               smallestPairwiseGap([firstSquare, secondSquare, thirdSquare]),

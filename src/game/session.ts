@@ -32,6 +32,7 @@ import {
   applyOutOfTimePass,
   applyPassGuard,
 } from "../rules/ply";
+import { seededRandom } from "../rules/random";
 
 /**
  * A ship was selected, with how many squares it can legally move to and how
@@ -137,24 +138,44 @@ export type SessionIntent =
   | { readonly type: "clock-expired"; readonly side: Side }
   | { readonly type: "pass-out-of-time" };
 
-/** The game state, the selected ship if any, and the last thing that happened. */
+/**
+ * The game state, the selected ship if any, the last thing that happened,
+ * and the two seeds a game record needs: `openingSeed`, the seed its deal
+ * started from, and `randomSeed`, the seed the session's next draw will
+ * use. The rules layer takes a `RandomSource` rather than carrying a seed,
+ * so the session keeps both as plain numbers rather than a live source: a
+ * stateful `RandomSource` kept here would draw twice under React's
+ * `StrictMode`, which invokes a reducer call twice, and desynchronise.
+ */
 export interface Session {
   readonly state: GameState;
   readonly selectedShipId: ShipId | undefined;
   readonly lastEvent: SessionEvent | undefined;
+  readonly openingSeed: number;
+  readonly randomSeed: number;
 }
 
 /**
- * The initial session for a starting game state. Runs the §5 pass guard once
- * so a starting position with no legal move at all is never sat on — the
- * same guard `applyMove` runs after every move.
+ * A session for a given game state, remembering the two seeds a game record
+ * needs and running the §5 pass guard once so a starting position with no
+ * legal move at all is never sat on — the same guard `applyMove` runs after
+ * every move. `randomSeed` is the seed the guard itself draws from, if it
+ * draws at all; the session stores the source's advanced seed, not the one
+ * it was given.
  */
-export function createSession(state: GameState): Session {
-  const { state: settled, effect } = applyPassGuard(state);
+export function createSession(
+  state: GameState,
+  openingSeed: number,
+  randomSeed: number,
+): Session {
+  const random = seededRandom(randomSeed);
+  const { state: settled, effect } = applyPassGuard(state, random);
   return {
     state: settled,
     selectedShipId: undefined,
     lastEvent: effect,
+    openingSeed,
+    randomSeed: random.currentSeed(),
   };
 }
 
@@ -237,7 +258,8 @@ function activateWithSelection(
   }
 
   if (other !== undefined) {
-    const result = applyAttack(session.state, selectedShipId, square);
+    const random = seededRandom(session.randomSeed);
+    const result = applyAttack(session.state, selectedShipId, square, random);
     if (result.outcome !== "applied") {
       return rejected(session, result.reason, square);
     }
@@ -252,10 +274,13 @@ function activateWithSelection(
         target: square,
         effects: result.effects,
       },
+      openingSeed: session.openingSeed,
+      randomSeed: random.currentSeed(),
     };
   }
 
-  const result = applyMove(session.state, selectedShipId, square);
+  const random = seededRandom(session.randomSeed);
+  const result = applyMove(session.state, selectedShipId, square, random);
   if (result.outcome !== "applied") {
     return rejected(session, result.reason, square);
   }
@@ -273,6 +298,8 @@ function activateWithSelection(
       cost: result.cost,
       powerAfter: result.powerAfter,
     },
+    openingSeed: session.openingSeed,
+    randomSeed: random.currentSeed(),
   };
 }
 
@@ -285,19 +312,19 @@ export function sessionReducer(
   intent: SessionIntent,
 ): Session {
   if (intent.type === "new-game") {
-    return createSession(
-      startingGameState(intent.randomSeed, {
-        lengthInRounds: intent.lengthInRounds,
-        fleetSize: intent.fleetSize,
-        chargedNodeCount: intent.chargedNodeCount,
-        combatEnabled: intent.combatEnabled,
-        scoring: intent.scoring,
-        nodePlaystyle: intent.nodePlaystyle,
-        planetBonus: intent.planetBonus,
-        planetActivity: intent.planetActivity,
-        playerMatching: intent.playerMatching,
-      }),
-    );
+    const random = seededRandom(intent.randomSeed);
+    const state = startingGameState(random, {
+      lengthInRounds: intent.lengthInRounds,
+      fleetSize: intent.fleetSize,
+      chargedNodeCount: intent.chargedNodeCount,
+      combatEnabled: intent.combatEnabled,
+      scoring: intent.scoring,
+      nodePlaystyle: intent.nodePlaystyle,
+      planetBonus: intent.planetBonus,
+      planetActivity: intent.planetActivity,
+      playerMatching: intent.playerMatching,
+    });
+    return createSession(state, intent.randomSeed, random.currentSeed());
   }
 
   if (intent.type === "dismiss") {
@@ -310,7 +337,8 @@ export function sessionReducer(
   }
 
   if (intent.type === "pass-out-of-time") {
-    const { state, effects } = applyOutOfTimePass(session.state);
+    const random = seededRandom(session.randomSeed);
+    const { state, effects } = applyOutOfTimePass(session.state, random);
     if (effects.length === 0) {
       return session;
     }
@@ -318,6 +346,8 @@ export function sessionReducer(
       state,
       selectedShipId: undefined,
       lastEvent: effects[effects.length - 1],
+      openingSeed: session.openingSeed,
+      randomSeed: random.currentSeed(),
     };
   }
 

@@ -19,7 +19,7 @@ import { CHARGED_NODE_COUNTS, type ChargedNodeCount } from "./nodes";
 import { PLANETS } from "./planets";
 import { PLAYER_MATCHING_SETTINGS } from "./playerMatching";
 import { MAX_POWER, type PowerLevel } from "./power";
-import { mulberry32 } from "./random";
+import { mulberry32, seededRandom } from "./random";
 import { nodeCarriesExtra, shuffleProspectiveSignals } from "./steal";
 import { SCORING_SETTINGS } from "./scoring";
 
@@ -126,40 +126,35 @@ describe("isActivityBonusKindAvailable (steal.md §10)", () => {
 });
 
 describe("drawActivityBonusKind (steal.md §10)", () => {
-  it("advances the seed by exactly one mulberry32 step", () => {
-    const [, nextSeed] = drawActivityBonusKind(777, NO_NODES, 4, NO_SHIPS);
+  it("makes exactly one draw", () => {
+    const random = seededRandom(777);
+    drawActivityBonusKind(random, NO_NODES, 4, NO_SHIPS);
     const [, expectedSeed] = mulberry32(777);
-    expect(nextSeed).toBe(expectedSeed);
+    expect(random.currentSeed()).toBe(expectedSeed);
+    expect(random.draws()).toHaveLength(1);
   });
 
   it("never draws an excluded kind, over many seeds", () => {
     const excluded = new Set<ActivityBonusKind>(["large-points", "fuel"]);
-    let seed = 12345;
+    const random = seededRandom(12345);
     for (let i = 0; i < 500; i++) {
-      const [kind, nextSeed] = drawActivityBonusKind(
-        seed,
+      const kind = drawActivityBonusKind(
+        random,
         NO_NODES,
         5,
         NO_SHIPS,
         excluded,
       );
       expect(excluded.has(kind)).toBe(false);
-      seed = nextSeed;
     }
   });
 
   it("never draws additional nodes once every node has its extra", () => {
     const everyExtra = everyNodeWithExtra(3);
-    let seed = 54321;
+    const random = seededRandom(54321);
     for (let i = 0; i < 500; i++) {
-      const [kind, nextSeed] = drawActivityBonusKind(
-        seed,
-        everyExtra,
-        3,
-        NO_SHIPS,
-      );
+      const kind = drawActivityBonusKind(random, everyExtra, 3, NO_SHIPS);
       expect(kind).not.toBe("additional-nodes");
-      seed = nextSeed;
     }
   });
 
@@ -175,11 +170,10 @@ describe("drawActivityBonusKind (steal.md §10)", () => {
       "node-scramble": 0,
     };
     const sampleSize = 20000;
-    let seed = 999;
+    const random = seededRandom(999);
     for (let i = 0; i < sampleSize; i++) {
-      const [kind, nextSeed] = drawActivityBonusKind(seed, NO_NODES, 5, ships);
+      const kind = drawActivityBonusKind(random, NO_NODES, 5, ships);
       counts[kind]++;
-      seed = nextSeed;
     }
     for (const kind of ACTIVITY_BONUS_KINDS) {
       counts[kind] /= sampleSize;
@@ -260,17 +254,19 @@ describe("fuelWeight (steal.md §10)", () => {
 });
 
 describe("drawActivityBonusPlanet (steal.md §10)", () => {
-  it("draws uniformly from the given list and advances the seed by one step", () => {
-    const [square, nextSeed] = drawActivityBonusPlanet(42, PLANETS);
+  it("draws uniformly from the given list and makes exactly one draw", () => {
+    const random = seededRandom(42);
+    const square = drawActivityBonusPlanet(random, PLANETS);
     expect(PLANETS.some((p) => squareName(p) === squareName(square))).toBe(
       true,
     );
     const [, expectedSeed] = mulberry32(42);
-    expect(nextSeed).toBe(expectedSeed);
+    expect(random.currentSeed()).toBe(expectedSeed);
+    expect(random.draws()).toHaveLength(1);
   });
 
   it("draws every planet in a single-element list", () => {
-    const [square] = drawActivityBonusPlanet(1, [PLANETS[5]]);
+    const square = drawActivityBonusPlanet(seededRandom(1), [PLANETS[5]]);
     expect(squareName(square)).toBe(squareName(PLANETS[5]));
   });
 });
@@ -365,7 +361,12 @@ describe("the point table mirrors steal.md §10", () => {
 
 describe("dealActivityBonuses (steal.md §10)", () => {
   it("deals two distinct planets, of two distinct kinds, both from the twelve planets", () => {
-    const [[first, second]] = dealActivityBonuses(NO_NODES, 4, NO_SHIPS, 2024);
+    const [first, second] = dealActivityBonuses(
+      NO_NODES,
+      4,
+      NO_SHIPS,
+      seededRandom(2024),
+    );
 
     expect(squareName(first.square)).not.toBe(squareName(second.square));
     expect(first.kind).not.toBe(second.kind);
@@ -376,19 +377,36 @@ describe("dealActivityBonuses (steal.md §10)", () => {
     }
   });
 
-  it("consumes exactly four seed steps", () => {
-    const [, nextSeed] = dealActivityBonuses(NO_NODES, 4, NO_SHIPS, 2024);
+  it("makes exactly four draws", () => {
+    const random = seededRandom(2024);
+    dealActivityBonuses(NO_NODES, 4, NO_SHIPS, random);
     let expectedSeed = 2024;
     for (let step = 0; step < 4; step++) {
       [, expectedSeed] = mulberry32(expectedSeed);
     }
-    expect(nextSeed).toBe(expectedSeed);
+    expect(random.currentSeed()).toBe(expectedSeed);
+    expect(random.draws()).toHaveLength(4);
   });
 
   it("is deterministic for a seed, and differs for a different seed", () => {
-    const [firstBonuses] = dealActivityBonuses(NO_NODES, 4, NO_SHIPS, 555);
-    const [secondBonuses] = dealActivityBonuses(NO_NODES, 4, NO_SHIPS, 555);
-    const [thirdBonuses] = dealActivityBonuses(NO_NODES, 4, NO_SHIPS, 556);
+    const firstBonuses = dealActivityBonuses(
+      NO_NODES,
+      4,
+      NO_SHIPS,
+      seededRandom(555),
+    );
+    const secondBonuses = dealActivityBonuses(
+      NO_NODES,
+      4,
+      NO_SHIPS,
+      seededRandom(555),
+    );
+    const thirdBonuses = dealActivityBonuses(
+      NO_NODES,
+      4,
+      NO_SHIPS,
+      seededRandom(556),
+    );
 
     expect(secondBonuses).toEqual(firstBonuses);
     expect(thirdBonuses).not.toEqual(firstBonuses);
@@ -396,9 +414,9 @@ describe("dealActivityBonuses (steal.md §10)", () => {
 
   it("deals from full starting fleets exactly what it deals with no ships, Fuel's weight being 10 either way", () => {
     for (let seed = 0; seed < 200; seed++) {
-      expect(dealActivityBonuses(NO_NODES, 4, FULL_FLEETS, seed)).toEqual(
-        dealActivityBonuses(NO_NODES, 4, NO_SHIPS, seed),
-      );
+      expect(
+        dealActivityBonuses(NO_NODES, 4, FULL_FLEETS, seededRandom(seed)),
+      ).toEqual(dealActivityBonuses(NO_NODES, 4, NO_SHIPS, seededRandom(seed)));
     }
   });
 });
@@ -413,7 +431,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
     readonly ships?: readonly Ship[];
     readonly playerMatching?: "off" | "double" | "required";
     readonly scoring?: "simple" | "bonus";
-    readonly randomSeed?: number;
+    readonly seed?: number;
   }) {
     return {
       nodes: config.nodes ?? NO_NODES,
@@ -428,7 +446,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       chargedNodeCount: 3 as ChargedNodeCount,
       playerMatching: config.playerMatching ?? "off",
       scoring: config.scoring ?? "simple",
-      randomSeed: config.randomSeed ?? 4242,
+      seed: config.seed ?? 4242,
     };
   }
 
@@ -438,15 +456,25 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       planetActivity: "off" as const,
     };
     expect(() =>
-      resolveActivityBonusClaim(state, "green", claimedPlanet),
+      resolveActivityBonusClaim(
+        state,
+        "green",
+        claimedPlanet,
+        seededRandom(state.seed),
+      ),
     ).toThrow(RangeError);
   });
 
   it("throws when the landed planet carries neither current bonus", () => {
     const state = stateFor({ kind: "small-points" });
-    expect(() => resolveActivityBonusClaim(state, "green", PLANETS[5])).toThrow(
-      RangeError,
-    );
+    expect(() =>
+      resolveActivityBonusClaim(
+        state,
+        "green",
+        PLANETS[5],
+        seededRandom(state.seed),
+      ),
+    ).toThrow(RangeError);
   });
 
   it("a points kind reports the table's amount and leaves nodes and ships untouched", () => {
@@ -456,7 +484,12 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       playerMatching: "off",
       scoring: "simple",
     });
-    const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+    const result = resolveActivityBonusClaim(
+      state,
+      "green",
+      claimedPlanet,
+      seededRandom(state.seed),
+    );
 
     expect(result.outcome.kind).toBe("large-points");
     expect(result.outcome.pointsAwarded).toBe(
@@ -477,7 +510,12 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       ship("red-1", "red", "C7", 3),
     ];
     const state = stateFor({ kind: "fuel", ships });
-    const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+    const result = resolveActivityBonusClaim(
+      state,
+      "green",
+      claimedPlanet,
+      seededRandom(state.seed),
+    );
 
     expect([...result.outcome.poweredShipIds].sort()).toEqual([
       "green-1",
@@ -503,8 +541,9 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       seed: number,
       shipsAtDraw: readonly Ship[],
     ): [ActivityBonusKind, ActivityBonusKind] {
-      const [survivorKind, seedAfterSurvivor] = drawActivityBonusKind(
-        seed,
+      const random = seededRandom(seed);
+      const survivorKind = drawActivityBonusKind(
+        random,
         NO_NODES,
         3,
         shipsAtDraw,
@@ -516,12 +555,9 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
           !occupied.has(squareName(square)) &&
           squareName(square) !== squareName(survivorPlanet),
       );
-      const [, seedAfterPlanet] = drawActivityBonusPlanet(
-        seedAfterSurvivor,
-        eligible,
-      );
-      const [newKind] = drawActivityBonusKind(
-        seedAfterPlanet,
+      drawActivityBonusPlanet(random, eligible);
+      const newKind = drawActivityBonusKind(
+        random,
         NO_NODES,
         3,
         shipsAtDraw,
@@ -532,8 +568,13 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
 
     let discriminatingSeeds = 0;
     for (let seed = 0; seed < 300; seed++) {
-      const state = stateFor({ kind: "fuel", ships, randomSeed: seed });
-      const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+      const state = stateFor({ kind: "fuel", ships, seed: seed });
+      const result = resolveActivityBonusClaim(
+        state,
+        "green",
+        claimedPlanet,
+        seededRandom(state.seed),
+      );
       const afterFuel = expectedKinds(seed, result.ships);
       const beforeFuel = expectedKinds(seed, ships);
 
@@ -559,7 +600,12 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       F5: { state: "prospective", level: 0, signal: 2 },
     };
     const state = stateFor({ kind: "additional-nodes", nodes });
-    const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+    const result = resolveActivityBonusClaim(
+      state,
+      "green",
+      claimedPlanet,
+      seededRandom(state.seed),
+    );
 
     expect(result.outcome.addedSquares).toHaveLength(2);
     expect(result.outcome.recoloredSquares).toEqual([]);
@@ -586,13 +632,18 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
     };
     for (const playerMatching of ["off", "required"] as const) {
       const state = stateFor({ kind: "node-scramble", nodes, playerMatching });
-      const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+      const result = resolveActivityBonusClaim(
+        state,
+        "green",
+        claimedPlanet,
+        seededRandom(state.seed),
+      );
 
       const expected = shuffleProspectiveSignals(
         nodes,
         3,
         playerMatching,
-        state.randomSeed,
+        seededRandom(state.seed),
       );
       expect(result.nodes).toEqual(expected.nodes);
       expect(result.outcome.recoloredSquares).toEqual(
@@ -620,9 +671,14 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       const state = stateFor({
         kind: "small-points",
         survivorKind: "fuel",
-        randomSeed: seed,
+        seed: seed,
       });
-      const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+      const result = resolveActivityBonusClaim(
+        state,
+        "green",
+        claimedPlanet,
+        seededRandom(state.seed),
+      );
       expect(result.outcome.survivor.oldKind).toBe("fuel");
       expect(result.outcome.survivor.newKind).not.toBe("fuel");
     }
@@ -633,9 +689,14 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       const state = stateFor({
         kind: "small-points",
         survivorKind: "fuel",
-        randomSeed: seed,
+        seed: seed,
       });
-      const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+      const result = resolveActivityBonusClaim(
+        state,
+        "green",
+        claimedPlanet,
+        seededRandom(state.seed),
+      );
       expect(result.outcome.newBonus.kind).not.toBe(
         result.outcome.survivor.newKind,
       );
@@ -651,9 +712,14 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
           ship("green-1", "green", squareName(claimedPlanet)),
           ship("red-1", "red", squareName(occupiedPlanet)),
         ],
-        randomSeed: seed,
+        seed: seed,
       });
-      const result = resolveActivityBonusClaim(state, "green", claimedPlanet);
+      const result = resolveActivityBonusClaim(
+        state,
+        "green",
+        claimedPlanet,
+        seededRandom(state.seed),
+      );
       expect(squareName(result.outcome.newBonus.square)).not.toBe(
         squareName(survivorPlanet),
       );
@@ -669,6 +735,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       claimedFirst,
       "green",
       claimedPlanet,
+      seededRandom(claimedFirst.seed),
     );
     expect(squareName(resultClaimedFirst.activityBonuses[0].square)).not.toBe(
       squareName(claimedPlanet),
@@ -682,6 +749,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       claimedSecond,
       "green",
       survivorPlanet,
+      seededRandom(claimedSecond.seed),
     );
     expect(squareName(resultClaimedSecond.activityBonuses[1].square)).not.toBe(
       squareName(survivorPlanet),
@@ -693,19 +761,22 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
 
   it("is deterministic for a seed, and differs for a different seed", () => {
     const first = resolveActivityBonusClaim(
-      stateFor({ kind: "small-points", randomSeed: 9 }),
+      stateFor({ kind: "small-points", seed: 9 }),
       "green",
       claimedPlanet,
+      seededRandom(9),
     );
     const second = resolveActivityBonusClaim(
-      stateFor({ kind: "small-points", randomSeed: 9 }),
+      stateFor({ kind: "small-points", seed: 9 }),
       "green",
       claimedPlanet,
+      seededRandom(9),
     );
     const third = resolveActivityBonusClaim(
-      stateFor({ kind: "small-points", randomSeed: 10 }),
+      stateFor({ kind: "small-points", seed: 10 }),
       "green",
       claimedPlanet,
+      seededRandom(10),
     );
 
     expect(second).toEqual(first);

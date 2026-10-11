@@ -19,6 +19,7 @@ import {
   nodeStateAt,
   startingGameState,
 } from "./gameState";
+import { seededRandom } from "./random";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "./gameLength";
 import { applyPassGuard } from "./ply";
 import type { PowerLevel } from "./power";
@@ -61,7 +62,6 @@ function buildState(config: {
   nodes?: Readonly<Record<string, readonly [NodeState, number]>>;
   sideToMove?: "green" | "red";
   plyNumber?: number;
-  randomSeed?: number;
   chargedNodeCount?: ChargedNodeCount;
   scoring?: ScoringSetting;
   nodePlaystyle?: NodePlaystyle;
@@ -72,8 +72,6 @@ function buildState(config: {
     nodes: nodeStatuses(config.nodes ?? {}),
     sideToMove: config.sideToMove ?? "green",
     plyNumber: config.plyNumber ?? 1,
-    randomSeed: config.randomSeed ?? 1,
-    openingSeed: config.randomSeed ?? 1,
     nodePlaystyle: config.nodePlaystyle ?? "continuous",
     rotators: config.rotators ?? [],
     planetBonus: "off",
@@ -100,7 +98,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 2)],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(4);
     expect(result.effects).toContainEqual({
@@ -122,7 +120,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(3);
     expect(result.state.ships.find((s) => s.id === "green-2")?.power).toBe(4);
@@ -153,7 +151,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     // green-2 is already full, so it does not count towards the charging
     // total: green-1 is the only ship actually charging, and takes the lone
@@ -179,7 +177,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 5)],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(6);
     expect(result.effects).toContainEqual({
@@ -206,7 +204,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(6);
     expect(result.state.ships.find((s) => s.id === "green-2")?.power).toBe(5);
@@ -226,7 +224,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 6)],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.ships.find((s) => s.id === "green-1")?.power).toBe(6);
     expect(
@@ -240,7 +238,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       ships: [ship("green-1", "green", PLANET_SQUARE_NAME, 2)],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(
       result.effects.some((effect) => effect.type === "energy-collected"),
@@ -254,7 +252,7 @@ describe("runEndOfTurn — step 1, the planet gain (§3.1, §4.1)", () => {
       ships: [ship("red-1", "red", PLANET_SQUARE_NAME, 2)],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.ships.find((s) => s.id === "red-1")?.power).toBe(2);
     expect(
@@ -283,7 +281,7 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     const shipPower = (id: ShipId): PowerLevel | undefined =>
       result.state.ships.find((s) => s.id === id)?.power;
@@ -332,7 +330,7 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     const shipPower = (id: ShipId): PowerLevel | undefined =>
       result.state.ships.find((s) => s.id === id)?.power;
@@ -358,7 +356,7 @@ describe("runEndOfTurn — step 1, nodes no longer touch power (§4.1)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "power-gained",
@@ -380,7 +378,7 @@ describe("runEndOfTurn — step 3, the charged countdown (§8.3)", () => {
       [ship("red-1", "red", "H8", 4)],
     ]) {
       const state = buildState({ nodes: { H8: ["charged", 5] }, ships });
-      const result = runEndOfTurn(state);
+      const result = runEndOfTurn(state, seededRandom(1));
       expect(result.state.nodes.H8).toEqual({ state: "charged", level: 4 });
     }
   });
@@ -388,7 +386,7 @@ describe("runEndOfTurn — step 3, the charged countdown (§8.3)", () => {
   it("leaves a charged node with no countdown at 0, indefinitely", () => {
     const state = buildState({ nodes: { H8: ["charged", 0] } });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.nodes.H8).toEqual({ state: "charged", level: 0 });
     expect(
@@ -417,7 +415,7 @@ describe("runEndOfTurn — step 3, the charged countdown (§8.3)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.nodes.H8).toEqual({
       state: "depleted",
@@ -461,7 +459,7 @@ describe("runEndOfTurn — step 3, the charged countdown (§8.3)", () => {
       },
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.nodes.H8.state).toBe("depleted");
     expect(result.effects).toEqual([
@@ -469,15 +467,15 @@ describe("runEndOfTurn — step 3, the charged countdown (§8.3)", () => {
     ]);
   });
 
-  it("draws nothing from the seed, whatever it does", () => {
+  it("draws nothing from the source, whatever it does", () => {
     const state = buildState({
       nodes: { H8: ["charged", 1], K5: ["charged", 5] },
-      randomSeed: 20260907,
     });
+    const random = seededRandom(20260907);
 
-    const result = runEndOfTurn(state);
+    runEndOfTurn(state, random);
 
-    expect(result.state.randomSeed).toBe(state.randomSeed);
+    expect(random.draws()).toEqual([]);
   });
 });
 
@@ -497,7 +495,7 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
       });
       let plies = 0;
       for (;;) {
-        const result = runEndOfTurn(state);
+        const result = runEndOfTurn(state, seededRandom(1));
         plies += 1;
         if (result.state.nodes.H8.state === "depleted") {
           break;
@@ -511,7 +509,7 @@ describe("runEndOfTurn — lifetimes (§8.3)", () => {
   it("leaves a node nobody visits running forever — no countdown, nothing to spend", () => {
     let state = buildState({ nodes: { H8: ["charged", 0] } });
     for (let ply = 0; ply < 100; ply++) {
-      const result = runEndOfTurn(state);
+      const result = runEndOfTurn(state, seededRandom(1));
       expect(result.state.nodes.H8).toEqual({ state: "charged", level: 0 });
       state = result.state;
     }
@@ -533,7 +531,7 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
       },
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toEqual([
       { type: "node-retired", square: squareFromName("H8") },
@@ -560,7 +558,7 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
     });
     const startingCount = Object.keys(state.nodes).length;
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.nodes[depletedName]).toBeUndefined();
     expect(Object.keys(result.state.nodes)).toHaveLength(startingCount - 1);
@@ -579,7 +577,7 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
       },
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     const retirements = result.effects.filter(
       (effect): effect is NodeRetiredEffect => effect.type === "node-retired",
@@ -605,7 +603,7 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
       nodes: { H8: ["charged", 1] },
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.nodes.H8.state).toBe("depleted");
     expect(
@@ -614,7 +612,7 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
     // It first has a chance to retire at the end of the next ply, once it
     // truly was depleted when that one began — `result.state` genuinely has
     // H8 depleted, so this second call derives it into the set on its own.
-    const nextResult = runEndOfTurn(result.state);
+    const nextResult = runEndOfTurn(result.state, seededRandom(1));
     expect(
       nextResult.state.nodes.H8 === undefined ||
         nextResult.state.nodes.H8.level < result.state.nodes.H8.level,
@@ -626,7 +624,7 @@ describe("runEndOfTurn — step 6, retirement (§8.2)", () => {
       let state = buildState({ nodes: { H8: ["depleted", startLevel] } });
       let plies = 0;
       for (;;) {
-        const result = runEndOfTurn(state);
+        const result = runEndOfTurn(state, seededRandom(1));
         plies += 1;
         if (result.state.nodes.H8 === undefined) {
           return plies;
@@ -655,7 +653,7 @@ describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §
       ships: [ship("green-1", "green", "H8", 3)],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(
       result.effects.findIndex((effect) => effect.type === "node-retired"),
@@ -676,7 +674,7 @@ describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §
       nodes: { H8: ["depleted", 1] },
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects.some((effect) => effect.type === "ship-freed")).toBe(
       false,
@@ -698,7 +696,7 @@ describe("runEndOfTurn — the trap: ship-trapped and ship-freed (§7, §8.1, §
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.nodes.H8.state).toBe("depleted");
     expect(
@@ -726,7 +724,7 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       sideToMove: "green",
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     const reliefs = result.effects.filter(
       (effect): effect is NodeReliefEffect => effect.type === "node-relief",
@@ -764,7 +762,7 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       sideToMove: "green",
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects.some((effect) => effect.type === "node-relief")).toBe(
       false,
@@ -791,7 +789,8 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       sideToMove: "green",
     });
 
-    const result = runEndOfTurn(state);
+    const random = seededRandom(1);
+    const result = runEndOfTurn(state, random);
 
     expect(
       result.effects.some(
@@ -800,9 +799,9 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       ),
     ).toBe(false);
     expect(result.state.nodes.A1.state).toBe("depleted");
-    // Nothing in the sequence draws from the seed: step 3 and step 6 are
+    // Nothing in the sequence draws from the source: step 3 and step 6 are
     // both deterministic now, and step 7 finds no qualifying candidate.
-    expect(result.state.randomSeed).toBe(state.randomSeed);
+    expect(random.draws()).toEqual([]);
   });
 
   it("relieves the side that did not just move, as well as the side that did", () => {
@@ -812,7 +811,7 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       sideToMove: "green",
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "node-relief",
@@ -829,7 +828,7 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       sideToMove: "green",
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     const reliefs = result.effects.filter(
       (effect): effect is NodeReliefEffect => effect.type === "node-relief",
@@ -855,12 +854,12 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       sideToMove: "green",
     });
 
-    const resultWithBoxedTrap = runEndOfTurn(withBoxedTrap);
-    const resultWithoutAnyShips = runEndOfTurn(withoutAnyShips);
+    const boxedTrapRandom = seededRandom(1);
+    runEndOfTurn(withBoxedTrap, boxedTrapRandom);
+    const withoutAnyShipsRandom = seededRandom(1);
+    runEndOfTurn(withoutAnyShips, withoutAnyShipsRandom);
 
-    expect(resultWithBoxedTrap.state.randomSeed).toBe(
-      resultWithoutAnyShips.state.randomSeed,
-    );
+    expect(boxedTrapRandom.draws()).toEqual(withoutAnyShipsRandom.draws());
   });
 
   it("breaks a tie on remaining life by board order and draws nothing from the seed", () => {
@@ -871,7 +870,6 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
     // `trappingNodesFor` (`trap.ts`) lists D8 before L8 (board order), so D8
     // wins, with no seed movement at all.
     const tiedLevel = 30;
-    const seed = 1;
 
     const state = buildState({
       nodes: {
@@ -884,10 +882,10 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       },
       ships: [ship("green-1", "green", "D8"), ship("green-2", "green", "L8")],
       sideToMove: "green",
-      randomSeed: seed,
     });
 
-    const result = runEndOfTurn(state);
+    const random = seededRandom(1);
+    const result = runEndOfTurn(state, random);
 
     const relief = result.effects.find(
       (effect): effect is NodeReliefEffect => effect.type === "node-relief",
@@ -901,8 +899,8 @@ describe("runEndOfTurn — step 7, the all-trapped relief (§8.6 step 7, §5)", 
       (effect): effect is NodeRetiredEffect => effect.type === "node-retired",
     );
     expect(retired?.square).toEqual(squareFromName("D8"));
-    // Nothing in the sequence draws from the seed any more.
-    expect(result.state.randomSeed).toBe(seed);
+    // Nothing in the sequence draws from the source.
+    expect(random.draws()).toEqual([]);
     // Step 6 spends one ply off both tied nodes, ahead of step 7's choice —
     // they are still tied, just one ply lower, when the choice is made.
     expect(result.state.nodes.L8).toEqual({
@@ -925,7 +923,7 @@ describe("runEndOfTurn — step 4, charging never charges a node that only appea
       },
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.nodes.H8).toBeUndefined();
     expect(result.state.nodes.F2.state).toBe("depleted");
@@ -959,7 +957,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
       },
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(
       result.effects.some((effect) => effect.type === "queue-refilled"),
@@ -992,10 +990,9 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
         N4: ["inactive", 2],
         H8: ["inactive", TOP_NODE_PRIORITY],
       },
-      randomSeed: 20260906,
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "node-charged",
@@ -1033,10 +1030,9 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
         H8: ["inactive", 3],
       },
       ships: [ship("green-1", "green", "F2", 3)],
-      randomSeed: 20260906,
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     const campingShip = result.state.ships.find((s) => s.id === "green-1");
     expect(campingShip?.square).toEqual(squareFromName("F2"));
@@ -1063,7 +1059,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
       },
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     const chargedNow = nodeSquares(result.state).filter(
       (square) => nodeStateAt(result.state, square) === "charged",
@@ -1097,7 +1093,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
       },
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.nodes.F2).toEqual({ state: "inactive", level: 1 });
     expect(result.state.nodes.N4).toEqual({ state: "inactive", level: 2 });
@@ -1124,7 +1120,7 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
       },
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.nodes.F2).toEqual({ state: "inactive", level: 1 });
     expect(result.state.nodes.N4).toEqual({ state: "inactive", level: 2 });
@@ -1147,10 +1143,9 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
         H8: ["inactive", TOP_NODE_PRIORITY],
       },
       ships: [ship("green-1", "green", "C3")],
-      randomSeed: 20260906,
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     const refills = result.effects.filter(
       (effect): effect is QueueRefilledEffect =>
@@ -1189,10 +1184,9 @@ describe("runEndOfTurn — step 5, refill or rotate (§8.2, §8.6 step 5)", () =
           N4: ["inactive", 2],
           H8: ["inactive", TOP_NODE_PRIORITY],
         },
-        randomSeed: 20260906,
       });
 
-      const result = runEndOfTurn(state);
+      const result = runEndOfTurn(state, seededRandom(1));
 
       const refills = result.effects.filter(
         (effect): effect is QueueRefilledEffect =>
@@ -1224,7 +1218,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("green-1", "green", "D2")],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(
       result.effects.filter((effect) => effect.type !== "node-retired"),
@@ -1247,7 +1241,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("green-1", "green", "D2")],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(
       result.effects.filter((effect) => effect.type !== "node-retired"),
@@ -1262,7 +1256,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("green-1", "green", "H8", 0)],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -1282,7 +1276,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("green-1", "green", "H8", 0)],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -1309,7 +1303,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -1341,7 +1335,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -1374,7 +1368,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -1410,7 +1404,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -1441,7 +1435,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -1461,7 +1455,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("green-1", "green", "H8", 0)],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.effects).toContainEqual({
       type: "energy-collected",
@@ -1481,7 +1475,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       ships: [ship("red-1", "red", "H8", 3)],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(
       result.effects.some((effect) => effect.type === "energy-collected"),
@@ -1509,7 +1503,7 @@ describe("runEndOfTurn — step 2, the energy collection (§8.4)", () => {
       energy: { green: 3, red: 7 },
     };
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(result.state.energy.green).toBeGreaterThanOrEqual(3);
     expect(result.state.energy.red).toBeGreaterThanOrEqual(7);
@@ -1544,7 +1538,7 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
       ],
     });
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.effect?.type).toBe("ply-passed");
     // Holding a charged node no longer costs power (§4.1), so green-1's
@@ -1573,7 +1567,7 @@ describe("runEndOfTurn — a passed ply still settles both directions in full (�
       energy: { green: 5, red: 0 },
     };
 
-    const result = applyPassGuard(state);
+    const result = applyPassGuard(state, seededRandom(1));
 
     expect(result.effect?.type).toBe("ply-passed");
     expect(
@@ -1592,7 +1586,8 @@ describe("runEndOfTurn — a quiet board does nothing at all (§8.1, §8.3)", ()
     const PLIES_TO_RUN = 60;
 
     for (const seed of SEEDS) {
-      const opening = startingGameState(seed, {
+      const dealRandom = seededRandom(seed);
+      const opening = startingGameState(dealRandom, {
         lengthInRounds: DEFAULT_GAME_LENGTH_ROUNDS,
         combatEnabled: true,
       });
@@ -1600,14 +1595,15 @@ describe("runEndOfTurn — a quiet board does nothing at all (§8.1, §8.3)", ()
         (name) => opening.nodes[name]?.state === "charged",
       );
       let state = opening;
+      const random = seededRandom(dealRandom.currentSeed());
 
       for (let ply = 1; ply <= PLIES_TO_RUN; ply++) {
-        const result = runEndOfTurn(state);
+        const result = runEndOfTurn(state, random);
         // No ship stands on any of them, so none ever starts a countdown,
         // and with nothing depleted there is nothing to charge from the
         // queue either — the only thing left to happen is the queue's own
         // silent rotation (§8.2), which is not this story's concern and
-        // raises no effect and moves no seed.
+        // raises no effect and draws nothing.
         expect(result.effects).toEqual([]);
         for (const name of chargedNames) {
           expect(result.state.nodes[name]).toEqual({
@@ -1615,7 +1611,7 @@ describe("runEndOfTurn — a quiet board does nothing at all (§8.1, §8.3)", ()
             level: 0,
           });
         }
-        expect(result.state.randomSeed).toBe(opening.randomSeed);
+        expect(random.draws()).toEqual([]);
         state = { ...result.state, plyNumber: result.state.plyNumber + 1 };
       }
     }
@@ -1642,8 +1638,6 @@ describe("runEndOfTurn — steal runs only power and energy (steal.md §8)", () 
       },
       sideToMove: "green",
       plyNumber: 1,
-      randomSeed: 4242,
-      openingSeed: 4242,
       nodePlaystyle: "steal",
       rotators: [],
       planetBonus: "off",
@@ -1659,7 +1653,8 @@ describe("runEndOfTurn — steal runs only power and energy (steal.md §8)", () 
       playerMatching: "off",
     };
 
-    const result = runEndOfTurn(state);
+    const random = seededRandom(1);
+    const result = runEndOfTurn(state, random);
 
     expect(result.effects.map((effect) => effect.type)).toEqual([
       "power-gained",
@@ -1667,7 +1662,7 @@ describe("runEndOfTurn — steal runs only power and energy (steal.md §8)", () 
     ]);
     expect(result.state.nodes).toEqual(state.nodes);
     expect(result.state.rotators).toEqual([]);
-    expect(result.state.randomSeed).toBe(state.randomSeed);
+    expect(random.draws()).toEqual([]);
     expect(result.state.energy.green).toBe(1);
   });
 });
@@ -1690,8 +1685,6 @@ describe("runEndOfTurn — player-matching nodes (steal.md §9)", () => {
       ),
       sideToMove: "red",
       plyNumber: 1,
-      randomSeed: 4242,
-      openingSeed: 4242,
       nodePlaystyle: "steal",
       rotators: [],
       planetBonus: "off",
@@ -1715,7 +1708,7 @@ describe("runEndOfTurn — player-matching nodes (steal.md §9)", () => {
       ships: [ship("red-1", "red", "C3"), ship("red-2", "red", "E5")],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     const collected = result.effects.find(
       (effect) => effect.type === "energy-collected",
@@ -1738,7 +1731,7 @@ describe("runEndOfTurn — player-matching nodes (steal.md §9)", () => {
       ships: [ship("red-1", "red", "B2"), ship("red-2", "red", "C3")],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     expect(
       result.effects.some((effect) => effect.type === "energy-collected"),
@@ -1753,7 +1746,7 @@ describe("runEndOfTurn — player-matching nodes (steal.md §9)", () => {
       ships: [ship("red-1", "red", "B2"), ship("red-2", "red", "E5")],
     });
 
-    const result = runEndOfTurn(state);
+    const result = runEndOfTurn(state, seededRandom(1));
 
     const collected = result.effects.find(
       (effect) => effect.type === "energy-collected",
