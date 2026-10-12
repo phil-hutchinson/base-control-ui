@@ -275,10 +275,24 @@ const DEDICATED_WITH_PLANET_BONUS: Setup = {
   artwork: [3, 1, 14, 7, 2, 9, 5, 13, 4, 10, 6, 8],
 };
 
+const STEAL_WITH_IMMEDIATE: Setup = {
+  playstyle: "steal",
+  rounds: 30,
+  fleetSize: 5,
+  chargedNodes: 4,
+  combat: false,
+  scoring: "bonus",
+  planetBonus: "off",
+  planetActivity: "race",
+  playerMatching: "immediate",
+  artwork: [3, 1, 14, 7, 2, 9, 5, 13, 4, 10, 6, 8],
+};
+
 describe("draws round-trip", () => {
   it.each([
     ["steal with planet effects", STEAL_WITH_PLANET_EFFECTS, 555],
     ["dedicated with planet bonus", DEDICATED_WITH_PLANET_BONUS, 777],
+    ["steal with immediate player-matching", STEAL_WITH_IMMEDIATE, 999],
   ])("matches the hash after every ply (%s)", (_label, setup, seed) => {
     const game = playPolicyGame(setup, seed, 40);
     expect(game.steps.length).toBeGreaterThan(10);

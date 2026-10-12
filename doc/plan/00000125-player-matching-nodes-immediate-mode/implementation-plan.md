@@ -675,7 +675,59 @@ Verification (automated): full `npm test` green with the new tests above,
 
 ### Step 3 — Landing on an immediate node
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned. `steal.ts` gains `landOnImmediateNode`
+(removes the landed square; draws one fresh square anchored on it via
+`drawStealProspectiveSquare` when the node had only that square, none when
+it had two) and a header note on its draw count. `energy.ts` gains
+`immediateNodePayment` (reuses `energyForNodesHeld` on
+`chargedNodesHeldBy`, times 3 under simple / 2 under bonus via two named
+constants, 0 when out of time) beside `turnCollection`, touching nothing
+outside its own return value — `ply.ts` credits the energy itself. `ply.ts`
+adds `ImmediateNodeLandedEffect` to `MoveEffect`, and `applyMove`'s steal
+branch gains a third destination case ahead of the ordinary claim: when
+`isImmediateSignal` is true, `landOnImmediateNode` runs, the payment is
+priced on the state with the ship moved and any leave already resolved,
+credited to `energy` (a new local alongside `nodes`) only when the landing
+side is the node's own matched side and the amount is positive, and the
+effect is pushed with that amount (0 for the opponent's node, nothing held,
+or out of time) and the fresh square if one was drawn. `EnergyOverlay.tsx`'s
+explicit `endOfPlySettlements` union gains the new effect with no behaviour
+(Step 5's), which is the one other place in the app that exhaustively named
+`MoveEffect`'s members.
+
+Deviations from the plan: (1) `fullGame.test.ts`'s `assertStealNodeInvariants`
+dropped its separate `chargedNodeCount` parameter in favour of reading
+`state` directly (it already carries `chargedNodeCount` and
+`playerMatching`), iterating `gameSignals(state)` instead of
+`NODE_SIGNALS.slice(0, chargedNodeCount)`, and branching on
+`isImmediateSignal` to check red's and green's signals separately (never
+charged, one or two prospective squares) from ordinary ones (today's
+invariants unchanged); all four call sites updated. This mirrors Step 2's
+own note on `assertActivityBonusInvariants` losing the same kind of
+now-redundant parameter, and was needed because the existing immediate +
+planet-effects sweep in this file was already calling the old signature
+with only the ordinary count, silently skipping red's and green's
+invariants — Step 3's own verification asked for exactly the check this
+exposed. A new `describe.each` block runs a hundred-round immediate game at
+3 and 4 ordinary nodes, under each planet effects setting, asserting the
+invariant throughout and that paid landings, unpaid landings and moved
+nodes are all non-vacuous. (2) `seededReplay.test.ts`'s `StealNodeEvent`
+union gained a third `"landed"` member and `stealNodeEvents` records
+`immediate-node-landed` effects too, rather than a wholly separate event
+type, since the existing `chooseStealPly` policy already heads for any
+`"prospective"` square — red's and green's included — with no change
+needed; a new harness and describe block mirror the existing steal replay
+tests. (3) `ply.test.ts`'s shared `buildState` helper gained `scoring` and
+`playerMatching` config fields (previously hard-coded to `"simple"` and
+`"off"`), needed to build an immediate game; both default to the prior
+hard-coded values, so no existing test's behaviour changed. No rule,
+decision or settled item from the plan was reopened. `npm test` rose from
+98 files/2212 tests to 98 files/2241 tests (+29); `npm run typecheck`,
+`npm run lint` and `npm run format:check` are clean; the pinned required
+game's hash in `src/core/stateHash.test.ts` is unchanged, and a new
+immediate setup was added to its "draws round-trip" coverage.
 
 Implement S5–S8: the new `steal.ts` landing function (D8), the payment
 function in `energy.ts` (D7), `applyMove`'s third destination case in

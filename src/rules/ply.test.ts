@@ -16,6 +16,7 @@ import {
   applyOutOfTimePass,
   applyPassGuard,
   assertFightInvariants,
+  type ImmediateNodeLandedEffect,
   type NodeAbandonedEffect,
   type NodeClaimedEffect,
 } from "./ply";
@@ -31,6 +32,8 @@ import { type NodePlaystyle } from "./nodePlaystyle";
 import { CHARGED_COUNTDOWN_PLIES, EXIT_COUNTDOWN_PLIES } from "./countdown";
 import { abandonNode, claimNode } from "./steal";
 import { legalMoves } from "./movement";
+import type { PlayerMatchingSetting } from "./playerMatching";
+import type { ScoringSetting } from "./scoring";
 
 function ship(
   id: ShipId,
@@ -70,6 +73,8 @@ function buildState(config: {
   combatEnabled?: boolean;
   nodePlaystyle?: NodePlaystyle;
   rotators?: readonly Square[];
+  scoring?: ScoringSetting;
+  playerMatching?: PlayerMatchingSetting;
 }): GameState {
   return {
     ships: config.ships,
@@ -91,8 +96,8 @@ function buildState(config: {
     chargedNodeCount: config.chargedNodeCount ?? DEFAULT_CHARGED_NODE_COUNT,
     outOfTime: config.outOfTime ?? { green: false, red: false },
     combatEnabled: config.combatEnabled ?? true,
-    scoring: "simple",
-    playerMatching: "off",
+    scoring: config.scoring ?? "simple",
+    playerMatching: config.playerMatching ?? "off",
   };
 }
 
@@ -1697,6 +1702,263 @@ describe("applyMove and applyAttack under steal (steal.md §§3-5)", () => {
       "attacker-on-charged-node",
     );
   });
+});
+
+describe("applyMove landing on an immediate node (steal.md §9)", () => {
+  function immediateLandedEffect(
+    effects: readonly { readonly type: string }[],
+  ): ImmediateNodeLandedEffect | undefined {
+    return effects.find(
+      (effect): effect is ImmediateNodeLandedEffect =>
+        effect.type === "immediate-node-landed",
+    );
+  }
+
+  it("landing on one's own node holding nothing pays nothing, and the node moves", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "G8"), ship("red-1", "red", "A1")],
+      rawNodes: {
+        H8: { state: "prospective", level: 0, signal: 4 },
+      },
+      chargedNodeCount: 3,
+      playerMatching: "immediate",
+      nodePlaystyle: "steal",
+    });
+
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H8"),
+      seededRandom(1),
+    );
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    const landed = immediateLandedEffect(result.effects);
+    expect(landed).toMatchObject({
+      type: "immediate-node-landed",
+      shipId: "green-1",
+      side: "green",
+      signal: 4,
+      matchedSide: "green",
+      square: squareFromName("H8"),
+      amount: 0,
+    });
+    expect(landed?.newProspective).toBeDefined();
+    expect(result.state.energy.green).toBe(0);
+    expect(result.state.nodes.H8).toBeUndefined();
+  });
+
+  it.each([
+    ["simple" as const, 1, 3],
+    ["simple" as const, 2, 6],
+    ["bonus" as const, 1, 2],
+    ["bonus" as const, 2, 6],
+  ])(
+    "holding %s nodes under %s pays %d",
+    (scoring, heldCount, expectedAmount) => {
+      const heldSquares = ["C3", "E5"].slice(0, heldCount);
+      const state = buildState({
+        ships: [
+          ship("green-1", "green", "G8"),
+          ...heldSquares.map((square, index) =>
+            ship(`green-holder-${index}`, "green", square),
+          ),
+          ship("red-1", "red", "A1"),
+        ],
+        rawNodes: {
+          H8: { state: "prospective", level: 0, signal: 4 },
+          ...Object.fromEntries(
+            heldSquares.map((square, index) => [
+              square,
+              { state: "charged" as const, level: 0, signal: index },
+            ]),
+          ),
+        },
+        chargedNodeCount: 3,
+        playerMatching: "immediate",
+        scoring,
+        nodePlaystyle: "steal",
+      });
+
+      const result = applyMove(
+        state,
+        "green-1",
+        squareFromName("H8"),
+        seededRandom(2),
+      );
+      expect(result.outcome).toBe("applied");
+      if (result.outcome !== "applied") {
+        throw new Error("expected the move to be applied");
+      }
+
+      const landed = immediateLandedEffect(result.effects);
+      expect(landed?.amount).toBe(expectedAmount);
+    },
+  );
+
+  it("stepping off a held ordinary node straight onto one's own immediate node pays for the nodes still held, not the one just left", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "G8"),
+        ship("green-2", "green", "D4"),
+        ship("red-1", "red", "A1"),
+      ],
+      rawNodes: {
+        G8: { state: "charged", level: 0, signal: 0 },
+        F6: { state: "prospective", level: 0, signal: 0 },
+        D4: { state: "charged", level: 0, signal: 1 },
+        E3: { state: "prospective", level: 0, signal: 1 },
+        H8: { state: "prospective", level: 0, signal: 4 },
+      },
+      chargedNodeCount: 3,
+      playerMatching: "immediate",
+      scoring: "simple",
+      nodePlaystyle: "steal",
+    });
+
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H8"),
+      seededRandom(3),
+    );
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    expect(result.effects.slice(0, 2).map((effect) => effect.type)).toEqual([
+      "node-abandoned",
+      "immediate-node-landed",
+    ]);
+
+    const landed = immediateLandedEffect(result.effects);
+    // Only D4's node (signal 1) is still held once G8's has been abandoned —
+    // the node just left does not count towards the payment.
+    expect(landed?.amount).toBe(3);
+  });
+
+  it("landing on the opponent's node pays nothing, and moves it", () => {
+    const state = buildState({
+      ships: [ship("green-1", "green", "G8"), ship("red-1", "red", "A1")],
+      rawNodes: {
+        H8: { state: "prospective", level: 0, signal: 3 },
+      },
+      chargedNodeCount: 3,
+      playerMatching: "immediate",
+      nodePlaystyle: "steal",
+    });
+
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H8"),
+      seededRandom(4),
+    );
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    const landed = immediateLandedEffect(result.effects);
+    expect(landed).toMatchObject({
+      side: "green",
+      matchedSide: "red",
+      amount: 0,
+    });
+    expect(landed?.newProspective).toBeDefined();
+    expect(result.state.energy.green).toBe(0);
+    expect(result.state.nodes.H8).toBeUndefined();
+  });
+
+  it("after Additional nodes, landing on either of a two-square immediate node's squares removes only that square, draws nothing, and pays as usual when it is one's own", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "G8"),
+        ship("green-2", "green", "C3"),
+        ship("red-1", "red", "A1"),
+      ],
+      rawNodes: {
+        H8: { state: "prospective", level: 0, signal: 4 },
+        L8: { state: "prospective", level: 0, signal: 4 },
+        C3: { state: "charged", level: 0, signal: 0 },
+      },
+      chargedNodeCount: 3,
+      playerMatching: "immediate",
+      scoring: "simple",
+      nodePlaystyle: "steal",
+    });
+
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H8"),
+      seededRandom(5),
+    );
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    const landed = immediateLandedEffect(result.effects);
+    expect(landed?.newProspective).toBeUndefined();
+    expect(landed?.amount).toBe(3);
+    expect(result.state.nodes.H8).toBeUndefined();
+    expect(result.state.nodes.L8).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 4,
+    });
+  });
+
+  it("an immediate node is never charged after any landing, and the same ply's end-of-turn collection still pays the ordinary nodes held", () => {
+    const state = buildState({
+      ships: [
+        ship("green-1", "green", "G8"),
+        ship("green-2", "green", "C3"),
+        ship("red-1", "red", "A1"),
+      ],
+      rawNodes: {
+        H8: { state: "prospective", level: 0, signal: 4 },
+        L8: { state: "prospective", level: 0, signal: 4 },
+        C3: { state: "charged", level: 0, signal: 0 },
+      },
+      chargedNodeCount: 3,
+      playerMatching: "immediate",
+      scoring: "simple",
+      nodePlaystyle: "steal",
+    });
+
+    const result = applyMove(
+      state,
+      "green-1",
+      squareFromName("H8"),
+      seededRandom(5),
+    );
+    expect(result.outcome).toBe("applied");
+    if (result.outcome !== "applied") {
+      throw new Error("expected the move to be applied");
+    }
+
+    for (const status of Object.values(result.state.nodes)) {
+      if (status.signal === 4) {
+        expect(status.state).not.toBe("charged");
+      }
+    }
+
+    // The immediate payment (3, for the one ordinary node held) plus the
+    // same ply's end-of-turn collection for that same node still held (1,
+    // under simple scoring, off's own path under immediate — energy.ts).
+    expect(result.state.energy.green).toBe(4);
+  });
+
+  // A side out of time only ever passes (rules.md §5), so a move never
+  // lands on an immediate node while out of time — the zero payment for
+  // that case is pinned at the energy-function level instead
+  // (energy.test.ts, "immediateNodePayment").
 });
 
 describe("assertFightInvariants (rules.md §7)", () => {

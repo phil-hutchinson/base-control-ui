@@ -42,9 +42,9 @@ import {
 } from "./playerMatching";
 import { SCORING_SETTINGS, type ScoringSetting } from "./scoring";
 import {
-  NODE_SIGNALS,
-  type NodeSignal,
   everyNodeHasExtra,
+  gameSignals,
+  isImmediateSignal,
   squaresForSignal,
 } from "./steal";
 import {
@@ -468,41 +468,47 @@ function assertNoInactiveOrDepletedNodes(state: GameState): void {
 
 /**
  * Every steal node invariant that must hold at any ply (steal.md §§2, 8,
- * 10): each of the game's `chargedNodeCount` signals has at most one charged
- * square, and one or two prospective squares when Held, two or three when
- * Open — the larger count only under planet effects, when the node carries
- * an extra; never depleted or inactive; a charged square never carries a
- * countdown; and no rotator is ever laid down.
+ * 9, 10): every ordinary signal has at most one charged square, and one or
+ * two prospective squares when Held, two or three when Open — the larger
+ * count only under planet effects, when the node carries an extra. Under
+ * player-matching nodes' immediate setting, red's and green's signals
+ * (`isImmediateSignal`) are never charged instead, and carry one
+ * prospective square, or two while they carry an extra. Never depleted or
+ * inactive; a charged square never carries a countdown; and no rotator is
+ * ever laid down. `state` carries both `chargedNodeCount` and
+ * `playerMatching`, so this needs no count passed in separately
+ * (`gameSignals`).
  */
-function assertStealNodeInvariants(
-  state: GameState,
-  chargedNodeCount: ChargedNodeCount,
-): void {
+function assertStealNodeInvariants(state: GameState): void {
   assertNoInactiveOrDepletedNodes(state);
   assertRotatorsAreFree(state);
 
-  for (const signal of NODE_SIGNALS.slice(
-    0,
-    chargedNodeCount,
-  ) as readonly NodeSignal[]) {
+  for (const signal of gameSignals(state)) {
     const squares = squaresForSignal(state.nodes, signal);
     const statuses = squares.map((square) => nodeStatusAt(state, square));
 
     const chargedCount = statuses.filter(
       (status) => status?.state === "charged",
     ).length;
-    expect(chargedCount).toBeLessThanOrEqual(1);
-
     const prospectiveCount = statuses.filter(
       (status) => status?.state === "prospective",
     ).length;
-    const usual = chargedCount === 1 ? 1 : 2;
-    // One more than usual only when Additional nodes has given this signal
-    // an extra (steal.md §10) — the planet effects sweep below is what
-    // exercises that case.
-    const most = state.planetActivity === "off" ? usual : usual + 1;
-    expect(prospectiveCount).toBeGreaterThanOrEqual(usual);
-    expect(prospectiveCount).toBeLessThanOrEqual(most);
+
+    if (isImmediateSignal(state, signal)) {
+      expect(chargedCount).toBe(0);
+      expect(prospectiveCount).toBeGreaterThanOrEqual(1);
+      expect(prospectiveCount).toBeLessThanOrEqual(2);
+    } else {
+      expect(chargedCount).toBeLessThanOrEqual(1);
+
+      const usual = chargedCount === 1 ? 1 : 2;
+      // One more than usual only when Additional nodes has given this signal
+      // an extra (steal.md §10) — the planet effects sweep below is what
+      // exercises that case.
+      const most = state.planetActivity === "off" ? usual : usual + 1;
+      expect(prospectiveCount).toBeGreaterThanOrEqual(usual);
+      expect(prospectiveCount).toBeLessThanOrEqual(most);
+    }
 
     for (const status of statuses) {
       expect(
@@ -741,8 +747,7 @@ describe.each(CHARGED_NODE_COUNTS)(
             chargedNodeCount,
             combatEnabled,
             nodePlaystyle: "steal",
-            onPly: (state) =>
-              assertStealNodeInvariants(state, chargedNodeCount),
+            onPly: (state) => assertStealNodeInvariants(state),
             onEffects: (effects) => {
               for (const effect of effects) {
                 if (effect.type === "node-claimed") {
@@ -765,7 +770,7 @@ describe.each(CHARGED_NODE_COUNTS)(
 
         expect(finalState.plyNumber).toBe(pliesForGameLength(100) + 1);
         expect(isGameOver(finalState)).toBe(true);
-        assertStealNodeInvariants(finalState, chargedNodeCount);
+        assertStealNodeInvariants(finalState);
 
         // Not vacuous: over a hundred rounds the greedy policy (which heads
         // for a prospective node whenever one is reachable) actually claims
@@ -787,6 +792,69 @@ describe.each(CHARGED_NODE_COUNTS)(
         for (const collected of redCollected) {
           expect(collected.newTotal).toBeGreaterThan(redRunningTotal);
           redRunningTotal = collected.newTotal;
+        }
+      },
+    );
+  },
+);
+
+describe.each(
+  // Immediate offers only four or three ordinary nodes (steal.md §9); five
+  // is not among its offered counts.
+  CHARGED_NODE_COUNTS.filter((count) => count !== 5),
+)(
+  "a full steal game under player-matching nodes' immediate setting, end to end, at %d ordinary nodes (steal.md §9)",
+  (chargedNodeCount) => {
+    it.each(["off", "stable", "race"] as const)(
+      "plays a hundred-round game to its end with planet effects=%s, landing on immediate nodes throughout",
+      (planetActivity) => {
+        const seed = 20260819;
+        let paidLandings = 0;
+        let unpaidLandings = 0;
+        let movedNodes = 0;
+        let usedUpExtras = 0;
+
+        const { finalState } = playFullGame(seed, 100, {
+          chargedNodeCount,
+          nodePlaystyle: "steal",
+          playerMatching: "immediate",
+          planetActivity,
+          onPly: (state) => assertStealNodeInvariants(state),
+          onEffects: (effects) => {
+            for (const effect of effects) {
+              if (effect.type !== "immediate-node-landed") {
+                continue;
+              }
+              if (effect.amount > 0) {
+                paidLandings += 1;
+              } else {
+                unpaidLandings += 1;
+              }
+              if (effect.newProspective !== undefined) {
+                movedNodes += 1;
+              } else {
+                usedUpExtras += 1;
+              }
+            }
+          },
+        });
+
+        expect(finalState.plyNumber).toBe(pliesForGameLength(100) + 1);
+        expect(isGameOver(finalState)).toBe(true);
+        assertStealNodeInvariants(finalState);
+
+        // Not vacuous: over a hundred rounds the greedy policy (which heads
+        // for a prospective node whenever one is reachable, red's and
+        // green's own included) actually lands on immediate nodes, paid and
+        // unpaid, and moves at least one of them.
+        expect(paidLandings).toBeGreaterThan(0);
+        expect(unpaidLandings).toBeGreaterThan(0);
+        expect(movedNodes).toBeGreaterThan(0);
+        // Additional nodes (steal.md §10) is the only way a landing can use
+        // up an extra instead of moving the node; vacuous under "off", where
+        // it never fires.
+        if (planetActivity === "off") {
+          expect(usedUpExtras).toBe(0);
         }
       },
     );
@@ -838,7 +906,7 @@ describe.each(
           onPly: (state) => {
             beforePly = afterPly;
             afterPly = state;
-            assertStealNodeInvariants(state, chargedNodeCount);
+            assertStealNodeInvariants(state);
             assertActivityBonusInvariants(state);
             expect(state.energy.green).toBeGreaterThanOrEqual(previousGreen);
             expect(state.energy.red).toBeGreaterThanOrEqual(previousRed);
@@ -873,7 +941,7 @@ describe.each(
 
         expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
         expect(isGameOver(finalState)).toBe(true);
-        assertStealNodeInvariants(finalState, chargedNodeCount);
+        assertStealNodeInvariants(finalState);
         assertActivityBonusInvariants(finalState);
 
         // Not vacuous: the bonus-preferring policy actually races for and

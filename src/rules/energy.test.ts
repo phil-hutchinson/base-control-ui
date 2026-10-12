@@ -3,6 +3,7 @@ import { ALL_SQUARES, squareFromName } from "./board";
 import {
   chargedNodesHeldBy,
   energyForNodesHeld,
+  immediateNodePayment,
   turnCollection,
 } from "./energy";
 import type { ShipId } from "./fleet";
@@ -481,6 +482,67 @@ describe("turnCollection", () => {
     expect(result.withheld).toBe(true);
     expect(result.withheldReason).toBe("out-of-time");
     expect(result.countedNodes).toBe(0);
+    expect(result.amount).toBe(0);
+  });
+});
+
+describe("immediateNodePayment (steal.md §9)", () => {
+  const HELD_SQUARES = ["B2", "C3", "D4", "E5"];
+
+  function stateHoldingNodes(
+    count: number,
+    scoring: ScoringSetting,
+  ): GameState {
+    const held = HELD_SQUARES.slice(0, count);
+    return buildState({
+      nodePlaystyle: "steal",
+      chargedNodeCount: 4,
+      scoring,
+      playerMatching: "immediate",
+      nodes: Object.fromEntries(held.map((name) => [name, "charged" as const])),
+      ships: held.map((name, index) => ship(`red-${index}`, "red", name)),
+    });
+  }
+
+  it("pays 3, 6, 9 or 12 under simple scoring for one through four ordinary nodes held", () => {
+    const expected = [3, 6, 9, 12];
+    [1, 2, 3, 4].forEach((count, index) => {
+      const result = immediateNodePayment(
+        stateHoldingNodes(count, "simple"),
+        "red",
+      );
+      expect(result.heldSquares).toHaveLength(count);
+      expect(result.amount).toBe(expected[index]);
+    });
+  });
+
+  it("pays 2, 6, 12 or 20 under bonus scoring for one through four ordinary nodes held", () => {
+    const expected = [2, 6, 12, 20];
+    [1, 2, 3, 4].forEach((count, index) => {
+      const result = immediateNodePayment(
+        stateHoldingNodes(count, "bonus"),
+        "red",
+      );
+      expect(result.amount).toBe(expected[index]);
+    });
+  });
+
+  it("pays nothing when the landing side holds no ordinary node", () => {
+    const result = immediateNodePayment(stateHoldingNodes(0, "simple"), "red");
+
+    expect(result.heldSquares).toEqual([]);
+    expect(result.amount).toBe(0);
+  });
+
+  it("pays nothing when the landing side is out of time, however many nodes it holds", () => {
+    const state: GameState = {
+      ...stateHoldingNodes(2, "bonus"),
+      outOfTime: { green: false, red: true },
+    };
+
+    const result = immediateNodePayment(state, "red");
+
+    expect(result.heldSquares).toHaveLength(2);
     expect(result.amount).toBe(0);
   });
 });

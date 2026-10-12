@@ -13,6 +13,7 @@ import type {
 import type {
   ActivityBonusClaimedEffect,
   FightResolvedEffect,
+  ImmediateNodeLandedEffect,
   NodeAbandonedEffect,
   NodeClaimedEffect,
   NodeSpentEffect,
@@ -54,7 +55,9 @@ function settlementsIn(effects: readonly EndOfTurnEffect[]): Settlement[] {
  * attack's a `FightResolvedEffect`, and either can carry a
  * `QueueRotatedEffect`, a `PlanetBonusClaimedEffect` or an
  * `ActivityBonusClaimedEffect`, none of which carries a settlement of its
- * own).
+ * own — under player-matching nodes' immediate setting, a move can also
+ * carry an `ImmediateNodeLandedEffect`, likewise not a settlement of this
+ * kind).
  */
 function endOfPlySettlements(
   effects: readonly (
@@ -64,6 +67,7 @@ function endOfPlySettlements(
     | NodeSpentEffect
     | NodeAbandonedEffect
     | NodeClaimedEffect
+    | ImmediateNodeLandedEffect
     | PlanetBonusClaimedEffect
     | ActivityBonusClaimedEffect
     | QueueRotatedEffect

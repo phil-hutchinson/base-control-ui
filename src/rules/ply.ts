@@ -45,6 +45,7 @@ import {
   resolveActivityBonusClaim,
 } from "./activityBonus";
 import { type EndOfTurnEffect, runEndOfTurn } from "./endOfTurn";
+import { immediateNodePayment } from "./energy";
 import { otherSide, type Side, type ShipId } from "./fleet";
 import { isGameOver } from "./gameLength";
 import { type GameState, type Ship, shipsBySquare } from "./gameState";
@@ -64,8 +65,11 @@ import type { RandomSource } from "./random";
 import {
   abandonNode,
   claimNode,
+  isImmediateSignal,
+  landOnImmediateNode,
   type NodeSignal,
   type RecoloredSquare,
+  sideMatchedToSignal,
 } from "./steal";
 
 /** Why the side to move's ply passed instead of moving or attacking (rules.md §5). */
@@ -142,6 +146,34 @@ export interface NodeClaimedEffect {
   readonly strandedShip?: StrandedShip;
   readonly discardedSquares: readonly Square[];
   readonly newProspective: Square;
+}
+
+/**
+ * A ship landed on an immediate node's square under player-matching nodes'
+ * immediate setting (steal.md §9): `square` is the square just landed on,
+ * with the landing ship (`shipId`, `side`) aboard, `signal` is the node's
+ * signal and `matchedSide` is the side it belongs to. `amount` is what was
+ * paid — 0 when `side` is not `matchedSide` (the opponent's node, paid
+ * nothing), when `side` held no ordinary node at the moment of landing, or
+ * when `side` is out of time. `newProspective` is the fresh prospective
+ * square drawn for the node when it had only the one square landed on,
+ * absent when the node carried an extra and lost it instead (steal.md
+ * §10). Always after any `NodeAbandonedEffect` the same move also raises —
+ * leaving comes before landing when one move does both (steal.md §5) — and
+ * before any `PlanetBonusClaimedEffect` or `ActivityBonusClaimedEffect`,
+ * since a prospective square is never a planet and the two never fire on
+ * the same landing. A move lands on one square, so a move raises at most
+ * one of `node-claimed` and `immediate-node-landed`, never both.
+ */
+export interface ImmediateNodeLandedEffect {
+  readonly type: "immediate-node-landed";
+  readonly shipId: ShipId;
+  readonly side: Side;
+  readonly signal: NodeSignal;
+  readonly matchedSide: Side;
+  readonly square: Square;
+  readonly amount: number;
+  readonly newProspective?: Square;
 }
 
 /**
@@ -241,6 +273,7 @@ export type MoveEffect =
   | NodeSpentEffect
   | NodeAbandonedEffect
   | NodeClaimedEffect
+  | ImmediateNodeLandedEffect
   | PlanetBonusClaimedEffect
   | ActivityBonusClaimedEffect
   | QueueRotatedEffect
@@ -699,15 +732,27 @@ function claimActivityBonus(
  * occupied square, since a countdown's own holder is standing there.
  *
  * Under steal instead (steal.md §§3-5), those two checks are replaced by its
- * own two events. If the ship left a charged node and the destination is not
+ * own events. If the ship left a charged node and the destination is not
  * that same node's own prospective square, the node is abandoned
- * (`abandonNode`), raising a `NodeAbandonedEffect`. If the destination is a
- * prospective square, of any node, its node is then claimed (`claimNode`),
- * raising a `NodeClaimedEffect` — after any `NodeAbandonedEffect`, since
- * leaving comes first when one move does both. A ship relocating onto its
- * own node's prospective square only claims: the abandon condition excludes
- * it. Both draws, and any `claimActivityBonus` below goes on to make, are
- * made on the one `random` source this call was given.
+ * (`abandonNode`), raising a `NodeAbandonedEffect`. If the destination is an
+ * **immediate** node's square, under player-matching nodes' immediate
+ * setting (steal.md §9, `isImmediateSignal`), the landing resolves at once
+ * instead of a claim: `landOnImmediateNode` removes the square and, if the
+ * node had no other square, draws it a fresh one anchored on the square just
+ * landed on; if the node is the landing side's own, `immediateNodePayment`
+ * prices what it pays — on the state with the ship moved and any leave
+ * already resolved — and that amount is credited to the side's energy at
+ * once, mid-move, the way a bonus already is; the opponent's own node pays
+ * nothing. This raises an `ImmediateNodeLandedEffect`. Otherwise, if the
+ * destination is an ordinary prospective square, of any node, its node is
+ * claimed (`claimNode`), raising a `NodeClaimedEffect`. Whichever of the two
+ * fires sits after any `NodeAbandonedEffect`, since leaving comes first when
+ * one move does both; a move lands on one square, so it raises at most one
+ * of `node-claimed` and `immediate-node-landed`, never both. A ship
+ * relocating onto its own node's prospective square only claims: the abandon
+ * condition excludes it. Every draw made here, and any `claimActivityBonus`
+ * below goes on to make, is made on the one `random` source this call was
+ * given.
  *
  * Then `claimPlanetBonus` pays a classic bonus if `destination` earns one,
  * raising a `PlanetBonusClaimedEffect`, and `claimActivityBonus` claims an
@@ -759,6 +804,7 @@ export function applyMove(
   const leftSquareName = squareName(ship.square);
   const destinationSquareName = squareName(destination);
   let nodes = state.nodes;
+  let energy = state.energy;
 
   if (state.nodePlaystyle === "steal") {
     const leftStatus = state.nodes[leftSquareName];
@@ -790,7 +836,48 @@ export function applyMove(
       });
     }
 
-    if (destinationSignal !== undefined) {
+    if (
+      destinationSignal !== undefined &&
+      isImmediateSignal(state, destinationSignal)
+    ) {
+      const landed = landOnImmediateNode(
+        nodes,
+        destinationSignal,
+        destination,
+        shipSquares,
+        random,
+      );
+      nodes = landed.nodes;
+
+      const matchedSide = sideMatchedToSignal(destinationSignal, state);
+      if (matchedSide === undefined) {
+        throw new RangeError(
+          `signal ${destinationSignal} is immediate but matched to no side, despite isImmediateSignal reporting it was`,
+        );
+      }
+
+      const payment =
+        matchedSide === ship.side
+          ? immediateNodePayment({ ...state, ships, nodes }, ship.side)
+          : undefined;
+      const amount = payment?.amount ?? 0;
+      if (amount > 0) {
+        energy = { ...energy, [ship.side]: energy[ship.side] + amount };
+      }
+
+      effects.push({
+        type: "immediate-node-landed",
+        shipId: ship.id,
+        side: ship.side,
+        signal: destinationSignal,
+        matchedSide,
+        square: destination,
+        amount,
+        ...(landed.newProspective !== undefined
+          ? { newProspective: landed.newProspective }
+          : {}),
+      });
+    } else if (destinationSignal !== undefined) {
       const claimed = claimNode(
         nodes,
         destinationSignal,
@@ -860,6 +947,7 @@ export function applyMove(
     ...state,
     ships,
     nodes,
+    energy,
   };
   const { state: classicClaimedState, effect: claimEffect } = claimPlanetBonus(
     afterMove,

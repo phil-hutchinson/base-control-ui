@@ -538,10 +538,13 @@ function chooseStealPly(state: GameState): PlyChoice | undefined {
 }
 
 /**
- * One `node-claimed` or `node-abandoned` effect, reduced to the fields worth
- * comparing across a replay: the signal, the square the event happened at,
- * whether a claim released a square (a steal, or a relocation), and the
- * fresh prospective square drawn.
+ * One `node-claimed`, `node-abandoned` or `immediate-node-landed` effect,
+ * reduced to the fields worth comparing across a replay: the signal, the
+ * square the event happened at, whether a claim released a square (a
+ * steal, or a relocation), and the fresh prospective square drawn.
+ * `"landed"` is player-matching nodes' immediate setting (steal.md §9): the
+ * landing side, the matched side, the amount paid and the fresh square, if
+ * one was drawn.
  */
 type StealNodeEvent =
   | {
@@ -556,9 +559,18 @@ type StealNodeEvent =
       readonly signal: number;
       readonly square: string;
       readonly newProspective: string;
+    }
+  | {
+      readonly kind: "landed";
+      readonly signal: number;
+      readonly side: string;
+      readonly matchedSide: string;
+      readonly square: string;
+      readonly amount: number;
+      readonly newProspective: string | undefined;
     };
 
-/** Every steal node event nested inside a ply's own effects, in order (steal.md §§3-5). */
+/** Every steal node event nested inside a ply's own effects, in order (steal.md §§3-5, §9). */
 function stealNodeEvents(
   effects: readonly (MoveEffect | AttackEffect)[],
 ): readonly StealNodeEvent[] {
@@ -581,6 +593,19 @@ function stealNodeEvents(
             ? undefined
             : squareName(effect.releasedSquare),
         newProspective: squareName(effect.newProspective),
+      });
+    } else if (effect.type === "immediate-node-landed") {
+      events.push({
+        kind: "landed",
+        signal: effect.signal,
+        side: effect.side,
+        matchedSide: effect.matchedSide,
+        square: squareName(effect.square),
+        amount: effect.amount,
+        newProspective:
+          effect.newProspective === undefined
+            ? undefined
+            : squareName(effect.newProspective),
       });
     }
   }
@@ -703,6 +728,130 @@ describe("a seeded steal game replays its opening board and its claim and abando
     // happens to make it coincide, pick another pair.
     const first = playSeededStealGame(20260819, 40);
     const second = playSeededStealGame(20260820, 40);
+
+    expect(second.openingBoard).not.toEqual(first.openingBoard);
+    expect(second.events).not.toEqual(first.events);
+  });
+});
+
+/**
+ * Plays a whole steal game under player-matching nodes' immediate setting
+ * (steal.md §9) from `seed` at `lengthInRounds` using `chooseStealPly` —
+ * unchanged from the ordinary steal harness above, since it already heads
+ * for any `"prospective"` square, red's and green's own included — and
+ * records the opening board the seed dealt before play began, every
+ * `node-claimed`, `node-abandoned` and `immediate-node-landed` event the
+ * game raised, in order, and how many fights happened.
+ */
+function playSeededImmediateStealGame(
+  seed: number,
+  lengthInRounds: number,
+): PlayedStealGame {
+  const random = seededRandom(seed);
+  let state = startingGameState(random, {
+    lengthInRounds,
+    combatEnabled: true,
+    fleetSize: 5,
+    chargedNodeCount: 4,
+    scoring: "simple",
+    nodePlaystyle: "steal",
+    playerMatching: "immediate",
+  });
+  const openingBoard = state.nodes;
+  const events: StealNodeEvent[] = [];
+  let fightCount = 0;
+
+  let pliesApplied = 0;
+  while (!isGameOver(state)) {
+    if (pliesApplied >= MAX_PLIES) {
+      throw new Error(
+        `seeded immediate steal replay game exceeded ${MAX_PLIES} plies without ending — likely a regression`,
+      );
+    }
+    pliesApplied += 1;
+
+    const choice = chooseStealPly(state);
+
+    if (choice === undefined) {
+      const { state: nextState } = applyPassGuard(state, random);
+      state = nextState;
+      continue;
+    }
+
+    if (choice.kind === "attack") {
+      const result = applyAttack(state, choice.shipId, choice.target, random);
+      if (result.outcome !== "applied") {
+        throw new Error(
+          `policy chose an illegal attack: ${result.reason} for ${choice.shipId} on ${squareName(choice.target)}`,
+        );
+      }
+      state = result.state;
+      for (const effect of result.effects) {
+        if (effect.type === "fight-resolved") {
+          fightCount += 1;
+        }
+      }
+      events.push(...stealNodeEvents(result.effects));
+    } else {
+      const result = applyMove(
+        state,
+        choice.shipId,
+        choice.destination,
+        random,
+      );
+      if (result.outcome !== "applied") {
+        throw new Error(
+          `policy chose an illegal move: ${result.reason} for ${choice.shipId} to ${squareName(choice.destination)}`,
+        );
+      }
+      state = result.state;
+      events.push(...stealNodeEvents(result.effects));
+    }
+  }
+
+  return { finalState: state, openingBoard, events, fightCount };
+}
+
+describe("a seeded steal game under player-matching nodes' immediate setting replays its opening board and its claim/abandon/landing sequence exactly (steal.md §9)", () => {
+  it("produces plenty of claims and abandons, and lands on immediate nodes both paid and unpaid, moving at least one — the run is not vacuous", () => {
+    const { events, fightCount } = playSeededImmediateStealGame(20260819, 40);
+
+    const claimed = events.filter((event) => event.kind === "claimed");
+    const abandoned = events.filter((event) => event.kind === "abandoned");
+    const landed = events.filter((event) => event.kind === "landed");
+    const paidLandings = landed.filter(
+      (event) => event.kind === "landed" && event.amount > 0,
+    );
+    const unpaidLandings = landed.filter(
+      (event) => event.kind === "landed" && event.amount === 0,
+    );
+    const movedNodes = landed.filter(
+      (event) => event.kind === "landed" && event.newProspective !== undefined,
+    );
+
+    expect(claimed.length).toBeGreaterThanOrEqual(5);
+    expect(abandoned.length).toBeGreaterThanOrEqual(5);
+    expect(paidLandings.length).toBeGreaterThanOrEqual(1);
+    expect(unpaidLandings.length).toBeGreaterThanOrEqual(1);
+    expect(movedNodes.length).toBeGreaterThanOrEqual(1);
+    expect(fightCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it("replays the same opening board, the same claim/abandon/landing sequence and the same final state from the same seed", () => {
+    const first = playSeededImmediateStealGame(20260819, 40);
+    const second = playSeededImmediateStealGame(20260819, 40);
+
+    expect(second.openingBoard).toEqual(first.openingBoard);
+    expect(second.events).toEqual(first.events);
+    expect(second.finalState).toEqual(first.finalState);
+  });
+
+  it("deals a different opening board and produces a different claim/abandon/landing sequence from a different seed", () => {
+    // Any pair of distinct seeds is expected to diverge; this pair is
+    // confirmed to by running this test. If a future change to the game
+    // happens to make it coincide, pick another pair.
+    const first = playSeededImmediateStealGame(20260819, 40);
+    const second = playSeededImmediateStealGame(20260820, 40);
 
     expect(second.openingBoard).not.toEqual(first.openingBoard);
     expect(second.events).not.toEqual(first.events);

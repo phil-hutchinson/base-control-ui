@@ -19,6 +19,7 @@ import {
   dealStealOpeningBoard,
   everyNodeHasExtra,
   type GameSettings,
+  landOnImmediateNode,
   matchedSignalForSide,
   nodeAnchor,
   NODE_SIGNALS,
@@ -684,6 +685,163 @@ describe("abandonNode (steal.md §4)", () => {
     );
     expect(squareName(result.newProspective)).toBe(squareName(expected));
     expect(random.currentSeed()).toBe(expectedRandom.currentSeed());
+  });
+});
+
+describe("landOnImmediateNode (steal.md §9)", () => {
+  it("removes the landed square and draws exactly one fresh square for a one-square node", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 4 },
+    };
+    const landedSquare = squareAt("H", 8);
+    const shipSquares = [landedSquare];
+
+    const result = landOnImmediateNode(
+      before,
+      4,
+      landedSquare,
+      shipSquares,
+      seededRandom(321),
+    );
+
+    expect(result.nodes.H8).toBeUndefined();
+    expect(result.newProspective).toBeDefined();
+    const fresh = result.newProspective as Square;
+    expect(Object.keys(result.nodes)).toEqual([squareName(fresh)]);
+    expect(result.nodes[squareName(fresh)]).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 4,
+    });
+
+    const pool = legalNodePool([], shipSquares, "widened");
+    expect(pool.map(squareName)).toContain(squareName(fresh));
+  });
+
+  it("anchors the fresh square on the square just landed on, not on any square the node still has", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 4 },
+      C3: { state: "prospective", level: 0, signal: 0 },
+    };
+    const landedSquare = squareAt("H", 8);
+    const shipSquares = [landedSquare];
+    const seed = 55;
+
+    const random = seededRandom(seed);
+    const result = landOnImmediateNode(
+      before,
+      4,
+      landedSquare,
+      shipSquares,
+      random,
+    );
+
+    const expectedRandom = seededRandom(seed);
+    const expected = drawStealProspectiveSquare(
+      [squareAt("C", 3)],
+      [landedSquare],
+      [squareAt("C", 3)],
+      shipSquares,
+      expectedRandom,
+    );
+    expect(squareName(result.newProspective as Square)).toBe(
+      squareName(expected),
+    );
+    expect(random.currentSeed()).toBe(expectedRandom.currentSeed());
+  });
+
+  it("makes exactly one draw for a one-square node", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 4 },
+    };
+    const landedSquare = squareAt("H", 8);
+    const seed = 99;
+
+    const [, expectedSeed] = mulberry32(seed);
+    const random = seededRandom(seed);
+    landOnImmediateNode(before, 4, landedSquare, [landedSquare], random);
+
+    expect(random.currentSeed()).toBe(expectedSeed);
+    expect(random.draws()).toHaveLength(1);
+  });
+
+  it("removes only the landed square and draws nothing for a two-square node", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 4 },
+      L8: { state: "prospective", level: 0, signal: 4 },
+    };
+    const landedSquare = squareAt("H", 8);
+
+    const random = seededRandom(7);
+    const result = landOnImmediateNode(
+      before,
+      4,
+      landedSquare,
+      [landedSquare],
+      random,
+    );
+
+    expect(result.nodes.H8).toBeUndefined();
+    expect(result.nodes.L8).toEqual({
+      state: "prospective",
+      level: 0,
+      signal: 4,
+    });
+    expect(result.newProspective).toBeUndefined();
+    expect(random.draws()).toHaveLength(0);
+  });
+
+  it("deals the same result for the same seed, and a different one for a different seed", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 4 },
+    };
+    const landedSquare = squareAt("H", 8);
+
+    const first = landOnImmediateNode(
+      before,
+      4,
+      landedSquare,
+      [landedSquare],
+      seededRandom(9),
+    );
+    const second = landOnImmediateNode(
+      before,
+      4,
+      landedSquare,
+      [landedSquare],
+      seededRandom(9),
+    );
+    const third = landOnImmediateNode(
+      before,
+      4,
+      landedSquare,
+      [landedSquare],
+      seededRandom(10),
+    );
+
+    expect(second).toEqual(first);
+    expect(third).not.toEqual(first);
+  });
+
+  it("the fresh square is never on a ship or adjacent to a node (the widened pool)", () => {
+    const before: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 4 },
+      C3: { state: "prospective", level: 0, signal: 0 },
+    };
+    const landedSquare = squareAt("H", 8);
+    const shipSquares = [landedSquare, squareAt("D", 4)];
+
+    const result = landOnImmediateNode(
+      before,
+      4,
+      landedSquare,
+      shipSquares,
+      seededRandom(321),
+    );
+
+    const fresh = result.newProspective as Square;
+    expect(shipSquares.map(squareName)).not.toContain(squareName(fresh));
+    expect(isAdjacent(fresh, squareAt("C", 3))).toBe(false);
   });
 });
 

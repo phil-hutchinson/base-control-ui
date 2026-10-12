@@ -33,6 +33,13 @@
 // `abandonNode` first and passes the same source into `claimNode` — leaving
 // comes before claiming (steal.md §5) — for two draws in that order.
 //
+// Landing on an immediate node's square (player-matching nodes' immediate
+// setting, steal.md §9) is `landOnImmediateNode` instead of a claim: it
+// makes exactly one draw, anchored on the square just landed on, when the
+// node had only that one square, and none at all when it had two (the
+// extra is used up instead). When the same move also abandons the node it
+// left, `ply.ts` calls `abandonNode` first, for the same reason as above.
+//
 // Under planet effects (steal.md §10), two more pure functions change the
 // node map outside a claim or a leave. `addExtraProspectiveSquares`
 // (Additional nodes) draws one square per signal not already carrying an
@@ -369,6 +376,65 @@ export function abandonNode(
   const newProspective = drawStealProspectiveSquare(
     occupiedNodeSquares,
     anchors,
+    otherNodeSquares,
+    shipSquares,
+    random,
+  );
+  nodes[squareName(newProspective)] = {
+    state: "prospective",
+    level: 0,
+    signal,
+  };
+
+  return { nodes, newProspective };
+}
+
+/** The outcome of landing on an immediate node's square (steal.md §9): the resulting node map and the fresh square drawn, if any. */
+export interface LandOnImmediateNodeResult {
+  readonly nodes: Readonly<Record<string, NodeStatus>>;
+  /** The fresh prospective square drawn for the node, present only when the node had no other square. */
+  readonly newProspective?: Square;
+}
+
+/**
+ * Resolves a landing on `signal`'s immediate node at `landedSquare` under
+ * player-matching nodes' immediate setting (steal.md §9): the square landed
+ * on is removed, whether the landing side's own node or the opponent's, and
+ * whoever is paid for it is for the caller to work out — this function
+ * knows nothing about energy. If the node had only that one square, one
+ * fresh prospective square is drawn for it, anchored on `landedSquare`
+ * itself rather than on any square the node still has (`nodeAnchor` is not
+ * used here — the node moves well away from where it was), weighted against
+ * every other signal's current squares (`drawStealProspectiveSquare`,
+ * steal.md §6). If the node had two squares (it carried an extra, steal.md
+ * §10), nothing is drawn: the extra is used up, and the node is left with
+ * its other square. `shipSquares` is the board's ship squares as they stand
+ * once the landing move has resolved. Makes exactly one draw on `random`
+ * for a one-square node, none for a two-square one.
+ */
+export function landOnImmediateNode(
+  nodesBefore: Readonly<Record<string, NodeStatus>>,
+  signal: NodeSignal,
+  landedSquare: Square,
+  shipSquares: readonly Square[],
+  random: RandomSource,
+): LandOnImmediateNodeResult {
+  const nodes: Record<string, NodeStatus> = { ...nodesBefore };
+  delete nodes[squareName(landedSquare)];
+
+  if (squaresForSignal(nodes, signal).length > 0) {
+    return { nodes };
+  }
+
+  const occupiedNodeSquares = ALL_SQUARES.filter(
+    (square) => nodes[squareName(square)] !== undefined,
+  );
+  const otherNodeSquares = occupiedNodeSquares.filter(
+    (square) => nodes[squareName(square)]?.signal !== signal,
+  );
+  const newProspective = drawStealProspectiveSquare(
+    occupiedNodeSquares,
+    [landedSquare],
     otherNodeSquares,
     shipSquares,
     random,
