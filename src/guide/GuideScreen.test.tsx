@@ -14,7 +14,7 @@ import { GuideScreen } from "./GuideScreen";
 afterEach(cleanup);
 
 describe("GuideScreen", () => {
-  it("shows the title and the eight headings in the story's order", () => {
+  it("shows the title and the nine headings in the story's order", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     expect(
@@ -27,7 +27,7 @@ describe("GuideScreen", () => {
     );
   });
 
-  it("renders all eight paragraphs from the copy module", () => {
+  it("renders all nine paragraphs from the copy module", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     expect(screen.getByText(GUIDE_INTRO_PARAGRAPH)).toBeInTheDocument();
@@ -36,10 +36,10 @@ describe("GuideScreen", () => {
     }
   });
 
-  it("renders ten diagrams: the scoring diagram, one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
+  it("renders eleven diagrams: the scoring diagram, one under each section, plus NEW CHARGED NODE SELECTION's second one", () => {
     const { container } = render(<GuideScreen onBack={vi.fn()} />);
 
-    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(10);
+    expect(container.querySelectorAll(".guide-diagram")).toHaveLength(11);
   });
 
   it("renders the node playstyle setting lines and the rotator square after them, in order", () => {
@@ -85,10 +85,12 @@ describe("GuideScreen", () => {
     const nodeSelectionIndex = headings.indexOf("NEW CHARGED NODE SELECTION");
     const stealingNodesIndex = headings.indexOf("STEALING NODES");
     const playerMatchingIndex = headings.indexOf("PLAYER-MATCHING NODES");
+    const immediateNodesIndex = headings.indexOf("IMMEDIATE NODES");
     const planetBonusIndex = headings.indexOf("PLANET BONUS");
     expect(stealingNodesIndex).toBe(nodeSelectionIndex + 1);
     expect(playerMatchingIndex).toBe(stealingNodesIndex + 1);
-    expect(planetBonusIndex).toBe(playerMatchingIndex + 1);
+    expect(immediateNodesIndex).toBe(playerMatchingIndex + 1);
+    expect(planetBonusIndex).toBe(immediateNodesIndex + 1);
 
     const heading = screen.getByRole("heading", {
       level: 2,
@@ -121,7 +123,25 @@ describe("GuideScreen", () => {
     expect(section?.querySelectorAll(".ship-model--red")).toHaveLength(0);
   });
 
-  it("pairs PLANET BONUS, after PLAYER-MATCHING NODES, with a diagram of three planets and one checkmark", () => {
+  it("pairs IMMEDIATE NODES, after PLAYER-MATCHING NODES, with a diagram showing green's node before and after an arrow", () => {
+    render(<GuideScreen onBack={vi.fn()} />);
+
+    const heading = screen.getByRole("heading", {
+      level: 2,
+      name: "IMMEDIATE NODES",
+    });
+    const section = heading.closest("section");
+    expect(section).not.toBeNull();
+    expect(section?.querySelectorAll(".node-marker--charged")).toHaveLength(1);
+    expect(section?.querySelectorAll(".node-marker--prospective")).toHaveLength(
+      2,
+    );
+    expect(section?.querySelectorAll(".ship-model--green")).toHaveLength(3);
+    expect(section?.querySelectorAll(".ship-model--red")).toHaveLength(0);
+    expect(section?.querySelectorAll(".guide-diagram__arrow")).toHaveLength(1);
+  });
+
+  it("pairs PLANET BONUS, after IMMEDIATE NODES, with a diagram of three planets and one checkmark", () => {
     render(<GuideScreen onBack={vi.fn()} />);
 
     const heading = screen.getByRole("heading", {

@@ -8,6 +8,9 @@
 // player-matching nodes setting (steal.md §9), approved as drafted by the
 // owner. The PLANET EFFECTS section's paragraph describes the planet
 // effects setting (steal.md §10), approved by the owner.
+// The IMMEDIATE NODES section's paragraph describes the immediate
+// player-matching setting (steal.md §9, "Immediate"), drafted by the plan
+// for story 00000125 and awaiting the owner's approval.
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //
@@ -28,7 +31,7 @@ export const GUIDE_INTRO_PARAGRAPH =
   "extra node under bonus scoring.";
 
 /**
- * Identifies one of the guide's eight headed sections, so a caller can pair
+ * Identifies one of the guide's nine headed sections, so a caller can pair
  * a section with its diagram without relying on array position.
  */
 export type GuideSectionId =
@@ -38,6 +41,7 @@ export type GuideSectionId =
   | "nodeSelection"
   | "stealingNodes"
   | "playerMatchingNodes"
+  | "immediateNodes"
   | "planetBonus"
   | "planetActivity";
 
@@ -64,9 +68,10 @@ export interface GuideSection {
 }
 
 /**
- * The eight headed sections, in the order the guide reads: movement,
+ * The nine headed sections, in the order the guide reads: movement,
  * refuelling, the node lifecycle, new charged node selection, stealing
- * nodes, player-matching nodes, the planet bonus, and planet effects.
+ * nodes, player-matching nodes, immediate nodes, the planet bonus, and
+ * planet effects.
  */
 export const GUIDE_SECTIONS: readonly GuideSection[] = [
   {
@@ -149,7 +154,23 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
       "points at the end of your turn. With REQUIRED, you gain no " +
       "points for any node unless one of your spaceships is on your " +
       "own node. Either player can land on either node: taking your " +
-      "opponent's node is a way to shut them out.",
+      "opponent's node is a way to shut them out. There is also an " +
+      "IMMEDIATE choice, explained in IMMEDIATE NODES below.",
+  },
+  {
+    id: "immediateNodes",
+    heading: "IMMEDIATE NODES",
+    paragraph:
+      "Under the Steal playstyle, IMMEDIATE is a fourth choice for " +
+      "player-matching nodes. Your own node becomes a single set of " +
+      "rings in your colour, and it is never charged. Land a spaceship " +
+      "on it and it pays you points at once — three times what your " +
+      "charged nodes pay in a turn under simple scoring, twice under " +
+      "bonus — so it pays most when you already hold several nodes, " +
+      "and nothing if you hold none. It then moves elsewhere on the " +
+      "board. Landing on your opponent's node moves it too, without " +
+      "paying anyone. Under IMMEDIATE, the Charged nodes choice counts " +
+      "only your other nodes.",
   },
   {
     id: "planetBonus",

@@ -8,6 +8,7 @@ import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import { DEFAULT_PLAYER_MATCHING } from "../rules/playerMatching";
 import { DEFAULT_SCORING } from "../rules/scoring";
 import {
+  ImmediateNodesDiagram,
   PlanetActivityDiagram,
   MovementDiagram,
   NodeLifecycleDiagram,
@@ -254,6 +255,40 @@ describe("PlayerMatchingNodesDiagram", () => {
     expect(container.querySelectorAll(".ship-model--green")).toHaveLength(1);
     expect(container.querySelectorAll(".ship-model--red")).toHaveLength(0);
     expect(container.querySelectorAll(".guide-diagram__arrow")).toHaveLength(0);
+  });
+});
+
+describe("ImmediateNodesDiagram", () => {
+  it("shows green's node, before and after an arrow, moving once landed on", () => {
+    const { container } = render(<ImmediateNodesDiagram />);
+
+    const chargedMarkers = container.querySelectorAll(".node-marker--charged");
+    expect(chargedMarkers).toHaveLength(1);
+    const prospectiveMarkers = container.querySelectorAll(
+      ".node-marker--prospective",
+    );
+    expect(prospectiveMarkers).toHaveLength(2);
+
+    for (const marker of prospectiveMarkers) {
+      const ring = marker.querySelector("circle");
+      expect(ring).toHaveAttribute("stroke", PLAYER_NODE_COLORS.green.core);
+    }
+
+    expect(container.querySelectorAll(".guide-diagram__arrow")).toHaveLength(1);
+    expect(container.querySelectorAll(".ship-model--green")).toHaveLength(3);
+    expect(container.querySelectorAll(".ship-model--red")).toHaveLength(0);
+
+    const cells = container.querySelectorAll(".guide-diagram__cell");
+    const afterShipCell = cells[4];
+    expect(
+      afterShipCell.querySelector(".node-marker--charged"),
+    ).not.toBeInTheDocument();
+    expect(
+      afterShipCell.querySelector(".node-marker--prospective"),
+    ).not.toBeInTheDocument();
+    expect(
+      afterShipCell.querySelector(".ship-model--green"),
+    ).toBeInTheDocument();
   });
 });
 

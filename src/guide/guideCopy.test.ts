@@ -19,7 +19,7 @@ describe("guideCopy", () => {
     );
   });
 
-  it("has the eight headed sections in the story's order", () => {
+  it("has the nine headed sections in the story's order", () => {
     expect(GUIDE_SECTIONS.map((section) => section.heading)).toEqual([
       "MOVEMENT",
       "REFUELLING",
@@ -27,6 +27,7 @@ describe("guideCopy", () => {
       "NEW CHARGED NODE SELECTION",
       "STEALING NODES",
       "PLAYER-MATCHING NODES",
+      "IMMEDIATE NODES",
       "PLANET BONUS",
       "PLANET EFFECTS",
     ]);
@@ -89,7 +90,7 @@ describe("guideCopy", () => {
     expect(GUIDE_SECTIONS[4].paragraph.toLowerCase()).not.toContain("signal");
   });
 
-  it("has the player-matching nodes paragraph, between stealing nodes and the planet bonus", () => {
+  it("has the player-matching nodes paragraph, between stealing nodes and immediate nodes", () => {
     expect(GUIDE_SECTIONS[5].heading).toBe("PLAYER-MATCHING NODES");
     expect(GUIDE_SECTIONS[5].paragraph).toBe(
       "Under the Steal playstyle, you can give each player a node of " +
@@ -98,12 +99,29 @@ describe("guideCopy", () => {
         "gain points at the end of your turn. With REQUIRED, you gain " +
         "no points for any node unless one of your spaceships is on " +
         "your own node. Either player can land on either node: taking " +
-        "your opponent's node is a way to shut them out.",
+        "your opponent's node is a way to shut them out. There is " +
+        "also an IMMEDIATE choice, explained in IMMEDIATE NODES below.",
+    );
+  });
+
+  it("has the immediate nodes paragraph, between player-matching nodes and the planet bonus", () => {
+    expect(GUIDE_SECTIONS[6].heading).toBe("IMMEDIATE NODES");
+    expect(GUIDE_SECTIONS[6].paragraph).toBe(
+      "Under the Steal playstyle, IMMEDIATE is a fourth choice for " +
+        "player-matching nodes. Your own node becomes a single set of " +
+        "rings in your colour, and it is never charged. Land a " +
+        "spaceship on it and it pays you points at once — three times " +
+        "what your charged nodes pay in a turn under simple scoring, " +
+        "twice under bonus — so it pays most when you already hold " +
+        "several nodes, and nothing if you hold none. It then moves " +
+        "elsewhere on the board. Landing on your opponent's node " +
+        "moves it too, without paying anyone. Under IMMEDIATE, the " +
+        "Charged nodes choice counts only your other nodes.",
     );
   });
 
   it("has the planet bonus paragraph, scoped to the other playstyles, before planet effects", () => {
-    expect(GUIDE_SECTIONS[6].paragraph).toBe(
+    expect(GUIDE_SECTIONS[7].paragraph).toBe(
       "Under the Continuous, Planet and Dedicated playstyles, when the " +
         "planet bonus option is on, each player is given three planets " +
         "that also pay them points — two or three, whichever was chosen " +
@@ -114,9 +132,9 @@ describe("guideCopy", () => {
   });
 
   it("has the planet effects paragraph, last in the story's order, covering Stable and Race", () => {
-    expect(GUIDE_SECTIONS[7].id).toBe("planetActivity");
-    expect(GUIDE_SECTIONS[7].heading).toBe("PLANET EFFECTS");
-    expect(GUIDE_SECTIONS[7].paragraph).toBe(
+    expect(GUIDE_SECTIONS[8].id).toBe("planetActivity");
+    expect(GUIDE_SECTIONS[8].heading).toBe("PLANET EFFECTS");
+    expect(GUIDE_SECTIONS[8].paragraph).toBe(
       "Under the Steal playstyle, the planet effects option puts two " +
         "bonuses on the board instead, on two planets shown above the " +
         "clocks. Either player can claim one by landing a spaceship " +

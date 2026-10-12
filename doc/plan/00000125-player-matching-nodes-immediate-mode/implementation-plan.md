@@ -963,7 +963,35 @@ look is checked by the owner in Step 8.
 
 ### Step 6 — Quick Guide: IMMEDIATE NODES
 
-Status: pending
+Status: implemented
+
+Notes: Implemented as planned. `guideCopy.ts` gains the `immediateNodes`
+section id, inserted between `playerMatchingNodes` and `planetBonus`, with
+its heading IMMEDIATE NODES and a paragraph covering the single set of
+rings, paying at once (three times a turn's collection under simple, twice
+under bonus, most when several nodes are already held, nothing when none
+are), moving elsewhere, the opponent's node moving without paying, and the
+Charged nodes choice counting only the other nodes; `GuideSectionId` and the
+module's doc comments now say nine sections. PLAYER-MATCHING NODES' own
+paragraph gains one closing sentence naming IMMEDIATE and pointing to the
+new section, verbatim: "There is also an IMMEDIATE choice, explained in
+IMMEDIATE NODES below." `guideDiagrams.tsx` gains `ImmediateNodesDiagram`: a
+before → after strip — a held ordinary charged node beside green's single
+prospective rings and a second green ship about to land, an arrow, then
+that ship on the now-ordinary square and green's rings moved on further
+along the strip — using signal 5 (green's signal in a four-ordinary-node
+immediate game) with a comment naming why, and drawing no "+N" overlay.
+`GuideScreen.tsx` pairs the new section with the new diagram, and its doc
+comments move from eight to nine sections. Updated `guideCopy.test.ts`,
+`GuideScreen.test.tsx` and `guideDiagrams.test.tsx` for the new section,
+its position, its paragraph text and its diagram's markers.
+
+No deviation from the plan. `npm test` rose from 98 files/2260 tests to 98
+files/2263 tests (+3); `npm run typecheck`, `npm run lint` and `npm run
+format:check` are clean. The copy and the diagram are drafts for the owner's
+approval in Step 8, per the plan's own verification note; `guideCopy.ts`'s
+header comment records them as drafted for story 125, awaiting approval,
+following the file's existing provenance-note convention.
 
 - `src/guide/guideCopy.ts` — a new section, id `immediateNodes`, heading
   **IMMEDIATE NODES**, placed straight after PLAYER-MATCHING NODES. Its
