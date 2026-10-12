@@ -57,24 +57,25 @@ install, no account, no server.
 > opening position to the final score. Opening it shows a start screen, not the
 > board: the game's name, a choice of node playstyle (continuous, planet,
 > dedicated or steal, steal to start), a choice of how many ships a side
-> (five, four or three, five to start), a choice of how many nodes are lit at
-> once (five, four or three, four to start), a choice of player-matching
-> nodes when steal is chosen (off, double or required, required to start), a
-> choice of node scoring (simple, one energy for each node held, or
-> bonus, where each extra node held at once is worth more than the last, bonus
-> to start), a choice of whether planets pay a bonus when continuous, planet
-> or dedicated is chosen (off, two points or three points, off to start), a
+> (five, four or three, five to start), a choice of player-matching nodes
+> when steal is chosen (off, double, required or immediate, required to
+> start), a choice of how many nodes are lit at once (five, four or three,
+> four to start, with only four or three under immediate), a choice of node
+> scoring (simple, one energy for each node held, or bonus, where each extra
+> node held at once is worth more than the last, bonus to start), a choice
+> of whether planets pay a bonus when continuous, planet or dedicated is
+> chosen (off, two points or three points, off to start), a
 > choice of planet effects when steal is chosen instead (off, stable or race,
 > race to start), a choice of how many rounds the game lasts
 > (thirty, forty-five, sixty or ninety, thirty to start), a choice of a clock
 > (unlimited, or six, four or two seconds a turn, unlimited to start) and a PLAY
 > button. The start screen also offers a quick guide — a first read for someone
 > who has never played, not a full rules reference — explaining scoring,
-> movement, refuelling, how nodes come and go, player-matching nodes, the planet
-> bonus and planet effects, with a back button that returns you to the
-> start screen with the choices exactly as you left them. Each choice also has
-> a question mark beside its title, which opens a short explanation of it
-> right there on the start screen. Your browser's own
+> movement, refuelling, how nodes come and go, player-matching nodes, immediate
+> nodes, the planet bonus and planet effects, with a back button that returns
+> you to the start screen with the choices exactly as you left them. Each
+> choice also has a question mark beside its title, which opens a short
+> explanation of it right there on the start screen. Your browser's own
 > back and forward buttons move between the screens too, and the address bar
 > says which screen you are on. The app's spelling follows your browser's
 > language: American spelling if it prefers US English, international spelling
@@ -149,7 +150,12 @@ install, no account, no server.
 > steal, lets you give each player a node of their own, shown in red and
 > green: off treats every node the same, double lets your own node count as
 > two when you are holding it, and required means you collect nothing from any
-> node until you are standing on your own — required to start. Under the other
+> node until you are standing on your own — required to start. Immediate
+> makes your own node a single square that is never lit: land on it and it
+> pays you at once, more the more nodes you are holding, and then moves
+> somewhere else, while landing on your opponent's moves it without paying
+> anyone. Under immediate, the count of lit nodes leaves red's and green's
+> out, so three means three other nodes plus those two. Under the other
 > three, whatever runs out during a turn is made up at the end of it by
 > lighting from the waiting three, highest rings first, so the board is always
 > brought back to whichever count you chose by the time your turn begins.

@@ -963,7 +963,7 @@ look is checked by the owner in Step 8.
 
 ### Step 6 — Quick Guide: IMMEDIATE NODES
 
-Status: implemented
+Status: committed
 
 Notes: Implemented as planned. `guideCopy.ts` gains the `immediateNodes`
 section id, inserted between `playerMatchingNodes` and `planetBonus`, with
@@ -1035,7 +1035,13 @@ owner approves the copy and the diagram in Step 8.
 
 ### Step 7 — `README.md`
 
-Status: pending
+Status: committed
+
+Notes: Done inline by the orchestrator. The status blurb lists
+player-matching nodes before the lit-node count under steal, with immediate
+as its fourth choice and four or three as the only counts under it; the
+quick guide list names immediate nodes; the player-matching passage gains
+a plain description of immediate and of what the count means under it.
 
 Run `/update-readme` (or do its job by hand). Where the README lists the
 start screen's choices, add IMMEDIATE to the player-matching choices (off,
