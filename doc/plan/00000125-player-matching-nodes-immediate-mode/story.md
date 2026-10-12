@@ -144,8 +144,10 @@ changelog entry, in its own commit ahead of the code. Tagging stays on hold
   the existing announcement of energy gained. Landing on the opponent's node
   shows no "+N". The node is then seen to move, or to lose its extra square.
 - **The pips** under each score show one pip for each **ordinary** node:
-  three or four. Red's and green's nodes never have a pip, and no pip is
-  ever crossed under immediate.
+  three or four, capped at the number of ships as today. Red's and green's
+  nodes never have a pip. Nothing about immediate crosses a pip, but a
+  player who is out of time still has their held pips crossed, as under
+  every other setting.
 - **The Quick Guide** gains its own **IMMEDIATE NODES** section, with a
   diagram, explaining the single square, paying on landing, the payment
   scale, and that landing on the opponent's node moves it without paying.
