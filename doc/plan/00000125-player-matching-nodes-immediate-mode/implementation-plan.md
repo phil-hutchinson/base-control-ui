@@ -435,7 +435,23 @@ fixed by Step 3 before anything else builds on it.
 
 ### Step 1 — Ruleset 0.46: immediate player-matching nodes
 
-Status: pending
+Status: committed
+
+Notes: Wrote the immediate setting into `rules.md` (§1, §8.1, §8.4) and
+`steal.md` (§1–§3, §5–§10, the new Immediate part of §9, the Additional
+nodes/Node scramble exceptions and the two new point-table rows in §10),
+bumped `RULES_VERSION` to 0.46, added the 0.46 changelog entry, and
+corrected `story.md`'s "The ruleset" list to name the §2/§3/§5/§8 pointers
+it builds in place, per the owner's standing preference. Owner decision
+carried from the task brief — immediate still crosses held pips when a
+player is out of time, same as every other setting — needed no ruleset
+change, since pips are a UI detail rules.md never mentions; it is recorded
+for Step 5. `npm run format:check` required a `prettier --write` on
+`changelog.md` and `steal.md` after editing (one paragraph in §10's Node
+scramble section settled on a line over 80 characters, matching several
+pre-existing lines in the same file). No other deviation from the plan:
+`npm test` stayed at 98 files / 2162 tests, unchanged, since this step is
+docs-only; `npm run typecheck` and `npm run lint` are clean.
 
 Edit `doc/ruleset/rules.md`, `doc/ruleset/steal.md` and
 `doc/ruleset/changelog.md`, and set `RULES_VERSION` in

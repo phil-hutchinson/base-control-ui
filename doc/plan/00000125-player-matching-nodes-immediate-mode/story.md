@@ -121,6 +121,14 @@ changelog entry, in its own commit ahead of the code. Tagging stays on hold
 - **steal.md §6, §7 and §10** state the immediate exceptions: the anchor
   when an immediate node moves, the single-square opening deal, Additional
   nodes and Node scramble, and the two new point-table rows.
+- **steal.md §2, §3, §5 and §8** gain short pointers, so the document stays
+  consistent: §2's "always occupies exactly two squares" and its
+  configuration table hold for every node except an immediate node;
+  §3's claim rule applies to an ordinary node's prospective square, with
+  landing on an immediate node's square covered by §9 instead; §5's
+  leave-first ordering covers landing on an immediate node too; §8's
+  closing sentence about energy being priced at the end of the turn notes
+  that an immediate node pays on landing instead.
 - **rules.md §8.1** says the charged-node choice works differently under
   steal's immediate setting, pointing to steal.md. **rules.md §1 and §8.4**
   name an immediate node among the sources of energy.
