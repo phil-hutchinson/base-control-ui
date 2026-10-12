@@ -174,15 +174,15 @@ describe("App", () => {
     expect(screen.queryByText("Green to play")).not.toBeInTheDocument();
   });
 
-  it("renders the eight option groups in order under the default STEAL: Node playstyle, Ships, Charged nodes, Player-matching nodes, Node scoring, Planet effects, Rounds, Clock", () => {
+  it("renders the eight option groups in order under the default STEAL: Node playstyle, Ships, Player-matching nodes, Charged nodes, Node scoring, Planet effects, Rounds, Clock", () => {
     render(<App />);
 
     const groups = screen.getAllByRole("group");
     expect(groups.map(groupTitle)).toEqual([
       "Node playstyle",
       "Ships",
-      "Charged nodes",
       "Player-matching nodes",
+      "Charged nodes",
       "Node scoring",
       "Planet effects",
       "Rounds",

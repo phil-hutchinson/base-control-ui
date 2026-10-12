@@ -236,6 +236,21 @@
   outline-offset: 2px;
 }
 
+/* A disabled choice: the same outlined shape, greyed out and uninteractive —
+   not offered under the currently chosen setting, rather than hidden
+   outright. Specificity over `.start-screen__label:hover` so hovering a
+   disabled choice does not brighten it. */
+.start-screen__choice input:disabled + .start-screen__label {
+  color: var(--color-text-dim);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.start-screen__choice input:disabled + .start-screen__label:hover {
+  color: var(--color-text-dim);
+  border-color: var(--color-text-dim);
+}
+
 .start-screen__play {
   /* Built up from `.game-over-panel__button`: bigger, brighter, the
      loudest thing on the screen. */

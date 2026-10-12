@@ -38,6 +38,7 @@ import {
 import {
   DEFAULT_PLAYER_MATCHING,
   resolvePlayerMatching,
+  resolvePlayerMatchingChargedNodeCount,
   type PlayerMatchingSetting,
 } from "./rules/playerMatching";
 import { DEFAULT_SCORING, type ScoringSetting } from "./rules/scoring";
@@ -89,7 +90,15 @@ export interface AppScreen {
  * for the start screen", which is exactly what leaving the guide does.
  * Planet bonus and planet effects are remembered separately, so switching
  * playstyle shows the other group as it was last left, and switching back
- * finds the first unchanged.
+ * finds the first unchanged. The charged-node count works the same way:
+ * `setChargedNodeCount` sets the remembered count, but the `chargedNodeCount`
+ * this hook returns, and the one `handlePlay` dispatches, is that count
+ * resolved against the node playstyle and player-matching setting actually
+ * chosen (`resolvePlayerMatchingChargedNodeCount`) — so a remembered 5 shows
+ * as 4 under steal's immediate player-matching setting, which does not offer
+ * it, and shows as 5 again the moment another setting or playstyle is
+ * chosen, unless 4 or 3 was clicked meanwhile, which becomes the new
+ * remembered count.
  */
 export function useAppScreen(
   dispatch: (intent: SessionIntent) => void,
@@ -98,9 +107,8 @@ export function useAppScreen(
   const { screen, showGame, showGuide, leaveToStart } =
     useScreenAddress(gameOver);
   const [fleetSize, setFleetSize] = useState<FleetSize>(DEFAULT_FLEET_SIZE);
-  const [chargedNodeCount, setChargedNodeCount] = useState<ChargedNodeCount>(
-    DEFAULT_CHARGED_NODE_COUNT,
-  );
+  const [rememberedChargedNodeCount, setChargedNodeCount] =
+    useState<ChargedNodeCount>(DEFAULT_CHARGED_NODE_COUNT);
   const [scoring, setScoring] = useState<ScoringSetting>(DEFAULT_SCORING);
   const [nodePlaystyle, setNodePlaystyle] = useState<NodePlaystyle>(
     DEFAULT_NODE_PLAYSTYLE,
@@ -118,6 +126,11 @@ export function useAppScreen(
   );
   const [clockSetting, setClockSetting] = useState<ClockSetting>(
     DEFAULT_CLOCK_SETTING,
+  );
+  const chargedNodeCount = resolvePlayerMatchingChargedNodeCount(
+    nodePlaystyle,
+    playerMatching,
+    rememberedChargedNodeCount,
   );
 
   function handlePlay() {

@@ -791,7 +791,35 @@ pinned core hash untouched.
 
 ### Step 4 — The start screen
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned. `useAppScreen.ts`'s `chargedNodeCount` state
+was renamed `rememberedChargedNodeCount`; the hook now returns and dispatches
+`resolvePlayerMatchingChargedNodeCount(nodePlaystyle, playerMatching,
+rememberedChargedNodeCount)` as `chargedNodeCount`, while `setChargedNodeCount`
+still writes the remembered value, giving the restore behaviour D10
+describes for free. `StartScreen.tsx` swapped the Player-matching nodes and
+Charged nodes blocks (Player-matching now renders first, under steal only, as
+before); `OptionChoice` gained an optional `disabled` prop forwarded to the
+radio input; the Charged nodes group computes
+`chargedNodeCountsForPlayerMatching(nodePlaystyle === "steal" ? playerMatching
+: "off")` and disables any value it excludes (only 5 under immediate).
+`StartScreen.css` gained a disabled-choice style (dimmed, `not-allowed`
+cursor, hover suppressed) layered the same way the checked style is.
+`optionTips.ts`'s Player-matching nodes tip gained the IMMEDIATE line given
+in the plan, verbatim — a draft, to be reviewed with the owner in Step 8, not
+yet marked as approved anywhere in code, per the comment convention (no
+design-process language in source). Updated tests: `StartScreen.test.tsx`
+(group order under STEAL, two new tests for the disabled/enabled 5 radio),
+`optionTips.test.ts` (the IMMEDIATE choice), `useAppScreen.test.tsx` (four new
+tests: resolves 5 to 4 under immediate and dispatches 4, restores 5 on
+REQUIRED, restores 5 on switching playstyle, does not restore 5 once 3 or 4
+was clicked meanwhile), `App.test.tsx` (the eight-group order assertion).
+
+No deviation from the plan. `npm test` rose from 98 files/2241 tests to 98
+files/2247 tests (+6); `npm run typecheck`, `npm run lint` and `npm run
+format:check` are clean. The look of the greyed-out 5 and the tip wording are
+for the owner to check in Step 8, per the plan's own verification note.
 
 Implement S13 per D10:
 
