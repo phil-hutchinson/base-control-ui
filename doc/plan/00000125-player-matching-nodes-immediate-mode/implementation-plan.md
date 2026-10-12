@@ -1066,7 +1066,12 @@ or default it states is false.
 
 ### Step 8 — The owner plays it
 
-Status: pending
+Status: committed
+
+Notes: The owner played it and passed the verification list with no
+defects, and approved the option tip's IMMEDIATE line, the IMMEDIATE NODES
+section, the PLAYER-MATCHING NODES pointer sentence and the diagram as
+drafted. `guideCopy.ts`'s header now records the copy as approved.
 
 No code, unless the owner's play turns up a defect — fix it here, with a
 test where the defect is in logic, and record it in the Notes. A rules

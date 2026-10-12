@@ -9,8 +9,8 @@
 // owner. The PLANET EFFECTS section's paragraph describes the planet
 // effects setting (steal.md §10), approved by the owner.
 // The IMMEDIATE NODES section's paragraph describes the immediate
-// player-matching setting (steal.md §9, "Immediate"), drafted by the plan
-// for story 00000125 and awaiting the owner's approval.
+// player-matching setting (steal.md §9, "Immediate"), approved as drafted
+// by the owner.
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //
