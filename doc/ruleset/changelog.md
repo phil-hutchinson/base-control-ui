@@ -38,9 +38,10 @@ and so would be a tag candidate; tagging stays on hold until the game plays
   side holds at the moment of landing, after any leave: what those nodes
   would pay at the end of a turn (rules.md §8.4), multiplied **three
   times** under simple scoring and **twice** under bonus scoring — simple
-  pays 3, 6, 9 or 12 for one through four nodes held, bonus pays 2, 6, 12 or 20. Holding no nodes pays nothing, but the node still moves. A player who
-  is out of time is paid nothing (rules.md §10), and the node still moves
-  or is used up as usual.
+  pays 3, 6, 9 or 12 for one through four nodes held, bonus pays 2, 6, 12
+  or 20. Holding no nodes pays nothing, but the node still moves. A player
+  who is out of time is paid nothing (rules.md §10), and the node still
+  moves or is used up as usual.
 - **Ordinary nodes still pay at the end of a turn exactly as they do under
   every other setting**, with no doubling and nothing withheld; immediate
   nodes never take part in that.

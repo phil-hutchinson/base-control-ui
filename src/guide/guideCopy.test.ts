@@ -116,7 +116,8 @@ describe("guideCopy", () => {
         "several nodes, and nothing if you hold none. It then moves " +
         "elsewhere on the board. Landing on your opponent's node " +
         "moves it too, without paying anyone. Under IMMEDIATE, the " +
-        "Charged nodes choice counts only your other nodes.",
+        "Charged nodes choice counts only the other nodes, not the red " +
+        "and green ones.",
     );
   });
 

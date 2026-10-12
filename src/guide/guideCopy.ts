@@ -9,8 +9,8 @@
 // owner. The PLANET EFFECTS section's paragraph describes the planet
 // effects setting (steal.md §10), approved by the owner.
 // The IMMEDIATE NODES section's paragraph describes the immediate
-// player-matching setting (steal.md §9, "Immediate"), approved as drafted
-// by the owner.
+// player-matching setting (steal.md §9, "Immediate"), approved by the
+// owner with a rewording of its last sentence.
 // `GuideScreen` renders these in order and pairs each with its diagram; this
 // module knows nothing about React or layout.
 //
@@ -170,7 +170,7 @@ export const GUIDE_SECTIONS: readonly GuideSection[] = [
       "and nothing if you hold none. It then moves elsewhere on the " +
       "board. Landing on your opponent's node moves it too, without " +
       "paying anyone. Under IMMEDIATE, the Charged nodes choice counts " +
-      "only your other nodes.",
+      "only the other nodes, not the red and green ones.",
   },
   {
     id: "planetBonus",

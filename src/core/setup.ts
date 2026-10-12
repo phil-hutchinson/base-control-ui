@@ -128,8 +128,10 @@ function isArtworkPermutation(value: unknown): value is readonly number[] {
  * `playerMatching` setting does not offer (`chargedNodeCountsForPlayerMatching`
  * — immediate offers 4 or 3 only) reports `not-allowed-with-player-matching`
  * on `chargedNodes`. That check is skipped when the raw `playerMatching`
- * value is not itself one of the offered settings. `artwork` is checked
- * against `PLANET_PICTURE_NUMBERS` instead, reporting `not-a-permutation`.
+ * value is not itself one of the offered settings, or when `playstyle` is
+ * an offered value other than `"steal"`, where player-matching is never in
+ * force. `artwork` is checked against `PLANET_PICTURE_NUMBERS` instead,
+ * reporting `not-a-permutation`.
  * Every problem found is collected, never just the first; unknown fields are
  * reported last, in the input's own key order. An input that is not a plain
  * object reports every known field as `missing`.
@@ -196,11 +198,13 @@ export function parseSetup(
     // playerMatching is validated below, in Setup's declared field order;
     // this peeks at the raw value, only when it is itself an offered
     // setting, so the chargedNodes problem still reports at chargedNodes'
-    // own position.
+    // own position. Skipped outside steal, where player-matching is never
+    // in force, mirroring how the playstyle cross-check below is skipped.
     const peekedPlayerMatching = isPlayerMatchingSetting(record.playerMatching)
       ? record.playerMatching
       : undefined;
     if (
+      (playstyle === undefined || playstyle === "steal") &&
       peekedPlayerMatching !== undefined &&
       !chargedNodeCountsForPlayerMatching(peekedPlayerMatching).includes(
         chargedNodes,

@@ -456,15 +456,16 @@ A node carrying an extra behaves as follows:
   Open with three prospective squares, and carries it until it is next
   claimed.
 
-**Node scramble** shuffles the signals on the prospective squares between
-the nodes. Only prospective squares take part — every one of them, a
-node's extra included, and an immediate node's one or two squares (section 9) among them. Charged squares, and the ships on them, are not touched. No
-square is added, removed or drawn anew: the squares stay where they are,
-and only which node each belongs to changes. Each node keeps exactly as
-many prospective squares as it had, so a Held node stays Held, an Open node
-stays Open, a node carrying an extra still carries it, and an immediate
-node keeps its one or two squares. The red or green colour can move onto a
-square that belonged to an ordinary node, and the reverse.
+**Node scramble** shuffles the signals on the prospective squares between the
+nodes. Only prospective squares take part — every one of them, a node's extra
+included, and an immediate node's one or two squares (section 9) among them.
+Charged squares, and the ships on them, are not touched. No square is added,
+removed or drawn anew: the squares stay where they are, and only which node each
+belongs to changes. Each node keeps exactly as many prospective squares as it
+had, so a Held node stays Held, an Open node stays Open, a node carrying an
+extra still carries it, and an immediate node keeps its one or two squares. The
+red or green colour can move onto a square that belonged to an ordinary node,
+and the reverse.
 
 Each prospective square's signal is taken off it, and the signals are
 placed back onto the squares one at a time:

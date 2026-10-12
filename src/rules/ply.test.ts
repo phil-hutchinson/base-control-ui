@@ -1757,7 +1757,7 @@ describe("applyMove landing on an immediate node (steal.md §9)", () => {
     ["bonus" as const, 1, 2],
     ["bonus" as const, 2, 6],
   ])(
-    "holding %s nodes under %s pays %d",
+    "under %s, holding %d nodes pays %d",
     (scoring, heldCount, expectedAmount) => {
       const heldSquares = ["C3", "E5"].slice(0, heldCount);
       const state = buildState({

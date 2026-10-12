@@ -444,7 +444,7 @@ describe("turnCollection", () => {
     expect(result.amount).toBe(1);
   });
 
-  it("IMMEDIATE: prices exactly the held ordinary count, like OFF — an immediate node is never charged, so standing on nothing counts as its own (steal.md §9)", () => {
+  it("IMMEDIATE: prices the held ordinary nodes exactly as OFF does — no own node, nothing withheld (steal.md §9)", () => {
     const state = buildState({
       nodePlaystyle: "steal",
       chargedNodeCount: 3,

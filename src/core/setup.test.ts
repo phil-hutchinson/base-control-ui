@@ -223,6 +223,22 @@ describe("parseSetup", () => {
     });
   });
 
+  it("skips the chargedNodes/player-matching cross-check when playstyle is an offered value other than steal", () => {
+    const result = parseSetup({
+      ...EXAMPLE_SETUP,
+      playstyle: "planet",
+      planetActivity: "off",
+      playerMatching: "immediate",
+      chargedNodes: 5,
+    });
+    expect(result).toEqual({
+      ok: false,
+      problems: [
+        { field: "playerMatching", problem: "not-allowed-with-playstyle" },
+      ],
+    });
+  });
+
   it("reports artwork that is too short, too long, repeated, non-picture or not an array as not-a-permutation", () => {
     const cases = [
       [3, 1, 14, 7, 2, 9, 5, 13, 4, 10, 6], // short
