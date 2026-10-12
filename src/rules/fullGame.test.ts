@@ -519,10 +519,7 @@ function assertStealNodeInvariants(
  * different kinds, and neither planet carries a ship; and Additional nodes
  * never stands among them while every node already has its extra.
  */
-function assertActivityBonusInvariants(
-  state: GameState,
-  chargedNodeCount: ChargedNodeCount,
-): void {
+function assertActivityBonusInvariants(state: GameState): void {
   expect(state.activityBonuses).toHaveLength(2);
   const [first, second] = state.activityBonuses;
   expect(squareName(first.square)).not.toBe(squareName(second.square));
@@ -539,7 +536,7 @@ function assertActivityBonusInvariants(
     (bonus) => bonus.kind === "additional-nodes",
   );
   if (additionalNodesStanding) {
-    expect(everyNodeHasExtra(state.nodes, chargedNodeCount)).toBe(false);
+    expect(everyNodeHasExtra(state.nodes, state)).toBe(false);
   }
 }
 
@@ -806,14 +803,21 @@ describe.each(
   "a full steal game under %s planet effects, end to end, at %d nodes (steal.md §10)",
   (planetActivity, chargedNodeCount) => {
     it.each(
-      PLAYER_MATCHING_SETTINGS.flatMap((playerMatching) =>
-        SCORING_SETTINGS.flatMap((scoring) =>
-          [true, false].map(
-            (combatEnabled) =>
-              [playerMatching, scoring, combatEnabled] as const,
+      PLAYER_MATCHING_SETTINGS
+        // Immediate offers only four or three nodes (steal.md §9); five is
+        // not among its offered counts.
+        .filter(
+          (playerMatching) =>
+            playerMatching !== "immediate" || chargedNodeCount !== 5,
+        )
+        .flatMap((playerMatching) =>
+          SCORING_SETTINGS.flatMap((scoring) =>
+            [true, false].map(
+              (combatEnabled) =>
+                [playerMatching, scoring, combatEnabled] as const,
+            ),
           ),
         ),
-      ),
     )(
       "keeps two distinct bonuses on two empty planets throughout, claiming at least one, with player-matching=%s, scoring=%s, combat enabled=%s",
       (playerMatching, scoring, combatEnabled) => {
@@ -835,7 +839,7 @@ describe.each(
             beforePly = afterPly;
             afterPly = state;
             assertStealNodeInvariants(state, chargedNodeCount);
-            assertActivityBonusInvariants(state, chargedNodeCount);
+            assertActivityBonusInvariants(state);
             expect(state.energy.green).toBeGreaterThanOrEqual(previousGreen);
             expect(state.energy.red).toBeGreaterThanOrEqual(previousRed);
             previousGreen = state.energy.green;
@@ -870,7 +874,7 @@ describe.each(
         expect(finalState.plyNumber).toBe(pliesForGameLength(30) + 1);
         expect(isGameOver(finalState)).toBe(true);
         assertStealNodeInvariants(finalState, chargedNodeCount);
-        assertActivityBonusInvariants(finalState, chargedNodeCount);
+        assertActivityBonusInvariants(finalState);
 
         // Not vacuous: the bonus-preferring policy actually races for and
         // claims bonuses over the course of the game.

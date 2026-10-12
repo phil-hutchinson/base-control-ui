@@ -26,10 +26,13 @@ export interface SignalColors {
 
 /**
  * How the board presents each steal signal (steal.md §2), indexed by
- * `NodeSignal`: gold, silver, mid blue, purple, brown, in the order a game
- * of N nodes uses its first N signals. A signal matched to a side
+ * `NodeSignal`: gold, silver, mid blue, purple, brown, teal, in the order a
+ * game of N signals uses its first N. A signal matched to a side
  * (`PLAYER_NODE_COLORS`) is drawn in that side's pair instead — see
- * `colorsForSignal`.
+ * `colorsForSignal`. The sixth entry, teal, is reachable only by an
+ * unmatched signal 5 — under player-matching nodes' immediate setting with
+ * four ordinary nodes, signal 5 is always green's, so no game the rules
+ * offer today actually draws it.
  */
 export const SIGNAL_COLORS: readonly SignalColors[] = [
   { core: "#DAA520", rim: "#F5DEB3" }, // gold
@@ -37,6 +40,7 @@ export const SIGNAL_COLORS: readonly SignalColors[] = [
   { core: "#3F7FE0", rim: "#B5CFF5" }, // mid blue
   { core: "#8E55D6", rim: "#D6C2F2" }, // purple
   { core: "#94602F", rim: "#D0A77C" }, // brown
+  { core: "#2F9E8F", rim: "#BCE8E0" }, // teal
 ];
 
 /**

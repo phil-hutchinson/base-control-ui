@@ -9,7 +9,8 @@ import {
 import { DEFAULT_FLEET_SIZE, startingFleet } from "./fleet";
 import type { NodeStatus } from "./gameState";
 import { drawStealProspectiveSquare, legalNodePool } from "./nodePlacement";
-import { CHARGED_NODE_COUNTS } from "./nodes";
+import { CHARGED_NODE_COUNTS, type ChargedNodeCount } from "./nodes";
+import type { PlayerMatchingSetting } from "./playerMatching";
 import { mulberry32, seededRandom } from "./random";
 import {
   abandonNode,
@@ -17,10 +18,12 @@ import {
   claimNode,
   dealStealOpeningBoard,
   everyNodeHasExtra,
+  type GameSettings,
   matchedSignalForSide,
   nodeAnchor,
   NODE_SIGNALS,
   nodeCarriesExtra,
+  type NodeSignal,
   shuffleProspectiveSignals,
   sideMatchedToSignal,
   squaresForSignal,
@@ -29,6 +32,14 @@ import {
 const FLEET_SQUARES = startingFleet(DEFAULT_FLEET_SIZE).map(
   (entry) => entry.square,
 );
+
+/** A game's settings for the signal-aware functions, off by default. */
+function settings(
+  chargedNodeCount: ChargedNodeCount,
+  playerMatching: PlayerMatchingSetting = "off",
+): GameSettings {
+  return { chargedNodeCount, playerMatching };
+}
 
 /** The 121 squares C3-M13, in board order — §3.2's strict pool interior. */
 function interiorSquares(): Square[] {
@@ -61,23 +72,26 @@ function nodes(
 
 describe("matchedSignalForSide and sideMatchedToSignal (steal.md §9)", () => {
   it("matches red to the second-to-last signal and green to the last", () => {
-    expect(matchedSignalForSide("red", 5)).toBe(3);
-    expect(matchedSignalForSide("green", 5)).toBe(4);
-    expect(matchedSignalForSide("red", 4)).toBe(2);
-    expect(matchedSignalForSide("green", 4)).toBe(3);
-    expect(matchedSignalForSide("red", 3)).toBe(1);
-    expect(matchedSignalForSide("green", 3)).toBe(2);
+    expect(matchedSignalForSide("red", settings(5))).toBe(3);
+    expect(matchedSignalForSide("green", settings(5))).toBe(4);
+    expect(matchedSignalForSide("red", settings(4))).toBe(2);
+    expect(matchedSignalForSide("green", settings(4))).toBe(3);
+    expect(matchedSignalForSide("red", settings(3))).toBe(1);
+    expect(matchedSignalForSide("green", settings(3))).toBe(2);
   });
 
   it("is the inverse of sideMatchedToSignal for every node count", () => {
     for (const nodeCount of CHARGED_NODE_COUNTS) {
       expect(
-        sideMatchedToSignal(matchedSignalForSide("red", nodeCount), nodeCount),
+        sideMatchedToSignal(
+          matchedSignalForSide("red", settings(nodeCount)),
+          settings(nodeCount),
+        ),
       ).toBe("red");
       expect(
         sideMatchedToSignal(
-          matchedSignalForSide("green", nodeCount),
-          nodeCount,
+          matchedSignalForSide("green", settings(nodeCount)),
+          settings(nodeCount),
         ),
       ).toBe("green");
     }
@@ -87,13 +101,22 @@ describe("matchedSignalForSide and sideMatchedToSignal (steal.md §9)", () => {
     for (const nodeCount of CHARGED_NODE_COUNTS) {
       for (const signal of NODE_SIGNALS.slice(0, nodeCount)) {
         if (
-          signal !== matchedSignalForSide("red", nodeCount) &&
-          signal !== matchedSignalForSide("green", nodeCount)
+          signal !== matchedSignalForSide("red", settings(nodeCount)) &&
+          signal !== matchedSignalForSide("green", settings(nodeCount))
         ) {
-          expect(sideMatchedToSignal(signal, nodeCount)).toBeUndefined();
+          expect(
+            sideMatchedToSignal(signal, settings(nodeCount)),
+          ).toBeUndefined();
         }
       }
     }
+  });
+
+  it("counts red and green on top of the chosen count under immediate", () => {
+    expect(matchedSignalForSide("red", settings(4, "immediate"))).toBe(4);
+    expect(matchedSignalForSide("green", settings(4, "immediate"))).toBe(5);
+    expect(matchedSignalForSide("red", settings(3, "immediate"))).toBe(3);
+    expect(matchedSignalForSide("green", settings(3, "immediate"))).toBe(4);
   });
 });
 
@@ -165,7 +188,7 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
     (nodeCount) => {
       const dealt = dealStealOpeningBoard(
         FLEET_SQUARES,
-        nodeCount,
+        settings(nodeCount),
         seededRandom(12345),
       );
 
@@ -183,9 +206,13 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
   );
 
   it("puts at least one of each signal's two squares in the strict pool's interior, since the first is always drawn from it", () => {
-    const dealt = dealStealOpeningBoard(FLEET_SQUARES, 5, seededRandom(99));
+    const dealt = dealStealOpeningBoard(
+      FLEET_SQUARES,
+      settings(5),
+      seededRandom(99),
+    );
 
-    for (const signal of NODE_SIGNALS) {
+    for (const signal of NODE_SIGNALS.slice(0, 5)) {
       const names = squaresForSignal(dealt, signal).map(squareName);
       expect(
         names.filter((name) => INTERIOR_NAMES.has(name)).length,
@@ -194,9 +221,13 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
   });
 
   it("never places a signal's two squares adjacent to each other", () => {
-    const dealt = dealStealOpeningBoard(FLEET_SQUARES, 5, seededRandom(4242));
+    const dealt = dealStealOpeningBoard(
+      FLEET_SQUARES,
+      settings(5),
+      seededRandom(4242),
+    );
 
-    for (const signal of NODE_SIGNALS) {
+    for (const signal of NODE_SIGNALS.slice(0, 5)) {
       const squares = squaresForSignal(dealt, signal);
       expect(squares).toHaveLength(2);
       expect(isAdjacent(squares[0], squares[1])).toBe(false);
@@ -204,7 +235,11 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
   });
 
   it("never places a node under a ship", () => {
-    const dealt = dealStealOpeningBoard(FLEET_SQUARES, 5, seededRandom(777));
+    const dealt = dealStealOpeningBoard(
+      FLEET_SQUARES,
+      settings(5),
+      seededRandom(777),
+    );
     const shipNames = new Set(FLEET_SQUARES.map(squareName));
 
     for (const name of Object.keys(dealt)) {
@@ -213,9 +248,21 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
   });
 
   it("deals the same board for the same seed, and a different board for a different seed", () => {
-    const first = dealStealOpeningBoard(FLEET_SQUARES, 4, seededRandom(1000));
-    const second = dealStealOpeningBoard(FLEET_SQUARES, 4, seededRandom(1000));
-    const third = dealStealOpeningBoard(FLEET_SQUARES, 4, seededRandom(1001));
+    const first = dealStealOpeningBoard(
+      FLEET_SQUARES,
+      settings(4),
+      seededRandom(1000),
+    );
+    const second = dealStealOpeningBoard(
+      FLEET_SQUARES,
+      settings(4),
+      seededRandom(1000),
+    );
+    const third = dealStealOpeningBoard(
+      FLEET_SQUARES,
+      settings(4),
+      seededRandom(1001),
+    );
 
     expect(second).toEqual(first);
     expect(third).not.toEqual(first);
@@ -230,10 +277,76 @@ describe("dealStealOpeningBoard (steal.md §7)", () => {
       }
 
       const random = seededRandom(seed);
-      dealStealOpeningBoard(FLEET_SQUARES, nodeCount, random);
+      dealStealOpeningBoard(FLEET_SQUARES, settings(nodeCount), random);
 
       expect(random.currentSeed()).toBe(expectedSeed);
       expect(random.draws()).toHaveLength(nodeCount * 2);
+    }
+  });
+
+  it.each([3, 4] as const)(
+    "under immediate, deals %d ordinary signals with two squares each and a single square for red's and green's (steal.md §7, §9)",
+    (nodeCount) => {
+      const dealt = dealStealOpeningBoard(
+        FLEET_SQUARES,
+        settings(nodeCount, "immediate"),
+        seededRandom(2024),
+      );
+
+      for (const signal of NODE_SIGNALS.slice(0, nodeCount)) {
+        expect(squaresForSignal(dealt, signal)).toHaveLength(2);
+      }
+      expect(squaresForSignal(dealt, nodeCount as NodeSignal)).toHaveLength(1);
+      expect(
+        squaresForSignal(dealt, (nodeCount + 1) as NodeSignal),
+      ).toHaveLength(1);
+    },
+  );
+
+  it.each([3, 4] as const)(
+    "under immediate, makes exactly (nodeCount + 2) + nodeCount draws",
+    (nodeCount) => {
+      const seed = 55;
+      const totalDraws = nodeCount + 2 + nodeCount;
+      let expectedSeed = seed;
+      for (let step = 0; step < totalDraws; step++) {
+        [, expectedSeed] = mulberry32(expectedSeed);
+      }
+
+      const random = seededRandom(seed);
+      dealStealOpeningBoard(
+        FLEET_SQUARES,
+        settings(nodeCount, "immediate"),
+        random,
+      );
+
+      expect(random.currentSeed()).toBe(expectedSeed);
+      expect(random.draws()).toHaveLength(totalDraws);
+    },
+  );
+
+  it("under immediate, weighs an ordinary signal's second square against red's and green's first squares", () => {
+    const dealt = dealStealOpeningBoard(
+      FLEET_SQUARES,
+      settings(3, "immediate"),
+      seededRandom(31),
+    );
+    const redSquares = squaresForSignal(dealt, 3);
+    const greenSquares = squaresForSignal(dealt, 4);
+    expect(redSquares).toHaveLength(1);
+    expect(greenSquares).toHaveLength(1);
+
+    // Every ordinary signal's two squares are never adjacent to red's or
+    // green's single square, exactly as they are never adjacent to any
+    // other node's — the widened pool's node-adjacency constraint already
+    // guarantees this, but it only holds if red's and green's squares were
+    // actually weighed as other nodes' squares.
+    for (const signal of [0, 1, 2] as const) {
+      for (const square of squaresForSignal(dealt, signal)) {
+        for (const other of [...redSquares, ...greenSquares]) {
+          expect(isAdjacent(square, other)).toBe(false);
+        }
+      }
     }
   });
 });
@@ -545,7 +658,7 @@ describe("abandonNode (steal.md §4)", () => {
       signal: 0,
     });
     expect(squaresForSignal(result.nodes, 0)).toHaveLength(3);
-    expect(nodeCarriesExtra(result.nodes, 0)).toBe(true);
+    expect(nodeCarriesExtra(result.nodes, 0, settings(5))).toBe(true);
   });
 
   it("anchors the new square on both remaining prospective squares when leaving a Held node carrying an extra", () => {
@@ -580,11 +693,12 @@ describe("nodeCarriesExtra (steal.md §10)", () => {
       B4: { state: "charged", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
     });
-    expect(nodeCarriesExtra(held, 0)).toBe(false);
+    expect(nodeCarriesExtra(held, 0, settings(5))).toBe(false);
     expect(
       nodeCarriesExtra(
         { ...held, L8: { state: "prospective", level: 0, signal: 0 } },
         0,
+        settings(5),
       ),
     ).toBe(true);
   });
@@ -594,11 +708,30 @@ describe("nodeCarriesExtra (steal.md §10)", () => {
       B4: { state: "prospective", level: 0, signal: 0 },
       H8: { state: "prospective", level: 0, signal: 0 },
     });
-    expect(nodeCarriesExtra(open, 0)).toBe(false);
+    expect(nodeCarriesExtra(open, 0, settings(5))).toBe(false);
     expect(
       nodeCarriesExtra(
         { ...open, L8: { state: "prospective", level: 0, signal: 0 } },
         0,
+        settings(5),
+      ),
+    ).toBe(true);
+  });
+
+  it("under immediate, is false for a one-square immediate node, true with two", () => {
+    const immediateSettings = settings(4, "immediate");
+    const oneSquare = nodes({
+      H8: { state: "prospective", level: 0, signal: 4 },
+    });
+    expect(nodeCarriesExtra(oneSquare, 4, immediateSettings)).toBe(false);
+    expect(
+      nodeCarriesExtra(
+        {
+          ...oneSquare,
+          L8: { state: "prospective", level: 0, signal: 4 },
+        },
+        4,
+        immediateSettings,
       ),
     ).toBe(true);
   });
@@ -616,7 +749,7 @@ describe("everyNodeHasExtra (steal.md §10)", () => {
       F6: { state: "prospective", level: 0, signal: 2 },
       F9: { state: "prospective", level: 0, signal: 2 },
     });
-    expect(everyNodeHasExtra(map, 3)).toBe(false);
+    expect(everyNodeHasExtra(map, settings(3))).toBe(false);
   });
 
   it("is true once every node up to nodeCount carries an extra", () => {
@@ -631,7 +764,37 @@ describe("everyNodeHasExtra (steal.md §10)", () => {
       F6: { state: "prospective", level: 0, signal: 2 },
       F9: { state: "prospective", level: 0, signal: 2 },
     });
-    expect(everyNodeHasExtra(map, 3)).toBe(true);
+    expect(everyNodeHasExtra(map, settings(3))).toBe(true);
+  });
+
+  it("under immediate, is false unless red's and green's nodes carry an extra too", () => {
+    const immediateSettings = settings(3, "immediate");
+    const everyOrdinaryExtra: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0 },
+      M12: { state: "prospective", level: 0, signal: 0 },
+      C3: { state: "prospective", level: 0, signal: 1 },
+      D4: { state: "prospective", level: 0, signal: 1 },
+      J4: { state: "prospective", level: 0, signal: 1 },
+      E5: { state: "charged", level: 0, signal: 2 },
+      F6: { state: "prospective", level: 0, signal: 2 },
+      F9: { state: "prospective", level: 0, signal: 2 },
+      A1: { state: "prospective", level: 0, signal: 3 },
+      O15: { state: "prospective", level: 0, signal: 4 },
+    };
+    expect(everyNodeHasExtra(everyOrdinaryExtra, immediateSettings)).toBe(
+      false,
+    );
+    expect(
+      everyNodeHasExtra(
+        {
+          ...everyOrdinaryExtra,
+          A2: { state: "prospective", level: 0, signal: 3 },
+          O14: { state: "prospective", level: 0, signal: 4 },
+        },
+        immediateSettings,
+      ),
+    ).toBe(true);
   });
 });
 
@@ -649,7 +812,7 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
   it("adds exactly one square to each node not carrying an extra, none to a node that already carries one, in signal order", () => {
     const result = addExtraProspectiveSquares(
       before,
-      3,
+      settings(3),
       [],
       seededRandom(4242),
     );
@@ -673,15 +836,15 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
 
     for (const signal of [0, 1, 2] as const) {
       expect(squaresForSignal(result.nodes, signal)).toHaveLength(3);
-      expect(nodeCarriesExtra(result.nodes, signal)).toBe(true);
+      expect(nodeCarriesExtra(result.nodes, signal, settings(3))).toBe(true);
     }
-    expect(everyNodeHasExtra(result.nodes, 3)).toBe(true);
+    expect(everyNodeHasExtra(result.nodes, settings(3))).toBe(true);
   });
 
   it("makes exactly one draw per square added", () => {
     const seed = 4242;
     const random = seededRandom(seed);
-    const result = addExtraProspectiveSquares(before, 3, [], random);
+    const result = addExtraProspectiveSquares(before, settings(3), [], random);
 
     let expectedSeed = seed;
     for (let step = 0; step < result.addedSquares.length; step++) {
@@ -692,9 +855,24 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
   });
 
   it("deals the same result for the same seed, and a different one for a different seed", () => {
-    const first = addExtraProspectiveSquares(before, 3, [], seededRandom(9));
-    const second = addExtraProspectiveSquares(before, 3, [], seededRandom(9));
-    const third = addExtraProspectiveSquares(before, 3, [], seededRandom(10));
+    const first = addExtraProspectiveSquares(
+      before,
+      settings(3),
+      [],
+      seededRandom(9),
+    );
+    const second = addExtraProspectiveSquares(
+      before,
+      settings(3),
+      [],
+      seededRandom(9),
+    );
+    const third = addExtraProspectiveSquares(
+      before,
+      settings(3),
+      [],
+      seededRandom(10),
+    );
 
     expect(second).toEqual(first);
     expect(third).not.toEqual(first);
@@ -713,7 +891,12 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
       K13: { state: "prospective", level: 0, signal: 2 },
     };
     const random = seededRandom(4242);
-    const result = addExtraProspectiveSquares(everyoneHasExtra, 3, [], random);
+    const result = addExtraProspectiveSquares(
+      everyoneHasExtra,
+      settings(3),
+      [],
+      random,
+    );
 
     expect(result.addedSquares).toEqual([]);
     expect(result.nodes).toEqual(everyoneHasExtra);
@@ -721,11 +904,35 @@ describe("addExtraProspectiveSquares (steal.md §10)", () => {
     expect(random.draws()).toHaveLength(0);
   });
 
+  it("under immediate, gives red's and green's nodes an extra too", () => {
+    const immediateSettings = settings(3, "immediate");
+    const withMatched: Record<string, NodeStatus> = {
+      ...before,
+      A1: { state: "prospective", level: 0, signal: 3 },
+      O15: { state: "prospective", level: 0, signal: 4 },
+    };
+
+    const result = addExtraProspectiveSquares(
+      withMatched,
+      immediateSettings,
+      [],
+      seededRandom(4242),
+    );
+
+    expect(result.addedSquares).toHaveLength(4);
+    for (const signal of [0, 1, 2, 3, 4] as const) {
+      expect(nodeCarriesExtra(result.nodes, signal, immediateSettings)).toBe(
+        true,
+      );
+    }
+    expect(everyNodeHasExtra(result.nodes, immediateSettings)).toBe(true);
+  });
+
   it("draws each added square from the widened pool, off every other node's squares and every ship", () => {
     const shipSquares = [squareAt("A", 1), squareAt("O", 15)];
     const result = addExtraProspectiveSquares(
       before,
-      3,
+      settings(3),
       shipSquares,
       seededRandom(777),
     );
@@ -815,8 +1022,7 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
       for (let seed = 1; seed <= 200; seed++) {
         const result = shuffleProspectiveSignals(
           fiveNodes,
-          5,
-          playerMatching,
+          settings(5, playerMatching),
           seededRandom(seed),
         );
         expectShuffleInvariants(fiveNodes, result.nodes);
@@ -829,7 +1035,7 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
     (playerMatching) => {
       const seed = 4242;
       const random = seededRandom(seed);
-      shuffleProspectiveSignals(fiveNodes, 5, playerMatching, random);
+      shuffleProspectiveSignals(fiveNodes, settings(5, playerMatching), random);
       expect(random.currentSeed()).toBe(
         seedAfter(seed, 2 * fiveNodesProspectiveCount),
       );
@@ -844,8 +1050,7 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
       for (let seed = 1; seed <= 200; seed++) {
         const result = shuffleProspectiveSignals(
           fiveNodes,
-          5,
-          playerMatching,
+          settings(5, playerMatching),
           seededRandom(seed),
         );
         const expected = boardOrder.flatMap((name) => {
@@ -870,20 +1075,17 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
   it("deals the same result for the same seed, and a different one for a different seed", () => {
     const first = shuffleProspectiveSignals(
       fiveNodes,
-      5,
-      "required",
+      settings(5, "required"),
       seededRandom(9),
     );
     const second = shuffleProspectiveSignals(
       fiveNodes,
-      5,
-      "required",
+      settings(5, "required"),
       seededRandom(9),
     );
     const third = shuffleProspectiveSignals(
       fiveNodes,
-      5,
-      "required",
+      settings(5, "required"),
       seededRandom(10),
     );
 
@@ -907,8 +1109,7 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
 
     const result = shuffleProspectiveSignals(
       fiveNodes,
-      5,
-      "double",
+      settings(5, "double"),
       seededRandom(seed),
     );
     expect(result.nodes[candidates[squareIndex]]?.signal).toBe(firstSignal);
@@ -935,15 +1136,14 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
       for (const [board, nodeCount] of boards) {
         const before = prospectiveSignals(board);
         const matched = new Set([
-          matchedSignalForSide("red", nodeCount),
-          matchedSignalForSide("green", nodeCount),
+          matchedSignalForSide("red", settings(nodeCount)),
+          matchedSignalForSide("green", settings(nodeCount)),
         ]);
         for (let seed = 1; seed <= 300; seed++) {
           const after = prospectiveSignals(
             shuffleProspectiveSignals(
               board,
-              nodeCount,
-              playerMatching,
+              settings(nodeCount, playerMatching),
               seededRandom(seed),
             ).nodes,
           );
@@ -979,8 +1179,7 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
         const random = seededRandom(seed);
         const result = shuffleProspectiveSignals(
           board,
-          3,
-          playerMatching,
+          settings(3, playerMatching),
           random,
         );
         expectShuffleInvariants(board, result.nodes);
@@ -994,7 +1193,7 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
     (nodeCount) => {
       const dealt = dealStealOpeningBoard(
         FLEET_SQUARES,
-        nodeCount,
+        settings(nodeCount),
         seededRandom(777),
       );
       const outcomes = new Set<string>();
@@ -1002,8 +1201,7 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
         const random = seededRandom(seed);
         const result = shuffleProspectiveSignals(
           dealt,
-          nodeCount,
-          "off",
+          settings(nodeCount),
           random,
         );
         expectShuffleInvariants(dealt, result.nodes);
@@ -1013,4 +1211,28 @@ describe("shuffleProspectiveSignals (steal.md §10)", () => {
       expect(outcomes.size).toBeGreaterThan(1);
     },
   );
+
+  it("under immediate, places red's and green's signals first and keeps their one or two squares", () => {
+    const immediateBoard: Record<string, NodeStatus> = {
+      H8: { state: "prospective", level: 0, signal: 0 },
+      L8: { state: "prospective", level: 0, signal: 0 },
+      C3: { state: "prospective", level: 0, signal: 1 },
+      D5: { state: "prospective", level: 0, signal: 1 },
+      E10: { state: "prospective", level: 0, signal: 2 },
+      K12: { state: "prospective", level: 0, signal: 2 },
+      N2: { state: "prospective", level: 0, signal: 3 },
+      B13: { state: "prospective", level: 0, signal: 4 },
+    };
+    const immediateSettings = settings(3, "immediate");
+    for (let seed = 1; seed <= 100; seed++) {
+      const result = shuffleProspectiveSignals(
+        immediateBoard,
+        immediateSettings,
+        seededRandom(seed),
+      );
+      expectShuffleInvariants(immediateBoard, result.nodes);
+      expect(squaresForSignal(result.nodes, 3)).toHaveLength(1);
+      expect(squaresForSignal(result.nodes, 4)).toHaveLength(1);
+    }
+  });
 });

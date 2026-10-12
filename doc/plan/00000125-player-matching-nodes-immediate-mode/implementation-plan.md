@@ -535,7 +535,59 @@ named anywhere.
 
 ### Step 2 — The setting, the node count, the deal and planet effects
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned. `playerMatching.ts` gains `"immediate"`,
+`chargedNodeCountsForPlayerMatching` and
+`resolvePlayerMatchingChargedNodeCount`. `steal.ts` widens `NodeSignal`/
+`NODE_SIGNALS` to 0–5, adds `GameSettings` (the `Pick<GameState,
+"chargedNodeCount" | "playerMatching">` D3 calls for), `gameSignalCount`,
+`gameSignals` and `isImmediateSignal`, and switches `matchedSignalForSide`,
+`sideMatchedToSignal`, `matchedSideForSignal`, `dealStealOpeningBoard`,
+`nodeCarriesExtra` (gains a third `settings` parameter), `everyNodeHasExtra`,
+`addExtraProspectiveSquares` and `shuffleProspectiveSignals` (drops its
+separate `playerMatching` parameter, folded into `settings`) to take it.
+`gameState.ts` validates `chargedNodeCount` against
+`chargedNodeCountsForPlayerMatching` and passes `{ chargedNodeCount,
+playerMatching }` into the steal deal and the activity-bonus deal.
+`energy.ts`'s `turnCollection` needed no code change for D6: since
+`"immediate"` is neither `"double"` nor `"required"`, it already takes the
+`else` branch (off's own), and an immediate node can never appear in
+`heldSquares` since it is never charged — only the doc comment changed; a
+test pins this. `activityBonus.ts`'s point table is now `Partial` over
+`PlayerMatchingSetting` so the five-node row can omit `immediate`;
+`activityBonusPoints` throws a `RangeError` for that one unoffered
+combination; `isActivityBonusKindAvailable`, `drawActivityBonusKind` and
+`dealActivityBonuses` take `settings` in place of a bare `nodeCount`, and
+`resolveActivityBonusClaim`'s internal calls pass its own `state` parameter
+straight through (it already carries both fields). `core/setup.ts` gains
+`"not-allowed-with-player-matching"` and peeks at the raw `playerMatching`
+value to validate `chargedNodes` in field order, exactly as D9 describes.
+Compile-through: `StartScreen.tsx`'s and `StartScreen.test.tsx`'s
+`PLAYER_MATCHING_LABELS` gain `immediate: "IMMEDIATE"`; `squareArt.ts`'s
+`SIGNAL_COLORS` gains a sixth (teal) entry; `ScoreDisplay.tsx`'s
+`matchedSignalForSide` call passes `state` instead of
+`state.chargedNodeCount`. `PlanetBonusPanel`/`ActivityBonusCell` needed no
+change — `activityBonusPoints`'s own signature is unchanged by D3.
+
+Deviations from the plan: (1) `fullGame.test.ts`'s existing
+`describe.each`/`it.each` sweep over every `PLAYER_MATCHING_SETTINGS` ×
+`CHARGED_NODE_COUNTS` combination now has to skip immediate at five nodes
+(the one combination `startingGameState` rejects), since the setting union
+it iterates widened under this step; added a `.filter` rather than touching
+the pinned-hash test. (2) `assertActivityBonusInvariants` in the same file
+lost its now-unused `chargedNodeCount` parameter (its one use became
+`everyNodeHasExtra(state.nodes, state)`, `state` already satisfying
+`GameSettings`); both call sites updated. (3)
+`stealPlacement.test.ts`'s "the fallback never fires" test iterated the
+bare `NODE_SIGNALS` constant, which widened from 5 to 6 entries under D2;
+sliced to the game's actual 5 signals in the two places that assumed the
+old length, rather than changing the test's seeded five-node setup. No
+rule, decision or settled item from the plan was reopened. `npm test` rose
+from 98 files/2162 tests to 98 files/2212 tests (+50); `npm run typecheck`,
+`npm run lint` and `npm run format:check` are clean;
+`src/core/stateHash.test.ts` was not touched and its pinned hash is
+unchanged.
 
 Bring immediate into the rules layer up to, but not including, what
 landing on an immediate node does (Step 3).

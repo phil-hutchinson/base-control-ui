@@ -112,9 +112,13 @@ export interface TurnCollection {
  * like any other. Under `"required"`, holding at least one node without
  * holding the own one withholds the turn's collection entirely
  * (`countedNodes` 0, `withheld` true); holding the own node prices exactly
- * as `"off"` would, the own node counting once. `energyForNodesHeld` itself
- * is unchanged — this changes the count that function is asked to price,
- * never the price a count is worth.
+ * as `"off"` would, the own node counting once. Under `"immediate"`
+ * (steal.md §9) this takes the same path as `"off"`: an immediate node is
+ * never charged, so it can never appear in `heldSquares`, `ownNodeSquare` is
+ * always `undefined` and nothing here is withheld for player-matching — an
+ * immediate node pays only on landing (`ply.ts`), never at the end of a
+ * turn. `energyForNodesHeld` itself is unchanged — this changes the count
+ * that function is asked to price, never the price a count is worth.
  */
 export function turnCollection(state: GameState, side: Side): TurnCollection {
   const heldSquares = chargedNodesHeldBy(state, side);
@@ -124,7 +128,7 @@ export function turnCollection(state: GameState, side: Side): TurnCollection {
       : heldSquares.find(
           (square) =>
             state.nodes[squareName(square)]?.signal ===
-            matchedSignalForSide(side, state.chargedNodeCount),
+            matchedSignalForSide(side, state),
         );
   const standingOnOwnNode = ownNodeSquare !== undefined;
 

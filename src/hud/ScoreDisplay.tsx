@@ -75,10 +75,7 @@ function pipFills(
   if (state.playerMatching === "off") {
     return collection.heldSquares.map(fillFor);
   }
-  const opponentSignal = matchedSignalForSide(
-    otherSide(side),
-    state.chargedNodeCount,
-  );
+  const opponentSignal = matchedSignalForSide(otherSide(side), state);
   const opponentSquare = collection.heldSquares.find(
     (square) => state.nodes[squareName(square)]?.signal === opponentSignal,
   );

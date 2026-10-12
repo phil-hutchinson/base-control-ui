@@ -103,6 +103,7 @@ const PLAYER_MATCHING_LABELS: Record<PlayerMatchingSetting, string> = {
   off: "OFF",
   double: "DOUBLE",
   required: "REQUIRED",
+  immediate: "IMMEDIATE",
 };
 
 interface RenderOverrides {

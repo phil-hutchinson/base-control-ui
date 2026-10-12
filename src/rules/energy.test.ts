@@ -442,4 +442,45 @@ describe("turnCollection", () => {
     expect(result.countedNodes).toBe(1);
     expect(result.amount).toBe(1);
   });
+
+  it("IMMEDIATE: prices exactly the held ordinary count, like OFF — an immediate node is never charged, so standing on nothing counts as its own (steal.md §9)", () => {
+    const state = buildState({
+      nodePlaystyle: "steal",
+      chargedNodeCount: 3,
+      scoring: "simple",
+      playerMatching: "immediate",
+      nodes: {
+        [SIGNAL_1]: ["charged", 1],
+        E5: ["charged", 0],
+      },
+      ships: [ship("red-1", "red", SIGNAL_1), ship("red-2", "red", "E5")],
+    });
+
+    const result = turnCollection(state, "red");
+
+    expect(result.standingOnOwnNode).toBe(false);
+    expect(result.ownNodeSquare).toBeUndefined();
+    expect(result.withheld).toBe(false);
+    expect(result.countedNodes).toBe(2);
+    expect(result.amount).toBe(2);
+  });
+
+  it("IMMEDIATE: out of time still withholds the whole turn, exactly as under every other setting", () => {
+    const state = buildState({
+      nodePlaystyle: "steal",
+      chargedNodeCount: 3,
+      scoring: "bonus",
+      playerMatching: "immediate",
+      nodes: { [SIGNAL_1]: ["charged", 1] },
+      ships: [ship("red-1", "red", SIGNAL_1)],
+      outOfTime: { green: false, red: true },
+    });
+
+    const result = turnCollection(state, "red");
+
+    expect(result.withheld).toBe(true);
+    expect(result.withheldReason).toBe("out-of-time");
+    expect(result.countedNodes).toBe(0);
+    expect(result.amount).toBe(0);
+  });
 });

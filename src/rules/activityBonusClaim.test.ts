@@ -35,10 +35,19 @@ import type { ScoringSetting } from "./scoring";
 import {
   addExtraProspectiveSquares,
   everyNodeHasExtra,
+  type GameSettings,
   nodeCarriesExtra,
   shuffleProspectiveSignals,
 } from "./steal";
 import { PLANETS } from "./planets";
+
+/** A game's settings for the signal-aware functions, off by default. */
+function settings(
+  chargedNodeCount: ChargedNodeCount,
+  playerMatching: PlayerMatchingSetting = "off",
+): GameSettings {
+  return { chargedNodeCount, playerMatching };
+}
 
 function ship(
   id: ShipId,
@@ -231,7 +240,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
     if (result.outcome !== "applied") {
       throw new Error("expected the move to be applied");
     }
-    expect(everyNodeHasExtra(result.state.nodes, 3)).toBe(true);
+    expect(everyNodeHasExtra(result.state.nodes, settings(3))).toBe(true);
     expect(result.effects).toContainEqual(
       expect.objectContaining({
         type: "activity-bonus-claimed",
@@ -289,7 +298,8 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
       );
     }
     expect(result.state.nodes).toEqual(
-      shuffleProspectiveSignals(nodes, 3, "required", seededRandom(1)).nodes,
+      shuffleProspectiveSignals(nodes, settings(3, "required"), seededRandom(1))
+        .nodes,
     );
     expect(result.effects).toContainEqual(
       expect.objectContaining({
@@ -473,8 +483,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
     expect(result.state.nodes).toEqual(
       shuffleProspectiveSignals(
         afterLeave,
-        3,
-        "off",
+        settings(3),
         seededRandom(seedAfterLeave),
       ).nodes,
     );
@@ -541,7 +550,7 @@ describe("a move that lands on a planet effects bonus planet (steal.md §10)", (
     for (const [, status] of signalZeroSquares) {
       expect(status.state).toBe("prospective");
     }
-    expect(nodeCarriesExtra(result.state.nodes, 0)).toBe(true);
+    expect(nodeCarriesExtra(result.state.nodes, 0, settings(3))).toBe(true);
   });
 });
 
@@ -1011,7 +1020,7 @@ describe("a claim under stable planet effects (steal.md §10)", () => {
       const expectedKind = drawActivityBonusKind(
         expectedRandom,
         state.nodes,
-        3,
+        settings(3),
         state.ships,
         new Set([survivor.kind]),
       );
@@ -1209,7 +1218,7 @@ describe.each(["race", "stable"] as const)(
         // were not counted as occupied — the attacker's own new square only.
         const naive = addExtraProspectiveSquares(
           nodes,
-          5,
+          settings(5),
           [attackerPlanet],
           attackerRandom,
         );
