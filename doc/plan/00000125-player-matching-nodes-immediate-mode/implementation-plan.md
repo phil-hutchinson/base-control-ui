@@ -873,7 +873,48 @@ look of the greyed-out 5 is checked by the owner in Step 8.
 
 ### Step 5 — Board, HUD and announcements
 
-Status: pending
+Status: committed
+
+Notes: Implemented as planned. `EnergyOverlay.tsx` gains
+`immediateNodeLandedSettlement`, drawing a settlement for a `moved` event's
+`immediate-node-landed` effect when `amount > 0` (the landed square as its
+only square); `settlementsForEvent` now branches `"moved"` separately from
+`"attacked"` so it can prepend this settlement ahead of the ply's own
+end-of-turn one — a paying landing can show two "+N"s, as D11 describes.
+`ScoreDisplay.tsx`'s `pipFills` takes the off path for `"immediate"` too
+(functionally already the result the DOUBLE/REQUIRED branch computed, since
+`turnCollection` never gives immediate an `ownNodeSquare` and an immediate
+node can never appear in `heldSquares`, but written explicitly per D12
+rather than left to that coincidence); `pipCount` needed no change, since
+`chargedNodeCount` is already the ordinary count under immediate (D1) and
+immediate gets no extra pip. `SCORE_DIGITS`'s and `pipCount`'s comments were
+updated for immediate's own largest single-ply total (a landing's 20 plus
+that same ply's own 10, 30 at four nodes under bonus). `activityBonusColors.ts`
+now returns gold/red/green whenever player-matching is not off (immediate
+included), rather than naming "double or required" explicitly.
+`announcements.ts` gains `immediateNodeLandedClause`/
+`immediateNodeLandedClauseText`, wired into `moveSentence` after the claim
+clause (mutually exclusive with it, so order between them never matters in
+practice): the landing side's own node names the amount paid or that it
+paid nothing, the opponent's node names only the landing, and a further
+clause says the node moved to its fresh square or lost its extra square.
+`Board.tsx` and `boardAnimations.ts` needed no change — confirmed by a new
+Board.test.tsx describe block that a one-square immediate node draws as a
+single set of prospective rings in its matched side's colour and a
+two-square one as two, never charged, through the existing
+`matchedSideForSignal` wiring (D12). `boardAnimations.ts`'s
+`signalsBeforeScramble` was left untouched per the plan's own fallback: an
+immediate landing's `newProspective` can never coincide with a Node scramble
+claim in the same event, since landing on an immediate node's square is
+never landing on a planet.
+
+No deviation from the plan. `npm test` rose from 98 files/2247 tests to 98
+files/2260 tests (+13); `npm run typecheck` and `npm run lint` are clean;
+`npm run format:check` needed one `prettier --write` pass on
+`EnergyOverlay.tsx` and `EnergyOverlay.test.tsx` (a long object-literal line
+in each), after which it is clean too. The look of the "+N" flash, the pip
+row and the announcement wording are for the owner to check in Step 8, per
+the plan's own verification note.
 
 Make the game screen show immediate correctly (S4, S14, D11, D12):
 

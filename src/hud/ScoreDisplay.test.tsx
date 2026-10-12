@@ -619,6 +619,57 @@ describe("ScoreDisplay", () => {
       ]);
     });
 
+    it("draws a three- or four-pip row under IMMEDIATE, filled in the ordinary signals' colours only, never red or green", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("red", 2),
+          ship("red-a", "red", "E5"),
+          ship("red-b", "red", "H8"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "immediate",
+      });
+      const immediateState: GameState = { ...state, chargedNodeCount: 3 };
+
+      const { container } = render(
+        <ScoreDisplay state={immediateState} side="red" displayedTotal={0} />,
+      );
+
+      expect(container.querySelectorAll(".score-display__pip")).toHaveLength(3);
+      expect(
+        container.querySelectorAll(".score-display__pip--lit"),
+      ).toHaveLength(2);
+      expect(litFills(container)).toEqual([
+        SIGNAL_COLORS[0].core,
+        SIGNAL_COLORS[1].core,
+      ]);
+    });
+
+    it("crosses IMMEDIATE's held pips while out of time, exactly as under every other setting (rules.md §10)", () => {
+      const state = buildStealState({
+        ships: [
+          ...shipsFor("red", 2),
+          ship("red-a", "red", "E5"),
+          ship("red-b", "red", "H8"),
+        ],
+        signalBySquare: { E5: 0, H8: 1, K5: 2, E11: 3, K11: 4 },
+        playerMatching: "immediate",
+        outOfTime: { green: false, red: true },
+      });
+      const immediateState: GameState = { ...state, chargedNodeCount: 3 };
+
+      const { container } = render(
+        <ScoreDisplay state={immediateState} side="red" displayedTotal={0} />,
+      );
+
+      expect(container.querySelectorAll(".score-display__pip--x")).toHaveLength(
+        2,
+      );
+      expect(
+        container.querySelectorAll(".score-display__pip--lit"),
+      ).toHaveLength(0);
+    });
+
     it("crosses REQUIRED's X pips in their nodes' colours, opponent's node first", () => {
       const state = buildStealState({
         ships: [

@@ -26,4 +26,12 @@ describe("activityBonusSymbolColors (steal.md §10)", () => {
       PLAYER_NODE_COLORS.green.core,
     ]);
   });
+
+  it("is gold, red, green when player-matching is immediate", () => {
+    expect(activityBonusSymbolColors("immediate")).toEqual([
+      SIGNAL_COLORS[0].core,
+      PLAYER_NODE_COLORS.red.core,
+      PLAYER_NODE_COLORS.green.core,
+    ]);
+  });
 });

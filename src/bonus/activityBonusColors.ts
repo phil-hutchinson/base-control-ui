@@ -1,11 +1,13 @@
 // The three colours an activity bonus's Additional nodes and Node
 // scramble symbols draw in (steal.md §10): gold, silver and mid blue
 // ordinarily, or gold plus the two player colours when player-matching
-// nodes are on (DOUBLE or REQUIRED, steal.md §9) — silver and blue are then
-// dropped in favour of the colours a matched node itself can be drawn in, so
-// the symbol never borrows a colour that means something else on the board
-// at the same time. Pure, so `PlanetBonusPanel` and the Quick Guide's
-// PLANET EFFECTS diagram draw from the one source.
+// nodes are on (DOUBLE, REQUIRED or IMMEDIATE, steal.md §9) — silver and
+// blue are then dropped in favour of the colours a matched node itself can
+// be drawn in, so the symbol never borrows a colour that means something
+// else on the board at the same time. Red's and green's nodes are on the
+// board under IMMEDIATE too, so it takes the same colours as DOUBLE and
+// REQUIRED. Pure, so `PlanetBonusPanel` and the Quick Guide's PLANET
+// EFFECTS diagram draw from the one source.
 
 import type { PlayerMatchingSetting } from "../rules/playerMatching";
 import { PLAYER_NODE_COLORS, SIGNAL_COLORS } from "../board/squareArt";
@@ -15,13 +17,13 @@ export type ActivityBonusSymbolColors = readonly [string, string, string];
 
 /**
  * The three colours for the given game's player-matching setting (steal.md
- * §10): gold, red, green under DOUBLE or REQUIRED; gold, silver, blue
- * otherwise.
+ * §10): gold, red, green under DOUBLE, REQUIRED or IMMEDIATE; gold, silver,
+ * blue when it is OFF.
  */
 export function activityBonusSymbolColors(
   playerMatching: PlayerMatchingSetting,
 ): ActivityBonusSymbolColors {
-  if (playerMatching === "double" || playerMatching === "required") {
+  if (playerMatching !== "off") {
     return [
       SIGNAL_COLORS[0].core,
       PLAYER_NODE_COLORS.red.core,

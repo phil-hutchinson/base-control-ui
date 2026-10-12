@@ -27,6 +27,7 @@ import type {
   ActivityBonusClaimedEffect,
   AttackEffect,
   FightResolvedEffect,
+  ImmediateNodeLandedEffect,
   MoveEffect,
   NodeAbandonedEffect,
   NodeClaimedEffect,
@@ -509,14 +510,54 @@ function nodeClaimedClauseText(effects: readonly MoveEffect[]): string {
 }
 
 /**
+ * A ship landing on an immediate node's square, under player-matching
+ * nodes' immediate setting (steal.md §9): the amount paid when the node was
+ * the landing side's own, that landing on its own node paid nothing (it
+ * held no ordinary node, or is out of time), or that the node belonged to
+ * the opponent and paid nothing at all either way; then whether the node
+ * moved on to a fresh square or, carrying an extra, simply lost it. No
+ * colour and no signal is named (steal.md §2).
+ */
+function immediateNodeLandedClause(effect: ImmediateNodeLandedEffect): string {
+  const side = capitalize(effect.side);
+  const square = squareName(effect.square);
+  const landingClause =
+    effect.side === effect.matchedSide
+      ? effect.amount > 0
+        ? `${side} landed on its own node at ${square} and gained ${effect.amount} energy.`
+        : `${side} landed on its own node at ${square} and gained nothing.`
+      : `${side} landed on the opponent's node at ${square}.`;
+  const nodeClause =
+    effect.newProspective !== undefined
+      ? ` The node moved to ${squareName(effect.newProspective)}.`
+      : " The node lost its extra square.";
+  return `${landingClause}${nodeClause}`;
+}
+
+/**
+ * Every `immediate-node-landed` effect a move carries, as one clause
+ * (steal.md §9) — at most one, since a move can land on only one square and
+ * a move raises at most one of `node-claimed` and `immediate-node-landed`.
+ */
+function immediateNodeLandedClauseText(effects: readonly MoveEffect[]): string {
+  const landed = effects.find(
+    (effect): effect is ImmediateNodeLandedEffect =>
+      effect.type === "immediate-node-landed",
+  );
+  return landed !== undefined ? ` ${immediateNodeLandedClause(landed)}` : "";
+}
+
+/**
  * "What the move was": the ship's journey, whether it ended on a planet, what
  * the move cost (rules.md §6), and — between those and the turn-ending
  * clauses — whether it spent a charged node by leaving it (§8.3) or, under
  * steal, gave one up or claimed one (steal.md §§3–5, in that order when one
- * move does both), whether the landing claimed a planet bonus (§3.4) and
- * whether the landing rotated the waiting nodes (§8.2). Either side's ship
- * reads the same way; the side is already named at the start of the
- * sentence.
+ * move does both), or landed on an immediate node under player-matching
+ * nodes' immediate setting (steal.md §9, in place of a claim — a move
+ * raises at most one of the two), whether the landing claimed a planet
+ * bonus (§3.4) and whether the landing rotated the waiting nodes (§8.2).
+ * Either side's ship reads the same way; the side is already named at the
+ * start of the sentence.
  */
 function moveSentence(event: MovedEvent): string {
   const from = squareName(event.from);
@@ -531,7 +572,7 @@ function moveSentence(event: MovedEvent): string {
   const nodeSpentClauseText =
     nodeSpent !== undefined ? ` ${nodeSpentClause(nodeSpent.square)}` : "";
 
-  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}${nodeSpentClauseText}${nodeAbandonedClauseText(event.effects, event.side)}${nodeClaimedClauseText(event.effects)}${planetBonusClaimedClausesText(event.effects)}${activityBonusClaimedClausesText(event.effects)}${queueRotatedClausesText(event.effects)}`;
+  return `${journey} ${moveCostClause(event.cost, event.powerAfter)}${nodeSpentClauseText}${nodeAbandonedClauseText(event.effects, event.side)}${nodeClaimedClauseText(event.effects)}${immediateNodeLandedClauseText(event.effects)}${planetBonusClaimedClausesText(event.effects)}${activityBonusClaimedClausesText(event.effects)}${queueRotatedClausesText(event.effects)}`;
 }
 
 /**

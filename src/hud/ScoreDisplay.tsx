@@ -20,9 +20,12 @@ import "./ScoreDisplay.css";
 /** The most a turn can pay is whatever the chosen setting pays for the
  * board's charged-node count (§8.4) — 15 at bonus with five nodes held, or,
  * under DOUBLE (steal.md §9), one more with the own node counted twice, 21
- * at bonus. Over the longest offered game, 90 rounds, that reaches
- * roughly 1,890, so four digits still comfortably covers it and the arcade
- * readout's fixed width never reflows as the total grows. */
+ * at bonus. Under IMMEDIATE (steal.md §9) a single ply can pay more still: a
+ * landing on four held ordinary nodes under bonus scoring pays 20 at once,
+ * and that same ply's own end-of-turn collection can add another 10, 30 in
+ * all. Over the longest offered game, 90 rounds, that reaches roughly
+ * 2,700, so four digits still comfortably covers it and the arcade readout's
+ * fixed width never reflows as the total grows. */
 const SCORE_DIGITS = 4;
 
 /** The side of a pip's square viewBox, and the centre its circle and cross
@@ -54,11 +57,14 @@ const SIDE_NAME: Readonly<Record<Side, string>> = {
  * order: the board colour of
  * the node it stands for (`colorsForSignal`, as `NodeMarker` draws it), or
  * `undefined` for a node with no signal, which the stylesheet fills gold.
- * With player-matching nodes on, the row runs own node, opponent's node, then
- * the rest in board order, and under DOUBLE the own node fills two pips —
- * except while the collection is withheld (REQUIRED, or out of time, §10),
- * when the row is one cross per held node and the own node fills only one of
- * them.
+ * With player-matching nodes DOUBLE or REQUIRED, the row runs own node,
+ * opponent's node, then the rest in board order, and under DOUBLE the own
+ * node fills two pips — except while the collection is withheld (REQUIRED,
+ * or out of time, §10), when the row is one cross per held node and the own
+ * node fills only one of them. Under OFF and IMMEDIATE the row is simply
+ * the held ordinary nodes in board order — an immediate node is never
+ * charged, so it is never one of them, and `turnCollection` never counts an
+ * own node under IMMEDIATE to order the row by.
  */
 function pipFills(
   state: GameState,
@@ -72,7 +78,7 @@ function pipFills(
     }
     return colorsForSignal(signal, matchedSideForSignal(state, signal)).core;
   };
-  if (state.playerMatching === "off") {
+  if (state.playerMatching === "off" || state.playerMatching === "immediate") {
     return collection.heldSquares.map(fillFor);
   }
   const opponentSignal = matchedSignalForSide(otherSide(side), state);
@@ -115,7 +121,10 @@ export function ScoreDisplay({
   // board's count alone, so a fleet smaller than the board is never shown
   // pips it could not light. DOUBLE (steal.md §9) can price one more than
   // that (the own node counted twice), so the row grows by one to still
-  // reach the most a turn can pay.
+  // reach the most a turn can pay. Under IMMEDIATE `chargedNodeCount` is
+  // already the ordinary node count (red's and green's nodes are never
+  // charged, so never counted here), and no held node is ever priced
+  // twice, so the row needs no extra pip and no immediate-specific case.
   const shipCount = state.ships.filter((ship) => ship.side === side).length;
   const pipCount =
     Math.min(shipCount, state.chargedNodeCount) +
