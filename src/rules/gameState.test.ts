@@ -15,12 +15,13 @@ import {
 } from "./gameState";
 import {
   CHARGED_NODE_COUNTS,
+  type ChargedNodeCount,
   DEFAULT_CHARGED_NODE_COUNT,
   dealOpeningBoard,
 } from "./nodes";
 import { INACTIVE_NODE_COUNT } from "./nodeQueue";
 import { DEFAULT_NODE_PLAYSTYLE, NODE_PLAYSTYLES } from "./nodePlaystyle";
-import { dealStealOpeningBoard } from "./steal";
+import { dealStealOpeningBoard, type GameSettings } from "./steal";
 import { legalDestinations } from "./movement";
 import { dealActivityBonuses } from "./activityBonus";
 import { DEFAULT_PLANET_ACTIVITY } from "./planetActivity";
@@ -28,7 +29,16 @@ import { PLANET_BONUS_SETTINGS } from "./planetBonus";
 import {
   DEFAULT_PLAYER_MATCHING,
   PLAYER_MATCHING_SETTINGS,
+  type PlayerMatchingSetting,
 } from "./playerMatching";
+
+/** A game's settings for the signal-aware functions, off by default. */
+function settings(
+  chargedNodeCount: ChargedNodeCount,
+  playerMatching: PlayerMatchingSetting = "off",
+): GameSettings {
+  return { chargedNodeCount, playerMatching };
+}
 import { isPlanet } from "./planets";
 import { MAX_POWER } from "./power";
 import { applyMove } from "./ply";
@@ -658,7 +668,7 @@ describe("startingGameState under steal (steal.md §7)", () => {
     });
     const dealt = dealStealOpeningBoard(
       STARTING_FLEET_SQUARES,
-      4,
+      settings(4),
       seededRandom(SEED),
     );
 
@@ -710,7 +720,7 @@ describe("startingGameState under steal (steal.md §7)", () => {
       planetActivity: "off",
     });
     const dealRandom = seededRandom(SEED);
-    dealStealOpeningBoard(STARTING_FLEET_SQUARES, 4, dealRandom);
+    dealStealOpeningBoard(STARTING_FLEET_SQUARES, settings(4), dealRandom);
     expect(withoutBonusRandom.currentSeed()).toBe(dealRandom.currentSeed());
 
     const withBonusRandom = seededRandom(SEED);
@@ -807,7 +817,7 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
       planetActivity: "off",
     });
     const dealRandom = seededRandom(SEED);
-    dealStealOpeningBoard(STARTING_FLEET_SQUARES, 4, dealRandom);
+    dealStealOpeningBoard(STARTING_FLEET_SQUARES, settings(4), dealRandom);
     expect(withOff.activityBonuses).toEqual([]);
     expect(withOffRandom.currentSeed()).toBe(dealRandom.currentSeed());
   });
@@ -880,14 +890,14 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
       const boardRandom = seededRandom(SEED);
       const nodes = dealStealOpeningBoard(
         STARTING_FLEET_SQUARES,
-        chargedNodeCount,
+        settings(chargedNodeCount),
         boardRandom,
       );
       const seedAfterBoard = boardRandom.currentSeed();
       const bonusRandom = seededRandom(seedAfterBoard);
       const bonuses = dealActivityBonuses(
         nodes,
-        chargedNodeCount,
+        settings(chargedNodeCount),
         state.ships,
         bonusRandom,
       );
@@ -899,7 +909,7 @@ describe("startingGameState's activityBonuses field (steal.md §10)", () => {
       expect(
         dealActivityBonuses(
           nodes,
-          chargedNodeCount,
+          settings(chargedNodeCount),
           [],
           seededRandom(seedAfterBoard),
         ),
@@ -1037,6 +1047,43 @@ describe("startingGameState's playerMatching field (steal.md §9)", () => {
           expect(matchedRandom.currentSeed()).toBe(offRandom.currentSeed());
         }
       }
+    },
+  );
+
+  it("throws a RangeError for immediate with 5 charged nodes", () => {
+    expect(() =>
+      startingGameState(seededRandom(SEED), {
+        nodePlaystyle: "steal",
+        chargedNodeCount: 5,
+        playerMatching: "immediate",
+      }),
+    ).toThrow(RangeError);
+  });
+
+  it.each([4, 3] as const)(
+    "deals under immediate with %d charged nodes",
+    (chargedNodeCount) => {
+      const state = startingGameState(seededRandom(SEED), {
+        nodePlaystyle: "steal",
+        chargedNodeCount,
+        playerMatching: "immediate",
+      });
+
+      expect(state.playerMatching).toBe("immediate");
+      expect(state.chargedNodeCount).toBe(chargedNodeCount);
+      expect(Object.values(state.nodes)).toHaveLength(chargedNodeCount * 2 + 2);
+    },
+  );
+
+  it.each(["continuous", "planet", "dedicated"] as const)(
+    "throws a RangeError for immediate paired with the %s node playstyle",
+    (nodePlaystyle) => {
+      expect(() =>
+        startingGameState(seededRandom(SEED), {
+          nodePlaystyle,
+          playerMatching: "immediate",
+        }),
+      ).toThrow(RangeError);
     },
   );
 });

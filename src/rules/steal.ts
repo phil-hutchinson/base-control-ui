@@ -10,23 +10,35 @@
 // The opening deal's draws, in this fixed order, so a recorded game replays
 // exactly:
 //
-// 1. Each node's first prospective square, signal 0 through N-1 in turn,
-//    drawn uniformly from the strict pool by `drawNodeSquare`, each seeing
-//    the squares already placed. N draws.
-// 2. Each node's second prospective square, signal 0 through N-1 in turn,
-//    drawn by `drawStealOpeningProspectiveSquare`, anchored on that signal's
-//    first square, weighted against every other signal's square placed so
-//    far, over rules.md §3.2's strict pool where the board leaves room (only
+// 1. Each of the game's N signals' first prospective square, in signal
+//    order, drawn uniformly from the strict pool by `drawNodeSquare`, each
+//    seeing the squares already placed. N draws.
+// 2. Each signal's second prospective square, in signal order, drawn by
+//    `drawStealOpeningProspectiveSquare`, anchored on that signal's first
+//    square, weighted against every other signal's square placed so far,
+//    over rules.md §3.2's strict pool where the board leaves room (only
 //    falling back to the widened pool, or from there to §3.2's own fallback,
-//    when it does not — steal.md §7). N more draws.
+//    when it does not — steal.md §7). Under player-matching nodes'
+//    immediate setting (steal.md §9), red's and green's signals are skipped
+//    here — they keep only their first square — so this draws once per
+//    ordinary signal instead of once per signal.
 //
-// 2N draws in total, nothing else.
+// 2N draws in total under off, double and required; under immediate,
+// (N + 2) first-square draws plus N second-square draws, N being the chosen
+// ordinary count. Nothing else.
 //
 // Once play is under way, `claimNode` and `abandonNode` each draw exactly
 // one fresh prospective square and so make exactly one draw. When a single
 // move both abandons one node and claims another, `ply.ts` calls
 // `abandonNode` first and passes the same source into `claimNode` — leaving
 // comes before claiming (steal.md §5) — for two draws in that order.
+//
+// Landing on an immediate node's square (player-matching nodes' immediate
+// setting, steal.md §9) is `landOnImmediateNode` instead of a claim: it
+// makes exactly one draw, anchored on the square just landed on, when the
+// node had only that one square, and none at all when it had two (the
+// extra is used up instead). When the same move also abandons the node it
+// left, `ply.ts` calls `abandonNode` first, for the same reason as above.
 //
 // Under planet effects (steal.md §10), two more pure functions change the
 // node map outside a claim or a leave. `addExtraProspectiveSquares`
@@ -55,52 +67,79 @@
 import { ALL_SQUARES, type Square, squareName } from "./board";
 import type { Side } from "./fleet";
 import type { GameState, NodeStatus } from "./gameState";
-import type { ChargedNodeCount } from "./nodes";
 import {
   drawNodeSquare,
   drawStealOpeningProspectiveSquare,
   drawStealProspectiveSquare,
 } from "./nodePlacement";
-import type { PlayerMatchingSetting } from "./playerMatching";
 import type { RandomSource } from "./random";
 
-/** A node's identity under steal (steal.md §2): one per node, 0 to 4. */
-export type NodeSignal = 0 | 1 | 2 | 3 | 4;
+/** A node's identity under steal (steal.md §2): one per node, 0 to 5. */
+export type NodeSignal = 0 | 1 | 2 | 3 | 4 | 5;
 
 /**
- * The offered signals, in the order a game of N nodes uses them: a
- * three-node game uses the first three, and so on.
+ * The offered signals, in the order a game of N signals uses them: a
+ * three-signal game uses the first three, and so on. `GameSettings` is the
+ * `Pick` every signal-aware function in this module takes — the game's
+ * chosen charged-node count and player-matching setting — so a caller can
+ * never pass the chosen count where the game's actual signal count
+ * (`gameSignalCount`) is meant.
  */
-export const NODE_SIGNALS: readonly NodeSignal[] = [0, 1, 2, 3, 4];
+export const NODE_SIGNALS: readonly NodeSignal[] = [0, 1, 2, 3, 4, 5];
+
+/** The fields a signal-aware function needs from a game's settings. */
+export type GameSettings = Pick<
+  GameState,
+  "chargedNodeCount" | "playerMatching"
+>;
+
+/**
+ * How many signals a game actually has (steal.md §1, §9): `chargedNodeCount`
+ * under off, double and required, unchanged; `chargedNodeCount + 2` under
+ * immediate, since red's node and green's node come on top of the chosen
+ * ordinary count.
+ */
+export function gameSignalCount(settings: GameSettings): number {
+  return settings.playerMatching === "immediate"
+    ? settings.chargedNodeCount + 2
+    : settings.chargedNodeCount;
+}
+
+/** The signals a game actually uses, in signal order (`gameSignalCount`). */
+export function gameSignals(settings: GameSettings): readonly NodeSignal[] {
+  return NODE_SIGNALS.slice(0, gameSignalCount(settings));
+}
 
 /**
  * The signal matched to `side` under player-matching nodes (steal.md §9), in
- * a game of `nodeCount` nodes: red is matched to the second-to-last signal,
- * green to the last — the two signals whose colours the app replaces with
- * the players' own. Neither this nor `sideMatchedToSignal` consults the
- * player-matching setting; callers check `state.playerMatching !== "off"`
- * first.
+ * a game of the given settings: red is matched to the second-to-last
+ * signal, green to the last — the two signals whose colours the app
+ * replaces with the players' own. Neither this nor `sideMatchedToSignal`
+ * consults the player-matching setting; callers check
+ * `state.playerMatching !== "off"` first.
  */
 export function matchedSignalForSide(
   side: Side,
-  nodeCount: ChargedNodeCount,
+  settings: GameSettings,
 ): NodeSignal {
-  return (side === "red" ? nodeCount - 2 : nodeCount - 1) as NodeSignal;
+  const count = gameSignalCount(settings);
+  return (side === "red" ? count - 2 : count - 1) as NodeSignal;
 }
 
 /**
  * The side `signal` is matched to under player-matching nodes (steal.md §9),
- * in a game of `nodeCount` nodes, or `undefined` if it is matched to
+ * in a game of the given settings, or `undefined` if it is matched to
  * neither. The inverse of `matchedSignalForSide`.
  */
 export function sideMatchedToSignal(
   signal: NodeSignal,
-  nodeCount: ChargedNodeCount,
+  settings: GameSettings,
 ): Side | undefined {
-  if (signal === nodeCount - 2) {
+  const count = gameSignalCount(settings);
+  if (signal === count - 2) {
     return "red";
   }
-  if (signal === nodeCount - 1) {
+  if (signal === count - 1) {
     return "green";
   }
   return undefined;
@@ -113,12 +152,28 @@ export function sideMatchedToSignal(
  * player's colour, so the board and the score pips cannot disagree.
  */
 export function matchedSideForSignal(
-  state: Pick<GameState, "playerMatching" | "chargedNodeCount">,
+  state: GameSettings,
   signal: NodeSignal,
 ): Side | undefined {
   return state.playerMatching === "off"
     ? undefined
-    : sideMatchedToSignal(signal, state.chargedNodeCount);
+    : sideMatchedToSignal(signal, state);
+}
+
+/**
+ * Whether `signal` is one of the game's two immediate nodes — red's or
+ * green's own, under player-matching nodes' immediate setting (steal.md
+ * §9). Every other signal, and every signal under off, double or required,
+ * is an ordinary node.
+ */
+export function isImmediateSignal(
+  settings: GameSettings,
+  signal: NodeSignal,
+): boolean {
+  return (
+    settings.playerMatching === "immediate" &&
+    sideMatchedToSignal(signal, settings) !== undefined
+  );
 }
 
 /** One node's status under steal: always level 0, always carrying its signal. */
@@ -172,20 +227,26 @@ export function nodeAnchor(
 
 /**
  * Whether `signal`'s node carries an extra (steal.md §10): one prospective
- * square more than usual — two when it is Held, three when it is Open. No
+ * square more than usual — two when it is Held, three when it is Open, for
+ * an ordinary node; two instead of one for an immediate node
+ * (`isImmediateSignal`, steal.md §9, §10), which is never Held. No
  * particular square is the extra; this is a count.
  */
 export function nodeCarriesExtra(
   nodes: Readonly<Record<string, NodeStatus>>,
   signal: NodeSignal,
+  settings: GameSettings,
 ): boolean {
   const statuses = squaresForSignal(nodes, signal).map(
     (square) => nodes[squareName(square)],
   );
-  const held = statuses.some((status) => status?.state === "charged");
   const prospectiveCount = statuses.filter(
     (status) => status?.state === "prospective",
   ).length;
+  if (isImmediateSignal(settings, signal)) {
+    return prospectiveCount > 1;
+  }
+  const held = statuses.some((status) => status?.state === "charged");
   return prospectiveCount > (held ? 1 : 2);
 }
 
@@ -328,23 +389,86 @@ export function abandonNode(
   return { nodes, newProspective };
 }
 
+/** The outcome of landing on an immediate node's square (steal.md §9): the resulting node map and the fresh square drawn, if any. */
+export interface LandOnImmediateNodeResult {
+  readonly nodes: Readonly<Record<string, NodeStatus>>;
+  /** The fresh prospective square drawn for the node, present only when the node had no other square. */
+  readonly newProspective?: Square;
+}
+
+/**
+ * Resolves a landing on `signal`'s immediate node at `landedSquare` under
+ * player-matching nodes' immediate setting (steal.md §9): the square landed
+ * on is removed, whether the landing side's own node or the opponent's, and
+ * whoever is paid for it is for the caller to work out — this function
+ * knows nothing about energy. If the node had only that one square, one
+ * fresh prospective square is drawn for it, anchored on `landedSquare`
+ * itself rather than on any square the node still has (`nodeAnchor` is not
+ * used here — the node moves well away from where it was), weighted against
+ * every other signal's current squares (`drawStealProspectiveSquare`,
+ * steal.md §6). If the node had two squares (it carried an extra, steal.md
+ * §10), nothing is drawn: the extra is used up, and the node is left with
+ * its other square. `shipSquares` is the board's ship squares as they stand
+ * once the landing move has resolved. Makes exactly one draw on `random`
+ * for a one-square node, none for a two-square one.
+ */
+export function landOnImmediateNode(
+  nodesBefore: Readonly<Record<string, NodeStatus>>,
+  signal: NodeSignal,
+  landedSquare: Square,
+  shipSquares: readonly Square[],
+  random: RandomSource,
+): LandOnImmediateNodeResult {
+  const nodes: Record<string, NodeStatus> = { ...nodesBefore };
+  delete nodes[squareName(landedSquare)];
+
+  if (squaresForSignal(nodes, signal).length > 0) {
+    return { nodes };
+  }
+
+  const occupiedNodeSquares = ALL_SQUARES.filter(
+    (square) => nodes[squareName(square)] !== undefined,
+  );
+  const otherNodeSquares = occupiedNodeSquares.filter(
+    (square) => nodes[squareName(square)]?.signal !== signal,
+  );
+  const newProspective = drawStealProspectiveSquare(
+    occupiedNodeSquares,
+    [landedSquare],
+    otherNodeSquares,
+    shipSquares,
+    random,
+  );
+  nodes[squareName(newProspective)] = {
+    state: "prospective",
+    level: 0,
+    signal,
+  };
+
+  return { nodes, newProspective };
+}
+
 /**
  * Deals the opening board under steal (steal.md §7): every node Open, no
- * charged square anywhere. Each signal's first prospective square is drawn
- * uniformly from the strict pool, one at a time, signal 0 through
- * `nodeCount - 1`; then each signal's second is drawn by
- * `drawStealOpeningProspectiveSquare`, anchored on the first, weighted
- * against every other signal's square placed so far, in the same order —
- * from the strict pool where the board leaves room, keeping the opening
- * deal's rings off the outer two rings except as a last resort. Makes
- * exactly `2 * nodeCount` draws on `random`.
+ * charged square anywhere. Each of the game's signals' first prospective
+ * square is drawn uniformly from the strict pool, one at a time, in signal
+ * order (ordinary signals first, then red's, then green's — steal.md §9).
+ * Each signal's second is then drawn by `drawStealOpeningProspectiveSquare`,
+ * anchored on the first, weighted against every other signal's square
+ * placed so far — from the strict pool where the board leaves room, keeping
+ * the opening deal's rings off the outer two rings except as a last resort.
+ * Under immediate (steal.md §7, §9), only the ordinary signals draw a
+ * second square — red's and green's each keep their single square — so this
+ * makes `(chargedNodeCount + 2) + chargedNodeCount` draws on `random`; under
+ * every other setting every signal draws a second square too, for
+ * `2 * chargedNodeCount` draws, unchanged.
  */
 export function dealStealOpeningBoard(
   shipSquares: readonly Square[],
-  nodeCount: ChargedNodeCount,
+  settings: GameSettings,
   random: RandomSource,
 ): StealNodeMap {
-  const signals = NODE_SIGNALS.slice(0, nodeCount);
+  const signals = gameSignals(settings);
   const nodes: Record<string, StealNodeStatus> = {};
 
   const firstSquares: Square[] = [];
@@ -354,7 +478,12 @@ export function dealStealOpeningBoard(
     nodes[squareName(square)] = { state: "prospective", level: 0, signal };
   }
 
-  signals.forEach((signal, index) => {
+  const secondSquareSignals =
+    settings.playerMatching === "immediate"
+      ? signals.slice(0, settings.chargedNodeCount)
+      : signals;
+
+  secondSquareSignals.forEach((signal, index) => {
     const anchor = firstSquares[index];
     const occupiedNodeSquares = ALL_SQUARES.filter(
       (square) => nodes[squareName(square)] !== undefined,
@@ -376,16 +505,16 @@ export function dealStealOpeningBoard(
 }
 
 /**
- * Whether every one of the game's `nodeCount` signals already carries an
- * extra (steal.md §10, `nodeCarriesExtra`) — the Additional nodes bonus is
+ * Whether every one of the game's signals already carries an extra
+ * (steal.md §10, `nodeCarriesExtra`) — the Additional nodes bonus is
  * unavailable exactly when this is true.
  */
 export function everyNodeHasExtra(
   nodes: Readonly<Record<string, NodeStatus>>,
-  nodeCount: ChargedNodeCount,
+  settings: GameSettings,
 ): boolean {
-  return NODE_SIGNALS.slice(0, nodeCount).every((signal) =>
-    nodeCarriesExtra(nodes, signal),
+  return gameSignals(settings).every((signal) =>
+    nodeCarriesExtra(nodes, signal, settings),
   );
 }
 
@@ -398,28 +527,30 @@ export interface AddExtraProspectiveSquaresResult {
 
 /**
  * Gives one more prospective square to every node that does not already
- * carry an extra (steal.md §10, `nodeCarriesExtra`): signal 0 through
- * `nodeCount - 1` in turn, each an ordinary prospective square drawn by
+ * carry an extra (steal.md §10, `nodeCarriesExtra`): every one of the
+ * game's signals in turn, each an ordinary prospective square drawn by
  * section 6's weighted rule (`drawStealProspectiveSquare`), anchored per
  * `nodeAnchor`, weighted against every other node's current squares —
  * including a square just placed for an earlier signal in this same call.
- * A node already carrying an extra is skipped. `shipSquares` is the board's
- * ship squares as they stand at the moment the bonus is claimed. One draw on
- * `random` per square added — none at all when every node already has its
- * extra, in which case the caller should not have called this (see
- * `everyNodeHasExtra`).
+ * A node already carrying an extra is skipped. Under player-matching
+ * nodes' immediate setting, red's and green's nodes take part too, each
+ * carrying an extra at two prospective squares instead of one (steal.md
+ * §9, §10). `shipSquares` is the board's ship squares as they stand at the
+ * moment the bonus is claimed. One draw on `random` per square added —
+ * none at all when every node already has its extra, in which case the
+ * caller should not have called this (see `everyNodeHasExtra`).
  */
 export function addExtraProspectiveSquares(
   nodesBefore: Readonly<Record<string, NodeStatus>>,
-  nodeCount: ChargedNodeCount,
+  settings: GameSettings,
   shipSquares: readonly Square[],
   random: RandomSource,
 ): AddExtraProspectiveSquaresResult {
   let nodes: Record<string, NodeStatus> = { ...nodesBefore };
   const addedSquares: Square[] = [];
 
-  for (const signal of NODE_SIGNALS.slice(0, nodeCount)) {
-    if (nodeCarriesExtra(nodes, signal)) {
+  for (const signal of gameSignals(settings)) {
+    if (nodeCarriesExtra(nodes, signal, settings)) {
       continue;
     }
 
@@ -468,19 +599,20 @@ export interface ShuffleProspectiveSignalsResult {
  * Shuffles the signals on every prospective square between the nodes
  * (steal.md §10). No square is added, removed or moved, charged squares are
  * left exactly as they stand, and each signal keeps as many prospective
- * squares as it had. The signals are placed back one at a time, red's and
- * green's matched signals first when `playerMatching` is on, then the rest:
- * each placement draws a signal weighted by how many of it are still
- * unplaced, then a square uniformly among the still-empty squares whose
- * signal before the shuffle was a different one, or among every still-empty
- * square when there is none. The fixed draw order is in this module's
- * header. Exactly two draws on `random` per prospective square. Also
- * reports every square whose signal changed, with its old and new signal.
+ * squares as it had — red's and green's immediate node included, one or two
+ * squares (steal.md §9). The signals are placed back one at a time, red's
+ * and green's matched signals first when `playerMatching` is not off
+ * (double, required or immediate alike), then the rest: each placement
+ * draws a signal weighted by how many of it are still unplaced, then a
+ * square uniformly among the still-empty squares whose signal before the
+ * shuffle was a different one, or among every still-empty square when
+ * there is none. The fixed draw order is in this module's header. Exactly
+ * two draws on `random` per prospective square. Also reports every square
+ * whose signal changed, with its old and new signal.
  */
 export function shuffleProspectiveSignals(
   nodesBefore: Readonly<Record<string, NodeStatus>>,
-  nodeCount: ChargedNodeCount,
-  playerMatching: PlayerMatchingSetting,
+  settings: GameSettings,
   random: RandomSource,
 ): ShuffleProspectiveSignalsResult {
   const prospective = ALL_SQUARES.flatMap((square) => {
@@ -495,14 +627,14 @@ export function shuffleProspectiveSignals(
     unplaced.set(signalBefore, (unplaced.get(signalBefore) ?? 0) + 1);
   }
 
-  const signals = NODE_SIGNALS.slice(0, nodeCount);
+  const signals = gameSignals(settings);
   const phases: (readonly NodeSignal[])[] = [];
-  if (playerMatching === "off") {
+  if (settings.playerMatching === "off") {
     phases.push(signals);
   } else {
     const matched = [
-      matchedSignalForSide("red", nodeCount),
-      matchedSignalForSide("green", nodeCount),
+      matchedSignalForSide("red", settings),
+      matchedSignalForSide("green", settings),
     ].sort((a, b) => a - b);
     phases.push(matched);
     phases.push(signals.filter((signal) => !matched.includes(signal)));

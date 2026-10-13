@@ -13,6 +13,7 @@ import {
   GUIDE_TITLE,
 } from "./guideCopy";
 import {
+  ImmediateNodesDiagram,
   MovementDiagram,
   NodeLifecycleDiagram,
   NodeSelectionDiagram,
@@ -29,7 +30,7 @@ import { useSpelling } from "../spelling/spellingContext";
 import "./GuideScreen.css";
 
 /**
- * The remaining eight sections' diagrams, keyed by section id rather than
+ * The remaining nine sections' diagrams, keyed by section id rather than
  * array position, so a section added to `GUIDE_SECTIONS` without a matching
  * entry here fails to compile instead of rendering `undefined`.
  */
@@ -40,6 +41,7 @@ const SECTION_DIAGRAMS: Record<GuideSectionId, ComponentType> = {
   nodeSelection: NodeSelectionDiagram,
   stealingNodes: StealingNodesDiagram,
   playerMatchingNodes: PlayerMatchingNodesDiagram,
+  immediateNodes: ImmediateNodesDiagram,
   planetBonus: PlanetBonusDiagram,
   planetActivity: PlanetActivityDiagram,
 };
@@ -59,7 +61,7 @@ interface GuideScreenProps {
 }
 
 /**
- * The Quick Guide: the intro paragraph and scoring diagram, then the eight
+ * The Quick Guide: the intro paragraph and scoring diagram, then the nine
  * headed sections, each a heading, its paragraph and its diagram — NEW
  * CHARGED NODE SELECTION also carries the three rotation setting lines and a
  * second, trailing diagram. All copy is shown in the spelling in force.

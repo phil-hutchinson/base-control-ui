@@ -7,6 +7,67 @@ version that changes how the game is played is a candidate to be tagged
 plays exactly the rules described by version 0.1 — but tagging is on hold
 until the game plays (see the project's contribution notes).
 
+## 0.46 — player-matching nodes: immediate
+
+This is a gameplay change — steal gains a fourth player-matching setting,
+in which red's and green's nodes pay on landing instead of being held —
+and so would be a tag candidate; tagging stays on hold until the game plays
+(see the project's contribution notes).
+
+- **A fourth player-matching setting, offered only under the steal
+  playstyle**: **immediate** (steal.md §9), alongside off, double and
+  required. This document names no default.
+- **Under immediate, red's node and green's node are never charged and
+  never held.** Each is a single kind of node of its own: one prospective
+  square in its player's colour, or two while it carries an extra from
+  Additional nodes (steal.md §10). They are dealt as the second-to-last and
+  last nodes of the opening deal, as under double and required, but get no
+  second prospective square of their own.
+- **Landing on one of their squares, from either side, resolves at once.**
+  If the node is the landing side's own, that side is paid; the opponent's
+  pays nothing. The square landed on is removed. If the node had only that
+  one square, a fresh prospective square is drawn by steal.md §6's weighted
+  rule, anchored on the square just landed on, so the node moves well away
+  from where it was; if it had two (it carried an extra), nothing is drawn,
+  and the extra is used up. Leaving a held ordinary node and landing on an
+  immediate node's square in the same move resolves the leave first, so the
+  node left is no longer held when the payment is counted. Only a move that
+  ends on the square counts; a fight's returns land only on planets, so a
+  fight never lands on an immediate node.
+- **The payment** is counted from the ordinary charged nodes the landing
+  side holds at the moment of landing, after any leave: what those nodes
+  would pay at the end of a turn (rules.md §8.4), multiplied **three
+  times** under simple scoring and **twice** under bonus scoring — simple
+  pays 3, 6, 9 or 12 for one through four nodes held, bonus pays 2, 6, 12
+  or 20. Holding no nodes pays nothing, but the node still moves. A player
+  who is out of time is paid nothing (rules.md §10), and the node still
+  moves or is used up as usual.
+- **Ordinary nodes still pay at the end of a turn exactly as they do under
+  every other setting**, with no doubling and nothing withheld; immediate
+  nodes never take part in that.
+- **The charged-node choice counts the ordinary nodes only, under
+  immediate, and offers four or three** (rules.md §8.1, steal.md §1, §9);
+  red's and green's nodes come on top, so a game has six or five nodes in
+  all. Five is not offered under immediate.
+- **The opening deal** (steal.md §7) is unaffected for the ordinary nodes.
+  Red's and green's nodes draw only their first square, from the strict
+  pool as usual; only the ordinary nodes then draw a second square, by the
+  weighted rule, seeing red's and green's squares as other nodes' squares.
+- **Planet effects** (steal.md §10) work as they do under the other
+  settings, with three details: Additional nodes gives red's and green's
+  nodes an extra too, unavailable only while every node, red and green
+  included, carries one; Node scramble treats red's and green's squares
+  like any other prospective square, still placing the player-matched
+  signals first; and the point table gains two rows for immediate, at 3
+  and 4 nodes, equal to the required rows for the same count, until
+  immediate has been measured on its own.
+- **steal.md §§1–3, 5–10** are updated to match; **rules.md §§1, 8.1 and
+  8.4** name an immediate node among the ways to collect energy and note
+  that the charged-node choice works differently under it.
+- **Nothing else changes.** Off, double and required play and look exactly
+  as they did in version 0.45, as do the continuous, planet and dedicated
+  playstyles, which offer no player-matching setting at all.
+
 ## 0.45 — a player out of time gains no more energy
 
 This is a gameplay change — a player whose clock has run out could

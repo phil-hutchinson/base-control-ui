@@ -1,6 +1,6 @@
 # Base Control — Rules
 
-**Rules version: 0.45**
+**Rules version: 0.46**
 
 This document is the single source of truth for how Base Control is played,
 together with its companion [steal.md](steal.md), which holds the node rules
@@ -17,8 +17,9 @@ Base Control is a two-player game played on a square board. Each player
 commands a fleet of three to five ships and competes to occupy the board's
 contested nodes, collecting **energy** for every turn they hold one — and,
 under the planet bonus or planet effects setting (section 3.4), for
-landing on the right planet. The player with the most energy when the game
-ends is the winner.
+landing on the right planet, or, under steal's immediate player-matching
+setting, for landing on a node of their own (steal.md §9). The player with
+the most energy when the game ends is the winner.
 
 Combat is a choice made before play begins (section 7). When it is on,
 ships are never destroyed: a fight has no winner — both ships involved are
@@ -601,7 +602,9 @@ game's lifetime. At the end of every turn, whatever shortfall there is
 against the chosen number is filled from the three inactive nodes, highest
 priority first. The shortfall is always filled on the turn it appears — the
 board is never left short of the chosen number of charged nodes (see the
-[development notes](tech-notes.md)).
+[development notes](tech-notes.md)). Under the steal playstyle's immediate
+player-matching setting, this choice works differently — it counts the
+**ordinary** nodes only, and offers four or three (steal.md §1, §9).
 
 **The opening board is dealt.** The game opens with **eight** nodes at
 five charged, **seven** at four, **six** at three:
@@ -802,7 +805,8 @@ but that is a fact about the board, not a cap on what collecting can pay.
 
 Node collection is not the only source of energy: under the planet bonus
 or planet effects setting, landing on the right planet also pays
-(section 3.4).
+(section 3.4), and, under steal's immediate player-matching setting, so
+does landing on a node of your own (steal.md §9).
 
 This section applies under the steal playstyle too: a player is paid exactly
 the same way for the charged nodes they hold when their turn ends

@@ -938,6 +938,83 @@ describe("Board", () => {
     });
   });
 
+  describe("an immediate node's shape and colour (steal.md §9)", () => {
+    it("draws green's one-square immediate node as a single set of prospective rings in green's colour, never charged", () => {
+      const square = squareAt("E", 11);
+      render(
+        <Board
+          session={createSession(
+            {
+              ...stateWithStealNodes({
+                [squareName(square)]: {
+                  state: "prospective",
+                  level: 0,
+                  signal: 4,
+                },
+              }),
+              chargedNodeCount: 3,
+              playerMatching: "immediate",
+            },
+            0,
+            0,
+          )}
+          onIntent={noop}
+        />,
+      );
+
+      const cell = screen.getByRole("gridcell", {
+        name: "E11, prospective node",
+      });
+      const circles = cell.querySelectorAll(".node-marker circle");
+      expect(circles.length).toBeGreaterThan(0);
+      for (const circle of circles) {
+        expect(circle).toHaveAttribute("stroke", PLAYER_NODE_COLORS.green.core);
+      }
+      expect(
+        screen.queryByRole("gridcell", { name: /charged node/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("draws red's two-square immediate node (carrying an Additional nodes extra) as two separate marker rings, each in red's colour, never charged", () => {
+      const squares = [squareAt("E", 11), squareAt("K", 11)];
+      const nodes: Record<string, NodeStatus> = Object.fromEntries(
+        squares.map((square) => [
+          squareName(square),
+          { state: "prospective" as const, level: 0, signal: 3 },
+        ]),
+      );
+
+      render(
+        <Board
+          session={createSession(
+            {
+              ...stateWithStealNodes(nodes),
+              chargedNodeCount: 3,
+              playerMatching: "immediate",
+            },
+            0,
+            0,
+          )}
+          onIntent={noop}
+        />,
+      );
+
+      for (const square of squares) {
+        const cell = screen.getByRole("gridcell", {
+          name: `${squareName(square)}, prospective node`,
+        });
+        const circles = cell.querySelectorAll(".node-marker circle");
+        expect(circles.length).toBeGreaterThan(0);
+        for (const circle of circles) {
+          expect(circle).toHaveAttribute("stroke", PLAYER_NODE_COLORS.red.core);
+        }
+      }
+      expect(
+        screen.queryByRole("gridcell", { name: /charged node/ }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   describe("rotators the board is told to draw", () => {
     const ROTATOR_SQUARES = [squareAt("C", 3), squareAt("N", 12)];
 

@@ -12,7 +12,10 @@ rules.md section 8's node rules entirely, and changes nothing else about the
 game. The charged-node choice (rules.md §8.1) still sets how many nodes the
 game has — five, four or three — it just no longer means how many are
 charged at any one moment, because that number rises and falls as the two
-players take and lose nodes.
+players take and lose nodes. Under player-matching nodes' **immediate**
+setting (section 9), the choice counts the **ordinary** nodes only, and
+offers **four or three**; red's and green's nodes come on top of them, so a
+game has six or five nodes in all.
 
 ## 2. A node is a signal with two squares
 
@@ -44,6 +47,12 @@ colour.
 Every node is dealt **Open**. The opening board therefore carries no charged
 square at all: nobody scores until a ship reaches one.
 
+This section's two squares and its table describe every node except an
+immediate node. Under player-matching nodes' **immediate** setting, red's
+node and green's node are each a different kind of node altogether, with
+neither a charged square nor any of this table's configurations (section
+9).
+
 ## 3. Claiming a node
 
 A ship **lands on a prospective square** — of any node, whether that node is
@@ -66,6 +75,10 @@ costs the holder a whole turn and a move, and leaves the node's new
 prospective square drawn afresh, exactly as taking it from an opponent
 would. Under planet effects (stable or race), a node carrying an extra
 is claimed a little differently (section 10).
+
+This section's claim rule applies to an ordinary node's prospective square.
+Under player-matching nodes' **immediate** setting, landing on red's or
+green's square is section 9's rule instead.
 
 ## 4. Leaving a node
 
@@ -90,6 +103,10 @@ on claimed and given its fresh one. A ship's own node's prospective square is
 the one exception — landing there is a **relocation**, not a leaving, and the
 claim rule of section 3 alone applies, drawing one fresh prospective square.
 
+This ordering — leaving resolves first — holds just the same when the
+square landed on is an immediate node's, under player-matching nodes'
+**immediate** setting (section 9).
+
 ## 6. Where a prospective node is drawn
 
 A prospective square is legal wherever rules.md §3.2 allows a node, with
@@ -113,6 +130,13 @@ where `d` is Chebyshev distance, as rules.md §3.2 defines it. When the
 anchor is more than one square, `d(s, a)` is the distance from `s` to the
 nearest of them. When `S` is
 empty — only the very first node of the opening deal — the second term is 0.
+Red's and green's squares count among `S` like any other node's squares, for
+every draw.
+
+Under player-matching nodes' **immediate** setting (section 9), when an
+immediate node draws a fresh square after a landing, its anchor is the
+square just landed on, not the nearest of its own remaining squares — so the
+node moves well away from where it was.
 
 **A square on the outer edge has its weight halved** — row 1 or 15, column A
 or O. `d(s, a)` is never below 2 in the ordinary pool, because an adjacent
@@ -147,6 +171,12 @@ play is under way — a claim's or an abandon's fresh square — is unaffected,
 and keeps drawing from section 6's widened pool. No rotators are laid down
 under steal.
 
+Under player-matching nodes' **immediate** setting (section 9), red's node
+and green's node are dealt only their first prospective square — they draw
+no second. Only the ordinary nodes then draw a second prospective square, by
+the same rule, and those draws see red's and green's single squares as any
+other node's squares, exactly as section 6's `S` already does.
+
 ## 8. What rules.md section 8 does not do under steal
 
 Under steal, none of the following happen:
@@ -168,22 +198,29 @@ Under steal, none of the following happen:
 Of the end-of-turn order (rules.md §8.6), only **step 1 (power)** and
 **step 2 (energy)** run. Energy (rules.md §8.4) is unchanged under steal,
 except as section 9 provides, and is still priced by the charged nodes a
-player is standing on when their turn ends. Nothing else in rules.md
-changes.
+player is standing on when their turn ends — an immediate node pays
+differently, on landing rather than at the end of a turn (section 9).
+Nothing else in rules.md changes.
 
 ## 9. Player-matching nodes
 
 Before play begins, a choice is made, the same for both players and fixed
-for the game's lifetime: **off, double or required**. This document names
-no default.
+for the game's lifetime: **off, double, required or immediate**. This
+document names no default.
 
-With **double** or **required**, two of the game's nodes are matched to the
-players, one each, for the whole game: of the nodes the opening deal deals
-(section 7), the second-to-last is red's and the last is green's. The match
-is fixed: it does not follow whoever holds the node. A matched node is
-claimed, left, stolen, relocated and dealt exactly as any other node
-(sections 3–7) — either player may take either matched node, and taking the
-opponent's is a legitimate way to deny it to them.
+With **double**, **required** or **immediate**, two of the game's nodes are
+matched to the players, one each, for the whole game: of the nodes the
+opening deal deals (section 7), the second-to-last is red's and the last is
+green's. The match is fixed: it does not follow whoever holds the node.
+
+Under **immediate**, the charged-node choice (section 1, rules.md §8.1)
+counts the **ordinary** nodes only, and offers **four or three**; red's and
+green's nodes come on top of them, so a game has six or five nodes in all.
+
+With double or required, a matched node is claimed, left, stolen, relocated
+and dealt exactly as any other node (sections 3–7) — either player may take
+either matched node, and taking the opponent's is a legitimate way to deny
+it to them.
 
 **Double.** At the end of a player's turn, their own node, if one of their
 ships stands on it, counts as **two** nodes held. The opponent's matched
@@ -197,15 +234,51 @@ on their own node, they collect **no** node energy that turn, however many
 other nodes they hold. If one does, they collect exactly what rules.md
 §8.4 gives, their own node counting once, like any other.
 
-A player who is out of time collects nothing under either setting (rules.md
-§10).
+**Immediate.** Red's node and green's node are never charged and never
+held: each is a single kind of node of its own.
 
-**Planet effects** (section 10) is unaffected by either setting:
+- **It has one prospective square**, in its player's colour, or **two**
+  while it carries an extra (section 10). It never has a charged square, so
+  it is never held, never pays at the end of a turn, and never counts as a
+  node held.
+- **Landing on one of its squares** — with a ship of either side — resolves
+  at once:
+  1. If the node is the landing side's own, that side is paid at once (see
+     below). If it is the opponent's, nothing is paid.
+  2. The square landed on is removed.
+  3. If the node had only that one square, a fresh prospective square is
+     drawn for it by section 6's weighted rule, anchored on the square just
+     landed on, so the node moves well away from where it was. If the node
+     had two squares (it carried an extra), nothing is drawn instead: the
+     extra is used up, and the node is left with its other square.
+- **Leaving comes first** (section 5): a ship that steps off a charged
+  square and lands on an immediate node's square resolves the leave first,
+  so the node it left is no longer held when the payment below is counted.
+- **Only landing counts**: a move that ends on the square. Flying over it
+  does nothing, and a ship returned by a fight lands only on planets
+  (rules.md §7.1), so a fight never lands on an immediate node.
+- **The payment** is counted from the ordinary charged nodes the landing
+  side's ships are standing on **at the moment of landing**, after any leave
+  has resolved — what those nodes would pay at the end of a turn (rules.md
+  §8.4), multiplied **three times** under simple scoring and **twice**
+  under bonus scoring: simple pays 3, 6, 9 or 12 for one through four nodes
+  held, bonus pays 2, 6, 12 or 20. Holding no nodes pays nothing, but the
+  node still moves or is used up as usual.
+- **Ordinary nodes still pay at the end of a turn** exactly as rules.md
+  §8.4 describes, with no doubling and nothing withheld. An immediate node
+  never takes part in that: it pays only on landing, if it pays at all.
+
+A player who is out of time collects nothing under any of these three
+settings (rules.md §10); under immediate, the node still moves or is used
+up as usual, but pays nothing.
+
+**Planet effects** (section 10) is unaffected by any of these settings:
 required withholds node energy only, and a bonus planet pays on landing
 whether or not a player holds their own node. Nothing here ever subtracts
 energy; required withholds a turn's node energy, and never takes any away.
 Under planet effects, stable and race alike, this section's choice also
-sizes the **point amounts** a points bonus pays (section 10).
+sizes the **point amounts** a points bonus pays (section 10), immediate
+included.
 
 The app shows the two matched nodes in the players' own colours, in the
 same manner that section 2 already notes for a signal.
@@ -326,12 +399,18 @@ how fast nodes pay in that game:
 |     3 | off             | 2 / 3 / 5                  | 3 / 5 / 8                 |
 |     3 | double          | 2 / 4 / 6                  | 5 / 8 / 12                |
 |     3 | required        | 1 / 2 / 4                  | 2 / 4 / 6                 |
+|     3 | immediate       | 1 / 2 / 4                  | 2 / 4 / 6                 |
 |     4 | off             | 2 / 4 / 6                  | 4 / 6 / 10                |
 |     4 | double          | 3 / 5 / 8                  | 6 / 10 / 15               |
 |     4 | required        | 2 / 3 / 5                  | 3 / 5 / 8                 |
+|     4 | immediate       | 2 / 3 / 5                  | 3 / 5 / 8                 |
 |     5 | off             | 3 / 5 / 8                  | 5 / 8 / 12                |
 |     5 | double          | 3 / 6 / 10                 | 6 / 10 / 15               |
 |     5 | required        | 2 / 4 / 6                  | 4 / 6 / 10                |
+
+Immediate is not offered at five nodes (section 9), so the table has no row
+for it there. Until immediate has been measured on its own, it uses the
+**required** row for the same node count.
 
 The table roughly follows a pattern: double plays like one node more, since
 a player's own node counts as two, and required plays like one node fewer,
@@ -353,6 +432,15 @@ node at a time in the order the nodes were dealt. This kind is **not
 available**, and so never dealt, while every node already carries an
 extra.
 
+Under player-matching nodes' **immediate** setting (section 9), red's node
+and green's node take part too: each carries an extra when it has **two**
+prospective squares instead of its usual one, drawn the same way — by
+section 6's weighted rule, anchored on the node's one remaining square —
+unless it already carries one. This kind is not available while every
+node, red's and green's included, already carries an extra. Landing on
+either of an immediate node's two squares uses the extra up, exactly as
+section 9 describes.
+
 A node carrying an extra behaves as follows:
 
 - **Held**, it has one charged square and two prospective squares. **Open**,
@@ -368,24 +456,28 @@ A node carrying an extra behaves as follows:
   Open with three prospective squares, and carries it until it is next
   claimed.
 
-**Node scramble** shuffles the signals on the prospective squares between
-the nodes. Only prospective squares take part — every one of them, a
-node's extra included. Charged squares, and the ships on them, are not
-touched. No square is added, removed or drawn anew: the squares stay where
-they are, and only which node each belongs to changes. Each node keeps
-exactly as many prospective squares as it had, so a Held node stays Held,
-an Open node stays Open, and a node carrying an extra still carries it.
+**Node scramble** shuffles the signals on the prospective squares between the
+nodes. Only prospective squares take part — every one of them, a node's extra
+included, and an immediate node's one or two squares (section 9) among them.
+Charged squares, and the ships on them, are not touched. No square is added,
+removed or drawn anew: the squares stay where they are, and only which node each
+belongs to changes. Each node keeps exactly as many prospective squares as it
+had, so a Held node stays Held, an Open node stays Open, a node carrying an
+extra still carries it, and an immediate node keeps its one or two squares. The
+red or green colour can move onto a square that belonged to an ordinary node,
+and the reverse.
 
 Each prospective square's signal is taken off it, and the signals are
 placed back onto the squares one at a time:
 
 1. **The player-matched signals first.** With player-matching (section 9)
-   double or required, take the red and green signals. Draw one of them at
-   random, weighted by how many of each are still unplaced. Place it on a
-   square drawn at random, every square equally likely, among the squares
-   still empty **whose signal before the shuffle was a different one**; if
-   there is no such square, draw from every square still empty instead.
-   Repeat until every red and green signal has been placed.
+   on — double, required or immediate — take the red and green signals.
+   Draw one of them at random, weighted by how many of each are still
+   unplaced. Place it on a square drawn at random, every square equally
+   likely, among the squares still empty **whose signal before the shuffle
+   was a different one**; if there is no such square, draw from every
+   square still empty instead. Repeat until every red and green signal has
+   been placed.
 2. **The other signals.** Do the same with every other signal. With
    player-matching off, this is the only step, and it takes every signal.
 

@@ -47,6 +47,7 @@ import {
   type PlanetActivitySetting,
 } from "./planetActivity";
 import {
+  chargedNodeCountsForPlayerMatching,
   DEFAULT_PLAYER_MATCHING,
   isPlayerMatchingSetting,
   PLAYER_MATCHING_SETTINGS,
@@ -155,7 +156,10 @@ export interface GameState {
    * Under steal (steal.md §1) this is how many **nodes** the game has, not
    * how many are charged at any one moment — that number rises and falls as
    * the two players take and lose them, and may legitimately be zero, as it
-   * is on a steal game's opening board.
+   * is on a steal game's opening board. Under player-matching nodes'
+   * immediate setting (steal.md §9), this counts the **ordinary** nodes
+   * only; red's node and green's node come on top of it, so the game's
+   * actual signal count (`gameSignalCount` in `steal.ts`) is this plus two.
    */
   readonly chargedNodeCount: ChargedNodeCount;
   /**
@@ -282,9 +286,13 @@ export interface StartingGameStateOptions {
    */
   readonly fleetSize?: number;
   /**
-   * How many nodes the board keeps charged (rules.md §8.1). Defaults to
-   * `DEFAULT_CHARGED_NODE_COUNT`. Must be one of `nodes.ts`'s offered
-   * charged-node counts, or this throws a `RangeError`. Stored on the
+   * How many nodes the board keeps charged (rules.md §8.1); under steal's
+   * player-matching immediate setting, how many **ordinary** nodes the game
+   * has, red's and green's nodes coming on top (steal.md §1, §9). Defaults
+   * to `DEFAULT_CHARGED_NODE_COUNT`. Must be one of `nodes.ts`'s offered
+   * charged-node counts, and one of the counts `playerMatching` offers
+   * (`chargedNodeCountsForPlayerMatching` — 4 or 3 under immediate, every
+   * count otherwise), or this throws a `RangeError`. Stored on the
    * resulting state as `chargedNodeCount`, unlike `fleetSize`, because it
    * cannot be derived back from the dealt board.
    */
@@ -383,18 +391,22 @@ export interface StartingGameStateOptions {
  * the planet bonus is a classic amount, exactly six more for the bonus
  * planet deal (rules.md §3.4), drawn last so an off game draws nothing
  * extra. Under steal instead, the deal makes exactly `2 * chargedNodeCount`
- * draws (`dealStealOpeningBoard`, steal.md §7) — no rotator set is ever
- * drawn — and the planet bonus is always off, so the classic bonus planet
- * deal never runs. When planet effects is on (steal.md §10, steal only),
- * `dealActivityBonuses` instead makes exactly four more draws, last.
- * The player-matching nodes setting (steal.md §9) draws nothing — which two
- * signals are matched to the players is derived from `chargedNodeCount`, not
- * drawn — so a steal game started with double or required deals exactly the
- * board an off game deals from a source built the same way. `random` is left
- * holding whatever it has drawn once this returns; this function neither
- * reads nor stores a seed anywhere, so a caller that wants to remember where
- * the deal started keeps that itself. Every test builds its own source, so a
- * game's opening position is always reproducible.
+ * draws under off, double and required, or `(chargedNodeCount + 2) +
+ * chargedNodeCount` under immediate (`dealStealOpeningBoard`, steal.md §7,
+ * §9) — no rotator set is ever drawn — and the planet bonus is always off,
+ * so the classic bonus planet deal never runs. When planet effects is on
+ * (steal.md §10, steal only), `dealActivityBonuses` instead makes exactly
+ * four more draws, last. The player-matching nodes setting (steal.md §9)
+ * draws nothing on its own — which signals are matched to the players is
+ * derived from the chosen settings, not drawn — so a steal game started
+ * with double or required deals exactly the board an off game deals from a
+ * source built the same way; immediate deals two signals fewer their
+ * second square (see `dealStealOpeningBoard`), so it alone draws
+ * differently. `random` is left holding whatever it has drawn once this
+ * returns; this function neither reads nor stores a seed anywhere, so a
+ * caller that wants to remember where the deal started keeps that itself.
+ * Every test builds its own source, so a game's opening position is always
+ * reproducible.
  *
  * `options` carries everything else, each optional and documented on
  * `StartingGameStateOptions` — see there for the fields and their defaults
@@ -479,6 +491,15 @@ export function startingGameState(
       `startingGameState: playerMatching "${playerMatching}" is only valid under the steal node playstyle, got nodePlaystyle "${nodePlaystyle}"`,
     );
   }
+  if (
+    !chargedNodeCountsForPlayerMatching(playerMatching).includes(
+      chargedNodeCount,
+    )
+  ) {
+    throw new RangeError(
+      `startingGameState: chargedNodeCount ${chargedNodeCount} is not offered with playerMatching "${playerMatching}"`,
+    );
+  }
   if (planetActivity !== "off" && nodePlaystyle !== "steal") {
     throw new RangeError(
       `startingGameState: planetActivity "${planetActivity}" is only valid under the steal node playstyle, got nodePlaystyle "${nodePlaystyle}"`,
@@ -500,7 +521,11 @@ export function startingGameState(
   const shipSquares = ships.map((ship) => ship.square);
   const nodes: Readonly<Record<string, NodeStatus>> =
     nodePlaystyle === "steal"
-      ? dealStealOpeningBoard(shipSquares, chargedNodeCount, random)
+      ? dealStealOpeningBoard(
+          shipSquares,
+          { chargedNodeCount, playerMatching },
+          random,
+        )
       : dealOpeningBoard(shipSquares, chargedNodeCount, random);
 
   const dealtNodeSquares = ALL_SQUARES.filter(
@@ -518,7 +543,12 @@ export function startingGameState(
 
   const activityBonuses: readonly ActivityBonusEntry[] =
     planetActivity !== "off"
-      ? dealActivityBonuses(nodes, chargedNodeCount, ships, random)
+      ? dealActivityBonuses(
+          nodes,
+          { chargedNodeCount, playerMatching },
+          ships,
+          random,
+        )
       : [];
 
   return {

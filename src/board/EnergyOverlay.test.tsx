@@ -8,7 +8,7 @@ import type { EnergyCollectedEffect } from "../rules/endOfTurn";
 import { DEFAULT_GAME_LENGTH_ROUNDS } from "../rules/gameLength";
 import { DEFAULT_CHARGED_NODE_COUNT } from "../rules/nodes";
 import type { GameState } from "../rules/gameState";
-import type { PassEffect } from "../rules/ply";
+import type { ImmediateNodeLandedEffect, PassEffect } from "../rules/ply";
 import type { MovedEvent, Session, SessionEvent } from "../game/session";
 import { EnergyOverlay } from "./EnergyOverlay";
 
@@ -197,6 +197,104 @@ describe("EnergyOverlay", () => {
     expect(container.querySelectorAll(".energy-overlay__pulse")).toHaveLength(
       2,
     );
+  });
+
+  describe('an immediate landing\'s own "+N" (steal.md §9)', () => {
+    const LANDED_SQUARE = squareAt("K", 11);
+
+    function movedEventWithImmediateLanding(amount: number): MovedEvent {
+      const landed: ImmediateNodeLandedEffect = {
+        type: "immediate-node-landed",
+        shipId: "red-1",
+        side: "red",
+        signal: 4,
+        matchedSide: "red",
+        square: LANDED_SQUARE,
+        amount,
+      };
+      return {
+        type: "moved",
+        shipId: "red-1",
+        side: "red",
+        from: squareAt("K", 10),
+        to: LANDED_SQUARE,
+        effects: [
+          landed,
+          {
+            type: "ply-ended",
+            side: "red",
+            sideToMove: "green",
+            endOfTurn: [],
+          },
+        ],
+        cost: 1,
+        powerAfter: 5,
+      };
+    }
+
+    it('draws a "+N" and a pulse on the landed square for a paying landing', () => {
+      const { container } = render(
+        <EnergyOverlay
+          session={sessionWithEvent(movedEventWithImmediateLanding(9))}
+        />,
+      );
+
+      const gains = container.querySelectorAll(".energy-overlay__amount");
+      expect(gains).toHaveLength(1);
+      expect(gains[0]).toHaveTextContent("+9");
+      expect(gains[0]).toHaveClass("energy-overlay__amount--red");
+
+      const pulses = container.querySelectorAll(".energy-overlay__pulse");
+      expect(pulses).toHaveLength(1);
+      expect(pulses[0]).toHaveClass("energy-overlay__pulse--red");
+    });
+
+    it("draws nothing for an unpaid landing (the opponent's node, nothing held, or out of time)", () => {
+      const { container } = render(
+        <EnergyOverlay
+          session={sessionWithEvent(movedEventWithImmediateLanding(0))}
+        />,
+      );
+
+      expect(
+        container.querySelectorAll(".energy-overlay__amount"),
+      ).toHaveLength(0);
+      expect(container.querySelectorAll(".energy-overlay__pulse")).toHaveLength(
+        0,
+      );
+    });
+
+    it("draws the landing's own \"+N\" and the ply's end-of-turn collection separately", () => {
+      const event: MovedEvent = {
+        ...movedEventWithImmediateLanding(9),
+        effects: [
+          movedEventWithImmediateLanding(9).effects[0],
+          {
+            type: "ply-ended",
+            side: "red",
+            sideToMove: "green",
+            endOfTurn: [
+              {
+                type: "energy-collected",
+                side: "red",
+                amount: 3,
+                newTotal: 12,
+                squares: [squareAt("E", 5)],
+              },
+            ],
+          },
+        ],
+      };
+
+      const { container } = render(
+        <EnergyOverlay session={sessionWithEvent(event)} />,
+      );
+
+      const gains = Array.from(
+        container.querySelectorAll(".energy-overlay__amount"),
+      ).map((gain) => gain.textContent);
+      expect(gains).toEqual(["+9", "+3"]);
+    });
   });
 
   it("is aria-hidden", () => {

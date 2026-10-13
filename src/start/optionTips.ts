@@ -73,6 +73,13 @@ export const OPTION_TIPS: Readonly<Record<OptionGroupId, OptionTip>> = {
         choice: "REQUIRED",
         text: "You score no points for any node unless you hold your own.",
       },
+      {
+        choice: "IMMEDIATE",
+        text:
+          "Your own node pays at once when you land on it — more for " +
+          "every node you hold — then moves elsewhere. Landing on your " +
+          "opponent's moves it without paying.",
+      },
     ],
   },
   scoring: {

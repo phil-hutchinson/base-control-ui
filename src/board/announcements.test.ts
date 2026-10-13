@@ -327,6 +327,156 @@ describe("announcementFor", () => {
     );
   });
 
+  it("announces landing on its own immediate node and gaining energy, then the node moving on (steal.md §9)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "red-1",
+      side: "red",
+      from: squareAt("K", 10),
+      to: squareAt("K", 11),
+      effects: [
+        {
+          type: "immediate-node-landed",
+          shipId: "red-1",
+          side: "red",
+          signal: 3,
+          matchedSide: "red",
+          square: squareAt("K", 11),
+          amount: 9,
+          newProspective: squareAt("B", 3),
+        },
+        { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Red ship moved from K10 to K11. The move cost 1 power, leaving 5. Red landed on its own node at K11 and gained 9 energy. The node moved to B3. Green's turn.",
+    );
+  });
+
+  it("announces landing on its own immediate node while holding nothing, gaining nothing (steal.md §9)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "red-1",
+      side: "red",
+      from: squareAt("K", 10),
+      to: squareAt("K", 11),
+      effects: [
+        {
+          type: "immediate-node-landed",
+          shipId: "red-1",
+          side: "red",
+          signal: 3,
+          matchedSide: "red",
+          square: squareAt("K", 11),
+          amount: 0,
+          newProspective: squareAt("B", 3),
+        },
+        { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Red ship moved from K10 to K11. The move cost 1 power, leaving 5. Red landed on its own node at K11 and gained nothing. The node moved to B3. Green's turn.",
+    );
+  });
+
+  it("announces landing on the opponent's immediate node, paying nothing (steal.md §9)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "green-1",
+      side: "green",
+      from: squareAt("K", 10),
+      to: squareAt("K", 11),
+      effects: [
+        {
+          type: "immediate-node-landed",
+          shipId: "green-1",
+          side: "green",
+          signal: 3,
+          matchedSide: "red",
+          square: squareAt("K", 11),
+          amount: 0,
+          newProspective: squareAt("B", 3),
+        },
+        {
+          type: "ply-ended",
+          side: "green",
+          sideToMove: "red",
+          endOfTurn: [],
+        },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Green ship moved from K10 to K11. The move cost 1 power, leaving 5. Green landed on the opponent's node at K11. The node moved to B3. Red's turn.",
+    );
+  });
+
+  it("announces an immediate node losing its extra square instead of moving, once the extra is used up (steal.md §10)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "red-1",
+      side: "red",
+      from: squareAt("K", 10),
+      to: squareAt("K", 11),
+      effects: [
+        {
+          type: "immediate-node-landed",
+          shipId: "red-1",
+          side: "red",
+          signal: 3,
+          matchedSide: "red",
+          square: squareAt("K", 11),
+          amount: 3,
+        },
+        { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Red ship moved from K10 to K11. The move cost 1 power, leaving 5. Red landed on its own node at K11 and gained 3 energy. The node lost its extra square. Green's turn.",
+    );
+  });
+
+  it("announces a move that both gives up a held node and lands on an immediate one, in that order (steal.md §5, §9)", () => {
+    const event: MovedEvent = {
+      type: "moved",
+      shipId: "red-1",
+      side: "red",
+      from: squareAt("F", 4),
+      to: squareAt("K", 11),
+      effects: [
+        {
+          type: "node-abandoned",
+          signal: 0,
+          square: squareAt("F", 4),
+          newProspective: squareAt("C", 2),
+        },
+        {
+          type: "immediate-node-landed",
+          shipId: "red-1",
+          side: "red",
+          signal: 3,
+          matchedSide: "red",
+          square: squareAt("K", 11),
+          amount: 6,
+          newProspective: squareAt("B", 3),
+        },
+        { type: "ply-ended", side: "red", sideToMove: "green", endOfTurn: [] },
+      ],
+      cost: 1,
+      powerAfter: 5,
+    };
+    expect(announcementFor(event)).toBe(
+      "Red ship moved from F4 to K11. The move cost 1 power, leaving 5. Red gives up the node at F4. Red landed on its own node at K11 and gained 6 energy. The node moved to B3. Green's turn.",
+    );
+  });
+
   it("announces a move that both ends on a planet and ends the ply", () => {
     const event: MovedEvent = {
       type: "moved",

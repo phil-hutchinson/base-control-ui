@@ -227,7 +227,7 @@ describe("the fallback never fires, at the largest fleet and five nodes — the 
       });
       const shipSquares = state.ships.map((ship) => ship.square);
 
-      for (const signal of NODE_SIGNALS as readonly NodeSignal[]) {
+      for (const signal of NODE_SIGNALS.slice(0, 5) as readonly NodeSignal[]) {
         const squares = squaresForSignal(state.nodes, signal);
         expect(squares).toHaveLength(2);
         const [a, b] = squares;
@@ -236,9 +236,9 @@ describe("the fallback never fires, at the largest fleet and five nodes — the 
           const otherSquares = ([a, b] as readonly Square[]).filter(
             (candidate) => squareName(candidate) !== squareName(square),
           );
-          const everyOtherNodeSquare = NODE_SIGNALS.filter(
-            (other) => other !== signal,
-          ).flatMap((other) => squaresForSignal(state.nodes, other));
+          const everyOtherNodeSquare = NODE_SIGNALS.slice(0, 5)
+            .filter((other) => other !== signal)
+            .flatMap((other) => squaresForSignal(state.nodes, other));
           expect(
             satisfiesOrdinaryPoolConstraints(
               square,

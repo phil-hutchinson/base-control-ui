@@ -22,6 +22,7 @@ import {
   PLANET_BONUS_SETTINGS,
 } from "../rules/planetBonus";
 import {
+  chargedNodeCountsForPlayerMatching,
   type PlayerMatchingSetting,
   PLAYER_MATCHING_SETTINGS,
 } from "../rules/playerMatching";
@@ -84,6 +85,7 @@ const PLAYER_MATCHING_LABELS: Record<PlayerMatchingSetting, string> = {
   off: "OFF",
   double: "DOUBLE",
   required: "REQUIRED",
+  immediate: "IMMEDIATE",
 };
 
 /**
@@ -134,10 +136,16 @@ interface StartScreenProps {
  * only calls the matching handler — it dispatches nothing and starts no
  * game. The Player-matching nodes group renders only while the node
  * playstyle is steal, so the caller's `playerMatching` value is otherwise
- * unused chrome. In the same position, the Planet effects group renders
- * under steal and the Planet bonus group under every other playstyle, so
- * only one of `planetBonus` and `planetActivity` is ever shown; each keeps
- * its own value while hidden.
+ * unused chrome. It sits above Charged nodes, because under steal's
+ * immediate player-matching setting the Charged nodes choice counts only
+ * the ordinary nodes and does not offer 5 — that choice's 5 is disabled,
+ * not hidden, whenever the currently chosen setting does not offer it
+ * (`chargedNodeCountsForPlayerMatching`); the caller is responsible for
+ * resolving a disabled choice back to one that is offered, as
+ * `useAppScreen` does. In the same position, the Planet effects group
+ * renders under steal and the Planet bonus group under every other
+ * playstyle, so only one of `planetBonus` and `planetActivity` is ever
+ * shown; each keeps its own value while hidden.
  */
 export function StartScreen({
   fleetSize,
@@ -179,6 +187,9 @@ export function StartScreen({
   );
   useTipDismissal(openTip, closeTip);
   const tipProps = { openTip, onToggleTip: toggleTip };
+  const offeredChargedNodeCounts = chargedNodeCountsForPlayerMatching(
+    nodePlaystyle === "steal" ? playerMatching : "off",
+  );
 
   return (
     <div className="start-screen">
@@ -214,18 +225,6 @@ export function StartScreen({
           />
         ))}
       </OptionGroup>
-      <OptionGroup groupId="chargedNodeCount" {...tipProps}>
-        {CHARGED_NODE_COUNTS.map((value) => (
-          <OptionChoice
-            key={value}
-            name={chargedNodeCountGroupName}
-            value={value}
-            label={String(value)}
-            checked={value === chargedNodeCount}
-            onChange={() => onChargedNodeCountChange(value)}
-          />
-        ))}
-      </OptionGroup>
       {nodePlaystyle === "steal" ? (
         <OptionGroup groupId="playerMatching" {...tipProps}>
           {PLAYER_MATCHING_SETTINGS.map((value) => (
@@ -240,6 +239,19 @@ export function StartScreen({
           ))}
         </OptionGroup>
       ) : null}
+      <OptionGroup groupId="chargedNodeCount" {...tipProps}>
+        {CHARGED_NODE_COUNTS.map((value) => (
+          <OptionChoice
+            key={value}
+            name={chargedNodeCountGroupName}
+            value={value}
+            label={String(value)}
+            checked={value === chargedNodeCount}
+            disabled={!offeredChargedNodeCounts.includes(value)}
+            onChange={() => onChargedNodeCountChange(value)}
+          />
+        ))}
+      </OptionGroup>
       <OptionGroup groupId="scoring" {...tipProps}>
         {SCORING_SETTINGS.map((value) => (
           <OptionChoice
@@ -377,15 +389,21 @@ interface OptionChoiceProps {
   readonly value: string | number;
   readonly label: string;
   readonly checked: boolean;
+  readonly disabled?: boolean;
   readonly onChange: () => void;
 }
 
-/** One radio in an option group: a visually hidden input with a styled label. */
+/**
+ * One radio in an option group: a visually hidden input with a styled label.
+ * A disabled choice (`StartScreen.css` greys it out) cannot be checked and
+ * ignores clicks, as a native disabled radio always does.
+ */
 function OptionChoice({
   name,
   value,
   label,
   checked,
+  disabled = false,
   onChange,
 }: OptionChoiceProps) {
   const id = useId();
@@ -397,6 +415,7 @@ function OptionChoice({
         name={name}
         value={value}
         checked={checked}
+        disabled={disabled}
         onChange={onChange}
         className="visually-hidden"
       />

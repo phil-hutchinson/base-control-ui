@@ -18,6 +18,7 @@ import {
   type PlanetBonusSetting,
 } from "../rules/planetBonus";
 import {
+  chargedNodeCountsForPlayerMatching,
   isPlayerMatchingSetting,
   type PlayerMatchingSetting,
 } from "../rules/playerMatching";
@@ -67,6 +68,7 @@ export type SetupProblemKind =
   | "unknown-field"
   | "not-offered"
   | "not-allowed-with-playstyle"
+  | "not-allowed-with-player-matching"
   | "not-a-permutation";
 
 /** A single reported problem: which field, and what was wrong with it. */
@@ -119,11 +121,20 @@ function isArtworkPermutation(value: unknown): value is readonly number[] {
  * `"off"` for planet bonus under steal, or for planet effects and player
  * matching outside steal). That cross-check is skipped when `playstyle`
  * itself is missing or not offered, since there is then nothing to check
- * against. `artwork` is checked against `PLANET_PICTURE_NUMBERS` instead,
- * reporting `not-a-permutation`. Every problem found is collected, never
- * just the first; unknown fields are reported last, in the input's own key
- * order. An input that is not a plain object reports every known field as
- * `missing`.
+ * against. `chargedNodes` gets a cross-check of its own, against a peek at
+ * the raw `playerMatching` value rather than the parsed one (`playerMatching`
+ * is declared after `chargedNodes`, and a problem must still report at its
+ * own field's position): an offered `chargedNodes` value that the peeked
+ * `playerMatching` setting does not offer (`chargedNodeCountsForPlayerMatching`
+ * — immediate offers 4 or 3 only) reports `not-allowed-with-player-matching`
+ * on `chargedNodes`. That check is skipped when the raw `playerMatching`
+ * value is not itself one of the offered settings, or when `playstyle` is
+ * an offered value other than `"steal"`, where player-matching is never in
+ * force. `artwork` is checked against `PLANET_PICTURE_NUMBERS` instead,
+ * reporting `not-a-permutation`.
+ * Every problem found is collected, never just the first; unknown fields are
+ * reported last, in the input's own key order. An input that is not a plain
+ * object reports every known field as `missing`.
  */
 export function parseSetup(
   input: unknown,
@@ -184,6 +195,26 @@ export function parseSetup(
     problems.push({ field: "chargedNodes", problem: "not-offered" });
   } else {
     chargedNodes = record.chargedNodes;
+    // playerMatching is validated below, in Setup's declared field order;
+    // this peeks at the raw value, only when it is itself an offered
+    // setting, so the chargedNodes problem still reports at chargedNodes'
+    // own position. Skipped outside steal, where player-matching is never
+    // in force, mirroring how the playstyle cross-check below is skipped.
+    const peekedPlayerMatching = isPlayerMatchingSetting(record.playerMatching)
+      ? record.playerMatching
+      : undefined;
+    if (
+      (playstyle === undefined || playstyle === "steal") &&
+      peekedPlayerMatching !== undefined &&
+      !chargedNodeCountsForPlayerMatching(peekedPlayerMatching).includes(
+        chargedNodes,
+      )
+    ) {
+      problems.push({
+        field: "chargedNodes",
+        problem: "not-allowed-with-player-matching",
+      });
+    }
   }
 
   let combat: boolean | undefined;

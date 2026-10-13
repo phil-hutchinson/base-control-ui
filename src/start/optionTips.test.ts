@@ -37,7 +37,7 @@ describe("OPTION_TIPS", () => {
     });
   });
 
-  it("explains player-matching nodes, then DOUBLE and REQUIRED", () => {
+  it("explains player-matching nodes, then DOUBLE, REQUIRED and IMMEDIATE", () => {
     expect(OPTION_TIPS.playerMatching).toEqual({
       intro:
         "When on, each player has a node in their own colour, with a special effect:",
@@ -49,6 +49,13 @@ describe("OPTION_TIPS", () => {
         {
           choice: "REQUIRED",
           text: "You score no points for any node unless you hold your own.",
+        },
+        {
+          choice: "IMMEDIATE",
+          text:
+            "Your own node pays at once when you land on it — more for " +
+            "every node you hold — then moves elsewhere. Landing on your " +
+            "opponent's moves it without paying.",
         },
       ],
     });

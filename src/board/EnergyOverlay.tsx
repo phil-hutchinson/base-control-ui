@@ -13,6 +13,8 @@ import type {
 import type {
   ActivityBonusClaimedEffect,
   FightResolvedEffect,
+  ImmediateNodeLandedEffect,
+  MoveEffect,
   NodeAbandonedEffect,
   NodeClaimedEffect,
   NodeSpentEffect,
@@ -46,15 +48,38 @@ function settlementsIn(effects: readonly EndOfTurnEffect[]): Settlement[] {
 }
 
 /**
+ * A move's own `ImmediateNodeLandedEffect`, as a settlement on the square
+ * just landed on (steal.md §9), if it paid anything. Landing on the
+ * opponent's node, holding nothing, or being out of time all pay 0, which
+ * draws nothing — the node is still seen to move, with no flash. A move
+ * carries at most one of these (`ply.ts`).
+ */
+function immediateNodeLandedSettlement(
+  effects: readonly MoveEffect[],
+): Settlement[] {
+  const landed = effects.find(
+    (effect): effect is ImmediateNodeLandedEffect =>
+      effect.type === "immediate-node-landed",
+  );
+  if (landed === undefined || landed.amount <= 0) {
+    return [];
+  }
+  return [
+    { side: landed.side, amount: landed.amount, squares: [landed.square] },
+  ];
+}
+
+/**
  * The `ply-ended` and `ply-passed` settlements out of a move's or an
  * attack's effect list. Takes the two effect lists' common shape rather than
  * either one by name, since a move's effects and an attack's effects are
  * otherwise different types (a move's can also carry a `NodeSpentEffect` or,
- * under steal, a `NodeAbandonedEffect` and a `NodeClaimedEffect`, and an
- * attack's a `FightResolvedEffect`, and either can carry a
- * `QueueRotatedEffect`, a `PlanetBonusClaimedEffect` or an
+ * under steal, a `NodeAbandonedEffect`, a `NodeClaimedEffect` or an
+ * `ImmediateNodeLandedEffect`, and an attack's a `FightResolvedEffect`, and
+ * either can carry a `QueueRotatedEffect`, a `PlanetBonusClaimedEffect` or an
  * `ActivityBonusClaimedEffect`, none of which carries a settlement of its
- * own).
+ * own — a move's `ImmediateNodeLandedEffect` is drawn separately, by
+ * `immediateNodeLandedSettlement` above).
  */
 function endOfPlySettlements(
   effects: readonly (
@@ -64,6 +89,7 @@ function endOfPlySettlements(
     | NodeSpentEffect
     | NodeAbandonedEffect
     | NodeClaimedEffect
+    | ImmediateNodeLandedEffect
     | PlanetBonusClaimedEffect
     | ActivityBonusClaimedEffect
     | QueueRotatedEffect
@@ -86,7 +112,11 @@ function endOfPlySettlements(
  * reported. A move or an attack always ends the ply, and that can be
  * immediately followed by the pass guard firing for the other side, so a
  * `moved` or `attacked` event can carry settlements from both - one from its
- * `ply-ended` effect and one from a nested `ply-passed` effect.
+ * `ply-ended` effect and one from a nested `ply-passed` effect. A `moved`
+ * event can carry a further one of its own, from landing on an immediate
+ * node (steal.md §9) — drawn first, on the square just landed on, ahead of
+ * the turn's own settlement at its held squares' centroid, so a paying
+ * landing can show two "+N"s on the same ply.
  */
 function settlementsForEvent(
   event: SessionEvent | undefined,
@@ -99,7 +129,14 @@ function settlementsForEvent(
     return settlementsIn(event.endOfTurn);
   }
 
-  if (event.type === "moved" || event.type === "attacked") {
+  if (event.type === "moved") {
+    return [
+      ...immediateNodeLandedSettlement(event.effects),
+      ...endOfPlySettlements(event.effects),
+    ];
+  }
+
+  if (event.type === "attacked") {
     return endOfPlySettlements(event.effects);
   }
 

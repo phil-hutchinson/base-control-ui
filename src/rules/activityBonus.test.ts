@@ -17,11 +17,26 @@ import { ALL_SQUARES, type Square, squareFromName, squareName } from "./board";
 import type { NodeStatus, Ship } from "./gameState";
 import { CHARGED_NODE_COUNTS, type ChargedNodeCount } from "./nodes";
 import { PLANETS } from "./planets";
-import { PLAYER_MATCHING_SETTINGS } from "./playerMatching";
+import {
+  PLAYER_MATCHING_SETTINGS,
+  type PlayerMatchingSetting,
+} from "./playerMatching";
 import { MAX_POWER, type PowerLevel } from "./power";
 import { mulberry32, seededRandom } from "./random";
-import { nodeCarriesExtra, shuffleProspectiveSignals } from "./steal";
+import {
+  type GameSettings,
+  nodeCarriesExtra,
+  shuffleProspectiveSignals,
+} from "./steal";
 import { SCORING_SETTINGS } from "./scoring";
+
+/** A game's settings for the signal-aware functions, off by default. */
+function settings(
+  chargedNodeCount: ChargedNodeCount,
+  playerMatching: PlayerMatchingSetting = "off",
+): GameSettings {
+  return { chargedNodeCount, playerMatching };
+}
 
 function ship(
   id: string,
@@ -104,22 +119,24 @@ describe("isActivityBonusKindAvailable (steal.md §10)", () => {
       if (kind === "additional-nodes") {
         continue;
       }
-      expect(isActivityBonusKindAvailable(kind, NO_NODES, 3)).toBe(true);
-      expect(isActivityBonusKindAvailable(kind, everyNodeWithExtra(3), 3)).toBe(
+      expect(isActivityBonusKindAvailable(kind, NO_NODES, settings(3))).toBe(
         true,
       );
+      expect(
+        isActivityBonusKindAvailable(kind, everyNodeWithExtra(3), settings(3)),
+      ).toBe(true);
     }
   });
 
   it("makes additional nodes unavailable exactly when every node already has an extra", () => {
-    expect(isActivityBonusKindAvailable("additional-nodes", NO_NODES, 3)).toBe(
-      true,
-    );
+    expect(
+      isActivityBonusKindAvailable("additional-nodes", NO_NODES, settings(3)),
+    ).toBe(true);
     expect(
       isActivityBonusKindAvailable(
         "additional-nodes",
         everyNodeWithExtra(3),
-        3,
+        settings(3),
       ),
     ).toBe(false);
   });
@@ -128,7 +145,7 @@ describe("isActivityBonusKindAvailable (steal.md §10)", () => {
 describe("drawActivityBonusKind (steal.md §10)", () => {
   it("makes exactly one draw", () => {
     const random = seededRandom(777);
-    drawActivityBonusKind(random, NO_NODES, 4, NO_SHIPS);
+    drawActivityBonusKind(random, NO_NODES, settings(4), NO_SHIPS);
     const [, expectedSeed] = mulberry32(777);
     expect(random.currentSeed()).toBe(expectedSeed);
     expect(random.draws()).toHaveLength(1);
@@ -141,7 +158,7 @@ describe("drawActivityBonusKind (steal.md §10)", () => {
       const kind = drawActivityBonusKind(
         random,
         NO_NODES,
-        5,
+        settings(5),
         NO_SHIPS,
         excluded,
       );
@@ -153,7 +170,12 @@ describe("drawActivityBonusKind (steal.md §10)", () => {
     const everyExtra = everyNodeWithExtra(3);
     const random = seededRandom(54321);
     for (let i = 0; i < 500; i++) {
-      const kind = drawActivityBonusKind(random, everyExtra, 3, NO_SHIPS);
+      const kind = drawActivityBonusKind(
+        random,
+        everyExtra,
+        settings(3),
+        NO_SHIPS,
+      );
       expect(kind).not.toBe("additional-nodes");
     }
   });
@@ -172,7 +194,7 @@ describe("drawActivityBonusKind (steal.md §10)", () => {
     const sampleSize = 20000;
     const random = seededRandom(999);
     for (let i = 0; i < sampleSize; i++) {
-      const kind = drawActivityBonusKind(random, NO_NODES, 5, ships);
+      const kind = drawActivityBonusKind(random, NO_NODES, settings(5), ships);
       counts[kind]++;
     }
     for (const kind of ACTIVITY_BONUS_KINDS) {
@@ -278,21 +300,49 @@ describe("activityBonusPoints (steal.md §10)", () => {
     expect(activityBonusPoints(4, "double", "bonus", "medium")).toBe(10);
     expect(activityBonusPoints(5, "required", "simple", "large")).toBe(6);
     expect(activityBonusPoints(5, "double", "bonus", "large")).toBe(15);
+    expect(activityBonusPoints(3, "immediate", "simple", "small")).toBe(1);
+    expect(activityBonusPoints(4, "immediate", "bonus", "large")).toBe(8);
+  });
+
+  it("throws for immediate at five nodes, the one combination the ruleset does not offer", () => {
+    expect(() =>
+      activityBonusPoints(5, "immediate", "simple", "small"),
+    ).toThrow(RangeError);
   });
 });
 
 describe("the point table mirrors steal.md §10", () => {
-  it("agrees with the code for all 18 node-count/matching/scoring cells", () => {
+  /** Every node-count/matching pair the ruleset offers a row for — every combination but immediate at five nodes. */
+  function offeredCells(): {
+    nodes: ChargedNodeCount;
+    matching: PlayerMatchingSetting;
+  }[] {
+    const cells: {
+      nodes: ChargedNodeCount;
+      matching: PlayerMatchingSetting;
+    }[] = [];
+    for (const nodes of CHARGED_NODE_COUNTS) {
+      for (const matching of PLAYER_MATCHING_SETTINGS) {
+        if (nodes === 5 && matching === "immediate") {
+          continue;
+        }
+        cells.push({ nodes, matching });
+      }
+    }
+    return cells;
+  }
+
+  it("agrees with the code for every offered node-count/matching/scoring cell", () => {
     const stealMdPath = fileURLToPath(
       new URL("../../doc/ruleset/steal.md", import.meta.url),
     );
     const stealMdText = readFileSync(stealMdPath, "utf-8");
     const rowPattern =
-      /\|\s*(\d)\s*\|\s*(off|double|required)\s*\|\s*(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+)\s*\|\s*(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+)\s*\|/g;
+      /\|\s*(\d)\s*\|\s*(off|double|required|immediate)\s*\|\s*(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+)\s*\|\s*(\d+)\s*\/\s*(\d+)\s*\/\s*(\d+)\s*\|/g;
 
     const rows: {
       nodes: ChargedNodeCount;
-      matching: "off" | "double" | "required";
+      matching: PlayerMatchingSetting;
       simple: [number, number, number];
       bonus: [number, number, number];
     }[] = [];
@@ -300,14 +350,16 @@ describe("the point table mirrors steal.md §10", () => {
     while ((match = rowPattern.exec(stealMdText)) !== null) {
       rows.push({
         nodes: Number(match[1]) as ChargedNodeCount,
-        matching: match[2] as "off" | "double" | "required",
+        matching: match[2] as PlayerMatchingSetting,
         simple: [Number(match[3]), Number(match[4]), Number(match[5])],
         bonus: [Number(match[6]), Number(match[7]), Number(match[8])],
       });
     }
 
+    // 3 node counts x 4 settings, minus the one combination (5 x immediate)
+    // the ruleset does not offer a row for: 9 + 2 = 11.
     expect(rows).toHaveLength(
-      CHARGED_NODE_COUNTS.length * PLAYER_MATCHING_SETTINGS.length,
+      CHARGED_NODE_COUNTS.length * PLAYER_MATCHING_SETTINGS.length - 1,
     );
 
     for (const row of rows) {
@@ -333,37 +385,41 @@ describe("the point table mirrors steal.md §10", () => {
       ).toBe(largeBonus);
     }
 
-    for (const nodeCount of CHARGED_NODE_COUNTS) {
-      for (const matching of PLAYER_MATCHING_SETTINGS) {
-        expect(
-          rows.some(
-            (row) => row.nodes === nodeCount && row.matching === matching,
-          ),
-        ).toBe(true);
-      }
+    for (const { nodes, matching } of offeredCells()) {
+      expect(
+        rows.some((row) => row.nodes === nodes && row.matching === matching),
+      ).toBe(true);
     }
   });
 
   for (const scoring of SCORING_SETTINGS) {
-    it(`covers every ${scoring} scoring cell without throwing`, () => {
-      for (const nodeCount of CHARGED_NODE_COUNTS) {
-        for (const matching of PLAYER_MATCHING_SETTINGS) {
-          for (const size of ["small", "medium", "large"] as const) {
-            expect(() =>
-              activityBonusPoints(nodeCount, matching, scoring, size),
-            ).not.toThrow();
-          }
+    it(`covers every offered ${scoring} scoring cell without throwing`, () => {
+      for (const { nodes, matching } of offeredCells()) {
+        for (const size of ["small", "medium", "large"] as const) {
+          expect(() =>
+            activityBonusPoints(nodes, matching, scoring, size),
+          ).not.toThrow();
         }
       }
     });
   }
+
+  it("throws for every unoffered cell (immediate at five nodes)", () => {
+    for (const scoring of SCORING_SETTINGS) {
+      for (const size of ["small", "medium", "large"] as const) {
+        expect(() =>
+          activityBonusPoints(5, "immediate", scoring, size),
+        ).toThrow(RangeError);
+      }
+    }
+  });
 });
 
 describe("dealActivityBonuses (steal.md §10)", () => {
   it("deals two distinct planets, of two distinct kinds, both from the twelve planets", () => {
     const [first, second] = dealActivityBonuses(
       NO_NODES,
-      4,
+      settings(4),
       NO_SHIPS,
       seededRandom(2024),
     );
@@ -379,7 +435,7 @@ describe("dealActivityBonuses (steal.md §10)", () => {
 
   it("makes exactly four draws", () => {
     const random = seededRandom(2024);
-    dealActivityBonuses(NO_NODES, 4, NO_SHIPS, random);
+    dealActivityBonuses(NO_NODES, settings(4), NO_SHIPS, random);
     let expectedSeed = 2024;
     for (let step = 0; step < 4; step++) {
       [, expectedSeed] = mulberry32(expectedSeed);
@@ -391,19 +447,19 @@ describe("dealActivityBonuses (steal.md §10)", () => {
   it("is deterministic for a seed, and differs for a different seed", () => {
     const firstBonuses = dealActivityBonuses(
       NO_NODES,
-      4,
+      settings(4),
       NO_SHIPS,
       seededRandom(555),
     );
     const secondBonuses = dealActivityBonuses(
       NO_NODES,
-      4,
+      settings(4),
       NO_SHIPS,
       seededRandom(555),
     );
     const thirdBonuses = dealActivityBonuses(
       NO_NODES,
-      4,
+      settings(4),
       NO_SHIPS,
       seededRandom(556),
     );
@@ -415,8 +471,20 @@ describe("dealActivityBonuses (steal.md §10)", () => {
   it("deals from full starting fleets exactly what it deals with no ships, Fuel's weight being 10 either way", () => {
     for (let seed = 0; seed < 200; seed++) {
       expect(
-        dealActivityBonuses(NO_NODES, 4, FULL_FLEETS, seededRandom(seed)),
-      ).toEqual(dealActivityBonuses(NO_NODES, 4, NO_SHIPS, seededRandom(seed)));
+        dealActivityBonuses(
+          NO_NODES,
+          settings(4),
+          FULL_FLEETS,
+          seededRandom(seed),
+        ),
+      ).toEqual(
+        dealActivityBonuses(
+          NO_NODES,
+          settings(4),
+          NO_SHIPS,
+          seededRandom(seed),
+        ),
+      );
     }
   });
 });
@@ -545,7 +613,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       const survivorKind = drawActivityBonusKind(
         random,
         NO_NODES,
-        3,
+        settings(3),
         shipsAtDraw,
         new Set(["medium-points"]),
       );
@@ -559,7 +627,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
       const newKind = drawActivityBonusKind(
         random,
         NO_NODES,
-        3,
+        settings(3),
         shipsAtDraw,
         new Set([survivorKind]),
       );
@@ -614,7 +682,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
         (status) => status.signal === signal,
       );
       expect(squares).toHaveLength(3);
-      expect(nodeCarriesExtra(result.nodes, signal)).toBe(true);
+      expect(nodeCarriesExtra(result.nodes, signal, settings(3))).toBe(true);
     }
     expect(result.outcome.pointsAwarded).toBe(0);
   });
@@ -641,8 +709,7 @@ describe("resolveActivityBonusClaim (steal.md §10)", () => {
 
       const expected = shuffleProspectiveSignals(
         nodes,
-        3,
-        playerMatching,
+        settings(3, playerMatching),
         seededRandom(state.seed),
       );
       expect(result.nodes).toEqual(expected.nodes);

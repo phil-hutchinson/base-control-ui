@@ -355,6 +355,77 @@ export function PlayerMatchingNodesDiagram() {
   return <GuideDiagram columns={2} cells={cells} />;
 }
 
+// The signal IMMEDIATE NODES's diagram draws green's node with — green's
+// signal in a four-ordinary-node immediate game (ordinary 0-3, red 4,
+// green 5 — matchedSignalForSide's own assignment), so the diagram shows
+// the same signal that game would match. The ordinary node shown held uses
+// signal 0, the palette's first, as STEALING NODES's diagram does.
+const IMMEDIATE_DIAGRAM_GREEN_SIGNAL: NodeSignal = 5;
+const IMMEDIATE_DIAGRAM_ORDINARY_SIGNAL: NodeSignal = 0;
+const IMMEDIATE_DIAGRAM_POWER = 4;
+
+/**
+ * Diagram 8b: an immediate node (steal.md §9, "Immediate") at a glance.
+ * Before: green already holds an ordinary charged node, and a second green
+ * ship waits beside green's own node — a single set of rings in green,
+ * never charged. After: that ship has landed where the rings were, now an
+ * ordinary square, and green's rings have moved on, further along the
+ * strip. No "+N" is drawn (steal.md §9's payment is shown only in words,
+ * not by a new overlay).
+ */
+export function ImmediateNodesDiagram() {
+  const cells: readonly GuideDiagramCell[] = [
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-immediate-1",
+        nodeState: "charged",
+        signal: IMMEDIATE_DIAGRAM_ORDINARY_SIGNAL,
+        occupant: { side: "green", power: IMMEDIATE_DIAGRAM_POWER },
+      },
+    },
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-immediate-2",
+        nodeState: "prospective",
+        signal: IMMEDIATE_DIAGRAM_GREEN_SIGNAL,
+        matchedSide: "green",
+      },
+    },
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-immediate-3",
+        occupant: { side: "green", power: IMMEDIATE_DIAGRAM_POWER },
+      },
+    },
+    { kind: "arrow" },
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-immediate-4",
+        occupant: { side: "green", power: IMMEDIATE_DIAGRAM_POWER },
+      },
+    },
+    {
+      kind: "square",
+      square: {
+        isPlanet: false,
+        squareName: "guide-immediate-5",
+        nodeState: "prospective",
+        signal: IMMEDIATE_DIAGRAM_GREEN_SIGNAL,
+        matchedSide: "green",
+      },
+    },
+  ];
+  return <GuideDiagram columns={6} cells={cells} />;
+}
+
 /**
  * Diagram 9: green's bonus row alone — three planets, one already carrying
  * the settled checkmark, the other two unclaimed. Red's row and the `+N`

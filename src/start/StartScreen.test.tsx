@@ -103,6 +103,7 @@ const PLAYER_MATCHING_LABELS: Record<PlayerMatchingSetting, string> = {
   off: "OFF",
   double: "DOUBLE",
   required: "REQUIRED",
+  immediate: "IMMEDIATE",
 };
 
 interface RenderOverrides {
@@ -270,6 +271,28 @@ describe("StartScreen", () => {
     ).toEqual(["5", "4", "3"]);
   });
 
+  it("disables 5 in the charged nodes group under STEAL + IMMEDIATE, leaving 4 and 3 enabled", () => {
+    renderStartScreen({
+      nodePlaystyle: "steal",
+      playerMatching: "immediate",
+      chargedNodeCount: 4,
+    });
+
+    const group = screen.getByRole("group", { name: "Charged nodes" });
+    expect(within(group).getByRole("radio", { name: "5" })).toBeDisabled();
+    expect(within(group).getByRole("radio", { name: "4" })).toBeEnabled();
+    expect(within(group).getByRole("radio", { name: "3" })).toBeEnabled();
+  });
+
+  it("enables all of 5, 4 and 3 in the charged nodes group under STEAL + REQUIRED", () => {
+    renderStartScreen({ nodePlaystyle: "steal", playerMatching: "required" });
+
+    const group = screen.getByRole("group", { name: "Charged nodes" });
+    expect(within(group).getByRole("radio", { name: "5" })).toBeEnabled();
+    expect(within(group).getByRole("radio", { name: "4" })).toBeEnabled();
+    expect(within(group).getByRole("radio", { name: "3" })).toBeEnabled();
+  });
+
   it("renders the seven option groups in order: Node playstyle, Ships, Charged nodes, Node scoring, Planet bonus, Rounds, Clock, with no Player-matching nodes group, under a non-steal playstyle", () => {
     renderStartScreen({ nodePlaystyle: "planet" });
 
@@ -285,15 +308,15 @@ describe("StartScreen", () => {
     ]);
   });
 
-  it("renders eight option groups under STEAL, with Player-matching nodes between Charged nodes and Node scoring, and Planet effects in Planet bonus's place", () => {
+  it("renders eight option groups under STEAL, with Player-matching nodes between Ships and Charged nodes, and Planet effects in Planet bonus's place", () => {
     renderStartScreen({ nodePlaystyle: "steal" });
 
     const groups = screen.getAllByRole("group");
     expect(groups.map(groupTitle)).toEqual([
       "Node playstyle",
       "Ships",
-      "Charged nodes",
       "Player-matching nodes",
+      "Charged nodes",
       "Node scoring",
       "Planet effects",
       "Rounds",

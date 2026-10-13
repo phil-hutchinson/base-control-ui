@@ -53,6 +53,7 @@ import type { ScoringSetting } from "./scoring";
 import {
   addExtraProspectiveSquares,
   everyNodeHasExtra,
+  type GameSettings,
   type RecoloredSquare,
   shuffleProspectiveSignals,
 } from "./steal";
@@ -123,16 +124,17 @@ export interface ActivityBonusEntry {
 /**
  * Whether `kind` may currently be dealt (steal.md §10): every kind but
  * Additional nodes is always available; Additional nodes is unavailable
- * exactly when every one of the game's `nodeCount` nodes already carries an
- * extra prospective square (`everyNodeHasExtra`).
+ * exactly when every one of the game's signals already carries an extra
+ * prospective square (`everyNodeHasExtra`) — red's and green's signals
+ * included under player-matching nodes' immediate setting (steal.md §9).
  */
 export function isActivityBonusKindAvailable(
   kind: ActivityBonusKind,
   nodes: Readonly<Record<string, NodeStatus>>,
-  nodeCount: ChargedNodeCount,
+  settings: GameSettings,
 ): boolean {
   if (kind === "additional-nodes") {
-    return !everyNodeHasExtra(nodes, nodeCount);
+    return !everyNodeHasExtra(nodes, settings);
   }
   return true;
 }
@@ -148,13 +150,13 @@ export function isActivityBonusKindAvailable(
 export function drawActivityBonusKind(
   random: RandomSource,
   nodes: Readonly<Record<string, NodeStatus>>,
-  nodeCount: ChargedNodeCount,
+  settings: GameSettings,
   ships: readonly Pick<Ship, "power">[],
   excludedKinds: ReadonlySet<ActivityBonusKind> = new Set(),
 ): ActivityBonusKind {
   const weights = ACTIVITY_BONUS_KINDS.map((kind) =>
     excludedKinds.has(kind) ||
-    !isActivityBonusKindAvailable(kind, nodes, nodeCount)
+    !isActivityBonusKindAvailable(kind, nodes, settings)
       ? 0
       : kind === "fuel"
         ? fuelWeight(ships)
@@ -195,8 +197,14 @@ export function activityBonusPointSize(
 
 type PointsBySize = Readonly<Record<ActivityBonusPointSize, number>>;
 type PointsByScoring = Readonly<Record<ScoringSetting, PointsBySize>>;
+/**
+ * Keyed by player-matching setting, but not every node count has every
+ * setting's row: immediate is not offered at five nodes (steal.md §9),
+ * `Partial` so the five-node row's absent `immediate` key type-checks
+ * instead of being forced to carry a row the ruleset does not state.
+ */
 type PointsByMatching = Readonly<
-  Record<PlayerMatchingSetting, PointsByScoring>
+  Partial<Record<PlayerMatchingSetting, PointsByScoring>>
 >;
 
 /**
@@ -204,7 +212,9 @@ type PointsByMatching = Readonly<
  * node count, its player-matching setting and its scoring, mirrored verbatim
  * from steal.md §10's table — `activityBonus.test.ts` reads that table and
  * asserts the two agree, so a balancing change to one without the other
- * fails the suite.
+ * fails the suite. Until immediate has been measured on its own, its rows
+ * at 3 and 4 equal the required rows for the same node count, and 5 carries
+ * no immediate row at all.
  */
 const ACTIVITY_BONUS_POINTS: Readonly<
   Record<ChargedNodeCount, PointsByMatching>
@@ -222,6 +232,10 @@ const ACTIVITY_BONUS_POINTS: Readonly<
       simple: { small: 1, medium: 2, large: 4 },
       bonus: { small: 2, medium: 4, large: 6 },
     },
+    immediate: {
+      simple: { small: 1, medium: 2, large: 4 },
+      bonus: { small: 2, medium: 4, large: 6 },
+    },
   },
   4: {
     off: {
@@ -233,6 +247,10 @@ const ACTIVITY_BONUS_POINTS: Readonly<
       bonus: { small: 6, medium: 10, large: 15 },
     },
     required: {
+      simple: { small: 2, medium: 3, large: 5 },
+      bonus: { small: 3, medium: 5, large: 8 },
+    },
+    immediate: {
       simple: { small: 2, medium: 3, large: 5 },
       bonus: { small: 3, medium: 5, large: 8 },
     },
@@ -256,6 +274,8 @@ const ACTIVITY_BONUS_POINTS: Readonly<
 /**
  * The energy a points bonus of the given size pays, for a game of
  * `nodeCount` nodes under `playerMatching` and `scoring` (steal.md §10).
+ * Throws a `RangeError` for a `nodeCount`/`playerMatching` pair the ruleset
+ * does not offer — immediate at five nodes, the one such pair.
  */
 export function activityBonusPoints(
   nodeCount: ChargedNodeCount,
@@ -263,7 +283,13 @@ export function activityBonusPoints(
   scoring: ScoringSetting,
   size: ActivityBonusPointSize,
 ): number {
-  return ACTIVITY_BONUS_POINTS[nodeCount][playerMatching][scoring][size];
+  const byScoring = ACTIVITY_BONUS_POINTS[nodeCount][playerMatching];
+  if (byScoring === undefined) {
+    throw new RangeError(
+      `activityBonusPoints: player-matching "${playerMatching}" is not offered with ${nodeCount} nodes`,
+    );
+  }
+  return byScoring[scoring][size];
 }
 
 /**
@@ -278,7 +304,7 @@ export function activityBonusPoints(
  */
 export function dealActivityBonuses(
   nodes: Readonly<Record<string, NodeStatus>>,
-  nodeCount: ChargedNodeCount,
+  settings: GameSettings,
   ships: readonly Pick<Ship, "power">[],
   random: RandomSource,
 ): readonly [ActivityBonusEntry, ActivityBonusEntry] {
@@ -287,11 +313,11 @@ export function dealActivityBonuses(
     (square) => squareName(square) !== squareName(firstPlanet),
   );
   const secondPlanet = drawActivityBonusPlanet(random, remainingPlanets);
-  const firstKind = drawActivityBonusKind(random, nodes, nodeCount, ships);
+  const firstKind = drawActivityBonusKind(random, nodes, settings, ships);
   const secondKind = drawActivityBonusKind(
     random,
     nodes,
-    nodeCount,
+    settings,
     ships,
     new Set([firstKind]),
   );
@@ -425,21 +451,11 @@ export function resolveActivityBonusClaim(
     poweredShipIds = powered;
   } else if (claimed.kind === "additional-nodes") {
     const shipSquares = ships.map((ship) => ship.square);
-    const added = addExtraProspectiveSquares(
-      nodes,
-      state.chargedNodeCount,
-      shipSquares,
-      random,
-    );
+    const added = addExtraProspectiveSquares(nodes, state, shipSquares, random);
     nodes = added.nodes;
     addedSquares = added.addedSquares;
   } else if (claimed.kind === "node-scramble") {
-    const shuffled = shuffleProspectiveSignals(
-      nodes,
-      state.chargedNodeCount,
-      state.playerMatching,
-      random,
-    );
+    const shuffled = shuffleProspectiveSignals(nodes, state, random);
     nodes = shuffled.nodes;
     recoloredSquares = shuffled.recoloredSquares;
   }
@@ -449,7 +465,7 @@ export function resolveActivityBonusClaim(
       ? drawActivityBonusKind(
           random,
           nodes,
-          state.chargedNodeCount,
+          state,
           ships,
           new Set([survivor.kind]),
         )
@@ -472,7 +488,7 @@ export function resolveActivityBonusClaim(
   const newBonusKind = drawActivityBonusKind(
     random,
     nodes,
-    state.chargedNodeCount,
+    state,
     ships,
     new Set([survivorNewKind]),
   );

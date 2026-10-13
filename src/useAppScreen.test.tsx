@@ -323,6 +323,86 @@ describe("useAppScreen", () => {
     );
   });
 
+  it("resolves a remembered 5 charged nodes down to 4 when IMMEDIATE is chosen under steal", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
+
+    act(() => {
+      result.current.setChargedNodeCount(5);
+    });
+    act(() => {
+      result.current.setPlayerMatching("immediate");
+    });
+
+    expect(result.current.chargedNodeCount).toBe(4);
+
+    act(() => {
+      result.current.handlePlay();
+    });
+
+    expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        type: "new-game",
+        chargedNodeCount: 4,
+        playerMatching: "immediate",
+      }),
+    );
+  });
+
+  it("restores the remembered 5 charged nodes when REQUIRED is chosen again after IMMEDIATE", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
+
+    act(() => {
+      result.current.setChargedNodeCount(5);
+    });
+    act(() => {
+      result.current.setPlayerMatching("immediate");
+    });
+    act(() => {
+      result.current.setPlayerMatching("required");
+    });
+
+    expect(result.current.chargedNodeCount).toBe(5);
+  });
+
+  it("restores the remembered 5 charged nodes when switching away from steal after IMMEDIATE", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
+
+    act(() => {
+      result.current.setChargedNodeCount(5);
+    });
+    act(() => {
+      result.current.setPlayerMatching("immediate");
+    });
+    act(() => {
+      result.current.setNodePlaystyle("planet");
+    });
+
+    expect(result.current.chargedNodeCount).toBe(5);
+  });
+
+  it("does not restore 5 after IMMEDIATE if 3 or 4 was chosen meanwhile", () => {
+    const dispatch = vi.fn();
+    const { result } = renderHook(() => useAppScreen(dispatch, false));
+
+    act(() => {
+      result.current.setChargedNodeCount(5);
+    });
+    act(() => {
+      result.current.setPlayerMatching("immediate");
+    });
+    act(() => {
+      result.current.setChargedNodeCount(3);
+    });
+    act(() => {
+      result.current.setPlayerMatching("required");
+    });
+
+    expect(result.current.chargedNodeCount).toBe(3);
+  });
+
   it("carries a chosen charged-node count of three into the new-game intent, and keeps it on returning to start", async () => {
     const dispatch = vi.fn();
     const { result } = renderHook(() => useAppScreen(dispatch, true));

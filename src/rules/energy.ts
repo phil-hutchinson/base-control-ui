@@ -6,8 +6,12 @@
 // place that reckons a side's whole end-of-turn collection, so the payout,
 // the pips and the live region cannot drift apart. A side whose clock has
 // run out (rules.md §10) is withheld outright, taking precedence over
-// player-matching nodes. Nothing about the end-of-turn sequence, effects or
-// running totals lives here.
+// player-matching nodes. Under player-matching nodes' immediate setting,
+// `immediateNodePayment` prices a landing on an immediate node the same
+// way, multiplied, so that payment can never drift from what a turn pays
+// either — `ply.ts` calls it mid-move and credits the energy itself; this
+// module never touches `state.energy`. Nothing about the end-of-turn
+// sequence, effects or running totals lives here.
 
 import { type Square, squareName } from "./board";
 import {
@@ -64,6 +68,54 @@ export function energyForNodesHeld(
 }
 
 /**
+ * The multiplier an immediate landing applies to one turn's collection
+ * (steal.md §9): three times under simple scoring, twice under bonus.
+ */
+const IMMEDIATE_SIMPLE_MULTIPLIER = 3;
+const IMMEDIATE_BONUS_MULTIPLIER = 2;
+
+/** The whole of what an immediate landing pays — see `immediateNodePayment`. */
+export interface ImmediateNodePayment {
+  /** The ordinary charged nodes the landing side held at the moment of landing. */
+  readonly heldSquares: readonly Square[];
+  /** The resulting amount, 0 when `side` holds no node or is out of time. */
+  readonly amount: number;
+}
+
+/**
+ * What landing on its own immediate node pays `side`, right now (steal.md
+ * §9): the ordinary charged nodes it holds at the moment of landing, priced
+ * as one turn's collection would be (`energyForNodesHeld`) and then
+ * multiplied — three times under simple scoring, twice under bonus — or 0
+ * outright if `side`'s clock has run out (rules.md §10), which a player who
+ * is out of time gains no energy from any source. `state` must already
+ * reflect the ship having moved and any leave (steal.md §5) having
+ * resolved, since the payment is counted at that moment, not before it.
+ * Holding no nodes pays nothing, but the caller still moves or uses up the
+ * node as usual — this function only prices the payment, and does not
+ * decide whether `side` is the one being paid at all (steal.md §9 pays only
+ * the landing side's own node, never the opponent's): that choice is the
+ * caller's.
+ */
+export function immediateNodePayment(
+  state: GameState,
+  side: Side,
+): ImmediateNodePayment {
+  const heldSquares = chargedNodesHeldBy(state, side);
+  if (state.outOfTime[side]) {
+    return { heldSquares, amount: 0 };
+  }
+  const multiplier =
+    state.scoring === "simple"
+      ? IMMEDIATE_SIMPLE_MULTIPLIER
+      : IMMEDIATE_BONUS_MULTIPLIER;
+  return {
+    heldSquares,
+    amount: energyForNodesHeld(heldSquares.length, state.scoring) * multiplier,
+  };
+}
+
+/**
  * Why a collection is withheld outright: `"out-of-time"` when the side's
  * clock has run out (rules.md §10), which takes precedence over `"required"`, the
  * player-matching nodes case of holding nodes but not the side's own one
@@ -112,9 +164,13 @@ export interface TurnCollection {
  * like any other. Under `"required"`, holding at least one node without
  * holding the own one withholds the turn's collection entirely
  * (`countedNodes` 0, `withheld` true); holding the own node prices exactly
- * as `"off"` would, the own node counting once. `energyForNodesHeld` itself
- * is unchanged — this changes the count that function is asked to price,
- * never the price a count is worth.
+ * as `"off"` would, the own node counting once. Under `"immediate"`
+ * (steal.md §9) this takes the same path as `"off"`: an immediate node is
+ * never charged, so it can never appear in `heldSquares`, `ownNodeSquare` is
+ * always `undefined` and nothing here is withheld for player-matching — an
+ * immediate node pays only on landing (`ply.ts`), never at the end of a
+ * turn. `energyForNodesHeld` itself is unchanged — this changes the count
+ * that function is asked to price, never the price a count is worth.
  */
 export function turnCollection(state: GameState, side: Side): TurnCollection {
   const heldSquares = chargedNodesHeldBy(state, side);
@@ -124,7 +180,7 @@ export function turnCollection(state: GameState, side: Side): TurnCollection {
       : heldSquares.find(
           (square) =>
             state.nodes[squareName(square)]?.signal ===
-            matchedSignalForSide(side, state.chargedNodeCount),
+            matchedSignalForSide(side, state),
         );
   const standingOnOwnNode = ownNodeSquare !== undefined;
 

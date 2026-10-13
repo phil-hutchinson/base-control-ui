@@ -173,6 +173,72 @@ describe("parseSetup", () => {
     });
   });
 
+  it("reports chargedNodes 5 under immediate as not-allowed-with-player-matching", () => {
+    const result = parseSetup({
+      ...EXAMPLE_SETUP,
+      chargedNodes: 5,
+      playerMatching: "immediate",
+    });
+    expect(result).toEqual({
+      ok: false,
+      problems: [
+        { field: "chargedNodes", problem: "not-allowed-with-player-matching" },
+      ],
+    });
+  });
+
+  it("parses chargedNodes 4 or 3 under immediate", () => {
+    for (const chargedNodes of [4, 3]) {
+      const result = parseSetup({
+        ...EXAMPLE_SETUP,
+        chargedNodes,
+        playerMatching: "immediate",
+      });
+      expect(result).toEqual({
+        ok: true,
+        setup: { ...EXAMPLE_SETUP, chargedNodes, playerMatching: "immediate" },
+      });
+    }
+  });
+
+  it("skips the chargedNodes/player-matching cross-check when playerMatching is missing", () => {
+    const result = parseSetup(
+      omit({ ...EXAMPLE_SETUP, chargedNodes: 5 }, "playerMatching"),
+    );
+    expect(result).toEqual({
+      ok: false,
+      problems: [{ field: "playerMatching", problem: "missing" }],
+    });
+  });
+
+  it("skips the chargedNodes/player-matching cross-check when playerMatching is not offered", () => {
+    const result = parseSetup({
+      ...EXAMPLE_SETUP,
+      chargedNodes: 5,
+      playerMatching: "bogus",
+    });
+    expect(result).toEqual({
+      ok: false,
+      problems: [{ field: "playerMatching", problem: "not-offered" }],
+    });
+  });
+
+  it("skips the chargedNodes/player-matching cross-check when playstyle is an offered value other than steal", () => {
+    const result = parseSetup({
+      ...EXAMPLE_SETUP,
+      playstyle: "planet",
+      planetActivity: "off",
+      playerMatching: "immediate",
+      chargedNodes: 5,
+    });
+    expect(result).toEqual({
+      ok: false,
+      problems: [
+        { field: "playerMatching", problem: "not-allowed-with-playstyle" },
+      ],
+    });
+  });
+
   it("reports artwork that is too short, too long, repeated, non-picture or not an array as not-a-permutation", () => {
     const cases = [
       [3, 1, 14, 7, 2, 9, 5, 13, 4, 10, 6], // short
